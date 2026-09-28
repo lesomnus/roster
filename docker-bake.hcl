@@ -7,7 +7,8 @@
 #
 # `docker buildx bake` builds it. `test` is a target and not part of the
 # default group: the gate is `./scripts/test.sh`, and this is its Go half for a
-# machine that has no toolchain -- see `Dockerfile`.
+# machine that has no toolchain -- see `Dockerfile`. Nor are `dist` and `dev`,
+# which are how CI compiles once and copies after (`DIST`, below).
 
 variable "TAG" {
   default = "local"
@@ -47,6 +48,38 @@ variable "PLATFORMS" {
   default = ["linux/amd64", "linux/arm64"]
 }
 
+# What `dist` wrote, when it has already been built; empty means compile.
+#
+# Set, it stands in for the `dist` stage of every image here, so building one is
+# copying files onto a base and nothing else. That is how CI compiles once: the
+# `build` job writes `./dist`, and the jobs that test an image and the one that
+# pushes it each build theirs out of that directory rather than out of the
+# source (`.github/workflows/ci.yml`).
+variable "DIST" {
+  default = ""
+}
+
+function "dist" {
+  params = []
+  result = DIST == "" ? {} : { dist = DIST }
+}
+
+# The binaries for every platform and the pages, into `./dist`.
+#
+# One platform, the builder's: `ARCHS` has the stage compile the others from
+# here, which is what makes it one job rather than one per architecture.
+target "dist" {
+  target     = "dist"
+  dockerfile = "Dockerfile"
+
+  args = {
+    APP_VERSION = APP_VERSION
+    ARCHS       = join(" ", [for p in PLATFORMS : split("/", p)[1]])
+  }
+
+  output = [{ type = "local", dest = "./dist" }]
+}
+
 # Four tags for one build, which is three more than a `docker push` gives you
 # and each answers a different question.
 #
@@ -72,6 +105,7 @@ target "app" {
   dockerfile = "Dockerfile"
   platforms  = PLATFORMS
   tags       = tags(REPO)
+  contexts   = dist()
 
   # `APP_VERSION` rather than the revision, because it is what the binary can
   # be told: `roster version` reads a variable payday exports for exactly this,
@@ -95,6 +129,20 @@ target "app" {
     "org.opencontainers.image.revision"  = "${BUILD_HASH}"
     "org.opencontainers.image.version"   = "${APP_VERSION}"
     "org.opencontainers.image.created"   = "${BUILD_TIMESTAMP}"
+  }
+}
+
+# The compose image, under the name `compose.yaml` gives it. Never pushed: this
+# is for a job that has `./dist` and wants the image `scripts/hydra.sh` and
+# `scripts/cluster.sh` walk with, without compiling it again.
+target "dev" {
+  target     = "dev"
+  dockerfile = "Dockerfile"
+  tags       = ["roster-dev"]
+  contexts   = dist()
+
+  args = {
+    APP_VERSION = APP_VERSION
   }
 }
 

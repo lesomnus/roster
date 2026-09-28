@@ -11,7 +11,8 @@
 #   dev   what `docker compose up` runs. alpine, and the seeding scripts in
 #         `docker/`, so the quickstart in `docs/operating.md` is one command.
 #
-# `docker buildx bake` builds `app`; `compose.yaml` names `target: dev`.
+# `docker buildx bake` builds `app`; `compose.yaml` names `target: dev`. Both
+# are copies out of one stage, `dist`, and are nothing else -- see there for why.
 
 # The two pages, on the **builder's** architecture, because a page has none.
 # Under `platforms` a naive stage would run node twice, the second time under
@@ -54,6 +55,13 @@ FROM base AS build
 ARG TARGETOS
 ARG TARGETARCH
 
+# Which architectures this compiles, one after the other in one stage. Left
+# alone it is the one being built, so a desk's `docker compose up --build`
+# compiles what it runs and nothing more. CI hands in every one it publishes
+# (`docker-bake.hcl`, target `dist`), because there the compiling happens once,
+# in one job, and every image after it is a copy.
+ARG ARCHS="${TARGETARCH}"
+
 # What `roster version` prints.
 #
 # The toolchain would stamp `vcs.revision` from the checkout, and cannot here:
@@ -63,13 +71,8 @@ ARG TARGETARCH
 # is where something reading a registry can find it anyway.
 ARG APP_VERSION="0.0.0-dev"
 
-RUN --mount=type=cache,target=/root/.cache/go-build \
-	CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-	go build -trimpath \
-	-ldflags="-s -w -X github.com/lesomnus/payday/version.version=${APP_VERSION}" \
-	-o /out/roster ./cmd/roster
-
-# And the example product app, which is not roster and is in this image anyway.
+# roster, and beside it the example product app, which is not roster and is in
+# this image anyway.
 #
 # It is the second half of a deployment's smoke test: `oauth2-proxy` in front of
 # a static page proves the issuer is one a standard relying party accepts, and
@@ -79,20 +82,49 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 #
 # A second image would be a second build, a second tag and a second thing to
 # pin; a second binary is a few megabytes and no pipeline. It is named for what
-# it is, nothing runs it unless a deployment says so, and deleting this stanza
-# is the whole of removing it.
+# it is, nothing runs it unless a deployment says so, and deleting its `go
+# build` below is the whole of removing it.
 RUN --mount=type=cache,target=/root/.cache/go-build \
-	CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
-	go build -trimpath -ldflags="-s -w" \
-	-o /out/example-product ./examples/product
+	set -e; for arch in ${ARCHS}; do \
+		CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${arch} \
+		go build -trimpath \
+		-ldflags="-s -w -X github.com/lesomnus/payday/version.version=${APP_VERSION}" \
+		-o /out/${arch}/roster ./cmd/roster; \
+		CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${arch} \
+		go build -trimpath -ldflags="-s -w" \
+		-o /out/${arch}/example-product ./examples/product; \
+	done
+
+# Everything an image is made of, and nothing an image adds: a binary per
+# architecture and the pages, which have none.
+#
+#   /amd64/roster  /amd64/example-product
+#   /arm64/...
+#   /pages/{console,user,account,login}
+#
+# The two images below copy out of this stage and out of nothing else, which is
+# what lets CI build it **once**: `docker-bake.hcl`'s `dist` writes it to a
+# directory, and every image after that is built with the directory standing in
+# for the stage (a named context called `dist`). So the binary `scripts/cluster.sh`
+# and `scripts/hydra.sh` test is the binary that is pushed, and nothing compiles
+# twice. Built without that, as `docker compose up --build` does, it is an
+# ordinary stage and the images are what they always were.
+FROM scratch AS dist
+COPY --from=build /out/ /
+COPY --from=page /src/ts/dist/console /pages/console
+COPY --from=page /src/ts/dist/user /pages/user
+COPY --from=page /src/ts/dist/account /pages/account
+COPY --from=page /src/ts/dist/login /pages/login
 
 # Static rather than scratch: `roster account serve` makes outbound TLS calls to
 # whatever providers a tenant wrote down as `Connection` rows, so it needs root
 # certificates, and this is the smallest base that has them and a nonroot uid.
 FROM gcr.io/distroless/static-debian12:nonroot AS app
 
-COPY --from=build /out/roster /usr/local/bin/roster
-COPY --from=build /out/example-product /usr/local/bin/example-product
+ARG TARGETARCH
+
+COPY --from=dist /${TARGETARCH}/roster /usr/local/bin/roster
+COPY --from=dist /${TARGETARCH}/example-product /usr/local/bin/example-product
 
 # Where the four pages land. A deployment points at each:
 #
@@ -100,10 +132,7 @@ COPY --from=build /out/example-product /usr/local/bin/example-product
 #   user_console.dir               the user console, at `/` on `server.http`
 #   account.page.dir               the account page
 #   login.page.dir                 the Login App's, for a deployment with Hydra
-COPY --from=page /src/ts/dist/console /usr/share/roster/console
-COPY --from=page /src/ts/dist/user /usr/share/roster/user
-COPY --from=page /src/ts/dist/account /usr/share/roster/account
-COPY --from=page /src/ts/dist/login /usr/share/roster/login
+COPY --from=dist /pages/ /usr/share/roster/
 
 USER nonroot:nonroot
 
@@ -130,12 +159,11 @@ FROM alpine:3.22 AS dev
 # seed, which is an authenticator app's whole job and `oathtool`'s.
 RUN apk add --no-cache ca-certificates curl oath-toolkit-oathtool
 
-COPY --from=build /out/roster /usr/local/bin/roster
-COPY --from=build /out/example-product /usr/local/bin/example-product
-COPY --from=page /src/ts/dist/console /usr/share/roster/console
-COPY --from=page /src/ts/dist/user /usr/share/roster/user
-COPY --from=page /src/ts/dist/account /usr/share/roster/account
-COPY --from=page /src/ts/dist/login /usr/share/roster/login
+ARG TARGETARCH
+
+COPY --from=dist /${TARGETARCH}/roster /usr/local/bin/roster
+COPY --from=dist /${TARGETARCH}/example-product /usr/local/bin/example-product
+COPY --from=dist /pages/ /usr/share/roster/
 COPY docker/entrypoint.sh docker/customer.sh docker/account.sh docker/ldap.sh docker/login.sh docker/dial.sh docker/flow.sh docker/behind.sh docker/itself.sh docker/device.sh /usr/local/bin/
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
