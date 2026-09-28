@@ -71,6 +71,12 @@ import (
 // are left out **for now** rather than refused: it is a decision to take on
 // purpose and not one to arrive at because a provisioner happened to support
 // them.
+//
+// `Tenant.config` **is** here, since #67: the two settings that decide how a
+// tenant signs in are configuration by the same test a `Connection` passes,
+// and a deployment that could declare the directory and not the switch that
+// says whether passwords are a way in could not be stood up twice the same
+// way. [Settings] is the one rule that makes it safe to declare.
 
 // Declared is the label a provisioned row carries, and its value is the file
 // that declared it.
@@ -111,6 +117,32 @@ type Resource struct {
 	// MailDomain: which of the tenant's connections an address at this domain
 	// is routed to. Empty routes nowhere, as on `Add`.
 	Routes string `yaml:"routes"`
+
+	// Tenant: what it has decided about itself. See [Settings] for the one
+	// rule that makes it declarable.
+	Config *Settings `yaml:"config"`
+
+	// From is the file this came out of, which is what the row's label says
+	// so that a refusal can name it.
+	From string `yaml:"-"`
+}
+
+// Settings is `Tenant.config` as a file declares it, and every field is a
+// pointer for one reason: **a key absent from the file leaves the setting as
+// it is.** `password` has presence in the schema on purpose -- *unset is yes*
+// -- and a file that read an absent key as `false` would lock a tenant out of
+// the one credential roster holds itself by not mentioning it. So the file is
+// applied field by field over what the row already says, and `config:` left
+// out altogether touches nothing.
+//
+// The two together are how a tenant signs in, and they are configuration by
+// every test the kinds above pass: the front door is an origin the deployment
+// runs and routes, and whether a password is a way in is one bool that
+// `Vouch.Verify` enforces -- the security-relevant half, and the one worth
+// reading in a diff.
+type Settings struct {
+	Password  *bool   `yaml:"password"`
+	FrontDoor *string `yaml:"front_door"`
 }
 
 // Resources is a file of them.
@@ -142,6 +174,7 @@ func ReadResources(paths []string) ([]Resource, error) {
 			if r.Kind == "" {
 				return nil, fmt.Errorf("resources: %s: [%d]: kind", p, i)
 			}
+			r.From = p
 			out = append(out, r)
 		}
 	}
@@ -257,13 +290,23 @@ func asProvisioner(ctx context.Context, s *Server) (context.Context, error) {
 	// `frame.Everything` because this writes across every tenant, and the wall
 	// is what would otherwise narrow it. The server is `Ungated` either way;
 	// what the frame buys is the **trail**, which now names which rows a file
-	// wrote rather than saying they appeared.
-	return frame.Into(ctx, frame.New(who, pdid.Nil, frame.Whole())), nil
+	// wrote rather than saying they appeared -- and, since the tenant's settings
+	// go through `Update`, the scope is also what `mayWriteDeclared` reads to
+	// tell the file's own writer from a caller at a port. This said
+	// `frame.Everything` for as long as it existed and passed no scope at all,
+	// which nothing noticed while every kind was written with `Patch`.
+	return frame.Into(ctx, frame.New(who, pdid.Nil, frame.Whole()).WithScope(frame.Everything)), nil
 }
 
-// labels is what a declared row carries, merged over what the file said.
+// labelsOf is what a declared row carries: the file it came from, so that a
+// refusal from a port can say where the row is written. A row made by a Go
+// call rather than a file -- a test, the sandbox -- carries its kind.
 func labelsOf(r Resource) map[string]string {
-	return map[string]string{Declared: r.Kind}
+	if r.From == "" {
+		return map[string]string{Declared: r.Kind}
+	}
+
+	return map[string]string{Declared: r.From}
 }
 
 // The four kinds. Each is the same shape and the shape is the point: `Add`,
@@ -293,31 +336,72 @@ func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (strin
 		if dry {
 			return what, "added", nil
 		}
-		_, err = s.Tenant().Add(ctx, app.TenantAddRequest_builder{
+		add := app.TenantAddRequest_builder{
 			Alias: r.Alias, Name: r.Name, Desc: r.Desc, Labels: labelsOf(r),
-		}.Build())
+		}
+		if r.Config != nil {
+			add.Config = settle(nil, r.Config)
+		}
+		_, err = s.Tenant().Add(ctx, add.Build())
 
 		return what, "added", err
 	}
 	if err != nil {
 		return what, "", err
 	}
-	if got.GetName() == r.Name && got.GetDesc() == r.Desc && declared(got.GetLabels()) {
+
+	// The settings as they will be: what the row says, with the fields the
+	// file mentions written over it. Compared against the row's own so that a
+	// file mentioning nothing, or nothing new, is "same".
+	next := settle(got.GetConfig(), r.Config)
+	if got.GetName() == r.Name && got.GetDesc() == r.Desc && declared(got.GetLabels()) &&
+		proto.Equal(next, settle(got.GetConfig(), nil)) {
 		return what, "same", nil
 	}
 	if dry {
 		return what, "changed", nil
 	}
 
-	_, err = s.Tenant().Patch(ctx, app.TenantPatchRequest_builder{
+	// `Update` and not `Patch`, which the three below use: it is the verb the
+	// consoles call, so the one rule about a front door -- an origin and
+	// nothing more -- meets a file exactly as it meets a form.
+	up := app.TenantUpdateRequest_builder{
 		Ref:         app.TenantRef_builder{Id: got.GetId()}.Build(),
 		Name:        proto.String(r.Name),
 		Desc:        proto.String(r.Desc),
 		Labels:      labelsOf(r),
 		DateUpdated: got.GetDateUpdated(),
-	}.Build())
+	}
+	if r.Config != nil {
+		up.Config = next
+	}
+	_, err = s.Tenant().Update(ctx, up.Build())
 
 	return what, "changed", err
+}
+
+// settle is a tenant's settings with what a file said written over them,
+// field by field, as a message of its own -- `Update` replaces the settings
+// whole, so what it is handed has to carry the fields the file did not mention
+// as they already are.
+func settle(cur *app.TenantConfig, said *Settings) *app.TenantConfig {
+	out := app.TenantConfig_builder{}.Build()
+	if cur.HasPassword() {
+		out.SetPassword(cur.GetPassword())
+	}
+	out.SetFrontDoor(cur.GetFrontDoor())
+
+	if said == nil {
+		return out
+	}
+	if said.Password != nil {
+		out.SetPassword(*said.Password)
+	}
+	if said.FrontDoor != nil {
+		out.SetFrontDoor(*said.FrontDoor)
+	}
+
+	return out
 }
 
 func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (string, string, error) {

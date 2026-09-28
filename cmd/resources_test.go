@@ -39,6 +39,9 @@ resources:
   - kind: Tenant
     alias: newco
     name: Newco
+    config:
+      password: false
+      front_door: https://account.newco.example
   - kind: Connection
     tenant: newco
     name: entra
@@ -63,7 +66,8 @@ resources:
 	})
 	// `build` migrates the plane it is about; the second one is this test's.
 	x.NoError(entmigrate.NewSchema(b.Control.Drv).Create(ctx))
-	rs, err := cmd.ReadResources(declare(t, file))
+	paths := declare(t, file)
+	rs, err := cmd.ReadResources(paths)
 	x.NoError(err)
 	x.Len(rs, 4)
 
@@ -96,8 +100,18 @@ resources:
 	// reads it, which is what makes a `Connection` safe to declare at all.
 	x.Equal("env:ENTRA", got.GetSecretRef())
 
-	// The mark that says a file owns it.
-	x.Contains(got.GetLabels(), cmd.Declared)
+	// The mark that says a file owns it, and which file, so that a refusal
+	// from a port can say where the row is written.
+	x.Equal(paths[0], got.GetLabels()[cmd.Declared])
+
+	// And the tenant's own settings, which are how it signs in (#67): the
+	// switch `Vouch.Verify` enforces, and the origin the user console sends a
+	// browser to. Both written, both carrying presence.
+	tn := tenantOf(t, ctx, b, "newco")
+	x.True(tn.GetConfig().HasPassword())
+	x.False(tn.GetConfig().GetPassword())
+	x.False(tn.OffersPassword())
+	x.Equal("https://account.newco.example", tn.GetConfig().GetFrontDoor())
 
 	t.Run("a second run with the same file changes nothing", func(t *testing.T) {
 		x := require.New(t)
@@ -146,6 +160,77 @@ resources:
 		x.NoError(err)
 
 		x.NotNil(connectionOf(t, ctx, b, "newco", "entra"), "a row was erased for not being mentioned")
+
+		// And a `config:` the file stopped mentioning is left as it was,
+		// which is the same rule one level down: absent is *leave it*.
+		tn := tenantOf(t, ctx, b, "newco")
+		x.False(tn.OffersPassword(), "a setting was reset for not being mentioned")
+		x.Equal("https://account.newco.example", tn.GetConfig().GetFrontDoor())
+	})
+
+	// `password` has presence on purpose -- *unset is yes* -- so the one thing
+	// a file must not do is read an absent key as `false`. Field by field: a
+	// file that mentions one setting leaves the other as it is, and a tenant
+	// declared without the key keeps the credential roster holds itself.
+	t.Run("a setting the file does not mention is left alone, and unset stays yes", func(t *testing.T) {
+		x := require.New(t)
+		rs, err := cmd.ReadResources(declare(t, `
+resources:
+  - kind: Tenant
+    alias: fresh
+    name: Fresh
+    config:
+      front_door: https://account.fresh.example
+`))
+		x.NoError(err)
+		_, err = cmd.ApplyResources(ctx, b.Server, rs, false)
+		x.NoError(err)
+
+		tn := tenantOf(t, ctx, b, "fresh")
+		x.False(tn.GetConfig().HasPassword(), "an absent key was written as a decision")
+		x.True(tn.OffersPassword(), "a tenant declared without the key lost its passwords")
+		x.Equal("https://account.fresh.example", tn.GetConfig().GetFrontDoor())
+
+		// The other way round: the switch alone, and the front door stays.
+		rs, err = cmd.ReadResources(declare(t, `
+resources:
+  - kind: Tenant
+    alias: fresh
+    name: Fresh
+    config:
+      password: false
+`))
+		x.NoError(err)
+		v, err := cmd.ApplyResources(ctx, b.Server, rs, false)
+		x.NoError(err)
+		x.Equal([]string{"@fresh"}, v.Changed)
+
+		tn = tenantOf(t, ctx, b, "fresh")
+		x.False(tn.OffersPassword())
+		x.Equal("https://account.fresh.example", tn.GetConfig().GetFrontDoor(), "a setting was reset for not being mentioned")
+
+		// And said again, it is the same.
+		v, err = cmd.ApplyResources(ctx, b.Server, rs, false)
+		x.NoError(err)
+		x.Equal([]string{"@fresh"}, v.Same)
+	})
+
+	// The one rule about a front door meets a file exactly as it meets a form,
+	// because the file writes through the same verb the consoles call.
+	t.Run("a front door is an origin and nothing more, from a file too", func(t *testing.T) {
+		x := require.New(t)
+		rs, err := cmd.ReadResources(declare(t, `
+resources:
+  - kind: Tenant
+    alias: fresh
+    name: Fresh
+    config:
+      front_door: https://account.fresh.example/login
+`))
+		x.NoError(err)
+		_, err = cmd.ApplyResources(ctx, b.Server, rs, false)
+		x.Equal(codes.InvalidArgument, status.Code(err), "%v", err)
+		x.ErrorContains(err, "front_door")
 	})
 
 	// A kind nobody implemented is named rather than skipped: it is a typo or a
@@ -158,6 +243,17 @@ resources:
 		_, err = cmd.ApplyResources(ctx, b.Server, rs, false)
 		x.ErrorContains(err, "Holder")
 	})
+}
+
+func tenantOf(t *testing.T, ctx context.Context, b *built, alias string) *app.Tenant {
+	t.Helper()
+	v, err := b.Ungated.Tenant().Get(ctx, app.TenantGetRequest_builder{
+		Ref:    app.TenantRef_builder{Alias: proto.String(alias)}.Build(),
+		Select: app.TenantSelect_builder{All: proto.Bool(true)}.Build(),
+	}.Build())
+	require.NoError(t, err)
+
+	return v
 }
 
 func connectionOf(t *testing.T, ctx context.Context, b *built, tenant, name string) *app.Connection {
