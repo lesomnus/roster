@@ -11,7 +11,7 @@
 
 import { createClient, type Client, type Transport } from '@connectrpc/connect'
 import { createConnectTransport } from '@connectrpc/connect-web'
-import { StrictMode, useState } from 'react'
+import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { Provider } from '@lesomnus/payday/react'
@@ -145,6 +145,47 @@ let auth: Client<typeof AuthService>
 
 function SignIn(props: { onDone: () => void }): React.ReactNode {
 	const [bad, setBad] = useState(false)
+
+	// What this name lets somebody in with, asked before the form is drawn.
+	//
+	// `undefined` while it is in flight: the form is **not** drawn optimistically
+	// and then taken away, because the flicker would be on the page of exactly the
+	// tenant it is wrong for. One round trip on a page that is about to make
+	// another is a price worth the absence of that.
+	const [offers, setOffers] = useState<{ password: boolean } | undefined>(undefined)
+
+	useEffect(() => {
+		void auth
+			.offers({})
+			.then((v) => setOffers({ password: v.password }))
+			// A tenant that cannot be read is not a tenant with no passwords.
+			// Drawing the form is the answer that lets somebody get in if the
+			// read was the only thing wrong.
+			.catch((e: unknown) => {
+				console.error('offers refused:', e)
+				setOffers({ password: true })
+			})
+	}, [])
+
+	if (offers === undefined) return <main className="loading">…</main>
+
+	// Not a form nobody can use. `Vouch.Verify` refuses a password here whatever
+	// is typed, and refuses it **the same way a wrong one is refused** -- so a
+	// form drawn anyway is one whose every answer is "no" with nothing to say
+	// why (`server/vouch/vouch.go`). Until a directory can be reached from this
+	// page there is nothing else to offer, so it says so instead of pretending.
+	if (!offers.password) {
+		return (
+			<main className="sign-in">
+				<h1>roster</h1>
+				<p className="note">
+					This organisation signs in through a directory, so there is no password
+					to type here — and this page cannot yet send you to one. Until it can,
+					the account page is where somebody arrives through their provider.
+				</p>
+			</main>
+		)
+	}
 
 	return (
 		<form

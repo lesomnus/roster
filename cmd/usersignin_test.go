@@ -188,3 +188,53 @@ func TestTheCookieARosterUserGetsIsACaller(t *testing.T) {
 	x.Equal(b.Contoso.Bytes(), me.GetTenant(), "the session named a holder of another tenant")
 	x.Equal("someone", me.GetAlias())
 }
+
+// TestThePageIsToldWhetherThereIsAFormToDraw is `#62`'s first half.
+//
+// `TenantConfig.password` is a fact roster enforces, and `Vouch.Verify` refuses a
+// password for a tenant that has it off **with the same answer as a wrong one**
+// -- `server/vouch/vouch.go` argues that and ends with *the app that draws the
+// form was told by `/flow` and has no form to draw*. The Login App is told, the
+// account app is told (`GET /providers` carries `password`), and the user console
+// was not: it drew the form unconditionally, so a tenant whose people all arrive
+// through a directory got a form every answer to which was refused, and the word
+// "no".
+//
+// So the page asks first, and this is the asking. Both directions, because a
+// method that answered `false` always would pass a test for the tenant this is
+// about and break every other one.
+func TestThePageIsToldWhetherThereIsAFormToDraw(t *testing.T) {
+	x := require.New(t)
+
+	b, ctx := build(t, func(c *cmd.Config) { c.SignIn.Enabled = true })
+
+	_, err := b.Ungated.Host().Add(ctx, app.HostAddRequest_builder{
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+		Name:   "contoso.example",
+	}.Build())
+	x.NoError(err)
+
+	conn := pdtest.Serve(t, b.grpc(t))
+	auth := app.NewAuthServiceClient(conn)
+	at := metadata.NewOutgoingContext(ctx, arrivingAt(t, "contoso.example"))
+
+	// Unset is yes, which is what a tenant written before the field existed
+	// relies on -- `vouch.Offers` is the one sentence both sides ask.
+	got, err := auth.Offers(at, app.AuthOffersRequest_builder{}.Build())
+	x.NoError(err)
+	x.True(got.GetPassword(), "a tenant that has never been configured was said to have no password")
+
+	off(t, b, b.Contoso)
+
+	got, err = auth.Offers(at, app.AuthOffersRequest_builder{}.Build())
+	x.NoError(err)
+	x.False(got.GetPassword(), "the page would have drawn a form every answer to which is refused")
+
+	// And the subject is the name, not a field: there is nothing in the request
+	// to point at another operator, so this cannot be used to read how one is
+	// configured. A name nothing claims is refused rather than answered about
+	// whichever tenant the call happened to reach.
+	_, err = auth.Offers(metadata.NewOutgoingContext(ctx, arrivingAt(t, "nobody.example")),
+		app.AuthOffersRequest_builder{}.Build())
+	x.Error(err, "a name no tenant claims was answered about somebody")
+}

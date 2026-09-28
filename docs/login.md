@@ -632,9 +632,16 @@ An operator whose people all arrive through a directory turns the password off, 
 it is **not** *do not draw the form*. `TenantConfig.password` is a fact roster
 enforces: `Vouch.Verify` refuses the right password, and `Vouch.Link` mints no
 recovery link -- which ends by handing somebody a password, so a link for such a
-tenant is a mailbox full of dead ends. The two sign-in pages read the same field and
+tenant is a mailbox full of dead ends. The sign-in pages read the same field and
 draw no form, and that is the **consequence** rather than the feature. A switch that
 only hides a form is a lock somebody sets and does not get.
+
+There are **three** of them, and the third was told last: the user console drew the
+form unconditionally until `AuthService.Offers` existed, so for such a tenant it
+offered one whose every answer `Vouch.Verify` refused, and said only *no*. The Login
+App is told by `/flow` and the account app by `GET /providers`; on the data plane a
+page cannot be told by a route (`cmd.serveHttp` says why) and cannot read the tenant
+through the wall before it has a frame, so it asks.
 
 Three things it deliberately does not reach:
 

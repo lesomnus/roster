@@ -38,6 +38,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/vouch"
+	"google.golang.org/protobuf/proto"
 )
 
 // Auth is `AuthService` over this plane's holders.
@@ -157,6 +158,35 @@ func (a authed) SignIn(ctx context.Context, req *app.AuthSignInRequest) (*app.Au
 // The plane's only one where nothing was said, which is the control plane and
 // is why `AuthSignInRequest` has no tenant field: asking would be asking a
 // question with a single answer.
+// Offers is what this name lets somebody in with; `proto/app/auth.proto` says
+// why a page has to ask and why this is a method rather than a route.
+//
+// Read with `a.s`, which has no wall on it -- the same reason [Auth]'s doc gives
+// for `SignIn`: this runs before anybody has been resolved. What keeps it narrow
+// is not a frame but the subject, which is `whose` and cannot be pointed
+// anywhere else.
+func (a authed) Offers(ctx context.Context, _ *app.AuthOffersRequest) (*app.AuthOffersResponse, error) {
+	tenant, err := a.whose(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	t, err := a.s.Tenant().Get(ctx, app.TenantGetRequest_builder{
+		Ref:    app.TenantRef_builder{Alias: &tenant}.Build(),
+		Select: app.TenantSelect_builder{Config: proto.Bool(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	// `vouch.Offers` and not the field, so the two places that answer this
+	// question answer it the same way -- including *unset is yes*, which is what
+	// a tenant written before the field existed relies on.
+	return app.AuthOffersResponse_builder{
+		Password: vouch.Offers(t, vouch.KindPassword),
+	}.Build(), nil
+}
+
 func (a authed) whose(ctx context.Context) (string, error) {
 	if a.tenant != nil {
 		return a.tenant(ctx)

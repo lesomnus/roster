@@ -236,6 +236,115 @@ func (b0 AuthSignOutResponse_builder) Build() *AuthSignOutResponse {
 	return m0
 }
 
+// AuthOffersRequest is empty for the reason [AuthSignInRequest] has no tenant
+// field: which tenant is the name the browser arrived at, and a field would be a
+// caller asking to be told about one it did not arrive at.
+type AuthOffersRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AuthOffersRequest) Reset() {
+	*x = AuthOffersRequest{}
+	mi := &file_app_auth_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuthOffersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuthOffersRequest) ProtoMessage() {}
+
+func (x *AuthOffersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_auth_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type AuthOffersRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 AuthOffersRequest_builder) Build() *AuthOffersRequest {
+	m0 := &AuthOffersRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type AuthOffersResponse struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Password bool                   `protobuf:"varint,1,opt,name=password"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *AuthOffersResponse) Reset() {
+	*x = AuthOffersResponse{}
+	mi := &file_app_auth_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuthOffersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuthOffersResponse) ProtoMessage() {}
+
+func (x *AuthOffersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_auth_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AuthOffersResponse) GetPassword() bool {
+	if x != nil {
+		return x.xxx_hidden_Password
+	}
+	return false
+}
+
+func (x *AuthOffersResponse) SetPassword(v bool) {
+	x.xxx_hidden_Password = v
+}
+
+type AuthOffersResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Whether a password is a way in here.
+	//
+	// `TenantConfig.password`, as roster enforces it, and not the page's guess.
+	// False means every answer to a password form is refused, so the form is not
+	// drawn -- which is the **consequence** of the switch rather than the feature,
+	// the distinction `docs/login.md` § *A tenant with no passwords* draws.
+	Password bool
+}
+
+func (b0 AuthOffersResponse_builder) Build() *AuthOffersResponse {
+	m0 := &AuthOffersResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Password = b.Password
+	return m0
+}
+
 var File_app_auth_proto protoreflect.FileDescriptor
 
 const file_app_auth_proto_rawDesc = "" +
@@ -246,25 +355,33 @@ const file_app_auth_proto_rawDesc = "" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\"\x14\n" +
 	"\x12AuthSignInResponse\"\x14\n" +
 	"\x12AuthSignOutRequest\"\x15\n" +
-	"\x13AuthSignOutResponse2\x92\x01\n" +
+	"\x13AuthSignOutResponse\"\x13\n" +
+	"\x11AuthOffersRequest\"0\n" +
+	"\x12AuthOffersResponse\x12\x1a\n" +
+	"\bpassword\x18\x01 \x01(\bR\bpassword2\xd3\x01\n" +
 	"\vAuthService\x12?\n" +
 	"\x06SignIn\x12\x19.roster.AuthSignInRequest\x1a\x1a.roster.AuthSignInResponse\x12B\n" +
-	"\aSignOut\x12\x1a.roster.AuthSignOutRequest\x1a\x1b.roster.AuthSignOutResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\aSignOut\x12\x1a.roster.AuthSignOutRequest\x1a\x1b.roster.AuthSignOutResponse\x12?\n" +
+	"\x06Offers\x12\x19.roster.AuthOffersRequest\x1a\x1a.roster.AuthOffersResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_app_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_app_auth_proto_goTypes = []any{
 	(*AuthSignInRequest)(nil),   // 0: roster.AuthSignInRequest
 	(*AuthSignInResponse)(nil),  // 1: roster.AuthSignInResponse
 	(*AuthSignOutRequest)(nil),  // 2: roster.AuthSignOutRequest
 	(*AuthSignOutResponse)(nil), // 3: roster.AuthSignOutResponse
+	(*AuthOffersRequest)(nil),   // 4: roster.AuthOffersRequest
+	(*AuthOffersResponse)(nil),  // 5: roster.AuthOffersResponse
 }
 var file_app_auth_proto_depIdxs = []int32{
 	0, // 0: roster.AuthService.SignIn:input_type -> roster.AuthSignInRequest
 	2, // 1: roster.AuthService.SignOut:input_type -> roster.AuthSignOutRequest
-	1, // 2: roster.AuthService.SignIn:output_type -> roster.AuthSignInResponse
-	3, // 3: roster.AuthService.SignOut:output_type -> roster.AuthSignOutResponse
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
+	4, // 2: roster.AuthService.Offers:input_type -> roster.AuthOffersRequest
+	1, // 3: roster.AuthService.SignIn:output_type -> roster.AuthSignInResponse
+	3, // 4: roster.AuthService.SignOut:output_type -> roster.AuthSignOutResponse
+	5, // 5: roster.AuthService.Offers:output_type -> roster.AuthOffersResponse
+	3, // [3:6] is the sub-list for method output_type
+	0, // [0:3] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -281,7 +398,7 @@ func file_app_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_auth_proto_rawDesc), len(file_app_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
