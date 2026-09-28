@@ -422,8 +422,8 @@ account:
   base: https://account.contoso.example
   page: { dir: /usr/share/roster/account }
   terminal: true                          # `roster sign-in`; off unless said
-  keys:
-    contoso: env:ROSTER_ACCOUNT_KEY_CONTOSO
+  # keys: left out -- made at start, in memory, one per tenant with a name.
+  # A process of its own names them: { contoso: env:ROSTER_ACCOUNT_KEY_CONTOSO }
 
 ldap:
   addr: :389
@@ -434,7 +434,8 @@ ldap:
 login:                                    # only with Hydra in front; see login.md
   addr: :8091
   hydra: { admin: http://hydra:4445 }
-  key: env:ROSTER_LOGIN_KEY                # one rk_, narrowed per request
+  # key: left out -- one rk_ made at start, narrowed per request. A process of
+  # its own names it: env:ROSTER_LOGIN_KEY, or file:… from `roster login provision`
 
   consent: skip                           # ask draws a screen instead
   base: https://login.contoso.example     # one redirect URI for the whole app
@@ -457,6 +458,19 @@ passwords included.
 already do. `roster serve` opens whichever are named, in the same errgroup as the
 server, so a front door that cannot come up is a start-up failure rather than a
 deployment that is half there.
+
+**And a key unsaid is a key made at start.** `account.keys` and `login.key` left
+out in one process are the rows `roster account provision` and `roster login
+provision` would have written -- a holder in each tenant with a `Host` row, a role
+holding exactly what the app calls as itself, a binding, and a key -- with the
+token kept in memory. That is one replica, and a restart is a rotation: the
+account page asks everybody to sign in again, which is all a rotation costs, since
+the key is a row like any other whichever way it was made. A tenant that registers
+a name later is fronted after the next start. In four processes nothing is made
+for you: each `provision` writes its keys into a directory the app's own process
+reads with `file:`, and a key that was written down is left exactly as written --
+a reference that resolves to nothing is a refusal, never a fresh key made quietly
+over it. `ldap.keys` is still yours to write either way.
 
 Each of the three is a **consumer**: it reaches roster over the wire with a tenant
 key and cannot reach past it, in one process exactly as in four. `scripts/test.sh`

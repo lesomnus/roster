@@ -154,11 +154,11 @@ done
 r identity add '{"holder":{"slug":{"alias":"erin","tenant":{"alias":"contoso"}}},
 	"provider":"entra","subject":"e2e-erin-at-entra"}' >/dev/null
 # The account app's own key: a person of the tenant's, holding what the app
-# calls as itself (`account/account.go` says which), which is not everything.
-r holder add @contoso/account >/dev/null
-echo '{"role":{"slug":{"alias":"everything","tenant":{"alias":"contoso"}}},"holder":{"slug":{"alias":"account","tenant":{"alias":"contoso"}}}}' \
-	| r binding add - >/dev/null
-key="$(r key add --tenant contoso --holder account --name e2e --allow '/roster.*/*' 2>/dev/null)"
+# calls as itself (`account.Calls`) and nothing wider, through the command a
+# deployment runs. It was a `holder add`, a binding to `everything` and a
+# `key add --allow '/roster.*/*'` under a comment saying the opposite.
+r account provision --out "${work}/keys" >/dev/null 2>&1
+key="$(cat "${work}/keys/contoso.key")"
 
 echo "== serve"
 "${work}/roster" --config "${work}/roster.yaml" serve >"${work}/serve.log" 2>&1 &

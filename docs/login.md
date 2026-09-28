@@ -883,7 +883,8 @@ the key may make only the reads that work out *whose* flow this is, and everythi
 a flow does is the role's. A key as wide as the role would be one that could do
 all of it without naming a tenant, which is the frame this exists to take away.
 
-`roster key add --tenant contoso --holder account` mints an `rt_`, and
+`roster key add --tenant contoso --holder account` mints an `rt_`, `roster account
+provision` mints one per tenant with the role beside it, and
 `cmd/accountkey_test.go` is that fact per call.
 
 The tenant an app names is always the app's **assertion** -- roster never sees the

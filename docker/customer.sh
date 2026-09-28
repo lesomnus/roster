@@ -59,11 +59,6 @@ for h in "${PUBLIC_HOST}" 127.0.0.1 behind product; do
 	printf '{"tenant":{"alias":"%s"},"name":"%s"}' "${t}" "${h}" | roster host add - >/dev/null
 done
 
-# The account app's own person and key, holding what the app calls as itself.
-roster holder add "@${t}/account" >/dev/null
-printf '{"role":{"slug":{"alias":"everything","tenant":{"alias":"%s"}}},"holder":{"slug":{"alias":"account","tenant":{"alias":"%s"}}}}' "${t}" "${t}" \
-	| roster binding add - >/dev/null
-
 # The directory's own person and key: what a directory reads, and `Verify`
 # so that `LDAP_BIND=password` works when somebody sets it (`docs/ldap.md`
 # § The key this process holds).
@@ -89,5 +84,10 @@ umask 077
 roster login provision --out "${ACCOUNT_STATE}" >/dev/null
 roster key add --tenant "${t}" --holder directory --name directory --allow '/roster.TenantService/Get,/roster.HolderService/Get,/roster.HolderService/List,/roster.HolderService/Search,/roster.EmailService/Get,/roster.EmailService/List,/roster.GroupService/Get,/roster.GroupService/List,/roster.GroupMembershipService/List,/roster.SiteService/Get,/roster.SiteService/List,/roster.TeamService/Get,/roster.TeamService/List,/roster.TeamMembershipService/List,/roster.VouchService/Verify' 2>/dev/null >"${ACCOUNT_STATE}/${SEED_CUSTOMER}.ldap.key.tmp"
 mv "${ACCOUNT_STATE}/${SEED_CUSTOMER}.ldap.key.tmp" "${ACCOUNT_STATE}/${SEED_CUSTOMER}.ldap.key"
-roster key add --tenant "${t}" --holder account --name account --allow '/roster.*/*' 2>/dev/null >"${key}.tmp"
-mv "${key}.tmp" "${key}"
+# The account app's, through the command rather than by hand, for the reason
+# the Login App's is: `account.Calls` is the one place that list lives, and this
+# is the command a deployment runs. It was a `holder add`, a binding to
+# `everything` and a `key add --allow '/roster.*/*'` here -- a front door as
+# wide as the tenant, because the list was long to spell. Last, and written
+# whole or not at all, because this file is the marker "once" is decided by.
+roster account provision --out "${ACCOUNT_STATE}" >/dev/null
