@@ -555,6 +555,9 @@ resources:
   - kind: Tenant
     alias: contoso
     name: Contoso
+    config:                              # how the tenant signs in; see below
+      password: false                    # everybody arrives through a directory
+      front_door: https://account.contoso.example
   - kind: Connection
     tenant: contoso
     name: entra
@@ -589,6 +592,15 @@ Three properties, each deliberate:
   edit from a port is refused. The cost is real -- fixing a declared row during an
   outage becomes a git round trip -- so a deployment that would rather have the
   text field declares fewer things.
+
+**A tenant's settings are applied field by field.** `config.password` and
+`config.front_door` are how a tenant signs in -- the switch `Vouch.Verify`
+enforces, and the origin the user console sends a browser to -- and they are
+configuration by the same test a `Connection` passes. A key absent from the file
+leaves that setting as it is: `password` has presence on purpose (*unset is yes*),
+so a file that does not mention it never turns passwords off by omission, and
+`config:` left out altogether touches nothing. A `front_door` is an origin and
+nothing more, from a file exactly as from a form.
 
 What is **not** declarable is `Holder`, `Credential`, `Identity` and `Email`:
 people and the ways into their accounts. A file that made those is a file that
