@@ -137,21 +137,13 @@ func serve(t *testing.T, enrol account.Enrol, with ...func(*account.Config)) *de
 
 		front, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: "account"}.Build())
 		x.NoError(err)
+		// `account.Calls` and not a list of its own, so that the list `roster
+		// account provision` writes is the one these tests prove sufficient --
+		// plus `Holder.Add`, which `provision` grants only where a deployment
+		// said `enrolling`, and which the enrolment tests below need.
 		role, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
 			Tenant: at, Alias: "front-door",
-			Methods: []string{
-				"/roster.TenantService/Get", "/roster.ConnectionService/List", "/roster.ConnectionService/Get",
-				"/roster.IdentityService/Get", "/roster.IdentityService/Add", "/roster.HolderService/Add",
-				"/roster.VouchService/Delegate", "/roster.VouchService/Accept", "/roster.DelegationService/Revoke",
-				"/roster.FrontService/WhoseHost", "/roster.FrontService/WhereFrom",
-				"/roster.MeService/Get", "/roster.MeService/Unlink", "/roster.MeService/SignOutEverywhere",
-				"/roster.HolderService/Update", "/roster.ApiKeyService/Erase", "/roster.ApiKeyService/List", "/roster.EmailService/List",
-				"/roster.EmailService/Add", "/roster.EmailService/Erase", "/roster.ApiKeyService/Issue",
-				"/roster.CredentialService/Set", "/roster.CredentialService/Enrol", "/roster.CredentialService/Erase",
-				"/roster.HolderService/Get", "/roster.EmailService/Get", "/roster.EmailService/Verify", "/roster.EmailService/Confirm",
-				"/roster.VouchService/Link", "/roster.VouchService/Redeem", "/roster.CredentialService/Issue", "/roster.VouchService/Verify",
-				"/roster.DelegationService/List", "/roster.DelegationService/Erase",
-			},
+			Methods: append(append([]string{}, account.Calls...), rstr.HolderService_Add_FullMethodName),
 		}.Build())
 		x.NoError(err)
 		_, err = s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{

@@ -181,6 +181,38 @@ var Methods = []string{
 	rstr.DelegationService_Erase_FullMethodName,
 }
 
+// Calls is what this app calls **as itself**, with the tenant's key, and the
+// whole of it: what a key minted for this app has to allow, and what `roster
+// account provision` writes into the role it makes. `cmd/accountkey_test.go`
+// is what each of them buys, and `account_test.go` fronts two tenants on
+// exactly this list.
+//
+// [Methods] is inside it, and that is not a convenience. A delegation is never
+// wider than the key that asked for it (`mayDelegate` in `server/vouch`), so a
+// key that could not call `Email.Add` could not mint a delegation carrying it,
+// and the page would draw a section every answer to which is refused.
+//
+// What is **not** here is `Holder.Add`. Making people is a wider grant than
+// signing them in, and [Enrolling] is the one policy that needs it -- so
+// `provision` adds it where a deployment wrote `enrol: enrolling` down, and
+// never by default. `cli.LoginMethods` draws the same line for the same reason.
+var Calls = append([]string{
+	rstr.TenantService_Get_FullMethodName,
+	rstr.FrontService_WhoseHost_FullMethodName,
+	rstr.FrontService_WhereFrom_FullMethodName,
+	rstr.ConnectionService_List_FullMethodName,
+	rstr.ConnectionService_Get_FullMethodName,
+	rstr.IdentityService_Get_FullMethodName,
+	rstr.VouchService_Verify_FullMethodName,
+	rstr.VouchService_Delegate_FullMethodName,
+	rstr.VouchService_Accept_FullMethodName,
+	rstr.VouchService_Link_FullMethodName,
+	rstr.VouchService_Redeem_FullMethodName,
+	rstr.DelegationService_Revoke_FullMethodName,
+	rstr.CredentialService_Issue_FullMethodName,
+	rstr.EmailService_Confirm_FullMethodName,
+}, Methods...)
+
 // EnvSecret resolves `env:NAME` and refuses every other scheme. A second scheme
 // -- a file, a secrets manager -- is a deployment's to add through
 // [Config.Secret]; roster's own vocabulary is this one.

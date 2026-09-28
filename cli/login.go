@@ -261,10 +261,7 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 			// people is wider than signing them in -- so it is granted only
 			// where a deployment wrote `login.enrol: enrolling` down, and never
 			// by default.
-			methods := LoginMethods
-			if c.Login.Enrol == "enrolling" {
-				methods = append(append([]string{}, LoginMethods...), rstr.HolderService_Add_FullMethodName)
-			}
+			methods := loginMethodsFor(c.Login.Enrol)
 
 			// The key first, because it is the half that needs no customer.
 			//
@@ -274,7 +271,7 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 			// customer existed, the server would not start without the files, and
 			// the customer could not be made without the server. `deploy/` hit
 			// exactly that on its first run against an empty cluster.
-			if err := provisionKey(ctx, s, out); err != nil {
+			if _, err := provisionKey(ctx, s, out); err != nil {
 				return err
 			}
 
@@ -494,55 +491,50 @@ var LoginResolving = []string{
 // key's alias is unique per holder and cannot be read back, so the row from the
 // last run is of no use to anybody and is one more thing that would answer if it
 // leaked. A restart is a rotation.
-func provisionKey(ctx context.Context, s *cmd.Server, out string) error {
+func provisionKey(ctx context.Context, s *cmd.Server, out string) (string, error) {
 	if s.Control == nil {
-		return errors.New("this app's key is a deployment key, and there is no control plane to hold it")
+		return "", errors.New("this app's key is a deployment key, and there is no control plane to hold it")
 	}
 
 	who, err := cmd.HolderNamed(ctx, s.Control, provisioned)
 	if err != nil {
-		return err
-	}
-
-	// Erased first, as above.
-	if v, err := s.Control.Ungated.ApiKey().Get(ctx, rstr.ApiKeyGetRequest_builder{
-		Ref: rstr.ApiKeyRef_builder{
-			Slug: rstr.ApiKeyRefBySlug_builder{Holder: rstr.HolderRef_builder{Id: who.Bytes()}.Build(), Alias: z.Ptr(provisioned)}.Build(),
-		}.Build(),
-		Select: rstr.ApiKeySelect_builder{}.Build(),
-	}.Build()); err == nil {
-		if _, err := s.Control.Ungated.ApiKey().Erase(ctx, rstr.ApiKeyRef_builder{Id: v.GetId()}.Build()); err != nil {
-			return err
-		}
-	} else if status.Code(err) != codes.NotFound {
-		return err
-	}
-
-	token, sum, err := keys.Mint(keys.PrefixDeployment)
-	if err != nil {
-		return err
+		return "", err
 	}
 
 	// [LoginResolving] and not [LoginMethods], which is the split that matters:
 	// what a call inside a flow may do is the nominated holder's role, and what
 	// this key may do is the three reads that decide which holder that is.
-	if _, err := s.Control.Ungated.ApiKey().Add(ctx, rstr.ApiKeyAddRequest_builder{
-		Holder: rstr.HolderRef_builder{Id: who.Bytes()}.Build(), Alias: provisioned,
-		Secret: sum, Methods: LoginResolving,
-	}.Build()); err != nil {
-		return err
+	token, err := mintNamed(ctx, s.Control.Ungated, who.Bytes(), provisioned, LoginResolving, keys.PrefixDeployment)
+	if err != nil {
+		return "", err
 	}
 
-	// `0600` and a directory this command made at `0700`: what is written is a
-	// credential, and the only reader is the process beside it.
+	// Into memory alone when nothing names a directory, which is `roster serve`
+	// making the key at start; `cli/provision.go` says what that is worth.
+	if out == "" {
+		return token, nil
+	}
+
 	path := filepath.Join(out, provisioned+".key")
-	if err := os.WriteFile(path, []byte(token+"\n"), 0o600); err != nil {
-		return err
+	if err := writeKey(path, token); err != nil {
+		return "", err
 	}
 
 	fmt.Fprintf(os.Stderr, "roster: the Login App's key for @%s written to %s.\n", provisioned, path)
 
-	return nil
+	return token, nil
+}
+
+// loginMethodsFor is what the nominated holder's role allows: [LoginMethods],
+// plus the one grant a policy asks for. `enrolling` makes people, and making
+// people is wider than signing them in -- so it is granted only where a
+// deployment wrote `login.enrol: enrolling` down, and never by default.
+func loginMethodsFor(enrol string) []string {
+	if enrol == "enrolling" {
+		return append(append([]string{}, LoginMethods...), rstr.HolderService_Add_FullMethodName)
+	}
+
+	return LoginMethods
 }
 
 // nominate is the per-customer half: a holder the app borrows, and every `Host`
@@ -585,11 +577,11 @@ func nominate(ctx context.Context, s *cmd.Server, methods []string) (int, error)
 		}
 		alias := tn.GetAlias()
 
-		who, err := ensureHolder(ctx, s, at, alias)
+		who, err := ensureHolderNamed(ctx, s, at, provisioned)
 		if err != nil {
 			return n, fmt.Errorf("%s: %w", alias, err)
 		}
-		role, err := ensureRole(ctx, s, at, methods)
+		role, err := ensureRoleNamed(ctx, s, at, provisioned, methods)
 		if err != nil {
 			return n, fmt.Errorf("%s: %w", alias, err)
 		}
@@ -627,65 +619,6 @@ func nominate(ctx context.Context, s *cmd.Server, methods []string) (int, error)
 // provisioned is what this command's rows are called, so that a later run finds
 // them and a person reading the admin console can tell them from somebody's.
 const provisioned = "login-app"
-
-func ensureHolder(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string) ([]byte, error) {
-	v, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: provisioned}.Build())
-	if err == nil {
-		return v.GetId(), nil
-	}
-	if status.Code(err) != codes.AlreadyExists {
-		return nil, err
-	}
-
-	got, err := s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
-		Ref: rstr.HolderRef_builder{
-			Slug: rstr.HolderRefBySlug_builder{Alias: z.Ptr(provisioned), Tenant: at}.Build(),
-		}.Build(),
-		Select: rstr.HolderSelect_builder{}.Build(),
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
-
-	return got.GetId(), nil
-}
-
-func ensureRole(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, methods []string) ([]byte, error) {
-	// Patched when it is already there rather than left alone: the list above
-	// grows with the app, and a role written by an older version is a Login App
-	// that starts and then refuses one thing.
-	v, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
-		Tenant: at, Alias: provisioned, Methods: methods,
-	}.Build())
-	if err == nil {
-		return v.GetId(), nil
-	}
-	if status.Code(err) != codes.AlreadyExists {
-		return nil, err
-	}
-
-	got, err := s.Ungated.Role().Get(ctx, rstr.RoleGetRequest_builder{
-		Ref: rstr.RoleRef_builder{
-			Slug: rstr.RoleRefBySlug_builder{Alias: z.Ptr(provisioned), Tenant: at}.Build(),
-		}.Build(),
-		// `date_updated` because a patch is refused without the version it is
-		// against -- which is the rule keeping two writers from each thinking
-		// they wrote last.
-		Select: rstr.RoleSelect_builder{DateUpdated: z.Ptr(true)}.Build(),
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
-	if _, err := s.Ungated.Role().Patch(ctx, rstr.RolePatchRequest_builder{
-		Ref:         rstr.RoleRef_builder{Id: got.GetId()}.Build(),
-		Methods:     methods,
-		DateUpdated: got.GetDateUpdated(),
-	}.Build()); err != nil {
-		return nil, err
-	}
-
-	return got.GetId(), nil
-}
 
 func mustFind[T any](cl *xli.Command, name string) T {
 	v, _ := flg.Find[T](cl, name)
