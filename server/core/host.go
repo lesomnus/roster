@@ -288,7 +288,19 @@ func (s coreHost) Patch(ctx context.Context, req *app.HostPatchRequest) (*app.Ho
 }
 
 // Update is `Patch` with the name held back; `host_svc.ext.proto` says why.
+// And refused on a row a file declared, as every declarable kind's is.
 func (s coreHost) Update(ctx context.Context, req *app.HostUpdateRequest) (*app.Host, error) {
+	got, err := s.HostServiceServer.Get(ctx, app.HostGetRequest_builder{
+		Ref:    req.GetRef(),
+		Select: app.HostSelect_builder{Labels: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayWriteDeclared(ctx, "ref", got.GetLabels()); err != nil {
+		return nil, err
+	}
+
 	patch := app.HostPatchRequest_builder{
 		Ref:         req.GetRef(),
 		DateUpdated: req.GetDateUpdated(),
@@ -346,7 +358,19 @@ func normalised(field, v string, by func(string) string) error {
 }
 
 // Update is `Patch` with the name held back; `host_svc.ext.proto` says why.
+// And refused on a row a file declared, as every declarable kind's is.
 func (s coreMailDomain) Update(ctx context.Context, req *app.MailDomainUpdateRequest) (*app.MailDomain, error) {
+	got, err := s.MailDomainServiceServer.Get(ctx, app.MailDomainGetRequest_builder{
+		Ref:    req.GetRef(),
+		Select: app.MailDomainSelect_builder{Labels: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayWriteDeclared(ctx, "ref", got.GetLabels()); err != nil {
+		return nil, err
+	}
+
 	patch := app.MailDomainPatchRequest_builder{
 		Ref:         req.GetRef(),
 		DateUpdated: req.GetDateUpdated(),

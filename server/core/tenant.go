@@ -190,7 +190,23 @@ func (s Core) Tenant() app.TenantServiceServer { return coreTenant{s, s.Next().T
 
 // Update is the narrow write over a tenant: name, note, labels and the
 // settings, and never the alias or the identifier. See `tenant_svc.ext.proto`.
+//
+// Refused outright on a row a file declared, which `declared.go` argues for --
+// and argues hardest here, since the settings are the security-relevant half:
+// a password switch flipped in a console that the next start flips back is the
+// "right on Tuesday, wrong on Wednesday" that file is about.
 func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*app.Tenant, error) {
+	got, err := s.TenantServiceServer.Get(ctx, app.TenantGetRequest_builder{
+		Ref:    req.GetRef(),
+		Select: app.TenantSelect_builder{Labels: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayWriteDeclared(ctx, "ref", got.GetLabels()); err != nil {
+		return nil, err
+	}
+
 	patch := app.TenantPatchRequest_builder{
 		Ref:         req.GetRef(),
 		DateUpdated: req.GetDateUpdated(),

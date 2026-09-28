@@ -236,6 +236,99 @@ resources:
 	x.NoError(err)
 	x.Equal("https://somewhere.else/", connectionOf(t, ctx, b, "contoso", "entra").GetIssuer())
 
+	// Every kind a file can declare, and not the one the rule was first written
+	// for: `Tenant`, `Host` and `MailDomain` each have an `Update` a console
+	// calls, and for a while only `Connection`'s looked at the label. A tenant's
+	// is the one that matters most, since its settings are the security-relevant
+	// half -- a password switch flipped in a console that the next start flips
+	// back is exactly the Tuesday-and-Wednesday `declared.go` is about.
+	t.Run("and so is every other kind a file declares", func(t *testing.T) {
+		x := require.New(t)
+		rs, err := cmd.ReadResources(declare(t, `
+resources:
+  - kind: Tenant
+    alias: newco
+    name: Newco
+  - kind: Host
+    tenant: newco
+    name: newco.example
+  - kind: MailDomain
+    tenant: newco
+    name: newco.example
+`))
+		x.NoError(err)
+		_, err = cmd.ApplyResources(ctx, b.Server, rs, false)
+		x.NoError(err)
+
+		tn, err := b.Ungated.Tenant().Get(ctx, app.TenantGetRequest_builder{
+			Ref:    app.TenantRef_builder{Alias: proto.String("newco")}.Build(),
+			Select: app.TenantSelect_builder{All: proto.Bool(true)}.Build(),
+		}.Build())
+		x.NoError(err)
+		newco := mustId(t, tn.GetId())
+
+		// One of newco's own, holding everything, from a port.
+		who := b.holder(t, ctx, newco, "someone")
+		as := b.as(ctx, who, newco)
+
+		_, err = b.Walled.Tenant().Update(as, app.TenantUpdateRequest_builder{
+			Ref:         app.TenantRef_builder{Id: tn.GetId()}.Build(),
+			Name:        proto.String("Renamed"),
+			Config:      app.TenantConfig_builder{Password: proto.Bool(false)}.Build(),
+			DateUpdated: tn.GetDateUpdated(),
+		}.Build())
+		x.Equal(codes.FailedPrecondition, status.Code(err), "a declared tenant was edited from a port: %v", err)
+		x.ErrorContains(err, "declared")
+
+		h, err := b.Ungated.Host().Get(ctx, app.HostGetRequest_builder{
+			Ref:    app.HostRef_builder{Name: proto.String("newco.example")}.Build(),
+			Select: app.HostSelect_builder{All: proto.Bool(true)}.Build(),
+		}.Build())
+		x.NoError(err)
+		_, err = b.Walled.Host().Update(as, app.HostUpdateRequest_builder{
+			Ref:         app.HostRef_builder{Id: h.GetId()}.Build(),
+			Desc:        proto.String("edited"),
+			DateUpdated: h.GetDateUpdated(),
+		}.Build())
+		x.Equal(codes.FailedPrecondition, status.Code(err), "a declared host was edited from a port: %v", err)
+
+		m, err := b.Ungated.MailDomain().Get(ctx, app.MailDomainGetRequest_builder{
+			Ref: app.MailDomainRef_builder{
+				At: app.MailDomainRefByAt_builder{
+					Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(), Name: proto.String("newco.example"),
+				}.Build(),
+			}.Build(),
+			Select: app.MailDomainSelect_builder{All: proto.Bool(true)}.Build(),
+		}.Build())
+		x.NoError(err)
+		_, err = b.Walled.MailDomain().Update(as, app.MailDomainUpdateRequest_builder{
+			Ref:         app.MailDomainRef_builder{Id: m.GetId()}.Build(),
+			Desc:        proto.String("edited"),
+			DateUpdated: m.GetDateUpdated(),
+		}.Build())
+		x.Equal(codes.FailedPrecondition, status.Code(err), "a declared mail domain was edited from a port: %v", err)
+
+		// And the file still writes all three, which is the point of the refusals.
+		rs, err = cmd.ReadResources(declare(t, `
+resources:
+  - kind: Tenant
+    alias: newco
+    name: Newco Inc
+  - kind: Host
+    tenant: newco
+    name: newco.example
+    desc: the front door
+  - kind: MailDomain
+    tenant: newco
+    name: newco.example
+    desc: where the people are
+`))
+		x.NoError(err)
+		v, err := cmd.ApplyResources(ctx, b.Server, rs, false)
+		x.NoError(err)
+		x.Len(v.Changed, 3, "%v", v)
+	})
+
 	// A row nobody declared is edited as it always was.
 	t.Run("and a row nobody declared is untouched by this", func(t *testing.T) {
 		x := require.New(t)
