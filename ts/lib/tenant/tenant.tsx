@@ -129,7 +129,10 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 							// message. `password: true` and not "unset" once
 							// somebody has touched the box: unset means the
 							// default and this is now a decision.
-							config: { password: f.get('password') !== null },
+							config: {
+								password: f.get('password') !== null,
+								frontDoor: String(f.get('front_door') ?? '').trim(),
+							},
 						})
 						.then(() => tell({ kind: 'done', text: 'saved' }))
 						.catch((e: unknown) => tell({ kind: 'bad', text: said(e) }))
@@ -149,6 +152,19 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					<input type="checkbox" name="password" defaultChecked={t.config?.password ?? true} />
 					a password is a way in here
 				</label>
+				{/*
+					Where this tenant's people sign in through a directory, as an
+					origin. The user console sends a browser there for a provider,
+					and roster refuses to hand anybody into this tenant's console
+					until one is named -- so this too is a fact roster acts on and
+					not a screen setting (`tenant.ext.proto`). Empty is no front
+					door, which is what a tenant whose people all have passwords is.
+				*/}
+				<input
+					name="front_door"
+					placeholder="front door: https://account.contoso.example"
+					defaultValue={t.config?.frontDoor ?? ''}
+				/>
 				<button type="submit" disabled={update.state === 'pending' || !mayWrite}>
 					save
 				</button>

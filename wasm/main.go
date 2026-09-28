@@ -330,8 +330,18 @@ func main() {
 	)
 	cmd.Register(usrv, s.Walled)
 	app.RegisterMeServiceServer(usrv, me.New(s.Ent, cmd.Everything(s.Ent), me.WithWrites(s.Walled)))
+	// The name beside the tenant, for a link spent at this door: what
+	// `sandbox.ArrivedAt` writes for the lookup, answered here as the name --
+	// and a call that carried one of its own keeps it, for the same reason.
+	arrived := func(ctx context.Context) string {
+		if v := cmd.ArrivedAt(ctx); v != "" {
+			return v
+		}
+
+		return hostAt
+	}
 	app.RegisterAuthServiceServer(usrv, sandbox.Auth(
-		console.Auth(s.Ungated, s.Ent, s.People, console.WithTenant(at)), at, user))
+		console.Auth(s.Ungated, s.Ent, s.People, console.WithTenant(at), console.WithArrival(arrived)), at, user))
 	app.RegisterVouchServiceServer(usrv, vouch.New(s.Ungated, s.Walled,
 		vouch.WithKeys(s.Keyring), vouch.WithLockout(s.Lockout)))
 

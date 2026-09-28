@@ -490,6 +490,45 @@ message VouchAcceptRequest {
 
   // When it stops working. Unset is `keys.DelegateFor`, which is minutes.
   google.protobuf.Timestamp expires = 3;
+
+  // A name the person's own tenant answers at, to also mint a **link** for:
+  // one the front door hands the browser, and the user console at that name
+  // spends for a session of roster's own (`AuthService.SignIn`). Empty mints no
+  // link, which is every front door that is not handing anybody on.
+  //
+  // # Why it is here and not on `Link`
+  //
+  // Because of what the grant would mean. `Vouch.Link` is what an app that
+  // mails recovery links holds, and a recovery link ends in a delegation
+  // bounded by the **redeeming caller's** methods -- so the widest thing that
+  // grant can mint is a credential no wider than the app. A link spent at the
+  // console ends in a session carrying everything the person may do, and a
+  // field that let the recovery grant mint one would turn every mailer into
+  // something that can hand anybody their whole account. This method's grant
+  // already means *roster believes this caller about who somebody is*, which is
+  // the trust a session rests on, so the field goes where the trust is.
+  //
+  // # What it costs, beyond what `Accept` already cost
+  //
+  // A delegation is bounded by `methods`, and this is not: the session it ends
+  // in is the person's own, decided by their bindings on every call, exactly as
+  // a password sign-in at the user console is. A front door that may `Accept` could
+  // already act as anybody within its methods; with this it can hand anybody
+  // their own console. That is the same trust -- *this is really them* --
+  // reaching one door further, and it is bounded by two things `Accept` was
+  // not: the tenant has to have named a front door (`TenantConfig.front_door`),
+  // and this has to be a name that tenant answers at. A key that may `Accept`
+  // for contoso cannot hand contoso's people into fabrikam's console, or into
+  // contoso's until contoso says it has a front door at all.
+  //
+  // # Why not `Delegate` too
+  //
+  // A password sign-in at the front door could hand somebody on the same way,
+  // and does not: the user console has a password form of its own, at the tenant's
+  // own name, and a second road for the same credential would be a second
+  // place for the lockout, the second factor and the refusals to be kept in
+  // step. This exists for the sign-in the user console cannot do itself.
+  string at = 4;
 }
 
 message VouchDelegateResponse {
@@ -511,6 +550,19 @@ message VouchDelegateResponse {
 
   // When it stops working, which is always set when a token is.
   google.protobuf.Timestamp expires = 11;
+
+  // The link, when [VouchAcceptRequest.at] asked for one, and the only time it
+  // is readable -- `link.proto` says what is stored. A browser carries it to
+  // the name it was minted for, once, within minutes (`vouch.LinkAtFor`).
+  //
+  // Not the delegation above and not a substitute for it: the front door keeps
+  // its own session on the delegation exactly as before, and this is the one
+  // extra thing it was asked to hand on. Absent for every call that did not
+  // ask, the way `continuation` is absent for a finished sign-in.
+  string link = 12;
+
+  // When the link stops working, set exactly when the link is.
+  google.protobuf.Timestamp link_expires = 13;
 }
 
 message VouchLinkRequest {

@@ -24,6 +24,12 @@ type LinkCreate struct {
 	hooks    []Hook
 }
 
+// SetAt sets the "at" field.
+func (_c *LinkCreate) SetAt(v string) *LinkCreate {
+	_c.mutation.SetAt(v)
+	return _c
+}
+
 // SetSecret sets the "secret" field.
 func (_c *LinkCreate) SetSecret(v []byte) *LinkCreate {
 	_c.mutation.SetSecret(v)
@@ -154,6 +160,9 @@ func (_c *LinkCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *LinkCreate) check() error {
+	if _, ok := _c.mutation.At(); !ok {
+		return &ValidationError{Name: "at", err: errors.New(`ent: missing required field "Link.at"`)}
+	}
 	if _, ok := _c.mutation.Secret(); !ok {
 		return &ValidationError{Name: "secret", err: errors.New(`ent: missing required field "Link.secret"`)}
 	}
@@ -207,6 +216,10 @@ func (_c *LinkCreate) createSpec() (*Link, *sqlgraph.CreateSpec) {
 	if id, ok := _c.mutation.Id(); ok {
 		_node.Id = id
 		_spec.Id.Value = &id
+	}
+	if value, ok := _c.mutation.At(); ok {
+		_spec.SetField(link.FieldAt, field.TypeString, value)
+		_node.At = value
 	}
 	if value, ok := _c.mutation.Secret(); ok {
 		_spec.SetField(link.FieldSecret, field.TypeBytes, value)

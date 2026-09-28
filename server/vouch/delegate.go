@@ -1,6 +1,7 @@
 package vouch
 
 import (
+	"bytes"
 	"context"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/keys"
 )
 
@@ -276,6 +278,16 @@ func (s *Server) Accept(ctx context.Context, req *app.VouchAcceptRequest) (*app.
 		return nil, err
 	}
 
+	// Whether this caller may hand the person on, decided **before** anything
+	// is written: a refusal here leaves no delegation behind for a call that
+	// was refused.
+	at := front.Hostname(req.GetAt())
+	if req.GetAt() != "" {
+		if err := s.mayHandOn(ctx, who, at); err != nil {
+			return nil, err
+		}
+	}
+
 	// The same answer a finished sign-in carries, because that is what this is:
 	// a caller reading `verified.ok` reads one field whichever way the person
 	// was proved.
@@ -285,7 +297,59 @@ func (s *Server) Accept(ctx context.Context, req *app.VouchAcceptRequest) (*app.
 		Tenant: tenant.Bytes(),
 	}.Build()
 
-	return s.mint(ctx, res, holder, issuer, methods, req.GetExpires())
+	out, err := s.mint(ctx, res, holder, issuer, methods, req.GetExpires())
+	if err != nil {
+		return nil, err
+	}
+
+	if req.GetAt() != "" {
+		link, until, err := s.linkAt(ctx, holder, issuer, at)
+		if err != nil {
+			return nil, err
+		}
+		out.SetLink(link)
+		out.SetLinkExpires(until)
+	}
+
+	return out, nil
+}
+
+// mayHandOn is whether a front door may mint a link for the user console at
+// `at`, for somebody in `who`'s tenant. `VouchAcceptRequest.at` says what the
+// two refusals are for; this is them.
+func (s *Server) mayHandOn(ctx context.Context, who *app.Holder, at string) error {
+	if at == "" {
+		return pderr.Invalidf("at", "a name this tenant answers at")
+	}
+
+	// The tenant's decision first, because it is the one a caller cannot
+	// change: a front door is named by the tenant, and until one is, nobody is
+	// handed into its console -- whatever the caller may `Accept`.
+	if who.GetTenant().GetConfig().GetFrontDoor() == "" {
+		return status.Error(codes.FailedPrecondition,
+			"at: this tenant has named no front door, so nobody is handed into its console")
+	}
+
+	// And the name has to be the tenant's own. Read through the wall, which
+	// answers a name of another tenant's as no name at all for a caller inside
+	// one -- and compared anyway, because a deployment key reads through no
+	// wall and would be handed the row.
+	h, err := s.walled.Host().Get(ctx, app.HostGetRequest_builder{
+		Ref:    app.HostRef_builder{Name: z.Ptr(at)}.Build(),
+		Select: app.HostSelect_builder{Tenant: app.TenantSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return pderr.Invalidf("at", "not a name this tenant answers at")
+		}
+
+		return err
+	}
+	if !bytes.Equal(h.GetTenant().GetId(), who.GetTenant().GetId()) {
+		return pderr.Invalidf("at", "not a name this tenant answers at")
+	}
+
+	return nil
 }
 
 // claimed is the person a claim reaches, and refuses one that reaches nobody
@@ -319,10 +383,12 @@ func (s *Server) claimed(ctx context.Context, claim *app.VouchClaim) (*app.Holde
 		// The same three the credential read asks for, and for the same
 		// reasons: the tenant because a delegation names one, and the two
 		// stamps because a person who is suspended or gone is not somebody a
-		// token gets to be.
+		// token gets to be. And the tenant's settings, for [Server.mayHandOn]:
+		// one read either way, and the alternative is a second one on a path
+		// that was reading the row anyway.
 		Select: app.IdentitySelect_builder{
 			Holder: app.HolderSelect_builder{
-				Tenant:       app.TenantSelect_builder{}.Build(),
+				Tenant:       app.TenantSelect_builder{Config: z.Ptr(true)}.Build(),
 				DateErased:   z.Ptr(true),
 				DateDisabled: z.Ptr(true),
 			}.Build(),

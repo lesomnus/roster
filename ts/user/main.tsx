@@ -143,6 +143,13 @@ let sandbox: Sandbox | null = null
  */
 let auth: Client<typeof AuthService>
 
+/** What this name lets somebody in with, as `AuthService.Offers` answers it. */
+interface Offers {
+	password: boolean
+	providers: { name: string; issuer: string }[]
+	frontDoor: string
+}
+
 function SignIn(props: { onDone: () => void }): React.ReactNode {
 	const [bad, setBad] = useState(false)
 
@@ -152,83 +159,120 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
 	// and then taken away, because the flicker would be on the page of exactly the
 	// tenant it is wrong for. One round trip on a page that is about to make
 	// another is a price worth the absence of that.
-	const [offers, setOffers] = useState<{ password: boolean } | undefined>(undefined)
+	const [offers, setOffers] = useState<Offers | undefined>(undefined)
 
 	useEffect(() => {
 		void auth
 			.offers({})
-			.then((v) => setOffers({ password: v.password }))
+			.then((v) =>
+				setOffers({
+					password: v.password,
+					providers: v.providers.map((p) => ({ name: p.name, issuer: p.issuer })),
+					frontDoor: v.frontDoor,
+				}),
+			)
 			// A tenant that cannot be read is not a tenant with no passwords.
 			// Drawing the form is the answer that lets somebody get in if the
 			// read was the only thing wrong.
 			.catch((e: unknown) => {
 				console.error('offers refused:', e)
-				setOffers({ password: true })
+				setOffers({ password: true, providers: [], frontDoor: '' })
 			})
 	}, [])
 
 	if (offers === undefined) return <main className="loading">…</main>
 
-	// Not a form nobody can use. `Vouch.Verify` refuses a password here whatever
-	// is typed, and refuses it **the same way a wrong one is refused** -- so a
-	// form drawn anyway is one whose every answer is "no" with nothing to say
-	// why (`server/vouch/vouch.go`). Until a directory can be reached from this
-	// page there is nothing else to offer, so it says so instead of pretending.
-	if (!offers.password) {
-		return (
-			<main className="sign-in">
-				<h1>roster</h1>
-				<p className="note">
-					This organisation signs in through a directory, so there is no password
-					to type here — and this page cannot yet send you to one. Until it can,
-					the account page is where somebody arrives through their provider.
-				</p>
-			</main>
-		)
-	}
+	// A button per provider, where there is somewhere to send a browser: the
+	// tenant's own front door, told which provider and where to come back to.
+	// `location.origin` and never a configured address, for `ADDR`'s reason --
+	// the name in the bar is who this page is for -- and the front door checks
+	// that the name is the tenant's before the round trip (`account.nextOf`).
+	// What comes back is a link, spent in `run` below for the same session a
+	// password ends in.
+	const doors = offers.frontDoor === '' ? [] : offers.providers
+	const through = (name: string): string =>
+		`${offers.frontDoor}/login?connection=${encodeURIComponent(name)}&next=${encodeURIComponent(location.origin)}`
 
 	return (
-		<form
-			className="sign-in"
-			onSubmit={(e) => {
-				e.preventDefault()
-
-				const f = new FormData(e.currentTarget)
-				void auth
-					.signIn({
-						alias: String(f.get('alias') ?? ''),
-						password: String(f.get('password') ?? ''),
-					})
-					.then(() => props.onDone())
-					.catch((e: unknown) => {
-						// The form says "no" and nothing else, on purpose; the
-						// reason goes where somebody developing this looks.
-						console.error('sign-in refused:', e)
-						setBad(true)
-					})
-			}}
-		>
+		<main className="sign-in">
 			<h1>roster</h1>
-			<label>
-				who
-				<input name="alias" autoFocus />
-			</label>
-			<label>
-				password
-				<input name="password" type="password" />
-			</label>
-			<button type="submit">sign in</button>
 
-			{/* One answer however it was wrong. Which of "no such person",
-			    "wrong password" and "locked" it was is an oracle, and the
-			    lockout in `server/vouch` is what makes guessing expensive. */}
-			{bad && <p className="bad">no</p>}
+			{/*
+				Not a form nobody can use. `Vouch.Verify` refuses a password here
+				whatever is typed, and refuses it **the same way a wrong one is
+				refused** -- so a form drawn for a tenant with the password off is
+				one whose every answer is "no" with nothing to say why
+				(`server/vouch/vouch.go`).
+			*/}
+			{offers.password && (
+				<form
+					onSubmit={(e) => {
+						e.preventDefault()
+
+						const f = new FormData(e.currentTarget)
+						void auth
+							.signIn({
+								alias: String(f.get('alias') ?? ''),
+								password: String(f.get('password') ?? ''),
+							})
+							.then(() => props.onDone())
+							.catch((e: unknown) => {
+								// The form says "no" and nothing else, on purpose; the
+								// reason goes where somebody developing this looks.
+								console.error('sign-in refused:', e)
+								setBad(true)
+							})
+					}}
+				>
+					<label>
+						who
+						<input name="alias" autoFocus />
+					</label>
+					<label>
+						password
+						<input name="password" type="password" />
+					</label>
+					<button type="submit">sign in</button>
+
+					{/* One answer however it was wrong. Which of "no such person",
+					    "wrong password" and "locked" it was is an oracle, and the
+					    lockout in `server/vouch` is what makes guessing expensive. */}
+					{bad && <p className="bad">no</p>}
+				</form>
+			)}
+
+			{/* After the form and under a rule, as `#lib/signin.tsx` draws them
+			    and for its reason: somebody with a password types it without
+			    reading the page. The rule only when there is something on both
+			    sides of it. */}
+			{offers.password && doors.length > 0 && <p className="or">or</p>}
+
+			{doors.length > 0 && (
+				<section className="providers">
+					{doors.map((p) => (
+						<a key={p.name} className="button" href={through(p.name)}>
+							<span className="mark" aria-hidden="true" />
+							<span className="with">sign in with</span>
+							<span className="who">{p.name}</span>
+						</a>
+					))}
+				</section>
+			)}
+
+			{!offers.password && doors.length === 0 && (
+				<p className="note">
+					This organisation signs in through a directory, so there is no password
+					to type here — and it has not said where its sign-in page is, so this
+					page cannot send you to one. Until it does, the account page is where
+					somebody arrives through their provider.
+				</p>
+			)}
 
 			<p>
 				The organisation is the name this page is at, so there is nothing
 				to pick.
 			</p>
-		</form>
+		</main>
 	)
 }
 
@@ -246,6 +290,21 @@ function ungatedTransport(): Transport | undefined {
 }
 
 async function run(transport: Transport): Promise<void> {
+	// A link a front door handed this browser, when the address says so. Spent
+	// before anything else, because the session it ends in is what `Me.Get`
+	// below asks about; and spent by the page rather than by a route, because a
+	// path that is not a file **is** the page (`cmd.ConsoleMount`), so there is
+	// no server route to add. The address is put back first, so that a reload or
+	// a bookmark does not carry a link that is already spent -- one answer for a
+	// refused link, in the user console, for `SignIn`'s reason.
+	if (location.pathname === '/callback') {
+		const link = new URLSearchParams(location.search).get('link') ?? ''
+		history.replaceState(null, '', '/')
+		if (link !== '') {
+			await auth.signIn({ link }).catch((e: unknown) => console.error('the link was refused:', e))
+		}
+	}
+
 	// Opened once, for the page's lifetime, and before anybody has signed in.
 	// A store is a local thing: what it would key on is who the server says the
 	// caller is, and that is answered call by call.

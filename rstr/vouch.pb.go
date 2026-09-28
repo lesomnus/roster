@@ -1140,6 +1140,7 @@ type VouchAcceptRequest struct {
 	xxx_hidden_Claim   *VouchClaim            `protobuf:"bytes,1,opt,name=claim"`
 	xxx_hidden_Methods []string               `protobuf:"bytes,2,rep,name=methods"`
 	xxx_hidden_Expires *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expires"`
+	xxx_hidden_At      string                 `protobuf:"bytes,4,opt,name=at"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1190,6 +1191,13 @@ func (x *VouchAcceptRequest) GetExpires() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *VouchAcceptRequest) GetAt() string {
+	if x != nil {
+		return x.xxx_hidden_At
+	}
+	return ""
+}
+
 func (x *VouchAcceptRequest) SetClaim(v *VouchClaim) {
 	x.xxx_hidden_Claim = v
 }
@@ -1200,6 +1208,10 @@ func (x *VouchAcceptRequest) SetMethods(v []string) {
 
 func (x *VouchAcceptRequest) SetExpires(v *timestamppb.Timestamp) {
 	x.xxx_hidden_Expires = v
+}
+
+func (x *VouchAcceptRequest) SetAt(v string) {
+	x.xxx_hidden_At = v
 }
 
 func (x *VouchAcceptRequest) HasClaim() bool {
@@ -1235,6 +1247,44 @@ type VouchAcceptRequest_builder struct {
 	Methods []string
 	// When it stops working. Unset is `keys.DelegateFor`, which is minutes.
 	Expires *timestamppb.Timestamp
+	// A name the person's own tenant answers at, to also mint a **link** for:
+	// one the front door hands the browser, and the user console at that name
+	// spends for a session of roster's own (`AuthService.SignIn`). Empty mints no
+	// link, which is every front door that is not handing anybody on.
+	//
+	// # Why it is here and not on `Link`
+	//
+	// Because of what the grant would mean. `Vouch.Link` is what an app that
+	// mails recovery links holds, and a recovery link ends in a delegation
+	// bounded by the **redeeming caller's** methods -- so the widest thing that
+	// grant can mint is a credential no wider than the app. A link spent at the
+	// console ends in a session carrying everything the person may do, and a
+	// field that let the recovery grant mint one would turn every mailer into
+	// something that can hand anybody their whole account. This method's grant
+	// already means *roster believes this caller about who somebody is*, which is
+	// the trust a session rests on, so the field goes where the trust is.
+	//
+	// # What it costs, beyond what `Accept` already cost
+	//
+	// A delegation is bounded by `methods`, and this is not: the session it ends
+	// in is the person's own, decided by their bindings on every call, exactly as
+	// a password sign-in at the user console is. A front door that may `Accept` could
+	// already act as anybody within its methods; with this it can hand anybody
+	// their own console. That is the same trust -- *this is really them* --
+	// reaching one door further, and it is bounded by two things `Accept` was
+	// not: the tenant has to have named a front door (`TenantConfig.front_door`),
+	// and this has to be a name that tenant answers at. A key that may `Accept`
+	// for contoso cannot hand contoso's people into fabrikam's console, or into
+	// contoso's until contoso says it has a front door at all.
+	//
+	// # Why not `Delegate` too
+	//
+	// A password sign-in at the front door could hand somebody on the same way,
+	// and does not: the user console has a password form of its own, at the tenant's
+	// own name, and a second road for the same credential would be a second
+	// place for the lockout, the second factor and the refusals to be kept in
+	// step. This exists for the sign-in the user console cannot do itself.
+	At string
 }
 
 func (b0 VouchAcceptRequest_builder) Build() *VouchAcceptRequest {
@@ -1244,16 +1294,19 @@ func (b0 VouchAcceptRequest_builder) Build() *VouchAcceptRequest {
 	x.xxx_hidden_Claim = b.Claim
 	x.xxx_hidden_Methods = b.Methods
 	x.xxx_hidden_Expires = b.Expires
+	x.xxx_hidden_At = b.At
 	return m0
 }
 
 type VouchDelegateResponse struct {
-	state               protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Verified *VouchVerifyResponse   `protobuf:"bytes,1,opt,name=verified"`
-	xxx_hidden_Token    string                 `protobuf:"bytes,10,opt,name=token"`
-	xxx_hidden_Expires  *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=expires"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Verified    *VouchVerifyResponse   `protobuf:"bytes,1,opt,name=verified"`
+	xxx_hidden_Token       string                 `protobuf:"bytes,10,opt,name=token"`
+	xxx_hidden_Expires     *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=expires"`
+	xxx_hidden_Link        string                 `protobuf:"bytes,12,opt,name=link"`
+	xxx_hidden_LinkExpires *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=link_expires,json=linkExpires"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *VouchDelegateResponse) Reset() {
@@ -1302,6 +1355,20 @@ func (x *VouchDelegateResponse) GetExpires() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *VouchDelegateResponse) GetLink() string {
+	if x != nil {
+		return x.xxx_hidden_Link
+	}
+	return ""
+}
+
+func (x *VouchDelegateResponse) GetLinkExpires() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_LinkExpires
+	}
+	return nil
+}
+
 func (x *VouchDelegateResponse) SetVerified(v *VouchVerifyResponse) {
 	x.xxx_hidden_Verified = v
 }
@@ -1312,6 +1379,14 @@ func (x *VouchDelegateResponse) SetToken(v string) {
 
 func (x *VouchDelegateResponse) SetExpires(v *timestamppb.Timestamp) {
 	x.xxx_hidden_Expires = v
+}
+
+func (x *VouchDelegateResponse) SetLink(v string) {
+	x.xxx_hidden_Link = v
+}
+
+func (x *VouchDelegateResponse) SetLinkExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_LinkExpires = v
 }
 
 func (x *VouchDelegateResponse) HasVerified() bool {
@@ -1328,12 +1403,23 @@ func (x *VouchDelegateResponse) HasExpires() bool {
 	return x.xxx_hidden_Expires != nil
 }
 
+func (x *VouchDelegateResponse) HasLinkExpires() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_LinkExpires != nil
+}
+
 func (x *VouchDelegateResponse) ClearVerified() {
 	x.xxx_hidden_Verified = nil
 }
 
 func (x *VouchDelegateResponse) ClearExpires() {
 	x.xxx_hidden_Expires = nil
+}
+
+func (x *VouchDelegateResponse) ClearLinkExpires() {
+	x.xxx_hidden_LinkExpires = nil
 }
 
 type VouchDelegateResponse_builder struct {
@@ -1355,6 +1441,17 @@ type VouchDelegateResponse_builder struct {
 	Token string
 	// When it stops working, which is always set when a token is.
 	Expires *timestamppb.Timestamp
+	// The link, when [VouchAcceptRequest.at] asked for one, and the only time it
+	// is readable -- `link.proto` says what is stored. A browser carries it to
+	// the name it was minted for, once, within minutes (`vouch.LinkAtFor`).
+	//
+	// Not the delegation above and not a substitute for it: the front door keeps
+	// its own session on the delegation exactly as before, and this is the one
+	// extra thing it was asked to hand on. Absent for every call that did not
+	// ask, the way `continuation` is absent for a finished sign-in.
+	Link string
+	// When the link stops working, set exactly when the link is.
+	LinkExpires *timestamppb.Timestamp
 }
 
 func (b0 VouchDelegateResponse_builder) Build() *VouchDelegateResponse {
@@ -1364,6 +1461,8 @@ func (b0 VouchDelegateResponse_builder) Build() *VouchDelegateResponse {
 	x.xxx_hidden_Verified = b.Verified
 	x.xxx_hidden_Token = b.Token
 	x.xxx_hidden_Expires = b.Expires
+	x.xxx_hidden_Link = b.Link
+	x.xxx_hidden_LinkExpires = b.LinkExpires
 	return m0
 }
 
@@ -1703,16 +1802,19 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x18\n" +
 	"\amethods\x18\n" +
 	" \x03(\tR\amethods\x124\n" +
-	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"\x8e\x01\n" +
+	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"\x9e\x01\n" +
 	"\x12VouchAcceptRequest\x12(\n" +
 	"\x05claim\x18\x01 \x01(\v2\x12.roster.VouchClaimR\x05claim\x12\x18\n" +
 	"\amethods\x18\x02 \x03(\tR\amethods\x124\n" +
-	"\aexpires\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"\x9c\x01\n" +
+	"\aexpires\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\x12\x0e\n" +
+	"\x02at\x18\x04 \x01(\tR\x02at\"\xef\x01\n" +
 	"\x15VouchDelegateResponse\x127\n" +
 	"\bverified\x18\x01 \x01(\v2\x1b.roster.VouchVerifyResponseR\bverified\x12\x14\n" +
 	"\x05token\x18\n" +
 	" \x01(\tR\x05token\x124\n" +
-	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"l\n" +
+	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\x12\x12\n" +
+	"\x04link\x18\f \x01(\tR\x04link\x12=\n" +
+	"\flink_expires\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vlinkExpires\"l\n" +
 	"\x10VouchLinkRequest\x12\"\n" +
 	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x124\n" +
 	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"_\n" +
@@ -1761,27 +1863,28 @@ var file_app_vouch_proto_depIdxs = []int32{
 	13, // 8: roster.VouchAcceptRequest.expires:type_name -> google.protobuf.Timestamp
 	4,  // 9: roster.VouchDelegateResponse.verified:type_name -> roster.VouchVerifyResponse
 	13, // 10: roster.VouchDelegateResponse.expires:type_name -> google.protobuf.Timestamp
-	0,  // 11: roster.VouchLinkRequest.who:type_name -> roster.VouchWho
-	13, // 12: roster.VouchLinkRequest.expires:type_name -> google.protobuf.Timestamp
-	13, // 13: roster.VouchLinkResponse.expires:type_name -> google.protobuf.Timestamp
-	13, // 14: roster.VouchRedeemRequest.expires:type_name -> google.protobuf.Timestamp
-	2,  // 15: roster.VouchService.Verify:input_type -> roster.VouchVerifyRequest
-	7,  // 16: roster.VouchService.Delegate:input_type -> roster.VouchDelegateRequest
-	10, // 17: roster.VouchService.Link:input_type -> roster.VouchLinkRequest
-	12, // 18: roster.VouchService.Redeem:input_type -> roster.VouchRedeemRequest
-	5,  // 19: roster.VouchService.Continue:input_type -> roster.VouchContinueRequest
-	8,  // 20: roster.VouchService.Accept:input_type -> roster.VouchAcceptRequest
-	4,  // 21: roster.VouchService.Verify:output_type -> roster.VouchVerifyResponse
-	9,  // 22: roster.VouchService.Delegate:output_type -> roster.VouchDelegateResponse
-	11, // 23: roster.VouchService.Link:output_type -> roster.VouchLinkResponse
-	9,  // 24: roster.VouchService.Redeem:output_type -> roster.VouchDelegateResponse
-	6,  // 25: roster.VouchService.Continue:output_type -> roster.VouchContinueResponse
-	9,  // 26: roster.VouchService.Accept:output_type -> roster.VouchDelegateResponse
-	21, // [21:27] is the sub-list for method output_type
-	15, // [15:21] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	13, // 11: roster.VouchDelegateResponse.link_expires:type_name -> google.protobuf.Timestamp
+	0,  // 12: roster.VouchLinkRequest.who:type_name -> roster.VouchWho
+	13, // 13: roster.VouchLinkRequest.expires:type_name -> google.protobuf.Timestamp
+	13, // 14: roster.VouchLinkResponse.expires:type_name -> google.protobuf.Timestamp
+	13, // 15: roster.VouchRedeemRequest.expires:type_name -> google.protobuf.Timestamp
+	2,  // 16: roster.VouchService.Verify:input_type -> roster.VouchVerifyRequest
+	7,  // 17: roster.VouchService.Delegate:input_type -> roster.VouchDelegateRequest
+	10, // 18: roster.VouchService.Link:input_type -> roster.VouchLinkRequest
+	12, // 19: roster.VouchService.Redeem:input_type -> roster.VouchRedeemRequest
+	5,  // 20: roster.VouchService.Continue:input_type -> roster.VouchContinueRequest
+	8,  // 21: roster.VouchService.Accept:input_type -> roster.VouchAcceptRequest
+	4,  // 22: roster.VouchService.Verify:output_type -> roster.VouchVerifyResponse
+	9,  // 23: roster.VouchService.Delegate:output_type -> roster.VouchDelegateResponse
+	11, // 24: roster.VouchService.Link:output_type -> roster.VouchLinkResponse
+	9,  // 25: roster.VouchService.Redeem:output_type -> roster.VouchDelegateResponse
+	6,  // 26: roster.VouchService.Continue:output_type -> roster.VouchContinueResponse
+	9,  // 27: roster.VouchService.Accept:output_type -> roster.VouchDelegateResponse
+	22, // [22:28] is the sub-list for method output_type
+	16, // [16:22] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_app_vouch_proto_init() }

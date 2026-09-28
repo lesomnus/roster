@@ -11,7 +11,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/auth.proto.
  */
 export const file_app_auth: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvYXV0aC5wcm90bxIGcm9zdGVyIjQKEUF1dGhTaWduSW5SZXF1ZXN0Eg0KBWFsaWFzGAEgASgJEhAKCHBhc3N3b3JkGAIgASgJIhQKEkF1dGhTaWduSW5SZXNwb25zZSIUChJBdXRoU2lnbk91dFJlcXVlc3QiFQoTQXV0aFNpZ25PdXRSZXNwb25zZSITChFBdXRoT2ZmZXJzUmVxdWVzdCImChJBdXRoT2ZmZXJzUmVzcG9uc2USEAoIcGFzc3dvcmQYASABKAgy0wEKC0F1dGhTZXJ2aWNlEj8KBlNpZ25JbhIZLnJvc3Rlci5BdXRoU2lnbkluUmVxdWVzdBoaLnJvc3Rlci5BdXRoU2lnbkluUmVzcG9uc2USQgoHU2lnbk91dBIaLnJvc3Rlci5BdXRoU2lnbk91dFJlcXVlc3QaGy5yb3N0ZXIuQXV0aFNpZ25PdXRSZXNwb25zZRI/CgZPZmZlcnMSGS5yb3N0ZXIuQXV0aE9mZmVyc1JlcXVlc3QaGi5yb3N0ZXIuQXV0aE9mZmVyc1Jlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac");
+  fileDesc("Cg5hcHAvYXV0aC5wcm90bxIGcm9zdGVyIkIKEUF1dGhTaWduSW5SZXF1ZXN0Eg0KBWFsaWFzGAEgASgJEhAKCHBhc3N3b3JkGAIgASgJEgwKBGxpbmsYAyABKAkiFAoSQXV0aFNpZ25JblJlc3BvbnNlIhQKEkF1dGhTaWduT3V0UmVxdWVzdCIVChNBdXRoU2lnbk91dFJlc3BvbnNlIhMKEUF1dGhPZmZlcnNSZXF1ZXN0ImkKEkF1dGhPZmZlcnNSZXNwb25zZRIQCghwYXNzd29yZBgBIAEoCBItCglwcm92aWRlcnMYAiADKAsyGi5yb3N0ZXIuQXV0aE9mZmVyc1Byb3ZpZGVyEhIKCmZyb250X2Rvb3IYAyABKAkiMgoSQXV0aE9mZmVyc1Byb3ZpZGVyEgwKBG5hbWUYASABKAkSDgoGaXNzdWVyGAIgASgJMtMBCgtBdXRoU2VydmljZRI/CgZTaWduSW4SGS5yb3N0ZXIuQXV0aFNpZ25JblJlcXVlc3QaGi5yb3N0ZXIuQXV0aFNpZ25JblJlc3BvbnNlEkIKB1NpZ25PdXQSGi5yb3N0ZXIuQXV0aFNpZ25PdXRSZXF1ZXN0Ghsucm9zdGVyLkF1dGhTaWduT3V0UmVzcG9uc2USPwoGT2ZmZXJzEhkucm9zdGVyLkF1dGhPZmZlcnNSZXF1ZXN0Ghoucm9zdGVyLkF1dGhPZmZlcnNSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH");
 
 /**
  * @generated from message roster.AuthSignInRequest
@@ -35,6 +35,44 @@ export type AuthSignInRequest = Message<"roster.AuthSignInRequest"> & {
    * @generated from field: string password = 2;
    */
   password: string;
+
+  /**
+   * The other way in: a link a front door handed this browser, spent here
+   * instead of a password. Exactly one of the two ways is meant, and a request
+   * that carries both is refused rather than resolved in some order this
+   * comment would then have to define -- `VouchWho`'s rule, one service over.
+   *
+   * # What it is
+   *
+   * `Vouch.Accept` minted it, for somebody a front door had already checked
+   * against the tenant's own directory, and for **this name**: a link is spent
+   * at the name it was minted for and nowhere else (`Link.at`), once, within
+   * minutes. What it ends in is the same session a password ends in -- the
+   * cookie, and nothing in the response -- because it is the same person at
+   * the same door, proved a different way.
+   *
+   * # Why a field on SignIn and not a method
+   *
+   * `Delegate` is its own method rather than a field on `Verify` because a
+   * role grants methods, and a field would make one grant mean two things.
+   * Nothing grants this: `SignIn` is the one public method here, and what it
+   * takes is not a permission but a proof. A second proof is a field on the
+   * verb that spends proofs, the way a continuation is on `Delegate`.
+   *
+   * # It is not `Vouch.Redeem`
+   *
+   * That one spends a recovery link and answers the caller that minted it
+   * with a delegation. This is spent by a browser, which is no caller at all,
+   * at a console that mints sessions rather than delegations. The two share a
+   * table and are told apart on both sides -- `link.proto` § *The third kind*.
+   *
+   * Only where a name decides the tenant, which is the data plane: on the
+   * control plane nothing arrives at a name, so there is nowhere for a link to
+   * have been minted for, and one presented there is refused.
+   *
+   * @generated from field: string link = 3;
+   */
+  link: string;
 };
 
 /**
@@ -125,6 +163,35 @@ export type AuthOffersResponse = Message<"roster.AuthOffersResponse"> & {
    * @generated from field: bool password = 1;
    */
   password: boolean;
+
+  /**
+   * The directories this tenant's people arrive through, by the name the
+   * tenant gave each and the issuer behind it -- the same two fields the
+   * account app's `GET /providers` has answered anonymously at a tenant's own
+   * host for as long as it existed, and nothing else off the row.
+   *
+   * A list of facts and not of buttons: the page draws one per provider only
+   * where there is somewhere to send a browser, which is [front_door] below.
+   * Both are answered so that a page can say the true thing in either case --
+   * *this organisation signs in through a directory, and this page has
+   * nowhere to send you* is a different sentence from a list of buttons.
+   *
+   * @generated from field: repeated roster.AuthOffersProvider providers = 2;
+   */
+  providers: AuthOffersProvider[];
+
+  /**
+   * Where the page sends a browser for one of them: the origin of the
+   * tenant's own front door, as the tenant wrote it down
+   * (`TenantConfig.front_door`). Empty is no front door, and no buttons.
+   *
+   * The page appends the front door's own route and two things it knows: which
+   * provider (`connection`), and its own origin (`next`), which is where the
+   * front door sends the browser back with a link for [AuthSignInRequest.link].
+   *
+   * @generated from field: string front_door = 3;
+   */
+  frontDoor: string;
 };
 
 /**
@@ -133,6 +200,36 @@ export type AuthOffersResponse = Message<"roster.AuthOffersResponse"> & {
  */
 export const AuthOffersResponseSchema: GenMessage<AuthOffersResponse> = /*@__PURE__*/
   messageDesc(file_app_auth, 5);
+
+/**
+ * AuthOffersProvider is one directory a tenant's people arrive through, as a
+ * sign-in page needs it and no further. `Connection` is the row.
+ *
+ * @generated from message roster.AuthOffersProvider
+ */
+export type AuthOffersProvider = Message<"roster.AuthOffersProvider"> & {
+  /**
+   * What the tenant calls it -- `entra`, `github` -- which is what the front
+   * door takes as `?connection=`.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * The issuer, which is where the browser is about to be sent anyway.
+   *
+   * @generated from field: string issuer = 2;
+   */
+  issuer: string;
+};
+
+/**
+ * Describes the message roster.AuthOffersProvider.
+ * Use `create(AuthOffersProviderSchema)` to create a new message.
+ */
+export const AuthOffersProviderSchema: GenMessage<AuthOffersProvider> = /*@__PURE__*/
+  messageDesc(file_app_auth, 6);
 
 /**
  * AuthService is how an operator gets a credential, and gives it up.

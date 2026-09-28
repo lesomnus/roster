@@ -154,6 +154,40 @@ message AuthSignInRequest {
   // The secret, as typed. Not a hash: hashing is the store's, because
   // parameters chosen by a caller are parameters it cannot vouch for.
   string password = 2;
+
+  // The other way in: a link a front door handed this browser, spent here
+  // instead of a password. Exactly one of the two ways is meant, and a request
+  // that carries both is refused rather than resolved in some order this
+  // comment would then have to define -- `VouchWho`'s rule, one service over.
+  //
+  // # What it is
+  //
+  // `Vouch.Accept` minted it, for somebody a front door had already checked
+  // against the tenant's own directory, and for **this name**: a link is spent
+  // at the name it was minted for and nowhere else (`Link.at`), once, within
+  // minutes. What it ends in is the same session a password ends in -- the
+  // cookie, and nothing in the response -- because it is the same person at
+  // the same door, proved a different way.
+  //
+  // # Why a field on SignIn and not a method
+  //
+  // `Delegate` is its own method rather than a field on `Verify` because a
+  // role grants methods, and a field would make one grant mean two things.
+  // Nothing grants this: `SignIn` is the one public method here, and what it
+  // takes is not a permission but a proof. A second proof is a field on the
+  // verb that spends proofs, the way a continuation is on `Delegate`.
+  //
+  // # It is not `Vouch.Redeem`
+  //
+  // That one spends a recovery link and answers the caller that minted it
+  // with a delegation. This is spent by a browser, which is no caller at all,
+  // at a console that mints sessions rather than delegations. The two share a
+  // table and are told apart on both sides -- `link.proto` § *The third kind*.
+  //
+  // Only where a name decides the tenant, which is the data plane: on the
+  // control plane nothing arrives at a name, so there is nowhere for a link to
+  // have been minted for, and one presented there is refused.
+  string link = 3;
 }
 
 // AuthSignInResponse is empty, and that is the answer.
@@ -184,4 +218,36 @@ message AuthOffersResponse {
   // drawn -- which is the **consequence** of the switch rather than the feature,
   // the distinction `docs/login.md` § *A tenant with no passwords* draws.
   bool password = 1;
+
+  // The directories this tenant's people arrive through, by the name the
+  // tenant gave each and the issuer behind it -- the same two fields the
+  // account app's `GET /providers` has answered anonymously at a tenant's own
+  // host for as long as it existed, and nothing else off the row.
+  //
+  // A list of facts and not of buttons: the page draws one per provider only
+  // where there is somewhere to send a browser, which is [front_door] below.
+  // Both are answered so that a page can say the true thing in either case --
+  // *this organisation signs in through a directory, and this page has
+  // nowhere to send you* is a different sentence from a list of buttons.
+  repeated AuthOffersProvider providers = 2;
+
+  // Where the page sends a browser for one of them: the origin of the
+  // tenant's own front door, as the tenant wrote it down
+  // (`TenantConfig.front_door`). Empty is no front door, and no buttons.
+  //
+  // The page appends the front door's own route and two things it knows: which
+  // provider (`connection`), and its own origin (`next`), which is where the
+  // front door sends the browser back with a link for [AuthSignInRequest.link].
+  string front_door = 3;
+}
+
+// AuthOffersProvider is one directory a tenant's people arrive through, as a
+// sign-in page needs it and no further. `Connection` is the row.
+message AuthOffersProvider {
+  // What the tenant calls it -- `entra`, `github` -- which is what the front
+  // door takes as `?connection=`.
+  string name = 1;
+
+  // The issuer, which is where the browser is about to be sent anyway.
+  string issuer = 2;
 }

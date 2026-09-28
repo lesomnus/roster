@@ -261,6 +261,7 @@ func (b0 Tenant_builder) Build() *Tenant {
 type TenantConfig struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Password    bool                   `protobuf:"varint,1,opt,name=password"`
+	xxx_hidden_FrontDoor   string                 `protobuf:"bytes,2,opt,name=front_door,json=frontDoor"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -299,9 +300,20 @@ func (x *TenantConfig) GetPassword() bool {
 	return false
 }
 
+func (x *TenantConfig) GetFrontDoor() string {
+	if x != nil {
+		return x.xxx_hidden_FrontDoor
+	}
+	return ""
+}
+
 func (x *TenantConfig) SetPassword(v bool) {
 	x.xxx_hidden_Password = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 2)
+}
+
+func (x *TenantConfig) SetFrontDoor(v string) {
+	x.xxx_hidden_FrontDoor = v
 }
 
 func (x *TenantConfig) HasPassword() bool {
@@ -339,6 +351,28 @@ type TenantConfig_builder struct {
 	// case it was asked for: a form nobody uses is a form that says somebody here
 	// has a password.
 	Password *bool
+	// Where this tenant's people sign in through a directory: the origin of
+	// the front door in front of it, `https://account.contoso.example`. Empty is
+	// no front door, which is what a tenant whose people all have passwords is.
+	//
+	// # What roster does with it
+	//
+	// Two things, and the second is the one that makes this a fact rather than an
+	// address a page is handed. The user console asks `AuthService.Offers` what
+	// this name lets somebody in with, and this is where it sends them for a
+	// provider -- the page cannot know, because which of a tenant's `Host` rows
+	// is the front door is not written on the row, and in a development
+	// deployment the two are one name on two ports. And `Vouch.Accept` **refuses
+	// to hand anybody into this tenant's console** while this is empty: a front
+	// door minting a link for a browser to spend at the user console is the
+	// tenant's decision, taken here, and not something a key that may `Accept`
+	// may do to a tenant that never said so.
+	//
+	// An origin and nothing more -- scheme and host, a port if the deployment
+	// needs one -- because the front door's own routes are the front door's
+	// (`/login`, `/callback`) and a path written here would be a second copy of
+	// one of them. `server/core` refuses anything else on the way in.
+	FrontDoor string
 }
 
 func (b0 TenantConfig_builder) Build() *TenantConfig {
@@ -346,9 +380,10 @@ func (b0 TenantConfig_builder) Build() *TenantConfig {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Password != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 2)
 		x.xxx_hidden_Password = *b.Password
 	}
+	x.xxx_hidden_FrontDoor = b.FrontDoor
 	return m0
 }
 
@@ -376,9 +411,11 @@ const file_roster_payday_tenant_proto_rawDesc = "" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref \x14(dB\x02\n" +
-	"\x00H\x01\x1a\x00\"1\n" +
+	"\x00H\x01\x1a\x00\"P\n" +
 	"\fTenantConfig\x12!\n" +
-	"\bpassword\x18\x01 \x01(\bB\x05\xaa\x01\x02\b\x01R\bpasswordB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\bpassword\x18\x01 \x01(\bB\x05\xaa\x01\x02\b\x01R\bpassword\x12\x1d\n" +
+	"\n" +
+	"front_door\x18\x02 \x01(\tR\tfrontDoorB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_roster_payday_tenant_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_roster_payday_tenant_proto_goTypes = []any{

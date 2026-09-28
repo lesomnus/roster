@@ -73,19 +73,44 @@ func WithTenant(fn func(ctx context.Context) (string, error)) Option {
 	return func(a *authed) { a.tenant = fn }
 }
 
+// WithArrival is the name the request arrived at, beside the tenant it names.
+//
+// For the one sign-in that is bound to a name rather than to a secret: a link
+// a front door handed the browser is spent at the name it was minted for
+// (`Link.at`), so the user console compares the name and not only the tenant.
+// Two of a tenant's names are two doors, and a link for one is not a link for
+// the other. `cmd.ArrivedAt` is it on a served deployment; the sandbox
+// supplies the name it made up, the way it does for [WithTenant].
+func WithArrival(fn func(ctx context.Context) string) Option {
+	return func(a *authed) { a.arrival = fn }
+}
+
 type authed struct {
 	app.UnimplementedAuthServiceServer
 
 	s        app.Server
 	db       *ent.Client
 	sessions *authsession.Sessions
-	v        app.VouchServiceServer
+	v        *vouch.Server
 
 	// tenant is [WithTenant], and nil is the one this plane has.
 	tenant func(ctx context.Context) (string, error)
+
+	// arrival is [WithArrival], and nil is a plane nothing arrives at by name.
+	arrival func(ctx context.Context) string
 }
 
 func (a authed) SignIn(ctx context.Context, req *app.AuthSignInRequest) (*app.AuthSignInResponse, error) {
+	if link := req.GetLink(); link != "" {
+		// Exactly one way of proving somebody, refused rather than resolved in
+		// some order this comment would then have to define.
+		if req.GetAlias() != "" || req.GetPassword() != "" {
+			return nil, status.Error(codes.InvalidArgument, "a link, or an alias and a password; not both")
+		}
+
+		return a.handed(ctx, link)
+	}
+
 	if req.GetAlias() == "" || req.GetPassword() == "" {
 		return nil, status.Error(codes.InvalidArgument, "both an alias and a password")
 	}
@@ -115,6 +140,45 @@ func (a authed) SignIn(ctx context.Context, req *app.AuthSignInRequest) (*app.Au
 		return nil, status.Error(codes.Unauthenticated, "no")
 	}
 
+	return a.admit(ctx, res)
+}
+
+// handed is a sign-in by a link a front door handed the browser: the person
+// was checked at the tenant's own directory, `Vouch.Accept` minted a link for
+// this name, and this spends it. `AuthSignInRequest.link` is the why.
+//
+// Only where a name decides the tenant. The control plane's door has no
+// [WithArrival], and a link presented there is refused before it is looked up:
+// nothing arrives at a name there, so nothing was ever minted for it.
+func (a authed) handed(ctx context.Context, link string) (*app.AuthSignInResponse, error) {
+	if a.tenant == nil || a.arrival == nil {
+		return nil, status.Error(codes.FailedPrecondition,
+			"a link is spent at the name it was minted for, and nothing arrives at a name here")
+	}
+
+	tenant, err := a.whose(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := a.v.SpendAt(ctx, link, a.arrival(ctx), tenant)
+	if err != nil {
+		return nil, err
+	}
+	if !res.GetOk() {
+		// One answer, as above: a link that was never one, one already spent,
+		// one for another name. Told apart, this would say whether a string
+		// was ever a real link.
+		return nil, status.Error(codes.Unauthenticated, "no")
+	}
+
+	return a.admit(ctx, res)
+}
+
+// admit is the session a finished sign-in ends in, whichever way the person
+// was proved: one function, so that a password and a link cannot come to two
+// answers about what a session is.
+func (a authed) admit(ctx context.Context, res *app.VouchVerifyResponse) (*app.AuthSignInResponse, error) {
 	k, err := pdid.From(res.GetHolder())
 	if err != nil {
 		return nil, err
@@ -179,11 +243,33 @@ func (a authed) Offers(ctx context.Context, _ *app.AuthOffersRequest) (*app.Auth
 		return nil, err
 	}
 
+	// The directories, by name and issuer and nothing else off the row --
+	// the same two fields `GET /providers` answers, read here with the same
+	// unwalled server for the same reason as the tenant above.
+	cs, err := a.s.Connection().List(ctx, app.ConnectionListRequest_builder{
+		Filters: []*app.ConnectionFilter{
+			app.ConnectionFilter_builder{Tenant: app.TenantRef_builder{Id: t.GetId()}.Build()}.Build(),
+		},
+		Size: 100,
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	providers := make([]*app.AuthOffersProvider, 0, len(cs.GetItems()))
+	for _, c := range cs.GetItems() {
+		providers = append(providers, app.AuthOffersProvider_builder{
+			Name:   c.GetName(),
+			Issuer: c.GetIssuer(),
+		}.Build())
+	}
+
 	// `vouch.Offers` and not the field, so the two places that answer this
 	// question answer it the same way -- including *unset is yes*, which is what
 	// a tenant written before the field existed relies on.
 	return app.AuthOffersResponse_builder{
-		Password: vouch.Offers(t, vouch.KindPassword),
+		Password:  vouch.Offers(t, vouch.KindPassword),
+		Providers: providers,
+		FrontDoor: t.GetConfig().GetFrontDoor(),
 	}.Build(), nil
 }
 

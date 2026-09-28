@@ -28,6 +28,7 @@ message LinkAddRequest {
   bytes id = 1;
   HolderRef holder = 2;
   EmailRef email = 12;
+  string at = 8 [features.field_presence = IMPLICIT];
   bytes secret = 9 [features.field_presence = IMPLICIT];
   bytes issuer = 10 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_expires = 11;
@@ -50,6 +51,7 @@ message LinkSelect {
   bool all = 1;
   HolderSelect holder = 2;
   EmailSelect email = 12;
+  bool at = 8;
   bool secret = 9;
   bool issuer = 10;
   bool date_expires = 11;

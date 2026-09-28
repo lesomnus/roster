@@ -24,6 +24,7 @@ type AuthSignInRequest struct {
 	state               protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Alias    string                 `protobuf:"bytes,1,opt,name=alias"`
 	xxx_hidden_Password string                 `protobuf:"bytes,2,opt,name=password"`
+	xxx_hidden_Link     string                 `protobuf:"bytes,3,opt,name=link"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -67,12 +68,23 @@ func (x *AuthSignInRequest) GetPassword() string {
 	return ""
 }
 
+func (x *AuthSignInRequest) GetLink() string {
+	if x != nil {
+		return x.xxx_hidden_Link
+	}
+	return ""
+}
+
 func (x *AuthSignInRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = v
 }
 
 func (x *AuthSignInRequest) SetPassword(v string) {
 	x.xxx_hidden_Password = v
+}
+
+func (x *AuthSignInRequest) SetLink(v string) {
+	x.xxx_hidden_Link = v
 }
 
 type AuthSignInRequest_builder struct {
@@ -87,6 +99,39 @@ type AuthSignInRequest_builder struct {
 	// The secret, as typed. Not a hash: hashing is the store's, because
 	// parameters chosen by a caller are parameters it cannot vouch for.
 	Password string
+	// The other way in: a link a front door handed this browser, spent here
+	// instead of a password. Exactly one of the two ways is meant, and a request
+	// that carries both is refused rather than resolved in some order this
+	// comment would then have to define -- `VouchWho`'s rule, one service over.
+	//
+	// # What it is
+	//
+	// `Vouch.Accept` minted it, for somebody a front door had already checked
+	// against the tenant's own directory, and for **this name**: a link is spent
+	// at the name it was minted for and nowhere else (`Link.at`), once, within
+	// minutes. What it ends in is the same session a password ends in -- the
+	// cookie, and nothing in the response -- because it is the same person at
+	// the same door, proved a different way.
+	//
+	// # Why a field on SignIn and not a method
+	//
+	// `Delegate` is its own method rather than a field on `Verify` because a
+	// role grants methods, and a field would make one grant mean two things.
+	// Nothing grants this: `SignIn` is the one public method here, and what it
+	// takes is not a permission but a proof. A second proof is a field on the
+	// verb that spends proofs, the way a continuation is on `Delegate`.
+	//
+	// # It is not `Vouch.Redeem`
+	//
+	// That one spends a recovery link and answers the caller that minted it
+	// with a delegation. This is spent by a browser, which is no caller at all,
+	// at a console that mints sessions rather than delegations. The two share a
+	// table and are told apart on both sides -- `link.proto` § *The third kind*.
+	//
+	// Only where a name decides the tenant, which is the data plane: on the
+	// control plane nothing arrives at a name, so there is nowhere for a link to
+	// have been minted for, and one presented there is refused.
+	Link string
 }
 
 func (b0 AuthSignInRequest_builder) Build() *AuthSignInRequest {
@@ -95,6 +140,7 @@ func (b0 AuthSignInRequest_builder) Build() *AuthSignInRequest {
 	_, _ = b, x
 	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Password = b.Password
+	x.xxx_hidden_Link = b.Link
 	return m0
 }
 
@@ -283,10 +329,12 @@ func (b0 AuthOffersRequest_builder) Build() *AuthOffersRequest {
 }
 
 type AuthOffersResponse struct {
-	state               protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Password bool                   `protobuf:"varint,1,opt,name=password"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Password  bool                   `protobuf:"varint,1,opt,name=password"`
+	xxx_hidden_Providers *[]*AuthOffersProvider `protobuf:"bytes,2,rep,name=providers"`
+	xxx_hidden_FrontDoor string                 `protobuf:"bytes,3,opt,name=front_door,json=frontDoor"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *AuthOffersResponse) Reset() {
@@ -321,8 +369,32 @@ func (x *AuthOffersResponse) GetPassword() bool {
 	return false
 }
 
+func (x *AuthOffersResponse) GetProviders() []*AuthOffersProvider {
+	if x != nil {
+		if x.xxx_hidden_Providers != nil {
+			return *x.xxx_hidden_Providers
+		}
+	}
+	return nil
+}
+
+func (x *AuthOffersResponse) GetFrontDoor() string {
+	if x != nil {
+		return x.xxx_hidden_FrontDoor
+	}
+	return ""
+}
+
 func (x *AuthOffersResponse) SetPassword(v bool) {
 	x.xxx_hidden_Password = v
+}
+
+func (x *AuthOffersResponse) SetProviders(v []*AuthOffersProvider) {
+	x.xxx_hidden_Providers = &v
+}
+
+func (x *AuthOffersResponse) SetFrontDoor(v string) {
+	x.xxx_hidden_FrontDoor = v
 }
 
 type AuthOffersResponse_builder struct {
@@ -335,6 +407,25 @@ type AuthOffersResponse_builder struct {
 	// drawn -- which is the **consequence** of the switch rather than the feature,
 	// the distinction `docs/login.md` § *A tenant with no passwords* draws.
 	Password bool
+	// The directories this tenant's people arrive through, by the name the
+	// tenant gave each and the issuer behind it -- the same two fields the
+	// account app's `GET /providers` has answered anonymously at a tenant's own
+	// host for as long as it existed, and nothing else off the row.
+	//
+	// A list of facts and not of buttons: the page draws one per provider only
+	// where there is somewhere to send a browser, which is [front_door] below.
+	// Both are answered so that a page can say the true thing in either case --
+	// *this organisation signs in through a directory, and this page has
+	// nowhere to send you* is a different sentence from a list of buttons.
+	Providers []*AuthOffersProvider
+	// Where the page sends a browser for one of them: the origin of the
+	// tenant's own front door, as the tenant wrote it down
+	// (`TenantConfig.front_door`). Empty is no front door, and no buttons.
+	//
+	// The page appends the front door's own route and two things it knows: which
+	// provider (`connection`), and its own origin (`next`), which is where the
+	// front door sends the browser back with a link for [AuthSignInRequest.link].
+	FrontDoor string
 }
 
 func (b0 AuthOffersResponse_builder) Build() *AuthOffersResponse {
@@ -342,6 +433,84 @@ func (b0 AuthOffersResponse_builder) Build() *AuthOffersResponse {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Password = b.Password
+	x.xxx_hidden_Providers = &b.Providers
+	x.xxx_hidden_FrontDoor = b.FrontDoor
+	return m0
+}
+
+// AuthOffersProvider is one directory a tenant's people arrive through, as a
+// sign-in page needs it and no further. `Connection` is the row.
+type AuthOffersProvider struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Name   string                 `protobuf:"bytes,1,opt,name=name"`
+	xxx_hidden_Issuer string                 `protobuf:"bytes,2,opt,name=issuer"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *AuthOffersProvider) Reset() {
+	*x = AuthOffersProvider{}
+	mi := &file_app_auth_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuthOffersProvider) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuthOffersProvider) ProtoMessage() {}
+
+func (x *AuthOffersProvider) ProtoReflect() protoreflect.Message {
+	mi := &file_app_auth_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AuthOffersProvider) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *AuthOffersProvider) GetIssuer() string {
+	if x != nil {
+		return x.xxx_hidden_Issuer
+	}
+	return ""
+}
+
+func (x *AuthOffersProvider) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *AuthOffersProvider) SetIssuer(v string) {
+	x.xxx_hidden_Issuer = v
+}
+
+type AuthOffersProvider_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// What the tenant calls it -- `entra`, `github` -- which is what the front
+	// door takes as `?connection=`.
+	Name string
+	// The issuer, which is where the browser is about to be sent anyway.
+	Issuer string
+}
+
+func (b0 AuthOffersProvider_builder) Build() *AuthOffersProvider {
+	m0 := &AuthOffersProvider{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Issuer = b.Issuer
 	return m0
 }
 
@@ -349,22 +518,29 @@ var File_app_auth_proto protoreflect.FileDescriptor
 
 const file_app_auth_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/auth.proto\x12\x06roster\"E\n" +
+	"\x0eapp/auth.proto\x12\x06roster\"Y\n" +
 	"\x11AuthSignInRequest\x12\x14\n" +
 	"\x05alias\x18\x01 \x01(\tR\x05alias\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"\x14\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x12\n" +
+	"\x04link\x18\x03 \x01(\tR\x04link\"\x14\n" +
 	"\x12AuthSignInResponse\"\x14\n" +
 	"\x12AuthSignOutRequest\"\x15\n" +
 	"\x13AuthSignOutResponse\"\x13\n" +
-	"\x11AuthOffersRequest\"0\n" +
+	"\x11AuthOffersRequest\"\x89\x01\n" +
 	"\x12AuthOffersResponse\x12\x1a\n" +
-	"\bpassword\x18\x01 \x01(\bR\bpassword2\xd3\x01\n" +
+	"\bpassword\x18\x01 \x01(\bR\bpassword\x128\n" +
+	"\tproviders\x18\x02 \x03(\v2\x1a.roster.AuthOffersProviderR\tproviders\x12\x1d\n" +
+	"\n" +
+	"front_door\x18\x03 \x01(\tR\tfrontDoor\"@\n" +
+	"\x12AuthOffersProvider\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
+	"\x06issuer\x18\x02 \x01(\tR\x06issuer2\xd3\x01\n" +
 	"\vAuthService\x12?\n" +
 	"\x06SignIn\x12\x19.roster.AuthSignInRequest\x1a\x1a.roster.AuthSignInResponse\x12B\n" +
 	"\aSignOut\x12\x1a.roster.AuthSignOutRequest\x1a\x1b.roster.AuthSignOutResponse\x12?\n" +
 	"\x06Offers\x12\x19.roster.AuthOffersRequest\x1a\x1a.roster.AuthOffersResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_app_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_app_auth_proto_goTypes = []any{
 	(*AuthSignInRequest)(nil),   // 0: roster.AuthSignInRequest
 	(*AuthSignInResponse)(nil),  // 1: roster.AuthSignInResponse
@@ -372,19 +548,21 @@ var file_app_auth_proto_goTypes = []any{
 	(*AuthSignOutResponse)(nil), // 3: roster.AuthSignOutResponse
 	(*AuthOffersRequest)(nil),   // 4: roster.AuthOffersRequest
 	(*AuthOffersResponse)(nil),  // 5: roster.AuthOffersResponse
+	(*AuthOffersProvider)(nil),  // 6: roster.AuthOffersProvider
 }
 var file_app_auth_proto_depIdxs = []int32{
-	0, // 0: roster.AuthService.SignIn:input_type -> roster.AuthSignInRequest
-	2, // 1: roster.AuthService.SignOut:input_type -> roster.AuthSignOutRequest
-	4, // 2: roster.AuthService.Offers:input_type -> roster.AuthOffersRequest
-	1, // 3: roster.AuthService.SignIn:output_type -> roster.AuthSignInResponse
-	3, // 4: roster.AuthService.SignOut:output_type -> roster.AuthSignOutResponse
-	5, // 5: roster.AuthService.Offers:output_type -> roster.AuthOffersResponse
-	3, // [3:6] is the sub-list for method output_type
-	0, // [0:3] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	6, // 0: roster.AuthOffersResponse.providers:type_name -> roster.AuthOffersProvider
+	0, // 1: roster.AuthService.SignIn:input_type -> roster.AuthSignInRequest
+	2, // 2: roster.AuthService.SignOut:input_type -> roster.AuthSignOutRequest
+	4, // 3: roster.AuthService.Offers:input_type -> roster.AuthOffersRequest
+	1, // 4: roster.AuthService.SignIn:output_type -> roster.AuthSignInResponse
+	3, // 5: roster.AuthService.SignOut:output_type -> roster.AuthSignOutResponse
+	5, // 6: roster.AuthService.Offers:output_type -> roster.AuthOffersResponse
+	4, // [4:7] is the sub-list for method output_type
+	1, // [1:4] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_app_auth_proto_init() }
@@ -398,7 +576,7 @@ func file_app_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_auth_proto_rawDesc), len(file_app_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

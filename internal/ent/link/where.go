@@ -56,6 +56,11 @@ func IdLTE(id uuid.UUID) predicate.Link {
 	return predicate.Link(sql.FieldLTE(FieldId, id))
 }
 
+// At applies equality check predicate on the "at" field. It's identical to AtEQ.
+func At(v string) predicate.Link {
+	return predicate.Link(sql.FieldEQ(FieldAt, v))
+}
+
 // Secret applies equality check predicate on the "secret" field. It's identical to SecretEQ.
 func Secret(v []byte) predicate.Link {
 	return predicate.Link(sql.FieldEQ(FieldSecret, v))
@@ -94,6 +99,71 @@ func HolderId(v uuid.UUID) predicate.Link {
 // EmailId applies equality check predicate on the "email_id" field. It's identical to EmailIdEQ.
 func EmailId(v uuid.UUID) predicate.Link {
 	return predicate.Link(sql.FieldEQ(FieldEmailId, v))
+}
+
+// AtEQ applies the EQ predicate on the "at" field.
+func AtEQ(v string) predicate.Link {
+	return predicate.Link(sql.FieldEQ(FieldAt, v))
+}
+
+// AtNEQ applies the NEQ predicate on the "at" field.
+func AtNEQ(v string) predicate.Link {
+	return predicate.Link(sql.FieldNEQ(FieldAt, v))
+}
+
+// AtIn applies the In predicate on the "at" field.
+func AtIn(vs ...string) predicate.Link {
+	return predicate.Link(sql.FieldIn(FieldAt, vs...))
+}
+
+// AtNotIn applies the NotIn predicate on the "at" field.
+func AtNotIn(vs ...string) predicate.Link {
+	return predicate.Link(sql.FieldNotIn(FieldAt, vs...))
+}
+
+// AtGT applies the GT predicate on the "at" field.
+func AtGT(v string) predicate.Link {
+	return predicate.Link(sql.FieldGT(FieldAt, v))
+}
+
+// AtGTE applies the GTE predicate on the "at" field.
+func AtGTE(v string) predicate.Link {
+	return predicate.Link(sql.FieldGTE(FieldAt, v))
+}
+
+// AtLT applies the LT predicate on the "at" field.
+func AtLT(v string) predicate.Link {
+	return predicate.Link(sql.FieldLT(FieldAt, v))
+}
+
+// AtLTE applies the LTE predicate on the "at" field.
+func AtLTE(v string) predicate.Link {
+	return predicate.Link(sql.FieldLTE(FieldAt, v))
+}
+
+// AtContains applies the Contains predicate on the "at" field.
+func AtContains(v string) predicate.Link {
+	return predicate.Link(sql.FieldContains(FieldAt, v))
+}
+
+// AtHasPrefix applies the HasPrefix predicate on the "at" field.
+func AtHasPrefix(v string) predicate.Link {
+	return predicate.Link(sql.FieldHasPrefix(FieldAt, v))
+}
+
+// AtHasSuffix applies the HasSuffix predicate on the "at" field.
+func AtHasSuffix(v string) predicate.Link {
+	return predicate.Link(sql.FieldHasSuffix(FieldAt, v))
+}
+
+// AtEqualFold applies the EqualFold predicate on the "at" field.
+func AtEqualFold(v string) predicate.Link {
+	return predicate.Link(sql.FieldEqualFold(FieldAt, v))
+}
+
+// AtContainsFold applies the ContainsFold predicate on the "at" field.
+func AtContainsFold(v string) predicate.Link {
+	return predicate.Link(sql.FieldContainsFold(FieldAt, v))
 }
 
 // SecretEQ applies the EQ predicate on the "secret" field.

@@ -574,6 +574,12 @@ type flow struct {
 	connection string
 	link       bool
 	who        pdid.Id // for a link: whose account is being added to
+
+	// next is where the browser goes back to when the sign-in was started from
+	// the tenant's user console rather than from this page: that console's own
+	// origin, checked to be the tenant's before the round trip, and nil for a
+	// sign-in that ends here.
+	next *url.URL
 }
 
 const stateCookie = "account_state"
@@ -583,6 +589,11 @@ const stateCookie = "account_state"
 // `?connection=entra` names it; left out, a tenant with exactly one provider
 // goes there, and one with several is asked, since guessing would send a
 // person to a directory they are not in.
+//
+// `&next=https://contoso.example` is the user console saying the browser came
+// from it: the round trip ends there instead of here, with a link roster
+// minted for that name (`VouchAcceptRequest.at`). See [App.nextOf] for what is
+// accepted.
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	a.start(w, r, false, pdid.Nil)
 }
@@ -628,12 +639,21 @@ func (a *App) start(w http.ResponseWriter, r *http.Request, link bool, who pdid.
 		return
 	}
 
+	// Where the browser came from, when it came from the tenant's user console:
+	// checked **before** the round trip, because an open redirect with a way in
+	// attached is worse than one without.
+	next, err := a.nextOf(ctx, r.URL.Query().Get("next"), t)
+	if err != nil {
+		http.Error(w, "next: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	state, err := arrives.Nonce()
 	if err != nil {
 		http.Error(w, "cannot start", http.StatusInternalServerError)
 		return
 	}
-	a.flows.Put(state, flow{tenant: t, connection: name, link: link, who: who}, 10*time.Minute)
+	a.flows.Put(state, flow{tenant: t, connection: name, link: link, who: who, next: next}, 10*time.Minute)
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     stateCookie,
@@ -729,6 +749,24 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if f.next != nil {
+		// Started from the tenant's user console, which is where the browser
+		// goes back to -- carrying a link roster minted for **that name** and
+		// that console spends for a session of roster's own. This app keeps a
+		// session as well, as `HandOn` says, so the person is signed in at both
+		// doors they passed through.
+		at := front.Hostname(f.next.Host)
+		handed, err := a.door.HandOn(as, w, f.tenant.id.String(), who.Provider, who.Subject, at)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "account: hand %s/%s on to %s: %v\n", who.Provider, who.Subject, at, err)
+			http.Error(w, "cannot sign in", http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, f.next.String()+"/callback?link="+url.QueryEscape(handed), http.StatusFound)
+
+		return
+	}
+
 	// `Accept` resolves the claim on roster's side and mints the delegation;
 	// the session is this app's and says nothing about the provider.
 	if err := a.door.Accept(as, w, f.tenant.id.String(), who.Provider, who.Subject); err != nil {
@@ -737,6 +775,35 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+// nextOf is the origin a sign-in started from the user console goes back to,
+// or nil for one started here.
+//
+// The name has to be one **this** tenant answers at -- `WhoseHost`, the same
+// lookup that decided which tenant this request is about -- and an origin and
+// nothing more, because the route the link is delivered to is the user
+// console's to name and not the caller's. One answer for a name nobody serves
+// and a name another tenant does: which of the two it was is not the browser's
+// to learn at a form strangers reach.
+func (a *App) nextOf(ctx context.Context, v string, t *tenant) (*url.URL, error) {
+	if v == "" {
+		return nil, nil
+	}
+
+	bad := errors.New("an origin this tenant answers at, and nothing after the host")
+
+	u, err := url.Parse(v)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil ||
+		(u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" {
+		return nil, bad
+	}
+	at, err := a.tenantOf(ctx, u.Host)
+	if err != nil || at != t {
+		return nil, bad
+	}
+
+	return &url.URL{Scheme: u.Scheme, Host: u.Host}, nil
 }
 
 // known makes sure the claim names somebody here, enrolling them if the

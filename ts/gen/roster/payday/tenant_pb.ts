@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/tenant.proto.
  */
 export const file_roster_payday_tenant: GenFile = /*@__PURE__*/
-  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L3RlbmFudC5wcm90bxIGcm9zdGVyIowDCgZUZW5hbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhUKBWFsaWFzGAQgASgJQgbqghYCMAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEioKBmxhYmVscxgHIAMoCzIaLnJvc3Rlci5UZW5hbnQuTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASJAoGY29uZmlnGAggASgLMhQucm9zdGVyLlRlbmFudENvbmZpZxotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOj3K/BUEEgIQAYq7FjEIATIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZEICCgBIARoAIicKDFRlbmFudENvbmZpZxIXCghwYXNzd29yZBgBIAEoCEIFqgECCAFCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L3RlbmFudC5wcm90bxIGcm9zdGVyIowDCgZUZW5hbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhUKBWFsaWFzGAQgASgJQgbqghYCMAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEioKBmxhYmVscxgHIAMoCzIaLnJvc3Rlci5UZW5hbnQuTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASJAoGY29uZmlnGAggASgLMhQucm9zdGVyLlRlbmFudENvbmZpZxotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOj3K/BUEEgIQAYq7FjEIATIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZEICCgBIARoAIjsKDFRlbmFudENvbmZpZxIXCghwYXNzd29yZBgBIAEoCEIFqgECCAESEgoKZnJvbnRfZG9vchgCIAEoCUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Tenant is the wall an app is divided by.
@@ -146,6 +146,33 @@ export type TenantConfig = Message<"roster.TenantConfig"> & {
    * @generated from field: bool password = 1 [features.field_presence = EXPLICIT];
    */
   password: boolean;
+
+  /**
+   * Where this tenant's people sign in through a directory: the origin of
+   * the front door in front of it, `https://account.contoso.example`. Empty is
+   * no front door, which is what a tenant whose people all have passwords is.
+   *
+   * # What roster does with it
+   *
+   * Two things, and the second is the one that makes this a fact rather than an
+   * address a page is handed. The user console asks `AuthService.Offers` what
+   * this name lets somebody in with, and this is where it sends them for a
+   * provider -- the page cannot know, because which of a tenant's `Host` rows
+   * is the front door is not written on the row, and in a development
+   * deployment the two are one name on two ports. And `Vouch.Accept` **refuses
+   * to hand anybody into this tenant's console** while this is empty: a front
+   * door minting a link for a browser to spend at the user console is the
+   * tenant's decision, taken here, and not something a key that may `Accept`
+   * may do to a tenant that never said so.
+   *
+   * An origin and nothing more -- scheme and host, a port if the deployment
+   * needs one -- because the front door's own routes are the front door's
+   * (`/login`, `/callback`) and a path written here would be a second copy of
+   * one of them. `server/core` refuses anything else on the way in.
+   *
+   * @generated from field: string front_door = 2;
+   */
+  frontDoor: string;
 };
 
 /**

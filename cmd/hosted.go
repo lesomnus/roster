@@ -29,6 +29,31 @@ import (
 // HTTP request carries, and `:authority` is gRPC's own.
 var arrivedAt = []string{"x-forwarded-host", "host", ":authority"}
 
+// ArrivedAt is the name this request came in on, as a `Host` row holds one,
+// and empty for a request that carries none.
+//
+// Exported for the one reader that needs the name **beside** the tenant it
+// resolves to. A link a front door hands a browser is spent at the name it was
+// minted for (`Link.at`), so the user console compares the name and not only
+// the tenant: two of a tenant's names are two doors, and a link for one is not
+// a link for the other. `console.WithArrival` is where it goes.
+func ArrivedAt(ctx context.Context) string {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return ""
+	}
+
+	for _, k := range arrivedAt {
+		for _, v := range md.Get(k) {
+			if name := front.Hostname(v); name != "" {
+				return name
+			}
+		}
+	}
+
+	return ""
+}
+
 // Hosted is [console.WithTenant] over `Host` rows: the tenant that claims the
 // name this request arrived at, by alias.
 //
@@ -39,23 +64,7 @@ var arrivedAt = []string{"x-forwarded-host", "host", ":authority"}
 // browser that just sent it.
 func Hosted(db *ent.Client) func(ctx context.Context) (string, error) {
 	return func(ctx context.Context) (string, error) {
-		md, ok := metadata.FromIncomingContext(ctx)
-		if !ok {
-			return "", status.Error(codes.FailedPrecondition,
-				"a sign-in here is about the tenant whose name you arrived at, and this request carries none")
-		}
-
-		name := ""
-		for _, k := range arrivedAt {
-			for _, v := range md.Get(k) {
-				if name = front.Hostname(v); name != "" {
-					break
-				}
-			}
-			if name != "" {
-				break
-			}
-		}
+		name := ArrivedAt(ctx)
 		if name == "" {
 			return "", status.Error(codes.FailedPrecondition,
 				"a sign-in here is about the tenant whose name you arrived at, and this request carries none")

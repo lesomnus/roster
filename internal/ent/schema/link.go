@@ -21,6 +21,8 @@ func (Link) Fields() []ent.Field {
 		field.Uuid("id").
 			Unique().
 			Immutable(),
+		field.String("at").
+			Immutable(),
 		field.Bytes("secret").
 			Immutable(),
 		field.Bytes("issuer").

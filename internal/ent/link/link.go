@@ -12,6 +12,8 @@ const (
 	Label = "link"
 	// FieldId holds the string denoting the id field in the database.
 	FieldId = "id"
+	// FieldAt holds the string denoting the at field in the database.
+	FieldAt = "at"
 	// FieldSecret holds the string denoting the secret field in the database.
 	FieldSecret = "secret"
 	// FieldIssuer holds the string denoting the issuer field in the database.
@@ -53,6 +55,7 @@ const (
 // Columns holds all SQL columns for link fields.
 var Columns = []string{
 	FieldId,
+	FieldAt,
 	FieldSecret,
 	FieldIssuer,
 	FieldDateExpires,
@@ -79,6 +82,11 @@ type OrderOption func(*sql.Selector)
 // ById orders the results by the id field.
 func ById(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldId, opts...).ToFunc()
+}
+
+// ByAt orders the results by the at field.
+func ByAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAt, opts...).ToFunc()
 }
 
 // ByDateExpires orders the results by the date_expires field.
