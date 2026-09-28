@@ -1,0 +1,282 @@
+package cli
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/lesomnus/z"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"github.com/lesomnus/roster/account"
+	"github.com/lesomnus/roster/cmd"
+	rstr "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
+)
+
+// What a front door needs before it can be one, made where it is used.
+//
+// A holder of its own in each tenant it fronts, a role holding exactly what it
+// calls as itself, the binding between them, and a key. `roster login
+// provision` has written those four for the Login App since #36; this is the
+// same four for the account app, and the helpers the two share. Neither makes
+// a tenant: a customer is the tenant's, and a command that made one by
+// mentioning it would be a way to write rows into somebody else's by typo.
+//
+// # Which tenants
+//
+// The ones with a `Host` row. A tenant that registered a name is a tenant a
+// front door fronts (#42), so *who do we front* is a query and not a list --
+// `nominate` reads it the same way. A tenant with no name yet is unreachable
+// from a browser whatever key the app holds, so there is nothing to mint for,
+// and one that registers a name after this ran is fronted after the next run.
+//
+// # Where the key goes
+//
+// Into a file when `out` names a directory -- `roster account provision`, run
+// beside a process of its own -- and into memory when it does not, which is
+// what `roster serve` asks for when `account.keys` says nothing: a key made at
+// start, which is one replica, exactly as `account.seal` reads an empty value.
+// Either way the row is a key like any other. It is in the trail, it can be
+// revoked, and a restart is a rotation -- so what a deployment gives up by
+// writing nothing down is only what a rotation costs, which is that the
+// account page asks everybody to sign in again.
+
+// accountProvisioned is what the account app's rows are called, so that a
+// later run finds them and a person reading a list can tell them from
+// somebody's. `docker/customer.sh` has minted a holder and a key of this name
+// by hand for as long as it existed, which is what makes this the replacement
+// for a runbook step rather than a second name for one.
+const accountProvisioned = "account"
+
+// provisionAccount ensures the account app's rows in every tenant that has a
+// name, mints one key per tenant, and answers with the keys by alias.
+func provisionAccount(ctx context.Context, s *cmd.Server, enrol string, out string) (map[string]string, error) {
+	methods := account.Calls
+	if enrol == "enrolling" {
+		// Making people is wider than signing them in, and it is granted where
+		// a deployment wrote it down and nowhere else -- `LoginMethods` and
+		// `login provision` draw the same line.
+		methods = append(append([]string{}, account.Calls...), rstr.HolderService_Add_FullMethodName)
+	}
+
+	tenants, err := fronted(ctx, s)
+	if err != nil {
+		return nil, err
+	}
+
+	if out != "" {
+		if err := os.MkdirAll(out, 0o700); err != nil {
+			return nil, err
+		}
+	}
+
+	made := map[string]string{}
+	for _, t := range tenants {
+		at := rstr.TenantRef_builder{Id: t.id}.Build()
+
+		who, err := ensureHolderNamed(ctx, s, at, accountProvisioned)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", t.alias, err)
+		}
+		role, err := ensureRoleNamed(ctx, s, at, accountProvisioned, methods)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", t.alias, err)
+		}
+		if err := ensureBinding(ctx, s, role, who); err != nil {
+			return nil, fmt.Errorf("%s: %w", t.alias, err)
+		}
+
+		token, err := mintNamed(ctx, s.Ungated, who, accountProvisioned, methods, keys.PrefixTenant)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", t.alias, err)
+		}
+		made[t.alias] = token
+
+		if out == "" {
+			continue
+		}
+
+		path := filepath.Join(out, t.alias+".key")
+		if err := writeKey(path, token); err != nil {
+			return nil, err
+		}
+		fmt.Fprintf(os.Stderr, "roster: the account app's key for @%s/%s written to %s.\n", t.alias, accountProvisioned, path)
+	}
+
+	return made, nil
+}
+
+// aTenant is one a front door fronts: its identifier and what it is called.
+type aTenant struct {
+	id    []byte
+	alias string
+}
+
+// fronted is every tenant with a `Host` row, once each.
+//
+// Paged, because a deployment fronting many customers has more names than one
+// page holds, and a list read as one page fronts the first twenty of them and
+// says nothing about the rest.
+func fronted(ctx context.Context, s *cmd.Server) ([]aTenant, error) {
+	seen := map[string]bool{}
+	out := []aTenant{}
+
+	after := ""
+	for {
+		vs, err := s.Ungated.Host().List(ctx, rstr.HostListRequest_builder{Size: 100, After: after}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range vs.GetItems() {
+			id := v.GetTenant().GetId()
+			if seen[string(id)] {
+				continue
+			}
+			seen[string(id)] = true
+
+			tn, err := s.Ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+				Ref:    rstr.TenantRef_builder{Id: id}.Build(),
+				Select: rstr.TenantSelect_builder{Alias: z.Ptr(true)}.Build(),
+			}.Build())
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, aTenant{id: id, alias: tn.GetAlias()})
+		}
+
+		if vs.GetNext() == "" {
+			return out, nil
+		}
+		after = vs.GetNext()
+	}
+}
+
+// ensureHolderNamed is a holder called `alias` in the tenant, made if there is
+// none.
+func ensureHolderNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string) ([]byte, error) {
+	v, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: alias}.Build())
+	if err == nil {
+		return v.GetId(), nil
+	}
+	if status.Code(err) != codes.AlreadyExists {
+		return nil, err
+	}
+
+	got, err := s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+		Ref: rstr.HolderRef_builder{
+			Slug: rstr.HolderRefBySlug_builder{Alias: z.Ptr(alias), Tenant: at}.Build(),
+		}.Build(),
+		Select: rstr.HolderSelect_builder{}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	return got.GetId(), nil
+}
+
+// ensureRoleNamed is a role called `alias` holding exactly `methods`.
+//
+// Patched when it is already there rather than left alone: the list grows with
+// the app, and a role written by an older version is an app that starts and
+// then refuses one thing.
+func ensureRoleNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string, methods []string) ([]byte, error) {
+	v, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
+		Tenant: at, Alias: alias, Methods: methods,
+	}.Build())
+	if err == nil {
+		return v.GetId(), nil
+	}
+	if status.Code(err) != codes.AlreadyExists {
+		return nil, err
+	}
+
+	got, err := s.Ungated.Role().Get(ctx, rstr.RoleGetRequest_builder{
+		Ref: rstr.RoleRef_builder{
+			Slug: rstr.RoleRefBySlug_builder{Alias: z.Ptr(alias), Tenant: at}.Build(),
+		}.Build(),
+		// `date_updated` because a patch is refused without the version it is
+		// against -- which is the rule keeping two writers from each thinking
+		// they wrote last.
+		Select: rstr.RoleSelect_builder{DateUpdated: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.Ungated.Role().Patch(ctx, rstr.RolePatchRequest_builder{
+		Ref:         rstr.RoleRef_builder{Id: got.GetId()}.Build(),
+		Methods:     methods,
+		DateUpdated: got.GetDateUpdated(),
+	}.Build()); err != nil {
+		return nil, err
+	}
+
+	return got.GetId(), nil
+}
+
+// ensureBinding binds the role to the holder, once.
+func ensureBinding(ctx context.Context, s *cmd.Server, role, who []byte) error {
+	_, err := s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+		Role:   rstr.RoleRef_builder{Id: role}.Build(),
+		Holder: rstr.HolderRef_builder{Id: who}.Build(),
+	}.Build())
+	if err != nil && status.Code(err) != codes.AlreadyExists {
+		return err
+	}
+
+	return nil
+}
+
+// mintNamed replaces the key called `alias` on a holder, and answers with the
+// token once.
+//
+// Replaced rather than added to: a key's alias is unique per holder and a key
+// cannot be read back, so the row from the last run is of no use to anybody
+// and is one more thing that would answer if it leaked. A restart is a
+// rotation, and nothing accumulates.
+func mintNamed(ctx context.Context, at rstr.Server, who []byte, alias string, methods []string, prefix string) (string, error) {
+	if v, err := at.ApiKey().Get(ctx, rstr.ApiKeyGetRequest_builder{
+		Ref: rstr.ApiKeyRef_builder{
+			Slug: rstr.ApiKeyRefBySlug_builder{Holder: rstr.HolderRef_builder{Id: who}.Build(), Alias: z.Ptr(alias)}.Build(),
+		}.Build(),
+		Select: rstr.ApiKeySelect_builder{}.Build(),
+	}.Build()); err == nil {
+		if _, err := at.ApiKey().Erase(ctx, rstr.ApiKeyRef_builder{Id: v.GetId()}.Build()); err != nil {
+			return "", err
+		}
+	} else if status.Code(err) != codes.NotFound {
+		return "", err
+	}
+
+	token, sum, err := keys.Mint(prefix)
+	if err != nil {
+		return "", err
+	}
+	if _, err := at.ApiKey().Add(ctx, rstr.ApiKeyAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: who}.Build(), Alias: alias,
+		Secret: sum, Methods: methods,
+	}.Build()); err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
+// writeKey puts a token into a file that is either whole or not there.
+//
+// `0600` in a directory made at `0700`: what is written is a credential, and
+// the only reader is the process beside it. Written beside and moved into
+// place, because that reader waits on the file's existence (`docker/account.sh`)
+// and a half-written key is a refused start with nothing saying why.
+func writeKey(path, token string) error {
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, []byte(token+"\n"), 0o600); err != nil {
+		return err
+	}
+
+	return os.Rename(tmp, path)
+}

@@ -65,7 +65,66 @@ func NewCmdAccount(c *cmd.Config) *xli.Command {
 		Name:  "account",
 		Brief: "the front door a customer's people sign in at",
 
-		Commands: xli.Commands{newCmdAccountServe(c)},
+		Commands: xli.Commands{newCmdAccountServe(c), newCmdAccountProvision(c)},
+	}
+}
+
+// newCmdAccountProvision is `roster account provision`: this app's own rows
+// and keys, made where they are used -- `roster login provision` for the other
+// front door, and `cli/provision.go` says what the four rows are and why they
+// are ensured rather than written once.
+//
+// A process of its own reads what this writes:
+//
+//	account:
+//	  keys: { contoso: file:/run/roster-account/contoso.key }
+//
+// Inside `roster serve` nothing runs this. `account.keys` left empty is the
+// same rows and a key made at start, in memory, which is one replica.
+func newCmdAccountProvision(c *cmd.Config) *xli.Command {
+	return &xli.Command{
+		Name:  "provision",
+		Brief: "mint this deployment's own account app keys into a directory, one per tenant with a name, for `account.keys: {alias: file:…}`",
+
+		Flags: flg.Flags{
+			&flg.String{Name: "out", Brief: "the directory to write <alias>.key into; /run/roster-account if empty"},
+		},
+
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			out, _ := flg.Find[string](cl, "out")
+			if out == "" {
+				out = "/run/roster-account"
+			}
+
+			s, err := cmd.Build(ctx, *c)
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+
+			// Both planes, the way `serve` says it: this runs beside the server
+			// on a fresh volume, and `login provision` learned on an empty
+			// cluster what a command that assumes the tables are there does on
+			// the first boot it exists for.
+			if err := Ready(ctx, s, *c); err != nil {
+				return err
+			}
+
+			made, err := provisionAccount(ctx, s, c.Account.Enrol, out)
+			if err != nil {
+				return err
+			}
+			if len(made) == 0 {
+				// Said and not refused, for `login provision`'s reason: this
+				// runs on every start, and a fresh volume having nobody to
+				// front is not a deployment that should fail to come up.
+				fmt.Fprintln(os.Stderr,
+					"roster: no tenant has a `Host` row yet, so there is nobody to front."+
+						" A tenant registers a name and this runs again on the next start.")
+			}
+
+			return nil
+		}),
 	}
 }
 
