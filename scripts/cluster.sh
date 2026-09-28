@@ -15,6 +15,14 @@
 #     ./scripts/cluster.sh            # up, check, down
 #     ./scripts/cluster.sh --hold     # leave it up to look at
 #
+# It builds the two images it needs, unless it is handed them:
+#
+#     ROSTER_APP_IMAGE=... ROSTER_DEV_IMAGE=... ./scripts/cluster.sh
+#
+# which is CI, where one job compiles and every job after it copies
+# (`docker-bake.hcl`, `DIST`). What is handed in has to be this checkout's; the
+# script has no way to tell.
+#
 # Not in `scripts/test.sh`: it needs an engine and a few minutes, like
 # `hydra.sh` and `e2e.sh`.
 #
@@ -81,6 +89,8 @@ cd "${__root}"
 : "${CLUSTER:=roster-e2e}"
 : "${NS:=roster}"
 : "${KUBECTL_IMAGE:=alpine/k8s:1.31.0}"
+: "${ROSTER_APP_IMAGE:=}"
+: "${ROSTER_DEV_IMAGE:=}"
 
 hold=""
 for v in "$@"; do
@@ -391,8 +401,19 @@ echo "== the images this checkout builds"
 # walks -- all of which is right for what it ships and all of which a walk
 # needs. So the walk runs the `dev` stage, the same one `scripts/hydra.sh` runs
 # against compose, and the thing under test is still the `app` one.
-tried docker build -q --target app -t "roster-cluster:${CLUSTER}" . >/dev/null
-tried docker build -q --target dev -t "roster-walk:${CLUSTER}" . >/dev/null
+#
+# Either one handed in is tagged rather than built, under the same name, so
+# nothing below knows which it was.
+image() {
+	local stage="$1" given="$2" name="$3"
+	if [ -n "${given}" ]; then
+		docker tag "${given}" "${name}"
+	else
+		tried docker build -q --target "${stage}" -t "${name}" . >/dev/null
+	fi
+}
+image app "${ROSTER_APP_IMAGE}" "roster-cluster:${CLUSTER}"
+image dev "${ROSTER_DEV_IMAGE}" "roster-walk:${CLUSTER}"
 standing
 
 # Its output rather than its status, because a node that refuses the copy is an

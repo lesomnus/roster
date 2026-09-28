@@ -16,6 +16,7 @@
 #
 #     ./scripts/hydra.sh            # up, walk, down
 #     ./scripts/hydra.sh --hold     # leave it up to look at
+#     ROSTER_DEV_IMAGE=... ./scripts/hydra.sh   # with an image already built
 #
 # Not in `scripts/test.sh` for `scripts/e2e.sh`'s reason: it needs an engine and
 # a minute. CI runs it as a job of its own.
@@ -67,7 +68,16 @@ echo "== up"
 #
 # This is the step that waits: `login` depends on `customer` having **completed**,
 # so when it returns the tenant is seeded and the app has its key.
-docker compose up -d --build login >/dev/null
+#
+# `--build` unless an image is handed in as `ROSTER_DEV_IMAGE`, which
+# `compose.yaml` runs instead of building one. That is CI, where the binaries are
+# compiled once and this job gets the image they were copied into; like
+# `scripts/cluster.sh`'s, what is handed in has to be this checkout's.
+build=--build
+if [ -n "${ROSTER_DEV_IMAGE:-}" ]; then
+	build=
+fi
+docker compose up -d ${build} login >/dev/null
 
 # `customer.sh` has already run -- `login` waits on it -- so the person exists
 # and this is the identifier the token has to name.

@@ -58,6 +58,12 @@ services:
     # deployment runs -- distroless, nonroot, no shell -- and `dev` is this one,
     # which adds a shell and the scripts in `docker/` so that `up` leaves a
     # deployment with a customer in it. See the head of `Dockerfile`.
+    #
+    # Named, and the same name on every service built from it, so that an image
+    # built somewhere else can be the one this runs: `scripts/hydra.sh` in CI is
+    # handed the one the `build` job's binaries were copied into, and does not
+    # compile them again. `up --build` builds it under this name as before.
+    image: ${ROSTER_DEV_IMAGE:-roster-dev}
     build:
       context: .
       target: dev
@@ -153,6 +159,7 @@ services:
   # account app answers on, and the app's key. Reads the databases directly, as
   # a shell on the box would, so it carries the same connection settings.
   customer:
+    image: ${ROSTER_DEV_IMAGE:-roster-dev}
     build:
       context: .
       target: dev
@@ -178,6 +185,7 @@ services:
   # The account app: its own process, fronting roster over the wire with the
   # key above, the way it is deployed.
   account:
+    image: ${ROSTER_DEV_IMAGE:-roster-dev}
     build:
       context: .
       target: dev
@@ -200,6 +208,7 @@ services:
   #
   #     ldapsearch -H ldap://localhost:1389 -x   #       -D uid=erin,ou=people,o=contoso -w rt_… -b o=contoso '(objectClass=inetOrgPerson)'
   ldap:
+    image: ${ROSTER_DEV_IMAGE:-roster-dev}
     build:
       context: .
       target: dev
@@ -418,6 +427,7 @@ services:
   #       --endpoint http://localhost:4444 --port 5555 \
   #       --scope openid,offline,profile,email
   login:
+    image: ${ROSTER_DEV_IMAGE:-roster-dev}
     build:
       context: .
       target: dev
@@ -511,6 +521,7 @@ services:
   # the **URLs this app builds** were checked against nothing, and the first one
   # that was wrong was found by a person clicking sign out in a cluster.
   product:
+    image: ${ROSTER_DEV_IMAGE:-roster-dev}
     build:
       context: .
       target: dev

@@ -10,6 +10,13 @@
 # The image is the last job and it `needs` every other one, so what reaches the
 # registry is what the gates passed. It was its own workflow for a commit, which
 # is the arrangement where a red `ci` does not stop a push.
+#
+# And roster is compiled for an image **once**, by `build`. The jobs that test an
+# image and the one that pushes it copy those binaries onto a base and do not
+# compile them again -- so what `cluster` and `hydra` walked is, byte for byte,
+# the binary that is pushed. It was compiled four times a run before this, in
+# three jobs, and the one that was pushed was not one of the ones tested: only
+# the image job handed in `APP_VERSION`.
 name: ci
 
 # `workflow_dispatch` because the image job is here: a rebuild of what `main`
@@ -22,6 +29,45 @@ on:
   pull_request:
 
 jobs:
+  # The binaries of every platform, and the pages, compiled once: `dist` in
+  # `docker-bake.hcl`, cross-compiled from this runner's architecture.
+  #
+  # A tar and not the directory, because an artifact does not keep file modes
+  # and a binary that arrives without `x` is an image that does not start. One
+  # day, because nothing reads it after this run.
+  #
+  # The timestamp is taken here and handed to `image`, because `APP_VERSION` is
+  # derived from it and is compiled into the binary: a run that crossed midnight
+  # would otherwise tag the image with a day the binary does not say.
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      timestamp: ${{ steps.when.outputs.timestamp }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: when
+        run: echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/bake-action@v7
+        env:
+          BUILD_ID: r${{ github.run_id }}
+          BUILD_TIMESTAMP: ${{ steps.when.outputs.timestamp }}
+        with:
+          source: .
+          files: docker-bake.hcl
+          targets: dist
+          set: |
+            dist.output=type=tar,dest=dist.tar
+            dist.cache-from=type=gha,scope=dist
+            dist.cache-to=type=gha,scope=dist,mode=max
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist.tar
+          retention-days: 1
+
   go:
     runs-on: ubuntu-latest
     steps:
@@ -172,11 +218,24 @@ jobs:
   # Its own job because it is `compose.yaml` and an engine rather than a `go
   # test`, and because a minute of it is not a minute every other job should
   # pay.
+  #
+  # The compose image is `build`'s binaries copied onto alpine -- `DIST` in
+  # `docker-bake.hcl` -- and handed to the script rather than built by it.
   hydra:
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+      - run: mkdir dist && tar -xf dist.tar -C dist
+      - run: docker buildx bake -f docker-bake.hcl --set '*.platform=linux/amd64' --load dev
+        env:
+          DIST: ./dist
       - run: ./scripts/hydra.sh
+        env:
+          ROSTER_DEV_IMAGE: roster-dev
 
   # The reference deployment, in a real cluster, and the class no fresh process
   # can see.
@@ -200,15 +259,29 @@ jobs:
   # gate that is sometimes skipped is also a gate somebody has to reason about
   # before trusting it, and this one is ten minutes on a runner nobody is waiting
   # for.
+  #
+  # Both images out of `build`'s binaries, as `hydra` does: the `app` one that is
+  # under test, and the `dev` one the walks run in.
   cluster:
+    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+      - run: mkdir dist && tar -xf dist.tar -C dist
+      - run: docker buildx bake -f docker-bake.hcl --set '*.platform=linux/amd64' --set app.tags=roster-app --load app dev
+        env:
+          DIST: ./dist
       # Pinned, because the installer follows `main` otherwise and a cluster that
       # comes up differently next month is a red run about the wrong thing.
       - run: curl -sSL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.9.0 bash
       - run: ./scripts/cluster.sh
+        env:
+          ROSTER_APP_IMAGE: roster-app
+          ROSTER_DEV_IMAGE: roster-dev
 
   # The image, last, and only after everything above is green.
   #
@@ -219,10 +292,14 @@ jobs:
   #
   # Built on every pull request and pushed only from `main`. What is there has
   # to be deployable, and a branch that has not been merged is not that; a
-  # change that breaks the build still fails here rather than on the day
+  # change that breaks the build still fails in `build` rather than on the day
   # somebody deploys.
+  #
+  # Built out of `build`'s binaries and not out of the source: every platform's
+  # image is those files copied onto distroless, so this compiles nothing, and
+  # the binary pushed is the one `cluster` and `hydra` ran.
   image:
-    needs: [go, postgres, ts, e2e, hydra, cluster]
+    needs: [build, go, postgres, ts, e2e, hydra, cluster]
     runs-on: ubuntu-latest
 
     permissions:
@@ -233,15 +310,20 @@ jobs:
       TAG: edge
       BUILD_HASH: ${{ github.sha }}
       BUILD_ID: r${{ github.run_id }}
+      BUILD_TIMESTAMP: ${{ needs.build.outputs.timestamp }}
+      DIST: ./dist
 
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+      - run: mkdir dist && tar -xf dist.tar -C dist
       - uses: docker/setup-buildx-action@v4
 
-      # No QEMU. Both stages that do work build on the runner's architecture
-      # and cross-compile, so `linux/arm64` is a second link rather than a
-      # second run under emulation -- see `Dockerfile`. Setting it up anyway
-      # would be minutes a build, spent on nothing.
+      # No QEMU. Nothing here runs: the `app` stage is copies onto distroless,
+      # and the compiling was `build`'s, cross from the runner's architecture --
+      # see `Dockerfile`. Setting it up anyway would be time spent on nothing.
 
       - uses: docker/login-action@v4
         if: github.event_name == 'push'
@@ -254,12 +336,14 @@ jobs:
         id: build
         uses: docker/bake-action@v7
         with:
+          # The checkout, not the action's default of the commit fetched again:
+          # `./dist` is in neither the repository nor its history. And no cache,
+          # because there is nothing here worth keeping -- the layers are files
+          # this run just downloaded.
+          source: .
           files: docker-bake.hcl
           targets: app
           push: ${{ github.event_name == 'push' }}
-          set: |
-            app.cache-from=type=gha,scope=app
-            app.cache-to=type=gha,scope=app,mode=max
 
       # What was pushed, said once, rather than left for somebody to ask the
       # registry what a moving tag points at now. `:edge` moves; the digest is
