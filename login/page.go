@@ -46,9 +46,17 @@ func (a *App) page() http.Handler {
 			r.URL.Path = "/"
 		}
 
-		// A form for one flow. Nothing here is cacheable and a stale copy is a
-		// browser posting to a challenge that has been spent.
-		w.Header().Set("cache-control", "no-store")
+		// A form for one flow: a stale copy of the document is a browser
+		// posting to a challenge that has been spent, so it is not kept at
+		// all. The document, and not what it loads. The bundles under
+		// `assets/` are named by their content and carry no challenge, and
+		// what a browser may keep of them is the file server's to say
+		// (`cmd.Page`) -- it was `no-store` on everything, which threw away
+		// the caching of the one thing here that is safe to cache, and was
+		// the one page of the four that set anything at all (#69).
+		if r.URL.Path == "/" {
+			w.Header().Set("cache-control", "no-store")
+		}
 		a.c.Page.ServeHTTP(w, r)
 	})
 }

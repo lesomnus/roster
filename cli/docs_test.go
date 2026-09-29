@@ -61,6 +61,7 @@ var elsewhere = map[string]string{
 	"./esm/vs/*.js":               "the same",
 	"public/":                     "vite's convention, named in a comment about it",
 	"ts/public/":                  "`npm run wasm` writes it, so a checkout has no such directory; named in the comment about why it is not counted",
+	"assets/":                     "vite's output beside a page's index, under ts/dist/, which a checkout has no copy of; named by the comments about what a browser may keep of it",
 	"lib/route.ts":                "relative to ts/console, where the comment is",
 	"clients/*.json":              "relative to deploy/, and a glob",
 	"migrations/":                 "named to say there is not one",

@@ -734,7 +734,7 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		}
 	}
 	if lc.Page.Dir != "" {
-		cfg.Page = http.FileServer(http.Dir(lc.Page.Dir))
+		cfg.Page = cmd.Page(lc.Page.Dir)
 	}
 
 	a, err := login.New(ctx, cfg)

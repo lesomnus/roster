@@ -431,8 +431,10 @@ And the rules, which are the part that is easy to get wrong and the reason
 - **Hold nothing.** No token, no continuation, no idea how many steps there are.
   The cookie the app set is the whole of the state, so script on the page has
   nothing to reach.
-- **Nothing is cacheable.** `cache-control: no-store` is set for you on every
-  screen; a stale copy is a browser posting to a challenge that has been spent.
+- **The document is never kept.** `cache-control: no-store` is set for you on
+  every screen; a stale copy is a browser posting to a challenge that has been
+  spent. What the screen loads is another matter: the bundles beside it are
+  named by their content and served `immutable`, like every other page's.
 - **An answer you do not recognise is a refusal, not a crash.** Two rows above
   gained a state after they were first written, and a page that draws *this did not
   work* for an unknown answer survives that. It is the one thing asked of a page in

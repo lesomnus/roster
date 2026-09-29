@@ -1409,21 +1409,26 @@ func (s *Server) serveControlHttp(ctx context.Context, c Config, g *grpc.Server)
 // thing: a directory, served at the root of the listener whose RPCs it calls.
 //
 // A path that is not a file is the index, which is what a page that routes in
-// the browser needs on reload. `config.json` is the one thing the page has to
-// be told that its own origin does not say.
+// the browser needs on reload. What the files are served with is [Page]'s,
+// which is where what a browser may keep of them is decided.
 func ConsoleMount(c ConsoleConfig) func(*web.Mux) {
 	return func(m *web.Mux) {
 		if c.Dir == "" {
 			return
 		}
-		files := http.FileServer(http.Dir(c.Dir))
+		page := Page(c.Dir)
 		m.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			at := filepath.Join(c.Dir, filepath.FromSlash(strings.TrimPrefix(r.URL.Path, "/")))
 			if st, err := os.Stat(at); err != nil || st.IsDir() {
-				http.ServeFile(w, r, filepath.Join(c.Dir, "index.html"))
-				return
+				// The index by its own path rather than `ServeFile` on the
+				// file, so that what [Page] says about it is said about the
+				// document: a bundle that is gone is answered with the index,
+				// and must not be answered with the index kept for a year
+				// under the bundle's name.
+				r = r.Clone(r.Context())
+				r.URL.Path = "/"
 			}
-			files.ServeHTTP(w, r)
+			page.ServeHTTP(w, r)
 		}))
 	}
 }

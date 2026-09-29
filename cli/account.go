@@ -259,7 +259,7 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 		return fmt.Errorf("account.enrol (--enrol): %q is not one of invited, expected, enrolling", ac.Enrol)
 	}
 	if ac.Page.Dir != "" {
-		cfg.Static = http.FileServer(http.Dir(ac.Page.Dir))
+		cfg.Static = cmd.Page(ac.Page.Dir)
 	}
 
 	// The cookie is this app's, and the session is **in** it: sealed under a

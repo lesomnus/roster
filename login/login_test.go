@@ -645,6 +645,35 @@ func (d *deployment) signIn(t *testing.T, b *http.Client, challenge, who, secret
 	return to.To, res.StatusCode
 }
 
+// TestTheFormIsNeverKeptAndWhatItLoadsIsNotItsToSay is `page()`'s one header.
+//
+// `no-store` on the document, because a stale copy of it is a browser posting
+// to a challenge that has been spent. It was `no-store` on every path, which
+// threw away the caching of the bundles under `assets/` -- named by their
+// content, carrying no challenge -- and was the one page of roster's four that
+// set anything at all (#69). What a browser may keep of a bundle is the file
+// server's to say (`cmd.Page`), and this app now leaves it to say it.
+func TestTheFormIsNeverKeptAndWhatItLoadsIsNotItsToSay(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+	b := d.browser(t)
+
+	d.hydra.raise("c1", "contoso-web")
+
+	res, err := b.Get(d.app.URL + "/login?login_challenge=c1")
+	x.NoError(err)
+	defer res.Body.Close()
+	x.Equal(http.StatusOK, res.StatusCode)
+	x.Equal("no-store", res.Header.Get("Cache-Control"), "a screen bound to a challenge was left for the browser to keep")
+
+	// A bundle's road: the fixture answers 404, as a build does for a name it
+	// has not got, and what matters is that this app said nothing about it.
+	res, err = b.Get(d.app.URL + "/assets/index-DTU4Ooe7.js")
+	x.NoError(err)
+	defer res.Body.Close()
+	x.NotEqual("no-store", res.Header.Get("Cache-Control"), "the app overruled the file server about a bundle")
+}
+
 // TestALoginAppTellsHydraWhoSignedIn is the whole of it, once, end to end.
 //
 // A browser arrives with a challenge, types a password, and what Hydra is told
