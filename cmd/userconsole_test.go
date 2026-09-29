@@ -156,6 +156,56 @@ func TestTheUserConsoleAndItsDoorAreOneListener(t *testing.T) {
 		x.Contains(body, `"alias":"someone"`)
 		x.NotContains(body, "somebody-else")
 	})
+
+	// #70, over the transcoder, which is the road a browser takes: the session
+	// goes from under the cookie, and the cookie the jar held is presented by
+	// hand from then on, the way a browser that was not told otherwise would.
+	// `TestASessionTheServerHasForgottenIsNobodyAtTheDoor` is the same on the
+	// wire a client speaks; what is checked here is the two headers -- one on a
+	// refusal -- reaching a browser.
+	t.Run("and a session the server has forgotten is nobody at the door, and dropped", func(t *testing.T) {
+		x := require.New(t)
+
+		held := jar.Cookies(mustUrl(t, srv.URL))
+		x.NotEmpty(held, "nothing was holding a session to forget")
+		code, body := post("/roster.AuthService/SignOut", `{}`)
+		x.Equal(http.StatusOK, code, body)
+
+		with := func(path string) *http.Response {
+			t.Helper()
+
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL+path, strings.NewReader(`{}`))
+			x.NoError(err)
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Connect-Protocol-Version", "1")
+			for _, c := range held {
+				req.AddCookie(c)
+			}
+
+			res, err := http.DefaultClient.Do(req)
+			x.NoError(err)
+			t.Cleanup(func() { _ = res.Body.Close() })
+
+			return res
+		}
+		dropped := func(res *http.Response) bool {
+			for _, c := range res.Cookies() {
+				if c.Name == held[0].Name && c.Value == "" && c.MaxAge < 0 {
+					return true
+				}
+			}
+
+			return false
+		}
+
+		res := with("/roster.MeService/Get")
+		x.Equal(http.StatusUnauthorized, res.StatusCode, "a dead cookie was served")
+		x.True(dropped(res), "the browser was left carrying a key nothing holds: %v", res.Header.Values("Set-Cookie"))
+
+		res = with("/roster.AuthService/Offers")
+		x.Equal(http.StatusOK, res.StatusCode, "the page could not learn how to sign in")
+		x.True(dropped(res), "the browser was left carrying a key nothing holds: %v", res.Header.Values("Set-Cookie"))
+	})
 }
 
 // TestAUserConsoleWithNoDoorIsRefused is the pair of settings that builds a

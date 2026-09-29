@@ -244,6 +244,72 @@ func TestThePageIsToldWhetherThereIsAFormToDraw(t *testing.T) {
 	x.Error(err, "a name no tenant claims was answered about somebody")
 }
 
+// TestASessionTheServerHasForgottenIsNobodyAtTheDoor is #70.
+//
+// A session that idled out leaves its cookie in the browser, and every call
+// the user console then made was refused before the handler -- the two that
+// exist to be callable without a credential included. So the page could not
+// learn how to sign in, drew a password form as its fallback, and that form
+// could not work either; the only way out was deleting the cookie by hand.
+//
+// The rule is payday's (`auth.Public`): a credential that is no good is nobody
+// on a method that asks nothing of the caller, and every answer to it clears
+// the cookie. What is pinned here is that roster's two doors are those methods,
+// that `Me` still is not, and that the sign-in the page then makes wins over
+// the cookie it was made with.
+func TestASessionTheServerHasForgottenIsNobodyAtTheDoor(t *testing.T) {
+	x := require.New(t)
+
+	b, ctx := build(t, func(c *cmd.Config) { c.SignIn.Enabled = true })
+	answersAt(t, b.Server, b.Contoso, "contoso.example")
+
+	res, err := b.Ungated.Credential().Issue(ctx, app.CredentialIssueRequest_builder{
+		Ref: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+	secret := res.GetSecret()
+
+	conn := pdtest.Serve(t, b.grpc(t))
+	auth := app.NewAuthServiceClient(conn)
+	at := metadata.NewOutgoingContext(ctx, arrivingAt(t, "contoso.example"))
+
+	// A session, and then the row gone from under it: signed out here, idled
+	// out in the wild, and one answer for both.
+	var h metadata.MD
+	_, err = auth.SignIn(at, app.AuthSignInRequest_builder{Alias: "someone", Password: secret}.Build(), grpc.Header(&h))
+	x.NoError(err)
+	dead := cookieIn(t, h)
+	carrying := metadata.NewOutgoingContext(ctx,
+		metadata.Join(arrivingAt(t, "contoso.example"), metadata.Pairs("cookie", dead)))
+
+	_, err = auth.SignOut(carrying, app.AuthSignOutRequest_builder{}.Build())
+	x.NoError(err)
+
+	// Where the method asks who is calling: refused, as before.
+	_, err = app.NewMeServiceClient(conn).Get(carrying, app.MeGetRequest_builder{}.Build())
+	x.Equal(codes.Unauthenticated, status.Code(err), "a dead cookie was served")
+
+	// Where it does not: the page learns what to draw ...
+	got, err := auth.Offers(carrying, app.AuthOffersRequest_builder{}.Build())
+	x.NoError(err, "a dead cookie shut the door it exists to open")
+	x.True(got.GetPassword())
+
+	// ... draws it, and the form works with the dead cookie still in the
+	// browser. What comes back is the cookie that clears the dead one and then
+	// the live one, in that order, so a browser applying them ends signed in.
+	h = metadata.MD{}
+	_, err = auth.SignIn(carrying, app.AuthSignInRequest_builder{Alias: "someone", Password: secret}.Build(), grpc.Header(&h))
+	x.NoError(err, "the form the page drew could not work")
+	x.Len(h.Get("set-cookie"), 2, "the dead cookie was not dropped, or the live one not minted: %v", h.Get("set-cookie"))
+	live := cookieIn(t, h)
+	x.NotEqual(dead, live)
+
+	_, err = app.NewMeServiceClient(conn).Get(
+		metadata.NewOutgoingContext(ctx, metadata.Pairs("cookie", live)),
+		app.MeGetRequest_builder{}.Build())
+	x.NoError(err, "the session the page got names nobody")
+}
+
 // answersAt is a name a tenant answers at, which is a `Host` row.
 func answersAt(t *testing.T, s *cmd.Server, in pdid.Id, name string) {
 	t.Helper()
