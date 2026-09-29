@@ -117,8 +117,8 @@ type AuthSignInRequest_builder struct {
 	//
 	// `Delegate` is its own method rather than a field on `Verify` because a
 	// role grants methods, and a field would make one grant mean two things.
-	// Nothing grants this: `SignIn` is the one public method here, and what it
-	// takes is not a permission but a proof. A second proof is a field on the
+	// Nothing grants this: `SignIn` is public, and what it takes is not a
+	// permission but a proof. A second proof is a field on the
 	// verb that spends proofs, the way a continuation is on `Delegate`.
 	//
 	// # It is not `Vouch.Redeem`

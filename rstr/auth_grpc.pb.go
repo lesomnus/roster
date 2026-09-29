@@ -106,11 +106,16 @@ const (
 // A field would be worse than either: a caller naming the tenant it would like
 // to be checked against is a caller choosing which passwords it is guessing at.
 //
-// And it is the one method here served without a credential, which it has to be
-// -- that is what is being asked for. What that costs is the same thing an HTTP
-// `/session` cost: anybody who reaches the port may guess passwords, and the
-// rate limit counts per tenant off a frame a public call has none of. The
-// answers are the lockout in `server/vouch`, the control listener being
+// And `SignIn` is served without a credential, which it has to be -- that is
+// what is being asked for -- as is `Offers`, which a page asks one step earlier
+// to know what to draw. Both are served to a browser whose cookie names a
+// session this server has forgotten, too: a caller with a dead credential is
+// exactly who asks how to sign in, and refusing them there was a page that
+// could not learn what to draw and drew a form that could not work (#70; the
+// rule is payday's, `auth.Public`). What being public costs is the same thing
+// an HTTP `/session` cost: anybody who reaches the port may guess passwords,
+// and the rate limit counts per tenant off a frame a public call has none of.
+// The answers are the lockout in `server/vouch`, the control listener being
 // private, and the data plane's door being shut until a deployment opens it.
 type AuthServiceClient interface {
 	// SignIn checks a secret and sets the cookie.
@@ -284,11 +289,16 @@ func (c *authServiceClient) Offers(ctx context.Context, in *AuthOffersRequest, o
 // A field would be worse than either: a caller naming the tenant it would like
 // to be checked against is a caller choosing which passwords it is guessing at.
 //
-// And it is the one method here served without a credential, which it has to be
-// -- that is what is being asked for. What that costs is the same thing an HTTP
-// `/session` cost: anybody who reaches the port may guess passwords, and the
-// rate limit counts per tenant off a frame a public call has none of. The
-// answers are the lockout in `server/vouch`, the control listener being
+// And `SignIn` is served without a credential, which it has to be -- that is
+// what is being asked for -- as is `Offers`, which a page asks one step earlier
+// to know what to draw. Both are served to a browser whose cookie names a
+// session this server has forgotten, too: a caller with a dead credential is
+// exactly who asks how to sign in, and refusing them there was a page that
+// could not learn what to draw and drew a form that could not work (#70; the
+// rule is payday's, `auth.Public`). What being public costs is the same thing
+// an HTTP `/session` cost: anybody who reaches the port may guess passwords,
+// and the rate limit counts per tenant off a frame a public call has none of.
+// The answers are the lockout in `server/vouch`, the control listener being
 // private, and the data plane's door being shut until a deployment opens it.
 type AuthServiceServer interface {
 	// SignIn checks a secret and sets the cookie.

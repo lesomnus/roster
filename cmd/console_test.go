@@ -655,6 +655,14 @@ func TestTheAdminPortIsTheWholeOfTheConsolesPath(t *testing.T) {
 		defer res.Body.Close()
 
 		x.Equal(http.StatusUnauthorized, res.StatusCode, "a signed-out cookie was served")
+
+		// And told to drop it (#70): a key nothing holds is otherwise presented
+		// on every call, the sign-in page's included.
+		dropped := false
+		for _, c := range res.Cookies() {
+			dropped = dropped || (c.Name == held[0].Name && c.Value == "" && c.MaxAge < 0)
+		}
+		x.True(dropped, "the browser was left carrying a key nothing holds: %v", res.Header.Values("Set-Cookie"))
 	})
 }
 
