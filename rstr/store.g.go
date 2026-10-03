@@ -47,6 +47,7 @@ type Server interface {
 	Binding() BindingServiceServer
 	SiteMembership() SiteMembershipServiceServer
 	TeamMembership() TeamMembershipServiceServer
+	Nomination() NominationServiceServer
 	Session() SessionServiceServer
 	Audit() AuditServiceServer
 	Outbox() OutboxServiceServer
@@ -78,6 +79,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterBindingServiceServer(g, s.Binding())
 	RegisterSiteMembershipServiceServer(g, s.SiteMembership())
 	RegisterTeamMembershipServiceServer(g, s.TeamMembership())
+	RegisterNominationServiceServer(g, s.Nomination())
 	RegisterSessionServiceServer(g, s.Session())
 	RegisterAuditServiceServer(g, s.Audit())
 	RegisterOutboxServiceServer(g, s.Outbox())
@@ -105,6 +107,7 @@ type UnimplementedServer struct {
 	BindingServer         BindingServiceServer
 	SiteMembershipServer  SiteMembershipServiceServer
 	TeamMembershipServer  TeamMembershipServiceServer
+	NominationServer      NominationServiceServer
 	SessionServer         SessionServiceServer
 	AuditServer           AuditServiceServer
 	OutboxServer          OutboxServiceServer
@@ -151,6 +154,9 @@ func (UnimplementedServer) SiteMembership() SiteMembershipServiceServer {
 func (UnimplementedServer) TeamMembership() TeamMembershipServiceServer {
 	return UnimplementedTeamMembershipServiceServer{}
 }
+func (UnimplementedServer) Nomination() NominationServiceServer {
+	return UnimplementedNominationServiceServer{}
+}
 func (UnimplementedServer) Session() SessionServiceServer { return UnimplementedSessionServiceServer{} }
 func (UnimplementedServer) Audit() AuditServiceServer     { return UnimplementedAuditServiceServer{} }
 func (UnimplementedServer) Outbox() OutboxServiceServer   { return UnimplementedOutboxServiceServer{} }
@@ -177,6 +183,7 @@ type StaticServer struct {
 	BindingServer         BindingServiceServer
 	SiteMembershipServer  SiteMembershipServiceServer
 	TeamMembershipServer  TeamMembershipServiceServer
+	NominationServer      NominationServiceServer
 	SessionServer         SessionServiceServer
 	AuditServer           AuditServiceServer
 	OutboxServer          OutboxServiceServer
@@ -203,6 +210,7 @@ func (s StaticServer) Role() RoleServiceServer                       { return s.
 func (s StaticServer) Binding() BindingServiceServer                 { return s.BindingServer }
 func (s StaticServer) SiteMembership() SiteMembershipServiceServer   { return s.SiteMembershipServer }
 func (s StaticServer) TeamMembership() TeamMembershipServiceServer   { return s.TeamMembershipServer }
+func (s StaticServer) Nomination() NominationServiceServer           { return s.NominationServer }
 func (s StaticServer) Session() SessionServiceServer                 { return s.SessionServer }
 func (s StaticServer) Audit() AuditServiceServer                     { return s.AuditServer }
 func (s StaticServer) Outbox() OutboxServiceServer                   { return s.OutboxServer }
@@ -229,6 +237,7 @@ type Client interface {
 	Binding() BindingServiceClient
 	SiteMembership() SiteMembershipServiceClient
 	TeamMembership() TeamMembershipServiceClient
+	Nomination() NominationServiceClient
 	Session() SessionServiceClient
 	Audit() AuditServiceClient
 	Outbox() OutboxServiceClient
@@ -257,6 +266,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Binding:         NewBindingServiceClient(c),
 		_SiteMembership:  NewSiteMembershipServiceClient(c),
 		_TeamMembership:  NewTeamMembershipServiceClient(c),
+		_Nomination:      NewNominationServiceClient(c),
 		_Session:         NewSessionServiceClient(c),
 		_Audit:           NewAuditServiceClient(c),
 		_Outbox:          NewOutboxServiceClient(c),
@@ -285,6 +295,7 @@ type client struct {
 	_Binding         BindingServiceClient
 	_SiteMembership  SiteMembershipServiceClient
 	_TeamMembership  TeamMembershipServiceClient
+	_Nomination      NominationServiceClient
 	_Session         SessionServiceClient
 	_Audit           AuditServiceClient
 	_Outbox          OutboxServiceClient
@@ -311,6 +322,7 @@ func (c *client) Role() RoleServiceClient                       { return c._Role
 func (c *client) Binding() BindingServiceClient                 { return c._Binding }
 func (c *client) SiteMembership() SiteMembershipServiceClient   { return c._SiteMembership }
 func (c *client) TeamMembership() TeamMembershipServiceClient   { return c._TeamMembership }
+func (c *client) Nomination() NominationServiceClient           { return c._Nomination }
 func (c *client) Session() SessionServiceClient                 { return c._Session }
 func (c *client) Audit() AuditServiceClient                     { return c._Audit }
 func (c *client) Outbox() OutboxServiceClient                   { return c._Outbox }

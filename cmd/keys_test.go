@@ -48,6 +48,10 @@ type keyedBuilt struct {
 	Contoso pdid.Id
 	Who     pdid.Id
 	Token   string
+
+	// Service is the control-plane holder the key hangs off: what a tenant
+	// names when it nominates somebody for this key (`Nomination.borrower_id`).
+	Service pdid.Id
 }
 
 // keyFor stands a deployment up and mints a key allowing exactly `methods`.
@@ -112,6 +116,7 @@ func keyedFor(t *testing.T, with func(*cmd.Config), methods ...string) *keyedBui
 		Config:  c,
 		Conn:    served(t, s),
 		Contoso: contoso, Who: who, Token: token,
+		Service: svc,
 	}
 }
 

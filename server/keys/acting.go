@@ -149,7 +149,7 @@ func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 			//
 			// `Vouch.Delegate` stamps a delegation with whoever asked for it, and
 			// under [HeaderAt] that caller is not the key -- it is the holder the
-			// name's `Host` row nominates. So the same resolution has to happen
+			// name's tenant nominated for this key. So the same resolution has to happen
 			// here or the row is never recognised as this caller's: the app mints
 			// one and is refused its own token on the next hop, which is what a
 			// whole afternoon of `502` looked like.
@@ -159,7 +159,10 @@ func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 			// minted the delegation -- but an `rt_` cannot, and neither can a key
 			// narrowed to a **different** name, which is what the check still
 			// says.
-			h, err := Nominated(ctx, tenant, at)
+			if k.Holder == nil {
+				return no()
+			}
+			h, err := Nominated(ctx, tenant, at, k.Holder.GetId())
 			if err != nil || h == nil {
 				return no()
 			}

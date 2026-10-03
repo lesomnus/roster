@@ -78,10 +78,6 @@ func (s coreHost) Add(ctx context.Context, req *app.HostAddRequest) (*app.Host, 
 	if err := normalised("name", req.GetName(), front.Hostname); err != nil {
 		return nil, err
 	}
-	if err := s.actsAsIsTheirs(ctx, req.GetTenant(), req.GetActsAs()); err != nil {
-		return nil, err
-	}
-
 	own, err := s.ownName(ctx, req.GetTenant())
 	if err != nil {
 		return nil, err
@@ -241,40 +237,6 @@ func (s coreHost) proved(ctx context.Context, req *app.HostAddRequest) (*app.Hos
 	}
 
 	return v, nil
-}
-
-// actsAsIsTheirs refuses a `Host` nominating somebody else's holder.
-//
-// The nomination is what a deployment key borrows here (`Host.acts_as`,
-// `server/keys/at.go`), so a row naming a holder of another tenant would hand a
-// caller a frame in a tenant that never agreed to it -- one row reaching two,
-// which is what the agreements in `agree.go` exist for and the same shape.
-//
-// Unset is nobody to borrow and is the ordinary state; only a nomination is
-// checked.
-func (s coreHost) actsAsIsTheirs(ctx context.Context, at *app.TenantRef, who *app.HolderRef) error {
-	if who == nil {
-		return nil
-	}
-
-	whose, err := s.tenantOfHolder(ctx, who)
-	if err != nil {
-		return err
-	}
-
-	where := pdid.Nil
-	if at != nil {
-		v, err := s.Next().Tenant().Get(ctx, app.TenantGetRequest_builder{Ref: at}.Build())
-		if err != nil {
-			return err
-		}
-
-		if where, err = pdid.From(v.GetId()); err != nil {
-			return err
-		}
-	}
-
-	return tenantsAgree("acts_as", whose, where)
 }
 
 func (s coreHost) Patch(ctx context.Context, req *app.HostPatchRequest) (*app.Host, error) {

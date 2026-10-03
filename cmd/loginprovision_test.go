@@ -46,7 +46,7 @@ import (
 //	the role's       everything a call inside a flow does, widened by `enrolling`
 //
 // A key as wide as the role would be a key that could do all of it **without**
-// naming a tenant, which is the wide frame `Host.acts_as` exists to take away.
+// naming a tenant, which is the wide frame a `Nomination` exists to take away.
 func provisioned(t *testing.T, enrol string) (key, role []string) {
 	t.Helper()
 	x := require.New(t)
@@ -133,15 +133,21 @@ func allowedByRole(t *testing.T, ctx context.Context, s *cmd.Server, tenant stri
 	x.NoError(err)
 
 	// And the nomination, which is what makes any of it reachable: without it a
-	// request carrying `roster-at` for this name is refused outright rather than
-	// answered as the key (`server/keys/at.go`).
-	host, err := s.Ungated.Host().Get(ctx, app.HostGetRequest_builder{
-		Ref:    app.HostRef_builder{Name: proto.String("contoso.example.com")}.Build(),
-		Select: app.HostSelect_builder{ActsAs: app.HolderSelect_builder{}.Build()}.Build(),
-	}.Build())
+	// request carrying `roster-at` for this tenant's name is refused outright
+	// rather than answered as the key (`server/keys/at.go`). Found by the
+	// control-plane holder the key hangs off, which is the one `provision` named.
+	borrower, err := cmd.HolderNamed(ctx, s.Control, "login-app")
 	x.NoError(err)
-	x.Equal(who.GetId(), host.GetActsAs().GetId(),
-		"the name does not borrow the holder provision wrote, so no flow can reach it")
+	n, err := s.Ungated.Nomination().Get(ctx, app.NominationGetRequest_builder{
+		Ref: app.NominationRef_builder{Borrower: app.NominationRefByBorrower_builder{
+			Tenant:     at,
+			BorrowerId: borrower.Bytes(),
+		}.Build()}.Build(),
+		Select: app.NominationSelect_builder{ActsAs: app.HolderSelect_builder{}.Build()}.Build(),
+	}.Build())
+	x.NoError(err, "provision nominated nobody for its key in this tenant, so no flow can reach it")
+	x.Equal(who.GetId(), n.GetActsAs().GetId(),
+		"the tenant nominated somebody other than the holder provision wrote")
 
 	return role.GetMethods()
 }
@@ -179,7 +185,7 @@ func TestTheProvisionedRoleAllowsWhatThePolicyAsksFor(t *testing.T) {
 // The key may make the three reads that work out whose flow this is, and nothing
 // else. Everything a flow actually does is the nominated holder's role, reached
 // only by a request that **names a tenant** -- so a key as wide as the role would
-// be one that could do all of it with the wide frame `Host.acts_as` exists to
+// be one that could do all of it with the wide frame a `Nomination` exists to
 // take away.
 func TestTheProvisionedKeyIsNarrowerThanTheRole(t *testing.T) {
 	x := require.New(t)
@@ -235,4 +241,87 @@ func TestProvisionMigratesBothPlanes(t *testing.T) {
 	// And no names to nominate on, which is said and not refused: a fresh volume
 	// has no customers, and refusing here would be a deployment that cannot come
 	// up because it has not come up.
+}
+
+// TestProvisionAgainBindsNothingTwiceAndLeavesOtherAppsAlone is two defects the
+// walk over names had, found on a running deployment.
+//
+// It bound the role once per **name** on every start, and nothing refused a
+// second identical binding: one holder had sixty-three of them. And it wrote
+// the nomination onto each name, which could hold one app -- so any other
+// roster-hosted app nominated at the same name lost it at the Login App's next
+// restart.
+func TestProvisionAgainBindsNothingTwiceAndLeavesOtherAppsAlone(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	drv, dsn := pdtest.DB(t)
+	cdrv, cdsn := pdtest.DB(t)
+	out := t.TempDir()
+
+	c := cmd.Config{
+		Db:      config.DbConfig{Driver: drv, Dsn: dsn, Migrate: true},
+		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn, Migrate: true}},
+	}
+
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	x.NoError(entmigrate.NewSchema(s.Drv).Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Control.Drv).Create(ctx))
+
+	tn, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "contoso"}.Build())
+	x.NoError(err)
+	at := app.TenantRef_builder{Id: tn.GetId()}.Build()
+
+	// Two names, which is what multiplied the bindings.
+	for _, name := range []string{"one.contoso.example", "two.contoso.example"} {
+		_, err := s.Ungated.Host().Add(ctx, app.HostAddRequest_builder{Tenant: at, Name: name}.Build())
+		x.NoError(err)
+	}
+
+	// Another app the roster operator runs, nominated in the same tenant.
+	product, err := cmd.HolderNamed(ctx, s.Control, "product")
+	x.NoError(err)
+	itsHolder, err := s.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{Tenant: at, Alias: "product"}.Build())
+	x.NoError(err)
+	_, err = s.Ungated.Nomination().Add(ctx, app.NominationAddRequest_builder{
+		Tenant: at, BorrowerId: product.Bytes(),
+		ActsAs: app.HolderRef_builder{Id: itsHolder.GetId()}.Build(),
+	}.Build())
+	x.NoError(err)
+	s.Close()
+
+	for range 3 {
+		x.NoError(cli.NewCmdLogin(&c).Run(ctx, []string{"provision", "--out", out}))
+	}
+
+	s, err = cmd.Build(ctx, c)
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+
+	who, err := s.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{
+			Slug: app.HolderRefBySlug_builder{Alias: proto.String("login-app"), Tenant: at}.Build(),
+		}.Build(),
+		Select: app.HolderSelect_builder{}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	bs, err := s.Ungated.Binding().List(ctx, app.BindingListRequest_builder{
+		Filters: []*app.BindingFilter{app.BindingFilter_builder{
+			Holder: app.HolderRef_builder{Id: who.GetId()}.Build(),
+		}.Build()},
+	}.Build())
+	x.NoError(err)
+	x.Len(bs.GetItems(), 1, "three starts over two names bound the role more than once")
+
+	n, err := s.Ungated.Nomination().Get(ctx, app.NominationGetRequest_builder{
+		Ref: app.NominationRef_builder{Borrower: app.NominationRefByBorrower_builder{
+			Tenant: at, BorrowerId: product.Bytes(),
+		}.Build()}.Build(),
+		Select: app.NominationSelect_builder{ActsAs: app.HolderSelect_builder{}.Build()}.Build(),
+	}.Build())
+	x.NoError(err)
+	x.Equal(itsHolder.GetId(), n.GetActsAs().GetId(), "provision took another app's nomination")
 }

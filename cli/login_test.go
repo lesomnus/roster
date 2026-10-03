@@ -9,8 +9,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/lesomnus/z"
-
 	"github.com/lesomnus/roster/cmd"
 	rstr "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
@@ -91,13 +89,19 @@ func TestAFirstStartWithNoKeyYetStillComesUp(t *testing.T) {
 		x.NoError(err)
 		x.True(strings.HasPrefix(got.Key, keys.PrefixDeployment), "not a deployment key: %q", got.Key)
 
-		// The per-customer half too: the name borrows a holder now.
-		h, err := s.Ungated.Host().Get(ctx, rstr.HostGetRequest_builder{
-			Ref:    rstr.HostRef_builder{Name: z.Ptr("contoso.example")}.Build(),
-			Select: rstr.HostSelect_builder{ActsAs: rstr.HolderSelect_builder{}.Build()}.Build(),
-		}.Build())
+		// The per-customer half too: the tenant behind the name nominated a
+		// holder for this app's key.
+		borrower, err := cmd.HolderNamed(ctx, s.Control, provisioned)
 		x.NoError(err)
-		x.NotEmpty(h.GetActsAs().GetId(), "the name was not nominated on")
+		n, err := s.Ungated.Nomination().Get(ctx, rstr.NominationGetRequest_builder{
+			Ref: rstr.NominationRef_builder{Borrower: rstr.NominationRefByBorrower_builder{
+				Tenant:     rstr.TenantRef_builder{Id: contoso}.Build(),
+				BorrowerId: borrower.Bytes(),
+			}.Build()}.Build(),
+			Select: rstr.NominationSelect_builder{ActsAs: rstr.HolderSelect_builder{}.Build()}.Build(),
+		}.Build())
+		x.NoError(err, "the tenant was not nominated in")
+		x.NotEmpty(n.GetActsAs().GetId())
 
 		// And without the plane an `rk_` lives in, nothing is made and nothing
 		// refuses: the app stays off, as a missing file leaves it.

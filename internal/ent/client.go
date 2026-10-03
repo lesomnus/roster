@@ -26,6 +26,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/link"
 	"github.com/lesomnus/roster/internal/ent/maildomain"
+	"github.com/lesomnus/roster/internal/ent/nomination"
 	"github.com/lesomnus/roster/internal/ent/outbox"
 	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/session"
@@ -75,6 +76,8 @@ type Client struct {
 	Link *LinkClient
 	// MailDomain is the client for interacting with the MailDomain builders.
 	MailDomain *MailDomainClient
+	// Nomination is the client for interacting with the Nomination builders.
+	Nomination *NominationClient
 	// Outbox is the client for interacting with the Outbox builders.
 	Outbox *OutboxClient
 	// Role is the client for interacting with the Role builders.
@@ -117,6 +120,7 @@ func (c *Client) init() {
 	c.Identity = NewIdentityClient(c.config)
 	c.Link = NewLinkClient(c.config)
 	c.MailDomain = NewMailDomainClient(c.config)
+	c.Nomination = NewNominationClient(c.config)
 	c.Outbox = NewOutboxClient(c.config)
 	c.Role = NewRoleClient(c.config)
 	c.Session = NewSessionClient(c.config)
@@ -233,6 +237,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Identity:        NewIdentityClient(cfg),
 		Link:            NewLinkClient(cfg),
 		MailDomain:      NewMailDomainClient(cfg),
+		Nomination:      NewNominationClient(cfg),
 		Outbox:          NewOutboxClient(cfg),
 		Role:            NewRoleClient(cfg),
 		Session:         NewSessionClient(cfg),
@@ -276,6 +281,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Identity:        NewIdentityClient(cfg),
 		Link:            NewLinkClient(cfg),
 		MailDomain:      NewMailDomainClient(cfg),
+		Nomination:      NewNominationClient(cfg),
 		Outbox:          NewOutboxClient(cfg),
 		Role:            NewRoleClient(cfg),
 		Session:         NewSessionClient(cfg),
@@ -361,8 +367,8 @@ func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.ApiKey, c.Audit, c.Binding, c.Connection, c.Continuation, c.Credential,
 		c.Delegation, c.Email, c.Group, c.GroupMembership, c.Holder, c.Host,
-		c.HostProof, c.Identity, c.Link, c.MailDomain, c.Outbox, c.Role, c.Session,
-		c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
+		c.HostProof, c.Identity, c.Link, c.MailDomain, c.Nomination, c.Outbox, c.Role,
+		c.Session, c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
 	} {
 		n.Use(hooks...)
 	}
@@ -374,8 +380,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.ApiKey, c.Audit, c.Binding, c.Connection, c.Continuation, c.Credential,
 		c.Delegation, c.Email, c.Group, c.GroupMembership, c.Holder, c.Host,
-		c.HostProof, c.Identity, c.Link, c.MailDomain, c.Outbox, c.Role, c.Session,
-		c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
+		c.HostProof, c.Identity, c.Link, c.MailDomain, c.Nomination, c.Outbox, c.Role,
+		c.Session, c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -416,6 +422,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Link.mutate(ctx, m)
 	case *MailDomainMutation:
 		return c.MailDomain.mutate(ctx, m)
+	case *NominationMutation:
+		return c.Nomination.mutate(ctx, m)
 	case *OutboxMutation:
 		return c.Outbox.mutate(ctx, m)
 	case *RoleMutation:
@@ -2280,22 +2288,6 @@ func (c *HostClient) QueryTenant(_m *Host) *TenantQuery {
 	return query
 }
 
-// QueryActsAs queries the acts_as edge of a Host.
-func (c *HostClient) QueryActsAs(_m *Host) *HolderQuery {
-	query := (&HolderClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.Id
-		step := sqlgraph.NewStep(
-			sqlgraph.From(host.Table, host.FieldId, id),
-			sqlgraph.To(holder.Table, holder.FieldId),
-			sqlgraph.Edge(sqlgraph.M2O, false, host.ActsAsTable, host.ActsAsColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // Hooks returns the client hooks.
 func (c *HostClient) Hooks() []Hook {
 	return c.hooks.Host
@@ -2930,6 +2922,171 @@ func (c *MailDomainClient) mutate(ctx context.Context, m *MailDomainMutation) (V
 		return (&MailDomainDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown MailDomain mutation op: %q", m.Op())
+	}
+}
+
+// NominationClient is a client for the Nomination schema.
+type NominationClient struct {
+	config
+}
+
+// NewNominationClient returns a client for the Nomination from the given config.
+func NewNominationClient(c config) *NominationClient {
+	return &NominationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `nomination.Hooks(f(g(h())))`.
+func (c *NominationClient) Use(hooks ...Hook) {
+	c.hooks.Nomination = append(c.hooks.Nomination, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `nomination.Intercept(f(g(h())))`.
+func (c *NominationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Nomination = append(c.inters.Nomination, interceptors...)
+}
+
+// Create returns a builder for creating a Nomination entity.
+func (c *NominationClient) Create() *NominationCreate {
+	mutation := newNominationMutation(c.config, OpCreate)
+	return &NominationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Nomination entities.
+func (c *NominationClient) CreateBulk(builders ...*NominationCreate) *NominationCreateBulk {
+	return &NominationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *NominationClient) MapCreateBulk(slice any, setFunc func(*NominationCreate, int)) *NominationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &NominationCreateBulk{err: fmt.Errorf("calling to NominationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*NominationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &NominationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Nomination.
+func (c *NominationClient) Update() *NominationUpdate {
+	mutation := newNominationMutation(c.config, OpUpdate)
+	return &NominationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *NominationClient) UpdateOne(_m *Nomination) *NominationUpdateOne {
+	mutation := newNominationMutation(c.config, OpUpdateOne, withNomination(_m))
+	return &NominationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *NominationClient) UpdateOneId(id uuid.UUID) *NominationUpdateOne {
+	mutation := newNominationMutation(c.config, OpUpdateOne, withNominationId(id))
+	return &NominationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Nomination.
+func (c *NominationClient) Delete() *NominationDelete {
+	mutation := newNominationMutation(c.config, OpDelete)
+	return &NominationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *NominationClient) DeleteOne(_m *Nomination) *NominationDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *NominationClient) DeleteOneId(id uuid.UUID) *NominationDeleteOne {
+	builder := c.Delete().Where(nomination.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &NominationDeleteOne{builder}
+}
+
+// Query returns a query builder for Nomination.
+func (c *NominationClient) Query() *NominationQuery {
+	return &NominationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeNomination},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Nomination entity by its id.
+func (c *NominationClient) Get(ctx context.Context, id uuid.UUID) (*Nomination, error) {
+	return c.Query().Where(nomination.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *NominationClient) GetX(ctx context.Context, id uuid.UUID) *Nomination {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTenant queries the tenant edge of a Nomination.
+func (c *NominationClient) QueryTenant(_m *Nomination) *TenantQuery {
+	query := (&TenantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(nomination.Table, nomination.FieldId, id),
+			sqlgraph.To(tenant.Table, tenant.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, nomination.TenantTable, nomination.TenantColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryActsAs queries the acts_as edge of a Nomination.
+func (c *NominationClient) QueryActsAs(_m *Nomination) *HolderQuery {
+	query := (&HolderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(nomination.Table, nomination.FieldId, id),
+			sqlgraph.To(holder.Table, holder.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, nomination.ActsAsTable, nomination.ActsAsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *NominationClient) Hooks() []Hook {
+	return c.hooks.Nomination
+}
+
+// Interceptors returns the client interceptors.
+func (c *NominationClient) Interceptors() []Interceptor {
+	return c.inters.Nomination
+}
+
+func (c *NominationClient) mutate(ctx context.Context, m *NominationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&NominationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&NominationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&NominationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&NominationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Nomination mutation op: %q", m.Op())
 	}
 }
 
@@ -4178,13 +4335,13 @@ type (
 	hooks struct {
 		ApiKey, Audit, Binding, Connection, Continuation, Credential, Delegation, Email,
 		Group, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain,
-		Outbox, Role, Session, Site, SiteMembership, Team, TeamMembership,
+		Nomination, Outbox, Role, Session, Site, SiteMembership, Team, TeamMembership,
 		Tenant []ent.Hook
 	}
 	inters struct {
 		ApiKey, Audit, Binding, Connection, Continuation, Credential, Delegation, Email,
 		Group, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain,
-		Outbox, Role, Session, Site, SiteMembership, Team, TeamMembership,
+		Nomination, Outbox, Role, Session, Site, SiteMembership, Team, TeamMembership,
 		Tenant []ent.Interceptor
 	}
 )

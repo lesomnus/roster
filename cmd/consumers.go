@@ -206,11 +206,11 @@ type LoginConfig struct {
 	// # Why an `rk_` is allowed to be this app's credential now
 	//
 	// `docs/login.md` refused one: an `rk_` resolves to a frame with no tenant,
-	// so what separated customers would be this app's own code. `Host.acts_as`
+	// so what separated customers would be this app's own code. A `Nomination`
 	// answers it rather than waiving it -- every call goes out with `roster-at`
-	// and is answered as the holder that tenant nominated, with their bindings
-	// and nothing wider (#43). The wall is still what separates them; it is
-	// applied per request instead of per process.
+	// and is answered as the holder that tenant nominated for this app's key,
+	// with their bindings and nothing wider (#43, #73). The wall is still what
+	// separates them; it is applied per request instead of per process.
 	//
 	// **Empty, inside `roster serve`, is a key made at start**, with the
 	// nominations that go with it -- what `roster login provision` writes,

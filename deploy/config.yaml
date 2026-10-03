@@ -91,8 +91,8 @@ login:
   # tenant here, keyed by alias, beside a `clients:` block saying which OAuth
   # clients were whose so the right key could be picked. Both are gone -- which
   # tenant a flow is about comes from the redirect it named, through that
-  # tenant's `Host` row, and `Host.acts_as` is what roster narrows this one key
-  # to on every call.
+  # tenant's `Host` row, and the `Nomination` in that tenant is what roster
+  # narrows this one key to on every call.
   #
   # From a file because it cannot be put anywhere in advance and one put there
   # afterwards is a thing to rotate. Unlike the per-tenant keys it replaces, it

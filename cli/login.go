@@ -24,6 +24,7 @@ import (
 
 	"github.com/lesomnus/otx/log"
 	"github.com/lesomnus/payday/auth/authsession"
+	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/roster/account"
 	"github.com/lesomnus/roster/arrives"
@@ -271,7 +272,8 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 			// customer existed, the server would not start without the files, and
 			// the customer could not be made without the server. `deploy/` hit
 			// exactly that on its first run against an empty cluster.
-			if _, err := provisionKey(ctx, s, out); err != nil {
+			_, borrower, err := provisionKey(ctx, s, out)
+			if err != nil {
 				return err
 			}
 
@@ -288,7 +290,7 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 			// To stderr rather than through `log`: this command stands up no
 			// telemetry, and what it says is read in `kubectl logs` of an init
 			// container.
-			n, err := nominate(ctx, s, methods)
+			n, err := nominate(ctx, s, methods, borrower)
 			if err != nil {
 				return err
 			}
@@ -484,21 +486,22 @@ var LoginResolving = []string{
 //
 // A **deployment** key, on a control-plane holder, which is the change #36 is:
 // it was one `rt_` per tenant on a holder inside each, and what separated
-// customers was which key was picked. `Host.acts_as` separates them now, per
-// request, so the credential is one and the nomination is what narrows it.
+// customers was which key was picked. A `Nomination` in each tenant separates
+// them now, per request, so the credential is one and the nomination is what
+// narrows it.
 //
 // Replaced rather than added to, for the reason the per-tenant version was: a
 // key's alias is unique per holder and cannot be read back, so the row from the
 // last run is of no use to anybody and is one more thing that would answer if it
 // leaked. A restart is a rotation.
-func provisionKey(ctx context.Context, s *cmd.Server, out string) (string, error) {
+func provisionKey(ctx context.Context, s *cmd.Server, out string) (string, pdid.Id, error) {
 	if s.Control == nil {
-		return "", errors.New("this app's key is a deployment key, and there is no control plane to hold it")
+		return "", pdid.Nil, errors.New("this app's key is a deployment key, and there is no control plane to hold it")
 	}
 
 	who, err := cmd.HolderNamed(ctx, s.Control, provisioned)
 	if err != nil {
-		return "", err
+		return "", pdid.Nil, err
 	}
 
 	// [LoginResolving] and not [LoginMethods], which is the split that matters:
@@ -506,23 +509,23 @@ func provisionKey(ctx context.Context, s *cmd.Server, out string) (string, error
 	// this key may do is the three reads that decide which holder that is.
 	token, err := mintNamed(ctx, s.Control.Ungated, who.Bytes(), provisioned, LoginResolving, keys.PrefixDeployment)
 	if err != nil {
-		return "", err
+		return "", pdid.Nil, err
 	}
 
 	// Into memory alone when nothing names a directory, which is `roster serve`
 	// making the key at start; `cli/provision.go` says what that is worth.
 	if out == "" {
-		return token, nil
+		return token, who, nil
 	}
 
 	path := filepath.Join(out, provisioned+".key")
 	if err := writeKey(path, token); err != nil {
-		return "", err
+		return "", pdid.Nil, err
 	}
 
 	fmt.Fprintf(os.Stderr, "roster: the Login App's key for @%s written to %s.\n", provisioned, path)
 
-	return token, nil
+	return token, who, nil
 }
 
 // loginMethodsFor is what the nominated holder's role allows: [LoginMethods],
@@ -537,11 +540,12 @@ func loginMethodsFor(enrol string) []string {
 	return LoginMethods
 }
 
-// nominate is the per-customer half: a holder the app borrows, and every `Host`
-// row of that tenant pointed at it.
+// nominate is the per-customer half: in every tenant with a name, a holder the
+// app is answered as, its role, and the [rstr.Nomination] that says so for this
+// app's key.
 //
-// It answers with how many names it nominated on, because none is a state worth
-// saying out loud rather than a failure.
+// It answers with how many tenants it nominated in, because none is a state
+// worth saying out loud rather than a failure.
 //
 // # Walked off the names and not off a list
 //
@@ -550,23 +554,33 @@ func loginMethodsFor(enrol string) []string {
 // possible: the row is theirs to write, so nothing here has to be told about a
 // customer by a roster operator.
 //
-// # The nomination is a narrowing and needs no permission
+// # Once per tenant, and found by the key's holder
 //
-// `Host.acts_as` names the holder a deployment key borrows for a request about
-// that name. The key already saw every tenant, so borrowing this holder is
-// strictly **less** -- which is why `server/core` holds it to one rule and one
-// only: the holder has to be that tenant's (`actsAsIsTheirs`). Either a tenant's
-// own administrator or a roster operator may write it, and this is the operator
-// doing it for a deployment where they run the app for everybody.
-func nominate(ctx context.Context, s *cmd.Server, methods []string) (int, error) {
-	vs, err := s.Ungated.Host().List(ctx, rstr.HostListRequest_builder{}.Build())
+// This walked the names and wrote `Host.acts_as` on each, which made two things
+// wrong at once. A tenant with eight names had its binding added eight times on
+// every start. And a name could nominate only one app, so this overwrote
+// whatever any other roster-hosted app had put there -- a product served at the
+// very name the Login App narrows to for that product's sign-in.
+//
+// The nomination is per tenant and per app now (`nomination.proto`): `borrower`
+// is the control-plane holder this app's key hangs off, and the row says who
+// that key is answered as here. The names only decide which tenants there are.
+//
+// # Nominating is a way in, and this is the deployment's own work
+//
+// A narrowed key is answered with the nominated holder's bindings and not its
+// own methods, so `server/core` holds a nomination to `mayWriteAWayIn`. This
+// goes through the unwalled server with no frame, which is the deployment's own
+// work and passes, and the holder it nominates is the one it just made.
+func nominate(ctx context.Context, s *cmd.Server, methods []string, borrower pdid.Id) (int, error) {
+	tenants, err := tenantsWithNames(ctx, s)
 	if err != nil {
 		return 0, err
 	}
 
 	n := 0
-	for _, v := range vs.GetItems() {
-		at := rstr.TenantRef_builder{Id: v.GetTenant().GetId()}.Build()
+	for _, t := range tenants {
+		at := rstr.TenantRef_builder{Id: t.Bytes()}.Build()
 
 		tn, err := s.Ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
 			Ref:    at,
@@ -585,35 +599,100 @@ func nominate(ctx context.Context, s *cmd.Server, methods []string) (int, error)
 		if err != nil {
 			return n, fmt.Errorf("%s: %w", alias, err)
 		}
-		if _, err := s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
-			Role:   rstr.RoleRef_builder{Id: role}.Build(),
-			Holder: rstr.HolderRef_builder{Id: who}.Build(),
-		}.Build()); err != nil && status.Code(err) != codes.AlreadyExists {
+		if err := ensureBinding(ctx, s, role, who); err != nil {
 			return n, fmt.Errorf("%s: %w", alias, err)
 		}
 
-		// Already pointing at them is nothing to write, which keeps a restart
-		// from being a row changed and a `Watch` event for every name.
-		if bytes.Equal(v.GetActsAs().GetId(), who) {
-			n++
-
-			continue
+		changed, err := ensureNominated(ctx, s, at, borrower, who)
+		if err != nil {
+			return n, fmt.Errorf("%s: %w", alias, err)
 		}
-
-		if _, err := s.Ungated.Host().Patch(ctx, rstr.HostPatchRequest_builder{
-			Ref:         rstr.HostRef_builder{Id: v.GetId()}.Build(),
-			ActsAs:      rstr.HolderRef_builder{Id: who}.Build(),
-			DateUpdated: v.GetDateUpdated(),
-		}.Build()); err != nil {
-			return n, fmt.Errorf("%s: %s: %w", alias, v.GetName(), err)
+		if changed {
+			fmt.Fprintf(os.Stderr, "roster: %s: flows arriving at its names are answered as @%s/%s, allowing %d method(s).\n",
+				alias, alias, provisioned, len(methods))
 		}
-
-		fmt.Fprintf(os.Stderr, "roster: %s: flows arriving at %s are answered as @%s/%s, allowing %d method(s).\n",
-			alias, v.GetName(), alias, provisioned, len(methods))
 		n++
 	}
 
 	return n, nil
+}
+
+// tenantsWithNames is every tenant that has a `Host` row, once each, in the
+// order their first name was written.
+//
+// Paged, which the walk this replaced was not: it read the first page of names
+// and stopped, so the twenty-first name a deployment registered was a tenant
+// this app never fronted.
+func tenantsWithNames(ctx context.Context, s *cmd.Server) ([]pdid.Id, error) {
+	seen := map[pdid.Id]bool{}
+	out := []pdid.Id{}
+
+	after := ""
+	for {
+		vs, err := s.Ungated.Host().List(ctx, rstr.HostListRequest_builder{
+			Size:  100,
+			After: after,
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range vs.GetItems() {
+			t, err := pdid.From(v.GetTenant().GetId())
+			if err != nil {
+				return nil, err
+			}
+			if seen[t] {
+				continue
+			}
+			seen[t] = true
+			out = append(out, t)
+		}
+
+		if after = vs.GetNext(); after == "" {
+			return out, nil
+		}
+	}
+}
+
+// ensureNominated makes `borrower`'s keys answer as `who` in this tenant, and
+// says whether that changed anything.
+//
+// Already pointing at them is nothing to write, which keeps a restart from
+// being a row changed and a `Watch` event in every tenant.
+func ensureNominated(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, borrower pdid.Id, who []byte) (bool, error) {
+	v, err := s.Ungated.Nomination().Get(ctx, rstr.NominationGetRequest_builder{
+		Ref: rstr.NominationRef_builder{
+			Borrower: rstr.NominationRefByBorrower_builder{Tenant: at, BorrowerId: borrower.Bytes()}.Build(),
+		}.Build(),
+		Select: rstr.NominationSelect_builder{
+			ActsAs:      rstr.HolderSelect_builder{}.Build(),
+			DateUpdated: z.Ptr(true),
+		}.Build(),
+	}.Build())
+	if status.Code(err) == codes.NotFound {
+		_, err := s.Ungated.Nomination().Add(ctx, rstr.NominationAddRequest_builder{
+			Tenant:     at,
+			BorrowerId: borrower.Bytes(),
+			ActsAs:     rstr.HolderRef_builder{Id: who}.Build(),
+		}.Build())
+
+		return err == nil, err
+	}
+	if err != nil {
+		return false, err
+	}
+	if bytes.Equal(v.GetActsAs().GetId(), who) {
+		return false, nil
+	}
+
+	_, err = s.Ungated.Nomination().Patch(ctx, rstr.NominationPatchRequest_builder{
+		Ref:         rstr.NominationRef_builder{Id: v.GetId()}.Build(),
+		ActsAs:      rstr.HolderRef_builder{Id: who}.Build(),
+		DateUpdated: v.GetDateUpdated(),
+	}.Build())
+
+	return err == nil, err
 }
 
 // provisioned is what this command's rows are called, so that a later run finds

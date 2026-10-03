@@ -140,10 +140,10 @@ type Config struct {
 	// `docs/login.md` argued against it: an `rk_` resolves to a frame with no
 	// tenant, the policy hands it `frame.Everything`, and what keeps contoso's
 	// request out of fabrikam's rows is this app's own code. That objection was
-	// right and is answered rather than waived -- `Host.acts_as` names the
-	// holder a tenant nominates, so every call goes out with `roster-at` and is
-	// answered as that holder, in that tenant, with their bindings and nothing
-	// wider (`server/keys/at.go`, #43).
+	// right and is answered rather than waived -- a `Nomination` names the
+	// holder a tenant nominates for this app's key, so every call goes out with
+	// `roster-at` and is answered as that holder, in that tenant, with their
+	// bindings and nothing wider (`server/keys/at.go`, #43, #73).
 	//
 	// So the wall is still what separates tenants. What differs is that it is
 	// applied per **request** rather than per process, and that adding a tenant

@@ -319,11 +319,11 @@ func loginApp(ctx context.Context, c *cmd.Config, l net.Listener, s *cmd.Server)
 			return gc, nil
 		}
 
-		token, err := provisionKey(ctx, s, "")
+		token, borrower, err := provisionKey(ctx, s, "")
 		if err != nil {
 			return gc, fmt.Errorf("login.key: none named, and making one here: %w", err)
 		}
-		if _, err := nominate(ctx, s, loginMethodsFor(gc.Enrol)); err != nil {
+		if _, err := nominate(ctx, s, loginMethodsFor(gc.Enrol), borrower); err != nil {
 			return gc, fmt.Errorf("login.key: none named, and making one here: %w", err)
 		}
 		gc.Key = token

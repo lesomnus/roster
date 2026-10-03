@@ -44,6 +44,7 @@ import (
 	identity "github.com/lesomnus/roster/internal/ent/identity"
 	link "github.com/lesomnus/roster/internal/ent/link"
 	maildomain "github.com/lesomnus/roster/internal/ent/maildomain"
+	nomination "github.com/lesomnus/roster/internal/ent/nomination"
 	outbox "github.com/lesomnus/roster/internal/ent/outbox"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	role "github.com/lesomnus/roster/internal/ent/role"
@@ -114,6 +115,7 @@ const (
 	IdentityDomain        pdid.Domain = 8  // "identity"
 	LinkDomain            pdid.Domain = 23 // "link"
 	MailDomainDomain      pdid.Domain = 21 // "mail-domain"
+	NominationDomain      pdid.Domain = 27 // "nomination"
 	OutboxDomain          pdid.Domain = 4  // "outbox"
 	RoleDomain            pdid.Domain = 15 // "role"
 	SessionDomain         pdid.Domain = 24 // "session"
@@ -141,6 +143,7 @@ func init() {
 	pdid.Register("roster.Identity", IdentityDomain, "identity")
 	pdid.Register("roster.Link", LinkDomain, "link")
 	pdid.Register("roster.MailDomain", MailDomainDomain, "mail-domain")
+	pdid.Register("roster.Nomination", NominationDomain, "nomination")
 	pdid.Register("roster.Outbox", OutboxDomain, "outbox")
 	pdid.Register("roster.Role", RoleDomain, "role")
 	pdid.Register("roster.Session", SessionDomain, "session")
@@ -172,6 +175,7 @@ var Domains = map[string]pdid.Domain{
 	"roster.Identity":        IdentityDomain,
 	"roster.Link":            LinkDomain,
 	"roster.MailDomain":      MailDomainDomain,
+	"roster.Nomination":      NominationDomain,
 	"roster.Outbox":          OutboxDomain,
 	"roster.Role":            RoleDomain,
 	"roster.Session":         SessionDomain,
@@ -386,6 +390,16 @@ func (wall) MailDomainScope(ctx context.Context) (predicate.MailDomain, error) {
 	return maildomain.TenantIdIn(vs...), nil
 }
 
+// NominationScope: a row belongs to the tenant its "tenant" reaches.
+func (wall) NominationScope(ctx context.Context) (predicate.Nomination, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return nomination.TenantIdIn(vs...), nil
+}
+
 // OutboxScope: declared `global`, so it is not behind the wall at all.
 func (wall) OutboxScope(ctx context.Context) (predicate.Outbox, error) {
 	return nil, nil
@@ -584,6 +598,11 @@ func (x grouped) LinkScope(ctx context.Context) (predicate.Link, error) {
 
 // MailDomainScope: in no set -- it declared no field 3, so this narrows nothing.
 func (x grouped) MailDomainScope(ctx context.Context) (predicate.MailDomain, error) {
+	return nil, nil
+}
+
+// NominationScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) NominationScope(ctx context.Context) (predicate.Nomination, error) {
 	return nil, nil
 }
 
@@ -4591,6 +4610,389 @@ func filterMailDomain(f *rstr.MailDomainFilter) (predicate.MailDomain, error) {
 	return maildomain.And(ps...), nil
 }
 
+type sinkNomination struct {
+	rstr.NominationServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Nomination() rstr.NominationServiceServer {
+	return sinkNomination{s.Server.Nomination(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderNomination is how Nominations come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderNomination = []sqlpage.Order{
+	{Column: nomination.FieldDateCreated, Desc: false},
+	{Column: nomination.FieldId, Desc: false},
+}
+
+const (
+	// NominationPageSize is what a request that did not say gets, and
+	// NominationPageLimit is the most it gets however loudly it asks.
+	NominationPageSize  = 20
+	NominationPageLimit = 100
+
+	// NominationFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	NominationFilterLimit = 32
+)
+
+// List answers with the Nominations that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkNomination) List(ctx context.Context, req *rstr.NominationListRequest) (*rstr.NominationListResponse, error) {
+	q := s.store.Db.Nomination.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.NominationNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > NominationFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), NominationFilterLimit)
+		}
+
+		ps := make([]predicate.Nomination, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterNomination(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(nomination.Or(ps...))
+	}
+
+	if v := req.GetAfter(); v != "" {
+		var (
+			at0 time.Time
+			at1 uuid.UUID
+		)
+		if err := sqlpage.Decode(v, &at0, &at1); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		p, err := sqlpage.After(orderNomination, []any{at0, at1})
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), NominationPageSize, NominationPageLimit)
+	us, err := q.Order(nomination.ByDateCreated(), nomination.ById()).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.Nomination, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.NominationListResponse_builder{Items: items}.Build()
+	if more {
+		last := us[len(us)-1]
+		next, err := sqlpage.Encode(last.DateCreated, last.Id)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(next)
+	}
+
+	return res, nil
+}
+
+// filterNomination turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterNomination(f *rstr.NominationFilter) (predicate.Nomination, error) {
+	ps := make([]predicate.Nomination, 0, 1)
+	if f.HasRef() {
+		p, err := bare.NominationPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasTenant() {
+		w := f.GetTenant()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+			}
+
+			ps = append(ps, nomination.TenantIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.TenantPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, nomination.HasTenantWith(q))
+		}
+	}
+	if f.HasBorrowerId() {
+		k, err := entuuid.FromBytes(f.GetBorrowerId())
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "borrower_id: %s", err)
+		}
+
+		ps = append(ps, nomination.BorrowerIdEQ(k))
+	}
+	if f.HasActsAs() {
+		w := f.GetActsAs()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "acts_as: %s", err)
+			}
+
+			ps = append(ps, nomination.ActsAsIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.HolderPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, nomination.HasActsAsWith(q))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return nomination.And(ps...), nil
+}
+
+// NominationService is the prefix of every Rpc of that service, which is how a
+// change is known to be about a Nomination. A service is named for the entity it
+// is about, so the name carries it.
+var NominationService = watch.ServiceOf(rstr.NominationService_Get_FullMethodName)
+
+// Watch answers with the Nominations this caller may see, as they are now and as
+// they change.
+//
+// What is sent is **state and never a delta**, which is what makes a stream
+// that missed something still correct: the next item about a row carries the
+// whole of it, so a client converges rather than replays. It is also what
+// makes the first message safe to duplicate against the ones after it.
+func (s sinkNomination) Watch(req *rstr.NominationWatchRequest, out grpc.ServerStreamingServer[rstr.NominationWatchResponse]) error {
+	ctx := out.Context()
+
+	// A watch with no filters is the whole table, forever. It is the one
+	// shape that has no cap at all, so it is the one shape refused.
+	fs := req.GetFilters()
+	switch {
+	case len(fs) == 0:
+		return status.Error(codes.InvalidArgument,
+			"filters: a watch says which rows it is about; one that says nothing is the whole table, for as long as it is open")
+	case len(fs) > NominationFilterLimit:
+		return status.Errorf(codes.InvalidArgument,
+			"filters: %d of them, and %d is the most one watch carries", len(fs), NominationFilterLimit)
+	}
+
+	// Resolved before anything is subscribed to, so a name that names
+	// nothing is an answer rather than a stream that quietly watches none.
+	watching, err := s.watchNominationKeys(ctx, fs)
+	if err != nil {
+		return err
+	}
+
+	var snapshot func(watch.Seen) error
+	if !req.GetSkipSnapshot() {
+		snapshot = func(sent watch.Seen) error { return s.watchNow(ctx, req, out, sent) }
+	}
+
+	if s.w == nil {
+		return status.Error(codes.Unimplemented,
+			"this deployment publishes no changes; see WithWatch")
+	}
+
+	return watch.Stream(ctx, s.w, NominationService, snapshot,
+		func(ks map[pdid.Id]string, sent watch.Seen) error {
+			items := make([]*rstr.NominationWatchItem, 0, len(ks))
+			for k, action := range ks {
+				u, err := s.watchRead(ctx, watching, k)
+				if err != nil {
+					return err
+				}
+				if u == nil && !sent[k] {
+					// Not theirs, or not what they asked for, and they
+					// have never been told about it. A row that never
+					// matched is not news.
+					continue
+				}
+
+				sent[k] = u != nil
+				items = append(items, rstr.NominationWatchItem_builder{
+					Id:     k.Bytes(),
+					Value:  u,
+					Action: action,
+				}.Build())
+			}
+			if len(items) == 0 {
+				return nil
+			}
+
+			return out.Send(rstr.NominationWatchResponse_builder{Items: items}.Build())
+		})
+}
+
+// watchNow sends what matches right now, through the same List a caller
+// would have called -- so what a stream begins with and what a list answers
+// cannot disagree, and a client does not have to do both and race them.
+func (s sinkNomination) watchNow(
+	ctx context.Context, req *rstr.NominationWatchRequest, out grpc.ServerStreamingServer[rstr.NominationWatchResponse],
+	sent watch.Seen,
+) error {
+	after := ""
+	for {
+		res, err := s.List(ctx, rstr.NominationListRequest_builder{
+			Filters: req.GetFilters(),
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		items := make([]*rstr.NominationWatchItem, 0, len(res.GetItems()))
+		for _, u := range res.GetItems() {
+			k, err := pdid.From(u.GetId())
+			if err != nil {
+				return err
+			}
+
+			sent[k] = true
+			// No action: this is not something anybody asked for, it is
+			// what is already there.
+			items = append(items, rstr.NominationWatchItem_builder{Id: u.GetId(), Value: u}.Build())
+		}
+		if len(items) > 0 {
+			if err := out.Send(rstr.NominationWatchResponse_builder{Items: items}.Build()); err != nil {
+				return err
+			}
+		}
+
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// watchRead answers with the row as it is now, or nil when it is no longer
+// one this caller may see -- erased, walled off, or no longer matching what
+// they asked for. The three are deliberately indistinguishable to a caller:
+// a stream that told them apart would be saying which rows stopped being
+// theirs, which is the thing the wall is for.
+//
+// The Get is what keeps the wall out of this file. It goes through the same
+// server every other read does, with the context of the caller who asked, so
+// a row they may not see comes back NotFound and is never sent.
+func (s sinkNomination) watchRead(
+	ctx context.Context, watching []pdid.Id, k pdid.Id,
+) (*rstr.Nomination, error) {
+	// Not one of the rows this stream is about. Asked before the read, so a
+	// busy table costs a stream nothing for the rows it does not watch.
+	if !slices.Contains(watching, k) {
+		return nil, nil
+	}
+
+	v, err := s.Get(ctx, rstr.NominationGetRequest_builder{
+		Ref: rstr.NominationRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return v, nil
+}
+
+// watchNominationKeys is the rows a stream is about, resolved once when it opens.
+//
+// A filter names a row and a row is named several ways -- by identifier, or
+// by whatever unique index the schema declared. Resolving them here rather
+// than comparing them per event does three things: the comparison afterwards
+// is an identifier against an identifier, a name that names nothing is
+// refused when the stream opens rather than silently watching nothing, and a
+// row renamed while the stream is open goes on being the row that was asked
+// for -- which is what somebody watching a thing meant.
+func (s sinkNomination) watchNominationKeys(
+	ctx context.Context, fs []*rstr.NominationFilter,
+) ([]pdid.Id, error) {
+	ks := make([]pdid.Id, 0, len(fs))
+	for i, f := range fs {
+		if !f.HasRef() {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters[%d]: a watch says which rows it is about by naming them", i)
+		}
+
+		v, err := s.Get(ctx, rstr.NominationGetRequest_builder{Ref: f.GetRef()}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		k, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		ks = append(ks, k)
+	}
+
+	return ks, nil
+}
+
 type sinkRole struct {
 	rstr.RoleServiceServer
 	store  bare.Store
@@ -7410,41 +7812,7 @@ func (s gateHost) Add(ctx context.Context, req *rstr.HostAddRequest) (*rstr.Host
 		}
 	}
 
-	if ref := req.GetActsAs(); ref != nil {
-		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
-			Ref: ref,
-		}.Build()); err != nil {
-			if status.Code(err) == codes.NotFound {
-				return nil, gate.ErrNotFound("Holder")
-			}
-
-			return nil, err
-		}
-	}
-
 	return s.HostServiceServer.Add(ctx, req)
-}
-
-// Patch refuses an edge moved onto a row this caller cannot see.
-//
-// The wall narrows the row being written and says nothing about what the
-// write points **at**. An edge is a read -- a `Select` walks it -- so one
-// moved out of the caller's scope is a way through the wall one hop later,
-// exactly as it would have been at `Add`.
-func (s gateHost) Patch(ctx context.Context, req *rstr.HostPatchRequest) (*rstr.Host, error) {
-	if ref := req.GetActsAs(); ref != nil {
-		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
-			Ref: ref,
-		}.Build()); err != nil {
-			if status.Code(err) == codes.NotFound {
-				return nil, gate.ErrNotFound("Holder")
-			}
-
-			return nil, err
-		}
-	}
-
-	return s.HostServiceServer.Patch(ctx, req)
 }
 
 type gateHostProof struct {
@@ -7601,6 +7969,76 @@ func (s gateMailDomain) Add(ctx context.Context, req *rstr.MailDomainAddRequest)
 	}
 
 	return s.MailDomainServiceServer.Add(ctx, req)
+}
+
+type gateNomination struct {
+	Gate
+	rstr.NominationServiceServer
+}
+
+func (s Gate) Nomination() rstr.NominationServiceServer {
+	return gateNomination{s, s.Next().Nomination()}
+}
+
+// Add refuses a Nomination put into a Tenant this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `tenant` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Tenant, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateNomination) Add(ctx context.Context, req *rstr.NominationAddRequest) (*rstr.Nomination, error) {
+	if ref := req.GetTenant(); ref != nil {
+		if _, err := s.Gate.Next().Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Tenant")
+			}
+
+			return nil, err
+		}
+	}
+
+	if ref := req.GetActsAs(); ref != nil {
+		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.NominationServiceServer.Add(ctx, req)
+}
+
+// Patch refuses an edge moved onto a row this caller cannot see.
+//
+// The wall narrows the row being written and says nothing about what the
+// write points **at**. An edge is a read -- a `Select` walks it -- so one
+// moved out of the caller's scope is a way through the wall one hop later,
+// exactly as it would have been at `Add`.
+func (s gateNomination) Patch(ctx context.Context, req *rstr.NominationPatchRequest) (*rstr.Nomination, error) {
+	if ref := req.GetActsAs(); ref != nil {
+		if _, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.NominationServiceServer.Patch(ctx, req)
 }
 
 type gateRole struct {
@@ -8705,6 +9143,38 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 
 		return k, b, nil
 
+	case NominationDomain:
+		row, err := s.Nomination().Get(ctx, rstr.NominationGetRequest_builder{
+			Ref: rstr.NominationRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		// Erased softly is still a row; see [erasedNomination].
+		if status.Code(err) == codes.NotFound {
+			row, err = erasedNomination(ctx, s, key)
+		}
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil(), []byte{}, nil
+			}
+
+			return uuid.Nil(), nil, err
+		}
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		if !row.HasTenant() {
+			return uuid.Nil(), b, nil
+		}
+
+		k, err := entuuid.FromBytes(row.GetTenant().GetId())
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		return k, b, nil
+
 	case RoleDomain:
 		row, err := s.Role().Get(ctx, rstr.RoleGetRequest_builder{
 			Ref: rstr.RoleRef_builder{Id: key.Bytes()}.Build(),
@@ -9343,6 +9813,33 @@ func erasedMailDomain(ctx context.Context, s bare.Server, key pdid.Id) (*rstr.Ma
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, status.Error(codes.NotFound, "MailDomain not found")
+		}
+
+		return nil, err
+	}
+
+	return v.Proto(), nil
+}
+
+// erasedNomination is the row `key` names among the rows already erased, which no
+// bare read answers: erasure is part of every reference that server builds.
+// The recorder is the one caller that has to see past it -- the row it asks
+// about was erased by the very write it is recording, and a trail row built
+// blind was filed under the actor's tenant with an empty value, which the
+// tenant whose row was erased could not read.
+func erasedNomination(ctx context.Context, s bare.Server, key pdid.Id) (*rstr.Nomination, error) {
+	k, err := entuuid.FromBytes(key.Bytes())
+	if err != nil {
+		return nil, err
+	}
+
+	q := s.Db.Nomination.Query().Where(nomination.IdEQ(k), nomination.DateErasedNotNil())
+	bare.NominationSelectInit(q, nil)
+
+	v, err := q.Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, status.Error(codes.NotFound, "Nomination not found")
 		}
 
 		return nil, err
@@ -11081,6 +11578,50 @@ func (s interceptTeamMembership) List(ctx context.Context, req *rstr.TeamMembers
 func (s interceptTeamMembership) Watch(req *rstr.TeamMembershipWatchRequest, out grpc.ServerStreamingServer[rstr.TeamMembershipWatchResponse]) error {
 	return grpcx.RunStream(s.stream, s.TeamMembershipServiceServer,
 		rstr.TeamMembershipService_Watch_FullMethodName, req, out, s.TeamMembershipServiceServer.Watch)
+}
+
+func (s Intercept) Nomination() rstr.NominationServiceServer {
+	return interceptNomination{s, s.Next().Nomination()}
+}
+
+type interceptNomination struct {
+	Intercept
+	rstr.NominationServiceServer
+}
+
+func (s interceptNomination) Add(ctx context.Context, req *rstr.NominationAddRequest) (*rstr.Nomination, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.NominationServiceServer,
+		rstr.NominationService_Add_FullMethodName, req, s.NominationServiceServer.Add)
+}
+
+func (s interceptNomination) Get(ctx context.Context, req *rstr.NominationGetRequest) (*rstr.Nomination, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.NominationServiceServer,
+		rstr.NominationService_Get_FullMethodName, req, s.NominationServiceServer.Get)
+}
+
+func (s interceptNomination) Patch(ctx context.Context, req *rstr.NominationPatchRequest) (*rstr.Nomination, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.NominationServiceServer,
+		rstr.NominationService_Patch_FullMethodName, req, s.NominationServiceServer.Patch)
+}
+
+func (s interceptNomination) Apply(ctx context.Context, req *rstr.NominationApplyRequest) (*rstr.Nomination, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.NominationServiceServer,
+		rstr.NominationService_Apply_FullMethodName, req, s.NominationServiceServer.Apply)
+}
+
+func (s interceptNomination) Erase(ctx context.Context, req *rstr.NominationRef) (*rstr.NominationEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.NominationServiceServer,
+		rstr.NominationService_Erase_FullMethodName, req, s.NominationServiceServer.Erase)
+}
+
+func (s interceptNomination) List(ctx context.Context, req *rstr.NominationListRequest) (*rstr.NominationListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.NominationServiceServer,
+		rstr.NominationService_List_FullMethodName, req, s.NominationServiceServer.List)
+}
+
+func (s interceptNomination) Watch(req *rstr.NominationWatchRequest, out grpc.ServerStreamingServer[rstr.NominationWatchResponse]) error {
+	return grpcx.RunStream(s.stream, s.NominationServiceServer,
+		rstr.NominationService_Watch_FullMethodName, req, out, s.NominationServiceServer.Watch)
 }
 
 func (s Intercept) Session() rstr.SessionServiceServer {
@@ -13587,6 +14128,84 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.TeamMembership().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.NominationService_Add_FullMethodName:
+		v := &rstr.NominationAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Nomination().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.NominationService_Get_FullMethodName:
+		v := &rstr.NominationGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Nomination().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.NominationService_Patch_FullMethodName:
+		v := &rstr.NominationPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Nomination().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.NominationService_Apply_FullMethodName:
+		v := &rstr.NominationApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Nomination().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.NominationService_Erase_FullMethodName:
+		v := &rstr.NominationRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Nomination().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.NominationService_List_FullMethodName:
+		v := &rstr.NominationListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Nomination().List(ctx, v)
 		if err != nil {
 			return nil, err
 		}

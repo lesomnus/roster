@@ -201,6 +201,18 @@ func (f MailDomainFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MailDomainMutation", m)
 }
 
+// The NominationFunc type is an adapter to allow the use of ordinary
+// function as Nomination mutator.
+type NominationFunc func(context.Context, *ent.NominationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f NominationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.NominationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.NominationMutation", m)
+}
+
 // The OutboxFunc type is an adapter to allow the use of ordinary
 // function as Outbox mutator.
 type OutboxFunc func(context.Context, *ent.OutboxMutation) (ent.Value, error)

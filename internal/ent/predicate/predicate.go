@@ -65,6 +65,9 @@ type Link func(*sql.Selector)
 // MailDomain is the predicate function for maildomain builders.
 type MailDomain func(*sql.Selector)
 
+// Nomination is the predicate function for nomination builders.
+type Nomination func(*sql.Selector)
+
 // Outbox is the predicate function for outbox builders.
 type Outbox func(*sql.Selector)
 
