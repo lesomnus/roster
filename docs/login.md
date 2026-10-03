@@ -858,17 +858,18 @@ a while, and the refusal was right about the thing it named: an `rk_` resolves t
 a frame with no tenant and the policy hands it `frame.Everything`, so what kept
 contoso's request out of fabrikam's rows would be the app's own code.
 
-It is **answered** rather than waived. A `Host` may nominate a holder --
-`acts_as` -- and a request that says which name it arrived at is answered as that
-holder:
+It is **answered** rather than waived. A tenant nominates a holder for the app's
+key -- a `Nomination` -- and a request that says which name it arrived at is
+answered as that holder:
 
 ```
 authorization: Bearer rk_…          who is calling
 roster-at: contoso.example.com      which name this call is about
 ```
 
-roster resolves the name to its tenant and to the holder that tenant nominated,
-and the frame is **that holder's**: their bindings, their tenant, and
+roster resolves the name to its tenant, and the key to the holder that tenant
+nominated **for the control-plane holder this key hangs off**, and the frame is
+**that holder's**: their bindings, their tenant, and
 `grpcx.Limit` counting against them rather than against nothing. A name nothing
 claims, or one whose tenant nominated nobody, is refused rather than answered as
 the key -- which would hand back the wide frame the caller was narrowing.

@@ -34,8 +34,14 @@ import (
 // no server package but that one; the reasoning is there.
 const HeaderAt = front.HeaderAt
 
-// Nominated is the holder a name's `Host` row put in `acts_as`, or nil where
-// there is no such row or it nominates nobody.
+// Nominated is the holder `borrower`'s keys are answered as in the tenant that
+// answers at `at`, or nil where no name is that and no [app.Nomination] says so.
+//
+// Two lookups, and each answers a different question. The `Host` says **which
+// tenant** the name is; the `Nomination` says **who this app is** there, found
+// by the control-plane holder the presented key hangs off. They used to be one
+// field on the `Host`, which made a name able to nominate one app -- and the
+// Login App and a product arrive at the same name (`nomination.proto`).
 //
 // Factored out of [At] because [Acting] needs the same answer: a delegation is
 // bound to the caller it was issued to, and when a deployment key is narrowed
@@ -45,24 +51,43 @@ const HeaderAt = front.HeaderAt
 // which holder a name borrows.
 //
 // The tenant comes back on the holder, selected, because both callers need it.
-func Nominated(ctx context.Context, tenant app.Server, at string) (*app.Holder, error) {
-	if tenant == nil || at == "" {
+func Nominated(ctx context.Context, tenant app.Server, at string, borrower []byte) (*app.Holder, error) {
+	if tenant == nil || at == "" || len(borrower) == 0 {
 		return nil, nil
 	}
 
 	v, err := tenant.Host().Get(ctx, app.HostGetRequest_builder{
-		Ref: app.HostRef_builder{Name: &at}.Build(),
-		Select: app.HostSelect_builder{
-			ActsAs: app.HolderSelect_builder{
-				Tenant: app.TenantSelect_builder{}.Build(),
-			}.Build(),
-		}.Build(),
+		Ref:    app.HostRef_builder{Name: &at}.Build(),
+		Select: app.HostSelect_builder{Tenant: app.TenantSelect_builder{}.Build()}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
 	}
 
-	h := v.GetActsAs()
+	n, err := tenant.Nomination().Get(ctx, app.NominationGetRequest_builder{
+		Ref: app.NominationRef_builder{
+			Borrower: app.NominationRefByBorrower_builder{
+				Tenant:     app.TenantRef_builder{Id: v.GetTenant().GetId()}.Build(),
+				BorrowerId: borrower,
+			}.Build(),
+		}.Build(),
+		Select: app.NominationSelect_builder{
+			ActsAs: app.HolderSelect_builder{
+				Tenant: app.TenantSelect_builder{}.Build(),
+			}.Build(),
+		}.Build(),
+	}.Build())
+	if status.Code(err) == codes.NotFound {
+		// The tenant answers at this name and has not said who this app is
+		// there. Nobody, rather than an error: the caller refuses either way,
+		// and the two are told apart in its log rather than on the wire.
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	h := n.GetActsAs()
 	if h == nil || len(h.GetId()) == 0 {
 		return nil, nil
 	}
@@ -85,7 +110,7 @@ func ArrivedAt(md metadata.MD) string {
 	return out
 }
 
-// At resolves a **deployment key** down to the holder a `Host` nominates.
+// At resolves a **deployment key** down to the holder a tenant nominated for it.
 //
 // # What it is for
 //
@@ -94,16 +119,21 @@ func ArrivedAt(md metadata.MD) string {
 // keeps contoso's request out of fabrikam's rows is the app's own code. That is
 // what `docs/login.md` refuses an `rk_` front door for.
 //
-// A `Host` names the holder its tenant nominated (`Host.acts_as`), so there is
-// something to narrow **to**: a request carrying `roster-at` is answered as
-// that holder, in that tenant, with their bindings and nothing wider.
+// The name a request declares (`roster-at`) is a `Host`, which says the tenant;
+// a [app.Nomination] in that tenant says who **this key's holder** is there.
+// So there is something to narrow **to**: that holder, in that tenant, with
+// their bindings and nothing wider.
 //
-// # It grants nothing, and that is why it needs no rule
+// # Less on one axis, and not on the other
 //
-// The caller already saw every tenant. What this does is take that away for one
-// request, so there is no escalation to refuse and nothing for `mayGrant` to
-// compare: a nomination is a tenant choosing how narrow the app in front of
-// them is, not a permission it is given.
+// The caller already saw every tenant, so this takes the tenant axis away for
+// one request. It does **not** take methods away: the frame is the nominated
+// holder's bindings, and the key's own methods are not consulted, so a key
+// minted for three reads comes out holding whatever that holder was granted.
+// That is why the nomination is found by the key -- a key nobody nominated is
+// refused here rather than borrowing whatever the name pointed at, which is
+// what `Host.acts_as` allowed (#73) -- and why writing a nomination is held to
+// the rule a way into an account is (`server/core`, `mayWriteAWayIn`).
 //
 // # Where it sits
 //
@@ -151,15 +181,16 @@ func At(deployment app.Server, tenant app.Server) auth.Handler {
 		if !strings.HasPrefix(token, PrefixDeployment) {
 			return no()
 		}
-		if _, err := findKey(ctx, deployment, token); err != nil {
+		k, err := findKey(ctx, deployment, token)
+		if err != nil || k.Holder == nil {
 			return no()
 		}
 
-		h, err := Nominated(ctx, tenant, at)
+		h, err := Nominated(ctx, tenant, at, k.Holder.GetId())
 		if err != nil || h == nil {
-			// A name nothing claims, or one that is here and nominates nobody.
-			// Refused rather than answered as the key, because answering would
-			// hand back the wide frame the caller was trying to narrow --
+			// A name nothing claims, or a tenant that nominated nobody for this
+			// key. Refused rather than answered as the key, because answering
+			// would hand back the wide frame the caller was trying to narrow --
 			// silently.
 			return no()
 		}

@@ -507,24 +507,38 @@ Two halves, and neither takes a list of tenants.
 and there is no Secret at all. What it allows is the three reads that work out
 whose flow this is and nothing else.
 
-**Per name a tenant registered:** this deployment's own front door inside that
-tenant -- a `login-app` holder, a role holding what the app calls as itself, the
-binding -- and the `Host` row pointed at it (`acts_as`), which is what roster
-narrows the one key **to** on every call. Walked off the `Host` rows rather than a
-list, because a tenant that registered a name is a tenant this app fronts (#42).
+**Per tenant that registered a name:** this deployment's own front door inside
+that tenant -- a `login-app` holder, a role holding what the app calls as itself,
+one binding -- and a `Nomination` saying the key's control-plane holder is
+answered as it there, which is what roster narrows the one key **to** on every
+call. Found off the `Host` rows rather than a list, because a tenant that
+registered a name is a tenant this app fronts (#42). Once per tenant, whatever
+number of names it has, and it touches no other app's nomination: two
+roster-hosted apps arriving at one name are two nominations, not one field to
+fight over (#73).
 
 A deployment with no names yet is **said and not refused**, because this runs on
 every start and a fresh volume has nothing to nominate. It replaces rather than
 adds -- a key cannot be read back, so a restart is a rotation.
 
-**A name declared in `resources:` is nominated on the next start, not this one.**
-This runs *before* the server, and the server is what applies `resources:` -- so
-the pass that would nominate a new `Host` row happens before the row exists, and
-the row arrives with `acts_as` unset. A flow for it then resolves to a tenant and
-is refused at `Vouch.Delegate`, because `keys.At` will not answer as the key for a
-name that nominates nobody. One restart fixes it, and a deployment that adds names
-by hand rather than by file does not have it at all: write the row, and the next
-start nominates.
+**A tenant's first name declared in `resources:` is nominated in on the next
+start, not this one.** This runs *before* the server, and the server is what
+applies `resources:` -- so the pass that would nominate in a tenant that has just
+got its first `Host` row happens before the row exists, and the tenant has no
+`Nomination` for the key. A flow for it then resolves to a tenant and is refused
+at `Vouch.Delegate`, because `keys.At` will not answer as the key for a tenant
+that nominated nobody for it. One restart fixes it. A further name for a tenant
+already nominated in works on the start that applies it, and a deployment that
+adds names by hand rather than by file does not have it at all: write the row,
+and the next start nominates.
+
+**Upgrading from `Host.acts_as`.** The field is gone (`host.proto` reserves 8)
+and its column is left where it was; nothing reads it. The first start of this
+version's `login provision` writes the nominations from the names, so a
+deployment that runs it as an init container -- `deploy/` does -- needs nothing
+done. A roster-hosted app other than the Login App that relied on a name's
+`acts_as` has to be nominated in each tenant before it is upgraded to, or its
+calls are refused.
 
 Beside the process is where it belongs: an `initContainer` in Kubernetes, a line
 before `ExecStart` on a box. `deploy/` is that, as manifests.

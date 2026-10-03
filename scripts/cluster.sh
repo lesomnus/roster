@@ -234,13 +234,16 @@ resync() {
 # renominated is roster restarted so that `login provision` sees a name that was
 # not there when it last ran.
 #
-# **Why a declared name takes two starts.** `roster login provision` is an init
-# container, so it runs *before* `serve` -- and `serve` is what applies
-# `resources:`. So the pass that would nominate the holder a new `Host` row
-# borrows happens before the row exists, and the row arrives with `acts_as`
-# unset. What that looks like from a walk is `WhoseHost` answering fine and
-# `Vouch.Delegate` answering `Unauthenticated`, because `keys.At` refuses a name
-# that nominates nobody rather than answering as the key.
+# **Why a tenant's first declared name takes two starts.** `roster login
+# provision` is an init container, so it runs *before* `serve` -- and `serve` is
+# what applies `resources:`. So the pass that would nominate the Login App in a
+# tenant that has just got its first `Host` row happens before the row exists,
+# and the tenant has no `Nomination` for the app's key yet. What that looks like
+# from a walk is `WhoseHost` answering fine and `Vouch.Delegate` answering
+# `Unauthenticated`, because `keys.At` refuses a tenant that nominated nobody for
+# this key rather than answering as the key. A further name in a tenant already
+# nominated in needs no second start: the nomination is the tenant's, not the
+# name's.
 #
 # It is not a rig quirk: any deployment that declares a name in a file has it, and
 # `docs/operating.md` says so beside the command. The first start already needed
@@ -1366,10 +1369,10 @@ resync /w/behind || two=$?
 # `resources.yaml` is in the `roster` ConfigMap, whose name carries a hash of its
 # contents -- so declaring the second name gives the Deployment a new pod template
 # and a rollout. Two things have to happen on that rollout and both are the
-# pod's: `serve` applies the new `Host` row, and the `login provision` init
-# container nominates the holder that name borrows (`Host.acts_as`). Until the
-# second of those, a flow raised for the client resolves to a name that claims
-# nobody and is refused.
+# pod's: `serve` applies the new `Host` row, and -- for a tenant that had no
+# name before -- the `login provision` init container nominates the Login App in
+# it. Until both, a flow raised for the client resolves to a name that claims
+# nobody, or to a tenant that nominated nobody for the key, and is refused.
 #
 # What that looks like from the walk is `the password was not accepted`, which is
 # a sentence about the wrong thing; it cost a CI run, where everything is slower

@@ -44,6 +44,8 @@ type Tx struct {
 	Link *LinkClient
 	// MailDomain is the client for interacting with the MailDomain builders.
 	MailDomain *MailDomainClient
+	// Nomination is the client for interacting with the Nomination builders.
+	Nomination *NominationClient
 	// Outbox is the client for interacting with the Outbox builders.
 	Outbox *OutboxClient
 	// Role is the client for interacting with the Role builders.
@@ -207,6 +209,7 @@ func (tx *Tx) init() {
 	tx.Identity = NewIdentityClient(tx.config)
 	tx.Link = NewLinkClient(tx.config)
 	tx.MailDomain = NewMailDomainClient(tx.config)
+	tx.Nomination = NewNominationClient(tx.config)
 	tx.Outbox = NewOutboxClient(tx.config)
 	tx.Role = NewRoleClient(tx.config)
 	tx.Session = NewSessionClient(tx.config)

@@ -22,13 +22,6 @@ func (e *Host) Proto() *rstr.Host {
 	x.SetName(e.Name)
 	x.SetDesc(e.Desc)
 	x.SetLabels(e.Labels)
-	if v := e.Edges.ActsAs; v != nil {
-		x.SetActsAs(v.Proto())
-	} else if v := e.ActsAsId; v != *new(uuid.UUID) {
-		r := &rstr.Holder{}
-		r.SetId(v[:])
-		x.SetActsAs(r)
-	}
 	if e.DateProved != nil {
 		x.SetDateProved(timestamppb.New(*e.DateProved))
 	}

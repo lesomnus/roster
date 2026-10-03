@@ -15,21 +15,19 @@ import (
 
 // Mutation represents an operation that mutates the Host nodes in the graph.
 type Mutation struct {
-	op             ent.Op
-	typ            string
-	name           *string
-	desc           *string
-	labels         *map[string]string
-	date_proved    *time.Time
-	date_updated   *time.Time
-	date_erased    *time.Time
-	date_created   *time.Time
-	clearedFields  map[string]struct{}
-	tenant         *uuid.UUID
-	clearedtenant  bool
-	acts_as        *uuid.UUID
-	clearedacts_as bool
-	predicates     []predicate.Host
+	op            ent.Op
+	typ           string
+	name          *string
+	desc          *string
+	labels        *map[string]string
+	date_proved   *time.Time
+	date_updated  *time.Time
+	date_erased   *time.Time
+	date_created  *time.Time
+	clearedFields map[string]struct{}
+	tenant        *uuid.UUID
+	clearedtenant bool
+	predicates    []predicate.Host
 }
 
 // NewMutation creates a new Mutation for the Host entity.
@@ -250,38 +248,6 @@ func (m *Mutation) ResetTenantId() {
 	m.tenant = nil
 }
 
-// SetActsAsId sets the "acts_as_id" field.
-func (m *Mutation) SetActsAsId(u uuid.UUID) {
-	m.acts_as = &u
-}
-
-// ActsAsId returns the value of the "acts_as_id" field in the mutation.
-func (m *Mutation) ActsAsId() (r uuid.UUID, exists bool) {
-	v := m.acts_as
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ClearActsAsId clears the value of the "acts_as_id" field.
-func (m *Mutation) ClearActsAsId() {
-	m.acts_as = nil
-	m.clearedFields[FieldActsAsId] = struct{}{}
-}
-
-// ActsAsIdCleared returns if the "acts_as_id" field was cleared in this mutation.
-func (m *Mutation) ActsAsIdCleared() bool {
-	_, ok := m.clearedFields[FieldActsAsId]
-	return ok
-}
-
-// ResetActsAsId resets all changes to the "acts_as_id" field.
-func (m *Mutation) ResetActsAsId() {
-	m.acts_as = nil
-	delete(m.clearedFields, FieldActsAsId)
-}
-
 // ClearTenant clears the "tenant" edge to the Tenant entity.
 func (m *Mutation) ClearTenant() {
 	m.clearedtenant = true
@@ -307,33 +273,6 @@ func (m *Mutation) TenantIds() (ids []uuid.UUID) {
 func (m *Mutation) ResetTenant() {
 	m.tenant = nil
 	m.clearedtenant = false
-}
-
-// ClearActsAs clears the "acts_as" edge to the Holder entity.
-func (m *Mutation) ClearActsAs() {
-	m.clearedacts_as = true
-	m.clearedFields[FieldActsAsId] = struct{}{}
-}
-
-// ActsAsCleared reports if the "acts_as" edge to the Holder entity was cleared.
-func (m *Mutation) ActsAsCleared() bool {
-	return m.ActsAsIdCleared() || m.clearedacts_as
-}
-
-// ActsAsIds returns the "acts_as" edge Ids in the mutation.
-// Note that Ids always returns len(Ids) <= 1 for unique edges, and you should use
-// ActsAsId instead. It exists only for internal usage by the builders.
-func (m *Mutation) ActsAsIds() (ids []uuid.UUID) {
-	if id := m.acts_as; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetActsAs resets all changes to the "acts_as" edge.
-func (m *Mutation) ResetActsAs() {
-	m.acts_as = nil
-	m.clearedacts_as = false
 }
 
 // Where appends a list predicates to the Mutation builder.
@@ -370,7 +309,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 8)
 	if m.name != nil {
 		fields = append(fields, FieldName)
 	}
@@ -394,9 +333,6 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.tenant != nil {
 		fields = append(fields, FieldTenantId)
-	}
-	if m.acts_as != nil {
-		fields = append(fields, FieldActsAsId)
 	}
 	return fields
 }
@@ -422,8 +358,6 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateCreated()
 	case FieldTenantId:
 		return m.TenantId()
-	case FieldActsAsId:
-		return m.ActsAsId()
 	}
 	return nil, false
 }
@@ -496,13 +430,6 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetTenantId(v)
 		return nil
-	case FieldActsAsId:
-		v, ok := value.(uuid.UUID)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetActsAsId(v)
-		return nil
 	}
 	return fmt.Errorf("unknown Host field %s", name)
 }
@@ -545,9 +472,6 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateCreated) {
 		fields = append(fields, FieldDateCreated)
 	}
-	if m.FieldCleared(FieldActsAsId) {
-		fields = append(fields, FieldActsAsId)
-	}
 	return fields
 }
 
@@ -573,9 +497,6 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDateCreated:
 		m.ClearDateCreated()
-		return nil
-	case FieldActsAsId:
-		m.ClearActsAsId()
 		return nil
 	}
 	return fmt.Errorf("unknown Host nullable field %s", name)
@@ -609,21 +530,15 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldTenantId:
 		m.ResetTenantId()
 		return nil
-	case FieldActsAsId:
-		m.ResetActsAsId()
-		return nil
 	}
 	return fmt.Errorf("unknown Host field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *Mutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	if m.tenant != nil {
 		edges = append(edges, EdgeTenant)
-	}
-	if m.acts_as != nil {
-		edges = append(edges, EdgeActsAs)
 	}
 	return edges
 }
@@ -636,17 +551,13 @@ func (m *Mutation) AddedIds(name string) []ent.Value {
 		if id := m.tenant; id != nil {
 			return []ent.Value{*id}
 		}
-	case EdgeActsAs:
-		if id := m.acts_as; id != nil {
-			return []ent.Value{*id}
-		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *Mutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
@@ -658,12 +569,9 @@ func (m *Mutation) RemovedIds(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *Mutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	if m.clearedtenant {
 		edges = append(edges, EdgeTenant)
-	}
-	if m.clearedacts_as {
-		edges = append(edges, EdgeActsAs)
 	}
 	return edges
 }
@@ -674,8 +582,6 @@ func (m *Mutation) EdgeCleared(name string) bool {
 	switch name {
 	case EdgeTenant:
 		return m.clearedtenant
-	case EdgeActsAs:
-		return m.clearedacts_as
 	}
 	return false
 }
@@ -687,9 +593,6 @@ func (m *Mutation) ClearEdge(name string) error {
 	case EdgeTenant:
 		m.ClearTenant()
 		return nil
-	case EdgeActsAs:
-		m.ClearActsAs()
-		return nil
 	}
 	return fmt.Errorf("unknown Host unique edge %s", name)
 }
@@ -700,9 +603,6 @@ func (m *Mutation) ResetEdge(name string) error {
 	switch name {
 	case EdgeTenant:
 		m.ResetTenant()
-		return nil
-	case EdgeActsAs:
-		m.ResetActsAs()
 		return nil
 	}
 	return fmt.Errorf("unknown Host edge %s", name)

@@ -156,12 +156,16 @@ func mintingOf(cl *xli.Command) (minting, error) {
 
 	allow, _ := flg.Find[[]string](cl, "allow")
 	methods := cmd.SplitMethods(allow)
-	if len(methods) == 0 {
+	narrowed, _ := flg.Find[bool](cl, "narrowed")
+	if len(methods) == 0 && !narrowed {
 		// Refused rather than defaulted, in either direction. Defaulting
 		// to everything hands out more than anybody asked for, and
 		// defaulting to nothing mints a key that silently does not work
 		// -- which is worse to debug than being told now.
-		return minting{}, errors.New("--allow: a key that allows nothing is not a key; name the methods")
+		//
+		// `--narrowed` is the one key with nothing on it that works, and it
+		// has to be said: see [narrowedFlag].
+		return minting{}, errors.New("--allow: a key that allows nothing is not a key; name the methods, or say --narrowed")
 	}
 
 	m := minting{name: name, methods: methods}

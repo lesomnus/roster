@@ -114,7 +114,6 @@ type Host struct {
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
 	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_ActsAs      *Holder                `protobuf:"bytes,8,opt,name=acts_as,json=actsAs"`
 	xxx_hidden_DateProved  *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=date_proved,json=dateProved"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
@@ -183,13 +182,6 @@ func (x *Host) GetLabels() map[string]string {
 	return nil
 }
 
-func (x *Host) GetActsAs() *Holder {
-	if x != nil {
-		return x.xxx_hidden_ActsAs
-	}
-	return nil
-}
-
 func (x *Host) GetDateProved() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateProved
@@ -241,10 +233,6 @@ func (x *Host) SetLabels(v map[string]string) {
 	x.xxx_hidden_Labels = v
 }
 
-func (x *Host) SetActsAs(v *Holder) {
-	x.xxx_hidden_ActsAs = v
-}
-
 func (x *Host) SetDateProved(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateProved = v
 }
@@ -266,13 +254,6 @@ func (x *Host) HasTenant() bool {
 		return false
 	}
 	return x.xxx_hidden_Tenant != nil
-}
-
-func (x *Host) HasActsAs() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_ActsAs != nil
 }
 
 func (x *Host) HasDateProved() bool {
@@ -305,10 +286,6 @@ func (x *Host) HasDateCreated() bool {
 
 func (x *Host) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
-}
-
-func (x *Host) ClearActsAs() {
-	x.xxx_hidden_ActsAs = nil
 }
 
 func (x *Host) ClearDateProved() {
@@ -353,37 +330,6 @@ type Host_builder struct {
 	// setting goes in a field, so that what is configuration and what is a note
 	// stay tellable apart.
 	Labels map[string]string
-	// The holder a **deployment key** borrows when a request says it arrived
-	// here, and unset is nobody to borrow.
-	//
-	// # What it is for
-	//
-	// One Login App instance fronting many tenants. It holds one credential
-	// (`docs/login.md`), and the roster-hosted shape is an `rk_` -- which
-	// resolves to a frame with no tenant, so the policy hands it
-	// `frame.Everything` and what keeps one tenant's rows out of another's is the
-	// app's own code.
-	//
-	// This is what roster narrows it **to** instead. A request carrying
-	// `roster-at: contoso.example.com` resolves through this row to a tenant and
-	// to the holder that tenant put here, and the frame is that holder's: their
-	// bindings, their tenant, and `grpcx.Limit` counting against them rather than
-	// against nothing.
-	//
-	// # It grants nothing
-	//
-	// An `rk_` already sees every tenant. Borrowing a nominated holder's frame is
-	// strictly **less** than what it had, which is why this needs no escalation
-	// rule of its own and why either a tenant's own administrator or a roster
-	// operator may write it. What it is, is a tenant choosing how narrow the app
-	// in front of them is.
-	//
-	// # Whose holder
-	//
-	// One of this tenant's, and `server/core` refuses one from another: a row
-	// that named somebody else's would hand a caller a frame in a tenant that
-	// never agreed to it, which is the shape [core.agrees] exists for.
-	ActsAs *Holder
 	// When roster looked up DNS and read back what it had asked for, and **unset
 	// is a row nobody proved**.
 	//
@@ -426,7 +372,6 @@ func (b0 Host_builder) Build() *Host {
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
 	x.xxx_hidden_Labels = b.Labels
-	x.xxx_hidden_ActsAs = b.ActsAs
 	x.xxx_hidden_DateProved = b.DateProved
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
@@ -987,14 +932,13 @@ var File_app_host_proto protoreflect.FileDescriptor
 
 const file_app_host_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/host.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xa7\x05\n" +
+	"\x0eapp/host.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xfc\x04\n" +
 	"\x04Host\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x1a\n" +
 	"\x04name\x18\x05 \x01(\tB\x06\xea\x82\x16\x020\x01R\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\tR\x04desc\x120\n" +
-	"\x06labels\x18\a \x03(\v2\x18.roster.Host.LabelsEntryR\x06labels\x12/\n" +
-	"\aacts_as\x18\b \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x028\x01R\x06actsAs\x12I\n" +
+	"\x06labels\x18\a \x03(\v2\x18.roster.Host.LabelsEntryR\x06labels\x12I\n" +
 	"\vdate_proved\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\f\xea\x82\x16\x028\x01\xaa\xc1\x16\x02\x10\x01R\n" +
 	"dateProved\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
@@ -1013,7 +957,7 @@ const file_app_host_proto_rawDesc = "" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
-	"\x06tenant \x14(d\"\xe9\x04\n" +
+	"\x06tenant \x14(dJ\x04\b\b\x10\t\"\xe9\x04\n" +
 	"\n" +
 	"MailDomain\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
@@ -1076,32 +1020,30 @@ var file_app_host_proto_goTypes = []any{
 	nil,                           // 3: roster.Host.LabelsEntry
 	nil,                           // 4: roster.MailDomain.LabelsEntry
 	(*Tenant)(nil),                // 5: roster.Tenant
-	(*Holder)(nil),                // 6: roster.Holder
-	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
+	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
 }
 var file_app_host_proto_depIdxs = []int32{
 	5,  // 0: roster.Host.tenant:type_name -> roster.Tenant
 	3,  // 1: roster.Host.labels:type_name -> roster.Host.LabelsEntry
-	6,  // 2: roster.Host.acts_as:type_name -> roster.Holder
-	7,  // 3: roster.Host.date_proved:type_name -> google.protobuf.Timestamp
-	7,  // 4: roster.Host.date_updated:type_name -> google.protobuf.Timestamp
-	7,  // 5: roster.Host.date_erased:type_name -> google.protobuf.Timestamp
-	7,  // 6: roster.Host.date_created:type_name -> google.protobuf.Timestamp
-	5,  // 7: roster.MailDomain.tenant:type_name -> roster.Tenant
-	4,  // 8: roster.MailDomain.labels:type_name -> roster.MailDomain.LabelsEntry
-	7,  // 9: roster.MailDomain.date_updated:type_name -> google.protobuf.Timestamp
-	7,  // 10: roster.MailDomain.date_erased:type_name -> google.protobuf.Timestamp
-	7,  // 11: roster.MailDomain.date_created:type_name -> google.protobuf.Timestamp
-	5,  // 12: roster.HostProof.tenant:type_name -> roster.Tenant
-	7,  // 13: roster.HostProof.date_expires:type_name -> google.protobuf.Timestamp
-	7,  // 14: roster.HostProof.date_updated:type_name -> google.protobuf.Timestamp
-	7,  // 15: roster.HostProof.date_erased:type_name -> google.protobuf.Timestamp
-	7,  // 16: roster.HostProof.date_created:type_name -> google.protobuf.Timestamp
-	17, // [17:17] is the sub-list for method output_type
-	17, // [17:17] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	6,  // 2: roster.Host.date_proved:type_name -> google.protobuf.Timestamp
+	6,  // 3: roster.Host.date_updated:type_name -> google.protobuf.Timestamp
+	6,  // 4: roster.Host.date_erased:type_name -> google.protobuf.Timestamp
+	6,  // 5: roster.Host.date_created:type_name -> google.protobuf.Timestamp
+	5,  // 6: roster.MailDomain.tenant:type_name -> roster.Tenant
+	4,  // 7: roster.MailDomain.labels:type_name -> roster.MailDomain.LabelsEntry
+	6,  // 8: roster.MailDomain.date_updated:type_name -> google.protobuf.Timestamp
+	6,  // 9: roster.MailDomain.date_erased:type_name -> google.protobuf.Timestamp
+	6,  // 10: roster.MailDomain.date_created:type_name -> google.protobuf.Timestamp
+	5,  // 11: roster.HostProof.tenant:type_name -> roster.Tenant
+	6,  // 12: roster.HostProof.date_expires:type_name -> google.protobuf.Timestamp
+	6,  // 13: roster.HostProof.date_updated:type_name -> google.protobuf.Timestamp
+	6,  // 14: roster.HostProof.date_erased:type_name -> google.protobuf.Timestamp
+	6,  // 15: roster.HostProof.date_created:type_name -> google.protobuf.Timestamp
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_app_host_proto_init() }

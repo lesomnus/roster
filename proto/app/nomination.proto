@@ -1,0 +1,145 @@
+edition = "2023";
+
+package roster;
+
+import "roster/payday/holder.proto";
+import "roster/payday/tenant.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// Nomination is who a deployment key acts as in one tenant.
+//
+// # What it is for
+//
+// A roster operator runs one instance of an app for many tenants -- the
+// roster-hosted Login App, or a product doing the same -- and that instance
+// holds one `rk_`. Unnarrowed, an `rk_` is answered with `frame.Everything` and
+// what keeps one tenant's rows out of another's is the app's own code. A request
+// that says which name it arrived at (`roster-at`) is answered instead as the
+// holder **this** row names, in this tenant, with that holder's bindings: the
+// wall is roster's again, the trail of the tenant written to names one of its
+// own holders, and what the app may do there is the tenant's to grant.
+//
+// # Why it is not a field on Host
+//
+// It was: `Host.acts_as`. A name says **which tenant** a request is about, and
+// it was also made to say **who to be** -- and those are facts about different
+// things. The first belongs to the name. The second belongs to the app, and
+// more than one app arrives at the same name: the Login App narrows to the host
+// of a product's redirect, which is the name that product is served at, and the
+// product narrows to the same name for its own calls. One field could nominate
+// one of them, and `roster login provision` rewrote it to its own holder on
+// every start.
+//
+// Here the name only chooses the tenant, and the nomination is found by **which
+// key asked**: one row per tenant per app. So two apps never contend for a name,
+// and a key nobody nominated is refused -- which also closes what `acts_as` left
+// open, that any `rk_` could borrow whatever any name nominated (#73).
+//
+// # It is the tenant's, and it narrows rather than grants -- for the tenant
+//
+// An `rk_` already reaches every tenant, so being answered as one tenant's
+// holder is less on that axis. It is not less on the other: the frame becomes
+// that holder's bindings and the key's own methods are not consulted
+// (`server/keys/at.go`). So writing one is writing **a way to act as that
+// holder**, held by whoever holds the key, and `server/core` asks of it what it
+// asks of a key or a credential: nobody nominates a holder wider than
+// themselves (`mayWriteAWayIn`). A tenant administrator nominating the app's
+// holder they made for it passes; nominating their owner does not.
+message Nomination {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  Tenant tenant = 2 [(orm.edge) = {immutable: true}];
+
+  // 4 to 7 are left empty: nobody names a nomination, and it is found by the
+  // pair below rather than by a word.
+
+  // The control-plane holder whose deployment keys borrow through this row.
+  //
+  // # A holder and not a key
+  //
+  // A key is rotated -- `roster login provision` mints a fresh one on every
+  // start -- and the holder it hangs off is what stays. Naming the key would
+  // make every rotation a nomination to rewrite in every tenant.
+  //
+  // # An identifier and not an edge
+  //
+  // That holder is in the **control plane**, another database, and there is no
+  // query from one to the other (`docs/position.md`, § 'Two planes, one
+  // schema'). So it is the identifier, the way `Audit.actor_id` is, and what
+  // checks it is `keys.At` comparing it with the holder of the key that was
+  // presented -- found in the control plane, by the key.
+  //
+  // A tenant cannot see the control plane, so a tenant administrator writing
+  // one is told this value by whoever runs the app. That is the same thing as
+  // being told which app it is.
+  bytes borrower_id = 8 [(orm.field) = {
+    type: TYPE_UUID
+    immutable: true
+  }];
+
+  // Who the key is answered as. One of **this** tenant's holders: a nomination
+  // naming somebody else's would hand a caller a frame in a tenant that never
+  // agreed to it, which is the shape `server/core`'s `agrees` exists for.
+  Holder acts_as = 9 [(orm.edge) = {}];
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {
+            name: "date_created"
+            number: 15
+          },
+          {
+            name: "id"
+            number: 1
+          }
+        ]
+      },
+      // One per app per tenant. Two would be two answers to "who is this key
+      // here", and whichever the lookup found first would be the one.
+      {
+        name: "borrower"
+        refs: [
+          {name: "tenant", number: 2},
+          {name: "borrower_id", number: 8}
+        ]
+        unique: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 27
+
+    list: {
+      order: [{field: {name: "date_created"}}, {field: {name: "id"}}]
+      by: [
+        {name: "ref"},
+        {name: "tenant"},
+        {name: "borrower_id"},
+        {name: "acts_as"}
+      ]
+      size: 20
+      max: 100
+    }
+    watch: {}
+  };
+}

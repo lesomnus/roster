@@ -405,9 +405,11 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 	// call *inside* a flow may do is the nominated holder's role, because
 	// `keys.At` answers as that holder with `frame.Whole()` and does not carry
 	// the key's own list through.
+	var borrower pdid.Id
 	front := func() string {
 		who, err := cmd.HolderNamed(ctx, s.Control, "login-app")
 		x.NoError(err)
+		borrower = who
 		token, sum, err := keys.Mint(keys.PrefixDeployment)
 		x.NoError(err)
 		_, err = s.Control.Ungated.ApiKey().Add(ctx, rstr.ApiKeyAddRequest_builder{
@@ -498,15 +500,21 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 		}.Build())
 		x.NoError(err)
 
-		// The name this tenant answers at, nominating the holder above.
+		// The name this tenant answers at, and the holder above nominated for
+		// this app's key.
 		//
 		// This is what replaced a key per tenant (#36): the app holds one `rk_`
-		// and sends `roster-at` per request, and `Host.acts_as` is what roster
-		// narrows that key **to**. Two clients still reach one sign-in -- a
-		// customer with two products has two -- and both resolve here through
-		// the redirect they named rather than through a map.
+		// and sends `roster-at` per request; the name says which tenant, and the
+		// `Nomination` is what roster narrows that key **to** there. Two clients
+		// still reach one sign-in -- a customer with two products has two -- and
+		// both resolve here through the redirect they named rather than through
+		// a map.
 		_, err = s.Ungated.Host().Add(ctx, rstr.HostAddRequest_builder{
 			Tenant: at, Name: alias + ".app.test",
+		}.Build())
+		x.NoError(err)
+		_, err = s.Ungated.Nomination().Add(ctx, rstr.NominationAddRequest_builder{
+			Tenant: at, BorrowerId: borrower.Bytes(),
 			ActsAs: rstr.HolderRef_builder{Id: front.GetId()}.Build(),
 		}.Build())
 		x.NoError(err)

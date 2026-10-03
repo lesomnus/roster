@@ -8,6 +8,7 @@ import (
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
+	"github.com/lesomnus/xli/flg"
 
 	"github.com/lesomnus/payday/pdcmd"
 
@@ -89,7 +90,7 @@ func newCmdControlKeyAdd(c *cmd.Config) *xli.Command {
 			&arg.String{Name: "HOLDER", Brief: "which holder, by alias; made if there is none"},
 		},
 
-		Flags: mintFlags(),
+		Flags: append(mintFlags(), narrowedFlag()),
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			alias, _ := arg.Get[string](cl, "HOLDER")
@@ -119,6 +120,32 @@ func newCmdControlKeyAdd(c *cmd.Config) *xli.Command {
 			return m.mint(ctx, s.Control.Ungated, who, keys.PrefixDeployment, "@"+alias)
 		}),
 	}
+}
+
+// narrowedFlag is how a deployment key with no methods of its own is asked for.
+//
+// # What such a key is
+//
+// A deployment key's `methods` are what it may do **unnarrowed** -- across every
+// tenant, as itself. A request carrying `roster-at` is answered instead as the
+// holder a tenant nominated for it, with that holder's bindings, and the key's
+// own list is not consulted (`server/keys/at.go`). So the list is the width of
+// the calls an app makes before it knows the tenant: three reads for the Login
+// App, and none at all for a product that always knows which tenant a request is
+// about.
+//
+// That product could not be minted a key. `--allow` refuses empty, because an
+// empty list on any other key is one that silently opens nothing -- and on this
+// one it is exactly the intent: every call must name a tenant, and a call that
+// forgets to is refused rather than answered across all of them. Saying
+// `--narrowed` is what tells the two apart, so a forgotten `--allow` is still
+// the refusal it was.
+//
+// Only here, and not on `roster key add`: a customer's `rt_` resolves to a
+// holder in one tenant already and is never narrowed, so an empty one would be
+// the key that does nothing. #74.
+func narrowedFlag() flg.Flag {
+	return &flg.Switch{Name: "narrowed", Brief: "a key that allows nothing until a request names a tenant with roster-at; --allow may then be empty"}
 }
 
 // newCmdControlVouch is `roster vouch`'s three local commands, on the control

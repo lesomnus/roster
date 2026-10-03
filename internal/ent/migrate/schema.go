@@ -532,7 +532,6 @@ var (
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "tenant_id", Type: field.TypeUuid},
-		{Name: "acts_as_id", Type: field.TypeUuid, Nullable: true},
 	}
 	// HostTable holds the schema information for the "host" table.
 	HostTable = &schema.Table{
@@ -545,12 +544,6 @@ var (
 				Columns:    []*schema.Column{HostColumns[8]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "host_holder_acts_as",
-				Columns:    []*schema.Column{HostColumns[9]},
-				RefColumns: []*schema.Column{HolderColumns[0]},
-				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -733,6 +726,51 @@ var (
 				Name:    "maildomain_name_tenant_id",
 				Unique:  true,
 				Columns: []*schema.Column{MaildomainColumns[1], MaildomainColumns[8]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
+	// NominationColumns holds the columns for the "nomination" table.
+	NominationColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "borrower_id", Type: field.TypeUuid},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "acts_as_id", Type: field.TypeUuid},
+	}
+	// NominationTable holds the schema information for the "nomination" table.
+	NominationTable = &schema.Table{
+		Name:       "nomination",
+		Columns:    NominationColumns,
+		PrimaryKey: []*schema.Column{NominationColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "nomination_tenant_tenant",
+				Columns:    []*schema.Column{NominationColumns[5]},
+				RefColumns: []*schema.Column{TenantColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "nomination_holder_acts_as",
+				Columns:    []*schema.Column{NominationColumns[6]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "nomination_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{NominationColumns[4], NominationColumns[0]},
+			},
+			{
+				Name:    "nomination_borrower_id_tenant_id",
+				Unique:  true,
+				Columns: []*schema.Column{NominationColumns[1], NominationColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -1070,6 +1108,7 @@ var (
 		IdentityTable,
 		LinkTable,
 		MaildomainTable,
+		NominationTable,
 		OutboxTable,
 		RoleTable,
 		SessionTable,
@@ -1132,7 +1171,6 @@ func init() {
 		Table: "holder",
 	}
 	HostTable.ForeignKeys[0].RefTable = TenantTable
-	HostTable.ForeignKeys[1].RefTable = HolderTable
 	HostTable.Annotation = &entsql.Annotation{
 		Table: "host",
 	}
@@ -1152,6 +1190,11 @@ func init() {
 	MaildomainTable.ForeignKeys[0].RefTable = TenantTable
 	MaildomainTable.Annotation = &entsql.Annotation{
 		Table: "maildomain",
+	}
+	NominationTable.ForeignKeys[0].RefTable = TenantTable
+	NominationTable.ForeignKeys[1].RefTable = HolderTable
+	NominationTable.Annotation = &entsql.Annotation{
+		Table: "nomination",
 	}
 	OutboxTable.Annotation = &entsql.Annotation{
 		Table: "outbox",

@@ -1,6 +1,6 @@
 # The entities
 
-roster is twenty-four tables and the arguments for why each is a table. This
+roster is twenty-five tables and the arguments for why each is a table. This
 file is the map: the shape they make, and a paragraph on each.
 
 It is **not** where the reasoning lives. Every entity is declared in a `.proto`
@@ -11,7 +11,7 @@ is short enough to read in one sitting and points at them.
 `docs/position.md` is what roster is for and where it stops. `docs/roadmap.md`
 is the order it was built in.
 
-## One story, told twenty-four times
+## One story, told twenty-five times
 
 Every entity below ends with a line or two about the same deployment, so that
 what a row is **next to** is visible from its own section. Read them in order
@@ -46,7 +46,7 @@ flowchart TB
   W["ways in<br/>🔒 Credential · 🪪 Identity<br/>📧 Email · 🔑 ApiKey"]
   B["with a clock on them<br/>🎫 Delegation · ⏳ Continuation<br/>✨ Link · 🍪 Session"]
   M["what they may do<br/>📜 Role · 🔗 Binding<br/>👥 Group · 🫂 GroupMembership<br/>🎽 Team · 🏅 TeamMembership"]
-  F["the front door<br/>🌐 Host · 🔎 HostProof<br/>📮 MailDomain · 🔌 Connection"]
+  F["the front door<br/>🌐 Host · 🔎 HostProof · 🎟️ Nomination<br/>📮 MailDomain · 🔌 Connection"]
   R["the record<br/>📖 Audit · 📤 Outbox"]
   SM["🚩 SiteMembership"]
 
@@ -482,6 +482,8 @@ replaces would be a set of signed-in browsers.
 ```mermaid
 erDiagram
   "🏢 Tenant"  ||--o{  "🌐 Host" : "answers at"
+  "🏢 Tenant"  ||--o{  "🎟️ Nomination" : "says who each app is"
+  "🎟️ Nomination" }o--||  "👤 Holder" : "acts as"
   "🏢 Tenant"  ||--o{  "📮 MailDomain" : "routes"
   "🏢 Tenant"  ||--o{  "🔌 Connection" : "authenticates through"
 ```
@@ -512,6 +514,24 @@ managing their own names.
 > is contoso's. A front door asks before it knows anybody, which is why the read
 > is on the unwalled server. fabrikam cannot take that name without publishing a
 > record under it, which is the next entity.
+
+### 🎟️ `Nomination` — who a roster-hosted app is, in one tenant
+
+An app a roster operator runs for many tenants holds one deployment key (`rk_`),
+and unnarrowed that key sees every tenant. A request that declares the name it
+arrived at (`roster-at`) is answered instead as the holder this row names: the
+🌐 `Host` says which tenant, and the nomination is found by the **control-plane
+holder the presented key hangs off** -- an identifier, `borrower_id`, because that
+holder is in another database. One per tenant per app, and the holder must be
+that tenant's own. It was a field on 🌐 `Host` (`acts_as`) until two apps had to
+arrive at one name and any `rk_` turned out to borrow whatever a name nominated
+(#73). Writing one is a way to act as that holder, so nobody nominates a holder
+wider than themselves.
+
+> The Login App and a product both arrive at `contoso.example.com`. contoso has
+> two nominations, one per app, so the sign-in is answered as contoso's
+> `login-app` and the product's own calls as contoso's `product` -- each with the
+> bindings contoso gave it, and each in contoso's trail under that name.
 
 ### 🔎 `HostProof` — a name being claimed, and what to publish for it
 
@@ -654,6 +674,7 @@ hard (gone).
 | 🌐 `Host` | 20 | `tenant` edge | -- | soft | `proto/app/host.proto` |
 | 📮 `MailDomain` | 21 | `tenant` edge | -- | soft | `proto/app/host.proto` |
 | 🔎 `HostProof` | 26 | `tenant` edge | -- | soft | `proto/app/host.proto` |
+| 🎟️ `Nomination` | 27 | `tenant` edge | yes | soft | `proto/app/nomination.proto` |
 | ⏳ `Continuation` | 22 | via `holder.tenant` | -- | soft | `proto/app/continuation.proto` |
 | ✨ `Link` | 23 | via `holder.tenant` | -- | soft | `proto/app/link.proto` |
 | 🍪 `Session` | 24 | via `holder.tenant` | -- | soft | `proto/app/session.proto` |

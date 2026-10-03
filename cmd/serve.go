@@ -966,6 +966,11 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 	// compared. The wall narrows a claim to whoever made it.
 	app.RegisterHostProofServiceServer(g, s.HostProof())
 	app.RegisterMailDomainServiceServer(g, s.MailDomain())
+	// Served, reads and all: a nomination names a tenant's holder and a
+	// control-plane identifier, neither of them a secret, and a tenant
+	// administrator is who decides which app acts as whom in their tenant.
+	// `server/core` holds the writes to the rule a way into an account is.
+	app.RegisterNominationServiceServer(g, s.Nomination())
 	app.RegisterConnectionServiceServer(g, s.Connection())
 	app.RegisterHolderServiceServer(g, s.Holder())
 	app.RegisterIdentityServiceServer(g, s.Identity())

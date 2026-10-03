@@ -218,9 +218,36 @@ func ensureRoleNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, ali
 	return got.GetId(), nil
 }
 
-// ensureBinding binds the role to the holder, once.
+// ensureBinding binds the role to the holder across the tenant, once.
+//
+// # Looked for first, because nothing refuses a second
+//
+// This used to `Add` and treat `AlreadyExists` as done -- and `Binding` has no
+// unique index for it to come back with, since the same role may rightly be
+// bound to the same holder at two sites. So every start added one more: a
+// deployment found with sixty-three identical `login-app` bindings on one
+// holder, one per name per restart. They grant nothing extra and are noise in
+// every screen and every audit of who holds what.
+//
+// The tenant-wide one is what this writes, so a binding of the same pair at a
+// site is not it and does not count.
 func ensureBinding(ctx context.Context, s *cmd.Server, role, who []byte) error {
-	_, err := s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+	vs, err := s.Ungated.Binding().List(ctx, rstr.BindingListRequest_builder{
+		Filters: []*rstr.BindingFilter{rstr.BindingFilter_builder{
+			Role:   rstr.RoleRef_builder{Id: role}.Build(),
+			Holder: rstr.HolderRef_builder{Id: who}.Build(),
+		}.Build()},
+	}.Build())
+	if err != nil {
+		return err
+	}
+	for _, v := range vs.GetItems() {
+		if len(v.GetSite().GetId()) == 0 {
+			return nil
+		}
+	}
+
+	_, err = s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
 		Role:   rstr.RoleRef_builder{Id: role}.Build(),
 		Holder: rstr.HolderRef_builder{Id: who}.Build(),
 	}.Build())
