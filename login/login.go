@@ -54,6 +54,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"slices"
 	"time"
 
 	"google.golang.org/grpc"
@@ -805,8 +806,37 @@ func (a *App) decide(w http.ResponseWriter, r *http.Request) {
 // The only place this app reads anybody. What it reads is `Me.Get`, which
 // answers everything a claim could come from in one call, and what it puts in
 // the token is decided by the scope the client asked for -- `claimsOf`.
+//
+// # Only the audiences the client is registered for, by their exact name
+//
+// An access token names the APIs it is for (`aud`), and each API takes only
+// the ones naming it (`docs/apps.md`, "People's tokens") -- so which client may
+// hold a token for which API is the client's registration. Hydra checks a
+// requested audience against it, and checks it as a URL: scheme, host, and a
+// path prefix. An audience that is a URN has a scheme and nothing else, so a
+// client registered for one `urn:` audience was issued tokens for **any** --
+// tyrell, registered for kamino's, got khala's and one that names nothing.
+// Compared here as strings, exactly, and anything else refused: the client is
+// sent back with `invalid_target` (RFC 8707) and nobody's token.
 func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o *tenant) {
 	ctx := r.Context()
+
+	for _, aud := range v.Audience {
+		if slices.Contains(v.Client.Audience, aud) {
+			continue
+		}
+
+		to, err := a.admin.refuseConsent(ctx, v.Challenge, "invalid_target",
+			fmt.Sprintf("%s is not an audience client %s is registered for", aud, v.Client.Id))
+		if err != nil {
+			a.broken(w, r, err)
+
+			return
+		}
+		http.Redirect(w, r, to, http.StatusSeeOther)
+
+		return
+	}
 
 	claims := map[string]any{}
 	as, err := a.door.Acting(withAt(ctx, o.at), r)

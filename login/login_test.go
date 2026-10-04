@@ -69,6 +69,13 @@ type hydra struct {
 	// each challenge will accept, and what the app sent when it tried.
 	codes map[string]string
 	typed map[string]string
+
+	// Audiences: what a challenge asks for, what a client is registered for,
+	// and what the app answered with -- granted, or the error it refused with.
+	audience   map[string][]string // challenge -> requested
+	registered map[string][]string // client -> registered
+	granted    []string
+	refusal    string
 }
 
 func newHydra(t *testing.T) *hydra {
@@ -79,6 +86,9 @@ func newHydra(t *testing.T) *hydra {
 		refusedBy: map[string]bool{},
 		codes:     map[string]string{},
 		typed:     map[string]string{},
+
+		audience:   map[string][]string{},
+		registered: map[string][]string{},
 	}
 
 	m := http.NewServeMux()
@@ -183,22 +193,28 @@ func newHydra(t *testing.T) *hydra {
 		w.WriteHeader(http.StatusNoContent)
 	})
 	m.HandleFunc("PUT /admin/oauth2/auth/requests/consent/reject", func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			Error string `json:"error"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+
 		h.mu.Lock()
-		h.rejected = true
+		h.rejected, h.refusal = true, body.Error
 		h.mu.Unlock()
 
 		writeJson(w, map[string]string{"redirect_to": "/denied"})
 	})
 	m.HandleFunc("PUT /admin/oauth2/auth/requests/consent/accept", func(w http.ResponseWriter, r *http.Request) {
 		var body struct {
-			Session struct {
+			Audience []string `json:"grant_access_token_audience"`
+			Session  struct {
 				IdToken map[string]any `json:"id_token"`
 			} `json:"session"`
 		}
 		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		h.mu.Lock()
-		h.claims = body.Session.IdToken
+		h.claims, h.granted = body.Session.IdToken, body.Audience
 		h.mu.Unlock()
 
 		writeJson(w, map[string]string{"redirect_to": "/done"})
@@ -223,9 +239,15 @@ func (h *hydra) raised(w http.ResponseWriter, r *http.Request, param string) {
 		return
 	}
 
+	h.mu.Lock()
+	asked, registered := h.audience[c], h.registered[client]
+	h.mu.Unlock()
+
 	writeJson(w, map[string]any{
 		"challenge": c,
-		"client":    map[string]string{"client_id": client},
+		"client":    map[string]any{"client_id": client, "audience": registered},
+
+		"requested_access_token_audience": asked,
 
 		// The authorization request, whole, which is what a real Hydra records
 		// and what says **which tenant** this flow is about (#36): the host of
@@ -1517,4 +1539,52 @@ func TestEveryWrongDeviceCodeIsOneAnswer(t *testing.T) {
 		res := post(t, d, "WDJB-MJHT")
 		x.Equal(http.StatusBadGateway, res.StatusCode)
 	})
+}
+
+// TestATokenIsOnlyForTheAudiencesItsClientIsRegisteredFor is consent for an
+// access token, which names the APIs it is for.
+//
+// Hydra checks a requested audience against the client's registration as a
+// URL -- scheme, host, a path prefix -- and a URN is a scheme and nothing else:
+// a client registered for `urn:hday:api:kamino` was issued tokens for
+// `urn:hday:api:khala` too, and for one that names nothing. So the app compares
+// them as strings, and refuses the rest.
+func TestATokenIsOnlyForTheAudiencesItsClientIsRegisteredFor(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+	b := d.browser(t)
+
+	d.hydra.mu.Lock()
+	d.hydra.registered["contoso-web"] = []string{"urn:hday:api:kamino"}
+	d.hydra.audience["c1"] = []string{"urn:hday:api:kamino"}
+	d.hydra.audience["c2"] = []string{"urn:hday:api:khala"}
+	d.hydra.mu.Unlock()
+
+	d.hydra.raise("c1", "contoso-web")
+	_, code := d.signIn(t, b, "c1", "erin", password)
+	x.Equal(http.StatusOK, code)
+	res, err := b.Get(d.app.URL + "/consent?consent_challenge=c1")
+	x.NoError(err)
+	res.Body.Close()
+	x.Equal(http.StatusSeeOther, res.StatusCode)
+
+	d.hydra.mu.Lock()
+	granted, refused := d.hydra.granted, d.hydra.rejected
+	d.hydra.mu.Unlock()
+	x.False(refused)
+	x.Equal([]string{"urn:hday:api:kamino"}, granted)
+
+	// Another API's, which Hydra let through because a URN matches any URN.
+	d.hydra.raise("c2", "contoso-web")
+	_, code = d.signIn(t, b, "c2", "erin", password)
+	x.Equal(http.StatusOK, code)
+	res, err = b.Get(d.app.URL + "/consent?consent_challenge=c2")
+	x.NoError(err)
+	res.Body.Close()
+	x.Equal(http.StatusSeeOther, res.StatusCode)
+
+	d.hydra.mu.Lock()
+	defer d.hydra.mu.Unlock()
+	x.True(d.hydra.rejected, "a token was granted for an audience the client is not registered for")
+	x.Equal("invalid_target", d.hydra.refusal)
 }
