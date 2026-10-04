@@ -147,7 +147,7 @@ func TestABrowserSpeaksConnectToTheAppAndRosterAnswersAsThePerson(t *testing.T) 
 	m := http.NewServeMux()
 	m.Handle("/session", d.Handler())
 	m.Handle("/session/", d.Handler())
-	m.Handle("/", d.Proxy(target, func(context.Context, string) (string, error) { return token, nil }))
+	m.Handle("/", d.Proxy(target, func(context.Context, string) (frontdoor.Bearer, error) { return frontdoor.Bearer{Token: token}, nil }))
 	app := httptest.NewServer(m)
 	t.Cleanup(app.Close)
 

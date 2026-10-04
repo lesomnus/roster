@@ -423,14 +423,15 @@ account:
   base: https://account.contoso.example
   page: { dir: /usr/share/roster/account }
   terminal: true                          # `roster sign-in`; off unless said
-  # keys: left out -- made at start, in memory, one per tenant with a name.
-  # A process of its own names them: { contoso: env:ROSTER_ACCOUNT_KEY_CONTOSO }
+  # key: left out -- one rk_ made at start, narrowed per request to the holder
+  # each tenant nominated. A process of its own names it: file:… from
+  # `roster account provision`. (`keys:` is a tenant running its own copy.)
 
 ldap:
   addr: :389
   bind: key
-  keys:
-    contoso: env:ROSTER_LDAP_KEY_CONTOSO
+  key: file:/run/roster/directory.key     # `roster control key add --allow … directory`,
+                                          # and `roster app install … directory` per tenant
 
 login:                                    # only with Hydra in front; see login.md
   addr: :8091
@@ -460,26 +461,27 @@ already do. `roster serve` opens whichever are named, in the same errgroup as th
 server, so a front door that cannot come up is a start-up failure rather than a
 deployment that is half there.
 
-**And a key unsaid is a key made at start.** `account.keys` and `login.key` left
+**And a key unsaid is a key made at start.** `account.key` and `login.key` left
 out in one process are the rows `roster account provision` and `roster login
-provision` would have written -- for the account app, a holder in each tenant with
-a `Host` row, a role holding exactly what the app calls as itself, a binding and
-an `rt_`; for the Login App, one `rk_` and in each such tenant a holder, its role
-and binding, and the nomination that answers the key as them -- with the tokens
+provision` would have written -- for each app, one `rk_` and, in each tenant with a
+`Host` row, a holder, a role holding exactly what the app calls as itself, one
+binding, and the nomination that answers the key as that holder -- with the tokens
 kept in memory. That is one replica, and a restart is a rotation: the
 account page asks everybody to sign in again, which is all a rotation costs, since
 the key is a row like any other whichever way it was made. A tenant that registers
-a name later is fronted after the next start. In four processes nothing is made
+a name later is nominated in at the next start, and the account app finds it on
+the first request for that name without one. In four processes nothing is made
 for you: each `provision` writes its keys into a directory the app's own process
 reads with `file:`, and a key that was written down is left exactly as written --
 a reference that resolves to nothing is a refusal, never a fresh key made quietly
-over it. `ldap.keys` is still yours to write either way.
+over it. The directory's key is still yours to write either way:
+`roster control key add --allow /roster.NominationService/List directory`, and
+`roster app install --tenant … --role … directory` in each tenant it serves.
 
 Each of the three is a **consumer**: it reaches roster over the wire with its own
-key and cannot reach past it, in one process exactly as in four -- the account app
-and `ldap serve` with one `rt_` per tenant, the Login App with one `rk_` narrowed
-per request to the holder each tenant nominated (moving the other two to the
-Login App's shape is open; [apps.md](apps.md)). `scripts/test.sh`
+key and cannot reach past it, in one process exactly as in four -- each with one
+`rk_` narrowed per request to the holder each tenant nominated for it
+([apps.md](apps.md)), or, run by a tenant for itself, that tenant's `rt_`. `scripts/test.sh`
 refuses the import rather than trusting anybody to remember. Their own designs are
 [ldap.md](ldap.md) and [login.md](login.md); `account/`'s package comment is the
 third.

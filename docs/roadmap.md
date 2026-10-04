@@ -672,6 +672,10 @@ is not a request* -- which survives because the generated check sits in the
 | — | the Login App's provisioning binds once, and reads every name | **done** — found on a running deployment with sixty-three identical `login-app` bindings on one holder. `ensureBinding` added and took `AlreadyExists` for done, and `Binding` has no unique index to answer with one -- the same pair at two sites is legitimate -- so every start added one per name. It looks first now. The same walk read the first page of `Host` rows and stopped, so the twenty-first name a deployment registered was a tenant the app never fronted; it pages, and nominates once per tenant. `TestProvisionAgainBindsNothingTwiceAndLeavesOtherAppsAlone`. Duplicates already written stay until somebody erases them |
 | — | a deployment key with nothing on it, for an app that always names a tenant | **done** — the second half of [#74](https://github.com/lesomnus/roster/issues/74). A deployment key's `methods` are what it does **unnarrowed**, and a product that always knows its tenant does nothing unnarrowed -- but `--allow` refused an empty list, so it had to name something, and a request that forgot `roster-at` ran that across every tenant. `roster control key add --narrowed` mints it empty: refused as itself, answered as whoever each tenant nominated. Only on the control plane: an `rt_` is never narrowed, so an empty one would be the key that does nothing, and a forgotten `--allow` is still refused. `TestANarrowedKeyDoesNothingUntilARequestNamesATenant` |
 | — | forgetting somebody ends any app's nomination to act as them | **done** — found reading the documentation against the design rather than the code: `roster forget` removes the rows that say what somebody may do, and a `Nomination` naming them is one, but the list of a person's rows is written out by hand and it was not on it. A forgotten holder nominated for an app left the app answered as a blank pseudonym with nothing bound to it -- refused everything there, with nothing saying why. It goes with the rest now, so the app is refused at the nomination instead. Thirteen foreign keys reach `Holder`, not twelve. `TestForgettingSomebodyKeepsTheEventAndLosesTheContents` |
+| — | `roster-at` names a tenant, for a caller with no name to give | **done** — the roster half of [#76](https://github.com/lesomnus/roster/issues/76). `roster-at` took a `Host` name because the Login App learns its tenant from a redirect's host; a directory learns it from a DN and a job from its own configuration, and registering a name nobody browses to only to narrow a key was ceremony. `@contoso` or `@<identifier>` names the tenant itself. It loses nothing beside a name: since #73 the name only chooses the tenant and the nomination is what consents. `TestATenantNamedDirectlyIsNarrowedTheSameWay` |
+| — | a deployment key reads its own nominations and nobody else's | **done** — how an app run for many tenants learns which ones it serves. It has to ask before it can name one, so it asks unnarrowed, which is every tenant's rows; the layer holds `List` and `Get` to the key's own `borrower_id`, read from the control plane through a function `cmd` injects (`core.Borrower`) because the data plane holds no client of the other database. Not a twin verb: the same `List`, about the caller's own rows. A key cannot `Watch` them -- a payday watch names rows by reference -- so it lists again, and the account app does when a name arrives for a tenant it has not read. `TestAKeyReadsItsOwnNominationsAndNobodyElses` |
+| — | an app is installed into a tenant by a roster operator, and the tenant takes it from there | **done** — [#75](https://github.com/lesomnus/roster/issues/75). `roster app install` writes the app's holder in the tenant, its role, the binding and the nomination (with `name`, so a tenant can read which app it is), **once** -- installing again changes nothing the tenant changed -- and with `--administer` adds the app's methods to the role a tenant is made with. That last is why it is the operator's: a tenant's first administrator is bound `/roster.*/*`, which covers no app's methods, and nobody hands out what they do not hold. `uninstall` ends the nomination, which a tenant administrator can also do from the new *apps* tab in both consoles. `TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem`; `ts/e2e/user.spec.ts` ends one |
+| — | the account app and the directory take one deployment key | **done** — the rest of [#76](https://github.com/lesomnus/roster/issues/76). Both held one `rt_` per tenant because an unnarrowed `rk_` is `frame.Everything`, which #36 answered for the Login App and nobody had carried over. `account.key` / `ldap.key` (`--deployment-key`) is one `rk_` narrowed per call with `roster-at: @<tenant>`; the tenants are the key's own nominations, and the account app reads them again when a name arrives for one it does not know, so a tenant installed later is fronted without a restart. `roster account provision` writes one key and nominates, by the Login App's own two functions; `frontdoor`'s proxy carries `roster-at` beside the bearer, without which a delegation minted narrowed was refused on the way back. `keys` stays, for a tenant running its own copy. Both suites run on a deployment key now, with one test each kept for per-tenant keys |
 
 ## Open, for whoever picks this up next
 
@@ -714,23 +718,13 @@ in 2026-08, and one of them closed by *looking*:
 
 ### Open, and filed
 
-Three, all from working out how a product runs beside roster ([apps.md](apps.md)):
+One, from working out how a product runs beside roster ([apps.md](apps.md)):
 
 - [#74](https://github.com/lesomnus/roster/issues/74) -- an app calling another app
   on a tenant's behalf has no identity to carry. The direction is a short-lived
   token naming the nominated holder, bound to an audience and checked with
   `Introspect`; what *the audience* is, and whether it is the `rd_` table, are
   undecided. (Its other half, `control key add --narrowed`, is done.)
-- [#75](https://github.com/lesomnus/roster/issues/75) -- a roster-hosted product
-  needs a holder, bindings, a name and a nomination in every tenant it serves, and
-  nothing makes them but the Login App's own provisioning.
-- [#76](https://github.com/lesomnus/roster/issues/76) -- the account app and
-  `ldap serve` hold one `rt_` per tenant; move them to the Login App's shape, and
-  let `roster-at` name a tenant for a caller that has no host to name.
-
-And one question with no issue yet: how an app reads which tenants nominated it
-without a key that can read everybody's nominations (`apps.md`, § *One client for
-all three*).
 
 Before those, [#12](https://github.com/lesomnus/roster/issues/12) is closed: the
 reference manifests are here, `scripts/cluster.sh` stands them up in k3d, all

@@ -365,8 +365,8 @@ go run ./cmd/roster config env    # every variable this can be told through
 cd ts && npm install && npm run dev            # the admin console, cross-origin
 npm --prefix ts run dev:login                  # the sign-in pages, no backend at all
 go run ./cmd/roster account serve --roster … \
-  --connect … --key contoso=rt_… --static ts/dist/account   # the front door
-go run ./cmd/roster ldap serve --roster … --key contoso=rt_…  # the directory
+  --connect … --deployment-key file:… --static ts/dist/account   # the front door
+go run ./cmd/roster ldap serve --roster … --deployment-key file:…  # the directory
 
 docker compose up --build       # Postgres, both planes, a customer, both pages, LDAP
 ```

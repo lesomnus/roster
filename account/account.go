@@ -27,15 +27,20 @@
 // that can, which is one more than there should be. `scripts/test.sh` refuses
 // the import rather than trusting this paragraph.
 //
-// # One tenant key per tenant it fronts
+// # One key, narrowed to the tenant every call is about
 //
-// A deployment key resolves to a frame with no tenant and the policy hands it
-// `frame.Everything`; on an internet-facing app that is an actor reaching every
-// operator's rows, kept out of the wrong ones by nothing but this code. A tenant
-// key resolves to a holder inside a tenant and the wall does the narrowing. So
-// [Config.Keys] is one `rt_` per tenant, by the tenant's alias, and every call
-// this app makes about a host is made with the key of the tenant that host
-// resolves to -- `cmd/accountkey_test.go` is the fact this rests on.
+// An unnarrowed deployment key resolves to a frame with no tenant and the policy
+// hands it `frame.Everything`; on an internet-facing app that would be an actor
+// reaching every tenant's rows, kept out of the wrong ones by nothing but this
+// code. So the app never calls as that: every call about a host names the
+// tenant the host resolved to (`roster-at`), and roster answers it as the holder
+// that tenant nominated for this app's key -- the wall does the narrowing, per
+// request. [Config.Key] is that key, and the tenants are its own nominations
+// (#76, `docs/apps.md`).
+//
+// [Config.Keys], one `rt_` per tenant, is the shape this had before: a tenant
+// key resolves to a holder inside its tenant already. It stays for a tenant
+// running its own copy, and `cmd/accountkey_test.go` is the fact it rests on.
 //
 // # The providers are roster's rows, not this app's configuration
 //
@@ -105,6 +110,19 @@ type Config struct {
 	// `roster key add --tenant contoso --holder account` -- for a holder in that
 	// tenant whose role names what a front door calls (see [Methods]).
 	Keys map[string]string
+
+	// Key is the other way to front many tenants: one deployment key (`rk_`),
+	// minted for this app on the control plane, and every call narrowed to the
+	// holder the tenant it is about nominated for it (`roster-at`,
+	// `docs/apps.md`). Which tenants those are is read from the key's own
+	// nominations -- at start, and again when a name arrives for a tenant not
+	// yet read -- so a tenant this app is installed into after it started is
+	// fronted without a restart. The key itself needs [Resolving] and nothing
+	// else; everything in [Calls] is the nominated holder's role.
+	//
+	// One of Key and Keys. Keys is a tenant running its own copy with an `rt_`,
+	// or a deployment that has not moved yet (#76).
+	Key string
 
 	// Base is this app's public origin, the one registered with every provider
 	// as the redirect: `https://login.example.com`. Empty derives it from each
@@ -196,6 +214,13 @@ var Methods = []string{
 // signing them in, and [Enrolling] is the one policy that needs it -- so
 // `provision` adds it where a deployment wrote `enrol: enrolling` down, and
 // never by default. `cli.LoginMethods` draws the same line for the same reason.
+// Resolving is what [Config.Key] is allowed as itself, before a call names a
+// tenant: which tenant a name is, and which tenants nominated it.
+var Resolving = []string{
+	rstr.FrontService_WhoseHost_FullMethodName,
+	rstr.NominationService_List_FullMethodName,
+}
+
 var Calls = append([]string{
 	rstr.TenantService_Get_FullMethodName,
 	rstr.FrontService_WhoseHost_FullMethodName,
@@ -243,6 +268,17 @@ type tenant struct {
 	id    pdid.Id
 	alias string
 	key   string
+
+	// at is what every call about this tenant declares with `roster-at`: the
+	// tenant itself, when the key is a deployment key narrowed to whoever the
+	// tenant nominated. Empty for a tenant key, which is in its tenant already.
+	at string
+}
+
+// on is a context whose calls go out as this tenant's: its key, and the tenant
+// named when the key needs narrowing.
+func (t *tenant) on(ctx context.Context) context.Context {
+	return context.WithValue(ctx, keyKey{}, cred{key: t.key, at: t.at})
 }
 
 // App is the front door.
@@ -254,6 +290,7 @@ type App struct {
 	vouch  rstr.VouchServiceClient
 	door   *frontdoor.Door
 
+	mu      sync.RWMutex
 	byId    map[pdid.Id]*tenant
 	byAlias map[string]*tenant
 
@@ -289,8 +326,10 @@ func New(ctx context.Context, c Config) (*App, error) {
 		return nil, errors.New("account: Roster: where the data plane speaks gRPC")
 	case c.Connect == nil:
 		return nil, errors.New("account: Connect: where the same server speaks Connect over HTTP")
-	case len(c.Keys) == 0:
-		return nil, errors.New("account: Keys: one tenant key per tenant this app fronts; none is nobody to front")
+	case len(c.Keys) == 0 && c.Key == "":
+		return nil, errors.New("account: Keys or Key: one tenant key per tenant this app fronts, or one deployment key; none is nobody to front")
+	case len(c.Keys) > 0 && c.Key != "":
+		return nil, errors.New("account: Keys and Key: one way to front tenants, not two")
 	case c.Sessions == nil:
 		return nil, errors.New("account: Sessions: the cookie is the app's, so the app makes it")
 	}
@@ -311,7 +350,10 @@ func New(ctx context.Context, c Config) (*App, error) {
 	}
 	opts := append(auth.Inject(auth.ProviderFunc(func(ctx context.Context) context.Context {
 		if k, ok := keyOf(ctx); ok {
-			return metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+k)
+			ctx = metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+k.key)
+			if k.at != "" {
+				ctx = metadata.AppendToOutgoingContext(ctx, front.HeaderAt, k.at)
+			}
 		}
 
 		return ctx
@@ -334,6 +376,14 @@ func New(ctx context.Context, c Config) (*App, error) {
 		devices: held(),
 	}
 	a.arrives = arrives.New(a.roster, c.Secret)
+
+	if c.Key != "" {
+		if err := a.nominated(ctx); err != nil {
+			conn.Close()
+
+			return nil, err
+		}
+	}
 
 	for alias, key := range c.Keys {
 		v, err := a.roster.Tenant().Get(withKey(ctx, key), rstr.TenantGetRequest_builder{
@@ -466,11 +516,12 @@ func (a *App) tenantOf(ctx context.Context, host string) (*tenant, error) {
 		}
 	}
 
-	var any string
-	for _, t := range a.byAlias {
+	any := a.c.Key
+	for _, t := range a.tenants() {
+		if any != "" {
+			break
+		}
 		any = t.key
-
-		break
 	}
 
 	res, err := a.front.WhoseHost(withKey(ctx, any), rstr.FrontWhoseHostRequest_builder{Host: name}.Build())
@@ -488,7 +539,14 @@ func (a *App) tenantOf(ctx context.Context, host string) (*tenant, error) {
 	if err != nil {
 		return nil, err
 	}
-	t, ok := a.byId[id]
+	t, ok := a.tenant(id)
+	if !ok && a.c.Key != "" {
+		// A tenant this app was put into after it last read its nominations.
+		if err := a.nominated(ctx); err != nil {
+			return nil, err
+		}
+		t, ok = a.tenant(id)
+	}
 	if !ok {
 		// roster serves this name for an operator this app holds no key for:
 		// nobody to act as, so the same answer as a name nobody serves.
@@ -503,13 +561,13 @@ func (a *App) tenantOf(ctx context.Context, host string) (*tenant, error) {
 
 // bearer is the credential a proxied call goes out with: the key of the tenant
 // this request resolved to.
-func (a *App) bearer(ctx context.Context, host string) (string, error) {
+func (a *App) bearer(ctx context.Context, host string) (frontdoor.Bearer, error) {
 	t, ok := tenantFrom(ctx)
 	if !ok {
-		return "", ErrUnknownHost
+		return frontdoor.Bearer{}, ErrUnknownHost
 	}
 
-	return t.key, nil
+	return frontdoor.Bearer{Token: t.key, At: t.at}, nil
 }
 
 // providers is what the sign-in page draws: which operator this is, and the
@@ -529,7 +587,7 @@ func (a *App) providers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tn, err := a.roster.Tenant().Get(withKey(r.Context(), t.key), rstr.TenantGetRequest_builder{
+	tn, err := a.roster.Tenant().Get(t.on(r.Context()), rstr.TenantGetRequest_builder{
 		Ref: rstr.TenantRef_builder{Id: t.id.Bytes()}.Build(),
 		Select: rstr.TenantSelect_builder{
 			Alias: proto.Bool(true), Name: proto.Bool(true), Labels: proto.Bool(true),
@@ -576,12 +634,12 @@ func (a *App) providers(w http.ResponseWriter, r *http.Request) {
 
 // connections is the tenant's providers, read with the tenant's own key.
 func (a *App) connections(ctx context.Context, t *tenant) ([]*rstr.Connection, error) {
-	return a.arrives.Connections(withKey(ctx, t.key), t.id)
+	return a.arrives.Connections(t.on(ctx), t.id)
 }
 
 // relying is this app as the relying party for one connection of one tenant.
 func (a *App) relying(ctx context.Context, t *tenant, name string, r *http.Request) (*oauth2.Config, *oidc.IDTokenVerifier, error) {
-	return a.arrives.Relying(withKey(ctx, t.key), t.id, name, a.redirect(r))
+	return a.arrives.Relying(t.on(ctx), t.id, name, a.redirect(r))
 }
 
 // redirect is where a provider sends the browser back: `Base` if the
@@ -734,7 +792,7 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	who.TenantAlias = f.tenant.alias
 	who.Provider = f.connection
 
-	as := withKey(ctx, f.tenant.key)
+	as := f.tenant.on(ctx)
 
 	if f.link {
 		_, err := a.roster.Identity().Add(as, rstr.IdentityAddRequest_builder{
@@ -855,7 +913,7 @@ type tenantKey struct{}
 type keyKey struct{}
 
 func withTenant(ctx context.Context, t *tenant) context.Context {
-	return withKey(context.WithValue(ctx, tenantKey{}, t), t.key)
+	return t.on(context.WithValue(ctx, tenantKey{}, t))
 }
 
 func tenantFrom(ctx context.Context) (*tenant, bool) {
@@ -864,14 +922,98 @@ func tenantFrom(ctx context.Context) (*tenant, bool) {
 	return t, ok && t != nil
 }
 
+// cred is what a call goes out with: a key, and the tenant it is narrowed to
+// when it is a deployment key.
+type cred struct{ key, at string }
+
+// withKey is a call with a key and no tenant named: the reads a deployment key
+// makes as itself, or a tenant key, which needs none.
 func withKey(ctx context.Context, key string) context.Context {
-	return context.WithValue(ctx, keyKey{}, key)
+	return context.WithValue(ctx, keyKey{}, cred{key: key})
 }
 
-func keyOf(ctx context.Context) (string, bool) {
-	k, ok := ctx.Value(keyKey{}).(string)
+func keyOf(ctx context.Context) (cred, bool) {
+	k, ok := ctx.Value(keyKey{}).(cred)
 
-	return k, ok && k != ""
+	return k, ok && k.key != ""
+}
+
+// Fronts is how many tenants this app fronts as of now, for the log: with a
+// deployment key that is what its nominations said when last read, which grows
+// as tenants are found.
+func (a *App) Fronts() int { return len(a.tenants()) }
+
+// tenants is every tenant this app fronts, as of now.
+func (a *App) tenants() []*tenant {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	out := make([]*tenant, 0, len(a.byAlias))
+	for _, t := range a.byAlias {
+		out = append(out, t)
+	}
+
+	return out
+}
+
+func (a *App) tenant(id pdid.Id) (*tenant, bool) {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	t, ok := a.byId[id]
+
+	return t, ok
+}
+
+// nominated reads which tenants nominated [Config.Key], and fronts each.
+//
+// Asked with the key as itself, which sees its own nominations and nobody
+// else's (`server/core`, `coreNomination.List`). A tenant's alias is then read
+// **narrowed to that tenant**, so a nomination that names a holder who may not
+// read their own tenant is found out here rather than at somebody's sign-in.
+func (a *App) nominated(ctx context.Context) error {
+	found := []*tenant{}
+
+	after := ""
+	for {
+		vs, err := a.roster.Nomination().List(withKey(ctx, a.c.Key), rstr.NominationListRequest_builder{
+			Size: 100, After: after,
+		}.Build())
+		if err != nil {
+			return fmt.Errorf("account: which tenants nominated this app's key: %w", err)
+		}
+
+		for _, v := range vs.GetItems() {
+			id, err := pdid.From(v.GetTenant().GetId())
+			if err != nil {
+				return err
+			}
+
+			t := &tenant{id: id, key: a.c.Key, at: front.AtTenant(id.String())}
+			tn, err := a.roster.Tenant().Get(t.on(ctx), rstr.TenantGetRequest_builder{
+				Ref:    rstr.TenantRef_builder{Id: id.Bytes()}.Build(),
+				Select: rstr.TenantSelect_builder{Alias: proto.Bool(true)}.Build(),
+			}.Build())
+			if err != nil {
+				return fmt.Errorf("account: the holder %s nominated for this app cannot read %s: %w", id, id, err)
+			}
+			t.alias = tn.GetAlias()
+			found = append(found, t)
+		}
+
+		if after = vs.GetNext(); after == "" {
+			break
+		}
+	}
+
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	for _, t := range found {
+		a.byId[t.id] = t
+		a.byAlias[t.alias] = t
+	}
+
+	return nil
 }
 
 // recover starts a recovery: a link mailed to the address a person names.
@@ -905,7 +1047,7 @@ func (a *App) recover(w http.ResponseWriter, r *http.Request) {
 	}
 	address := front.Address(body.Address)
 
-	res, err := a.vouch.Link(withKey(ctx, t.key), rstr.VouchLinkRequest_builder{
+	res, err := a.vouch.Link(t.on(ctx), rstr.VouchLinkRequest_builder{
 		Who: rstr.VouchWho_builder{Tenant: t.alias, Address: address}.Build(),
 	}.Build())
 	if err != nil {
@@ -923,7 +1065,7 @@ func (a *App) recover(w http.ResponseWriter, r *http.Request) {
 	link := a.finish(r, "/redeem", res.GetToken())
 	go func() {
 		ctx := context.WithoutCancel(ctx)
-		_, err := a.roster.Email().Get(withKey(ctx, t.key), rstr.EmailGetRequest_builder{
+		_, err := a.roster.Email().Get(t.on(ctx), rstr.EmailGetRequest_builder{
 			Ref: rstr.EmailRef_builder{
 				At: rstr.EmailRefByAt_builder{TenantId: t.id.Bytes(), Address: proto.String(address)}.Build(),
 			}.Build(),
@@ -959,8 +1101,8 @@ func (a *App) redeem(w http.ResponseWriter, r *http.Request) {
 	// The link names the tenant through the person it was minted for, and the
 	// key that minted it is the one that redeems it -- so try each tenant's
 	// key; a link minted under one answers under no other.
-	for _, t := range a.byAlias {
-		as := withKey(ctx, t.key)
+	for _, t := range a.tenants() {
+		as := t.on(ctx)
 		res, err := a.vouch.Redeem(as, rstr.VouchRedeemRequest_builder{
 			Token:   token,
 			Methods: []string{rstr.MeService_Get_FullMethodName},
@@ -1009,7 +1151,7 @@ func (a *App) verify(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no operator here serves this name", http.StatusNotFound)
 		return
 	}
-	as = withKey(as, t.key)
+	as = t.on(as)
 
 	var body struct {
 		Id string `json:"id"`
@@ -1040,7 +1182,7 @@ func (a *App) verify(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no", http.StatusNotFound)
 		return
 	}
-	res, err := a.roster.Email().Verify(withKey(ctx, t.key), rstr.EmailVerifyRequest_builder{Ref: ref}.Build())
+	res, err := a.roster.Email().Verify(t.on(ctx), rstr.EmailVerifyRequest_builder{Ref: ref}.Build())
 	if err != nil {
 		if status.Code(err) == codes.PermissionDenied {
 			http.Error(w, "no", http.StatusForbidden)
@@ -1121,7 +1263,7 @@ func (a *App) claim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := a.roster.Email().Verify(withKey(ctx, t.key), rstr.EmailVerifyRequest_builder{
+	res, err := a.roster.Email().Verify(t.on(ctx), rstr.EmailVerifyRequest_builder{
 		Ref: rstr.EmailRef_builder{
 			At: rstr.EmailRefByAt_builder{TenantId: t.id.Bytes(), Address: proto.String(address)}.Build(),
 		}.Build(),
@@ -1167,8 +1309,8 @@ func (a *App) confirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, t := range a.byAlias {
-		res, err := a.roster.Email().Confirm(withKey(ctx, t.key), rstr.EmailConfirmRequest_builder{Token: token}.Build())
+	for _, t := range a.tenants() {
+		res, err := a.roster.Email().Confirm(t.on(ctx), rstr.EmailConfirmRequest_builder{Token: token}.Build())
 		if err != nil {
 			continue
 		}
@@ -1270,7 +1412,7 @@ func (a *App) prove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := a.vouch.Verify(withKey(ctx, t.key), rstr.VouchVerifyRequest_builder{
+	res, err := a.vouch.Verify(t.on(ctx), rstr.VouchVerifyRequest_builder{
 		Who:    rstr.VouchWho_builder{Id: who.Bytes()}.Build(),
 		Kind:   body.Kind,
 		Name:   body.Name,

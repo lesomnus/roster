@@ -45,17 +45,25 @@ import (
 // [Door.Acting]'s reason.
 //
 // What goes out is the app's own credential -- `bearer`, asked per request,
-// because an app fronting several operators holds one tenant key per tenant
-// and which one is a fact about the host the browser arrived at -- and the
-// person's delegation in `roster-as`; what came in as `Cookie` and
-// `Authorization` is dropped. What comes back is roster's answer, untouched.
-func (d *Door) Proxy(roster *url.URL, bearer func(ctx context.Context, host string) (string, error)) http.Handler {
+// because which credential, and which tenant it is narrowed to, is a fact about
+// the host the browser arrived at -- and the person's delegation in
+// `roster-as`. An app fronting several operators with one deployment key
+// answers the key and the tenant to name in `roster-at`; one holding a tenant
+// key per tenant answers that tenant's key and no name. What came in as
+// `Cookie` and `Authorization` is dropped. What comes back is roster's answer,
+// untouched.
+func (d *Door) Proxy(roster *url.URL, bearer func(ctx context.Context, host string) (Bearer, error)) http.Handler {
 	rp := &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
 			pr.SetURL(roster)
 			pr.Out.Header.Del("Cookie")
-			pr.Out.Header.Set("Authorization", "Bearer "+actingOf(pr.In.Context()).bearer)
-			pr.Out.Header.Set(keys.HeaderActing, actingOf(pr.In.Context()).token)
+			a := actingOf(pr.In.Context())
+			pr.Out.Header.Set("Authorization", "Bearer "+a.bearer.Token)
+			pr.Out.Header.Set(keys.HeaderActing, a.token)
+			pr.Out.Header.Del(keys.HeaderAt)
+			if a.bearer.At != "" {
+				pr.Out.Header.Set(keys.HeaderAt, a.bearer.At)
+			}
 		},
 	}
 
@@ -96,10 +104,20 @@ func (d *Door) Proxy(roster *url.URL, bearer func(ctx context.Context, host stri
 	})
 }
 
+// Bearer is the app's credential for one proxied call: its key, and -- when the
+// key is a deployment key -- the tenant it is narrowed to, as `roster-at` says
+// one. A delegation minted under a narrowed key is stamped with the holder it
+// was narrowed to, so it is recognised on the way back only under the same
+// narrowing (`server/keys/acting.go`).
+type Bearer struct {
+	Token string
+	At    string
+}
+
 // acting is what one proxied call goes out with: the app's credential for this
 // tenant, and the person's delegation.
 type acting struct {
-	bearer string
+	bearer Bearer
 	token  string
 }
 

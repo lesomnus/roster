@@ -45,7 +45,7 @@ func (d *Directory) group(ctx context.Context, t *tenant, r *reads, id []byte) (
 	if v, ok := r.groups[string(id)]; ok {
 		return v, nil
 	}
-	v, err := d.roster.Group().Get(withKey(ctx, t.key), rstr.GroupGetRequest_builder{Ref: rstr.GroupRef_builder{Id: id}.Build()}.Build())
+	v, err := d.roster.Group().Get(t.on(ctx), rstr.GroupGetRequest_builder{Ref: rstr.GroupRef_builder{Id: id}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (d *Directory) team(ctx context.Context, t *tenant, r *reads, id []byte) (*
 	if v, ok := r.teams[string(id)]; ok {
 		return v, nil
 	}
-	v, err := d.roster.Team().Get(withKey(ctx, t.key), rstr.TeamGetRequest_builder{Ref: rstr.TeamRef_builder{Id: id}.Build()}.Build())
+	v, err := d.roster.Team().Get(t.on(ctx), rstr.TeamGetRequest_builder{Ref: rstr.TeamRef_builder{Id: id}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (d *Directory) site(ctx context.Context, t *tenant, r *reads, id []byte) (*
 	if v, ok := r.sites[string(id)]; ok {
 		return v, nil
 	}
-	v, err := d.roster.Site().Get(withKey(ctx, t.key), rstr.SiteGetRequest_builder{Ref: rstr.SiteRef_builder{Id: id}.Build()}.Build())
+	v, err := d.roster.Site().Get(t.on(ctx), rstr.SiteGetRequest_builder{Ref: rstr.SiteRef_builder{Id: id}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (d *Directory) holder(ctx context.Context, t *tenant, r *reads, id []byte) 
 	if v, ok := r.holders[string(id)]; ok {
 		return v, nil
 	}
-	v, err := d.roster.Holder().Get(withKey(ctx, t.key), rstr.HolderGetRequest_builder{Ref: rstr.HolderRef_builder{Id: id}.Build()}.Build())
+	v, err := d.roster.Holder().Get(t.on(ctx), rstr.HolderGetRequest_builder{Ref: rstr.HolderRef_builder{Id: id}.Build()}.Build())
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func (d *Directory) groupMembers(ctx context.Context, t *tenant, group []byte) (
 	var out [][]byte
 	var after string
 	for {
-		vs, err := d.roster.GroupMembership().List(withKey(ctx, t.key), rstr.GroupMembershipListRequest_builder{
+		vs, err := d.roster.GroupMembership().List(t.on(ctx), rstr.GroupMembershipListRequest_builder{
 			Filters: []*rstr.GroupMembershipFilter{rstr.GroupMembershipFilter_builder{Group: rstr.GroupRef_builder{Id: group}.Build()}.Build()},
 			Size:    int32(d.c.PageSize), After: after,
 		}.Build())
@@ -199,7 +199,7 @@ func (d *Directory) teamMembers(ctx context.Context, t *tenant, team []byte) ([]
 	var out [][]byte
 	var after string
 	for {
-		vs, err := d.roster.TeamMembership().List(withKey(ctx, t.key), rstr.TeamMembershipListRequest_builder{
+		vs, err := d.roster.TeamMembership().List(t.on(ctx), rstr.TeamMembershipListRequest_builder{
 			Filters: []*rstr.TeamMembershipFilter{rstr.TeamMembershipFilter_builder{Team: rstr.TeamRef_builder{Id: team}.Build()}.Build()},
 			Size:    int32(d.c.PageSize), After: after,
 		}.Build())
@@ -262,7 +262,7 @@ func (d *Directory) memberOf(ctx context.Context, t *tenant, r *reads, holder []
 	var out []string
 	var after string
 	for {
-		vs, err := d.roster.GroupMembership().List(withKey(ctx, t.key), rstr.GroupMembershipListRequest_builder{
+		vs, err := d.roster.GroupMembership().List(t.on(ctx), rstr.GroupMembershipListRequest_builder{
 			Filters: []*rstr.GroupMembershipFilter{rstr.GroupMembershipFilter_builder{Holder: rstr.HolderRef_builder{Id: holder}.Build()}.Build()},
 			Size:    int32(d.c.PageSize), After: after,
 		}.Build())
@@ -282,7 +282,7 @@ func (d *Directory) memberOf(ctx context.Context, t *tenant, r *reads, holder []
 	}
 	after = ""
 	for {
-		vs, err := d.roster.TeamMembership().List(withKey(ctx, t.key), rstr.TeamMembershipListRequest_builder{
+		vs, err := d.roster.TeamMembership().List(t.on(ctx), rstr.TeamMembershipListRequest_builder{
 			Filters: []*rstr.TeamMembershipFilter{rstr.TeamMembershipFilter_builder{Holder: rstr.HolderRef_builder{Id: holder}.Build()}.Build()},
 			Size:    int32(d.c.PageSize), After: after,
 		}.Build())
@@ -313,7 +313,7 @@ func (d *Directory) memberOf(ctx context.Context, t *tenant, r *reads, holder []
 func (d *Directory) groups(ctx context.Context, t *tenant, r *reads, w wants, send func(*entry) wire.Result) wire.Result {
 	var after string
 	for {
-		vs, err := d.roster.Group().List(withKey(ctx, t.key), rstr.GroupListRequest_builder{Size: int32(d.c.PageSize), After: after}.Build())
+		vs, err := d.roster.Group().List(t.on(ctx), rstr.GroupListRequest_builder{Size: int32(d.c.PageSize), After: after}.Build())
 		if err != nil {
 			return refusal(err)
 		}
@@ -338,7 +338,7 @@ func (d *Directory) groups(ctx context.Context, t *tenant, r *reads, w wants, se
 func (d *Directory) findGroup(ctx context.Context, t *tenant, alias string) (*rstr.Group, wire.Result) {
 	var after string
 	for {
-		vs, err := d.roster.Group().List(withKey(ctx, t.key), rstr.GroupListRequest_builder{Size: int32(d.c.PageSize), After: after}.Build())
+		vs, err := d.roster.Group().List(t.on(ctx), rstr.GroupListRequest_builder{Size: int32(d.c.PageSize), After: after}.Build())
 		if err != nil {
 			return nil, refusal(err)
 		}
@@ -360,7 +360,7 @@ func (d *Directory) findGroup(ctx context.Context, t *tenant, alias string) (*rs
 func (d *Directory) sites(ctx context.Context, t *tenant, r *reads, w wants, deep bool, send func(*entry) wire.Result) wire.Result {
 	var after string
 	for {
-		vs, err := d.roster.Site().List(withKey(ctx, t.key), rstr.SiteListRequest_builder{Size: int32(d.c.PageSize), After: after}.Build())
+		vs, err := d.roster.Site().List(t.on(ctx), rstr.SiteListRequest_builder{Size: int32(d.c.PageSize), After: after}.Build())
 		if err != nil {
 			return refusal(err)
 		}
@@ -395,7 +395,7 @@ func (d *Directory) teams(ctx context.Context, t *tenant, r *reads, w wants, sit
 		if site != nil {
 			req.Filters = []*rstr.TeamFilter{rstr.TeamFilter_builder{Site: site}.Build()}
 		}
-		vs, err := d.roster.Team().List(withKey(ctx, t.key), req.Build())
+		vs, err := d.roster.Team().List(t.on(ctx), req.Build())
 		if err != nil {
 			return refusal(err)
 		}
@@ -421,7 +421,7 @@ func (d *Directory) teams(ctx context.Context, t *tenant, r *reads, w wants, sit
 func (d *Directory) findSite(ctx context.Context, t *tenant, r *reads, alias string) (*rstr.Site, wire.Result) {
 	var after string
 	for {
-		vs, err := d.roster.Site().List(withKey(ctx, t.key), rstr.SiteListRequest_builder{Size: int32(d.c.PageSize), After: after}.Build())
+		vs, err := d.roster.Site().List(t.on(ctx), rstr.SiteListRequest_builder{Size: int32(d.c.PageSize), After: after}.Build())
 		if err != nil {
 			return nil, refusal(err)
 		}
@@ -446,7 +446,7 @@ func (d *Directory) findTeam(ctx context.Context, t *tenant, site *rstr.Site, al
 		if site != nil {
 			req.Filters = []*rstr.TeamFilter{rstr.TeamFilter_builder{Site: rstr.SiteRef_builder{Id: site.GetId()}.Build()}.Build()}
 		}
-		vs, err := d.roster.Team().List(withKey(ctx, t.key), req.Build())
+		vs, err := d.roster.Team().List(t.on(ctx), req.Build())
 		if err != nil {
 			return nil, refusal(err)
 		}

@@ -118,6 +118,10 @@ a tenant answers at>`, as the holder that tenant nominated for this key, with
 that holder's bindings: everything a product does for one of your customers.
 [apps.md](../apps.md) is which of those an app needs, and the shapes it can take.
 
+A key narrowed to a tenant needs that tenant to have nominated somebody for it,
+which `roster app install --tenant T --role … NAME` does: the holder, its role,
+the binding and the nomination, once.
+
 Something a **tenant** runs -- their CI, their sync job, their own copy of an app
 -- is a holder in their tenant with an `rt_` ([below](#a-tenant-key--rt_)).
 

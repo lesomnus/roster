@@ -47,14 +47,17 @@ tenant beta     Host  kamino.beta.example
                 Binding     …
 ```
 
-A request is about the tenant whose name it arrived at, and it says so:
+A request says which tenant it is about -- by a name the tenant answers at, or
+by the tenant itself when the app has no name to give (a directory has a DN, a
+job its own configuration):
 
 ```
 authorization: Bearer rk_…
-roster-at: kamino.acme.example
+roster-at: kamino.acme.example        or        roster-at: @acme
 ```
 
-roster resolves the name to its tenant through the `Host`, then finds the
+roster resolves the name to its tenant through the `Host` (or takes the tenant
+as written), then finds the
 `Nomination` in that tenant for **the control-plane holder the key hangs off**,
 and answers the call as that holder: their bindings, their tenant, the wall
 narrowing every read (`server/keys/at.go`). Nothing about the frame is the
@@ -71,6 +74,8 @@ roster control key add --narrowed kamino
 ```
 
 which is refused as itself and answered as whoever each tenant nominated (#74).
+An app that has to learn which tenants it serves adds one method:
+`--allow /roster.NominationService/List` (§ *One client for all three*).
 
 Three things follow from the nomination being found by the key.
 
@@ -84,8 +89,26 @@ Three things follow from the nomination being found by the key.
   (`server/core/nomination.go`).
 
 Setting a tenant up for an A app is a holder, its bindings and a nomination in
-that tenant, and a `Host` for its name. The Login App's `roster login
-provision` does that for the Login App; nothing does it for a product yet (#75).
+that tenant -- and a `Host` for its name, if it is reached by one. A roster
+operator does it, once per tenant (#75):
+
+```sh
+roster app install --tenant acme \
+  --role '/hday.oasys.RobotService/*' \
+  --administer '/hday.oasys.*/*' \
+  kamino
+```
+
+It is the roster operator's because of the last flag. A tenant's first
+administrator is bound `/roster.*/*`, which covers none of an app's methods, and
+nobody hands out what they do not hold -- so nobody in the tenant could give the
+app's holder its role, or themselves the right to manage it. `--administer` adds
+the app's methods to that administrator's role, once; from then on the holder's
+bindings, and the nomination, are the tenant's. Installing again changes nothing
+the tenant changed. `roster app uninstall --tenant acme kamino` ends the
+nomination, and the tenant administrator can do the same from the user console's
+*apps* tab. The Login App and the account app do this for themselves at start,
+in every tenant with a name.
 
 ## B -- one instance per tenant
 
@@ -123,10 +146,9 @@ plane is the roster operator's. It holds one `rt_` per customer that minted one,
 each answering in that customer's tenant alone. That is not a fourth shape, just
 C for each tenant, and it needs nothing from roster that C does not.
 
-The account app and `ldap serve` run that way today -- one instance, an `rt_` per
-tenant -- though a roster operator runs them, because they predate narrowing.
-Moving them to A is #76; until then they are the exception this page does not
-recommend for a new app.
+The account app and `ldap serve` take `--key alias=rt_…` for exactly this case,
+a tenant running its own copy. Run by a roster operator for everybody they are A,
+each with one deployment key (#76).
 
 ## A person calling the app
 
@@ -194,12 +216,14 @@ var ErrNotServed = errors.New("this instance does not serve that tenant")
 - **The prefix says how to authenticate.** `rt_` is C: one tenant, read from
   `MeService.Get`, and `Roster()` is the bearer alone. `rk_` is A or B: the
   bearer and `roster-at`.
-- **roster says which tenants.** For an `rk_`, the tenants are the ones with a
-  `Nomination` for the key's holder, and the name to send is one of that
-  tenant's `Host` rows. One tenant is B, several is A -- the same binary, a
-  different key. How an app reads its own nominations without a key that can
-  read everybody's is open; a `List` filtered by `borrower_id` works today and
-  needs the key to hold `NominationService/List` unnarrowed.
+- **roster says which tenants.** For an `rk_`, `NominationService/List` asked as
+  the key answers its own nominations and nobody else's -- roster holds a key to
+  its own `borrower_id` (`server/core/nomination.go`) -- and `roster-at: @<tenant>`
+  names any of them with no `Host` to look up. One tenant is B, several is A --
+  the same binary, a different key. A key cannot **watch** them (a watch names
+  rows by reference); it lists again, which the account app does when a name
+  arrives for a tenant it has not read. The account app and `ldap serve` are this
+  layer, written twice.
 - **`Token()`** is #74, and is the bearer itself in C until then.
 
 What this layer **cannot** hide, and should not try to:
@@ -208,9 +232,9 @@ What this layer **cannot** hide, and should not try to:
   that is a fact about the product, not a detail of authentication. The layer
   answers `ErrNotServed`; the business logic decides what a feature that crosses
   tenants does in a shape that has none.
-- **Setting a tenant up.** A needs a holder, bindings, a nomination and a name
-  per tenant (#75); C needs a key. That is operations, written down beside the
-  shape, not code.
+- **Setting a tenant up.** A needs `roster app install` per tenant; C needs a
+  key the tenant mints. That is operations, written down beside the shape, not
+  code.
 - **The database.** B on a shared database is confined in roster and nowhere
   else unless the app's database login is.
 
@@ -223,5 +247,8 @@ What this layer **cannot** hide, and should not try to:
 | `server/core/nomination.go` | the two questions a nomination is asked |
 | `cli/control.go`, `narrowedFlag` | a deployment key with nothing on it |
 | `cli/login.go`, `nominate` | the Login App setting itself up in every tenant |
+| `cli/app.go` | `roster app install` / `uninstall` |
+| `account/account.go`, `ldap/ldap.go` | two consumers in the A shape |
+| `ts/lib/tenant/apps.tsx` | the *apps* tab, in both consoles |
 | [login.md](login.md) § *What a front door needs* | the same arrangement from the Login App's side |
 | [operating.md](operating.md) | `roster login provision`, and upgrading from `Host.acts_as` |

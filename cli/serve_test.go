@@ -10,7 +10,7 @@ import (
 	"github.com/lesomnus/roster/server/keys"
 )
 
-// TestAFrontDoorInThisProcessMakesItsOwnKeys is `account.keys` left empty
+// TestAFrontDoorInThisProcessMakesItsOwnKeys is `account.key` and `account.keys` left empty
 // inside `roster serve`: the rows `roster account provision` writes, and the
 // key in memory rather than in a file, which is one replica.
 //
@@ -30,8 +30,8 @@ func TestAFrontDoorInThisProcessMakesItsOwnKeys(t *testing.T) {
 	c := &cmd.Config{Account: cmd.AccountConfig{Addr: ":0", Connect: "http://127.0.0.1:1"}}
 	ac, err := frontDoor(ctx, c, listening(t), s)
 	x.NoError(err)
-	x.Len(ac.Keys, 1, "%v", ac.Keys)
-	x.True(strings.HasPrefix(ac.Keys["contoso"], keys.PrefixTenant), "not a tenant key: %q", ac.Keys["contoso"])
+	x.Empty(ac.Keys, "a key per tenant was made, which #76 replaced")
+	x.True(strings.HasPrefix(ac.Key, keys.PrefixDeployment), "not a deployment key: %q", ac.Key)
 
 	t.Run("and a reference that resolves to nothing is still a refusal", func(t *testing.T) {
 		x := require.New(t)
@@ -48,15 +48,28 @@ func TestAFrontDoorInThisProcessMakesItsOwnKeys(t *testing.T) {
 		x.ErrorContains(err, "keys.contoso")
 	})
 
-	t.Run("and nobody to front is not a failure to start", func(t *testing.T) {
+	t.Run("and a key named is a reference that has to resolve", func(t *testing.T) {
 		x := require.New(t)
 
-		// A fresh deployment: no tenant has a name yet, so there is nothing to
-		// mint for, and the caller says so rather than refusing to come up.
+		c := &cmd.Config{Account: cmd.AccountConfig{
+			Addr: ":0", Connect: "http://127.0.0.1:1",
+			Key: "env:NOTHING_SET_HERE",
+		}}
+		_, err := frontDoor(ctx, c, listening(t), s)
+		x.ErrorContains(err, "account.key")
+	})
+
+	t.Run("and nobody to front yet still makes the key", func(t *testing.T) {
+		x := require.New(t)
+
+		// A fresh deployment: no tenant has a name yet. A deployment key needs
+		// no tenant to exist, so it is made anyway, and the app finds the
+		// tenants it is later nominated in for itself.
 		empty := deployment(t)
 		c := &cmd.Config{Account: cmd.AccountConfig{Addr: ":0", Connect: "http://127.0.0.1:1"}}
 		ac, err := frontDoor(ctx, c, listening(t), empty)
 		x.NoError(err)
 		x.Empty(ac.Keys)
+		x.True(strings.HasPrefix(ac.Key, keys.PrefixDeployment))
 	})
 }

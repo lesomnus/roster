@@ -26,8 +26,10 @@ import (
 // request out of fabrikam's rows would be the app's own code, which is the
 // wiring-as-control roster refuses elsewhere. A tenant key (`rt_`) resolves to a
 // holder inside a tenant, the tenant travels with the actor, and the wall does
-// the narrowing with no discipline asked of the app. So the app holds one `rt_`
-// per tenant it fronts, picked by host, and this is what that buys, through
+// the narrowing with no discipline asked of the app. So the app held one `rt_`
+// per tenant it fronts, picked by host -- the shape a tenant running its own copy
+// still takes; run for everybody it holds one deployment key narrowed per call
+// to the holder each tenant nominated (#76) -- and this is what that buys, through
 // the served stack: the five calls a front door makes before it has a person
 // -- look an identity up, enrol a stranger, accept a claim, read the row, and
 // check a password -- each answer for the key's own tenant and refuse for

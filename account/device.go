@@ -462,7 +462,7 @@ func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
 		name = "terminal"
 	}
 
-	res, err := a.roster.ApiKey().Issue(withKey(as, t.key), rstr.ApiKeyIssueRequest_builder{
+	res, err := a.roster.ApiKey().Issue(t.on(as), rstr.ApiKeyIssueRequest_builder{
 		Holder:  rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Alias:   name,
 		Methods: v.methods,

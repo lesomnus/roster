@@ -165,7 +165,7 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 				// unsaid the keys are made here, one per tenant with a name,
 				// and a fresh deployment has no names yet. The next start
 				// finds them. `roster account serve` still refuses with none.
-				if len(ac.Keys) == 0 {
+				if len(ac.Keys) == 0 && ac.Key == "" {
 					slog.Warn("account: no tenant has a `Host` row yet, so there is nobody to front and the app is not serving; " +
 						"a tenant registers a name and the next start fronts it")
 				} else {
@@ -273,20 +273,31 @@ func frontDoor(ctx context.Context, c *cmd.Config, l net.Listener, s *cmd.Server
 		ac.Connect = "http://" + c.Server.Http.Addr
 	}
 
+	if c.Account.Key != "" {
+		key, err := tokenOrRef(c.Account.Key)
+		if err != nil {
+			return ac, fmt.Errorf("account.key: %w", err)
+		}
+		ac.Key = key
+
+		return ac, nil
+	}
+
 	keys, err := keysOf(c.Account.Keys, AccountKeyPrefix, nil)
 	switch {
 	case err == nil:
 		ac.Keys = keys
 
 	case errors.Is(err, errNoKeys):
-		made, err := provisionAccount(ctx, s, ac.Enrol, "")
+		if s == nil || s.Control == nil {
+			return ac, nil
+		}
+		token, n, err := provisionAccount(ctx, s, ac.Enrol, "")
 		if err != nil {
-			return ac, fmt.Errorf("account.keys: none named, and making them here: %w", err)
+			return ac, fmt.Errorf("account.key: none named, and making one here: %w", err)
 		}
-		ac.Keys = made
-		if len(made) > 0 {
-			slog.Warn(fmt.Sprintf("account: keys made at start for %d tenant(s), which is one replica; account.keys names ones to share", len(made)))
-		}
+		ac.Key = token
+		slog.Warn(fmt.Sprintf("account: key made at start, fronting %d tenant(s), which is one replica; account.key names one to share", n))
 
 	default:
 		return ac, err
@@ -355,6 +366,16 @@ func directory(c *cmd.Config, l net.Listener) (cmd.LdapConfig, error) {
 	lc := c.Ldap
 	if lc.Roster == "" {
 		lc.Roster = l.Addr().String()
+	}
+
+	if c.Ldap.Key != "" {
+		key, err := tokenOrRef(c.Ldap.Key)
+		if err != nil {
+			return lc, fmt.Errorf("ldap.key: %w", err)
+		}
+		lc.Key = key
+
+		return lc, nil
 	}
 
 	keys, err := keysOf(c.Ldap.Keys, LdapKeyPrefix, nil)

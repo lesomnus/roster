@@ -94,7 +94,7 @@ func (s *search) person(ctx context.Context, t *tenant, alias string) (*entry, w
 // The exact name first, which is one indexed read; then `Search`, whose
 // match on the alias is already without regard to case.
 func (d *Directory) byAlias(ctx context.Context, t *tenant, alias string) (*rstr.Holder, error) {
-	v, err := d.roster.Holder().Get(withKey(ctx, t.key), rstr.HolderGetRequest_builder{
+	v, err := d.roster.Holder().Get(t.on(ctx), rstr.HolderGetRequest_builder{
 		Ref: rstr.HolderRef_builder{Slug: rstr.HolderRefBySlug_builder{
 			Alias:  proto.String(alias),
 			Tenant: rstr.TenantRef_builder{Id: t.id.Bytes()}.Build(),
@@ -109,7 +109,7 @@ func (d *Directory) byAlias(ctx context.Context, t *tenant, alias string) (*rstr
 
 	after := ""
 	for {
-		vs, err := d.roster.Holder().Search(withKey(ctx, t.key), rstr.HolderSearchRequest_builder{
+		vs, err := d.roster.Holder().Search(t.on(ctx), rstr.HolderSearchRequest_builder{
 			Q: proto.String(alias), Size: int32(d.c.PageSize), After: after,
 		}.Build())
 		if err != nil {
@@ -177,7 +177,7 @@ func (d *Directory) verifiedAddresses(ctx context.Context, t *tenant, holder []b
 	var out []string
 	after := ""
 	for {
-		vs, err := d.roster.Email().List(withKey(ctx, t.key), rstr.EmailListRequest_builder{
+		vs, err := d.roster.Email().List(t.on(ctx), rstr.EmailListRequest_builder{
 			Filters: []*rstr.EmailFilter{rstr.EmailFilter_builder{Holder: rstr.HolderRef_builder{Id: holder}.Build()}.Build()},
 			Size:    int32(d.c.PageSize),
 			After:   after,
@@ -309,7 +309,7 @@ func (s *search) people(ctx context.Context, t *tenant, after string) (string, w
 	case p.address != "":
 		// As roster stores it: the same normalisation `Email.Add` holds the
 		// address to, so a client's `Kim@` finds the row `kim@` is.
-		v, err := d.roster.Email().Get(withKey(ctx, t.key), rstr.EmailGetRequest_builder{
+		v, err := d.roster.Email().Get(t.on(ctx), rstr.EmailGetRequest_builder{
 			Ref: rstr.EmailRef_builder{At: rstr.EmailRefByAt_builder{TenantId: t.id.Bytes(), Address: proto.String(front.Address(p.address))}.Build()}.Build(),
 		}.Build())
 		if err != nil {
@@ -357,13 +357,13 @@ func (s *search) people(ctx context.Context, t *tenant, after string) (string, w
 			q := proto.Clone(p.search).(*rstr.HolderSearchRequest)
 			q.SetSize(int32(size))
 			q.SetAfter(after)
-			vs, err := d.roster.Holder().Search(withKey(ctx, t.key), q)
+			vs, err := d.roster.Holder().Search(t.on(ctx), q)
 			if err != nil {
 				return "", refusal(err)
 			}
 			items, next = vs.GetItems(), vs.GetNext()
 		} else {
-			vs, err := d.roster.Holder().List(withKey(ctx, t.key), rstr.HolderListRequest_builder{
+			vs, err := d.roster.Holder().List(t.on(ctx), rstr.HolderListRequest_builder{
 				Size:  int32(size),
 				After: after,
 			}.Build())

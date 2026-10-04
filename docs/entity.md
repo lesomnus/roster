@@ -533,6 +533,9 @@ arrive at one name and any `rk_` turned out to borrow whatever a name nominated
 (#73). A key no tenant nominated is refused rather than answered as itself.
 Writing one is a way to act as that holder, so nobody nominates a holder wider
 than themselves, and forgetting a holder removes the nominations naming them.
+`name` is the app's, for a screen -- a tenant cannot read the control plane
+`borrower_id` points into. A deployment key reading nominations as itself is
+held to its own; `roster app install` writes them (#75).
 
 > The Login App and a product both arrive at `contoso.example.com`. contoso has
 > two nominations, one per app, so the sign-in is answered as contoso's

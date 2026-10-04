@@ -2,9 +2,7 @@ package cli
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
@@ -18,26 +16,29 @@ import (
 
 // What a front door needs before it can be one, made where it is used.
 //
-// A holder of its own in each tenant it fronts, a role holding exactly what it
-// calls as itself, the binding between them, and a key. `roster login
-// provision` has written those four for the Login App since #36; this is the
-// same four for the account app, and the helpers the two share. Neither makes
-// a tenant: a customer is the tenant's, and a command that made one by
+// One deployment key on the control plane, allowed only what the app asks
+// before a request names a tenant; and in each tenant it fronts a holder of its
+// own, a role holding exactly what it calls as itself, the binding between them,
+// and the nomination that answers the key as that holder there. `roster login
+// provision` has written those for the Login App since #36 and #73; this is the
+// same for the account app since #76, and the helpers the two share. Neither
+// makes a tenant: a customer is the tenant's, and a command that made one by
 // mentioning it would be a way to write rows into somebody else's by typo.
 //
 // # Which tenants
 //
 // The ones with a `Host` row. A tenant that registered a name is a tenant a
-// front door fronts (#42), so *who do we front* is a query and not a list --
-// `nominate` reads it the same way. A tenant with no name yet is unreachable
-// from a browser whatever key the app holds, so there is nothing to mint for,
-// and one that registers a name after this ran is fronted after the next run.
+// front door fronts (#42), so *who do we front* is a query and not a list. A
+// tenant with no name yet is unreachable from a browser whatever key the app
+// holds, so there is nothing to nominate in, and one that registers a name after
+// this ran is nominated in on the next run -- which the running app then finds
+// for itself, by its own nominations, without a restart.
 //
 // # Where the key goes
 //
 // Into a file when `out` names a directory -- `roster account provision`, run
 // beside a process of its own -- and into memory when it does not, which is
-// what `roster serve` asks for when `account.keys` says nothing: a key made at
+// what `roster serve` asks for when `account.key` and `account.keys` say nothing: a key made at
 // start, which is one replica, exactly as `account.seal` reads an empty value.
 // Either way the row is a key like any other. It is in the trail, it can be
 // revoked, and a restart is a rotation -- so what a deployment gives up by
@@ -53,106 +54,32 @@ const accountProvisioned = "account"
 
 // provisionAccount ensures the account app's rows in every tenant that has a
 // name, mints one key per tenant, and answers with the keys by alias.
-func provisionAccount(ctx context.Context, s *cmd.Server, enrol string, out string) (map[string]string, error) {
+func provisionAccount(ctx context.Context, s *cmd.Server, enrol string, out string) (string, int, error) {
 	methods := account.Calls
 	if enrol == "enrolling" {
-		// Making people is wider than signing them in, and it is granted where
-		// a deployment wrote it down and nowhere else -- `LoginMethods` and
-		// `login provision` draw the same line.
 		methods = append(append([]string{}, account.Calls...), rstr.HolderService_Add_FullMethodName)
-	}
-
-	tenants, err := fronted(ctx, s)
-	if err != nil {
-		return nil, err
 	}
 
 	if out != "" {
 		if err := os.MkdirAll(out, 0o700); err != nil {
-			return nil, err
+			return "", 0, err
 		}
 	}
 
-	made := map[string]string{}
-	for _, t := range tenants {
-		at := rstr.TenantRef_builder{Id: t.id}.Build()
-
-		who, err := ensureHolderNamed(ctx, s, at, accountProvisioned)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", t.alias, err)
-		}
-		role, err := ensureRoleNamed(ctx, s, at, accountProvisioned, methods)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", t.alias, err)
-		}
-		if err := ensureBinding(ctx, s, role, who); err != nil {
-			return nil, fmt.Errorf("%s: %w", t.alias, err)
-		}
-
-		token, err := mintNamed(ctx, s.Ungated, who, accountProvisioned, methods, keys.PrefixTenant)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", t.alias, err)
-		}
-		made[t.alias] = token
-
-		if out == "" {
-			continue
-		}
-
-		path := filepath.Join(out, t.alias+".key")
-		if err := writeKey(path, token); err != nil {
-			return nil, err
-		}
-		fmt.Fprintf(os.Stderr, "roster: the account app's key for @%s/%s written to %s.\n", t.alias, accountProvisioned, path)
+	// One key, the account app's own on the control plane, allowed only what it
+	// asks before a request names a tenant; and in each tenant with a name, the
+	// holder it is answered as there. The Login App's arrangement, by the same
+	// two functions (#76).
+	token, borrower, err := provisionDeploymentKey(ctx, s, accountProvisioned, account.Resolving, out)
+	if err != nil {
+		return "", 0, err
+	}
+	n, err := nominateAs(ctx, s, accountProvisioned, methods, borrower)
+	if err != nil {
+		return "", 0, err
 	}
 
-	return made, nil
-}
-
-// aTenant is one a front door fronts: its identifier and what it is called.
-type aTenant struct {
-	id    []byte
-	alias string
-}
-
-// fronted is every tenant with a `Host` row, once each.
-//
-// Paged, because a deployment fronting many customers has more names than one
-// page holds, and a list read as one page fronts the first twenty of them and
-// says nothing about the rest.
-func fronted(ctx context.Context, s *cmd.Server) ([]aTenant, error) {
-	seen := map[string]bool{}
-	out := []aTenant{}
-
-	after := ""
-	for {
-		vs, err := s.Ungated.Host().List(ctx, rstr.HostListRequest_builder{Size: 100, After: after}.Build())
-		if err != nil {
-			return nil, err
-		}
-
-		for _, v := range vs.GetItems() {
-			id := v.GetTenant().GetId()
-			if seen[string(id)] {
-				continue
-			}
-			seen[string(id)] = true
-
-			tn, err := s.Ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
-				Ref:    rstr.TenantRef_builder{Id: id}.Build(),
-				Select: rstr.TenantSelect_builder{Alias: z.Ptr(true)}.Build(),
-			}.Build())
-			if err != nil {
-				return nil, err
-			}
-			out = append(out, aTenant{id: id, alias: tn.GetAlias()})
-		}
-
-		if vs.GetNext() == "" {
-			return out, nil
-		}
-		after = vs.GetNext()
-	}
+	return token, n, nil
 }
 
 // ensureHolderNamed is a holder called `alias` in the tenant, made if there is
