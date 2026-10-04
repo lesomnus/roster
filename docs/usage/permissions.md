@@ -63,8 +63,9 @@ so it is worth reading once:
 
 Which is wider than the writes that name a role. `GroupMembership.Add` names
 none and hands over every binding written to that group; `ApiKey.Add` names none
-and hands over a credential that acts as somebody. All of them are refused
-unless the caller already holds what they are handing out.
+and hands over a credential that acts as somebody, and so does
+`NominationService/Add` -- an app's key answered as somebody in this tenant. All
+of them are refused unless the caller already holds what they are handing out.
 
 ## A group
 
@@ -144,11 +145,47 @@ Both put people together and they answer different questions.
 | --- | --- | --- |
 | scope | the whole tenant | one site |
 | members | may be in any site | of that site |
-| carries a role | no — a **binding** to the group does | yes, per member |
-| used for | *grant these people this* | *these people do this here* |
+| carries a role | no — a **binding** to the group does | a member may hold one, or none |
+| used for | *grant these people this* | *these people work together here* |
 
-A group is a handle you point a binding at. A team is a structure with roles
-inside it.
+A group is a handle you point a binding at. A team is the organisation's own
+structure, and a member's role in it is optional.
+
+### Membership is not a permission, outside roster either
+
+What somebody may do is the union of their bindings, the bindings of their
+groups and the roles they hold in teams -- and roster guards every write to it:
+joining a group is refused unless you hold what the group's bindings hand out.
+**A membership nothing is bound to is guarded by nothing**, because it hands out
+nothing roster knows of.
+
+So an app must not grant on membership. It asks `HolderService/Reaches` and
+checks the method it is about to serve ([apps.md](../apps.md)); anything finer
+than one RPC is a method of a permission service the app declares. A product that
+checked *is she on the ops team* would be granting something any holder of
+`TeamMembership.Add` could hand out, past the rule above.
+
+A client that can only grant on membership -- an LDAP client reading `memberOf`
+([ldap.md](../ldap.md)), a proxy reading a token's `groups` -- gets the same
+protection one way: **bind the group to a role naming what it grants**, even
+though no RPC by that name exists:
+
+```sh
+roster role add @newco/jenkins-admin '{"methods": ["/ext.jenkins.Admin/*"]}'
+
+echo '{"role": {"slug":{"alias":"jenkins-admin","tenant":{"alias":"newco"}}},
+       "group":{"slug":{"alias":"jenkins-admins","tenant":{"alias":"newco"}}}}' \
+  | roster binding add -
+```
+
+Joining that group is then refused to anybody who does not hold
+`/ext.jenkins.Admin/*` themselves. That includes a tenant's first administrator,
+whose role from `tenant add` is `/roster.*/*` and covers no other app's methods:
+somebody has to be bound the external permission -- or a pattern over it -- before
+they can hand it out, and a roster operator on the admin listener is who starts
+that. The same is true of every app's own methods, `/hday.oasys.*/*` included. A
+team carries no such binding, so map an external permission to a group and never
+to a team.
 
 ## You cannot hand out what you do not hold
 
@@ -193,6 +230,7 @@ unless that person's permissions are a subset of the caller's:
 | `IdentityService/Add` | an account at a provider that signs in as them |
 | `EmailService/Add` | a mailbox a recovery link is sent to |
 | `ApiKeyService/Add`, `/Issue` | a key that **acts as** them |
+| `NominationService/Add`, `/Patch` | an app's deployment key answered **as** them in this tenant |
 
 The middle two are worth reading twice before granting. They sound like keeping a
 directory tidy, and each is a way to sign in as whoever the row is about: link an

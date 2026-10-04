@@ -63,8 +63,10 @@ one tenant, and an operator is named by alias alone because of it. What answers
 across both planes stays outside -- `roster key list` and `roster key revoke`,
 because a key's identifier does not say which database it is in.
 
-A machine that works for **one** customer is not this. It is a holder in their
-tenant with an `rt_`: `roster key add --tenant … --holder …`.
+`control key add --narrowed NAME` is the key for an app you host that always names
+a tenant: it allows nothing until a request does (`ways-in.md`). Something a
+**customer** runs for themselves is not this. It is a holder in their tenant with
+an `rt_`: `roster key add --tenant … --holder …`.
 
 ## How anything is named
 

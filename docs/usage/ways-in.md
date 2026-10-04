@@ -22,7 +22,7 @@ them*, and what an app does with the answer is the app's.
 | | what it is | who presents it | where it is checked |
 | --- | --- | --- | --- |
 | a **password** | an argon2id verifier on a `Credential` row | a person, to your front door | `VouchService.Verify`, here |
-| **`rk_`** deployment key | a control-plane row; presents **as itself** | one of your own services | the auth interceptor, every request |
+| **`rk_`** deployment key | a control-plane row; presents **as itself**, or -- naming a tenant with `roster-at` -- as the holder that tenant nominated for it | an app you run across tenants | the auth interceptor, every request |
 | **`rt_`** tenant key | a data-plane row; **resolves to its holder** | a customer's script, or their app | the same interceptor |
 | **`rd_`** delegation | short-lived, bound to the key that asked for it | an app, *beside* its own key | the same interceptor |
 | an **identity** | `(tenant, provider, subject)` — an account somewhere else | nobody; it is a fact, not a secret | whoever verified the provider |
@@ -105,14 +105,21 @@ If your front door would rather be handed something it can call roster with,
 
 ## A deployment key — `rk_`
 
-For **your own services**: the login app, a product backend, a job that reads
-the trail. They are holders of the control plane, and a key presents **as
-itself** rather than as a person.
+For an app **you** run -- you being a roster operator -- that has to reach more
+than one tenant, or that a tenant cannot be asked to hold a key for: the Login
+App, a product you host for your customers, a job that reads the trail. The key
+hangs off a row of the control plane, which is why the command says `control`:
+it writes to the other database.
 
-*Your own* is the deployment's, not a customer's. A machine that works for **one**
-tenant — its CI, its sync job — is an ordinary holder in that tenant with an
-`rt_` ([below](#a-tenant-key--rt_)), which is why the command says `control`: it
-writes to the other database.
+It answers two ways. **Unnarrowed**, as itself, across every tenant, allowed
+exactly its `--allow` -- the job reading the trail, or the Login App's three reads
+before it knows whose flow a challenge is. **Narrowed**, with `roster-at: <a name
+a tenant answers at>`, as the holder that tenant nominated for this key, with
+that holder's bindings: everything a product does for one of your customers.
+[apps.md](../apps.md) is which of those an app needs, and the shapes it can take.
+
+Something a **tenant** runs -- their CI, their sync job, their own copy of an app
+-- is a holder in their tenant with an `rt_` ([below](#a-tenant-key--rt_)).
 
 ```sh
 roster control key add --allow '/roster.VouchService/Verify,/roster.MeService/Get' custody
@@ -131,7 +138,16 @@ up on purpose before they need it, and the control plane has one tenant so an
 alias names one of them.
 
 `--allow` is required in both directions: everything hands out more than anybody
-asked for, and nothing mints a key that silently does not work.
+asked for, and nothing mints a key that silently does not work. The one key with
+nothing on it that works is said so:
+
+```sh
+roster control key add --narrowed kamino
+```
+
+It is refused as itself and answered as whoever each tenant nominated -- the key
+for a product that always knows which tenant a request is about, so a request
+that forgets `roster-at` is refused rather than run across all of them.
 
 Write it however reads best — the flag repeats, and each occurrence may itself
 be a comma-separated list:
@@ -145,8 +161,8 @@ roster control key add \
 
 Flags come before the name, as everywhere in this CLI.
 
-**A deployment key is not walled by tenant.** It is the widest credential this
-deployment issues. Some methods are wider than they look and the command says so
+**A deployment key is not walled by tenant when it is not narrowed.** It is the
+widest credential this deployment issues. Some methods are wider than they look and the command says so
 when you grant one:
 
 ```
@@ -155,7 +171,7 @@ write in this deployment, in every tenant, for as long as the retention policy
 keeps them.
 ```
 
-`--expires 720h` bounds one. Empty is forever, which is what a machine wants.
+`--expires 720h` bounds one. Empty is forever, which is what an unattended app wants.
 
 ## A tenant key — `rt_`
 

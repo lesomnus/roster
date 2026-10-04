@@ -33,9 +33,10 @@ The store that answers who somebody is: people, their external identities, their
 addresses, and the tenants, sites and teams they belong to. It owns `sub`.
 
 It is **not** the identity provider. Hydra speaks the protocol and a Login App
-runs the flow; roster is what they ask. So its callers are machines -- the Login
-App, admin consoles -- and its own authentication is mTLS or an API key, never
-`authoidc`. See `docs/position.md`.
+runs the flow; roster is what they ask. So its callers are apps and the people
+using its consoles -- the Login App, a product, an operator at the admin console --
+and its own authentication is mTLS, an API key or a console's session cookie,
+never `authoidc`. See `docs/position.md`.
 
 ### The other rule
 

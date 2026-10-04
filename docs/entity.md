@@ -65,7 +65,7 @@ flowchart TB
 it: there is no binding that makes somebody see another customer.
 
 **👤 `Holder` is who.** A credential resolves to one, the trail names one on
-every line, and twelve foreign keys point at one.
+every line, and thirteen foreign keys point at one.
 
 **📍 `Site` is the second axis.** A tenant is the wall between customers and a
 site is the wall inside one -- a factory, a region, an environment. An entity
@@ -372,17 +372,21 @@ own check.
 
 ### 🔑 `ApiKey` — what one service may call this deployment for
 
-**Two kinds, on two planes, and the prefix says which.** An `rk_` is one of the
-deployment's own services and lives in the **control plane** -- a second roster
-in the same process on its own database -- because a key that opens every tenant
-must not sit in the tables it opens. An `rt_` belongs to an ordinary person and
-lives beside them on the data plane; `ApiKey.Issue` mints one for somebody, and
-the same verb with their own reference is how that somebody mints their own.
+**Two kinds, on two planes, and the prefix says which.** An `rk_` hangs off a
+control-plane row -- a roster operator, or the row owning an app they run across
+tenants -- and lives in the **control plane**, a second roster in the same
+process on its own database, because a key that can open every tenant must not
+sit in the tables it opens. An `rt_` hangs off a holder in a tenant and lives
+beside them on the data plane, whoever is behind that holder; `ApiKey.Issue`
+mints one for somebody, and the same verb with their own reference is how that
+somebody mints their own.
 
-They also resolve differently, which is the part a trail shows: an `rk_` is
-served **as this row**, so the record names which key asked, while an `rt_`
+They also resolve differently, which is the part a trail shows. An `rt_`
 resolves to its holder -- which is why writing one onto somebody is refused on
-the same terms their password is.
+the same terms their password is. An `rk_` is served **as this row** when it is
+not narrowed, so the record names which key asked; narrowed with `roster-at` it
+is served as the holder that tenant nominated for it (🎟️ `Nomination`), and the
+record names them.
 
 It is not a 🔒 `Credential`: a credential proves *who* and a key grants *what*,
 and there is nowhere on a credential to write the second; nor would argon2id at
@@ -492,7 +496,8 @@ Three rows a front door reads **before it knows who anybody is**, which is why
 each is a row here rather than a map in every app's configuration.
 
 They are read in order, and only the first is asked with nothing. 🌐 `Host` takes
-a name and answers with a tenant; `FrontService.WhereFrom` then takes **that
+a name and answers with a tenant -- which is also the first half of narrowing a
+deployment key, whose second half is that tenant's 🎟️ `Nomination` for it; `FrontService.WhereFrom` then takes **that
 tenant** and an address, because the same mail domain means different things to
 two operators. 🔌 `Connection` is the tenant's own configuration and is read once
 there is a tenant to read it for.
@@ -525,8 +530,9 @@ holder the presented key hangs off** -- an identifier, `borrower_id`, because th
 holder is in another database. One per tenant per app, and the holder must be
 that tenant's own. It was a field on 🌐 `Host` (`acts_as`) until two apps had to
 arrive at one name and any `rk_` turned out to borrow whatever a name nominated
-(#73). Writing one is a way to act as that holder, so nobody nominates a holder
-wider than themselves.
+(#73). A key no tenant nominated is refused rather than answered as itself.
+Writing one is a way to act as that holder, so nobody nominates a holder wider
+than themselves, and forgetting a holder removes the nominations naming them.
 
 > The Login App and a product both arrive at `contoso.example.com`. contoso has
 > two nominations, one per app, so the sign-in is answered as contoso's

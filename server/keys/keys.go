@@ -10,12 +10,15 @@
 //
 //   - A **deployment** key lives in the control plane: a second roster, in this
 //     process, on its own database, whose one tenant is the owner and whose
-//     holders are that owner's services (docs/position.md, § 'Two planes, one
-//     schema'). It resolves
-//     to the key itself, and the policy hands it every tenant there is.
-//   - A **tenant** key lives here, on an ordinary person. It resolves to that
-//     person, so nothing about the wall, the bindings or the sites is decided
-//     twice -- it is somebody calling, narrowed by the key's own methods.
+//     holders are the roster operators and the rows owning the keys of apps
+//     they run across tenants (docs/position.md, § 'Two planes, one schema').
+//     It resolves to the key itself, and the policy hands it every tenant there
+//     is -- unless the request names a tenant, and [At] answers it as the
+//     holder that tenant nominated for it.
+//   - A **tenant** key lives here, on a holder in a tenant, whoever is behind
+//     it. It resolves to that holder, so nothing about the wall, the bindings
+//     or the sites is decided twice -- it is somebody calling, narrowed by the
+//     key's own methods.
 //
 // So this package is small on purpose. Finding a key is a `Get` against a
 // generated server, checking one is a hash, and what a key allows is a

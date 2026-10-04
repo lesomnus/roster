@@ -79,6 +79,16 @@ func TestForgettingSomebodyKeepsTheEventAndLosesTheContents(t *testing.T) {
 	other := b.holder(t, ctx, b.Contoso, "bystander")
 	b.addressOf(t, ctx, other, "bystander@contoso.example")
 
+	// And an app's key answered as each of them in this tenant.
+	for _, h := range []pdid.Id{who, other} {
+		_, err := b.Ungated.Nomination().Add(ctx, app.NominationAddRequest_builder{
+			Tenant:     app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+			BorrowerId: pdid.New(pd.HolderDomain).Bytes(),
+			ActsAs:     app.HolderRef_builder{Id: h.Bytes()}.Build(),
+		}.Build())
+		x.NoError(err)
+	}
+
 	was, err := b.Ent.Audit.Query().Count(ctx)
 	x.NoError(err)
 
@@ -97,6 +107,10 @@ func TestForgettingSomebodyKeepsTheEventAndLosesTheContents(t *testing.T) {
 		n, err = b.Ent.Email.Query().Where().Count(ctx)
 		x.NoError(err)
 		x.Equal(1, n, "their address survived, or somebody else's went with it")
+
+		n, err = b.Ent.Nomination.Query().Count(ctx)
+		x.NoError(err)
+		x.Equal(1, n, "an app is still answered as them, or the bystander's nomination went too")
 	})
 
 	t.Run("and the row that is left names nobody", func(t *testing.T) {

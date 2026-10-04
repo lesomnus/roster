@@ -14,7 +14,10 @@ This page is the design **and** how to run it. The
 
 **`roster ldap serve` is a consumer**, exactly as `roster account serve` is:
 one tenant key per tenant it fronts, reaching roster over the wire and never
-past it, whether it runs as its own process or as a block in the server's. It
+past it, whether it runs as its own process or as a block in the server's. One
+instance for many tenants is the roster-hosted shape, and the Login App takes it
+with one deployment key narrowed per request; moving this process and the account
+app to the same is open ([apps.md](apps.md)). It
 speaks LDAPv3 on one side and `rstr` on the other, and it *translates*: a bind is
 `Vouch.Verify` or a key read back through `Me.Get`, a search is `Holder.Search`,
 `Holder.List`, `Email.List`, `GroupMembership.List`. It holds no data, keeps no cache and
@@ -188,6 +191,27 @@ team's DN carries its site, because a team is a group of people **within one
 site** (`entity.md`). A site is an `organizationalUnit`. Nested groups are not
 here because they are not in roster (`position.md` § What we deliberately do
 not have).
+
+### What a client grants on, and what roster guards
+
+`member` is the attribute the schema defines (`groupOfNames`, RFC 4519);
+`memberOf` is its reverse, Active Directory's convenience, and says nothing
+`member` does not. Neither means *may do something* -- but a client that maps a
+group to its administrators turns membership into a permission, and roster guards
+only the permissions it knows of. Joining a group is refused to anybody who does
+not hold what that group's **bindings** hand out (`server/core/escalate.go`), so a
+group nothing is bound to can be joined by anybody who may call
+`GroupMembership.Add`, and a team membership with no role grants nothing roster
+can see.
+
+So: **map a client's permission to a group, and bind that group to a role naming
+the permission** -- `/ext.jenkins.Admin/*`, a method no RPC answers to -- so that
+joining it is held to the rule ([usage/permissions.md](usage/permissions.md) §
+*Membership is not a permission, outside roster either*). Teams are published here,
+`memberOf` included, because a directory is also an address book and an
+organisation chart; they carry no binding, so nothing maps a permission to one
+safely. That is a decision about what this tree shows, taken knowing it, and
+revisited if a client turns out to have no way to tell the two apart.
 
 ## Search
 

@@ -26,7 +26,7 @@ operator** runs the deployment and is a holder of the control plane; a
 | what a request carries | `authorization: Bearer rk_…` and `roster-at: <the name it arrived at>` | the same, with `roster-at` fixed in its configuration | `authorization: Bearer rt_…` |
 | whose name is in the tenant's trail | the nominated holder | the nominated holder | the key's holder |
 | who decides what it may do there | the tenant administrator, by that holder's bindings | the same | the same |
-| may it act in another tenant | yes, wherever it was nominated | no | no |
+| may it act in another tenant | yes, wherever it was nominated | no, provided each instance has its own control-plane holder (below) | no |
 
 The Login App is A when a roster operator runs it for everybody and C when a
 tenant runs their own; glossary, *the Login App*.
@@ -117,13 +117,24 @@ one with an `rt_` is refused.
 The tenant sees the holder in their own directory and can revoke the key, which
 is the property C is chosen for.
 
+**C, held several times.** Somebody who is not a roster operator -- a third party
+integrating with several of your customers -- cannot hold an `rk_`: the control
+plane is the roster operator's. It holds one `rt_` per customer that minted one,
+each answering in that customer's tenant alone. That is not a fourth shape, just
+C for each tenant, and it needs nothing from roster that C does not.
+
+The account app and `ldap serve` run that way today -- one instance, an `rt_` per
+tenant -- though a roster operator runs them, because they predate narrowing.
+Moving them to A is #76; until then they are the exception this page does not
+recommend for a new app.
+
 ## A person calling the app
 
 Whatever the shape, a request from a person arrives with one of:
 
 | credential | how the app checks it |
 | --- | --- |
-| an access token from the issuer, `aud` = this app | the issuer's keys; `sub` is a `Holder.id` |
+| an access token from the issuer, `aud` = this app | the issuer's keys; `sub` is a `Holder.id`. A token whose `aud` is the page that signed somebody in, accepted by every API that page calls, is one any of those APIs can replay at the others -- the shape tyrell and its APIs are in today, and not yet settled |
 | an `rt_` of the person's (a script, an app password) | `payday.TokenService/Introspect`; answers the holder, tenant and the key's methods |
 | an `rd_` this app was given | `Introspect`, which answers only the app it was issued to |
 
@@ -134,7 +145,16 @@ permission service** the app declares in its own proto package -- for example
 `hday.oasys.AdminService/SeeEveryTenant` -- named in a role like any other
 method. A role is a bundle of those; an app asks about the permission and never
 about the role's name, so a role can be split or renamed without the app
-noticing.
+noticing. Nor about which group or team somebody is in: a membership nothing is
+bound to is guarded by nothing ([usage/permissions.md](usage/permissions.md) §
+*Membership is not a permission*).
+
+**Somebody has to hold an app's methods before they can grant them.** A tenant's
+first administrator is bound `/roster.*/*`, which covers none of an app's own
+methods, and nobody hands out what they do not hold. So a roster operator, on the
+admin listener, starts it: binds a tenant administrator the app's methods -- or a
+pattern over every app sold to that tenant -- and from there it is the tenant's to
+hand on.
 
 Every shape asks the same questions in the same order, so this half of an app is
 written once.
