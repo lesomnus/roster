@@ -148,14 +148,14 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 		return nil, err
 	}
 
-	role, made, err := roleOnce(ctx, s, at, name, methods)
+	role, made, err := roleOnce(ctx, s, at, AppRole(name), methods)
 	if err != nil {
 		return nil, err
 	}
 	if made {
-		said = append(said, fmt.Sprintf("@%s/%s may call %d method(s) in %s.", tenant, name, len(methods), tenant))
+		said = append(said, fmt.Sprintf("@%s/%s may call %d method(s) in %s, as role %s.", tenant, name, len(methods), tenant, AppRole(name)))
 	} else {
-		said = append(said, fmt.Sprintf("@%s/%s already has a role; left as the tenant has it.", tenant, name))
+		said = append(said, fmt.Sprintf("%s already has role %s; left as the tenant has it.", tenant, AppRole(name)))
 	}
 	if err := ensureBinding(ctx, s, role, who); err != nil {
 		return nil, err
@@ -190,6 +190,23 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 
 	return said, nil
 }
+
+// AppRole is the alias of the role `roster app install` binds to an app's
+// holder: the app's name and `-app`.
+//
+// # Not the app's name
+//
+// It was, and the name is taken. An app names the role **its people** are
+// given after itself -- kamino's staff role is `kamino`, `/hday.oasys.*/*`,
+// and khala's is `khala` -- and [roleOnce] adopts a role that is already there,
+// as it must for a second run. So installing kamino into a tenant that already
+// used it bound the staff role to the app's own holder: the app's key answered
+// with every method of the app it is, and none of the roster reads `--role`
+// named. Found on the first deployment it was pointed at, before it ran.
+//
+// A suffix rather than a flag, because `docs/apps.md` already drew it so and a
+// name an operator has to choose is a name two operators choose differently.
+func AppRole(app string) string { return app + "-app" }
 
 // roleOnce is the role called `alias` in this tenant, made with `methods` if
 // there is none and **left alone** if there is -- the difference from
