@@ -244,6 +244,21 @@ sign_in() {
 	fi
 
 	l=$(c -o /dev/null -D - "${l}" | loc)
+
+	# The walk that asks for an API this client is not registered for, which
+	# Hydra lets through when the audiences are URNs -- it compares them as URLs,
+	# and a URN is a scheme and nothing else. The Login App refuses it at
+	# consent, by name (`login/login.go`, `grant`).
+	if [ -n "${EXPECT_REFUSED:-}" ]; then
+		case "${l}" in
+		*error=invalid_target*)
+			step "an audience it is not registered for" "refused, invalid_target"
+			echo "flow: ok"
+			exit 0
+			;;
+		esac
+		die "a token was granted for ${AUDIENCE}, which ${OAUTH_CLIENT} is not registered for: ${l}"
+	fi
 	step "the code, at the product's callback" "$(printf '%s' "${l}" | cut -c1-40)…"
 
 	grant=$(printf '%s' "${l}" | sed 's/.*[?&]code=//; s/&.*//')

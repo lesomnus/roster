@@ -54,6 +54,11 @@ type admin struct {
 type client struct {
 	Id   string `json:"client_id"`
 	Name string `json:"client_name"`
+
+	// The audiences this client is registered for: the APIs a token for it
+	// may name (`docs/apps.md`, "People's tokens"). Read at consent, and
+	// compared exactly -- see [App.grant].
+	Audience []string `json:"audience"`
 }
 
 // registration is what Hydra holds about a client, which is more than a
@@ -420,10 +425,16 @@ type logoutRequest struct {
 // `access_denied` is the OAuth code for it, so the client is told what happened
 // rather than being left at a redirect that never comes.
 func (a admin) rejectConsent(ctx context.Context, challenge string) (string, error) {
+	return a.refuseConsent(ctx, challenge, "access_denied", "the person was asked and said no")
+}
+
+// refuseConsent answers a consent challenge with an OAuth error, which is where
+// the client is sent.
+func (a admin) refuseConsent(ctx context.Context, challenge, code, why string) (string, error) {
 	v := &redirect{}
 	body := map[string]string{
-		"error":             "access_denied",
-		"error_description": "the person was asked and said no",
+		"error":             code,
+		"error_description": why,
 	}
 	if err := a.do(ctx, http.MethodPut, "consent/reject", "consent_challenge", challenge, body, v); err != nil {
 		return "", err

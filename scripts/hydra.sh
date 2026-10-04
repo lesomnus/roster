@@ -162,6 +162,17 @@ walk() {
 
 walk skip "$@"
 
+# And an API the demo client is not registered for. Hydra compares a requested
+# audience with the registration as a URL, and these are URNs -- a scheme and
+# nothing else -- so it lets any of them through for a client registered for
+# one. The Login App is what refuses it, and this is that refusal against a
+# real Hydra rather than the harness's.
+echo
+echo "== and an API the client is not registered for"
+docker compose run --rm --no-deps --entrypoint /usr/local/bin/flow.sh \
+	-e "EXPECT_SUB=${sub}" -e "CONSENT=skip" -e "AUDIENCE=urn:roster:other:api" -e "EXPECT_REFUSED=1" \
+	login "$@"
+
 # The second mode, which is a different app: the setting is read at start.
 # Put back afterwards, so `--hold` leaves what `compose.yaml` describes.
 echo
