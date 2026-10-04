@@ -52,8 +52,9 @@ other plane, and both are read.
 ## The two planes
 
 roster runs twice in one process, on two databases: the **data plane** holds
-customers and their people, and the **control plane** holds who may call this
-deployment -- the operator's own people, the services, and the keys under those.
+customers, their people and the apps acting in their tenants, and the **control
+plane** holds who runs this deployment -- the roster operators, and one row per app
+they run across tenants, owning that app's deployment key.
 A key must not live in the tables it protects, which is why the second is a
 database and not a reserved tenant. There is no query from one to the other.
 
@@ -301,7 +302,7 @@ Five at most, and which open is what the configuration named.
 | --- | --- | --- |
 | `server.addr` | product apps | gRPC, **walled** and gated. Keys only -- a cookie names nobody here |
 | `server.http.addr` | anything that cannot speak gRPC, and a roster user's browser | the same, transcoded (Connect, gRPC-Web). Serves the **user console** and the sign-in behind it |
-| `control.addr` | the deployment's own services | who runs this deployment, which services call it, their keys. Takes an `rk_` |
+| `control.addr` | the roster operators' shells, and their jobs | who runs this deployment and the deployment keys of the apps they run. Takes an `rk_` |
 | `control.http.addr` | the same, over HTTP | the RPCs a shell makes -- `roster control …`. **No page**, and no sign-in |
 | `admin.addr` / `.http.addr` | a roster operator's browser | **customers**: the data plane with no wall, behind an operator's session. Serves the **admin console** and the sign-in behind it |
 
@@ -461,9 +462,11 @@ deployment that is half there.
 
 **And a key unsaid is a key made at start.** `account.keys` and `login.key` left
 out in one process are the rows `roster account provision` and `roster login
-provision` would have written -- a holder in each tenant with a `Host` row, a role
-holding exactly what the app calls as itself, a binding, and a key -- with the
-token kept in memory. That is one replica, and a restart is a rotation: the
+provision` would have written -- for the account app, a holder in each tenant with
+a `Host` row, a role holding exactly what the app calls as itself, a binding and
+an `rt_`; for the Login App, one `rk_` and in each such tenant a holder, its role
+and binding, and the nomination that answers the key as them -- with the tokens
+kept in memory. That is one replica, and a restart is a rotation: the
 account page asks everybody to sign in again, which is all a rotation costs, since
 the key is a row like any other whichever way it was made. A tenant that registers
 a name later is fronted after the next start. In four processes nothing is made
@@ -472,8 +475,11 @@ reads with `file:`, and a key that was written down is left exactly as written -
 a reference that resolves to nothing is a refusal, never a fresh key made quietly
 over it. `ldap.keys` is still yours to write either way.
 
-Each of the three is a **consumer**: it reaches roster over the wire with a tenant
-key and cannot reach past it, in one process exactly as in four. `scripts/test.sh`
+Each of the three is a **consumer**: it reaches roster over the wire with its own
+key and cannot reach past it, in one process exactly as in four -- the account app
+and `ldap serve` with one `rt_` per tenant, the Login App with one `rk_` narrowed
+per request to the holder each tenant nominated (moving the other two to the
+Login App's shape is open; [apps.md](apps.md)). `scripts/test.sh`
 refuses the import rather than trusting anybody to remember. Their own designs are
 [ldap.md](ldap.md) and [login.md](login.md); `account/`'s package comment is the
 third.
@@ -546,8 +552,8 @@ before `ExecStart` on a box. `deploy/` is that, as manifests.
 ### Which to run
 
 Four processes, when the blast radius is worth the pods: the account app and the
-Login App face the internet and hold one tenant key per tenant, while the
-control plane holds every key and the database. In one process a bug in the first
+Login App face the internet and hold the credentials for every tenant they front,
+while the control plane holds every key and the database. In one process a bug in the first
 reaches the second; in four that is a kernel boundary rather than a code one.
 
 One process, when it is not. A deployment that is four containers to run one
@@ -715,7 +721,7 @@ audit:
   every: 24h                     # how often the policy is applied
   by:
     holder:
-      profile: gdpr              # people are under a privacy regime
+      profile: gdpr              # a holder may be a person, so this is the strict one
     host:
       profile: forever           # a hostname is not personal data
 ```
@@ -784,12 +790,13 @@ nothing after it.
 
 ### A key that can read the trail can read everything
 
-A key is the **deployment's**, and the deployment is every tenant in it -- the wall
-narrows nothing for one. `Audit.value` is the row as each write left it, so one
+A deployment key is the **deployment's**, and unnarrowed it is every tenant in it
+-- the wall narrows nothing for it. `Audit.value` is the row as each write left it, so one
 method answers every table's contents, in every tenant, across all time, including
 rows long since deleted. It is the single widest read this deployment has, and
-`roster key add` says so when a key's methods reach it. No **role** reaches it that
-way, because a person is walled to their own tenant.
+`roster control key add` says so when a key's methods reach it. No **role** reaches
+it that way, because a holder is walled to their own tenant -- and a deployment key
+narrowed with `roster-at` is answered as one of those.
 
 ### There is no RPC for any of it
 
@@ -835,8 +842,8 @@ answer: a forgotten holder has no alias, so there is no name left to bring back.
 
 What goes: everything that says *this person reaches here, signs in there, holds
 this* -- addresses, identities, verifiers, API keys, sessions, attempts, links, and
-the rows that say what they may do. The `Holder` row **stays, blank**: its
-identifier is `Audit.actor_id` and twelve foreign keys point at it, and what makes
+the rows that say what they may do, and any app's nomination to act as them. The `Holder` row **stays, blank**: its
+identifier is `Audit.actor_id` and thirteen foreign keys point at it, and what makes
 it personal data is that it *resolves*. Emptied, it is a stable pseudonym reaching
 nothing.
 

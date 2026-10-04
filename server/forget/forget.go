@@ -35,7 +35,7 @@
 // person holding permissions is a row waiting to be a surprise.
 //
 // The `Holder` row itself **stays, blank**. Its identifier is referenced --
-// `Audit.actor_id` is it, and twelve foreign keys point at it -- and what makes
+// `Audit.actor_id` is it, and thirteen foreign keys point at it -- and what makes
 // it personal data is that it resolves to a name. Emptied of the columns that
 // name somebody, it is a stable pseudonym reaching nothing, which is exactly
 // what a trail wants: *the same someone did these fourteen things*, with no way
@@ -70,6 +70,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/link"
+	"github.com/lesomnus/roster/internal/ent/nomination"
 	"github.com/lesomnus/roster/internal/ent/session"
 	"github.com/lesomnus/roster/internal/ent/sitemembership"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
@@ -334,12 +335,12 @@ func subjects() []subject {
 		// waiting to be a surprise.
 		//
 		// And there is an asymmetry underneath worth knowing about, which
-		// nothing else states: of the twelve foreign keys into `holder`,
-		// eleven are `NO ACTION` and `binding_holder_holder` alone is
+		// nothing else states: of the thirteen foreign keys into `holder`,
+		// twelve are `NO ACTION` and `binding_holder_holder` alone is
 		// `SET NULL` -- see `internal/ent/migrate/schema.go`. Nothing depends
 		// on it today, because an erase is an UPDATE and no `ON DELETE` rule
 		// fires. It would matter the day somebody builds a **hard** erase of a
-		// person: eleven children would block it and `Binding` would quietly
+		// person: twelve children would block it and `Binding` would quietly
 		// keep a row whose holder is NULL. Removing these here is what makes
 		// that irrelevant either way.
 		{
@@ -349,6 +350,21 @@ func subjects() []subject {
 			},
 			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 				return db.Binding.Delete().Where(binding.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
+			},
+		},
+		// Who an app is answered as in this tenant, when the answer is them.
+		// A nomination of a forgotten holder is a deployment key still acting
+		// as a blank pseudonym -- with nothing bound to it once the row above is
+		// gone, so it would do nothing, and that is the problem: the app is
+		// refused everything there and nothing says why. Gone, the key is
+		// refused at the nomination, which is the refusal that names the cause.
+		{
+			name: "nomination",
+			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+				return db.Nomination.Query().Where(nomination.HasActsAsWith(holder.IdEQ(k))).Ids(ctx)
+			},
+			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+				return db.Nomination.Delete().Where(nomination.HasActsAsWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
 		{

@@ -101,8 +101,8 @@ every commit so the page cannot drift from the binary.
   with attempt counting and a lockout, all in the one place that holds the row.
   A second factor (TOTP or WebAuthn) is the same story.
 - **Answers to API keys.** A second roster runs in the same process on its own
-  database, holding the deployment's own services and what each may call -- so a
-  key never lives in the tables it protects.
+  database, holding the roster operators and the keys of the apps they run
+  across tenants -- so a key never lives in the tables it protects.
 - **Roles bound at a scope**, in the shape Kubernetes settled on: a `Site` is a
   namespace, a role with no site is a `ClusterRole`, and nobody may grant what
   they do not hold.

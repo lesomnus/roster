@@ -41,14 +41,15 @@ that outlives the answer and has to be believed by people who cannot ask.**
 
 | | |
 | --- | --- |
-| **A person** | `Holder`. Its identifier is the `sub` every product knows them by, which is why it is roster's and not a provider's |
+| **Who a request is from** | `Holder` -- a person, or an app acting in a tenant; the row does not say which. Its identifier is the `sub` every product knows them by, which is why it is roster's and not a provider's |
 | **How they sign in elsewhere** | `Identity` — `(tenant, provider, subject)`, unique, so Entra at work and GitHub for the same human is one person |
 | **Addresses** | `Email`, several per person, each with whether anybody checked it |
 | **How they sign in here** | `Credential` — a password when there is no provider in front, and the second factor beside it. Verified here, never handed out |
 | **Where they belong** | `Tenant`, `Site`, `Team`, and the memberships between |
-| **Who may call this** | `ApiKey` in both planes — `rk_` for the deployment's own services, `rt_` for a person's — and `Role`/`Group`/`Binding` in the data plane |
+| **Who may call this** | `ApiKey` in both planes — `rk_` on the control plane for an app a roster operator runs across tenants, `rt_` on a holder in a tenant — and `Role`/`Group`/`Binding` in the data plane |
 | **On whose behalf** | `Delegation` — a short-lived credential an app holds for somebody it just signed in. Never a bearer on its own, and never wider than the person |
 | **Which name is whose** | `Host` — the name a front door answers at, and the tenant it belongs to — and `MailDomain`, where the people at an address authenticate |
+| **Who an app is, in each tenant** | `Nomination` — the holder a deployment key is answered as in one tenant, so a roster-hosted app acts there as one of that tenant's own ([apps.md](apps.md)) |
 
 The first four are the original sentence. The last two are what it costs to
 serve the first four to more than one product.
@@ -226,8 +227,9 @@ front door does.
 **It moves no line.** roster still signs nothing: the token a product verifies
 is Hydra's, and what this app contributes is the one string Hydra has no way to
 choose. It is a caller on the list above rather than an exception to it, holds
-one tenant key per tenant like the other two, and reaches roster only over the
-wire.
+one credential -- an `rk_` narrowed per request when a roster operator runs it
+for many tenants, an `rt_` when a tenant runs their own -- and reaches roster
+only over the wire.
 
 What it does take on is a **wire contract with somebody else's product** --
 Hydra's admin API, four endpoints, whose field names break this at run time if
@@ -416,10 +418,11 @@ them, and `server/core/escalate.go` is the code.
 
 ## Two planes, one schema
 
-roster runs twice in one process — a data plane holding customers and their
-people, a control plane holding the deployment's own services and their keys.
-Same schema, different instance, and a `Holder` means a person in one and a
-caller in the other.
+roster runs twice in one process — a data plane holding customers, their people
+and the apps acting in their tenants, a control plane holding the roster
+operators and the rows that own the deployment's keys. Same schema, different
+instance, and a `Holder` means the same thing in both: whoever a request is
+from, without saying whether a person or a program is behind it.
 
 That is not a trick. It is what the first sentence of this document implies once
 more than one product asks the question: somebody has to say which products may

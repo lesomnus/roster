@@ -224,11 +224,12 @@ that is what made *sign out* a lie.
 | Hydra, public | `GET /.well-known/openid-configuration` · `GET /oauth2/auth` · `POST /oauth2/token` · `GET /oauth2/sessions/logout` · `POST /oauth2/device/auth` · `GET /oauth2/device/verify` | the protocol. A relying party touches only these -- the last two only if it has no browser |
 | Hydra, admin | `GET\|PUT /admin/oauth2/auth/requests/{login,consent,logout}[/accept\|/reject]` · `PUT /admin/oauth2/auth/requests/device/accept` · `GET /admin/clients` · `DELETE /admin/oauth2/auth/sessions/login` | the Login App's side, and **private** -- `login/hydra.go` is all of it, in one file, with no SDK. The device one has **no getter beside it**, which is why that screen asks the app nothing |
 | the Login App | `GET /login` · `GET /consent` · `POST /consent` · `GET /logout` · `POST /logout` · `GET /device` · `POST /device` · `GET /signed-out` · `GET /flow` · `POST /session` · `POST /session/continue` · `DELETE /session` · `POST /accept` | the pages Hydra's five `URLS_*` point at, the one endpoint the page may ask (`/flow`), and `frontdoor`'s three (`POST /session` and after) |
-| roster, gRPC | `roster.VouchService/Delegate` · `roster.DelegationService/Revoke` · `roster.MeService/Get` · `roster.TenantService/Get` · `roster.SyncService/Watch` | the whole of what roster is asked on this route. `Delegate` verifies the secret **and** mints the `rd_` that `Me.Get` is then made with; `Watch` is continuous and in none of the diagrams -- it is how somebody being disabled reaches the sessions already open |
+| roster, gRPC | `roster.FrontService/WhoseHost` · `roster.VouchService/Delegate` · `roster.DelegationService/Revoke` · `roster.MeService/Get` · `roster.TenantService/Get` · `roster.SyncService/Watch` | the whole of what roster is asked on this route. `WhoseHost` turns the redirect's host into a tenant, before the Login App's key is narrowed to the holder that tenant nominated for it; `Delegate` verifies the secret **and** mints the `rd_` that `Me.Get` is then made with; `Watch` is continuous and in none of the diagrams -- it is how somebody being disabled reaches the sessions already open |
 
 Two things that table says better than prose. The product and the proxy never
-reach roster -- **no roster key, no RPC, nothing but a token** -- and roster is
-never told what a flow is: it is asked to prove a secret, to say who the caller
+reach roster -- **no roster key, no RPC, nothing but a token** -- because neither
+decides anything about the person beyond who they are; a product that does asks
+roster, below. And roster is never told what a flow is: it is asked to prove a secret, to say who the caller
 is, and to revoke a delegation.
 
 What is not in those four is the **other way in**: `GET /provider` and
@@ -272,7 +273,7 @@ Which puts the line between the two halves of every diagram above:
 | | |
 | --- | --- |
 | browser ↔ app | HTTP, each app's own. Redirects and `Set-Cookie`, which is what a browser is, and a challenge in a query string, which is what Hydra hands over |
-| app ↔ roster | protobuf, generated, over gRPC. The five calls in the table, and nothing else |
+| app ↔ roster | protobuf, generated, over gRPC. The six calls in the table, and nothing else |
 
 That HTTP half is written down as a contract now, because a deployment serving
 its own sign-in screens writes code against it:
@@ -438,7 +439,10 @@ verifier: p.Verifier(&oidc.Config{ClientID: *clientId}),
 ```
 
 An app with an API behind it keeps the handler instead and hands it to the
-interceptor, which is the example in `authoidc.New`'s own doc comment.
+interceptor, which is the example in `authoidc.New`'s own doc comment -- with the
+audience **that API's own name**, and the browser asking the issuer for a token
+for it. A token issued to the page and accepted by several APIs is one any of
+them can replay at the others; [apps.md](apps.md) has where that is still open.
 
 ### The session, which is payday's and opaque
 
@@ -518,7 +522,10 @@ new person the day the issuer's hostname changes. One that keyed on
 are for the page and are not the identity.
 
 `Grant: frame.Whole()` is everything this app lets somebody do, which is read one
-page. A product with rows of its own puts its own answer there.
+page. A product with rows of its own puts its own answer there, and the answer is
+roster's: `HolderService/Reaches` for the person, checked against the method being
+served with `frame.Covers` -- never a claim in the token, a role's name, or which
+group or team somebody is in ([apps.md](apps.md)).
 
 ### And the one thing it keeps the token for
 

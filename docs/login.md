@@ -287,13 +287,13 @@ sequenceDiagram
 
 | | the call | what it settles |
 | --- | --- | --- |
-| the challenge | `GET /admin/oauth2/auth/requests/login` | which **client**, and so which operator and which `rt_` key. Asked before a form is drawn, so a challenge this app fronts nobody for fails here rather than after somebody has typed a password |
+| the challenge | `GET /admin/oauth2/auth/requests/login` | which **client**, and the redirect it named -- whose host is the tenant (§ *What a front door needs*). Asked before a form is drawn, so a challenge this app fronts nobody for fails here rather than after somebody has typed a password |
 | `skip` | none | Hydra already knows this browser, within `remember`. `acceptLogin(v.Subject)` straight away: the subject is Hydra's and this app must not second-guess it |
 | the page | `GET /flow` | `{brand, client, scope}`. The page may not ask Hydra and this app may, so this is the one endpoint it has |
 | the first form | `VouchService.Delegate` | 204 signed in · 200 one factor proved, another to prove · 401 everything else. `Delegate` and not `Verify` because a yes has to come back with the `rd_` the consent hop reads `Me.Get` with |
 | the second form | `VouchService.Delegate` with the continuation | the app holds no half-signed-in state: the continuation is roster's, short-lived and single-use |
 | the accept | `PUT …/login/accept` | **`subject` is the `Holder.id`.** Nobody is named until every form is answered -- accepting after the first would hand a product a token for somebody who proved half of what the deployment asked for |
-| the claims | `MeService.Get`, as the person | `preferred_username`, `name`, `groups`, a **verified** address -- each only if the client asked for the scope that carries it. Never `methods` |
+| the claims | `MeService.Get`, as the person | `preferred_username`, `name`, `groups`, a **verified** address -- each only if the client asked for the scope that carries it. Never `methods`. `groups` is the aliases of the person's **teams**, not their `Group`s: an organisation's structure, and nothing a product should grant on -- what somebody may do is `HolderService/Reaches` ([apps.md](apps.md)) |
 | the grant | `PUT …/consent/accept` | `consent: skip` grants and draws nothing; `ask` draws the screen and `POST /consent` is its answer |
 
 The delegation this app minted is spent at the grant and the cookie is ended there
@@ -345,10 +345,10 @@ sequenceDiagram
 | --- | --- | --- |
 | the buttons | `ConnectionService.List` | what `/flow` answers beside the brand. The **name** and nothing else: the issuer is where the browser is about to go, `secret_ref` is the operator's, and what to call the button is the page's |
 | the form | `TenantService.Get`, `config.password` | whether there is a password form at all. Not a screen setting: roster **refuses** a password for a tenant with this off (`vouch.Offers`), so the page draws what is already true. Unset is yes |
-| which operator | the challenge, again | `/provider` is in a flow, so the `Connection` rows read are the ones that client's operator can see. fabrikam's challenge cannot reach contoso's directory |
+| which operator | the challenge, again | `/provider` is in a flow, so the `Connection` rows read are the ones the tenant behind the redirect can see -- the call is narrowed to the holder that tenant nominated. fabrikam's challenge cannot reach contoso's directory |
 | the redirect | `login.base` | **one URL for the whole app**, because Hydra sends every browser here under one name. Which operator a callback belongs to comes from the state, and the state is a nonce naming a row this app kept |
 | the exchange | the provider's own | the Login App is the relying party, exactly as the account app is |
-| who may sign in | `login.enrol` | `invited` admits only somebody already linked; `expected` admits somebody an operator entered, matched by the **address** on their row; `enrolling` admits a stranger too. `enrolling` needs `HolderService.Add`, which the provisioned key does not hold |
+| who may sign in | `login.enrol` | `invited` admits only somebody already linked; `expected` admits somebody an operator entered, matched by the **address** on their row; `enrolling` admits a stranger too. `enrolling` needs `HolderService.Add`, which `roster login provision` puts on the nominated holder's role and never on the key |
 | the sign-in | `VouchService.Accept` | the claim this app verified, exchanged for a delegation. Not `Verify`: there is no password here to check |
 | the session | `Door.Accept` | minted here for the same reason the password path has one -- the consent hop reads the person **as them** to fill the claims |
 | the accept | `PUT …/login/accept` | the `Holder.id`. The same string a password would have produced for the same person, which is what makes Monday-Entra and Saturday-password one `sub` |
@@ -362,7 +362,7 @@ all of them), and it finishes at the app's own cookie.
 endings; everything between them is `arrives`.
 
 And the other direction is done: **signing somebody out in roster reaches
-Hydra.** The Login App holds `SyncService` open, one stream per tenant, and when
+Hydra.** The Login App holds `SyncService` open -- one stream, on its deployment key and naming no tenant, so it hears every tenant's sign-outs, fronted or not -- and when
 roster says somebody has been signed out everywhere, suspended or erased it tells
 Hydra to forget them -- so the next product they open finds a form rather than a
 fresh token. roster does not know Hydra exists and this does not change that: the
@@ -874,10 +874,15 @@ nominated **for the control-plane holder this key hangs off**, and the frame is
 claims, or one whose tenant nominated nobody, is refused rather than answered as
 the key -- which would hand back the wide frame the caller was narrowing.
 
-It grants nothing. The key already saw every tenant, so borrowing a nominated
-holder is strictly less, which is why it needs no escalation rule and why either
-that tenant or a roster operator may write the nomination.
-`server/keys/at.go` is the mechanism and `proto/app/host.proto` is the field.
+It is less on one axis and not on the other. The key already saw every tenant,
+so narrowing takes tenants away -- but the frame becomes the nominated holder's
+bindings, which are not the key's methods and may be wider. So a nomination is a
+way to act as that holder, held by whoever holds the key: it is found by the key
+(a key nobody nominated is refused), and writing one is held to the rule a way
+into an account is -- nobody nominates a holder wider than themselves. Either that
+tenant's administrator or a roster operator may write one. `server/keys/at.go` is
+the mechanism, `proto/app/nomination.proto` the row and why it is not a field on
+`Host`.
 
 **And the key's own method list is not carried through.** `keys.At` answers as the
 nominated holder with `frame.Whole()`, so what bounds a call inside a flow is that
@@ -895,6 +900,14 @@ browser -- and the key is the only thing that assertion is held against.
 
 ### What its key has to be allowed
 
+This is what a front door calls, in general. A **self-hosted** one holds it all on
+its one `rt_` -- the holder's bindings narrowed by the key's own methods. A
+**roster-hosted** one splits it: the key holds only what it calls without naming
+a tenant -- for the Login App, `WhoseHost` and `TenantService/Get` before a flow's
+tenant is known, and the one `SyncService/Watch` stream that hears every tenant --
+and the rest is the role of the holder each tenant nominated. `cli.LoginResolving`
+and `cli.LoginMethods` are the Login App's two lists exactly.
+
 | | |
 | --- | --- |
 | `/roster.VouchService/Verify` | checking a password |
@@ -910,8 +923,10 @@ browser -- and the key is the only thing that assertion is held against.
 
 Not `CredentialService/Set` -- changing a password belongs to whatever account
 portal owns the person -- and no `Holder` writes, since a product does not own the
-people it serves. `roster login provision` mints exactly this set for the Login App,
-which is what makes `enrolling` a deliberate extra rather than a default.
+people it serves. Nor `HolderService/Add`, which only `enrol: enrolling` adds --
+to the role `roster login provision` binds to the Login App's holder in each
+tenant, never to its key -- which is what makes it a deliberate extra rather than
+a default.
 
 ## Asking roster as the person who just signed in
 
@@ -949,33 +964,31 @@ reach: a sign-in through a provider never calls `Vouch`, so there is nothing for
 delegation to ride back on, and the page says so rather than falling back to the
 app's own credential. `delegation.proto` is the why.
 
-## What a calling machine is, and where it lives
+## Where an app's rows live
 
-A caller has to be a row, because roster answers nothing anonymously. Which
-plane the row is in follows from **what the caller acts across**, and there are
-two answers rather than one.
+A caller has to be a row, because roster answers nothing anonymously -- and the
+row says nothing about whether a person or a program is behind it. What decides
+where an app's rows go is **who runs the instance and how many tenants it
+serves**, and [apps.md](apps.md) is that question in full. In short:
 
-**A front door is a `Holder` in each tenant it fronts, with an `rt_`** -- the
-answer § *What a front door needs* gives above, and the one this app, `account/`
-and `examples/sso` all take. The key resolves to a holder inside a tenant, so
-the wall narrows every read and write with no discipline asked of the app.
-`roster key add --tenant contoso --holder login-app …` mints one.
+**Its identity is a `Holder` in each tenant it acts in.** That is the row a
+tenant's trail names, the one whose bindings the tenant administrator decides,
+and the one the wall narrows every read and write to. A self-hosted front door
+reaches it with an `rt_` on that holder; a roster-hosted one with its `rk_`,
+narrowed per request to the holder the tenant nominated for it.
 
-**A caller that acts across every tenant is a `Holder` in the control plane,
-with an `rk_`** -- the deployment's own machinery: a job that reads the trail, a
-console, the custody callers `docs/position.md` draws the line for. Three facts
-make that the right table for them and the wrong one for a front door:
-`Holder.id` is the `sub` of every token, so a row in the data plane is
-somebody a product app may be handed; a `Holder` belongs to one tenant and is
-walled by it; and `grpcx.Limit` counts per tenant off the frame. For a caller
-whose work really is every tenant's, each of those is in the way. For a front
-door they are the point -- except the last, which is the cost: an `rk_` resolves
-to a frame with no tenant and the policy hands it `frame.Everything`, so what
-keeps one tenant's rows out of another's is the app's own code.
+**The control plane holds what a tenant cannot.** A deployment key has to hang
+off a control-plane row, because it is answered across tenants when it is not
+narrowed -- so a roster-hosted app has one row there, owning its key, and that
+row is never who a narrowed call is answered as. The control plane's other rows
+are the roster operators themselves. What an unnarrowed `rk_` may do is exactly
+its `methods`: three reads for the Login App, none for an app minted
+`--narrowed`, and for a job whose work really is every tenant's -- reading the
+trail -- whatever that work names.
 
-So the question to ask of a new machine is not which plane is for machines. It
-is whether one tenant's wall is a fact about this caller or an obstacle to it.
-[usage/ways-in.md](usage/ways-in.md) is what to type for either.
+So the question to ask of a new app is not which plane is for machines. It is
+who runs it and for how many tenants. [usage/ways-in.md](usage/ways-in.md) is what
+to type for each.
 
 ## See also
 

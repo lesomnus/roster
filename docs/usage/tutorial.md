@@ -109,7 +109,9 @@ APP=$(roster control key add \
 
 Naming `portal` created it, on the control plane — the deployment's own
 database, not newco's, which is what `control` says. `--allow` is required — everything hands out more
-than anybody asked for, and nothing mints a key that silently does not work.
+than anybody asked for, and nothing mints a key that silently does not work —
+unless `--narrowed` says the key is for an app that always names a tenant
+([apps.md](../apps.md)).
 
 **A key for Alice's laptop**, which acts *as her*:
 

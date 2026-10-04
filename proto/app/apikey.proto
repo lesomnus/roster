@@ -14,10 +14,13 @@ option go_package = "github.com/lesomnus/roster/rstr";
 //
 // # Where these live
 //
-// In the **control plane**: a second roster, in the same process, on its own
-// database. Its one tenant is the deployment's owner, its holders are that
-// owner's services -- custody, and whatever else they run -- and these hang off
-// them. See docs/position.md, § 'Two planes, one schema'.
+// In both planes, and the prefix says which (`server/keys`). A **deployment**
+// key (`rk_`) is in the **control plane**: a second roster, in the same process,
+// on its own database, whose one tenant is the deployment's owner and whose
+// holders are the roster operators and the rows that own the keys of the apps
+// they run across tenants. A **tenant** key (`rt_`) hangs off a holder in a
+// tenant, whoever is behind it. See docs/position.md, § 'Two planes, one
+// schema', and docs/apps.md for which an app holds.
 //
 // Two databases because a key must not live in the same tables as the data it
 // protects: separate, a fault in the wall cannot reach one, since there is no

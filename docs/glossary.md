@@ -80,7 +80,7 @@ Three notes about the list itself:
 
 | | |
 | --- | --- |
-| **the trail** (437) | the audit table: who wrote what, when, and what it was before. payday's `Audit` entity, `server/trail` for retention. A deployment key reads every tenant's, which `roster control key add` says out loud |
+| **the trail** (437) | the audit table: who wrote what, when, and what it was before. payday's `Audit` entity, `server/trail` for retention. A deployment key whose methods reach it reads every tenant's, which `roster control key add` says out loud |
 | **the corpus** (73) | the breached-password list a new password is checked against, in the one place that holds the row |
 | **an epoch** | a counter on a `Holder` that invalidates everything issued before it. `Holder.Invalidate` moves it, which is how *sign this person out of everything* reaches sessions and delegations that are already open |
 | **a seam** (29) | payday's word for a place it deliberately leaves for an app to fill -- `auth` reads a credential and does not issue one, and `AuthService` is roster filling that seam |

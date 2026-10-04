@@ -769,10 +769,10 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 	}
 
 	// The same two words the account app takes, and the same default. What is
-	// **not** the same is what `enrolling` costs here: the key this deployment
-	// mints for itself holds no `HolderService.Add`, so an tenant asking for
-	// it has a key of their own to mint. Said at start rather than at the first
-	// stranger's sign-in.
+	// **not** the same is where `enrolling`'s cost lands: `HolderService.Add` is
+	// added to the role `roster login provision` binds to this app's holder in
+	// each tenant, never to the key -- so it is only as wide as the tenant that
+	// role is in. Said at start rather than at the first stranger's sign-in.
 	var enrol arrives.Enrol
 	switch lc.Enrol {
 	case "", "invited":
