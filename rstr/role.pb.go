@@ -57,6 +57,7 @@ type Role struct {
 	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_Methods     []string               `protobuf:"bytes,8,rep,name=methods"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
@@ -132,6 +133,13 @@ func (x *Role) GetDesc() string {
 	return ""
 }
 
+func (x *Role) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *Role) GetMethods() []string {
 	if x != nil {
 		return x.xxx_hidden_Methods
@@ -185,6 +193,10 @@ func (x *Role) SetName(v string) {
 
 func (x *Role) SetDesc(v string) {
 	x.xxx_hidden_Desc = v
+}
+
+func (x *Role) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *Role) SetMethods(v []string) {
@@ -271,6 +283,13 @@ type Role_builder struct {
 	Alias string
 	Name  string
 	Desc  string
+	// Whatever the deployment keeps about this row that the schema does not name.
+	//
+	// Number seven, the one an entity spends on labels (`host.proto`). A row a
+	// deployment declared -- a roster-hosted front door's role, written from its
+	// configuration at every start -- carries `roster.declared`, and
+	// `server/core` refuses every write to it from anybody else (`declared.go`).
+	Labels map[string]string
 	// The RPCs this allows: a whole method name, or a pattern naming a service
 	// or a package.
 	//
@@ -322,6 +341,7 @@ func (b0 Role_builder) Build() *Role {
 	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_Methods = b.Methods
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
@@ -356,6 +376,7 @@ type Binding struct {
 	xxx_hidden_Site        *Site                  `protobuf:"bytes,3,opt,name=site"`
 	xxx_hidden_Holder      *Holder                `protobuf:"bytes,8,opt,name=holder"`
 	xxx_hidden_Group       *Group                 `protobuf:"bytes,9,opt,name=group"`
+	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -423,6 +444,13 @@ func (x *Binding) GetGroup() *Group {
 	return nil
 }
 
+func (x *Binding) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *Binding) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -465,6 +493,10 @@ func (x *Binding) SetHolder(v *Holder) {
 
 func (x *Binding) SetGroup(v *Group) {
 	x.xxx_hidden_Group = v
+}
+
+func (x *Binding) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *Binding) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -566,8 +598,15 @@ type Binding_builder struct {
 	// Where it applies, and empty is the whole tenant.
 	Site *Site
 	// Who it is for: one of these, never both and never neither.
-	Holder      *Holder
-	Group       *Group
+	Holder *Holder
+	Group  *Group
+	// Whatever the deployment keeps about this row that the schema does not name.
+	//
+	// Number seven, the one an entity spends on labels (`host.proto`). A row a
+	// deployment declared -- a roster-hosted front door's role, written from its
+	// configuration at every start -- carries `roster.declared`, and
+	// `server/core` refuses every write to it from anybody else (`declared.go`).
+	Labels      map[string]string
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
@@ -582,6 +621,7 @@ func (b0 Binding_builder) Build() *Binding {
 	x.xxx_hidden_Site = b.Site
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Group = b.Group
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -592,19 +632,23 @@ var File_app_role_proto protoreflect.FileDescriptor
 
 const file_app_role_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/role.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1aroster/payday/holder.proto\x1a\x0eapp/site.proto\x1a\x0fapp/group.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xc6\x04\n" +
+	"\x0eapp/role.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1aroster/payday/holder.proto\x1a\x0eapp/site.proto\x1a\x0fapp/group.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xb3\x05\n" +
 	"\x04Role\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12*\n" +
 	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\x12\x18\n" +
+	"\x04desc\x18\x06 \x01(\tR\x04desc\x120\n" +
+	"\x06labels\x18\a \x03(\v2\x18.roster.Role.LabelsEntryR\x06labels\x12\x18\n" +
 	"\amethods\x18\b \x03(\tR\amethods\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\x8e\x01\xca\xfc\x15G\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\x8e\x01\xca\xfc\x15G\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x1a\x1f\x12\x04slug\x1a\t\n" +
 	"\x05alias\x10\x04\x1a\n" +
@@ -619,17 +663,21 @@ const file_app_role_proto_rawDesc = "" +
 	"\x03ref\x1a\b\n" +
 	"\x06tenant\x1a\x06\n" +
 	"\x04site \x14(dJ\x04\b\t\x10\n" +
-	"\"\xc5\x04\n" +
+	"\"\xb5\x05\n" +
 	"\aBinding\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12(\n" +
 	"\x04role\x18\x02 \x01(\v2\f.roster.RoleB\x06\xf2\x82\x16\x02@\x01R\x04role\x12*\n" +
 	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x120\n" +
 	"\x06holder\x18\b \x01(\v2\x0e.roster.HolderB\b\xf2\x82\x16\x048\x01@\x01R\x06holder\x12-\n" +
-	"\x05group\x18\t \x01(\v2\r.roster.GroupB\b\xf2\x82\x16\x048\x01@\x01R\x05group\x12F\n" +
+	"\x05group\x18\t \x01(\v2\r.roster.GroupB\b\xf2\x82\x16\x048\x01@\x01R\x05group\x123\n" +
+	"\x06labels\x18\a \x03(\v2\x1b.roster.Binding.LabelsEntryR\x06labels\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\x8d\x01\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\x8d\x01\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x8a\xbb\x16_\b\x122L\n" +
 	"\x12\n" +
@@ -645,34 +693,38 @@ const file_app_role_proto_rawDesc = "" +
 	"\x04site \x14(d\"\r\n" +
 	"\vrole.tenantB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_role_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_app_role_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_app_role_proto_goTypes = []any{
 	(*Role)(nil),                  // 0: roster.Role
 	(*Binding)(nil),               // 1: roster.Binding
-	(*Tenant)(nil),                // 2: roster.Tenant
-	(*Site)(nil),                  // 3: roster.Site
-	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
-	(*Holder)(nil),                // 5: roster.Holder
-	(*Group)(nil),                 // 6: roster.Group
+	nil,                           // 2: roster.Role.LabelsEntry
+	nil,                           // 3: roster.Binding.LabelsEntry
+	(*Tenant)(nil),                // 4: roster.Tenant
+	(*Site)(nil),                  // 5: roster.Site
+	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
+	(*Holder)(nil),                // 7: roster.Holder
+	(*Group)(nil),                 // 8: roster.Group
 }
 var file_app_role_proto_depIdxs = []int32{
-	2,  // 0: roster.Role.tenant:type_name -> roster.Tenant
-	3,  // 1: roster.Role.site:type_name -> roster.Site
-	4,  // 2: roster.Role.date_updated:type_name -> google.protobuf.Timestamp
-	4,  // 3: roster.Role.date_erased:type_name -> google.protobuf.Timestamp
-	4,  // 4: roster.Role.date_created:type_name -> google.protobuf.Timestamp
-	0,  // 5: roster.Binding.role:type_name -> roster.Role
-	3,  // 6: roster.Binding.site:type_name -> roster.Site
-	5,  // 7: roster.Binding.holder:type_name -> roster.Holder
-	6,  // 8: roster.Binding.group:type_name -> roster.Group
-	4,  // 9: roster.Binding.date_updated:type_name -> google.protobuf.Timestamp
-	4,  // 10: roster.Binding.date_erased:type_name -> google.protobuf.Timestamp
-	4,  // 11: roster.Binding.date_created:type_name -> google.protobuf.Timestamp
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	4,  // 0: roster.Role.tenant:type_name -> roster.Tenant
+	5,  // 1: roster.Role.site:type_name -> roster.Site
+	2,  // 2: roster.Role.labels:type_name -> roster.Role.LabelsEntry
+	6,  // 3: roster.Role.date_updated:type_name -> google.protobuf.Timestamp
+	6,  // 4: roster.Role.date_erased:type_name -> google.protobuf.Timestamp
+	6,  // 5: roster.Role.date_created:type_name -> google.protobuf.Timestamp
+	0,  // 6: roster.Binding.role:type_name -> roster.Role
+	5,  // 7: roster.Binding.site:type_name -> roster.Site
+	7,  // 8: roster.Binding.holder:type_name -> roster.Holder
+	8,  // 9: roster.Binding.group:type_name -> roster.Group
+	3,  // 10: roster.Binding.labels:type_name -> roster.Binding.LabelsEntry
+	6,  // 11: roster.Binding.date_updated:type_name -> google.protobuf.Timestamp
+	6,  // 12: roster.Binding.date_erased:type_name -> google.protobuf.Timestamp
+	6,  // 13: roster.Binding.date_created:type_name -> google.protobuf.Timestamp
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_app_role_proto_init() }
@@ -690,7 +742,7 @@ func file_app_role_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_role_proto_rawDesc), len(file_app_role_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -24,6 +24,12 @@ type NominationCreate struct {
 	hooks    []Hook
 }
 
+// SetLabels sets the "labels" field.
+func (_c *NominationCreate) SetLabels(v map[string]string) *NominationCreate {
+	_c.mutation.SetLabels(v)
+	return _c
+}
+
 // SetName sets the "name" field.
 func (_c *NominationCreate) SetName(v string) *NominationCreate {
 	_c.mutation.SetName(v)
@@ -191,6 +197,10 @@ func (_c *NominationCreate) createSpec() (*Nomination, *sqlgraph.CreateSpec) {
 	if id, ok := _c.mutation.Id(); ok {
 		_node.Id = id
 		_spec.Id.Value = &id
+	}
+	if value, ok := _c.mutation.Labels(); ok {
+		_spec.SetField(nomination.FieldLabels, field.TypeJson, value)
+		_node.Labels = value
 	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(nomination.FieldName, field.TypeString, value)

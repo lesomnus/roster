@@ -321,6 +321,17 @@ func (d *Directory) Bind(ctx context.Context, c *wire.Conn, req wire.BindRequest
 	}
 }
 
+// boundTenant is the tenant of the DN the connection is bound as.
+func (d *Directory) boundTenant(c *wire.Conn) (*tenant, bool) {
+	name, ok := c.Bound()
+	if !ok {
+		return nil, false
+	}
+	t, _, ok := d.bindDN(name)
+
+	return t, ok
+}
+
 // bindDN reads `uid=<alias>,ou=people,<suffix>`: the one shape a bind names.
 func (d *Directory) bindDN(s string) (*tenant, string, bool) {
 	name, err := parseDN(s)
@@ -344,11 +355,15 @@ const (
 
 var units = []string{ouPeople, ouGroups, ouSites}
 
-func (d *Directory) rootDSE() *entry {
+// rootDSE is what this server is, as the connection it answers sees it: the
+// suffix of the tenant it is bound in, or none before a bind.
+func (d *Directory) rootDSE(bound *tenant) *entry {
 	e := newEntry(dn{})
 	e.add("objectClass", "top")
 	e.add("supportedLDAPVersion", "3")
-	e.add("namingContexts", d.NamingContexts()...)
+	if bound != nil {
+		e.add("namingContexts", bound.base.String())
+	}
 	e.add("supportedControl", wire.OidPagedResults)
 	e.add("supportedExtension", wire.OidStartTLS, wire.OidWhoAmI)
 	e.add("vendorName", "roster")

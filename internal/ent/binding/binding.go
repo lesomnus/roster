@@ -12,6 +12,8 @@ const (
 	Label = "binding"
 	// FieldId holds the string denoting the id field in the database.
 	FieldId = "id"
+	// FieldLabels holds the string denoting the labels field in the database.
+	FieldLabels = "labels"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -69,6 +71,7 @@ const (
 // Columns holds all SQL columns for binding fields.
 var Columns = []string{
 	FieldId,
+	FieldLabels,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,

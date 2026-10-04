@@ -74,6 +74,11 @@ type deployment struct {
 
 	contoso, fabrikam pdid.Id
 	kim, lee, park    []byte
+
+	// fabrikam's own kim, and their app password: somebody bound in the other
+	// tenant, which a bind holds a connection to.
+	otherKim    []byte
+	otherKimKey string
 }
 
 func stand(t *testing.T) *deployment {
@@ -156,7 +161,7 @@ func stand(t *testing.T) *deployment {
 		p.SetEmployeeNo("1002")
 	})
 	d.park = d.person(t, d.contoso, "park", "Park Left", nil, nil)
-	d.person(t, d.fabrikam, "kim", "Kim Other", nil, nil)
+	d.otherKim = d.person(t, d.fabrikam, "kim", "Kim Other", nil, nil)
 
 	// kim: a verified address and an unverified one, a password, and an
 	// authenticator app confirmed by one code.
@@ -191,6 +196,7 @@ func stand(t *testing.T) *deployment {
 	// App passwords: a key on the person's own row, `Me.Get` and nothing else.
 	d.kimKey = d.key(t, d.kim, "nas", []string{"/roster.MeService/Get"})
 	d.leeKey = d.key(t, d.lee, "jenkins", []string{"/roster.MeService/Get"})
+	d.otherKimKey = d.key(t, d.otherKim, "nas", []string{"/roster.MeService/Get"})
 
 	// roster on the wire.
 	g, err := s.Grpc(ctx, cmd.Config{})
@@ -452,17 +458,22 @@ func perTenant(c *ldap.Config) { c.Key, c.Keys = "", nil }
 
 // TestATenantKeyPerTenantStillServesEachSuffix is the shape the deployment key
 // replaced for a roster operator (#76), kept for what it still is.
+// otherKimDN is fabrikam's kim, who is not contoso's.
+const otherKimDN = "uid=kim,ou=people,o=fabrikam"
+
 func TestATenantKeyPerTenantStillServesEachSuffix(t *testing.T) {
 	x := require.New(t)
 	d := stand(t)
 	c := d.serve(t, ldap.BindKey, func(c *ldap.Config) { perTenant(c); c.Keys = d.keys })
 
-	root := search(t, c, "", goldap.ScopeBaseObject, "(objectClass=*)", "+")
-	x.ElementsMatch([]string{"o=contoso", "o=fabrikam"}, root[0].GetAttributeValues("namingContexts"))
-
 	x.NoError(c.Bind(kimDN, d.kimKey))
 	got := search(t, c, contosoDN, goldap.ScopeWholeSubtree, "(uid=lee)", "cn")
 	x.Equal([]string{leeDN}, dns(got))
+
+	// And fabrikam, to somebody bound there.
+	x.NoError(c.Bind(otherKimDN, d.otherKimKey))
+	got = search(t, c, "o=fabrikam", goldap.ScopeWholeSubtree, "(uid=kim)", "cn")
+	x.Equal([]string{otherKimDN}, dns(got))
 }
 
 func TestASuffixIsATenant(t *testing.T) {
@@ -470,28 +481,35 @@ func TestASuffixIsATenant(t *testing.T) {
 	d := stand(t)
 	c := d.serve(t, ldap.BindKey, nil)
 
+	// Before a bind the root names no tenant: a suffix is a tenant's name, and
+	// listing every one this process fronts told anybody who its customers are.
 	root := search(t, c, "", goldap.ScopeBaseObject, "(objectClass=*)", "+")
 	x.Len(root, 1)
-	x.ElementsMatch([]string{"o=contoso", "o=fabrikam"}, root[0].GetAttributeValues("namingContexts"))
+	x.Empty(root[0].GetAttributeValues("namingContexts"))
 
 	x.NoError(c.Bind(kimDN, d.kimKey))
+	root = search(t, c, "", goldap.ScopeBaseObject, "(objectClass=*)", "+")
+	x.Equal([]string{"o=contoso"}, root[0].GetAttributeValues("namingContexts"))
 
 	contoso := search(t, c, contosoDN, goldap.ScopeWholeSubtree, "(uid=kim)", "entryUUID")
 	x.Equal([]string{kimDN}, dns(contoso))
-	fabrikam := search(t, c, "o=fabrikam", goldap.ScopeWholeSubtree, "(uid=kim)", "entryUUID")
-	x.Equal([]string{"uid=kim,ou=people,o=fabrikam"}, dns(fabrikam))
-	x.NotEqual(contoso[0].GetAttributeValue("entryUUID"), fabrikam[0].GetAttributeValue("entryUUID"), "two kims, one row")
 
-	// And the whole server is both, each under its own name.
+	// A bind is to one tenant. The other's suffix is not there for somebody
+	// bound in this one -- it was, and a person in contoso read fabrikam's
+	// people -- and the whole server is this tenant.
+	_, err := c.Search(goldap.NewSearchRequest("o=fabrikam", goldap.ScopeWholeSubtree, goldap.NeverDerefAliases, 0, 0, false, "(uid=kim)", []string{"entryUUID"}, nil))
+	x.True(goldap.IsErrorWithCode(err, goldap.LDAPResultNoSuchObject), "contoso's kim read fabrikam: %v", err)
 	all := search(t, c, "", goldap.ScopeWholeSubtree, "(objectClass=inetOrgPerson)", "uid")
-	x.ElementsMatch([]string{
-		kimDN, leeDN, adminDN, directoryDN,
-		"uid=kim,ou=people,o=fabrikam",
-		"uid=directory,ou=people,o=fabrikam",
+	x.ElementsMatch([]string{kimDN, leeDN, adminDN, directoryDN}, dns(all))
 
-		// The holder every tenant is made with (`server/core/tenant.go`).
-		"uid=admin,ou=people,o=fabrikam",
-	}, dns(all))
+	// And the same process serves fabrikam, each under its own name, to
+	// somebody bound there.
+	x.NoError(c.Bind(otherKimDN, d.otherKimKey))
+	fabrikam := search(t, c, "o=fabrikam", goldap.ScopeWholeSubtree, "(uid=kim)", "entryUUID")
+	x.Equal([]string{otherKimDN}, dns(fabrikam))
+	x.NotEqual(contoso[0].GetAttributeValue("entryUUID"), fabrikam[0].GetAttributeValue("entryUUID"), "two kims, one row")
+	_, err = c.Search(goldap.NewSearchRequest(contosoDN, goldap.ScopeWholeSubtree, goldap.NeverDerefAliases, 0, 0, false, "(uid=kim)", []string{"entryUUID"}, nil))
+	x.True(goldap.IsErrorWithCode(err, goldap.LDAPResultNoSuchObject), "fabrikam's kim read contoso: %v", err)
 
 	t.Run("a suffix renamed is the same tenant", func(t *testing.T) {
 		x := require.New(t)
@@ -773,12 +791,11 @@ func TestGroupsTeamsAndSitesAreTheTree(t *testing.T) {
 		x.NoError(err)
 		x.ElementsMatch(want, dns(res.Entries))
 
-		// And from the root, both tenants, each once.
+		// And from the root, the tenant this connection is bound in, once.
 		res, err = c.SearchWithPaging(goldap.NewSearchRequest("", goldap.ScopeWholeSubtree, goldap.NeverDerefAliases, 0, 0, false, "(objectClass=*)", []string{"1.1"}, nil), 4)
 		x.NoError(err)
 		all := dns(res.Entries)
-		x.Subset(all, want)
-		x.Contains(all, "uid=kim,ou=people,o=fabrikam")
+		x.ElementsMatch(want, all)
 		seen := map[string]bool{}
 		for _, dn := range all {
 			x.False(seen[dn], "%s twice", dn)
@@ -814,7 +831,10 @@ func TestOneTenantCannotStopTheDirectoryForTheOthers(t *testing.T) {
 	x.NoError(err)
 
 	c := d.serve(t, ldap.BindKey, nil)
+	x.NoError(c.Bind(kimDN, d.kimKey), "contoso was not served")
 	root := search(t, c, "", goldap.ScopeBaseObject, "(objectClass=*)", "+")
-	x.Len(root, 1)
 	x.Equal([]string{"o=contoso"}, root[0].GetAttributeValues("namingContexts"))
+
+	err = c.Bind(otherKimDN, d.otherKimKey)
+	x.True(goldap.IsErrorWithCode(err, goldap.LDAPResultInvalidCredentials), "fabrikam, which turned the directory's holder off, was served: %v", err)
 }

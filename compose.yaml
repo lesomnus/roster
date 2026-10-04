@@ -296,6 +296,15 @@ services:
       URLS_DEVICE_VERIFICATION: http://${PUBLIC_HOST:-localhost}:8091/device
       # The Login App answers consent itself, so nothing here draws a screen.
       # A deployment that wants one points `URLS_CONSENT` at its own.
+      #
+      # Access tokens as JWTs, which is how an API that checks people's tokens
+      # itself reads one: the issuer's keys from `/.well-known/jwks.json`, and
+      # `aud` naming **that API** -- so a token sent to one cannot be spent at
+      # another, which an ID token for the page (aud = the page's client) can.
+      # Opaque, an API would have to ask Hydra's admin port, which nothing
+      # outside this deployment's own processes may reach. `docs/apps.md`,
+      # "People's tokens", and `flow.sh` checks it.
+      STRATEGIES_ACCESS_TOKEN: jwt
       LOG_LEVEL: warn
     # ⚠️ `--dev` **disables critical security checks**, in Hydra's own words,
     # and the deployment runs `serve all` without it. That difference is here
@@ -359,6 +368,7 @@ services:
           "grant_types": ["authorization_code", "refresh_token"],
           "response_types": ["code"],
           "scope": "openid offline profile email",
+          "audience": ["urn:roster:demo:api"],
           "redirect_uris": ["http://127.0.0.1:5555/callback"],
           "post_logout_redirect_uris": ["http://127.0.0.1:5555/callback"],
           "token_endpoint_auth_method": "client_secret_basic"

@@ -26,6 +26,12 @@ type BindingCreate struct {
 	hooks    []Hook
 }
 
+// SetLabels sets the "labels" field.
+func (_c *BindingCreate) SetLabels(v map[string]string) *BindingCreate {
+	_c.mutation.SetLabels(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *BindingCreate) SetDateUpdated(v time.Time) *BindingCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -215,6 +221,10 @@ func (_c *BindingCreate) createSpec() (*Binding, *sqlgraph.CreateSpec) {
 	if id, ok := _c.mutation.Id(); ok {
 		_node.Id = id
 		_spec.Id.Value = &id
+	}
+	if value, ok := _c.mutation.Labels(); ok {
+		_spec.SetField(binding.FieldLabels, field.TypeJson, value)
+		_node.Labels = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(binding.FieldDateUpdated, field.TypeTime, value)

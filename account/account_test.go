@@ -586,10 +586,24 @@ func TestSomebodyRecoversTheirAccountByMail(t *testing.T) {
 	var link string
 	x.Eventually(func() bool { link = d.sent("bob@fabrikam.com"); return link != "" }, 2*time.Second, 20*time.Millisecond,
 		"no link was mailed to bob")
-	x.Contains(link, "/redeem?token=rl_")
+	x.Contains(link, "/redeem?")
+	x.Contains(link, "token=rl_")
+	x.Contains(link, "at="+d.fabrikam.String(), "the link does not name the tenant whose key redeems it")
+
+	// Naming another tenant, it is nothing: a link is redeemed by the key that
+	// minted it, and that is the one tried -- not every tenant's in turn.
+	other, err := url.Parse(link)
+	x.NoError(err)
+	q := other.Query()
+	q.Set("at", d.contoso.String())
+	other.RawQuery = q.Encode()
+	res, err := b.Get(other.String())
+	x.NoError(err)
+	res.Body.Close()
+	x.Equal(http.StatusNotFound, res.StatusCode, "a link was redeemed under another tenant's key")
 
 	// The link, clicked: a page with a new password on it and no session.
-	res, err := b.Get(link)
+	res, err = b.Get(link)
 	x.NoError(err)
 	page, _ := io.ReadAll(res.Body)
 	res.Body.Close()
@@ -647,7 +661,8 @@ func TestSomebodyVerifiesAnAddressOfTheirOwn(t *testing.T) {
 	x.Equal(http.StatusAccepted, code, body)
 
 	link := d.sent("erin@contoso.com")
-	x.Contains(link, "/confirm?token=rl_", "no link was mailed to the address on the row")
+	x.Contains(link, "/confirm?", "no link was mailed to the address on the row")
+	x.Contains(link, "token=rl_")
 
 	// Clicked from a browser with no session at all: the mailbox is the proof.
 	res, err := d.browser(t, "contoso.test").Get(link)
@@ -1039,4 +1054,39 @@ func TestOneTenantCannotStopTheAppForTheOthers(t *testing.T) {
 
 	code, body = d.browser(t, "contoso.test").do(t, http.MethodGet, "/providers", "", nil)
 	x.Equal(http.StatusOK, code, body)
+}
+
+// TestASessionIsTheTenantsItWasSignedInAt is a browser's cookie at another
+// tenant's name.
+//
+// The cookie is the browser's, and every tenant is here at a name of its own --
+// so a session signed in at fabrikam arrived at contoso and was read as signed
+// in there. roster refused what the proxy carried for it, but `/claim` had a
+// link minted for fabrikam's bob and mailed to an address in contoso.
+func TestASessionIsTheTenantsItWasSignedInAt(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+	d := serve(t, account.Invited())
+
+	const theirs = "shared@contoso.example"
+	carol, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build(), Alias: "carol",
+	}.Build())
+	x.NoError(err)
+	_, err = d.ungated.Email().Add(ctx, rstr.EmailAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: carol.GetId()}.Build(), Address: theirs,
+	}.Build())
+	x.NoError(err)
+
+	b := d.browser(t, "fabrikam.test")
+	json := func(r *http.Request) { r.Header.Set("Content-Type", "application/json") }
+	code, body := b.do(t, http.MethodPost, "/session", `{"alias":"bob","password":"correct horse battery staple"}`, json)
+	x.Equal(http.StatusNoContent, code, body)
+
+	// The same browser, the same cookie, at contoso's name.
+	b.host = "contoso.test"
+	code, body = b.do(t, http.MethodPost, "/claim", `{"address":"`+theirs+`"}`, json)
+	x.Equal(http.StatusUnauthorized, code, "a session from fabrikam was signed in at contoso: %s", body)
+	time.Sleep(100 * time.Millisecond)
+	x.Empty(d.sent(theirs), "a link was mailed for somebody of another tenant")
 }

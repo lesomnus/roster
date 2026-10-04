@@ -27,6 +27,8 @@ type Role struct {
 	Name string `json:"name,omitempty"`
 	// Desc holds the value of the "desc" field.
 	Desc string `json:"desc,omitempty"`
+	// Labels holds the value of the "labels" field.
+	Labels map[string]string `json:"labels,omitempty"`
 	// Methods holds the value of the "methods" field.
 	Methods []string `json:"methods,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
@@ -83,7 +85,7 @@ func (*Role) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case role.FieldMethods:
+		case role.FieldLabels, role.FieldMethods:
 			values[i] = new([]byte)
 		case role.FieldAlias, role.FieldName, role.FieldDesc:
 			values[i] = new(sql.NullString)
@@ -131,6 +133,14 @@ func (_m *Role) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field desc", values[i])
 			} else if value.Valid {
 				_m.Desc = value.String
+			}
+		case role.FieldLabels:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field labels", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Labels); err != nil {
+					return fmt.Errorf("unmarshal field labels: %w", err)
+				}
 			}
 		case role.FieldMethods:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -225,6 +235,9 @@ func (_m *Role) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("desc=")
 	builder.WriteString(_m.Desc)
+	builder.WriteString(", ")
+	builder.WriteString("labels=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Labels))
 	builder.WriteString(", ")
 	builder.WriteString("methods=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Methods))

@@ -30,6 +30,7 @@ type RoleAddRequest struct {
 	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_Methods     []string               `protobuf:"bytes,8,rep,name=methods"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
@@ -105,6 +106,13 @@ func (x *RoleAddRequest) GetDesc() string {
 	return ""
 }
 
+func (x *RoleAddRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *RoleAddRequest) GetMethods() []string {
 	if x != nil {
 		return x.xxx_hidden_Methods
@@ -124,7 +132,7 @@ func (x *RoleAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
 }
 
 func (x *RoleAddRequest) SetTenant(v *TenantRef) {
@@ -145,6 +153,10 @@ func (x *RoleAddRequest) SetName(v string) {
 
 func (x *RoleAddRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = v
+}
+
+func (x *RoleAddRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *RoleAddRequest) SetMethods(v []string) {
@@ -209,6 +221,7 @@ type RoleAddRequest_builder struct {
 	Alias       string
 	Name        string
 	Desc        string
+	Labels      map[string]string
 	Methods     []string
 	DateCreated *timestamppb.Timestamp
 }
@@ -218,7 +231,7 @@ func (b0 RoleAddRequest_builder) Build() *RoleAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -226,6 +239,7 @@ func (b0 RoleAddRequest_builder) Build() *RoleAddRequest {
 	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_Methods = b.Methods
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
@@ -605,6 +619,7 @@ type RoleSelect struct {
 	xxx_hidden_Alias       bool                   `protobuf:"varint,4,opt,name=alias"`
 	xxx_hidden_Name        bool                   `protobuf:"varint,5,opt,name=name"`
 	xxx_hidden_Desc        bool                   `protobuf:"varint,6,opt,name=desc"`
+	xxx_hidden_Labels      bool                   `protobuf:"varint,7,opt,name=labels"`
 	xxx_hidden_Methods     bool                   `protobuf:"varint,8,opt,name=methods"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
@@ -682,6 +697,13 @@ func (x *RoleSelect) GetDesc() bool {
 	return false
 }
 
+func (x *RoleSelect) GetLabels() bool {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return false
+}
+
 func (x *RoleSelect) GetMethods() bool {
 	if x != nil {
 		return x.xxx_hidden_Methods
@@ -712,7 +734,7 @@ func (x *RoleSelect) GetDateCreated() bool {
 
 func (x *RoleSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 11)
 }
 
 func (x *RoleSelect) SetTenant(v *TenantSelect) {
@@ -725,37 +747,42 @@ func (x *RoleSelect) SetSite(v *SiteSelect) {
 
 func (x *RoleSelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 11)
 }
 
 func (x *RoleSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 11)
 }
 
 func (x *RoleSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 11)
+}
+
+func (x *RoleSelect) SetLabels(v bool) {
+	x.xxx_hidden_Labels = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 11)
 }
 
 func (x *RoleSelect) SetMethods(v bool) {
 	x.xxx_hidden_Methods = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 11)
 }
 
 func (x *RoleSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 11)
 }
 
 func (x *RoleSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 11)
 }
 
 func (x *RoleSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 11)
 }
 
 func (x *RoleSelect) HasAll() bool {
@@ -800,32 +827,39 @@ func (x *RoleSelect) HasDesc() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *RoleSelect) HasMethods() bool {
+func (x *RoleSelect) HasLabels() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
-func (x *RoleSelect) HasDateUpdated() bool {
+func (x *RoleSelect) HasMethods() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
-func (x *RoleSelect) HasDateErased() bool {
+func (x *RoleSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
-func (x *RoleSelect) HasDateCreated() bool {
+func (x *RoleSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
+}
+
+func (x *RoleSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
 }
 
 func (x *RoleSelect) ClearAll() {
@@ -856,23 +890,28 @@ func (x *RoleSelect) ClearDesc() {
 	x.xxx_hidden_Desc = false
 }
 
-func (x *RoleSelect) ClearMethods() {
+func (x *RoleSelect) ClearLabels() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_Labels = false
+}
+
+func (x *RoleSelect) ClearMethods() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_Methods = false
 }
 
 func (x *RoleSelect) ClearDateUpdated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *RoleSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *RoleSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_DateCreated = false
 }
 
@@ -885,6 +924,7 @@ type RoleSelect_builder struct {
 	Alias       *bool
 	Name        *bool
 	Desc        *bool
+	Labels      *bool
 	Methods     *bool
 	DateUpdated *bool
 	DateErased  *bool
@@ -896,37 +936,41 @@ func (b0 RoleSelect_builder) Build() *RoleSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 11)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 11)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 11)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 11)
 		x.xxx_hidden_Desc = *b.Desc
 	}
+	if b.Labels != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 11)
+		x.xxx_hidden_Labels = *b.Labels
+	}
 	if b.Methods != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 11)
 		x.xxx_hidden_Methods = *b.Methods
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 11)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 11)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 11)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -938,6 +982,7 @@ type RolePatchRequest struct {
 	xxx_hidden_Alias            *string                `protobuf:"bytes,8,opt,name=alias"`
 	xxx_hidden_Name             *string                `protobuf:"bytes,10,opt,name=name"`
 	xxx_hidden_Desc             *string                `protobuf:"bytes,12,opt,name=desc"`
+	xxx_hidden_Labels           map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_Methods          []string               `protobuf:"bytes,16,rep,name=methods"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
@@ -1009,6 +1054,13 @@ func (x *RolePatchRequest) GetDesc() string {
 	return ""
 }
 
+func (x *RolePatchRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *RolePatchRequest) GetMethods() []string {
 	if x != nil {
 		return x.xxx_hidden_Methods
@@ -1036,17 +1088,21 @@ func (x *RolePatchRequest) SetRef(v *RoleRef) {
 
 func (x *RolePatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 8)
 }
 
 func (x *RolePatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 8)
 }
 
 func (x *RolePatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 8)
+}
+
+func (x *RolePatchRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *RolePatchRequest) SetMethods(v []string) {
@@ -1059,7 +1115,7 @@ func (x *RolePatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *RolePatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
 }
 
 func (x *RolePatchRequest) HasRef() bool {
@@ -1101,7 +1157,7 @@ func (x *RolePatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
 func (x *RolePatchRequest) ClearRef() {
@@ -1128,7 +1184,7 @@ func (x *RolePatchRequest) ClearDateUpdated() {
 }
 
 func (x *RolePatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
@@ -1139,6 +1195,7 @@ type RolePatchRequest_builder struct {
 	Alias   *string
 	Name    *string
 	Desc    *string
+	Labels  map[string]string
 	Methods []string
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
@@ -1162,21 +1219,22 @@ func (b0 RolePatchRequest_builder) Build() *RolePatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 8)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 8)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 8)
 		x.xxx_hidden_Desc = b.Desc
 	}
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_Methods = b.Methods
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -1656,6 +1714,7 @@ type BindingAddRequest struct {
 	xxx_hidden_Site        *SiteRef               `protobuf:"bytes,3,opt,name=site"`
 	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,8,opt,name=holder"`
 	xxx_hidden_Group       *GroupRef              `protobuf:"bytes,9,opt,name=group"`
+	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
@@ -1723,6 +1782,13 @@ func (x *BindingAddRequest) GetGroup() *GroupRef {
 	return nil
 }
 
+func (x *BindingAddRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *BindingAddRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
@@ -1735,7 +1801,7 @@ func (x *BindingAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
 }
 
 func (x *BindingAddRequest) SetRole(v *RoleRef) {
@@ -1752,6 +1818,10 @@ func (x *BindingAddRequest) SetHolder(v *HolderRef) {
 
 func (x *BindingAddRequest) SetGroup(v *GroupRef) {
 	x.xxx_hidden_Group = v
+}
+
+func (x *BindingAddRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *BindingAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -1833,6 +1903,7 @@ type BindingAddRequest_builder struct {
 	Site        *SiteRef
 	Holder      *HolderRef
 	Group       *GroupRef
+	Labels      map[string]string
 	DateCreated *timestamppb.Timestamp
 }
 
@@ -1841,13 +1912,14 @@ func (b0 BindingAddRequest_builder) Build() *BindingAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Role = b.Role
 	x.xxx_hidden_Site = b.Site
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Group = b.Group
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -2078,6 +2150,7 @@ type BindingSelect struct {
 	xxx_hidden_Site        *SiteSelect            `protobuf:"bytes,3,opt,name=site"`
 	xxx_hidden_Holder      *HolderSelect          `protobuf:"bytes,8,opt,name=holder"`
 	xxx_hidden_Group       *GroupSelect           `protobuf:"bytes,9,opt,name=group"`
+	xxx_hidden_Labels      bool                   `protobuf:"varint,7,opt,name=labels"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
@@ -2147,6 +2220,13 @@ func (x *BindingSelect) GetGroup() *GroupSelect {
 	return nil
 }
 
+func (x *BindingSelect) GetLabels() bool {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return false
+}
+
 func (x *BindingSelect) GetDateUpdated() bool {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -2170,7 +2250,7 @@ func (x *BindingSelect) GetDateCreated() bool {
 
 func (x *BindingSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
 }
 
 func (x *BindingSelect) SetRole(v *RoleSelect) {
@@ -2189,19 +2269,24 @@ func (x *BindingSelect) SetGroup(v *GroupSelect) {
 	x.xxx_hidden_Group = v
 }
 
+func (x *BindingSelect) SetLabels(v bool) {
+	x.xxx_hidden_Labels = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 9)
+}
+
 func (x *BindingSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 9)
 }
 
 func (x *BindingSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 9)
 }
 
 func (x *BindingSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 9)
 }
 
 func (x *BindingSelect) HasAll() bool {
@@ -2239,25 +2324,32 @@ func (x *BindingSelect) HasGroup() bool {
 	return x.xxx_hidden_Group != nil
 }
 
-func (x *BindingSelect) HasDateUpdated() bool {
+func (x *BindingSelect) HasLabels() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *BindingSelect) HasDateErased() bool {
+func (x *BindingSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
-func (x *BindingSelect) HasDateCreated() bool {
+func (x *BindingSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+}
+
+func (x *BindingSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
 func (x *BindingSelect) ClearAll() {
@@ -2281,18 +2373,23 @@ func (x *BindingSelect) ClearGroup() {
 	x.xxx_hidden_Group = nil
 }
 
-func (x *BindingSelect) ClearDateUpdated() {
+func (x *BindingSelect) ClearLabels() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_Labels = false
+}
+
+func (x *BindingSelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *BindingSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *BindingSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
 	x.xxx_hidden_DateCreated = false
 }
 
@@ -2304,6 +2401,7 @@ type BindingSelect_builder struct {
 	Site        *SiteSelect
 	Holder      *HolderSelect
 	Group       *GroupSelect
+	Labels      *bool
 	DateUpdated *bool
 	DateErased  *bool
 	DateCreated *bool
@@ -2314,23 +2412,27 @@ func (b0 BindingSelect_builder) Build() *BindingSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Role = b.Role
 	x.xxx_hidden_Site = b.Site
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Group = b.Group
+	if b.Labels != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 9)
+		x.xxx_hidden_Labels = *b.Labels
+	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 9)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 9)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 9)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -2339,6 +2441,7 @@ func (b0 BindingSelect_builder) Build() *BindingSelect {
 type BindingPatchRequest struct {
 	state                       protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref              *BindingRef            `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Labels           map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
@@ -2379,6 +2482,13 @@ func (x *BindingPatchRequest) GetRef() *BindingRef {
 	return nil
 }
 
+func (x *BindingPatchRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *BindingPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -2397,13 +2507,17 @@ func (x *BindingPatchRequest) SetRef(v *BindingRef) {
 	x.xxx_hidden_Ref = v
 }
 
+func (x *BindingPatchRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
+}
+
 func (x *BindingPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateUpdated = v
 }
 
 func (x *BindingPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
 }
 
 func (x *BindingPatchRequest) HasRef() bool {
@@ -2424,7 +2538,7 @@ func (x *BindingPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
 func (x *BindingPatchRequest) ClearRef() {
@@ -2436,14 +2550,15 @@ func (x *BindingPatchRequest) ClearDateUpdated() {
 }
 
 func (x *BindingPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
 type BindingPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref *BindingRef
+	Ref    *BindingRef
+	Labels map[string]string
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -2465,9 +2580,10 @@ func (b0 BindingPatchRequest_builder) Build() *BindingPatchRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -2994,16 +3110,20 @@ var File_app_role_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_role_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/role_svc.g.proto\x12\x06roster\x1a\x15app/group_svc.g.proto\x1a\x0eapp/role.proto\x1a\x14app/site_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\x9c\x02\n" +
+	"\x14app/role_svc.g.proto\x12\x06roster\x1a\x15app/group_svc.g.proto\x1a\x0eapp/role.proto\x1a\x14app/site_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\x93\x03\n" +
 	"\x0eRoleAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12#\n" +
 	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
-	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12\x18\n" +
+	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12:\n" +
+	"\x06labels\x18\a \x03(\v2\".roster.RoleAddRequest.LabelsEntryR\x06labels\x12\x18\n" +
 	"\amethods\x18\b \x03(\tR\amethods\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"_\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"_\n" +
 	"\x0eRoleGetRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.RoleRefR\x03ref\x12*\n" +
 	"\x06select\x18\x02 \x01(\v2\x12.roster.RoleSelectR\x06select\"O\n" +
@@ -3013,7 +3133,7 @@ const file_app_role_svc_g_proto_rawDesc = "" +
 	"\x03key\"P\n" +
 	"\rRoleRefBySlug\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\"\xb3\x02\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\"\xcb\x02\n" +
 	"\n" +
 	"RoleSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
@@ -3021,21 +3141,26 @@ const file_app_role_svc_g_proto_rawDesc = "" +
 	"\x04site\x18\x03 \x01(\v2\x12.roster.SiteSelectR\x04site\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\bR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\bR\x04desc\x12\x18\n" +
+	"\x04desc\x18\x06 \x01(\bR\x04desc\x12\x16\n" +
+	"\x06labels\x18\a \x01(\bR\x06labels\x12\x18\n" +
 	"\amethods\x18\b \x01(\bR\amethods\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xfa\x01\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xf3\x02\n" +
 	"\x10RolePatchRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.RoleRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\f \x01(\tR\x04desc\x12\x18\n" +
+	"\x04desc\x18\f \x01(\tR\x04desc\x12<\n" +
+	"\x06labels\x18\x0e \x03(\v2$.roster.RolePatchRequest.LabelsEntryR\x06labels\x12\x18\n" +
 	"\amethods\x18\x10 \x03(\tR\amethods\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"Y\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"Y\n" +
 	"\x10RoleApplyRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.RoleRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"+\n" +
@@ -3052,35 +3177,44 @@ const file_app_role_svc_g_proto_rawDesc = "" +
 	"RoleFilter\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.RoleRefR\x03ref\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12#\n" +
-	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\"\xff\x01\n" +
+	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\"\xf9\x02\n" +
 	"\x11BindingAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12#\n" +
 	"\x04role\x18\x02 \x01(\v2\x0f.roster.RoleRefR\x04role\x12#\n" +
 	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\x12)\n" +
 	"\x06holder\x18\b \x01(\v2\x11.roster.HolderRefR\x06holder\x12&\n" +
 	"\x05group\x18\t \x01(\v2\x10.roster.GroupRefR\x05group\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"h\n" +
+	"\x06labels\x18\a \x03(\v2%.roster.BindingAddRequest.LabelsEntryR\x06labels\x12=\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"h\n" +
 	"\x11BindingGetRequest\x12$\n" +
 	"\x03ref\x18\x01 \x01(\v2\x12.roster.BindingRefR\x03ref\x12-\n" +
 	"\x06select\x18\x02 \x01(\v2\x15.roster.BindingSelectR\x06select\"%\n" +
 	"\n" +
 	"BindingRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02idB\x05\n" +
-	"\x03key\"\xb1\x02\n" +
+	"\x03key\"\xc9\x02\n" +
 	"\rBindingSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12&\n" +
 	"\x04role\x18\x02 \x01(\v2\x12.roster.RoleSelectR\x04role\x12&\n" +
 	"\x04site\x18\x03 \x01(\v2\x12.roster.SiteSelectR\x04site\x12,\n" +
 	"\x06holder\x18\b \x01(\v2\x14.roster.HolderSelectR\x06holder\x12)\n" +
-	"\x05group\x18\t \x01(\v2\x13.roster.GroupSelectR\x05group\x12!\n" +
+	"\x05group\x18\t \x01(\v2\x13.roster.GroupSelectR\x05group\x12\x16\n" +
+	"\x06labels\x18\a \x01(\bR\x06labels\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xa8\x01\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xa4\x02\n" +
 	"\x13BindingPatchRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.roster.BindingRefR\x03ref\x12=\n" +
+	"\x03ref\x18\x01 \x01(\v2\x12.roster.BindingRefR\x03ref\x12?\n" +
+	"\x06labels\x18\x0e \x03(\v2'.roster.BindingPatchRequest.LabelsEntryR\x06labels\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"_\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"_\n" +
 	"\x13BindingApplyRequest\x12$\n" +
 	"\x03ref\x18\x01 \x01(\v2\x12.roster.BindingRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\".\n" +
@@ -3114,7 +3248,7 @@ const file_app_role_svc_g_proto_rawDesc = "" +
 	"\x05Erase\x12\x12.roster.BindingRef\x1a\x1c.roster.BindingEraseResponse\x12?\n" +
 	"\x04List\x12\x1a.roster.BindingListRequest\x1a\x1b.roster.BindingListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_role_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_app_role_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_app_role_svc_g_proto_goTypes = []any{
 	(*RoleAddRequest)(nil),        // 0: roster.RoleAddRequest
 	(*RoleGetRequest)(nil),        // 1: roster.RoleGetRequest
@@ -3137,89 +3271,97 @@ var file_app_role_svc_g_proto_goTypes = []any{
 	(*BindingListRequest)(nil),    // 18: roster.BindingListRequest
 	(*BindingListResponse)(nil),   // 19: roster.BindingListResponse
 	(*BindingFilter)(nil),         // 20: roster.BindingFilter
-	(*TenantRef)(nil),             // 21: roster.TenantRef
-	(*SiteRef)(nil),               // 22: roster.SiteRef
-	(*timestamppb.Timestamp)(nil), // 23: google.protobuf.Timestamp
-	(*TenantSelect)(nil),          // 24: roster.TenantSelect
-	(*SiteSelect)(nil),            // 25: roster.SiteSelect
-	(*patchpb.Patch)(nil),         // 26: patch.Patch
-	(*Role)(nil),                  // 27: roster.Role
-	(*HolderRef)(nil),             // 28: roster.HolderRef
-	(*GroupRef)(nil),              // 29: roster.GroupRef
-	(*HolderSelect)(nil),          // 30: roster.HolderSelect
-	(*GroupSelect)(nil),           // 31: roster.GroupSelect
-	(*Binding)(nil),               // 32: roster.Binding
+	nil,                           // 21: roster.RoleAddRequest.LabelsEntry
+	nil,                           // 22: roster.RolePatchRequest.LabelsEntry
+	nil,                           // 23: roster.BindingAddRequest.LabelsEntry
+	nil,                           // 24: roster.BindingPatchRequest.LabelsEntry
+	(*TenantRef)(nil),             // 25: roster.TenantRef
+	(*SiteRef)(nil),               // 26: roster.SiteRef
+	(*timestamppb.Timestamp)(nil), // 27: google.protobuf.Timestamp
+	(*TenantSelect)(nil),          // 28: roster.TenantSelect
+	(*SiteSelect)(nil),            // 29: roster.SiteSelect
+	(*patchpb.Patch)(nil),         // 30: patch.Patch
+	(*Role)(nil),                  // 31: roster.Role
+	(*HolderRef)(nil),             // 32: roster.HolderRef
+	(*GroupRef)(nil),              // 33: roster.GroupRef
+	(*HolderSelect)(nil),          // 34: roster.HolderSelect
+	(*GroupSelect)(nil),           // 35: roster.GroupSelect
+	(*Binding)(nil),               // 36: roster.Binding
 }
 var file_app_role_svc_g_proto_depIdxs = []int32{
-	21, // 0: roster.RoleAddRequest.tenant:type_name -> roster.TenantRef
-	22, // 1: roster.RoleAddRequest.site:type_name -> roster.SiteRef
-	23, // 2: roster.RoleAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 3: roster.RoleGetRequest.ref:type_name -> roster.RoleRef
-	4,  // 4: roster.RoleGetRequest.select:type_name -> roster.RoleSelect
-	3,  // 5: roster.RoleRef.slug:type_name -> roster.RoleRefBySlug
-	21, // 6: roster.RoleRefBySlug.tenant:type_name -> roster.TenantRef
-	24, // 7: roster.RoleSelect.tenant:type_name -> roster.TenantSelect
-	25, // 8: roster.RoleSelect.site:type_name -> roster.SiteSelect
-	2,  // 9: roster.RolePatchRequest.ref:type_name -> roster.RoleRef
-	23, // 10: roster.RolePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 11: roster.RoleApplyRequest.ref:type_name -> roster.RoleRef
-	26, // 12: roster.RoleApplyRequest.patch:type_name -> patch.Patch
-	10, // 13: roster.RoleListRequest.filters:type_name -> roster.RoleFilter
-	27, // 14: roster.RoleListResponse.items:type_name -> roster.Role
-	2,  // 15: roster.RoleFilter.ref:type_name -> roster.RoleRef
-	21, // 16: roster.RoleFilter.tenant:type_name -> roster.TenantRef
-	22, // 17: roster.RoleFilter.site:type_name -> roster.SiteRef
-	2,  // 18: roster.BindingAddRequest.role:type_name -> roster.RoleRef
-	22, // 19: roster.BindingAddRequest.site:type_name -> roster.SiteRef
-	28, // 20: roster.BindingAddRequest.holder:type_name -> roster.HolderRef
-	29, // 21: roster.BindingAddRequest.group:type_name -> roster.GroupRef
-	23, // 22: roster.BindingAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	13, // 23: roster.BindingGetRequest.ref:type_name -> roster.BindingRef
-	14, // 24: roster.BindingGetRequest.select:type_name -> roster.BindingSelect
-	4,  // 25: roster.BindingSelect.role:type_name -> roster.RoleSelect
-	25, // 26: roster.BindingSelect.site:type_name -> roster.SiteSelect
-	30, // 27: roster.BindingSelect.holder:type_name -> roster.HolderSelect
-	31, // 28: roster.BindingSelect.group:type_name -> roster.GroupSelect
-	13, // 29: roster.BindingPatchRequest.ref:type_name -> roster.BindingRef
-	23, // 30: roster.BindingPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	13, // 31: roster.BindingApplyRequest.ref:type_name -> roster.BindingRef
-	26, // 32: roster.BindingApplyRequest.patch:type_name -> patch.Patch
-	20, // 33: roster.BindingListRequest.filters:type_name -> roster.BindingFilter
-	32, // 34: roster.BindingListResponse.items:type_name -> roster.Binding
-	13, // 35: roster.BindingFilter.ref:type_name -> roster.BindingRef
-	2,  // 36: roster.BindingFilter.role:type_name -> roster.RoleRef
-	28, // 37: roster.BindingFilter.holder:type_name -> roster.HolderRef
-	29, // 38: roster.BindingFilter.group:type_name -> roster.GroupRef
-	22, // 39: roster.BindingFilter.site:type_name -> roster.SiteRef
-	0,  // 40: roster.RoleService.Add:input_type -> roster.RoleAddRequest
-	1,  // 41: roster.RoleService.Get:input_type -> roster.RoleGetRequest
-	5,  // 42: roster.RoleService.Patch:input_type -> roster.RolePatchRequest
-	6,  // 43: roster.RoleService.Apply:input_type -> roster.RoleApplyRequest
-	2,  // 44: roster.RoleService.Erase:input_type -> roster.RoleRef
-	8,  // 45: roster.RoleService.List:input_type -> roster.RoleListRequest
-	11, // 46: roster.BindingService.Add:input_type -> roster.BindingAddRequest
-	12, // 47: roster.BindingService.Get:input_type -> roster.BindingGetRequest
-	15, // 48: roster.BindingService.Patch:input_type -> roster.BindingPatchRequest
-	16, // 49: roster.BindingService.Apply:input_type -> roster.BindingApplyRequest
-	13, // 50: roster.BindingService.Erase:input_type -> roster.BindingRef
-	18, // 51: roster.BindingService.List:input_type -> roster.BindingListRequest
-	27, // 52: roster.RoleService.Add:output_type -> roster.Role
-	27, // 53: roster.RoleService.Get:output_type -> roster.Role
-	27, // 54: roster.RoleService.Patch:output_type -> roster.Role
-	27, // 55: roster.RoleService.Apply:output_type -> roster.Role
-	7,  // 56: roster.RoleService.Erase:output_type -> roster.RoleEraseResponse
-	9,  // 57: roster.RoleService.List:output_type -> roster.RoleListResponse
-	32, // 58: roster.BindingService.Add:output_type -> roster.Binding
-	32, // 59: roster.BindingService.Get:output_type -> roster.Binding
-	32, // 60: roster.BindingService.Patch:output_type -> roster.Binding
-	32, // 61: roster.BindingService.Apply:output_type -> roster.Binding
-	17, // 62: roster.BindingService.Erase:output_type -> roster.BindingEraseResponse
-	19, // 63: roster.BindingService.List:output_type -> roster.BindingListResponse
-	52, // [52:64] is the sub-list for method output_type
-	40, // [40:52] is the sub-list for method input_type
-	40, // [40:40] is the sub-list for extension type_name
-	40, // [40:40] is the sub-list for extension extendee
-	0,  // [0:40] is the sub-list for field type_name
+	25, // 0: roster.RoleAddRequest.tenant:type_name -> roster.TenantRef
+	26, // 1: roster.RoleAddRequest.site:type_name -> roster.SiteRef
+	21, // 2: roster.RoleAddRequest.labels:type_name -> roster.RoleAddRequest.LabelsEntry
+	27, // 3: roster.RoleAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 4: roster.RoleGetRequest.ref:type_name -> roster.RoleRef
+	4,  // 5: roster.RoleGetRequest.select:type_name -> roster.RoleSelect
+	3,  // 6: roster.RoleRef.slug:type_name -> roster.RoleRefBySlug
+	25, // 7: roster.RoleRefBySlug.tenant:type_name -> roster.TenantRef
+	28, // 8: roster.RoleSelect.tenant:type_name -> roster.TenantSelect
+	29, // 9: roster.RoleSelect.site:type_name -> roster.SiteSelect
+	2,  // 10: roster.RolePatchRequest.ref:type_name -> roster.RoleRef
+	22, // 11: roster.RolePatchRequest.labels:type_name -> roster.RolePatchRequest.LabelsEntry
+	27, // 12: roster.RolePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 13: roster.RoleApplyRequest.ref:type_name -> roster.RoleRef
+	30, // 14: roster.RoleApplyRequest.patch:type_name -> patch.Patch
+	10, // 15: roster.RoleListRequest.filters:type_name -> roster.RoleFilter
+	31, // 16: roster.RoleListResponse.items:type_name -> roster.Role
+	2,  // 17: roster.RoleFilter.ref:type_name -> roster.RoleRef
+	25, // 18: roster.RoleFilter.tenant:type_name -> roster.TenantRef
+	26, // 19: roster.RoleFilter.site:type_name -> roster.SiteRef
+	2,  // 20: roster.BindingAddRequest.role:type_name -> roster.RoleRef
+	26, // 21: roster.BindingAddRequest.site:type_name -> roster.SiteRef
+	32, // 22: roster.BindingAddRequest.holder:type_name -> roster.HolderRef
+	33, // 23: roster.BindingAddRequest.group:type_name -> roster.GroupRef
+	23, // 24: roster.BindingAddRequest.labels:type_name -> roster.BindingAddRequest.LabelsEntry
+	27, // 25: roster.BindingAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	13, // 26: roster.BindingGetRequest.ref:type_name -> roster.BindingRef
+	14, // 27: roster.BindingGetRequest.select:type_name -> roster.BindingSelect
+	4,  // 28: roster.BindingSelect.role:type_name -> roster.RoleSelect
+	29, // 29: roster.BindingSelect.site:type_name -> roster.SiteSelect
+	34, // 30: roster.BindingSelect.holder:type_name -> roster.HolderSelect
+	35, // 31: roster.BindingSelect.group:type_name -> roster.GroupSelect
+	13, // 32: roster.BindingPatchRequest.ref:type_name -> roster.BindingRef
+	24, // 33: roster.BindingPatchRequest.labels:type_name -> roster.BindingPatchRequest.LabelsEntry
+	27, // 34: roster.BindingPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	13, // 35: roster.BindingApplyRequest.ref:type_name -> roster.BindingRef
+	30, // 36: roster.BindingApplyRequest.patch:type_name -> patch.Patch
+	20, // 37: roster.BindingListRequest.filters:type_name -> roster.BindingFilter
+	36, // 38: roster.BindingListResponse.items:type_name -> roster.Binding
+	13, // 39: roster.BindingFilter.ref:type_name -> roster.BindingRef
+	2,  // 40: roster.BindingFilter.role:type_name -> roster.RoleRef
+	32, // 41: roster.BindingFilter.holder:type_name -> roster.HolderRef
+	33, // 42: roster.BindingFilter.group:type_name -> roster.GroupRef
+	26, // 43: roster.BindingFilter.site:type_name -> roster.SiteRef
+	0,  // 44: roster.RoleService.Add:input_type -> roster.RoleAddRequest
+	1,  // 45: roster.RoleService.Get:input_type -> roster.RoleGetRequest
+	5,  // 46: roster.RoleService.Patch:input_type -> roster.RolePatchRequest
+	6,  // 47: roster.RoleService.Apply:input_type -> roster.RoleApplyRequest
+	2,  // 48: roster.RoleService.Erase:input_type -> roster.RoleRef
+	8,  // 49: roster.RoleService.List:input_type -> roster.RoleListRequest
+	11, // 50: roster.BindingService.Add:input_type -> roster.BindingAddRequest
+	12, // 51: roster.BindingService.Get:input_type -> roster.BindingGetRequest
+	15, // 52: roster.BindingService.Patch:input_type -> roster.BindingPatchRequest
+	16, // 53: roster.BindingService.Apply:input_type -> roster.BindingApplyRequest
+	13, // 54: roster.BindingService.Erase:input_type -> roster.BindingRef
+	18, // 55: roster.BindingService.List:input_type -> roster.BindingListRequest
+	31, // 56: roster.RoleService.Add:output_type -> roster.Role
+	31, // 57: roster.RoleService.Get:output_type -> roster.Role
+	31, // 58: roster.RoleService.Patch:output_type -> roster.Role
+	31, // 59: roster.RoleService.Apply:output_type -> roster.Role
+	7,  // 60: roster.RoleService.Erase:output_type -> roster.RoleEraseResponse
+	9,  // 61: roster.RoleService.List:output_type -> roster.RoleListResponse
+	36, // 62: roster.BindingService.Add:output_type -> roster.Binding
+	36, // 63: roster.BindingService.Get:output_type -> roster.Binding
+	36, // 64: roster.BindingService.Patch:output_type -> roster.Binding
+	36, // 65: roster.BindingService.Apply:output_type -> roster.Binding
+	17, // 66: roster.BindingService.Erase:output_type -> roster.BindingEraseResponse
+	19, // 67: roster.BindingService.List:output_type -> roster.BindingListResponse
+	56, // [56:68] is the sub-list for method output_type
+	44, // [44:56] is the sub-list for method input_type
+	44, // [44:44] is the sub-list for extension type_name
+	44, // [44:44] is the sub-list for extension extendee
+	0,  // [0:44] is the sub-list for field type_name
 }
 
 func init() { file_app_role_svc_g_proto_init() }
@@ -3245,7 +3387,7 @@ func file_app_role_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_role_svc_g_proto_rawDesc), len(file_app_role_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   21,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

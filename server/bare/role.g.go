@@ -130,6 +130,9 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 	q.SetAlias(req.GetAlias())
 	q.SetName(req.GetName())
 	q.SetDesc(req.GetDesc())
+	if u := req.GetLabels(); len(u) > 0 {
+		q.SetLabels(u)
+	}
 	if u := req.GetMethods(); len(u) > 0 {
 		q.SetMethods(u)
 	}
@@ -214,6 +217,9 @@ func RoleSelectedFields(m *rstr.RoleSelect) []string {
 	}
 	if m.GetDesc() {
 		vs = append(vs, role.FieldDesc)
+	}
+	if m.GetLabels() {
+		vs = append(vs, role.FieldLabels)
 	}
 	if m.GetMethods() {
 		vs = append(vs, role.FieldMethods)
@@ -305,7 +311,7 @@ func RoleGetKey(ctx context.Context, db *ent.Client, ref *rstr.RoleRef) (uuid.UU
 var roleOrmEntity = ormpatch.MustEntityOf(rstr.File_app_role_proto, "Role")
 
 var rolePatchColumns = entpatch.Columns{
-	1: role.FieldId, 2: role.TenantColumn, 3: role.SiteColumn, 4: role.FieldAlias, 5: role.FieldName, 6: role.FieldDesc, 8: role.FieldMethods, 13: role.FieldDateUpdated, 14: role.FieldDateErased, 15: role.FieldDateCreated}
+	1: role.FieldId, 2: role.TenantColumn, 3: role.SiteColumn, 4: role.FieldAlias, 5: role.FieldName, 6: role.FieldDesc, 7: role.FieldLabels, 8: role.FieldMethods, 13: role.FieldDateUpdated, 14: role.FieldDateErased, 15: role.FieldDateCreated}
 
 func (s RoleServiceServer) Apply(ctx context.Context, req *rstr.RoleApplyRequest) (*rstr.Role, error) {
 	if !req.HasPatch() {
@@ -645,6 +651,9 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 			})
 		}
 	}
+	if u := req.GetLabels(); len(u) > 0 {
+		q.SetLabels(u)
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -717,6 +726,9 @@ func BindingSelectedFields(m *rstr.BindingSelect) []string {
 	vs := make([]string, 0, len(binding.Columns))
 	{
 		vs = append(vs, binding.FieldId)
+	}
+	if m.GetLabels() {
+		vs = append(vs, binding.FieldLabels)
 	}
 	if m.GetDateUpdated() {
 		vs = append(vs, binding.FieldDateUpdated)
@@ -820,7 +832,7 @@ func BindingGetKey(ctx context.Context, db *ent.Client, ref *rstr.BindingRef) (u
 var bindingOrmEntity = ormpatch.MustEntityOf(rstr.File_app_role_proto, "Binding")
 
 var bindingPatchColumns = entpatch.Columns{
-	1: binding.FieldId, 2: binding.RoleColumn, 3: binding.SiteColumn, 8: binding.HolderColumn, 9: binding.GroupColumn, 13: binding.FieldDateUpdated, 14: binding.FieldDateErased, 15: binding.FieldDateCreated}
+	1: binding.FieldId, 2: binding.RoleColumn, 3: binding.SiteColumn, 8: binding.HolderColumn, 9: binding.GroupColumn, 7: binding.FieldLabels, 13: binding.FieldDateUpdated, 14: binding.FieldDateErased, 15: binding.FieldDateCreated}
 
 func (s BindingServiceServer) Apply(ctx context.Context, req *rstr.BindingApplyRequest) (*rstr.Binding, error) {
 	if !req.HasPatch() {

@@ -109,7 +109,11 @@ rpc() {
 }
 json() { sed "s/.*\"$1\":\"//; s/\".*//"; }
 
-authorize="${ISSUER}/oauth2/auth?client_id=${OAUTH_CLIENT}&response_type=code&scope=openid+profile+email&redirect_uri=$(printf '%s' "${CALLBACK}" | sed 's|:|%3A|g; s|/|%2F|g')&state=abcdefghijklmnopqrst"
+# And an API the token is for (`audience`), which is what a page asks for once per
+# API it calls -- `docs/apps.md`, "People's tokens". The demo client may ask for
+# this one (`compose.yaml`).
+: "${AUDIENCE:=urn:roster:demo:api}"
+authorize="${ISSUER}/oauth2/auth?client_id=${OAUTH_CLIENT}&response_type=code&scope=openid+profile+email&redirect_uri=$(printf '%s' "${CALLBACK}" | sed 's|:|%3A|g; s|/|%2F|g')&audience=$(printf '%s' "${AUDIENCE}" | sed 's|:|%3A|g')&state=abcdefghijklmnopqrst"
 
 # begin is a product sending a browser to Hydra, as far as the login app's door.
 # It answers the challenge, and leaves the status in `began`.
@@ -278,6 +282,23 @@ printf '%s' "${claims}" | grep -q '"preferred_username":"'"${SEED_USER}"'"' \
 # holding a copy of would hold a stale one. `login/claims.go` says why.
 printf '%s' "${claims}" | grep -q '"methods"' \
 	&& die "the id_token carries roster's method list"
+
+# The token for the API, which is the one an API takes. A JWT, so the API checks
+# it with the issuer's keys and asks nobody; `aud` the API it was asked for, so
+# it is refused anywhere else; and the same subject. The ID token is the page's
+# (aud = its client), which is why an API refuses one.
+at=$(printf '%s' "${token}" | sed 's/.*"access_token":"//; s/".*//')
+[ "$(printf '%s' "${at}" | tr -cd '.' | wc -c)" = "2" ] || die "the access token is not a JWT: ${at}"
+atc=$(printf '%s' "${at}" | payload)
+printf '%s' "${atc}" | grep -q "\"${AUDIENCE}\"" || die "the access token is not for ${AUDIENCE}: ${atc}"
+printf '%s' "${atc}" | grep -q '"sub":"'"${sub}"'"' || die "the access token names somebody else: ${atc}"
+# And says which client it was issued to (RFC 9068), which an ID token does not:
+# an API that takes access tokens tells the two apart by it (kamino does).
+printf '%s' "${atc}" | grep -q '"client_id":"'"${OAUTH_CLIENT}"'"' || die "the access token names no client_id: ${atc}"
+printf '%s' "${claims}" | grep -q "\"${AUDIENCE}\"" && die "the id_token is for the API too: ${claims}"
+kid=$(printf '%s' "${at}" | cut -d. -f1 | tr '_-' '/+' | awk '{ n = length($0) % 4; if (n) $0 = $0 substr("===", 1, 4 - n); print }' | base64 -d | sed 's/.*"kid":"//; s/".*//')
+c "${ISSUER}/.well-known/jwks.json" | grep -q "\"${kid}\"" || die "the key the access token is signed with is not in the issuer's JWKS: ${kid}"
+step "the access token" "a JWT for ${AUDIENCE}, signed by a published key"
 
 # What roster's sign-out is worth, which needs Hydra to be remembering something
 # in the first place -- `login.sh` sets `remember`, and this is why.

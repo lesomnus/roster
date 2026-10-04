@@ -66,6 +66,7 @@ type Nomination struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
 	xxx_hidden_Tenant      *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_BorrowerId  []byte                 `protobuf:"bytes,8,opt,name=borrower_id,json=borrowerId"`
 	xxx_hidden_ActsAs      *Holder                `protobuf:"bytes,9,opt,name=acts_as,json=actsAs"`
@@ -111,6 +112,13 @@ func (x *Nomination) GetId() []byte {
 func (x *Nomination) GetTenant() *Tenant {
 	if x != nil {
 		return x.xxx_hidden_Tenant
+	}
+	return nil
+}
+
+func (x *Nomination) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
 	}
 	return nil
 }
@@ -166,6 +174,10 @@ func (x *Nomination) SetId(v []byte) {
 
 func (x *Nomination) SetTenant(v *Tenant) {
 	x.xxx_hidden_Tenant = v
+}
+
+func (x *Nomination) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *Nomination) SetName(v string) {
@@ -255,6 +267,14 @@ type Nomination_builder struct {
 
 	Id     []byte
 	Tenant *Tenant
+	// Whatever the deployment keeps about this row that the schema does not name.
+	//
+	// Number seven, the one an entity spends on labels (`host.proto`). The
+	// nominations roster's own front doors write for themselves at start -- the
+	// Login App's, the account app's -- are declared by the deployment's
+	// configuration and carry `roster.declared`: a tenant does not end them, and
+	// neither does anybody else but the deployment (`server/core/declared.go`).
+	Labels map[string]string
 	// What a person reading the tenant's nominations calls the app -- `kamino`.
 	//
 	// For a screen and nothing else. `borrower_id` is what decides, and it names
@@ -297,6 +317,7 @@ func (b0 Nomination_builder) Build() *Nomination {
 	_, _ = b, x
 	x.xxx_hidden_Id = b.Id
 	x.xxx_hidden_Tenant = b.Tenant
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_BorrowerId = b.BorrowerId
 	x.xxx_hidden_ActsAs = b.ActsAs
@@ -310,11 +331,12 @@ var File_app_nomination_proto protoreflect.FileDescriptor
 
 const file_app_nomination_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/nomination.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xca\x04\n" +
+	"\x14app/nomination.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xbd\x05\n" +
 	"\n" +
 	"Nomination\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x12\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x126\n" +
+	"\x06labels\x18\a \x03(\v2\x1e.roster.Nomination.LabelsEntryR\x06labels\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12)\n" +
 	"\vborrower_id\x18\b \x01(\fB\b\xea\x82\x16\x04\x10@@\x01R\n" +
 	"borrowerId\x12-\n" +
@@ -322,7 +344,10 @@ const file_app_nomination_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\xa8\x01\xca\xfc\x15Q\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xa8\x01\xca\xfc\x15Q\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x1a)\x12\bborrower\x1a\n" +
 	"\n" +
@@ -339,24 +364,26 @@ const file_app_nomination_proto_rawDesc = "" +
 	"\vborrower_id\x1a\t\n" +
 	"\aacts_as \x14(d:\x00B&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_nomination_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_app_nomination_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_app_nomination_proto_goTypes = []any{
 	(*Nomination)(nil),            // 0: roster.Nomination
-	(*Tenant)(nil),                // 1: roster.Tenant
-	(*Holder)(nil),                // 2: roster.Holder
-	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
+	nil,                           // 1: roster.Nomination.LabelsEntry
+	(*Tenant)(nil),                // 2: roster.Tenant
+	(*Holder)(nil),                // 3: roster.Holder
+	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
 }
 var file_app_nomination_proto_depIdxs = []int32{
-	1, // 0: roster.Nomination.tenant:type_name -> roster.Tenant
-	2, // 1: roster.Nomination.acts_as:type_name -> roster.Holder
-	3, // 2: roster.Nomination.date_updated:type_name -> google.protobuf.Timestamp
-	3, // 3: roster.Nomination.date_erased:type_name -> google.protobuf.Timestamp
-	3, // 4: roster.Nomination.date_created:type_name -> google.protobuf.Timestamp
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	2, // 0: roster.Nomination.tenant:type_name -> roster.Tenant
+	1, // 1: roster.Nomination.labels:type_name -> roster.Nomination.LabelsEntry
+	3, // 2: roster.Nomination.acts_as:type_name -> roster.Holder
+	4, // 3: roster.Nomination.date_updated:type_name -> google.protobuf.Timestamp
+	4, // 4: roster.Nomination.date_erased:type_name -> google.protobuf.Timestamp
+	4, // 5: roster.Nomination.date_created:type_name -> google.protobuf.Timestamp
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_app_nomination_proto_init() }
@@ -372,7 +399,7 @@ func file_app_nomination_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_nomination_proto_rawDesc), len(file_app_nomination_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -343,6 +343,14 @@ resources:
 	x.NoError(err)
 	x.Equal("https://somewhere.else/", connectionOf(t, ctx, b, "contoso", "entra").GetIssuer())
 
+	// Nor erased from a port: it came back at the next start, which is the same
+	// futile edit. Turning it off is taking it out of the file and then erasing
+	// it as the deployment -- a shell on the box, with no frame.
+	_, err = b.Walled.Connection().Erase(as, ref)
+	x.Equal(codes.FailedPrecondition, status.Code(err), "a declared row was erased from a port")
+	_, err = b.Ungated.Connection().Erase(ctx, ref)
+	x.NoError(err, "the deployment could not erase what it declared")
+
 	// Every kind a file can declare, and not the one the rule was first written
 	// for: `Tenant`, `Host` and `MailDomain` each have an `Update` a console
 	// calls, and for a while only `Connection`'s looked at the label. A tenant's

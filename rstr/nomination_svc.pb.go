@@ -26,6 +26,7 @@ type NominationAddRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
 	xxx_hidden_Tenant      *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_BorrowerId  []byte                 `protobuf:"bytes,8,opt,name=borrower_id,json=borrowerId"`
 	xxx_hidden_ActsAs      *HolderRef             `protobuf:"bytes,9,opt,name=acts_as,json=actsAs"`
@@ -75,6 +76,13 @@ func (x *NominationAddRequest) GetTenant() *TenantRef {
 	return nil
 }
 
+func (x *NominationAddRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *NominationAddRequest) GetName() string {
 	if x != nil {
 		return x.xxx_hidden_Name
@@ -108,11 +116,15 @@ func (x *NominationAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
 }
 
 func (x *NominationAddRequest) SetTenant(v *TenantRef) {
 	x.xxx_hidden_Tenant = v
+}
+
+func (x *NominationAddRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *NominationAddRequest) SetName(v string) {
@@ -184,6 +196,7 @@ type NominationAddRequest_builder struct {
 
 	Id          []byte
 	Tenant      *TenantRef
+	Labels      map[string]string
 	Name        string
 	BorrowerId  []byte
 	ActsAs      *HolderRef
@@ -195,10 +208,11 @@ func (b0 NominationAddRequest_builder) Build() *NominationAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_BorrowerId = b.BorrowerId
 	x.xxx_hidden_ActsAs = b.ActsAs
@@ -576,6 +590,7 @@ type NominationSelect struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_All         bool                   `protobuf:"varint,1,opt,name=all"`
 	xxx_hidden_Tenant      *TenantSelect          `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Labels      bool                   `protobuf:"varint,7,opt,name=labels"`
 	xxx_hidden_Name        bool                   `protobuf:"varint,5,opt,name=name"`
 	xxx_hidden_BorrowerId  bool                   `protobuf:"varint,8,opt,name=borrower_id,json=borrowerId"`
 	xxx_hidden_ActsAs      *HolderSelect          `protobuf:"bytes,9,opt,name=acts_as,json=actsAs"`
@@ -627,6 +642,13 @@ func (x *NominationSelect) GetTenant() *TenantSelect {
 	return nil
 }
 
+func (x *NominationSelect) GetLabels() bool {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return false
+}
+
 func (x *NominationSelect) GetName() bool {
 	if x != nil {
 		return x.xxx_hidden_Name
@@ -671,21 +693,26 @@ func (x *NominationSelect) GetDateCreated() bool {
 
 func (x *NominationSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
 }
 
 func (x *NominationSelect) SetTenant(v *TenantSelect) {
 	x.xxx_hidden_Tenant = v
 }
 
+func (x *NominationSelect) SetLabels(v bool) {
+	x.xxx_hidden_Labels = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 9)
+}
+
 func (x *NominationSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 9)
 }
 
 func (x *NominationSelect) SetBorrowerId(v bool) {
 	x.xxx_hidden_BorrowerId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 9)
 }
 
 func (x *NominationSelect) SetActsAs(v *HolderSelect) {
@@ -694,17 +721,17 @@ func (x *NominationSelect) SetActsAs(v *HolderSelect) {
 
 func (x *NominationSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 9)
 }
 
 func (x *NominationSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 9)
 }
 
 func (x *NominationSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 9)
 }
 
 func (x *NominationSelect) HasAll() bool {
@@ -721,18 +748,25 @@ func (x *NominationSelect) HasTenant() bool {
 	return x.xxx_hidden_Tenant != nil
 }
 
-func (x *NominationSelect) HasName() bool {
+func (x *NominationSelect) HasLabels() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
 }
 
-func (x *NominationSelect) HasBorrowerId() bool {
+func (x *NominationSelect) HasName() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *NominationSelect) HasBorrowerId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
 func (x *NominationSelect) HasActsAs() bool {
@@ -746,21 +780,21 @@ func (x *NominationSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
 func (x *NominationSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
 func (x *NominationSelect) HasDateCreated() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
 func (x *NominationSelect) ClearAll() {
@@ -772,13 +806,18 @@ func (x *NominationSelect) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
 }
 
-func (x *NominationSelect) ClearName() {
+func (x *NominationSelect) ClearLabels() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Labels = false
+}
+
+func (x *NominationSelect) ClearName() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
 	x.xxx_hidden_Name = false
 }
 
 func (x *NominationSelect) ClearBorrowerId() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
 	x.xxx_hidden_BorrowerId = false
 }
 
@@ -787,17 +826,17 @@ func (x *NominationSelect) ClearActsAs() {
 }
 
 func (x *NominationSelect) ClearDateUpdated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *NominationSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *NominationSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
 	x.xxx_hidden_DateCreated = false
 }
 
@@ -806,6 +845,7 @@ type NominationSelect_builder struct {
 
 	All         *bool
 	Tenant      *TenantSelect
+	Labels      *bool
 	Name        *bool
 	BorrowerId  *bool
 	ActsAs      *HolderSelect
@@ -819,29 +859,33 @@ func (b0 NominationSelect_builder) Build() *NominationSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
+	if b.Labels != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 9)
+		x.xxx_hidden_Labels = *b.Labels
+	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 9)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.BorrowerId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 9)
 		x.xxx_hidden_BorrowerId = *b.BorrowerId
 	}
 	x.xxx_hidden_ActsAs = b.ActsAs
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 9)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 9)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 9)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -850,6 +894,7 @@ func (b0 NominationSelect_builder) Build() *NominationSelect {
 type NominationPatchRequest struct {
 	state                       protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref              *NominationRef         `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Labels           map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_Name             *string                `protobuf:"bytes,10,opt,name=name"`
 	xxx_hidden_ActsAs           *HolderRef             `protobuf:"bytes,18,opt,name=acts_as,json=actsAs"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
@@ -892,6 +937,13 @@ func (x *NominationPatchRequest) GetRef() *NominationRef {
 	return nil
 }
 
+func (x *NominationPatchRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *NominationPatchRequest) GetName() string {
 	if x != nil {
 		if x.xxx_hidden_Name != nil {
@@ -927,9 +979,13 @@ func (x *NominationPatchRequest) SetRef(v *NominationRef) {
 	x.xxx_hidden_Ref = v
 }
 
+func (x *NominationPatchRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
+}
+
 func (x *NominationPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
 }
 
 func (x *NominationPatchRequest) SetActsAs(v *HolderRef) {
@@ -942,7 +998,7 @@ func (x *NominationPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *NominationPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 6)
 }
 
 func (x *NominationPatchRequest) HasRef() bool {
@@ -956,7 +1012,7 @@ func (x *NominationPatchRequest) HasName() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
 }
 
 func (x *NominationPatchRequest) HasActsAs() bool {
@@ -977,7 +1033,7 @@ func (x *NominationPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
 func (x *NominationPatchRequest) ClearRef() {
@@ -985,7 +1041,7 @@ func (x *NominationPatchRequest) ClearRef() {
 }
 
 func (x *NominationPatchRequest) ClearName() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
 	x.xxx_hidden_Name = nil
 }
 
@@ -998,7 +1054,7 @@ func (x *NominationPatchRequest) ClearDateUpdated() {
 }
 
 func (x *NominationPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
@@ -1006,6 +1062,7 @@ type NominationPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref    *NominationRef
+	Labels map[string]string
 	Name   *string
 	ActsAs *HolderRef
 	// The version this update requires the stored date_updated to be.
@@ -1029,14 +1086,15 @@ func (b0 NominationPatchRequest_builder) Build() *NominationPatchRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Labels = b.Labels
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
 		x.xxx_hidden_Name = b.Name
 	}
 	x.xxx_hidden_ActsAs = b.ActsAs
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -1827,15 +1885,19 @@ var File_app_nomination_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_nomination_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/nomination_svc.g.proto\x12\x06roster\x1a\x14app/nomination.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\xff\x01\n" +
+	"\x1aapp/nomination_svc.g.proto\x12\x06roster\x1a\x14app/nomination.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\xfc\x02\n" +
 	"\x14NominationAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x19\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12@\n" +
+	"\x06labels\x18\a \x03(\v2(.roster.NominationAddRequest.LabelsEntryR\x06labels\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12&\n" +
 	"\vborrower_id\x18\b \x01(\fB\x05\xaa\x01\x02\b\x02R\n" +
 	"borrowerId\x12*\n" +
 	"\aacts_as\x18\t \x01(\v2\x11.roster.HolderRefR\x06actsAs\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"q\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"q\n" +
 	"\x14NominationGetRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.NominationRefR\x03ref\x120\n" +
 	"\x06select\x18\x02 \x01(\v2\x18.roster.NominationSelectR\x06select\"g\n" +
@@ -1846,10 +1908,11 @@ const file_app_nomination_svc_g_proto_rawDesc = "" +
 	"\x17NominationRefByBorrower\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x1f\n" +
 	"\vborrower_id\x18\b \x01(\fR\n" +
-	"borrowerId\"\x9d\x02\n" +
+	"borrowerId\"\xb5\x02\n" +
 	"\x10NominationSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x14.roster.TenantSelectR\x06tenant\x12\x12\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x14.roster.TenantSelectR\x06tenant\x12\x16\n" +
+	"\x06labels\x18\a \x01(\bR\x06labels\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x1f\n" +
 	"\vborrower_id\x18\b \x01(\bR\n" +
 	"borrowerId\x12-\n" +
@@ -1857,14 +1920,18 @@ const file_app_nomination_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xee\x01\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xed\x02\n" +
 	"\x16NominationPatchRequest\x12'\n" +
-	"\x03ref\x18\x01 \x01(\v2\x15.roster.NominationRefR\x03ref\x12\x12\n" +
+	"\x03ref\x18\x01 \x01(\v2\x15.roster.NominationRefR\x03ref\x12B\n" +
+	"\x06labels\x18\x0e \x03(\v2*.roster.NominationPatchRequest.LabelsEntryR\x06labels\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12*\n" +
 	"\aacts_as\x18\x12 \x01(\v2\x11.roster.HolderRefR\x06actsAs\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"e\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"e\n" +
 	"\x16NominationApplyRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.NominationRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
@@ -1901,7 +1968,7 @@ const file_app_nomination_svc_g_proto_rawDesc = "" +
 	"\x04List\x12\x1d.roster.NominationListRequest\x1a\x1e.roster.NominationListResponse\x12J\n" +
 	"\x05Watch\x12\x1e.roster.NominationWatchRequest\x1a\x1f.roster.NominationWatchResponse0\x01B!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_nomination_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_app_nomination_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_app_nomination_svc_g_proto_goTypes = []any{
 	(*NominationAddRequest)(nil),    // 0: roster.NominationAddRequest
 	(*NominationGetRequest)(nil),    // 1: roster.NominationGetRequest
@@ -1917,56 +1984,60 @@ var file_app_nomination_svc_g_proto_goTypes = []any{
 	(*NominationWatchRequest)(nil),  // 11: roster.NominationWatchRequest
 	(*NominationWatchResponse)(nil), // 12: roster.NominationWatchResponse
 	(*NominationWatchItem)(nil),     // 13: roster.NominationWatchItem
-	(*TenantRef)(nil),               // 14: roster.TenantRef
-	(*HolderRef)(nil),               // 15: roster.HolderRef
-	(*timestamppb.Timestamp)(nil),   // 16: google.protobuf.Timestamp
-	(*TenantSelect)(nil),            // 17: roster.TenantSelect
-	(*HolderSelect)(nil),            // 18: roster.HolderSelect
-	(*patchpb.Patch)(nil),           // 19: patch.Patch
-	(*Nomination)(nil),              // 20: roster.Nomination
+	nil,                             // 14: roster.NominationAddRequest.LabelsEntry
+	nil,                             // 15: roster.NominationPatchRequest.LabelsEntry
+	(*TenantRef)(nil),               // 16: roster.TenantRef
+	(*HolderRef)(nil),               // 17: roster.HolderRef
+	(*timestamppb.Timestamp)(nil),   // 18: google.protobuf.Timestamp
+	(*TenantSelect)(nil),            // 19: roster.TenantSelect
+	(*HolderSelect)(nil),            // 20: roster.HolderSelect
+	(*patchpb.Patch)(nil),           // 21: patch.Patch
+	(*Nomination)(nil),              // 22: roster.Nomination
 }
 var file_app_nomination_svc_g_proto_depIdxs = []int32{
-	14, // 0: roster.NominationAddRequest.tenant:type_name -> roster.TenantRef
-	15, // 1: roster.NominationAddRequest.acts_as:type_name -> roster.HolderRef
-	16, // 2: roster.NominationAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 3: roster.NominationGetRequest.ref:type_name -> roster.NominationRef
-	4,  // 4: roster.NominationGetRequest.select:type_name -> roster.NominationSelect
-	3,  // 5: roster.NominationRef.borrower:type_name -> roster.NominationRefByBorrower
-	14, // 6: roster.NominationRefByBorrower.tenant:type_name -> roster.TenantRef
-	17, // 7: roster.NominationSelect.tenant:type_name -> roster.TenantSelect
-	18, // 8: roster.NominationSelect.acts_as:type_name -> roster.HolderSelect
-	2,  // 9: roster.NominationPatchRequest.ref:type_name -> roster.NominationRef
-	15, // 10: roster.NominationPatchRequest.acts_as:type_name -> roster.HolderRef
-	16, // 11: roster.NominationPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 12: roster.NominationApplyRequest.ref:type_name -> roster.NominationRef
-	19, // 13: roster.NominationApplyRequest.patch:type_name -> patch.Patch
-	10, // 14: roster.NominationListRequest.filters:type_name -> roster.NominationFilter
-	20, // 15: roster.NominationListResponse.items:type_name -> roster.Nomination
-	2,  // 16: roster.NominationFilter.ref:type_name -> roster.NominationRef
-	14, // 17: roster.NominationFilter.tenant:type_name -> roster.TenantRef
-	15, // 18: roster.NominationFilter.acts_as:type_name -> roster.HolderRef
-	10, // 19: roster.NominationWatchRequest.filters:type_name -> roster.NominationFilter
-	13, // 20: roster.NominationWatchResponse.items:type_name -> roster.NominationWatchItem
-	20, // 21: roster.NominationWatchItem.value:type_name -> roster.Nomination
-	0,  // 22: roster.NominationService.Add:input_type -> roster.NominationAddRequest
-	1,  // 23: roster.NominationService.Get:input_type -> roster.NominationGetRequest
-	5,  // 24: roster.NominationService.Patch:input_type -> roster.NominationPatchRequest
-	6,  // 25: roster.NominationService.Apply:input_type -> roster.NominationApplyRequest
-	2,  // 26: roster.NominationService.Erase:input_type -> roster.NominationRef
-	8,  // 27: roster.NominationService.List:input_type -> roster.NominationListRequest
-	11, // 28: roster.NominationService.Watch:input_type -> roster.NominationWatchRequest
-	20, // 29: roster.NominationService.Add:output_type -> roster.Nomination
-	20, // 30: roster.NominationService.Get:output_type -> roster.Nomination
-	20, // 31: roster.NominationService.Patch:output_type -> roster.Nomination
-	20, // 32: roster.NominationService.Apply:output_type -> roster.Nomination
-	7,  // 33: roster.NominationService.Erase:output_type -> roster.NominationEraseResponse
-	9,  // 34: roster.NominationService.List:output_type -> roster.NominationListResponse
-	12, // 35: roster.NominationService.Watch:output_type -> roster.NominationWatchResponse
-	29, // [29:36] is the sub-list for method output_type
-	22, // [22:29] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	16, // 0: roster.NominationAddRequest.tenant:type_name -> roster.TenantRef
+	14, // 1: roster.NominationAddRequest.labels:type_name -> roster.NominationAddRequest.LabelsEntry
+	17, // 2: roster.NominationAddRequest.acts_as:type_name -> roster.HolderRef
+	18, // 3: roster.NominationAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 4: roster.NominationGetRequest.ref:type_name -> roster.NominationRef
+	4,  // 5: roster.NominationGetRequest.select:type_name -> roster.NominationSelect
+	3,  // 6: roster.NominationRef.borrower:type_name -> roster.NominationRefByBorrower
+	16, // 7: roster.NominationRefByBorrower.tenant:type_name -> roster.TenantRef
+	19, // 8: roster.NominationSelect.tenant:type_name -> roster.TenantSelect
+	20, // 9: roster.NominationSelect.acts_as:type_name -> roster.HolderSelect
+	2,  // 10: roster.NominationPatchRequest.ref:type_name -> roster.NominationRef
+	15, // 11: roster.NominationPatchRequest.labels:type_name -> roster.NominationPatchRequest.LabelsEntry
+	17, // 12: roster.NominationPatchRequest.acts_as:type_name -> roster.HolderRef
+	18, // 13: roster.NominationPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 14: roster.NominationApplyRequest.ref:type_name -> roster.NominationRef
+	21, // 15: roster.NominationApplyRequest.patch:type_name -> patch.Patch
+	10, // 16: roster.NominationListRequest.filters:type_name -> roster.NominationFilter
+	22, // 17: roster.NominationListResponse.items:type_name -> roster.Nomination
+	2,  // 18: roster.NominationFilter.ref:type_name -> roster.NominationRef
+	16, // 19: roster.NominationFilter.tenant:type_name -> roster.TenantRef
+	17, // 20: roster.NominationFilter.acts_as:type_name -> roster.HolderRef
+	10, // 21: roster.NominationWatchRequest.filters:type_name -> roster.NominationFilter
+	13, // 22: roster.NominationWatchResponse.items:type_name -> roster.NominationWatchItem
+	22, // 23: roster.NominationWatchItem.value:type_name -> roster.Nomination
+	0,  // 24: roster.NominationService.Add:input_type -> roster.NominationAddRequest
+	1,  // 25: roster.NominationService.Get:input_type -> roster.NominationGetRequest
+	5,  // 26: roster.NominationService.Patch:input_type -> roster.NominationPatchRequest
+	6,  // 27: roster.NominationService.Apply:input_type -> roster.NominationApplyRequest
+	2,  // 28: roster.NominationService.Erase:input_type -> roster.NominationRef
+	8,  // 29: roster.NominationService.List:input_type -> roster.NominationListRequest
+	11, // 30: roster.NominationService.Watch:input_type -> roster.NominationWatchRequest
+	22, // 31: roster.NominationService.Add:output_type -> roster.Nomination
+	22, // 32: roster.NominationService.Get:output_type -> roster.Nomination
+	22, // 33: roster.NominationService.Patch:output_type -> roster.Nomination
+	22, // 34: roster.NominationService.Apply:output_type -> roster.Nomination
+	7,  // 35: roster.NominationService.Erase:output_type -> roster.NominationEraseResponse
+	9,  // 36: roster.NominationService.List:output_type -> roster.NominationListResponse
+	12, // 37: roster.NominationService.Watch:output_type -> roster.NominationWatchResponse
+	31, // [31:38] is the sub-list for method output_type
+	24, // [24:31] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_app_nomination_svc_g_proto_init() }
@@ -1987,7 +2058,7 @@ func file_app_nomination_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_nomination_svc_g_proto_rawDesc), len(file_app_nomination_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

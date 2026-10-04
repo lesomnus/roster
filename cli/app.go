@@ -169,7 +169,7 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 	}
 	said := []string{}
 
-	who, made, err := holderNamed(ctx, s, at, name)
+	who, made, err := holderNamed(ctx, s, at, name, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +202,7 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 	} else {
 		said = append(said, fmt.Sprintf("%s already has role %s; left as the tenant has it.", tenant, AppRole(name)))
 	}
-	if err := ensureBinding(ctx, s, role, who); err != nil {
+	if err := ensureBinding(ctx, s, role, who, nil); err != nil {
 		return nil, err
 	}
 

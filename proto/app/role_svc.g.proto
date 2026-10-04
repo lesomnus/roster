@@ -48,6 +48,7 @@ message RoleAddRequest {
   string alias = 4 [features.field_presence = IMPLICIT];
   string name = 5 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
   repeated string methods = 8;
   google.protobuf.Timestamp date_created = 15;
 }
@@ -76,6 +77,7 @@ message RoleSelect {
   bool alias = 4;
   bool name = 5;
   bool desc = 6;
+  bool labels = 7;
   bool methods = 8;
   bool date_updated = 13;
   bool date_erased = 14;
@@ -87,6 +89,7 @@ message RolePatchRequest {
   string alias = 8;
   string name = 10;
   string desc = 12;
+  map<string, string> labels = 14;
   repeated string methods = 16;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
@@ -160,6 +163,7 @@ message BindingAddRequest {
   SiteRef site = 3;
   HolderRef holder = 8;
   GroupRef group = 9;
+  map<string, string> labels = 7;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -180,6 +184,7 @@ message BindingSelect {
   SiteSelect site = 3;
   HolderSelect holder = 8;
   GroupSelect group = 9;
+  bool labels = 7;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -187,6 +192,7 @@ message BindingSelect {
 
 message BindingPatchRequest {
   BindingRef ref = 1;
+  map<string, string> labels = 14;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.

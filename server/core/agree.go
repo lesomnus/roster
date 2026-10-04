@@ -319,6 +319,9 @@ func (s coreRole) Add(ctx context.Context, req *app.RoleAddRequest) (*app.Role, 
 // same call: `mayGrant` refuses anybody who does not already hold everything,
 // and holding everything is the only way to hand it out.
 func (s coreRole) Patch(ctx context.Context, req *app.RolePatchRequest) (*app.Role, error) {
+	if err := s.declaredRole(ctx, req.GetRef()); err != nil {
+		return nil, err
+	}
 	// Read off the row rather than taken from the request: `Role.site` is
 	// immutable, so the request has no say in it, and asking the request would
 	// be asking the caller which rules to hold them to.

@@ -41,6 +41,14 @@ The suffixes it serves are the tenants that nominated its key, read at start.
 A tenant running its own copy gives it that tenant's `rt_` instead,
 `--key contoso=rt_…` or `ROSTER_LDAP_KEY_CONTOSO`.
 
+**A bind holds a connection to one tenant.** One process serving many tenants
+answers each connection as the tenant its bind DN is in: the root DSE names that
+suffix and no other -- and none before a bind, since a suffix is a tenant's name --
+a search from the root walks that tenant alone, and a search under another
+tenant's suffix is `noSuchObject`, the answer for a name that is not there. It
+was once only *whether* the connection was bound, and a person bound in contoso
+searched `o=fabrikam` and read fabrikam's people.
+
 Or as a block in `roster.yaml`, which puts it in the same process as the server
 (`operating.md` § "One process, or four" is the trade -- this process holds tenant
 keys and faces a network of appliances, so a deployment that cares keeps it in a
@@ -437,5 +445,5 @@ comment beside what it decides.
 | --- | --- | --- |
 | L0 | the wire | **done** — `ldap/wire`: the loop, simple bind, search, unbind, abandon, StartTLS (and LDAPS as the listener's), WhoAmI, paging, the refusal table. Proved against `go-ldap` as the client and by hand for what it has no call for (abandon); under the race detector |
 | L1 | people | **done** — `ldap/`: the tree above the people, `ou=people` with every attribute in the table (`mail` verified only, disabled absent), bind in all three modes with roster's `ok` as the second-factor rule, search planned into `Holder.Get`/`Holder.Search`/`Email.Get`/`Holder.List` and evaluated off the BER tree, paging on roster's own cursor, `uid` and `mail` found without regard to case. `roster ldap serve` with `--key`/`ROSTER_LDAP_KEY_`, `--base`, `--bind`, `--tls`, `--listen-tls`, `--require-tls`. The import check learned `ldap/`. Eight tests in `ldap/`, one in `cmd/` |
-| L2 | groups, teams, sites | **done** — `ou=groups` as `groupOfNames` with `member` the DNs of people in the tree (the disabled are not named), `ou=sites/ou=<site>/ou=teams/cn=<team>` and `ou=teams` under the suffix for a team with no site, `memberOf` on a person from the other end, `(memberOf=…)` planned into one membership list. A subtree search from a suffix or the root pages in stages -- people on roster's cursor, then the groups, then the sites -- carried in the cookie, so a client paging the whole server sees every entry once. `TestGroupsTeamsAndSitesAreTheTree` |
+| L2 | groups, teams, sites | **done** — `ou=groups` as `groupOfNames` with `member` the DNs of people in the tree (the disabled are not named), `ou=sites/ou=<site>/ou=teams/cn=<team>` and `ou=teams` under the suffix for a team with no site, `memberOf` on a person from the other end, `(memberOf=…)` planned into one membership list. A subtree search from a suffix or the root pages in stages -- people on roster's cursor, then the groups, then the sites -- carried in the cookie, so a client paging from the root sees every entry of the tenant it is bound in once. `TestGroupsTeamsAndSitesAreTheTree` |
 | L3 | shipped | **done** — the `ldap` compose service on `1389` with its key from `customer.sh`, `operating.md` § "One process, or four", `usage/ways-in.md` on app passwords, `baseline.md` § A directory over LDAP, the account page's *mint an app password* form and its spec, and this file as a description |

@@ -158,6 +158,24 @@ func holderOf(ctx context.Context, at app.Server, in pdid.Id, alias string) (pdi
 		Tenant: app.TenantRef_builder{Id: in.Bytes()}.Build(),
 		Alias:  alias,
 	}.Build())
+	if status.Code(err) == codes.AlreadyExists {
+		// Another process made it between the read and the write -- an init
+		// container and a shell running the same command at once. Theirs is
+		// the row, and it is read rather than refused.
+		v, err := at.Holder().Get(ctx, app.HolderGetRequest_builder{
+			Ref: app.HolderRef_builder{
+				Slug: app.HolderRefBySlug_builder{
+					Alias:  z.Ptr(alias),
+					Tenant: app.TenantRef_builder{Id: in.Bytes()}.Build(),
+				}.Build(),
+			}.Build(),
+		}.Build())
+		if err != nil {
+			return pdid.Nil, err
+		}
+
+		return pdid.From(v.GetId())
+	}
 	if err != nil {
 		return pdid.Nil, err
 	}

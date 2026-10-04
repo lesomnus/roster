@@ -826,6 +826,23 @@ func (m *BindingMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
 	}
 }
 
+// OldLabels returns the old "labels" field's value of the Binding entity.
+// If the Binding object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *BindingMutation) OldLabels(ctx context.Context) (v map[string]string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLabels is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLabels requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the Binding entity.
 // If the Binding object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -950,6 +967,8 @@ func (m *BindingMutation) OldGroupId(ctx context.Context) (v uuid.UUID, err erro
 // database failed.
 func (m *BindingMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case binding.FieldLabels:
+		return m.OldLabels(ctx)
 	case binding.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case binding.FieldDateErased:
@@ -4786,6 +4805,23 @@ func (m *NominationMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
 	}
 }
 
+// OldLabels returns the old "labels" field's value of the Nomination entity.
+// If the Nomination object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NominationMutation) OldLabels(ctx context.Context) (v map[string]string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLabels is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLabels requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
 // OldName returns the old "name" field's value of the Nomination entity.
 // If the Nomination object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -4910,6 +4946,8 @@ func (m *NominationMutation) OldActsAsId(ctx context.Context) (v uuid.UUID, err 
 // database failed.
 func (m *NominationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case nomination.FieldLabels:
+		return m.OldLabels(ctx)
 	case nomination.FieldName:
 		return m.OldName(ctx)
 	case nomination.FieldBorrowerId:
@@ -5343,6 +5381,23 @@ func (m *RoleMutation) OldDesc(ctx context.Context) (v string, err error) {
 	return oldValue.Desc, nil
 }
 
+// OldLabels returns the old "labels" field's value of the Role entity.
+// If the Role object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoleMutation) OldLabels(ctx context.Context) (v map[string]string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLabels is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLabels requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabels: %w", err)
+	}
+	return oldValue.Labels, nil
+}
+
 // OldMethods returns the old "methods" field's value of the Role entity.
 // If the Role object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -5456,6 +5511,8 @@ func (m *RoleMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldName(ctx)
 	case role.FieldDesc:
 		return m.OldDesc(ctx)
+	case role.FieldLabels:
+		return m.OldLabels(ctx)
 	case role.FieldMethods:
 		return m.OldMethods(ctx)
 	case role.FieldDateUpdated:

@@ -12,6 +12,8 @@ const (
 	Label = "nomination"
 	// FieldId holds the string denoting the id field in the database.
 	FieldId = "id"
+	// FieldLabels holds the string denoting the labels field in the database.
+	FieldLabels = "labels"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldBorrowerId holds the string denoting the borrower_id field in the database.
@@ -51,6 +53,7 @@ const (
 // Columns holds all SQL columns for nomination fields.
 var Columns = []string{
 	FieldId,
+	FieldLabels,
 	FieldName,
 	FieldBorrowerId,
 	FieldDateUpdated,

@@ -404,12 +404,12 @@ func (a *app) callback(w http.ResponseWriter, r *http.Request) {
 			held[k] = fmt.Sprint(v)
 		}
 	}
-	if gs, ok := claims["groups"].([]any); ok && len(gs) > 0 {
+	if gs, ok := claims["teams"].([]any); ok && len(gs) > 0 {
 		vs := make([]string, 0, len(gs))
 		for _, g := range gs {
 			vs = append(vs, fmt.Sprint(g))
 		}
-		held["groups"] = strings.Join(vs, ", ")
+		held["teams"] = strings.Join(vs, ", ")
 	}
 
 	_, cookie, err := a.sessions.Mint(ctx, authsession.Session{
@@ -505,7 +505,7 @@ func (a *app) who(r *http.Request) ([][2]string, error) {
 	}
 
 	out := [][2]string{{"sub", v.Id}}
-	for _, k := range []string{"preferred_username", "name", "email", "groups", "iss", "aud"} {
+	for _, k := range []string{"preferred_username", "name", "email", "teams", "iss", "aud"} {
 		if s, ok := v.Held[k]; ok && s != "" {
 			out = append(out, [2]string{k, s})
 		}

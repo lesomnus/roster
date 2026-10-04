@@ -272,7 +272,21 @@ func (s coreApiKey) List(ctx context.Context, req *app.ApiKeyListRequest) (*app.
 		}
 	}
 
-	return s.ApiKeyServiceServer.List(ctx, req)
+	res, err := s.ApiKeyServiceServer.List(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Without the verifier, on every stack. The served ones strip it on the way
+	// out already; the unwalled one does not, because `keys.lookup` reads it
+	// there -- with `Get`, by the hash. Nothing finds a key by listing, so a
+	// list has no use for it, and `roster api-key ls -o json` on the box was
+	// printing every key's.
+	for _, v := range res.GetItems() {
+		v.SetSecret(nil)
+	}
+
+	return res, nil
 }
 
 func (s coreApiKey) Erase(ctx context.Context, req *app.ApiKeyRef) (*app.ApiKeyEraseResponse, error) {

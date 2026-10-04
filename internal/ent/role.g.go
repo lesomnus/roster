@@ -29,6 +29,7 @@ func (e *Role) Proto() *rstr.Role {
 	x.SetAlias(e.Alias)
 	x.SetName(e.Name)
 	x.SetDesc(e.Desc)
+	x.SetLabels(e.Labels)
 	x.SetMethods(e.Methods)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
@@ -68,6 +69,7 @@ func (e *Binding) Proto() *rstr.Binding {
 		r.SetId(v[:])
 		x.SetGroup(r)
 	}
+	x.SetLabels(e.Labels)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

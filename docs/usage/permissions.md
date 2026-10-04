@@ -183,7 +183,7 @@ Joining that group is then refused to anybody who does not hold
 whose role from `tenant add` is `/roster.*/*` and covers no other app's methods:
 somebody has to be bound the external permission -- or a pattern over it -- before
 they can hand it out, and a roster operator on the admin listener is who starts
-that. The same is true of every app's own methods, `/hday.oasys.*/*` included. A
+that. The same is true of every app's own methods, `/hday.kamino.*/*` included. A
 team carries no such binding, so map an external permission to a group and never
 to a team.
 

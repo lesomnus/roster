@@ -91,6 +91,16 @@ func GroupId(v uuid.UUID) predicate.Binding {
 	return predicate.Binding(sql.FieldEQ(FieldGroupId, v))
 }
 
+// LabelsIsNil applies the IsNil predicate on the "labels" field.
+func LabelsIsNil() predicate.Binding {
+	return predicate.Binding(sql.FieldIsNull(FieldLabels))
+}
+
+// LabelsNotNil applies the NotNil predicate on the "labels" field.
+func LabelsNotNil() predicate.Binding {
+	return predicate.Binding(sql.FieldNotNull(FieldLabels))
+}
+
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
 func DateUpdatedEQ(v time.Time) predicate.Binding {
 	return predicate.Binding(sql.FieldEQ(FieldDateUpdated, v))

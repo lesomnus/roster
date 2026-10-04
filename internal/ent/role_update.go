@@ -72,6 +72,18 @@ func (_u *RoleUpdate) SetNillableDesc(v *string) *RoleUpdate {
 	return _u
 }
 
+// SetLabels sets the "labels" field.
+func (_u *RoleUpdate) SetLabels(v map[string]string) *RoleUpdate {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *RoleUpdate) ClearLabels() *RoleUpdate {
+	_u.mutation.ClearLabels()
+	return _u
+}
+
 // SetMethods sets the "methods" field.
 func (_u *RoleUpdate) SetMethods(v []string) *RoleUpdate {
 	_u.mutation.SetMethods(v)
@@ -191,6 +203,12 @@ func (_u *RoleUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(role.FieldDesc, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(role.FieldLabels, field.TypeJson, value)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(role.FieldLabels, field.TypeJson)
+	}
 	if value, ok := _u.mutation.Methods(); ok {
 		_spec.SetField(role.FieldMethods, field.TypeJson, value)
 	}
@@ -275,6 +293,18 @@ func (_u *RoleUpdateOne) SetNillableDesc(v *string) *RoleUpdateOne {
 	if v != nil {
 		_u.SetDesc(*v)
 	}
+	return _u
+}
+
+// SetLabels sets the "labels" field.
+func (_u *RoleUpdateOne) SetLabels(v map[string]string) *RoleUpdateOne {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *RoleUpdateOne) ClearLabels() *RoleUpdateOne {
+	_u.mutation.ClearLabels()
 	return _u
 }
 
@@ -426,6 +456,12 @@ func (_u *RoleUpdateOne) sqlSave(ctx context.Context) (_node *Role, err error) {
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(role.FieldDesc, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(role.FieldLabels, field.TypeJson, value)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(role.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Methods(); ok {
 		_spec.SetField(role.FieldMethods, field.TypeJson, value)

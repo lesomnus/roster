@@ -613,10 +613,11 @@ Three properties, each deliberate:
 - **It writes as somebody.** A `provisioner` holder in the control plane, framed
   as the actor of every write, so the trail names which rows a file wrote. It has
   no password and no key.
-- **What it writes, it owns.** A declared row carries `roster.declared` and an
-  edit from a port is refused. The cost is real -- fixing a declared row during an
-  outage becomes a git round trip -- so a deployment that would rather have the
-  text field declares fewer things.
+- **What it writes, it owns.** A declared row carries `roster.declared` and is
+  **read-only** at a port: an edit is refused, and so is an erase, which used to
+  pass and came back at the next start. The cost is real -- fixing a declared row
+  during an outage becomes a git round trip -- so a deployment that would rather
+  have the text field declares fewer things.
 
 **A tenant's settings are applied field by field.** `config.password` and
 `config.front_door` are how a tenant signs in -- the switch `Vouch.Verify`
@@ -631,6 +632,39 @@ What is **not** declarable is `Holder`, `Credential`, `Identity` and `Email`:
 people and the ways into their accounts. A file that made those is a file that
 grants access to whoever can write it. `Role` and `Binding` are the same argument
 one step out and are left out for now rather than refused.
+
+### Declared rows
+
+Two things declare rows: this file, and the configuration that turns on one of
+roster's own front doors -- `login provision` and the in-process account app
+write the front door's holder, role, binding and nomination in every tenant with
+a name, labelled `roster.declared: config: login` / `config: account`. Either
+way the row is read-only to everybody who reaches it through a port: a tenant
+administrator, the user console, the admin console.
+
+Turning one off is two steps, and neither is at a console:
+
+1. Take it out of where it is declared -- the resource out of the file; the front
+   door out of the configuration and its manifests (the init container
+   included) -- and deploy.
+2. Erase what is left, from a shell on the box: `roster ... erase` reading the
+   database directly is the deployment's own work, which a declared row allows.
+
+### The CLI on the box is the deployment
+
+`roster <entity> <verb>` with `--config` opens the databases itself and calls
+the servers in the same process, with no wall and no gate -- there is no caller
+to ask anything of, so there is no frame, and the trail names nobody for what it
+writes (`resources apply` is the exception: it frames itself as `provisioner`).
+It is what a deployment does before anybody can sign in -- `init`, migrations,
+`login provision` -- and the way out of a broken one.
+
+It is not a door that can be locked from inside roster: whoever has a shell in
+the pod has the database files and the configuration, keys included, and could
+write the rows without the CLI. What guards it is who may open that shell
+(`kubectl exec` on the namespace). Day-to-day work goes over the wire instead --
+`client.addr` with your own credential (`roster sign-in` makes one for a
+terminal) -- where the gate decides and the trail names you.
 
 ## Passwords, and what closes an account
 

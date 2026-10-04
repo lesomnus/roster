@@ -88,7 +88,7 @@ func TestAProductAppSignsSomebodyInAndKeepsItsOwnSession(t *testing.T) {
 	p.Claims = map[string]any{
 		"preferred_username": "erin",
 		"name":               "Erin of contoso",
-		"groups":             []any{"ops", "release"},
+		"teams":              []any{"ops", "release"},
 	}
 
 	_, s := serve(t, p)

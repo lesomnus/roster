@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/nomination.proto.
  */
 export const file_app_nomination: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvbm9taW5hdGlvbi5wcm90bxIGcm9zdGVyIv4DCgpOb21pbmF0aW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESDAoEbmFtZRgFIAEoCRIdCgtib3Jyb3dlcl9pZBgIIAEoDEII6oIWBBBAQAESJQoHYWN0c19hcxgJIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBPKCFgASOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOqgByvwVURICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGikSCGJvcnJvd2VyGgoKBnRlbmFudBACGg8KC2JvcnJvd2VyX2lkEAgwAYq7Fk8IGzJJChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudBoNCgtib3Jyb3dlcl9pZBoJCgdhY3RzX2FzIBQoZDoAQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChRhcHAvbm9taW5hdGlvbi5wcm90bxIGcm9zdGVyIt0ECgpOb21pbmF0aW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESLgoGbGFiZWxzGAcgAygLMh4ucm9zdGVyLk5vbWluYXRpb24uTGFiZWxzRW50cnkSDAoEbmFtZRgFIAEoCRIdCgtib3Jyb3dlcl9pZBgIIAEoDEII6oIWBBBAQAESJQoHYWN0c19hcxgJIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBPKCFgASOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6qAHK/BVREgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaKRIIYm9ycm93ZXIaCgoGdGVuYW50EAIaDwoLYm9ycm93ZXJfaWQQCDABirsWTwgbMkkKEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGdGVuYW50Gg0KC2JvcnJvd2VyX2lkGgkKB2FjdHNfYXMgFChkOgBCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Nomination is who a deployment key acts as in one tenant.
@@ -74,6 +74,19 @@ export type Nomination = Message<"roster.Nomination"> & {
    * @generated from field: roster.Tenant tenant = 2;
    */
   tenant?: Tenant | undefined;
+
+  /**
+   * Whatever the deployment keeps about this row that the schema does not name.
+   *
+   * Number seven, the one an entity spends on labels (`host.proto`). The
+   * nominations roster's own front doors write for themselves at start -- the
+   * Login App's, the account app's -- are declared by the deployment's
+   * configuration and carry `roster.declared`: a tenant does not end them, and
+   * neither does anybody else but the deployment (`server/core/declared.go`).
+   *
+   * @generated from field: map<string, string> labels = 7;
+   */
+  labels: { [key: string]: string };
 
   /**
    * What a person reading the tenant's nominations calls the app -- `kamino`.
