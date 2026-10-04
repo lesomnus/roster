@@ -5,6 +5,7 @@
   "grant_types": ["authorization_code", "refresh_token"],
   "response_types": ["code"],
   "scope": "openid offline profile email",
+  "audience": ["urn:roster:demo:api"],
 
   "token_endpoint_auth_method": "client_secret_basic",
 
