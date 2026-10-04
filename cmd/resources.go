@@ -607,6 +607,26 @@ func allowProvisioner(ctx context.Context, s *Server, who pdid.Id) error {
 		return fmt.Errorf("resources: the role a provisioner is bound to: %w", err)
 	}
 
+	// Looked for first, because nothing refuses a second: `Binding` has no
+	// unique index to answer `AlreadyExists` with, so this added one more on
+	// every start -- seven on one deployment's control plane before anybody
+	// counted. `cli`'s `ensureBinding` learned the same thing about the Login
+	// App's.
+	vs, err := s.Ungated.Binding().List(ctx, app.BindingListRequest_builder{
+		Filters: []*app.BindingFilter{app.BindingFilter_builder{
+			Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		}.Build()},
+	}.Build())
+	if err != nil {
+		return fmt.Errorf("resources: the provisioner's binding: %w", err)
+	}
+	for _, v := range vs.GetItems() {
+		if len(v.GetSite().GetId()) == 0 {
+			return nil
+		}
+	}
+
 	_, err = s.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
 		Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
 		Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),

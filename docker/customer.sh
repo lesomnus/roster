@@ -28,6 +28,14 @@ key="${ACCOUNT_STATE}/account.key"
 if [ -e "${key}" ]; then
 	exit 0
 fi
+# A volume the rig before #76 seeded: its marker was the customer's key, and
+# running the seed again over it fails at `tenant add` -- leaving the account
+# app and the directory waiting for key files nothing will write. Said, with
+# what to do, rather than that.
+if [ -e "${ACCOUNT_STATE}/${SEED_CUSTOMER}.key" ]; then
+	echo "roster: this volume was seeded by an older rig; \`docker compose down -v\` and bring it up again" >&2
+	exit 1
+fi
 mkdir -p "${ACCOUNT_STATE}"
 
 echo "roster: standing ${SEED_CUSTOMER} up, once" >&2

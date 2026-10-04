@@ -791,3 +791,30 @@ func TestGroupsTeamsAndSitesAreTheTree(t *testing.T) {
 		require.True(t, goldap.IsErrorWithCode(err, goldap.LDAPResultNoSuchObject), "%v", err)
 	})
 }
+
+// TestOneTenantCannotStopTheDirectoryForTheOthers is a tenant disabling the
+// holder it nominated for the directory: its own row, its own decision.
+//
+// Reading the directory's nominations failed on the first tenant that could
+// not be read through, which was every tenant's directory -- and in `roster
+// serve`, the server's errgroup with it. It is skipped, and said.
+func TestOneTenantCannotStopTheDirectoryForTheOthers(t *testing.T) {
+	x := require.New(t)
+	d := stand(t)
+	ctx := t.Context()
+
+	h, err := d.s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+		Ref: rstr.HolderRef_builder{Slug: rstr.HolderRefBySlug_builder{
+			Alias: proto.String("directory"), Tenant: rstr.TenantRef_builder{Id: d.fabrikam.Bytes()}.Build(),
+		}.Build()}.Build(),
+		Select: rstr.HolderSelect_builder{}.Build(),
+	}.Build())
+	x.NoError(err)
+	_, err = d.s.Ungated.Holder().Disable(ctx, rstr.HolderDisableRequest_builder{Ref: rstr.HolderRef_builder{Id: h.GetId()}.Build()}.Build())
+	x.NoError(err)
+
+	c := d.serve(t, ldap.BindKey, nil)
+	root := search(t, c, "", goldap.ScopeBaseObject, "(objectClass=*)", "+")
+	x.Len(root, 1)
+	x.Equal([]string{"o=contoso"}, root[0].GetAttributeValues("namingContexts"))
+}

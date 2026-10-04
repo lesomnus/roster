@@ -1547,11 +1547,16 @@ type DelegationExchangeRequest_builder struct {
 	// Who the token is for: the holder the receiving app is in this tenant -- the
 	// one its own key is narrowed to when it introspects.
 	Audience *HolderRef
-	// What the token is for, at the receiver: its own methods, which roster does
-	// not know and does not need to. The receiver narrows by them as it would by
-	// a key's; what the caller may actually do there is still the receiver's to
-	// decide, with `HolderService/Reaches`. Required, for `Delegate`'s reason: a
-	// token that allows nothing opens no door.
+	// What the token is for, at the receiver: usually its own methods. The
+	// receiver narrows by them as it would by a key's; what the caller may
+	// actually do there is still the receiver's to decide, with
+	// `HolderService/Reaches`. Required, for `Delegate`'s reason: a token that
+	// allows nothing opens no door.
+	//
+	// Held to what the caller's own credential allows, as `Vouch.Delegate`
+	// holds its tokens: the receiver may present this beside its key in
+	// `roster-as`, and roster answers that as the caller within these methods,
+	// whatever they name. A key attenuated to a few methods hands on no more.
 	Methods []string
 }
 

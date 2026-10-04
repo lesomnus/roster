@@ -10,6 +10,8 @@ import (
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/pdid"
@@ -167,6 +169,12 @@ func mintingOf(cl *xli.Command) (minting, error) {
 		// has to be said: see [narrowedFlag].
 		return minting{}, errors.New("--allow: a key that allows nothing is not a key; name the methods, or say --narrowed")
 	}
+	if len(methods) > 0 && narrowed {
+		// Two keys in one: narrowed is nothing as itself, and `--allow` is
+		// something as itself across every tenant. Taken silently, the second
+		// wins and the key is wider than the word on the command line.
+		return minting{}, errors.New("--narrowed: a narrowed key allows nothing as itself; drop --allow, or drop --narrowed")
+	}
 
 	m := minting{name: name, methods: methods}
 	if v, _ := flg.Find[string](cl, "expires"); v != "" {
@@ -200,6 +208,9 @@ func (m minting) mint(ctx context.Context, at app.Server, who pdid.Id, prefix st
 		Methods:     m.methods,
 		DateExpires: m.expires,
 	}.Build())
+	if status.Code(err) == codes.AlreadyExists {
+		return fmt.Errorf("%s already has a key called %q; revoke it, or name this one with --name", whose, m.name)
+	}
 	if err != nil {
 		return err
 	}
@@ -212,9 +223,15 @@ func (m minting) mint(ctx context.Context, at app.Server, who pdid.Id, prefix st
 	// To stdout and nowhere else. It is not logged, because a credential that
 	// reaches a log has been given away.
 	fmt.Fprintf(os.Stdout, "%s\n", token)
-	fmt.Fprintf(os.Stderr,
-		"key %s for %s, allowing %d method(s). This is the only time it is shown.\n",
-		k, whose, len(m.methods))
+	if len(m.methods) == 0 {
+		fmt.Fprintf(os.Stderr,
+			"key %s for %s, narrowed: nothing as itself, and in a tenant whatever that tenant's nomination holds. "+
+				"This is the only time it is shown.\n", k, whose)
+	} else {
+		fmt.Fprintf(os.Stderr,
+			"key %s for %s, allowing %d method(s). This is the only time it is shown.\n",
+			k, whose, len(m.methods))
+	}
 
 	if v := cmd.Widest(m.methods); v != "" {
 		fmt.Fprintf(os.Stderr, "\n%s\n", v)

@@ -12,6 +12,10 @@
  * is drawn by its `name`, the app's name `install` wrote, and by the holder it
  * acts as, which is this tenant's own.
  *
+ * What ending one does not do is said on the screen rather than left to be
+ * found: roster's own apps are nominated again at every start (`cli/login.go`,
+ * `nominateAs`), and an app's own tenant key outlives its nomination.
+ *
  * @module
  */
 
@@ -57,6 +61,12 @@ function AppList(props: { tenant: Uint8Array; may: (m: string) => boolean }): Re
 				with what you bind to that holder and nothing else, and everything it does
 				here is in your trail under that holder&apos;s name. Ending it stops the app
 				acting here from its next request.
+			</p>
+			<p className="note">
+				Roster&apos;s own apps -- the sign-in page, the account page, a directory -- are
+				put back the next time roster starts, because signing in here goes through
+				them; to keep one off, ask whoever runs roster. And ending a nomination ends
+				only that: a key an app holds in this tenant itself is revoked on its own.
 			</p>
 
 			{items.length === 0 && <p className="none">no apps act in this tenant</p>}

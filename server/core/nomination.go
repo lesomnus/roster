@@ -41,6 +41,9 @@ func (s Core) Nomination() app.NominationServiceServer {
 // it does everywhere in that file: `roster login provision` nominates the
 // holder it made.
 func (s coreNomination) Add(ctx context.Context, req *app.NominationAddRequest) (*app.Nomination, error) {
+	if err := byATenant(ctx); err != nil {
+		return nil, err
+	}
 	if len(req.GetBorrowerId()) == 0 {
 		return nil, pderr.Invalidf("borrower_id", "the control-plane holder whose keys this nominates for; a nomination for nobody answers nothing")
 	}
@@ -66,6 +69,9 @@ func (s coreNomination) Add(ctx context.Context, req *app.NominationAddRequest) 
 // alone, which is where every general write in this package stands and why
 // (`escalate.go`, "the one place it is not").
 func (s coreNomination) Patch(ctx context.Context, req *app.NominationPatchRequest) (*app.Nomination, error) {
+	if err := byATenant(ctx); err != nil {
+		return nil, err
+	}
 	if who := req.GetActsAs(); who != nil {
 		v, err := s.Next().Nomination().Get(ctx, app.NominationGetRequest_builder{
 			Ref:    req.GetRef(),
@@ -85,6 +91,33 @@ func (s coreNomination) Patch(ctx context.Context, req *app.NominationPatchReque
 	}
 
 	return s.NominationServiceServer.Patch(ctx, req)
+}
+
+// Erase is a tenant ending an app's nomination, and refused to a deployment
+// key as itself for [byATenant]'s reason.
+func (s coreNomination) Erase(ctx context.Context, req *app.NominationRef) (*app.NominationEraseResponse, error) {
+	if err := byATenant(ctx); err != nil {
+		return nil, err
+	}
+
+	return s.NominationServiceServer.Erase(ctx, req)
+}
+
+// byATenant refuses a deployment key answered as itself.
+//
+// That key is `frame.Everything` held to its methods, so one allowed `Add`
+// could write a nomination in any tenant -- its own holder borrowing as
+// somebody there who holds nothing, whom the reach rule lets anybody name. A
+// nomination is a tenant's decision, or the deployment's own work through the
+// unwalled server (`roster app install`), which has no frame. A key narrowed to
+// a tenant's holder is that holder and is asked what anybody there is.
+func byATenant(ctx context.Context) error {
+	if f, ok := frame.From(ctx); ok && f.Actor.Domain() == pd.ApiKeyDomain {
+		return status.Error(codes.PermissionDenied,
+			"a nomination is a tenant's to write, and a deployment key as itself is nobody in any tenant")
+	}
+
+	return nil
 }
 
 // nominatesTheirOwn refuses a nomination of somebody else's holder.

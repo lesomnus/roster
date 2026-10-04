@@ -183,6 +183,14 @@ type HolderServiceClient interface {
 	// caller, only added up. A rule that narrowed it by the caller's own reach
 	// would be an object rule over a read, which is a shape roster has not taken
 	// and does not need here.
+	//
+	// # A suspended holder reaches nothing
+	//
+	// Their bindings stay, and so would an answer read off them -- but the gate
+	// refuses every credential of theirs before it asks what they hold, so what
+	// it would decide is nothing, and that is what this says. An app checking a
+	// token roster never sees (an SSO ID token, good for its hour) has only this
+	// to learn the person was suspended from.
 	Reaches(ctx context.Context, in *HolderReachesRequest, opts ...grpc.CallOption) (*HolderReachesResponse, error)
 	// Search finds people by what is known about them -- a fragment of a name
 	// or an alias, a department, an employee number -- which is the question a
@@ -513,6 +521,14 @@ type HolderServiceServer interface {
 	// caller, only added up. A rule that narrowed it by the caller's own reach
 	// would be an object rule over a read, which is a shape roster has not taken
 	// and does not need here.
+	//
+	// # A suspended holder reaches nothing
+	//
+	// Their bindings stay, and so would an answer read off them -- but the gate
+	// refuses every credential of theirs before it asks what they hold, so what
+	// it would decide is nothing, and that is what this says. An app checking a
+	// token roster never sees (an SSO ID token, good for its hour) has only this
+	// to learn the person was suspended from.
 	Reaches(context.Context, *HolderReachesRequest) (*HolderReachesResponse, error)
 	// Search finds people by what is known about them -- a fragment of a name
 	// or an alias, a department, an employee number -- which is the question a

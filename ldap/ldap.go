@@ -200,6 +200,10 @@ func New(ctx context.Context, c Config) (*Directory, error) {
 	}
 	for alias := range c.Bases {
 		if _, ok := fronts[alias]; !ok {
+			// Refused, as everything this is told and cannot do is. Which
+			// means a suffix pinned for a tenant ties this directory's start
+			// to that tenant still fronting it -- `docs/ldap.md` says so where
+			// `--base` is described.
 			conn.Close()
 
 			return nil, fmt.Errorf("ldap: Bases: a suffix for %q, and no key or nomination for it", alias)
@@ -439,7 +443,12 @@ func (d *Directory) fronted(ctx context.Context) (map[string]*tenant, error) {
 				Select: rstr.TenantSelect_builder{Alias: proto.Bool(true)}.Build(),
 			}.Build())
 			if err != nil {
-				return nil, fmt.Errorf("ldap: the holder %s nominated for this directory cannot read %s: %w", id, id, err)
+				// The tenant's own doing -- a holder disabled, a role narrowed --
+				// so the tenant goes unfronted and the directory serves everybody
+				// else. Failing here failed the directory for every tenant.
+				d.c.Log.Warn("ldap: a tenant nominated a holder for this directory that cannot read it; not fronting it",
+					slog.String("tenant", id.String()), slog.String("err", err.Error()))
+				continue
 			}
 			t.alias = tn.GetAlias()
 			out[t.alias] = t

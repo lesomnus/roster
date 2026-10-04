@@ -142,7 +142,9 @@ func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 			}
 
 			raw = k.Holder.GetId()
-		} else if at := ArrivedAt(md); at != "" {
+		} else if at, ok := ArrivedAt(md); !ok {
+			return no()
+		} else if at != "" {
 			// A deployment key that was **narrowed** when the delegation was
 			// minted, which is what a roster-hosted Login App does on every call
 			// (#36).

@@ -130,19 +130,34 @@ func tenantAt(ctx context.Context, tenant app.Server, at string) ([]byte, error)
 	return v.GetTenant().GetId(), nil
 }
 
-// ArrivedAt is the name a request declares, normalised, or empty.
+// ArrivedAt is the name a request declares, normalised, and whether what it
+// declared names one place at all.
+//
+// No header is `("", true)`: nothing was said. A header that is there and does
+// not name exactly one place -- empty once normalised (`" "`, `":443"`, `"[]"`),
+// or two different names -- is `("", false)`, and every reader refuses it.
+// It used to read as nothing said, and for an unnarrowed key nothing said is
+// every tenant: a caller that meant to be narrowed and sent a name that
+// normalised away was answered wider than if it had sent no header at all.
 //
 // One reader was enough while [At] was the only one; [Acting] is the second, and
 // a header read in two places is a header spelled differently in one of them.
-func ArrivedAt(md metadata.MD) string {
-	out := ""
-	for _, v := range md.Get(HeaderAt) {
-		if v != "" {
-			out = front.Hostname(v)
-		}
+func ArrivedAt(md metadata.MD) (string, bool) {
+	vs := md.Get(HeaderAt)
+	if len(vs) == 0 {
+		return "", true
 	}
 
-	return out
+	out := ""
+	for _, v := range vs {
+		h := front.Hostname(v)
+		if h == "" || (out != "" && h != out) {
+			return "", false
+		}
+		out = h
+	}
+
+	return out, true
 }
 
 // At resolves a **deployment key** down to the holder a tenant nominated for it.
@@ -190,17 +205,23 @@ func At(deployment app.Server, tenant app.Server) auth.Handler {
 			return auth.Identity{}, auth.ErrNoCredential
 		}
 
-		at := ArrivedAt(md)
-		if at == "" {
-			return auth.Identity{}, auth.ErrNoCredential
-		}
-
 		// One refusal for every way this can be wrong -- an unknown key, a
 		// tenant key, a name nothing claims, a name whose tenant nominated
 		// nobody. Which one it was is what somebody probing would like to know,
 		// and the deployment's own app is told by its logs rather than by this.
 		no := func() (auth.Identity, error) {
 			return auth.Identity{}, status.Error(codes.Unauthenticated, "no")
+		}
+
+		// Said and unreadable is refused here, not passed on: passed on, it is
+		// answered as the key itself, which is the wide frame this exists to
+		// replace. See [ArrivedAt].
+		at, ok := ArrivedAt(md)
+		if !ok {
+			return no()
+		}
+		if at == "" {
+			return auth.Identity{}, auth.ErrNoCredential
 		}
 
 		if tenant == nil || deployment == nil {
@@ -241,6 +262,10 @@ func At(deployment app.Server, tenant app.Server) auth.Handler {
 			// policy already answers.
 			Grant: frame.Whole(),
 			Id:    who.String(),
+
+			// The key's, so that a stream opened with it ends when it does, as
+			// one answered by [Store] would. Left out, a watch outlived the key.
+			Expires: k.Expires,
 		}
 
 		if t := h.GetTenant().GetId(); len(t) > 0 {

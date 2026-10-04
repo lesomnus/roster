@@ -34,7 +34,7 @@ tenant runs their own; glossary, *the Login App*.
 ## A -- one instance, many tenants
 
 ```
-control plane   @owner/kamino ── rk_ (one key, rotated freely)
+control plane   @owner/kamino ── rk_ (one key; every live key here borrows)
 
 tenant acme     Host  kamino.acme.example         names say which tenant
                 @acme/kamino                      who the app is here
@@ -103,12 +103,27 @@ It is the roster operator's because of the last flag. A tenant's first
 administrator is bound `/roster.*/*`, which covers none of an app's methods, and
 nobody hands out what they do not hold -- so nobody in the tenant could give the
 app's holder its role, or themselves the right to manage it. `--administer` adds
-the app's methods to that administrator's role, once; from then on the holder's
-bindings, and the nomination, are the tenant's. Installing again changes nothing
-the tenant changed. `roster app uninstall --tenant acme kamino` ends the
-nomination, and the tenant administrator can do the same from the user console's
-*apps* tab. The Login App and the account app do this for themselves at start,
-in every tenant with a name.
+the app's methods to that administrator's role; from then on the holder's
+bindings, and the nomination, are the tenant's. Installing again leaves a role
+the tenant reshaped as they have it, and puts back a nomination or binding that
+is gone -- it is how an operator puts an app back after a tenant ended it, which
+the tenant usually cannot do itself: nominating the app's holder needs the
+app's methods. `roster app uninstall --tenant acme kamino` ends the nomination,
+and the tenant administrator can do the same from the user console's *apps*
+tab. The Login App and the account app do this for themselves at start, in
+every tenant with a name -- so for them ending it lasts until the next start.
+
+**A holder of the app's name that is already there is not taken silently.** It
+is somebody's -- a person, an earlier app holder with a key and a role -- and
+the app's key would be answered with everything it holds, while whoever signs
+in as it would hold the app's methods. `install` refuses it unless it holds
+nothing but the app's own role, and `--adopt` says to use it anyway, printing
+what it held. The start-up provisioning of roster's own apps skips such a
+tenant and says why, rather than failing for every tenant.
+
+**Every live key on the app's control-plane holder borrows through the
+nomination**, not only the one just minted: `install` names them. Rotate by
+minting the new key with `--name`, then revoking the old one.
 
 ## B -- one instance per tenant
 

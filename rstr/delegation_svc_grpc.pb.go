@@ -79,9 +79,11 @@ type DelegationServiceClient interface {
 	//
 	// A holder: a person's credential, or a deployment key narrowed with
 	// `roster-at` to the holder a tenant nominated for it. A deployment key as
-	// itself is nobody in any tenant and is refused. The audience is one of the
-	// caller's own tenant's holders -- a call across tenants is not something
-	// this can say.
+	// itself is nobody in any tenant and is refused, and so is a caller acting
+	// through a delegation (`roster-as`) -- minting from one would renew it. The
+	// audience is one of the caller's own tenant's holders, and not the caller:
+	// a call across tenants is not something this can say, and a token for
+	// yourself proves nothing to anybody.
 	Exchange(ctx context.Context, in *DelegationExchangeRequest, opts ...grpc.CallOption) (*DelegationExchangeResponse, error)
 }
 
@@ -223,9 +225,11 @@ type DelegationServiceServer interface {
 	//
 	// A holder: a person's credential, or a deployment key narrowed with
 	// `roster-at` to the holder a tenant nominated for it. A deployment key as
-	// itself is nobody in any tenant and is refused. The audience is one of the
-	// caller's own tenant's holders -- a call across tenants is not something
-	// this can say.
+	// itself is nobody in any tenant and is refused, and so is a caller acting
+	// through a delegation (`roster-as`) -- minting from one would renew it. The
+	// audience is one of the caller's own tenant's holders, and not the caller:
+	// a call across tenants is not something this can say, and a token for
+	// yourself proves nothing to anybody.
 	Exchange(context.Context, *DelegationExchangeRequest) (*DelegationExchangeResponse, error)
 	mustEmbedUnimplementedDelegationServiceServer()
 }

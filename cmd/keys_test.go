@@ -451,3 +451,40 @@ func freshKey(t *testing.T) []byte {
 
 	return b
 }
+
+// TestASuspendedHolderReachesNothing is what an app reading an SSO token is
+// told about somebody who was suspended after it was minted.
+//
+// Every credential of theirs is refused before the gate is asked, so the gate's
+// answer is nothing -- and `Reaches` said their bindings, so kamino and khala
+// kept serving them for the token's hour.
+func TestASuspendedHolderReachesNothing(t *testing.T) {
+	x := require.New(t)
+	b := keyFor(t, app.TenantService_Get_FullMethodName)
+	ctx := t.Context()
+
+	who := addHolder(t, ctx, b.Server, b.Contoso, "suspended")
+	permits(t, ctx, b, b.Contoso, who, "staff", "/hday.oasys.*/*")
+
+	reach := func() []string {
+		v, err := b.Server.Ungated.Holder().Reaches(ctx, app.HolderReachesRequest_builder{
+			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		return v.GetMethods()
+	}
+	x.Equal([]string{"/hday.oasys.*/*"}, reach())
+
+	h, err := b.Server.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Select: app.HolderSelect_builder{DateUpdated: proto.Bool(true)}.Build(),
+	}.Build())
+	x.NoError(err)
+	_, err = b.Server.Ungated.Holder().Disable(ctx, app.HolderDisableRequest_builder{
+		Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(), DateUpdated: h.GetDateUpdated(),
+	}.Build())
+	x.NoError(err)
+
+	x.Empty(reach(), "a suspended holder was answered with their bindings")
+}

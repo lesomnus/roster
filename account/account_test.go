@@ -981,3 +981,62 @@ func TestATenantPutIntoTheAppLaterIsFrontedWithoutARestart(t *testing.T) {
 	x.Equal(http.StatusOK, code, body)
 	x.Contains(body, `"alias":"northwind"`)
 }
+
+// TestOneTenantCannotStopTheAppForTheOthers is a tenant administrator acting on
+// their own rows.
+//
+// Disabling the holder their tenant nominated for this app -- or narrowing its
+// role -- leaves a nomination this app cannot read through. Reading
+// nominations failed on the first such tenant, so every tenant behind it went
+// unfronted: at start in `roster serve` that was the server's errgroup, and so a
+// crash loop for the whole deployment; here, a tenant put into the app later.
+func TestOneTenantCannotStopTheAppForTheOthers(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+	d := serve(t, account.Invited())
+
+	deployed, err := cmd.HolderNamed(ctx, d.s.Control, "account")
+	x.NoError(err)
+
+	installed := func(alias string, disabled bool) {
+		tn, err := d.ungated.Tenant().Add(ctx, rstr.TenantAddRequest_builder{Alias: alias, Name: alias}.Build())
+		x.NoError(err)
+		at := rstr.TenantRef_builder{Id: tn.GetId()}.Build()
+		_, err = d.ungated.Host().Add(ctx, rstr.HostAddRequest_builder{Tenant: at, Name: alias + ".test"}.Build())
+		x.NoError(err)
+		front, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: "account"}.Build())
+		x.NoError(err)
+		role, err := d.ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{Tenant: at, Alias: "front-door", Methods: account.Calls}.Build())
+		x.NoError(err)
+		_, err = d.ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+			Role: rstr.RoleRef_builder{Id: role.GetId()}.Build(), Holder: rstr.HolderRef_builder{Id: front.GetId()}.Build(),
+		}.Build())
+		x.NoError(err)
+		_, err = d.ungated.Nomination().Add(ctx, rstr.NominationAddRequest_builder{
+			Tenant: at, BorrowerId: deployed.Bytes(), ActsAs: rstr.HolderRef_builder{Id: front.GetId()}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		if disabled {
+			_, err = d.ungated.Holder().Disable(ctx, rstr.HolderDisableRequest_builder{
+				Ref: rstr.HolderRef_builder{Id: front.GetId()}.Build(), DateUpdated: front.GetDateUpdated(),
+			}.Build())
+			x.NoError(err)
+		}
+	}
+
+	// One tenant's administrator turns the app's holder off; another tenant
+	// is put into the app after it.
+	installed("northwind", true)
+	installed("westwind", false)
+
+	code, body := d.browser(t, "westwind.test").do(t, http.MethodGet, "/providers", "", nil)
+	x.Equal(http.StatusOK, code, body)
+	x.Contains(body, `"alias":"westwind"`)
+
+	code, _ = d.browser(t, "northwind.test").do(t, http.MethodGet, "/providers", "", nil)
+	x.Equal(http.StatusNotFound, code, "the tenant that turned the app off is not fronted")
+
+	code, body = d.browser(t, "contoso.test").do(t, http.MethodGet, "/providers", "", nil)
+	x.Equal(http.StatusOK, code, body)
+}

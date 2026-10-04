@@ -65,6 +65,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -971,6 +972,15 @@ func (a *App) tenant(id pdid.Id) (*tenant, bool) {
 // else's (`server/core`, `coreNomination.List`). A tenant's alias is then read
 // **narrowed to that tenant**, so a nomination that names a holder who may not
 // read their own tenant is found out here rather than at somebody's sign-in.
+//
+// # One tenant is skipped, not the app
+//
+// Found out, it is said and that tenant is left unfronted. It used to fail
+// the whole app -- and in `roster serve` the app shares the server's errgroup,
+// so the server with it. Everything that makes the read fail is the tenant's
+// own to do: disable the holder it nominated, narrow that holder's role. So
+// one tenant's administrator, acting on their own rows, crash-looped the
+// deployment every other tenant signs in through.
 func (a *App) nominated(ctx context.Context) error {
 	found := []*tenant{}
 
@@ -995,7 +1005,9 @@ func (a *App) nominated(ctx context.Context) error {
 				Select: rstr.TenantSelect_builder{Alias: proto.Bool(true)}.Build(),
 			}.Build())
 			if err != nil {
-				return fmt.Errorf("account: the holder %s nominated for this app cannot read %s: %w", id, id, err)
+				slog.Warn("account: a tenant nominated a holder for this app that cannot read it; not fronting it",
+					slog.String("tenant", id.String()), slog.String("err", err.Error()))
+				continue
 			}
 			t.alias = tn.GetAlias()
 			found = append(found, t)
