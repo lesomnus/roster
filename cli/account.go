@@ -84,7 +84,7 @@ func NewCmdAccount(c *cmd.Config) *xli.Command {
 func newCmdAccountProvision(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "provision",
-		Brief: "mint this deployment's own account app keys into a directory, one per tenant with a name, for `account.keys: {alias: file:…}`",
+		Brief: "mint the account app's deployment key into a directory, and nominate it in every tenant with a name, for `account.key: file:…`",
 
 		Flags: flg.Flags{
 			&flg.String{Name: "out", Brief: "the directory to write <alias>.key into; /run/roster-account if empty"},
@@ -110,11 +110,11 @@ func newCmdAccountProvision(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			made, err := provisionAccount(ctx, s, c.Account.Enrol, out)
+			_, n, err := provisionAccount(ctx, s, c.Account.Enrol, out)
 			if err != nil {
 				return err
 			}
-			if len(made) == 0 {
+			if n == 0 {
 				// Said and not refused, for `login provision`'s reason: this
 				// runs on every start, and a fresh volume having nobody to
 				// front is not a deployment that should fail to come up.
@@ -142,6 +142,7 @@ func newCmdAccountServe(c *cmd.Config) *xli.Command {
 			&flg.String{Name: "static", Brief: "a directory to serve as the page; empty serves none"},
 			&flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"},
 			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per tenant fronted. Or ROSTER_ACCOUNT_KEY_<ALIAS> in the environment"},
+			&flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it, as rk_…, env:NAME or file:PATH; instead of --key"},
 			&flg.Switch{Name: "insecure-cookie", Brief: "a cookie without Secure, for a page served over plain http in development"},
 			&flg.Switch{Name: "terminal", Brief: "let a machine with no browser ask for a key here (`roster sign-in`)"},
 			&flg.Strings{Name: "seal", Brief: "the key sessions are sealed into the cookie under, as env:NAME holding 32 bytes base64; repeat to rotate, the first seals. Empty is a key made at start, which is one replica"},
@@ -194,12 +195,23 @@ func newCmdAccountServe(c *cmd.Config) *xli.Command {
 
 			// `--key` is literal and the block's values are references, so the
 			// two are merged rather than one replacing the other. See [keysOf].
-			given, _ := flg.Find[[]string](cl, "key")
-			keys, err := keysOf(ac.Keys, AccountKeyPrefix, given)
-			if err != nil {
-				return err
+			if v, _ := flg.Find[string](cl, "deployment-key"); v != "" {
+				ac.Key = v
 			}
-			ac.Keys = keys
+			if ac.Key != "" {
+				key, err := tokenOrRef(ac.Key)
+				if err != nil {
+					return fmt.Errorf("--deployment-key (account.key): %w", err)
+				}
+				ac.Key = key
+			} else {
+				given, _ := flg.Find[[]string](cl, "key")
+				keys, err := keysOf(ac.Keys, AccountKeyPrefix, given)
+				if err != nil {
+					return err
+				}
+				ac.Keys = keys
+			}
 
 			if ac.Roster == "" || ac.Connect == "" {
 				return errors.New("--roster and --connect (or account.roster and account.connect): where roster speaks gRPC, and where the same server speaks HTTP")
@@ -236,6 +248,7 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 		Connect:  target,
 		Insecure: ac.Insecure,
 		Keys:     ac.Keys,
+		Key:      ac.Key,
 
 		// The same setting the session store is built with below, because this
 		// app sets one cookie the store does not: a provider flow's state.
@@ -293,7 +306,7 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 		return err
 	}
 	log.From(ctx).InfoContext(ctx, "account", slog.String("addr", l.Addr().String()),
-		slog.Int("tenants", len(ac.Keys)))
+		slog.Int("tenants", a.Fronts()))
 
 	srv := &http.Server{Handler: a.Handler()}
 	go func() {

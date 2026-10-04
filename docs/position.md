@@ -182,7 +182,8 @@ way to a product's page.
 
 roster ships those callers, and none of them moves the line. The account app
 (`account/`, `roster account serve`) is a login app: a separate process holding
-one tenant key per tenant, doing the OIDC exchange with the providers an
+one deployment key narrowed per request to the holder each tenant nominated for
+it (#76), doing the OIDC exchange with the providers an
 operator wrote down as `Connection` rows, minting the delegation through
 `Vouch.Accept`/`Delegate`, and handing the page's calls on to roster as the
 person. It is a consumer -- it reaches roster only over the wire -- and

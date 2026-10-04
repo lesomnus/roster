@@ -23,6 +23,7 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	rstr "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/keys"
 )
 
@@ -88,15 +89,16 @@ func bearing(ctx context.Context, token string) context.Context {
 }
 
 // TestAFrontDoorsKeysAreMadeWhereTheyAreUsed is `roster account provision`,
-// and the half of it `roster serve` runs at start when `account.keys` says
-// nothing.
+// and the half of it `roster serve` runs at start when `account.key` and
+// `account.keys` say nothing.
 //
 // A front door's key was a runbook step: a holder, a role with the right
 // thirty methods, a binding, `roster key add`, and the token carried into the
 // app's environment -- per tenant, by hand, `docker/customer.sh` being the
-// written-down version. `roster login provision` replaced that for the Login
-// App; this is the same four rows for the account app, and what each of them
-// has to be for the key to be the app's and nobody wider's.
+// written-down version. Then it was one `rt_` per tenant, made here. Since #76
+// it is the Login App's arrangement: one deployment key, allowed only what it
+// asks before a request names a tenant, and in each tenant with a name the
+// holder it is answered as there.
 func TestAFrontDoorsKeysAreMadeWhereTheyAreUsed(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
@@ -108,44 +110,52 @@ func TestAFrontDoorsKeysAreMadeWhereTheyAreUsed(t *testing.T) {
 	tenantCalled(t, s, "fabrikam")
 	answersAt(t, s, contoso, "contoso.example")
 
-	made, err := provisionAccount(ctx, s, "", "")
+	key, n, err := provisionAccount(ctx, s, "", "")
 	x.NoError(err)
-	x.Len(made, 1, "a tenant with no name was fronted: %v", made)
-	key := made["contoso"]
-	x.True(strings.HasPrefix(key, keys.PrefixTenant), "not a tenant key: %q", key)
+	x.Equal(1, n, "a tenant with no name was fronted")
+	x.True(strings.HasPrefix(key, keys.PrefixDeployment), "not a deployment key: %q", key)
 
 	conn := served(t, s)
 	tc := rstr.NewTenantServiceClient(conn)
+	in := func(token, tenant string) context.Context {
+		return metadata.AppendToOutgoingContext(bearing(ctx, token), front.HeaderAt, front.AtTenant(tenant))
+	}
 
-	t.Run("the key is contoso's, and reaches contoso alone", func(t *testing.T) {
+	t.Run("the key reaches contoso, and only as the holder contoso nominated", func(t *testing.T) {
 		x := require.New(t)
 
-		got, err := tc.Get(bearing(ctx, key), rstr.TenantGetRequest_builder{
+		got, err := tc.Get(in(key, "contoso"), rstr.TenantGetRequest_builder{
 			Ref: rstr.TenantRef_builder{Alias: z.Ptr("contoso")}.Build(),
 		}.Build())
 		x.NoError(err)
 		x.Equal("contoso", got.GetAlias())
 
-		_, err = tc.Get(bearing(ctx, key), rstr.TenantGetRequest_builder{
+		_, err = tc.Get(in(key, "fabrikam"), rstr.TenantGetRequest_builder{
 			Ref: rstr.TenantRef_builder{Alias: z.Ptr("fabrikam")}.Build(),
 		}.Build())
-		x.Error(err, "contoso's front door read fabrikam")
+		x.Equal(codes.Unauthenticated, status.Code(err), "contoso's front door read fabrikam")
+
+		// As itself it may resolve a name and list its nominations, and no more.
+		_, err = tc.Get(bearing(ctx, key), rstr.TenantGetRequest_builder{
+			Ref: rstr.TenantRef_builder{Alias: z.Ptr("contoso")}.Build(),
+		}.Build())
+		x.Equal(codes.PermissionDenied, status.Code(err), "the key did a tenant's work without naming one")
 	})
 
-	t.Run("and holds what the app calls as itself", func(t *testing.T) {
+	t.Run("and the holder holds what the app calls as itself", func(t *testing.T) {
 		x := require.New(t)
 
 		// `Accept` is the grant `roster key add` warns about, and the one a
 		// front door cannot do without. A claim reaching nobody is `NotFound`;
-		// `PermissionDenied` would be the key not holding it.
-		_, err := rstr.NewVouchServiceClient(conn).Accept(bearing(ctx, key), rstr.VouchAcceptRequest_builder{
+		// `PermissionDenied` would be the role not holding it.
+		_, err := rstr.NewVouchServiceClient(conn).Accept(in(key, "contoso"), rstr.VouchAcceptRequest_builder{
 			Claim:   rstr.VouchClaim_builder{Tenant: contoso, Provider: "entra", Subject: "nobody"}.Build(),
 			Methods: []string{rstr.MeService_Get_FullMethodName},
 		}.Build())
 		x.Equal(codes.NotFound, status.Code(err), "%v", err)
 
 		// And not what it does not: making people is `enrolling`'s grant.
-		_, err = rstr.NewHolderServiceClient(conn).Add(bearing(ctx, key), rstr.HolderAddRequest_builder{
+		_, err = rstr.NewHolderServiceClient(conn).Add(in(key, "contoso"), rstr.HolderAddRequest_builder{
 			Tenant: rstr.TenantRef_builder{Id: contoso}.Build(), Alias: "somebody",
 		}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
@@ -154,16 +164,16 @@ func TestAFrontDoorsKeysAreMadeWhereTheyAreUsed(t *testing.T) {
 	t.Run("and a second run is a rotation", func(t *testing.T) {
 		x := require.New(t)
 
-		again, err := provisionAccount(ctx, s, "", "")
+		again, _, err := provisionAccount(ctx, s, "", "")
 		x.NoError(err)
-		x.NotEqual(key, again["contoso"])
+		x.NotEqual(key, again)
 
-		_, err = tc.Get(bearing(ctx, key), rstr.TenantGetRequest_builder{
+		_, err = tc.Get(in(key, "contoso"), rstr.TenantGetRequest_builder{
 			Ref: rstr.TenantRef_builder{Alias: z.Ptr("contoso")}.Build(),
 		}.Build())
 		x.Equal(codes.Unauthenticated, status.Code(err), "the key from the last run still answers")
 
-		_, err = tc.Get(bearing(ctx, again["contoso"]), rstr.TenantGetRequest_builder{
+		_, err = tc.Get(in(again, "contoso"), rstr.TenantGetRequest_builder{
 			Ref: rstr.TenantRef_builder{Alias: z.Ptr("contoso")}.Build(),
 		}.Build())
 		x.NoError(err)
@@ -172,19 +182,19 @@ func TestAFrontDoorsKeysAreMadeWhereTheyAreUsed(t *testing.T) {
 	t.Run("and enrolling widens the role by one method", func(t *testing.T) {
 		x := require.New(t)
 
-		made, err := provisionAccount(ctx, s, "enrolling", "")
+		made, _, err := provisionAccount(ctx, s, "enrolling", "")
 		x.NoError(err)
 
-		_, err = rstr.NewHolderServiceClient(conn).Add(bearing(ctx, made["contoso"]), rstr.HolderAddRequest_builder{
+		_, err = rstr.NewHolderServiceClient(conn).Add(in(made, "contoso"), rstr.HolderAddRequest_builder{
 			Tenant: rstr.TenantRef_builder{Id: contoso}.Build(), Alias: "somebody",
 		}.Build())
 		x.NoError(err, "a deployment that wrote `enrolling` down cannot make people")
 
 		// Back to the default, which the next run writes over the role
 		// rather than leaving the wider list behind.
-		made, err = provisionAccount(ctx, s, "", "")
+		made, _, err = provisionAccount(ctx, s, "", "")
 		x.NoError(err)
-		_, err = rstr.NewHolderServiceClient(conn).Add(bearing(ctx, made["contoso"]), rstr.HolderAddRequest_builder{
+		_, err = rstr.NewHolderServiceClient(conn).Add(in(made, "contoso"), rstr.HolderAddRequest_builder{
 			Tenant: rstr.TenantRef_builder{Id: contoso}.Build(), Alias: "somebody-else",
 		}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err), "the grant outlived the setting")
@@ -194,21 +204,21 @@ func TestAFrontDoorsKeysAreMadeWhereTheyAreUsed(t *testing.T) {
 		x := require.New(t)
 		dir := filepath.Join(t.TempDir(), "keys")
 
-		made, err := provisionAccount(ctx, s, "", dir)
+		made, _, err := provisionAccount(ctx, s, "", dir)
 		x.NoError(err)
 
-		path := filepath.Join(dir, "contoso.key")
+		path := filepath.Join(dir, "account.key")
 		b, err := os.ReadFile(path)
 		x.NoError(err)
-		x.Equal(made["contoso"], strings.TrimSpace(string(b)))
+		x.Equal(made, strings.TrimSpace(string(b)))
 
 		st, err := os.Stat(path)
 		x.NoError(err)
 		x.Equal(os.FileMode(0o600), st.Mode().Perm(), "a credential readable by anybody on the box")
 
 		// And the reference a deployment writes resolves to it.
-		got, err := keysOf(map[string]string{"contoso": "file:" + path}, AccountKeyPrefix, nil)
+		got, err := tokenOrRef("file:" + path)
 		x.NoError(err)
-		x.Equal(made["contoso"], got["contoso"])
+		x.Equal(made, got)
 	})
 }

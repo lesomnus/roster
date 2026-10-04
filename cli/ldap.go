@@ -51,6 +51,7 @@ func newCmdLdapServe(c *cmd.Config) *xli.Command {
 			&flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"},
 			&flg.Switch{Name: "insecure", Brief: "dial roster without TLS"},
 			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per operator fronted. Or " + LdapKeyPrefix + "<ALIAS> in the environment"},
+			&flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it, as rk_…, env:NAME or file:PATH; instead of --key"},
 			&flg.Strings{Name: "base", Brief: "a tenant's suffix, as alias=dc=…; o=<alias> if not given"},
 			&flg.String{Name: "bind", Brief: "what a bind's password may be: key (an app password the person minted; the default), password (their own), either"},
 			&flg.String{Name: "tls", Brief: "this server's certificate and key, as cert.pem,key.pem; offers StartTLS and enables --listen-tls"},
@@ -104,12 +105,23 @@ func newCmdLdapServe(c *cmd.Config) *xli.Command {
 				}
 			}
 
-			given, _ := flg.Find[[]string](cl, "key")
-			keys, err := keysOf(lc.Keys, LdapKeyPrefix, given)
-			if err != nil {
-				return err
+			if v, _ := flg.Find[string](cl, "deployment-key"); v != "" {
+				lc.Key = v
 			}
-			lc.Keys = keys
+			if lc.Key != "" {
+				key, err := tokenOrRef(lc.Key)
+				if err != nil {
+					return fmt.Errorf("--deployment-key (ldap.key): %w", err)
+				}
+				lc.Key = key
+			} else {
+				given, _ := flg.Find[[]string](cl, "key")
+				keys, err := keysOf(lc.Keys, LdapKeyPrefix, given)
+				if err != nil {
+					return err
+				}
+				lc.Keys = keys
+			}
 
 			if lc.Roster == "" {
 				return errors.New("--roster (or ldap.roster): where roster speaks gRPC")
@@ -160,6 +172,7 @@ func serveLdap(ctx context.Context, lc cmd.LdapConfig) error {
 	cfg := ldap.Config{
 		Roster:   lc.Roster,
 		Keys:     lc.Keys,
+		Key:      lc.Key,
 		Bases:    lc.Bases,
 		Bind:     mode,
 		Insecure: lc.Insecure,
@@ -178,7 +191,7 @@ func serveLdap(ctx context.Context, lc cmd.LdapConfig) error {
 	errs := make(chan error, 2)
 	serve := func(l net.Listener, how string) {
 		log.From(ctx).InfoContext(ctx, "ldap", slog.String("addr", l.Addr().String()), slog.String("how", how),
-			slog.Int("tenants", len(lc.Keys)), slog.Any("suffixes", d.NamingContexts()))
+			slog.Int("tenants", len(d.NamingContexts())), slog.Any("suffixes", d.NamingContexts()))
 		go func() {
 			<-ctx.Done()
 			_ = l.Close()

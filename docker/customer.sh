@@ -24,7 +24,7 @@ set -eu
 : "${PUBLIC_HOST:=localhost}"
 : "${ACCOUNT_STATE:=/var/lib/roster-account}"
 
-key="${ACCOUNT_STATE}/${SEED_CUSTOMER}.key"
+key="${ACCOUNT_STATE}/account.key"
 if [ -e "${key}" ]; then
 	exit 0
 fi
@@ -59,13 +59,13 @@ for h in "${PUBLIC_HOST}" 127.0.0.1 behind product; do
 	printf '{"tenant":{"alias":"%s"},"name":"%s"}' "${t}" "${h}" | roster host add - >/dev/null
 done
 
-# The directory's own person and key: what a directory reads, and `Verify`
-# so that `LDAP_BIND=password` works when somebody sets it (`docs/ldap.md`
-# § The key this process holds).
-roster holder add "@${t}/directory" >/dev/null
-roster role add "@${t}/directory" '{"methods":["/roster.TenantService/Get","/roster.HolderService/Get","/roster.HolderService/List","/roster.HolderService/Search","/roster.EmailService/Get","/roster.EmailService/List","/roster.GroupService/Get","/roster.GroupService/List","/roster.GroupMembershipService/List","/roster.SiteService/Get","/roster.SiteService/List","/roster.TeamService/Get","/roster.TeamService/List","/roster.TeamMembershipService/List","/roster.VouchService/Verify"]}' >/dev/null
-printf '{"role":{"slug":{"alias":"directory","tenant":{"alias":"%s"}}},"holder":{"slug":{"alias":"directory","tenant":{"alias":"%s"}}}}' "${t}" "${t}" \
-	| roster binding add - >/dev/null
+# The directory is installed into the tenant like any roster-hosted app: its
+# holder there, a role naming what a directory reads -- and `Verify`, so that
+# `LDAP_BIND=password` works when somebody sets it (`docs/ldap.md` § The key
+# this process holds) -- the binding, and the nomination its key is answered
+# through. The key itself is minted below, with the others.
+roster app install --tenant "${t}" \
+	--role /roster.TenantService/Get,/roster.HolderService/Get,/roster.HolderService/List,/roster.HolderService/Search,/roster.EmailService/Get,/roster.EmailService/List,/roster.GroupService/Get,/roster.GroupService/List,/roster.GroupMembershipService/List,/roster.SiteService/Get,/roster.SiteService/List,/roster.TeamService/Get,/roster.TeamService/List,/roster.TeamMembershipService/List,/roster.VouchService/Verify directory >/dev/null
 
 # To a file first and moved into place, so a half-written key is never read.
 # The directory's and the Login App's first and the account app's last, because
@@ -82,8 +82,10 @@ umask 077
 # drifting once -- and it is the command `deploy/` runs, so this rig exercises it
 # rather than a hand-rolled equivalent of it.
 roster login provision --out "${ACCOUNT_STATE}" >/dev/null
-roster key add --tenant "${t}" --holder directory --name directory --allow '/roster.TenantService/Get,/roster.HolderService/Get,/roster.HolderService/List,/roster.HolderService/Search,/roster.EmailService/Get,/roster.EmailService/List,/roster.GroupService/Get,/roster.GroupService/List,/roster.GroupMembershipService/List,/roster.SiteService/Get,/roster.SiteService/List,/roster.TeamService/Get,/roster.TeamService/List,/roster.TeamMembershipService/List,/roster.VouchService/Verify' 2>/dev/null >"${ACCOUNT_STATE}/${SEED_CUSTOMER}.ldap.key.tmp"
-mv "${ACCOUNT_STATE}/${SEED_CUSTOMER}.ldap.key.tmp" "${ACCOUNT_STATE}/${SEED_CUSTOMER}.ldap.key"
+# The directory's one deployment key, allowed as itself only to find the
+# tenants that nominated it (#76).
+roster control key add --allow /roster.NominationService/List directory 2>/dev/null >"${ACCOUNT_STATE}/directory.key.tmp"
+mv "${ACCOUNT_STATE}/directory.key.tmp" "${ACCOUNT_STATE}/directory.key"
 # The account app's, through the command rather than by hand, for the reason
 # the Login App's is: `account.Calls` is the one place that list lives, and this
 # is the command a deployment runs. It was a `holder add`, a binding to

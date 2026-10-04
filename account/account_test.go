@@ -48,6 +48,11 @@ type deployment struct {
 	fabrikam pdid.Id
 	erin     []byte
 
+	// tokens is a tenant key per tenant, for [perTenant]: the shape a tenant
+	// running its own copy takes, which the deployment key replaced for a
+	// roster operator running one for everybody (#76).
+	tokens map[string]string
+
 	// mail is what the app asked to have delivered: the mailbox, and the link.
 	mu   sync.Mutex
 	mail []struct{ to, link string }
@@ -95,9 +100,23 @@ func serve(t *testing.T, enrol account.Enrol, with ...func(*account.Config)) *de
 	d := &deployment{s: s, ungated: s.Ungated, idp: newIdp(t)}
 	t.Setenv("EXAMPLE_SECRET", "unused")
 
-	// Two operators, each with a name this app serves them under and a key for
-	// the app -- one per tenant, minted for a holder in that tenant whose role
-	// names what a front door calls.
+	// The app's one deployment key, on the control plane, allowed only what it
+	// asks before a request names a tenant -- the shape `roster account
+	// provision` makes since #76. Each tenant below nominates its own holder
+	// for it.
+	deployed, err := cmd.HolderNamed(ctx, s.Control, "account")
+	x.NoError(err)
+	deployKey, deploySum, err := keys.Mint(keys.PrefixDeployment)
+	x.NoError(err)
+	_, err = s.Control.Ungated.ApiKey().Add(ctx, rstr.ApiKeyAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: deployed.Bytes()}.Build(), Alias: "account", Secret: deploySum,
+		Methods: account.Resolving,
+	}.Build())
+	x.NoError(err)
+
+	// Two operators, each with a name this app serves them under, a holder the
+	// app is answered as there whose role names what a front door calls -- and,
+	// for the tests about a tenant running its own copy, a key for that holder.
 	var tokens = map[string]string{}
 	for _, alias := range []string{"contoso", "fabrikam"} {
 		var tn *rstr.Tenant
@@ -148,6 +167,12 @@ func serve(t *testing.T, enrol account.Enrol, with ...func(*account.Config)) *de
 		x.NoError(err)
 		_, err = s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
 			Role: rstr.RoleRef_builder{Id: role.GetId()}.Build(), Holder: rstr.HolderRef_builder{Id: front.GetId()}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		_, err = s.Ungated.Nomination().Add(ctx, rstr.NominationAddRequest_builder{
+			Tenant: at, BorrowerId: deployed.Bytes(), Name: "account",
+			ActsAs: rstr.HolderRef_builder{Id: front.GetId()}.Build(),
 		}.Build())
 		x.NoError(err)
 
@@ -250,7 +275,7 @@ func serve(t *testing.T, enrol account.Enrol, with ...func(*account.Config)) *de
 		Roster:   l.Addr().String(),
 		Connect:  connect,
 		Insecure: true,
-		Keys:     tokens,
+		Key:      deployKey,
 		Base:     base,
 		Enrol:    enrol,
 		Sessions: sessions(),
@@ -269,8 +294,12 @@ func serve(t *testing.T, enrol account.Enrol, with ...func(*account.Config)) *de
 			return nil
 		},
 	}
+	d.tokens = tokens
 	for _, w := range with {
 		w(&cfg)
+	}
+	if cfg.Key == "" {
+		cfg.Keys = tokens
 	}
 
 	a, err := account.New(ctx, cfg)
@@ -369,6 +398,30 @@ func (b *browser) rpc(t *testing.T, method, body string) (int, string) {
 // providers come from roster, the key comes from the host, the round trip to a
 // provider ends in a session, a password does the same one tenant over, and the
 // page reaches roster as the person through the app's own origin.
+// perTenant serves the app with a tenant key per tenant instead of one
+// deployment key: a tenant running its own copy, held once per tenant (#76).
+func perTenant(c *account.Config) { c.Key = "" }
+
+// TestATenantKeyPerTenantStillFrontsEach is the shape a deployment key replaced
+// for a roster operator, kept for what it still is: a tenant's own `rt_`, held
+// once per tenant by whoever the tenants each gave one to. The same two
+// answers, the same refusal for a name nobody serves.
+func TestATenantKeyPerTenantStillFrontsEach(t *testing.T) {
+	x := require.New(t)
+	d := serve(t, account.Invited(), perTenant)
+
+	code, body := d.browser(t, "contoso.test").do(t, http.MethodGet, "/providers", "", nil)
+	x.Equal(http.StatusOK, code, body)
+	x.Contains(body, `"alias":"contoso"`)
+
+	code, body = d.browser(t, "fabrikam.test").do(t, http.MethodGet, "/providers", "", nil)
+	x.Equal(http.StatusOK, code, body)
+	x.Contains(body, `"Fabrikam Inc"`)
+
+	code, _ = d.browser(t, "nobody.test").do(t, http.MethodGet, "/providers", "", nil)
+	x.Equal(http.StatusNotFound, code)
+}
+
 func TestTheAccountAppFrontsTwoOperators(t *testing.T) {
 	d := serve(t, account.Invited())
 
@@ -890,4 +943,41 @@ func TestTheFrontDoorHandsSomebodyOnToTheirConsole(t *testing.T) {
 			x.Equal(http.StatusBadRequest, code, "%s: %d %s", next, code, body)
 		}
 	})
+}
+
+// TestATenantPutIntoTheAppLaterIsFrontedWithoutARestart is what reading the
+// key's own nominations buys over a list of keys read once at start (#76).
+//
+// A tenant the app is installed into after it started has a name and a
+// nomination the app has never read. The first request for that name is
+// answered by roster with a tenant the app does not know, and the app reads its
+// nominations again rather than saying nobody serves the name.
+func TestATenantPutIntoTheAppLaterIsFrontedWithoutARestart(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+	d := serve(t, account.Invited())
+
+	tn, err := d.ungated.Tenant().Add(ctx, rstr.TenantAddRequest_builder{Alias: "northwind", Name: "Northwind"}.Build())
+	x.NoError(err)
+	at := rstr.TenantRef_builder{Id: tn.GetId()}.Build()
+	_, err = d.ungated.Host().Add(ctx, rstr.HostAddRequest_builder{Tenant: at, Name: "northwind.test"}.Build())
+	x.NoError(err)
+	front, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: "account"}.Build())
+	x.NoError(err)
+	role, err := d.ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{Tenant: at, Alias: "front-door", Methods: account.Calls}.Build())
+	x.NoError(err)
+	_, err = d.ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+		Role: rstr.RoleRef_builder{Id: role.GetId()}.Build(), Holder: rstr.HolderRef_builder{Id: front.GetId()}.Build(),
+	}.Build())
+	x.NoError(err)
+	deployed, err := cmd.HolderNamed(ctx, d.s.Control, "account")
+	x.NoError(err)
+	_, err = d.ungated.Nomination().Add(ctx, rstr.NominationAddRequest_builder{
+		Tenant: at, BorrowerId: deployed.Bytes(), ActsAs: rstr.HolderRef_builder{Id: front.GetId()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	code, body := d.browser(t, "northwind.test").do(t, http.MethodGet, "/providers", "", nil)
+	x.Equal(http.StatusOK, code, body)
+	x.Contains(body, `"alias":"northwind"`)
 }

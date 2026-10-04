@@ -83,16 +83,26 @@ type AccountConfig struct {
 	// and `--key alias=rt_…` still takes a literal, which is in the process
 	// list and says so.
 	//
-	// **Empty, inside `roster serve`, is keys made at start.** The same rows
-	// `roster account provision` writes -- a holder, a role holding what the
-	// app calls as itself, a binding, a key -- for every tenant with a `Host`
-	// row, and the token kept in memory, which is one replica: the reading
-	// [AccountConfig.Seal] gives an empty value. A restart is a rotation, and
-	// a tenant that registers a name later is fronted after the next start.
-	// `roster account serve` still refuses with none, because somebody typed
-	// that one and a process whose only job is the front door has nothing to
-	// do without a key.
+	// One of this and [AccountConfig.Key]: a tenant running its own copy names
+	// its `rt_` here, and so does a deployment that has not moved to `key` yet.
+	//
+	// **Both empty, inside `roster serve`, is a key made at start**: the rows
+	// `roster account provision` writes -- one deployment key, and in every
+	// tenant with a `Host` row a holder, a role holding what the app calls as
+	// itself, a binding and the nomination -- with the token kept in memory,
+	// which is one replica: the reading [AccountConfig.Seal] gives an empty
+	// value. A restart is a rotation. `roster account serve` still refuses with
+	// neither, because somebody typed that one and a process whose only job is
+	// the front door has nothing to do without a key.
 	Keys map[string]string `yaml:"keys"`
+
+	// Key is one deployment key for every tenant fronted, narrowed on each call
+	// to the holder that tenant nominated for it -- the shape the Login App
+	// takes, and the one a roster operator running this for many tenants wants
+	// (#76, `docs/apps.md`). A reference, `env:NAME` or `file:PATH`; `roster
+	// account provision` writes the file. A tenant this app is put into later
+	// is fronted at the first request for one of its names, with no restart.
+	Key string `yaml:"key"`
 
 	// Seal is the key sessions are sealed into the cookie under, as `env:NAME`
 	// holding 32 bytes of base64. Repeat to rotate: the first seals and every
@@ -146,6 +156,13 @@ type LdapConfig struct {
 	// Keys is one tenant key per tenant fronted, by alias, as `env:NAME`.
 	// See [AccountConfig.Keys]; `ROSTER_LDAP_KEY_<ALIAS>` is merged with it.
 	Keys map[string]string `yaml:"keys"`
+
+	// Key is one deployment key instead, answered in each tenant as the holder
+	// that tenant nominated for it -- `roster control key add --allow
+	// /roster.NominationService/List directory`, then `roster app install
+	// directory` per tenant with the directory's role. A reference, `env:NAME` or `file:PATH`.
+	// One of this and Keys (#76).
+	Key string `yaml:"key"`
 
 	// Bases is a tenant's suffix, by alias. `o=<alias>` where none is given.
 	Bases map[string]string `yaml:"bases"`

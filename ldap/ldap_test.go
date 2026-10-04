@@ -65,7 +65,12 @@ type deployment struct {
 	roster string
 	keys   map[string]string
 	kimKey string // kim's app password
-	leeKey string // lee's
+
+	// deployed is the directory's one deployment key, nominated in both
+	// tenants as their `directory` holder -- what [deployment.serve] hands the
+	// directory unless a test asks for [perTenant] (#76).
+	deployed string
+	leeKey   string // lee's
 
 	contoso, fabrikam pdid.Id
 	kim, lee, park    []byte
@@ -112,6 +117,32 @@ func stand(t *testing.T) *deployment {
 			d.fabrikam = id
 		}
 		d.keys[alias] = d.service(t, id, "directory", reads)
+	}
+
+	// And the shape since #76: one deployment key, allowed as itself only to
+	// find its nominations, answered in each tenant as its `directory`.
+	borrower, err := cmd.HolderNamed(ctx, s.Control, "directory")
+	x.NoError(err)
+	token, sum, err := keys.Mint(keys.PrefixDeployment)
+	x.NoError(err)
+	_, err = s.Control.Ungated.ApiKey().Add(ctx, rstr.ApiKeyAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: borrower.Bytes()}.Build(), Alias: "directory", Secret: sum,
+		Methods: []string{rstr.NominationService_List_FullMethodName},
+	}.Build())
+	x.NoError(err)
+	d.deployed = token
+	for _, in := range []pdid.Id{d.contoso, d.fabrikam} {
+		at := rstr.TenantRef_builder{Id: in.Bytes()}.Build()
+		h, err := s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+			Ref:    rstr.HolderRef_builder{Slug: rstr.HolderRefBySlug_builder{Alias: proto.String("directory"), Tenant: at}.Build()}.Build(),
+			Select: rstr.HolderSelect_builder{}.Build(),
+		}.Build())
+		x.NoError(err)
+		_, err = s.Ungated.Nomination().Add(ctx, rstr.NominationAddRequest_builder{
+			Tenant: at, BorrowerId: borrower.Bytes(), Name: "directory",
+			ActsAs: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		}.Build())
+		x.NoError(err)
 	}
 
 	d.kim = d.person(t, d.contoso, "kim", "Kim Minji", &rstr.Profile{}, func(p *rstr.Profile) {
@@ -309,7 +340,7 @@ func (d *deployment) serve(t *testing.T, mode ldap.Mode, with func(*ldap.Config)
 	t.Helper()
 	x := require.New(t)
 
-	cfg := ldap.Config{Roster: d.roster, Insecure: true, Keys: d.keys, Bind: mode}
+	cfg := ldap.Config{Roster: d.roster, Insecure: true, Key: d.deployed, Bind: mode}
 	if with != nil {
 		with(&cfg)
 	}
@@ -413,6 +444,25 @@ func TestAPasswordBindStopsAtASecondFactor(t *testing.T) {
 		err := c.Bind(kimDN, password)
 		x.True(goldap.IsErrorWithCode(err, goldap.LDAPResultInvalidCredentials), "%v", err)
 	})
+}
+
+// perTenant serves the directory with a tenant key per tenant instead of one
+// deployment key: a tenant running its own copy, held once per tenant.
+func perTenant(c *ldap.Config) { c.Key, c.Keys = "", nil }
+
+// TestATenantKeyPerTenantStillServesEachSuffix is the shape the deployment key
+// replaced for a roster operator (#76), kept for what it still is.
+func TestATenantKeyPerTenantStillServesEachSuffix(t *testing.T) {
+	x := require.New(t)
+	d := stand(t)
+	c := d.serve(t, ldap.BindKey, func(c *ldap.Config) { perTenant(c); c.Keys = d.keys })
+
+	root := search(t, c, "", goldap.ScopeBaseObject, "(objectClass=*)", "+")
+	x.ElementsMatch([]string{"o=contoso", "o=fabrikam"}, root[0].GetAttributeValues("namingContexts"))
+
+	x.NoError(c.Bind(kimDN, d.kimKey))
+	got := search(t, c, contosoDN, goldap.ScopeWholeSubtree, "(uid=lee)", "cn")
+	x.Equal([]string{leeDN}, dns(got))
 }
 
 func TestASuffixIsATenant(t *testing.T) {
@@ -635,7 +685,7 @@ func TestLdapIsToldEverything(t *testing.T) {
 	x.ErrorContains(err, "Keys")
 
 	_, err = ldap.New(ctx, ldap.Config{Roster: d.roster, Insecure: true, Keys: d.keys, Bases: map[string]string{"nobody": "o=nobody"}})
-	x.ErrorContains(err, "no key for it")
+	x.ErrorContains(err, "no key or nomination for it")
 
 	_, err = ldap.New(ctx, ldap.Config{Roster: d.roster, Insecure: true, Keys: map[string]string{"fabrikam": d.keys["contoso"]}})
 	x.ErrorContains(err, "cannot see", "a key for one tenant was taken as another's")

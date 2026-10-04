@@ -50,7 +50,7 @@ func TestLdapServeIsToldEverything(t *testing.T) {
 	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", key, "--base", "newco"), "--base")
 	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", key, "--listen-tls", ":0"), "--tls")
 	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", key, "--require-tls"), "--tls")
-	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", key, "--base", "other=o=other"), "no key for it")
+	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", key, "--base", "other=o=other"), "no key or nomination for it")
 	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", "other="+b.Hers.Client.Auth.Credential), "cannot see",
 		"a key for one tenant was taken as another's")
 

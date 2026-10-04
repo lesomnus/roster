@@ -13,11 +13,11 @@ This page is the design **and** how to run it. The
 ## What it is, in one paragraph
 
 **`roster ldap serve` is a consumer**, exactly as `roster account serve` is:
-one tenant key per tenant it fronts, reaching roster over the wire and never
-past it, whether it runs as its own process or as a block in the server's. One
-instance for many tenants is the roster-hosted shape, and the Login App takes it
-with one deployment key narrowed per request; moving this process and the account
-app to the same is open ([apps.md](apps.md)). It
+one deployment key, answered in each tenant as the holder that tenant nominated
+for it, reaching roster over the wire and never past it, whether it runs as its
+own process or as a block in the server's -- the roster-hosted shape of
+[apps.md](apps.md). A directory has a DN where a front door has a host, so every
+call names its tenant directly: `roster-at: @<tenant>`. It
 speaks LDAPv3 on one side and `rstr` on the other, and it *translates*: a bind is
 `Vouch.Verify` or a key read back through `Me.Get`, a search is `Holder.Search`,
 `Holder.List`, `Email.List`, `GroupMembership.List`. It holds no data, keeps no cache and
@@ -28,11 +28,18 @@ every time).
 ## Running it
 
 ```sh
+roster control key add --allow /roster.NominationService/List directory > directory.key
+roster app install --tenant contoso --role '<the methods below>' directory
+
 roster ldap serve --roster roster:8080 \
-  --key contoso=rt_… --key fabrikam=rt_…      # or ROSTER_LDAP_KEY_<ALIAS>
+  --deployment-key file:directory.key \
   --tls cert.pem,key.pem --require-tls \
   --listen :389 --listen-tls :636
 ```
+
+The suffixes it serves are the tenants that nominated its key, read at start.
+A tenant running its own copy gives it that tenant's `rt_` instead,
+`--key contoso=rt_…` or `ROSTER_LDAP_KEY_CONTOSO`.
 
 Or as a block in `roster.yaml`, which puts it in the same process as the server
 (`operating.md` § "One process, or four" is the trade -- this process holds tenant
@@ -43,12 +50,11 @@ container of its own):
 ldap:
   addr: :389
   bind: key
-  keys:
-    contoso: env:ROSTER_LDAP_KEY_CONTOSO
+  key: file:/run/roster/directory.key
 ```
 
-Either way it is a **consumer**: one tenant key per tenant, reaching roster over
-the wire and never past it. Mint the key for a holder of its own with the role in
+Either way it is a **consumer**, reaching roster over the wire and never past it.
+Install it into each tenant with the role in
 § [The key this process holds](#the-key-this-process-holds); `docker/customer.sh`
 is that, as a script.
 
@@ -272,8 +278,10 @@ client's problem and not this process's.
 
 ## The key this process holds
 
-`--key contoso=rt_…`, or `ROSTER_LDAP_KEY_CONTOSO`, one per tenant, minted
-for a holder in that tenant whose role names what a directory reads:
+One deployment key, allowed as itself only `/roster.NominationService/List` --
+the tenants it serves -- and in each tenant a holder it is answered as, whose role
+names what a directory reads. `roster app install --tenant … --role … directory`
+writes the holder, the role, the binding and the nomination:
 
 ```
 /roster.TenantService/Get             # at start: which tenant this key is, and that it sees it
@@ -293,8 +301,8 @@ for a holder in that tenant whose role names what a directory reads:
 /roster.TeamMembershipService/List
 ```
 
-`docker/customer.sh` mints exactly this for the compose stack (`Verify`
-included, since `LDAP_BIND` is a switch there), and a key that
+`docker/customer.sh` installs exactly this for the compose stack (`Verify`
+included, since `LDAP_BIND` is a switch there), and a role that
 holds less answers `insufficientAccessRights` (50) with roster's message where
 the missing method would have been read, rather than an empty tree.
 
@@ -318,7 +326,7 @@ minted by the app's name*).
 | --- | --- |
 | `ldap/` | the package: the tree, the bind, the search, the filter walker. A consumer, held to it by `scripts/test.sh`'s import check, which learns the second directory |
 | `ldap/wire/` | the protocol: one connection's loop, and the handful of messages this process speaks, decoded from and encoded to BER. Nothing in it knows what a holder is |
-| `cli/ldap.go` | `roster ldap serve`: `--listen` (`:389`), `--listen-tls`, `--roster`, `--insecure`, `--key`/`ROSTER_LDAP_KEY_<ALIAS>`, `--base`, `--bind`, `--tls`, `--require-tls` |
+| `cli/ldap.go` | `roster ldap serve`: `--listen` (`:389`), `--listen-tls`, `--roster`, `--insecure`, `--deployment-key` (or `--key`/`ROSTER_LDAP_KEY_<ALIAS>` for a tenant's own copy), `--base`, `--bind`, `--tls`, `--require-tls` |
 | `docker/ldap.sh`, `compose.yaml` | the `ldap` service beside `account`, on `1389`, its key from the same `customer` one-shot; `LDAP_BIND=either` turns password binds on |
 | `docs/operating.md` | § "One process, or four" -- where the `ldap:` block sits |
 | `docs/usage/ways-in.md` | a paragraph under the tenant key: an app password is a key |

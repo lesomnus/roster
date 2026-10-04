@@ -48,6 +48,7 @@ import (
 
 	"github.com/lesomnus/roster/ldap/wire"
 	rstr "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/front"
 )
 
 // Mode is what a bind's password may be.
@@ -94,6 +95,13 @@ type Config struct {
 	// what a directory reads (`docs/ldap.md` § The key this process holds).
 	Keys map[string]string
 
+	// Key is one deployment key instead: the directory is answered in each
+	// tenant as the holder that tenant nominated for it, naming the tenant on
+	// every call (`roster-at: @<tenant>`, since a directory has a DN where a
+	// front door has a host). The tenants are the key's own nominations, read
+	// at start. One of Key and Keys (#76).
+	Key string
+
 	// Bases renames a tenant's suffix, by alias: `dc=contoso,dc=example`
 	// where the default is `o=contoso`.
 	Bases map[string]string
@@ -122,6 +130,10 @@ type tenant struct {
 	id    pdid.Id
 	key   string
 	base  dn
+
+	// at is what every call about this tenant declares with `roster-at`, when
+	// the key is a deployment key narrowed to whoever the tenant nominated.
+	at string
 }
 
 // Directory is the tree, over roster.
@@ -140,13 +152,10 @@ func New(ctx context.Context, c Config) (*Directory, error) {
 	switch {
 	case c.Roster == "":
 		return nil, errors.New("ldap: Roster: where the data plane speaks gRPC")
-	case len(c.Keys) == 0:
-		return nil, errors.New("ldap: Keys: one tenant key per operator this directory fronts; none is nobody to front")
-	}
-	for alias := range c.Bases {
-		if _, ok := c.Keys[alias]; !ok {
-			return nil, fmt.Errorf("ldap: Bases: a suffix for %q, and no key for it", alias)
-		}
+	case len(c.Keys) == 0 && c.Key == "":
+		return nil, errors.New("ldap: Keys or Key: one tenant key per operator this directory fronts, or one deployment key; none is nobody to front")
+	case len(c.Keys) > 0 && c.Key != "":
+		return nil, errors.New("ldap: Keys and Key: one way to front tenants, not two")
 	}
 	if c.PageSize <= 0 || c.PageSize > DefaultPageSize {
 		c.PageSize = DefaultPageSize
@@ -161,7 +170,10 @@ func New(ctx context.Context, c Config) (*Directory, error) {
 	}
 	opts := append(auth.Inject(auth.ProviderFunc(func(ctx context.Context) context.Context {
 		if k, ok := keyOf(ctx); ok {
-			return metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+k)
+			ctx = metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+k.key)
+			if k.at != "" {
+				ctx = metadata.AppendToOutgoingContext(ctx, front.HeaderAt, k.at)
+			}
 		}
 
 		return ctx
@@ -180,27 +192,27 @@ func New(ctx context.Context, c Config) (*Directory, error) {
 		vouch:  rstr.NewVouchServiceClient(conn),
 	}
 
-	aliases := make([]string, 0, len(c.Keys))
-	for alias := range c.Keys {
+	fronts, err := d.fronted(ctx)
+	if err != nil {
+		conn.Close()
+
+		return nil, err
+	}
+	for alias := range c.Bases {
+		if _, ok := fronts[alias]; !ok {
+			conn.Close()
+
+			return nil, fmt.Errorf("ldap: Bases: a suffix for %q, and no key or nomination for it", alias)
+		}
+	}
+
+	aliases := make([]string, 0, len(fronts))
+	for alias := range fronts {
 		aliases = append(aliases, alias)
 	}
 	sort.Strings(aliases)
 	for _, alias := range aliases {
-		key := c.Keys[alias]
-		v, err := d.roster.Tenant().Get(withKey(ctx, key), rstr.TenantGetRequest_builder{
-			Ref: rstr.TenantRef_builder{Alias: proto.String(alias)}.Build(),
-		}.Build())
-		if err != nil {
-			conn.Close()
-
-			return nil, fmt.Errorf("ldap: the key for %q cannot see %q: %w", alias, alias, err)
-		}
-		id, err := pdid.From(v.GetId())
-		if err != nil {
-			conn.Close()
-
-			return nil, err
-		}
+		t := fronts[alias]
 
 		base := dn{{attr: "o", value: alias}}
 		if s, ok := c.Bases[alias]; ok {
@@ -211,7 +223,8 @@ func New(ctx context.Context, c Config) (*Directory, error) {
 				return nil, fmt.Errorf("ldap: Bases[%s]: %q is not a DN", alias, s)
 			}
 		}
-		d.tenants = append(d.tenants, &tenant{alias: alias, id: id, key: key, base: base})
+		t.base = base
+		d.tenants = append(d.tenants, t)
 	}
 	sort.SliceStable(d.tenants, func(i, j int) bool { return len(d.tenants[i].base) > len(d.tenants[j].base) })
 
@@ -279,7 +292,7 @@ func (d *Directory) Bind(ctx context.Context, c *wire.Conn, req wire.BindRequest
 	if !d.c.Bind.passwords() {
 		return wire.Refuse(wire.InvalidCredentials, "this directory binds with app passwords: a key the person mints for this client")
 	}
-	v, err := d.vouch.Verify(withKey(ctx, t.key), rstr.VouchVerifyRequest_builder{
+	v, err := d.vouch.Verify(t.on(ctx), rstr.VouchVerifyRequest_builder{
 		Who:    rstr.VouchWho_builder{Tenant: t.alias, Alias: alias}.Build(),
 		Secret: req.Password,
 	}.Build())
@@ -364,14 +377,77 @@ func (d *Directory) unit(t *tenant, ou string) *entry {
 // call that checks it.
 type keyKey struct{}
 
+// cred is what a call goes out with: a key, and the tenant it is narrowed to
+// when it is a deployment key.
+type cred struct{ key, at string }
+
 func withKey(ctx context.Context, key string) context.Context {
-	return context.WithValue(ctx, keyKey{}, key)
+	return context.WithValue(ctx, keyKey{}, cred{key: key})
 }
 
-func keyOf(ctx context.Context) (string, bool) {
-	v, ok := ctx.Value(keyKey{}).(string)
+// on is a context whose calls go out as this tenant's.
+func (t *tenant) on(ctx context.Context) context.Context {
+	return context.WithValue(ctx, keyKey{}, cred{key: t.key, at: t.at})
+}
 
-	return v, ok && v != ""
+func keyOf(ctx context.Context) (cred, bool) {
+	v, ok := ctx.Value(keyKey{}).(cred)
+
+	return v, ok && v.key != ""
+}
+
+// fronted is every tenant this directory fronts, by alias, each proved to be
+// readable with what it will be read with: a tenant key reading its own
+// tenant, or the deployment key narrowed to the holder each tenant nominated.
+func (d *Directory) fronted(ctx context.Context) (map[string]*tenant, error) {
+	out := map[string]*tenant{}
+
+	for alias, key := range d.c.Keys {
+		v, err := d.roster.Tenant().Get(withKey(ctx, key), rstr.TenantGetRequest_builder{
+			Ref: rstr.TenantRef_builder{Alias: proto.String(alias)}.Build(),
+		}.Build())
+		if err != nil {
+			return nil, fmt.Errorf("ldap: the key for %q cannot see %q: %w", alias, alias, err)
+		}
+		id, err := pdid.From(v.GetId())
+		if err != nil {
+			return nil, err
+		}
+		out[alias] = &tenant{alias: alias, id: id, key: key}
+	}
+	if d.c.Key == "" {
+		return out, nil
+	}
+
+	after := ""
+	for {
+		vs, err := d.roster.Nomination().List(withKey(ctx, d.c.Key), rstr.NominationListRequest_builder{
+			Size: 100, After: after,
+		}.Build())
+		if err != nil {
+			return nil, fmt.Errorf("ldap: which tenants nominated this directory's key: %w", err)
+		}
+		for _, v := range vs.GetItems() {
+			id, err := pdid.From(v.GetTenant().GetId())
+			if err != nil {
+				return nil, err
+			}
+
+			t := &tenant{id: id, key: d.c.Key, at: front.AtTenant(id.String())}
+			tn, err := d.roster.Tenant().Get(t.on(ctx), rstr.TenantGetRequest_builder{
+				Ref:    rstr.TenantRef_builder{Id: id.Bytes()}.Build(),
+				Select: rstr.TenantSelect_builder{Alias: proto.Bool(true)}.Build(),
+			}.Build())
+			if err != nil {
+				return nil, fmt.Errorf("ldap: the holder %s nominated for this directory cannot read %s: %w", id, id, err)
+			}
+			t.alias = tn.GetAlias()
+			out[t.alias] = t
+		}
+		if after = vs.GetNext(); after == "" {
+			return out, nil
+		}
+	}
 }
 
 // refusal turns a roster error into the search's result. Not found is an
