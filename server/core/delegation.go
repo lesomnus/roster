@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"crypto/subtle"
 
 	"github.com/lesomnus/payday/pdid"
 
@@ -9,6 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/z"
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
@@ -70,7 +72,7 @@ func (s coreDelegation) Revoke(ctx context.Context, req *app.DelegationRevokeReq
 // here to a read as well: a delegation is a credential, and listing them is
 // listing where somebody is signed in.
 func (s coreDelegation) Get(ctx context.Context, req *app.DelegationGetRequest) (*app.Delegation, error) {
-	if err := s.reaches(ctx, req.GetRef()); err != nil {
+	if err := s.reachesOrWasIssued(ctx, req.GetRef()); err != nil {
 		return nil, err
 	}
 
@@ -106,6 +108,38 @@ func (s coreDelegation) Erase(ctx context.Context, req *app.DelegationRef) (*app
 	return s.DelegationServiceServer.Erase(ctx, req)
 }
 
+// reachesOrWasIssued is [coreDelegation.reaches], or the caller being the one
+// the delegation was issued to.
+//
+// # A delegation issued to you is yours to read
+//
+// Whoever it is about. `TokenService/Introspect` reads a delegation with the
+// caller's frame on the context, and an app is routinely narrower than the
+// person or app a delegation it was handed is about: khala is told who kamino
+// is by a token kamino exchanged for it (`Exchange`), and a product introspects
+// the delegation of somebody who holds more than the product does. The reach
+// rule would refuse both, and it is the wrong rule here -- it guards *seeing
+// where somebody is signed in*, and a holder of the token already has the one
+// row it names. The rule for presenting a delegation is the issuer binding
+// (`keys.issued`), and this is the same rule for reading one: `Revoke` already
+// rests on it.
+func (s coreDelegation) reachesOrWasIssued(ctx context.Context, ref *app.DelegationRef) error {
+	if f, ok := frame.From(ctx); ok && !f.Actor.IsZero() {
+		v, err := s.DelegationServiceServer.Get(ctx, app.DelegationGetRequest_builder{
+			Ref:    ref,
+			Select: app.DelegationSelect_builder{Issuer: z.Ptr(true)}.Build(),
+		}.Build())
+		if err != nil {
+			return err
+		}
+		if subtle.ConstantTimeCompare(v.GetIssuer(), f.Actor.Bytes()) == 1 {
+			return nil
+		}
+	}
+
+	return s.reaches(ctx, ref)
+}
+
 // reaches is `mayReach` on the holder of the delegation a reference names.
 func (s coreDelegation) reaches(ctx context.Context, ref *app.DelegationRef) error {
 	v, err := s.DelegationServiceServer.Get(ctx, app.DelegationGetRequest_builder{
@@ -121,4 +155,63 @@ func (s coreDelegation) reaches(ctx context.Context, ref *app.DelegationRef) err
 	}
 
 	return s.mayReach(ctx, "ref", holder)
+}
+
+// Exchange mints a delegation about the caller, issued to the audience: a token
+// one app hands another so the second can ask roster who the first is.
+// `delegation_svc.ext.proto` has the argument.
+//
+// # What it reuses, and what it turns round
+//
+// [keys.Delegate] mints and stores it, and `TokenService/Introspect` already
+// answers a delegation only to the caller it was issued to. What is new is
+// which way round the two fields go: an ordinary delegation is *about somebody
+// else, for the caller*; this is *about the caller, for somebody else*. So the
+// receiver introspects and is told the caller, and the caller -- who would be
+// the obvious one to leak it -- is told nothing about it at all.
+//
+// # The rules
+//
+// The caller is a holder, because the token names a holder: a deployment key as
+// itself is no one in any tenant. The audience is the caller's tenant's own,
+// the agreement every row naming two holders is held to (`agree.go`). Neither
+// rule needs a grant check: the token hands the receiver nothing it could not
+// already be told by `HolderService/Reaches` about the caller, and what it may
+// do *at roster* through `roster-as` is narrowed to `methods`, which name the
+// receiver's own RPCs and not roster's.
+func (s coreDelegation) Exchange(ctx context.Context, req *app.DelegationExchangeRequest) (*app.DelegationExchangeResponse, error) {
+	f, ok := frame.From(ctx)
+	if !ok || f.Actor.IsZero() || f.Tenant == pdid.Nil {
+		return nil, status.Error(codes.FailedPrecondition,
+			"a token naming the caller needs a caller in a tenant: a deployment key names one with roster-at")
+	}
+	if req.GetAudience() == nil {
+		return nil, status.Error(codes.InvalidArgument, "audience: which app in this tenant the token is for")
+	}
+
+	to, err := s.holderOf(ctx, req.GetAudience())
+	if err != nil {
+		return nil, err
+	}
+	whose, err := s.tenantOfHolder(ctx, app.HolderRef_builder{Id: to.Bytes()}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if err := tenantsAgree("audience", whose, f.Tenant); err != nil {
+		return nil, err
+	}
+
+	token, v, err := keys.Delegate(ctx, s.Next(), keys.Delegated{
+		Holder:  f.Actor,
+		Issuer:  to.Bytes(),
+		Methods: req.GetMethods(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return app.DelegationExchangeResponse_builder{
+		Token:       token,
+		DateExpires: v.GetDateExpires(),
+	}.Build(), nil
 }

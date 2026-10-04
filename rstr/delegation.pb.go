@@ -310,6 +310,13 @@ type Delegation_builder struct {
 	Secret []byte
 	// Which caller was given this, so that another cannot present it.
 	//
+	// Usually the caller that minted it, about somebody it just signed in. A
+	// `DelegationService/Exchange` turns that round: the row is about the caller,
+	// and this names the **audience** -- the holder another app is in the same
+	// tenant -- so that only that app, introspecting, is told who it names (#74).
+	// Either way it is a data-plane holder or a control-plane key, compared and
+	// never followed.
+	//
 	// Opaque bytes: an identifier from the other plane, compared and never
 	// resolved. See the note above for why it is not an edge.
 	//

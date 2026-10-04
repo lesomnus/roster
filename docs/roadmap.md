@@ -676,6 +676,7 @@ is not a request* -- which survives because the generated check sits in the
 | — | a deployment key reads its own nominations and nobody else's | **done** — how an app run for many tenants learns which ones it serves. It has to ask before it can name one, so it asks unnarrowed, which is every tenant's rows; the layer holds `List` and `Get` to the key's own `borrower_id`, read from the control plane through a function `cmd` injects (`core.Borrower`) because the data plane holds no client of the other database. Not a twin verb: the same `List`, about the caller's own rows. A key cannot `Watch` them -- a payday watch names rows by reference -- so it lists again, and the account app does when a name arrives for a tenant it has not read. `TestAKeyReadsItsOwnNominationsAndNobodyElses` |
 | — | an app is installed into a tenant by a roster operator, and the tenant takes it from there | **done** — [#75](https://github.com/lesomnus/roster/issues/75). `roster app install` writes the app's holder in the tenant, its role, the binding and the nomination (with `name`, so a tenant can read which app it is), **once** -- installing again changes nothing the tenant changed -- and with `--administer` adds the app's methods to the role a tenant is made with. That last is why it is the operator's: a tenant's first administrator is bound `/roster.*/*`, which covers no app's methods, and nobody hands out what they do not hold. `uninstall` ends the nomination, which a tenant administrator can also do from the new *apps* tab in both consoles. `TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem`; `ts/e2e/user.spec.ts` ends one |
 | — | the account app and the directory take one deployment key | **done** — the rest of [#76](https://github.com/lesomnus/roster/issues/76). Both held one `rt_` per tenant because an unnarrowed `rk_` is `frame.Everything`, which #36 answered for the Login App and nobody had carried over. `account.key` / `ldap.key` (`--deployment-key`) is one `rk_` narrowed per call with `roster-at: @<tenant>`; the tenants are the key's own nominations, and the account app reads them again when a name arrives for one it does not know, so a tenant installed later is fronted without a restart. `roster account provision` writes one key and nominates, by the Login App's own two functions; `frontdoor`'s proxy carries `roster-at` beside the bearer, without which a delegation minted narrowed was refused on the way back. `keys` stays, for a tenant running its own copy. Both suites run on a deployment key now, with one test each kept for per-tenant keys |
+| — | one app proves who it is to another in the same tenant | **done** — the rest of [#74](https://github.com/lesomnus/roster/issues/74). `DelegationService/Exchange` mints a delegation **about the caller, issued to the audience** -- a delegation turned round -- so the receiving app, narrowed to the same tenant, introspects it and is told the sender, and nobody else is told anything. Opaque and introspected, so roster still issues nothing a third party verifies alone. Two things it found in what was already there: `Introspect` read a delegation through `server/core`'s reach rule, so an app narrower than whoever a token was about -- a product introspecting the delegation of somebody who holds more than it does -- was refused, and refused **by name**, telling it the token was real and whose; a delegation issued to the caller is now the caller's to read, and every other refusal there answers `NotFound`. `TestAnAppProvesWhoItIsToAnotherInTheSameTenant` |
 
 ## Open, for whoever picks this up next
 
@@ -718,13 +719,10 @@ in 2026-08, and one of them closed by *looking*:
 
 ### Open, and filed
 
-One, from working out how a product runs beside roster ([apps.md](apps.md)):
-
-- [#74](https://github.com/lesomnus/roster/issues/74) -- an app calling another app
-  on a tenant's behalf has no identity to carry. The direction is a short-lived
-  token naming the nominated holder, bound to an audience and checked with
-  `Introspect`; what *the audience* is, and whether it is the `rd_` table, are
-  undecided. (Its other half, `control key add --narrowed`, is done.)
+None filed. What is known and not started: an app acting **as a person** at
+another app ([apps.md](apps.md), § *An app calling another app*), and an access
+token per API rather than one ID token several APIs accept
+([relying-party.md](relying-party.md)).
 
 Before those, [#12](https://github.com/lesomnus/roster/issues/12) is closed: the
 reference manifests are here, `scripts/cluster.sh` stands them up in k3d, all

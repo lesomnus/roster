@@ -183,15 +183,39 @@ written once.
 
 ## An app calling another app
 
-Not yet possible with an `rk_` (#74). kamino calling khala on acme's behalf has
-nothing khala can check as `@acme/kamino`: an `rk_` does not introspect on the
-data plane, and `roster-at` is a header only roster reads. The direction filed is
-roster exchanging `rk_` + `roster-at` for a short-lived token naming the
-nominated holder, with an audience, that the receiving app checks with
-`Introspect` -- **checked by roster**, because roster issues nothing a third
-party verifies on its own (`CLAUDE.md`, *the other rule*). Until then, an app
-that has to call another uses C's shape for that call: an `rt_` on its holder in
-that tenant.
+kamino calling khala about acme has to show khala it is `@acme/kamino`, and its
+own credential cannot: an `rk_` does not introspect on the data plane, and
+`roster-at` is a header only roster reads. So it exchanges one (#74):
+
+```
+kamino ─ rk_ + roster-at: @acme ─▶ DelegationService/Exchange{audience: @acme/khala, methods}
+       ◀─ rd_…   (about @acme/kamino, issued to @acme/khala, fifteen minutes)
+kamino ─ Bearer rd_… ─▶ khala
+khala  ─ rk_ + roster-at: @acme ─▶ TokenService/Introspect(rd_…)
+       ◀─ @acme/kamino, acme, the methods
+khala  ─ HolderService/Reaches(@acme/kamino) → covers → serves it, or not
+```
+
+- **It is a delegation turned round.** An ordinary one is about somebody else and
+  issued to the caller; this is about the caller and issued to the audience. Only
+  the audience is told who it names -- the sender, and every other caller, get the
+  `NotFound` a string that was never a token gets.
+- **Checked by roster.** It is opaque and the receiver asks, because roster
+  issues nothing a third party verifies on its own (`CLAUDE.md`, *the other
+  rule*).
+- **One tenant.** The audience is the caller's own tenant's holder; the receiver
+  introspects narrowed to that tenant too, which is how the issuer binding
+  matches.
+- **`methods` are the receiver's.** What the token is for at khala --
+  `/hday.khala.RobotService/Get` -- which roster neither knows nor checks. khala
+  narrows by them as it would by a key's, and still decides with `Reaches`.
+- **What each side's role needs.** The sender `/roster.DelegationService/Exchange`;
+  the receiver `/payday.TokenService/Introspect`. Both go in the `--role` an app is
+  installed with.
+
+Acting **as a person** at another app -- kamino calling khala on erin's behalf --
+is not this, and nothing does it yet: kamino holds erin's access token, not a
+delegation, and the token was issued to the page.
 
 ## One client for all three
 
@@ -206,7 +230,7 @@ type Tenancy interface {
 	Serves(ctx context.Context) ([]pdid.Id, error)
 	// A context whose calls to roster are answered as this app's holder in tenant.
 	Roster(ctx context.Context, tenant pdid.Id) (context.Context, error)
-	// A token naming this app's holder in tenant, for calling audience. (#74)
+	// A token naming this app's holder in tenant, for calling audience.
 	Token(ctx context.Context, tenant pdid.Id, audience string) (string, error)
 }
 
@@ -224,7 +248,8 @@ var ErrNotServed = errors.New("this instance does not serve that tenant")
   rows by reference); it lists again, which the account app does when a name
   arrives for a tenant it has not read. The account app and `ldap serve` are this
   layer, written twice.
-- **`Token()`** is #74, and is the bearer itself in C until then.
+- **`Token()`** is `DelegationService/Exchange`, asked narrowed to the tenant,
+  for the audience's holder there; in C, the same call with the `rt_`.
 
 What this layer **cannot** hide, and should not try to:
 

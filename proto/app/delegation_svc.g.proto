@@ -31,6 +31,34 @@ service DelegationService {
   // real, whose it is, or still alive. What a caller may rely on is that a
   // delegation **it** was issued is gone afterwards.
   rpc Revoke(DelegationRevokeRequest) returns (DelegationRevokeResponse);
+  // Exchange is a short-lived token naming the caller, for one other app in the
+  // same tenant to check -- how one roster-hosted app proves who it is to
+  // another (#74, `docs/apps.md`).
+  //
+  // # A delegation, issued to the receiver
+  //
+  // A delegation already says *who* (`holder`) and *who may present it*
+  // (`issuer`), and `TokenService/Introspect` already answers only the caller
+  // it was issued to. So this mints one about the **caller** and issues it to
+  // the **audience**: kamino, narrowed to acme, asks for a token for
+  // `@acme/khala`; khala, narrowed to acme too, introspects it and is told
+  // `@acme/kamino`. Nobody else is told anything -- kamino included -- and the
+  // token is as good as a stranger's string to every caller but khala.
+  //
+  // # Checked by roster, which is why roster may make it
+  //
+  // roster issues nothing a third party verifies without asking (CLAUDE.md,
+  // *the other rule*). This is opaque, and the receiver asks: the same kind of
+  // thing an `rt_` is.
+  //
+  // # Who may ask
+  //
+  // A holder: a person's credential, or a deployment key narrowed with
+  // `roster-at` to the holder a tenant nominated for it. A deployment key as
+  // itself is nobody in any tenant and is refused. The audience is one of the
+  // caller's own tenant's holders -- a call across tenants is not something
+  // this can say.
+  rpc Exchange(DelegationExchangeRequest) returns (DelegationExchangeResponse);
 }
 
 message DelegationAddRequest {
@@ -140,3 +168,24 @@ message DelegationRevokeRequest {
 }
 
 message DelegationRevokeResponse {}
+
+message DelegationExchangeRequest {
+  // Who the token is for: the holder the receiving app is in this tenant -- the
+  // one its own key is narrowed to when it introspects.
+  HolderRef audience = 1;
+
+  // What the token is for, at the receiver: its own methods, which roster does
+  // not know and does not need to. The receiver narrows by them as it would by
+  // a key's; what the caller may actually do there is still the receiver's to
+  // decide, with `HolderService/Reaches`. Required, for `Delegate`'s reason: a
+  // token that allows nothing opens no door.
+  repeated string methods = 2;
+}
+
+message DelegationExchangeResponse {
+  // The token, shown once.
+  string token = 1 [features.field_presence = IMPLICIT];
+
+  // When it stops working.
+  google.protobuf.Timestamp date_expires = 2;
+}

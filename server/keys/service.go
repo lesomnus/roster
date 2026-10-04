@@ -98,6 +98,16 @@ func (v service) Introspect(ctx context.Context, req *pdpb.TokenIntrospectReques
 	}
 
 	k, err := find(ctx, v.s, token)
+	if status.Code(err) == codes.PermissionDenied {
+		// The read was refused by `server/core`'s reach rule, which is about
+		// the row's holder and not about this caller holding the token: a
+		// caller narrower than whoever the token is about is told so by name.
+		// Said here as `NotFound`, the answer every other wrong token gets, so
+		// that a found string tells its holder nothing -- not that it is real,
+		// and not whose. The one caller the read is not refused to is the one it
+		// was issued to (`coreDelegation`), which is the caller this answers.
+		err = status.Error(codes.NotFound, "no such token")
+	}
 	if err != nil {
 		// Whatever the lookup refused with is already the shape the contract
 		// asks for: `NotFound` for anything about the token, and everything
