@@ -93,7 +93,7 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 		x := require.New(t)
 
 		r, err := s.Ungated.Role().Get(ctx, app.RoleGetRequest_builder{
-			Ref:    app.RoleRef_builder{Slug: app.RoleRefBySlug_builder{Alias: proto.String("kamino"), Tenant: at}.Build()}.Build(),
+			Ref:    app.RoleRef_builder{Slug: app.RoleRefBySlug_builder{Alias: proto.String("kamino-app"), Tenant: at}.Build()}.Build(),
 			Select: app.RoleSelect_builder{DateUpdated: proto.Bool(true)}.Build(),
 		}.Build())
 		x.NoError(err)
@@ -142,4 +142,55 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 		err := cli.NewCmdApp(&c).Run(ctx, []string{"install", "--tenant", "acme", "kamino"})
 		require.ErrorContains(t, err, "--role")
 	})
+}
+
+// An app names the role its people are given after itself -- kamino's staff
+// role is `kamino` -- and installing the app into a tenant that already uses it
+// must not bind that role to the app's holder. It did: the role install made
+// was called the app's name, and a role already there is adopted.
+func TestInstallingAnAppLeavesARoleCalledAfterItAlone(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	c := seedbed(t)
+	out, err := initRun(t, c)
+	x.NoError(err, "init: %s", out)
+
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	acme, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "acme"}.Build())
+	x.NoError(err)
+	at := app.TenantRef_builder{Id: acme.GetId()}.Build()
+	staff, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
+		Tenant: at, Alias: "kamino", Methods: []string{"/hday.oasys.*/*"},
+	}.Build())
+	x.NoError(err)
+	x.NoError(s.Close())
+
+	token := stdoutOf(t, cli.NewCmdControl(&c), "key", "add", "--narrowed", "kamino")
+	x.NoError(cli.NewCmdApp(&c).Run(ctx, []string{"install",
+		"--tenant", "acme",
+		"--role", "/roster.HolderService/Reaches",
+		"kamino"}))
+
+	s, err = cmd.Build(ctx, c)
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+
+	v, err := app.NewMeServiceClient(served(t, s)).Get(arrivedAt(ctx, token, front.AtTenant("acme")), app.MeGetRequest_builder{}.Build())
+	x.NoError(err)
+	x.Equal([]string{"/roster.HolderService/Reaches"}, v.GetMethods(), "the app was answered with its staff role")
+
+	bs, err := s.Ungated.Binding().List(ctx, app.BindingListRequest_builder{
+		Filters: []*app.BindingFilter{app.BindingFilter_builder{Role: app.RoleRef_builder{Id: staff.GetId()}.Build()}.Build()},
+	}.Build())
+	x.NoError(err)
+	x.Empty(bs.GetItems(), "the staff role was bound to the app's holder")
+
+	r, err := s.Ungated.Role().Get(ctx, app.RoleGetRequest_builder{
+		Ref:    app.RoleRef_builder{Slug: app.RoleRefBySlug_builder{Alias: proto.String(cli.AppRole("kamino")), Tenant: at}.Build()}.Build(),
+		Select: app.RoleSelect_builder{Methods: proto.Bool(true)}.Build(),
+	}.Build())
+	x.NoError(err)
+	x.Equal([]string{"/roster.HolderService/Reaches"}, r.GetMethods())
 }
