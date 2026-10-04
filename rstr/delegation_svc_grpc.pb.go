@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DelegationService_Add_FullMethodName    = "/roster.DelegationService/Add"
-	DelegationService_Get_FullMethodName    = "/roster.DelegationService/Get"
-	DelegationService_Patch_FullMethodName  = "/roster.DelegationService/Patch"
-	DelegationService_Apply_FullMethodName  = "/roster.DelegationService/Apply"
-	DelegationService_Erase_FullMethodName  = "/roster.DelegationService/Erase"
-	DelegationService_List_FullMethodName   = "/roster.DelegationService/List"
-	DelegationService_Revoke_FullMethodName = "/roster.DelegationService/Revoke"
+	DelegationService_Add_FullMethodName      = "/roster.DelegationService/Add"
+	DelegationService_Get_FullMethodName      = "/roster.DelegationService/Get"
+	DelegationService_Patch_FullMethodName    = "/roster.DelegationService/Patch"
+	DelegationService_Apply_FullMethodName    = "/roster.DelegationService/Apply"
+	DelegationService_Erase_FullMethodName    = "/roster.DelegationService/Erase"
+	DelegationService_List_FullMethodName     = "/roster.DelegationService/List"
+	DelegationService_Revoke_FullMethodName   = "/roster.DelegationService/Revoke"
+	DelegationService_Exchange_FullMethodName = "/roster.DelegationService/Exchange"
 )
 
 // DelegationServiceClient is the client API for DelegationService service.
@@ -54,6 +55,34 @@ type DelegationServiceClient interface {
 	// real, whose it is, or still alive. What a caller may rely on is that a
 	// delegation **it** was issued is gone afterwards.
 	Revoke(ctx context.Context, in *DelegationRevokeRequest, opts ...grpc.CallOption) (*DelegationRevokeResponse, error)
+	// Exchange is a short-lived token naming the caller, for one other app in the
+	// same tenant to check -- how one roster-hosted app proves who it is to
+	// another (#74, `docs/apps.md`).
+	//
+	// # A delegation, issued to the receiver
+	//
+	// A delegation already says *who* (`holder`) and *who may present it*
+	// (`issuer`), and `TokenService/Introspect` already answers only the caller
+	// it was issued to. So this mints one about the **caller** and issues it to
+	// the **audience**: kamino, narrowed to acme, asks for a token for
+	// `@acme/khala`; khala, narrowed to acme too, introspects it and is told
+	// `@acme/kamino`. Nobody else is told anything -- kamino included -- and the
+	// token is as good as a stranger's string to every caller but khala.
+	//
+	// # Checked by roster, which is why roster may make it
+	//
+	// roster issues nothing a third party verifies without asking (CLAUDE.md,
+	// *the other rule*). This is opaque, and the receiver asks: the same kind of
+	// thing an `rt_` is.
+	//
+	// # Who may ask
+	//
+	// A holder: a person's credential, or a deployment key narrowed with
+	// `roster-at` to the holder a tenant nominated for it. A deployment key as
+	// itself is nobody in any tenant and is refused. The audience is one of the
+	// caller's own tenant's holders -- a call across tenants is not something
+	// this can say.
+	Exchange(ctx context.Context, in *DelegationExchangeRequest, opts ...grpc.CallOption) (*DelegationExchangeResponse, error)
 }
 
 type delegationServiceClient struct {
@@ -134,6 +163,16 @@ func (c *delegationServiceClient) Revoke(ctx context.Context, in *DelegationRevo
 	return out, nil
 }
 
+func (c *delegationServiceClient) Exchange(ctx context.Context, in *DelegationExchangeRequest, opts ...grpc.CallOption) (*DelegationExchangeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DelegationExchangeResponse)
+	err := c.cc.Invoke(ctx, DelegationService_Exchange_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DelegationServiceServer is the server API for DelegationService service.
 // All implementations must embed UnimplementedDelegationServiceServer
 // for forward compatibility.
@@ -160,6 +199,34 @@ type DelegationServiceServer interface {
 	// real, whose it is, or still alive. What a caller may rely on is that a
 	// delegation **it** was issued is gone afterwards.
 	Revoke(context.Context, *DelegationRevokeRequest) (*DelegationRevokeResponse, error)
+	// Exchange is a short-lived token naming the caller, for one other app in the
+	// same tenant to check -- how one roster-hosted app proves who it is to
+	// another (#74, `docs/apps.md`).
+	//
+	// # A delegation, issued to the receiver
+	//
+	// A delegation already says *who* (`holder`) and *who may present it*
+	// (`issuer`), and `TokenService/Introspect` already answers only the caller
+	// it was issued to. So this mints one about the **caller** and issues it to
+	// the **audience**: kamino, narrowed to acme, asks for a token for
+	// `@acme/khala`; khala, narrowed to acme too, introspects it and is told
+	// `@acme/kamino`. Nobody else is told anything -- kamino included -- and the
+	// token is as good as a stranger's string to every caller but khala.
+	//
+	// # Checked by roster, which is why roster may make it
+	//
+	// roster issues nothing a third party verifies without asking (CLAUDE.md,
+	// *the other rule*). This is opaque, and the receiver asks: the same kind of
+	// thing an `rt_` is.
+	//
+	// # Who may ask
+	//
+	// A holder: a person's credential, or a deployment key narrowed with
+	// `roster-at` to the holder a tenant nominated for it. A deployment key as
+	// itself is nobody in any tenant and is refused. The audience is one of the
+	// caller's own tenant's holders -- a call across tenants is not something
+	// this can say.
+	Exchange(context.Context, *DelegationExchangeRequest) (*DelegationExchangeResponse, error)
 	mustEmbedUnimplementedDelegationServiceServer()
 }
 
@@ -190,6 +257,9 @@ func (UnimplementedDelegationServiceServer) List(context.Context, *DelegationLis
 }
 func (UnimplementedDelegationServiceServer) Revoke(context.Context, *DelegationRevokeRequest) (*DelegationRevokeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Revoke not implemented")
+}
+func (UnimplementedDelegationServiceServer) Exchange(context.Context, *DelegationExchangeRequest) (*DelegationExchangeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Exchange not implemented")
 }
 func (UnimplementedDelegationServiceServer) mustEmbedUnimplementedDelegationServiceServer() {}
 func (UnimplementedDelegationServiceServer) testEmbeddedByValue()                           {}
@@ -338,6 +408,24 @@ func _DelegationService_Revoke_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DelegationService_Exchange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DelegationExchangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DelegationServiceServer).Exchange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DelegationService_Exchange_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DelegationServiceServer).Exchange(ctx, req.(*DelegationExchangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DelegationService_ServiceDesc is the grpc.ServiceDesc for DelegationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -372,6 +460,10 @@ var DelegationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Revoke",
 			Handler:    _DelegationService_Revoke_Handler,
+		},
+		{
+			MethodName: "Exchange",
+			Handler:    _DelegationService_Exchange_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/delegation_svc.g.proto.
  */
 export const file_app_delegation_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChphcHAvZGVsZWdhdGlvbl9zdmMuZy5wcm90bxIGcm9zdGVyIugBChREZWxlZ2F0aW9uQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEg8KB21ldGhvZHMYCCADKAkSFQoGc2VjcmV0GAkgASgMQgWqAQIIAhIVCgZpc3N1ZXIYCiABKAxCBaoBAggCEjAKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJkChREZWxlZ2F0aW9uR2V0UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuRGVsZWdhdGlvblJlZhIoCgZzZWxlY3QYAiABKAsyGC5yb3N0ZXIuRGVsZWdhdGlvblNlbGVjdCI2Cg1EZWxlZ2F0aW9uUmVmEgwKAmlkGAEgASgMSAASEAoGc2VjcmV0GAkgASgMSABCBQoDa2V5Is0BChBEZWxlZ2F0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0Eg8KB21ldGhvZHMYCCABKAgSDgoGc2VjcmV0GAkgASgIEg4KBmlzc3VlchgKIAEoCBIUCgxkYXRlX2V4cGlyZXMYCyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKKAQoWRGVsZWdhdGlvblBhdGNoUmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuRGVsZWdhdGlvblJlZhIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCJZChZEZWxlZ2F0aW9uQXBwbHlSZXF1ZXN0EiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5EZWxlZ2F0aW9uUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giKQoXRGVsZWdhdGlvbkVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIm0KFURlbGVnYXRpb25MaXN0UmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLkRlbGVnYXRpb25GaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIlAKFkRlbGVnYXRpb25MaXN0UmVzcG9uc2USIQoFaXRlbXMYASADKAsyEi5yb3N0ZXIuRGVsZWdhdGlvbhITCgRuZXh0GAIgASgJQgWqAQIIAiJZChBEZWxlZ2F0aW9uRmlsdGVyEiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5EZWxlZ2F0aW9uUmVmEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYiLwoXRGVsZWdhdGlvblJldm9rZVJlcXVlc3QSFAoFdG9rZW4YASABKAlCBaoBAggCIhoKGERlbGVnYXRpb25SZXZva2VSZXNwb25zZTLUAwoRRGVsZWdhdGlvblNlcnZpY2USNwoDQWRkEhwucm9zdGVyLkRlbGVnYXRpb25BZGRSZXF1ZXN0GhIucm9zdGVyLkRlbGVnYXRpb24SNwoDR2V0Ehwucm9zdGVyLkRlbGVnYXRpb25HZXRSZXF1ZXN0GhIucm9zdGVyLkRlbGVnYXRpb24SOwoFUGF0Y2gSHi5yb3N0ZXIuRGVsZWdhdGlvblBhdGNoUmVxdWVzdBoSLnJvc3Rlci5EZWxlZ2F0aW9uEjsKBUFwcGx5Eh4ucm9zdGVyLkRlbGVnYXRpb25BcHBseVJlcXVlc3QaEi5yb3N0ZXIuRGVsZWdhdGlvbhI/CgVFcmFzZRIVLnJvc3Rlci5EZWxlZ2F0aW9uUmVmGh8ucm9zdGVyLkRlbGVnYXRpb25FcmFzZVJlc3BvbnNlEkUKBExpc3QSHS5yb3N0ZXIuRGVsZWdhdGlvbkxpc3RSZXF1ZXN0Gh4ucm9zdGVyLkRlbGVnYXRpb25MaXN0UmVzcG9uc2USSwoGUmV2b2tlEh8ucm9zdGVyLkRlbGVnYXRpb25SZXZva2VSZXF1ZXN0GiAucm9zdGVyLkRlbGVnYXRpb25SZXZva2VSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_delegation, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChphcHAvZGVsZWdhdGlvbl9zdmMuZy5wcm90bxIGcm9zdGVyIugBChREZWxlZ2F0aW9uQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEg8KB21ldGhvZHMYCCADKAkSFQoGc2VjcmV0GAkgASgMQgWqAQIIAhIVCgZpc3N1ZXIYCiABKAxCBaoBAggCEjAKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJkChREZWxlZ2F0aW9uR2V0UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuRGVsZWdhdGlvblJlZhIoCgZzZWxlY3QYAiABKAsyGC5yb3N0ZXIuRGVsZWdhdGlvblNlbGVjdCI2Cg1EZWxlZ2F0aW9uUmVmEgwKAmlkGAEgASgMSAASEAoGc2VjcmV0GAkgASgMSABCBQoDa2V5Is0BChBEZWxlZ2F0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0Eg8KB21ldGhvZHMYCCABKAgSDgoGc2VjcmV0GAkgASgIEg4KBmlzc3VlchgKIAEoCBIUCgxkYXRlX2V4cGlyZXMYCyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKKAQoWRGVsZWdhdGlvblBhdGNoUmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuRGVsZWdhdGlvblJlZhIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCJZChZEZWxlZ2F0aW9uQXBwbHlSZXF1ZXN0EiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5EZWxlZ2F0aW9uUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giKQoXRGVsZWdhdGlvbkVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIm0KFURlbGVnYXRpb25MaXN0UmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLkRlbGVnYXRpb25GaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIlAKFkRlbGVnYXRpb25MaXN0UmVzcG9uc2USIQoFaXRlbXMYASADKAsyEi5yb3N0ZXIuRGVsZWdhdGlvbhITCgRuZXh0GAIgASgJQgWqAQIIAiJZChBEZWxlZ2F0aW9uRmlsdGVyEiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5EZWxlZ2F0aW9uUmVmEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYiLwoXRGVsZWdhdGlvblJldm9rZVJlcXVlc3QSFAoFdG9rZW4YASABKAlCBaoBAggCIhoKGERlbGVnYXRpb25SZXZva2VSZXNwb25zZSJRChlEZWxlZ2F0aW9uRXhjaGFuZ2VSZXF1ZXN0EiMKCGF1ZGllbmNlGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIPCgdtZXRob2RzGAIgAygJImQKGkRlbGVnYXRpb25FeGNoYW5nZVJlc3BvbnNlEhQKBXRva2VuGAEgASgJQgWqAQIIAhIwCgxkYXRlX2V4cGlyZXMYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wMqcEChFEZWxlZ2F0aW9uU2VydmljZRI3CgNBZGQSHC5yb3N0ZXIuRGVsZWdhdGlvbkFkZFJlcXVlc3QaEi5yb3N0ZXIuRGVsZWdhdGlvbhI3CgNHZXQSHC5yb3N0ZXIuRGVsZWdhdGlvbkdldFJlcXVlc3QaEi5yb3N0ZXIuRGVsZWdhdGlvbhI7CgVQYXRjaBIeLnJvc3Rlci5EZWxlZ2F0aW9uUGF0Y2hSZXF1ZXN0GhIucm9zdGVyLkRlbGVnYXRpb24SOwoFQXBwbHkSHi5yb3N0ZXIuRGVsZWdhdGlvbkFwcGx5UmVxdWVzdBoSLnJvc3Rlci5EZWxlZ2F0aW9uEj8KBUVyYXNlEhUucm9zdGVyLkRlbGVnYXRpb25SZWYaHy5yb3N0ZXIuRGVsZWdhdGlvbkVyYXNlUmVzcG9uc2USRQoETGlzdBIdLnJvc3Rlci5EZWxlZ2F0aW9uTGlzdFJlcXVlc3QaHi5yb3N0ZXIuRGVsZWdhdGlvbkxpc3RSZXNwb25zZRJLCgZSZXZva2USHy5yb3N0ZXIuRGVsZWdhdGlvblJldm9rZVJlcXVlc3QaIC5yb3N0ZXIuRGVsZWdhdGlvblJldm9rZVJlc3BvbnNlElEKCEV4Y2hhbmdlEiEucm9zdGVyLkRlbGVnYXRpb25FeGNoYW5nZVJlcXVlc3QaIi5yb3N0ZXIuRGVsZWdhdGlvbkV4Y2hhbmdlUmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_delegation, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.DelegationAddRequest
@@ -385,6 +385,63 @@ export const DelegationRevokeResponseSchema: GenMessage<DelegationRevokeResponse
   messageDesc(file_app_delegation_svc_g, 11);
 
 /**
+ * @generated from message roster.DelegationExchangeRequest
+ */
+export type DelegationExchangeRequest = Message<"roster.DelegationExchangeRequest"> & {
+  /**
+   * Who the token is for: the holder the receiving app is in this tenant -- the
+   * one its own key is narrowed to when it introspects.
+   *
+   * @generated from field: roster.HolderRef audience = 1;
+   */
+  audience?: HolderRef | undefined;
+
+  /**
+   * What the token is for, at the receiver: its own methods, which roster does
+   * not know and does not need to. The receiver narrows by them as it would by
+   * a key's; what the caller may actually do there is still the receiver's to
+   * decide, with `HolderService/Reaches`. Required, for `Delegate`'s reason: a
+   * token that allows nothing opens no door.
+   *
+   * @generated from field: repeated string methods = 2;
+   */
+  methods: string[];
+};
+
+/**
+ * Describes the message roster.DelegationExchangeRequest.
+ * Use `create(DelegationExchangeRequestSchema)` to create a new message.
+ */
+export const DelegationExchangeRequestSchema: GenMessage<DelegationExchangeRequest> = /*@__PURE__*/
+  messageDesc(file_app_delegation_svc_g, 12);
+
+/**
+ * @generated from message roster.DelegationExchangeResponse
+ */
+export type DelegationExchangeResponse = Message<"roster.DelegationExchangeResponse"> & {
+  /**
+   * The token, shown once.
+   *
+   * @generated from field: string token = 1 [features.field_presence = IMPLICIT];
+   */
+  token: string;
+
+  /**
+   * When it stops working.
+   *
+   * @generated from field: google.protobuf.Timestamp date_expires = 2;
+   */
+  dateExpires?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.DelegationExchangeResponse.
+ * Use `create(DelegationExchangeResponseSchema)` to create a new message.
+ */
+export const DelegationExchangeResponseSchema: GenMessage<DelegationExchangeResponse> = /*@__PURE__*/
+  messageDesc(file_app_delegation_svc_g, 13);
+
+/**
  * @generated from service roster.DelegationService
  */
 export const DelegationService: GenService<{
@@ -465,6 +522,42 @@ export const DelegationService: GenService<{
     methodKind: "unary";
     input: typeof DelegationRevokeRequestSchema;
     output: typeof DelegationRevokeResponseSchema;
+  },
+  /**
+   * Exchange is a short-lived token naming the caller, for one other app in the
+   * same tenant to check -- how one roster-hosted app proves who it is to
+   * another (#74, `docs/apps.md`).
+   *
+   * # A delegation, issued to the receiver
+   *
+   * A delegation already says *who* (`holder`) and *who may present it*
+   * (`issuer`), and `TokenService/Introspect` already answers only the caller
+   * it was issued to. So this mints one about the **caller** and issues it to
+   * the **audience**: kamino, narrowed to acme, asks for a token for
+   * `@acme/khala`; khala, narrowed to acme too, introspects it and is told
+   * `@acme/kamino`. Nobody else is told anything -- kamino included -- and the
+   * token is as good as a stranger's string to every caller but khala.
+   *
+   * # Checked by roster, which is why roster may make it
+   *
+   * roster issues nothing a third party verifies without asking (CLAUDE.md,
+   * *the other rule*). This is opaque, and the receiver asks: the same kind of
+   * thing an `rt_` is.
+   *
+   * # Who may ask
+   *
+   * A holder: a person's credential, or a deployment key narrowed with
+   * `roster-at` to the holder a tenant nominated for it. A deployment key as
+   * itself is nobody in any tenant and is refused. The audience is one of the
+   * caller's own tenant's holders -- a call across tenants is not something
+   * this can say.
+   *
+   * @generated from rpc roster.DelegationService.Exchange
+   */
+  exchange: {
+    methodKind: "unary";
+    input: typeof DelegationExchangeRequestSchema;
+    output: typeof DelegationExchangeResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_delegation_svc_g, 0);

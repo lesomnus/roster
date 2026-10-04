@@ -11082,6 +11082,11 @@ func (s interceptDelegation) Revoke(ctx context.Context, req *rstr.DelegationRev
 		rstr.DelegationService_Revoke_FullMethodName, req, s.DelegationServiceServer.Revoke)
 }
 
+func (s interceptDelegation) Exchange(ctx context.Context, req *rstr.DelegationExchangeRequest) (*rstr.DelegationExchangeResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		rstr.DelegationService_Exchange_FullMethodName, req, s.DelegationServiceServer.Exchange)
+}
+
 func (s Intercept) Site() rstr.SiteServiceServer {
 	return interceptSite{s, s.Next().Site()}
 }
@@ -13166,6 +13171,19 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.Delegation().Revoke(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.DelegationService_Exchange_FullMethodName:
+		v := &rstr.DelegationExchangeRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Delegation().Exchange(ctx, v)
 		if err != nil {
 			return nil, err
 		}
