@@ -65,7 +65,24 @@ func New(open app.Server) *Server { return &Server{open: open} }
 //
 // `keys.HeaderAt` is this constant, and `server/keys` is where what happens when
 // a request carries it is written down.
+//
+// # A name, or a tenant
+//
+// The value is a name a tenant answers at -- a `Host` -- or [AtTenant] of a
+// tenant itself, `@contoso` or `@<its identifier>`. The second is for a caller
+// with no name to give: a directory resolves its tenant from a DN, a job from
+// its own configuration. It loses nothing beside the first, because the name
+// was only ever how the tenant was chosen; what decides whether the key may act
+// there is the tenant's `Nomination` for it, either way (#76).
 const HeaderAt = "roster-at"
+
+// AtTenant is the value of [HeaderAt] that names a tenant directly, by alias or
+// identifier, rather than by a name it answers at.
+func AtTenant(ref string) string { return TenantMark + ref }
+
+// TenantMark is what a [HeaderAt] value naming a tenant begins with. Not a
+// character a hostname may hold, so the two cannot be mistaken for each other.
+const TenantMark = "@"
 
 // Hostname is a host as this app stores and compares one: lowercased, with any
 // port removed and an address literal unbracketed.

@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/nomination.proto.
  */
 export const file_app_nomination: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvbm9taW5hdGlvbi5wcm90bxIGcm9zdGVyIvADCgpOb21pbmF0aW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESHQoLYm9ycm93ZXJfaWQYCCABKAxCCOqCFgQQQEABEiUKB2FjdHNfYXMYCSABKAsyDi5yb3N0ZXIuSG9sZGVyQgTyghYAEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqoAcr8FVESAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARopEghib3Jyb3dlchoKCgZ0ZW5hbnQQAhoPCgtib3Jyb3dlcl9pZBAIMAGKuxZPCBsySQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQaDQoLYm9ycm93ZXJfaWQaCQoHYWN0c19hcyAUKGQ6AEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChRhcHAvbm9taW5hdGlvbi5wcm90bxIGcm9zdGVyIv4DCgpOb21pbmF0aW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESDAoEbmFtZRgFIAEoCRIdCgtib3Jyb3dlcl9pZBgIIAEoDEII6oIWBBBAQAESJQoHYWN0c19hcxgJIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBPKCFgASOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOqgByvwVURICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGikSCGJvcnJvd2VyGgoKBnRlbmFudBACGg8KC2JvcnJvd2VyX2lkEAgwAYq7Fk8IGzJJChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudBoNCgtib3Jyb3dlcl9pZBoJCgdhY3RzX2FzIBQoZDoAQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Nomination is who a deployment key acts as in one tenant.
@@ -74,6 +74,18 @@ export type Nomination = Message<"roster.Nomination"> & {
    * @generated from field: roster.Tenant tenant = 2;
    */
   tenant?: Tenant | undefined;
+
+  /**
+   * What a person reading the tenant's nominations calls the app -- `kamino`.
+   *
+   * For a screen and nothing else. `borrower_id` is what decides, and it names
+   * a holder on the control plane, which no tenant can read: without this a
+   * tenant administrator looking at who acts in their tenant would see an
+   * identifier they cannot look up. `roster app install` writes the app's name.
+   *
+   * @generated from field: string name = 5;
+   */
+  name: string;
 
   /**
    * The control-plane holder whose deployment keys borrow through this row.

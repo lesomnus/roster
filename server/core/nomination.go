@@ -1,12 +1,18 @@
 package core
 
 import (
+	"bytes"
 	"context"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/pd"
 )
 
 type coreNomination struct {
@@ -109,4 +115,136 @@ func (s coreNomination) nominatesTheirOwn(ctx context.Context, at *app.TenantRef
 	}
 
 	return tenantsAgree("acts_as", whose, where)
+}
+
+// List is every nomination the caller may see -- and for an unnarrowed
+// deployment key, only its own.
+//
+// # Why a key is narrowed here and not by the wall
+//
+// An app run for many tenants has to learn which tenants it acts in before it
+// can name one, so it asks with its key unnarrowed, and an unnarrowed key is
+// `frame.Everything`: the wall shows it every tenant's nominations, every
+// other app's included. What it is owed is its own, and which are its own is a
+// fact about the **key** -- the control-plane holder it hangs off -- that the
+// wall has no way to read.
+//
+// So the filter is the layer's to write rather than the caller's: every filter
+// is held to the key's own `borrower_id`, and one naming another app's is
+// refused rather than quietly rewritten. No twin verb beside `List` -- CLAUDE.md,
+// *no self-only twin of a verb* -- the same `List`, answering about the
+// caller's own rows when the caller is a key.
+//
+// Anybody else is read as before: a person, or a key narrowed to a holder,
+// sees the nominations of the tenant the wall leaves them, which is what a
+// tenant administrator managing which apps act as whom needs.
+func (s coreNomination) List(ctx context.Context, req *app.NominationListRequest) (*app.NominationListResponse, error) {
+	own, ok, err := s.ownBorrower(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if ok {
+		fs, err := heldTo(req.GetFilters(), own)
+		if err != nil {
+			return nil, err
+		}
+
+		req = app.NominationListRequest_builder{Filters: fs, Size: req.GetSize(), After: req.GetAfter()}.Build()
+	}
+
+	return s.NominationServiceServer.List(ctx, req)
+}
+
+// Watch is refused to an unnarrowed deployment key, where [coreNomination.List]
+// answers.
+//
+// A payday watch names the rows it is about by reference and refuses anything
+// else, and a key's own nominations are found by `borrower_id`, which it cannot
+// filter on. So a key polls `List`: an app learning that a tenant installed it
+// a minute late is a smaller cost than a stream that would have to be shown
+// every app's rows to be useful. Anybody else watches as before.
+func (s coreNomination) Watch(req *app.NominationWatchRequest, stream app.NominationService_WatchServer) error {
+	if _, ok, err := s.ownBorrower(stream.Context()); err != nil {
+		return err
+	} else if ok {
+		return status.Error(codes.Unimplemented,
+			"a deployment key cannot watch nominations: a watch names its rows, and a key's are found by borrower_id; poll List")
+	}
+
+	return s.NominationServiceServer.Watch(req, stream)
+}
+
+// Get is held to the same: a key reads its own nominations and is told nothing
+// of any other's, not even that it exists.
+func (s coreNomination) Get(ctx context.Context, req *app.NominationGetRequest) (*app.Nomination, error) {
+	own, ok, err := s.ownBorrower(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if ok {
+		yes := true
+		v, err := s.Next().Nomination().Get(ctx, app.NominationGetRequest_builder{
+			Ref:    req.GetRef(),
+			Select: app.NominationSelect_builder{BorrowerId: &yes}.Build(),
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+		if !bytes.Equal(v.GetBorrowerId(), own.Bytes()) {
+			return nil, status.Error(codes.NotFound, "no such nomination")
+		}
+	}
+
+	return s.NominationServiceServer.Get(ctx, req)
+}
+
+// ownBorrower is the `borrower_id` an unnarrowed deployment key may read, and
+// whether the caller is one at all.
+//
+// No frame is the deployment's own work through an unwalled server, which reads
+// everything as it does everywhere in this package. A frame whose actor is a
+// holder -- a person, or a key narrowed to the holder a tenant nominated -- is
+// the wall's to narrow.
+func (s coreNomination) ownBorrower(ctx context.Context) (pdid.Id, bool, error) {
+	f, ok := frame.From(ctx)
+	if !ok || f.Actor.Domain() != pd.ApiKeyDomain {
+		return pdid.Nil, false, nil
+	}
+	if s.rules.Borrower == nil {
+		return pdid.Nil, false, status.Error(codes.Unimplemented,
+			"this server cannot say whose a deployment key is, so it shows a key no nominations")
+	}
+
+	own, err := s.rules.Borrower(ctx, f.Actor)
+	if err != nil {
+		return pdid.Nil, false, err
+	}
+
+	return own, true, nil
+}
+
+// heldTo is every filter narrowed to `own`, and one where there were none.
+// A filter that named somebody else's borrower is refused: rewriting it would
+// answer a question the caller did not ask.
+func heldTo(fs []*app.NominationFilter, own pdid.Id) ([]*app.NominationFilter, error) {
+	if len(fs) == 0 {
+		return []*app.NominationFilter{app.NominationFilter_builder{BorrowerId: own.Bytes()}.Build()}, nil
+	}
+
+	out := make([]*app.NominationFilter, 0, len(fs))
+	for _, f := range fs {
+		if b := f.GetBorrowerId(); len(b) > 0 && !bytes.Equal(b, own.Bytes()) {
+			return nil, status.Error(codes.PermissionDenied,
+				"borrower_id: a deployment key reads its own nominations and nobody else's")
+		}
+
+		out = append(out, app.NominationFilter_builder{
+			Ref:        f.GetRef(),
+			Tenant:     f.GetTenant(),
+			BorrowerId: own.Bytes(),
+			ActsAs:     f.GetActsAs(),
+		}.Build())
+	}
+
+	return out, nil
 }

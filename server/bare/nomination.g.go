@@ -116,6 +116,7 @@ func (s NominationServiceServer) Add(ctx context.Context, req *rstr.NominationAd
 			v.SetTenant(rstr.Tenant_builder{Id: k[:]}.Build())
 		})
 	}
+	q.SetName(req.GetName())
 	if v, err := entuuid.FromBytes(req.GetBorrowerId()); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "borrower_id: %s", err)
 	} else {
@@ -201,6 +202,9 @@ func NominationSelectedFields(m *rstr.NominationSelect) []string {
 	vs := make([]string, 0, len(nomination.Columns))
 	{
 		vs = append(vs, nomination.FieldId)
+	}
+	if m.GetName() {
+		vs = append(vs, nomination.FieldName)
 	}
 	if m.GetBorrowerId() {
 		vs = append(vs, nomination.FieldBorrowerId)
@@ -302,7 +306,7 @@ func NominationGetKey(ctx context.Context, db *ent.Client, ref *rstr.NominationR
 var nominationOrmEntity = ormpatch.MustEntityOf(rstr.File_app_nomination_proto, "Nomination")
 
 var nominationPatchColumns = entpatch.Columns{
-	1: nomination.FieldId, 2: nomination.TenantColumn, 8: nomination.FieldBorrowerId, 9: nomination.ActsAsColumn, 13: nomination.FieldDateUpdated, 14: nomination.FieldDateErased, 15: nomination.FieldDateCreated}
+	1: nomination.FieldId, 2: nomination.TenantColumn, 5: nomination.FieldName, 8: nomination.FieldBorrowerId, 9: nomination.ActsAsColumn, 13: nomination.FieldDateUpdated, 14: nomination.FieldDateErased, 15: nomination.FieldDateCreated}
 
 func (s NominationServiceServer) Apply(ctx context.Context, req *rstr.NominationApplyRequest) (*rstr.Nomination, error) {
 	if !req.HasPatch() {

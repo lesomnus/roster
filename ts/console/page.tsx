@@ -76,6 +76,7 @@ const under: readonly Of[] = [
 	'hosts',
 	'connections',
 	'maildomains',
+	'apps',
 	'sites',
 	'groups',
 	'roles',
@@ -183,7 +184,7 @@ export function Page(props: {
 			lead: 'head',
 		},
 
-		// Each named for the rows it lists, which is why there are eight of them
+		// Each named for the rows it lists, which is why there are nine of them
 		// rather than five: *arrives through* was four entities in one screen and
 		// *organisation* was two. `docs/glossary.md` § *A word for prose is not a
 		// name*.
@@ -191,6 +192,7 @@ export function Page(props: {
 		{ at: 'hosts', name: 'hosts', ok: picked && may('/roster.HostService/List') },
 		{ at: 'connections', name: 'connections', ok: picked && may('/roster.ConnectionService/List') },
 		{ at: 'maildomains', name: 'mail domains', ok: picked && may('/roster.MailDomainService/List') },
+		{ at: 'apps', name: 'apps', ok: picked && may('/roster.NominationService/List') },
 		{ at: 'sites', name: 'sites', ok: picked && may('/roster.SiteService/List') },
 		{ at: 'groups', name: 'groups', ok: picked && may('/roster.GroupService/List') },
 		{ at: 'roles', name: 'roles', ok: picked && may('/roster.RoleService/List') },

@@ -205,7 +205,18 @@ type Rules struct {
 	// answers about the caller -- one function, so the two cannot disagree.
 	// Nil is a stack that cannot say, and `Reaches` says so.
 	Held Held
+
+	// Borrower is the control-plane holder a deployment key hangs off -- what a
+	// `Nomination` names as `borrower_id`. The key is in another database and
+	// this package holds no client of either, so `cmd`, which has both, says.
+	// Nil is a stack that cannot, and a deployment key reading nominations is
+	// refused rather than shown every app's. See [coreNomination.List].
+	Borrower Borrower
 }
+
+// Borrower answers which control-plane holder the deployment key `key` hangs
+// off, or `NotFound` where there is no such key.
+type Borrower func(ctx context.Context, key pdid.Id) (pdid.Id, error)
 
 // Releasing erases the `Host` row that holds a name, across every tenant, on
 // the driver it is handed.

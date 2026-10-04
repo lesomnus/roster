@@ -17,6 +17,7 @@ import (
 type Mutation struct {
 	op             ent.Op
 	typ            string
+	name           *string
 	borrower_id    *uuid.UUID
 	date_updated   *time.Time
 	date_erased    *time.Time
@@ -41,6 +42,25 @@ func NewMutation(op ent.Op) *Mutation {
 // Predicates returns the list of predicates set on the mutation.
 func (m *Mutation) Predicates() []predicate.Nomination {
 	return m.predicates
+}
+
+// SetName sets the "name" field.
+func (m *Mutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *Mutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *Mutation) ResetName() {
+	m.name = nil
 }
 
 // SetBorrowerId sets the "borrower_id" field.
@@ -271,7 +291,10 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
+	if m.name != nil {
+		fields = append(fields, FieldName)
+	}
 	if m.borrower_id != nil {
 		fields = append(fields, FieldBorrowerId)
 	}
@@ -298,6 +321,8 @@ func (m *Mutation) Fields() []string {
 // schema.
 func (m *Mutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case FieldName:
+		return m.Name()
 	case FieldBorrowerId:
 		return m.BorrowerId()
 	case FieldDateUpdated:
@@ -326,6 +351,13 @@ func (m *Mutation) OldField(ctx context.Context, name string) (ent.Value, error)
 // type.
 func (m *Mutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
 	case FieldBorrowerId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
@@ -432,6 +464,9 @@ func (m *Mutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *Mutation) ResetField(name string) error {
 	switch name {
+	case FieldName:
+		m.ResetName()
+		return nil
 	case FieldBorrowerId:
 		m.ResetBorrowerId()
 		return nil

@@ -735,6 +735,7 @@ var (
 	// NominationColumns holds the columns for the "nomination" table.
 	NominationColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "name", Type: field.TypeString},
 		{Name: "borrower_id", Type: field.TypeUuid},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
@@ -750,13 +751,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "nomination_tenant_tenant",
-				Columns:    []*schema.Column{NominationColumns[5]},
+				Columns:    []*schema.Column{NominationColumns[6]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "nomination_holder_acts_as",
-				Columns:    []*schema.Column{NominationColumns[6]},
+				Columns:    []*schema.Column{NominationColumns[7]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -765,12 +766,12 @@ var (
 			{
 				Name:    "nomination_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{NominationColumns[4], NominationColumns[0]},
+				Columns: []*schema.Column{NominationColumns[5], NominationColumns[0]},
 			},
 			{
 				Name:    "nomination_borrower_id_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{NominationColumns[1], NominationColumns[5]},
+				Columns: []*schema.Column{NominationColumns[2], NominationColumns[6]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

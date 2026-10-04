@@ -59,8 +59,16 @@ message Nomination {
 
   Tenant tenant = 2 [(orm.edge) = {immutable: true}];
 
-  // 4 to 7 are left empty: nobody names a nomination, and it is found by the
-  // pair below rather than by a word.
+  // 4, 6 and 7 are left empty: a nomination is found by the pair below rather
+  // than by a word.
+
+  // What a person reading the tenant's nominations calls the app -- `kamino`.
+  //
+  // For a screen and nothing else. `borrower_id` is what decides, and it names
+  // a holder on the control plane, which no tenant can read: without this a
+  // tenant administrator looking at who acts in their tenant would see an
+  // identifier they cannot look up. `roster app install` writes the app's name.
+  string name = 5;
 
   // The control-plane holder whose deployment keys borrow through this row.
   //

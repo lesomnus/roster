@@ -26,6 +26,7 @@ type NominationAddRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
 	xxx_hidden_Tenant      *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_BorrowerId  []byte                 `protobuf:"bytes,8,opt,name=borrower_id,json=borrowerId"`
 	xxx_hidden_ActsAs      *HolderRef             `protobuf:"bytes,9,opt,name=acts_as,json=actsAs"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -74,6 +75,13 @@ func (x *NominationAddRequest) GetTenant() *TenantRef {
 	return nil
 }
 
+func (x *NominationAddRequest) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
 func (x *NominationAddRequest) GetBorrowerId() []byte {
 	if x != nil {
 		return x.xxx_hidden_BorrowerId
@@ -100,11 +108,15 @@ func (x *NominationAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
 }
 
 func (x *NominationAddRequest) SetTenant(v *TenantRef) {
 	x.xxx_hidden_Tenant = v
+}
+
+func (x *NominationAddRequest) SetName(v string) {
+	x.xxx_hidden_Name = v
 }
 
 func (x *NominationAddRequest) SetBorrowerId(v []byte) {
@@ -172,6 +184,7 @@ type NominationAddRequest_builder struct {
 
 	Id          []byte
 	Tenant      *TenantRef
+	Name        string
 	BorrowerId  []byte
 	ActsAs      *HolderRef
 	DateCreated *timestamppb.Timestamp
@@ -182,10 +195,11 @@ func (b0 NominationAddRequest_builder) Build() *NominationAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
+	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_BorrowerId = b.BorrowerId
 	x.xxx_hidden_ActsAs = b.ActsAs
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -562,6 +576,7 @@ type NominationSelect struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_All         bool                   `protobuf:"varint,1,opt,name=all"`
 	xxx_hidden_Tenant      *TenantSelect          `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Name        bool                   `protobuf:"varint,5,opt,name=name"`
 	xxx_hidden_BorrowerId  bool                   `protobuf:"varint,8,opt,name=borrower_id,json=borrowerId"`
 	xxx_hidden_ActsAs      *HolderSelect          `protobuf:"bytes,9,opt,name=acts_as,json=actsAs"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
@@ -612,6 +627,13 @@ func (x *NominationSelect) GetTenant() *TenantSelect {
 	return nil
 }
 
+func (x *NominationSelect) GetName() bool {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return false
+}
+
 func (x *NominationSelect) GetBorrowerId() bool {
 	if x != nil {
 		return x.xxx_hidden_BorrowerId
@@ -649,16 +671,21 @@ func (x *NominationSelect) GetDateCreated() bool {
 
 func (x *NominationSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 8)
 }
 
 func (x *NominationSelect) SetTenant(v *TenantSelect) {
 	x.xxx_hidden_Tenant = v
 }
 
+func (x *NominationSelect) SetName(v bool) {
+	x.xxx_hidden_Name = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 8)
+}
+
 func (x *NominationSelect) SetBorrowerId(v bool) {
 	x.xxx_hidden_BorrowerId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 8)
 }
 
 func (x *NominationSelect) SetActsAs(v *HolderSelect) {
@@ -667,17 +694,17 @@ func (x *NominationSelect) SetActsAs(v *HolderSelect) {
 
 func (x *NominationSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 8)
 }
 
 func (x *NominationSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 8)
 }
 
 func (x *NominationSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
 }
 
 func (x *NominationSelect) HasAll() bool {
@@ -694,11 +721,18 @@ func (x *NominationSelect) HasTenant() bool {
 	return x.xxx_hidden_Tenant != nil
 }
 
-func (x *NominationSelect) HasBorrowerId() bool {
+func (x *NominationSelect) HasName() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *NominationSelect) HasBorrowerId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
 func (x *NominationSelect) HasActsAs() bool {
@@ -712,21 +746,21 @@ func (x *NominationSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
 func (x *NominationSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
 func (x *NominationSelect) HasDateCreated() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
 func (x *NominationSelect) ClearAll() {
@@ -738,8 +772,13 @@ func (x *NominationSelect) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
 }
 
-func (x *NominationSelect) ClearBorrowerId() {
+func (x *NominationSelect) ClearName() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Name = false
+}
+
+func (x *NominationSelect) ClearBorrowerId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
 	x.xxx_hidden_BorrowerId = false
 }
 
@@ -748,17 +787,17 @@ func (x *NominationSelect) ClearActsAs() {
 }
 
 func (x *NominationSelect) ClearDateUpdated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *NominationSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *NominationSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_DateCreated = false
 }
 
@@ -767,6 +806,7 @@ type NominationSelect_builder struct {
 
 	All         *bool
 	Tenant      *TenantSelect
+	Name        *bool
 	BorrowerId  *bool
 	ActsAs      *HolderSelect
 	DateUpdated *bool
@@ -779,25 +819,29 @@ func (b0 NominationSelect_builder) Build() *NominationSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 8)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
+	if b.Name != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 8)
+		x.xxx_hidden_Name = *b.Name
+	}
 	if b.BorrowerId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 8)
 		x.xxx_hidden_BorrowerId = *b.BorrowerId
 	}
 	x.xxx_hidden_ActsAs = b.ActsAs
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 8)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -806,6 +850,7 @@ func (b0 NominationSelect_builder) Build() *NominationSelect {
 type NominationPatchRequest struct {
 	state                       protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref              *NominationRef         `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Name             *string                `protobuf:"bytes,10,opt,name=name"`
 	xxx_hidden_ActsAs           *HolderRef             `protobuf:"bytes,18,opt,name=acts_as,json=actsAs"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
@@ -847,6 +892,16 @@ func (x *NominationPatchRequest) GetRef() *NominationRef {
 	return nil
 }
 
+func (x *NominationPatchRequest) GetName() string {
+	if x != nil {
+		if x.xxx_hidden_Name != nil {
+			return *x.xxx_hidden_Name
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *NominationPatchRequest) GetActsAs() *HolderRef {
 	if x != nil {
 		return x.xxx_hidden_ActsAs
@@ -872,6 +927,11 @@ func (x *NominationPatchRequest) SetRef(v *NominationRef) {
 	x.xxx_hidden_Ref = v
 }
 
+func (x *NominationPatchRequest) SetName(v string) {
+	x.xxx_hidden_Name = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 5)
+}
+
 func (x *NominationPatchRequest) SetActsAs(v *HolderRef) {
 	x.xxx_hidden_ActsAs = v
 }
@@ -882,7 +942,7 @@ func (x *NominationPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *NominationPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
 }
 
 func (x *NominationPatchRequest) HasRef() bool {
@@ -890,6 +950,13 @@ func (x *NominationPatchRequest) HasRef() bool {
 		return false
 	}
 	return x.xxx_hidden_Ref != nil
+}
+
+func (x *NominationPatchRequest) HasName() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
 }
 
 func (x *NominationPatchRequest) HasActsAs() bool {
@@ -910,11 +977,16 @@ func (x *NominationPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
 func (x *NominationPatchRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
+}
+
+func (x *NominationPatchRequest) ClearName() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Name = nil
 }
 
 func (x *NominationPatchRequest) ClearActsAs() {
@@ -926,7 +998,7 @@ func (x *NominationPatchRequest) ClearDateUpdated() {
 }
 
 func (x *NominationPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
@@ -934,6 +1006,7 @@ type NominationPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref    *NominationRef
+	Name   *string
 	ActsAs *HolderRef
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
@@ -956,10 +1029,14 @@ func (b0 NominationPatchRequest_builder) Build() *NominationPatchRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
+	if b.Name != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 5)
+		x.xxx_hidden_Name = b.Name
+	}
 	x.xxx_hidden_ActsAs = b.ActsAs
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -1750,10 +1827,11 @@ var File_app_nomination_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_nomination_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/nomination_svc.g.proto\x12\x06roster\x1a\x14app/nomination.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\xe4\x01\n" +
+	"\x1aapp/nomination_svc.g.proto\x12\x06roster\x1a\x14app/nomination.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\xff\x01\n" +
 	"\x14NominationAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12&\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x19\n" +
+	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12&\n" +
 	"\vborrower_id\x18\b \x01(\fB\x05\xaa\x01\x02\b\x02R\n" +
 	"borrowerId\x12*\n" +
 	"\aacts_as\x18\t \x01(\v2\x11.roster.HolderRefR\x06actsAs\x12=\n" +
@@ -1768,19 +1846,22 @@ const file_app_nomination_svc_g_proto_rawDesc = "" +
 	"\x17NominationRefByBorrower\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x1f\n" +
 	"\vborrower_id\x18\b \x01(\fR\n" +
-	"borrowerId\"\x89\x02\n" +
+	"borrowerId\"\x9d\x02\n" +
 	"\x10NominationSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x14.roster.TenantSelectR\x06tenant\x12\x1f\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x14.roster.TenantSelectR\x06tenant\x12\x12\n" +
+	"\x04name\x18\x05 \x01(\bR\x04name\x12\x1f\n" +
 	"\vborrower_id\x18\b \x01(\bR\n" +
 	"borrowerId\x12-\n" +
 	"\aacts_as\x18\t \x01(\v2\x14.roster.HolderSelectR\x06actsAs\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xda\x01\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xee\x01\n" +
 	"\x16NominationPatchRequest\x12'\n" +
-	"\x03ref\x18\x01 \x01(\v2\x15.roster.NominationRefR\x03ref\x12*\n" +
+	"\x03ref\x18\x01 \x01(\v2\x15.roster.NominationRefR\x03ref\x12\x12\n" +
+	"\x04name\x18\n" +
+	" \x01(\tR\x04name\x12*\n" +
 	"\aacts_as\x18\x12 \x01(\v2\x11.roster.HolderRefR\x06actsAs\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"e\n" +

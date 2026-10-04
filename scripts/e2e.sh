@@ -158,7 +158,12 @@ r identity add '{"holder":{"slug":{"alias":"erin","tenant":{"alias":"contoso"}}}
 # deployment runs. It was a `holder add`, a binding to `everything` and a
 # `key add --allow '/roster.*/*'` under a comment saying the opposite.
 r account provision --out "${work}/keys" >/dev/null 2>&1
-key="$(cat "${work}/keys/contoso.key")"
+key="${work}/keys/account.key"
+# A roster-hosted product put into contoso, which is what the *apps* tab lists
+# and what its administrator ends in `user.spec.ts`. The key is minted and
+# thrown away: nothing here calls as the app, and the rows are the point.
+r control key add --narrowed kamino >/dev/null 2>&1
+r app install --tenant contoso --role '/hday.oasys.RobotService/*' kamino >/dev/null 2>&1
 
 echo "== serve"
 "${work}/roster" --config "${work}/roster.yaml" serve >"${work}/serve.log" 2>&1 &
@@ -180,7 +185,7 @@ up "${E2E_USER}"
 "${work}/roster" --config "${work}/roster.yaml" account serve --listen 127.0.0.1:18090 \
 	--roster 127.0.0.1:18051 --connect http://127.0.0.1:18052 --insecure \
 	--base "${E2E_ACCOUNT}" --static "${__root}/ts/dist/account" \
-	--key "contoso=${key}" --insecure-cookie >"${work}/account.log" 2>&1 &
+	--deployment-key "file:${key}" --insecure-cookie >"${work}/account.log" 2>&1 &
 pids+=($!)
 
 up "${E2E_ACCOUNT}/providers"

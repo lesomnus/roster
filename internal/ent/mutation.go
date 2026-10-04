@@ -4786,6 +4786,23 @@ func (m *NominationMutation) Ids(ctx context.Context) ([]uuid.UUID, error) {
 	}
 }
 
+// OldName returns the old "name" field's value of the Nomination entity.
+// If the Nomination object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NominationMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldName requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
 // OldBorrowerId returns the old "borrower_id" field's value of the Nomination entity.
 // If the Nomination object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -4893,6 +4910,8 @@ func (m *NominationMutation) OldActsAsId(ctx context.Context) (v uuid.UUID, err 
 // database failed.
 func (m *NominationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case nomination.FieldName:
+		return m.OldName(ctx)
 	case nomination.FieldBorrowerId:
 		return m.OldBorrowerId(ctx)
 	case nomination.FieldDateUpdated:
