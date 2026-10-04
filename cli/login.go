@@ -585,13 +585,13 @@ func loginMethodsFor(enrol string) []string {
 // goes through the unwalled server with no frame, which is the deployment's own
 // work and passes, and the holder it nominates is the one it just made.
 func nominate(ctx context.Context, s *cmd.Server, methods []string, borrower pdid.Id) (int, error) {
-	return nominateAs(ctx, s, provisioned, methods, borrower)
+	return nominateAs(ctx, s, provisioned, methods, borrower, "")
 }
 
 // nominateAs is [nominate] for the roster-hosted app called `alias`: a holder of
 // that name in each tenant with a name, its role, one binding, and the
 // nomination for `borrower`.
-func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []string, borrower pdid.Id) (int, error) {
+func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []string, borrower pdid.Id, legacy string) (int, error) {
 	tenants, err := tenantsWithNames(ctx, s)
 	if err != nil {
 		return 0, err
@@ -610,9 +610,41 @@ func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []stri
 		}
 		name := tn.GetAlias()
 
-		who, err := ensureHolderNamed(ctx, s, at, alias)
+		// A row of the same name that is somebody else's is said and the
+		// tenant skipped, rather than failing the run: this is an init
+		// container, and one that fails is every tenant's sign-in down because
+		// one tenant named somebody `login-app`.
+		skip := func(why string) {
+			fmt.Fprintf(os.Stderr, "roster: %s: not answering @%s's key as @%s/%s: %s.\n", name, alias, name, alias, why)
+		}
+
+		who, made, err := holderNamed(ctx, s, at, alias)
 		if err != nil {
 			return n, fmt.Errorf("%s: %w", name, err)
+		}
+		existing, err := roleNamed(ctx, s, at, alias)
+		if err != nil {
+			return n, fmt.Errorf("%s: %w", name, err)
+		}
+		if !made {
+			h, err := holdingOf(ctx, s, who, existing)
+			if err != nil {
+				return n, fmt.Errorf("%s: %w", name, err)
+			}
+			if h.wayIn() || len(h.roles) > 0 {
+				skip(fmt.Sprintf("@%s/%s is already somebody's -- it holds %s -- and this would answer the app as them", name, alias, h))
+				continue
+			}
+		}
+		if existing != nil {
+			others, err := boundToOthers(ctx, s, existing, who)
+			if err != nil {
+				return n, fmt.Errorf("%s: %w", name, err)
+			}
+			if others {
+				skip(fmt.Sprintf("the tenant's role %q is bound to others, and rewriting it would hand them the app's methods", alias))
+				continue
+			}
 		}
 		role, err := ensureRoleNamed(ctx, s, at, alias, methods)
 		if err != nil {
@@ -620,6 +652,16 @@ func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []stri
 		}
 		if err := ensureBinding(ctx, s, role, who); err != nil {
 			return n, fmt.Errorf("%s: %w", name, err)
+		}
+		if legacy != "" {
+			// The key this app held in the tenant before it held one deployment
+			// key (#76). Its token was made at start and thrown away, but the
+			// row still opens the holder's role to anybody who kept one -- an
+			// `account provision --out` file, a compose volume -- and nothing
+			// rotates it any more.
+			if err := eraseKeyNamed(ctx, s.Ungated, who, legacy); err != nil {
+				return n, fmt.Errorf("%s: the key it held before: %w", name, err)
+			}
 		}
 
 		changed, err := ensureNominated(ctx, s, at, borrower, who, alias)

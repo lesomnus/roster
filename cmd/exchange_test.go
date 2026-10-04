@@ -3,12 +3,14 @@ package cmd_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdpb"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -108,4 +110,56 @@ func TestAnAppProvesWhoItIsToAnotherInTheSameTenant(t *testing.T) {
 		require.Equal(t, codes.InvalidArgument, status.Code(err))
 	})
 
+}
+
+// TestExchangeHandsOnNothingTheCallerMayNot is what review found in #74.
+//
+// The token is an ordinary delegation, and its receiver may present it beside
+// its own key in `roster-as`. So a key attenuated to `Exchange` alone minted
+// one about its holder, issued to that same holder, allowing `/*.*/*` --
+// presented it beside the same key, and was answered with the holder's whole
+// role, which was enough to mint a permanent `/roster.*/*` key. Three
+// refusals now, one for each leg.
+func TestExchangeHandsOnNothingTheCallerMayNot(t *testing.T) {
+	b := keyFor(t, app.TenantService_Get_FullMethodName)
+	ctx := t.Context()
+	exchange := "/roster.DelegationService/Exchange"
+
+	alice := addHolder(t, ctx, b.Server, b.Contoso, "alice")
+	permits(t, ctx, b, b.Contoso, alice, "admin", "/roster.*/*")
+	bob := addHolder(t, ctx, b.Server, b.Contoso, "bob")
+	carol := addHolder(t, ctx, b.Server, b.Contoso, "carol")
+
+	narrow := mintFor(t, ctx, b, alice, "exchange-only", []string{exchange}, time.Time{})
+
+	delegations := app.NewDelegationServiceClient(b.Conn)
+	mint := func(ctx context.Context, to pdid.Id, methods ...string) (*app.DelegationExchangeResponse, error) {
+		return delegations.Exchange(ctx, app.DelegationExchangeRequest_builder{
+			Audience: app.HolderRef_builder{Id: to.Bytes()}.Build(),
+			Methods:  methods,
+		}.Build())
+	}
+
+	t.Run("a method the key may not call is not handed on", func(t *testing.T) {
+		_, err := mint(bearing(ctx, narrow), bob, "/*.*/*")
+		require.Equal(t, codes.PermissionDenied, status.Code(err), "%v", err)
+	})
+
+	t.Run("a token for yourself is refused", func(t *testing.T) {
+		_, err := mint(bearing(ctx, narrow), alice, exchange)
+		require.Equal(t, codes.InvalidArgument, status.Code(err), "%v", err)
+	})
+
+	t.Run("what the key may call is handed on, and acting through it mints nothing", func(t *testing.T) {
+		x := require.New(t)
+
+		got, err := mint(bearing(ctx, narrow), bob, exchange)
+		x.NoError(err)
+
+		// bob presents it, and is alice within `Exchange` -- which would have
+		// minted the same token again with a fresh expiry.
+		bobs := mintFor(t, ctx, b, bob, "bob", []string{exchange}, time.Time{})
+		_, err = mint(acting(ctx, bobs, got.GetToken()), carol, exchange)
+		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
+	})
 }

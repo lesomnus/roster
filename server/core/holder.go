@@ -309,10 +309,18 @@ func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) 
 func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) (*app.HolderReachesResponse, error) {
 	v, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
 		Ref:    req.GetRef(),
-		Select: app.HolderSelect_builder{}.Build(),
+		Select: app.HolderSelect_builder{DateDisabled: z.Ptr(true)}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
+	}
+	if v.GetDateDisabled() != nil {
+		// Suspended: every credential of theirs is refused before the gate is
+		// asked, so the gate's answer is nothing. Answering their bindings
+		// instead told an app checking an SSO token roster cannot see -- one
+		// minted before the suspension, good for its hour -- that they still
+		// held everything they held.
+		return app.HolderReachesResponse_builder{EverySite: z.Ptr(false)}.Build(), nil
 	}
 	if s.rules.Held == nil {
 		return nil, status.Error(codes.Unimplemented,

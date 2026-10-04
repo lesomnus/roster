@@ -194,3 +194,70 @@ func TestInstallingAnAppLeavesARoleCalledAfterItAlone(t *testing.T) {
 	x.NoError(err)
 	x.Equal([]string{"/roster.HolderService/Reaches"}, r.GetMethods())
 }
+
+// TestInstallingAnAppTakesNoHolderThatIsSomebodys is a holder of the app's
+// name that was already there.
+//
+// It was taken silently: the app's key was answered with whatever that holder
+// held, and whoever signs in as it was handed the app's role. `install admin`
+// answered the key as the tenant's administrator. Now it is refused unless it
+// holds nothing but the app's own role, and `--adopt` says to take it anyway.
+func TestInstallingAnAppTakesNoHolderThatIsSomebodys(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	c := seedbed(t)
+	out, err := initRun(t, c)
+	x.NoError(err, "init: %s", out)
+
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	acme, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "acme"}.Build())
+	x.NoError(err)
+	at := app.TenantRef_builder{Id: acme.GetId()}.Build()
+
+	// Somebody called kamino, who holds the staff role.
+	kamino, err := s.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{Tenant: at, Alias: "kamino"}.Build())
+	x.NoError(err)
+	staff, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{Tenant: at, Alias: "staff", Methods: []string{"/hday.oasys.*/*"}}.Build())
+	x.NoError(err)
+	_, err = s.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
+		Role: app.RoleRef_builder{Id: staff.GetId()}.Build(), Holder: app.HolderRef_builder{Id: kamino.GetId()}.Build(),
+	}.Build())
+	x.NoError(err)
+	x.NoError(s.Close())
+
+	install := func(args ...string) error {
+		return cli.NewCmdApp(&c).Run(ctx, append([]string{"install", "--tenant", "acme", "--role", "/roster.HolderService/Reaches"}, args...))
+	}
+
+	err = install("kamino")
+	x.ErrorContains(err, "--adopt")
+
+	s, err = cmd.Build(ctx, c)
+	x.NoError(err)
+	vs, err := s.Ungated.Nomination().List(ctx, app.NominationListRequest_builder{}.Build())
+	x.NoError(err)
+	x.Empty(vs.GetItems(), "a refused install nominated somebody")
+	_, err = cmd.ControlHolder(ctx, s.Control, "kamino")
+	x.Equal(codes.NotFound, status.Code(err), "a refused install made the app's control-plane holder")
+	x.NoError(s.Close())
+
+	x.NoError(install("--adopt", "kamino"))
+
+	t.Run("and a tenant or an app nobody has is refused, making nothing", func(t *testing.T) {
+		x := require.New(t)
+
+		x.Error(cli.NewCmdApp(&c).Run(ctx, []string{"install", "--tenant", "nosuch", "--role", "/roster.HolderService/Reaches", "khala"}))
+		x.Error(cli.NewCmdApp(&c).Run(ctx, []string{"uninstall", "--tenant", "nosuch", "kamino"}))
+		x.Error(cli.NewCmdApp(&c).Run(ctx, []string{"uninstall", "--tenant", "acme", "kamnio"}))
+
+		s, err := cmd.Build(ctx, c)
+		x.NoError(err)
+		defer s.Close()
+		for _, name := range []string{"khala", "kamnio"} {
+			_, err = cmd.ControlHolder(ctx, s.Control, name)
+			x.Equal(codes.NotFound, status.Code(err), "%s was made by a command that failed", name)
+		}
+	})
+}

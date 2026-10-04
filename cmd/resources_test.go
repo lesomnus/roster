@@ -120,6 +120,17 @@ resources:
 		x.Empty(v.Added)
 		x.Empty(v.Changed)
 		x.Len(v.Same, 4)
+
+		// Nor binds the provisioner again: `Binding` has no unique index to
+		// refuse a second, and a deployment's control plane was found holding
+		// one per start.
+		who, err := cmd.ControlHolder(ctx, b.Server.Control, "provisioner")
+		x.NoError(err)
+		bs, err := b.Server.Control.Ungated.Binding().List(ctx, app.BindingListRequest_builder{
+			Filters: []*app.BindingFilter{app.BindingFilter_builder{Holder: app.HolderRef_builder{Id: who.Bytes()}.Build()}.Build()},
+		}.Build())
+		x.NoError(err)
+		x.Len(bs.GetItems(), 1, "a second run bound the provisioner twice")
 	})
 
 	t.Run("and an edited field is written", func(t *testing.T) {

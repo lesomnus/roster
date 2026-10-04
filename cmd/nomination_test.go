@@ -502,3 +502,65 @@ func TestAKeyReadsItsOwnNominationsAndNobodyElses(t *testing.T) {
 		require.Equal(t, codes.Unimplemented, status.Code(err), "a key watched a nomination, which a watch by reference could not hold to its own")
 	})
 }
+
+// TestARosterAtThatNamesNothingIsRefused is a header that is there and names
+// no one place.
+//
+// It was read as no header at all, and for an unnarrowed key no header is every
+// tenant: `roster-at: :443` was answered wider than a request that sent nothing
+// would have been, and wider than the caller meant to be. A narrowed key was
+// never at risk -- it allows nothing as itself -- so the key here is one with a
+// method of its own.
+func TestARosterAtThatNamesNothingIsRefused(t *testing.T) {
+	b := keyFor(t, app.HolderService_List_FullMethodName)
+	ctx := t.Context()
+
+	answersAt(t, b.Server, b.Contoso, "contoso.example")
+	nominates(t, b.Server, b.Contoso, b.Service, b.Who)
+	permits(t, ctx, b, b.Contoso, b.Who, "fronts", app.HolderService_List_FullMethodName)
+
+	holders := app.NewHolderServiceClient(b.Conn)
+	list := func(ats ...string) error {
+		kv := []string{"authorization", "Bearer " + b.Token}
+		for _, a := range ats {
+			kv = append(kv, keys.HeaderAt, a)
+		}
+		_, err := holders.List(metadata.NewOutgoingContext(ctx, metadata.Pairs(kv...)), app.HolderListRequest_builder{}.Build())
+
+		return err
+	}
+
+	for _, ats := range [][]string{
+		{""},
+		{" "},
+		{":443"},
+		{"[]"},
+		{"contoso.example", " "},
+		{"contoso.example", ":443"},
+		{"contoso.example", "fabrikam.example"},
+	} {
+		require.Equal(t, codes.Unauthenticated, status.Code(list(ats...)), "roster-at %q was answered", ats)
+	}
+
+	require.NoError(t, list("contoso.example"), "one name, once")
+	require.NoError(t, list("contoso.example", "CONTOSO.EXAMPLE:443"), "one name, said twice")
+	require.NoError(t, list(), "no header is the key as itself")
+}
+
+// TestADeploymentKeyAsItselfWritesNoNomination is a key allowed `Add`, unnarrowed.
+//
+// It is every tenant held to its methods, and a nomination is a way to act as
+// somebody: one such key wrote a nomination anywhere, for its own holder, as
+// whoever there held nothing -- whom the reach rule lets anybody name.
+func TestADeploymentKeyAsItselfWritesNoNomination(t *testing.T) {
+	b := keyFor(t, app.NominationService_Add_FullMethodName, app.NominationService_Erase_FullMethodName)
+	ctx := t.Context()
+
+	nobody := addHolder(t, ctx, b.Server, b.Contoso, "nobody")
+	_, err := app.NewNominationServiceClient(b.Conn).Add(bearing(ctx, b.Token), app.NominationAddRequest_builder{
+		Tenant:     app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+		BorrowerId: b.Service.Bytes(),
+		ActsAs:     app.HolderRef_builder{Id: nobody.Bytes()}.Build(),
+	}.Build())
+	require.Equal(t, codes.PermissionDenied, status.Code(err), "%v", err)
+}

@@ -71,7 +71,9 @@ func NewCmdApp(c *cmd.Config) *xli.Command {
 // own. An app's holder in a tenant is that tenant's: an administrator who
 // narrows its role or points the nomination at another holder has decided
 // something, and running this again -- for another tenant, or by a runbook that
-// runs it every time -- must not undo it.
+// runs it every time -- does not undo it. What it does put back is a row that
+// is gone, a nomination or a binding: that is how an operator puts an app back
+// after a tenant ended it, which the tenant usually cannot do itself.
 func newCmdAppInstall(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "install",
@@ -85,6 +87,7 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 			&flg.String{Name: "tenant", Brief: "the tenant, by alias"},
 			&flg.Strings{Name: "role", Brief: "what the app may do there, as methods; repeat it, or comma separate"},
 			&flg.Strings{Name: "administer", Brief: "the methods the tenant's administrators may hand on; added to their role, once"},
+			&flg.Switch{Name: "adopt", Brief: "use a holder of the app's name that already holds roles, keys or a way to sign in, with all of it"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -92,6 +95,7 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 			tenant, _ := flg.Find[string](cl, "tenant")
 			role, _ := flg.Find[[]string](cl, "role")
 			administer, _ := flg.Find[[]string](cl, "administer")
+			adopt, _ := flg.Find[bool](cl, "adopt")
 
 			if tenant == "" {
 				return errors.New("--tenant: which tenant to install it into")
@@ -109,7 +113,7 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
-			got, err := installApp(ctx, s, name, tenant, methods, cmd.SplitMethods(administer))
+			got, err := installApp(ctx, s, name, tenant, methods, cmd.SplitMethods(administer), adopt)
 			if err != nil {
 				return err
 			}
@@ -125,12 +129,20 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 
 // installApp is [newCmdAppInstall] without the process, and answers with what
 // it wrote, one sentence each, for the log.
-func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods, administer []string) ([]string, error) {
-	borrower, err := cmd.HolderNamed(ctx, s.Control, name)
-	if err != nil {
-		return nil, err
-	}
-
+//
+// # What it looks at before it writes
+//
+// The tenant, and the role its administrators hold when `--administer` names
+// one, are read first: an install that failed half way left a holder, a role
+// and a nomination behind for a command that said it failed.
+//
+// A holder of the app's name that is already there is somebody's, and is used
+// only if it holds nothing but the app's own role -- which is what a second run
+// finds -- or when `--adopt` says to. Taking it silently was answering the
+// app's key with whatever that holder held, and handing whoever signs in as it
+// the app's methods: `roster app install admin` was a key answered as the
+// tenant's administrator.
+func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods, administer []string, adopt bool) ([]string, error) {
 	at := rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build()
 	tn, err := s.Ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
 		Ref:    at,
@@ -141,9 +153,42 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 	}
 	at = rstr.TenantRef_builder{Id: tn.GetId()}.Build()
 
+	if len(administer) > 0 {
+		r, err := roleNamed(ctx, s, at, core.Everyverb)
+		if err != nil {
+			return nil, err
+		}
+		if r == nil {
+			return nil, fmt.Errorf("--administer: %s has no role %q to add the app's methods to", tenant, core.Everyverb)
+		}
+	}
+
+	existing, err := roleNamed(ctx, s, at, AppRole(name))
+	if err != nil {
+		return nil, err
+	}
 	said := []string{}
 
-	who, err := ensureHolderNamed(ctx, s, at, name)
+	who, made, err := holderNamed(ctx, s, at, name)
+	if err != nil {
+		return nil, err
+	}
+	if !made {
+		h, err := holdingOf(ctx, s, who, existing)
+		if err != nil {
+			return nil, err
+		}
+		switch {
+		case h.empty():
+		case !adopt:
+			return nil, fmt.Errorf("@%s/%s is already there and holds %s: the app's key would be answered with all of it, "+
+				"and whoever signs in as it would hold the app's methods. Name the app something else, or say --adopt", tenant, name, h)
+		default:
+			said = append(said, fmt.Sprintf("adopted @%s/%s, which already held %s; the app is answered with all of it.", tenant, name, h))
+		}
+	}
+
+	borrower, err := cmd.HolderNamed(ctx, s.Control, name)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +198,7 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 		return nil, err
 	}
 	if made {
-		said = append(said, fmt.Sprintf("@%s/%s may call %d method(s) in %s, as role %s.", tenant, name, len(methods), tenant, AppRole(name)))
+		said = append(said, fmt.Sprintf("@%s/%s may call %d method(s) in %s through role %s.", tenant, name, len(methods), tenant, AppRole(name)))
 	} else {
 		said = append(said, fmt.Sprintf("%s already has role %s; left as the tenant has it.", tenant, AppRole(name)))
 	}
@@ -176,6 +221,25 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 		return nil, err
 	case !bytes.Equal(n.GetActsAs().GetId(), who):
 		said = append(said, fmt.Sprintf("%s's key is nominated as somebody else in %s; left as the tenant has it.", name, tenant))
+	}
+
+	// Every live key on the app's control-plane holder borrows through the
+	// nomination, not only the one somebody just minted -- so they are named.
+	ks, err := s.Control.Ungated.ApiKey().List(ctx, rstr.ApiKeyListRequest_builder{
+		Filters: []*rstr.ApiKeyFilter{rstr.ApiKeyFilter_builder{Holder: rstr.HolderRef_builder{Id: borrower.Bytes()}.Build()}.Build()},
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	for _, k := range ks.GetItems() {
+		as := "narrowed"
+		if n := len(k.GetMethods()); n > 0 {
+			as = fmt.Sprintf("and %d method(s) across every tenant without roster-at", n)
+		}
+		said = append(said, fmt.Sprintf("key %q on %s is answered through it (%s).", k.GetAlias(), name, as))
+	}
+	if len(ks.GetItems()) == 0 {
+		said = append(said, fmt.Sprintf("%s has no key yet: roster control key add --narrowed %s.", name, name))
 	}
 
 	if len(administer) > 0 {
@@ -253,7 +317,9 @@ func nominationOf(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, borrow
 // tenant is made, which covers no app's methods; this is what a tenant
 // administrator needs before the app's holder's role, or anybody else's, is
 // theirs to change. Added to and never rewritten: what is already there stays,
-// and a method already covered by a pattern there is not added twice.
+// and a method already there, spelled the same, is not added twice. Spelled
+// the same and not covered: `/hday.oasys.*/*` beside `/hday.oasys.Robot/*` is
+// two rows, which is untidy and grants nothing more.
 func administered(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, methods []string) (int, error) {
 	got, err := s.Ungated.Role().Get(ctx, rstr.RoleGetRequest_builder{
 		Ref: rstr.RoleRef_builder{
@@ -322,11 +388,21 @@ func newCmdAppUninstall(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
-			borrower, err := cmd.HolderNamed(ctx, s.Control, name)
+			// Both looked up and neither made: a mistyped tenant was "not
+			// nominated; nothing to do", and a mistyped app was a new
+			// control-plane holder written by a command taking one away.
+			tn, err := s.Ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+				Ref:    rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build(),
+				Select: rstr.TenantSelect_builder{}.Build(),
+			}.Build())
+			if err != nil {
+				return fmt.Errorf("--tenant %s: %w", tenant, err)
+			}
+			borrower, err := cmd.ControlHolder(ctx, s.Control, name)
 			if err != nil {
 				return err
 			}
-			n, err := nominationOf(ctx, s, rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build(), borrower)
+			n, err := nominationOf(ctx, s, rstr.TenantRef_builder{Id: tn.GetId()}.Build(), borrower)
 			if status.Code(err) == codes.NotFound {
 				fmt.Fprintf(os.Stderr, "roster: %s is not nominated in %s; nothing to do.\n", name, tenant)
 

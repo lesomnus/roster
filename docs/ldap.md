@@ -28,7 +28,7 @@ every time).
 ## Running it
 
 ```sh
-roster control key add --allow /roster.NominationService/List directory > directory.key
+(umask 077 && roster control key add --allow /roster.NominationService/List directory > directory.key)
 roster app install --tenant contoso --role '<the methods below>' directory
 
 roster ldap serve --roster roster:8080 \
@@ -161,7 +161,12 @@ o=contoso
 
 A team with no site is `cn=<team>,ou=teams,o=contoso`, under the suffix's own
 `ou=teams`. `--base contoso=dc=contoso,dc=example` renames the suffix for a
-deployment whose clients already expect one. Nothing below the suffix is configurable:
+deployment whose clients already expect one -- and ties the directory's start to
+contoso: a `--base` for a tenant this directory does not front is refused, as
+everything it is told and cannot do is, so a tenant that ends the directory's
+nomination stops it starting until the flag goes. A tenant that cannot be read
+for any other reason -- the holder it nominated disabled, its role narrowed --
+is skipped with a warning and the rest are served. Nothing below the suffix is configurable:
 a directory's shape is what clients are configured against once, and two
 deployments of roster should agree on it.
 

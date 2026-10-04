@@ -1184,6 +1184,14 @@ export const HolderService: GenService<{
    * would be an object rule over a read, which is a shape roster has not taken
    * and does not need here.
    *
+   * # A suspended holder reaches nothing
+   *
+   * Their bindings stay, and so would an answer read off them -- but the gate
+   * refuses every credential of theirs before it asks what they hold, so what
+   * it would decide is nothing, and that is what this says. An app checking a
+   * token roster never sees (an SSO ID token, good for its hour) has only this
+   * to learn the person was suspended from.
+   *
    * @generated from rpc roster.HolderService.Reaches
    */
   reaches: {

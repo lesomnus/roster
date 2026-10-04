@@ -7,9 +7,11 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/z"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -174,16 +176,40 @@ func (s coreDelegation) reaches(ctx context.Context, ref *app.DelegationRef) err
 //
 // The caller is a holder, because the token names a holder: a deployment key as
 // itself is no one in any tenant. The audience is the caller's tenant's own,
-// the agreement every row naming two holders is held to (`agree.go`). Neither
-// rule needs a grant check: the token hands the receiver nothing it could not
-// already be told by `HolderService/Reaches` about the caller, and what it may
-// do *at roster* through `roster-as` is narrowed to `methods`, which name the
-// receiver's own RPCs and not roster's.
+// the agreement every row naming two holders is held to (`agree.go`), and
+// somebody **else**.
+//
+// # And what it may carry
+//
+// This said once that no grant check was needed, because `methods` would name
+// the receiver's RPCs and not roster's. Nothing made them: the row is an
+// ordinary delegation, the receiver may present it beside its own key in
+// `roster-as`, and roster answers that as the caller narrowed to `methods` --
+// whatever they name. So a key attenuated to this one method could mint a
+// token for itself allowing `/*.*/*`, present it beside the same key, and be
+// answered with its holder's whole role: an attenuation undone by the
+// credential it attenuates.
+//
+// So three refusals, each closing one leg of that:
+//
+//   - `methods` are held to what the caller's own credential allows, the rule
+//     `Vouch.Delegate` holds its tokens to (`server/vouch`, `mayDelegate`):
+//     nobody hands on what they may not call.
+//   - The audience is not the caller. A token for yourself proves nothing to
+//     anybody, and it was the whole of the trick above.
+//   - A caller acting through a delegation (`roster-as`) is refused. They are
+//     the person it names only within what that person handed over, and a
+//     token minted about them from it would be the same delegation renewed --
+//     a fresh expiry, out of reach of anything that revokes the first.
 func (s coreDelegation) Exchange(ctx context.Context, req *app.DelegationExchangeRequest) (*app.DelegationExchangeResponse, error) {
 	f, ok := frame.From(ctx)
 	if !ok || f.Actor.IsZero() || f.Tenant == pdid.Nil {
 		return nil, status.Error(codes.FailedPrecondition,
 			"a token naming the caller needs a caller in a tenant: a deployment key names one with roster-at")
+	}
+	if md, ok := metadata.FromIncomingContext(ctx); ok && len(md.Get(keys.HeaderActing)) > 0 {
+		return nil, status.Error(codes.PermissionDenied,
+			"a token naming the caller is the caller's own; one acting through a delegation may not mint another from it")
 	}
 	if req.GetAudience() == nil {
 		return nil, status.Error(codes.InvalidArgument, "audience: which app in this tenant the token is for")
@@ -193,12 +219,22 @@ func (s coreDelegation) Exchange(ctx context.Context, req *app.DelegationExchang
 	if err != nil {
 		return nil, err
 	}
+	if to == f.Actor {
+		return nil, pderr.Invalidf("audience", "a token for yourself proves who you are to nobody; name the app it is for")
+	}
 	whose, err := s.tenantOfHolder(ctx, app.HolderRef_builder{Id: to.Bytes()}.Build())
 	if err != nil {
 		return nil, err
 	}
 	if err := tenantsAgree("audience", whose, f.Tenant); err != nil {
 		return nil, err
+	}
+
+	for _, m := range req.GetMethods() {
+		if !f.Grant.Allows(m) {
+			return nil, status.Errorf(codes.PermissionDenied,
+				"methods: you may not call %s, so you may not hand it on", m)
+		}
 	}
 
 	token, v, err := keys.Delegate(ctx, s.Next(), keys.Delegated{

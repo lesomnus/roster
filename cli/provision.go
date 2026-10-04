@@ -1,8 +1,11 @@
 package cli
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
@@ -74,7 +77,7 @@ func provisionAccount(ctx context.Context, s *cmd.Server, enrol string, out stri
 	if err != nil {
 		return "", 0, err
 	}
-	n, err := nominateAs(ctx, s, accountProvisioned, methods, borrower)
+	n, err := nominateAs(ctx, s, accountProvisioned, methods, borrower, accountProvisioned)
 	if err != nil {
 		return "", 0, err
 	}
@@ -82,15 +85,23 @@ func provisionAccount(ctx context.Context, s *cmd.Server, enrol string, out stri
 	return token, n, nil
 }
 
-// ensureHolderNamed is a holder called `alias` in the tenant, made if there is
-// none.
-func ensureHolderNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string) ([]byte, error) {
+// holderNamed is a holder called `alias` in the tenant, made if there is none,
+// and whether this call made it.
+//
+// Whether it was made is the question the callers have to ask next, and it is
+// why this no longer answers with the row alone. A holder that was already
+// there is somebody's: a person a tenant called `account`, its administrator
+// called `admin`, an app's holder from before. Handing it an app's role hands
+// whoever signs in as it the app's methods, and answering the app's key as it
+// hands the app whatever it already held -- so a holder found is looked at
+// ([holdingOf]) before it is used, and a holder made needs nothing.
+func holderNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string) ([]byte, bool, error) {
 	v, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: alias}.Build())
 	if err == nil {
-		return v.GetId(), nil
+		return v.GetId(), true, nil
 	}
 	if status.Code(err) != codes.AlreadyExists {
-		return nil, err
+		return nil, false, err
 	}
 
 	got, err := s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
@@ -100,10 +111,166 @@ func ensureHolderNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, a
 		Select: rstr.HolderSelect_builder{}.Build(),
 	}.Build())
 	if err != nil {
+		return nil, false, err
+	}
+
+	return got.GetId(), false, nil
+}
+
+// holding is what a holder already has: what an app answered as it would be
+// answered with too, and the ways somebody signs in as it.
+type holding struct {
+	roles       []string
+	credentials int
+	identities  int
+	emails      int
+	keys        int
+}
+
+// wayIn is whether somebody signs in as this holder: a person, or a row people
+// share. An app's role on it is that somebody's.
+func (h holding) wayIn() bool { return h.credentials+h.identities+h.emails > 0 }
+
+func (h holding) empty() bool { return len(h.roles) == 0 && !h.wayIn() && h.keys == 0 }
+
+func (h holding) String() string {
+	out := []string{}
+	if len(h.roles) > 0 {
+		out = append(out, "role "+strings.Join(h.roles, ", "))
+	}
+	for _, v := range []struct {
+		n    int
+		what string
+	}{
+		{h.credentials, "credential"}, {h.identities, "identity"}, {h.emails, "email"}, {h.keys, "key"},
+	} {
+		if v.n > 0 {
+			out = append(out, fmt.Sprintf("%d %s(s)", v.n, v.what))
+		}
+	}
+	if len(out) == 0 {
+		return "nothing"
+	}
+
+	return strings.Join(out, "; ")
+}
+
+// holdingOf reads what `who` holds, leaving out bindings to `except`: the role
+// being given, which a second run finds already bound and which is not news.
+func holdingOf(ctx context.Context, s *cmd.Server, who []byte, except []byte) (holding, error) {
+	ref := rstr.HolderRef_builder{Id: who}.Build()
+	out := holding{}
+
+	seen := map[string]bool{}
+	after := ""
+	for {
+		vs, err := s.Ungated.Binding().List(ctx, rstr.BindingListRequest_builder{
+			Filters: []*rstr.BindingFilter{rstr.BindingFilter_builder{Holder: ref}.Build()},
+			Size:    100,
+			After:   after,
+		}.Build())
+		if err != nil {
+			return holding{}, err
+		}
+		for _, v := range vs.GetItems() {
+			r := v.GetRole().GetId()
+			if bytes.Equal(r, except) || seen[string(r)] {
+				continue
+			}
+			seen[string(r)] = true
+
+			got, err := s.Ungated.Role().Get(ctx, rstr.RoleGetRequest_builder{
+				Ref:    rstr.RoleRef_builder{Id: r}.Build(),
+				Select: rstr.RoleSelect_builder{Alias: z.Ptr(true)}.Build(),
+			}.Build())
+			if err != nil {
+				return holding{}, err
+			}
+			out.roles = append(out.roles, got.GetAlias())
+		}
+		if after = vs.GetNext(); after == "" {
+			break
+		}
+	}
+
+	cs, err := s.Ungated.Credential().List(ctx, rstr.CredentialListRequest_builder{
+		Filters: []*rstr.CredentialFilter{rstr.CredentialFilter_builder{Holder: ref}.Build()},
+	}.Build())
+	if err != nil {
+		return holding{}, err
+	}
+	out.credentials = len(cs.GetItems())
+
+	is, err := s.Ungated.Identity().List(ctx, rstr.IdentityListRequest_builder{
+		Filters: []*rstr.IdentityFilter{rstr.IdentityFilter_builder{Holder: ref}.Build()},
+	}.Build())
+	if err != nil {
+		return holding{}, err
+	}
+	out.identities = len(is.GetItems())
+
+	es, err := s.Ungated.Email().List(ctx, rstr.EmailListRequest_builder{
+		Filters: []*rstr.EmailFilter{rstr.EmailFilter_builder{Holder: ref}.Build()},
+	}.Build())
+	if err != nil {
+		return holding{}, err
+	}
+	out.emails = len(es.GetItems())
+
+	ks, err := s.Ungated.ApiKey().List(ctx, rstr.ApiKeyListRequest_builder{
+		Filters: []*rstr.ApiKeyFilter{rstr.ApiKeyFilter_builder{Holder: ref}.Build()},
+	}.Build())
+	if err != nil {
+		return holding{}, err
+	}
+	out.keys = len(ks.GetItems())
+
+	return out, nil
+}
+
+// roleNamed is the role called `alias` in the tenant, or nil when there is none.
+func roleNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string) ([]byte, error) {
+	v, err := s.Ungated.Role().Get(ctx, rstr.RoleGetRequest_builder{
+		Ref: rstr.RoleRef_builder{
+			Slug: rstr.RoleRefBySlug_builder{Alias: z.Ptr(alias), Tenant: at}.Build(),
+		}.Build(),
+		Select: rstr.RoleSelect_builder{}.Build(),
+	}.Build())
+	if status.Code(err) == codes.NotFound {
+		return nil, nil
+	}
+	if err != nil {
 		return nil, err
 	}
 
-	return got.GetId(), nil
+	return v.GetId(), nil
+}
+
+// boundToOthers is whether `role` is bound to anybody but `who`.
+//
+// The question [ensureRoleNamed] has to ask before it rewrites a role it finds
+// by name: a tenant's own role of the same name, bound to its people, would be
+// rewritten to an app's methods -- and every one of them would hold those.
+func boundToOthers(ctx context.Context, s *cmd.Server, role, who []byte) (bool, error) {
+	after := ""
+	for {
+		vs, err := s.Ungated.Binding().List(ctx, rstr.BindingListRequest_builder{
+			Filters: []*rstr.BindingFilter{rstr.BindingFilter_builder{Role: rstr.RoleRef_builder{Id: role}.Build()}.Build()},
+			Size:    100,
+			After:   after,
+		}.Build())
+		if err != nil {
+			return false, err
+		}
+		for _, v := range vs.GetItems() {
+			if !bytes.Equal(v.GetHolder().GetId(), who) || len(v.GetGroup().GetId()) > 0 {
+				return true, nil
+			}
+		}
+		if after = vs.GetNext(); after == "" {
+			return false, nil
+		}
+	}
 }
 
 // ensureRoleNamed is a role called `alias` holding exactly `methods`.
@@ -193,16 +360,7 @@ func ensureBinding(ctx context.Context, s *cmd.Server, role, who []byte) error {
 // and is one more thing that would answer if it leaked. A restart is a
 // rotation, and nothing accumulates.
 func mintNamed(ctx context.Context, at rstr.Server, who []byte, alias string, methods []string, prefix string) (string, error) {
-	if v, err := at.ApiKey().Get(ctx, rstr.ApiKeyGetRequest_builder{
-		Ref: rstr.ApiKeyRef_builder{
-			Slug: rstr.ApiKeyRefBySlug_builder{Holder: rstr.HolderRef_builder{Id: who}.Build(), Alias: z.Ptr(alias)}.Build(),
-		}.Build(),
-		Select: rstr.ApiKeySelect_builder{}.Build(),
-	}.Build()); err == nil {
-		if _, err := at.ApiKey().Erase(ctx, rstr.ApiKeyRef_builder{Id: v.GetId()}.Build()); err != nil {
-			return "", err
-		}
-	} else if status.Code(err) != codes.NotFound {
+	if err := eraseKeyNamed(ctx, at, who, alias); err != nil {
 		return "", err
 	}
 
@@ -220,15 +378,51 @@ func mintNamed(ctx context.Context, at rstr.Server, who []byte, alias string, me
 	return token, nil
 }
 
+// eraseKeyNamed erases the key called `alias` on a holder, if there is one.
+func eraseKeyNamed(ctx context.Context, at rstr.Server, who []byte, alias string) error {
+	v, err := at.ApiKey().Get(ctx, rstr.ApiKeyGetRequest_builder{
+		Ref: rstr.ApiKeyRef_builder{
+			Slug: rstr.ApiKeyRefBySlug_builder{Holder: rstr.HolderRef_builder{Id: who}.Build(), Alias: z.Ptr(alias)}.Build(),
+		}.Build(),
+		Select: rstr.ApiKeySelect_builder{}.Build(),
+	}.Build())
+	if status.Code(err) == codes.NotFound {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	_, err = at.ApiKey().Erase(ctx, rstr.ApiKeyRef_builder{Id: v.GetId()}.Build())
+
+	return err
+}
+
 // writeKey puts a token into a file that is either whole or not there.
 //
 // `0600` in a directory made at `0700`: what is written is a credential, and
 // the only reader is the process beside it. Written beside and moved into
 // place, because that reader waits on the file's existence (`docker/account.sh`)
 // and a half-written key is a refused start with nothing saying why.
+//
+// The leftover of a run that died between the two is removed first: `WriteFile`
+// keeps the mode of a file that is already there, so a `.tmp` somebody made
+// readable would have handed its mode to the key written into it.
 func writeKey(path, token string) error {
 	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, []byte(token+"\n"), 0o600); err != nil {
+	if err := os.Remove(tmp); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	f, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return err
+	}
+	if _, err := f.WriteString(token + "\n"); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
 		return err
 	}
 

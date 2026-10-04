@@ -40,6 +40,33 @@ func HolderNamed(ctx context.Context, s *Server, alias string) (pdid.Id, error) 
 	return who, err
 }
 
+// ControlHolder is a holder of this plane by alias, looked up and never made:
+// [HolderNamed] for a caller that is about to take something away and must not
+// add a row because somebody mistyped the name it is taking it from.
+func ControlHolder(ctx context.Context, s *Server, alias string) (pdid.Id, error) {
+	ts, err := s.Ungated.Tenant().List(ctx, app.TenantListRequest_builder{Size: 1}.Build())
+	if err != nil {
+		return pdid.Nil, err
+	}
+	if len(ts.GetItems()) == 0 {
+		return pdid.Nil, status.Errorf(codes.NotFound, "%s: no such holder; this control plane has no owner yet", alias)
+	}
+
+	v, err := s.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{
+			Slug: app.HolderRefBySlug_builder{
+				Alias:  z.Ptr(alias),
+				Tenant: app.TenantRef_builder{Id: ts.GetItems()[0].GetId()}.Build(),
+			}.Build(),
+		}.Build(),
+	}.Build())
+	if err != nil {
+		return pdid.Nil, fmt.Errorf("%s: %w", alias, err)
+	}
+
+	return pdid.From(v.GetId())
+}
+
 // holderNamedIn is [HolderNamed] on any stack, and the owner tenant it landed in.
 //
 // A stack rather than a [Server] so that `seedOperator` can hand it one rebound

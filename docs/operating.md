@@ -540,13 +540,16 @@ already nominated in works on the start that applies it, and a deployment that
 adds names by hand rather than by file does not have it at all: write the row,
 and the next start nominates.
 
-**Upgrading from `Host.acts_as`.** The field is gone (`host.proto` reserves 8)
-and its column is left where it was; nothing reads it. The first start of this
-version's `login provision` writes the nominations from the names, so a
-deployment that runs it as an init container -- `deploy/` does -- needs nothing
-done. A roster-hosted app other than the Login App that relied on a name's
-`acts_as` has to be nominated in each tenant before it is upgraded to, or its
-calls are refused.
+**Upgrading from `Host.acts_as`.** The field is gone (`host.proto` reserves 8).
+On Postgres its column is left where it was; on SQLite the migration rebuilds
+the table without it. Nothing reads it either way, and going back a version
+puts the column back empty and its `login provision` fills it again. The first
+start of this version's `login provision` writes the nominations from the
+names, so a deployment that runs it as an init container -- `deploy/` does --
+needs nothing done. A roster-hosted app other than the Login App that relied on
+a name's `acts_as` is refused from the upgrade on, until `roster app install`
+nominates it in each tenant: the table nominations live in arrives with the
+upgrade, so there is nothing to write ahead of it.
 
 Beside the process is where it belongs: an `initContainer` in Kubernetes, a line
 before `ExecStart` on a box. `deploy/` is that, as manifests.
