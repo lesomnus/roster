@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/lesomnus/z"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"uuid"
 
@@ -319,4 +321,32 @@ func KeyPlane(ctx context.Context, s *Server, k pdid.Id) (*Server, error) {
 	}
 
 	return nil, fmt.Errorf("--id: no key %s on either plane", k)
+}
+
+// keyOwners answers which control-plane holder a deployment key hangs off, for
+// `server/core`'s [core.Borrower]: the identity a `Nomination` is found by, on
+// the other database.
+//
+// A pointer filled in after the fact because the data plane's stack is built
+// before the control plane that answers it (`build`). Unfilled is a deployment
+// with no control plane, where there are no deployment keys to ask about.
+type keyOwners struct{ db *ent.Client }
+
+func (o *keyOwners) of(ctx context.Context, k pdid.Id) (pdid.Id, error) {
+	if o.db == nil {
+		return pdid.Nil, status.Error(codes.Unimplemented, "this deployment has no control plane, so no deployment keys")
+	}
+
+	who, err := o.db.ApiKey.Query().
+		Where(entapikey.IdEQ(uuid.UUID(k)), entapikey.DateErasedIsNil()).
+		QueryHolder().
+		OnlyId(ctx)
+	if ent.IsNotFound(err) {
+		return pdid.Nil, status.Error(codes.NotFound, "no such key")
+	}
+	if err != nil {
+		return pdid.Nil, err
+	}
+
+	return pdid.From(who[:])
 }

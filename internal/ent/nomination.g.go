@@ -19,6 +19,7 @@ func (e *Nomination) Proto() *rstr.Nomination {
 		r.SetId(v[:])
 		x.SetTenant(r)
 	}
+	x.SetName(e.Name)
 	x.SetBorrowerId(e.BorrowerId[:])
 	if v := e.Edges.ActsAs; v != nil {
 		x.SetActsAs(v.Proto())

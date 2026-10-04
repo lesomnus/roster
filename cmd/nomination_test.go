@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/roster/cli"
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/pd"
 )
@@ -393,5 +394,111 @@ func TestANarrowedKeyDoesNothingUntilARequestNamesATenant(t *testing.T) {
 	t.Run("and a forgotten --allow is still the refusal it was", func(t *testing.T) {
 		err := cli.NewCmdControl(&c).Run(t.Context(), []string{"key", "add", "forgot"})
 		require.ErrorContains(t, err, "--allow")
+	})
+}
+
+// TestATenantNamedDirectlyIsNarrowedTheSameWay is #76's roster half.
+//
+// A name a tenant answers at only ever chose the tenant; the nomination is what
+// consents. So a caller with no name to give -- a directory resolving its tenant
+// from a DN -- says the tenant itself, `@contoso` or `@<identifier>`, and is
+// answered exactly as a name would have had it answered.
+func TestATenantNamedDirectlyIsNarrowedTheSameWay(t *testing.T) {
+	x := require.New(t)
+
+	b := keyFor(t, app.TenantService_Get_FullMethodName)
+	ctx := t.Context()
+
+	nominates(t, b.Server, b.Contoso, b.Service, b.Who)
+	me := app.NewMeServiceClient(b.Conn)
+
+	for _, at := range []string{front.AtTenant("contoso"), front.AtTenant("CONTOSO"), front.AtTenant(b.Contoso.String())} {
+		v, err := me.Get(arrivedAt(ctx, b.Token, at), app.MeGetRequest_builder{}.Build())
+		x.NoError(err, "%s was not answered as the nominated holder", at)
+		x.Equal(b.Who.Bytes(), v.GetId(), at)
+	}
+
+	t.Run("and a tenant that nominated nobody for the key is refused", func(t *testing.T) {
+		x := require.New(t)
+
+		_ = add(t, ctx, b.Server, "fabrikam")
+		_, err := me.Get(arrivedAt(ctx, b.Token, front.AtTenant("fabrikam")), app.MeGetRequest_builder{}.Build())
+		x.Equal(codes.Unauthenticated, status.Code(err))
+	})
+
+	t.Run("and so are a tenant that does not exist, and none at all", func(t *testing.T) {
+		x := require.New(t)
+
+		for _, at := range []string{front.AtTenant("nobody"), front.TenantMark} {
+			_, err := me.Get(arrivedAt(ctx, b.Token, at), app.MeGetRequest_builder{}.Build())
+			x.Equal(codes.Unauthenticated, status.Code(err), "%q", at)
+		}
+	})
+}
+
+// TestAKeyReadsItsOwnNominationsAndNobodyElses is how an app run for many
+// tenants learns which ones it acts in.
+//
+// It has to ask before it can name a tenant, so it asks unnarrowed -- and an
+// unnarrowed deployment key is every tenant, which would show it every other
+// app's nominations too. What it is owed is its own, and the layer holds a key
+// to them: the same `List`, `Get` and `Watch`, answering about the caller's own
+// rows.
+func TestAKeyReadsItsOwnNominationsAndNobodyElses(t *testing.T) {
+	x := require.New(t)
+
+	b := keyFor(t, "/roster.NominationService/*")
+	ctx := t.Context()
+
+	fabrikam := add(t, ctx, b.Server, "fabrikam")
+	nominates(t, b.Server, b.Contoso, b.Service, b.Who)
+	nominates(t, b.Server, fabrikam, b.Service, addHolder(t, ctx, b.Server, fabrikam, "front"))
+
+	// Another app, in contoso.
+	other, _ := serviceKey(t, b.Server, "other", app.TenantService_Get_FullMethodName)
+	theirs, err := b.Ungated.Nomination().Add(ctx, app.NominationAddRequest_builder{
+		Tenant:     app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+		BorrowerId: other.Bytes(),
+		ActsAs:     app.HolderRef_builder{Id: addHolder(t, ctx, b.Server, b.Contoso, "other").Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	nominations := app.NewNominationServiceClient(b.Conn)
+	wide := metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+b.Token))
+
+	vs, err := nominations.List(wide, app.NominationListRequest_builder{}.Build())
+	x.NoError(err)
+	x.Len(vs.GetItems(), 2, "a key saw other than its own two nominations")
+	tenants := [][]byte{}
+	for _, v := range vs.GetItems() {
+		x.Equal(b.Service.Bytes(), v.GetBorrowerId())
+		tenants = append(tenants, v.GetTenant().GetId())
+	}
+	x.ElementsMatch([][]byte{b.Contoso.Bytes(), fabrikam.Bytes()}, tenants)
+
+	t.Run("and a filter naming another app's is refused", func(t *testing.T) {
+		_, err := nominations.List(wide, app.NominationListRequest_builder{
+			Filters: []*app.NominationFilter{app.NominationFilter_builder{BorrowerId: other.Bytes()}.Build()},
+		}.Build())
+		require.Equal(t, codes.PermissionDenied, status.Code(err))
+	})
+
+	t.Run("and another app's is not there to get", func(t *testing.T) {
+		_, err := nominations.Get(wide, app.NominationGetRequest_builder{
+			Ref: app.NominationRef_builder{Id: theirs.GetId()}.Build(),
+		}.Build())
+		require.Equal(t, codes.NotFound, status.Code(err))
+	})
+
+	t.Run("and it polls rather than watches", func(t *testing.T) {
+		st, err := nominations.Watch(wide, app.NominationWatchRequest_builder{
+			Filters: []*app.NominationFilter{app.NominationFilter_builder{
+				Ref: app.NominationRef_builder{Id: theirs.GetId()}.Build(),
+			}.Build()},
+		}.Build())
+		require.NoError(t, err)
+
+		_, err = st.Recv()
+		require.Equal(t, codes.Unimplemented, status.Code(err), "a key watched a nomination, which a watch by reference could not hold to its own")
 	})
 }

@@ -21,6 +21,7 @@ func (Nomination) Fields() []ent.Field {
 		field.Uuid("id").
 			Unique().
 			Immutable(),
+		field.String("name"),
 		field.Uuid("borrower_id").
 			Immutable(),
 		field.Time("date_updated"),

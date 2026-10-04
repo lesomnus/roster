@@ -34,8 +34,9 @@ import (
 // no server package but that one; the reasoning is there.
 const HeaderAt = front.HeaderAt
 
-// Nominated is the holder `borrower`'s keys are answered as in the tenant that
-// answers at `at`, or nil where no name is that and no [app.Nomination] says so.
+// Nominated is the holder `borrower`'s keys are answered as in the tenant `at`
+// chooses -- a name it answers at, or the tenant itself written `@contoso` -- or
+// nil where nothing is that and no [app.Nomination] says so.
 //
 // Two lookups, and each answers a different question. The `Host` says **which
 // tenant** the name is; the `Nomination` says **who this app is** there, found
@@ -56,10 +57,7 @@ func Nominated(ctx context.Context, tenant app.Server, at string, borrower []byt
 		return nil, nil
 	}
 
-	v, err := tenant.Host().Get(ctx, app.HostGetRequest_builder{
-		Ref:    app.HostRef_builder{Name: &at}.Build(),
-		Select: app.HostSelect_builder{Tenant: app.TenantSelect_builder{}.Build()}.Build(),
-	}.Build())
+	where, err := tenantAt(ctx, tenant, at)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +65,7 @@ func Nominated(ctx context.Context, tenant app.Server, at string, borrower []byt
 	n, err := tenant.Nomination().Get(ctx, app.NominationGetRequest_builder{
 		Ref: app.NominationRef_builder{
 			Borrower: app.NominationRefByBorrower_builder{
-				Tenant:     app.TenantRef_builder{Id: v.GetTenant().GetId()}.Build(),
+				Tenant:     app.TenantRef_builder{Id: where}.Build(),
 				BorrowerId: borrower,
 			}.Build(),
 		}.Build(),
@@ -93,6 +91,43 @@ func Nominated(ctx context.Context, tenant app.Server, at string, borrower []byt
 	}
 
 	return h, nil
+}
+
+// tenantAt is the tenant a [HeaderAt] value chooses: the tenant itself when it
+// is written `@alias` or `@<identifier>`, and otherwise the tenant whose `Host`
+// row has that name. Either way it chooses and does not consent -- the
+// nomination is what decides whether the key acts there.
+func tenantAt(ctx context.Context, tenant app.Server, at string) ([]byte, error) {
+	if ref, ok := strings.CutPrefix(at, front.TenantMark); ok {
+		if ref == "" {
+			return nil, status.Error(codes.InvalidArgument, "roster-at: a tenant with no name")
+		}
+
+		r := app.TenantRef_builder{Alias: &ref}
+		if k, err := pdid.Parse(ref); err == nil {
+			r = app.TenantRef_builder{Id: k.Bytes()}
+		}
+
+		v, err := tenant.Tenant().Get(ctx, app.TenantGetRequest_builder{
+			Ref:    r.Build(),
+			Select: app.TenantSelect_builder{}.Build(),
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		return v.GetId(), nil
+	}
+
+	v, err := tenant.Host().Get(ctx, app.HostGetRequest_builder{
+		Ref:    app.HostRef_builder{Name: &at}.Build(),
+		Select: app.HostSelect_builder{Tenant: app.TenantSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	return v.GetTenant().GetId(), nil
 }
 
 // ArrivedAt is the name a request declares, normalised, or empty.

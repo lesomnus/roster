@@ -12,6 +12,8 @@ const (
 	Label = "nomination"
 	// FieldId holds the string denoting the id field in the database.
 	FieldId = "id"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
 	// FieldBorrowerId holds the string denoting the borrower_id field in the database.
 	FieldBorrowerId = "borrower_id"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
@@ -49,6 +51,7 @@ const (
 // Columns holds all SQL columns for nomination fields.
 var Columns = []string{
 	FieldId,
+	FieldName,
 	FieldBorrowerId,
 	FieldDateUpdated,
 	FieldDateErased,
@@ -73,6 +76,11 @@ type OrderOption func(*sql.Selector)
 // ById orders the results by the id field.
 func ById(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldId, opts...).ToFunc()
+}
+
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
 // ByBorrowerId orders the results by the borrower_id field.

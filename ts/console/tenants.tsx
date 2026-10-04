@@ -69,6 +69,7 @@ import { Holders } from '#lib/tenant/holders.js'
 import { Hosts } from '#lib/tenant/hosts.js'
 import { Connections } from '#lib/tenant/connections.js'
 import { MailDomains } from '#lib/tenant/maildomains.js'
+import { Apps } from '#lib/tenant/apps.js'
 import { Sites } from '#lib/tenant/sites.js'
 import { Groups } from '#lib/tenant/groups.js'
 import { Roles } from '#lib/tenant/roles.js'
@@ -94,6 +95,7 @@ export type Screen =
 	| 'hosts'
 	| 'connections'
 	| 'maildomains'
+	| 'apps'
 	| 'sites'
 	| 'groups'
 	| 'roles'
@@ -224,6 +226,7 @@ function Screens(props: {
 			{props.at === 'hosts' && <Hosts tenant={tenant} may={props.may} />}
 			{props.at === 'connections' && <Connections tenant={tenant} may={props.may} />}
 			{props.at === 'maildomains' && <MailDomains tenant={tenant} may={props.may} />}
+			{props.at === 'apps' && <Apps tenant={tenant} may={props.may} />}
 			{props.at === 'sites' && <Sites tenant={tenant} may={props.may} />}
 			{props.at === 'groups' && <Groups tenant={tenant} may={props.may} />}
 			{props.at === 'roles' && <Roles tenant={tenant} may={props.may} />}

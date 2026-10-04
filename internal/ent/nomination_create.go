@@ -24,6 +24,12 @@ type NominationCreate struct {
 	hooks    []Hook
 }
 
+// SetName sets the "name" field.
+func (_c *NominationCreate) SetName(v string) *NominationCreate {
+	_c.mutation.SetName(v)
+	return _c
+}
+
 // SetBorrowerId sets the "borrower_id" field.
 func (_c *NominationCreate) SetBorrowerId(v uuid.UUID) *NominationCreate {
 	_c.mutation.SetBorrowerId(v)
@@ -126,6 +132,9 @@ func (_c *NominationCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *NominationCreate) check() error {
+	if _, ok := _c.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Nomination.name"`)}
+	}
 	if _, ok := _c.mutation.BorrowerId(); !ok {
 		return &ValidationError{Name: "borrower_id", err: errors.New(`ent: missing required field "Nomination.borrower_id"`)}
 	}
@@ -182,6 +191,10 @@ func (_c *NominationCreate) createSpec() (*Nomination, *sqlgraph.CreateSpec) {
 	if id, ok := _c.mutation.Id(); ok {
 		_node.Id = id
 		_spec.Id.Value = &id
+	}
+	if value, ok := _c.mutation.Name(); ok {
+		_spec.SetField(nomination.FieldName, field.TypeString, value)
+		_node.Name = value
 	}
 	if value, ok := _c.mutation.BorrowerId(); ok {
 		_spec.SetField(nomination.FieldBorrowerId, field.TypeUuid, value)

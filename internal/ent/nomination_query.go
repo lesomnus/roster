@@ -337,12 +337,12 @@ func (_q *NominationQuery) WithActsAs(opts ...func(*HolderQuery)) *NominationQue
 // Example:
 //
 //	var v []struct {
-//		BorrowerId uuid.UUID `json:"borrower_id,omitempty"`
+//		Name string `json:"name,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Nomination.Query().
-//		GroupBy(nomination.FieldBorrowerId).
+//		GroupBy(nomination.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *NominationQuery) GroupBy(field string, fields ...string) *NominationGroupBy {
@@ -360,11 +360,11 @@ func (_q *NominationQuery) GroupBy(field string, fields ...string) *NominationGr
 // Example:
 //
 //	var v []struct {
-//		BorrowerId uuid.UUID `json:"borrower_id,omitempty"`
+//		Name string `json:"name,omitempty"`
 //	}
 //
 //	client.Nomination.Query().
-//		Select(nomination.FieldBorrowerId).
+//		Select(nomination.FieldName).
 //		Scan(ctx, &v)
 func (_q *NominationQuery) Select(fields ...string) *NominationSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)

@@ -20,6 +20,8 @@ type Nomination struct {
 	config `json:"-"`
 	// Id of the ent.
 	Id uuid.UUID `json:"id,omitempty"`
+	// Name holds the value of the "name" field.
+	Name string `json:"name,omitempty"`
 	// BorrowerId holds the value of the "borrower_id" field.
 	BorrowerId uuid.UUID `json:"borrower_id,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
@@ -76,6 +78,8 @@ func (*Nomination) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case nomination.FieldName:
+			values[i] = new(sql.NullString)
 		case nomination.FieldDateUpdated, nomination.FieldDateErased, nomination.FieldDateCreated:
 			values[i] = new(sql.NullTime)
 		case nomination.FieldId, nomination.FieldBorrowerId, nomination.FieldTenantId, nomination.FieldActsAsId:
@@ -100,6 +104,12 @@ func (_m *Nomination) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				_m.Id = *value
+			}
+		case nomination.FieldName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value.Valid {
+				_m.Name = value.String
 			}
 		case nomination.FieldBorrowerId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
@@ -184,6 +194,9 @@ func (_m *Nomination) String() string {
 	var builder strings.Builder
 	builder.WriteString("Nomination(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
+	builder.WriteString("name=")
+	builder.WriteString(_m.Name)
+	builder.WriteString(", ")
 	builder.WriteString("borrower_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.BorrowerId))
 	builder.WriteString(", ")

@@ -31,6 +31,20 @@ func (_u *NominationUpdate) Where(ps ...predicate.Nomination) *NominationUpdate 
 	return _u
 }
 
+// SetName sets the "name" field.
+func (_u *NominationUpdate) SetName(v string) *NominationUpdate {
+	_u.mutation.SetName(v)
+	return _u
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (_u *NominationUpdate) SetNillableName(v *string) *NominationUpdate {
+	if v != nil {
+		_u.SetName(*v)
+	}
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *NominationUpdate) SetDateUpdated(v time.Time) *NominationUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -151,6 +165,9 @@ func (_u *NominationUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 			}
 		}
 	}
+	if value, ok := _u.mutation.Name(); ok {
+		_spec.SetField(nomination.FieldName, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(nomination.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -212,6 +229,20 @@ type NominationUpdateOne struct {
 	hooks     []Hook
 	mutation  *NominationMutation
 	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetName sets the "name" field.
+func (_u *NominationUpdateOne) SetName(v string) *NominationUpdateOne {
+	_u.mutation.SetName(v)
+	return _u
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (_u *NominationUpdateOne) SetNillableName(v *string) *NominationUpdateOne {
+	if v != nil {
+		_u.SetName(*v)
+	}
+	return _u
 }
 
 // SetDateUpdated sets the "date_updated" field.
@@ -363,6 +394,9 @@ func (_u *NominationUpdateOne) sqlSave(ctx context.Context) (_node *Nomination, 
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.Name(); ok {
+		_spec.SetField(nomination.FieldName, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(nomination.FieldDateUpdated, field.TypeTime, value)

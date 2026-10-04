@@ -54,6 +54,7 @@ import { Holders } from '#lib/tenant/holders.js'
 import { Hosts } from '#lib/tenant/hosts.js'
 import { Connections } from '#lib/tenant/connections.js'
 import { MailDomains } from '#lib/tenant/maildomains.js'
+import { Apps } from '#lib/tenant/apps.js'
 import { Sites } from '#lib/tenant/sites.js'
 import { Groups } from '#lib/tenant/groups.js'
 import { Roles } from '#lib/tenant/roles.js'
@@ -66,6 +67,7 @@ type Screen =
 	| 'hosts'
 	| 'connections'
 	| 'maildomains'
+	| 'apps'
 	| 'sites'
 	| 'groups'
 	| 'roles'
@@ -78,6 +80,7 @@ const screenNames: readonly Screen[] = [
 	'hosts',
 	'connections',
 	'maildomains',
+	'apps',
 	'sites',
 	'groups',
 	'roles',
@@ -176,6 +179,7 @@ function Screens(props: {
 		{ at: 'hosts', name: 'hosts', ok: props.may('/roster.HostService/List') },
 		{ at: 'connections', name: 'connections', ok: props.may('/roster.ConnectionService/List') },
 		{ at: 'maildomains', name: 'mail domains', ok: props.may('/roster.MailDomainService/List') },
+		{ at: 'apps', name: 'apps', ok: props.may('/roster.NominationService/List') },
 		{ at: 'sites', name: 'sites', ok: props.may('/roster.SiteService/List') },
 		{ at: 'groups', name: 'groups', ok: props.may('/roster.GroupService/List') },
 		{ at: 'roles', name: 'roles', ok: props.may('/roster.RoleService/List') },
@@ -204,6 +208,7 @@ function Screens(props: {
 			{props.at === 'hosts' && <Hosts tenant={tenant} may={props.may} />}
 			{props.at === 'connections' && <Connections tenant={tenant} may={props.may} />}
 			{props.at === 'maildomains' && <MailDomains tenant={tenant} may={props.may} />}
+			{props.at === 'apps' && <Apps tenant={tenant} may={props.may} />}
 			{props.at === 'sites' && <Sites tenant={tenant} may={props.may} />}
 			{props.at === 'groups' && <Groups tenant={tenant} may={props.may} />}
 			{props.at === 'roles' && <Roles tenant={tenant} may={props.may} />}

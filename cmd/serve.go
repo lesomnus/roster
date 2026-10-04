@@ -386,7 +386,15 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// the layer, where `Self` -- which overrides `Set` and nothing else -- never
 	// sees it. So the second stack is gone and this rule stays a link of its
 	// own, which is where a reader finds it. See `server/core/self.go`.
-	stacked, err := app.Build(walled.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking())), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
+	// Which control-plane holder a deployment key hangs off, asked of a
+	// database that does not exist yet: the control plane is built below, by
+	// this same function, and `owners` is pointed at it once it is. Until then
+	// -- and in a deployment with none -- it answers that it cannot say.
+	owners := &keyOwners{}
+	rules := Rules(client)
+	rules.Borrower = owners.of
+
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking())), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -401,7 +409,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// what this app means -- an identity linked by `init` or by an admin console
 	// is still an identity, and a subject that is an email address is still
 	// wrong.
-	ungated, err := app.Build(sink.WithWatch(w), core.Build(Rules(client), core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking())), pd.AuditBuild())
+	ungated, err := app.Build(sink.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking())), pd.AuditBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -493,6 +501,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		control.Keys = true
 
 		s.Control = control
+		owners.db = control.Ent
 
 		// What the nested `Build` arranged for itself, carried up.
 		//
