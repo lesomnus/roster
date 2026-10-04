@@ -163,6 +163,24 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 			return nil, err
 		}
 
+		// And somebody of the address's own tenant. A claimant named by
+		// identifier crossed the wall unasked: a front door holding a session
+		// from one tenant at another tenant's host had a claim link minted --
+		// and a message sent to the address -- for somebody the address's
+		// tenant never had. The agreement every row naming two holders is
+		// held to (`agree.go`).
+		row, err := s.tenantOfHolder(ctx, app.HolderRef_builder{Id: v.GetHolder().GetId()}.Build())
+		if err != nil {
+			return nil, err
+		}
+		theirs, err := s.tenantOfHolder(ctx, claim)
+		if err != nil {
+			return nil, err
+		}
+		if err := tenantsAgree("holder", theirs, row); err != nil {
+			return nil, err
+		}
+
 		k, err := s.holderOf(ctx, claim)
 		if err != nil {
 			return nil, err

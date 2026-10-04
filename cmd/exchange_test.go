@@ -9,7 +9,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdpb"
 
@@ -162,4 +164,78 @@ func TestExchangeHandsOnNothingTheCallerMayNot(t *testing.T) {
 		_, err = mint(acting(ctx, bobs, got.GetToken()), carol, exchange)
 		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
 	})
+}
+
+// TestAClaimantIsOfTheAddresssTenant is `Email.Verify` naming a claimant from
+// another tenant.
+//
+// The claimant crossed the wall by identifier, unasked: a front door holding a
+// session from one tenant at another's host had a claim link minted -- and
+// mailed -- for somebody the address's tenant never had.
+func TestAClaimantIsOfTheAddresssTenant(t *testing.T) {
+	b := keyFor(t, app.TenantService_Get_FullMethodName)
+	ctx := t.Context()
+
+	carol := addHolder(t, ctx, b.Server, b.Contoso, "carol")
+	_, err := b.Server.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
+		Holder: app.HolderRef_builder{Id: carol.Bytes()}.Build(), Address: "shared@contoso.example",
+	}.Build())
+	require.NoError(t, err)
+
+	fabrikam := add(t, ctx, b.Server, "fabrikam")
+	bob := addHolder(t, ctx, b.Server, fabrikam, "bob")
+
+	as := frame.Into(ctx, frame.New(b.Who, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
+	_, err = b.Server.Ungated.Email().Verify(as, app.EmailVerifyRequest_builder{
+		Ref: app.EmailRef_builder{
+			At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: proto.String("shared@contoso.example")}.Build(),
+		}.Build(),
+		Holder: app.HolderRef_builder{Id: bob.Bytes()}.Build(),
+	}.Build())
+	require.Error(t, err, "a claim link was minted for somebody of another tenant")
+	require.Contains(t, status.Convert(err).Message(), "holder")
+}
+
+// TestEndingANominationVoidsTheTokensTheAppMinted is "stop it acting here" for
+// an app that proved itself to another: the tokens it minted as its holder
+// were good for their quarter hour after, so it went on acting here through
+// them.
+func TestEndingANominationVoidsTheTokensTheAppMinted(t *testing.T) {
+	x := require.New(t)
+	b := keyFor(t, app.TenantService_Get_FullMethodName)
+	ctx := t.Context()
+	acme := b.Contoso
+
+	exchange := "/roster.DelegationService/Exchange"
+	introspect := "/payday.TokenService/Introspect"
+	nominates(t, b.Server, acme, b.Service, b.Who)
+	permits(t, ctx, b, acme, b.Who, "kamino", exchange, introspect)
+
+	khalaKey, khalaToken := serviceKey(t, b.Server, "khala", introspect)
+	khala := addHolder(t, ctx, b.Server, acme, "khala")
+	nominates(t, b.Server, acme, khalaKey, khala)
+	permits(t, ctx, b, acme, khala, "khala", introspect)
+
+	at := front.AtTenant("contoso")
+	got, err := app.NewDelegationServiceClient(b.Conn).Exchange(arrivedAt(ctx, b.Token, at), app.DelegationExchangeRequest_builder{
+		Audience: app.HolderRef_builder{Id: khala.Bytes()}.Build(),
+		Methods:  []string{"/hday.khala.RobotService/Get"},
+	}.Build())
+	x.NoError(err)
+
+	ask := func() error {
+		_, err := pdpb.NewTokenServiceClient(b.Conn).Introspect(arrivedAt(ctx, khalaToken, at), pdpb.TokenIntrospectRequest_builder{Token: got.GetToken()}.Build())
+		return err
+	}
+	x.NoError(ask())
+
+	ns, err := b.Server.Ungated.Nomination().List(ctx, app.NominationListRequest_builder{
+		Filters: []*app.NominationFilter{app.NominationFilter_builder{BorrowerId: b.Service.Bytes()}.Build()},
+	}.Build())
+	x.NoError(err)
+	x.Len(ns.GetItems(), 1)
+	_, err = b.Server.Ungated.Nomination().Erase(ctx, app.NominationRef_builder{Id: ns.GetItems()[0].GetId()}.Build())
+	x.NoError(err)
+
+	x.Equal(codes.NotFound, status.Code(ask()), "a token kamino minted outlived its nomination")
 }

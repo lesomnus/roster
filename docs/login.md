@@ -180,7 +180,7 @@ top of this page, so the app-side code barely moves: `authsession` asks for a
 the challenge, draws the same `frontdoor` forms **and the operator's providers**,
 and answers `acceptLoginRequest{subject}` with a `Holder.id` either way. The
 consent hop then reads the person once, *as them*, and puts `preferred_username`,
-`name`, `groups` and a **verified** address into the `id_token`, each only if the
+`name`, `teams` and a **verified** address into the `id_token`, each only if the
 client asked for the scope that carries it. What it never puts there is `methods`
 -- roster's answer about roster, which a product holding a copy of would hold a
 stale one.
@@ -293,7 +293,7 @@ sequenceDiagram
 | the first form | `VouchService.Delegate` | 204 signed in · 200 one factor proved, another to prove · 401 everything else. `Delegate` and not `Verify` because a yes has to come back with the `rd_` the consent hop reads `Me.Get` with |
 | the second form | `VouchService.Delegate` with the continuation | the app holds no half-signed-in state: the continuation is roster's, short-lived and single-use |
 | the accept | `PUT …/login/accept` | **`subject` is the `Holder.id`.** Nobody is named until every form is answered -- accepting after the first would hand a product a token for somebody who proved half of what the deployment asked for |
-| the claims | `MeService.Get`, as the person | `preferred_username`, `name`, `groups`, a **verified** address -- each only if the client asked for the scope that carries it. Never `methods`. `groups` is the aliases of the person's **teams**, not their `Group`s: an organisation's structure, and nothing a product should grant on -- what somebody may do is `HolderService/Reaches` ([apps.md](apps.md)) |
+| the claims | `MeService.Get`, as the person | `preferred_username`, `name`, `teams`, a **verified** address -- each only if the client asked for the scope that carries it. Never `methods`. `teams` is the aliases of the person's teams -- an organisation's structure, and nothing a product should grant on. It was `groups`, which relying parties read as permission groups; roster's own `Group`s are not in a token at all -- what somebody may do is `HolderService/Reaches` ([apps.md](apps.md)) |
 | the grant | `PUT …/consent/accept` | `consent: skip` grants and draws nothing; `ask` draws the screen and `POST /consent` is its answer |
 
 The delegation this app minted is spent at the grant and the cookie is ended there

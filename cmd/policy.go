@@ -229,6 +229,10 @@ type held struct {
 	methods map[string]struct{}
 	sites   []uuid.UUID
 	anySite bool
+
+	// everywhere is the methods of the bindings with no site: the part of
+	// `methods` the wall does not narrow. A role held in a team is not in it.
+	everywhere map[string]struct{}
 }
 
 // allows asks each pattern rather than looking the method up.
@@ -292,7 +296,7 @@ func bindingsReaching(ctx context.Context, db *ent.Client, who uuid.UUID) ([]*en
 
 // of reads the bindings a holder has, by being them or by being in a group.
 func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
-	h := held{methods: map[string]struct{}{}}
+	h := held{methods: map[string]struct{}{}, everywhere: map[string]struct{}{}}
 
 	vs, err := bindingsReaching(ctx, p.db, who)
 	if err != nil {
@@ -350,6 +354,11 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 		if v.Edges.Site == nil {
 			// Bound across the tenant, so there is no site to narrow by.
 			h.anySite = true
+			if v.Edges.Role != nil {
+				for _, m := range v.Edges.Role.Methods {
+					h.everywhere[m] = struct{}{}
+				}
+			}
 
 			continue
 		}
@@ -429,12 +438,13 @@ func Locking(db *ent.Client) core.Lock {
 // `mayReach` needs, because there a path not walked allows rather than refuses.
 func Rules(db *ent.Client) core.Rules {
 	return core.Rules{
-		Holds:     Holds(db),
-		Granted:   Granted(db),
-		Joining:   Joining(db),
-		Holding:   Holding(db),
-		Held:      core.Held(Everything(db)),
-		Releasing: Releasing(db),
+		Holds:      Holds(db),
+		Granted:    Granted(db),
+		Joining:    Joining(db),
+		Holding:    Holding(db),
+		Held:       core.Held(Everything(db)),
+		Everywhere: Everywhere(db),
+		Releasing:  Releasing(db),
 	}
 }
 
@@ -683,6 +693,27 @@ func allows(r *ent.Role, method string) bool {
 	}
 
 	return false
+}
+
+// Everywhere is [Everything] without a site or a team: the patterns held
+// through a binding across the whole tenant, for `Holder.Reaches`.
+func Everywhere(db *ent.Client) core.Everywhere {
+	p := policy{db}
+
+	return func(ctx context.Context, who pdid.Id) ([]string, error) {
+		h, err := p.of(ctx, who.Uuid())
+		if err != nil {
+			return nil, err
+		}
+
+		ms := make([]string, 0, len(h.everywhere))
+		for m := range h.everywhere {
+			ms = append(ms, m)
+		}
+		slices.Sort(ms)
+
+		return ms, nil
+	}
 }
 
 // Everything is what a caller effectively holds, for `server/me`.

@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -20,6 +21,8 @@ type Nomination struct {
 	config `json:"-"`
 	// Id of the ent.
 	Id uuid.UUID `json:"id,omitempty"`
+	// Labels holds the value of the "labels" field.
+	Labels map[string]string `json:"labels,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// BorrowerId holds the value of the "borrower_id" field.
@@ -78,6 +81,8 @@ func (*Nomination) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case nomination.FieldLabels:
+			values[i] = new([]byte)
 		case nomination.FieldName:
 			values[i] = new(sql.NullString)
 		case nomination.FieldDateUpdated, nomination.FieldDateErased, nomination.FieldDateCreated:
@@ -104,6 +109,14 @@ func (_m *Nomination) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				_m.Id = *value
+			}
+		case nomination.FieldLabels:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field labels", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Labels); err != nil {
+					return fmt.Errorf("unmarshal field labels: %w", err)
+				}
 			}
 		case nomination.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -194,6 +207,9 @@ func (_m *Nomination) String() string {
 	var builder strings.Builder
 	builder.WriteString("Nomination(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
+	builder.WriteString("labels=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Labels))
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")

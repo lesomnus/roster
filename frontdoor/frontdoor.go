@@ -120,6 +120,13 @@ type Config struct {
 	// correct password was wrong.
 	Tenant func(ctx context.Context, host string) (string, error)
 
+	// TenantOf is the tenant a host is, by identifier, for an app where every
+	// tenant has a name of its own -- the account app. Set, a session is held to
+	// it: one signed in at another tenant's host is nobody here ([Door.Who],
+	// [Door.Acting]). Left nil by an app at one name for every tenant, which
+	// holds the tenant in its flow instead -- the Login App.
+	TenantOf func(ctx context.Context, host string) (pdid.Id, error)
+
 	// Half is how long a browser has to answer a second form.
 	//
 	// Shorter than roster's own hold on the attempt, so that this app is the
@@ -209,6 +216,14 @@ func (d *Door) Who(ctx context.Context, r *http.Request) (pdid.Id, bool) {
 // whole is the signed-in session this request carries -- who, and the
 // delegation this app acts with for them -- or nothing: no cookie, a dead
 // session, or one that is only half way.
+//
+// # And a session is the tenant's it was signed in at
+//
+// Where every tenant has a name of its own ([Config.TenantOf]), a session is
+// held to the tenant of the host it arrives at. A cookie is the browser's, so a
+// session minted at one tenant's host arrived at another's and was read as
+// signed in there: the proxy and roster refused what it asked, but the account
+// app's `/claim` had a link minted and mailed.
 func (d *Door) whole(ctx context.Context, r *http.Request) (pdid.Id, string, bool) {
 	v, err := d.c.Sessions.Read(ctx, d.keyOf(r))
 	if err != nil {
@@ -217,6 +232,11 @@ func (d *Door) whole(ctx context.Context, r *http.Request) (pdid.Id, string, boo
 	token := v.Held[heldToken]
 	if token == "" {
 		return pdid.Nil, "", false
+	}
+	if d.c.TenantOf != nil {
+		if here, err := d.c.TenantOf(ctx, r.Host); err != nil || here.String() != v.TenantId {
+			return pdid.Nil, "", false
+		}
 	}
 	who, err := pdid.Parse(v.Id)
 	if err != nil {

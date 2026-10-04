@@ -104,6 +104,15 @@ spec:
           env:
             - { name: DSN, value: "sqlite:///data/hydra.db?_fk=true" }
 
+            # Access tokens as JWTs: how an API that checks people's tokens
+            # itself reads one -- the issuer's keys from
+            # `/.well-known/jwks.json`, and `aud` naming **that API**, so a token
+            # sent to one cannot be spent at another. Opaque, an API would have
+            # to ask this issuer's admin port, which nothing outside the
+            # deployment's own processes may reach. `docs/apps.md`, "People's
+            # tokens"; `docker/flow.sh` checks it.
+            - { name: STRATEGIES_ACCESS_TOKEN, value: jwt }
+
             # **Rotating this invalidates every token and every remembered
             # session**, which is the safe direction and is why Hydra takes a
             # list rather than one value. An overlay replaces the Secret.

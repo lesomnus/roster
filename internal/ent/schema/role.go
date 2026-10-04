@@ -24,6 +24,8 @@ func (Role) Fields() []ent.Field {
 		field.String("alias"),
 		field.String("name"),
 		field.String("desc"),
+		field.Json("labels", map[string]string{}).
+			Optional(),
 		field.Json("methods", []string{}).
 			Optional(),
 		field.Time("date_updated"),
@@ -80,6 +82,8 @@ func (Binding) Fields() []ent.Field {
 		field.Uuid("id").
 			Unique().
 			Immutable(),
+		field.Json("labels", map[string]string{}).
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

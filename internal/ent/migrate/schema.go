@@ -116,6 +116,7 @@ var (
 	// BindingColumns holds the columns for the "binding" table.
 	BindingColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -132,25 +133,25 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "binding_role_role",
-				Columns:    []*schema.Column{BindingColumns[4]},
+				Columns:    []*schema.Column{BindingColumns[5]},
 				RefColumns: []*schema.Column{RoleColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "binding_site_site",
-				Columns:    []*schema.Column{BindingColumns[5]},
+				Columns:    []*schema.Column{BindingColumns[6]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "binding_holder_holder",
-				Columns:    []*schema.Column{BindingColumns[6]},
+				Columns:    []*schema.Column{BindingColumns[7]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "binding_group_group",
-				Columns:    []*schema.Column{BindingColumns[7]},
+				Columns:    []*schema.Column{BindingColumns[8]},
 				RefColumns: []*schema.Column{GroupColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -159,7 +160,7 @@ var (
 			{
 				Name:    "binding_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{BindingColumns[3], BindingColumns[0]},
+				Columns: []*schema.Column{BindingColumns[4], BindingColumns[0]},
 			},
 		},
 	}
@@ -735,6 +736,7 @@ var (
 	// NominationColumns holds the columns for the "nomination" table.
 	NominationColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "borrower_id", Type: field.TypeUuid},
 		{Name: "date_updated", Type: field.TypeTime},
@@ -751,13 +753,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "nomination_tenant_tenant",
-				Columns:    []*schema.Column{NominationColumns[6]},
+				Columns:    []*schema.Column{NominationColumns[7]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "nomination_holder_acts_as",
-				Columns:    []*schema.Column{NominationColumns[7]},
+				Columns:    []*schema.Column{NominationColumns[8]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -766,12 +768,12 @@ var (
 			{
 				Name:    "nomination_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{NominationColumns[5], NominationColumns[0]},
+				Columns: []*schema.Column{NominationColumns[6], NominationColumns[0]},
 			},
 			{
 				Name:    "nomination_borrower_id_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{NominationColumns[2], NominationColumns[6]},
+				Columns: []*schema.Column{NominationColumns[3], NominationColumns[7]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -808,6 +810,7 @@ var (
 		{Name: "alias", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
 		{Name: "methods", Type: field.TypeJson, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
@@ -823,13 +826,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "role_tenant_tenant",
-				Columns:    []*schema.Column{RoleColumns[8]},
+				Columns:    []*schema.Column{RoleColumns[9]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "role_site_site",
-				Columns:    []*schema.Column{RoleColumns[9]},
+				Columns:    []*schema.Column{RoleColumns[10]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -838,12 +841,12 @@ var (
 			{
 				Name:    "role_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{RoleColumns[7], RoleColumns[0]},
+				Columns: []*schema.Column{RoleColumns[8], RoleColumns[0]},
 			},
 			{
 				Name:    "role_alias_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{RoleColumns[1], RoleColumns[8]},
+				Columns: []*schema.Column{RoleColumns[1], RoleColumns[9]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

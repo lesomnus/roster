@@ -409,12 +409,12 @@ func (_q *BindingQuery) WithGroup(opts ...func(*GroupQuery)) *BindingQuery {
 // Example:
 //
 //	var v []struct {
-//		DateUpdated time.Time `json:"date_updated,omitempty"`
+//		Labels map[string]string `json:"labels,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Binding.Query().
-//		GroupBy(binding.FieldDateUpdated).
+//		GroupBy(binding.FieldLabels).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *BindingQuery) GroupBy(field string, fields ...string) *BindingGroupBy {
@@ -432,11 +432,11 @@ func (_q *BindingQuery) GroupBy(field string, fields ...string) *BindingGroupBy 
 // Example:
 //
 //	var v []struct {
-//		DateUpdated time.Time `json:"date_updated,omitempty"`
+//		Labels map[string]string `json:"labels,omitempty"`
 //	}
 //
 //	client.Binding.Query().
-//		Select(binding.FieldDateUpdated).
+//		Select(binding.FieldLabels).
 //		Scan(ctx, &v)
 func (_q *BindingQuery) Select(fields ...string) *BindingSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)

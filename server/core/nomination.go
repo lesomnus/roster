@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pderr"
@@ -72,6 +74,9 @@ func (s coreNomination) Patch(ctx context.Context, req *app.NominationPatchReque
 	if err := byATenant(ctx); err != nil {
 		return nil, err
 	}
+	if err := s.declaredNomination(ctx, req.GetRef()); err != nil {
+		return nil, err
+	}
 	if who := req.GetActsAs(); who != nil {
 		v, err := s.Next().Nomination().Get(ctx, app.NominationGetRequest_builder{
 			Ref:    req.GetRef(),
@@ -95,12 +100,79 @@ func (s coreNomination) Patch(ctx context.Context, req *app.NominationPatchReque
 
 // Erase is a tenant ending an app's nomination, and refused to a deployment
 // key as itself for [byATenant]'s reason.
+//
+// # And the tokens the app minted as that holder
+//
+// An app that proved who it is to another (`Delegation.Exchange`) left tokens
+// naming its holder in other apps' hands, good for their quarter hour -- so
+// "stop it acting here" left it acting here, through them. The holder's epoch
+// is moved first, which voids every delegation about it minted before
+// (`keys.findDelegation`): what "sign out everywhere" writes.
+//
+// Only for a holder nobody signs in as. A nomination may name a person --
+// nothing stops a tenant pointing an app at one -- and ending it is not a
+// reason to sign that person out of everything.
 func (s coreNomination) Erase(ctx context.Context, req *app.NominationRef) (*app.NominationEraseResponse, error) {
 	if err := byATenant(ctx); err != nil {
 		return nil, err
 	}
+	if err := s.declaredNomination(ctx, req); err != nil {
+		return nil, err
+	}
+
+	got, err := s.Next().Nomination().Get(ctx, app.NominationGetRequest_builder{
+		Ref: req, Select: app.NominationSelect_builder{ActsAs: app.HolderSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if who := got.GetActsAs().GetId(); len(who) > 0 {
+		if err := s.voidIfNobodySignsIn(ctx, who); err != nil {
+			return nil, err
+		}
+	}
 
 	return s.NominationServiceServer.Erase(ctx, req)
+}
+
+// voidIfNobodySignsIn moves a machine holder's epoch to now: every delegation
+// about it minted before is void.
+func (s coreNomination) voidIfNobodySignsIn(ctx context.Context, who []byte) error {
+	ref := app.HolderRef_builder{Id: who}.Build()
+
+	cs, err := s.Next().Credential().List(ctx, app.CredentialListRequest_builder{
+		Filters: []*app.CredentialFilter{app.CredentialFilter_builder{Holder: ref}.Build()}, Size: 1,
+	}.Build())
+	if err != nil {
+		return err
+	}
+	is, err := s.Next().Identity().List(ctx, app.IdentityListRequest_builder{
+		Filters: []*app.IdentityFilter{app.IdentityFilter_builder{Holder: ref}.Build()}, Size: 1,
+	}.Build())
+	if err != nil {
+		return err
+	}
+	es, err := s.Next().Email().List(ctx, app.EmailListRequest_builder{
+		Filters: []*app.EmailFilter{app.EmailFilter_builder{Holder: ref}.Build()}, Size: 1,
+	}.Build())
+	if err != nil {
+		return err
+	}
+	if len(cs.GetItems())+len(is.GetItems())+len(es.GetItems()) > 0 {
+		return nil
+	}
+
+	h, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: ref, Select: app.HolderSelect_builder{DateUpdated: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return err
+	}
+	_, err = s.Next().Holder().Patch(ctx, app.HolderPatchRequest_builder{
+		Ref: ref, DateInvalidated: timestamppb.Now(), DateUpdated: h.GetDateUpdated(),
+	}.Build())
+
+	return err
 }
 
 // byATenant refuses a deployment key answered as itself.

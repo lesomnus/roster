@@ -59,8 +59,17 @@ message Nomination {
 
   Tenant tenant = 2 [(orm.edge) = {immutable: true}];
 
-  // 4, 6 and 7 are left empty: a nomination is found by the pair below rather
+  // 4 and 6 are left empty: a nomination is found by the pair below rather
   // than by a word.
+
+  // Whatever the deployment keeps about this row that the schema does not name.
+  //
+  // Number seven, the one an entity spends on labels (`host.proto`). The
+  // nominations roster's own front doors write for themselves at start -- the
+  // Login App's, the account app's -- are declared by the deployment's
+  // configuration and carry `roster.declared`: a tenant does not end them, and
+  // neither does anybody else but the deployment (`server/core/declared.go`).
+  map<string, string> labels = 7;
 
   // What a person reading the tenant's nominations calls the app -- `kamino`.
   //

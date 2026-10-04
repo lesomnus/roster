@@ -42,6 +42,12 @@ func (_c *RoleCreate) SetDesc(v string) *RoleCreate {
 	return _c
 }
 
+// SetLabels sets the "labels" field.
+func (_c *RoleCreate) SetLabels(v map[string]string) *RoleCreate {
+	_c.mutation.SetLabels(v)
+	return _c
+}
+
 // SetMethods sets the "methods" field.
 func (_c *RoleCreate) SetMethods(v []string) *RoleCreate {
 	_c.mutation.SetMethods(v)
@@ -220,6 +226,10 @@ func (_c *RoleCreate) createSpec() (*Role, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Desc(); ok {
 		_spec.SetField(role.FieldDesc, field.TypeString, value)
 		_node.Desc = value
+	}
+	if value, ok := _c.mutation.Labels(); ok {
+		_spec.SetField(role.FieldLabels, field.TypeJson, value)
+		_node.Labels = value
 	}
 	if value, ok := _c.mutation.Methods(); ok {
 		_spec.SetField(role.FieldMethods, field.TypeJson, value)

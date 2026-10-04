@@ -59,10 +59,28 @@ func (d *Directory) Search(ctx context.Context, c *wire.Conn, req wire.SearchReq
 		return wire.Refuse(wire.ProtocolError, "base: "+err.Error())
 	}
 
+	// Whose directory this connection is reading: the tenant of the DN it
+	// bound as, and nobody's before a bind.
+	//
+	// # A bind is to one tenant, and so is everything after it
+	//
+	// The search used to ask only *whether* the connection was bound. One
+	// process fronts every tenant that nominated its key, so a person bound in
+	// contoso searched `o=fabrikam` and read fabrikam's people, and a search
+	// from the root walked every tenant; the root entry named every tenant to
+	// anybody, bound or not. With per-tenant keys that was a deployment's
+	// choice of keys; with one deployment key it is the default. So the bound
+	// tenant is the whole tree a connection sees: its suffix is the only naming
+	// context, a search under any other is `noSuchObject` -- the answer for a
+	// name that is not there, since saying it is somebody else's would say it
+	// exists -- and the root walks it alone.
+	bound, isBound := d.boundTenant(c)
+
 	// The root DSE is the one thing read before a bind: it says what this
-	// server is, and nothing about anybody.
+	// server is, and nothing about anybody -- and since a suffix is a tenant's
+	// name, it names one only to somebody bound in it.
 	if len(name) == 0 && req.Scope == wire.ScopeBase {
-		e := d.rootDSE()
+		e := d.rootDSE(bound)
 		if e.matches(req.Filter) {
 			if err := w.Entry(e.project(req.Attributes, req.TypesOnly)); err != nil {
 				return wire.Refuse(wire.OperationsError, err.Error())
@@ -71,20 +89,19 @@ func (d *Directory) Search(ctx context.Context, c *wire.Conn, req wire.SearchReq
 
 		return wire.Ok
 	}
-	if _, ok := c.Bound(); !ok {
+	if !isBound {
 		return wire.Refuse(wire.InsufficientAccessRights, "bind first")
 	}
+	tenants := []*tenant{bound}
 
 	s := &search{d: d, req: req, w: w, want: wanted(req), reads: newReads()}
 	cur, paged := cursorOf(req)
 
-	// From the empty name downwards is every suffix: a client that searches
-	// the whole server gets every tenant this process fronts, each under its
-	// own suffix and read with its own key. One-level from the root is the
-	// suffixes themselves.
+	// From the empty name downwards is the bound tenant's suffix, the only one
+	// this connection sees. One-level from the root is that suffix itself.
 	if len(name) == 0 {
 		if req.Scope == wire.ScopeOne {
-			for _, t := range d.tenants {
+			for _, t := range tenants {
 				if res := s.send(d.organisation(t)); res.Code != wire.Success {
 					return res
 				}
@@ -92,7 +109,7 @@ func (d *Directory) Search(ctx context.Context, c *wire.Conn, req wire.SearchReq
 
 			return wire.Ok
 		}
-		for i, t := range d.tenants {
+		for i, t := range tenants {
 			if paged && cur.Tenant != "" && cur.Tenant != t.alias {
 				continue
 			}
@@ -112,8 +129,8 @@ func (d *Directory) Search(ctx context.Context, c *wire.Conn, req wire.SearchReq
 			// This tenant is done; the next page starts the next tenant, and
 			// there is no page to send between the two.
 			cur = cursor{}
-			if i+1 < len(d.tenants) && s.sent > 0 {
-				w.Cookie(cursor{Tenant: d.tenants[i+1].alias}.bytes())
+			if i+1 < len(tenants) && s.sent > 0 {
+				w.Cookie(cursor{Tenant: tenants[i+1].alias}.bytes())
 
 				return wire.Ok
 			}
@@ -123,7 +140,7 @@ func (d *Directory) Search(ctx context.Context, c *wire.Conn, req wire.SearchReq
 	}
 
 	t, rel, ok := d.tenantOf(name)
-	if !ok {
+	if !ok || t != bound {
 		return wire.Refuse(wire.NoSuchObject, "")
 	}
 	next, res := s.walk(ctx, t, rel, cur)

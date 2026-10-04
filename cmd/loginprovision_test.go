@@ -8,7 +8,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/lesomnus/payday/frame"
 
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/pdtest"
@@ -324,4 +328,97 @@ func TestProvisionAgainBindsNothingTwiceAndLeavesOtherAppsAlone(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 	x.Equal(itsHolder.GetId(), n.GetActsAs().GetId(), "provision took another app's nomination")
+}
+
+// TestAFrontDoorsOwnRowsAreDeclared is the Login App's rows in a tenant: the
+// holder, its role, the binding and the nomination `login provision` writes.
+//
+// They are the configuration's -- written because the deployment turned the
+// front door on, and rewritten at every start -- so they are read-only to
+// anybody reaching them through a port. A tenant administrator ending the
+// nomination from the user console was everybody's sign-in stopping until the
+// next deploy; disabling the holder was the same, for good. Turning one off is
+// taking it out of the configuration and then erasing what is left as the
+// deployment, which is what a shell on the box is.
+func TestAFrontDoorsOwnRowsAreDeclared(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	drv, dsn := pdtest.DB(t)
+	cdrv, cdsn := pdtest.DB(t)
+	c := cmd.Config{
+		Db:      config.DbConfig{Driver: drv, Dsn: dsn, Migrate: true},
+		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn, Migrate: true}},
+	}
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	x.NoError(entmigrate.NewSchema(s.Drv).Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Control.Drv).Create(ctx))
+	tn, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "contoso"}.Build())
+	x.NoError(err)
+	at := app.TenantRef_builder{Id: tn.GetId()}.Build()
+	_, err = s.Ungated.Host().Add(ctx, app.HostAddRequest_builder{Tenant: at, Name: "contoso.example"}.Build())
+	x.NoError(err)
+	x.NoError(s.Close())
+
+	x.NoError(cli.NewCmdLogin(&c).Run(ctx, []string{"provision", "--out", t.TempDir()}))
+
+	s, err = cmd.Build(ctx, c)
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+
+	who, err := s.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref:    app.HolderRef_builder{Slug: app.HolderRefBySlug_builder{Alias: proto.String("login-app"), Tenant: at}.Build()}.Build(),
+		Select: app.HolderSelect_builder{Labels: proto.Bool(true), DateUpdated: proto.Bool(true)}.Build(),
+	}.Build())
+	x.NoError(err)
+	role, err := s.Ungated.Role().Get(ctx, app.RoleGetRequest_builder{
+		Ref:    app.RoleRef_builder{Slug: app.RoleRefBySlug_builder{Alias: proto.String("login-app"), Tenant: at}.Build()}.Build(),
+		Select: app.RoleSelect_builder{Labels: proto.Bool(true), DateUpdated: proto.Bool(true)}.Build(),
+	}.Build())
+	x.NoError(err)
+	bs, err := s.Ungated.Binding().List(ctx, app.BindingListRequest_builder{
+		Filters: []*app.BindingFilter{app.BindingFilter_builder{Holder: app.HolderRef_builder{Id: who.GetId()}.Build()}.Build()},
+	}.Build())
+	x.NoError(err)
+	x.Len(bs.GetItems(), 1)
+	ns, err := s.Ungated.Nomination().List(ctx, app.NominationListRequest_builder{}.Build())
+	x.NoError(err)
+	x.Len(ns.GetItems(), 1)
+
+	x.Equal("config: login", who.GetLabels()[cmd.Declared])
+	x.Equal("config: login", role.GetLabels()[cmd.Declared])
+	x.Equal("config: login", ns.GetItems()[0].GetLabels()[cmd.Declared])
+
+	// The tenant's administrator, at a port: narrowed to their tenant.
+	admin, err := s.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{Tenant: at, Alias: "boss"}.Build())
+	x.NoError(err)
+	as := frame.Into(ctx, frame.New(cmd.MustFrom(admin.GetId()), cmd.MustFrom(tn.GetId()), frame.Whole()).WithScope(frame.Only(cmd.MustFrom(tn.GetId()))))
+
+	refused := func(err error, what string) {
+		t.Helper()
+		x.Equal(codes.FailedPrecondition, status.Code(err), "%s: %v", what, err)
+	}
+
+	_, err = s.Ungated.Nomination().Erase(as, app.NominationRef_builder{Id: ns.GetItems()[0].GetId()}.Build())
+	refused(err, "ending the Login App's nomination")
+	_, err = s.Ungated.Holder().Disable(as, app.HolderDisableRequest_builder{
+		Ref: app.HolderRef_builder{Id: who.GetId()}.Build(), DateUpdated: who.GetDateUpdated(),
+	}.Build())
+	refused(err, "disabling its holder")
+	_, err = s.Ungated.Holder().Erase(as, app.HolderRef_builder{Id: who.GetId()}.Build())
+	refused(err, "erasing its holder")
+	_, err = s.Ungated.Role().Patch(as, app.RolePatchRequest_builder{
+		Ref: app.RoleRef_builder{Id: role.GetId()}.Build(), Methods: []string{}, DateUpdated: role.GetDateUpdated(),
+	}.Build())
+	refused(err, "narrowing its role")
+	_, err = s.Ungated.Role().Erase(as, app.RoleRef_builder{Id: role.GetId()}.Build())
+	refused(err, "erasing its role")
+	_, err = s.Ungated.Binding().Erase(as, app.BindingRef_builder{Id: bs.GetItems()[0].GetId()}.Build())
+	refused(err, "erasing its binding")
+
+	// And the deployment, which has the configuration too, may.
+	_, err = s.Ungated.Nomination().Erase(ctx, app.NominationRef_builder{Id: ns.GetItems()[0].GetId()}.Build())
+	x.NoError(err, "the deployment could not erase what it declared")
 }

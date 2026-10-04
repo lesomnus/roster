@@ -3129,6 +3129,7 @@ type HolderReachesResponse struct {
 	xxx_hidden_Methods     []string               `protobuf:"bytes,10,rep,name=methods"`
 	xxx_hidden_Sites       [][]byte               `protobuf:"bytes,11,rep,name=sites"`
 	xxx_hidden_EverySite   bool                   `protobuf:"varint,12,opt,name=every_site,json=everySite"`
+	xxx_hidden_Everywhere  []string               `protobuf:"bytes,13,rep,name=everywhere"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -3181,6 +3182,13 @@ func (x *HolderReachesResponse) GetEverySite() bool {
 	return false
 }
 
+func (x *HolderReachesResponse) GetEverywhere() []string {
+	if x != nil {
+		return x.xxx_hidden_Everywhere
+	}
+	return nil
+}
+
 func (x *HolderReachesResponse) SetMethods(v []string) {
 	x.xxx_hidden_Methods = v
 }
@@ -3191,7 +3199,11 @@ func (x *HolderReachesResponse) SetSites(v [][]byte) {
 
 func (x *HolderReachesResponse) SetEverySite(v bool) {
 	x.xxx_hidden_EverySite = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+}
+
+func (x *HolderReachesResponse) SetEverywhere(v []string) {
+	x.xxx_hidden_Everywhere = v
 }
 
 func (x *HolderReachesResponse) HasEverySite() bool {
@@ -3217,6 +3229,17 @@ type HolderReachesResponse_builder struct {
 	Sites [][]byte
 	// A binding with no site is the tenant's whole width.
 	EverySite *bool
+	// The patterns held **across the whole tenant**: through a binding with no
+	// site, and not a role held in a team. What an app with no sites of its own
+	// grants on.
+	//
+	// `methods` is the union the gate asks -- *may they ever call this* -- and the
+	// wall then narrows the rows a site-bound or team-bound grant reaches. An app
+	// that has no such wall (kamino, khala: their tenants are customers, not a
+	// site of this one) cannot narrow, and reading `methods` it handed somebody
+	// bound at one site everything, everywhere. This is the part that needs no
+	// narrowing.
+	Everywhere []string
 }
 
 func (b0 HolderReachesResponse_builder) Build() *HolderReachesResponse {
@@ -3226,9 +3249,10 @@ func (b0 HolderReachesResponse_builder) Build() *HolderReachesResponse {
 	x.xxx_hidden_Methods = b.Methods
 	x.xxx_hidden_Sites = b.Sites
 	if b.EverySite != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
 		x.xxx_hidden_EverySite = *b.EverySite
 	}
+	x.xxx_hidden_Everywhere = b.Everywhere
 	return m0
 }
 
@@ -3624,13 +3648,16 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\vcredentials\x18\x0e \x03(\v2\x18.roster.SignInCredentialR\vcredentials\x12%\n" +
 	"\x04keys\x18\x0f \x03(\v2\x11.roster.SignInKeyR\x04keys\";\n" +
 	"\x14HolderReachesRequest\x12#\n" +
-	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\"f\n" +
+	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\"\x86\x01\n" +
 	"\x15HolderReachesResponse\x12\x18\n" +
 	"\amethods\x18\n" +
 	" \x03(\tR\amethods\x12\x14\n" +
 	"\x05sites\x18\v \x03(\fR\x05sites\x12\x1d\n" +
 	"\n" +
-	"every_site\x18\f \x01(\bR\teverySite\"\xcc\x01\n" +
+	"every_site\x18\f \x01(\bR\teverySite\x12\x1e\n" +
+	"\n" +
+	"everywhere\x18\r \x03(\tR\n" +
+	"everywhere\"\xcc\x01\n" +
 	"\x13HolderSearchRequest\x12.\n" +
 	"\afilters\x18\x01 \x03(\v2\x14.roster.HolderFilterR\afilters\x12\f\n" +
 	"\x01q\x18\b \x01(\tR\x01q\x12\x1e\n" +

@@ -42,12 +42,17 @@ func claimsOf(v *rstr.MeGetResponse, scope []string) map[string]any {
 			claims["name"] = n
 		}
 
+		// `teams`, and not `groups`. It was `groups`, which every relying
+		// party reads as *permission groups* -- Keycloak's, Okta's, Entra's --
+		// and a team is an organisation's structure, nothing to grant on. What
+		// somebody may do is `HolderService/Reaches`; roster's own `Group`s
+		// are not in a token at all.
 		teams := []string{}
 		for _, t := range v.GetTeams() {
 			teams = append(teams, t.GetAlias())
 		}
 		if len(teams) > 0 {
-			claims["groups"] = teams
+			claims["teams"] = teams
 		}
 	}
 

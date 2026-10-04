@@ -29,6 +29,18 @@ func (_u *BindingUpdate) Where(ps ...predicate.Binding) *BindingUpdate {
 	return _u
 }
 
+// SetLabels sets the "labels" field.
+func (_u *BindingUpdate) SetLabels(v map[string]string) *BindingUpdate {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *BindingUpdate) ClearLabels() *BindingUpdate {
+	_u.mutation.ClearLabels()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *BindingUpdate) SetDateUpdated(v time.Time) *BindingUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -121,6 +133,12 @@ func (_u *BindingUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(binding.FieldLabels, field.TypeJson, value)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(binding.FieldLabels, field.TypeJson)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(binding.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -153,6 +171,18 @@ type BindingUpdateOne struct {
 	hooks     []Hook
 	mutation  *BindingMutation
 	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetLabels sets the "labels" field.
+func (_u *BindingUpdateOne) SetLabels(v map[string]string) *BindingUpdateOne {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *BindingUpdateOne) ClearLabels() *BindingUpdateOne {
+	_u.mutation.ClearLabels()
+	return _u
 }
 
 // SetDateUpdated sets the "date_updated" field.
@@ -276,6 +306,12 @@ func (_u *BindingUpdateOne) sqlSave(ctx context.Context) (_node *Binding, err er
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(binding.FieldLabels, field.TypeJson, value)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(binding.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(binding.FieldDateUpdated, field.TypeTime, value)

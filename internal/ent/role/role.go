@@ -18,6 +18,8 @@ const (
 	FieldName = "name"
 	// FieldDesc holds the string denoting the desc field in the database.
 	FieldDesc = "desc"
+	// FieldLabels holds the string denoting the labels field in the database.
+	FieldLabels = "labels"
 	// FieldMethods holds the string denoting the methods field in the database.
 	FieldMethods = "methods"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
@@ -58,6 +60,7 @@ var Columns = []string{
 	FieldAlias,
 	FieldName,
 	FieldDesc,
+	FieldLabels,
 	FieldMethods,
 	FieldDateUpdated,
 	FieldDateErased,

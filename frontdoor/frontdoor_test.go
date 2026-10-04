@@ -2,11 +2,14 @@ package frontdoor
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/lesomnus/payday/auth/authsession"
+	"github.com/lesomnus/payday/pdid"
 
 	rstr "github.com/lesomnus/roster/rstr"
 )
@@ -58,4 +61,66 @@ func TestAnAppHasToSayWhatItAsksFor(t *testing.T) {
 	d, err := New(ok)
 	require.NoError(t, err)
 	require.Equal(t, HalfLife, d.c.Half, "zero takes the default rather than expiring immediately")
+}
+
+// TestASessionIsHeldToTheTenantOfItsHost is [Config.TenantOf]: a browser's
+// cookie at another tenant's name is nobody there, and the same cookie at its
+// own is still who it was.
+func TestASessionIsHeldToTheTenantOfItsHost(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	contoso, fabrikam := pdid.New(1), pdid.New(1)
+	hosts := map[string]pdid.Id{"contoso.test": contoso, "fabrikam.test": fabrikam}
+	sessions := authsession.New(authsession.NewMemStore())
+
+	c := Config{
+		Sessions:   sessions,
+		Vouch:      rstr.NewVouchServiceClient(nil),
+		Delegation: rstr.NewDelegationServiceClient(nil),
+		Methods:    []string{rstr.MeService_Get_FullMethodName},
+		Tenant:     func(ctx context.Context, host string) (string, error) { return "unused", nil },
+		TenantOf: func(ctx context.Context, host string) (pdid.Id, error) {
+			v, ok := hosts[host]
+			if !ok {
+				return pdid.Nil, ErrUnknownHost
+			}
+
+			return v, nil
+		},
+	}
+	d, err := New(c)
+	x.NoError(err)
+
+	bob := pdid.New(2)
+	_, cookie, err := sessions.Mint(ctx, authsession.Session{
+		Id: bob.String(), TenantId: fabrikam.String(), Held: map[string]string{heldToken: "rd_whatever"},
+	})
+	x.NoError(err)
+
+	at := func(host string) *http.Request {
+		r := httptest.NewRequest(http.MethodGet, "http://"+host+"/", nil)
+		r.AddCookie(cookie)
+
+		return r
+	}
+
+	who, ok := d.Who(ctx, at("fabrikam.test"))
+	x.True(ok)
+	x.Equal(bob, who)
+
+	_, ok = d.Who(ctx, at("contoso.test"))
+	x.False(ok, "fabrikam's session was signed in at contoso")
+	_, err = d.Acting(ctx, at("contoso.test"))
+	x.ErrorIs(err, ErrNotSignedIn)
+	_, ok = d.Who(ctx, at("nobody.test"))
+	x.False(ok, "a session was signed in at a name nobody serves")
+
+	// And without it -- an app at one name for every tenant -- the host is
+	// not read, which is the Login App.
+	c.TenantOf = nil
+	d, err = New(c)
+	x.NoError(err)
+	_, ok = d.Who(ctx, at("contoso.test"))
+	x.True(ok)
 }

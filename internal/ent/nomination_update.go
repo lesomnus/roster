@@ -31,6 +31,18 @@ func (_u *NominationUpdate) Where(ps ...predicate.Nomination) *NominationUpdate 
 	return _u
 }
 
+// SetLabels sets the "labels" field.
+func (_u *NominationUpdate) SetLabels(v map[string]string) *NominationUpdate {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *NominationUpdate) ClearLabels() *NominationUpdate {
+	_u.mutation.ClearLabels()
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *NominationUpdate) SetName(v string) *NominationUpdate {
 	_u.mutation.SetName(v)
@@ -165,6 +177,12 @@ func (_u *NominationUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 			}
 		}
 	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(nomination.FieldLabels, field.TypeJson, value)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(nomination.FieldLabels, field.TypeJson)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(nomination.FieldName, field.TypeString, value)
 	}
@@ -229,6 +247,18 @@ type NominationUpdateOne struct {
 	hooks     []Hook
 	mutation  *NominationMutation
 	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetLabels sets the "labels" field.
+func (_u *NominationUpdateOne) SetLabels(v map[string]string) *NominationUpdateOne {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *NominationUpdateOne) ClearLabels() *NominationUpdateOne {
+	_u.mutation.ClearLabels()
+	return _u
 }
 
 // SetName sets the "name" field.
@@ -394,6 +424,12 @@ func (_u *NominationUpdateOne) sqlSave(ctx context.Context) (_node *Nomination, 
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(nomination.FieldLabels, field.TypeJson, value)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(nomination.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(nomination.FieldName, field.TypeString, value)

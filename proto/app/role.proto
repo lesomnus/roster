@@ -58,6 +58,14 @@ message Role {
   string name = 5;
   string desc = 6;
 
+  // Whatever the deployment keeps about this row that the schema does not name.
+  //
+  // Number seven, the one an entity spends on labels (`host.proto`). A row a
+  // deployment declared -- a roster-hosted front door's role, written from its
+  // configuration at every start -- carries `roster.declared`, and
+  // `server/core` refuses every write to it from anybody else (`declared.go`).
+  map<string, string> labels = 7;
+
   // The RPCs this allows: a whole method name, or a pattern naming a service
   // or a package.
   //
@@ -187,6 +195,14 @@ message Binding {
   // Who it is for: one of these, never both and never neither.
   Holder holder = 8 [(orm.edge) = {immutable: true, nullable: true}];
   Group group = 9 [(orm.edge) = {immutable: true, nullable: true}];
+
+  // Whatever the deployment keeps about this row that the schema does not name.
+  //
+  // Number seven, the one an entity spends on labels (`host.proto`). A row a
+  // deployment declared -- a roster-hosted front door's role, written from its
+  // configuration at every start -- carries `roster.declared`, and
+  // `server/core` refuses every write to it from anybody else (`declared.go`).
+  map<string, string> labels = 7;
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];

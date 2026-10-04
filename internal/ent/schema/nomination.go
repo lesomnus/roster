@@ -21,6 +21,8 @@ func (Nomination) Fields() []ent.Field {
 		field.Uuid("id").
 			Unique().
 			Immutable(),
+		field.Json("labels", map[string]string{}).
+			Optional(),
 		field.String("name"),
 		field.Uuid("borrower_id").
 			Immutable(),

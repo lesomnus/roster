@@ -211,6 +211,18 @@ message HolderReachesResponse {
 
   // A binding with no site is the tenant's whole width.
   bool every_site = 12;
+
+  // The patterns held **across the whole tenant**: through a binding with no
+  // site, and not a role held in a team. What an app with no sites of its own
+  // grants on.
+  //
+  // `methods` is the union the gate asks -- *may they ever call this* -- and the
+  // wall then narrows the rows a site-bound or team-bound grant reaches. An app
+  // that has no such wall (kamino, khala: their tenants are customers, not a
+  // site of this one) cannot narrow, and reading `methods` it handed somebody
+  // bound at one site everything, everywhere. This is the part that needs no
+  // narrowing.
+  repeated string everywhere = 13;
 }
 
 message HolderSignsInRequest {

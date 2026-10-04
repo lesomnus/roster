@@ -12,9 +12,10 @@
  * is drawn by its `name`, the app's name `install` wrote, and by the holder it
  * acts as, which is this tenant's own.
  *
- * What ending one does not do is said on the screen rather than left to be
- * found: roster's own apps are nominated again at every start (`cli/login.go`,
- * `nominateAs`), and an app's own tenant key outlives its nomination.
+ * Roster's own front doors are declared by its configuration (`cli/login.go`,
+ * `nominateAs`) and read-only here: their rows say so and offer nothing to
+ * press. And what ending one does not do is said on the screen rather than left
+ * to be found: an app's own tenant key outlives its nomination.
  *
  * @module
  */
@@ -26,6 +27,10 @@ import { NominationService } from '#gen/app/nomination_svc_pb.js'
 
 import { Alias, by, said, uuid, when } from './parts.js'
 import { Menu } from '#lib/ui.js'
+
+// The label a deployment writes on a row its configuration declares, and
+// `server/core/declared.go` refuses every write to from a port.
+const declared = 'roster.declared'
 
 export function Apps(props: {
 	tenant: { id?: Uint8Array; alias?: string } | undefined
@@ -63,10 +68,11 @@ function AppList(props: { tenant: Uint8Array; may: (m: string) => boolean }): Re
 				acting here from its next request.
 			</p>
 			<p className="note">
-				Roster&apos;s own apps -- the sign-in page, the account page, a directory -- are
-				put back the next time roster starts, because signing in here goes through
-				them; to keep one off, ask whoever runs roster. And ending a nomination ends
-				only that: a key an app holds in this tenant itself is revoked on its own.
+				Roster&apos;s own apps -- the sign-in page, the account page -- are declared by
+				roster&apos;s configuration, because signing in here goes through them, and
+				nobody stops them from here: they are turned off where they are declared, by
+				whoever runs roster. And ending a nomination ends only that: a key an app
+				holds in this tenant itself is revoked on its own.
 			</p>
 
 			{items.length === 0 && <p className="none">no apps act in this tenant</p>}
@@ -91,21 +97,27 @@ function AppList(props: { tenant: Uint8Array; may: (m: string) => boolean }): Re
 								</td>
 								<td>{when(v.dateCreated)}</td>
 								<td className="acts">
-									<Menu label={`more for ${v.name || uuid(v.borrowerId)}`}>
-										<button
-											className="danger"
-											disabled={!props.may('/roster.NominationService/Erase')}
-											onClick={() => {
-												setBad(null)
-												void erase
-													.call({ key: { case: 'id', value: v.id } })
-													.then(() => setGone((was) => [...was, uuid(v.id)]))
-													.catch((e: unknown) => setBad(said(e)))
-											}}
-										>
-											stop it acting here
-										</button>
-									</Menu>
+									{v.labels[declared] !== undefined ? (
+										<span className="note" title={`declared in ${v.labels[declared]}`}>
+											declared
+										</span>
+									) : (
+										<Menu label={`more for ${v.name || uuid(v.borrowerId)}`}>
+											<button
+												className="danger"
+												disabled={!props.may('/roster.NominationService/Erase')}
+												onClick={() => {
+													setBad(null)
+													void erase
+														.call({ key: { case: 'id', value: v.id } })
+														.then(() => setGone((was) => [...was, uuid(v.id)]))
+														.catch((e: unknown) => setBad(said(e)))
+												}}
+											>
+												stop it acting here
+											</button>
+										</Menu>
+									)}
 								</td>
 							</tr>
 						))}

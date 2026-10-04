@@ -77,7 +77,7 @@ func provisionAccount(ctx context.Context, s *cmd.Server, enrol string, out stri
 	if err != nil {
 		return "", 0, err
 	}
-	n, err := nominateAs(ctx, s, accountProvisioned, methods, borrower, accountProvisioned)
+	n, err := nominateAs(ctx, s, accountProvisioned, methods, borrower, accountProvisioned, "config: account")
 	if err != nil {
 		return "", 0, err
 	}
@@ -95,8 +95,12 @@ func provisionAccount(ctx context.Context, s *cmd.Server, enrol string, out stri
 // whoever signs in as it the app's methods, and answering the app's key as it
 // hands the app whatever it already held -- so a holder found is looked at
 // ([holdingOf]) before it is used, and a holder made needs nothing.
-func holderNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string) ([]byte, bool, error) {
-	v, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: alias}.Build())
+//
+// `labels` are written on a holder it makes, and added to one it finds; nil
+// writes none. A front door's own holder is declared by the configuration that
+// turns the front door on, and carries [cmd.Declared] to say so.
+func holderNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string, labels map[string]string) ([]byte, bool, error) {
+	v, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: alias, Labels: labels}.Build())
 	if err == nil {
 		return v.GetId(), true, nil
 	}
@@ -108,13 +112,38 @@ func holderNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias s
 		Ref: rstr.HolderRef_builder{
 			Slug: rstr.HolderRefBySlug_builder{Alias: z.Ptr(alias), Tenant: at}.Build(),
 		}.Build(),
-		Select: rstr.HolderSelect_builder{}.Build(),
+		Select: rstr.HolderSelect_builder{Labels: z.Ptr(true), DateUpdated: z.Ptr(true)}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, false, err
 	}
+	if next, ok := withLabels(got.GetLabels(), labels); ok {
+		if _, err := s.Ungated.Holder().Patch(ctx, rstr.HolderPatchRequest_builder{
+			Ref: rstr.HolderRef_builder{Id: got.GetId()}.Build(), Labels: next, DateUpdated: got.GetDateUpdated(),
+		}.Build()); err != nil {
+			return nil, false, err
+		}
+	}
 
 	return got.GetId(), false, nil
+}
+
+// withLabels is `have` with `want` over it, and whether that differs from
+// `have` -- so a row already carrying them is not written again.
+func withLabels(have, want map[string]string) (map[string]string, bool) {
+	changed := false
+	next := make(map[string]string, len(have)+len(want))
+	for k, v := range have {
+		next[k] = v
+	}
+	for k, v := range want {
+		if next[k] != v {
+			next[k] = v
+			changed = true
+		}
+	}
+
+	return next, changed
 }
 
 // holding is what a holder already has: what an app answered as it would be
@@ -278,9 +307,9 @@ func boundToOthers(ctx context.Context, s *cmd.Server, role, who []byte) (bool, 
 // Patched when it is already there rather than left alone: the list grows with
 // the app, and a role written by an older version is an app that starts and
 // then refuses one thing.
-func ensureRoleNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string, methods []string) ([]byte, error) {
+func ensureRoleNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string, methods []string, labels map[string]string) ([]byte, error) {
 	v, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
-		Tenant: at, Alias: alias, Methods: methods,
+		Tenant: at, Alias: alias, Methods: methods, Labels: labels,
 	}.Build())
 	if err == nil {
 		return v.GetId(), nil
@@ -296,14 +325,16 @@ func ensureRoleNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, ali
 		// `date_updated` because a patch is refused without the version it is
 		// against -- which is the rule keeping two writers from each thinking
 		// they wrote last.
-		Select: rstr.RoleSelect_builder{DateUpdated: z.Ptr(true)}.Build(),
+		Select: rstr.RoleSelect_builder{DateUpdated: z.Ptr(true), Labels: z.Ptr(true)}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
 	}
+	next, _ := withLabels(got.GetLabels(), labels)
 	if _, err := s.Ungated.Role().Patch(ctx, rstr.RolePatchRequest_builder{
 		Ref:         rstr.RoleRef_builder{Id: got.GetId()}.Build(),
 		Methods:     methods,
+		Labels:      next,
 		DateUpdated: got.GetDateUpdated(),
 	}.Build()); err != nil {
 		return nil, err
@@ -325,7 +356,7 @@ func ensureRoleNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, ali
 //
 // The tenant-wide one is what this writes, so a binding of the same pair at a
 // site is not it and does not count.
-func ensureBinding(ctx context.Context, s *cmd.Server, role, who []byte) error {
+func ensureBinding(ctx context.Context, s *cmd.Server, role, who []byte, labels map[string]string) error {
 	vs, err := s.Ungated.Binding().List(ctx, rstr.BindingListRequest_builder{
 		Filters: []*rstr.BindingFilter{rstr.BindingFilter_builder{
 			Role:   rstr.RoleRef_builder{Id: role}.Build(),
@@ -336,14 +367,33 @@ func ensureBinding(ctx context.Context, s *cmd.Server, role, who []byte) error {
 		return err
 	}
 	for _, v := range vs.GetItems() {
-		if len(v.GetSite().GetId()) == 0 {
+		if len(v.GetSite().GetId()) != 0 {
+			continue
+		}
+		if len(labels) == 0 {
 			return nil
 		}
+
+		got, err := s.Ungated.Binding().Get(ctx, rstr.BindingGetRequest_builder{
+			Ref:    rstr.BindingRef_builder{Id: v.GetId()}.Build(),
+			Select: rstr.BindingSelect_builder{Labels: z.Ptr(true), DateUpdated: z.Ptr(true)}.Build(),
+		}.Build())
+		if err != nil {
+			return err
+		}
+		if next, ok := withLabels(got.GetLabels(), labels); ok {
+			_, err = s.Ungated.Binding().Patch(ctx, rstr.BindingPatchRequest_builder{
+				Ref: rstr.BindingRef_builder{Id: v.GetId()}.Build(), Labels: next, DateUpdated: got.GetDateUpdated(),
+			}.Build())
+		}
+
+		return err
 	}
 
 	_, err = s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
 		Role:   rstr.RoleRef_builder{Id: role}.Build(),
 		Holder: rstr.HolderRef_builder{Id: who}.Build(),
+		Labels: labels,
 	}.Build())
 	if err != nil && status.Code(err) != codes.AlreadyExists {
 		return err
@@ -368,10 +418,25 @@ func mintNamed(ctx context.Context, at rstr.Server, who []byte, alias string, me
 	if err != nil {
 		return "", err
 	}
-	if _, err := at.ApiKey().Add(ctx, rstr.ApiKeyAddRequest_builder{
-		Holder: rstr.HolderRef_builder{Id: who}.Build(), Alias: alias,
-		Secret: sum, Methods: methods,
-	}.Build()); err != nil {
+	add := func() error {
+		_, err := at.ApiKey().Add(ctx, rstr.ApiKeyAddRequest_builder{
+			Holder: rstr.HolderRef_builder{Id: who}.Build(), Alias: alias,
+			Secret: sum, Methods: methods,
+		}.Build())
+
+		return err
+	}
+	if err := add(); status.Code(err) == codes.AlreadyExists {
+		// Another run minted one between the erase and this -- two provisions
+		// at once. The key to keep is this run's, which is the one about to be
+		// written to a file; theirs is erased again, once.
+		if err := eraseKeyNamed(ctx, at, who, alias); err != nil {
+			return "", err
+		}
+		if err := add(); err != nil {
+			return "", err
+		}
+	} else if err != nil {
 		return "", err
 	}
 

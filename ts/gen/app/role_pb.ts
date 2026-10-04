@@ -23,7 +23,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/role.proto.
  */
 export const file_app_role: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvcm9sZS5wcm90bxIGcm9zdGVyIvIDCgRSb2xlEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESJAoEc2l0ZRgDIAEoCzIMLnJvc3Rlci5TaXRlQgjyghYEOAFAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSDwoHbWV0aG9kcxgIIAMoCRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6jgHK/BVHEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxY/CA8yOwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGdGVuYW50GgYKBHNpdGUgFChkSgQICRAKIoAECgdCaW5kaW5nEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIiCgRyb2xlGAIgASgLMgwucm9zdGVyLlJvbGVCBvKCFgJAARIkCgRzaXRlGAMgASgLMgwucm9zdGVyLlNpdGVCCPKCFgQ4AUABEigKBmhvbGRlchgIIAEoCzIOLnJvc3Rlci5Ib2xkZXJCCPKCFgQ4AUABEiYKBWdyb3VwGAkgASgLMg0ucm9zdGVyLkdyb3VwQgjyghYEOAFAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6jQHK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxZfCBIyTAoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaBgoEcm9sZRoICgZob2xkZXIaBwoFZ3JvdXAaBgoEc2l0ZSAUKGQiDQoLcm9sZS50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_tenant, file_roster_payday_holder, file_app_site, file_app_group, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvcm9sZS5wcm90bxIGcm9zdGVyIssECgRSb2xlEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESJAoEc2l0ZRgDIAEoCzIMLnJvc3Rlci5TaXRlQgjyghYEOAFAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSKAoGbGFiZWxzGAcgAygLMhgucm9zdGVyLlJvbGUuTGFiZWxzRW50cnkSDwoHbWV0aG9kcxgIIAMoCRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATqOAcr8FUcSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwAYq7Fj8IDzI7ChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZ0ZW5hbnQaBgoEc2l0ZSAUKGRKBAgJEAoi3AQKB0JpbmRpbmcSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiIKBHJvbGUYAiABKAsyDC5yb3N0ZXIuUm9sZUIG8oIWAkABEiQKBHNpdGUYAyABKAsyDC5yb3N0ZXIuU2l0ZUII8oIWBDgBQAESKAoGaG9sZGVyGAggASgLMg4ucm9zdGVyLkhvbGRlckII8oIWBDgBQAESJgoFZ3JvdXAYCSABKAsyDS5yb3N0ZXIuR3JvdXBCCPKCFgQ4AUABEisKBmxhYmVscxgHIAMoCzIbLnJvc3Rlci5CaW5kaW5nLkxhYmVsc0VudHJ5EjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOo0ByvwVJhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWXwgSMkwKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGgYKBHJvbGUaCAoGaG9sZGVyGgcKBWdyb3VwGgYKBHNpdGUgFChkIg0KC3JvbGUudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_tenant, file_roster_payday_holder, file_app_site, file_app_group, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Role is a named set of RPCs somebody may call.
@@ -90,6 +90,18 @@ export type Role = Message<"roster.Role"> & {
    * @generated from field: string desc = 6;
    */
   desc: string;
+
+  /**
+   * Whatever the deployment keeps about this row that the schema does not name.
+   *
+   * Number seven, the one an entity spends on labels (`host.proto`). A row a
+   * deployment declared -- a roster-hosted front door's role, written from its
+   * configuration at every start -- carries `roster.declared`, and
+   * `server/core` refuses every write to it from anybody else (`declared.go`).
+   *
+   * @generated from field: map<string, string> labels = 7;
+   */
+  labels: { [key: string]: string };
 
   /**
    * The RPCs this allows: a whole method name, or a pattern naming a service
@@ -211,6 +223,18 @@ export type Binding = Message<"roster.Binding"> & {
    * @generated from field: roster.Group group = 9;
    */
   group?: Group | undefined;
+
+  /**
+   * Whatever the deployment keeps about this row that the schema does not name.
+   *
+   * Number seven, the one an entity spends on labels (`host.proto`). A row a
+   * deployment declared -- a roster-hosted front door's role, written from its
+   * configuration at every start -- carries `roster.declared`, and
+   * `server/core` refuses every write to it from anybody else (`declared.go`).
+   *
+   * @generated from field: map<string, string> labels = 7;
+   */
+  labels: { [key: string]: string };
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

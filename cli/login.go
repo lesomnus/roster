@@ -585,13 +585,20 @@ func loginMethodsFor(enrol string) []string {
 // goes through the unwalled server with no frame, which is the deployment's own
 // work and passes, and the holder it nominates is the one it just made.
 func nominate(ctx context.Context, s *cmd.Server, methods []string, borrower pdid.Id) (int, error) {
-	return nominateAs(ctx, s, provisioned, methods, borrower, "")
+	return nominateAs(ctx, s, provisioned, methods, borrower, "", "config: login")
 }
 
 // nominateAs is [nominate] for the roster-hosted app called `alias`: a holder of
 // that name in each tenant with a name, its role, one binding, and the
 // nomination for `borrower`.
-func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []string, borrower pdid.Id, legacy string) (int, error) {
+func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []string, borrower pdid.Id, legacy, declaredBy string) (int, error) {
+	// Every row below is the configuration's: it is written because the
+	// deployment turned this front door on, and rewritten at every start. So
+	// each carries the label that makes it read-only to anybody reaching it
+	// through a port (`server/core/declared.go`) -- a tenant ending the Login
+	// App's nomination was everybody's sign-in stopping until the next deploy.
+	labels := map[string]string{cmd.Declared: declaredBy}
+
 	tenants, err := tenantsWithNames(ctx, s)
 	if err != nil {
 		return 0, err
@@ -618,7 +625,7 @@ func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []stri
 			fmt.Fprintf(os.Stderr, "roster: %s: not answering @%s's key as @%s/%s: %s.\n", name, alias, name, alias, why)
 		}
 
-		who, made, err := holderNamed(ctx, s, at, alias)
+		who, made, err := holderNamed(ctx, s, at, alias, labels)
 		if err != nil {
 			return n, fmt.Errorf("%s: %w", name, err)
 		}
@@ -646,11 +653,11 @@ func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []stri
 				continue
 			}
 		}
-		role, err := ensureRoleNamed(ctx, s, at, alias, methods)
+		role, err := ensureRoleNamed(ctx, s, at, alias, methods, labels)
 		if err != nil {
 			return n, fmt.Errorf("%s: %w", name, err)
 		}
-		if err := ensureBinding(ctx, s, role, who); err != nil {
+		if err := ensureBinding(ctx, s, role, who, labels); err != nil {
 			return n, fmt.Errorf("%s: %w", name, err)
 		}
 		if legacy != "" {
@@ -664,7 +671,7 @@ func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []stri
 			}
 		}
 
-		changed, err := ensureNominated(ctx, s, at, borrower, who, alias)
+		changed, err := ensureNominated(ctx, s, at, borrower, who, alias, labels)
 		if err != nil {
 			return n, fmt.Errorf("%s: %w", name, err)
 		}
@@ -721,13 +728,14 @@ func tenantsWithNames(ctx context.Context, s *cmd.Server) ([]pdid.Id, error) {
 //
 // Already pointing at them is nothing to write, which keeps a restart from
 // being a row changed and a `Watch` event in every tenant.
-func ensureNominated(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, borrower pdid.Id, who []byte, name string) (bool, error) {
+func ensureNominated(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, borrower pdid.Id, who []byte, name string, labels map[string]string) (bool, error) {
 	v, err := s.Ungated.Nomination().Get(ctx, rstr.NominationGetRequest_builder{
 		Ref: rstr.NominationRef_builder{
 			Borrower: rstr.NominationRefByBorrower_builder{Tenant: at, BorrowerId: borrower.Bytes()}.Build(),
 		}.Build(),
 		Select: rstr.NominationSelect_builder{
 			ActsAs:      rstr.HolderSelect_builder{}.Build(),
+			Labels:      z.Ptr(true),
 			DateUpdated: z.Ptr(true),
 		}.Build(),
 	}.Build())
@@ -737,6 +745,7 @@ func ensureNominated(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, bor
 			BorrowerId: borrower.Bytes(),
 			ActsAs:     rstr.HolderRef_builder{Id: who}.Build(),
 			Name:       name,
+			Labels:     labels,
 		}.Build())
 
 		return err == nil, err
@@ -744,17 +753,26 @@ func ensureNominated(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, bor
 	if err != nil {
 		return false, err
 	}
-	if bytes.Equal(v.GetActsAs().GetId(), who) {
+
+	next, relabel := withLabels(v.GetLabels(), labels)
+	repoint := !bytes.Equal(v.GetActsAs().GetId(), who)
+	if !relabel && !repoint {
 		return false, nil
 	}
 
-	_, err = s.Ungated.Nomination().Patch(ctx, rstr.NominationPatchRequest_builder{
+	patch := rstr.NominationPatchRequest_builder{
 		Ref:         rstr.NominationRef_builder{Id: v.GetId()}.Build(),
-		ActsAs:      rstr.HolderRef_builder{Id: who}.Build(),
 		DateUpdated: v.GetDateUpdated(),
-	}.Build())
+	}
+	if repoint {
+		patch.ActsAs = rstr.HolderRef_builder{Id: who}.Build()
+	}
+	if relabel {
+		patch.Labels = next
+	}
+	_, err = s.Ungated.Nomination().Patch(ctx, patch.Build())
 
-	return err == nil, err
+	return err == nil && repoint, err
 }
 
 // provisioned is what this command's rows are called, so that a later run finds

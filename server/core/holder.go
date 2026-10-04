@@ -53,6 +53,9 @@ type coreHolder struct {
 func (s Core) Holder() app.HolderServiceServer { return coreHolder{s, s.Next().Holder()} }
 
 func (s coreHolder) Update(ctx context.Context, req *app.HolderUpdateRequest) (*app.Holder, error) {
+	if err := s.declaredHolder(ctx, req.GetRef()); err != nil {
+		return nil, err
+	}
 	patch := app.HolderPatchRequest_builder{
 		Ref: req.GetRef(),
 
@@ -140,6 +143,9 @@ func (s coreHolder) Realias(ctx context.Context, req *app.HolderRealiasRequest) 
 // their own password sign themselves out of everything with nothing having said
 // so.
 func (s coreHolder) Disable(ctx context.Context, req *app.HolderDisableRequest) (*app.Holder, error) {
+	if err := s.declaredHolder(ctx, req.GetRef()); err != nil {
+		return nil, err
+	}
 	patch := app.HolderPatchRequest_builder{
 		Ref:          req.GetRef(),
 		DateDisabled: timestamppb.Now(),
@@ -150,6 +156,9 @@ func (s coreHolder) Disable(ctx context.Context, req *app.HolderDisableRequest) 
 }
 
 func (s coreHolder) Enable(ctx context.Context, req *app.HolderEnableRequest) (*app.Holder, error) {
+	if err := s.declaredHolder(ctx, req.GetRef()); err != nil {
+		return nil, err
+	}
 	patch := app.HolderPatchRequest_builder{
 		Ref:              req.GetRef(),
 		DateDisabledNull: z.Ptr(true),
@@ -340,6 +349,11 @@ func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) 
 	res := app.HolderReachesResponse_builder{Methods: ms, EverySite: z.Ptr(every)}
 	for _, k := range sites {
 		res.Sites = append(res.Sites, k.Bytes())
+	}
+	if s.rules.Everywhere != nil {
+		if res.Everywhere, err = s.rules.Everywhere(ctx, who); err != nil {
+			return nil, err
+		}
 	}
 
 	return res.Build(), nil

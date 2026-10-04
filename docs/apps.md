@@ -94,8 +94,8 @@ operator does it, once per tenant (#75):
 
 ```sh
 roster app install --tenant acme \
-  --role '/hday.oasys.RobotService/*' \
-  --administer '/hday.oasys.*/*' \
+  --role '/hday.kamino.RobotService/*' \
+  --administer '/hday.kamino.*/*' \
   kamino
 ```
 
@@ -112,6 +112,16 @@ app's methods. `roster app uninstall --tenant acme kamino` ends the nomination,
 and the tenant administrator can do the same from the user console's *apps*
 tab. The Login App and the account app do this for themselves at start, in
 every tenant with a name -- so for them ending it lasts until the next start.
+
+**Roster's own front doors are declared.** The Login App and the account app
+write their rows in every tenant at start -- the holder, its role, the binding
+and the nomination -- because the deployment's configuration turned them on, so
+those rows carry `roster.declared` and are read-only to everybody at a port: no
+tenant ends them, narrows them or disables them (`server/core/declared.go`).
+Turning one off is taking it out of the configuration, then erasing what is left
+from the box ([operating.md](operating.md), *Declared rows*). An app installed
+with `app install` is not declared: it is the operator's act, and the tenant's
+from then on.
 
 **A holder of the app's name that is already there is not taken silently.** It
 is somebody's -- a person, an earlier app holder with a key and a role -- and
@@ -171,15 +181,21 @@ Whatever the shape, a request from a person arrives with one of:
 
 | credential | how the app checks it |
 | --- | --- |
-| an access token from the issuer, `aud` = this app | the issuer's keys; `sub` is a `Holder.id`. A token whose `aud` is the page that signed somebody in, accepted by every API that page calls, is one any of those APIs can replay at the others -- the shape tyrell and its APIs are in today, and not yet settled |
+| an access token from the issuer, `aud` = this app | the issuer's keys (`/.well-known/jwks.json`, JWT access tokens); `aud` must name **this** API; `sub` is a `Holder.id`. See *People's tokens* below |
 | an `rt_` of the person's (a script, an app password) | `payday.TokenService/Introspect`; answers the holder, tenant and the key's methods |
 | an `rd_` this app was given | `Introspect`, which answers only the app it was issued to |
 
 and then asks roster what that person may call, with `HolderService/Reaches`,
-and decides with `frame.Covers` against the method being called. The app's own
+and decides with `frame.Covers` against the method being called -- reading
+`everywhere` if the app has no sites of its own. `methods` is the gate's union,
+which roster's wall then narrows for a grant bound at one site or held in a
+team; an app with no such wall would hand that grant everywhere. `everywhere`
+is the part that needs no narrowing. And a suspended holder reaches nothing:
+their credentials are refused before any of this, and an SSO token minted
+before the suspension is answered with nothing to cover. The app's own
 permissions are its own RPCs, and anything finer than one RPC is a **method of a
 permission service** the app declares in its own proto package -- for example
-`hday.oasys.AdminService/SeeEveryTenant` -- named in a role like any other
+`hday.kamino.AdminService/SeeEveryTenant` -- named in a role like any other
 method. A role is a bundle of those; an app asks about the permission and never
 about the role's name, so a role can be split or renamed without the app
 noticing. Nor about which group or team somebody is in: a membership nothing is
@@ -195,6 +211,29 @@ hand on.
 
 Every shape asks the same questions in the same order, so this half of an app is
 written once.
+
+### People's tokens
+
+A page that signs somebody in gets an **ID token**: it says to that page who
+signed in, and its `aud` is the page's own client. It is not for calling an API.
+Sent to two APIs that both accept `aud=<page>`, either one can replay it at the
+other as that person -- a log line or a compromised container is enough.
+
+So each API is an **audience**, a name of its own (`urn:hday:api:kamino`), and a
+page asks the issuer for one access token per API it calls, sent only to that
+API:
+
+- the issuer issues access tokens as JWTs (`STRATEGIES_ACCESS_TOKEN=jwt`,
+  `deploy/hydra.yaml`), signed by the keys it publishes;
+- the page's client is allowed the APIs' audiences (`"audience": [...]` in its
+  registration), and asks with `audience=` -- silently, once it is signed in,
+  since the issuer remembers the session; the Login App grants what was asked;
+- the API takes only an access token whose `aud` names it, which an ID token
+  (aud = a client) never does.
+
+Nothing else changes: `sub` is the holder, and what they may call is still
+`HolderService/Reaches`, never a claim in the token. `docker/flow.sh` walks it
+against Hydra.
 
 ## An app calling another app
 

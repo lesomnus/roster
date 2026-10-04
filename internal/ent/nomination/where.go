@@ -91,6 +91,16 @@ func ActsAsId(v uuid.UUID) predicate.Nomination {
 	return predicate.Nomination(sql.FieldEQ(FieldActsAsId, v))
 }
 
+// LabelsIsNil applies the IsNil predicate on the "labels" field.
+func LabelsIsNil() predicate.Nomination {
+	return predicate.Nomination(sql.FieldIsNull(FieldLabels))
+}
+
+// LabelsNotNil applies the NotNil predicate on the "labels" field.
+func LabelsNotNil() predicate.Nomination {
+	return predicate.Nomination(sql.FieldNotNull(FieldLabels))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Nomination {
 	return predicate.Nomination(sql.FieldEQ(FieldName, v))

@@ -291,6 +291,16 @@ func DescContainsFold(v string) predicate.Role {
 	return predicate.Role(sql.FieldContainsFold(FieldDesc, v))
 }
 
+// LabelsIsNil applies the IsNil predicate on the "labels" field.
+func LabelsIsNil() predicate.Role {
+	return predicate.Role(sql.FieldIsNull(FieldLabels))
+}
+
+// LabelsNotNil applies the NotNil predicate on the "labels" field.
+func LabelsNotNil() predicate.Role {
+	return predicate.Role(sql.FieldNotNull(FieldLabels))
+}
+
 // MethodsIsNil applies the IsNil predicate on the "methods" field.
 func MethodsIsNil() predicate.Role {
 	return predicate.Role(sql.FieldIsNull(FieldMethods))

@@ -39,6 +39,7 @@ service NominationService {
 message NominationAddRequest {
   bytes id = 1;
   TenantRef tenant = 2;
+  map<string, string> labels = 7;
   string name = 5 [features.field_presence = IMPLICIT];
   bytes borrower_id = 8 [features.field_presence = IMPLICIT];
   HolderRef acts_as = 9;
@@ -65,6 +66,7 @@ message NominationRefByBorrower {
 message NominationSelect {
   bool all = 1;
   TenantSelect tenant = 2;
+  bool labels = 7;
   bool name = 5;
   bool borrower_id = 8;
   HolderSelect acts_as = 9;
@@ -75,6 +77,7 @@ message NominationSelect {
 
 message NominationPatchRequest {
   NominationRef ref = 1;
+  map<string, string> labels = 14;
   string name = 10;
   HolderRef acts_as = 18;
   // The version this update requires the stored date_updated to be.

@@ -71,6 +71,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -300,6 +301,10 @@ type App struct {
 	// crawler cannot make every request a round trip.
 	hosts sync.Map // front.Hostname(host) -> hostAnswer
 
+	// misses counts the names nobody is served at, which is what decides when
+	// [App.forget] sweeps.
+	misses atomic.Int64
+
 	// arrives is the relying-party half: the `Connection` rows, the discovery,
 	// the exchange and the enrolment. Shared with the Login App, because both
 	// front doors read the same rows and a second copy drifts.
@@ -420,6 +425,16 @@ func New(ctx context.Context, c Config) (*App, error) {
 
 			return t.alias, nil
 		},
+		// And held to it: every tenant is here at names of its own, and a
+		// browser's cookie goes to all of them.
+		TenantOf: func(ctx context.Context, host string) (pdid.Id, error) {
+			t, err := a.tenantOf(ctx, host)
+			if err != nil {
+				return pdid.Nil, frontdoor.ErrUnknownHost
+			}
+
+			return t.id, nil
+		},
 	})
 	if err != nil {
 		conn.Close()
@@ -498,6 +513,28 @@ func (a *App) resolve(next http.Handler) http.Handler {
 	})
 }
 
+// forget remembers, for a few seconds, that nobody is served at `name` -- so a
+// burst for a name that is not here asks roster once rather than once each.
+//
+// And sweeps what has run out, every so often. A `Host` header is whatever the
+// client wrote, so this was a map that grew by one entry per name anybody ever
+// sent and was never read again; now an entry lasts its ten seconds and is gone.
+func (a *App) forget(name string) {
+	a.hosts.Store(name, hostAnswer{until: time.Now().Add(10 * time.Second)})
+	if a.misses.Add(1)%256 != 0 {
+		return
+	}
+
+	now := time.Now()
+	a.hosts.Range(func(k, v any) bool {
+		if h := v.(hostAnswer); h.t == nil && now.After(h.until) {
+			a.hosts.Delete(k)
+		}
+
+		return true
+	})
+}
+
 // tenantOf is which operator a name means, asked of roster once and remembered.
 //
 // Asked with **any** key this app holds: `FrontService.WhoseHost` reads through
@@ -528,7 +565,7 @@ func (a *App) tenantOf(ctx context.Context, host string) (*tenant, error) {
 	res, err := a.front.WhoseHost(withKey(ctx, any), rstr.FrontWhoseHostRequest_builder{Host: name}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound || status.Code(err) == codes.InvalidArgument {
-			a.hosts.Store(name, hostAnswer{until: time.Now().Add(10 * time.Second)})
+			a.forget(name)
 
 			return nil, ErrUnknownHost
 		}
@@ -551,7 +588,7 @@ func (a *App) tenantOf(ctx context.Context, host string) (*tenant, error) {
 	if !ok {
 		// roster serves this name for an operator this app holds no key for:
 		// nobody to act as, so the same answer as a name nobody serves.
-		a.hosts.Store(name, hostAnswer{until: time.Now().Add(10 * time.Second)})
+		a.forget(name)
 
 		return nil, ErrUnknownHost
 	}
@@ -1074,7 +1111,7 @@ func (a *App) recover(w http.ResponseWriter, r *http.Request) {
 	// fill in is not a way to have this deployment send mail anywhere. The
 	// browser is answered the same either way, and in the background, so the
 	// timing says nothing either.
-	link := a.finish(r, "/redeem", res.GetToken())
+	link := a.finish(r, "/redeem", res.GetToken(), t)
 	go func() {
 		ctx := context.WithoutCancel(ctx)
 		_, err := a.roster.Email().Get(t.on(ctx), rstr.EmailGetRequest_builder{
@@ -1110,17 +1147,17 @@ func (a *App) redeem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// The link names the tenant through the person it was minted for, and the
-	// key that minted it is the one that redeems it -- so try each tenant's
-	// key; a link minted under one answers under no other.
-	for _, t := range a.tenants() {
+	// The tenant the link names, whose key minted it and is the one that
+	// redeems it; see [App.finish].
+	if t, ok := a.linkTenant(r); ok {
 		as := t.on(ctx)
 		res, err := a.vouch.Redeem(as, rstr.VouchRedeemRequest_builder{
 			Token:   token,
 			Methods: []string{rstr.MeService_Get_FullMethodName},
 		}.Build())
 		if err != nil || !res.GetVerified().GetOk() {
-			continue
+			http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
+			return
 		}
 
 		reset, err := a.roster.Credential().Issue(as, rstr.CredentialIssueRequest_builder{
@@ -1205,7 +1242,7 @@ func (a *App) verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link := a.finish(r, "/confirm", res.GetToken())
+	link := a.finish(r, "/confirm", res.GetToken(), t)
 	if err := a.c.Mail(ctx, row.GetAddress(), "Confirm your address", link); err != nil {
 		fmt.Fprintf(os.Stderr, "account: mail to %s: %v\n", row.GetAddress(), err)
 		http.Error(w, "cannot send", http.StatusBadGateway)
@@ -1301,7 +1338,7 @@ func (a *App) claim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link := a.finish(r, "/confirm", res.GetToken())
+	link := a.finish(r, "/confirm", res.GetToken(), t)
 	if err := a.c.Mail(ctx, address, "Confirm your address", link); err != nil {
 		fmt.Fprintf(os.Stderr, "account: mail to %s: %v\n", address, err)
 		http.Error(w, "cannot send", http.StatusBadGateway)
@@ -1321,10 +1358,11 @@ func (a *App) confirm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, t := range a.tenants() {
+	if t, ok := a.linkTenant(r); ok {
 		res, err := a.roster.Email().Confirm(t.on(ctx), rstr.EmailConfirmRequest_builder{Token: token}.Build())
 		if err != nil {
-			continue
+			http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
+			return
 		}
 
 		w.Header().Set("content-type", "text/html; charset=utf-8")
@@ -1338,12 +1376,27 @@ func (a *App) confirm(w http.ResponseWriter, r *http.Request) {
 
 // finish is the URL a mailed link finishes at: `Base` if the deployment named
 // one, else this request's own origin.
-func (a *App) finish(r *http.Request, path, token string) string {
+//
+// It names the tenant (`at`), because the link may finish at one origin for
+// every tenant (`Base`), and the tenant is which key redeems it. It was found by
+// trying every tenant's key in turn -- for a request anybody can send, which
+// was one call to roster per tenant this app fronts, per request.
+func (a *App) finish(r *http.Request, path, token string, t *tenant) string {
 	u := a.redirectBase(r)
 	u.Path = path
-	u.RawQuery = url.Values{"token": {token}}.Encode()
+	u.RawQuery = url.Values{"token": {token}, "at": {t.id.String()}}.Encode()
 
 	return u.String()
+}
+
+// linkTenant is the tenant a mailed link names, or nobody.
+func (a *App) linkTenant(r *http.Request) (*tenant, bool) {
+	id, err := pdid.Parse(r.URL.Query().Get("at"))
+	if err != nil {
+		return nil, false
+	}
+
+	return a.tenant(id)
 }
 
 func (a *App) redirectBase(r *http.Request) *url.URL {

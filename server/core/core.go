@@ -206,6 +206,10 @@ type Rules struct {
 	// Nil is a stack that cannot say, and `Reaches` says so.
 	Held Held
 
+	// Everywhere is [Held] without a site or a team: what `Holder.Reaches`
+	// answers as `everywhere`.
+	Everywhere Everywhere
+
 	// Borrower is the control-plane holder a deployment key hangs off -- what a
 	// `Nomination` names as `borrower_id`. The key is in another database and
 	// this package holds no client of either, so `cmd`, which has both, says.
@@ -241,6 +245,11 @@ type Releasing func(ctx context.Context, drv dialect.Driver, name string) error
 // Held is what somebody may call and where, as the gate decides it. The
 // signature is `me.Held`'s, so one function serves both.
 type Held func(ctx context.Context, who pdid.Id) (methods []string, sites []pdid.Id, every bool, err error)
+
+// Everywhere is the part of [Held] that needs no narrowing: what somebody holds
+// through a binding across the whole tenant. `HolderReachesResponse.everywhere`
+// says who reads it.
+type Everywhere func(ctx context.Context, who pdid.Id) ([]string, error)
 
 // holding is [Rules.Holding], or [Rules.Granted] where a stack was assembled
 // before there were two answers.

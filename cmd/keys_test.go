@@ -488,3 +488,62 @@ func TestASuspendedHolderReachesNothing(t *testing.T) {
 
 	x.Empty(reach(), "a suspended holder was answered with their bindings")
 }
+
+// TestAKeyListCarriesNoVerifier is `roster api-key ls -o json` on the box: the
+// unwalled stack has no layer stripping secrets -- `keys.lookup` reads the
+// verifier through it -- and the list printed every key's.
+func TestAKeyListCarriesNoVerifier(t *testing.T) {
+	x := require.New(t)
+	b := keyFor(t, app.TenantService_Get_FullMethodName)
+
+	vs, err := b.Server.Control.Ungated.ApiKey().List(t.Context(), app.ApiKeyListRequest_builder{}.Build())
+	x.NoError(err)
+	x.NotEmpty(vs.GetItems())
+	for _, v := range vs.GetItems() {
+		x.Empty(v.GetSecret(), "key %s was listed with its verifier", v.GetAlias())
+	}
+
+	// And looking one up by its token still works, which reads it with `Get`.
+	_, err = app.NewTenantServiceClient(b.Conn).Get(bearing(t.Context(), b.Token), app.TenantGetRequest_builder{
+		Ref: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+}
+
+// TestWhatSomebodyHoldsEverywhereIsSaidApart is `Holder.Reaches` for an app
+// with no sites of its own.
+//
+// `methods` is the gate's union -- may they ever call this -- and roster's wall
+// narrows what a grant bound at one site reaches. kamino and khala have no
+// such wall, so reading `methods` they handed somebody bound at one site of
+// the company's everything, everywhere. `everywhere` is what needs no
+// narrowing.
+func TestWhatSomebodyHoldsEverywhereIsSaidApart(t *testing.T) {
+	x := require.New(t)
+	b := keyFor(t, app.TenantService_Get_FullMethodName)
+	ctx := t.Context()
+	at := app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build()
+
+	who := addHolder(t, ctx, b.Server, b.Contoso, "erin")
+	permits(t, ctx, b, b.Contoso, who, "reader", "/hday.oasys.RobotService/Get")
+
+	seoul, err := b.Server.Ungated.Site().Add(ctx, app.SiteAddRequest_builder{Tenant: at, Alias: "seoul"}.Build())
+	x.NoError(err)
+	writer, err := b.Server.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
+		Tenant: at, Alias: "writer", Methods: []string{"/hday.oasys.RobotService/Erase"},
+	}.Build())
+	x.NoError(err)
+	_, err = b.Server.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
+		Role:   app.RoleRef_builder{Id: writer.GetId()}.Build(),
+		Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Site:   app.SiteRef_builder{Id: seoul.GetId()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	v, err := b.Server.Ungated.Holder().Reaches(ctx, app.HolderReachesRequest_builder{
+		Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+	x.ElementsMatch([]string{"/hday.oasys.RobotService/Get", "/hday.oasys.RobotService/Erase"}, v.GetMethods())
+	x.Equal([]string{"/hday.oasys.RobotService/Get"}, v.GetEverywhere(), "a grant bound at one site was said to hold everywhere")
+}
