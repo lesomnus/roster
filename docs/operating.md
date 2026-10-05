@@ -635,6 +635,48 @@ people and the ways into their accounts. A file that made those is a file that
 grants access to whoever can write it. `Role` and `Binding` are the same argument
 one step out and are left out for now rather than refused.
 
+### A picture from the directory
+
+`login.profile: fill` (and `account.profile`) gives a person's profile what their
+directory says where it has nothing: the token's `name` as the display name, and
+their picture, which roster keeps at the sizes a screen draws (`Holder.portrait`,
+[entity.md](entity.md)). Only blanks -- what a person or an administrator wrote
+stays, and emptying a field is how somebody asks for the directory's again at
+their next sign-in. What a connection needs for the picture depends on where its
+directory keeps one:
+
+| directory | where the picture is | what the connection needs |
+| --- | --- | --- |
+| Google | the token's `picture`, a URL anybody can fetch | `profile` among its scopes, which a Google sign-in asks for anyway. Nothing to consent to beyond the sign-in. The URL is kept as `profile.picture`, beside roster's copy |
+| Entra | behind Microsoft Graph, where userinfo points | `User.Read` among its scopes, **consented for the whole directory first** (below). The URL is not kept, since no browser holds the token it needs |
+| anything else | the token's `picture`, else userinfo's | `profile`. A picture on the provider's own API host is fetched with the token, as Entra's is; one anywhere else only over https from an address on the internet -- so a directory inside the network that keeps pictures on another inside host gives none |
+
+**Entra: the consent before the scope.** A scope added to a connection is asked
+for at the next sign-in, and Entra asks each person for a permission the
+directory has not consented to as a whole. Where its user consent is off, that
+is *admin approval required*, and nobody signs in through that directory until
+an administrator consents -- and with `password: false`, nobody signs in at all.
+So, in this order:
+
+1. The app registration's **API permissions**. Microsoft Graph `User.Read`
+   (delegated) is there by default, since the portal adds it to every
+   registration; **Grant admin consent** for the directory, and its status reads
+   *Granted*. The button consents to everything in that list for everybody in
+   the directory. `User.Read` is the signed-in person's own profile and photo,
+   while they are signed in, and nobody else's. Adding the OpenID permissions
+   `openid`, `profile` and `email` to the list first makes the sign-in itself
+   ask nobody, somebody new included.
+2. Then `scopes: [email, profile, User.Read]` on the connection.
+
+`fill` with the scope still unchanged is safe either way: the name is filled,
+and a picture Graph refuses is a warning in the log naming `User.Read`, with the
+next sign-in trying again.
+
+**It is the deployment's, not a tenant's.** `profile` is a setting of the front
+door, which fronts every tenant, so a tenant cannot turn it off for its own
+people. A deployment whose tenants differ on it wants a switch per connection,
+which roster does not have yet.
+
 ### Declared rows
 
 Two things declare rows: this file, and the configuration that turns on one of
