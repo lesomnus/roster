@@ -897,7 +897,8 @@ function Profile(props: { holder: Holder; may: (method: string) => boolean }): R
 	return (
 		<section className="profile">
 			<h5>profile</h5>
-			<Picture holder={props.holder} may={props.may} />
+			{/* From a list, which carries the 64 rendition: drawn at 32 it is sharp. */}
+			<Picture holder={props.holder} may={props.may} px={32} />
 			<form
 				className="profile"
 				onSubmit={(e) => {

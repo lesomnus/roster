@@ -2,12 +2,19 @@
  * Somebody's picture as a page draws it, and the two things a person may do
  * about it: keep another image, or take it away.
  *
- * # Which picture
+ * # Which picture, and how large
  *
- * The largest rendition the row carries -- every size from a `Get`, one from a
- * list (`server/core/portrait.go`) -- and the profile's URL when roster has no
- * copy, which is a picture somebody chose and roster does not fetch. A page
- * draws what it has rather than asking again for a larger one.
+ * A page says how large it draws one, and gets the smallest rendition that is
+ * sharp at that size on a display of two device pixels to one -- or the
+ * largest the row carries, when none is. The row carries every size from a
+ * `Get` and one, the 64, from a list (`server/core/portrait.go`), so a screen
+ * drawing from a list draws at 32: a 64 drawn at 64 is a picture stretched to
+ * twice its size on most displays a person owns. And the size drawn is the
+ * page's rather than the row's, so a write answering with every size does not
+ * make the picture jump until the list is read again.
+ *
+ * The profile's URL when roster has no copy, which is a picture somebody chose
+ * and roster does not fetch.
  *
  * # What is sent
  *
@@ -26,16 +33,23 @@ import { HolderService } from '#gen/roster/payday/holder_svc_pb.js'
 /** The most `Portray` takes, which is roster's limit and said before sending. */
 const MAX_BYTES = 2 << 20
 
-/** largest is the biggest rendition a row carries; they are kept smallest first. */
-export function largest(h: Holder): string | undefined {
-	return h.portrait?.renditions.at(-1)?.uri
+/**
+ * pick is the smallest rendition sharp at `px` CSS pixels, at two device pixels
+ * to one, or the largest the row carries. They are kept smallest first.
+ */
+export function pick(h: Holder, px: number): string | undefined {
+	const vs = h.portrait?.renditions ?? []
+
+	return (vs.find((v) => v.size >= 2 * px) ?? vs.at(-1))?.uri
 }
 
-export function Picture(props: { holder: Holder; may: (method: string) => boolean }): React.ReactNode {
+/** Picture draws somebody's picture `px` CSS pixels square; 64 unless said. */
+export function Picture(props: { holder: Holder; may: (method: string) => boolean; px?: number }): React.ReactNode {
 	const portray = useCall(HolderService.method.portray)
 	const [bad, setBad] = useState<string | null>(null)
 	const h = props.holder
-	const src = largest(h) ?? (h.profile?.picture || undefined)
+	const px = props.px ?? 64
+	const src = pick(h, px) ?? (h.profile?.picture || undefined)
 	const may = props.may('/roster.HolderService/Portray')
 
 	const keep = (image: Uint8Array): void => {
@@ -47,7 +61,7 @@ export function Picture(props: { holder: Holder; may: (method: string) => boolea
 
 	return (
 		<div className="picture">
-			{src === undefined ? <span className="none">no picture</span> : <img src={src} alt="" width={64} height={64} />}
+			{src === undefined ? <span className="none">no picture</span> : <img src={src} alt="" width={px} height={px} />}
 			{may && (
 				<span className="actions">
 					<label>
