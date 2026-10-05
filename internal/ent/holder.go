@@ -44,6 +44,8 @@ type Holder struct {
 	DateInvalidated *time.Time `json:"date_invalidated,omitempty"`
 	// DateDisabled holds the value of the "date_disabled" field.
 	DateDisabled *time.Time `json:"date_disabled,omitempty"`
+	// Portrait holds the value of the "portrait" field.
+	Portrait *rstr.Portrait `json:"portrait,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -89,6 +91,8 @@ func (*Holder) scanValues(columns []string) ([]any, error) {
 			values[i] = holder.ValueScanner.Profile.ScanValue()
 		case holder.FieldData:
 			values[i] = holder.ValueScanner.Data.ScanValue()
+		case holder.FieldPortrait:
+			values[i] = holder.ValueScanner.Portrait.ScanValue()
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -181,6 +185,12 @@ func (_m *Holder) assignValues(columns []string, values []any) error {
 				_m.DateDisabled = new(time.Time)
 				*_m.DateDisabled = value.Time
 			}
+		case holder.FieldPortrait:
+			if value, err := holder.ValueScanner.Portrait.FromValue(values[i]); err != nil {
+				return err
+			} else {
+				_m.Portrait = value
+			}
 		case holder.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
@@ -266,6 +276,9 @@ func (_m *Holder) String() string {
 		builder.WriteString("date_disabled=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("portrait=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Portrait))
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TenantId))

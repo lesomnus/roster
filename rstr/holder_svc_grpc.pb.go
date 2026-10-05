@@ -34,6 +34,8 @@ const (
 	HolderService_SignsIn_FullMethodName    = "/roster.HolderService/SignsIn"
 	HolderService_Reaches_FullMethodName    = "/roster.HolderService/Reaches"
 	HolderService_Search_FullMethodName     = "/roster.HolderService/Search"
+	HolderService_Fill_FullMethodName       = "/roster.HolderService/Fill"
+	HolderService_Portray_FullMethodName    = "/roster.HolderService/Portray"
 )
 
 // HolderServiceClient is the client API for HolderService service.
@@ -81,6 +83,17 @@ type HolderServiceClient interface {
 	// a write on a holder, and a second service would be one more name for the
 	// same rows. The overlay mechanism exists for exactly this and nothing had
 	// used it.
+	//
+	// # A picture somewhere else takes the portrait away
+	//
+	// `profile.picture` and `portrait` are one picture in two forms: where it
+	// is, and roster's copy. A profile naming a **different** picture leaves the
+	// copy depicting the old one, and a screen that prefers the copy -- because
+	// it needs no fetch -- would go on drawing the picture somebody just
+	// replaced. So a write that changes `profile.picture` clears `portrait`, and
+	// the URL is checked when it changes: https, which a page fetches as it is
+	// and which no page can run. A value written before that rule is left alone
+	// until somebody changes it.
 	Update(ctx context.Context, in *HolderUpdateRequest, opts ...grpc.CallOption) (*Holder, error)
 	// Realias changes what a person is written as: `@contoso/alice` becomes
 	// `@contoso/alice-kim`.
@@ -205,6 +218,46 @@ type HolderServiceClient interface {
 	// "who has this mailbox" has one answer and a fragment of one is a way to
 	// enumerate them.
 	Search(ctx context.Context, in *HolderSearchRequest, opts ...grpc.CallOption) (*HolderSearchResponse, error)
+	// Fill writes what a provider said about somebody into what their profile
+	// does not have yet, and nothing else: a display name where there is none,
+	// and a picture for somebody who has none.
+	//
+	// # Why it is not Update
+	//
+	// `Disable`'s reason, and here it is the whole point. The front door that
+	// signs somebody in through a directory is the one part of a deployment
+	// holding what that directory says about them, and `Update` would let it
+	// replace anybody's profile with whatever a directory claims. This is the
+	// grant that cannot. It writes nothing over a value somebody chose, so a
+	// name a person corrected stays corrected and a picture they picked stays
+	// theirs -- and taking a value away is how somebody asks for the
+	// directory's again, at their next sign-in.
+	//
+	// # Why it answers so little
+	//
+	// Whether they are still pictureless, and not the row: a grant that filled
+	// blanks and answered with what it filled would be `Get` under another
+	// name, tenant-wide. That one bit is what a front door needs to decide
+	// whether to fetch an image at all, which is a request to a directory it
+	// should not make at every sign-in for a picture nobody will keep.
+	Fill(ctx context.Context, in *HolderFillRequest, opts ...grpc.CallOption) (*HolderFillResponse, error)
+	// Portray keeps an image as somebody's picture, or takes their picture
+	// away.
+	//
+	// # Why it is not a field on Update
+	//
+	// It is not handed a value to store. It is handed an image, and roster
+	// makes the sizes it keeps -- so what is written is roster's work, which
+	// nothing `Update` writes ever is, and its size is roster's to bound rather
+	// than the caller's.
+	//
+	// # It clears `profile.picture`
+	//
+	// `Update`'s rule, from the other side: the picture is one thing, and once
+	// it is this image a URL saying where some other picture is describes
+	// somebody else's. So this writes the profile's `picture` empty, and takes
+	// the version it was read under, as `Update` does.
+	Portray(ctx context.Context, in *HolderPortrayRequest, opts ...grpc.CallOption) (*Holder, error)
 }
 
 type holderServiceClient struct {
@@ -374,6 +427,26 @@ func (c *holderServiceClient) Search(ctx context.Context, in *HolderSearchReques
 	return out, nil
 }
 
+func (c *holderServiceClient) Fill(ctx context.Context, in *HolderFillRequest, opts ...grpc.CallOption) (*HolderFillResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HolderFillResponse)
+	err := c.cc.Invoke(ctx, HolderService_Fill_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *holderServiceClient) Portray(ctx context.Context, in *HolderPortrayRequest, opts ...grpc.CallOption) (*Holder, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Holder)
+	err := c.cc.Invoke(ctx, HolderService_Portray_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HolderServiceServer is the server API for HolderService service.
 // All implementations must embed UnimplementedHolderServiceServer
 // for forward compatibility.
@@ -419,6 +492,17 @@ type HolderServiceServer interface {
 	// a write on a holder, and a second service would be one more name for the
 	// same rows. The overlay mechanism exists for exactly this and nothing had
 	// used it.
+	//
+	// # A picture somewhere else takes the portrait away
+	//
+	// `profile.picture` and `portrait` are one picture in two forms: where it
+	// is, and roster's copy. A profile naming a **different** picture leaves the
+	// copy depicting the old one, and a screen that prefers the copy -- because
+	// it needs no fetch -- would go on drawing the picture somebody just
+	// replaced. So a write that changes `profile.picture` clears `portrait`, and
+	// the URL is checked when it changes: https, which a page fetches as it is
+	// and which no page can run. A value written before that rule is left alone
+	// until somebody changes it.
 	Update(context.Context, *HolderUpdateRequest) (*Holder, error)
 	// Realias changes what a person is written as: `@contoso/alice` becomes
 	// `@contoso/alice-kim`.
@@ -543,6 +627,46 @@ type HolderServiceServer interface {
 	// "who has this mailbox" has one answer and a fragment of one is a way to
 	// enumerate them.
 	Search(context.Context, *HolderSearchRequest) (*HolderSearchResponse, error)
+	// Fill writes what a provider said about somebody into what their profile
+	// does not have yet, and nothing else: a display name where there is none,
+	// and a picture for somebody who has none.
+	//
+	// # Why it is not Update
+	//
+	// `Disable`'s reason, and here it is the whole point. The front door that
+	// signs somebody in through a directory is the one part of a deployment
+	// holding what that directory says about them, and `Update` would let it
+	// replace anybody's profile with whatever a directory claims. This is the
+	// grant that cannot. It writes nothing over a value somebody chose, so a
+	// name a person corrected stays corrected and a picture they picked stays
+	// theirs -- and taking a value away is how somebody asks for the
+	// directory's again, at their next sign-in.
+	//
+	// # Why it answers so little
+	//
+	// Whether they are still pictureless, and not the row: a grant that filled
+	// blanks and answered with what it filled would be `Get` under another
+	// name, tenant-wide. That one bit is what a front door needs to decide
+	// whether to fetch an image at all, which is a request to a directory it
+	// should not make at every sign-in for a picture nobody will keep.
+	Fill(context.Context, *HolderFillRequest) (*HolderFillResponse, error)
+	// Portray keeps an image as somebody's picture, or takes their picture
+	// away.
+	//
+	// # Why it is not a field on Update
+	//
+	// It is not handed a value to store. It is handed an image, and roster
+	// makes the sizes it keeps -- so what is written is roster's work, which
+	// nothing `Update` writes ever is, and its size is roster's to bound rather
+	// than the caller's.
+	//
+	// # It clears `profile.picture`
+	//
+	// `Update`'s rule, from the other side: the picture is one thing, and once
+	// it is this image a URL saying where some other picture is describes
+	// somebody else's. So this writes the profile's `picture` empty, and takes
+	// the version it was read under, as `Update` does.
+	Portray(context.Context, *HolderPortrayRequest) (*Holder, error)
 	mustEmbedUnimplementedHolderServiceServer()
 }
 
@@ -597,6 +721,12 @@ func (UnimplementedHolderServiceServer) Reaches(context.Context, *HolderReachesR
 }
 func (UnimplementedHolderServiceServer) Search(context.Context, *HolderSearchRequest) (*HolderSearchResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Search not implemented")
+}
+func (UnimplementedHolderServiceServer) Fill(context.Context, *HolderFillRequest) (*HolderFillResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Fill not implemented")
+}
+func (UnimplementedHolderServiceServer) Portray(context.Context, *HolderPortrayRequest) (*Holder, error) {
+	return nil, status.Error(codes.Unimplemented, "method Portray not implemented")
 }
 func (UnimplementedHolderServiceServer) mustEmbedUnimplementedHolderServiceServer() {}
 func (UnimplementedHolderServiceServer) testEmbeddedByValue()                       {}
@@ -882,6 +1012,42 @@ func _HolderService_Search_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HolderService_Fill_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderFillRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).Fill(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_Fill_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).Fill(ctx, req.(*HolderFillRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HolderService_Portray_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderPortrayRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).Portray(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_Portray_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).Portray(ctx, req.(*HolderPortrayRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HolderService_ServiceDesc is the grpc.ServiceDesc for HolderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -944,6 +1110,14 @@ var HolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Search",
 			Handler:    _HolderService_Search_Handler,
+		},
+		{
+			MethodName: "Fill",
+			Handler:    _HolderService_Fill_Handler,
+		},
+		{
+			MethodName: "Portray",
+			Handler:    _HolderService_Portray_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

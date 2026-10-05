@@ -75,6 +75,11 @@ type AccountConfig struct {
 	// `enrolling`. See [LoginConfig.Enrol], which says what each is.
 	Enrol string `yaml:"enrol"`
 
+	// Profile is what a sign-in through a provider does to the person's
+	// profile: empty for nothing, `fill` for the blanks. See
+	// [LoginConfig.Profile], which says what is filled and from where.
+	Profile string `yaml:"profile"`
+
 	// Keys is one tenant key per tenant fronted, by alias.
 	//
 	// The values are **references** and not tokens: `env:NAME`, the one scheme
@@ -271,6 +276,26 @@ type LoginConfig struct {
 	// `roster login provision` mints does not: making people is a wider grant
 	// than signing them in, and `--enrol` is what says so out loud.
 	Enrol string `yaml:"enrol"`
+
+	// Profile is what a sign-in through a directory does to the person's
+	// profile. Empty is nothing.
+	//
+	//	fill   what the directory says goes where the profile has nothing --
+	//	       its `name` as the display name, and their picture, which roster
+	//	       keeps at the sizes a screen draws (`Holder.portrait`)
+	//
+	// Only blanks, so what a person or an operator wrote stays, and somebody
+	// who wants the directory's again empties the field and signs in. The
+	// picture is read with the token the sign-in was handed, which is the one
+	// moment anything here has one: from the token's `picture`, else from the
+	// provider's userinfo -- Entra's way, and its photo needs `User.Read`
+	// among the connection's scopes.
+	//
+	// It is the role's to allow, like `enrolling`: `HolderService.Fill` is added
+	// where this says `fill`, and nowhere else. That method writes only blanks
+	// and reads nothing back, so it is the grant a front door can hold without
+	// being able to rewrite anybody's profile.
+	Profile string `yaml:"profile"`
 
 	// Consent is what happens at the consent hop: `skip`, which grants what the
 	// client asked for and draws nothing, or `ask`, which draws a screen.

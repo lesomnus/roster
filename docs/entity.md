@@ -130,6 +130,12 @@ which is temporary and belongs to 🔒 `Credential`, nor an erasure. Both are
 timestamps rather than flags because the value travels and is monotonic: a
 duplicate is a no-op and a stale one cannot un-revoke.
 
+And a picture, in two forms. `profile.picture` says where one is, and
+`portrait` is roster's own copy at the sizes a screen draws -- 32, 64 and 128
+pixels, JPEG, inline -- rendered by roster from whatever image `Portray` or
+`Fill` is handed, so what a row carries is bounded by roster and not by a
+caller. A page of people carries one size of it, and `Get` all of them.
+
 > **alice** is a `Holder` in contoso. Whatever signs her in -- a password here,
 > an account at Entra, a key in a script -- resolves to this one row, and the
 > identifier of it is the `sub` every product knows her by. Suspend her and the

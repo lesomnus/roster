@@ -513,6 +513,9 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 				// provision` mints deliberately does not hold. Here so that one
 				// test can be about the policy rather than about the grant.
 				"/roster.HolderService/Add",
+
+				// And `profile: fill`, for the same reason.
+				"/roster.HolderService/Fill",
 			}, login.Methods...),
 		}.Build())
 		x.NoError(err)

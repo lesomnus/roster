@@ -10,7 +10,7 @@ import type { Any, Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_any, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Patch } from "../../patch/patch_pb.js";
 import { file_patch_patch } from "../../patch/patch_pb.js";
-import type { Holder, HolderSchema, Profile } from "./holder_pb.js";
+import type { Holder, HolderSchema, Portrait, Profile } from "./holder_pb.js";
 import { file_roster_payday_holder } from "./holder_pb.js";
 import type { TenantRef, TenantSelect } from "./tenant_svc_pb.js";
 import { file_roster_payday_tenant_svc_g } from "./tenant_svc_pb.js";
@@ -20,7 +20,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/holder_svc.g.proto.
  */
 export const file_roster_payday_holder_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("CiByb3N0ZXIvcGF5ZGF5L2hvbGRlcl9zdmMuZy5wcm90bxIGcm9zdGVyIscDChBIb2xkZXJBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjQKBmxhYmVscxgHIAMoCzIkLnJvc3Rlci5Ib2xkZXJBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIAoHcHJvZmlsZRgJIAEoCzIPLnJvc3Rlci5Qcm9maWxlEiIKBGRhdGEYCiABKAsyFC5nb29nbGUucHJvdG9idWYuQW55EjQKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWRhdGVfZGlzYWJsZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWAoQSG9sZGVyR2V0UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEiQKBnNlbGVjdBgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QiSQoJSG9sZGVyUmVmEgwKAmlkGAEgASgMSAASJwoEc2x1ZxgEIAEoCzIXLnJvc3Rlci5Ib2xkZXJSZWZCeVNsdWdIAEIFCgNrZXkiQwoPSG9sZGVyUmVmQnlTbHVnEg0KBWFsaWFzGAQgASgJEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYijQIKDEhvbGRlclNlbGVjdBILCgNhbGwYASABKAgSJAoGdGVuYW50GAIgASgLMhQucm9zdGVyLlRlbmFudFNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgSDwoHcHJvZmlsZRgJIAEoCBIMCgRkYXRhGAogASgIEhgKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAgSFQoNZGF0ZV9kaXNhYmxlZBgMIAEoCCKnBAoSSG9sZGVyUGF0Y2hSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDQoFYWxpYXMYCCABKAkSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjYKBmxhYmVscxgOIAMoCzImLnJvc3Rlci5Ib2xkZXJQYXRjaFJlcXVlc3QuTGFiZWxzRW50cnkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgSIAoHcHJvZmlsZRgSIAEoCzIPLnJvc3Rlci5Qcm9maWxlEhQKDHByb2ZpbGVfbnVsbBgTIAEoCBIiCgRkYXRhGBQgASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueRIRCglkYXRhX251bGwYFSABKAgSNAoQZGF0ZV9pbnZhbGlkYXRlZBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASHQoVZGF0ZV9pbnZhbGlkYXRlZF9udWxsGBcgASgIEjEKDWRhdGVfZGlzYWJsZWQYGCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfZGlzYWJsZWRfbnVsbBgZIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlEKEkhvbGRlckFwcGx5UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJQoTSG9sZGVyRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiZQoRSG9sZGVyTGlzdFJlcXVlc3QSJQoHZmlsdGVycxgBIAMoCzIULnJvc3Rlci5Ib2xkZXJGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkgKEkhvbGRlckxpc3RSZXNwb25zZRIdCgVpdGVtcxgBIAMoCzIOLnJvc3Rlci5Ib2xkZXISEwoEbmV4dBgCIAEoCUIFqgECCAIisgEKDEhvbGRlckZpbHRlchIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSMAoGbGFiZWxzGAMgAygLMiAucm9zdGVyLkhvbGRlckZpbHRlci5MYWJlbHNFbnRyeRotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlkKEkhvbGRlcldhdGNoUmVxdWVzdBIlCgdmaWx0ZXJzGAEgAygLMhQucm9zdGVyLkhvbGRlckZpbHRlchIcCg1za2lwX3NuYXBzaG90GAIgASgIQgWqAQIIAiI9ChNIb2xkZXJXYXRjaFJlc3BvbnNlEiYKBWl0ZW1zGAEgAygLMhcucm9zdGVyLkhvbGRlcldhdGNoSXRlbSJTCg9Ib2xkZXJXYXRjaEl0ZW0SCgoCaWQYASABKAwSHQoFdmFsdWUYAiABKAsyDi5yb3N0ZXIuSG9sZGVyEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIirQEKE0hvbGRlclVwZGF0ZVJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiAKB3Byb2ZpbGUYCSABKAsyDy5yb3N0ZXIuUHJvZmlsZRIiCgRkYXRhGAogASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueSJ3ChRIb2xkZXJSZWFsaWFzUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDQoFYWxpYXMYBCABKAkiaAoUSG9sZGVyRGlzYWJsZVJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImcKE0hvbGRlckVuYWJsZVJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImsKF0hvbGRlckludmFsaWRhdGVSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSMAoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCI2ChRIb2xkZXJTaWduc0luUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmIpMBChVIb2xkZXJTaWduc0luUmVzcG9uc2USKgoKaWRlbnRpdGllcxgNIAMoCzIWLnJvc3Rlci5TaWduSW5JZGVudGl0eRItCgtjcmVkZW50aWFscxgOIAMoCzIYLnJvc3Rlci5TaWduSW5DcmVkZW50aWFsEh8KBGtleXMYDyADKAsyES5yb3N0ZXIuU2lnbkluS2V5IjYKFEhvbGRlclJlYWNoZXNSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYiXwoVSG9sZGVyUmVhY2hlc1Jlc3BvbnNlEg8KB21ldGhvZHMYCiADKAkSDQoFc2l0ZXMYCyADKAwSEgoKZXZlcnlfc2l0ZRgMIAEoCBISCgpldmVyeXdoZXJlGA0gAygJIpsBChNIb2xkZXJTZWFyY2hSZXF1ZXN0EiUKB2ZpbHRlcnMYASADKAsyFC5yb3N0ZXIuSG9sZGVyRmlsdGVyEgkKAXEYCCABKAkSEgoKZGVwYXJ0bWVudBgJIAEoCRITCgtlbXBsb3llZV9ubxgKIAEoCRITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiSgoUSG9sZGVyU2VhcmNoUmVzcG9uc2USHQoFaXRlbXMYASADKAsyDi5yb3N0ZXIuSG9sZGVyEhMKBG5leHQYAiABKAlCBaoBAggCMosHCg1Ib2xkZXJTZXJ2aWNlEi8KA0FkZBIYLnJvc3Rlci5Ib2xkZXJBZGRSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchIvCgNHZXQSGC5yb3N0ZXIuSG9sZGVyR2V0UmVxdWVzdBoOLnJvc3Rlci5Ib2xkZXISMwoFUGF0Y2gSGi5yb3N0ZXIuSG9sZGVyUGF0Y2hSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchIzCgVBcHBseRIaLnJvc3Rlci5Ib2xkZXJBcHBseVJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEjcKBUVyYXNlEhEucm9zdGVyLkhvbGRlclJlZhobLnJvc3Rlci5Ib2xkZXJFcmFzZVJlc3BvbnNlEj0KBExpc3QSGS5yb3N0ZXIuSG9sZGVyTGlzdFJlcXVlc3QaGi5yb3N0ZXIuSG9sZGVyTGlzdFJlc3BvbnNlEkIKBVdhdGNoEhoucm9zdGVyLkhvbGRlcldhdGNoUmVxdWVzdBobLnJvc3Rlci5Ib2xkZXJXYXRjaFJlc3BvbnNlMAESNQoGVXBkYXRlEhsucm9zdGVyLkhvbGRlclVwZGF0ZVJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEjcKB1JlYWxpYXMSHC5yb3N0ZXIuSG9sZGVyUmVhbGlhc1JlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEjcKB0Rpc2FibGUSHC5yb3N0ZXIuSG9sZGVyRGlzYWJsZVJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEjUKBkVuYWJsZRIbLnJvc3Rlci5Ib2xkZXJFbmFibGVSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchI9CgpJbnZhbGlkYXRlEh8ucm9zdGVyLkhvbGRlckludmFsaWRhdGVSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchJGCgdTaWduc0luEhwucm9zdGVyLkhvbGRlclNpZ25zSW5SZXF1ZXN0Gh0ucm9zdGVyLkhvbGRlclNpZ25zSW5SZXNwb25zZRJGCgdSZWFjaGVzEhwucm9zdGVyLkhvbGRlclJlYWNoZXNSZXF1ZXN0Gh0ucm9zdGVyLkhvbGRlclJlYWNoZXNSZXNwb25zZRJDCgZTZWFyY2gSGy5yb3N0ZXIuSG9sZGVyU2VhcmNoUmVxdWVzdBocLnJvc3Rlci5Ib2xkZXJTZWFyY2hSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_me, file_google_protobuf_any, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder, file_roster_payday_tenant_svc_g]);
+  fileDesc("CiByb3N0ZXIvcGF5ZGF5L2hvbGRlcl9zdmMuZy5wcm90bxIGcm9zdGVyIusDChBIb2xkZXJBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjQKBmxhYmVscxgHIAMoCzIkLnJvc3Rlci5Ib2xkZXJBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIAoHcHJvZmlsZRgJIAEoCzIPLnJvc3Rlci5Qcm9maWxlEiIKBGRhdGEYCiABKAsyFC5nb29nbGUucHJvdG9idWYuQW55EjQKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWRhdGVfZGlzYWJsZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiIKCHBvcnRyYWl0GBAgASgLMhAucm9zdGVyLlBvcnRyYWl0Gi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWAoQSG9sZGVyR2V0UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEiQKBnNlbGVjdBgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QiSQoJSG9sZGVyUmVmEgwKAmlkGAEgASgMSAASJwoEc2x1ZxgEIAEoCzIXLnJvc3Rlci5Ib2xkZXJSZWZCeVNsdWdIAEIFCgNrZXkiQwoPSG9sZGVyUmVmQnlTbHVnEg0KBWFsaWFzGAQgASgJEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYinwIKDEhvbGRlclNlbGVjdBILCgNhbGwYASABKAgSJAoGdGVuYW50GAIgASgLMhQucm9zdGVyLlRlbmFudFNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgSDwoHcHJvZmlsZRgJIAEoCBIMCgRkYXRhGAogASgIEhgKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAgSFQoNZGF0ZV9kaXNhYmxlZBgMIAEoCBIQCghwb3J0cmFpdBgQIAEoCCLiBAoSSG9sZGVyUGF0Y2hSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDQoFYWxpYXMYCCABKAkSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjYKBmxhYmVscxgOIAMoCzImLnJvc3Rlci5Ib2xkZXJQYXRjaFJlcXVlc3QuTGFiZWxzRW50cnkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgSIAoHcHJvZmlsZRgSIAEoCzIPLnJvc3Rlci5Qcm9maWxlEhQKDHByb2ZpbGVfbnVsbBgTIAEoCBIiCgRkYXRhGBQgASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueRIRCglkYXRhX251bGwYFSABKAgSNAoQZGF0ZV9pbnZhbGlkYXRlZBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASHQoVZGF0ZV9pbnZhbGlkYXRlZF9udWxsGBcgASgIEjEKDWRhdGVfZGlzYWJsZWQYGCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfZGlzYWJsZWRfbnVsbBgZIAEoCBIiCghwb3J0cmFpdBggIAEoCzIQLnJvc3Rlci5Qb3J0cmFpdBIVCg1wb3J0cmFpdF9udWxsGCEgASgIGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiUQoSSG9sZGVyQXBwbHlSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIlChNIb2xkZXJFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJlChFIb2xkZXJMaXN0UmVxdWVzdBIlCgdmaWx0ZXJzGAEgAygLMhQucm9zdGVyLkhvbGRlckZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiSAoSSG9sZGVyTGlzdFJlc3BvbnNlEh0KBWl0ZW1zGAEgAygLMg4ucm9zdGVyLkhvbGRlchITCgRuZXh0GAIgASgJQgWqAQIIAiKyAQoMSG9sZGVyRmlsdGVyEh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhIwCgZsYWJlbHMYAyADKAsyIC5yb3N0ZXIuSG9sZGVyRmlsdGVyLkxhYmVsc0VudHJ5Gi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWQoSSG9sZGVyV2F0Y2hSZXF1ZXN0EiUKB2ZpbHRlcnMYASADKAsyFC5yb3N0ZXIuSG9sZGVyRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIj0KE0hvbGRlcldhdGNoUmVzcG9uc2USJgoFaXRlbXMYASADKAsyFy5yb3N0ZXIuSG9sZGVyV2F0Y2hJdGVtIlMKD0hvbGRlcldhdGNoSXRlbRIKCgJpZBgBIAEoDBIdCgV2YWx1ZRgCIAEoCzIOLnJvc3Rlci5Ib2xkZXISFQoGYWN0aW9uGAMgASgJQgWqAQIIAiKtAQoTSG9sZGVyVXBkYXRlUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIAoHcHJvZmlsZRgJIAEoCzIPLnJvc3Rlci5Qcm9maWxlEiIKBGRhdGEYCiABKAsyFC5nb29nbGUucHJvdG9idWYuQW55IncKFEhvbGRlclJlYWxpYXNSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSMAoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBINCgVhbGlhcxgEIAEoCSJoChRIb2xkZXJEaXNhYmxlUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiZwoTSG9sZGVyRW5hYmxlUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiawoXSG9sZGVySW52YWxpZGF0ZVJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjYKFEhvbGRlclNpZ25zSW5SZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYikwEKFUhvbGRlclNpZ25zSW5SZXNwb25zZRIqCgppZGVudGl0aWVzGA0gAygLMhYucm9zdGVyLlNpZ25JbklkZW50aXR5Ei0KC2NyZWRlbnRpYWxzGA4gAygLMhgucm9zdGVyLlNpZ25JbkNyZWRlbnRpYWwSHwoEa2V5cxgPIAMoCzIRLnJvc3Rlci5TaWduSW5LZXkiNgoUSG9sZGVyUmVhY2hlc1JlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZiJfChVIb2xkZXJSZWFjaGVzUmVzcG9uc2USDwoHbWV0aG9kcxgKIAMoCRINCgVzaXRlcxgLIAMoDBISCgpldmVyeV9zaXRlGAwgASgIEhIKCmV2ZXJ5d2hlcmUYDSADKAkimwEKE0hvbGRlclNlYXJjaFJlcXVlc3QSJQoHZmlsdGVycxgBIAMoCzIULnJvc3Rlci5Ib2xkZXJGaWx0ZXISCQoBcRgIIAEoCRISCgpkZXBhcnRtZW50GAkgASgJEhMKC2VtcGxveWVlX25vGAogASgJEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJKChRIb2xkZXJTZWFyY2hSZXNwb25zZRIdCgVpdGVtcxgBIAMoCzIOLnJvc3Rlci5Ib2xkZXISEwoEbmV4dBgCIAEoCUIFqgECCAIifgoRSG9sZGVyRmlsbFJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIbCgxkaXNwbGF5X25hbWUYCCABKAlCBaoBAggCEhYKB3BpY3R1cmUYCSABKAlCBaoBAggCEhQKBWltYWdlGAogASgMQgWqAQIIAiIwChJIb2xkZXJGaWxsUmVzcG9uc2USGgoLcGljdHVyZWxlc3MYASABKAhCBaoBAggCIn4KFEhvbGRlclBvcnRyYXlSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSMAoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIUCgVpbWFnZRgIIAEoDEIFqgECCAIygwgKDUhvbGRlclNlcnZpY2USLwoDQWRkEhgucm9zdGVyLkhvbGRlckFkZFJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEi8KA0dldBIYLnJvc3Rlci5Ib2xkZXJHZXRSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchIzCgVQYXRjaBIaLnJvc3Rlci5Ib2xkZXJQYXRjaFJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEjMKBUFwcGx5Ehoucm9zdGVyLkhvbGRlckFwcGx5UmVxdWVzdBoOLnJvc3Rlci5Ib2xkZXISNwoFRXJhc2USES5yb3N0ZXIuSG9sZGVyUmVmGhsucm9zdGVyLkhvbGRlckVyYXNlUmVzcG9uc2USPQoETGlzdBIZLnJvc3Rlci5Ib2xkZXJMaXN0UmVxdWVzdBoaLnJvc3Rlci5Ib2xkZXJMaXN0UmVzcG9uc2USQgoFV2F0Y2gSGi5yb3N0ZXIuSG9sZGVyV2F0Y2hSZXF1ZXN0Ghsucm9zdGVyLkhvbGRlcldhdGNoUmVzcG9uc2UwARI1CgZVcGRhdGUSGy5yb3N0ZXIuSG9sZGVyVXBkYXRlUmVxdWVzdBoOLnJvc3Rlci5Ib2xkZXISNwoHUmVhbGlhcxIcLnJvc3Rlci5Ib2xkZXJSZWFsaWFzUmVxdWVzdBoOLnJvc3Rlci5Ib2xkZXISNwoHRGlzYWJsZRIcLnJvc3Rlci5Ib2xkZXJEaXNhYmxlUmVxdWVzdBoOLnJvc3Rlci5Ib2xkZXISNQoGRW5hYmxlEhsucm9zdGVyLkhvbGRlckVuYWJsZVJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEj0KCkludmFsaWRhdGUSHy5yb3N0ZXIuSG9sZGVySW52YWxpZGF0ZVJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEkYKB1NpZ25zSW4SHC5yb3N0ZXIuSG9sZGVyU2lnbnNJblJlcXVlc3QaHS5yb3N0ZXIuSG9sZGVyU2lnbnNJblJlc3BvbnNlEkYKB1JlYWNoZXMSHC5yb3N0ZXIuSG9sZGVyUmVhY2hlc1JlcXVlc3QaHS5yb3N0ZXIuSG9sZGVyUmVhY2hlc1Jlc3BvbnNlEkMKBlNlYXJjaBIbLnJvc3Rlci5Ib2xkZXJTZWFyY2hSZXF1ZXN0Ghwucm9zdGVyLkhvbGRlclNlYXJjaFJlc3BvbnNlEj0KBEZpbGwSGS5yb3N0ZXIuSG9sZGVyRmlsbFJlcXVlc3QaGi5yb3N0ZXIuSG9sZGVyRmlsbFJlc3BvbnNlEjcKB1BvcnRyYXkSHC5yb3N0ZXIuSG9sZGVyUG9ydHJheVJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_me, file_google_protobuf_any, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder, file_roster_payday_tenant_svc_g]);
 
 /**
  * @generated from message roster.HolderAddRequest
@@ -80,6 +80,11 @@ export type HolderAddRequest = Message<"roster.HolderAddRequest"> & {
    * @generated from field: google.protobuf.Timestamp date_disabled = 12;
    */
   dateDisabled?: Timestamp | undefined;
+
+  /**
+   * @generated from field: roster.Portrait portrait = 16;
+   */
+  portrait?: Portrait | undefined;
 };
 
 /**
@@ -230,6 +235,11 @@ export type HolderSelect = Message<"roster.HolderSelect"> & {
    * @generated from field: bool date_disabled = 12;
    */
   dateDisabled: boolean;
+
+  /**
+   * @generated from field: bool portrait = 16;
+   */
+  portrait: boolean;
 };
 
 /**
@@ -351,6 +361,21 @@ export type HolderPatchRequest = Message<"roster.HolderPatchRequest"> & {
    * @generated from field: bool date_disabled_null = 25;
    */
   dateDisabledNull: boolean;
+
+  /**
+   * @generated from field: roster.Portrait portrait = 32;
+   */
+  portrait?: Portrait | undefined;
+
+  /**
+   * Clear portrait instead of writing it.
+   * It takes a field of its own because an unset value already means
+   * "leave it alone", so no value could have meant NULL. It wins
+   * outright: setting both this and portrait clears.
+   *
+   * @generated from field: bool portrait_null = 33;
+   */
+  portraitNull: boolean;
 };
 
 /**
@@ -948,6 +973,101 @@ export const HolderSearchResponseSchema: GenMessage<HolderSearchResponse> = /*@_
   messageDesc(file_roster_payday_holder_svc_g, 24);
 
 /**
+ * @generated from message roster.HolderFillRequest
+ */
+export type HolderFillRequest = Message<"roster.HolderFillRequest"> & {
+  /**
+   * @generated from field: roster.HolderRef ref = 1;
+   */
+  ref?: HolderRef | undefined;
+
+  /**
+   * What the provider calls them, for a profile with no display name.
+   *
+   * @generated from field: string display_name = 8 [features.field_presence = IMPLICIT];
+   */
+  displayName: string;
+
+  /**
+   * Where the provider keeps their picture, when that is somewhere a browser
+   * fetches as it is: an https URL. Written beside the portrait `image` makes,
+   * or alone when there is no image roster would keep -- and only for somebody
+   * with no picture, as the image is.
+   *
+   * @generated from field: string picture = 9 [features.field_presence = IMPLICIT];
+   */
+  picture: string;
+
+  /**
+   * The picture itself, as the provider handed it over: JPEG, PNG, GIF or
+   * WebP, rendered as `Portray` renders one.
+   *
+   * @generated from field: bytes image = 10 [features.field_presence = IMPLICIT];
+   */
+  image: Uint8Array;
+};
+
+/**
+ * Describes the message roster.HolderFillRequest.
+ * Use `create(HolderFillRequestSchema)` to create a new message.
+ */
+export const HolderFillRequestSchema: GenMessage<HolderFillRequest> = /*@__PURE__*/
+  messageDesc(file_roster_payday_holder_svc_g, 25);
+
+/**
+ * @generated from message roster.HolderFillResponse
+ */
+export type HolderFillResponse = Message<"roster.HolderFillResponse"> & {
+  /**
+   * They have no picture after this call -- no `profile.picture` and no
+   * `portrait` -- so an image handed over now would be kept.
+   *
+   * @generated from field: bool pictureless = 1 [features.field_presence = IMPLICIT];
+   */
+  pictureless: boolean;
+};
+
+/**
+ * Describes the message roster.HolderFillResponse.
+ * Use `create(HolderFillResponseSchema)` to create a new message.
+ */
+export const HolderFillResponseSchema: GenMessage<HolderFillResponse> = /*@__PURE__*/
+  messageDesc(file_roster_payday_holder_svc_g, 26);
+
+/**
+ * @generated from message roster.HolderPortrayRequest
+ */
+export type HolderPortrayRequest = Message<"roster.HolderPortrayRequest"> & {
+  /**
+   * @generated from field: roster.HolderRef ref = 1;
+   */
+  ref?: HolderRef | undefined;
+
+  /**
+   * Optimistic locking, as `Update` takes it: this replaces their picture and
+   * clears the profile's URL, so it is a write against what the caller read.
+   *
+   * @generated from field: google.protobuf.Timestamp date_updated = 13;
+   */
+  dateUpdated?: Timestamp | undefined;
+
+  /**
+   * JPEG, PNG, GIF or WebP, at most 2 MiB and 4096 pixels a side. Empty takes
+   * their picture away.
+   *
+   * @generated from field: bytes image = 8 [features.field_presence = IMPLICIT];
+   */
+  image: Uint8Array;
+};
+
+/**
+ * Describes the message roster.HolderPortrayRequest.
+ * Use `create(HolderPortrayRequestSchema)` to create a new message.
+ */
+export const HolderPortrayRequestSchema: GenMessage<HolderPortrayRequest> = /*@__PURE__*/
+  messageDesc(file_roster_payday_holder_svc_g, 27);
+
+/**
  * @generated from service roster.HolderService
  */
 export const HolderService: GenService<{
@@ -1049,6 +1169,17 @@ export const HolderService: GenService<{
    * a write on a holder, and a second service would be one more name for the
    * same rows. The overlay mechanism exists for exactly this and nothing had
    * used it.
+   *
+   * # A picture somewhere else takes the portrait away
+   *
+   * `profile.picture` and `portrait` are one picture in two forms: where it
+   * is, and roster's copy. A profile naming a **different** picture leaves the
+   * copy depicting the old one, and a screen that prefers the copy -- because
+   * it needs no fetch -- would go on drawing the picture somebody just
+   * replaced. So a write that changes `profile.picture` clears `portrait`, and
+   * the URL is checked when it changes: https, which a page fetches as it is
+   * and which no page can run. A value written before that rule is left alone
+   * until somebody changes it.
    *
    * @generated from rpc roster.HolderService.Update
    */
@@ -1235,6 +1366,62 @@ export const HolderService: GenService<{
     methodKind: "unary";
     input: typeof HolderSearchRequestSchema;
     output: typeof HolderSearchResponseSchema;
+  },
+  /**
+   * Fill writes what a provider said about somebody into what their profile
+   * does not have yet, and nothing else: a display name where there is none,
+   * and a picture for somebody who has none.
+   *
+   * # Why it is not Update
+   *
+   * `Disable`'s reason, and here it is the whole point. The front door that
+   * signs somebody in through a directory is the one part of a deployment
+   * holding what that directory says about them, and `Update` would let it
+   * replace anybody's profile with whatever a directory claims. This is the
+   * grant that cannot. It writes nothing over a value somebody chose, so a
+   * name a person corrected stays corrected and a picture they picked stays
+   * theirs -- and taking a value away is how somebody asks for the
+   * directory's again, at their next sign-in.
+   *
+   * # Why it answers so little
+   *
+   * Whether they are still pictureless, and not the row: a grant that filled
+   * blanks and answered with what it filled would be `Get` under another
+   * name, tenant-wide. That one bit is what a front door needs to decide
+   * whether to fetch an image at all, which is a request to a directory it
+   * should not make at every sign-in for a picture nobody will keep.
+   *
+   * @generated from rpc roster.HolderService.Fill
+   */
+  fill: {
+    methodKind: "unary";
+    input: typeof HolderFillRequestSchema;
+    output: typeof HolderFillResponseSchema;
+  },
+  /**
+   * Portray keeps an image as somebody's picture, or takes their picture
+   * away.
+   *
+   * # Why it is not a field on Update
+   *
+   * It is not handed a value to store. It is handed an image, and roster
+   * makes the sizes it keeps -- so what is written is roster's work, which
+   * nothing `Update` writes ever is, and its size is roster's to bound rather
+   * than the caller's.
+   *
+   * # It clears `profile.picture`
+   *
+   * `Update`'s rule, from the other side: the picture is one thing, and once
+   * it is this image a URL saying where some other picture is describes
+   * somebody else's. So this writes the profile's `picture` empty, and takes
+   * the version it was read under, as `Update` does.
+   *
+   * @generated from rpc roster.HolderService.Portray
+   */
+  portray: {
+    methodKind: "unary";
+    input: typeof HolderPortrayRequestSchema;
+    output: typeof HolderSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_roster_payday_holder_svc_g, 0);

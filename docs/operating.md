@@ -442,6 +442,8 @@ login:                                    # only with Hydra in front; see login.
   consent: skip                           # ask draws a screen instead
   base: https://login.contoso.example     # one redirect URI for the whole app
   enrol: invited                          # invited | expected | enrolling
+  # profile: fill                         # the directory's name and picture,
+                                          # where the profile has none
   page: { dir: /usr/share/roster/login }
   remember: 1h
   seal: [env:LOGIN_SEAL]

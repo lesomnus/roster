@@ -1,7 +1,10 @@
 package login_test
 
 import (
+	"bytes"
 	"encoding/json"
+	"image"
+	"image/png"
 	"net/http"
 	"net/url"
 	"testing"
@@ -536,4 +539,101 @@ func TestTheAddressADirectoryHandedOverIsKept(t *testing.T) {
 		_, claims := d.hydra.told()
 		x.NotContains(claims, "email")
 	})
+}
+
+// TestAProfileIsFilledFromTheProviderWhereItHasNothing is `profile: fill`
+// through the whole round trip, in Entra's shape: a name in the token, and the
+// picture behind userinfo and a token -- the one moment anything here has one.
+func TestAProfileIsFilledFromTheProviderWhereItHasNothing(t *testing.T) {
+	// erin is contoso's person, linked to the directory's subject, with
+	// whatever the directory will say about them.
+	erin := func(t *testing.T, fill bool, photo []byte) (*idptest.Idp, *deployment) {
+		t.Helper()
+		p := idptest.New(t, "login-app")
+		d := serveAs(t, login.Skip, func(c *login.Config) { c.Fill = fill })
+		d.connect(t, p, "entra")
+
+		_, err := d.s.Ungated.Identity().Add(t.Context(), rstr.IdentityAddRequest_builder{
+			Holder:   rstr.HolderRef_builder{Id: d.who["contoso"].Bytes()}.Build(),
+			Provider: "entra",
+			Subject:  "erin-at-entra",
+		}.Build())
+		require.NoError(t, err)
+
+		p.Subject = "erin-at-entra"
+		p.Claims = map[string]any{"name": "Erin Hart"}
+		p.UserInfo = map[string]any{"picture": p.URL + "/photo"}
+		p.Photo = photo
+
+		return p, d
+	}
+	signIn := func(t *testing.T, d *deployment, challenge string) {
+		t.Helper()
+		d.hydra.raise(challenge, "contoso-web")
+		res := d.through(t, d.browser(t), challenge, "entra")
+		require.Equal(t, http.StatusSeeOther, res.StatusCode, "the sign-in did not finish")
+	}
+	profile := func(t *testing.T, d *deployment) (*rstr.Profile, []uint32) {
+		t.Helper()
+		v, err := d.s.Ungated.Holder().Get(t.Context(), rstr.HolderGetRequest_builder{
+			Ref: rstr.HolderRef_builder{Id: d.who["contoso"].Bytes()}.Build(),
+		}.Build())
+		require.NoError(t, err)
+		sizes := []uint32{}
+		for _, r := range v.GetPortrait().GetRenditions() {
+			sizes = append(sizes, r.GetSize())
+		}
+
+		return v.GetProfile(), sizes
+	}
+
+	t.Run("filled, and the picture fetched with the token", func(t *testing.T) {
+		x := require.New(t)
+		p, d := erin(t, true, face(t, 200))
+
+		signIn(t, d, "c1")
+		got, sizes := profile(t, d)
+		x.Equal("Erin Hart", got.GetDisplayName())
+		x.Equal([]uint32{32, 64, 128}, sizes)
+		x.Empty(got.GetPicture(), "a URL only a token can fetch was kept for browsers")
+		x.EqualValues(1, p.Photos.Load())
+
+		// Somebody with a picture is not asked about again: the next sign-in
+		// fetches nothing from the directory.
+		signIn(t, d, "c2")
+		x.EqualValues(1, p.Photos.Load(), "a picture was fetched for somebody who has one")
+	})
+
+	t.Run("not unless the deployment says so", func(t *testing.T) {
+		x := require.New(t)
+		p, d := erin(t, false, face(t, 200))
+
+		signIn(t, d, "c1")
+		got, sizes := profile(t, d)
+		x.Empty(got.GetDisplayName())
+		x.Empty(sizes)
+		x.Zero(p.Photos.Load())
+	})
+
+	// A directory answering with something that is not a picture costs the
+	// picture and nothing else: the person is signed in, and the name is
+	// still theirs.
+	t.Run("and a picture that cannot be kept does not stop a sign-in", func(t *testing.T) {
+		x := require.New(t)
+		_, d := erin(t, true, []byte("<html>not a picture</html>"))
+
+		signIn(t, d, "c1")
+		got, sizes := profile(t, d)
+		x.Equal("Erin Hart", got.GetDisplayName())
+		x.Empty(sizes)
+	})
+}
+
+// face is a picture a directory might hold of somebody.
+func face(t *testing.T, side int) []byte {
+	t.Helper()
+	var b bytes.Buffer
+	require.NoError(t, png.Encode(&b, image.NewGray(image.Rect(0, 0, side, side))))
+
+	return b.Bytes()
 }

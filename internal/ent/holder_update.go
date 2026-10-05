@@ -183,6 +183,18 @@ func (_u *HolderUpdate) ClearDateDisabled() *HolderUpdate {
 	return _u
 }
 
+// SetPortrait sets the "portrait" field.
+func (_u *HolderUpdate) SetPortrait(v *rstr.Portrait) *HolderUpdate {
+	_u.mutation.SetPortrait(v)
+	return _u
+}
+
+// ClearPortrait clears the value of the "portrait" field.
+func (_u *HolderUpdate) ClearPortrait() *HolderUpdate {
+	_u.mutation.ClearPortrait()
+	return _u
+}
+
 // Mutation returns the HolderMutation object of the builder.
 func (_u *HolderUpdate) Mutation() *HolderMutation {
 	return _u.mutation
@@ -305,6 +317,19 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.DateDisabledCleared() {
 		_spec.ClearField(holder.FieldDateDisabled, field.TypeTime)
+	}
+	if value, ok := _u.mutation.Portrait(); ok {
+		vv, err := holder.ValueScanner.Portrait.Value(value)
+		if err != nil {
+			return 0, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return 0, err
+		}
+		_spec.SetField(holder.FieldPortrait, field.TypeJson, vv)
+	}
+	if _u.mutation.PortraitCleared() {
+		_spec.ClearField(holder.FieldPortrait, field.TypeJson)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -480,6 +505,18 @@ func (_u *HolderUpdateOne) ClearDateDisabled() *HolderUpdateOne {
 	return _u
 }
 
+// SetPortrait sets the "portrait" field.
+func (_u *HolderUpdateOne) SetPortrait(v *rstr.Portrait) *HolderUpdateOne {
+	_u.mutation.SetPortrait(v)
+	return _u
+}
+
+// ClearPortrait clears the value of the "portrait" field.
+func (_u *HolderUpdateOne) ClearPortrait() *HolderUpdateOne {
+	_u.mutation.ClearPortrait()
+	return _u
+}
+
 // Mutation returns the HolderMutation object of the builder.
 func (_u *HolderUpdateOne) Mutation() *HolderMutation {
 	return _u.mutation
@@ -632,6 +669,19 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 	}
 	if _u.mutation.DateDisabledCleared() {
 		_spec.ClearField(holder.FieldDateDisabled, field.TypeTime)
+	}
+	if value, ok := _u.mutation.Portrait(); ok {
+		vv, err := holder.ValueScanner.Portrait.Value(value)
+		if err != nil {
+			return nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, err
+		}
+		_spec.SetField(holder.FieldPortrait, field.TypeJson, vv)
+	}
+	if _u.mutation.PortraitCleared() {
+		_spec.ClearField(holder.FieldPortrait, field.TypeJson)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Holder{config: _u.config}

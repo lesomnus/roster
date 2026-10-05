@@ -52,6 +52,17 @@ service HolderService {
   // a write on a holder, and a second service would be one more name for the
   // same rows. The overlay mechanism exists for exactly this and nothing had
   // used it.
+  //
+  // # A picture somewhere else takes the portrait away
+  //
+  // `profile.picture` and `portrait` are one picture in two forms: where it
+  // is, and roster's copy. A profile naming a **different** picture leaves the
+  // copy depicting the old one, and a screen that prefers the copy -- because
+  // it needs no fetch -- would go on drawing the picture somebody just
+  // replaced. So a write that changes `profile.picture` clears `portrait`, and
+  // the URL is checked when it changes: https, which a page fetches as it is
+  // and which no page can run. A value written before that rule is left alone
+  // until somebody changes it.
   rpc Update(HolderUpdateRequest) returns (Holder);
   // Realias changes what a person is written as: `@contoso/alice` becomes
   // `@contoso/alice-kim`.
@@ -176,6 +187,46 @@ service HolderService {
   // "who has this mailbox" has one answer and a fragment of one is a way to
   // enumerate them.
   rpc Search(HolderSearchRequest) returns (HolderSearchResponse);
+  // Fill writes what a provider said about somebody into what their profile
+  // does not have yet, and nothing else: a display name where there is none,
+  // and a picture for somebody who has none.
+  //
+  // # Why it is not Update
+  //
+  // `Disable`'s reason, and here it is the whole point. The front door that
+  // signs somebody in through a directory is the one part of a deployment
+  // holding what that directory says about them, and `Update` would let it
+  // replace anybody's profile with whatever a directory claims. This is the
+  // grant that cannot. It writes nothing over a value somebody chose, so a
+  // name a person corrected stays corrected and a picture they picked stays
+  // theirs -- and taking a value away is how somebody asks for the
+  // directory's again, at their next sign-in.
+  //
+  // # Why it answers so little
+  //
+  // Whether they are still pictureless, and not the row: a grant that filled
+  // blanks and answered with what it filled would be `Get` under another
+  // name, tenant-wide. That one bit is what a front door needs to decide
+  // whether to fetch an image at all, which is a request to a directory it
+  // should not make at every sign-in for a picture nobody will keep.
+  rpc Fill(HolderFillRequest) returns (HolderFillResponse);
+  // Portray keeps an image as somebody's picture, or takes their picture
+  // away.
+  //
+  // # Why it is not a field on Update
+  //
+  // It is not handed a value to store. It is handed an image, and roster
+  // makes the sizes it keeps -- so what is written is roster's work, which
+  // nothing `Update` writes ever is, and its size is roster's to bound rather
+  // than the caller's.
+  //
+  // # It clears `profile.picture`
+  //
+  // `Update`'s rule, from the other side: the picture is one thing, and once
+  // it is this image a URL saying where some other picture is describes
+  // somebody else's. So this writes the profile's `picture` empty, and takes
+  // the version it was read under, as `Update` does.
+  rpc Portray(HolderPortrayRequest) returns (Holder);
 }
 
 message HolderAddRequest {
@@ -190,6 +241,7 @@ message HolderAddRequest {
   google.protobuf.Any data = 10;
   google.protobuf.Timestamp date_invalidated = 11;
   google.protobuf.Timestamp date_disabled = 12;
+  Portrait portrait = 16;
 }
 
 message HolderGetRequest {
@@ -223,6 +275,7 @@ message HolderSelect {
   bool data = 10;
   bool date_invalidated = 11;
   bool date_disabled = 12;
+  bool portrait = 16;
 }
 
 message HolderPatchRequest {
@@ -269,6 +322,12 @@ message HolderPatchRequest {
   // "leave it alone", so no value could have meant NULL. It wins
   // outright: setting both this and date_disabled clears.
   bool date_disabled_null = 25;
+  Portrait portrait = 32;
+  // Clear portrait instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and portrait clears.
+  bool portrait_null = 33;
 }
 
 message HolderApplyRequest {
@@ -491,4 +550,39 @@ message HolderSearchResponse {
 
   // What to ask for next, and empty when this was the last of them.
   string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message HolderFillRequest {
+  HolderRef ref = 1;
+
+  // What the provider calls them, for a profile with no display name.
+  string display_name = 8 [features.field_presence = IMPLICIT];
+
+  // Where the provider keeps their picture, when that is somewhere a browser
+  // fetches as it is: an https URL. Written beside the portrait `image` makes,
+  // or alone when there is no image roster would keep -- and only for somebody
+  // with no picture, as the image is.
+  string picture = 9 [features.field_presence = IMPLICIT];
+
+  // The picture itself, as the provider handed it over: JPEG, PNG, GIF or
+  // WebP, rendered as `Portray` renders one.
+  bytes image = 10 [features.field_presence = IMPLICIT];
+}
+
+message HolderFillResponse {
+  // They have no picture after this call -- no `profile.picture` and no
+  // `portrait` -- so an image handed over now would be kept.
+  bool pictureless = 1 [features.field_presence = IMPLICIT];
+}
+
+message HolderPortrayRequest {
+  HolderRef ref = 1;
+
+  // Optimistic locking, as `Update` takes it: this replaces their picture and
+  // clears the profile's URL, so it is a write against what the caller read.
+  google.protobuf.Timestamp date_updated = 13;
+
+  // JPEG, PNG, GIF or WebP, at most 2 MiB and 4096 pixels a side. Empty takes
+  // their picture away.
+  bytes image = 8 [features.field_presence = IMPLICIT];
 }

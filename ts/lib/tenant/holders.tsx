@@ -58,6 +58,7 @@ import { EmailService } from '#gen/app/email_svc_pb.js'
 import { IdentityService } from '#gen/app/identity_svc_pb.js'
 import type { Writes } from '#lib/client.js'
 import { expiries, expiresAt, until } from '#lib/expiry.js'
+import { Picture } from '#lib/picture.js'
 import { Bar, Fill, Menu, Sheet } from '#lib/ui.js'
 
 import { uuid } from './parts.js'
@@ -896,6 +897,7 @@ function Profile(props: { holder: Holder; may: (method: string) => boolean }): R
 	return (
 		<section className="profile">
 			<h5>profile</h5>
+			<Picture holder={props.holder} may={props.may} />
 			<form
 				className="profile"
 				onSubmit={(e) => {

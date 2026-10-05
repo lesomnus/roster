@@ -30,6 +30,7 @@ type Mutation struct {
 	data             **anypb.Any
 	date_invalidated *time.Time
 	date_disabled    *time.Time
+	portrait         **rstr.Portrait
 	clearedFields    map[string]struct{}
 	tenant           *uuid.UUID
 	clearedtenant    bool
@@ -350,6 +351,38 @@ func (m *Mutation) ResetDateDisabled() {
 	delete(m.clearedFields, FieldDateDisabled)
 }
 
+// SetPortrait sets the "portrait" field.
+func (m *Mutation) SetPortrait(r *rstr.Portrait) {
+	m.portrait = &r
+}
+
+// Portrait returns the value of the "portrait" field in the mutation.
+func (m *Mutation) Portrait() (r *rstr.Portrait, exists bool) {
+	v := m.portrait
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPortrait clears the value of the "portrait" field.
+func (m *Mutation) ClearPortrait() {
+	m.portrait = nil
+	m.clearedFields[FieldPortrait] = struct{}{}
+}
+
+// PortraitCleared returns if the "portrait" field was cleared in this mutation.
+func (m *Mutation) PortraitCleared() bool {
+	_, ok := m.clearedFields[FieldPortrait]
+	return ok
+}
+
+// ResetPortrait resets all changes to the "portrait" field.
+func (m *Mutation) ResetPortrait() {
+	m.portrait = nil
+	delete(m.clearedFields, FieldPortrait)
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (m *Mutation) SetTenantId(u uuid.UUID) {
 	m.tenant = &u
@@ -430,7 +463,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.alias != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -463,6 +496,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.date_disabled != nil {
 		fields = append(fields, FieldDateDisabled)
+	}
+	if m.portrait != nil {
+		fields = append(fields, FieldPortrait)
 	}
 	if m.tenant != nil {
 		fields = append(fields, FieldTenantId)
@@ -497,6 +533,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateInvalidated()
 	case FieldDateDisabled:
 		return m.DateDisabled()
+	case FieldPortrait:
+		return m.Portrait()
 	case FieldTenantId:
 		return m.TenantId()
 	}
@@ -592,6 +630,13 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDateDisabled(v)
 		return nil
+	case FieldPortrait:
+		v, ok := value.(*rstr.Portrait)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPortrait(v)
+		return nil
 	case FieldTenantId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
@@ -650,6 +695,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateDisabled) {
 		fields = append(fields, FieldDateDisabled)
 	}
+	if m.FieldCleared(FieldPortrait) {
+		fields = append(fields, FieldPortrait)
+	}
 	return fields
 }
 
@@ -684,6 +732,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDateDisabled:
 		m.ClearDateDisabled()
+		return nil
+	case FieldPortrait:
+		m.ClearPortrait()
 		return nil
 	}
 	return fmt.Errorf("unknown Holder nullable field %s", name)
@@ -725,6 +776,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldDateDisabled:
 		m.ResetDateDisabled()
+		return nil
+	case FieldPortrait:
+		m.ResetPortrait()
 		return nil
 	case FieldTenantId:
 		m.ResetTenantId()

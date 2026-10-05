@@ -549,6 +549,35 @@ p.acts {
 	gap: var(--s-1);
 }
 
+/* ------------------------------------------------------------- pictures */
+
+/* Somebody's picture, and beside it what may be done about it. Round because
+   a person is drawn that way everywhere else, and covered so a picture that
+   is not square -- a URL somebody typed -- is cropped rather than squashed. */
+.picture {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--s-3);
+	margin-bottom: var(--s-3);
+}
+
+.picture img {
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.picture .actions {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--s-2);
+}
+
+.picture input[type='file'] {
+	max-width: 14rem;
+	margin-left: var(--s-1);
+}
+
 /* ------------------------------------------------------------- notices */
 
 .note {

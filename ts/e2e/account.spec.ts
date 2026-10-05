@@ -37,6 +37,30 @@ test('a password signs her in, and a wrong one does not', async ({ page }) => {
 	await signOut(page)
 })
 
+// A picture she picks is kept as roster renders it -- a JPEG, whatever she sent
+// -- and taking it away is drawn at once: the page's store keeps a field an
+// answer leaves out, so a portrait taken away has to arrive as an empty one.
+test('a picture she picks is kept, and taken away again', async ({ page }) => {
+	// One pixel of PNG, which is a picture as far as anybody can tell.
+	const pixel = Buffer.from(
+		'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==',
+		'base64',
+	)
+
+	await signIn(page)
+	await signedIn(page)
+	const picture = page.locator('.picture').first()
+	await expect(picture.locator('.none')).toHaveText('no picture')
+
+	await picture.locator('input[type=file]').setInputFiles({ name: 'erin.png', mimeType: 'image/png', buffer: pixel })
+	await expect(picture.locator('img')).toHaveAttribute('src', /^data:image\/jpeg;base64,/)
+
+	await picture.locator('button', { hasText: 'take it away' }).click()
+	await expect(picture.locator('.none')).toHaveText('no picture')
+	await expect(picture.locator('img')).toHaveCount(0)
+	await signOut(page)
+})
+
 test('a second directory is one button, and the one she arrived through is not offered', async ({ page }) => {
 	// The rig gives contoso two connections and erin an identity at one of them,
 	// which is the shape an operator with Entra and GitHub has. What this pins is

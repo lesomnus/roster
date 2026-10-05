@@ -110,7 +110,7 @@ func newCmdAccountProvision(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			_, n, err := provisionAccount(ctx, s, c.Account.Enrol, out)
+			_, n, err := provisionAccount(ctx, s, c.Account.Enrol, c.Account.Profile, out)
 			if err != nil {
 				return err
 			}
@@ -141,6 +141,7 @@ func newCmdAccountServe(c *cmd.Config) *xli.Command {
 			&flg.String{Name: "base", Brief: "this app's public origin, registered with every provider as the redirect"},
 			&flg.String{Name: "static", Brief: "a directory to serve as the page; empty serves none"},
 			&flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"},
+			&flg.String{Name: "profile", Brief: "what a provider sign-in does to the profile: fill (its name and picture, where the profile has none); empty is nothing"},
 			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per tenant fronted. Or ROSTER_ACCOUNT_KEY_<ALIAS> in the environment"},
 			&flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it, as rk_…, env:NAME or file:PATH; instead of --key"},
 			&flg.Switch{Name: "insecure-cookie", Brief: "a cookie without Secure, for a page served over plain http in development"},
@@ -182,6 +183,9 @@ func newCmdAccountServe(c *cmd.Config) *xli.Command {
 			}
 			if v, _ := flg.Find[string](cl, "enrol"); v != "" {
 				ac.Enrol = v
+			}
+			if v, _ := flg.Find[string](cl, "profile"); v != "" {
+				ac.Profile = v
 			}
 			if v, _ := flg.Find[bool](cl, "insecure-cookie"); v {
 				ac.InsecureCookie = true
@@ -270,6 +274,9 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 		cfg.Enrol = account.Enrolling()
 	default:
 		return fmt.Errorf("account.enrol (--enrol): %q is not one of invited, expected, enrolling", ac.Enrol)
+	}
+	if cfg.Fill, err = fills("account.profile (--profile)", ac.Profile); err != nil {
+		return err
 	}
 	if ac.Page.Dir != "" {
 		cfg.Static = cmd.Page(ac.Page.Dir)

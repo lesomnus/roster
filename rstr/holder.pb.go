@@ -49,6 +49,7 @@ type Holder struct {
 	xxx_hidden_Data            *anypb.Any             `protobuf:"bytes,10,opt,name=data"`
 	xxx_hidden_DateInvalidated *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_invalidated,json=dateInvalidated"`
 	xxx_hidden_DateDisabled    *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_disabled,json=dateDisabled"`
+	xxx_hidden_Portrait        *Portrait              `protobuf:"bytes,16,opt,name=portrait"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -169,6 +170,13 @@ func (x *Holder) GetDateDisabled() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *Holder) GetPortrait() *Portrait {
+	if x != nil {
+		return x.xxx_hidden_Portrait
+	}
+	return nil
+}
+
 func (x *Holder) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -222,6 +230,10 @@ func (x *Holder) SetDateInvalidated(v *timestamppb.Timestamp) {
 
 func (x *Holder) SetDateDisabled(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateDisabled = v
+}
+
+func (x *Holder) SetPortrait(v *Portrait) {
+	x.xxx_hidden_Portrait = v
 }
 
 func (x *Holder) HasTenant() bool {
@@ -280,6 +292,13 @@ func (x *Holder) HasDateDisabled() bool {
 	return x.xxx_hidden_DateDisabled != nil
 }
 
+func (x *Holder) HasPortrait() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Portrait != nil
+}
+
 func (x *Holder) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
 }
@@ -310,6 +329,10 @@ func (x *Holder) ClearDateInvalidated() {
 
 func (x *Holder) ClearDateDisabled() {
 	x.xxx_hidden_DateDisabled = nil
+}
+
+func (x *Holder) ClearPortrait() {
+	x.xxx_hidden_Portrait = nil
 }
 
 type Holder_builder struct {
@@ -427,6 +450,35 @@ type Holder_builder struct {
 	// A timestamp for the reason above, and because *since when* is a question an
 	// operator asks.
 	DateDisabled *timestamppb.Timestamp
+	// A picture of this person, kept here: one square image at the sizes a
+	// screen draws one, inline.
+	//
+	// # Why roster keeps the image and not only where it is
+	//
+	// `profile.picture` says where a picture is, which is enough when that is
+	// somewhere a browser can fetch -- and a directory's often is not. Entra
+	// hands its photo only to a caller holding a token for Microsoft Graph, so
+	// the one moment anybody here can have it is a sign-in, and after that it
+	// is whatever was kept then. Kept here, a deployment with nowhere else to
+	// put an image still has a picture of everybody, and who may see it is who
+	// may read this row: the wall decides, rather than whoever learns a URL.
+	//
+	// # Why it is not in `Profile`
+	//
+	// `Profile` is replaced whole, and roster's own pages write it from a form
+	// -- the admin console and the user console from a row they read in a
+	// **list**. A list carries one size of this and not all of them
+	// (`server/core/portrait.go` says why), so a portrait inside the profile
+	// would be cut down by the next person to fix a typo in a department. Here a profile write cannot reach it: `Portray`
+	// and `Fill` write it, and both take an image and make the sizes themselves.
+	//
+	// # What it costs
+	//
+	// A few kilobytes on the row -- six or so for a photograph, at every size --
+	// in every `Get` that selects it and in the trail's copy of the row at each
+	// write to this holder. Bounded by what roster renders rather than by what
+	// a caller sends, which is why nothing writes it but roster.
+	Portrait *Portrait
 }
 
 func (b0 Holder_builder) Build() *Holder {
@@ -446,6 +498,7 @@ func (b0 Holder_builder) Build() *Holder {
 	x.xxx_hidden_Data = b.Data
 	x.xxx_hidden_DateInvalidated = b.DateInvalidated
 	x.xxx_hidden_DateDisabled = b.DateDisabled
+	x.xxx_hidden_Portrait = b.Portrait
 	return m0
 }
 
@@ -574,11 +627,169 @@ func (b0 Profile_builder) Build() *Profile {
 	return m0
 }
 
+// Portrait is one picture of somebody, at the sizes roster keeps it.
+//
+// Made by roster and never written by a caller: `Portray` and `Fill` take an
+// image and render it, so every portrait has the same sizes in the same format
+// however the image arrived.
+//
+// # JPEG, and these sizes
+//
+// JPEG because Go's standard library writes it and does not write WebP -- an
+// encoder for that is libwebp, which is cgo, which this binary does not link --
+// and at these sizes WebP would save a kilobyte or two. 32, 64 and 128 pixels
+// because a screen draws a person at 16 to 64 CSS pixels, at up to two device
+// pixels to one of those; anything larger is for somewhere that is not a row.
+// An image smaller than 128 pixels is not enlarged: its own size is the
+// largest one.
+//
+// One with no renditions is no picture, and is what a picture taken away is
+// written as, rather than as nothing: a page's store reads a field that is
+// absent from an answer as one that was not selected, and would go on drawing
+// the picture it had.
+//
+// Stored as the canonical protobuf JSON, so these **names** are the storage,
+// as `Profile`'s are.
+type Portrait struct {
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Renditions *[]*Rendition          `protobuf:"bytes,1,rep,name=renditions"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *Portrait) Reset() {
+	*x = Portrait{}
+	mi := &file_roster_payday_holder_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Portrait) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Portrait) ProtoMessage() {}
+
+func (x *Portrait) ProtoReflect() protoreflect.Message {
+	mi := &file_roster_payday_holder_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *Portrait) GetRenditions() []*Rendition {
+	if x != nil {
+		if x.xxx_hidden_Renditions != nil {
+			return *x.xxx_hidden_Renditions
+		}
+	}
+	return nil
+}
+
+func (x *Portrait) SetRenditions(v []*Rendition) {
+	x.xxx_hidden_Renditions = &v
+}
+
+type Portrait_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Smallest first, each the same image, square.
+	Renditions []*Rendition
+}
+
+func (b0 Portrait_builder) Build() *Portrait {
+	m0 := &Portrait{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Renditions = &b.Renditions
+	return m0
+}
+
+// Rendition is a portrait at one size.
+type Rendition struct {
+	state           protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Size uint32                 `protobuf:"varint,1,opt,name=size"`
+	xxx_hidden_Uri  string                 `protobuf:"bytes,2,opt,name=uri"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *Rendition) Reset() {
+	*x = Rendition{}
+	mi := &file_roster_payday_holder_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Rendition) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Rendition) ProtoMessage() {}
+
+func (x *Rendition) ProtoReflect() protoreflect.Message {
+	mi := &file_roster_payday_holder_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *Rendition) GetSize() uint32 {
+	if x != nil {
+		return x.xxx_hidden_Size
+	}
+	return 0
+}
+
+func (x *Rendition) GetUri() string {
+	if x != nil {
+		return x.xxx_hidden_Uri
+	}
+	return ""
+}
+
+func (x *Rendition) SetSize(v uint32) {
+	x.xxx_hidden_Size = v
+}
+
+func (x *Rendition) SetUri(v string) {
+	x.xxx_hidden_Uri = v
+}
+
+type Rendition_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Width and height, in pixels.
+	Size uint32
+	// `data:image/jpeg;base64,...`: a URI, so a page puts it in `src` as it is,
+	// and one that says what it holds, so nothing has to be told the format.
+	Uri string
+}
+
+func (b0 Rendition_builder) Build() *Rendition {
+	m0 := &Rendition{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Size = b.Size
+	x.xxx_hidden_Uri = b.Uri
+	return m0
+}
+
 var File_roster_payday_holder_proto protoreflect.FileDescriptor
 
 const file_roster_payday_holder_proto_rawDesc = "" +
 	"\n" +
-	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xb7\x06\n" +
+	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xe5\x06\n" +
 	"\x06Holder\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
@@ -594,7 +805,8 @@ const file_roster_payday_holder_proto_rawDesc = "" +
 	"\x04data\x18\n" +
 	" \x01(\v2\x14.google.protobuf.AnyR\x04data\x12M\n" +
 	"\x10date_invalidated\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\x0fdateInvalidated\x12G\n" +
-	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateDisabled\x1a9\n" +
+	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateDisabled\x12,\n" +
+	"\bportrait\x18\x10 \x01(\v2\x10.roster.PortraitR\bportrait\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:n\xca\xfc\x15%\x12\x02\x10\x01\x1a\x1f\x12\x04slug\x1a\t\n" +
@@ -618,32 +830,43 @@ const file_roster_payday_holder_proto_rawDesc = "" +
 	"department\x12\x1f\n" +
 	"\vemployee_no\x18\x04 \x01(\tR\n" +
 	"employeeNo\x12\x16\n" +
-	"\x06locale\x18\x05 \x01(\tR\x06localeB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\x06locale\x18\x05 \x01(\tR\x06locale\"=\n" +
+	"\bPortrait\x121\n" +
+	"\n" +
+	"renditions\x18\x01 \x03(\v2\x11.roster.RenditionR\n" +
+	"renditions\"1\n" +
+	"\tRendition\x12\x12\n" +
+	"\x04size\x18\x01 \x01(\rR\x04size\x12\x10\n" +
+	"\x03uri\x18\x02 \x01(\tR\x03uriB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_roster_payday_holder_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_roster_payday_holder_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_roster_payday_holder_proto_goTypes = []any{
 	(*Holder)(nil),                // 0: roster.Holder
 	(*Profile)(nil),               // 1: roster.Profile
-	nil,                           // 2: roster.Holder.LabelsEntry
-	(*Tenant)(nil),                // 3: roster.Tenant
-	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
-	(*anypb.Any)(nil),             // 5: google.protobuf.Any
+	(*Portrait)(nil),              // 2: roster.Portrait
+	(*Rendition)(nil),             // 3: roster.Rendition
+	nil,                           // 4: roster.Holder.LabelsEntry
+	(*Tenant)(nil),                // 5: roster.Tenant
+	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
+	(*anypb.Any)(nil),             // 7: google.protobuf.Any
 }
 var file_roster_payday_holder_proto_depIdxs = []int32{
-	3, // 0: roster.Holder.tenant:type_name -> roster.Tenant
-	2, // 1: roster.Holder.labels:type_name -> roster.Holder.LabelsEntry
-	4, // 2: roster.Holder.date_updated:type_name -> google.protobuf.Timestamp
-	4, // 3: roster.Holder.date_erased:type_name -> google.protobuf.Timestamp
-	4, // 4: roster.Holder.date_created:type_name -> google.protobuf.Timestamp
-	1, // 5: roster.Holder.profile:type_name -> roster.Profile
-	5, // 6: roster.Holder.data:type_name -> google.protobuf.Any
-	4, // 7: roster.Holder.date_invalidated:type_name -> google.protobuf.Timestamp
-	4, // 8: roster.Holder.date_disabled:type_name -> google.protobuf.Timestamp
-	9, // [9:9] is the sub-list for method output_type
-	9, // [9:9] is the sub-list for method input_type
-	9, // [9:9] is the sub-list for extension type_name
-	9, // [9:9] is the sub-list for extension extendee
-	0, // [0:9] is the sub-list for field type_name
+	5,  // 0: roster.Holder.tenant:type_name -> roster.Tenant
+	4,  // 1: roster.Holder.labels:type_name -> roster.Holder.LabelsEntry
+	6,  // 2: roster.Holder.date_updated:type_name -> google.protobuf.Timestamp
+	6,  // 3: roster.Holder.date_erased:type_name -> google.protobuf.Timestamp
+	6,  // 4: roster.Holder.date_created:type_name -> google.protobuf.Timestamp
+	1,  // 5: roster.Holder.profile:type_name -> roster.Profile
+	7,  // 6: roster.Holder.data:type_name -> google.protobuf.Any
+	6,  // 7: roster.Holder.date_invalidated:type_name -> google.protobuf.Timestamp
+	6,  // 8: roster.Holder.date_disabled:type_name -> google.protobuf.Timestamp
+	2,  // 9: roster.Holder.portrait:type_name -> roster.Portrait
+	3,  // 10: roster.Portrait.renditions:type_name -> roster.Rendition
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_roster_payday_holder_proto_init() }
@@ -658,7 +881,7 @@ func file_roster_payday_holder_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_roster_payday_holder_proto_rawDesc), len(file_roster_payday_holder_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

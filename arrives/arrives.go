@@ -37,6 +37,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -72,6 +73,17 @@ type Caller struct {
 	Email    string
 	Verified bool
 	Name     string
+
+	// Picture is the token's `picture` claim: where the provider says a
+	// picture of them is, when it said so in the token. Entra never does; its
+	// userinfo does, and [Providers.Fill] reads that only when a picture is
+	// wanted.
+	Picture string
+
+	// token is what the exchange handed over, kept for [Providers.Fill] to ask
+	// the provider with and for nothing else. Unexported, so it is never in
+	// anything an app logs or passes on by accident.
+	token *oauth2.Token
 }
 
 // Enrol decides what happens when somebody signs in at a provider and roster
@@ -302,13 +314,18 @@ type Providers struct {
 
 	// discovery is the document per (tenant, connection), fetched once.
 	discovery sync.Map // tenantId + "\x00" + name -> *oidc.Provider
+
+	// own and anywhere fetch a picture: from the provider's own API, with
+	// the token it handed over, and from anywhere else, without it and only
+	// on the internet. `fill.go` says why there are two.
+	own, anywhere *http.Client
 }
 
 // New is the relying party for whatever `Connection` rows the given client can
 // see. `secret` turns a `Connection.secret_ref` into the client secret it
 // names; roster stores that reference and never reads it.
 func New(c rstr.Client, secret func(ref string) (string, error)) *Providers {
-	return &Providers{roster: c, secret: secret}
+	return &Providers{roster: c, secret: secret, own: ownClient(), anywhere: publicClient(public)}
 }
 
 // Connections is one tenant's providers, in the order roster lists them.
@@ -328,29 +345,9 @@ func (p *Providers) Connections(ctx context.Context, tenant pdid.Id) ([]*rstr.Co
 // Relying is this app as the relying party for one connection of one tenant:
 // the discovery done, the secret resolved, the redirect fixed.
 func (p *Providers) Relying(ctx context.Context, tenant pdid.Id, name, redirect string) (*oauth2.Config, *oidc.IDTokenVerifier, error) {
-	c, err := p.roster.Connection().Get(ctx, rstr.ConnectionGetRequest_builder{
-		Ref: rstr.ConnectionRef_builder{
-			At: rstr.ConnectionRefByAt_builder{
-				Tenant: rstr.TenantRef_builder{Id: tenant.Bytes()}.Build(),
-				Name:   proto.String(name),
-			}.Build(),
-		}.Build(),
-		Select: rstr.ConnectionSelect_builder{All: proto.Bool(true)}.Build(),
-	}.Build())
+	c, v, err := p.discover(ctx, tenant, name)
 	if err != nil {
 		return nil, nil, err
-	}
-
-	k := tenant.String() + "\x00" + name
-	var v *oidc.Provider
-	if had, ok := p.discovery.Load(k); ok {
-		v = had.(*oidc.Provider)
-	} else {
-		v, err = oidc.NewProvider(ctx, c.GetIssuer())
-		if err != nil {
-			return nil, nil, fmt.Errorf("discovery at %s: %w", c.GetIssuer(), err)
-		}
-		p.discovery.Store(k, v)
 	}
 
 	secret := ""
@@ -368,6 +365,35 @@ func (p *Providers) Relying(ctx context.Context, tenant pdid.Id, name, redirect 
 		RedirectURL:  redirect,
 		Scopes:       append([]string{oidc.ScopeOpenID}, c.GetScopes()...),
 	}, v.Verifier(&oidc.Config{ClientID: c.GetClientId()}), nil
+}
+
+// discover is one connection of one tenant and what its issuer publishes, the
+// second fetched once.
+func (p *Providers) discover(ctx context.Context, tenant pdid.Id, name string) (*rstr.Connection, *oidc.Provider, error) {
+	c, err := p.roster.Connection().Get(ctx, rstr.ConnectionGetRequest_builder{
+		Ref: rstr.ConnectionRef_builder{
+			At: rstr.ConnectionRefByAt_builder{
+				Tenant: rstr.TenantRef_builder{Id: tenant.Bytes()}.Build(),
+				Name:   proto.String(name),
+			}.Build(),
+		}.Build(),
+		Select: rstr.ConnectionSelect_builder{All: proto.Bool(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	k := tenant.String() + "\x00" + name
+	if had, ok := p.discovery.Load(k); ok {
+		return c, had.(*oidc.Provider), nil
+	}
+	v, err := oidc.NewProvider(ctx, c.GetIssuer())
+	if err != nil {
+		return nil, nil, fmt.Errorf("discovery at %s: %w", c.GetIssuer(), err)
+	}
+	p.discovery.Store(k, v)
+
+	return c, v, nil
 }
 
 // Claim is what the provider said, verified: the exchange and the token check
@@ -392,12 +418,20 @@ func (p *Providers) Claim(ctx context.Context, cfg *oauth2.Config, verifier *oid
 		Email    string `json:"email"`
 		Verified bool   `json:"email_verified"`
 		Name     string `json:"name"`
+		Picture  string `json:"picture"`
 	}
 	if err := id.Claims(&claims); err != nil {
 		return Caller{}, err
 	}
 
-	return Caller{Subject: id.Subject, Email: claims.Email, Verified: claims.Verified, Name: claims.Name}, nil
+	return Caller{
+		Subject:  id.Subject,
+		Email:    claims.Email,
+		Verified: claims.Verified,
+		Name:     claims.Name,
+		Picture:  claims.Picture,
+		token:    tok,
+	}, nil
 }
 
 // Known makes sure the claim names somebody here, enrolling them if the

@@ -24,6 +24,9 @@ func init() {
 	// holderDescData is the schema descriptor for data field.
 	holderDescData := holderFields[9].Descriptor()
 	holder.ValueScanner.Data = holderDescData.ValueScanner.(field.TypeValueScanner[*anypb.Any])
+	// holderDescPortrait is the schema descriptor for portrait field.
+	holderDescPortrait := holderFields[12].Descriptor()
+	holder.ValueScanner.Portrait = holderDescPortrait.ValueScanner.(field.TypeValueScanner[*rstr.Portrait])
 	tenantFields := schema.Tenant{}.Fields()
 	_ = tenantFields
 	// tenantDescConfig is the schema descriptor for config field.

@@ -14,6 +14,7 @@ import (
 	sqlpage "github.com/protobuf-orm/ent/dialect/sql/sqlpage"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/portrait"
 )
 
 // The narrow write, and the one a caller is given.
@@ -53,7 +54,13 @@ type coreHolder struct {
 func (s Core) Holder() app.HolderServiceServer { return coreHolder{s, s.Next().Holder()} }
 
 func (s coreHolder) Update(ctx context.Context, req *app.HolderUpdateRequest) (*app.Holder, error) {
-	if err := s.declaredHolder(ctx, req.GetRef()); err != nil {
+	got, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
+		Ref: req.GetRef(), Select: app.HolderSelect_builder{Labels: z.Ptr(true), Profile: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayWriteDeclared(ctx, "ref", got.GetLabels()); err != nil {
 		return nil, err
 	}
 	patch := app.HolderPatchRequest_builder{
@@ -72,6 +79,17 @@ func (s coreHolder) Update(ctx context.Context, req *app.HolderUpdateRequest) (*
 	// in `data`, and cannot erase it by not knowing.
 	if req.HasProfile() {
 		patch.Profile = req.GetProfile()
+
+		// One picture in two forms (`holder_svc.ext.proto`): a profile naming
+		// a different one leaves the portrait a copy of the old, so it goes.
+		// The URL is checked only when it changes, which leaves a value
+		// written before the check to whoever next edits it.
+		if now := req.GetProfile().GetPicture(); now != got.GetProfile().GetPicture() {
+			if err := portrait.CheckURL(now); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "profile.picture: %s", err)
+			}
+			patch.Portrait = none()
+		}
 	}
 	if req.HasData() {
 		patch.Data = req.GetData()
@@ -428,7 +446,10 @@ func (s coreHolder) Search(ctx context.Context, req *app.HolderSearchRequest) (*
 			if !matches(v) {
 				continue
 			}
-			res.Items = append(res.Items, v)
+
+			// Read through `Next()`, so the page arrives as it is stored;
+			// what this answers is a page, and carries what `List` does.
+			res.Items = append(res.Items, paged(v))
 			if len(res.Items) < size {
 				continue
 			}

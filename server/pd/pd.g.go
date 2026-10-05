@@ -10744,6 +10744,16 @@ func (s interceptHolder) Search(ctx context.Context, req *rstr.HolderSearchReque
 		rstr.HolderService_Search_FullMethodName, req, s.HolderServiceServer.Search)
 }
 
+func (s interceptHolder) Fill(ctx context.Context, req *rstr.HolderFillRequest) (*rstr.HolderFillResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		rstr.HolderService_Fill_FullMethodName, req, s.HolderServiceServer.Fill)
+}
+
+func (s interceptHolder) Portray(ctx context.Context, req *rstr.HolderPortrayRequest) (*rstr.Holder, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		rstr.HolderService_Portray_FullMethodName, req, s.HolderServiceServer.Portray)
+}
+
 func (s Intercept) ApiKey() rstr.ApiKeyServiceServer {
 	return interceptApiKey{s, s.Next().ApiKey()}
 }
@@ -12495,6 +12505,32 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.Holder().Search(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HolderService_Fill_FullMethodName:
+		v := &rstr.HolderFillRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().Fill(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HolderService_Portray_FullMethodName:
+		v := &rstr.HolderPortrayRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().Portray(ctx, v)
 		if err != nil {
 			return nil, err
 		}

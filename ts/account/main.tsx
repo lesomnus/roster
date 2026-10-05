@@ -43,6 +43,7 @@ import { HolderService } from '#gen/roster/payday/holder_svc_pb.js'
 import { covers } from '#lib/covers.js'
 import { expiries, expiresAt, until } from '#lib/expiry.js'
 import { b64url, SignIn } from '#lib/signin.js'
+import { Picture } from '#lib/picture.js'
 import { open } from '#lib/store.js'
 import '#lib/style.css'
 
@@ -208,6 +209,7 @@ function Profile(props: { own: Uint8Array; alias: string; may: (m: string) => bo
 				<code>{props.alias}</code>
 			</p>
 			{!allowed && <Needs method="/roster.HolderService/Update" />}
+			{allowed && row.state === 'ok' && row.data !== undefined && <Picture holder={row.data} may={props.may} />}
 			{allowed && row.state === 'ok' && row.data !== undefined && (
 				<form
 					className="profile"
