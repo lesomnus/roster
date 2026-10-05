@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/holder.proto.
  */
 export const file_roster_payday_holder: GenFile = /*@__PURE__*/
-  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L2hvbGRlci5wcm90bxIGcm9zdGVyIrAFCgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSKgoGbGFiZWxzGAcgAygLMhoucm9zdGVyLkhvbGRlci5MYWJlbHNFbnRyeRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASIAoHcHJvZmlsZRgJIAEoCzIPLnJvc3Rlci5Qcm9maWxlEiIKBGRhdGEYCiABKAsyFC5nb29nbGUucHJvdG9idWYuQW55EjwKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOQoNZGF0ZV9kaXNhYmxlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOm7K/BUlEgIQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwAYq7FkEIAjI5ChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudBoICgZsYWJlbHMgFChkOgBIAiJpCgdQcm9maWxlEhQKDGRpc3BsYXlfbmFtZRgBIAEoCRIPCgdwaWN0dXJlGAIgASgJEhIKCmRlcGFydG1lbnQYAyABKAkSEwoLZW1wbG95ZWVfbm8YBCABKAkSDgoGbG9jYWxlGAUgASgJQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_any, file_google_protobuf_timestamp, file_orm, file_payday, file_roster_payday_tenant]);
+  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L2hvbGRlci5wcm90bxIGcm9zdGVyItQFCgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSKgoGbGFiZWxzGAcgAygLMhoucm9zdGVyLkhvbGRlci5MYWJlbHNFbnRyeRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASIAoHcHJvZmlsZRgJIAEoCzIPLnJvc3Rlci5Qcm9maWxlEiIKBGRhdGEYCiABKAsyFC5nb29nbGUucHJvdG9idWYuQW55EjwKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOQoNZGF0ZV9kaXNhYmxlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIiCghwb3J0cmFpdBgQIAEoCzIQLnJvc3Rlci5Qb3J0cmFpdBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOm7K/BUlEgIQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwAYq7FkEIAjI5ChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudBoICgZsYWJlbHMgFChkOgBIAiJpCgdQcm9maWxlEhQKDGRpc3BsYXlfbmFtZRgBIAEoCRIPCgdwaWN0dXJlGAIgASgJEhIKCmRlcGFydG1lbnQYAyABKAkSEwoLZW1wbG95ZWVfbm8YBCABKAkSDgoGbG9jYWxlGAUgASgJIjEKCFBvcnRyYWl0EiUKCnJlbmRpdGlvbnMYASADKAsyES5yb3N0ZXIuUmVuZGl0aW9uIiYKCVJlbmRpdGlvbhIMCgRzaXplGAEgASgNEgsKA3VyaRgCIAEoCUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_any, file_google_protobuf_timestamp, file_orm, file_payday, file_roster_payday_tenant]);
 
 /**
  * Holder is who a request is from.
@@ -205,6 +205,40 @@ export type Holder = Message<"roster.Holder"> & {
    * @generated from field: google.protobuf.Timestamp date_disabled = 12;
    */
   dateDisabled?: Timestamp | undefined;
+
+  /**
+   * A picture of this person, kept here: one square image at the sizes a
+   * screen draws one, inline.
+   *
+   * # Why roster keeps the image and not only where it is
+   *
+   * `profile.picture` says where a picture is, which is enough when that is
+   * somewhere a browser can fetch -- and a directory's often is not. Entra
+   * hands its photo only to a caller holding a token for Microsoft Graph, so
+   * the one moment anybody here can have it is a sign-in, and after that it
+   * is whatever was kept then. Kept here, a deployment with nowhere else to
+   * put an image still has a picture of everybody, and who may see it is who
+   * may read this row: the wall decides, rather than whoever learns a URL.
+   *
+   * # Why it is not in `Profile`
+   *
+   * `Profile` is replaced whole, and roster's own pages write it from a form
+   * -- the admin console and the user console from a row they read in a
+   * **list**. A list carries one size of this and not all of them
+   * (`server/core/portrait.go` says why), so a portrait inside the profile
+   * would be cut down by the next person to fix a typo in a department. Here a profile write cannot reach it: `Portray`
+   * and `Fill` write it, and both take an image and make the sizes themselves.
+   *
+   * # What it costs
+   *
+   * A few kilobytes on the row -- six or so for a photograph, at every size --
+   * in every `Get` that selects it and in the trail's copy of the row at each
+   * write to this holder. Bounded by what roster renders rather than by what
+   * a caller sends, which is why nothing writes it but roster.
+   *
+   * @generated from field: roster.Portrait portrait = 16;
+   */
+  portrait?: Portrait | undefined;
 };
 
 /**
@@ -264,4 +298,76 @@ export type Profile = Message<"roster.Profile"> & {
  */
 export const ProfileSchema: GenMessage<Profile> = /*@__PURE__*/
   messageDesc(file_roster_payday_holder, 1);
+
+/**
+ * Portrait is one picture of somebody, at the sizes roster keeps it.
+ *
+ * Made by roster and never written by a caller: `Portray` and `Fill` take an
+ * image and render it, so every portrait has the same sizes in the same format
+ * however the image arrived.
+ *
+ * # JPEG, and these sizes
+ *
+ * JPEG because Go's standard library writes it and does not write WebP -- an
+ * encoder for that is libwebp, which is cgo, which this binary does not link --
+ * and at these sizes WebP would save a kilobyte or two. 32, 64 and 128 pixels
+ * because a screen draws a person at 16 to 64 CSS pixels, at up to two device
+ * pixels to one of those; anything larger is for somewhere that is not a row.
+ * An image smaller than 128 pixels is not enlarged: its own size is the
+ * largest one.
+ *
+ * One with no renditions is no picture, and is what a picture taken away is
+ * written as, rather than as nothing: a page's store reads a field that is
+ * absent from an answer as one that was not selected, and would go on drawing
+ * the picture it had.
+ *
+ * Stored as the canonical protobuf JSON, so these **names** are the storage,
+ * as `Profile`'s are.
+ *
+ * @generated from message roster.Portrait
+ */
+export type Portrait = Message<"roster.Portrait"> & {
+  /**
+   * Smallest first, each the same image, square.
+   *
+   * @generated from field: repeated roster.Rendition renditions = 1;
+   */
+  renditions: Rendition[];
+};
+
+/**
+ * Describes the message roster.Portrait.
+ * Use `create(PortraitSchema)` to create a new message.
+ */
+export const PortraitSchema: GenMessage<Portrait> = /*@__PURE__*/
+  messageDesc(file_roster_payday_holder, 2);
+
+/**
+ * Rendition is a portrait at one size.
+ *
+ * @generated from message roster.Rendition
+ */
+export type Rendition = Message<"roster.Rendition"> & {
+  /**
+   * Width and height, in pixels.
+   *
+   * @generated from field: uint32 size = 1;
+   */
+  size: number;
+
+  /**
+   * `data:image/jpeg;base64,...`: a URI, so a page puts it in `src` as it is,
+   * and one that says what it holds, so nothing has to be told the format.
+   *
+   * @generated from field: string uri = 2;
+   */
+  uri: string;
+};
+
+/**
+ * Describes the message roster.Rendition.
+ * Use `create(RenditionSchema)` to create a new message.
+ */
+export const RenditionSchema: GenMessage<Rendition> = /*@__PURE__*/
+  messageDesc(file_roster_payday_holder, 3);
 

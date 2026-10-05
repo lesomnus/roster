@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync/atomic"
 	"testing"
 
 	"github.com/go-jose/go-jose/v4"
@@ -37,8 +38,22 @@ type Idp struct {
 	Subject string
 	Claims  map[string]any
 
+	// UserInfo is what `/userinfo` answers beside `sub`, to a caller holding
+	// [AccessToken]. A `picture` here and none in [Claims] is Entra's shape.
+	UserInfo map[string]any
+
+	// Photo is what `/photo` answers to a caller holding [AccessToken], and a
+	// 404 when it is nil: a picture only the token can fetch, as Entra's is.
+	// Photos counts the fetches that got one.
+	Photo  []byte
+	Photos atomic.Int32
+
 	key *rsa.PrivateKey
 }
+
+// AccessToken is the one the token endpoint hands out, which `/userinfo` and
+// `/photo` want back.
+const AccessToken = "the-access-token"
 
 // New stands one up, closed when the test ends.
 func New(t *testing.T, audience string) *Idp {
@@ -58,6 +73,7 @@ func New(t *testing.T, audience string) *Idp {
 			"authorization_endpoint": p.URL + "/authorize",
 			"token_endpoint":         p.URL + "/token",
 			"jwks_uri":               p.URL + "/keys",
+			"userinfo_endpoint":      p.URL + "/userinfo",
 			// The one an app needs to ask the issuer to forget a browser.
 			// Discovery is where it is found, and `oidc.Provider` does not
 			// model it -- so an app reads it off the raw document and a fake
@@ -100,10 +116,38 @@ func New(t *testing.T, audience string) *Idp {
 		}
 		w.Header().Set("content-type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"access_token": "unused",
+			"access_token": AccessToken,
 			"token_type":   "Bearer",
 			"id_token":     p.Sign(t, claims),
 		})
+	})
+	m.HandleFunc("/userinfo", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("authorization") != "Bearer "+AccessToken {
+			http.Error(w, "no", http.StatusUnauthorized)
+
+			return
+		}
+		claims := map[string]any{"sub": p.Subject}
+		for k, v := range p.UserInfo {
+			claims[k] = v
+		}
+		w.Header().Set("content-type", "application/json")
+		_ = json.NewEncoder(w).Encode(claims)
+	})
+	m.HandleFunc("/photo", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("authorization") != "Bearer "+AccessToken {
+			http.Error(w, "no", http.StatusUnauthorized)
+
+			return
+		}
+		if p.Photo == nil {
+			http.NotFound(w, r)
+
+			return
+		}
+		p.Photos.Add(1)
+		w.Header().Set("content-type", "image/png")
+		_, _ = w.Write(p.Photo)
 	})
 
 	p.Server = httptest.NewServer(m)

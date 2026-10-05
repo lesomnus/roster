@@ -37,6 +37,8 @@ const (
 	FieldDateInvalidated = "date_invalidated"
 	// FieldDateDisabled holds the string denoting the date_disabled field in the database.
 	FieldDateDisabled = "date_disabled"
+	// FieldPortrait holds the string denoting the portrait field in the database.
+	FieldPortrait = "portrait"
 	// FieldTenantId holds the string denoting the tenant_id field in the database.
 	FieldTenantId = "tenant_id"
 	// EdgeTenant holds the string denoting the tenant edge name in mutations.
@@ -66,6 +68,7 @@ var Columns = []string{
 	FieldData,
 	FieldDateInvalidated,
 	FieldDateDisabled,
+	FieldPortrait,
 	FieldTenantId,
 }
 
@@ -82,8 +85,9 @@ func ValidColumn(column string) bool {
 var (
 	// ValueScanner of all Holder fields.
 	ValueScanner struct {
-		Profile field.TypeValueScanner[*rstr.Profile]
-		Data    field.TypeValueScanner[*anypb.Any]
+		Profile  field.TypeValueScanner[*rstr.Profile]
+		Data     field.TypeValueScanner[*anypb.Any]
+		Portrait field.TypeValueScanner[*rstr.Portrait]
 	}
 )
 

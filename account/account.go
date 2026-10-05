@@ -140,6 +140,11 @@ type Config struct {
 	// never seen. Nil is [Invited]: nobody.
 	Enrol Enrol
 
+	// Fill is whether a sign-in through a provider gives the person's profile
+	// what the provider said, where it has nothing. `account.profile: fill`;
+	// the Login App's `login.Config.Fill` says the rest.
+	Fill bool
+
 	// Sessions is this app's own cookie. Never roster's.
 	Sessions *authsession.Sessions
 
@@ -185,6 +190,7 @@ var Methods = []string{
 	rstr.MeService_SignOutEverywhere_FullMethodName,
 	rstr.HolderService_Get_FullMethodName,
 	rstr.HolderService_Update_FullMethodName,
+	rstr.HolderService_Portray_FullMethodName,
 	rstr.ApiKeyService_List_FullMethodName,
 	rstr.ApiKeyService_Erase_FullMethodName,
 	rstr.IdentityService_Add_FullMethodName,
@@ -935,13 +941,22 @@ func (a *App) nextOf(ctx context.Context, v string, t *tenant) (*url.URL, error)
 }
 
 // known makes sure the claim names somebody here, enrolling them if the
-// deployment's policy says so. The holder it answers is unused on this path:
-// `Door.Accept` resolves the same claim again on roster's side, where the
-// delegation is minted.
+// deployment's policy says so, and fills what their profile lacks when this app
+// is told to. The holder is not answered: `Door.Accept` resolves the same claim
+// again on roster's side, where the delegation is minted.
+//
+// A profile left unfilled is said and not refused, as the Login App says it:
+// the person is signed in either way, and their next sign-in tries again.
 func (a *App) known(ctx context.Context, who Caller) error {
-	_, err := a.arrives.Known(ctx, a.c.Enrol, who)
+	holder, err := a.arrives.Known(ctx, a.c.Enrol, who)
+	if err != nil || !a.c.Fill {
+		return err
+	}
+	if err := a.arrives.Fill(ctx, holder, who); err != nil {
+		fmt.Fprintf(os.Stderr, "account: %s/%s: the profile was not filled from the provider: %v\n", who.Provider, who.Subject, err)
+	}
 
-	return err
+	return nil
 }
 
 // The two things a request carries below `resolve`: the tenant it is about,

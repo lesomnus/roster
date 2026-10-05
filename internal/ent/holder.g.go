@@ -40,5 +40,8 @@ func (e *Holder) Proto() *rstr.Holder {
 	if e.DateDisabled != nil {
 		x.SetDateDisabled(timestamppb.New(*e.DateDisabled))
 	}
+	if e.Portrait != nil {
+		x.SetPortrait(e.Portrait)
+	}
 	return x
 }

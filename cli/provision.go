@@ -57,11 +57,8 @@ const accountProvisioned = "account"
 
 // provisionAccount ensures the account app's rows in every tenant that has a
 // name, mints one key per tenant, and answers with the keys by alias.
-func provisionAccount(ctx context.Context, s *cmd.Server, enrol string, out string) (string, int, error) {
-	methods := account.Calls
-	if enrol == "enrolling" {
-		methods = append(append([]string{}, account.Calls...), rstr.HolderService_Add_FullMethodName)
-	}
+func provisionAccount(ctx context.Context, s *cmd.Server, enrol, profile string, out string) (string, int, error) {
+	methods := policyMethods(account.Calls, enrol, profile)
 
 	if out != "" {
 		if err := os.MkdirAll(out, 0o700); err != nil {

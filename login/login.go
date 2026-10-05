@@ -179,6 +179,12 @@ type Config struct {
 	// never seen. Nil is [arrives.Invited]: nobody.
 	Enrol arrives.Enrol
 
+	// Fill is whether a sign-in through a provider gives the person's profile
+	// what the provider said, where it has nothing: a display name, a picture.
+	// It is `login.profile: fill`, and the key's role has to hold
+	// `HolderService.Fill` for it ([arrives.Providers.Fill]).
+	Fill bool
+
 	// InsecureCookie drops `Secure` from the session cookie, for a page served
 	// over plain http in development. It is `authsession`'s and is said there;
 	// this app sets no cookie of its own.

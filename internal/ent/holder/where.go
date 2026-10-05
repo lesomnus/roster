@@ -566,6 +566,16 @@ func DateDisabledNotNil() predicate.Holder {
 	return predicate.Holder(sql.FieldNotNull(FieldDateDisabled))
 }
 
+// PortraitIsNil applies the IsNil predicate on the "portrait" field.
+func PortraitIsNil() predicate.Holder {
+	return predicate.Holder(sql.FieldIsNull(FieldPortrait))
+}
+
+// PortraitNotNil applies the NotNil predicate on the "portrait" field.
+func PortraitNotNil() predicate.Holder {
+	return predicate.Holder(sql.FieldNotNull(FieldPortrait))
+}
+
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.
 func TenantIdEQ(v uuid.UUID) predicate.Holder {
 	return predicate.Holder(sql.FieldEQ(FieldTenantId, v))

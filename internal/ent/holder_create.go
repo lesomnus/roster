@@ -123,6 +123,12 @@ func (_c *HolderCreate) SetNillableDateDisabled(v *time.Time) *HolderCreate {
 	return _c
 }
 
+// SetPortrait sets the "portrait" field.
+func (_c *HolderCreate) SetPortrait(v *rstr.Portrait) *HolderCreate {
+	_c.mutation.SetPortrait(v)
+	return _c
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (_c *HolderCreate) SetTenantId(v uuid.UUID) *HolderCreate {
 	_c.mutation.SetTenantId(v)
@@ -291,6 +297,17 @@ func (_c *HolderCreate) createSpec() (*Holder, *sqlgraph.CreateSpec, error) {
 	if value, ok := _c.mutation.DateDisabled(); ok {
 		_spec.SetField(holder.FieldDateDisabled, field.TypeTime, value)
 		_node.DateDisabled = &value
+	}
+	if value, ok := _c.mutation.Portrait(); ok {
+		vv, err := holder.ValueScanner.Portrait.Value(value)
+		if err != nil {
+			return nil, nil, err
+		}
+		if vv, err = field.JsonValue(vv); err != nil {
+			return nil, nil, err
+		}
+		_spec.SetField(holder.FieldPortrait, field.TypeJson, vv)
+		_node.Portrait = value
 	}
 	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

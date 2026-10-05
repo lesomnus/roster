@@ -137,6 +137,9 @@ func (s HolderServiceServer) Add(ctx context.Context, req *rstr.HolderAddRequest
 	if req.HasDateDisabled() {
 		q.SetDateDisabled(req.GetDateDisabled().AsTime())
 	}
+	if req.HasPortrait() {
+		q.SetPortrait(req.GetPortrait())
+	}
 
 	u, err := q.Save(ctx)
 	if err != nil {
@@ -237,6 +240,9 @@ func HolderSelectedFields(m *rstr.HolderSelect) []string {
 	if m.GetDateDisabled() {
 		vs = append(vs, holder.FieldDateDisabled)
 	}
+	if m.GetPortrait() {
+		vs = append(vs, holder.FieldPortrait)
+	}
 
 	return vs
 }
@@ -308,7 +314,7 @@ func HolderGetKey(ctx context.Context, db *ent.Client, ref *rstr.HolderRef) (uui
 var holderOrmEntity = ormpatch.MustEntityOf(rstr.File_roster_payday_holder_proto, "Holder")
 
 var holderPatchColumns = entpatch.Columns{
-	1: holder.FieldId, 2: holder.TenantColumn, 4: holder.FieldAlias, 5: holder.FieldName, 6: holder.FieldDesc, 7: holder.FieldLabels, 13: holder.FieldDateUpdated, 14: holder.FieldDateErased, 15: holder.FieldDateCreated, 9: holder.FieldProfile, 10: holder.FieldData, 11: holder.FieldDateInvalidated, 12: holder.FieldDateDisabled}
+	1: holder.FieldId, 2: holder.TenantColumn, 4: holder.FieldAlias, 5: holder.FieldName, 6: holder.FieldDesc, 7: holder.FieldLabels, 13: holder.FieldDateUpdated, 14: holder.FieldDateErased, 15: holder.FieldDateCreated, 9: holder.FieldProfile, 10: holder.FieldData, 11: holder.FieldDateInvalidated, 12: holder.FieldDateDisabled, 16: holder.FieldPortrait}
 
 func (s HolderServiceServer) Apply(ctx context.Context, req *rstr.HolderApplyRequest) (*rstr.Holder, error) {
 	if !req.HasPatch() {

@@ -46,6 +46,8 @@ func (Holder) Fields() []ent.Field {
 		field.Time("date_disabled").
 			Nillable().
 			Optional(),
+		field.Json("portrait", &rstr.Portrait{}).ValueScanner(entpb.ValueScanner[*rstr.Portrait]{}).
+			Optional(),
 		field.Uuid("tenant_id").
 			Immutable(),
 	}

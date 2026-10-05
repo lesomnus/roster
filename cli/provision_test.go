@@ -68,7 +68,7 @@ func TestProvisioningTakesNothingThatIsSomebodys(t *testing.T) {
 	_, err = mintNamed(ctx, s.Ungated, before.GetId(), accountProvisioned, []string{"/roster.MeService/Get"}, keys.PrefixTenant)
 	x.NoError(err)
 
-	_, n, err := provisionAccount(ctx, s, "", "")
+	_, n, err := provisionAccount(ctx, s, "", "", "")
 	x.NoError(err, "one tenant's row failed the run for every tenant")
 	x.Equal(1, n, "fronted a tenant whose rows are somebody's")
 

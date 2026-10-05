@@ -2,6 +2,7 @@ package login
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -154,6 +155,16 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 		a.broken(w, r, err)
 
 		return
+	}
+
+	// What the provider said about them, where their profile has nothing.
+	// After `Known`, so it is about somebody this tenant has; and never a
+	// reason to refuse them, which is why a failure is only said.
+	if a.c.Fill {
+		if err := a.arrives.Fill(as, holder, who); err != nil {
+			slog.WarnContext(ctx, "login: the profile was not filled from the provider",
+				"provider", who.Provider, "holder", holder.String(), "err", err)
+		}
 	}
 
 	// The session, for the same reason the password half has one: the consent

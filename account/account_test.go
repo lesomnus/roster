@@ -1,11 +1,14 @@
 package account_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/base32"
 	"encoding/base64"
 	"encoding/json"
+	"image"
+	"image/png"
 	"io"
 	"net"
 	"net/http"
@@ -158,11 +161,13 @@ func serve(t *testing.T, enrol account.Enrol, with ...func(*account.Config)) *de
 		x.NoError(err)
 		// `account.Calls` and not a list of its own, so that the list `roster
 		// account provision` writes is the one these tests prove sufficient --
-		// plus `Holder.Add`, which `provision` grants only where a deployment
-		// said `enrolling`, and which the enrolment tests below need.
+		// plus `Holder.Add` and `Holder.Fill`, which `provision` grants only
+		// where a deployment said `enrolling` and `profile: fill`, and which
+		// the tests of those two need.
 		role, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
 			Tenant: at, Alias: "front-door",
-			Methods: append(append([]string{}, account.Calls...), rstr.HolderService_Add_FullMethodName),
+			Methods: append(append([]string{}, account.Calls...),
+				rstr.HolderService_Add_FullMethodName, rstr.HolderService_Fill_FullMethodName),
 		}.Build())
 		x.NoError(err)
 		_, err = s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
@@ -562,6 +567,44 @@ func TestAStrangerIsEnrolledWhereTheDeploymentSaysSo(t *testing.T) {
 	for _, h := range vs.GetItems() {
 		x.NotEqual("newcomer", h.GetAlias())
 	}
+}
+
+// TestTheProfileIsFilledWhereTheDeploymentSaysSo is `account.profile: fill`:
+// the account app's sign-in through a provider gives the profile what the
+// provider said, where it has nothing, as the Login App's does.
+func TestTheProfileIsFilledWhereTheDeploymentSaysSo(t *testing.T) {
+	signIn := func(t *testing.T, d *deployment) *rstr.Holder {
+		t.Helper()
+		d.idp.Subject = "3001"
+		d.idp.Claims = map[string]any{"name": "Erin Hart"}
+		d.idp.UserInfo = map[string]any{"picture": d.idp.URL + "/photo"}
+		var b bytes.Buffer
+		require.NoError(t, png.Encode(&b, image.NewGray(image.Rect(0, 0, 100, 100))))
+		d.idp.Photo = b.Bytes()
+
+		code, body := d.browser(t, "contoso.test").do(t, http.MethodGet, "/login?connection=example", "", nil)
+		require.Equal(t, http.StatusOK, code, body)
+
+		v, err := d.ungated.Holder().Get(t.Context(), rstr.HolderGetRequest_builder{
+			Ref: rstr.HolderRef_builder{Id: d.erin}.Build(),
+		}.Build())
+		require.NoError(t, err)
+
+		return v
+	}
+
+	t.Run("filled", func(t *testing.T) {
+		x := require.New(t)
+		v := signIn(t, serve(t, account.Invited(), func(c *account.Config) { c.Fill = true }))
+		x.Equal("Erin Hart", v.GetProfile().GetDisplayName())
+		x.Len(v.GetPortrait().GetRenditions(), 3)
+	})
+	t.Run("and not, where it does not", func(t *testing.T) {
+		x := require.New(t)
+		v := signIn(t, serve(t, account.Invited()))
+		x.Empty(v.GetProfile().GetDisplayName())
+		x.False(v.HasPortrait())
+	})
 }
 
 // TestSomebodyRecoversTheirAccountByMail is the recovery flow: a link mailed to

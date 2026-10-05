@@ -48,10 +48,18 @@ import (
 //
 //	the key's        the three reads made before the tenant is known
 //	the role's       everything a call inside a flow does, widened by `enrolling`
+//	                 and by `profile: fill`
 //
 // A key as wide as the role would be a key that could do all of it **without**
 // naming a tenant, which is the wide frame a `Nomination` exists to take away.
 func provisioned(t *testing.T, enrol string) (key, role []string) {
+	t.Helper()
+
+	return provisionedAs(t, cmd.LoginConfig{Enrol: enrol})
+}
+
+// provisionedAs is [provisioned] with the rest of the block said.
+func provisionedAs(t *testing.T, lc cmd.LoginConfig) (key, role []string) {
 	t.Helper()
 	x := require.New(t)
 	ctx := t.Context()
@@ -64,7 +72,7 @@ func provisioned(t *testing.T, enrol string) (key, role []string) {
 		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
 		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
 		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
-		Login:   cmd.LoginConfig{Enrol: enrol},
+		Login:   lc,
 	}
 
 	s, err := cmd.Build(ctx, c)
@@ -180,6 +188,21 @@ func TestTheProvisionedRoleAllowsWhatThePolicyAsksFor(t *testing.T) {
 	t.Run("enrolling does, because it has to", func(t *testing.T) {
 		_, role := provisioned(t, "enrolling")
 		require.Contains(t, role, add)
+	})
+
+	// And the other: a profile is filled from a directory only where a
+	// deployment said so, by the method that writes blanks and nothing else.
+	t.Run("profile fill is the grant that writes only blanks", func(t *testing.T) {
+		x := require.New(t)
+		const fill = "/roster.HolderService/Fill"
+
+		key, role := provisionedAs(t, cmd.LoginConfig{Profile: "fill"})
+		x.Contains(role, fill)
+		x.NotContains(role, "/roster.HolderService/Update", "the grant that rewrites a profile, given instead")
+		x.NotContains(key, fill)
+
+		_, role = provisioned(t, "")
+		x.NotContains(role, fill)
 	})
 }
 
