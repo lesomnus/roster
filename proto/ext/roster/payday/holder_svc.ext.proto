@@ -197,11 +197,12 @@ service HolderService {
   //
   // # Why it answers so little
   //
-  // Whether they are still pictureless, and not the row: a grant that filled
-  // blanks and answered with what it filled would be `Get` under another
-  // name, tenant-wide. That one bit is what a front door needs to decide
-  // whether to fetch an image at all, which is a request to a directory it
-  // should not make at every sign-in for a picture nobody will keep.
+  // Which blanks are left, and not the row: a grant that filled blanks and
+  // answered with what it filled would be `Get` under another name,
+  // tenant-wide. Two bits are what a front door needs to decide whether to
+  // ask anybody at all -- a directory for a photograph, a workspace for a
+  // name -- which is a request it should not make at every sign-in for an
+  // answer nobody will keep.
   rpc Fill(HolderFillRequest) returns (HolderFillResponse);
 
   // Portray keeps an image as somebody's picture, or takes their picture
@@ -244,6 +245,10 @@ message HolderFillResponse {
   // They have no picture after this call -- no `profile.picture` and no
   // `portrait` -- so an image handed over now would be kept.
   bool pictureless = 1 [features.field_presence = IMPLICIT];
+
+  // They have no display name after this call, so a name handed over now
+  // would be kept.
+  bool nameless = 2 [features.field_presence = IMPLICIT];
 }
 
 message HolderPortrayRequest {

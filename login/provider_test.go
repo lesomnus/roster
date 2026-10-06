@@ -3,10 +3,13 @@ package login_test
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"image"
 	"image/png"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -541,7 +544,7 @@ func TestTheAddressADirectoryHandedOverIsKept(t *testing.T) {
 	})
 }
 
-// TestAProfileIsFilledFromTheProviderWhereItHasNothing is `profile: fill`
+// TestAProfileIsFilledFromTheProviderWhereItHasNothing is a tenant's `fill`
 // through the whole round trip, in Entra's shape: a name in the token, and the
 // picture behind userinfo and a token -- the one moment anything here has one.
 func TestAProfileIsFilledFromTheProviderWhereItHasNothing(t *testing.T) {
@@ -550,8 +553,9 @@ func TestAProfileIsFilledFromTheProviderWhereItHasNothing(t *testing.T) {
 	erin := func(t *testing.T, fill bool, photo []byte) (*idptest.Idp, *deployment) {
 		t.Helper()
 		p := idptest.New(t, "login-app")
-		d := serveAs(t, login.Skip, func(c *login.Config) { c.Fill = fill })
+		d := serve(t)
 		d.connect(t, p, "entra")
+		d.profile(t, rstr.TenantProfile_builder{Fill: fill}.Build())
 
 		_, err := d.s.Ungated.Identity().Add(t.Context(), rstr.IdentityAddRequest_builder{
 			Holder:   rstr.HolderRef_builder{Id: d.who["contoso"].Bytes()}.Build(),
@@ -604,7 +608,7 @@ func TestAProfileIsFilledFromTheProviderWhereItHasNothing(t *testing.T) {
 		x.EqualValues(1, p.Photos.Load(), "a picture was fetched for somebody who has one")
 	})
 
-	t.Run("not unless the deployment says so", func(t *testing.T) {
+	t.Run("not unless the tenant says so", func(t *testing.T) {
 		x := require.New(t)
 		p, d := erin(t, false, face(t, 200))
 
@@ -629,6 +633,18 @@ func TestAProfileIsFilledFromTheProviderWhereItHasNothing(t *testing.T) {
 	})
 }
 
+// profile is what contoso says about filling its people's profiles, written
+// as the deployment writes it -- which a Slack reference has to be.
+func (d *deployment) profile(t *testing.T, how *rstr.TenantProfile) {
+	t.Helper()
+	_, err := d.s.Ungated.Tenant().Patch(t.Context(), rstr.TenantPatchRequest_builder{
+		Ref:              rstr.TenantRef_builder{Alias: proto.String("contoso")}.Build(),
+		Config:           rstr.TenantConfig_builder{Profile: how}.Build(),
+		DateUpdatedForce: proto.Bool(true),
+	}.Build())
+	require.NoError(t, err)
+}
+
 // face is a picture a directory might hold of somebody.
 func face(t *testing.T, side int) []byte {
 	t.Helper()
@@ -636,4 +652,108 @@ func face(t *testing.T, side int) []byte {
 	require.NoError(t, png.Encode(&b, image.NewGray(image.Rect(0, 0, side, side))))
 
 	return b.Bytes()
+}
+
+// TestATenantsSlackFillsWhatTheProfileLacks is a tenant that names its Slack
+// workspace: it is filled from the person's Slack profile, found by the address
+// they signed in with -- the real name and the picture they chose -- and its
+// directory is asked for nothing.
+func TestATenantsSlackFillsWhatTheProfileLacks(t *testing.T) {
+	// slack is a workspace with erin in it, counting the questions it is asked.
+	slack := func(t *testing.T) (*httptest.Server, *atomic.Int32) {
+		t.Helper()
+		asked := &atomic.Int32{}
+		img := face(t, 200)
+		var s *httptest.Server
+		m := http.NewServeMux()
+		m.HandleFunc("/users.lookupByEmail", func(w http.ResponseWriter, r *http.Request) {
+			asked.Add(1)
+			w.Header().Set("content-type", "application/json")
+			if r.Header.Get("authorization") != "Bearer xoxb-test" || r.URL.Query().Get("email") != "erin@contoso.example" {
+				_ = json.NewEncoder(w).Encode(map[string]any{"ok": false, "error": "users_not_found"})
+
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "user": map[string]any{"profile": map[string]any{
+				"real_name": "Erin Hart", "image_512": s.URL + "/erin.png", "is_custom_image": true,
+			}}})
+		})
+		m.HandleFunc("/erin.png", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write(img) })
+		s = httptest.NewServer(m)
+		t.Cleanup(s.Close)
+
+		return s, asked
+	}
+	erin := func(t *testing.T, s *httptest.Server, email string) (*idptest.Idp, *deployment) {
+		t.Helper()
+		p := idptest.New(t, "login-app")
+		d := serveAs(t, login.Skip, func(c *login.Config) {
+			c.SlackAPI = s.URL
+
+			// What the deployment resolves a reference with; the token it
+			// names is the workspace's.
+			c.Secret = func(ref string) (string, error) {
+				if ref != "env:CONTOSO_SLACK" {
+					return "", errors.New("not a reference this deployment has")
+				}
+
+				return "xoxb-test", nil
+			}
+		})
+		d.connect(t, p, "entra")
+		d.profile(t, rstr.TenantProfile_builder{Fill: true, SlackSecretRef: "env:CONTOSO_SLACK"}.Build())
+		_, err := d.s.Ungated.Identity().Add(t.Context(), rstr.IdentityAddRequest_builder{
+			Holder:   rstr.HolderRef_builder{Id: d.who["contoso"].Bytes()}.Build(),
+			Provider: "entra",
+			Subject:  "erin-at-entra",
+		}.Build())
+		require.NoError(t, err)
+
+		// What the directory would say, which nobody is to read.
+		p.Subject = "erin-at-entra"
+		p.Claims = map[string]any{"name": "Erin of Entra", "email": email}
+		p.UserInfo = map[string]any{"picture": p.URL + "/photo"}
+		p.Photo = face(t, 200)
+
+		return p, d
+	}
+	signIn := func(t *testing.T, d *deployment, challenge string) *rstr.Holder {
+		t.Helper()
+		d.hydra.raise(challenge, "contoso-web")
+		res := d.through(t, d.browser(t), challenge, "entra")
+		require.Equal(t, http.StatusSeeOther, res.StatusCode, "the sign-in did not finish")
+		v, err := d.s.Ungated.Holder().Get(t.Context(), rstr.HolderGetRequest_builder{
+			Ref: rstr.HolderRef_builder{Id: d.who["contoso"].Bytes()}.Build(),
+		}.Build())
+		require.NoError(t, err)
+
+		return v
+	}
+
+	t.Run("from Slack, and not from the directory", func(t *testing.T) {
+		x := require.New(t)
+		s, asked := slack(t)
+		p, d := erin(t, s, "erin@contoso.example")
+
+		v := signIn(t, d, "c1")
+		x.Equal("Erin Hart", v.GetProfile().GetDisplayName())
+		x.Len(v.GetPortrait().GetRenditions(), 3)
+		x.Zero(p.Photos.Load(), "the directory was asked for a picture Slack was to give")
+		x.EqualValues(1, asked.Load())
+
+		// Filled once: a second sign-in asks Slack nothing.
+		signIn(t, d, "c2")
+		x.EqualValues(1, asked.Load(), "Slack was asked about somebody with nothing blank")
+	})
+
+	t.Run("and somebody Slack does not have is left as they were", func(t *testing.T) {
+		x := require.New(t)
+		s, _ := slack(t)
+		p, d := erin(t, s, "erin.elsewhere@contoso.example")
+
+		v := signIn(t, d, "c1")
+		x.Empty(v.GetProfile().GetDisplayName(), "the directory's name was used for a tenant on Slack")
+		x.False(v.HasPortrait())
+		x.Zero(p.Photos.Load())
+	})
 }

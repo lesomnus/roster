@@ -514,7 +514,8 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 				// test can be about the policy rather than about the grant.
 				"/roster.HolderService/Add",
 
-				// And `profile: fill`, for the same reason.
+				// And what fills a tenant's blanks, which `roster login
+				// provision` writes into the role whatever the policy.
 				"/roster.HolderService/Fill",
 			}, login.Methods...),
 		}.Build())

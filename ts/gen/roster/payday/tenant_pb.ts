@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/tenant.proto.
  */
 export const file_roster_payday_tenant: GenFile = /*@__PURE__*/
-  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L3RlbmFudC5wcm90bxIGcm9zdGVyIowDCgZUZW5hbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhUKBWFsaWFzGAQgASgJQgbqghYCMAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEioKBmxhYmVscxgHIAMoCzIaLnJvc3Rlci5UZW5hbnQuTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASJAoGY29uZmlnGAggASgLMhQucm9zdGVyLlRlbmFudENvbmZpZxotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOj3K/BUEEgIQAYq7FjEIATIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZEICCgBIARoAIjsKDFRlbmFudENvbmZpZxIXCghwYXNzd29yZBgBIAEoCEIFqgECCAESEgoKZnJvbnRfZG9vchgCIAEoCUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L3RlbmFudC5wcm90bxIGcm9zdGVyIowDCgZUZW5hbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhUKBWFsaWFzGAQgASgJQgbqghYCMAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEioKBmxhYmVscxgHIAMoCzIaLnJvc3Rlci5UZW5hbnQuTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASJAoGY29uZmlnGAggASgLMhQucm9zdGVyLlRlbmFudENvbmZpZxotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOj3K/BUEEgIQAYq7FjEIATIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZEICCgBIARoAImMKDFRlbmFudENvbmZpZxIXCghwYXNzd29yZBgBIAEoCEIFqgECCAESEgoKZnJvbnRfZG9vchgCIAEoCRImCgdwcm9maWxlGAMgASgLMhUucm9zdGVyLlRlbmFudFByb2ZpbGUiNwoNVGVuYW50UHJvZmlsZRIMCgRmaWxsGAEgASgIEhgKEHNsYWNrX3NlY3JldF9yZWYYAiABKAlCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Tenant is the wall an app is divided by.
@@ -173,6 +173,25 @@ export type TenantConfig = Message<"roster.TenantConfig"> & {
    * @generated from field: string front_door = 2;
    */
   frontDoor: string;
+
+  /**
+   * How a sign-in fills what this tenant's people's profiles lack, and from
+   * where.
+   *
+   * # Why it is the tenant's
+   *
+   * Because tenants differ on both halves. One wants nothing copied out of its
+   * directory; one keeps its people's pictures in Entra, where Teams puts
+   * them; one keeps them in Slack, whatever its directory has. A setting of
+   * the front door would be one answer for every tenant it fronts.
+   *
+   * It is a fact roster acts on, which is what this message is for: the front
+   * doors read it at every sign-in through a provider, and `HolderService.Fill`
+   * is what they write with.
+   *
+   * @generated from field: roster.TenantProfile profile = 3;
+   */
+  profile?: TenantProfile | undefined;
 };
 
 /**
@@ -181,4 +200,51 @@ export type TenantConfig = Message<"roster.TenantConfig"> & {
  */
 export const TenantConfigSchema: GenMessage<TenantConfig> = /*@__PURE__*/
   messageDesc(file_roster_payday_tenant, 1);
+
+/**
+ * TenantProfile is how a tenant's profiles are filled at a sign-in.
+ *
+ * Blanks only, once, by `HolderService.Fill`'s rule: what a person or an
+ * administrator wrote stays, and emptying a field is how somebody asks for the
+ * source's again at their next sign-in. Nothing watches a source afterwards.
+ *
+ * @generated from message roster.TenantProfile
+ */
+export type TenantProfile = Message<"roster.TenantProfile"> & {
+  /**
+   * Whether a sign-in through a provider fills the blanks at all. Unset is no:
+   * copying what a directory holds about people into another store is a
+   * decision, and one a tenant written before this existed never took.
+   *
+   * @generated from field: bool fill = 1;
+   */
+  fill: boolean;
+
+  /**
+   * A Slack workspace to fill from instead of the directory the person signed
+   * in through: where the deployment keeps a bot token holding `users:read`
+   * and `users:read.email`, in `Connection.secret_ref`'s words -- `env:NAME`.
+   * Empty is the directory: its token's claims, and its userinfo.
+   *
+   * # Written by the deployment and by nobody else
+   *
+   * A reference names one of the **deployment's** secrets, and the front door
+   * sends what it names to Slack as a bearer token. A tenant's administrator
+   * who could write it could point it at any secret the front door holds --
+   * another tenant's, the front door's own key. So `server/core` refuses a
+   * new one from anybody narrower than the deployment: the file a deployment
+   * declares its tenants in, and an operator. A tenant's administrator may
+   * keep it or take it away, which hands nothing to anybody.
+   *
+   * @generated from field: string slack_secret_ref = 2;
+   */
+  slackSecretRef: string;
+};
+
+/**
+ * Describes the message roster.TenantProfile.
+ * Use `create(TenantProfileSchema)` to create a new message.
+ */
+export const TenantProfileSchema: GenMessage<TenantProfile> = /*@__PURE__*/
+  messageDesc(file_roster_payday_tenant, 2);
 

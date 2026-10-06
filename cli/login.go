@@ -75,7 +75,6 @@ func newCmdLoginServe(c *cmd.Config) *xli.Command {
 			&flg.String{Name: "consent", Brief: "what the consent hop does: skip (grant what the client asked for; the default) or ask (draw a screen)"},
 			&flg.String{Name: "base", Brief: "this app's public origin, registered with every provider as the redirect. One for the whole app"},
 			&flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"},
-			&flg.String{Name: "profile", Brief: "what a provider sign-in does to the profile: fill (its name and picture, where the profile has none); empty is nothing"},
 			&flg.Strings{Name: "seal", Brief: "the key sessions are sealed under, as env:NAME; repeat to rotate"},
 			&flg.Switch{Name: "insecure-cookie", Brief: "drop Secure from the cookies, for plain http in development"},
 			&flg.String{Name: "static", Brief: "the built sign-in page (ts/dist/login)"},
@@ -119,9 +118,6 @@ func newCmdLoginServe(c *cmd.Config) *xli.Command {
 			}
 			if v, _ := flg.Find[string](cl, "enrol"); v != "" {
 				lc.Enrol = v
-			}
-			if v, _ := flg.Find[string](cl, "profile"); v != "" {
-				lc.Profile = v
 			}
 
 			if v, _ := flg.Find[string](cl, "key"); v != "" {
@@ -266,7 +262,7 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 			// people is wider than signing them in -- so it is granted only
 			// where a deployment wrote `login.enrol: enrolling` down, and never
 			// by default.
-			methods := loginMethodsFor(c.Login.Enrol, c.Login.Profile)
+			methods := loginMethodsFor(c.Login.Enrol)
 
 			// The key first, because it is the half that needs no customer.
 			//
@@ -457,6 +453,13 @@ var LoginMethods = append([]string{
 	// the claim it asked for -- with no other route to fix it in a deployment
 	// that cannot send mail.
 	rstr.EmailService_Attest_FullMethodName,
+
+	// What a tenant's profile setting fills, where a profile has nothing
+	// (`TenantProfile`). Held always, because whether to fill is each tenant's
+	// to say and this app fronts all of them -- and holding it costs nothing a
+	// tenant did not decide: it writes only blanks, reads nothing back, and is
+	// called only for a tenant that said `fill`.
+	rstr.HolderService_Fill_FullMethodName,
 }, login.Methods...)
 
 // LoginResolving is what this app calls **before** it knows whose flow it is,
@@ -545,43 +548,23 @@ func provisionDeploymentKey(ctx context.Context, s *cmd.Server, alias string, me
 }
 
 // loginMethodsFor is what the nominated holder's role allows: [LoginMethods],
-// plus the grants a policy asks for. `enrolling` makes people, and making
+// plus the one grant a policy asks for. `enrolling` makes people, and making
 // people is wider than signing them in -- so it is granted only where a
 // deployment wrote `login.enrol: enrolling` down, and never by default.
-// `profile: fill` is the same shape: writing what a directory says into
-// somebody's profile is more than signing them in, so `HolderService.Fill` is
-// in the role only where a deployment asked for it.
-func loginMethodsFor(enrol, profile string) []string {
-	return policyMethods(LoginMethods, enrol, profile)
+func loginMethodsFor(enrol string) []string {
+	return policyMethods(LoginMethods, enrol)
 }
 
-// policyMethods is a front door's own list and what its policies add to it --
-// the Login App's and the account app's alike, since the policies are the same
-// two words in both.
-func policyMethods(own []string, enrol, profile string) []string {
+// policyMethods is a front door's own list and what its enrolment policy adds
+// to it -- the Login App's and the account app's alike, since the policy is the
+// same word in both.
+func policyMethods(own []string, enrol string) []string {
 	vs := append([]string{}, own...)
 	if enrol == "enrolling" {
 		vs = append(vs, rstr.HolderService_Add_FullMethodName)
 	}
-	if profile == "fill" {
-		vs = append(vs, rstr.HolderService_Fill_FullMethodName)
-	}
 
 	return vs
-}
-
-// fills reads a front door's `profile:` -- empty for nothing, `fill` for the
-// blanks -- and refuses anything else at start rather than at the first
-// sign-in.
-func fills(field, v string) (bool, error) {
-	switch v {
-	case "":
-		return false, nil
-	case "fill":
-		return true, nil
-	}
-
-	return false, fmt.Errorf("%s: %q is not fill, or empty for nothing", field, v)
 }
 
 // nominate is the per-customer half: in every tenant with a name, a holder the
@@ -896,10 +879,6 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 	default:
 		return fmt.Errorf("login.enrol (--enrol): %q is not one of invited, expected, enrolling", lc.Enrol)
 	}
-	fill, err := fills("login.profile (--profile)", lc.Profile)
-	if err != nil {
-		return err
-	}
 
 	cfg := login.Config{
 		Consent:        how,
@@ -911,7 +890,6 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		InsecureCookie: lc.InsecureCookie,
 		Base:           base,
 		Enrol:          enrol,
-		Fill:           fill,
 
 		// `env:NAME`, roster's one vocabulary for a reference to a secret. The
 		// same function the account app and the directory resolve theirs with,

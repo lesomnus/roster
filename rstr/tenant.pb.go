@@ -262,6 +262,7 @@ type TenantConfig struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Password    bool                   `protobuf:"varint,1,opt,name=password"`
 	xxx_hidden_FrontDoor   string                 `protobuf:"bytes,2,opt,name=front_door,json=frontDoor"`
+	xxx_hidden_Profile     *TenantProfile         `protobuf:"bytes,3,opt,name=profile"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -307,13 +308,24 @@ func (x *TenantConfig) GetFrontDoor() string {
 	return ""
 }
 
+func (x *TenantConfig) GetProfile() *TenantProfile {
+	if x != nil {
+		return x.xxx_hidden_Profile
+	}
+	return nil
+}
+
 func (x *TenantConfig) SetPassword(v bool) {
 	x.xxx_hidden_Password = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 2)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 3)
 }
 
 func (x *TenantConfig) SetFrontDoor(v string) {
 	x.xxx_hidden_FrontDoor = v
+}
+
+func (x *TenantConfig) SetProfile(v *TenantProfile) {
+	x.xxx_hidden_Profile = v
 }
 
 func (x *TenantConfig) HasPassword() bool {
@@ -323,9 +335,20 @@ func (x *TenantConfig) HasPassword() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
+func (x *TenantConfig) HasProfile() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Profile != nil
+}
+
 func (x *TenantConfig) ClearPassword() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Password = false
+}
+
+func (x *TenantConfig) ClearProfile() {
+	x.xxx_hidden_Profile = nil
 }
 
 type TenantConfig_builder struct {
@@ -373,6 +396,20 @@ type TenantConfig_builder struct {
 	// (`/login`, `/callback`) and a path written here would be a second copy of
 	// one of them. `server/core` refuses anything else on the way in.
 	FrontDoor string
+	// How a sign-in fills what this tenant's people's profiles lack, and from
+	// where.
+	//
+	// # Why it is the tenant's
+	//
+	// Because tenants differ on both halves. One wants nothing copied out of its
+	// directory; one keeps its people's pictures in Entra, where Teams puts
+	// them; one keeps them in Slack, whatever its directory has. A setting of
+	// the front door would be one answer for every tenant it fronts.
+	//
+	// It is a fact roster acts on, which is what this message is for: the front
+	// doors read it at every sign-in through a provider, and `HolderService.Fill`
+	// is what they write with.
+	Profile *TenantProfile
 }
 
 func (b0 TenantConfig_builder) Build() *TenantConfig {
@@ -380,10 +417,104 @@ func (b0 TenantConfig_builder) Build() *TenantConfig {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Password != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 2)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 3)
 		x.xxx_hidden_Password = *b.Password
 	}
 	x.xxx_hidden_FrontDoor = b.FrontDoor
+	x.xxx_hidden_Profile = b.Profile
+	return m0
+}
+
+// TenantProfile is how a tenant's profiles are filled at a sign-in.
+//
+// Blanks only, once, by `HolderService.Fill`'s rule: what a person or an
+// administrator wrote stays, and emptying a field is how somebody asks for the
+// source's again at their next sign-in. Nothing watches a source afterwards.
+type TenantProfile struct {
+	state                     protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Fill           bool                   `protobuf:"varint,1,opt,name=fill"`
+	xxx_hidden_SlackSecretRef string                 `protobuf:"bytes,2,opt,name=slack_secret_ref,json=slackSecretRef"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
+}
+
+func (x *TenantProfile) Reset() {
+	*x = TenantProfile{}
+	mi := &file_roster_payday_tenant_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TenantProfile) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TenantProfile) ProtoMessage() {}
+
+func (x *TenantProfile) ProtoReflect() protoreflect.Message {
+	mi := &file_roster_payday_tenant_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *TenantProfile) GetFill() bool {
+	if x != nil {
+		return x.xxx_hidden_Fill
+	}
+	return false
+}
+
+func (x *TenantProfile) GetSlackSecretRef() string {
+	if x != nil {
+		return x.xxx_hidden_SlackSecretRef
+	}
+	return ""
+}
+
+func (x *TenantProfile) SetFill(v bool) {
+	x.xxx_hidden_Fill = v
+}
+
+func (x *TenantProfile) SetSlackSecretRef(v string) {
+	x.xxx_hidden_SlackSecretRef = v
+}
+
+type TenantProfile_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Whether a sign-in through a provider fills the blanks at all. Unset is no:
+	// copying what a directory holds about people into another store is a
+	// decision, and one a tenant written before this existed never took.
+	Fill bool
+	// A Slack workspace to fill from instead of the directory the person signed
+	// in through: where the deployment keeps a bot token holding `users:read`
+	// and `users:read.email`, in `Connection.secret_ref`'s words -- `env:NAME`.
+	// Empty is the directory: its token's claims, and its userinfo.
+	//
+	// # Written by the deployment and by nobody else
+	//
+	// A reference names one of the **deployment's** secrets, and the front door
+	// sends what it names to Slack as a bearer token. A tenant's administrator
+	// who could write it could point it at any secret the front door holds --
+	// another tenant's, the front door's own key. So `server/core` refuses a
+	// new one from anybody narrower than the deployment: the file a deployment
+	// declares its tenants in, and an operator. A tenant's administrator may
+	// keep it or take it away, which hands nothing to anybody.
+	SlackSecretRef string
+}
+
+func (b0 TenantProfile_builder) Build() *TenantProfile {
+	m0 := &TenantProfile{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Fill = b.Fill
+	x.xxx_hidden_SlackSecretRef = b.SlackSecretRef
 	return m0
 }
 
@@ -411,29 +542,35 @@ const file_roster_payday_tenant_proto_rawDesc = "" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref \x14(dB\x02\n" +
-	"\x00H\x01\x1a\x00\"P\n" +
+	"\x00H\x01\x1a\x00\"\x81\x01\n" +
 	"\fTenantConfig\x12!\n" +
 	"\bpassword\x18\x01 \x01(\bB\x05\xaa\x01\x02\b\x01R\bpassword\x12\x1d\n" +
 	"\n" +
-	"front_door\x18\x02 \x01(\tR\tfrontDoorB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"front_door\x18\x02 \x01(\tR\tfrontDoor\x12/\n" +
+	"\aprofile\x18\x03 \x01(\v2\x15.roster.TenantProfileR\aprofile\"M\n" +
+	"\rTenantProfile\x12\x12\n" +
+	"\x04fill\x18\x01 \x01(\bR\x04fill\x12(\n" +
+	"\x10slack_secret_ref\x18\x02 \x01(\tR\x0eslackSecretRefB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_roster_payday_tenant_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_roster_payday_tenant_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_roster_payday_tenant_proto_goTypes = []any{
 	(*Tenant)(nil),                // 0: roster.Tenant
 	(*TenantConfig)(nil),          // 1: roster.TenantConfig
-	nil,                           // 2: roster.Tenant.LabelsEntry
-	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
+	(*TenantProfile)(nil),         // 2: roster.TenantProfile
+	nil,                           // 3: roster.Tenant.LabelsEntry
+	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
 }
 var file_roster_payday_tenant_proto_depIdxs = []int32{
-	2, // 0: roster.Tenant.labels:type_name -> roster.Tenant.LabelsEntry
-	3, // 1: roster.Tenant.date_updated:type_name -> google.protobuf.Timestamp
-	3, // 2: roster.Tenant.date_created:type_name -> google.protobuf.Timestamp
+	3, // 0: roster.Tenant.labels:type_name -> roster.Tenant.LabelsEntry
+	4, // 1: roster.Tenant.date_updated:type_name -> google.protobuf.Timestamp
+	4, // 2: roster.Tenant.date_created:type_name -> google.protobuf.Timestamp
 	1, // 3: roster.Tenant.config:type_name -> roster.TenantConfig
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	2, // 4: roster.TenantConfig.profile:type_name -> roster.TenantProfile
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_roster_payday_tenant_proto_init() }
@@ -447,7 +584,7 @@ func file_roster_payday_tenant_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_roster_payday_tenant_proto_rawDesc), len(file_roster_payday_tenant_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

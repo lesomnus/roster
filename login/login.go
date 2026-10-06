@@ -179,11 +179,11 @@ type Config struct {
 	// never seen. Nil is [arrives.Invited]: nobody.
 	Enrol arrives.Enrol
 
-	// Fill is whether a sign-in through a provider gives the person's profile
-	// what the provider said, where it has nothing: a display name, a picture.
-	// It is `login.profile: fill`, and the key's role has to hold
-	// `HolderService.Fill` for it ([arrives.Providers.Fill]).
-	Fill bool
+	// SlackAPI is where Slack's Web API is, for a tenant that fills its
+	// profiles from Slack; empty is Slack's own ([arrives.Providers.SlackAPI]).
+	// Whether a tenant fills at all, and from where, is the tenant's own
+	// setting (`TenantProfile`), read at each sign-in.
+	SlackAPI string
 
 	// InsecureCookie drops `Secure` from the session cookie, for a page served
 	// over plain http in development. It is `authsession`'s and is said there;
@@ -334,6 +334,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 		known:  &hosts{at: map[string]*tenant{}},
 	}
 	a.arrives = arrives.New(a.roster, c.Secret)
+	a.arrives.SlackAPI = c.SlackAPI
 
 	// Nothing per tenant is resolved here, because there is nothing to resolve:
 	// who this app fronts is every tenant with a `Host` row, and that is a

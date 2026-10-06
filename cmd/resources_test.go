@@ -226,6 +226,46 @@ resources:
 		x.Equal([]string{"@fresh"}, v.Same)
 	})
 
+	// How the tenant's profiles are filled is declared like the rest of its
+	// settings, a key at a time -- the Slack reference included, which the
+	// file is where it is written from.
+	t.Run("a profile is declared field by field, its Slack reference too", func(t *testing.T) {
+		x := require.New(t)
+		apply := func(file string) {
+			t.Helper()
+			rs, err := cmd.ReadResources(declare(t, file))
+			x.NoError(err)
+			_, err = cmd.ApplyResources(ctx, b.Server, rs, false)
+			x.NoError(err)
+		}
+
+		apply(`
+resources:
+  - kind: Tenant
+    alias: pictured
+    name: Pictured
+    config:
+      profile:
+        fill: true
+        slack: env:PICTURED_SLACK
+`)
+		p := tenantOf(t, ctx, b, "pictured").GetConfig().GetProfile()
+		x.True(p.GetFill())
+		x.Equal("env:PICTURED_SLACK", p.GetSlackSecretRef())
+
+		// Not mentioned, left alone.
+		apply("resources:\n  - kind: Tenant\n    alias: pictured\n    name: Pictured\n    config:\n      password: false\n")
+		p = tenantOf(t, ctx, b, "pictured").GetConfig().GetProfile()
+		x.True(p.GetFill(), "fill was reset for not being mentioned")
+		x.Equal("env:PICTURED_SLACK", p.GetSlackSecretRef())
+
+		// Taken away, and only that.
+		apply("resources:\n  - kind: Tenant\n    alias: pictured\n    name: Pictured\n    config:\n      profile:\n        slack: \"\"\n")
+		p = tenantOf(t, ctx, b, "pictured").GetConfig().GetProfile()
+		x.True(p.GetFill())
+		x.Empty(p.GetSlackSecretRef())
+	})
+
 	// The one rule about a front door meets a file exactly as it meets a form,
 	// because the file writes through the same verb the consoles call.
 	t.Run("a front door is an origin and nothing more, from a file too", func(t *testing.T) {

@@ -77,17 +77,26 @@ func (s Core) mayWriteDeclared(ctx context.Context, field string, labels map[str
 	if _, ok := labels[declaredBy]; !ok {
 		return nil
 	}
-	// No frame is the deployment's own work in this process -- the CLI on the
-	// database, which is what the paragraph above says passes and what this
-	// refused until turning a declared row off depended on it. Nothing at a
-	// port arrives without one: the gate refuses every method that is not
-	// public before it gets here.
-	if f, ok := frame.From(ctx); !ok || f.Scope.All() {
+	if deployment(ctx) {
 		return nil
 	}
 
 	return status.Error(codes.FailedPrecondition, fmt.Sprintf(
 		"%s: this row is declared in %s and is written from there, not here", field, labels[declaredBy]))
+}
+
+// deployment is whether the caller is the deployment itself, by the test
+// [Core.mayWriteDeclared] states: a frame over every tenant, which nothing
+// reaching a listener as a tenant's somebody has.
+//
+// No frame passes too. It is the deployment's own work in this process -- the
+// CLI on the database, which turning a declared row off depended on -- and
+// nothing at a port arrives without one: the gate refuses every method that is
+// not public before it gets here.
+func deployment(ctx context.Context) bool {
+	f, ok := frame.From(ctx)
+
+	return !ok || f.Scope.All()
 }
 
 // The guard asked of each declarable kind before a write, by reading the row's

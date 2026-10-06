@@ -161,9 +161,9 @@ func serve(t *testing.T, enrol account.Enrol, with ...func(*account.Config)) *de
 		x.NoError(err)
 		// `account.Calls` and not a list of its own, so that the list `roster
 		// account provision` writes is the one these tests prove sufficient --
-		// plus `Holder.Add` and `Holder.Fill`, which `provision` grants only
-		// where a deployment said `enrolling` and `profile: fill`, and which
-		// the tests of those two need.
+		// plus `Holder.Add`, which `provision` grants only where a deployment
+		// said `enrolling`, and which the enrolment tests below need.
+		// (`Holder.Fill` is in `account.Calls` itself.)
 		role, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
 			Tenant: at, Alias: "front-door",
 			Methods: append(append([]string{}, account.Calls...),
@@ -569,12 +569,21 @@ func TestAStrangerIsEnrolledWhereTheDeploymentSaysSo(t *testing.T) {
 	}
 }
 
-// TestTheProfileIsFilledWhereTheDeploymentSaysSo is `account.profile: fill`:
-// the account app's sign-in through a provider gives the profile what the
-// provider said, where it has nothing, as the Login App's does.
-func TestTheProfileIsFilledWhereTheDeploymentSaysSo(t *testing.T) {
-	signIn := func(t *testing.T, d *deployment) *rstr.Holder {
+// TestTheProfileIsFilledWhereTheTenantSaysSo is a tenant's `fill`: the
+// account app's sign-in through a provider gives the profile what the provider
+// said, where it has nothing, as the Login App's does.
+func TestTheProfileIsFilledWhereTheTenantSaysSo(t *testing.T) {
+	signIn := func(t *testing.T, d *deployment, fill bool) *rstr.Holder {
 		t.Helper()
+		_, err := d.ungated.Tenant().Patch(t.Context(), rstr.TenantPatchRequest_builder{
+			Ref: rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build(),
+			Config: rstr.TenantConfig_builder{
+				Profile: rstr.TenantProfile_builder{Fill: fill}.Build(),
+			}.Build(),
+			DateUpdatedForce: proto.Bool(true),
+		}.Build())
+		require.NoError(t, err)
+
 		d.idp.Subject = "3001"
 		d.idp.Claims = map[string]any{"name": "Erin Hart"}
 		d.idp.UserInfo = map[string]any{"picture": d.idp.URL + "/photo"}
@@ -595,13 +604,13 @@ func TestTheProfileIsFilledWhereTheDeploymentSaysSo(t *testing.T) {
 
 	t.Run("filled", func(t *testing.T) {
 		x := require.New(t)
-		v := signIn(t, serve(t, account.Invited(), func(c *account.Config) { c.Fill = true }))
+		v := signIn(t, serve(t, account.Invited()), true)
 		x.Equal("Erin Hart", v.GetProfile().GetDisplayName())
 		x.Len(v.GetPortrait().GetRenditions(), 3)
 	})
 	t.Run("and not, where it does not", func(t *testing.T) {
 		x := require.New(t)
-		v := signIn(t, serve(t, account.Invited()))
+		v := signIn(t, serve(t, account.Invited()), false)
 		x.Empty(v.GetProfile().GetDisplayName())
 		x.False(v.HasPortrait())
 	})

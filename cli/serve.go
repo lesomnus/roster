@@ -292,7 +292,7 @@ func frontDoor(ctx context.Context, c *cmd.Config, l net.Listener, s *cmd.Server
 		if s == nil || s.Control == nil {
 			return ac, nil
 		}
-		token, n, err := provisionAccount(ctx, s, ac.Enrol, ac.Profile, "")
+		token, n, err := provisionAccount(ctx, s, ac.Enrol, "")
 		if err != nil {
 			return ac, fmt.Errorf("account.key: none named, and making one here: %w", err)
 		}
@@ -334,7 +334,7 @@ func loginApp(ctx context.Context, c *cmd.Config, l net.Listener, s *cmd.Server)
 		if err != nil {
 			return gc, fmt.Errorf("login.key: none named, and making one here: %w", err)
 		}
-		if _, err := nominate(ctx, s, loginMethodsFor(gc.Enrol, gc.Profile), borrower); err != nil {
+		if _, err := nominate(ctx, s, loginMethodsFor(gc.Enrol), borrower); err != nil {
 			return gc, fmt.Errorf("login.key: none named, and making one here: %w", err)
 		}
 		gc.Key = token

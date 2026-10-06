@@ -170,4 +170,47 @@ message TenantConfig {
   // (`/login`, `/callback`) and a path written here would be a second copy of
   // one of them. `server/core` refuses anything else on the way in.
   string front_door = 2;
+
+  // How a sign-in fills what this tenant's people's profiles lack, and from
+  // where.
+  //
+  // # Why it is the tenant's
+  //
+  // Because tenants differ on both halves. One wants nothing copied out of its
+  // directory; one keeps its people's pictures in Entra, where Teams puts
+  // them; one keeps them in Slack, whatever its directory has. A setting of
+  // the front door would be one answer for every tenant it fronts.
+  //
+  // It is a fact roster acts on, which is what this message is for: the front
+  // doors read it at every sign-in through a provider, and `HolderService.Fill`
+  // is what they write with.
+  TenantProfile profile = 3;
+}
+
+// TenantProfile is how a tenant's profiles are filled at a sign-in.
+//
+// Blanks only, once, by `HolderService.Fill`'s rule: what a person or an
+// administrator wrote stays, and emptying a field is how somebody asks for the
+// source's again at their next sign-in. Nothing watches a source afterwards.
+message TenantProfile {
+  // Whether a sign-in through a provider fills the blanks at all. Unset is no:
+  // copying what a directory holds about people into another store is a
+  // decision, and one a tenant written before this existed never took.
+  bool fill = 1;
+
+  // A Slack workspace to fill from instead of the directory the person signed
+  // in through: where the deployment keeps a bot token holding `users:read`
+  // and `users:read.email`, in `Connection.secret_ref`'s words -- `env:NAME`.
+  // Empty is the directory: its token's claims, and its userinfo.
+  //
+  // # Written by the deployment and by nobody else
+  //
+  // A reference names one of the **deployment's** secrets, and the front door
+  // sends what it names to Slack as a bearer token. A tenant's administrator
+  // who could write it could point it at any secret the front door holds --
+  // another tenant's, the front door's own key. So `server/core` refuses a
+  // new one from anybody narrower than the deployment: the file a deployment
+  // declares its tenants in, and an operator. A tenant's administrator may
+  // keep it or take it away, which hands nothing to anybody.
+  string slack_secret_ref = 2;
 }
