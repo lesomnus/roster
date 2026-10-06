@@ -140,10 +140,9 @@ type Config struct {
 	// never seen. Nil is [Invited]: nobody.
 	Enrol Enrol
 
-	// Fill is whether a sign-in through a provider gives the person's profile
-	// what the provider said, where it has nothing. `account.profile: fill`;
-	// the Login App's `login.Config.Fill` says the rest.
-	Fill bool
+	// SlackAPI is the Login App's `login.Config.SlackAPI`: where Slack's Web
+	// API is, for a tenant that fills its profiles from Slack.
+	SlackAPI string
 
 	// Sessions is this app's own cookie. Never roster's.
 	Sessions *authsession.Sessions
@@ -244,6 +243,10 @@ var Calls = append([]string{
 	rstr.DelegationService_Revoke_FullMethodName,
 	rstr.CredentialService_Issue_FullMethodName,
 	rstr.EmailService_Confirm_FullMethodName,
+
+	// What a tenant's profile setting fills at a sign-in here, as the Login
+	// App's does (`cli.LoginMethods` says why it is held always).
+	rstr.HolderService_Fill_FullMethodName,
 }, Methods...)
 
 // EnvSecret resolves `env:NAME` and refuses every other scheme. A second scheme
@@ -388,6 +391,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 		devices: held(),
 	}
 	a.arrives = arrives.New(a.roster, c.Secret)
+	a.arrives.SlackAPI = c.SlackAPI
 
 	if c.Key != "" {
 		if err := a.nominated(ctx); err != nil {
@@ -941,19 +945,20 @@ func (a *App) nextOf(ctx context.Context, v string, t *tenant) (*url.URL, error)
 }
 
 // known makes sure the claim names somebody here, enrolling them if the
-// deployment's policy says so, and fills what their profile lacks when this app
-// is told to. The holder is not answered: `Door.Accept` resolves the same claim
-// again on roster's side, where the delegation is minted.
+// deployment's policy says so, and fills what their profile lacks where their
+// tenant says to (`TenantProfile`). The holder is not answered: `Door.Accept`
+// resolves the same claim again on roster's side, where the delegation is
+// minted.
 //
 // A profile left unfilled is said and not refused, as the Login App says it:
 // the person is signed in either way, and their next sign-in tries again.
 func (a *App) known(ctx context.Context, who Caller) error {
 	holder, err := a.arrives.Known(ctx, a.c.Enrol, who)
-	if err != nil || !a.c.Fill {
+	if err != nil {
 		return err
 	}
 	if err := a.arrives.Fill(ctx, holder, who); err != nil {
-		fmt.Fprintf(os.Stderr, "account: %s/%s: the profile was not filled from the provider: %v\n", who.Provider, who.Subject, err)
+		fmt.Fprintf(os.Stderr, "account: %s/%s: the profile was not filled: %v\n", who.Provider, who.Subject, err)
 	}
 
 	return nil

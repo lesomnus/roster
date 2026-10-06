@@ -17,6 +17,7 @@ import (
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/lesomnus/payday/pdid"
 
@@ -54,13 +55,18 @@ const maxPicture = 2 << 20
 // maxPictureURL is the longest `profile.picture` roster keeps.
 const maxPictureURL = 2048
 
-// Fill writes what the provider said about somebody where their profile has
-// nothing: the token's `name` as their display name, and their picture.
+// Fill gives somebody's profile what their tenant says to fill it with, where
+// it has nothing (`TenantProfile`): nothing at all for a tenant that did not
+// say `fill`; the provider's word -- the token's `name` as their display name,
+// and their picture -- by default; and Slack's for a tenant that names a
+// workspace (`slack.go`).
 //
-// Two calls to roster at most, and usually one that writes nothing. The first
-// fills the name and answers whether they are pictureless, which is the one
-// thing worth knowing before asking a directory for a photograph; only then is
-// the picture fetched and handed over.
+// Asked at every sign-in through a provider, so the tenant's decision is read
+// where it is made, and taking effect is the next sign-in rather than the
+// front door's next restart. Then two calls to roster at most, and usually
+// one that writes nothing: the first fills the name and answers whether they
+// are pictureless, which is the one thing worth knowing before asking a
+// directory for a photograph.
 //
 // It never decides a sign-in. What it answers is for the app to log: the
 // person is signed in either way, and their next sign-in tries again.
@@ -68,7 +74,33 @@ func (p *Providers) Fill(ctx context.Context, holder pdid.Id, who Caller) error 
 	ctx, cancel := context.WithTimeout(ctx, fillTimeout)
 	defer cancel()
 
+	t, err := p.roster.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+		Ref:    rstr.TenantRef_builder{Id: who.Tenant.Bytes()}.Build(),
+		Select: rstr.TenantSelect_builder{Config: proto.Bool(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return err
+	}
+	how := t.GetConfig().GetProfile()
+	if !how.GetFill() {
+		return nil
+	}
+
 	ref := rstr.HolderRef_builder{Id: holder.Bytes()}.Build()
+	if at := how.GetSlackSecretRef(); at != "" {
+		// The deployment's secret, named by the deployment (`server/core`
+		// refuses a tenant writing one), and read the way a connection's is.
+		if p.secret == nil {
+			return errors.New("slack: this front door was given no way to read a secret reference")
+		}
+		token, err := p.secret(at)
+		if err != nil {
+			return fmt.Errorf("slack: %w", err)
+		}
+
+		return p.fillFromSlack(ctx, ref, token, who)
+	}
+
 	res, err := p.roster.Holder().Fill(ctx, rstr.HolderFillRequest_builder{Ref: ref, DisplayName: who.Name}.Build())
 	if err != nil || !res.GetPictureless() {
 		return err

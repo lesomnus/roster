@@ -132,6 +132,14 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 							config: {
 								password: f.get('password') !== null,
 								frontDoor: String(f.get('front_door') ?? '').trim(),
+								// The Slack reference goes back as it was read:
+								// it names one of the deployment's secrets, and
+								// roster refuses a new one from anybody but the
+								// deployment (`tenant.ext.proto`).
+								profile: {
+									fill: f.get('fill') !== null,
+									slackSecretRef: t.config?.profile?.slackSecretRef ?? '',
+								},
 							},
 						})
 						.then(() => tell({ kind: 'done', text: 'saved' }))
@@ -165,6 +173,17 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					placeholder="front door: https://account.contoso.example"
 					defaultValue={t.config?.frontDoor ?? ''}
 				/>
+				{/*
+					What a sign-in through a directory fills a profile with, where
+					it has nothing: the directory's name and picture, or the
+					tenant's Slack workspace's when the deployment named one. The
+					front doors read it at every sign-in.
+				*/}
+				<label className="check">
+					<input type="checkbox" name="fill" defaultChecked={t.config?.profile?.fill ?? false} />
+					a sign-in fills a blank name and picture
+					{(t.config?.profile?.slackSecretRef ?? '') !== '' ? ', from Slack' : ', from the directory'}
+				</label>
 				<button type="submit" disabled={update.state === 'pending' || !mayWrite}>
 					save
 				</button>

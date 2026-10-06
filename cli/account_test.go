@@ -110,7 +110,7 @@ func TestAFrontDoorsKeysAreMadeWhereTheyAreUsed(t *testing.T) {
 	tenantCalled(t, s, "fabrikam")
 	answersAt(t, s, contoso, "contoso.example")
 
-	key, n, err := provisionAccount(ctx, s, "", "", "")
+	key, n, err := provisionAccount(ctx, s, "", "")
 	x.NoError(err)
 	x.Equal(1, n, "a tenant with no name was fronted")
 	x.True(strings.HasPrefix(key, keys.PrefixDeployment), "not a deployment key: %q", key)
@@ -164,7 +164,7 @@ func TestAFrontDoorsKeysAreMadeWhereTheyAreUsed(t *testing.T) {
 	t.Run("and a second run is a rotation", func(t *testing.T) {
 		x := require.New(t)
 
-		again, _, err := provisionAccount(ctx, s, "", "", "")
+		again, _, err := provisionAccount(ctx, s, "", "")
 		x.NoError(err)
 		x.NotEqual(key, again)
 
@@ -182,7 +182,7 @@ func TestAFrontDoorsKeysAreMadeWhereTheyAreUsed(t *testing.T) {
 	t.Run("and enrolling widens the role by one method", func(t *testing.T) {
 		x := require.New(t)
 
-		made, _, err := provisionAccount(ctx, s, "enrolling", "", "")
+		made, _, err := provisionAccount(ctx, s, "enrolling", "")
 		x.NoError(err)
 
 		_, err = rstr.NewHolderServiceClient(conn).Add(in(made, "contoso"), rstr.HolderAddRequest_builder{
@@ -192,7 +192,7 @@ func TestAFrontDoorsKeysAreMadeWhereTheyAreUsed(t *testing.T) {
 
 		// Back to the default, which the next run writes over the role
 		// rather than leaving the wider list behind.
-		made, _, err = provisionAccount(ctx, s, "", "", "")
+		made, _, err = provisionAccount(ctx, s, "", "")
 		x.NoError(err)
 		_, err = rstr.NewHolderServiceClient(conn).Add(in(made, "contoso"), rstr.HolderAddRequest_builder{
 			Tenant: rstr.TenantRef_builder{Id: contoso}.Build(), Alias: "somebody-else",
@@ -200,32 +200,28 @@ func TestAFrontDoorsKeysAreMadeWhereTheyAreUsed(t *testing.T) {
 		x.Equal(codes.PermissionDenied, status.Code(err), "the grant outlived the setting")
 	})
 
-	t.Run("and fill by the one method that writes only blanks", func(t *testing.T) {
+	// Whether to fill is each tenant's to say (`TenantProfile`), and this app
+	// fronts all of them, so the method that fills -- blanks only, nothing read
+	// back -- is the app's whatever the enrolment policy.
+	t.Run("and it may fill a blank, whatever the policy", func(t *testing.T) {
 		x := require.New(t)
 		somebody := rstr.HolderRef_builder{Slug: rstr.HolderRefBySlug_builder{
 			Tenant: rstr.TenantRef_builder{Id: contoso}.Build(), Alias: z.Ptr("somebody"),
 		}.Build()}.Build()
 
-		made, _, err := provisionAccount(ctx, s, "", "fill", "")
+		made, _, err := provisionAccount(ctx, s, "", "")
 		x.NoError(err)
 		_, err = rstr.NewHolderServiceClient(conn).Fill(in(made, "contoso"), rstr.HolderFillRequest_builder{
 			Ref: somebody, DisplayName: "Somebody",
 		}.Build())
-		x.NoError(err, "a deployment that wrote `fill` down cannot fill a profile")
-
-		made, _, err = provisionAccount(ctx, s, "", "", "")
-		x.NoError(err)
-		_, err = rstr.NewHolderServiceClient(conn).Fill(in(made, "contoso"), rstr.HolderFillRequest_builder{
-			Ref: somebody, DisplayName: "Somebody",
-		}.Build())
-		x.Equal(codes.PermissionDenied, status.Code(err), "the grant outlived the setting")
+		x.NoError(err, "the account app cannot fill what its tenants say to fill")
 	})
 
 	t.Run("and into a file, for a process of its own to read", func(t *testing.T) {
 		x := require.New(t)
 		dir := filepath.Join(t.TempDir(), "keys")
 
-		made, _, err := provisionAccount(ctx, s, "", "", dir)
+		made, _, err := provisionAccount(ctx, s, "", dir)
 		x.NoError(err)
 
 		path := filepath.Join(dir, "account.key")

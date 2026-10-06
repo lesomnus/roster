@@ -122,7 +122,7 @@ func (s coreHolder) Fill(ctx context.Context, req *app.HolderFillRequest) (*app.
 		}
 	}
 
-	return app.HolderFillResponse_builder{Pictureless: pictureless}.Build(), nil
+	return app.HolderFillResponse_builder{Pictureless: pictureless, Nameless: p.GetDisplayName() == ""}.Build(), nil
 }
 
 // Portray keeps an image as somebody's picture, rendered, or takes their

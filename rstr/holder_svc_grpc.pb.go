@@ -235,11 +235,12 @@ type HolderServiceClient interface {
 	//
 	// # Why it answers so little
 	//
-	// Whether they are still pictureless, and not the row: a grant that filled
-	// blanks and answered with what it filled would be `Get` under another
-	// name, tenant-wide. That one bit is what a front door needs to decide
-	// whether to fetch an image at all, which is a request to a directory it
-	// should not make at every sign-in for a picture nobody will keep.
+	// Which blanks are left, and not the row: a grant that filled blanks and
+	// answered with what it filled would be `Get` under another name,
+	// tenant-wide. Two bits are what a front door needs to decide whether to
+	// ask anybody at all -- a directory for a photograph, a workspace for a
+	// name -- which is a request it should not make at every sign-in for an
+	// answer nobody will keep.
 	Fill(ctx context.Context, in *HolderFillRequest, opts ...grpc.CallOption) (*HolderFillResponse, error)
 	// Portray keeps an image as somebody's picture, or takes their picture
 	// away.
@@ -644,11 +645,12 @@ type HolderServiceServer interface {
 	//
 	// # Why it answers so little
 	//
-	// Whether they are still pictureless, and not the row: a grant that filled
-	// blanks and answered with what it filled would be `Get` under another
-	// name, tenant-wide. That one bit is what a front door needs to decide
-	// whether to fetch an image at all, which is a request to a directory it
-	// should not make at every sign-in for a picture nobody will keep.
+	// Which blanks are left, and not the row: a grant that filled blanks and
+	// answered with what it filled would be `Get` under another name,
+	// tenant-wide. Two bits are what a front door needs to decide whether to
+	// ask anybody at all -- a directory for a photograph, a workspace for a
+	// name -- which is a request it should not make at every sign-in for an
+	// answer nobody will keep.
 	Fill(context.Context, *HolderFillRequest) (*HolderFillResponse, error)
 	// Portray keeps an image as somebody's picture, or takes their picture
 	// away.

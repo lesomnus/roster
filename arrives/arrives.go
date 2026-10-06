@@ -319,6 +319,11 @@ type Providers struct {
 	// the token it handed over, and from anywhere else, without it and only
 	// on the internet. `fill.go` says why there are two.
 	own, anywhere *http.Client
+
+	// SlackAPI is where Slack's Web API is, for a tenant whose profiles are
+	// filled from Slack (`TenantProfile.slack_secret_ref`). Empty is Slack's
+	// own; a test, or a deployment on another Slack, names its own.
+	SlackAPI string
 }
 
 // New is the relying party for whatever `Connection` rows the given client can

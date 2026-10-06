@@ -141,8 +141,22 @@ type Resource struct {
 // `Vouch.Verify` enforces -- the security-relevant half, and the one worth
 // reading in a diff.
 type Settings struct {
-	Password  *bool   `yaml:"password"`
-	FrontDoor *string `yaml:"front_door"`
+	Password  *bool            `yaml:"password"`
+	FrontDoor *string          `yaml:"front_door"`
+	Profile   *ProfileSettings `yaml:"profile"`
+}
+
+// ProfileSettings is `config.profile`: whether a sign-in fills what a profile
+// lacks, and whether from a Slack workspace rather than the directory. Field by
+// field, like the rest of [Settings].
+//
+// The file is the one place a tenant's Slack reference is written from outside
+// the deployment's own hands, and that is why it is here: it names one of the
+// deployment's secrets, which the deployment mounts, and `server/core` refuses
+// a new one from a tenant's own administrator (`tenant.ext.proto`).
+type ProfileSettings struct {
+	Fill  *bool   `yaml:"fill"`
+	Slack *string `yaml:"slack"`
 }
 
 // Resources is a file of them.
@@ -390,15 +404,32 @@ func settle(cur *app.TenantConfig, said *Settings) *app.TenantConfig {
 		out.SetPassword(cur.GetPassword())
 	}
 	out.SetFrontDoor(cur.GetFrontDoor())
+	profile := app.TenantProfile_builder{
+		Fill:           cur.GetProfile().GetFill(),
+		SlackSecretRef: cur.GetProfile().GetSlackSecretRef(),
+	}.Build()
 
-	if said == nil {
-		return out
+	if said != nil {
+		if said.Password != nil {
+			out.SetPassword(*said.Password)
+		}
+		if said.FrontDoor != nil {
+			out.SetFrontDoor(*said.FrontDoor)
+		}
+		if p := said.Profile; p != nil {
+			if p.Fill != nil {
+				profile.SetFill(*p.Fill)
+			}
+			if p.Slack != nil {
+				profile.SetSlackSecretRef(*p.Slack)
+			}
+		}
 	}
-	if said.Password != nil {
-		out.SetPassword(*said.Password)
-	}
-	if said.FrontDoor != nil {
-		out.SetFrontDoor(*said.FrontDoor)
+
+	// Absent rather than empty when there is nothing in it, so a tenant that
+	// never mentioned a profile reads as one that never did.
+	if profile.GetFill() || profile.GetSlackSecretRef() != "" {
+		out.SetProfile(profile)
 	}
 
 	return out

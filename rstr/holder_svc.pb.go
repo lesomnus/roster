@@ -3762,6 +3762,7 @@ func (b0 HolderFillRequest_builder) Build() *HolderFillRequest {
 type HolderFillResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Pictureless bool                   `protobuf:"varint,1,opt,name=pictureless"`
+	xxx_hidden_Nameless    bool                   `protobuf:"varint,2,opt,name=nameless"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -3798,8 +3799,19 @@ func (x *HolderFillResponse) GetPictureless() bool {
 	return false
 }
 
+func (x *HolderFillResponse) GetNameless() bool {
+	if x != nil {
+		return x.xxx_hidden_Nameless
+	}
+	return false
+}
+
 func (x *HolderFillResponse) SetPictureless(v bool) {
 	x.xxx_hidden_Pictureless = v
+}
+
+func (x *HolderFillResponse) SetNameless(v bool) {
+	x.xxx_hidden_Nameless = v
 }
 
 type HolderFillResponse_builder struct {
@@ -3808,6 +3820,9 @@ type HolderFillResponse_builder struct {
 	// They have no picture after this call -- no `profile.picture` and no
 	// `portrait` -- so an image handed over now would be kept.
 	Pictureless bool
+	// They have no display name after this call, so a name handed over now
+	// would be kept.
+	Nameless bool
 }
 
 func (b0 HolderFillResponse_builder) Build() *HolderFillResponse {
@@ -3815,6 +3830,7 @@ func (b0 HolderFillResponse_builder) Build() *HolderFillResponse {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Pictureless = b.Pictureless
+	x.xxx_hidden_Nameless = b.Nameless
 	return m0
 }
 
@@ -4088,9 +4104,10 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\fdisplay_name\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\vdisplayName\x12\x1f\n" +
 	"\apicture\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\apicture\x12\x1b\n" +
 	"\x05image\x18\n" +
-	" \x01(\fB\x05\xaa\x01\x02\b\x02R\x05image\"=\n" +
+	" \x01(\fB\x05\xaa\x01\x02\b\x02R\x05image\"`\n" +
 	"\x12HolderFillResponse\x12'\n" +
-	"\vpictureless\x18\x01 \x01(\bB\x05\xaa\x01\x02\b\x02R\vpictureless\"\x97\x01\n" +
+	"\vpictureless\x18\x01 \x01(\bB\x05\xaa\x01\x02\b\x02R\vpictureless\x12!\n" +
+	"\bnameless\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\bnameless\"\x97\x01\n" +
 	"\x14HolderPortrayRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12=\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12\x1b\n" +

@@ -198,7 +198,7 @@ func (s Core) Tenant() app.TenantServiceServer { return coreTenant{s, s.Next().T
 func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*app.Tenant, error) {
 	got, err := s.TenantServiceServer.Get(ctx, app.TenantGetRequest_builder{
 		Ref:    req.GetRef(),
-		Select: app.TenantSelect_builder{Labels: z.Ptr(true)}.Build(),
+		Select: app.TenantSelect_builder{Labels: z.Ptr(true), Config: z.Ptr(true)}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -227,6 +227,9 @@ func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*
 	if req.HasConfig() {
 		cfg, err := configOf(req.GetConfig())
 		if err != nil {
+			return nil, err
+		}
+		if err := maySlack(ctx, got.GetConfig(), cfg); err != nil {
 			return nil, err
 		}
 		patch.Config = cfg
@@ -305,6 +308,9 @@ func (s coreTenant) Add(ctx context.Context, req *app.TenantAddRequest) (*app.Te
 	req, bad := addWithConfig(req)
 	if bad != nil {
 		return nil, bad
+	}
+	if err := maySlack(ctx, nil, req.GetConfig()); err != nil {
+		return nil, err
 	}
 	if s.prefix != keys.PrefixTenant {
 		return s.TenantServiceServer.Add(ctx, req)

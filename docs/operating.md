@@ -442,8 +442,6 @@ login:                                    # only with Hydra in front; see login.
   consent: skip                           # ask draws a screen instead
   base: https://login.contoso.example     # one redirect URI for the whole app
   enrol: invited                          # invited | expected | enrolling
-  # profile: fill                         # the directory's name and picture,
-                                          # where the profile has none
   page: { dir: /usr/share/roster/login }
   remember: 1h
   seal: [env:LOGIN_SEAL]
@@ -585,6 +583,7 @@ resources:
     config:                              # how the tenant signs in; see below
       password: false                    # everybody arrives through a directory
       front_door: https://account.contoso.example
+      profile: { fill: true }            # a sign-in fills a blank name and picture
   - kind: Connection
     tenant: contoso
     name: entra
@@ -637,13 +636,33 @@ one step out and are left out for now rather than refused.
 
 ### A picture from the directory
 
-`login.profile: fill` (and `account.profile`) gives a person's profile what their
-directory says where it has nothing: the token's `name` as the display name, and
-their picture, which roster keeps at the sizes a screen draws (`Holder.portrait`,
-[entity.md](entity.md)). Only blanks -- what a person or an administrator wrote
-stays, and emptying a field is how somebody asks for the directory's again at
-their next sign-in. What a connection needs for the picture depends on where its
-directory keeps one:
+A tenant may have a sign-in fill what its people's profiles lack: a display
+name, and a picture, which roster keeps at the sizes a screen draws
+(`Holder.portrait`, [entity.md](entity.md)). It is the **tenant's** setting,
+`config.profile`, because tenants differ on it -- one wants nothing copied out of
+its directory, one keeps its pictures in Entra, where Teams puts them, one
+keeps them in Slack:
+
+```yaml
+  - kind: Tenant
+    alias: contoso
+    config:
+      profile:
+        fill: true                       # unset is no
+        slack: env:CONTOSO_SLACK_TOKEN   # optional; see below
+```
+
+Or the checkbox in either console's tenant settings, for a tenant no file
+declares. Only blanks, once: what a person or an administrator wrote stays,
+nothing watches a source afterwards, and emptying a field is how somebody asks
+for the source's again at their next sign-in. The front doors read the setting
+at each sign-in through a provider and write with `HolderService.Fill`, which
+their roles hold whatever a tenant says -- it writes only blanks and reads
+nothing back.
+
+Without `slack`, the source is the directory the person signed in through, and
+what the connection needs for the picture depends on where that directory keeps
+one:
 
 | directory | where the picture is | what the connection needs |
 | --- | --- | --- |
@@ -672,10 +691,40 @@ So, in this order:
 and a picture Graph refuses is a warning in the log naming `User.Read`, with the
 next sign-in trying again.
 
-**It is the deployment's, not a tenant's.** `profile` is a setting of the front
-door, which fronts every tenant, so a tenant cannot turn it off for its own
-people. A deployment whose tenants differ on it wants a switch per connection,
-which roster does not have yet.
+**From Slack, where people keep theirs.** A directory has whatever was typed
+when the account was made; Slack has the photograph its owner chose. With
+`slack`, the tenant is filled from its workspace and its directory is asked for
+nothing: at a sign-in whose profile has a blank, the front door asks Slack who
+it has under the address the person signed in with (`users.lookupByEmail`), and
+fills the blank with their **real name** and the **picture they chose** --
+Slack's placeholder is nobody's picture and is left out. A person with nothing
+blank costs Slack nothing; somebody Slack does not have, or has deactivated, is
+left as they were.
+
+`slack` is a reference, in a `Connection.secret_ref`'s words: where the
+deployment keeps the token -- `env:NAME`, in the front door's environment --
+and not the token. And it is **the deployment's to write**: what it names is
+one of the deployment's secrets, which the front door sends to Slack, so roster
+refuses a new one from a tenant's own administrator, who may keep it or take it
+away. The file declaring the tenant is where it is written.
+
+The token is a Slack app's, installed in that workspace with two bot scopes
+and nothing else:
+
+```yaml
+# The app's manifest, at api.slack.com/apps -> Create New App -> From a manifest.
+display_information:
+  name: roster
+oauth_config:
+  scopes:
+    bot: [users:read, users:read.email]
+```
+
+*Install to Workspace* hands over the *Bot User OAuth Token* (`xoxb-…`), which
+goes in the front door's environment under the name `slack` names. It reads
+everybody's profile in the workspace, address included, so it is kept like any
+other secret; a token short of a scope is a warning at the sign-in naming the
+one it lacks.
 
 ### Declared rows
 

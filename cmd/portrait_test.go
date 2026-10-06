@@ -81,10 +81,18 @@ func TestFillWritesOnlyTheBlanks(t *testing.T) {
 		x := require.New(t)
 		dana := b.holder(t, ctx, b.Contoso, "dana")
 
+		// Nothing handed over is a question: which blanks are there, so a
+		// front door asks a directory or a workspace only for those.
+		res, err := c.Fill(door, app.HolderFillRequest_builder{Ref: ref(dana)}.Build())
+		x.NoError(err)
+		x.True(res.GetNameless())
+		x.True(res.GetPictureless())
+
 		// The name first, and the answer that decides whether an image is
 		// worth fetching.
-		res, err := c.Fill(door, app.HolderFillRequest_builder{Ref: ref(dana), DisplayName: "Dana Scully"}.Build())
+		res, err = c.Fill(door, app.HolderFillRequest_builder{Ref: ref(dana), DisplayName: "Dana Scully"}.Build())
 		x.NoError(err)
+		x.False(res.GetNameless())
 		x.True(res.GetPictureless())
 
 		res, err = c.Fill(door, app.HolderFillRequest_builder{

@@ -335,7 +335,7 @@ sequenceDiagram
     R-->>L: NotFound
     L->>R: HolderService.Add (Enrol), then IdentityService.Add
   end
-  opt login.profile: fill
+  opt the tenant's config.profile.fill
     L->>R: HolderService.Fill {display_name}
     R-->>L: {pictureless}
     opt pictureless
@@ -357,7 +357,7 @@ sequenceDiagram
 | the redirect | `login.base` | **one URL for the whole app**, because Hydra sends every browser here under one name. Which operator a callback belongs to comes from the state, and the state is a nonce naming a row this app kept |
 | the exchange | the provider's own | the Login App is the relying party, exactly as the account app is |
 | who may sign in | `login.enrol` | `invited` admits only somebody already linked; `expected` admits somebody an operator entered, matched by the **address** on their row; `enrolling` admits a stranger too. `enrolling` needs `HolderService.Add`, which `roster login provision` puts on the nominated holder's role and never on the key |
-| what the profile lacks | `login.profile` | `fill` gives the profile what the provider said where it has **nothing**: the token's `name` as the display name, and a picture for somebody with none -- the token's `picture`, else userinfo's, fetched with the token from the provider's own API (Entra's photo needs `User.Read` among the connection's scopes, consented for the directory first: [operating.md](operating.md) § *A picture from the directory*) and kept by roster at the sizes a screen draws. Only blanks, through `HolderService.Fill`, which writes nothing over a value and reads nothing back, and which `roster login provision` adds to the role where this says `fill`. Never a reason to refuse the sign-in |
+| what the profile lacks | the tenant's `config.profile` | `fill` gives the profile what its source says where it has **nothing**: a display name, and a picture for somebody with none. The source is the provider -- the token's `name` and `picture`, else userinfo's, the picture fetched with the token from the provider's own API (Entra's needs `User.Read` among the connection's scopes, consented for the directory first) -- or, where the deployment named the tenant's Slack workspace, Slack's real name and the picture the person chose, found by their address. [operating.md](operating.md) § *A picture from the directory*. Only blanks, through `HolderService.Fill`, which writes nothing over a value and reads nothing back. Never a reason to refuse the sign-in |
 | the sign-in | `VouchService.Accept` | the claim this app verified, exchanged for a delegation. Not `Verify`: there is no password here to check |
 | the session | `Door.Accept` | minted here for the same reason the password path has one -- the consent hop reads the person **as them** to fill the claims |
 | the accept | `PUT …/login/accept` | the `Holder.id`. The same string a password would have produced for the same person, which is what makes Monday-Entra and Saturday-password one `sub` |
@@ -935,7 +935,8 @@ portal owns the person -- and no `Holder` writes, since a product does not own t
 people it serves. Nor `HolderService/Add`, which only `enrol: enrolling` adds --
 to the role `roster login provision` binds to the Login App's holder in each
 tenant, never to its key -- which is what makes it a deliberate extra rather than
-a default. `HolderService/Fill` is the same, for `profile: fill`.
+a default. `HolderService/Fill` is the other way round, held always: whether to
+fill is each tenant's to say (`config.profile`), and it writes only blanks.
 
 ## Asking roster as the person who just signed in
 
