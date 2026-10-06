@@ -222,6 +222,89 @@ service HolderService {
   // somebody else's. So this writes the profile's `picture` empty, and takes
   // the version it was read under, as `Update` does.
   rpc Portray(HolderPortrayRequest) returns (Holder);
+
+  // Provision makes somebody a directory says exists: the person, their
+  // identity at the connection that directory provisions through, and their
+  // address -- in one write, or none of it.
+  //
+  // # Why it is not `Add`, `Identity.Add` and `Email.Add`
+  //
+  // Those three are each a grant somebody holds on its own, and two of them
+  // are ways into an account. A key holding `Identity.Add` may link a provider
+  // account to **anybody** who holds no more than its holder does -- and
+  // `Core.mayReach` answers yes for everybody who holds nothing, which is
+  // most people. A directory's key, reachable from the internet so the
+  // directory can call it, would be a way into all of them.
+  //
+  // This writes ways in only into the person it makes in the same breath, who
+  // holds nothing and has no other way in. So a key that holds this and none
+  // of those three can make people, and cannot reach anybody who already
+  // exists -- which is the whole of what a directory provisioning people
+  // needs, and nothing it does not.
+  //
+  // # What it is held to
+  //
+  // The connection must be the one the tenant provisions through
+  // (`Connection.provisions`), the subject is held to that connection's claim
+  // as `Identity.Add` holds it, and the address is written **unverified**: a
+  // verified address is where a recovery link goes, and `Email.Attest` with a
+  // stamp takes an address somebody else holds unproved. A taken address, or a
+  // taken subject, refuses the whole of it.
+  rpc Provision(HolderProvisionRequest) returns (Holder);
+
+  // Deactivate suspends somebody on their directory's word: `inactive`, or
+  // `deleted`, which the directory will not ask about again.
+  //
+  // # Why it is not `Disable`
+  //
+  // Because the directory may lift what it put there and nothing else
+  // (`Holder.directory`), and one verb for both could not say whose a
+  // suspension is. A suspension already an operator's stays theirs.
+  //
+  // Held to people the directory speaks for: somebody with an identity at the
+  // connection the tenant provisions through.
+  rpc Deactivate(HolderDeactivateRequest) returns (Holder);
+
+  // Activate lifts a suspension the directory made, and only that one.
+  //
+  // An operator's suspension is refused, and so is somebody the directory
+  // deleted: it said they are gone, and bringing them back is an operator's.
+  rpc Activate(HolderActivateRequest) returns (Holder);
+}
+
+message HolderProvisionRequest {
+  TenantRef tenant = 1;
+
+  // What roster calls them. Taken already, a suffix is added, as a sign-in
+  // that enrols somebody adds one.
+  string alias = 2 [features.field_presence = IMPLICIT];
+  string name = 3 [features.field_presence = IMPLICIT];
+  Profile profile = 4;
+
+  // Which connection, by name, and what it calls them: the identity a
+  // sign-in through it will find. It must be the connection the tenant
+  // provisions through.
+  string provider = 5 [features.field_presence = IMPLICIT];
+  string subject = 6 [features.field_presence = IMPLICIT];
+
+  // Their address, lowercased and trimmed, written unverified. Empty is none.
+  string address = 7 [features.field_presence = IMPLICIT];
+}
+
+message HolderDeactivateRequest {
+  HolderRef ref = 1;
+
+  // Optimistic locking, as `Disable` takes it.
+  google.protobuf.Timestamp date_updated = 13;
+
+  // The directory deleted them, rather than said they are inactive.
+  bool deleted = 2 [features.field_presence = IMPLICIT];
+}
+
+message HolderActivateRequest {
+  HolderRef ref = 1;
+
+  google.protobuf.Timestamp date_updated = 13;
 }
 
 message HolderFillRequest {

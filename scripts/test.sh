@@ -93,7 +93,7 @@ go tool pd gen --check --ts .
 # So is the Login App (`login/`), which needs neither exception: what it reads
 # of roster is `rstr` and `frontdoor` and nothing else.
 echo "== the consumers reach roster only over the wire"
-for pkg in ./account/ ./arrives/ ./ldap/ ./login/; do
+for pkg in ./account/ ./arrives/ ./ldap/ ./login/ ./scim/; do
 	if go list -f '{{join .Imports "\n"}}' "${pkg}" | grep -E '^github.com/lesomnus/roster/(internal|cmd|server/)' | grep -v '^github.com/lesomnus/roster/server/front$'; then
 		echo "${pkg} imports a server package; it is a consumer and reaches roster over the wire" >&2
 		exit 1

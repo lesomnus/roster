@@ -90,6 +90,7 @@ every commit so the page cannot drift from the binary.
 | run it for real | [docs/operating.md](docs/operating.md) -- databases, listeners, processes, the trail, replicas, TLS |
 | sign people in | [docs/login.md](docs/login.md), and [docs/relying-party.md](docs/relying-party.md) for the app in front |
 | serve a directory | [docs/ldap.md](docs/ldap.md) |
+| let a directory provision people here | [docs/scim.md](docs/scim.md) |
 | know the tables | [docs/entity.md](docs/entity.md) |
 | know what a word here means | [docs/glossary.md](docs/glossary.md) |
 

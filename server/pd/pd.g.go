@@ -10754,6 +10754,21 @@ func (s interceptHolder) Portray(ctx context.Context, req *rstr.HolderPortrayReq
 		rstr.HolderService_Portray_FullMethodName, req, s.HolderServiceServer.Portray)
 }
 
+func (s interceptHolder) Provision(ctx context.Context, req *rstr.HolderProvisionRequest) (*rstr.Holder, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		rstr.HolderService_Provision_FullMethodName, req, s.HolderServiceServer.Provision)
+}
+
+func (s interceptHolder) Deactivate(ctx context.Context, req *rstr.HolderDeactivateRequest) (*rstr.Holder, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		rstr.HolderService_Deactivate_FullMethodName, req, s.HolderServiceServer.Deactivate)
+}
+
+func (s interceptHolder) Activate(ctx context.Context, req *rstr.HolderActivateRequest) (*rstr.Holder, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		rstr.HolderService_Activate_FullMethodName, req, s.HolderServiceServer.Activate)
+}
+
 func (s Intercept) ApiKey() rstr.ApiKeyServiceServer {
 	return interceptApiKey{s, s.Next().ApiKey()}
 }
@@ -12536,6 +12551,45 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.Holder().Portray(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HolderService_Provision_FullMethodName:
+		v := &rstr.HolderProvisionRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().Provision(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HolderService_Deactivate_FullMethodName:
+		v := &rstr.HolderDeactivateRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().Deactivate(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.HolderService_Activate_FullMethodName:
+		v := &rstr.HolderActivateRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Holder().Activate(ctx, v)
 		if err != nil {
 			return nil, err
 		}

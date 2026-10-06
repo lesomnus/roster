@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/holder.proto.
  */
 export const file_roster_payday_holder: GenFile = /*@__PURE__*/
-  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L2hvbGRlci5wcm90bxIGcm9zdGVyItQFCgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSKgoGbGFiZWxzGAcgAygLMhoucm9zdGVyLkhvbGRlci5MYWJlbHNFbnRyeRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASIAoHcHJvZmlsZRgJIAEoCzIPLnJvc3Rlci5Qcm9maWxlEiIKBGRhdGEYCiABKAsyFC5nb29nbGUucHJvdG9idWYuQW55EjwKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOQoNZGF0ZV9kaXNhYmxlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIiCghwb3J0cmFpdBgQIAEoCzIQLnJvc3Rlci5Qb3J0cmFpdBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOm7K/BUlEgIQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwAYq7FkEIAjI5ChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudBoICgZsYWJlbHMgFChkOgBIAiJpCgdQcm9maWxlEhQKDGRpc3BsYXlfbmFtZRgBIAEoCRIPCgdwaWN0dXJlGAIgASgJEhIKCmRlcGFydG1lbnQYAyABKAkSEwoLZW1wbG95ZWVfbm8YBCABKAkSDgoGbG9jYWxlGAUgASgJIjEKCFBvcnRyYWl0EiUKCnJlbmRpdGlvbnMYASADKAsyES5yb3N0ZXIuUmVuZGl0aW9uIiYKCVJlbmRpdGlvbhIMCgRzaXplGAEgASgNEgsKA3VyaRgCIAEoCUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_any, file_google_protobuf_timestamp, file_orm, file_payday, file_roster_payday_tenant]);
+  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L2hvbGRlci5wcm90bxIGcm9zdGVyIucFCgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSKgoGbGFiZWxzGAcgAygLMhoucm9zdGVyLkhvbGRlci5MYWJlbHNFbnRyeRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASIAoHcHJvZmlsZRgJIAEoCzIPLnJvc3Rlci5Qcm9maWxlEiIKBGRhdGEYCiABKAsyFC5nb29nbGUucHJvdG9idWYuQW55EjwKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOQoNZGF0ZV9kaXNhYmxlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIRCglkaXJlY3RvcnkYCCABKAkSIgoIcG9ydHJhaXQYECABKAsyEC5yb3N0ZXIuUG9ydHJhaXQaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATpuyvwVJRICEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxZBCAIyOQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQaCAoGbGFiZWxzIBQoZDoASAIiaQoHUHJvZmlsZRIUCgxkaXNwbGF5X25hbWUYASABKAkSDwoHcGljdHVyZRgCIAEoCRISCgpkZXBhcnRtZW50GAMgASgJEhMKC2VtcGxveWVlX25vGAQgASgJEg4KBmxvY2FsZRgFIAEoCSIxCghQb3J0cmFpdBIlCgpyZW5kaXRpb25zGAEgAygLMhEucm9zdGVyLlJlbmRpdGlvbiImCglSZW5kaXRpb24SDAoEc2l6ZRgBIAEoDRILCgN1cmkYAiABKAlCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_any, file_google_protobuf_timestamp, file_orm, file_payday, file_roster_payday_tenant]);
 
 /**
  * Holder is who a request is from.
@@ -205,6 +205,35 @@ export type Holder = Message<"roster.Holder"> & {
    * @generated from field: google.protobuf.Timestamp date_disabled = 12;
    */
   dateDisabled?: Timestamp | undefined;
+
+  /**
+   * Whose suspension `date_disabled` is, when it is the **directory's**: the
+   * directory provisioning this person (SCIM, `docs/scim.md`) said they are
+   * `inactive`, or `deleted` them. Empty when nobody suspended them, or an
+   * operator did.
+   *
+   * # Why it is not a second `date_disabled`
+   *
+   * Everything that refuses a suspended person reads one column -- a sign-in, a
+   * key, a delegation, `Reaches`, the stream an app hears a suspension on --
+   * and a second column is a second place each of them has to remember. So
+   * the suspension is the one fact it was, and this says only whose it is.
+   *
+   * # Why whose matters
+   *
+   * A directory is one way: it never hears of an operator's suspension, and
+   * restarting its provisioning says `active: true` for everybody in scope.
+   * Were every suspension one thing, that restart would lift an operator's.
+   * So the directory lifts what it put there and nothing else
+   * (`HolderService.Activate`), and an operator's `Disable` or `Enable` makes
+   * the suspension theirs.
+   *
+   * Written by those verbs and nothing else: `Add` refuses it, as it refuses
+   * a portrait, and `Patch` is closed at the transport.
+   *
+   * @generated from field: string directory = 8;
+   */
+  directory: string;
 
   /**
    * A picture of this person, kept here: one square image at the sizes a

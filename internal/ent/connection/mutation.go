@@ -26,6 +26,7 @@ type Mutation struct {
 	appendscopes  []string
 	secret_ref    *string
 	subject_claim *string
+	provisions    *bool
 	date_updated  *time.Time
 	date_erased   *time.Time
 	date_created  *time.Time
@@ -243,6 +244,25 @@ func (m *Mutation) ResetSubjectClaim() {
 	m.subject_claim = nil
 }
 
+// SetProvisions sets the "provisions" field.
+func (m *Mutation) SetProvisions(b bool) {
+	m.provisions = &b
+}
+
+// Provisions returns the value of the "provisions" field in the mutation.
+func (m *Mutation) Provisions() (r bool, exists bool) {
+	v := m.provisions
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetProvisions resets all changes to the "provisions" field.
+func (m *Mutation) ResetProvisions() {
+	m.provisions = nil
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (m *Mutation) SetDateUpdated(t time.Time) {
 	m.date_updated = &t
@@ -406,7 +426,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.name != nil {
 		fields = append(fields, FieldName)
 	}
@@ -430,6 +450,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.subject_claim != nil {
 		fields = append(fields, FieldSubjectClaim)
+	}
+	if m.provisions != nil {
+		fields = append(fields, FieldProvisions)
 	}
 	if m.date_updated != nil {
 		fields = append(fields, FieldDateUpdated)
@@ -467,6 +490,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.SecretRef()
 	case FieldSubjectClaim:
 		return m.SubjectClaim()
+	case FieldProvisions:
+		return m.Provisions()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
@@ -546,6 +571,13 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetSubjectClaim(v)
+		return nil
+	case FieldProvisions:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProvisions(v)
 		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
@@ -674,6 +706,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldSubjectClaim:
 		m.ResetSubjectClaim()
+		return nil
+	case FieldProvisions:
+		m.ResetProvisions()
 		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()

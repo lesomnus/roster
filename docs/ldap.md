@@ -281,7 +281,7 @@ client's problem and not this process's.
 
 | operation | answer | why |
 | --- | --- | --- |
-| Add, Modify, ModifyDN, Delete | `unwillingToPerform` (53) | a directory front is a **read**; the write side of this is SCIM, and it is a separate plan |
+| Add, Modify, ModifyDN, Delete | `unwillingToPerform` (53) | a directory front is a **read**; the write side of this is SCIM ([scim.md](scim.md)) |
 | Compare | 53 | nobody's client does this, and `userPassword` compare is a bind that does not count toward a lockout |
 | Password Modify extended op (RFC 3062) | 53 for now | it could be `Credential.Set` with `current`; the question is whether a client that cannot do a second factor should change a password -- decision 6, below |
 | SASL bind | `authMethodNotSupported` (7) | above |
@@ -429,10 +429,12 @@ comment beside what it decides.
 
 ## Not here, and where it would go
 
-- **SCIM**, the write side: an app provisioning people *into* roster. It is
-  `Holder.Add`, `Email.Add`, `GroupMembership.Add` behind a JSON schema, and
-  it is a second consumer with a plan of its own. Nothing in this one should
-  make it harder.
+- **SCIM**, the write side, is [scim.md](scim.md) now: a directory
+  provisioning people *into* roster, a second consumer beside this one. It
+  turned out not to be `Holder.Add` and `Email.Add` behind a JSON schema --
+  those reach people who already exist, and a directory's key should reach only
+  the people it makes -- so it is `HolderService.Provision` and the verbs beside
+  it. Groups are its next step.
 - **Kerberos, certificates, nested groups**: `position.md` says why, and
   this process does not change the answer.
 - **A manager edge, more profile fields**: the conversation that produced

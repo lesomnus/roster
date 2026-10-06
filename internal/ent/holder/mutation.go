@@ -30,6 +30,7 @@ type Mutation struct {
 	data             **anypb.Any
 	date_invalidated *time.Time
 	date_disabled    *time.Time
+	directory        *string
 	portrait         **rstr.Portrait
 	clearedFields    map[string]struct{}
 	tenant           *uuid.UUID
@@ -351,6 +352,25 @@ func (m *Mutation) ResetDateDisabled() {
 	delete(m.clearedFields, FieldDateDisabled)
 }
 
+// SetDirectory sets the "directory" field.
+func (m *Mutation) SetDirectory(s string) {
+	m.directory = &s
+}
+
+// Directory returns the value of the "directory" field in the mutation.
+func (m *Mutation) Directory() (r string, exists bool) {
+	v := m.directory
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDirectory resets all changes to the "directory" field.
+func (m *Mutation) ResetDirectory() {
+	m.directory = nil
+}
+
 // SetPortrait sets the "portrait" field.
 func (m *Mutation) SetPortrait(r *rstr.Portrait) {
 	m.portrait = &r
@@ -463,7 +483,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 14)
 	if m.alias != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -496,6 +516,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.date_disabled != nil {
 		fields = append(fields, FieldDateDisabled)
+	}
+	if m.directory != nil {
+		fields = append(fields, FieldDirectory)
 	}
 	if m.portrait != nil {
 		fields = append(fields, FieldPortrait)
@@ -533,6 +556,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateInvalidated()
 	case FieldDateDisabled:
 		return m.DateDisabled()
+	case FieldDirectory:
+		return m.Directory()
 	case FieldPortrait:
 		return m.Portrait()
 	case FieldTenantId:
@@ -629,6 +654,13 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDateDisabled(v)
+		return nil
+	case FieldDirectory:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDirectory(v)
 		return nil
 	case FieldPortrait:
 		v, ok := value.(*rstr.Portrait)
@@ -776,6 +808,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldDateDisabled:
 		m.ResetDateDisabled()
+		return nil
+	case FieldDirectory:
+		m.ResetDirectory()
 		return nil
 	case FieldPortrait:
 		m.ResetPortrait()

@@ -1234,6 +1234,23 @@ func (m *ConnectionMutation) OldSubjectClaim(ctx context.Context) (v string, err
 	return oldValue.SubjectClaim, nil
 }
 
+// OldProvisions returns the old "provisions" field's value of the Connection entity.
+// If the Connection object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectionMutation) OldProvisions(ctx context.Context) (v bool, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldProvisions is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldProvisions requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProvisions: %w", err)
+	}
+	return oldValue.Provisions, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the Connection entity.
 // If the Connection object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -1323,6 +1340,8 @@ func (m *ConnectionMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldSecretRef(ctx)
 	case connection.FieldSubjectClaim:
 		return m.OldSubjectClaim(ctx)
+	case connection.FieldProvisions:
+		return m.OldProvisions(ctx)
 	case connection.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case connection.FieldDateErased:
@@ -3303,6 +3322,23 @@ func (m *HolderMutation) OldDateDisabled(ctx context.Context) (v *time.Time, err
 	return oldValue.DateDisabled, nil
 }
 
+// OldDirectory returns the old "directory" field's value of the Holder entity.
+// If the Holder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HolderMutation) OldDirectory(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDirectory is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDirectory requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDirectory: %w", err)
+	}
+	return oldValue.Directory, nil
+}
+
 // OldPortrait returns the old "portrait" field's value of the Holder entity.
 // If the Holder object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -3364,6 +3400,8 @@ func (m *HolderMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldDateInvalidated(ctx)
 	case holder.FieldDateDisabled:
 		return m.OldDateDisabled(ctx)
+	case holder.FieldDirectory:
+		return m.OldDirectory(ctx)
 	case holder.FieldPortrait:
 		return m.OldPortrait(ctx)
 	case holder.FieldTenantId:

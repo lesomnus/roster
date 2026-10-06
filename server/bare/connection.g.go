@@ -125,6 +125,7 @@ func (s ConnectionServiceServer) Add(ctx context.Context, req *rstr.ConnectionAd
 	}
 	q.SetSecretRef(req.GetSecretRef())
 	q.SetSubjectClaim(req.GetSubjectClaim())
+	q.SetProvisions(req.GetProvisions())
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -222,6 +223,9 @@ func ConnectionSelectedFields(m *rstr.ConnectionSelect) []string {
 	if m.GetSubjectClaim() {
 		vs = append(vs, connection.FieldSubjectClaim)
 	}
+	if m.GetProvisions() {
+		vs = append(vs, connection.FieldProvisions)
+	}
 	if m.GetDateUpdated() {
 		vs = append(vs, connection.FieldDateUpdated)
 	}
@@ -302,7 +306,7 @@ func ConnectionGetKey(ctx context.Context, db *ent.Client, ref *rstr.ConnectionR
 var connectionOrmEntity = ormpatch.MustEntityOf(rstr.File_app_connection_proto, "Connection")
 
 var connectionPatchColumns = entpatch.Columns{
-	1: connection.FieldId, 2: connection.TenantColumn, 5: connection.FieldName, 6: connection.FieldDesc, 7: connection.FieldLabels, 8: connection.FieldIssuer, 9: connection.FieldClientId, 10: connection.FieldScopes, 11: connection.FieldSecretRef, 12: connection.FieldSubjectClaim, 13: connection.FieldDateUpdated, 14: connection.FieldDateErased, 15: connection.FieldDateCreated}
+	1: connection.FieldId, 2: connection.TenantColumn, 5: connection.FieldName, 6: connection.FieldDesc, 7: connection.FieldLabels, 8: connection.FieldIssuer, 9: connection.FieldClientId, 10: connection.FieldScopes, 11: connection.FieldSecretRef, 12: connection.FieldSubjectClaim, 16: connection.FieldProvisions, 13: connection.FieldDateUpdated, 14: connection.FieldDateErased, 15: connection.FieldDateCreated}
 
 func (s ConnectionServiceServer) Apply(ctx context.Context, req *rstr.ConnectionApplyRequest) (*rstr.Connection, error) {
 	if !req.HasPatch() {

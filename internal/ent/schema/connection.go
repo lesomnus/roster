@@ -31,6 +31,7 @@ func (Connection) Fields() []ent.Field {
 			Optional(),
 		field.String("secret_ref"),
 		field.String("subject_claim"),
+		field.Bool("provisions"),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

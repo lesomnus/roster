@@ -179,6 +179,10 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 				}
 				g.Go(func() error { return serveLdap(ctx, lc) })
 			}
+			if c.Scim.Serves() {
+				sc := scimOf(c, l)
+				g.Go(func() error { return serveScim(ctx, sc) })
+			}
 			if c.Login.Serves() {
 				gc, err := loginApp(ctx, c, l, s)
 				if err != nil {

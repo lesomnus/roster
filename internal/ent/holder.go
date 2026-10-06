@@ -44,6 +44,8 @@ type Holder struct {
 	DateInvalidated *time.Time `json:"date_invalidated,omitempty"`
 	// DateDisabled holds the value of the "date_disabled" field.
 	DateDisabled *time.Time `json:"date_disabled,omitempty"`
+	// Directory holds the value of the "directory" field.
+	Directory string `json:"directory,omitempty"`
 	// Portrait holds the value of the "portrait" field.
 	Portrait *rstr.Portrait `json:"portrait,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
@@ -81,7 +83,7 @@ func (*Holder) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case holder.FieldLabels:
 			values[i] = new([]byte)
-		case holder.FieldAlias, holder.FieldName, holder.FieldDesc:
+		case holder.FieldAlias, holder.FieldName, holder.FieldDesc, holder.FieldDirectory:
 			values[i] = new(sql.NullString)
 		case holder.FieldDateUpdated, holder.FieldDateErased, holder.FieldDateCreated, holder.FieldDateInvalidated, holder.FieldDateDisabled:
 			values[i] = new(sql.NullTime)
@@ -185,6 +187,12 @@ func (_m *Holder) assignValues(columns []string, values []any) error {
 				_m.DateDisabled = new(time.Time)
 				*_m.DateDisabled = value.Time
 			}
+		case holder.FieldDirectory:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field directory", values[i])
+			} else if value.Valid {
+				_m.Directory = value.String
+			}
 		case holder.FieldPortrait:
 			if value, err := holder.ValueScanner.Portrait.FromValue(values[i]); err != nil {
 				return err
@@ -276,6 +284,9 @@ func (_m *Holder) String() string {
 		builder.WriteString("date_disabled=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("directory=")
+	builder.WriteString(_m.Directory)
 	builder.WriteString(", ")
 	builder.WriteString("portrait=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Portrait))

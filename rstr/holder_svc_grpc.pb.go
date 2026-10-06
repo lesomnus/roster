@@ -36,6 +36,9 @@ const (
 	HolderService_Search_FullMethodName     = "/roster.HolderService/Search"
 	HolderService_Fill_FullMethodName       = "/roster.HolderService/Fill"
 	HolderService_Portray_FullMethodName    = "/roster.HolderService/Portray"
+	HolderService_Provision_FullMethodName  = "/roster.HolderService/Provision"
+	HolderService_Deactivate_FullMethodName = "/roster.HolderService/Deactivate"
+	HolderService_Activate_FullMethodName   = "/roster.HolderService/Activate"
 )
 
 // HolderServiceClient is the client API for HolderService service.
@@ -259,6 +262,51 @@ type HolderServiceClient interface {
 	// somebody else's. So this writes the profile's `picture` empty, and takes
 	// the version it was read under, as `Update` does.
 	Portray(ctx context.Context, in *HolderPortrayRequest, opts ...grpc.CallOption) (*Holder, error)
+	// Provision makes somebody a directory says exists: the person, their
+	// identity at the connection that directory provisions through, and their
+	// address -- in one write, or none of it.
+	//
+	// # Why it is not `Add`, `Identity.Add` and `Email.Add`
+	//
+	// Those three are each a grant somebody holds on its own, and two of them
+	// are ways into an account. A key holding `Identity.Add` may link a provider
+	// account to **anybody** who holds no more than its holder does -- and
+	// `Core.mayReach` answers yes for everybody who holds nothing, which is
+	// most people. A directory's key, reachable from the internet so the
+	// directory can call it, would be a way into all of them.
+	//
+	// This writes ways in only into the person it makes in the same breath, who
+	// holds nothing and has no other way in. So a key that holds this and none
+	// of those three can make people, and cannot reach anybody who already
+	// exists -- which is the whole of what a directory provisioning people
+	// needs, and nothing it does not.
+	//
+	// # What it is held to
+	//
+	// The connection must be the one the tenant provisions through
+	// (`Connection.provisions`), the subject is held to that connection's claim
+	// as `Identity.Add` holds it, and the address is written **unverified**: a
+	// verified address is where a recovery link goes, and `Email.Attest` with a
+	// stamp takes an address somebody else holds unproved. A taken address, or a
+	// taken subject, refuses the whole of it.
+	Provision(ctx context.Context, in *HolderProvisionRequest, opts ...grpc.CallOption) (*Holder, error)
+	// Deactivate suspends somebody on their directory's word: `inactive`, or
+	// `deleted`, which the directory will not ask about again.
+	//
+	// # Why it is not `Disable`
+	//
+	// Because the directory may lift what it put there and nothing else
+	// (`Holder.directory`), and one verb for both could not say whose a
+	// suspension is. A suspension already an operator's stays theirs.
+	//
+	// Held to people the directory speaks for: somebody with an identity at the
+	// connection the tenant provisions through.
+	Deactivate(ctx context.Context, in *HolderDeactivateRequest, opts ...grpc.CallOption) (*Holder, error)
+	// Activate lifts a suspension the directory made, and only that one.
+	//
+	// An operator's suspension is refused, and so is somebody the directory
+	// deleted: it said they are gone, and bringing them back is an operator's.
+	Activate(ctx context.Context, in *HolderActivateRequest, opts ...grpc.CallOption) (*Holder, error)
 }
 
 type holderServiceClient struct {
@@ -442,6 +490,36 @@ func (c *holderServiceClient) Portray(ctx context.Context, in *HolderPortrayRequ
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Holder)
 	err := c.cc.Invoke(ctx, HolderService_Portray_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *holderServiceClient) Provision(ctx context.Context, in *HolderProvisionRequest, opts ...grpc.CallOption) (*Holder, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Holder)
+	err := c.cc.Invoke(ctx, HolderService_Provision_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *holderServiceClient) Deactivate(ctx context.Context, in *HolderDeactivateRequest, opts ...grpc.CallOption) (*Holder, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Holder)
+	err := c.cc.Invoke(ctx, HolderService_Deactivate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *holderServiceClient) Activate(ctx context.Context, in *HolderActivateRequest, opts ...grpc.CallOption) (*Holder, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Holder)
+	err := c.cc.Invoke(ctx, HolderService_Activate_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -669,6 +747,51 @@ type HolderServiceServer interface {
 	// somebody else's. So this writes the profile's `picture` empty, and takes
 	// the version it was read under, as `Update` does.
 	Portray(context.Context, *HolderPortrayRequest) (*Holder, error)
+	// Provision makes somebody a directory says exists: the person, their
+	// identity at the connection that directory provisions through, and their
+	// address -- in one write, or none of it.
+	//
+	// # Why it is not `Add`, `Identity.Add` and `Email.Add`
+	//
+	// Those three are each a grant somebody holds on its own, and two of them
+	// are ways into an account. A key holding `Identity.Add` may link a provider
+	// account to **anybody** who holds no more than its holder does -- and
+	// `Core.mayReach` answers yes for everybody who holds nothing, which is
+	// most people. A directory's key, reachable from the internet so the
+	// directory can call it, would be a way into all of them.
+	//
+	// This writes ways in only into the person it makes in the same breath, who
+	// holds nothing and has no other way in. So a key that holds this and none
+	// of those three can make people, and cannot reach anybody who already
+	// exists -- which is the whole of what a directory provisioning people
+	// needs, and nothing it does not.
+	//
+	// # What it is held to
+	//
+	// The connection must be the one the tenant provisions through
+	// (`Connection.provisions`), the subject is held to that connection's claim
+	// as `Identity.Add` holds it, and the address is written **unverified**: a
+	// verified address is where a recovery link goes, and `Email.Attest` with a
+	// stamp takes an address somebody else holds unproved. A taken address, or a
+	// taken subject, refuses the whole of it.
+	Provision(context.Context, *HolderProvisionRequest) (*Holder, error)
+	// Deactivate suspends somebody on their directory's word: `inactive`, or
+	// `deleted`, which the directory will not ask about again.
+	//
+	// # Why it is not `Disable`
+	//
+	// Because the directory may lift what it put there and nothing else
+	// (`Holder.directory`), and one verb for both could not say whose a
+	// suspension is. A suspension already an operator's stays theirs.
+	//
+	// Held to people the directory speaks for: somebody with an identity at the
+	// connection the tenant provisions through.
+	Deactivate(context.Context, *HolderDeactivateRequest) (*Holder, error)
+	// Activate lifts a suspension the directory made, and only that one.
+	//
+	// An operator's suspension is refused, and so is somebody the directory
+	// deleted: it said they are gone, and bringing them back is an operator's.
+	Activate(context.Context, *HolderActivateRequest) (*Holder, error)
 	mustEmbedUnimplementedHolderServiceServer()
 }
 
@@ -729,6 +852,15 @@ func (UnimplementedHolderServiceServer) Fill(context.Context, *HolderFillRequest
 }
 func (UnimplementedHolderServiceServer) Portray(context.Context, *HolderPortrayRequest) (*Holder, error) {
 	return nil, status.Error(codes.Unimplemented, "method Portray not implemented")
+}
+func (UnimplementedHolderServiceServer) Provision(context.Context, *HolderProvisionRequest) (*Holder, error) {
+	return nil, status.Error(codes.Unimplemented, "method Provision not implemented")
+}
+func (UnimplementedHolderServiceServer) Deactivate(context.Context, *HolderDeactivateRequest) (*Holder, error) {
+	return nil, status.Error(codes.Unimplemented, "method Deactivate not implemented")
+}
+func (UnimplementedHolderServiceServer) Activate(context.Context, *HolderActivateRequest) (*Holder, error) {
+	return nil, status.Error(codes.Unimplemented, "method Activate not implemented")
 }
 func (UnimplementedHolderServiceServer) mustEmbedUnimplementedHolderServiceServer() {}
 func (UnimplementedHolderServiceServer) testEmbeddedByValue()                       {}
@@ -1050,6 +1182,60 @@ func _HolderService_Portray_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HolderService_Provision_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderProvisionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).Provision(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_Provision_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).Provision(ctx, req.(*HolderProvisionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HolderService_Deactivate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderDeactivateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).Deactivate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_Deactivate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).Deactivate(ctx, req.(*HolderDeactivateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HolderService_Activate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderActivateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).Activate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_Activate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).Activate(ctx, req.(*HolderActivateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HolderService_ServiceDesc is the grpc.ServiceDesc for HolderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1120,6 +1306,18 @@ var HolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Portray",
 			Handler:    _HolderService_Portray_Handler,
+		},
+		{
+			MethodName: "Provision",
+			Handler:    _HolderService_Provision_Handler,
+		},
+		{
+			MethodName: "Deactivate",
+			Handler:    _HolderService_Deactivate_Handler,
+		},
+		{
+			MethodName: "Activate",
+			Handler:    _HolderService_Activate_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

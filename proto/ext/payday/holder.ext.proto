@@ -102,6 +102,31 @@ message Holder {
   // operator asks.
   google.protobuf.Timestamp date_disabled = 12 [(orm.field) = {nullable: true}];
 
+  // Whose suspension `date_disabled` is, when it is the **directory's**: the
+  // directory provisioning this person (SCIM, `docs/scim.md`) said they are
+  // `inactive`, or `deleted` them. Empty when nobody suspended them, or an
+  // operator did.
+  //
+  // # Why it is not a second `date_disabled`
+  //
+  // Everything that refuses a suspended person reads one column -- a sign-in, a
+  // key, a delegation, `Reaches`, the stream an app hears a suspension on --
+  // and a second column is a second place each of them has to remember. So
+  // the suspension is the one fact it was, and this says only whose it is.
+  //
+  // # Why whose matters
+  //
+  // A directory is one way: it never hears of an operator's suspension, and
+  // restarting its provisioning says `active: true` for everybody in scope.
+  // Were every suspension one thing, that restart would lift an operator's.
+  // So the directory lifts what it put there and nothing else
+  // (`HolderService.Activate`), and an operator's `Disable` or `Enable` makes
+  // the suspension theirs.
+  //
+  // Written by those verbs and nothing else: `Add` refuses it, as it refuses
+  // a portrait, and `Patch` is closed at the transport.
+  string directory = 8;
+
   // A picture of this person, kept here: one square image at the sizes a
   // screen draws one, inline.
   //

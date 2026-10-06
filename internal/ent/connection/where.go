@@ -86,6 +86,11 @@ func SubjectClaim(v string) predicate.Connection {
 	return predicate.Connection(sql.FieldEQ(FieldSubjectClaim, v))
 }
 
+// Provisions applies equality check predicate on the "provisions" field. It's identical to ProvisionsEQ.
+func Provisions(v bool) predicate.Connection {
+	return predicate.Connection(sql.FieldEQ(FieldProvisions, v))
+}
+
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
 func DateUpdated(v time.Time) predicate.Connection {
 	return predicate.Connection(sql.FieldEQ(FieldDateUpdated, v))
@@ -514,6 +519,16 @@ func SubjectClaimEqualFold(v string) predicate.Connection {
 // SubjectClaimContainsFold applies the ContainsFold predicate on the "subject_claim" field.
 func SubjectClaimContainsFold(v string) predicate.Connection {
 	return predicate.Connection(sql.FieldContainsFold(FieldSubjectClaim, v))
+}
+
+// ProvisionsEQ applies the EQ predicate on the "provisions" field.
+func ProvisionsEQ(v bool) predicate.Connection {
+	return predicate.Connection(sql.FieldEQ(FieldProvisions, v))
+}
+
+// ProvisionsNEQ applies the NEQ predicate on the "provisions" field.
+func ProvisionsNEQ(v bool) predicate.Connection {
+	return predicate.Connection(sql.FieldNEQ(FieldProvisions, v))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.

@@ -183,6 +183,20 @@ func (_u *HolderUpdate) ClearDateDisabled() *HolderUpdate {
 	return _u
 }
 
+// SetDirectory sets the "directory" field.
+func (_u *HolderUpdate) SetDirectory(v string) *HolderUpdate {
+	_u.mutation.SetDirectory(v)
+	return _u
+}
+
+// SetNillableDirectory sets the "directory" field if the given value is not nil.
+func (_u *HolderUpdate) SetNillableDirectory(v *string) *HolderUpdate {
+	if v != nil {
+		_u.SetDirectory(*v)
+	}
+	return _u
+}
+
 // SetPortrait sets the "portrait" field.
 func (_u *HolderUpdate) SetPortrait(v *rstr.Portrait) *HolderUpdate {
 	_u.mutation.SetPortrait(v)
@@ -317,6 +331,9 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.DateDisabledCleared() {
 		_spec.ClearField(holder.FieldDateDisabled, field.TypeTime)
+	}
+	if value, ok := _u.mutation.Directory(); ok {
+		_spec.SetField(holder.FieldDirectory, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Portrait(); ok {
 		vv, err := holder.ValueScanner.Portrait.Value(value)
@@ -505,6 +522,20 @@ func (_u *HolderUpdateOne) ClearDateDisabled() *HolderUpdateOne {
 	return _u
 }
 
+// SetDirectory sets the "directory" field.
+func (_u *HolderUpdateOne) SetDirectory(v string) *HolderUpdateOne {
+	_u.mutation.SetDirectory(v)
+	return _u
+}
+
+// SetNillableDirectory sets the "directory" field if the given value is not nil.
+func (_u *HolderUpdateOne) SetNillableDirectory(v *string) *HolderUpdateOne {
+	if v != nil {
+		_u.SetDirectory(*v)
+	}
+	return _u
+}
+
 // SetPortrait sets the "portrait" field.
 func (_u *HolderUpdateOne) SetPortrait(v *rstr.Portrait) *HolderUpdateOne {
 	_u.mutation.SetPortrait(v)
@@ -669,6 +700,9 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 	}
 	if _u.mutation.DateDisabledCleared() {
 		_spec.ClearField(holder.FieldDateDisabled, field.TypeTime)
+	}
+	if value, ok := _u.mutation.Directory(); ok {
+		_spec.SetField(holder.FieldDirectory, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Portrait(); ok {
 		vv, err := holder.ValueScanner.Portrait.Value(value)

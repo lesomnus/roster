@@ -445,6 +445,9 @@ login:                                    # only with Hydra in front; see login.
   page: { dir: /usr/share/roster/login }
   remember: 1h
   seal: [env:LOGIN_SEAL]
+
+scim:                                     # where a directory provisions people; see scim.md
+  addr: :8092                             # a listener of its own, and /scim/v2 is all it serves
 ```
 
 `account.terminal` is **off unless a deployment says so**, and it is the one
@@ -485,6 +488,12 @@ key and cannot reach past it, in one process exactly as in four -- each with one
 refuses the import rather than trusting anybody to remember. Their own designs are
 [ldap.md](ldap.md) and [login.md](login.md); `account/`'s package comment is the
 third.
+
+`scim:` is a fourth, and holds no key at all: each request forwards the
+directory's own tenant key and nothing else, so what it may do is that key's and
+its role's. It is a listener of its own rather than a path on `server.http`,
+because that listener answers every RPC over Connect and the one exposed to a
+directory's cloud should answer SCIM alone ([scim.md](scim.md)).
 
 `account.roster` and `account.connect` are left out above on purpose: in one
 process they default to this deployment's own listeners, and writing them again in
@@ -837,6 +846,14 @@ deliberately not covered by the escalation rules.
 How an app in front hears about it is one stream, `SyncService.Watch`, and that is
 the app's half: [login.md](login.md) § *Signing out reaches the issuer* and
 `sync.proto`.
+
+**A directory that provisions people suspends them too**, through verbs of its
+own -- `HolderService/Deactivate` and `Activate` -- and it is the same suspension:
+one `date_disabled`, refused everywhere `Disable` is. What differs is whose it is
+(`Holder.directory`). The directory lifts what it put there and nothing else, since
+restarting its provisioning says `active` for everybody in scope; an operator's
+`Disable` or `Enable` makes a suspension theirs, and somebody the directory deleted
+is an operator's to bring back ([scim.md](scim.md)).
 
 ## The audit trail
 

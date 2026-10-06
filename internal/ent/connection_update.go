@@ -144,6 +144,20 @@ func (_u *ConnectionUpdate) SetNillableSubjectClaim(v *string) *ConnectionUpdate
 	return _u
 }
 
+// SetProvisions sets the "provisions" field.
+func (_u *ConnectionUpdate) SetProvisions(v bool) *ConnectionUpdate {
+	_u.mutation.SetProvisions(v)
+	return _u
+}
+
+// SetNillableProvisions sets the "provisions" field if the given value is not nil.
+func (_u *ConnectionUpdate) SetNillableProvisions(v *bool) *ConnectionUpdate {
+	if v != nil {
+		_u.SetProvisions(*v)
+	}
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *ConnectionUpdate) SetDateUpdated(v time.Time) *ConnectionUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -270,6 +284,9 @@ func (_u *ConnectionUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	}
 	if value, ok := _u.mutation.SubjectClaim(); ok {
 		_spec.SetField(connection.FieldSubjectClaim, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Provisions(); ok {
+		_spec.SetField(connection.FieldProvisions, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(connection.FieldDateUpdated, field.TypeTime, value)
@@ -415,6 +432,20 @@ func (_u *ConnectionUpdateOne) SetSubjectClaim(v string) *ConnectionUpdateOne {
 func (_u *ConnectionUpdateOne) SetNillableSubjectClaim(v *string) *ConnectionUpdateOne {
 	if v != nil {
 		_u.SetSubjectClaim(*v)
+	}
+	return _u
+}
+
+// SetProvisions sets the "provisions" field.
+func (_u *ConnectionUpdateOne) SetProvisions(v bool) *ConnectionUpdateOne {
+	_u.mutation.SetProvisions(v)
+	return _u
+}
+
+// SetNillableProvisions sets the "provisions" field if the given value is not nil.
+func (_u *ConnectionUpdateOne) SetNillableProvisions(v *bool) *ConnectionUpdateOne {
+	if v != nil {
+		_u.SetProvisions(*v)
 	}
 	return _u
 }
@@ -575,6 +606,9 @@ func (_u *ConnectionUpdateOne) sqlSave(ctx context.Context) (_node *Connection, 
 	}
 	if value, ok := _u.mutation.SubjectClaim(); ok {
 		_spec.SetField(connection.FieldSubjectClaim, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Provisions(); ok {
+		_spec.SetField(connection.FieldProvisions, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(connection.FieldDateUpdated, field.TypeTime, value)

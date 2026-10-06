@@ -36,6 +36,8 @@ type Connection struct {
 	SecretRef string `json:"secret_ref,omitempty"`
 	// SubjectClaim holds the value of the "subject_claim" field.
 	SubjectClaim string `json:"subject_claim,omitempty"`
+	// Provisions holds the value of the "provisions" field.
+	Provisions bool `json:"provisions,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -77,6 +79,8 @@ func (*Connection) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case connection.FieldLabels, connection.FieldScopes:
 			values[i] = new([]byte)
+		case connection.FieldProvisions:
+			values[i] = new(sql.NullBool)
 		case connection.FieldName, connection.FieldDesc, connection.FieldIssuer, connection.FieldClientId, connection.FieldSecretRef, connection.FieldSubjectClaim:
 			values[i] = new(sql.NullString)
 		case connection.FieldDateUpdated, connection.FieldDateErased, connection.FieldDateCreated:
@@ -155,6 +159,12 @@ func (_m *Connection) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field subject_claim", values[i])
 			} else if value.Valid {
 				_m.SubjectClaim = value.String
+			}
+		case connection.FieldProvisions:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field provisions", values[i])
+			} else if value.Valid {
+				_m.Provisions = value.Bool
 			}
 		case connection.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -245,6 +255,9 @@ func (_m *Connection) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("subject_claim=")
 	builder.WriteString(_m.SubjectClaim)
+	builder.WriteString(", ")
+	builder.WriteString("provisions=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Provisions))
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

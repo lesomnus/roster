@@ -64,6 +64,7 @@ type Connection struct {
 	xxx_hidden_Scopes       []string               `protobuf:"bytes,10,rep,name=scopes"`
 	xxx_hidden_SecretRef    string                 `protobuf:"bytes,11,opt,name=secret_ref,json=secretRef"`
 	xxx_hidden_SubjectClaim string                 `protobuf:"bytes,12,opt,name=subject_claim,json=subjectClaim"`
+	xxx_hidden_Provisions   bool                   `protobuf:"varint,16,opt,name=provisions"`
 	xxx_hidden_DateUpdated  *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased   *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated  *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -166,6 +167,13 @@ func (x *Connection) GetSubjectClaim() string {
 	return ""
 }
 
+func (x *Connection) GetProvisions() bool {
+	if x != nil {
+		return x.xxx_hidden_Provisions
+	}
+	return false
+}
+
 func (x *Connection) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -228,6 +236,10 @@ func (x *Connection) SetSecretRef(v string) {
 
 func (x *Connection) SetSubjectClaim(v string) {
 	x.xxx_hidden_SubjectClaim = v
+}
+
+func (x *Connection) SetProvisions(v bool) {
+	x.xxx_hidden_Provisions = v
 }
 
 func (x *Connection) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -371,9 +383,17 @@ type Connection_builder struct {
 	// everybody already moved unknown at their next sign-in, so it is the
 	// deployment's (`server/core/connection.go`).
 	SubjectClaim string
-	DateUpdated  *timestamppb.Timestamp
-	DateErased   *timestamppb.Timestamp
-	DateCreated  *timestamppb.Timestamp
+	// Whether the tenant's directory provisions its people through this
+	// connection: the people it makes (`HolderService.Provision`) are linked
+	// here, and it may suspend the people who sign in through it
+	// (`HolderService.Deactivate`). One connection a tenant at most, because a
+	// directory provisioning people names them once.
+	//
+	// `docs/scim.md` is the directory that does.
+	Provisions  bool
+	DateUpdated *timestamppb.Timestamp
+	DateErased  *timestamppb.Timestamp
+	DateCreated *timestamppb.Timestamp
 }
 
 func (b0 Connection_builder) Build() *Connection {
@@ -390,6 +410,7 @@ func (b0 Connection_builder) Build() *Connection {
 	x.xxx_hidden_Scopes = b.Scopes
 	x.xxx_hidden_SecretRef = b.SecretRef
 	x.xxx_hidden_SubjectClaim = b.SubjectClaim
+	x.xxx_hidden_Provisions = b.Provisions
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -400,7 +421,7 @@ var File_app_connection_proto protoreflect.FileDescriptor
 
 const file_app_connection_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/connection.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xde\x05\n" +
+	"\x14app/connection.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xfe\x05\n" +
 	"\n" +
 	"Connection\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
@@ -414,7 +435,10 @@ const file_app_connection_proto_rawDesc = "" +
 	" \x03(\tR\x06scopes\x12\x1d\n" +
 	"\n" +
 	"secret_ref\x18\v \x01(\tR\tsecretRef\x12#\n" +
-	"\rsubject_claim\x18\f \x01(\tR\fsubjectClaim\x12F\n" +
+	"\rsubject_claim\x18\f \x01(\tR\fsubjectClaim\x12\x1e\n" +
+	"\n" +
+	"provisions\x18\x10 \x01(\bR\n" +
+	"provisions\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +

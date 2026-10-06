@@ -36,6 +36,7 @@ message ConnectionAddRequest {
   repeated string scopes = 10;
   string secret_ref = 11 [features.field_presence = IMPLICIT];
   string subject_claim = 12 [features.field_presence = IMPLICIT];
+  bool provisions = 16 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -67,6 +68,7 @@ message ConnectionSelect {
   bool scopes = 10;
   bool secret_ref = 11;
   bool subject_claim = 12;
+  bool provisions = 16;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -82,6 +84,7 @@ message ConnectionPatchRequest {
   repeated string scopes = 20;
   string secret_ref = 22;
   string subject_claim = 24;
+  bool provisions = 32;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.
@@ -161,5 +164,6 @@ message ConnectionUpdateRequest {
   repeated string scopes = 10;
   string secret_ref = 11;
   string subject_claim = 12;
+  bool provisions = 16;
   string desc = 6;
 }
