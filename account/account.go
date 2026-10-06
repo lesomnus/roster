@@ -74,7 +74,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -247,6 +246,10 @@ var Calls = append([]string{
 	// What a tenant's profile setting fills at a sign-in here, as the Login
 	// App's does (`cli.LoginMethods` says why it is held always).
 	rstr.HolderService_Fill_FullMethodName,
+
+	// Moving somebody to the claim their connection now names, at their next
+	// sign-in here (`cli.LoginMethods` says why it is held always).
+	rstr.IdentityService_Resubject_FullMethodName,
 }, Methods...)
 
 // EnvSecret resolves `env:NAME` and refuses every other scheme. A second scheme
@@ -686,7 +689,7 @@ func (a *App) connections(ctx context.Context, t *tenant) ([]*rstr.Connection, e
 }
 
 // relying is this app as the relying party for one connection of one tenant.
-func (a *App) relying(ctx context.Context, t *tenant, name string, r *http.Request) (*oauth2.Config, *oidc.IDTokenVerifier, error) {
+func (a *App) relying(ctx context.Context, t *tenant, name string, r *http.Request) (*oauth2.Config, *arrives.Verifier, error) {
 	return a.arrives.Relying(t.on(ctx), t.id, name, a.redirect(r))
 }
 
@@ -877,7 +880,7 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 
 	// Somebody this tenant has never seen is the one decision that is not
 	// roster's and not this package's: [Enrol].
-	if err := a.known(as, who); err != nil {
+	if err := a.known(as, &who); err != nil {
 		if errors.Is(err, ErrUninvited) {
 			http.Error(w, "this account has not been invited", http.StatusForbidden)
 			return
@@ -952,12 +955,12 @@ func (a *App) nextOf(ctx context.Context, v string, t *tenant) (*url.URL, error)
 //
 // A profile left unfilled is said and not refused, as the Login App says it:
 // the person is signed in either way, and their next sign-in tries again.
-func (a *App) known(ctx context.Context, who Caller) error {
+func (a *App) known(ctx context.Context, who *Caller) error {
 	holder, err := a.arrives.Known(ctx, a.c.Enrol, who)
 	if err != nil {
 		return err
 	}
-	if err := a.arrives.Fill(ctx, holder, who); err != nil {
+	if err := a.arrives.Fill(ctx, holder, *who); err != nil {
 		fmt.Fprintf(os.Stderr, "account: %s/%s: the profile was not filled: %v\n", who.Provider, who.Subject, err)
 	}
 

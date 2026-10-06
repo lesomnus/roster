@@ -537,6 +537,10 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 				// And what fills a tenant's blanks, which `roster login
 				// provision` writes into the role whatever the policy.
 				"/roster.HolderService/Fill",
+
+				// And what moves somebody to the claim their connection
+				// names, which it writes in whatever the connection says.
+				"/roster.IdentityService/Resubject",
 			}, login.Methods...),
 		}.Build())
 		x.NoError(err)

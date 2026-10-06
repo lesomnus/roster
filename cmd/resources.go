@@ -114,6 +114,10 @@ type Resource struct {
 	Scopes    []string `yaml:"scopes"`
 	SecretRef string   `yaml:"secret_ref"`
 
+	// Connection: which claim of the ID token is a person's subject, `sub`
+	// when left out. `oid` for Entra; `Connection.subject_claim` says why.
+	SubjectClaim string `yaml:"subject_claim"`
+
 	// MailDomain: which of the tenant's connections an address at this domain
 	// is routed to. Empty routes nowhere, as on `Add`.
 	Routes string `yaml:"routes"`
@@ -455,7 +459,8 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 		_, err = s.Connection().Add(ctx, app.ConnectionAddRequest_builder{
 			Tenant: at, Name: r.Name, Desc: r.Desc,
 			Issuer: r.Issuer, ClientId: r.ClientId, Scopes: r.Scopes, SecretRef: r.SecretRef,
-			Labels: labelsOf(r),
+			SubjectClaim: r.SubjectClaim,
+			Labels:       labelsOf(r),
 		}.Build())
 
 		return what, "added", err
@@ -465,6 +470,7 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 	}
 	if got.GetIssuer() == r.Issuer && got.GetClientId() == r.ClientId &&
 		got.GetSecretRef() == r.SecretRef && got.GetDesc() == r.Desc &&
+		got.GetSubjectClaim() == r.SubjectClaim &&
 		same(got.GetScopes(), r.Scopes) && declared(got.GetLabels()) {
 		return what, "same", nil
 	}
@@ -473,14 +479,15 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 	}
 
 	_, err = s.Connection().Patch(ctx, app.ConnectionPatchRequest_builder{
-		Ref:         app.ConnectionRef_builder{Id: got.GetId()}.Build(),
-		Desc:        proto.String(r.Desc),
-		Issuer:      proto.String(r.Issuer),
-		ClientId:    proto.String(r.ClientId),
-		Scopes:      r.Scopes,
-		SecretRef:   proto.String(r.SecretRef),
-		Labels:      labelsOf(r),
-		DateUpdated: got.GetDateUpdated(),
+		Ref:          app.ConnectionRef_builder{Id: got.GetId()}.Build(),
+		Desc:         proto.String(r.Desc),
+		Issuer:       proto.String(r.Issuer),
+		ClientId:     proto.String(r.ClientId),
+		Scopes:       r.Scopes,
+		SecretRef:    proto.String(r.SecretRef),
+		SubjectClaim: proto.String(r.SubjectClaim),
+		Labels:       labelsOf(r),
+		DateUpdated:  got.GetDateUpdated(),
 	}.Build())
 
 	return what, "changed", err

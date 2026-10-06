@@ -447,6 +447,12 @@ var LoginMethods = append([]string{
 	rstr.IdentityService_Add_FullMethodName,
 	rstr.EmailService_Get_FullMethodName,
 
+	// Moving somebody to the claim their connection now names, at their next
+	// sign-in (`Connection.subject_claim`). Held always, like `Fill`: whether a
+	// connection names one is each tenant's, and the move is of a row the
+	// token's own `sub` already names, to the claim the same token carries.
+	rstr.IdentityService_Resubject_FullMethodName,
+
 	// The address a directory hands over, written down on that directory's
 	// word. Without it a person who arrived through one has an account roster
 	// cannot say the address of, and the token every product reads is missing

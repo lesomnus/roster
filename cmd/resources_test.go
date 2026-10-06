@@ -154,6 +154,42 @@ resources:
 			connectionOf(t, ctx, b, "newco", "entra").GetIssuer())
 	})
 
+	t.Run("a connection names its people by a claim, from a file too", func(t *testing.T) {
+		x := require.New(t)
+		with := func(claim string) (cmd.Applied, error) {
+			t.Helper()
+			rs, err := cmd.ReadResources(declare(t, `
+resources:
+  - kind: Connection
+    tenant: newco
+    name: entra
+    issuer: https://login.microsoftonline.com/other/v2.0
+    client_id: the-app
+    scopes: [email, profile]
+    secret_ref: env:ENTRA
+`+claim))
+			x.NoError(err)
+
+			return cmd.ApplyResources(ctx, b.Server, rs, false)
+		}
+
+		v, err := with("    subject_claim: oid\n")
+		x.NoError(err)
+		x.Equal([]string{"@newco/entra"}, v.Changed)
+		x.Equal("oid", connectionOf(t, ctx, b, "newco", "entra").GetSubjectClaim())
+
+		_, err = with("    subject_claim: upn\n")
+		x.Error(err, "a claim no front door reads")
+		x.Equal("oid", connectionOf(t, ctx, b, "newco", "entra").GetSubjectClaim())
+
+		// And back, which a tenant may not do and the file -- the
+		// deployment -- may.
+		v, err = with("")
+		x.NoError(err)
+		x.Equal([]string{"@newco/entra"}, v.Changed)
+		x.Empty(connectionOf(t, ctx, b, "newco", "entra").GetSubjectClaim())
+	})
+
 	// The rule that reads as an omission and is a decision: `Connection.Update`
 	// exists because erase-and-add on a provider orphans every identity through
 	// it, and a reconciler that deleted what it no longer saw would do that on

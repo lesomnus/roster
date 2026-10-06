@@ -65,6 +65,12 @@ func (_c *ConnectionCreate) SetSecretRef(v string) *ConnectionCreate {
 	return _c
 }
 
+// SetSubjectClaim sets the "subject_claim" field.
+func (_c *ConnectionCreate) SetSubjectClaim(v string) *ConnectionCreate {
+	_c.mutation.SetSubjectClaim(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *ConnectionCreate) SetDateUpdated(v time.Time) *ConnectionCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -165,6 +171,9 @@ func (_c *ConnectionCreate) check() error {
 	if _, ok := _c.mutation.SecretRef(); !ok {
 		return &ValidationError{Name: "secret_ref", err: errors.New(`ent: missing required field "Connection.secret_ref"`)}
 	}
+	if _, ok := _c.mutation.SubjectClaim(); !ok {
+		return &ValidationError{Name: "subject_claim", err: errors.New(`ent: missing required field "Connection.subject_claim"`)}
+	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Connection.date_updated"`)}
 	}
@@ -240,6 +249,10 @@ func (_c *ConnectionCreate) createSpec() (*Connection, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.SecretRef(); ok {
 		_spec.SetField(connection.FieldSecretRef, field.TypeString, value)
 		_node.SecretRef = value
+	}
+	if value, ok := _c.mutation.SubjectClaim(); ok {
+		_spec.SetField(connection.FieldSubjectClaim, field.TypeString, value)
+		_node.SubjectClaim = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(connection.FieldDateUpdated, field.TypeTime, value)

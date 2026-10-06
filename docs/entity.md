@@ -359,6 +359,14 @@ what lets one human sign up to two operators with one Google account.
 > name somebody in fabrikam too, which is what keeping the tenant in the key is
 > for and which neither tenant can tell.
 
+Which claim of a token is the subject is the 🔌 `Connection`'s to say
+(`subject_claim`), and for Entra it has to be said: its `sub` is pairwise, one
+per app registration, so it names erin to one front door and to nothing else
+-- not to a directory provisioning her, which says `oid`. A connection moved to
+`oid` moves each identity at that person's next sign-in
+(`IdentityService.Resubject`): the same row and the same person, once, and only
+by a caller who may write a way into them.
+
 ### 📧 `Email` — an address somebody uses, and whether anybody checked
 
 A row rather than a key, for three reasons that compound: a person has several,
@@ -598,6 +606,11 @@ door sends to the connection's issuer -- so a new reference, and a new issuer
 for a connection that has one, are the deployment's to write, never a tenant's.
 A tenant may keep the reference or take it away, and a connection with no
 secret, a public client, is its own.
+
+`subject_claim` is which claim of the token is a person's 🪪 `Identity` subject:
+`sub` unless it says otherwise, and `oid` for Entra, whose `sub` is one per app.
+A tenant moves it forward and not back -- everybody already moved would be a
+stranger under the old claim -- so going back is the deployment's.
 
 > `entra` is a `Connection` in contoso: an issuer, a client id, the scopes, and
 > `env:CONTOSO_ENTRA_SECRET` saying where the deployment keeps the secret.

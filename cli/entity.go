@@ -167,7 +167,8 @@ func overlays(t *pdcmd.Tree) {
 		{"tenant/update", "roster.TenantService.Update", "what a customer says about itself: name, note, labels; never the alias"},
 		{"host/update", "roster.HostService.Update", "a host's note; never its name"},
 		{"mail-domain/update", "roster.MailDomainService.Update", "where a domain routes, and its note; never its name"},
-		{"connection/update", "roster.ConnectionService.Update", "a provider's issuer, client id, scopes, secret ref, note; never its name"},
+		{"connection/update", "roster.ConnectionService.Update", "a provider's issuer, client id, scopes, secret ref, subject claim, note; never its name"},
+		{"identity/resubject", "roster.IdentityService.Resubject", "move somebody's identity to the claim their connection now names; once, and only from `sub`"},
 		{"email/verify", "roster.EmailService.Verify", "mint a link that proves an address, printed once; delivering it is yours"},
 		{"email/confirm", "roster.EmailService.Confirm", "spend a verify link, and stamp the address it was minted for"},
 	} {

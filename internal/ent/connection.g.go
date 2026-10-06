@@ -26,6 +26,7 @@ func (e *Connection) Proto() *rstr.Connection {
 	x.SetClientId(e.ClientId)
 	x.SetScopes(e.Scopes)
 	x.SetSecretRef(e.SecretRef)
+	x.SetSubjectClaim(e.SubjectClaim)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

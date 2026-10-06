@@ -174,6 +174,7 @@ var (
 		{Name: "client_id", Type: field.TypeString},
 		{Name: "scopes", Type: field.TypeJson, Nullable: true},
 		{Name: "secret_ref", Type: field.TypeString},
+		{Name: "subject_claim", Type: field.TypeString},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -187,7 +188,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "connection_tenant_tenant",
-				Columns:    []*schema.Column{ConnectionColumns[11]},
+				Columns:    []*schema.Column{ConnectionColumns[12]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -196,12 +197,12 @@ var (
 			{
 				Name:    "connection_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{ConnectionColumns[10], ConnectionColumns[0]},
+				Columns: []*schema.Column{ConnectionColumns[11], ConnectionColumns[0]},
 			},
 			{
 				Name:    "connection_name_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{ConnectionColumns[1], ConnectionColumns[11]},
+				Columns: []*schema.Column{ConnectionColumns[1], ConnectionColumns[12]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

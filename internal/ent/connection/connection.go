@@ -26,6 +26,8 @@ const (
 	FieldScopes = "scopes"
 	// FieldSecretRef holds the string denoting the secret_ref field in the database.
 	FieldSecretRef = "secret_ref"
+	// FieldSubjectClaim holds the string denoting the subject_claim field in the database.
+	FieldSubjectClaim = "subject_claim"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -57,6 +59,7 @@ var Columns = []string{
 	FieldClientId,
 	FieldScopes,
 	FieldSecretRef,
+	FieldSubjectClaim,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -104,6 +107,11 @@ func ByClientId(opts ...sql.OrderTermOption) OrderOption {
 // BySecretRef orders the results by the secret_ref field.
 func BySecretRef(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSecretRef, opts...).ToFunc()
+}
+
+// BySubjectClaim orders the results by the subject_claim field.
+func BySubjectClaim(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSubjectClaim, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.

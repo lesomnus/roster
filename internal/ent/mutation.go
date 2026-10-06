@@ -1217,6 +1217,23 @@ func (m *ConnectionMutation) OldSecretRef(ctx context.Context) (v string, err er
 	return oldValue.SecretRef, nil
 }
 
+// OldSubjectClaim returns the old "subject_claim" field's value of the Connection entity.
+// If the Connection object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectionMutation) OldSubjectClaim(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldSubjectClaim is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldSubjectClaim requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubjectClaim: %w", err)
+	}
+	return oldValue.SubjectClaim, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the Connection entity.
 // If the Connection object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -1304,6 +1321,8 @@ func (m *ConnectionMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldScopes(ctx)
 	case connection.FieldSecretRef:
 		return m.OldSecretRef(ctx)
+	case connection.FieldSubjectClaim:
+		return m.OldSubjectClaim(ctx)
 	case connection.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case connection.FieldDateErased:

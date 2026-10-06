@@ -4,10 +4,12 @@ import (
 	"context"
 	"strings"
 
+	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/pderr"
+	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/vouch"
@@ -44,6 +46,10 @@ func (s coreIdentity) Add(ctx context.Context, req *app.IdentityAddRequest) (*ap
 		return nil, err
 	}
 
+	if err := s.subjectFits(ctx, req.GetHolder(), req.GetProvider(), req.GetSubject()); err != nil {
+		return nil, err
+	}
+
 	return s.IdentityServiceServer.Add(ctx, req)
 }
 
@@ -74,6 +80,183 @@ func subjectIsStable(v string) error {
 	}
 
 	return nil
+}
+
+// subjectFits holds a subject to the claim its connection names, where that
+// claim has a shape.
+//
+// `oid` is a GUID. A connection that names people by it and an identity whose
+// subject is not one is the mistake the claim exists to end: Entra's pairwise
+// `sub`, written where the person's own identifier belongs, names them to one
+// front door and to nothing else -- and a directory provisioning them, which
+// says `oid`, would find nobody and make a second person.
+func (s coreIdentity) subjectFits(ctx context.Context, holder *app.HolderRef, provider, subject string) error {
+	tenant, err := s.tenantOfHolder(ctx, holder)
+	switch status.Code(err) {
+	case codes.OK:
+	case codes.NotFound, codes.InvalidArgument:
+		// Not a person this caller can see. `Add` refuses that as what it is
+		// -- a reference naming no person is an argument and not a missing
+		// row -- and this has nothing to hold it to.
+		return nil
+	default:
+		return err
+	}
+	claim, err := s.claimOf(ctx, tenant, provider)
+	if err != nil {
+		return err
+	}
+	if claim == claimOid && !isGUID(subject) {
+		return pderr.Invalidf("subject",
+			"the %s connection names people by `oid`, which is a GUID, and %q is not one", provider, subject)
+	}
+
+	return nil
+}
+
+// claimOf is the claim a tenant's connection of that name reads as a subject.
+//
+// `sub` where there is no such connection: a provider no front door signs
+// anybody in through -- `local`, `ldap`, a name a script chose -- has no
+// claim, and its subjects are whatever it says they are. Read through this
+// stack, so a connection the caller cannot see is one they are not held to.
+func (s Core) claimOf(ctx context.Context, tenant pdid.Id, provider string) (string, error) {
+	if tenant == pdid.Nil {
+		return claimSub, nil
+	}
+
+	v, err := s.Next().Connection().Get(ctx, app.ConnectionGetRequest_builder{
+		Ref: app.ConnectionRef_builder{
+			At: app.ConnectionRefByAt_builder{
+				Tenant: app.TenantRef_builder{Id: tenant.Bytes()}.Build(),
+				Name:   z.Ptr(provider),
+			}.Build(),
+		}.Build(),
+		Select: app.ConnectionSelect_builder{SubjectClaim: z.Ptr(true)}.Build(),
+	}.Build())
+	if status.Code(err) == codes.NotFound {
+		return claimSub, nil
+	}
+	if err != nil {
+		return "", err
+	}
+
+	return subjectClaimOf(v.GetSubjectClaim()), nil
+}
+
+// isGUID is the shape `oid` takes: 8-4-4-4-12 hexadecimal digits.
+func isGUID(v string) bool {
+	if len(v) != 36 {
+		return false
+	}
+	for i, r := range v {
+		switch i {
+		case 8, 13, 18, 23:
+			if r != '-' {
+				return false
+			}
+		default:
+			if !('0' <= r && r <= '9' || 'a' <= r && r <= 'f' || 'A' <= r && r <= 'F') {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+// Resubject moves an identity to the subject its connection now names.
+//
+// `identity_svc.ext.proto` says why this is a verb and not a patch. What it
+// holds the move to is what makes it narrower than `Add` rather than wider:
+//
+//   - **The same row.** The holder edge is immutable, so whoever this is a way
+//     into, it stays a way into them -- the move cannot point an account at
+//     somebody else.
+//   - **A connection that names a claim other than `sub`**, which is the one
+//     reason a person's identifier at a provider changes at all.
+//   - **One way, once.** The subject held must not already be of the claim's
+//     shape and the new one must be, so a moved identity cannot be moved again
+//     -- a second move is a second person, and is `Add`'s refusal to make.
+//   - **And the caller may write a way into this person**, as for `Add`: the
+//     new subject is a way in like any other, and a front door is narrower than
+//     an administrator ([Core.mayWriteAWayIn]).
+//
+// The write goes through [Core.only] beside the identity's other ways in being
+// counted, as `Erase` does, so a move and an unlink of the same person are one
+// after the other rather than at once.
+func (s coreIdentity) Resubject(ctx context.Context, req *app.IdentityResubjectRequest) (*app.Identity, error) {
+	v, err := s.IdentityServiceServer.Get(ctx, app.IdentityGetRequest_builder{
+		Ref: req.GetRef(),
+		Select: app.IdentitySelect_builder{
+			Holder:   app.HolderSelect_builder{}.Build(),
+			Provider: z.Ptr(true),
+			Subject:  z.Ptr(true),
+			TenantId: z.Ptr(true),
+		}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	tenant, err := pdid.From(v.GetTenantId())
+	if err != nil {
+		return nil, err
+	}
+	claim, err := s.claimOf(ctx, tenant, v.GetProvider())
+	if err != nil {
+		return nil, err
+	}
+
+	to := req.GetSubject()
+	switch claim {
+	case claimSub:
+		return nil, status.Errorf(codes.FailedPrecondition,
+			"subject: the %s connection names people by `sub`, which is what this identity holds; "+
+				"a connection names its claim before anybody moves to it", v.GetProvider())
+	case claimOid:
+		if isGUID(v.GetSubject()) {
+			return nil, status.Error(codes.FailedPrecondition,
+				"subject: this identity already holds an `oid`, and a person's `oid` does not change; another one is another person")
+		}
+		if !isGUID(to) {
+			return nil, pderr.Invalidf("subject", "an `oid` is a GUID, and %q is not one", to)
+		}
+	}
+	if err := subjectIsStable(to); err != nil {
+		return nil, err
+	}
+
+	holder := v.GetHolder().GetId()
+	if err := s.mayWriteAWayIn(ctx, "ref", app.HolderRef_builder{Id: holder}.Build()); err != nil {
+		return nil, err
+	}
+
+	var out *app.Identity
+	err = s.only(ctx, holder, func(next app.Server) error {
+		patch := app.IdentityPatchRequest_builder{
+			Ref:     app.IdentityRef_builder{Id: v.GetId()}.Build(),
+			Subject: z.Ptr(to),
+		}
+		if req.HasDateUpdated() {
+			patch.DateUpdated = req.GetDateUpdated()
+		} else {
+			patch.DateUpdatedForce = z.Ptr(true)
+		}
+
+		w, err := next.Identity().Patch(ctx, patch.Build())
+		if err != nil {
+			return err
+		}
+		out = w
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 // oneAccountPerProvider refuses a second identity at a provider this person

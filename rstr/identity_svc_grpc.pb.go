@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	IdentityService_Add_FullMethodName   = "/roster.IdentityService/Add"
-	IdentityService_Get_FullMethodName   = "/roster.IdentityService/Get"
-	IdentityService_Patch_FullMethodName = "/roster.IdentityService/Patch"
-	IdentityService_Apply_FullMethodName = "/roster.IdentityService/Apply"
-	IdentityService_Erase_FullMethodName = "/roster.IdentityService/Erase"
-	IdentityService_List_FullMethodName  = "/roster.IdentityService/List"
-	IdentityService_Watch_FullMethodName = "/roster.IdentityService/Watch"
+	IdentityService_Add_FullMethodName       = "/roster.IdentityService/Add"
+	IdentityService_Get_FullMethodName       = "/roster.IdentityService/Get"
+	IdentityService_Patch_FullMethodName     = "/roster.IdentityService/Patch"
+	IdentityService_Apply_FullMethodName     = "/roster.IdentityService/Apply"
+	IdentityService_Erase_FullMethodName     = "/roster.IdentityService/Erase"
+	IdentityService_List_FullMethodName      = "/roster.IdentityService/List"
+	IdentityService_Watch_FullMethodName     = "/roster.IdentityService/Watch"
+	IdentityService_Resubject_FullMethodName = "/roster.IdentityService/Resubject"
 )
 
 // IdentityServiceClient is the client API for IdentityService service.
@@ -56,6 +57,15 @@ type IdentityServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *IdentityWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[IdentityWatchResponse], error)
+	// Resubject moves an identity to the subject its connection now names: the
+	// same row and the same person, and the identifier their provider gives them
+	// under that connection's `subject_claim`.
+	//
+	// Refused unless the connection names a claim other than `sub`, the subject
+	// held is not already of that claim's shape and the new one is -- one way,
+	// and once -- and the caller may write a way into this person
+	// (`server/core/escalate.go`).
+	Resubject(ctx context.Context, in *IdentityResubjectRequest, opts ...grpc.CallOption) (*Identity, error)
 }
 
 type identityServiceClient struct {
@@ -145,6 +155,16 @@ func (c *identityServiceClient) Watch(ctx context.Context, in *IdentityWatchRequ
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type IdentityService_WatchClient = grpc.ServerStreamingClient[IdentityWatchResponse]
 
+func (c *identityServiceClient) Resubject(ctx context.Context, in *IdentityResubjectRequest, opts ...grpc.CallOption) (*Identity, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Identity)
+	err := c.cc.Invoke(ctx, IdentityService_Resubject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // IdentityServiceServer is the server API for IdentityService service.
 // All implementations must embed UnimplementedIdentityServiceServer
 // for forward compatibility.
@@ -173,6 +193,15 @@ type IdentityServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*IdentityWatchRequest, grpc.ServerStreamingServer[IdentityWatchResponse]) error
+	// Resubject moves an identity to the subject its connection now names: the
+	// same row and the same person, and the identifier their provider gives them
+	// under that connection's `subject_claim`.
+	//
+	// Refused unless the connection names a claim other than `sub`, the subject
+	// held is not already of that claim's shape and the new one is -- one way,
+	// and once -- and the caller may write a way into this person
+	// (`server/core/escalate.go`).
+	Resubject(context.Context, *IdentityResubjectRequest) (*Identity, error)
 	mustEmbedUnimplementedIdentityServiceServer()
 }
 
@@ -203,6 +232,9 @@ func (UnimplementedIdentityServiceServer) List(context.Context, *IdentityListReq
 }
 func (UnimplementedIdentityServiceServer) Watch(*IdentityWatchRequest, grpc.ServerStreamingServer[IdentityWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
+}
+func (UnimplementedIdentityServiceServer) Resubject(context.Context, *IdentityResubjectRequest) (*Identity, error) {
+	return nil, status.Error(codes.Unimplemented, "method Resubject not implemented")
 }
 func (UnimplementedIdentityServiceServer) mustEmbedUnimplementedIdentityServiceServer() {}
 func (UnimplementedIdentityServiceServer) testEmbeddedByValue()                         {}
@@ -344,6 +376,24 @@ func _IdentityService_Watch_Handler(srv interface{}, stream grpc.ServerStream) e
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type IdentityService_WatchServer = grpc.ServerStreamingServer[IdentityWatchResponse]
 
+func _IdentityService_Resubject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IdentityResubjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).Resubject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_Resubject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).Resubject(ctx, req.(*IdentityResubjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // IdentityService_ServiceDesc is the grpc.ServiceDesc for IdentityService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -374,6 +424,10 @@ var IdentityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _IdentityService_List_Handler,
+		},
+		{
+			MethodName: "Resubject",
+			Handler:    _IdentityService_Resubject_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

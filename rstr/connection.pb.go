@@ -53,21 +53,22 @@ const (
 // Entra for staff and Google for contractors is an ordinary shape. Same rule
 // [Host] follows, and the same one `holder.proto` states.
 type Connection struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Tenant      *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
-	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_Issuer      string                 `protobuf:"bytes,8,opt,name=issuer"`
-	xxx_hidden_ClientId    string                 `protobuf:"bytes,9,opt,name=client_id,json=clientId"`
-	xxx_hidden_Scopes      []string               `protobuf:"bytes,10,rep,name=scopes"`
-	xxx_hidden_SecretRef   string                 `protobuf:"bytes,11,opt,name=secret_ref,json=secretRef"`
-	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id           []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant       *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Name         string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Desc         string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels       map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_Issuer       string                 `protobuf:"bytes,8,opt,name=issuer"`
+	xxx_hidden_ClientId     string                 `protobuf:"bytes,9,opt,name=client_id,json=clientId"`
+	xxx_hidden_Scopes       []string               `protobuf:"bytes,10,rep,name=scopes"`
+	xxx_hidden_SecretRef    string                 `protobuf:"bytes,11,opt,name=secret_ref,json=secretRef"`
+	xxx_hidden_SubjectClaim string                 `protobuf:"bytes,12,opt,name=subject_claim,json=subjectClaim"`
+	xxx_hidden_DateUpdated  *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased   *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated  *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *Connection) Reset() {
@@ -158,6 +159,13 @@ func (x *Connection) GetSecretRef() string {
 	return ""
 }
 
+func (x *Connection) GetSubjectClaim() string {
+	if x != nil {
+		return x.xxx_hidden_SubjectClaim
+	}
+	return ""
+}
+
 func (x *Connection) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -216,6 +224,10 @@ func (x *Connection) SetScopes(v []string) {
 
 func (x *Connection) SetSecretRef(v string) {
 	x.xxx_hidden_SecretRef = v
+}
+
+func (x *Connection) SetSubjectClaim(v string) {
+	x.xxx_hidden_SubjectClaim = v
 }
 
 func (x *Connection) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -333,10 +345,35 @@ type Connection_builder struct {
 	// secret the front door holds beside an issuer of their own
 	// (`server/core/connection.go`). A tenant keeps the reference it was given or
 	// takes it away, and a connection with none is wholly its own.
-	SecretRef   string
-	DateUpdated *timestamppb.Timestamp
-	DateErased  *timestamppb.Timestamp
-	DateCreated *timestamppb.Timestamp
+	SecretRef string
+	// Which claim of the ID token is a person's `Identity.subject` here.
+	//
+	// Empty is `sub`, which is what OIDC calls the subject and what most
+	// providers mean by one: Google's, Okta's and GitHub's name the person, the
+	// same for every app. Entra's does not. Its v2 `sub` is **pairwise** -- one
+	// per app registration -- so it names a person to this front door alone, and
+	// nothing else that knows them can say it: not a directory provisioning them
+	// (SCIM's `externalId`), not another app, not somebody reading the portal.
+	// Entra's immutable identifier is `oid`, which is what `Identity.subject`
+	// says the subject is for Entra, and what `oid` here makes it.
+	//
+	// Entra puts `oid` in the ID token only with the `profile` scope. A sign-in
+	// whose token lacks the claim is refused rather than falling back to `sub`:
+	// one person under two subjects is two people.
+	//
+	// # Moving a connection people already sign in through
+	//
+	// Everybody who signed in before has an identity keyed by `sub`. The front
+	// door moves each one at their next sign-in (`IdentityService.Resubject`),
+	// once, with the token that carries both; somebody it may not move -- wider
+	// than the front door -- signs in by the old row until an operator moves
+	// them. A tenant may move forward and not back: going back would leave
+	// everybody already moved unknown at their next sign-in, so it is the
+	// deployment's (`server/core/connection.go`).
+	SubjectClaim string
+	DateUpdated  *timestamppb.Timestamp
+	DateErased   *timestamppb.Timestamp
+	DateCreated  *timestamppb.Timestamp
 }
 
 func (b0 Connection_builder) Build() *Connection {
@@ -352,6 +389,7 @@ func (b0 Connection_builder) Build() *Connection {
 	x.xxx_hidden_ClientId = b.ClientId
 	x.xxx_hidden_Scopes = b.Scopes
 	x.xxx_hidden_SecretRef = b.SecretRef
+	x.xxx_hidden_SubjectClaim = b.SubjectClaim
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -362,7 +400,7 @@ var File_app_connection_proto protoreflect.FileDescriptor
 
 const file_app_connection_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/connection.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xb9\x05\n" +
+	"\x14app/connection.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xde\x05\n" +
 	"\n" +
 	"Connection\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
@@ -375,7 +413,8 @@ const file_app_connection_proto_rawDesc = "" +
 	"\x06scopes\x18\n" +
 	" \x03(\tR\x06scopes\x12\x1d\n" +
 	"\n" +
-	"secret_ref\x18\v \x01(\tR\tsecretRef\x12F\n" +
+	"secret_ref\x18\v \x01(\tR\tsecretRef\x12#\n" +
+	"\rsubject_claim\x18\f \x01(\tR\fsubjectClaim\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +

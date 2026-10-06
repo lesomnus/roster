@@ -33,6 +33,15 @@ service IdentityService {
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
   rpc Watch(IdentityWatchRequest) returns (stream IdentityWatchResponse);
+  // Resubject moves an identity to the subject its connection now names: the
+  // same row and the same person, and the identifier their provider gives them
+  // under that connection's `subject_claim`.
+  //
+  // Refused unless the connection names a claim other than `sub`, the subject
+  // held is not already of that claim's shape and the new one is -- one way,
+  // and once -- and the caller may write a way into this person
+  // (`server/core/escalate.go`).
+  rpc Resubject(IdentityResubjectRequest) returns (Identity);
 }
 
 message IdentityAddRequest {
@@ -189,4 +198,17 @@ message IdentityWatchItem {
   // Empty in the first message, which is not something anybody asked for -- it
   // is what is already there.
   string action = 3 [features.field_presence = IMPLICIT];
+}
+
+message IdentityResubjectRequest {
+  IdentityRef ref = 1;
+
+  // Optimistic locking, as `Patch` takes it: the version this caller read.
+  // Left out, the move does not wait on one -- the rules above are what it is
+  // held to, and none of them depends on a value somebody else could have
+  // changed in between.
+  google.protobuf.Timestamp date_updated = 13;
+
+  // What the provider calls this person under the connection's claim.
+  string subject = 9;
 }
