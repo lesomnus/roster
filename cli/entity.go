@@ -81,7 +81,7 @@ import (
 // # Why the connection is made by a [pdcmd.Connector]
 //
 // Because the tree is built here, while the command set is being assembled, and
-// the configuration has not been read yet -- `pdcmd.Load` runs on the root and
+// the configuration has not been read yet -- `cfg.Load` runs on the root and
 // this is a child of it. So the `*cmd.Config` [local] holds is still empty at this
 // moment and filled in by the time `Connect` is called, which is when somebody
 // actually runs one of these.

@@ -43,12 +43,9 @@ import (
 
 // Name is what this app is called, and it is the only place it is written.
 // The environment prefix and the names of the configuration files are derived
-// from it -- APPTEST_DB_DSN, apptest.yaml -- so there is nothing to keep in
-// step.
+// from it -- ROSTER_DB_DSN, roster.yaml -- by the loader `cli.Cmd` makes with
+// it, so there is nothing to keep in step.
 const Name = "roster"
-
-// Loader reads this app's configuration.
-var Loader = config.For(Name)
 
 // Config is what this app is configured with.
 //

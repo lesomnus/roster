@@ -176,7 +176,7 @@ func TestTheCliIsAlsoACustomersPerson(t *testing.T) {
 // running under the real root has.
 //
 // `cmd.Cmd` reads the file on the way down, so a test that used it would be a
-// test about `pdcmd.Load`. What is wanted here is the tree below it.
+// test about `cfg.Load`. What is wanted here is the tree below it.
 func root(t *testing.T, c *cmd.Config) *xli.Command {
 	t.Helper()
 

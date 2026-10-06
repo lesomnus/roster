@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/lesomnus/xli"
+	"github.com/lesomnus/xli/cfg"
 	"github.com/stretchr/testify/require"
 
 	"github.com/lesomnus/roster/cli"
@@ -311,14 +312,14 @@ func TestTheDocumentationNamesTestsThatExist(t *testing.T) {
 // documentation against what the loader reads.
 //
 // The four prefixes are the ones the consumers read for themselves rather than
-// through the loader (`cli.Cmd`'s `pdcmd.Reads`), so they are names with an alias
+// through the loader (`cli.Cmd`'s `cfg.Reads`), so they are names with an alias
 // after them and are documented as such.
 func TestTheDocumentationNamesVariablesThatAreRead(t *testing.T) {
 	x := require.New(t)
 	root := repoRoot(t)
 
 	have := map[string]bool{}
-	for _, n := range cmd.Loader.EnvNames(&cmd.Config{}) {
+	for _, n := range cfg.New(cmd.Name, &cmd.Config{}).EnvNames() {
 		have[n] = true
 	}
 	x.Greater(len(have), 50, "the loader named nothing")
