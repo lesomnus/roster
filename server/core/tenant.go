@@ -229,7 +229,7 @@ func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*
 		if err != nil {
 			return nil, err
 		}
-		if err := maySlack(ctx, got.GetConfig(), cfg); err != nil {
+		if err := s.maySlack(ctx, got.GetConfig(), cfg); err != nil {
 			return nil, err
 		}
 		patch.Config = cfg
@@ -309,7 +309,7 @@ func (s coreTenant) Add(ctx context.Context, req *app.TenantAddRequest) (*app.Te
 	if bad != nil {
 		return nil, bad
 	}
-	if err := maySlack(ctx, nil, req.GetConfig()); err != nil {
+	if err := s.maySlack(ctx, nil, req.GetConfig()); err != nil {
 		return nil, err
 	}
 	if s.prefix != keys.PrefixTenant {

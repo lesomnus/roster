@@ -706,7 +706,10 @@ deployment keeps the token -- `env:NAME`, in the front door's environment --
 and not the token. And it is **the deployment's to write**: what it names is
 one of the deployment's secrets, which the front door sends to Slack, so roster
 refuses a new one from a tenant's own administrator, who may keep it or take it
-away. The file declaring the tenant is where it is written.
+away. The file declaring the tenant is where it is written, or an operator at
+the admin port. A connection's `secret_ref` is held to the same rule, and so is
+moving the issuer of a connection that has one: a reference is the deployment
+naming its own secret, and the issuer is where that secret is sent.
 
 The token is a Slack app's, installed in that workspace with two bot scopes
 and nothing else:

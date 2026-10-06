@@ -55,9 +55,9 @@ func configOf(c *app.TenantConfig) (*app.TenantConfig, error) {
 // deployment's secrets, and the front door hands it to Slack. Keeping the one
 // already written, and taking it away, hand nothing to anybody, so a tenant's
 // administrator saving their settings with it unchanged is not refused.
-func maySlack(ctx context.Context, was, now *app.TenantConfig) error {
+func (s Core) maySlack(ctx context.Context, was, now *app.TenantConfig) error {
 	ref := now.GetProfile().GetSlackSecretRef()
-	if ref == "" || ref == was.GetProfile().GetSlackSecretRef() || deployment(ctx) {
+	if ref == "" || ref == was.GetProfile().GetSlackSecretRef() || s.deployment(ctx) {
 		return nil
 	}
 

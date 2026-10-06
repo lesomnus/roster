@@ -85,9 +85,16 @@ func (s Core) mayWriteDeclared(ctx context.Context, field string, labels map[str
 		"%s: this row is declared in %s and is written from there, not here", field, labels[declaredBy]))
 }
 
-// deployment is whether the caller is the deployment itself, by the test
-// [Core.mayWriteDeclared] states: a frame over every tenant, which nothing
+// deployment is whether the caller is the deployment itself, for the writes
+// only it may make: the ones that name its secrets. One of its operators, at
+// the port that has only operators ([Operated]); or the test
+// [Core.mayWriteDeclared] states, a frame over every tenant, which nothing
 // reaching a listener as a tenant's somebody has.
+func (s Core) deployment(ctx context.Context) bool {
+	return s.operators || deployment(ctx)
+}
+
+// deployment is the frame's half of [Core.deployment].
 //
 // No frame passes too. It is the deployment's own work in this process -- the
 // CLI on the database, which turning a declared row off depended on -- and

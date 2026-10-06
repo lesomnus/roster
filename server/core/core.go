@@ -76,6 +76,14 @@ type Core struct {
 	// `Mint` refuses rather than mint an unprefixed key.
 	prefix string
 
+	// operators is whether every caller of this stack is one of the
+	// deployment's operators -- the admin port's, and nothing else's. What it
+	// decides is [Core.deployment]: the writes only the deployment may make,
+	// which name its secrets. Not `mayWriteDeclared`, which holds a declared
+	// row against an operator at the admin console as well -- the file owns
+	// the row, whoever is at a screen.
+	operators bool
+
 	// lockout is the deployment's numbers for `Credential.Set`'s own-row
 	// re-authentication, which counts a wrong current password the way a
 	// wrong sign-in counts -- on the same columns, so the same numbers.
@@ -160,6 +168,10 @@ func WithPrefix(v string) Option { return func(s *Core) { s.prefix = v } }
 // WithLockout gives the layer the deployment's lockout numbers, for the
 // re-authentication a person's own `Credential.Set` asks for.
 func WithLockout(v vouch.Lockout) Option { return func(s *Core) { s.lockout = v } }
+
+// Operated says every caller of this stack is one of the deployment's
+// operators, which the admin port's is and no other: see [Core.deployment].
+func Operated() Option { return func(s *Core) { s.operators = true } }
 
 // WithPassword gives the layer what a new password has to be.
 func WithPassword(v Password) Option { return func(s *Core) { s.password = v } }
