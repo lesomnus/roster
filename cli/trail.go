@@ -12,6 +12,7 @@ import (
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
+	"github.com/lesomnus/xli/cfg"
 	"github.com/lesomnus/xli/flg"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -44,15 +45,15 @@ import (
 //
 // It is not `roster audit`, which is the generated entity command and reads
 // rows through a server. These are the acts no server offers.
-func NewCmdTrail(c *cmd.Config) *xli.Command {
+func NewCmdTrail(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "trail",
 		Brief: "what happens to the record of what happened, after long enough",
 
 		Commands: xli.Commands{
 			newCmdTrailPrune(c),
-			newCmdTrailRead(c),
-			newCmdTrailPurge(c),
+			newCmdTrailRead(l, c),
+			newCmdTrailPurge(l, c),
 			newCmdTrailProfiles(),
 		},
 	}
@@ -98,6 +99,10 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 
 			dry, _ := flg.Find[bool](cl, "dry-run")
 
+			// Read here and not bound to `audit.archive` as `--in` is: bound,
+			// it would also move the archive of the policy a run with no window
+			// applies -- the sweep's, exactly -- and of the one `cmd.Build`
+			// checks.
 			dir, _ := flg.Find[string](cl, "to")
 			if dir == "" {
 				dir = c.Audit.Archive
@@ -175,7 +180,7 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 // Deliberately: the reason to keep the file is that it outlives the deployment
 // that wrote it, so a reader that needed the deployment would be answering a
 // question nobody has at the moment they have it.
-func newCmdTrailRead(c *cmd.Config) *xli.Command {
+func newCmdTrailRead(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "read",
 		Brief: "read an archive back, without a database",
@@ -185,7 +190,7 @@ func newCmdTrailRead(c *cmd.Config) *xli.Command {
 		},
 
 		Flags: flg.Flags{
-			&flg.String{Name: "in", Brief: "a directory of archives; audit.archive by default"},
+			cfg.Bind(l, &c.Audit.Archive, &flg.String{Name: "in", Brief: "a directory of archives; audit.archive by default"}),
 			&flg.String{Name: "object", Brief: "only what happened to this identifier"},
 			&flg.String{Name: "actor", Brief: "only what this person did"},
 			&flg.String{Name: "tenant", Brief: "only this tenant, on any of the three columns"},
@@ -244,7 +249,7 @@ func newCmdTrailRead(c *cmd.Config) *xli.Command {
 // named for the month it holds, so one is destroyable when the month after it
 // has also passed. Rewriting a file to drop some of its rows would be editing
 // an archive, which is the thing this whole package refuses to offer.
-func newCmdTrailPurge(c *cmd.Config) *xli.Command {
+func newCmdTrailPurge(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "purge",
 		Brief: "destroy the archives that are old enough, and there is nothing after this",
@@ -253,7 +258,7 @@ func newCmdTrailPurge(c *cmd.Config) *xli.Command {
 			&flg.String{Name: "older-than", Brief: "how old the archive has to be, e.g. 61320h for seven years"},
 			&flg.String{Name: "before", Brief: "an instant instead, RFC 3339"},
 			&flg.String{Name: "kind", Brief: "only archives of this kind of thing; every kind by default"},
-			&flg.String{Name: "in", Brief: "the directory to destroy from; audit.archive by default"},
+			cfg.Bind(l, &c.Audit.Archive, &flg.String{Name: "in", Brief: "the directory to destroy from; audit.archive by default"}),
 			&flg.Switch{Name: "dry-run", Brief: "say which files and remove nothing"},
 		},
 
@@ -276,10 +281,7 @@ func newCmdTrailPurge(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			dir, _ := flg.Find[string](cl, "in")
-			if dir == "" {
-				dir = c.Audit.Archive
-			}
+			dir := c.Audit.Archive
 			if dir == "" {
 				return errors.New("--in: which directory")
 			}
@@ -445,10 +447,7 @@ func archives(cl *xli.Command, c *cmd.Config) ([]string, error) {
 		return vs, nil
 	}
 
-	dir, _ := flg.Find[string](cl, "in")
-	if dir == "" {
-		dir = c.Audit.Archive
-	}
+	dir := c.Audit.Archive
 	if dir == "" {
 		return nil, errors.New("name a file, or --in a directory, or set audit.archive")
 	}

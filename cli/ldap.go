@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/lesomnus/xli"
+	"github.com/lesomnus/xli/cfg"
 	"github.com/lesomnus/xli/flg"
 
 	"github.com/lesomnus/otx/log"
@@ -28,34 +29,37 @@ import (
 // roster's own listeners must not be in the process that does. It dials roster
 // over the wire like any other consumer, and is told everything from the shell
 // (`docs/ldap.md`).
-func NewCmdLdap(c *cmd.Config) *xli.Command {
+func NewCmdLdap(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "ldap",
 		Brief: "roster as a directory, over LDAP",
 
-		Commands: xli.Commands{newCmdLdapServe(c)},
+		Commands: xli.Commands{newCmdLdapServe(l, c)},
 	}
 }
 
 // LdapKeyPrefix is the environment form of `--key`: `ROSTER_LDAP_KEY_<ALIAS>`.
 const LdapKeyPrefix = "ROSTER_LDAP_KEY_"
 
-func newCmdLdapServe(c *cmd.Config) *xli.Command {
+func newCmdLdapServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "serve",
 		Brief: "answer LDAP binds and searches from roster's rows",
 
+		// Those in `cfg.Bind` are `ldap:`'s settings, applied by the load over
+		// the file and the environment when given; see `cli/account.go`. The
+		// two that are not are read in the handler, which says why.
 		Flags: flg.Flags{
-			&flg.String{Name: "listen", Brief: "where to speak LDAP, StartTLS offered when --tls is given; :389 if empty and --listen-tls is not given"},
-			&flg.String{Name: "listen-tls", Brief: "where to speak LDAPS; needs --tls"},
-			&flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"},
-			&flg.Switch{Name: "insecure", Brief: "dial roster without TLS"},
+			cfg.Bind(l, &c.Ldap.Addr, &flg.String{Name: "listen", Brief: "where to speak LDAP, StartTLS offered when --tls is given; :389 if empty and --listen-tls is not given"}),
+			cfg.Bind(l, &c.Ldap.AddrTls, &flg.String{Name: "listen-tls", Brief: "where to speak LDAPS; needs --tls"}),
+			cfg.Bind(l, &c.Ldap.Roster, &flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"}),
+			cfg.Bind(l, &c.Ldap.Insecure, &flg.Switch{Name: "insecure", Brief: "dial roster without TLS"}),
 			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per operator fronted. Or " + LdapKeyPrefix + "<ALIAS> in the environment"},
-			&flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it, as rk_…, env:NAME or file:PATH; instead of --key"},
+			cfg.Bind(l, &c.Ldap.Key, &flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it, as rk_…, env:NAME or file:PATH; instead of --key"}),
 			&flg.Strings{Name: "base", Brief: "a tenant's suffix, as alias=dc=…; o=<alias> if not given"},
-			&flg.String{Name: "bind", Brief: "what a bind's password may be: key (an app password the person minted; the default), password (their own), either"},
-			&flg.String{Name: "tls", Brief: "this server's certificate and key, as cert.pem,key.pem; offers StartTLS and enables --listen-tls"},
-			&flg.Switch{Name: "require-tls", Brief: "refuse a bind in the clear; a client must StartTLS or use LDAPS first"},
+			cfg.Bind(l, &c.Ldap.Bind, &flg.String{Name: "bind", Brief: "what a bind's password may be: key (an app password the person minted; the default), password (their own), either"}),
+			cfg.BindFunc(l, &c.Ldap.Tls, &flg.String{Name: "tls", Brief: "this server's certificate and key, as cert.pem,key.pem; offers StartTLS and enables --listen-tls"}, certPair),
+			cfg.Bind(l, &c.Ldap.RequireTls, &flg.Switch{Name: "require-tls", Brief: "refuse a bind in the clear; a client must StartTLS or use LDAPS first"}),
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -65,33 +69,11 @@ func newCmdLdapServe(c *cmd.Config) *xli.Command {
 			}
 			defer stop()
 
-			// The block first, then the flags over it. See `cli/account.go`.
+			// The block, with the flags bound above already in it.
 			lc := c.Ldap
-			if v, _ := flg.Find[string](cl, "listen"); v != "" {
-				lc.Addr = v
-			}
-			if v, _ := flg.Find[string](cl, "listen-tls"); v != "" {
-				lc.AddrTls = v
-			}
-			if v, _ := flg.Find[string](cl, "roster"); v != "" {
-				lc.Roster = v
-			}
-			if v, _ := flg.Find[bool](cl, "insecure"); v {
-				lc.Insecure = true
-			}
-			if v, _ := flg.Find[string](cl, "bind"); v != "" {
-				lc.Bind = v
-			}
-			if v, _ := flg.Find[bool](cl, "require-tls"); v {
-				lc.RequireTls = true
-			}
-			if v, _ := flg.Find[string](cl, "tls"); v != "" {
-				certFile, keyFile, ok := strings.Cut(v, ",")
-				if !ok {
-					return fmt.Errorf("--tls %q: cert.pem,key.pem", v)
-				}
-				lc.Tls = cmd.TlsConfig{Cert: certFile, Key: keyFile}
-			}
+
+			// `--base` adds to the block's suffixes rather than replacing
+			// them, so it is read here and not bound.
 			if vs, _ := flg.Find[[]string](cl, "base"); len(vs) > 0 {
 				if lc.Bases == nil {
 					lc.Bases = map[string]string{}
@@ -105,9 +87,6 @@ func newCmdLdapServe(c *cmd.Config) *xli.Command {
 				}
 			}
 
-			if v, _ := flg.Find[string](cl, "deployment-key"); v != "" {
-				lc.Key = v
-			}
 			if lc.Key != "" {
 				key, err := tokenOrRef(lc.Key)
 				if err != nil {
@@ -115,6 +94,8 @@ func newCmdLdapServe(c *cmd.Config) *xli.Command {
 				}
 				lc.Key = key
 			} else {
+				// `--key` is merged with the block and the environment by
+				// [keysOf], so it is read here and not bound either.
 				given, _ := flg.Find[[]string](cl, "key")
 				keys, err := keysOf(lc.Keys, LdapKeyPrefix, given)
 				if err != nil {
@@ -126,6 +107,8 @@ func newCmdLdapServe(c *cmd.Config) *xli.Command {
 			if lc.Roster == "" {
 				return errors.New("--roster (or ldap.roster): where roster speaks gRPC")
 			}
+			// Here and not a `Default` on `--listen`: `:389` is only for a
+			// directory that names no `addr_tls` either.
 			if lc.Addr == "" && lc.AddrTls == "" {
 				lc.Addr = ":389"
 			}
@@ -133,6 +116,22 @@ func newCmdLdapServe(c *cmd.Config) *xli.Command {
 			return serveLdap(ctx, lc)
 		}),
 	}
+}
+
+// certPair is `--tls cert.pem,key.pem`, as the `ldap.tls` block it sets whole.
+// Empty is an empty block, which is what `--tls=` asks for: no certificate,
+// whatever the file named.
+func certPair(v string) (cmd.TlsConfig, error) {
+	if v == "" {
+		return cmd.TlsConfig{}, nil
+	}
+
+	certFile, keyFile, ok := strings.Cut(v, ",")
+	if !ok {
+		return cmd.TlsConfig{}, fmt.Errorf("%q: cert.pem,key.pem", v)
+	}
+
+	return cmd.TlsConfig{Cert: certFile, Key: keyFile}, nil
 }
 
 // serveLdap answers LDAP until ctx is done.

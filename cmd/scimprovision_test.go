@@ -8,6 +8,7 @@ import (
 
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/pdtest"
+	"github.com/lesomnus/xli/cfg"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 
@@ -53,7 +54,7 @@ func TestADirectorysKeyIsMintedForOneTenantAndOneConnection(t *testing.T) {
 	provision := func(connection string) string {
 		t.Helper()
 
-		return strings.TrimSpace(stdoutOf(t, cli.NewCmdScim(&c), "provision", "--tenant", "acme", "--connection", connection))
+		return strings.TrimSpace(stdoutOf(t, cli.NewCmdScim(cfg.New(cmd.Name, &c), &c), "provision", "--tenant", "acme", "--connection", connection))
 	}
 	keysOf := func(s *cmd.Server) []*app.ApiKey {
 		t.Helper()
@@ -109,7 +110,7 @@ func TestADirectorysKeyIsMintedForOneTenantAndOneConnection(t *testing.T) {
 	x.Len(now, 1, "a second run added a key rather than replacing it")
 	x.NotEqual(was[0].GetId(), now[0].GetId())
 
-	err = cli.NewCmdScim(&c).Run(ctx, []string{"provision", "--tenant", "acme", "--connection", "okta"})
+	err = cli.NewCmdScim(cfg.New(cmd.Name, &c), &c).Run(ctx, []string{"provision", "--tenant", "acme", "--connection", "okta"})
 	x.ErrorContains(err, "declares")
 }
 

@@ -20,6 +20,7 @@ import (
 	"github.com/lesomnus/z"
 
 	"github.com/lesomnus/xli"
+	"github.com/lesomnus/xli/cfg"
 	"github.com/lesomnus/xli/flg"
 
 	"github.com/lesomnus/otx/log"
@@ -43,12 +44,12 @@ import (
 // and roster's own listeners must not be in the process that does. See
 // `docs/operating.md`, "One process, or four", which says the same thing about
 // all of them.
-func NewCmdLogin(c *cmd.Config) *xli.Command {
+func NewCmdLogin(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "login",
 		Brief: "the Login App, for a deployment with Hydra in front",
 
-		Commands: xli.Commands{newCmdLoginServe(c), newCmdLoginProvision(c), newCmdLoginDoctor(c)},
+		Commands: xli.Commands{newCmdLoginServe(l, c), newCmdLoginProvision(c), newCmdLoginDoctor(l, c)},
 	}
 }
 
@@ -61,23 +62,24 @@ func NewCmdLogin(c *cmd.Config) *xli.Command {
 // deleted silently, because a deployment reading `ROSTER_LOGIN_KEY_CONTOSO` out
 // of its own manifests needs to find out what replaced it.
 
-func newCmdLoginServe(c *cmd.Config) *xli.Command {
+func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "serve",
 		Brief: "answer Hydra's login and consent challenges from roster's rows",
 
+		// Bound to `login:`; see `cli/account.go`.
 		Flags: flg.Flags{
-			&flg.String{Name: "listen", Brief: "where to serve the sign-in page; :8091 if empty"},
-			&flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"},
-			&flg.Switch{Name: "insecure", Brief: "dial roster without TLS"},
-			&flg.String{Name: "hydra", Brief: "Hydra's admin API, e.g. http://hydra:4445. Private: anybody who reaches it can sign anybody in as anybody"},
-			&flg.String{Name: "key", Brief: "this app's one deployment key (rk_…), or a reference to it: env:NAME, file:PATH"},
-			&flg.String{Name: "consent", Brief: "what the consent hop does: skip (grant what the client asked for; the default) or ask (draw a screen)"},
-			&flg.String{Name: "base", Brief: "this app's public origin, registered with every provider as the redirect. One for the whole app"},
-			&flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"},
-			&flg.Strings{Name: "seal", Brief: "the key sessions are sealed under, as env:NAME; repeat to rotate"},
-			&flg.Switch{Name: "insecure-cookie", Brief: "drop Secure from the cookies, for plain http in development"},
-			&flg.String{Name: "static", Brief: "the built sign-in page (ts/dist/login)"},
+			cfg.Bind(l, &c.Login.Addr, &flg.String{Name: "listen", Brief: "where to serve the sign-in page; :8091 if empty"}),
+			cfg.Bind(l, &c.Login.Roster, &flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"}),
+			cfg.Bind(l, &c.Login.Insecure, &flg.Switch{Name: "insecure", Brief: "dial roster without TLS"}),
+			cfg.Bind(l, &c.Login.Hydra.Admin, &flg.String{Name: "hydra", Brief: "Hydra's admin API, e.g. http://hydra:4445. Private: anybody who reaches it can sign anybody in as anybody"}),
+			cfg.Bind(l, &c.Login.Key, &flg.String{Name: "key", Brief: "this app's one deployment key (rk_…), or a reference to it: env:NAME, file:PATH"}),
+			cfg.Bind(l, &c.Login.Consent, &flg.String{Name: "consent", Brief: "what the consent hop does: skip (grant what the client asked for; the default) or ask (draw a screen)"}),
+			cfg.Bind(l, &c.Login.Base, &flg.String{Name: "base", Brief: "this app's public origin, registered with every provider as the redirect. One for the whole app"}),
+			cfg.Bind(l, &c.Login.Enrol, &flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"}),
+			cfg.Bind(l, &c.Login.Seal, &flg.Strings{Name: "seal", Brief: "the key sessions are sealed under, as env:NAME; repeat to rotate"}),
+			cfg.Bind(l, &c.Login.InsecureCookie, &flg.Switch{Name: "insecure-cookie", Brief: "drop Secure from the cookies, for plain http in development"}),
+			cfg.Bind(l, &c.Login.Page.Dir, &flg.String{Name: "static", Brief: "the built sign-in page (ts/dist/login)"}),
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -87,42 +89,9 @@ func newCmdLoginServe(c *cmd.Config) *xli.Command {
 			}
 			defer stop()
 
-			// The block first, then the flags over it. See `cli/account.go`.
+			// The block, with the flags bound above already in it.
 			lc := c.Login
-			if v, _ := flg.Find[string](cl, "listen"); v != "" {
-				lc.Addr = v
-			}
-			if v, _ := flg.Find[string](cl, "roster"); v != "" {
-				lc.Roster = v
-			}
-			if v, _ := flg.Find[bool](cl, "insecure"); v {
-				lc.Insecure = true
-			}
-			if v, _ := flg.Find[string](cl, "hydra"); v != "" {
-				lc.Hydra.Admin = v
-			}
-			if vs, _ := flg.Find[[]string](cl, "seal"); len(vs) > 0 {
-				lc.Seal = vs
-			}
-			if v, _ := flg.Find[bool](cl, "insecure-cookie"); v {
-				lc.InsecureCookie = true
-			}
-			if v, _ := flg.Find[string](cl, "static"); v != "" {
-				lc.Page = cmd.PageConfig{Dir: v}
-			}
-			if v, _ := flg.Find[string](cl, "consent"); v != "" {
-				lc.Consent = v
-			}
-			if v, _ := flg.Find[string](cl, "base"); v != "" {
-				lc.Base = v
-			}
-			if v, _ := flg.Find[string](cl, "enrol"); v != "" {
-				lc.Enrol = v
-			}
 
-			if v, _ := flg.Find[string](cl, "key"); v != "" {
-				lc.Key = v
-			}
 			// A reference or the token itself, which is what `secretRef` decides:
 			// a configuration file is committed and a key is a secret, so the
 			// file says `env:NAME` and a flag may say the thing.
@@ -312,21 +281,19 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 // than logging into a stream nobody reads. Fragile findings are printed and do
 // not fail: they are things that work, and a deployment that has decided to
 // live with one should not have a red sync forever.
-func newCmdLoginDoctor(c *cmd.Config) *xli.Command {
+func newCmdLoginDoctor(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "doctor",
 		Brief: "ask hydra whether the clients this app fronts are registered in a way this stack works with",
 
 		Flags: flg.Flags{
-			&flg.String{Name: "hydra", Brief: "where hydra's admin API answers; the `login.hydra.admin` block otherwise"},
+			// The setting `login serve --hydra` is, so bound to it the same way.
+			cfg.Bind(l, &c.Login.Hydra.Admin, &flg.String{Name: "hydra", Brief: "where hydra's admin API answers; the `login.hydra.admin` block otherwise"}),
 			&flg.String{Name: "public", Brief: "where hydra's public endpoints answer, for the half about what hydra was told; derived from --hydra otherwise"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
-			at, _ := flg.Find[string](cl, "hydra")
-			if at == "" {
-				at = c.Login.Hydra.Admin
-			}
+			at := c.Login.Hydra.Admin
 			if at == "" {
 				return errors.New("login.hydra.admin (--hydra): where hydra's admin API answers")
 			}

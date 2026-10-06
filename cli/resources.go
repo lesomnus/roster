@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/lesomnus/xli"
+	"github.com/lesomnus/xli/cfg"
 	"github.com/lesomnus/xli/flg"
 
 	"github.com/lesomnus/roster/cmd"
@@ -21,30 +22,29 @@ import (
 // So `--dry-run` is the reason it exists and `apply` without it is the
 // afterthought: the same function `serve` calls, run by hand, for a deployment
 // that would rather not wait for a restart.
-func NewCmdResources(c *cmd.Config) *xli.Command {
+func NewCmdResources(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "resources",
 		Brief: "the rows a file declares: a customer, its names, its directories",
 
-		Commands: xli.Commands{newCmdResourcesApply(c)},
+		Commands: xli.Commands{newCmdResourcesApply(l, c)},
 	}
 }
 
-func newCmdResourcesApply(c *cmd.Config) *xli.Command {
+func newCmdResourcesApply(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "apply",
 		Brief: "write what the files declared; --dry-run says what it would do",
 
 		Flags: flg.Flags{
-			&flg.Strings{Name: "file", Brief: "a file to read; the `resources:` block otherwise"},
+			// `resources:` itself, given at the shell: the files replace the
+			// list rather than adding to it.
+			cfg.Bind(l, &c.Resources, &flg.Strings{Name: "file", Brief: "a file to read; the `resources:` block otherwise"}),
 			&flg.Switch{Name: "dry-run", Brief: "say what would change and write nothing"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			paths := c.Resources
-			if vs, _ := flg.Find[[]string](cl, "file"); len(vs) > 0 {
-				paths = vs
-			}
 			if len(paths) == 0 {
 				return fmt.Errorf("resources (--file): no files declared, and none given")
 			}

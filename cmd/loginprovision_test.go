@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lesomnus/xli/cfg"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -84,7 +85,7 @@ func provisioned(t *testing.T, enrol string) (key, role []string) {
 	x.NoError(err)
 	s.Close()
 
-	x.NoError(cli.NewCmdLogin(&c).Run(ctx, []string{"provision", "--out", out}))
+	x.NoError(cli.NewCmdLogin(cfg.New(cmd.Name, &c), &c).Run(ctx, []string{"provision", "--out", out}))
 
 	// One file and not one per tenant, which is the whole of the change: an
 	// `rk_` is the control plane's, so it needs no customer to exist and a first
@@ -249,7 +250,7 @@ func TestProvisionMigratesBothPlanes(t *testing.T) {
 
 	// Nothing has created a table on either plane, which is the state this
 	// command exists for.
-	x.NoError(cli.NewCmdLogin(&c).Run(ctx, []string{"provision", "--out", out}))
+	x.NoError(cli.NewCmdLogin(cfg.New(cmd.Name, &c), &c).Run(ctx, []string{"provision", "--out", out}))
 
 	b, err := os.ReadFile(filepath.Join(out, "login-app.key"))
 	x.NoError(err)
@@ -310,7 +311,7 @@ func TestProvisionAgainBindsNothingTwiceAndLeavesOtherAppsAlone(t *testing.T) {
 	s.Close()
 
 	for range 3 {
-		x.NoError(cli.NewCmdLogin(&c).Run(ctx, []string{"provision", "--out", out}))
+		x.NoError(cli.NewCmdLogin(cfg.New(cmd.Name, &c), &c).Run(ctx, []string{"provision", "--out", out}))
 	}
 
 	s, err = cmd.Build(ctx, c)
@@ -375,7 +376,7 @@ func TestAFrontDoorsOwnRowsAreDeclared(t *testing.T) {
 	x.NoError(err)
 	x.NoError(s.Close())
 
-	x.NoError(cli.NewCmdLogin(&c).Run(ctx, []string{"provision", "--out", t.TempDir()}))
+	x.NoError(cli.NewCmdLogin(cfg.New(cmd.Name, &c), &c).Run(ctx, []string{"provision", "--out", t.TempDir()}))
 
 	s, err = cmd.Build(ctx, c)
 	x.NoError(err)

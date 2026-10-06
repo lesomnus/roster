@@ -500,6 +500,20 @@ process they default to this deployment's own listeners, and writing them again 
 the file that already says `server.addr` is one more place for two answers to
 drift.
 
+**A flag of their own commands is the setting it says.** `roster account serve`,
+`roster ldap serve`, `roster login serve` and `roster scim serve` read the same
+blocks, and each flag that says one of their settings is bound to it: `--listen`
+is `ldap.addr` to `roster ldap serve`, and `--help` prints the variable beside it,
+`[$ROSTER_LDAP_ADDR]`. The loader applies a flag over the file and the
+environment, and only when it was given, so an empty value is a value --
+`--listen=` clears what the file says rather than leaving it, and
+`--insecure=false` turns off an `insecure: true` the file wrote. The same holds for
+the flags elsewhere that say a setting: `--hydra` of `roster login doctor` is
+`login.hydra.admin`, `--file` of `roster resources apply` is `resources`, and
+`--in` of `roster trail read` and `roster trail purge` is `audit.archive`. What is
+not a setting is read as it was: `--key alias=rt_…` and the `--base` of
+`roster ldap serve` add to the block's map rather than replace it.
+
 **The keys are references, not tokens.** `env:NAME` and `file:PATH` are both
 understood, `ROSTER_<APP>_KEY_<ALIAS>` still works and is merged with them, and
 `--key alias=rt_…` takes a literal that is in the process list and says so. Do
