@@ -591,6 +591,7 @@ resources:
     client_id: <the app registration>
     scopes: [email, profile]
     secret_ref: env:ENTRA_SECRET     # roster stores this and never reads it
+    subject_claim: oid               # Entra's sub is one per app; oid is the person
   - kind: Host
     tenant: contoso
     name: contoso.example

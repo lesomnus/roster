@@ -7,6 +7,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/lesomnus/payday/pderr"
+
 	app "github.com/lesomnus/roster/rstr"
 )
 
@@ -58,14 +60,74 @@ func (s Core) maySend(ctx context.Context, was *app.Connection, ref, issuer stri
 	return nil
 }
 
+// The claims a connection may name as a person's subject. `Connection` says
+// why there are two: `sub` is the person to most providers, and Entra's is
+// pairwise, so it names them as `oid`.
+const (
+	claimSub = "sub"
+	claimOid = "oid"
+)
+
+// subjectClaimOf is the claim a connection names, with empty read as the `sub`
+// it means.
+func subjectClaimOf(v string) string {
+	if v == "" {
+		return claimSub
+	}
+
+	return v
+}
+
+// maySubject holds a connection's `subject_claim` to the claims a front door
+// knows how to read, and its moves to the one direction a tenant may take.
+//
+// Forward is anybody's who may write the connection: everybody already signed
+// in moves at their next sign-in, by the token that carries both claims
+// (`IdentityService.Resubject`), and nobody is lost. Back is the deployment's:
+// everybody already moved has an identity the old claim never names, and would
+// be a stranger at their next sign-in -- refused, or enrolled a second time.
+func (s Core) maySubject(ctx context.Context, was, now string) error {
+	switch now {
+	case "", claimSub, claimOid:
+	default:
+		return pderr.Invalidf("subject_claim", "%q is not a claim a front door reads as a subject; `sub`, or `oid` for Entra", now)
+	}
+	if subjectClaimOf(now) == subjectClaimOf(was) || s.deployment(ctx) {
+		return nil
+	}
+	if subjectClaimOf(was) == claimSub && now == claimOid {
+		return nil
+	}
+
+	return status.Error(codes.PermissionDenied,
+		"subject_claim: going back would leave everybody already moved unknown at their next sign-in, so it is the deployment's")
+}
+
 // Add refuses a secret from a tenant, for [maySend]'s reason: a new connection
 // is a new reference and a new issuer at once.
 func (s coreConnection) Add(ctx context.Context, req *app.ConnectionAddRequest) (*app.Connection, error) {
 	if err := s.maySend(ctx, nil, req.GetSecretRef(), req.GetIssuer()); err != nil {
 		return nil, err
 	}
+	if err := s.maySubject(ctx, "", req.GetSubjectClaim()); err != nil {
+		return nil, err
+	}
 
 	return s.ConnectionServiceServer.Add(ctx, req)
+}
+
+// Patch is closed at the transport, and is what the deployment's own writers
+// use -- `cmd/resources.go` declares a connection with it. So it is held only
+// to the claims a front door can read: everything that reaches it is the
+// deployment, which [Core.maySubject] lets move either way.
+func (s coreConnection) Patch(ctx context.Context, req *app.ConnectionPatchRequest) (*app.Connection, error) {
+	if req.HasSubjectClaim() {
+		if err := s.maySubject(ctx, req.GetSubjectClaim(), req.GetSubjectClaim()); err != nil {
+			return nil, err
+		}
+	}
+
+	return s.ConnectionServiceServer.Patch(ctx, req)
 }
 
 // Update is `Patch` with the name held back -- and refused outright on a row a
@@ -73,8 +135,10 @@ func (s coreConnection) Add(ctx context.Context, req *app.ConnectionAddRequest) 
 // to [maySend].
 func (s coreConnection) Update(ctx context.Context, req *app.ConnectionUpdateRequest) (*app.Connection, error) {
 	got, err := s.ConnectionServiceServer.Get(ctx, app.ConnectionGetRequest_builder{
-		Ref:    req.GetRef(),
-		Select: app.ConnectionSelect_builder{Labels: z.Ptr(true), Issuer: z.Ptr(true), SecretRef: z.Ptr(true)}.Build(),
+		Ref: req.GetRef(),
+		Select: app.ConnectionSelect_builder{
+			Labels: z.Ptr(true), Issuer: z.Ptr(true), SecretRef: z.Ptr(true), SubjectClaim: z.Ptr(true),
+		}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -92,6 +156,11 @@ func (s coreConnection) Update(ctx context.Context, req *app.ConnectionUpdateReq
 	}
 	if err := s.maySend(ctx, got, ref, issuer); err != nil {
 		return nil, err
+	}
+	if req.HasSubjectClaim() {
+		if err := s.maySubject(ctx, got.GetSubjectClaim(), req.GetSubjectClaim()); err != nil {
+			return nil, err
+		}
 	}
 
 	patch := app.ConnectionPatchRequest_builder{
@@ -114,6 +183,11 @@ func (s coreConnection) Update(ctx context.Context, req *app.ConnectionUpdateReq
 	if req.HasDesc() {
 		patch.Desc = z.Ptr(req.GetDesc())
 	}
+	if req.HasSubjectClaim() {
+		patch.SubjectClaim = z.Ptr(req.GetSubjectClaim())
+	}
 
+	// The generated one, not [coreConnection.Patch]: what that holds a patch to
+	// is said above, against the row as read.
 	return s.ConnectionServiceServer.Patch(ctx, patch.Build())
 }

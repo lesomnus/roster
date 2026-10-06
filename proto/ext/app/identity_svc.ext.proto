@@ -1,0 +1,50 @@
+edition = "2023";
+
+package roster;
+
+import "google/protobuf/timestamp.proto";
+import "app/identity.proto";
+
+// What this app adds to the generated contract for `Identity`.
+//
+// # Why Resubject and not the Patch
+//
+// `Patch` writes anything the schema holds and is closed at the transport for
+// it (`grpcx.GeneralWrite`). An identity's subject is the half of a sign-in a
+// provider decides, and changing it is changing which account at that
+// provider is this person -- a way in, written. The one change that has a
+// reason is the provider's identifier for the same person becoming a
+// different claim (`Connection.subject_claim`), and that change has a shape a
+// layer can hold it to: the same row, the claim's shape, once.
+//
+// # Why it is not `Add` and an erase
+//
+// `Add` refuses a second identity at one provider (`oneAccountPerProvider`)
+// and `Erase` refuses a person's last way in, so the pair would have to be
+// written in an order one of them refuses. And it would be two writes where
+// the meaning is one: the person keeps their row, their trail and their place
+// in every list; only what the provider calls them moves.
+service IdentityService {
+  // Resubject moves an identity to the subject its connection now names: the
+  // same row and the same person, and the identifier their provider gives them
+  // under that connection's `subject_claim`.
+  //
+  // Refused unless the connection names a claim other than `sub`, the subject
+  // held is not already of that claim's shape and the new one is -- one way,
+  // and once -- and the caller may write a way into this person
+  // (`server/core/escalate.go`).
+  rpc Resubject(IdentityResubjectRequest) returns (Identity);
+}
+
+message IdentityResubjectRequest {
+  IdentityRef ref = 1;
+
+  // Optimistic locking, as `Patch` takes it: the version this caller read.
+  // Left out, the move does not wait on one -- the rules above are what it is
+  // held to, and none of them depends on a value somebody else could have
+  // changed in between.
+  google.protobuf.Timestamp date_updated = 13;
+
+  // What the provider calls this person under the connection's claim.
+  string subject = 9;
+}

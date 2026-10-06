@@ -10925,6 +10925,11 @@ func (s interceptIdentity) Watch(req *rstr.IdentityWatchRequest, out grpc.Server
 		rstr.IdentityService_Watch_FullMethodName, req, out, s.IdentityServiceServer.Watch)
 }
 
+func (s interceptIdentity) Resubject(ctx context.Context, req *rstr.IdentityResubjectRequest) (*rstr.Identity, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.IdentityServiceServer,
+		rstr.IdentityService_Resubject_FullMethodName, req, s.IdentityServiceServer.Resubject)
+}
+
 func (s Intercept) Email() rstr.EmailServiceServer {
 	return interceptEmail{s, s.Next().Email()}
 }
@@ -12869,6 +12874,19 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.Identity().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.IdentityService_Resubject_FullMethodName:
+		v := &rstr.IdentityResubjectRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Identity().Resubject(ctx, v)
 		if err != nil {
 			return nil, err
 		}

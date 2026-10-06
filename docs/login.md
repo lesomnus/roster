@@ -329,8 +329,13 @@ sequenceDiagram
 
   B->>L: GET /callback
   L->>E: POST /token, and verify the id_token
-  E-->>L: {sub, email, name}
+  E-->>L: {sub, oid, email, name}
   L->>R: IdentityService.Get {tenant, provider, subject}
+  Note over L,R: subject is the claim the connection names:<br/>sub, or oid for Entra
+  alt not found, and the connection names oid
+    L->>R: IdentityService.Get by the token's sub
+    L->>R: IdentityService.Resubject {oid}, once
+  end
   alt never seen here
     R-->>L: NotFound
     L->>R: HolderService.Add (Enrol), then IdentityService.Add
@@ -651,6 +656,25 @@ The first sign-in through the directory then finds that row, links the identity 
 it, and every sign-in after that is the ordinary lookup. The other way round works
 too and is the person's own: signed in with their password, they attach the
 provider account from the account page (`Identity.Add` with their own reference).
+
+### Which claim is the person
+
+A `Connection` says which claim of the token is a person's subject
+(`subject_claim`): `sub` unless it says otherwise. **Entra needs `oid`.** Its v2
+`sub` is pairwise -- one per app registration -- so it names somebody to this front
+door alone, while `oid` is the same everywhere: what the portal shows, what another
+app sees, and what a directory provisioning people sends as their `externalId`.
+`oid` comes only with the `profile` scope, and a token without it is refused rather
+than read by `sub`, because under the other claim it is somebody else.
+
+Moving a connection people already sign in through is one line, and nobody is
+lost. The front door finds each person by the `sub` their identity was keyed by and
+moves it to their `oid` -- once, with the token that carries both
+(`IdentityService.Resubject`). Somebody it may not move, because they hold more than
+the front door, signs in by the row they had and the front door says so in its log;
+an operator moves them with `roster identity resubject`, the `oid` read off the
+portal. A tenant moves forward and not back: everybody already moved would be a
+stranger under `sub`, so going back is the deployment's.
 
 ### The address a directory hands over
 

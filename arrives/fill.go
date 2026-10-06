@@ -187,7 +187,7 @@ func (p *Providers) userinfo(ctx context.Context, v *oidc.Provider, who Caller) 
 	// OpenID Connect Core 5.3.2: an answer about anybody but the token's
 	// subject is not used. A provider that answered with somebody else has
 	// a defect, and the picture of the wrong person is what it would cost.
-	if info.Subject != who.Subject {
+	if info.Subject != who.tokenSub() {
 		return "", errors.New("userinfo: answered about somebody other than who signed in")
 	}
 

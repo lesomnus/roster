@@ -34,5 +34,6 @@ message ConnectionUpdateRequest {
   string client_id = 9;
   repeated string scopes = 10;
   string secret_ref = 11;
+  string subject_claim = 12;
   string desc = 6;
 }

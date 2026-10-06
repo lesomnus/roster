@@ -81,6 +81,11 @@ func SecretRef(v string) predicate.Connection {
 	return predicate.Connection(sql.FieldEQ(FieldSecretRef, v))
 }
 
+// SubjectClaim applies equality check predicate on the "subject_claim" field. It's identical to SubjectClaimEQ.
+func SubjectClaim(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldEQ(FieldSubjectClaim, v))
+}
+
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
 func DateUpdated(v time.Time) predicate.Connection {
 	return predicate.Connection(sql.FieldEQ(FieldDateUpdated, v))
@@ -444,6 +449,71 @@ func SecretRefEqualFold(v string) predicate.Connection {
 // SecretRefContainsFold applies the ContainsFold predicate on the "secret_ref" field.
 func SecretRefContainsFold(v string) predicate.Connection {
 	return predicate.Connection(sql.FieldContainsFold(FieldSecretRef, v))
+}
+
+// SubjectClaimEQ applies the EQ predicate on the "subject_claim" field.
+func SubjectClaimEQ(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldEQ(FieldSubjectClaim, v))
+}
+
+// SubjectClaimNEQ applies the NEQ predicate on the "subject_claim" field.
+func SubjectClaimNEQ(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldNEQ(FieldSubjectClaim, v))
+}
+
+// SubjectClaimIn applies the In predicate on the "subject_claim" field.
+func SubjectClaimIn(vs ...string) predicate.Connection {
+	return predicate.Connection(sql.FieldIn(FieldSubjectClaim, vs...))
+}
+
+// SubjectClaimNotIn applies the NotIn predicate on the "subject_claim" field.
+func SubjectClaimNotIn(vs ...string) predicate.Connection {
+	return predicate.Connection(sql.FieldNotIn(FieldSubjectClaim, vs...))
+}
+
+// SubjectClaimGT applies the GT predicate on the "subject_claim" field.
+func SubjectClaimGT(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldGT(FieldSubjectClaim, v))
+}
+
+// SubjectClaimGTE applies the GTE predicate on the "subject_claim" field.
+func SubjectClaimGTE(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldGTE(FieldSubjectClaim, v))
+}
+
+// SubjectClaimLT applies the LT predicate on the "subject_claim" field.
+func SubjectClaimLT(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldLT(FieldSubjectClaim, v))
+}
+
+// SubjectClaimLTE applies the LTE predicate on the "subject_claim" field.
+func SubjectClaimLTE(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldLTE(FieldSubjectClaim, v))
+}
+
+// SubjectClaimContains applies the Contains predicate on the "subject_claim" field.
+func SubjectClaimContains(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldContains(FieldSubjectClaim, v))
+}
+
+// SubjectClaimHasPrefix applies the HasPrefix predicate on the "subject_claim" field.
+func SubjectClaimHasPrefix(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldHasPrefix(FieldSubjectClaim, v))
+}
+
+// SubjectClaimHasSuffix applies the HasSuffix predicate on the "subject_claim" field.
+func SubjectClaimHasSuffix(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldHasSuffix(FieldSubjectClaim, v))
+}
+
+// SubjectClaimEqualFold applies the EqualFold predicate on the "subject_claim" field.
+func SubjectClaimEqualFold(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldEqualFold(FieldSubjectClaim, v))
+}
+
+// SubjectClaimContainsFold applies the ContainsFold predicate on the "subject_claim" field.
+func SubjectClaimContainsFold(v string) predicate.Connection {
+	return predicate.Connection(sql.FieldContainsFold(FieldSubjectClaim, v))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.

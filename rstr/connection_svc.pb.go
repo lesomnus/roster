@@ -23,21 +23,22 @@ const (
 )
 
 type ConnectionAddRequest struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Tenant      *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
-	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_Issuer      string                 `protobuf:"bytes,8,opt,name=issuer"`
-	xxx_hidden_ClientId    string                 `protobuf:"bytes,9,opt,name=client_id,json=clientId"`
-	xxx_hidden_Scopes      []string               `protobuf:"bytes,10,rep,name=scopes"`
-	xxx_hidden_SecretRef   string                 `protobuf:"bytes,11,opt,name=secret_ref,json=secretRef"`
-	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id           []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant       *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Name         string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Desc         string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels       map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_Issuer       string                 `protobuf:"bytes,8,opt,name=issuer"`
+	xxx_hidden_ClientId     string                 `protobuf:"bytes,9,opt,name=client_id,json=clientId"`
+	xxx_hidden_Scopes       []string               `protobuf:"bytes,10,rep,name=scopes"`
+	xxx_hidden_SecretRef    string                 `protobuf:"bytes,11,opt,name=secret_ref,json=secretRef"`
+	xxx_hidden_SubjectClaim string                 `protobuf:"bytes,12,opt,name=subject_claim,json=subjectClaim"`
+	xxx_hidden_DateCreated  *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
+	XXX_presence            [1]uint32
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *ConnectionAddRequest) Reset() {
@@ -128,6 +129,13 @@ func (x *ConnectionAddRequest) GetSecretRef() string {
 	return ""
 }
 
+func (x *ConnectionAddRequest) GetSubjectClaim() string {
+	if x != nil {
+		return x.xxx_hidden_SubjectClaim
+	}
+	return ""
+}
+
 func (x *ConnectionAddRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
@@ -140,7 +148,7 @@ func (x *ConnectionAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 11)
 }
 
 func (x *ConnectionAddRequest) SetTenant(v *TenantRef) {
@@ -173,6 +181,10 @@ func (x *ConnectionAddRequest) SetScopes(v []string) {
 
 func (x *ConnectionAddRequest) SetSecretRef(v string) {
 	x.xxx_hidden_SecretRef = v
+}
+
+func (x *ConnectionAddRequest) SetSubjectClaim(v string) {
+	x.xxx_hidden_SubjectClaim = v
 }
 
 func (x *ConnectionAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -216,16 +228,17 @@ func (x *ConnectionAddRequest) ClearDateCreated() {
 type ConnectionAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Id          []byte
-	Tenant      *TenantRef
-	Name        string
-	Desc        string
-	Labels      map[string]string
-	Issuer      string
-	ClientId    string
-	Scopes      []string
-	SecretRef   string
-	DateCreated *timestamppb.Timestamp
+	Id           []byte
+	Tenant       *TenantRef
+	Name         string
+	Desc         string
+	Labels       map[string]string
+	Issuer       string
+	ClientId     string
+	Scopes       []string
+	SecretRef    string
+	SubjectClaim string
+	DateCreated  *timestamppb.Timestamp
 }
 
 func (b0 ConnectionAddRequest_builder) Build() *ConnectionAddRequest {
@@ -233,7 +246,7 @@ func (b0 ConnectionAddRequest_builder) Build() *ConnectionAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 11)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -244,6 +257,7 @@ func (b0 ConnectionAddRequest_builder) Build() *ConnectionAddRequest {
 	x.xxx_hidden_ClientId = b.ClientId
 	x.xxx_hidden_Scopes = b.Scopes
 	x.xxx_hidden_SecretRef = b.SecretRef
+	x.xxx_hidden_SubjectClaim = b.SubjectClaim
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -615,23 +629,24 @@ func (b0 ConnectionRefByAt_builder) Build() *ConnectionRefByAt {
 }
 
 type ConnectionSelect struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_All         bool                   `protobuf:"varint,1,opt,name=all"`
-	xxx_hidden_Tenant      *TenantSelect          `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Name        bool                   `protobuf:"varint,5,opt,name=name"`
-	xxx_hidden_Desc        bool                   `protobuf:"varint,6,opt,name=desc"`
-	xxx_hidden_Labels      bool                   `protobuf:"varint,7,opt,name=labels"`
-	xxx_hidden_Issuer      bool                   `protobuf:"varint,8,opt,name=issuer"`
-	xxx_hidden_ClientId    bool                   `protobuf:"varint,9,opt,name=client_id,json=clientId"`
-	xxx_hidden_Scopes      bool                   `protobuf:"varint,10,opt,name=scopes"`
-	xxx_hidden_SecretRef   bool                   `protobuf:"varint,11,opt,name=secret_ref,json=secretRef"`
-	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_All          bool                   `protobuf:"varint,1,opt,name=all"`
+	xxx_hidden_Tenant       *TenantSelect          `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Name         bool                   `protobuf:"varint,5,opt,name=name"`
+	xxx_hidden_Desc         bool                   `protobuf:"varint,6,opt,name=desc"`
+	xxx_hidden_Labels       bool                   `protobuf:"varint,7,opt,name=labels"`
+	xxx_hidden_Issuer       bool                   `protobuf:"varint,8,opt,name=issuer"`
+	xxx_hidden_ClientId     bool                   `protobuf:"varint,9,opt,name=client_id,json=clientId"`
+	xxx_hidden_Scopes       bool                   `protobuf:"varint,10,opt,name=scopes"`
+	xxx_hidden_SecretRef    bool                   `protobuf:"varint,11,opt,name=secret_ref,json=secretRef"`
+	xxx_hidden_SubjectClaim bool                   `protobuf:"varint,12,opt,name=subject_claim,json=subjectClaim"`
+	xxx_hidden_DateUpdated  bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased   bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated  bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
+	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
+	XXX_presence            [1]uint32
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *ConnectionSelect) Reset() {
@@ -722,6 +737,13 @@ func (x *ConnectionSelect) GetSecretRef() bool {
 	return false
 }
 
+func (x *ConnectionSelect) GetSubjectClaim() bool {
+	if x != nil {
+		return x.xxx_hidden_SubjectClaim
+	}
+	return false
+}
+
 func (x *ConnectionSelect) GetDateUpdated() bool {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -745,7 +767,7 @@ func (x *ConnectionSelect) GetDateCreated() bool {
 
 func (x *ConnectionSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 13)
 }
 
 func (x *ConnectionSelect) SetTenant(v *TenantSelect) {
@@ -754,52 +776,57 @@ func (x *ConnectionSelect) SetTenant(v *TenantSelect) {
 
 func (x *ConnectionSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 13)
 }
 
 func (x *ConnectionSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 13)
 }
 
 func (x *ConnectionSelect) SetLabels(v bool) {
 	x.xxx_hidden_Labels = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 13)
 }
 
 func (x *ConnectionSelect) SetIssuer(v bool) {
 	x.xxx_hidden_Issuer = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 13)
 }
 
 func (x *ConnectionSelect) SetClientId(v bool) {
 	x.xxx_hidden_ClientId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 13)
 }
 
 func (x *ConnectionSelect) SetScopes(v bool) {
 	x.xxx_hidden_Scopes = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 13)
 }
 
 func (x *ConnectionSelect) SetSecretRef(v bool) {
 	x.xxx_hidden_SecretRef = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 13)
+}
+
+func (x *ConnectionSelect) SetSubjectClaim(v bool) {
+	x.xxx_hidden_SubjectClaim = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 13)
 }
 
 func (x *ConnectionSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 13)
 }
 
 func (x *ConnectionSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 13)
 }
 
 func (x *ConnectionSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 12)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 13)
 }
 
 func (x *ConnectionSelect) HasAll() bool {
@@ -865,25 +892,32 @@ func (x *ConnectionSelect) HasSecretRef() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
-func (x *ConnectionSelect) HasDateUpdated() bool {
+func (x *ConnectionSelect) HasSubjectClaim() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
-func (x *ConnectionSelect) HasDateErased() bool {
+func (x *ConnectionSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
 }
 
-func (x *ConnectionSelect) HasDateCreated() bool {
+func (x *ConnectionSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
+}
+
+func (x *ConnectionSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
 }
 
 func (x *ConnectionSelect) ClearAll() {
@@ -930,36 +964,42 @@ func (x *ConnectionSelect) ClearSecretRef() {
 	x.xxx_hidden_SecretRef = false
 }
 
-func (x *ConnectionSelect) ClearDateUpdated() {
+func (x *ConnectionSelect) ClearSubjectClaim() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	x.xxx_hidden_SubjectClaim = false
+}
+
+func (x *ConnectionSelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *ConnectionSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *ConnectionSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 12)
 	x.xxx_hidden_DateCreated = false
 }
 
 type ConnectionSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	All         *bool
-	Tenant      *TenantSelect
-	Name        *bool
-	Desc        *bool
-	Labels      *bool
-	Issuer      *bool
-	ClientId    *bool
-	Scopes      *bool
-	SecretRef   *bool
-	DateUpdated *bool
-	DateErased  *bool
-	DateCreated *bool
+	All          *bool
+	Tenant       *TenantSelect
+	Name         *bool
+	Desc         *bool
+	Labels       *bool
+	Issuer       *bool
+	ClientId     *bool
+	Scopes       *bool
+	SecretRef    *bool
+	SubjectClaim *bool
+	DateUpdated  *bool
+	DateErased   *bool
+	DateCreated  *bool
 }
 
 func (b0 ConnectionSelect_builder) Build() *ConnectionSelect {
@@ -967,48 +1007,52 @@ func (b0 ConnectionSelect_builder) Build() *ConnectionSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 13)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 13)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 13)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	if b.Labels != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 13)
 		x.xxx_hidden_Labels = *b.Labels
 	}
 	if b.Issuer != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 13)
 		x.xxx_hidden_Issuer = *b.Issuer
 	}
 	if b.ClientId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 13)
 		x.xxx_hidden_ClientId = *b.ClientId
 	}
 	if b.Scopes != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 13)
 		x.xxx_hidden_Scopes = *b.Scopes
 	}
 	if b.SecretRef != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 13)
 		x.xxx_hidden_SecretRef = *b.SecretRef
 	}
+	if b.SubjectClaim != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 13)
+		x.xxx_hidden_SubjectClaim = *b.SubjectClaim
+	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 13)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 13)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 12)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 13)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -1024,6 +1068,7 @@ type ConnectionPatchRequest struct {
 	xxx_hidden_ClientId         *string                `protobuf:"bytes,18,opt,name=client_id,json=clientId"`
 	xxx_hidden_Scopes           []string               `protobuf:"bytes,20,rep,name=scopes"`
 	xxx_hidden_SecretRef        *string                `protobuf:"bytes,22,opt,name=secret_ref,json=secretRef"`
+	xxx_hidden_SubjectClaim     *string                `protobuf:"bytes,24,opt,name=subject_claim,json=subjectClaim"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
@@ -1128,6 +1173,16 @@ func (x *ConnectionPatchRequest) GetSecretRef() string {
 	return ""
 }
 
+func (x *ConnectionPatchRequest) GetSubjectClaim() string {
+	if x != nil {
+		if x.xxx_hidden_SubjectClaim != nil {
+			return *x.xxx_hidden_SubjectClaim
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *ConnectionPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -1148,12 +1203,12 @@ func (x *ConnectionPatchRequest) SetRef(v *ConnectionRef) {
 
 func (x *ConnectionPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 11)
 }
 
 func (x *ConnectionPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 11)
 }
 
 func (x *ConnectionPatchRequest) SetLabels(v map[string]string) {
@@ -1162,12 +1217,12 @@ func (x *ConnectionPatchRequest) SetLabels(v map[string]string) {
 
 func (x *ConnectionPatchRequest) SetIssuer(v string) {
 	x.xxx_hidden_Issuer = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 11)
 }
 
 func (x *ConnectionPatchRequest) SetClientId(v string) {
 	x.xxx_hidden_ClientId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 11)
 }
 
 func (x *ConnectionPatchRequest) SetScopes(v []string) {
@@ -1176,7 +1231,12 @@ func (x *ConnectionPatchRequest) SetScopes(v []string) {
 
 func (x *ConnectionPatchRequest) SetSecretRef(v string) {
 	x.xxx_hidden_SecretRef = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 11)
+}
+
+func (x *ConnectionPatchRequest) SetSubjectClaim(v string) {
+	x.xxx_hidden_SubjectClaim = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 11)
 }
 
 func (x *ConnectionPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -1185,7 +1245,7 @@ func (x *ConnectionPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *ConnectionPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 10)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 11)
 }
 
 func (x *ConnectionPatchRequest) HasRef() bool {
@@ -1230,6 +1290,13 @@ func (x *ConnectionPatchRequest) HasSecretRef() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
+func (x *ConnectionPatchRequest) HasSubjectClaim() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+}
+
 func (x *ConnectionPatchRequest) HasDateUpdated() bool {
 	if x == nil {
 		return false
@@ -1241,7 +1308,7 @@ func (x *ConnectionPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
 }
 
 func (x *ConnectionPatchRequest) ClearRef() {
@@ -1273,26 +1340,32 @@ func (x *ConnectionPatchRequest) ClearSecretRef() {
 	x.xxx_hidden_SecretRef = nil
 }
 
+func (x *ConnectionPatchRequest) ClearSubjectClaim() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	x.xxx_hidden_SubjectClaim = nil
+}
+
 func (x *ConnectionPatchRequest) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
 }
 
 func (x *ConnectionPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
 type ConnectionPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref       *ConnectionRef
-	Name      *string
-	Desc      *string
-	Labels    map[string]string
-	Issuer    *string
-	ClientId  *string
-	Scopes    []string
-	SecretRef *string
+	Ref          *ConnectionRef
+	Name         *string
+	Desc         *string
+	Labels       map[string]string
+	Issuer       *string
+	ClientId     *string
+	Scopes       []string
+	SecretRef    *string
+	SubjectClaim *string
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -1315,30 +1388,34 @@ func (b0 ConnectionPatchRequest_builder) Build() *ConnectionPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 11)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 11)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	x.xxx_hidden_Labels = b.Labels
 	if b.Issuer != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 11)
 		x.xxx_hidden_Issuer = b.Issuer
 	}
 	if b.ClientId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 11)
 		x.xxx_hidden_ClientId = b.ClientId
 	}
 	x.xxx_hidden_Scopes = b.Scopes
 	if b.SecretRef != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 11)
 		x.xxx_hidden_SecretRef = b.SecretRef
+	}
+	if b.SubjectClaim != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 11)
+		x.xxx_hidden_SubjectClaim = b.SubjectClaim
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 10)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 11)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -1787,18 +1864,19 @@ func (b0 ConnectionFilter_builder) Build() *ConnectionFilter {
 }
 
 type ConnectionUpdateRequest struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref         *ConnectionRef         `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_Issuer      *string                `protobuf:"bytes,8,opt,name=issuer"`
-	xxx_hidden_ClientId    *string                `protobuf:"bytes,9,opt,name=client_id,json=clientId"`
-	xxx_hidden_Scopes      []string               `protobuf:"bytes,10,rep,name=scopes"`
-	xxx_hidden_SecretRef   *string                `protobuf:"bytes,11,opt,name=secret_ref,json=secretRef"`
-	xxx_hidden_Desc        *string                `protobuf:"bytes,6,opt,name=desc"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref          *ConnectionRef         `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_DateUpdated  *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_Issuer       *string                `protobuf:"bytes,8,opt,name=issuer"`
+	xxx_hidden_ClientId     *string                `protobuf:"bytes,9,opt,name=client_id,json=clientId"`
+	xxx_hidden_Scopes       []string               `protobuf:"bytes,10,rep,name=scopes"`
+	xxx_hidden_SecretRef    *string                `protobuf:"bytes,11,opt,name=secret_ref,json=secretRef"`
+	xxx_hidden_SubjectClaim *string                `protobuf:"bytes,12,opt,name=subject_claim,json=subjectClaim"`
+	xxx_hidden_Desc         *string                `protobuf:"bytes,6,opt,name=desc"`
+	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
+	XXX_presence            [1]uint32
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *ConnectionUpdateRequest) Reset() {
@@ -1877,6 +1955,16 @@ func (x *ConnectionUpdateRequest) GetSecretRef() string {
 	return ""
 }
 
+func (x *ConnectionUpdateRequest) GetSubjectClaim() string {
+	if x != nil {
+		if x.xxx_hidden_SubjectClaim != nil {
+			return *x.xxx_hidden_SubjectClaim
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *ConnectionUpdateRequest) GetDesc() string {
 	if x != nil {
 		if x.xxx_hidden_Desc != nil {
@@ -1897,12 +1985,12 @@ func (x *ConnectionUpdateRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *ConnectionUpdateRequest) SetIssuer(v string) {
 	x.xxx_hidden_Issuer = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 8)
 }
 
 func (x *ConnectionUpdateRequest) SetClientId(v string) {
 	x.xxx_hidden_ClientId = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 8)
 }
 
 func (x *ConnectionUpdateRequest) SetScopes(v []string) {
@@ -1911,12 +1999,17 @@ func (x *ConnectionUpdateRequest) SetScopes(v []string) {
 
 func (x *ConnectionUpdateRequest) SetSecretRef(v string) {
 	x.xxx_hidden_SecretRef = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 8)
+}
+
+func (x *ConnectionUpdateRequest) SetSubjectClaim(v string) {
+	x.xxx_hidden_SubjectClaim = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 8)
 }
 
 func (x *ConnectionUpdateRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 8)
 }
 
 func (x *ConnectionUpdateRequest) HasRef() bool {
@@ -1954,11 +2047,18 @@ func (x *ConnectionUpdateRequest) HasSecretRef() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *ConnectionUpdateRequest) HasDesc() bool {
+func (x *ConnectionUpdateRequest) HasSubjectClaim() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
+func (x *ConnectionUpdateRequest) HasDesc() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
 func (x *ConnectionUpdateRequest) ClearRef() {
@@ -1984,8 +2084,13 @@ func (x *ConnectionUpdateRequest) ClearSecretRef() {
 	x.xxx_hidden_SecretRef = nil
 }
 
-func (x *ConnectionUpdateRequest) ClearDesc() {
+func (x *ConnectionUpdateRequest) ClearSubjectClaim() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_SubjectClaim = nil
+}
+
+func (x *ConnectionUpdateRequest) ClearDesc() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_Desc = nil
 }
 
@@ -1998,11 +2103,12 @@ type ConnectionUpdateRequest_builder struct {
 	// Each replaced whole when present, and left as it is when absent. Scopes
 	// have no presence: given, they replace; empty, they are left as they are,
 	// the way `Tenant.Update` takes labels.
-	Issuer    *string
-	ClientId  *string
-	Scopes    []string
-	SecretRef *string
-	Desc      *string
+	Issuer       *string
+	ClientId     *string
+	Scopes       []string
+	SecretRef    *string
+	SubjectClaim *string
+	Desc         *string
 }
 
 func (b0 ConnectionUpdateRequest_builder) Build() *ConnectionUpdateRequest {
@@ -2012,20 +2118,24 @@ func (b0 ConnectionUpdateRequest_builder) Build() *ConnectionUpdateRequest {
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.Issuer != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 8)
 		x.xxx_hidden_Issuer = b.Issuer
 	}
 	if b.ClientId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 8)
 		x.xxx_hidden_ClientId = b.ClientId
 	}
 	x.xxx_hidden_Scopes = b.Scopes
 	if b.SecretRef != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
 		x.xxx_hidden_SecretRef = b.SecretRef
 	}
+	if b.SubjectClaim != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 8)
+		x.xxx_hidden_SubjectClaim = b.SubjectClaim
+	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 8)
 		x.xxx_hidden_Desc = b.Desc
 	}
 	return m0
@@ -2035,7 +2145,7 @@ var File_app_connection_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/connection_svc.g.proto\x12\x06roster\x1a\x14app/connection.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\xc4\x03\n" +
+	"\x1aapp/connection_svc.g.proto\x12\x06roster\x1a\x14app/connection.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\xf0\x03\n" +
 	"\x14ConnectionAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x19\n" +
@@ -2047,7 +2157,8 @@ const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\x06scopes\x18\n" +
 	" \x03(\tR\x06scopes\x12$\n" +
 	"\n" +
-	"secret_ref\x18\v \x01(\tB\x05\xaa\x01\x02\b\x02R\tsecretRef\x12=\n" +
+	"secret_ref\x18\v \x01(\tB\x05\xaa\x01\x02\b\x02R\tsecretRef\x12*\n" +
+	"\rsubject_claim\x18\f \x01(\tB\x05\xaa\x01\x02\b\x02R\fsubjectClaim\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -2061,7 +2172,7 @@ const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\x03key\"R\n" +
 	"\x11ConnectionRefByAt\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x12\n" +
-	"\x04name\x18\x05 \x01(\tR\x04name\"\xe5\x02\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\"\x8a\x03\n" +
 	"\x10ConnectionSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x14.roster.TenantSelectR\x06tenant\x12\x12\n" +
@@ -2073,11 +2184,12 @@ const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\x06scopes\x18\n" +
 	" \x01(\bR\x06scopes\x12\x1d\n" +
 	"\n" +
-	"secret_ref\x18\v \x01(\bR\tsecretRef\x12!\n" +
+	"secret_ref\x18\v \x01(\bR\tsecretRef\x12#\n" +
+	"\rsubject_claim\x18\f \x01(\bR\fsubjectClaim\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xc1\x03\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xe6\x03\n" +
 	"\x16ConnectionPatchRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.ConnectionRefR\x03ref\x12\x12\n" +
 	"\x04name\x18\n" +
@@ -2088,7 +2200,8 @@ const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\tclient_id\x18\x12 \x01(\tR\bclientId\x12\x16\n" +
 	"\x06scopes\x18\x14 \x03(\tR\x06scopes\x12\x1d\n" +
 	"\n" +
-	"secret_ref\x18\x16 \x01(\tR\tsecretRef\x12=\n" +
+	"secret_ref\x18\x16 \x01(\tR\tsecretRef\x12#\n" +
+	"\rsubject_claim\x18\x18 \x01(\tR\fsubjectClaim\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
@@ -2108,7 +2221,7 @@ const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"f\n" +
 	"\x10ConnectionFilter\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.ConnectionRefR\x03ref\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\"\x81\x02\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\"\xa6\x02\n" +
 	"\x17ConnectionUpdateRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.ConnectionRefR\x03ref\x12=\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12\x16\n" +
@@ -2117,7 +2230,8 @@ const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\x06scopes\x18\n" +
 	" \x03(\tR\x06scopes\x12\x1d\n" +
 	"\n" +
-	"secret_ref\x18\v \x01(\tR\tsecretRef\x12\x12\n" +
+	"secret_ref\x18\v \x01(\tR\tsecretRef\x12#\n" +
+	"\rsubject_claim\x18\f \x01(\tR\fsubjectClaim\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\tR\x04desc2\xc6\x03\n" +
 	"\x11ConnectionService\x127\n" +
 	"\x03Add\x12\x1c.roster.ConnectionAddRequest\x1a\x12.roster.Connection\x127\n" +

@@ -80,6 +80,13 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 				that has one — is the deployment's to write: a tenant keeps it or takes
 				it away, and a connection with no secret is the tenant's own.
 			</p>
+			<p className="note">
+				<code>subject</code> is which claim of the token names the person: <code>sub</code>{' '}
+				unless it says otherwise, and <code>oid</code> for Entra, whose <code>sub</code> is
+				one per app and whose <code>oid</code> is what a directory provisioning them sends.
+				Moving to <code>oid</code> moves everybody at their next sign-in; moving back is
+				the deployment's.
+			</p>
 
 			<Bar>
 				<input
@@ -141,6 +148,7 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 														clientId: String(f.get('client_id') ?? '').trim(),
 														scopes,
 														secretRef: String(f.get('secret_ref') ?? '').trim(),
+														subjectClaim: String(f.get('subject_claim') ?? ''),
 														desc: String(f.get('desc') ?? '').trim(),
 													})
 													.then(() => setEditing(null))
@@ -151,6 +159,7 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 											<input name="client_id" placeholder="client id" defaultValue={v.clientId} required />
 											<input name="scopes" placeholder="scopes beyond openid" defaultValue={v.scopes.join(' ')} />
 											<input name="secret_ref" placeholder="env:CONTOSO_ENTRA_SECRET" defaultValue={v.secretRef} />
+											<Subject value={v.subjectClaim} />
 											<input name="desc" placeholder="note" defaultValue={v.desc} />
 											<button type="submit" disabled={update.state === 'pending'}>
 												save
@@ -172,7 +181,10 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 								</td>
 								<td className="mono">
 									{v.clientId}
-									<span className="under">{v.scopes.join(' ')}</span>
+									<span className="under">
+										{v.scopes.join(' ')}
+										{v.subjectClaim !== '' && ` · subject ${v.subjectClaim}`}
+									</span>
 								</td>
 								<td className="mono">{v.secretRef}</td>
 								<td className="acts">
@@ -230,6 +242,7 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 							clientId,
 							scopes,
 							secretRef: String(f.get('secret_ref') ?? '').trim(),
+							subjectClaim: String(f.get('subject_claim') ?? ''),
 							desc: String(f.get('desc') ?? '').trim(),
 						})
 						.then(() => {
@@ -247,6 +260,7 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 				<input name="client_id" placeholder="client id" required />
 				<input name="scopes" placeholder="scopes beyond openid, e.g. email" />
 				<input name="secret_ref" placeholder="env:CONTOSO_ENTRA_SECRET" />
+				<Subject value="" />
 				<input name="desc" placeholder="note (optional)" />
 				<button
 					type="submit"
@@ -257,5 +271,16 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 			</form>
 			</Sheet>
 		</section>
+	)
+}
+
+// Subject is which claim of a token names the person at this connection, as a
+// choice of the two a front door reads (`Connection.subject_claim`).
+function Subject(props: { value: string }) {
+	return (
+		<select name="subject_claim" aria-label="subject claim" defaultValue={props.value}>
+			<option value="">subject: sub</option>
+			<option value="oid">subject: oid (Entra)</option>
+		</select>
 	)
 }

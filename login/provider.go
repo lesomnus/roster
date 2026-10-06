@@ -145,7 +145,7 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 
 	// Somebody this tenant has never seen is the one decision that is not
 	// roster's and not this app's.
-	holder, err := a.arrives.Known(as, a.c.Enrol, who)
+	holder, err := a.arrives.Known(as, a.c.Enrol, &who)
 	if err != nil {
 		if errors.Is(err, arrives.ErrUninvited) {
 			http.Error(w, "this account has not been invited", http.StatusForbidden)

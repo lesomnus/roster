@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/connection.proto.
  */
 export const file_app_connection: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvY29ubmVjdGlvbi5wcm90bxIGcm9zdGVyIsIECgpDb25uZWN0aW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEi4KBmxhYmVscxgHIAMoCzIeLnJvc3Rlci5Db25uZWN0aW9uLkxhYmVsc0VudHJ5Eg4KBmlzc3VlchgIIAEoCRIRCgljbGllbnRfaWQYCSABKAkSDgoGc2NvcGVzGAogAygJEhIKCnNlY3JldF9yZWYYCyABKAkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6f8r8FUQSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARocEgJhdBoKCgZ0ZW5hbnQQAhoICgRuYW1lEAUwAYq7FjMIGTIvChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudCAUKGRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChRhcHAvY29ubmVjdGlvbi5wcm90bxIGcm9zdGVyItkECgpDb25uZWN0aW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEi4KBmxhYmVscxgHIAMoCzIeLnJvc3Rlci5Db25uZWN0aW9uLkxhYmVsc0VudHJ5Eg4KBmlzc3VlchgIIAEoCRIRCgljbGllbnRfaWQYCSABKAkSDgoGc2NvcGVzGAogAygJEhIKCnNlY3JldF9yZWYYCyABKAkSFQoNc3ViamVjdF9jbGFpbRgMIAEoCRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATp/yvwVRBICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGhwSAmF0GgoKBnRlbmFudBACGggKBG5hbWUQBTABirsWMwgZMi8KEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGdGVuYW50IBQoZEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Connection is which provider one operator's people arrive through.
@@ -151,6 +151,36 @@ export type Connection = Message<"roster.Connection"> & {
    * @generated from field: string secret_ref = 11;
    */
   secretRef: string;
+
+  /**
+   * Which claim of the ID token is a person's `Identity.subject` here.
+   *
+   * Empty is `sub`, which is what OIDC calls the subject and what most
+   * providers mean by one: Google's, Okta's and GitHub's name the person, the
+   * same for every app. Entra's does not. Its v2 `sub` is **pairwise** -- one
+   * per app registration -- so it names a person to this front door alone, and
+   * nothing else that knows them can say it: not a directory provisioning them
+   * (SCIM's `externalId`), not another app, not somebody reading the portal.
+   * Entra's immutable identifier is `oid`, which is what `Identity.subject`
+   * says the subject is for Entra, and what `oid` here makes it.
+   *
+   * Entra puts `oid` in the ID token only with the `profile` scope. A sign-in
+   * whose token lacks the claim is refused rather than falling back to `sub`:
+   * one person under two subjects is two people.
+   *
+   * # Moving a connection people already sign in through
+   *
+   * Everybody who signed in before has an identity keyed by `sub`. The front
+   * door moves each one at their next sign-in (`IdentityService.Resubject`),
+   * once, with the token that carries both; somebody it may not move -- wider
+   * than the front door -- signs in by the old row until an operator moves
+   * them. A tenant may move forward and not back: going back would leave
+   * everybody already moved unknown at their next sign-in, so it is the
+   * deployment's (`server/core/connection.go`).
+   *
+   * @generated from field: string subject_claim = 12;
+   */
+  subjectClaim: string;
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

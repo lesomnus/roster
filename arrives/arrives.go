@@ -37,6 +37,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -65,9 +66,17 @@ type Caller struct {
 
 	// Provider is the `Connection.name`, which is what `Identity.provider`
 	// stores; Subject is the provider's immutable identifier for them, never an
-	// address or a username.
+	// address or a username -- the claim the connection names
+	// (`Connection.subject_claim`), which is `sub` unless it says otherwise.
 	Provider string
 	Subject  string
+
+	// sub is the ID token's own `sub`, kept when the connection names another
+	// claim as the subject. It is what the person's identity was keyed by
+	// before the connection moved to that claim, so [Providers.Known] can find
+	// them by it once, and it is who userinfo answers about (OpenID Connect
+	// Core 5.3.2). Empty when Subject is the `sub`.
+	sub string
 
 	// What else the token carried, for a policy that names people by it.
 	Email    string
@@ -84,6 +93,15 @@ type Caller struct {
 	// the provider with and for nothing else. Unexported, so it is never in
 	// anything an app logs or passes on by accident.
 	token *oauth2.Token
+}
+
+// tokenSub is the ID token's `sub`, whichever claim Subject is.
+func (c Caller) tokenSub() string {
+	if c.sub != "" {
+		return c.sub
+	}
+
+	return c.Subject
 }
 
 // Enrol decides what happens when somebody signs in at a provider and roster
@@ -347,9 +365,20 @@ func (p *Providers) Connections(ctx context.Context, tenant pdid.Id) ([]*rstr.Co
 	return vs.GetItems(), nil
 }
 
+// Verifier is a connection's token check, and which claim of a token it
+// passes is the person's subject there (`Connection.subject_claim`).
+//
+// One value rather than a second return, so that what [Providers.Claim] reads
+// a subject by cannot come from a different connection than the check did.
+type Verifier struct {
+	*oidc.IDTokenVerifier
+
+	subject string
+}
+
 // Relying is this app as the relying party for one connection of one tenant:
 // the discovery done, the secret resolved, the redirect fixed.
-func (p *Providers) Relying(ctx context.Context, tenant pdid.Id, name, redirect string) (*oauth2.Config, *oidc.IDTokenVerifier, error) {
+func (p *Providers) Relying(ctx context.Context, tenant pdid.Id, name, redirect string) (*oauth2.Config, *Verifier, error) {
 	c, v, err := p.discover(ctx, tenant, name)
 	if err != nil {
 		return nil, nil, err
@@ -369,7 +398,10 @@ func (p *Providers) Relying(ctx context.Context, tenant pdid.Id, name, redirect 
 		Endpoint:     v.Endpoint(),
 		RedirectURL:  redirect,
 		Scopes:       append([]string{oidc.ScopeOpenID}, c.GetScopes()...),
-	}, v.Verifier(&oidc.Config{ClientID: c.GetClientId()}), nil
+	}, &Verifier{
+		IDTokenVerifier: v.Verifier(&oidc.Config{ClientID: c.GetClientId()}),
+		subject:         c.GetSubjectClaim(),
+	}, nil
 }
 
 // discover is one connection of one tenant and what its issuer publishes, the
@@ -403,7 +435,11 @@ func (p *Providers) discover(ctx context.Context, tenant pdid.Id, name string) (
 
 // Claim is what the provider said, verified: the exchange and the token check
 // that make the app the relying party.
-func (p *Providers) Claim(ctx context.Context, cfg *oauth2.Config, verifier *oidc.IDTokenVerifier, code string) (Caller, error) {
+//
+// The subject is the claim the connection names. A token without it is
+// refused rather than read by `sub`: the person would be somebody else under
+// the other claim, and a second person is what that makes.
+func (p *Providers) Claim(ctx context.Context, cfg *oauth2.Config, verifier *Verifier, code string) (Caller, error) {
 	if code == "" {
 		return Caller{}, errors.New("no code")
 	}
@@ -429,33 +465,49 @@ func (p *Providers) Claim(ctx context.Context, cfg *oauth2.Config, verifier *oid
 		return Caller{}, err
 	}
 
-	return Caller{
+	who := Caller{
 		Subject:  id.Subject,
 		Email:    claims.Email,
 		Verified: claims.Verified,
 		Name:     claims.Name,
 		Picture:  claims.Picture,
 		token:    tok,
-	}, nil
+	}
+	if named := verifier.subject; named != "" && named != "sub" {
+		var all map[string]any
+		if err := id.Claims(&all); err != nil {
+			return Caller{}, err
+		}
+		v, _ := all[named].(string)
+		if v == "" {
+			// Entra leaves `oid` out without the `profile` scope, which is the
+			// usual reason, and the one worth saying.
+			return Caller{}, fmt.Errorf("the token carries no %q, which this connection names its people by; "+
+				"Entra sends `oid` only to a client asking for the `profile` scope", named)
+		}
+		who.sub, who.Subject = id.Subject, v
+	}
+
+	return who, nil
 }
 
 // Known makes sure the claim names somebody here, enrolling them if the
 // deployment's policy says so, and links the identity itself so a policy cannot
 // forget to or do it a second way. What it answers is the `Holder.id`, which is
 // the `sub` of every token minted for them afterwards.
-func (p *Providers) Known(ctx context.Context, enrol Enrol, who Caller) (pdid.Id, error) {
-	v, err := p.roster.Identity().Get(ctx, rstr.IdentityGetRequest_builder{
-		Ref: rstr.IdentityRef_builder{
-			Subject: rstr.IdentityRefBySubject_builder{
-				TenantId: who.Tenant.Bytes(),
-				Provider: proto.String(who.Provider),
-				Subject:  proto.String(who.Subject),
-			}.Build(),
-		}.Build(),
-		Select: rstr.IdentitySelect_builder{
-			Holder: rstr.HolderSelect_builder{}.Build(),
-		}.Build(),
-	}.Build())
+//
+// # And it may answer by the subject they had
+//
+// A connection that names another claim than `sub` (`Connection.subject_claim`)
+// finds people who signed in before it did by the `sub` their identity was
+// keyed by, and moves that identity to the claim -- once, with the token that
+// carries both. When the move is refused -- somebody wider than this front door,
+// whom [Core.mayWriteAWayIn] keeps it from writing a way into -- they are
+// signed in by the row they had, which is what happened before the connection
+// moved, and an operator moves them. `who.Subject` is then that row's subject,
+// because it is what `Door.Accept` resolves them by next.
+func (p *Providers) Known(ctx context.Context, enrol Enrol, who *Caller) (pdid.Id, error) {
+	v, err := p.identity(ctx, who, who.Subject)
 	switch status.Code(err) {
 	case codes.OK:
 		return pdid.From(v.GetHolder().GetId())
@@ -464,10 +516,20 @@ func (p *Providers) Known(ctx context.Context, enrol Enrol, who Caller) (pdid.Id
 		return pdid.Nil, err
 	}
 
+	if who.sub != "" && who.sub != who.Subject {
+		id, ok, err := p.moved(ctx, who)
+		if err != nil {
+			return pdid.Nil, err
+		}
+		if ok {
+			return id, nil
+		}
+	}
+
 	if enrol == nil {
 		enrol = Invited()
 	}
-	id, err := enrol(ctx, p.roster, who)
+	id, err := enrol(ctx, p.roster, *who)
 	if err != nil {
 		return pdid.Nil, err
 	}
@@ -480,9 +542,61 @@ func (p *Providers) Known(ctx context.Context, enrol Enrol, who Caller) (pdid.Id
 		return pdid.Nil, fmt.Errorf("link %s/%s: %w", who.Provider, who.Subject, err)
 	}
 
-	p.attest(ctx, id, link, who)
+	p.attest(ctx, id, link, *who)
 
 	return id, nil
+}
+
+// identity is the row a subject at this provider names in this tenant.
+func (p *Providers) identity(ctx context.Context, who *Caller, subject string) (*rstr.Identity, error) {
+	return p.roster.Identity().Get(ctx, rstr.IdentityGetRequest_builder{
+		Ref: rstr.IdentityRef_builder{
+			Subject: rstr.IdentityRefBySubject_builder{
+				TenantId: who.Tenant.Bytes(),
+				Provider: proto.String(who.Provider),
+				Subject:  proto.String(subject),
+			}.Build(),
+		}.Build(),
+		Select: rstr.IdentitySelect_builder{
+			Holder: rstr.HolderSelect_builder{}.Build(),
+		}.Build(),
+	}.Build())
+}
+
+// moved finds somebody by the `sub` their identity was keyed by before the
+// connection named another claim, and moves it to that claim.
+//
+// Answers false when there is no such row: they are new under either claim,
+// and enrolment decides. A refused move is said and not refused -- they signed
+// in by a row the token's own `sub` names, exactly as they did before the
+// connection moved -- and `who.Subject` goes back to that row's subject.
+func (p *Providers) moved(ctx context.Context, who *Caller) (pdid.Id, bool, error) {
+	v, err := p.identity(ctx, who, who.sub)
+	switch status.Code(err) {
+	case codes.OK:
+	case codes.NotFound:
+		return pdid.Nil, false, nil
+	default:
+		return pdid.Nil, false, err
+	}
+
+	id, err := pdid.From(v.GetHolder().GetId())
+	if err != nil {
+		return pdid.Nil, false, err
+	}
+
+	if _, err := p.roster.Identity().Resubject(ctx, rstr.IdentityResubjectRequest_builder{
+		Ref:     rstr.IdentityRef_builder{Id: v.GetId()}.Build(),
+		Subject: proto.String(who.Subject),
+	}.Build()); err != nil {
+		slog.WarnContext(ctx, "arrives: signed in by the subject they had; an operator moves them",
+			"provider", who.Provider, "holder", id.String(), "err", err)
+		who.Subject = who.sub
+
+		return id, true, nil
+	}
+
+	return id, true, nil
 }
 
 // attest writes down the address the directory just handed over, on the word of
