@@ -56,6 +56,7 @@ type hydra struct {
 	accepted  int
 	rejected  bool
 	forgotten []string // the subjects hydra was told to forget
+	ungranted []string // the subjects whose every client's grant hydra was told to revoke
 
 	// The third challenge. `rp` is whether a relying party started it, which
 	// is the field the app's one refusal reads.
@@ -189,6 +190,18 @@ func newHydra(t *testing.T) *hydra {
 		h.mu.Lock()
 		h.forgotten = append(h.forgotten, r.URL.Query().Get("subject"))
 		h.mu.Unlock()
+
+		w.WriteHeader(http.StatusNoContent)
+	})
+	// What a refresh token hangs off. Counted only with `all=true`, which is the
+	// one form that reaches every client: a sign-out everywhere revoking one
+	// client's grant would leave the rest refreshing.
+	m.HandleFunc("DELETE /admin/oauth2/auth/sessions/consent", func(w http.ResponseWriter, r *http.Request) {
+		if q := r.URL.Query(); q.Get("all") == "true" {
+			h.mu.Lock()
+			h.ungranted = append(h.ungranted, q.Get("subject"))
+			h.mu.Unlock()
+		}
 
 		w.WriteHeader(http.StatusNoContent)
 	})
@@ -340,6 +353,13 @@ func (h *hydra) forgot() []string {
 	defer h.mu.Unlock()
 
 	return append([]string(nil), h.forgotten...)
+}
+
+func (h *hydra) ungrants() []string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	return append([]string(nil), h.ungranted...)
 }
 
 // times is how often hydra was told to forget one subject.
@@ -987,6 +1007,10 @@ func TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne(t *testing.T) {
 // credentials stop working, and Hydra goes on remembering them -- so the next
 // product they open gets a fresh token with no form in between.
 //
+// And it was quiet twice. Forgetting the browser left every client's grant, so
+// a product holding a refresh token went on refreshing for somebody signed out
+// everywhere; the grants go too now, every client's (`revokeSessions`).
+//
 // roster does not know Hydra exists and this test does not change that. What it
 // watches is `SyncService`, which says what has stopped being good about
 // somebody in roster's own vocabulary; turning that into a `DELETE` is the
@@ -1009,10 +1033,13 @@ func TestSigningSomebodyOutEverywhereReachesHydra(t *testing.T) {
 
 		return slices.Contains(d.hydra.forgot(), erin.String())
 	}, 10*time.Second, 100*time.Millisecond, "hydra was never told to forget her")
+	x.Eventually(func() bool {
+		return slices.Contains(d.hydra.ungrants(), erin.String())
+	}, 10*time.Second, 20*time.Millisecond, "her grants outlived the sign-out: a refresh token goes on refreshing")
 
 	// And nobody else. A stream narrowed by the wall hears one tenant per key,
 	// and an event about contoso's erin must not reach fabrikam's.
-	for _, s := range d.hydra.forgot() {
+	for _, s := range append(d.hydra.forgot(), d.hydra.ungrants()...) {
 		x.NotEqual(d.who["fabrikam"].String(), s, "an event about contoso reached fabrikam")
 	}
 }

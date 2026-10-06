@@ -24,8 +24,8 @@ import (
 // keeps that true. `SyncService` says what has stopped being good about
 // somebody -- signed out everywhere, suspended, erased -- to **any** app that
 // holds a credential, in roster's own vocabulary and nobody else's. Turning one
-// of those into `DELETE /admin/oauth2/auth/sessions/login` is a fact about
-// Hydra, so it lives in the package that already knows about Hydra.
+// of those into `DELETE /admin/oauth2/auth/sessions/{consent,login}` is a fact
+// about Hydra, so it lives in the package that already knows about Hydra.
 //
 // Without it there is a real hole and it is quiet: an tenant signs somebody
 // out everywhere, roster's own credentials stop working, and Hydra goes on
@@ -47,8 +47,8 @@ import (
 //
 // What that widens is what this hears, and it is worth being exact about: every
 // tenant's sign-outs rather than the fronted ones'. What it does with one is
-// `DELETE` a Hydra login session for a subject, and a subject Hydra has never
-// seen is a delete of nothing. So the wider stream costs a call that does
+// `DELETE` a subject's Hydra grants and login session, and a subject Hydra has
+// never seen is two deletes of nothing. So the wider stream costs calls that do
 // nothing, and buys not having to know who this app fronts.
 //
 // # What a reconnect means

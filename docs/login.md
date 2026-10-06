@@ -374,7 +374,11 @@ And the other direction is done: **signing somebody out in roster reaches
 Hydra.** The Login App holds `SyncService` open -- one stream, on its deployment key and naming no tenant, so it hears every tenant's sign-outs, fronted or not -- and when
 roster says somebody has been signed out everywhere, suspended or erased it tells
 Hydra to forget them -- so the next product they open finds a form rather than a
-fresh token. roster does not know Hydra exists and this does not change that: the
+fresh token. **Every client's grant goes with the browser**: a refresh token
+hangs off what somebody granted a client, not off the browser, so a product
+holding one refreshed on after a sign-out that only forgot the browser. An
+access token already issued is not reached -- a JWT verifies until it expires.
+roster does not know Hydra exists and this does not change that: the
 stream says what has stopped being good in roster's own vocabulary, to any app
 holding a credential, and turning that into a `DELETE` is the Login App's.
 

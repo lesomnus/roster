@@ -112,8 +112,12 @@ json() { sed "s/.*\"$1\":\"//; s/\".*//"; }
 # And an API the token is for (`audience`), which is what a page asks for once per
 # API it calls -- `docs/apps.md`, "People's tokens". The demo client may ask for
 # this one (`compose.yaml`).
+#
+# `offline` as well, which every registration this repository ships allows: a
+# refresh token is what a product keeps to go on acting for somebody with no
+# browser in front of it, and so what signing out everywhere has to reach.
 : "${AUDIENCE:=urn:roster:demo:api}"
-authorize="${ISSUER}/oauth2/auth?client_id=${OAUTH_CLIENT}&response_type=code&scope=openid+profile+email&redirect_uri=$(printf '%s' "${CALLBACK}" | sed 's|:|%3A|g; s|/|%2F|g')&audience=$(printf '%s' "${AUDIENCE}" | sed 's|:|%3A|g')&state=abcdefghijklmnopqrst"
+authorize="${ISSUER}/oauth2/auth?client_id=${OAUTH_CLIENT}&response_type=code&scope=openid+offline+profile+email&redirect_uri=$(printf '%s' "${CALLBACK}" | sed 's|:|%3A|g; s|/|%2F|g')&audience=$(printf '%s' "${AUDIENCE}" | sed 's|:|%3A|g')&state=abcdefghijklmnopqrst"
 
 # begin is a product sending a browser to Hydra, as far as the login app's door.
 # It answers the challenge, and leaves the status in `began`.
@@ -273,7 +277,18 @@ token=$(c -X POST "${ISSUER}/oauth2/token" \
 		-d "redirect_uri=${CALLBACK}" -u "${OAUTH_CLIENT}:${CLIENT_SECRET}")
 	id=$(printf '%s' "${token}" | sed 's/.*"id_token":"//; s/".*//')
 	[ -n "${id}" ] || die "no id_token: ${token}"
+	refresh=$(printf '%s' "${token}" | sed -n 's/.*"refresh_token":"\([^"]*\)".*/\1/p')
+	[ -n "${refresh}" ] || die "no refresh_token, and the client asked for offline: ${token}"
 
+}
+
+# spend spends the refresh token the walk holds, and leaves Hydra's answer in
+# `refreshed` and the token it rotated to in `refresh`.
+spend() {
+	refreshed=$(c -X POST "${ISSUER}/oauth2/token" \
+		-d grant_type=refresh_token -d "refresh_token=${refresh}" \
+		-u "${OAUTH_CLIENT}:${CLIENT_SECRET}")
+	refresh=$(printf '%s' "${refreshed}" | sed -n 's/.*"refresh_token":"\([^"]*\)".*/\1/p')
 }
 
 sign_in
@@ -356,6 +371,13 @@ printf '%s' "${again}" | grep -q '"preferred_username":"'"${SEED_USER}"'"' \
 	|| die "a token from a remembered browser carries no claims: ${again}"
 step "  and it carries the claims too" "preferred_username"
 
+# A refresh token that works, spent once before anybody signs out -- so that the
+# refusal below is about the sign-out and not about a token that never would
+# have. Hydra rotates it, and the one kept is the one it handed back.
+spend
+[ -n "${refresh}" ] || die "a refresh token did not refresh before anybody signed out: ${refreshed}"
+step "a refresh token refreshes" "ok"
+
 rpc HolderService/Invalidate \
 	"$(printf '{"ref":{"slug":{"alias":"%s","tenant":{"alias":"%s"}}}}' "${SEED_USER}" "${SEED_CUSTOMER}")" \
 	| grep -q 'dateInvalidated' || die "roster refused the sign-out"
@@ -371,6 +393,17 @@ until begin; [ "${began}" = "200" ]; do
 	sleep 1
 done
 step "and hydra asks for the form again" "${began}"
+
+# And a product holding a refresh token is refused another one. The grant hangs
+# off the consent and not the browser, so forgetting the browser alone left it
+# refreshing for somebody signed out everywhere (`login/hydra.go`,
+# `revokeSessions`). The Login App forgets the grants first, so by the step
+# above they are gone.
+spend
+case "${refreshed}" in
+*invalid_grant*) step "  and a refresh token is refused" "invalid_grant" ;;
+*) die "a refresh token outlived signing out everywhere: ${refreshed}" ;;
+esac
 
 # The other sign-out: the **person's**, through the issuer's own endpoint.
 #
