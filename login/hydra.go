@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -443,7 +444,8 @@ func (a admin) refuseConsent(ctx context.Context, challenge, code, why string) (
 	return v.To, nil
 }
 
-// revokeSessions tells Hydra to forget a browser it remembers as somebody.
+// revokeSessions tells Hydra to forget somebody: every grant a client holds for
+// them, and the browser it remembers as them.
 //
 // The other half of `remember`: with it, Hydra skips the form for a browser
 // that has already signed in, and this is what makes "signed out everywhere"
@@ -451,10 +453,41 @@ func (a admin) refuseConsent(ctx context.Context, challenge, code, why string) (
 // error worth having -- there is nothing to do about it and nothing was left
 // wrong.
 //
-// Not under `auth/requests/`, which is why it does not go through [admin.do]:
-// that path is challenges, and this is the session behind them.
+// # The grants, and not only the browser
+//
+// This forgot the browser and nothing else, and a browser is not all a client
+// holds. A refresh token hangs off the **consent** -- what somebody granted a
+// client -- so a product keeping one went on minting tokens for a person signed
+// out everywhere: Hydra v26.2.0 refreshed after `sessions/login` was deleted,
+// and answered `invalid_grant` once `sessions/consent` was. The registrations
+// `deploy/clients` and `compose.yaml` ship ask for `offline`, so that was every
+// product that kept what it was given. `all=true`, because a sign-out
+// everywhere is every client's.
+//
+// Both are asked whatever the other answered: a grant left alive behind a
+// forgotten browser is a sign-out that looks done and is not, and a browser
+// left remembered is a sign-in with no form. The grants first, which
+// `docker/flow.sh` leans on -- once Hydra asks that browser for the form, the
+// grants are already gone. What a grant costs is a consent asked again, which
+// under `Ask` is a screen and otherwise nothing.
+//
+// It does not reach an access token already issued. A JWT verifies until it
+// expires, which is the issuer's lifespan to set (`docs/apps.md`).
 func (a admin) revokeSessions(ctx context.Context, subject string) error {
-	u := fmt.Sprintf("%s/admin/oauth2/auth/sessions/login?subject=%s", a.base, url.QueryEscape(subject))
+	who := url.QueryEscape(subject)
+
+	return errors.Join(
+		a.forget(ctx, "consent", "subject="+who+"&all=true"),
+		a.forget(ctx, "login", "subject="+who),
+	)
+}
+
+// forget is one `DELETE /admin/oauth2/auth/sessions/<kind>`.
+//
+// Not under `auth/requests/`, which is why it does not go through [admin.do]:
+// that path is challenges, and these are the sessions behind them.
+func (a admin) forget(ctx context.Context, kind, query string) error {
+	u := fmt.Sprintf("%s/admin/oauth2/auth/sessions/%s?%s", a.base, kind, query)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, u, nil)
 	if err != nil {
@@ -474,7 +507,7 @@ func (a admin) revokeSessions(ctx context.Context, subject string) error {
 	_, _ = io.Copy(io.Discard, res.Body)
 
 	if res.StatusCode/100 != 2 && res.StatusCode != http.StatusNotFound {
-		return fmt.Errorf("login: hydra: DELETE sessions/login: %s", res.Status)
+		return fmt.Errorf("login: hydra: DELETE sessions/%s: %s", kind, res.Status)
 	}
 
 	return nil
