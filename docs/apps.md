@@ -312,12 +312,23 @@ khala  ─ Reaches(erin), Reaches(@acme/kamino) → both cover → serves it, or
 - **What ends it.** `Reaches` is live, so a suspension or a removed binding
   stops the next call, within whatever the receiver caches. Signing out
   everywhere voids roster's credentials and, through the Login App, the
-  issuer's session -- and not a JWT already issued, which verifies until it
-  expires. A receiver that must stop sooner follows `SyncService/Watch` and
+  issuer's session and every client's grant -- and not a JWT already issued,
+  which verifies until it expires. A receiver that must stop sooner follows `SyncService/Watch` and
   refuses a token issued before `date_invalidated`, the way `login/sync.go`
   ends sessions; one holding something that lasts -- a stream, a media session
   -- ends that there too. roster down is a refusal: the JWT verifies, and
   `Reaches` does not answer.
+- **A page left open renews with the receiver's session, not a refresh
+  token.** The two proofs start it, once. After that the receiver keeps a
+  session of its own for *this app, acting for this person* -- bound to the
+  tenant, the app's holder and the person, held by the app's server and never
+  its browser, with an end that renewing does not move. Each renewal brings a
+  fresh `rd_`, so an app whose nomination ended is refused at the next one,
+  and asks `Reaches` about both again. Signing out everywhere changes neither
+  answer, so the receiver follows `SyncService/Watch` from the start and ends
+  the session there; the app ending its own session ends this one too. A
+  refresh token instead would mint erin's whole credential at khala, with
+  nobody present, for as long as it lived.
 
 **What it is not.** A delegation about erin, minted from kamino's own
 (`roster-as`) and issued to khala: that is the shape for a **login app**, which
