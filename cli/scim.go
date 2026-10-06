@@ -11,6 +11,7 @@ import (
 
 	"github.com/lesomnus/otx/log"
 	"github.com/lesomnus/xli"
+	"github.com/lesomnus/xli/cfg"
 	"github.com/lesomnus/xli/flg"
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
@@ -29,22 +30,23 @@ import (
 // reason; `roster serve` opens the same thing when `scim:` names an address.
 // `provision` is the operator's half: a tenant's directory, and the key it
 // presents.
-func NewCmdScim(c *cmd.Config) *xli.Command {
+func NewCmdScim(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:     "scim",
 		Brief:    "roster as a SCIM 2.0 endpoint, where a directory provisions its people",
-		Commands: xli.Commands{newCmdScimServe(c), newCmdScimProvision(c)},
+		Commands: xli.Commands{newCmdScimServe(l, c), newCmdScimProvision(c)},
 	}
 }
 
-func newCmdScimServe(c *cmd.Config) *xli.Command {
+func newCmdScimServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "serve",
 		Brief: "answer SCIM at /scim/v2, as the directory's tenant key",
+		// Bound to `scim:`; see `cli/account.go`.
 		Flags: flg.Flags{
-			&flg.String{Name: "listen", Brief: "where to speak HTTP; :8080 if empty"},
-			&flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"},
-			&flg.Switch{Name: "insecure", Brief: "dial roster without TLS"},
+			cfg.Bind(l, &c.Scim.Addr, &flg.String{Name: "listen", Brief: "where to speak HTTP; :8080 if empty"}),
+			cfg.Bind(l, &c.Scim.Roster, &flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"}),
+			cfg.Bind(l, &c.Scim.Insecure, &flg.Switch{Name: "insecure", Brief: "dial roster without TLS"}),
 		},
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			ctx, stop, err := telemetry(ctx, c, "roster-scim")
@@ -53,17 +55,8 @@ func newCmdScimServe(c *cmd.Config) *xli.Command {
 			}
 			defer stop()
 
-			// The block first, then the flags over it. See `cli/account.go`.
+			// The block, with the flags bound above already in it.
 			sc := c.Scim
-			if v, _ := flg.Find[string](cl, "listen"); v != "" {
-				sc.Addr = v
-			}
-			if v, _ := flg.Find[string](cl, "roster"); v != "" {
-				sc.Roster = v
-			}
-			if v, _ := flg.Find[bool](cl, "insecure"); v {
-				sc.Insecure = true
-			}
 			if sc.Roster == "" {
 				return errors.New("--roster (or scim.roster): where roster speaks gRPC")
 			}

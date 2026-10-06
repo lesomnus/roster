@@ -59,6 +59,12 @@ import (
 // order to be wrong. What `c` holds when the loader is made is the defaults:
 // every load starts from it, which is what lets a test hand over a `Config`
 // filled in for it.
+//
+// The commands handed `l` are the ones with a flag that says a setting.
+// `cfg.Bind` ties the flag to the field, and the load applies it over the file
+// and the environment when it is given -- so the block a handler copies
+// already holds it, and `--help` prints the variable beside it. `Bind` takes a
+// field of this `c` and no other, which is why both are handed over.
 func Cmd(c *cmd.Config) *xli.Command {
 	l := cfg.New(cmd.Name, c,
 		// `ROSTER_ACCOUNT_KEY_<ALIAS>` and the one beside it are read by the
@@ -107,15 +113,15 @@ func Cmd(c *cmd.Config) *xli.Command {
 			NewCmdIssue(c),
 			NewCmdVouch(c),
 			NewCmdSignIn(c),
-			NewCmdTrail(c),
+			NewCmdTrail(l, c),
 			NewCmdForget(c),
 			NewCmdRestore(c),
 			NewCmdServe(c),
-			NewCmdAccount(c),
-			NewCmdLdap(c),
-			NewCmdScim(c),
-			NewCmdLogin(c),
-			NewCmdResources(c),
+			NewCmdAccount(l, c),
+			NewCmdLdap(l, c),
+			NewCmdScim(l, c),
+			NewCmdLogin(l, c),
+			NewCmdResources(l, c),
 			NewCmdApp(c),
 		}, NewCmdEntities(c)...),
 
@@ -135,6 +141,8 @@ func hal(c *cmd.Config) xli.Handler {
 	// there -- and this is only ever on a root. `cfg.Load` is gated the same
 	// way, for the same reason.
 	return xli.On(mode.Run, func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+		// By hand and not `cfg.Bind`: `Client.Local` is `yaml:"-"`, outside
+		// what the loader reads, so there is no field of its for it to bind to.
 		if v, ok := flg.Find[bool](cl, "HAL"); ok && v {
 			c.Client.Local = true
 		}

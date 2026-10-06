@@ -37,8 +37,11 @@ func TestLdapServeIsToldEverything(t *testing.T) {
 	b := cliUp(t, directoryReads...)
 	ctx := t.Context()
 
+	// Through the whole tree, because the flags are bound to `ldap:` and it is
+	// the load on the root that applies them. `--config=` reads no file, so what
+	// the directory is told is the command line and nothing a checkout left.
 	serve := func(args ...string) error {
-		return cli.NewCmdLdap(&cmd.Config{}).Run(ctx, append([]string{"serve"}, args...))
+		return cli.Cmd(&cmd.Config{}).Run(ctx, append([]string{"--config=", "ldap", "serve"}, args...))
 	}
 	roster := b.Hers.Client.Addr
 	key := "newco=" + b.Hers.Client.Auth.Credential
@@ -70,7 +73,7 @@ func TestLdapServeIsToldEverything(t *testing.T) {
 	run, cancel := context.WithCancel(ctx)
 	done := make(chan error, 1)
 	go func() {
-		done <- cli.NewCmdLdap(&cmd.Config{}).Run(run, []string{"serve", "--roster", roster, "--insecure", "--listen", addr, "--base", "newco=dc=newco,dc=example"})
+		done <- cli.Cmd(&cmd.Config{}).Run(run, []string{"--config=", "ldap", "serve", "--roster", roster, "--insecure", "--listen", addr, "--base", "newco=dc=newco,dc=example"})
 	}()
 	t.Cleanup(cancel)
 

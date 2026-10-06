@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/lesomnus/xli"
+	"github.com/lesomnus/xli/cfg"
 	"github.com/lesomnus/xli/flg"
 
 	"github.com/lesomnus/otx/log"
@@ -60,12 +61,26 @@ import (
 //
 // Flags win over the block, so a deployment that was passing them keeps working
 // and a shell can still override one value of a file.
-func NewCmdAccount(c *cmd.Config) *xli.Command {
+//
+// # A flag is the setting it says
+//
+// Each flag that says one of the block's settings is bound to it (`cfg.Bind`),
+// so the load applies it -- over the file and the environment, and only when
+// it is given -- and the block a handler copies already holds it. `--help`
+// prints the variable beside it. The same goes for `roster ldap serve`,
+// `roster login serve` and `roster scim serve`.
+//
+// They were copied over the block by hand after the load, and two rules differ
+// from that copy, both the loader's for every layer: an empty value is a value,
+// so `--listen=` clears what the file says rather than leaving it; and
+// `--insecure=false` turns off a file's `true`, where a switch could only ever
+// turn one on. What is still read by hand says why where it is read.
+func NewCmdAccount(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "account",
 		Brief: "the front door a customer's people sign in at",
 
-		Commands: xli.Commands{newCmdAccountServe(c), newCmdAccountProvision(c)},
+		Commands: xli.Commands{newCmdAccountServe(l, c), newCmdAccountProvision(c)},
 	}
 }
 
@@ -128,24 +143,26 @@ func newCmdAccountProvision(c *cmd.Config) *xli.Command {
 	}
 }
 
-func newCmdAccountServe(c *cmd.Config) *xli.Command {
+func newCmdAccountServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "serve",
 		Brief: "serve the sign-in page and the account screens, fronting roster",
 
+		// Those in `cfg.Bind` are `account:`'s settings; see [NewCmdAccount].
+		// `--key` is not one, and the handler says why.
 		Flags: flg.Flags{
-			&flg.String{Name: "listen", Brief: "where to listen; :8090 if empty"},
-			&flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"},
-			&flg.String{Name: "connect", Brief: "the same server over HTTP (server.http), for the page's calls: http(s)://host:port"},
-			&flg.Switch{Name: "insecure", Brief: "dial roster without TLS"},
-			&flg.String{Name: "base", Brief: "this app's public origin, registered with every provider as the redirect"},
-			&flg.String{Name: "static", Brief: "a directory to serve as the page; empty serves none"},
-			&flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"},
+			cfg.Bind(l, &c.Account.Addr, &flg.String{Name: "listen", Brief: "where to listen; :8090 if empty"}),
+			cfg.Bind(l, &c.Account.Roster, &flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"}),
+			cfg.Bind(l, &c.Account.Connect, &flg.String{Name: "connect", Brief: "the same server over HTTP (server.http), for the page's calls: http(s)://host:port"}),
+			cfg.Bind(l, &c.Account.Insecure, &flg.Switch{Name: "insecure", Brief: "dial roster without TLS"}),
+			cfg.Bind(l, &c.Account.Base, &flg.String{Name: "base", Brief: "this app's public origin, registered with every provider as the redirect"}),
+			cfg.Bind(l, &c.Account.Page.Dir, &flg.String{Name: "static", Brief: "a directory to serve as the page; empty serves none"}),
+			cfg.Bind(l, &c.Account.Enrol, &flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"}),
 			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per tenant fronted. Or ROSTER_ACCOUNT_KEY_<ALIAS> in the environment"},
-			&flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it, as rk_…, env:NAME or file:PATH; instead of --key"},
-			&flg.Switch{Name: "insecure-cookie", Brief: "a cookie without Secure, for a page served over plain http in development"},
-			&flg.Switch{Name: "terminal", Brief: "let a machine with no browser ask for a key here (`roster sign-in`)"},
-			&flg.Strings{Name: "seal", Brief: "the key sessions are sealed into the cookie under, as env:NAME holding 32 bytes base64; repeat to rotate, the first seals. Empty is a key made at start, which is one replica"},
+			cfg.Bind(l, &c.Account.Key, &flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it, as rk_…, env:NAME or file:PATH; instead of --key"}),
+			cfg.Bind(l, &c.Account.InsecureCookie, &flg.Switch{Name: "insecure-cookie", Brief: "a cookie without Secure, for a page served over plain http in development"}),
+			cfg.Bind(l, &c.Account.Terminal, &flg.Switch{Name: "terminal", Brief: "let a machine with no browser ask for a key here (`roster sign-in`)"}),
+			cfg.Bind(l, &c.Account.Seal, &flg.Strings{Name: "seal", Brief: "the key sessions are sealed into the cookie under, as env:NAME holding 32 bytes base64; repeat to rotate, the first seals. Empty is a key made at start, which is one replica"}),
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -155,49 +172,15 @@ func newCmdAccountServe(c *cmd.Config) *xli.Command {
 			}
 			defer stop()
 
-			// The block first, then the flags over it. A deployment that never
-			// wrote one passes what it always passed; a deployment that has one
-			// can still say a value at the shell, which is what a flag is for.
+			// The block, with the flags bound above already in it. A
+			// deployment that never wrote one passes what it always passed; a
+			// deployment that has one can still say a value at the shell, which
+			// is what a flag is for.
 			ac := c.Account
-			if v, _ := flg.Find[string](cl, "listen"); v != "" {
-				ac.Addr = v
-			}
 			if ac.Addr == "" {
 				ac.Addr = ":8090"
 			}
-			if v, _ := flg.Find[string](cl, "roster"); v != "" {
-				ac.Roster = v
-			}
-			if v, _ := flg.Find[string](cl, "connect"); v != "" {
-				ac.Connect = v
-			}
-			if v, _ := flg.Find[bool](cl, "insecure"); v {
-				ac.Insecure = true
-			}
-			if v, _ := flg.Find[string](cl, "base"); v != "" {
-				ac.Base = v
-			}
-			if v, _ := flg.Find[string](cl, "static"); v != "" {
-				ac.Page.Dir = v
-			}
-			if v, _ := flg.Find[string](cl, "enrol"); v != "" {
-				ac.Enrol = v
-			}
-			if v, _ := flg.Find[bool](cl, "insecure-cookie"); v {
-				ac.InsecureCookie = true
-			}
-			if v, _ := flg.Find[bool](cl, "terminal"); v {
-				ac.Terminal = true
-			}
-			if vs, _ := flg.Find[[]string](cl, "seal"); len(vs) > 0 {
-				ac.Seal = vs
-			}
 
-			// `--key` is literal and the block's values are references, so the
-			// two are merged rather than one replacing the other. See [keysOf].
-			if v, _ := flg.Find[string](cl, "deployment-key"); v != "" {
-				ac.Key = v
-			}
 			if ac.Key != "" {
 				key, err := tokenOrRef(ac.Key)
 				if err != nil {
@@ -205,6 +188,9 @@ func newCmdAccountServe(c *cmd.Config) *xli.Command {
 				}
 				ac.Key = key
 			} else {
+				// `--key` is literal and the block's values are references, so
+				// the two are merged rather than one replacing the other, and it
+				// is read here rather than bound. See [keysOf].
 				given, _ := flg.Find[[]string](cl, "key")
 				keys, err := keysOf(ac.Keys, AccountKeyPrefix, given)
 				if err != nil {
