@@ -267,9 +267,68 @@ khala  ─ HolderService/Reaches(@acme/kamino) → covers → serves it, or not
   the receiver `/payday.TokenService/Introspect`. Both go in the `--role` an app is
   installed with.
 
-Acting **as a person** at another app -- kamino calling khala on erin's behalf --
-is not this, and nothing does it yet: kamino holds erin's access token, not a
-delegation, and the token was issued to the page.
+### As a person
+
+Acting **as a person** at another app -- kamino calling khala on erin's behalf
+-- is not the exchange above with a person put into it (#83). kamino signs
+people in through the issuer, so what it holds of erin is the issuer's tokens
+and no `rd_`: a delegation is what a login app holds, and a product never does
+([relying-party.md](relying-party.md)). The proof of the person is the one the
+issuer already makes for this -- an access token for the API it is spent at,
+*People's tokens* above -- and the exchange goes beside it as the proof of the
+app:
+
+```
+kamino ─ authorize, audience=urn:hday:api:khala ─▶ issuer      (erin's browser, signed in)
+       ◀─ JWT {sub: erin, aud: khala, client_id: kamino}
+kamino ─ rk_ + roster-at: @acme ─▶ DelegationService/Exchange{audience: @acme/khala, methods}
+       ◀─ rd_…   (about @acme/kamino, issued to @acme/khala)
+kamino ─ the JWT and the rd_ ─▶ khala, at a method meant for an app acting for somebody
+khala  ─ the issuer's keys → aud, client_id;  Introspect(rd_) → @acme/kamino
+khala  ─ Reaches(erin), Reaches(@acme/kamino) → both cover → serves it, or not
+```
+
+- **Two proofs, and the receiver binds them.** The token's `client_id` has to
+  be the client of the app the `rd_` names, and erin has to be in that app's
+  tenant. A product is one client in every tenant (#36), so the receiver maps
+  a client to an app once, in its own configuration -- roster holds no OAuth
+  clients. Either proof alone is nothing: a token that leaked, without the
+  app's key; the app's key, without somebody who signed in.
+- **The app's ceiling is its holder's bindings.** What kamino may do for people
+  at khala is a permission method khala declares --
+  `hday.khala.AdminService/ActForPeople`, say -- which a tenant administrator
+  binds to `@acme/kamino`, and khala reads with `Reaches` on that holder. What
+  is served is what both cover: never wider than erin, never wider than the
+  app, and never a claim in either token.
+- **The token is erin's whole credential at that API** -- the one erin's own
+  page would present. So the receiver takes one minted for another app's client
+  only at the methods meant for it, or kamino holds everything erin may do at
+  khala.
+- **Minutes, not an hour.** Hydra v26.2.0 makes an access token live an hour
+  unless the client says otherwise, and a refresh token makes another without
+  erin. The delegating client gets a short lifespan of its own
+  (`authorization_code_grant_access_token_lifespan`) and no refresh token, or
+  *erin is at kamino* means *erin was, today*.
+- **What ends it.** `Reaches` is live, so a suspension or a removed binding
+  stops the next call, within whatever the receiver caches. Signing out
+  everywhere voids roster's credentials and, through the Login App, the
+  issuer's session -- and not a JWT already issued, which verifies until it
+  expires. A receiver that must stop sooner follows `SyncService/Watch` and
+  refuses a token issued before `date_invalidated`, the way `login/sync.go`
+  ends sessions; one holding something that lasts -- a stream, a media session
+  -- ends that there too. roster down is a refusal: the JWT verifies, and
+  `Reaches` does not answer.
+
+**What it is not.** A delegation about erin, minted from kamino's own
+(`roster-as`) and issued to khala: that is the shape for a **login app**, which
+does hold an `rd_`, and it is not built. `Exchange` refuses a caller acting
+through a delegation, because a token minted from one outlives whatever revokes
+the first; lifting that takes an expiry capped by the first, a revocation that
+reaches both, and an actor `Introspect` can name -- which payday's response has
+no field for. Nor a token roster signs with an `act` claim in it: roster issues
+nothing a third party verifies on its own. Hydra v26.2.0 offers no token
+exchange (`grant_types_supported`), and one that did would name the same
+client the access token's `client_id` already does.
 
 ## One client for all three
 
@@ -329,5 +388,6 @@ What this layer **cannot** hide, and should not try to:
 | `cli/app.go` | `roster app install` / `uninstall` |
 | `account/account.go`, `ldap/ldap.go` | two consumers in the A shape |
 | `ts/lib/tenant/apps.tsx` | the *apps* tab, in both consoles |
+| `docker/flow.sh` | an access token for one API, naming the client that asked for it |
 | [login.md](login.md) § *What a front door needs* | the same arrangement from the Login App's side |
 | [operating.md](operating.md) | `roster login provision`, and upgrading from `Host.acts_as` |

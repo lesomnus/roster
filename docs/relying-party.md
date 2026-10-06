@@ -442,7 +442,9 @@ An app with an API behind it keeps the handler instead and hands it to the
 interceptor, which is the example in `authoidc.New`'s own doc comment -- with the
 audience **that API's own name**, and the browser asking the issuer for a token
 for it. A token issued to the page and accepted by several APIs is one any of
-them can replay at the others; [apps.md](apps.md) has where that is still open.
+them can replay at the others; [apps.md](apps.md) § *People's tokens* is how
+each API gets its own, and § *As a person* how one app calls another for
+somebody.
 
 ### The session, which is payday's and opaque
 
