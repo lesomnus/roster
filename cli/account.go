@@ -441,7 +441,7 @@ var errNoKeys = errors.New("no tenant key")
 //
 // The prefix is read here rather than by the loader because the loader maps one
 // variable to one field and this is a variable per alias -- which is why
-// `pdcmd.Reads` has to be told the prefix is not a typo (`cli.go`).
+// `cfg.Reads` has to be told the prefix is not a typo (`cli.go`).
 func keysOf(refs map[string]string, prefix string, given []string) (map[string]string, error) {
 	out := map[string]string{}
 	for alias, ref := range refs {

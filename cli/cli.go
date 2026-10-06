@@ -31,6 +31,7 @@ import (
 	"context"
 
 	"github.com/lesomnus/xli"
+	"github.com/lesomnus/xli/cfg"
 	"github.com/lesomnus/xli/flg"
 	"github.com/lesomnus/xli/mode"
 
@@ -55,14 +56,37 @@ import (
 // The configuration is read on the **root**, so it has happened whichever
 // subcommand runs -- `config` prints what came out, `serve` listens on what it
 // says. A command that loaded it for itself would be one more place for the
-// order to be wrong.
+// order to be wrong. What `c` holds when the loader is made is the defaults:
+// every load starts from it, which is what lets a test hand over a `Config`
+// filled in for it.
 func Cmd(c *cmd.Config) *xli.Command {
+	l := cfg.New(cmd.Name, c,
+		// `ROSTER_ACCOUNT_KEY_<ALIAS>` and the one beside it are read by the
+		// consumers themselves (`keysOf`), not by the loader, and are not
+		// typos. Anything else beginning `ROSTER_` that no field answers to is
+		// reported, which is what a typo looks like -- and which is how the
+		// Login App's two were found, by being reported.
+		//
+		// `LOGIN_KEY_` and `LOGIN_CLIENT_` are **gone** from this list, and that
+		// is deliberate rather than tidying: the Login App holds one key and is
+		// told about no clients (#36), so `ROSTER_LOGIN_KEY` is an ordinary
+		// field the loader reads. A deployment still setting
+		// `ROSTER_LOGIN_KEY_CONTOSO` is now **reported** -- which is exactly
+		// what it should be, because nothing reads it any more and a key that is
+		// silently ignored is a deployment that fronts nobody and looks fine.
+		cfg.Reads("ACCOUNT_KEY_", "LDAP_KEY_"),
+	)
+
+	// `version` needs no configuration, and is what somebody runs to ask a
+	// deployment whose configuration is wrong what build it is.
+	version := pdcmd.NewCmdVersion()
+
 	return &xli.Command{
 		Name:  cmd.Name,
 		Brief: "roster",
 
 		Flags: flg.Flags{
-			pdcmd.ConfigFlag(),
+			cfg.ConfigFlag(),
 
 			// Named after the one `oas` has, which is named after the computer
 			// that would not open the pod bay doors. What it does is skip the
@@ -75,8 +99,8 @@ func Cmd(c *cmd.Config) *xli.Command {
 		},
 
 		Commands: append([]*xli.Command{
-			pdcmd.NewCmdVersion(),
-			pdcmd.NewCmdConfig(cmd.Loader, c),
+			version,
+			cfg.NewCmdConfig(l),
 			NewCmdInit(c),
 			NewCmdKey(c),
 			NewCmdControl(c),
@@ -94,22 +118,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 			NewCmdApp(c),
 		}, NewCmdEntities(c)...),
 
-		// `ROSTER_ACCOUNT_KEY_<ALIAS>` and the one beside it are read by the
-		// consumers themselves (`keysOf`), not by the loader, and are not typos.
-		// Anything else beginning `ROSTER_` that no field answers to is
-		// reported, which is what a typo looks like -- and which is how the
-		// Login App's two were found, by being reported.
-		//
-		// `LOGIN_KEY_` and `LOGIN_CLIENT_` are **gone** from this list, and that
-		// is deliberate rather than tidying: the Login App holds one key and is
-		// told about no clients (#36), so `ROSTER_LOGIN_KEY` is an ordinary
-		// field the loader reads. A deployment still setting
-		// `ROSTER_LOGIN_KEY_CONTOSO` is now **reported** -- which is exactly
-		// what it should be, because nothing reads it any more and a key that is
-		// silently ignored is a deployment that fronts nobody and looks fine.
-		Handler: xli.Chain(pdcmd.Load(cmd.Loader, c,
-			pdcmd.Reads("ACCOUNT_KEY_", "LDAP_KEY_"),
-		), hal(c), xli.RequireSubcommand()),
+		Handler: xli.Chain(cfg.Load(l, version), hal(c), xli.RequireSubcommand()),
 	}
 }
 
@@ -118,11 +127,11 @@ func Cmd(c *cmd.Config) *xli.Command {
 // A handler and not something the connector asks for itself, because a
 // connector is handed a context and not the command -- and the flag is on the
 // root, several commands above whichever one is running. This is the same seam
-// `pdcmd.Load` uses to put the configuration where a leaf can find it.
+// `cfg.Load` uses to put the configuration where a leaf can find it.
 func hal(c *cmd.Config) xli.Handler {
 	// `xli.On(mode.Run)` and not `OnRun`, which is exact: a root with a
 	// subcommand under it runs as `Run|Pass`, so the exact form never fires
-	// there -- and this is only ever on a root. `pdcmd.Load` is gated the same
+	// there -- and this is only ever on a root. `cfg.Load` is gated the same
 	// way, for the same reason.
 	return xli.On(mode.Run, func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 		if v, ok := flg.Find[bool](cl, "HAL"); ok && v {
