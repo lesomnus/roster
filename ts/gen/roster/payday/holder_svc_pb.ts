@@ -20,7 +20,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/holder_svc.g.proto.
  */
 export const file_roster_payday_holder_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("CiByb3N0ZXIvcGF5ZGF5L2hvbGRlcl9zdmMuZy5wcm90bxIGcm9zdGVyIusDChBIb2xkZXJBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjQKBmxhYmVscxgHIAMoCzIkLnJvc3Rlci5Ib2xkZXJBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIAoHcHJvZmlsZRgJIAEoCzIPLnJvc3Rlci5Qcm9maWxlEiIKBGRhdGEYCiABKAsyFC5nb29nbGUucHJvdG9idWYuQW55EjQKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWRhdGVfZGlzYWJsZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiIKCHBvcnRyYWl0GBAgASgLMhAucm9zdGVyLlBvcnRyYWl0Gi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWAoQSG9sZGVyR2V0UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEiQKBnNlbGVjdBgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QiSQoJSG9sZGVyUmVmEgwKAmlkGAEgASgMSAASJwoEc2x1ZxgEIAEoCzIXLnJvc3Rlci5Ib2xkZXJSZWZCeVNsdWdIAEIFCgNrZXkiQwoPSG9sZGVyUmVmQnlTbHVnEg0KBWFsaWFzGAQgASgJEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYinwIKDEhvbGRlclNlbGVjdBILCgNhbGwYASABKAgSJAoGdGVuYW50GAIgASgLMhQucm9zdGVyLlRlbmFudFNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgSDwoHcHJvZmlsZRgJIAEoCBIMCgRkYXRhGAogASgIEhgKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAgSFQoNZGF0ZV9kaXNhYmxlZBgMIAEoCBIQCghwb3J0cmFpdBgQIAEoCCLiBAoSSG9sZGVyUGF0Y2hSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDQoFYWxpYXMYCCABKAkSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjYKBmxhYmVscxgOIAMoCzImLnJvc3Rlci5Ib2xkZXJQYXRjaFJlcXVlc3QuTGFiZWxzRW50cnkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgSIAoHcHJvZmlsZRgSIAEoCzIPLnJvc3Rlci5Qcm9maWxlEhQKDHByb2ZpbGVfbnVsbBgTIAEoCBIiCgRkYXRhGBQgASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueRIRCglkYXRhX251bGwYFSABKAgSNAoQZGF0ZV9pbnZhbGlkYXRlZBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASHQoVZGF0ZV9pbnZhbGlkYXRlZF9udWxsGBcgASgIEjEKDWRhdGVfZGlzYWJsZWQYGCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfZGlzYWJsZWRfbnVsbBgZIAEoCBIiCghwb3J0cmFpdBggIAEoCzIQLnJvc3Rlci5Qb3J0cmFpdBIVCg1wb3J0cmFpdF9udWxsGCEgASgIGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiUQoSSG9sZGVyQXBwbHlSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIlChNIb2xkZXJFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJlChFIb2xkZXJMaXN0UmVxdWVzdBIlCgdmaWx0ZXJzGAEgAygLMhQucm9zdGVyLkhvbGRlckZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiSAoSSG9sZGVyTGlzdFJlc3BvbnNlEh0KBWl0ZW1zGAEgAygLMg4ucm9zdGVyLkhvbGRlchITCgRuZXh0GAIgASgJQgWqAQIIAiKyAQoMSG9sZGVyRmlsdGVyEh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhIwCgZsYWJlbHMYAyADKAsyIC5yb3N0ZXIuSG9sZGVyRmlsdGVyLkxhYmVsc0VudHJ5Gi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWQoSSG9sZGVyV2F0Y2hSZXF1ZXN0EiUKB2ZpbHRlcnMYASADKAsyFC5yb3N0ZXIuSG9sZGVyRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIj0KE0hvbGRlcldhdGNoUmVzcG9uc2USJgoFaXRlbXMYASADKAsyFy5yb3N0ZXIuSG9sZGVyV2F0Y2hJdGVtIlMKD0hvbGRlcldhdGNoSXRlbRIKCgJpZBgBIAEoDBIdCgV2YWx1ZRgCIAEoCzIOLnJvc3Rlci5Ib2xkZXISFQoGYWN0aW9uGAMgASgJQgWqAQIIAiKtAQoTSG9sZGVyVXBkYXRlUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIAoHcHJvZmlsZRgJIAEoCzIPLnJvc3Rlci5Qcm9maWxlEiIKBGRhdGEYCiABKAsyFC5nb29nbGUucHJvdG9idWYuQW55IncKFEhvbGRlclJlYWxpYXNSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSMAoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBINCgVhbGlhcxgEIAEoCSJoChRIb2xkZXJEaXNhYmxlUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiZwoTSG9sZGVyRW5hYmxlUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiawoXSG9sZGVySW52YWxpZGF0ZVJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjYKFEhvbGRlclNpZ25zSW5SZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYikwEKFUhvbGRlclNpZ25zSW5SZXNwb25zZRIqCgppZGVudGl0aWVzGA0gAygLMhYucm9zdGVyLlNpZ25JbklkZW50aXR5Ei0KC2NyZWRlbnRpYWxzGA4gAygLMhgucm9zdGVyLlNpZ25JbkNyZWRlbnRpYWwSHwoEa2V5cxgPIAMoCzIRLnJvc3Rlci5TaWduSW5LZXkiNgoUSG9sZGVyUmVhY2hlc1JlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZiJfChVIb2xkZXJSZWFjaGVzUmVzcG9uc2USDwoHbWV0aG9kcxgKIAMoCRINCgVzaXRlcxgLIAMoDBISCgpldmVyeV9zaXRlGAwgASgIEhIKCmV2ZXJ5d2hlcmUYDSADKAkimwEKE0hvbGRlclNlYXJjaFJlcXVlc3QSJQoHZmlsdGVycxgBIAMoCzIULnJvc3Rlci5Ib2xkZXJGaWx0ZXISCQoBcRgIIAEoCRISCgpkZXBhcnRtZW50GAkgASgJEhMKC2VtcGxveWVlX25vGAogASgJEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAiJKChRIb2xkZXJTZWFyY2hSZXNwb25zZRIdCgVpdGVtcxgBIAMoCzIOLnJvc3Rlci5Ib2xkZXISEwoEbmV4dBgCIAEoCUIFqgECCAIifgoRSG9sZGVyRmlsbFJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIbCgxkaXNwbGF5X25hbWUYCCABKAlCBaoBAggCEhYKB3BpY3R1cmUYCSABKAlCBaoBAggCEhQKBWltYWdlGAogASgMQgWqAQIIAiJJChJIb2xkZXJGaWxsUmVzcG9uc2USGgoLcGljdHVyZWxlc3MYASABKAhCBaoBAggCEhcKCG5hbWVsZXNzGAIgASgIQgWqAQIIAiJ+ChRIb2xkZXJQb3J0cmF5UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASFAoFaW1hZ2UYCCABKAxCBaoBAggCMoMICg1Ib2xkZXJTZXJ2aWNlEi8KA0FkZBIYLnJvc3Rlci5Ib2xkZXJBZGRSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchIvCgNHZXQSGC5yb3N0ZXIuSG9sZGVyR2V0UmVxdWVzdBoOLnJvc3Rlci5Ib2xkZXISMwoFUGF0Y2gSGi5yb3N0ZXIuSG9sZGVyUGF0Y2hSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchIzCgVBcHBseRIaLnJvc3Rlci5Ib2xkZXJBcHBseVJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEjcKBUVyYXNlEhEucm9zdGVyLkhvbGRlclJlZhobLnJvc3Rlci5Ib2xkZXJFcmFzZVJlc3BvbnNlEj0KBExpc3QSGS5yb3N0ZXIuSG9sZGVyTGlzdFJlcXVlc3QaGi5yb3N0ZXIuSG9sZGVyTGlzdFJlc3BvbnNlEkIKBVdhdGNoEhoucm9zdGVyLkhvbGRlcldhdGNoUmVxdWVzdBobLnJvc3Rlci5Ib2xkZXJXYXRjaFJlc3BvbnNlMAESNQoGVXBkYXRlEhsucm9zdGVyLkhvbGRlclVwZGF0ZVJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEjcKB1JlYWxpYXMSHC5yb3N0ZXIuSG9sZGVyUmVhbGlhc1JlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEjcKB0Rpc2FibGUSHC5yb3N0ZXIuSG9sZGVyRGlzYWJsZVJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEjUKBkVuYWJsZRIbLnJvc3Rlci5Ib2xkZXJFbmFibGVSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchI9CgpJbnZhbGlkYXRlEh8ucm9zdGVyLkhvbGRlckludmFsaWRhdGVSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchJGCgdTaWduc0luEhwucm9zdGVyLkhvbGRlclNpZ25zSW5SZXF1ZXN0Gh0ucm9zdGVyLkhvbGRlclNpZ25zSW5SZXNwb25zZRJGCgdSZWFjaGVzEhwucm9zdGVyLkhvbGRlclJlYWNoZXNSZXF1ZXN0Gh0ucm9zdGVyLkhvbGRlclJlYWNoZXNSZXNwb25zZRJDCgZTZWFyY2gSGy5yb3N0ZXIuSG9sZGVyU2VhcmNoUmVxdWVzdBocLnJvc3Rlci5Ib2xkZXJTZWFyY2hSZXNwb25zZRI9CgRGaWxsEhkucm9zdGVyLkhvbGRlckZpbGxSZXF1ZXN0Ghoucm9zdGVyLkhvbGRlckZpbGxSZXNwb25zZRI3CgdQb3J0cmF5Ehwucm9zdGVyLkhvbGRlclBvcnRyYXlSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlckIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_me, file_google_protobuf_any, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder, file_roster_payday_tenant_svc_g]);
+  fileDesc("CiByb3N0ZXIvcGF5ZGF5L2hvbGRlcl9zdmMuZy5wcm90bxIGcm9zdGVyIoUEChBIb2xkZXJBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjQKBmxhYmVscxgHIAMoCzIkLnJvc3Rlci5Ib2xkZXJBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASIAoHcHJvZmlsZRgJIAEoCzIPLnJvc3Rlci5Qcm9maWxlEiIKBGRhdGEYCiABKAsyFC5nb29nbGUucHJvdG9idWYuQW55EjQKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjEKDWRhdGVfZGlzYWJsZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKCWRpcmVjdG9yeRgIIAEoCUIFqgECCAISIgoIcG9ydHJhaXQYECABKAsyEC5yb3N0ZXIuUG9ydHJhaXQaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJYChBIb2xkZXJHZXRSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSJAoGc2VsZWN0GAIgASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdCJJCglIb2xkZXJSZWYSDAoCaWQYASABKAxIABInCgRzbHVnGAQgASgLMhcucm9zdGVyLkhvbGRlclJlZkJ5U2x1Z0gAQgUKA2tleSJDCg9Ib2xkZXJSZWZCeVNsdWcSDQoFYWxpYXMYBCABKAkSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZiKyAgoMSG9sZGVyU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZ0ZW5hbnQYAiABKAsyFC5yb3N0ZXIuVGVuYW50U2VsZWN0Eg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIOCgZsYWJlbHMYByABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBIPCgdwcm9maWxlGAkgASgIEgwKBGRhdGEYCiABKAgSGAoQZGF0ZV9pbnZhbGlkYXRlZBgLIAEoCBIVCg1kYXRlX2Rpc2FibGVkGAwgASgIEhEKCWRpcmVjdG9yeRgIIAEoCBIQCghwb3J0cmFpdBgQIAEoCCL1BAoSSG9sZGVyUGF0Y2hSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDQoFYWxpYXMYCCABKAkSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjYKBmxhYmVscxgOIAMoCzImLnJvc3Rlci5Ib2xkZXJQYXRjaFJlcXVlc3QuTGFiZWxzRW50cnkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgSIAoHcHJvZmlsZRgSIAEoCzIPLnJvc3Rlci5Qcm9maWxlEhQKDHByb2ZpbGVfbnVsbBgTIAEoCBIiCgRkYXRhGBQgASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueRIRCglkYXRhX251bGwYFSABKAgSNAoQZGF0ZV9pbnZhbGlkYXRlZBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASHQoVZGF0ZV9pbnZhbGlkYXRlZF9udWxsGBcgASgIEjEKDWRhdGVfZGlzYWJsZWQYGCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfZGlzYWJsZWRfbnVsbBgZIAEoCBIRCglkaXJlY3RvcnkYECABKAkSIgoIcG9ydHJhaXQYICABKAsyEC5yb3N0ZXIuUG9ydHJhaXQSFQoNcG9ydHJhaXRfbnVsbBghIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlEKEkhvbGRlckFwcGx5UmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJQoTSG9sZGVyRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiZQoRSG9sZGVyTGlzdFJlcXVlc3QSJQoHZmlsdGVycxgBIAMoCzIULnJvc3Rlci5Ib2xkZXJGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCIkgKEkhvbGRlckxpc3RSZXNwb25zZRIdCgVpdGVtcxgBIAMoCzIOLnJvc3Rlci5Ib2xkZXISEwoEbmV4dBgCIAEoCUIFqgECCAIisgEKDEhvbGRlckZpbHRlchIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSMAoGbGFiZWxzGAMgAygLMiAucm9zdGVyLkhvbGRlckZpbHRlci5MYWJlbHNFbnRyeRotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlkKEkhvbGRlcldhdGNoUmVxdWVzdBIlCgdmaWx0ZXJzGAEgAygLMhQucm9zdGVyLkhvbGRlckZpbHRlchIcCg1za2lwX3NuYXBzaG90GAIgASgIQgWqAQIIAiI9ChNIb2xkZXJXYXRjaFJlc3BvbnNlEiYKBWl0ZW1zGAEgAygLMhcucm9zdGVyLkhvbGRlcldhdGNoSXRlbSJTCg9Ib2xkZXJXYXRjaEl0ZW0SCgoCaWQYASABKAwSHQoFdmFsdWUYAiABKAsyDi5yb3N0ZXIuSG9sZGVyEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIirQEKE0hvbGRlclVwZGF0ZVJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiAKB3Byb2ZpbGUYCSABKAsyDy5yb3N0ZXIuUHJvZmlsZRIiCgRkYXRhGAogASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueSJ3ChRIb2xkZXJSZWFsaWFzUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDQoFYWxpYXMYBCABKAkiaAoUSG9sZGVyRGlzYWJsZVJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImcKE0hvbGRlckVuYWJsZVJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImsKF0hvbGRlckludmFsaWRhdGVSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSMAoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCI2ChRIb2xkZXJTaWduc0luUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmIpMBChVIb2xkZXJTaWduc0luUmVzcG9uc2USKgoKaWRlbnRpdGllcxgNIAMoCzIWLnJvc3Rlci5TaWduSW5JZGVudGl0eRItCgtjcmVkZW50aWFscxgOIAMoCzIYLnJvc3Rlci5TaWduSW5DcmVkZW50aWFsEh8KBGtleXMYDyADKAsyES5yb3N0ZXIuU2lnbkluS2V5IjYKFEhvbGRlclJlYWNoZXNSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYiXwoVSG9sZGVyUmVhY2hlc1Jlc3BvbnNlEg8KB21ldGhvZHMYCiADKAkSDQoFc2l0ZXMYCyADKAwSEgoKZXZlcnlfc2l0ZRgMIAEoCBISCgpldmVyeXdoZXJlGA0gAygJIpsBChNIb2xkZXJTZWFyY2hSZXF1ZXN0EiUKB2ZpbHRlcnMYASADKAsyFC5yb3N0ZXIuSG9sZGVyRmlsdGVyEgkKAXEYCCABKAkSEgoKZGVwYXJ0bWVudBgJIAEoCRITCgtlbXBsb3llZV9ubxgKIAEoCRITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAIiSgoUSG9sZGVyU2VhcmNoUmVzcG9uc2USHQoFaXRlbXMYASADKAsyDi5yb3N0ZXIuSG9sZGVyEhMKBG5leHQYAiABKAlCBaoBAggCIn4KEUhvbGRlckZpbGxSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSGwoMZGlzcGxheV9uYW1lGAggASgJQgWqAQIIAhIWCgdwaWN0dXJlGAkgASgJQgWqAQIIAhIUCgVpbWFnZRgKIAEoDEIFqgECCAIiSQoSSG9sZGVyRmlsbFJlc3BvbnNlEhoKC3BpY3R1cmVsZXNzGAEgASgIQgWqAQIIAhIXCghuYW1lbGVzcxgCIAEoCEIFqgECCAIifgoUSG9sZGVyUG9ydHJheVJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhQKBWltYWdlGAggASgMQgWqAQIIAiLRAQoWSG9sZGVyUHJvdmlzaW9uUmVxdWVzdBIhCgZ0ZW5hbnQYASABKAsyES5yb3N0ZXIuVGVuYW50UmVmEhQKBWFsaWFzGAIgASgJQgWqAQIIAhITCgRuYW1lGAMgASgJQgWqAQIIAhIgCgdwcm9maWxlGAQgASgLMg8ucm9zdGVyLlByb2ZpbGUSFwoIcHJvdmlkZXIYBSABKAlCBaoBAggCEhYKB3N1YmplY3QYBiABKAlCBaoBAggCEhYKB2FkZHJlc3MYByABKAlCBaoBAggCIoMBChdIb2xkZXJEZWFjdGl2YXRlUmVxdWVzdBIeCgNyZWYYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASFgoHZGVsZXRlZBgCIAEoCEIFqgECCAIiaQoVSG9sZGVyQWN0aXZhdGVSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSMAoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcDK6CQoNSG9sZGVyU2VydmljZRIvCgNBZGQSGC5yb3N0ZXIuSG9sZGVyQWRkUmVxdWVzdBoOLnJvc3Rlci5Ib2xkZXISLwoDR2V0Ehgucm9zdGVyLkhvbGRlckdldFJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEjMKBVBhdGNoEhoucm9zdGVyLkhvbGRlclBhdGNoUmVxdWVzdBoOLnJvc3Rlci5Ib2xkZXISMwoFQXBwbHkSGi5yb3N0ZXIuSG9sZGVyQXBwbHlSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchI3CgVFcmFzZRIRLnJvc3Rlci5Ib2xkZXJSZWYaGy5yb3N0ZXIuSG9sZGVyRXJhc2VSZXNwb25zZRI9CgRMaXN0Ehkucm9zdGVyLkhvbGRlckxpc3RSZXF1ZXN0Ghoucm9zdGVyLkhvbGRlckxpc3RSZXNwb25zZRJCCgVXYXRjaBIaLnJvc3Rlci5Ib2xkZXJXYXRjaFJlcXVlc3QaGy5yb3N0ZXIuSG9sZGVyV2F0Y2hSZXNwb25zZTABEjUKBlVwZGF0ZRIbLnJvc3Rlci5Ib2xkZXJVcGRhdGVSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchI3CgdSZWFsaWFzEhwucm9zdGVyLkhvbGRlclJlYWxpYXNSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchI3CgdEaXNhYmxlEhwucm9zdGVyLkhvbGRlckRpc2FibGVSZXF1ZXN0Gg4ucm9zdGVyLkhvbGRlchI1CgZFbmFibGUSGy5yb3N0ZXIuSG9sZGVyRW5hYmxlUmVxdWVzdBoOLnJvc3Rlci5Ib2xkZXISPQoKSW52YWxpZGF0ZRIfLnJvc3Rlci5Ib2xkZXJJbnZhbGlkYXRlUmVxdWVzdBoOLnJvc3Rlci5Ib2xkZXISRgoHU2lnbnNJbhIcLnJvc3Rlci5Ib2xkZXJTaWduc0luUmVxdWVzdBodLnJvc3Rlci5Ib2xkZXJTaWduc0luUmVzcG9uc2USRgoHUmVhY2hlcxIcLnJvc3Rlci5Ib2xkZXJSZWFjaGVzUmVxdWVzdBodLnJvc3Rlci5Ib2xkZXJSZWFjaGVzUmVzcG9uc2USQwoGU2VhcmNoEhsucm9zdGVyLkhvbGRlclNlYXJjaFJlcXVlc3QaHC5yb3N0ZXIuSG9sZGVyU2VhcmNoUmVzcG9uc2USPQoERmlsbBIZLnJvc3Rlci5Ib2xkZXJGaWxsUmVxdWVzdBoaLnJvc3Rlci5Ib2xkZXJGaWxsUmVzcG9uc2USNwoHUG9ydHJheRIcLnJvc3Rlci5Ib2xkZXJQb3J0cmF5UmVxdWVzdBoOLnJvc3Rlci5Ib2xkZXISOwoJUHJvdmlzaW9uEh4ucm9zdGVyLkhvbGRlclByb3Zpc2lvblJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEj0KCkRlYWN0aXZhdGUSHy5yb3N0ZXIuSG9sZGVyRGVhY3RpdmF0ZVJlcXVlc3QaDi5yb3N0ZXIuSG9sZGVyEjkKCEFjdGl2YXRlEh0ucm9zdGVyLkhvbGRlckFjdGl2YXRlUmVxdWVzdBoOLnJvc3Rlci5Ib2xkZXJCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_me, file_google_protobuf_any, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder, file_roster_payday_tenant_svc_g]);
 
 /**
  * @generated from message roster.HolderAddRequest
@@ -80,6 +80,11 @@ export type HolderAddRequest = Message<"roster.HolderAddRequest"> & {
    * @generated from field: google.protobuf.Timestamp date_disabled = 12;
    */
   dateDisabled?: Timestamp | undefined;
+
+  /**
+   * @generated from field: string directory = 8 [features.field_presence = IMPLICIT];
+   */
+  directory: string;
 
   /**
    * @generated from field: roster.Portrait portrait = 16;
@@ -237,6 +242,11 @@ export type HolderSelect = Message<"roster.HolderSelect"> & {
   dateDisabled: boolean;
 
   /**
+   * @generated from field: bool directory = 8;
+   */
+  directory: boolean;
+
+  /**
    * @generated from field: bool portrait = 16;
    */
   portrait: boolean;
@@ -361,6 +371,11 @@ export type HolderPatchRequest = Message<"roster.HolderPatchRequest"> & {
    * @generated from field: bool date_disabled_null = 25;
    */
   dateDisabledNull: boolean;
+
+  /**
+   * @generated from field: string directory = 16;
+   */
+  directory: string;
 
   /**
    * @generated from field: roster.Portrait portrait = 32;
@@ -1076,6 +1091,115 @@ export const HolderPortrayRequestSchema: GenMessage<HolderPortrayRequest> = /*@_
   messageDesc(file_roster_payday_holder_svc_g, 27);
 
 /**
+ * @generated from message roster.HolderProvisionRequest
+ */
+export type HolderProvisionRequest = Message<"roster.HolderProvisionRequest"> & {
+  /**
+   * @generated from field: roster.TenantRef tenant = 1;
+   */
+  tenant?: TenantRef | undefined;
+
+  /**
+   * What roster calls them. Taken already, a suffix is added, as a sign-in
+   * that enrols somebody adds one.
+   *
+   * @generated from field: string alias = 2 [features.field_presence = IMPLICIT];
+   */
+  alias: string;
+
+  /**
+   * @generated from field: string name = 3 [features.field_presence = IMPLICIT];
+   */
+  name: string;
+
+  /**
+   * @generated from field: roster.Profile profile = 4;
+   */
+  profile?: Profile | undefined;
+
+  /**
+   * Which connection, by name, and what it calls them: the identity a
+   * sign-in through it will find. It must be the connection the tenant
+   * provisions through.
+   *
+   * @generated from field: string provider = 5 [features.field_presence = IMPLICIT];
+   */
+  provider: string;
+
+  /**
+   * @generated from field: string subject = 6 [features.field_presence = IMPLICIT];
+   */
+  subject: string;
+
+  /**
+   * Their address, lowercased and trimmed, written unverified. Empty is none.
+   *
+   * @generated from field: string address = 7 [features.field_presence = IMPLICIT];
+   */
+  address: string;
+};
+
+/**
+ * Describes the message roster.HolderProvisionRequest.
+ * Use `create(HolderProvisionRequestSchema)` to create a new message.
+ */
+export const HolderProvisionRequestSchema: GenMessage<HolderProvisionRequest> = /*@__PURE__*/
+  messageDesc(file_roster_payday_holder_svc_g, 28);
+
+/**
+ * @generated from message roster.HolderDeactivateRequest
+ */
+export type HolderDeactivateRequest = Message<"roster.HolderDeactivateRequest"> & {
+  /**
+   * @generated from field: roster.HolderRef ref = 1;
+   */
+  ref?: HolderRef | undefined;
+
+  /**
+   * Optimistic locking, as `Disable` takes it.
+   *
+   * @generated from field: google.protobuf.Timestamp date_updated = 13;
+   */
+  dateUpdated?: Timestamp | undefined;
+
+  /**
+   * The directory deleted them, rather than said they are inactive.
+   *
+   * @generated from field: bool deleted = 2 [features.field_presence = IMPLICIT];
+   */
+  deleted: boolean;
+};
+
+/**
+ * Describes the message roster.HolderDeactivateRequest.
+ * Use `create(HolderDeactivateRequestSchema)` to create a new message.
+ */
+export const HolderDeactivateRequestSchema: GenMessage<HolderDeactivateRequest> = /*@__PURE__*/
+  messageDesc(file_roster_payday_holder_svc_g, 29);
+
+/**
+ * @generated from message roster.HolderActivateRequest
+ */
+export type HolderActivateRequest = Message<"roster.HolderActivateRequest"> & {
+  /**
+   * @generated from field: roster.HolderRef ref = 1;
+   */
+  ref?: HolderRef | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_updated = 13;
+   */
+  dateUpdated?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.HolderActivateRequest.
+ * Use `create(HolderActivateRequestSchema)` to create a new message.
+ */
+export const HolderActivateRequestSchema: GenMessage<HolderActivateRequest> = /*@__PURE__*/
+  messageDesc(file_roster_payday_holder_svc_g, 30);
+
+/**
  * @generated from service roster.HolderService
  */
 export const HolderService: GenService<{
@@ -1430,6 +1554,75 @@ export const HolderService: GenService<{
   portray: {
     methodKind: "unary";
     input: typeof HolderPortrayRequestSchema;
+    output: typeof HolderSchema;
+  },
+  /**
+   * Provision makes somebody a directory says exists: the person, their
+   * identity at the connection that directory provisions through, and their
+   * address -- in one write, or none of it.
+   *
+   * # Why it is not `Add`, `Identity.Add` and `Email.Add`
+   *
+   * Those three are each a grant somebody holds on its own, and two of them
+   * are ways into an account. A key holding `Identity.Add` may link a provider
+   * account to **anybody** who holds no more than its holder does -- and
+   * `Core.mayReach` answers yes for everybody who holds nothing, which is
+   * most people. A directory's key, reachable from the internet so the
+   * directory can call it, would be a way into all of them.
+   *
+   * This writes ways in only into the person it makes in the same breath, who
+   * holds nothing and has no other way in. So a key that holds this and none
+   * of those three can make people, and cannot reach anybody who already
+   * exists -- which is the whole of what a directory provisioning people
+   * needs, and nothing it does not.
+   *
+   * # What it is held to
+   *
+   * The connection must be the one the tenant provisions through
+   * (`Connection.provisions`), the subject is held to that connection's claim
+   * as `Identity.Add` holds it, and the address is written **unverified**: a
+   * verified address is where a recovery link goes, and `Email.Attest` with a
+   * stamp takes an address somebody else holds unproved. A taken address, or a
+   * taken subject, refuses the whole of it.
+   *
+   * @generated from rpc roster.HolderService.Provision
+   */
+  provision: {
+    methodKind: "unary";
+    input: typeof HolderProvisionRequestSchema;
+    output: typeof HolderSchema;
+  },
+  /**
+   * Deactivate suspends somebody on their directory's word: `inactive`, or
+   * `deleted`, which the directory will not ask about again.
+   *
+   * # Why it is not `Disable`
+   *
+   * Because the directory may lift what it put there and nothing else
+   * (`Holder.directory`), and one verb for both could not say whose a
+   * suspension is. A suspension already an operator's stays theirs.
+   *
+   * Held to people the directory speaks for: somebody with an identity at the
+   * connection the tenant provisions through.
+   *
+   * @generated from rpc roster.HolderService.Deactivate
+   */
+  deactivate: {
+    methodKind: "unary";
+    input: typeof HolderDeactivateRequestSchema;
+    output: typeof HolderSchema;
+  },
+  /**
+   * Activate lifts a suspension the directory made, and only that one.
+   *
+   * An operator's suspension is refused, and so is somebody the directory
+   * deleted: it said they are gone, and bringing them back is an operator's.
+   *
+   * @generated from rpc roster.HolderService.Activate
+   */
+  activate: {
+    methodKind: "unary";
+    input: typeof HolderActivateRequestSchema;
     output: typeof HolderSchema;
   },
 }> = /*@__PURE__*/

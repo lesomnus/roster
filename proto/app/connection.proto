@@ -136,6 +136,15 @@ message Connection {
   // deployment's (`server/core/connection.go`).
   string subject_claim = 12;
 
+  // Whether the tenant's directory provisions its people through this
+  // connection: the people it makes (`HolderService.Provision`) are linked
+  // here, and it may suspend the people who sign in through it
+  // (`HolderService.Deactivate`). One connection a tenant at most, because a
+  // directory provisioning people names them once.
+  //
+  // `docs/scim.md` is the directory that does.
+  bool provisions = 16;
+
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {

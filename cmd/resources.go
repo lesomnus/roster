@@ -118,6 +118,10 @@ type Resource struct {
 	// when left out. `oid` for Entra; `Connection.subject_claim` says why.
 	SubjectClaim string `yaml:"subject_claim"`
 
+	// Connection: whether the tenant's directory provisions its people
+	// through it (`docs/scim.md`). One connection a tenant at most.
+	Provisions bool `yaml:"provisions"`
+
 	// MailDomain: which of the tenant's connections an address at this domain
 	// is routed to. Empty routes nowhere, as on `Add`.
 	Routes string `yaml:"routes"`
@@ -460,6 +464,7 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 			Tenant: at, Name: r.Name, Desc: r.Desc,
 			Issuer: r.Issuer, ClientId: r.ClientId, Scopes: r.Scopes, SecretRef: r.SecretRef,
 			SubjectClaim: r.SubjectClaim,
+			Provisions:   r.Provisions,
 			Labels:       labelsOf(r),
 		}.Build())
 
@@ -470,7 +475,7 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 	}
 	if got.GetIssuer() == r.Issuer && got.GetClientId() == r.ClientId &&
 		got.GetSecretRef() == r.SecretRef && got.GetDesc() == r.Desc &&
-		got.GetSubjectClaim() == r.SubjectClaim &&
+		got.GetSubjectClaim() == r.SubjectClaim && got.GetProvisions() == r.Provisions &&
 		same(got.GetScopes(), r.Scopes) && declared(got.GetLabels()) {
 		return what, "same", nil
 	}
@@ -486,6 +491,7 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 		Scopes:       r.Scopes,
 		SecretRef:    proto.String(r.SecretRef),
 		SubjectClaim: proto.String(r.SubjectClaim),
+		Provisions:   proto.Bool(r.Provisions),
 		Labels:       labelsOf(r),
 		DateUpdated:  got.GetDateUpdated(),
 	}.Build())

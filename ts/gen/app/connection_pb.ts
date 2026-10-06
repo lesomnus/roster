@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/connection.proto.
  */
 export const file_app_connection: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvY29ubmVjdGlvbi5wcm90bxIGcm9zdGVyItkECgpDb25uZWN0aW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEi4KBmxhYmVscxgHIAMoCzIeLnJvc3Rlci5Db25uZWN0aW9uLkxhYmVsc0VudHJ5Eg4KBmlzc3VlchgIIAEoCRIRCgljbGllbnRfaWQYCSABKAkSDgoGc2NvcGVzGAogAygJEhIKCnNlY3JldF9yZWYYCyABKAkSFQoNc3ViamVjdF9jbGFpbRgMIAEoCRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATp/yvwVRBICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGhwSAmF0GgoKBnRlbmFudBACGggKBG5hbWUQBTABirsWMwgZMi8KEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGdGVuYW50IBQoZEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChRhcHAvY29ubmVjdGlvbi5wcm90bxIGcm9zdGVyIu0ECgpDb25uZWN0aW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEi4KBmxhYmVscxgHIAMoCzIeLnJvc3Rlci5Db25uZWN0aW9uLkxhYmVsc0VudHJ5Eg4KBmlzc3VlchgIIAEoCRIRCgljbGllbnRfaWQYCSABKAkSDgoGc2NvcGVzGAogAygJEhIKCnNlY3JldF9yZWYYCyABKAkSFQoNc3ViamVjdF9jbGFpbRgMIAEoCRISCgpwcm92aXNpb25zGBAgASgIEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOn/K/BVEEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHBICYXQaCgoGdGVuYW50EAIaCAoEbmFtZRAFMAGKuxYzCBkyLwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQgFChkQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Connection is which provider one operator's people arrive through.
@@ -181,6 +181,19 @@ export type Connection = Message<"roster.Connection"> & {
    * @generated from field: string subject_claim = 12;
    */
   subjectClaim: string;
+
+  /**
+   * Whether the tenant's directory provisions its people through this
+   * connection: the people it makes (`HolderService.Provision`) are linked
+   * here, and it may suspend the people who sign in through it
+   * (`HolderService.Deactivate`). One connection a tenant at most, because a
+   * directory provisioning people names them once.
+   *
+   * `docs/scim.md` is the directory that does.
+   *
+   * @generated from field: bool provisions = 16;
+   */
+  provisions: boolean;
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

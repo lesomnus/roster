@@ -71,6 +71,12 @@ func (_c *ConnectionCreate) SetSubjectClaim(v string) *ConnectionCreate {
 	return _c
 }
 
+// SetProvisions sets the "provisions" field.
+func (_c *ConnectionCreate) SetProvisions(v bool) *ConnectionCreate {
+	_c.mutation.SetProvisions(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *ConnectionCreate) SetDateUpdated(v time.Time) *ConnectionCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -174,6 +180,9 @@ func (_c *ConnectionCreate) check() error {
 	if _, ok := _c.mutation.SubjectClaim(); !ok {
 		return &ValidationError{Name: "subject_claim", err: errors.New(`ent: missing required field "Connection.subject_claim"`)}
 	}
+	if _, ok := _c.mutation.Provisions(); !ok {
+		return &ValidationError{Name: "provisions", err: errors.New(`ent: missing required field "Connection.provisions"`)}
+	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Connection.date_updated"`)}
 	}
@@ -253,6 +262,10 @@ func (_c *ConnectionCreate) createSpec() (*Connection, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.SubjectClaim(); ok {
 		_spec.SetField(connection.FieldSubjectClaim, field.TypeString, value)
 		_node.SubjectClaim = value
+	}
+	if value, ok := _c.mutation.Provisions(); ok {
+		_spec.SetField(connection.FieldProvisions, field.TypeBool, value)
+		_node.Provisions = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(connection.FieldDateUpdated, field.TypeTime, value)

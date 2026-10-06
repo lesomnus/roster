@@ -130,6 +130,11 @@ which is temporary and belongs to 🔒 `Credential`, nor an erasure. Both are
 timestamps rather than flags because the value travels and is monotonic: a
 duplicate is a no-op and a stale one cannot un-revoke.
 
+`directory` says whose a suspension is when it is a directory's -- `inactive`, or
+`deleted` -- because a directory provisioning people is one way and lifts what it
+put there and nothing else; an operator's suspension stays the operator's
+([scim.md](scim.md)).
+
 And a picture, in two forms. `profile.picture` says where one is, and
 `portrait` is roster's own copy at the sizes a screen draws -- 32, 64 and 128
 pixels, JPEG, inline -- rendered by roster from whatever image `Portray` or
@@ -606,6 +611,10 @@ door sends to the connection's issuer -- so a new reference, and a new issuer
 for a connection that has one, are the deployment's to write, never a tenant's.
 A tenant may keep the reference or take it away, and a connection with no
 secret, a public client, is its own.
+
+`provisions` marks the one connection a tenant's directory provisions its people
+through, so the people it makes are linked there and it may suspend those who sign
+in through it ([scim.md](scim.md)).
 
 `subject_claim` is which claim of the token is a person's 🪪 `Identity` subject:
 `sub` unless it says otherwise, and `oid` for Entra, whose `sub` is one per app.

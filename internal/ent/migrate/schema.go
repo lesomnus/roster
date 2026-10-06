@@ -175,6 +175,7 @@ var (
 		{Name: "scopes", Type: field.TypeJson, Nullable: true},
 		{Name: "secret_ref", Type: field.TypeString},
 		{Name: "subject_claim", Type: field.TypeString},
+		{Name: "provisions", Type: field.TypeBool},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -188,7 +189,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "connection_tenant_tenant",
-				Columns:    []*schema.Column{ConnectionColumns[12]},
+				Columns:    []*schema.Column{ConnectionColumns[13]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -197,12 +198,12 @@ var (
 			{
 				Name:    "connection_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{ConnectionColumns[11], ConnectionColumns[0]},
+				Columns: []*schema.Column{ConnectionColumns[12], ConnectionColumns[0]},
 			},
 			{
 				Name:    "connection_name_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{ConnectionColumns[1], ConnectionColumns[12]},
+				Columns: []*schema.Column{ConnectionColumns[1], ConnectionColumns[13]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -497,6 +498,7 @@ var (
 		{Name: "data", Type: field.TypeJson, Nullable: true},
 		{Name: "date_invalidated", Type: field.TypeTime, Nullable: true},
 		{Name: "date_disabled", Type: field.TypeTime, Nullable: true},
+		{Name: "directory", Type: field.TypeString},
 		{Name: "portrait", Type: field.TypeJson, Nullable: true},
 		{Name: "tenant_id", Type: field.TypeUuid},
 	}
@@ -508,7 +510,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "holder_tenant_tenant",
-				Columns:    []*schema.Column{HolderColumns[13]},
+				Columns:    []*schema.Column{HolderColumns[14]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -517,7 +519,7 @@ var (
 			{
 				Name:    "holder_alias_tenant_id",
 				Unique:  true,
-				Columns: []*schema.Column{HolderColumns[1], HolderColumns[13]},
+				Columns: []*schema.Column{HolderColumns[1], HolderColumns[14]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

@@ -49,6 +49,7 @@ type Holder struct {
 	xxx_hidden_Data            *anypb.Any             `protobuf:"bytes,10,opt,name=data"`
 	xxx_hidden_DateInvalidated *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_invalidated,json=dateInvalidated"`
 	xxx_hidden_DateDisabled    *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_disabled,json=dateDisabled"`
+	xxx_hidden_Directory       string                 `protobuf:"bytes,8,opt,name=directory"`
 	xxx_hidden_Portrait        *Portrait              `protobuf:"bytes,16,opt,name=portrait"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
@@ -170,6 +171,13 @@ func (x *Holder) GetDateDisabled() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *Holder) GetDirectory() string {
+	if x != nil {
+		return x.xxx_hidden_Directory
+	}
+	return ""
+}
+
 func (x *Holder) GetPortrait() *Portrait {
 	if x != nil {
 		return x.xxx_hidden_Portrait
@@ -230,6 +238,10 @@ func (x *Holder) SetDateInvalidated(v *timestamppb.Timestamp) {
 
 func (x *Holder) SetDateDisabled(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateDisabled = v
+}
+
+func (x *Holder) SetDirectory(v string) {
+	x.xxx_hidden_Directory = v
 }
 
 func (x *Holder) SetPortrait(v *Portrait) {
@@ -450,6 +462,30 @@ type Holder_builder struct {
 	// A timestamp for the reason above, and because *since when* is a question an
 	// operator asks.
 	DateDisabled *timestamppb.Timestamp
+	// Whose suspension `date_disabled` is, when it is the **directory's**: the
+	// directory provisioning this person (SCIM, `docs/scim.md`) said they are
+	// `inactive`, or `deleted` them. Empty when nobody suspended them, or an
+	// operator did.
+	//
+	// # Why it is not a second `date_disabled`
+	//
+	// Everything that refuses a suspended person reads one column -- a sign-in, a
+	// key, a delegation, `Reaches`, the stream an app hears a suspension on --
+	// and a second column is a second place each of them has to remember. So
+	// the suspension is the one fact it was, and this says only whose it is.
+	//
+	// # Why whose matters
+	//
+	// A directory is one way: it never hears of an operator's suspension, and
+	// restarting its provisioning says `active: true` for everybody in scope.
+	// Were every suspension one thing, that restart would lift an operator's.
+	// So the directory lifts what it put there and nothing else
+	// (`HolderService.Activate`), and an operator's `Disable` or `Enable` makes
+	// the suspension theirs.
+	//
+	// Written by those verbs and nothing else: `Add` refuses it, as it refuses
+	// a portrait, and `Patch` is closed at the transport.
+	Directory string
 	// A picture of this person, kept here: one square image at the sizes a
 	// screen draws one, inline.
 	//
@@ -498,6 +534,7 @@ func (b0 Holder_builder) Build() *Holder {
 	x.xxx_hidden_Data = b.Data
 	x.xxx_hidden_DateInvalidated = b.DateInvalidated
 	x.xxx_hidden_DateDisabled = b.DateDisabled
+	x.xxx_hidden_Directory = b.Directory
 	x.xxx_hidden_Portrait = b.Portrait
 	return m0
 }
@@ -789,7 +826,7 @@ var File_roster_payday_holder_proto protoreflect.FileDescriptor
 
 const file_roster_payday_holder_proto_rawDesc = "" +
 	"\n" +
-	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xe5\x06\n" +
+	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\x83\a\n" +
 	"\x06Holder\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
@@ -805,7 +842,8 @@ const file_roster_payday_holder_proto_rawDesc = "" +
 	"\x04data\x18\n" +
 	" \x01(\v2\x14.google.protobuf.AnyR\x04data\x12M\n" +
 	"\x10date_invalidated\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\x0fdateInvalidated\x12G\n" +
-	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateDisabled\x12,\n" +
+	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateDisabled\x12\x1c\n" +
+	"\tdirectory\x18\b \x01(\tR\tdirectory\x12,\n" +
 	"\bportrait\x18\x10 \x01(\v2\x10.roster.PortraitR\bportrait\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +

@@ -38,6 +38,10 @@ func (s coreHolder) Add(ctx context.Context, req *app.HolderAddRequest) (*app.Ho
 		return nil, status.Error(codes.InvalidArgument,
 			"portrait: roster makes one from an image, and Portray is what takes it")
 	}
+	if req.GetDirectory() != "" {
+		return nil, status.Error(codes.InvalidArgument,
+			"directory: says whose a suspension is, and Deactivate is what writes it")
+	}
 	if err := portrait.CheckURL(req.GetProfile().GetPicture()); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "profile.picture: %s", err)
 	}

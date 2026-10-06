@@ -35,5 +35,6 @@ message ConnectionUpdateRequest {
   repeated string scopes = 10;
   string secret_ref = 11;
   string subject_claim = 12;
+  bool provisions = 16;
   string desc = 6;
 }

@@ -205,6 +205,11 @@ func Enrolling() Enrol {
 	}
 }
 
+// AliasOf is what to call somebody a directory sent, from their address: the
+// rule a sign-in that enrols somebody names them by, for a directory that
+// provisions them instead (`scim`).
+func AliasOf(address string) string { return aliasOf(address) }
+
 // aliasOf is what to call somebody a directory sent, from the address it sent.
 //
 // # Why the local part is not the answer on its own

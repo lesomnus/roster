@@ -232,6 +232,14 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 				"holders, and control.db.driver names no database, so there is nobody to be and no " +
 				"listener is opened. name a control plane, or take the block out")
 	}
+	// A directory's key is a tenant key, and a deployment with no control
+	// plane reads none: its callers are believed by name (`auth.Plain`), so
+	// the endpoint would answer whoever wrote one down.
+	if c.Scim.Serves() && !c.Control.Serves() {
+		return nil, errors.New(
+			"scim: a directory signs in with a tenant key, and control.db.driver names no database, so " +
+				"no key is read and every caller would be believed by name. name a control plane, or take the block out")
+	}
 	// And the same shape once more, for the page a roster user opens.
 	//
 	// `sign_in.enabled` is what registers `AuthService` on this listener, so

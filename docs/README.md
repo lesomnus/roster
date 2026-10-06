@@ -41,6 +41,9 @@ somebody, replicas, TLS.
 [ldap.md](ldap.md) is the directory, for the clients on a network that speak LDAP
 and nothing else.
 
+[scim.md](scim.md) is the other direction: a directory provisioning its people
+into roster -- Entra, Okta -- and their leaving.
+
 ## 5. Sign people in
 
 [login.md](login.md) -- the path a password takes, what changes when Hydra is in

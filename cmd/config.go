@@ -93,6 +93,9 @@ type Config struct {
 	Ldap    LdapConfig    `yaml:"ldap"`
 	Login   LoginConfig   `yaml:"login"`
 
+	// Scim is the fourth: where a directory pushes the people it provisions.
+	Scim ScimConfig `yaml:"scim"`
+
 	// SignIn is whether the **data plane** answers `AuthService.SignIn`, so a
 	// roster user can be a caller of roster itself rather than only of an app
 	// in front of it.

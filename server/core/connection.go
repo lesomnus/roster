@@ -103,6 +103,48 @@ func (s Core) maySubject(ctx context.Context, was, now string) error {
 		"subject_claim: going back would leave everybody already moved unknown at their next sign-in, so it is the deployment's")
 }
 
+// oneProvisions refuses a second connection a tenant's directory provisions
+// through. A directory names the people it makes once, so two would be two
+// places the same person could be linked, and the second the wrong one.
+func (s Core) oneProvisions(ctx context.Context, tenant []byte, self []byte) error {
+	after := ""
+	for {
+		vs, err := s.Next().Connection().List(ctx, app.ConnectionListRequest_builder{
+			Filters: []*app.ConnectionFilter{app.ConnectionFilter_builder{
+				Tenant: app.TenantRef_builder{Id: tenant}.Build(),
+			}.Build()},
+			After: after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+		for _, v := range vs.GetItems() {
+			if v.GetProvisions() && !bytesEq(v.GetId(), self) {
+				return status.Errorf(codes.FailedPrecondition,
+					"provisions: %s already does for this tenant, and a directory provisions through one", v.GetName())
+			}
+		}
+
+		after = vs.GetNext()
+		if after == "" {
+			return nil
+		}
+	}
+}
+
+// tenantOfConnection is the tenant a connection belongs to, through the wall.
+func (s Core) tenantOfConnection(ctx context.Context, ref *app.ConnectionRef) ([]byte, []byte, error) {
+	v, err := s.Next().Connection().Get(ctx, app.ConnectionGetRequest_builder{
+		Ref:    ref,
+		Select: app.ConnectionSelect_builder{Tenant: app.TenantSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return v.GetTenant().GetId(), v.GetId(), nil
+}
+
 // Add refuses a secret from a tenant, for [maySend]'s reason: a new connection
 // is a new reference and a new issuer at once.
 func (s coreConnection) Add(ctx context.Context, req *app.ConnectionAddRequest) (*app.Connection, error) {
@@ -111,6 +153,17 @@ func (s coreConnection) Add(ctx context.Context, req *app.ConnectionAddRequest) 
 	}
 	if err := s.maySubject(ctx, "", req.GetSubjectClaim()); err != nil {
 		return nil, err
+	}
+	if req.GetProvisions() {
+		t, err := s.Next().Tenant().Get(ctx, app.TenantGetRequest_builder{
+			Ref: req.GetTenant(), Select: app.TenantSelect_builder{}.Build(),
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+		if err := s.oneProvisions(ctx, t.GetId(), nil); err != nil {
+			return nil, err
+		}
 	}
 
 	return s.ConnectionServiceServer.Add(ctx, req)
@@ -123,6 +176,15 @@ func (s coreConnection) Add(ctx context.Context, req *app.ConnectionAddRequest) 
 func (s coreConnection) Patch(ctx context.Context, req *app.ConnectionPatchRequest) (*app.Connection, error) {
 	if req.HasSubjectClaim() {
 		if err := s.maySubject(ctx, req.GetSubjectClaim(), req.GetSubjectClaim()); err != nil {
+			return nil, err
+		}
+	}
+	if req.GetProvisions() {
+		tenant, self, err := s.tenantOfConnection(ctx, req.GetRef())
+		if err != nil {
+			return nil, err
+		}
+		if err := s.oneProvisions(ctx, tenant, self); err != nil {
 			return nil, err
 		}
 	}
@@ -162,6 +224,15 @@ func (s coreConnection) Update(ctx context.Context, req *app.ConnectionUpdateReq
 			return nil, err
 		}
 	}
+	if req.GetProvisions() {
+		tenant, self, err := s.tenantOfConnection(ctx, req.GetRef())
+		if err != nil {
+			return nil, err
+		}
+		if err := s.oneProvisions(ctx, tenant, self); err != nil {
+			return nil, err
+		}
+	}
 
 	patch := app.ConnectionPatchRequest_builder{
 		Ref:         req.GetRef(),
@@ -185,6 +256,9 @@ func (s coreConnection) Update(ctx context.Context, req *app.ConnectionUpdateReq
 	}
 	if req.HasSubjectClaim() {
 		patch.SubjectClaim = z.Ptr(req.GetSubjectClaim())
+	}
+	if req.HasProvisions() {
+		patch.Provisions = z.Ptr(req.GetProvisions())
 	}
 
 	// The generated one, not [coreConnection.Patch]: what that holds a patch to

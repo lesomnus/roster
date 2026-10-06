@@ -123,6 +123,12 @@ func (_c *HolderCreate) SetNillableDateDisabled(v *time.Time) *HolderCreate {
 	return _c
 }
 
+// SetDirectory sets the "directory" field.
+func (_c *HolderCreate) SetDirectory(v string) *HolderCreate {
+	_c.mutation.SetDirectory(v)
+	return _c
+}
+
 // SetPortrait sets the "portrait" field.
 func (_c *HolderCreate) SetPortrait(v *rstr.Portrait) *HolderCreate {
 	_c.mutation.SetPortrait(v)
@@ -191,6 +197,9 @@ func (_c *HolderCreate) check() error {
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Holder.date_updated"`)}
+	}
+	if _, ok := _c.mutation.Directory(); !ok {
+		return &ValidationError{Name: "directory", err: errors.New(`ent: missing required field "Holder.directory"`)}
 	}
 	if _, ok := _c.mutation.TenantId(); !ok {
 		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Holder.tenant_id"`)}
@@ -297,6 +306,10 @@ func (_c *HolderCreate) createSpec() (*Holder, *sqlgraph.CreateSpec, error) {
 	if value, ok := _c.mutation.DateDisabled(); ok {
 		_spec.SetField(holder.FieldDateDisabled, field.TypeTime, value)
 		_node.DateDisabled = &value
+	}
+	if value, ok := _c.mutation.Directory(); ok {
+		_spec.SetField(holder.FieldDirectory, field.TypeString, value)
+		_node.Directory = value
 	}
 	if value, ok := _c.mutation.Portrait(); ok {
 		vv, err := holder.ValueScanner.Portrait.Value(value)

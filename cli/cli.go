@@ -113,6 +113,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 			NewCmdServe(c),
 			NewCmdAccount(c),
 			NewCmdLdap(c),
+			NewCmdScim(c),
 			NewCmdLogin(c),
 			NewCmdResources(c),
 			NewCmdApp(c),

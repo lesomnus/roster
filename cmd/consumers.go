@@ -2,7 +2,7 @@ package cmd
 
 import "time"
 
-// The three consumers, as configuration.
+// The consumers, as configuration.
 //
 // `roster account serve`, `roster ldap serve` and `roster login serve` are
 // separate processes that reach roster over the wire, and `scripts/test.sh`
@@ -182,6 +182,33 @@ type LdapConfig struct {
 
 // Serves is whether this deployment answers LDAP.
 func (c LdapConfig) Serves() bool { return c.Addr != "" || c.AddrTls != "" }
+
+// ScimConfig is roster as a SCIM 2.0 endpoint: where a directory pushes the
+// people it provisions (`docs/scim.md`).
+//
+// A listener of its own and not a path on `server.http`, though a deployment
+// exposes it at a path: that listener answers every RPC over Connect, so a
+// proxy rule that forwarded a little too much would publish all of it to the
+// directory's cloud. Here a rule that forwards too much publishes SCIM.
+type ScimConfig struct {
+	// Addr speaks HTTP, the path `/scim/v2`. Empty is nowhere.
+	Addr string `yaml:"addr"`
+
+	// Roster is where the data plane speaks gRPC, defaulting to this
+	// deployment's own for the reason [AccountConfig.Roster] gives.
+	Roster string `yaml:"roster"`
+
+	// Insecure dials roster without TLS.
+	Insecure bool `yaml:"insecure"`
+
+	// Concurrency is how many requests are worked on at once: a directory's
+	// cycle is a burst, and the rate a tenant's callers are held to is shared
+	// with its people signing in. Four when unsaid.
+	Concurrency int `yaml:"concurrency"`
+}
+
+// Serves is whether this deployment answers SCIM.
+func (c ScimConfig) Serves() bool { return c.Addr != "" }
 
 // LoginConfig is the Login App: the box Hydra hands a `login_challenge` to.
 //

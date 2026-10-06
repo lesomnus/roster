@@ -163,6 +163,20 @@ the page, one of the two is wrong and both are load-bearing.
 | `roster ldap serve` is told everything from the shell and refuses with a sentence for each thing it was not; told everything, a client binds with an app password and searches | `TestLdapServeIsToldEverything` · `TestLdapIsToldEverything` |
 | `ldap/` reaches roster only over the wire — it imports no server package but `front.Address` | `scripts/test.sh`, *the consumers reach roster only over the wire* |
 
+## A directory provisioning over SCIM
+
+[scim.md](scim.md) is what it is for.
+
+| the promise | pinned by |
+| --- | --- |
+| a person's whole life at the endpoint, in the order and the dialect Entra writes it: looked up, made with their identity and an unverified address, changed, suspended with a string for a boolean, lifted with a value object, and deleted -- which suspends and keeps the row while the endpoint speaks of them no more | `TestADirectoryProvisionsSomebodyTheWayEntraDoes` · `TestBothDialectsOfAPatchReadTheSame` · `TestTheFiltersADirectoryAsksAreRead` |
+| a directory's key makes people and reaches nobody who already exists: `Provision` writes ways in only into the person it makes, through the connection the tenant provisions through, in one write or none; the key holds no `Identity.Add`, no address write and no erase; a deployment key and a key that may not make are refused | `TestADirectoryMakesPeopleAndOnlyNewOnes` · `TestTheEndpointTakesATenantKeyAndNothingElse` · `TestADirectorysKeyIsMintedForOneTenantAndOneConnection` |
+| somebody already here is matched by their address and not made again, and what the directory owns of them is written all the same | `TestSomebodyAlreadyHereIsMatchedAndNotMadeAgain` |
+| the directory lifts only the suspensions it made, an operator's `Disable` makes one theirs, somebody it deleted is an operator's to bring back, and it suspends only people who sign in through its connection | `TestADirectoryLiftsOnlyItsOwnSuspension` · `TestTheDirectoryDoesNotLiftAnOperatorsSuspension` |
+| it owns what it sends: an attribute it does not send is left, and a `remove` takes one away | `TestWhatTheDirectoryDoesNotSendIsLeftAlone` |
+| it speaks of people only -- never a front door's declared holder or its own -- and one connection a tenant provisions through | `TestTheEndpointSpeaksOnlyOfPeople` · `TestATenantProvisionsThroughOneConnection` |
+| `scim:` with no control plane is a start-up failure, and `scim/` reaches roster only over the wire | `TestAnEndpointWithNoControlPlaneIsRefused` · `scripts/test.sh`, *the consumers reach roster only over the wire* |
+
 ## The Login App
 
 [login.md](login.md) § "What changes when Hydra is in front" is what it is for.
