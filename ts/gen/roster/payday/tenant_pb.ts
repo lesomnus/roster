@@ -233,8 +233,9 @@ export type TenantProfile = Message<"roster.TenantProfile"> & {
    * who could write it could point it at any secret the front door holds --
    * another tenant's, the front door's own key. So `server/core` refuses a
    * new one from anybody narrower than the deployment: the file a deployment
-   * declares its tenants in, and an operator. A tenant's administrator may
-   * keep it or take it away, which hands nothing to anybody.
+   * declares its tenants in, the CLI on its database, and an operator at the
+   * admin port. A tenant's administrator may keep it or take it away, which
+   * hands nothing to anybody.
    *
    * @generated from field: string slack_secret_ref = 2;
    */

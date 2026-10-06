@@ -321,6 +321,18 @@ type Connection_builder struct {
 	//
 	// Empty is a provider that needs none -- a public client with PKCE, which is
 	// what a front door with no back end has.
+	//
+	// # The deployment's to write
+	//
+	// What this names is one of the **deployment's** secrets, and the front door
+	// sends it to this connection's issuer. So a new reference, and a new issuer
+	// for a connection that has one, come from the deployment alone -- the file
+	// it declares its tenants in, the CLI on its database, a key of its own, an
+	// operator at the admin port -- and never from a tenant's administrator, who
+	// could otherwise name any
+	// secret the front door holds beside an issuer of their own
+	// (`server/core/connection.go`). A tenant keeps the reference it was given or
+	// takes it away, and a connection with none is wholly its own.
 	SecretRef   string
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp

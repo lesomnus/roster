@@ -593,6 +593,12 @@ that is the decision: `secret_ref` is only *where the deployment keeps it*
 reads. roster could not use it anyway -- using it means doing the OIDC exchange,
 which is being the relying party, and D19 says roster is not.
 
+What the reference names is still the **deployment's** secret, which the front
+door sends to the connection's issuer -- so a new reference, and a new issuer
+for a connection that has one, are the deployment's to write, never a tenant's.
+A tenant may keep the reference or take it away, and a connection with no
+secret, a public client, is its own.
+
 > `entra` is a `Connection` in contoso: an issuer, a client id, the scopes, and
 > `env:CONTOSO_ENTRA_SECRET` saying where the deployment keeps the secret.
 > roster stores that string and never reads it, because reading it would mean

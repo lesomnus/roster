@@ -95,7 +95,12 @@ func Admin(s *Server) (app.Server, error) {
 
 			// The data plane's kind: the admin port mints `rt_` for a customer's
 			// person, the same key that plane serves through `MeService`.
-			core.WithPrefix(keys.PrefixTenant)),
+			core.WithPrefix(keys.PrefixTenant),
+
+			// Everybody here is an operator, so the writes only the
+			// deployment makes -- a connection's secret, a tenant's Slack --
+			// are theirs to make here.
+			core.Operated()),
 		pd.AuditBuild())
 }
 

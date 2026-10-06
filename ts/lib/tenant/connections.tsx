@@ -75,7 +75,10 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 				is here is public: the issuer, the client id, the scopes. The client
 				secret is <strong>not</strong> here and never will be; <code>secret ref</code>{' '}
 				is where the account app finds it (<code>env:CONTOSO_ENTRA_SECRET</code>),
-				and roster stores that string without reading it.
+				and roster stores that string without reading it. It names one of the
+				deployment's secrets, so a new one — or a new issuer for a connection
+				that has one — is the deployment's to write: a tenant keeps it or takes
+				it away, and a connection with no secret is the tenant's own.
 			</p>
 
 			<Bar>
