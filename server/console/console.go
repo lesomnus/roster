@@ -23,8 +23,6 @@ package console
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -297,18 +295,4 @@ func (a authed) SignOut(ctx context.Context, req *app.AuthSignOutRequest) (*app.
 	_ = grpc.SetHeader(ctx, metadata.Pairs("set-cookie", a.sessions.End(ctx, was).String()))
 
 	return &app.AuthSignOutResponse{}, nil
-}
-
-// passphrase is 32 bytes from `crypto/rand`, printable.
-//
-// Long enough that it is not guessed and not a word anybody will recognise,
-// because the one thing it must not be is something somebody keeps. It is for
-// the first sign-in, and what happens next is that they change it.
-func passphrase() (string, error) {
-	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-
-	return base64.RawURLEncoding.EncodeToString(b), nil
 }

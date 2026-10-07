@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"fmt"
 
@@ -16,6 +14,7 @@ import (
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/core"
+	"github.com/lesomnus/roster/server/vouch"
 )
 
 // Seeded is what a fresh deployment is: the operator who runs it, and the
@@ -263,7 +262,7 @@ func seedOperator(ctx context.Context, s *Server, alias, given string) (pdid.Id,
 	secret := given
 	if secret == "" {
 		var err error
-		secret, err = passphrase()
+		secret, err = vouch.Passphrase()
 		if err != nil {
 			return pdid.Nil, "", err
 		}
@@ -305,18 +304,4 @@ func seedOperator(ctx context.Context, s *Server, alias, given string) (pdid.Id,
 	}
 
 	return who, secret, nil
-}
-
-// passphrase is 32 bytes from `crypto/rand`, printable.
-//
-// Long enough that it is not guessed and not a word anybody will recognise,
-// because the one thing it must not be is something somebody keeps. It is for
-// the first sign-in, and the admin console's job is to make them change it.
-func passphrase() (string, error) {
-	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-
-	return base64.RawURLEncoding.EncodeToString(b), nil
 }

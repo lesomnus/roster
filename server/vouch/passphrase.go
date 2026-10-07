@@ -19,11 +19,21 @@ import (
 // now, and this is exported because the layer that generates a password lives
 // in `server/core` while the parameters a secret is made and checked with live
 // here.
+//
+// It never starts with `-`. The URL alphabet has one, so one passphrase in
+// 64 did, and given to a command line as `--password <it>` it reads as a
+// flag: xli refuses a flag whose value looks like one, which catches a value
+// left out, and so it refused the password. Drawing again until the first
+// character is something else costs a fraction of a bit (log2 64/63), and
+// leaves every other character as random as it was.
 func Passphrase() (string, error) {
 	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
+	for {
+		if _, err := rand.Read(b); err != nil {
+			return "", err
+		}
+		if s := base64.RawURLEncoding.EncodeToString(b); s[0] != '-' {
+			return s, nil
+		}
 	}
-
-	return base64.RawURLEncoding.EncodeToString(b), nil
 }
