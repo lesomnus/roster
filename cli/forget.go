@@ -14,6 +14,7 @@ import (
 
 	"github.com/lesomnus/payday/pdcmd"
 	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/payday/trail"
 
 	"github.com/lesomnus/roster/internal/ent"
 	entholder "github.com/lesomnus/roster/internal/ent/holder"
@@ -63,6 +64,11 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
+			p, err := c.Holder.Trail(*c)
+			if err != nil {
+				return err
+			}
+
 			dry, _ := flg.Find[bool](cl, "dry-run")
 
 			ref, named := arg.Get[pdcmd.Ref](cl, "REF")
@@ -84,7 +90,7 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 				// No grace. They asked, and the clock a regulator counts is
 				// already running -- a window inside it would be risk bought
 				// with nothing.
-				return forgotten(ctx, s.Ent, who, c.Holder.Archive(*c))
+				return forgotten(ctx, s.Ent, who, p)
 			}
 
 			// Nobody named, so everybody the policy is done waiting for. Which
@@ -112,7 +118,7 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 
 					continue
 				}
-				if err := forgotten(ctx, s.Ent, who, c.Holder.Archive(*c)); err != nil {
+				if err := forgotten(ctx, s.Ent, who, p); err != nil {
 					return err
 				}
 			}
@@ -168,13 +174,19 @@ func NewCmdRestore(c *cmd.Config) *xli.Command {
 	}
 }
 
-func forgotten(ctx context.Context, db *ent.Client, who pdid.Id, archive string) error {
-	res, err := forget.Forget(ctx, db, who, archive)
+func forgotten(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy) error {
+	res, err := forget.Forget(ctx, db, who, p)
 	if err != nil {
 		return fmt.Errorf("%s: %w", who, err)
 	}
 
 	fmt.Fprintf(os.Stderr, "%s forgotten: %s\n", who, res)
+	if res.Held.Any() {
+		// Not an error: what a hold keeps is not this command's to destroy.
+		// It is the list of what to run this again for.
+		fmt.Fprintf(os.Stderr, "%s: %d trail row(s) kept by a legal hold of %v; run this again when it is lifted\n",
+			who, res.Held.Rows, append(res.Held.By, res.Held.Unanswered...))
+	}
 
 	return nil
 }

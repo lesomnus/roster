@@ -9,6 +9,8 @@ import (
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/trail"
 
+	"github.com/lesomnus/flob"
+
 	entaudit "github.com/lesomnus/roster/internal/ent/audit"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/forget"
@@ -92,7 +94,7 @@ func TestForgettingSomebodyKeepsTheEventAndLosesTheContents(t *testing.T) {
 	was, err := b.Ent.Audit.Query().Count(ctx)
 	x.NoError(err)
 
-	res, err := forget.Forget(ctx, b.Ent, who, "")
+	res, err := forget.Forget(ctx, b.Ent, who, trail.Policy{})
 	x.NoError(err)
 	x.NotZero(res.Rows)
 	x.NotZero(res.Trail)
@@ -216,7 +218,7 @@ func TestTheGraceCanBeUndoneUntilItIsNot(t *testing.T) {
 	t.Run("and not after they are forgotten", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := forget.Forget(ctx, b.Ent, who, "")
+		_, err := forget.Forget(ctx, b.Ent, who, trail.Policy{})
 		x.NoError(err)
 
 		x.ErrorContains(forget.Restore(ctx, b.Ent, who), "has been forgotten")
@@ -241,34 +243,31 @@ func TestForgettingReachesTheArchiveToo(t *testing.T) {
 	who := b.holder(t, ctx, b.Contoso, "erin")
 	b.addressOf(t, ctx, who, "erin@contoso.example")
 
-	dir := t.TempDir()
+	archive := flob.NewOsStores(t.TempDir())
 
 	// Everything into the archive first, so that the database holds none of it
-	// and the only copy left is the file.
-	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), dir)
+	// and the only copy left is the archive's.
+	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), archive)
 	x.NoError(err)
 	x.NotZero(n)
 
-	files, err := trail.Files(dir)
-	x.NoError(err)
-
 	held := 0
-	x.NoError(pd.ReadTrail(files, func(v *app.Audit) error {
+	x.NoError(trail.Read(ctx, archive, pd.TrailOf(func(v *app.Audit) error {
 		if string(v.GetObjectId()) == string(who.Bytes()) && len(v.GetValue()) > 0 {
 			held++
 		}
 
 		return nil
-	}))
+	})))
 	x.NotZero(held, "the archive holds nothing about them, so this proves nothing")
 
-	res, err := forget.Forget(ctx, b.Ent, who, dir)
+	res, err := forget.Forget(ctx, b.Ent, who, trail.Policy{Archive: archive})
 	x.NoError(err)
 	x.NotZero(res.Archived, "the archive was not reached")
 
 	left := 0
 	events := 0
-	x.NoError(pd.ReadTrail(files, func(v *app.Audit) error {
+	x.NoError(trail.Read(ctx, archive, pd.TrailOf(func(v *app.Audit) error {
 		if string(v.GetObjectId()) != string(who.Bytes()) {
 			return nil
 		}
@@ -279,7 +278,7 @@ func TestForgettingReachesTheArchiveToo(t *testing.T) {
 		}
 
 		return nil
-	}))
+	})))
 	x.Zero(left, "an archived row still holds what it said about them")
 	x.NotZero(events, "the archived events went as well as their contents")
 }

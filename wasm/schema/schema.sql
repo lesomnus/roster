@@ -37,6 +37,7 @@ CREATE INDEX `audit_counterpart_tenant_id_date_created` ON `audit` (`counterpart
 CREATE INDEX `audit_domain_date_created` ON `audit` (`domain`, `date_created`);
 CREATE INDEX `audit_object_id` ON `audit` (`object_id`);
 CREATE INDEX `audit_tenant_id_date_created` ON `audit` (`tenant_id`, `date_created`);
+CREATE INDEX `audit_tenant_id_domain_date_created` ON `audit` (`tenant_id`, `domain`, `date_created`);
 CREATE INDEX `binding_date_created_id` ON `binding` (`date_created`, `id`);
 CREATE INDEX `connection_date_created_id` ON `connection` (`date_created`, `id`);
 CREATE UNIQUE INDEX `connection_name_tenant_id` ON `connection` (`name`, `tenant_id`) WHERE date_erased IS NULL;
