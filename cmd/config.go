@@ -39,6 +39,7 @@ import (
 	// Linked whatever this deployment runs on, like the drivers above: what it
 	// costs is a `LISTEN` client in the binary, and what the other arrangement
 	// costs is `watch.broker: postgres` reading as a typo.
+	"github.com/lesomnus/payday/trail"
 )
 
 // Name is what this app is called, and it is the only place it is written.
@@ -224,14 +225,15 @@ type HolderConfig struct {
 	Every time.Duration `yaml:"every"`
 }
 
-// Archive is where the trail's archive lives, which forgetting has to reach as
-// well as the database.
+// Trail is the trail's policy, which forgetting answers to as well as the
+// retention sweep: its archive, which forgetting has to reach as well as the
+// database, and the legal holds that keep a row of it as it was.
 //
 // Read off `audit:` rather than repeated here, because there is one archive and
 // two things that write to it. A deployment that kept them apart would have a
 // person destroyed in one copy and not the other, which is the failure this
 // whole act exists to prevent.
-func (c HolderConfig) Archive(from Config) string { return from.Audit.Archive }
+func (c HolderConfig) Trail(from Config) (trail.Policy, error) { return from.Audit.Policy() }
 
 // VouchConfig is what checking secrets needs beyond the rows.
 type VouchConfig struct {

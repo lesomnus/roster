@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/roster/cmd"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -19,6 +20,8 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/payday/trail"
+
+	"github.com/lesomnus/flob"
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/pd"
@@ -139,7 +142,7 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 			store := pd.TrailStore(s.Ent)
 
 			if dry {
-				n, err := store.Count(ctx, of, before)
+				n, err := store.Count(ctx, trail.Scope{Kinds: of}, before)
 				if err != nil {
 					return err
 				}
@@ -149,11 +152,20 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 				return nil
 			}
 
+			// The deployment's policy even for a window of the operator's own:
+			// it is what knows whose trail a legal hold is on, and a removal by
+			// hand is not an exception to one.
+			p, err := c.Audit.Policy()
+			if err != nil {
+				return err
+			}
+
 			n := 0
+			held := trail.Held{}
 			if discard {
-				n, err = trail.Collect(ctx, store, of, before)
+				n, held, err = p.Collect(ctx, store, of, before)
 			} else {
-				n, err = trail.Archive(ctx, store, of, before, dir)
+				n, err = trail.Archive(ctx, store, of, before, flob.NewOsStores(dir))
 			}
 			if err != nil {
 				// With the count, because a run that moved most of the table
@@ -169,6 +181,7 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 
 			fmt.Fprintf(os.Stderr, "%d row(s) older than %s, to %s\n",
 				n, before.UTC().Format(time.RFC3339), where)
+			kept(held)
 
 			return nil
 		}),
@@ -177,16 +190,16 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 
 // newCmdTrailRead is the archive read back, and it opens no database.
 //
-// Deliberately: the reason to keep the file is that it outlives the deployment
-// that wrote it, so a reader that needed the deployment would be answering a
-// question nobody has at the moment they have it.
+// Deliberately: the reason to keep the archive is that it outlives the
+// deployment that wrote it, so a reader that needed the deployment would be
+// answering a question nobody has at the moment they have it.
 func newCmdTrailRead(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "read",
 		Brief: "read an archive back, without a database",
 
 		Args: arg.Args{
-			&arg.RestStrings{Name: "FILE", Brief: "the archives to read; --in or audit.archive by default"},
+			&arg.RestStrings{Name: "FILE", Brief: "files to read -- a chunk taken out, or a directory from before; the archive at --in or audit.archive by default"},
 		},
 
 		Flags: flg.Flags{
@@ -205,6 +218,9 @@ func newCmdTrailRead(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			if err != nil {
 				return err
 			}
+			if len(paths) == 0 && c.Audit.Archive == "" {
+				return errors.New("name a file, or --in a directory, or set audit.archive")
+			}
 
 			keep, err := filterOf(cl)
 			if err != nil {
@@ -213,10 +229,7 @@ func newCmdTrailRead(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 
 			asJson, _ := flg.Find[bool](cl, "json")
 
-			// One call over every file rather than one per file, because the
-			// duplicate two writers leave behind is only visible to a reader
-			// that has seen both. See [trail.Read].
-			return pd.ReadTrail(paths, func(v *app.Audit) error {
+			show := func(v *app.Audit) error {
 				if !keep(v) {
 					return nil
 				}
@@ -238,17 +251,42 @@ func newCmdTrailRead(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 					named(v.GetActorId()))
 
 				return nil
-			})
+			}
+
+			// Files named on the command line are files: a chunk somebody took
+			// out, or a directory from before the archive was a store.
+			if len(paths) > 0 {
+				return trail.ReadFiles(paths, pd.TrailOf(show))
+			}
+
+			// One call over the whole archive rather than one per chunk,
+			// because the duplicate two writers leave behind is only visible
+			// to a reader that has seen both. See [trail.Read].
+			dir := c.Audit.Archive
+			if err := trail.Read(ctx, flob.NewOsStores(dir), pd.TrailOf(show)); err != nil {
+				return err
+			}
+
+			// And the files a version before wrote, if no pass has taken them
+			// in yet. Read where they are rather than adopted: this command
+			// reads, and moving an archive about is a pass's to do.
+			loose, err := filepath.Glob(filepath.Join(dir, "audit-*"+trail.Ext))
+			if err != nil || len(loose) == 0 {
+				return err
+			}
+
+			return trail.ReadFiles(loose, pd.TrailOf(show))
 		}),
 	}
 }
 
 // newCmdTrailPurge is the end of the line.
 //
-// By file and not by row, which is what the archive's layout is for: a file is
-// named for the month it holds, so one is destroyable when the month after it
-// has also passed. Rewriting a file to drop some of its rows would be editing
-// an archive, which is the thing this whole package refuses to offer.
+// By chunk and not by row, which is what the archive's layout is for: a chunk
+// says when the newest row in it was written, so one is destroyable when that
+// row is past the cutoff. Rewriting a chunk to drop some of its rows would be
+// editing an archive, which only a legal hold on part of a file from before is
+// a reason for -- and that is payday's to do, not a flag here.
 func newCmdTrailPurge(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "purge",
@@ -257,9 +295,9 @@ func newCmdTrailPurge(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 		Flags: flg.Flags{
 			&flg.String{Name: "older-than", Brief: "how old the archive has to be, e.g. 61320h for seven years"},
 			&flg.String{Name: "before", Brief: "an instant instead, RFC 3339"},
-			&flg.String{Name: "kind", Brief: "only archives of this kind of thing; every kind by default"},
+			&flg.String{Name: "kind", Brief: "only chunks of this kind of thing; every kind by default"},
 			cfg.Bind(l, &c.Audit.Archive, &flg.String{Name: "in", Brief: "the directory to destroy from; audit.archive by default"}),
-			&flg.Switch{Name: "dry-run", Brief: "say which files and remove nothing"},
+			&flg.Switch{Name: "dry-run", Brief: "say which chunks and remove nothing"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -281,32 +319,40 @@ func newCmdTrailPurge(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			dir := c.Audit.Archive
-			if dir == "" {
+			if c.Audit.Archive == "" {
 				return errors.New("--in: which directory")
+			}
+
+			// The deployment's policy, for its archive and for its holds: a
+			// purge by hand leaves what a hold is on, and says how much.
+			p, err := c.Audit.Policy()
+			if err != nil {
+				return err
 			}
 
 			cut := of.CutFor(before)
 
 			if dry, _ := flg.Find[bool](cl, "dry-run"); dry {
-				vs, err := trail.Doomed(dir, cut)
+				vs, held, err := p.Doomed(ctx, cut)
 				if err != nil {
 					return err
 				}
 				for _, v := range vs {
 					fmt.Fprintf(os.Stdout, "%s\n", v)
 				}
+				kept(held)
 
 				return nil
 			}
 
-			vs, err := trail.Purge(ctx, dir, cut)
+			vs, held, err := p.Purge(ctx, cut)
 			if err != nil {
-				return fmt.Errorf("after %d file(s): %w", len(vs), err)
+				return fmt.Errorf("after %d chunk(s): %w", len(vs), err)
 			}
 			for _, v := range vs {
 				fmt.Fprintf(os.Stdout, "%s\n", v)
 			}
+			kept(held)
 
 			return nil
 		}),
@@ -441,18 +487,25 @@ func cutoff(cl *xli.Command) (time.Time, bool, error) {
 	}
 }
 
-// archives is which files to read.
+// archives is the files named on the command line, and none when the archive
+// itself is what is read.
 func archives(cl *xli.Command, c *cmd.Config) ([]string, error) {
 	if vs, ok := arg.Get[[]string](cl, "FILE"); ok && len(vs) > 0 {
 		return vs, nil
 	}
 
-	dir := c.Audit.Archive
-	if dir == "" {
-		return nil, errors.New("name a file, or --in a directory, or set audit.archive")
+	return nil, nil
+}
+
+// kept says what a legal hold left as it was, which is not a failure and is
+// not nothing either.
+func kept(h trail.Held) {
+	if !h.Any() {
+		return
 	}
 
-	return trail.Files(dir)
+	fmt.Fprintf(os.Stderr, "kept by a legal hold: %d row(s) and %d chunk(s), of %v\n",
+		h.Rows, h.Chunks, append(h.By, h.Unanswered...))
 }
 
 // filterOf is the flags as one question asked of each row.

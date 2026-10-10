@@ -46,11 +46,12 @@ func TestADatabaseFromBeforeTheDomainColumnUpgrades(t *testing.T) {
 	x.NoError(err)
 	x.NotZero(was)
 
-	// The index goes first, because the column it is on cannot: an old database
-	// has neither, and taking them away in the order the migration put them
-	// there is the only way to get back to that shape.
+	// The indexes go first, because the column they are on cannot: an old
+	// database has none of them, and taking them away in the order the
+	// migration put them there is the only way to get back to that shape.
 	for _, q := range []string{
 		"DROP INDEX audit_domain_date_created",
+		"DROP INDEX audit_tenant_id_domain_date_created",
 		"ALTER TABLE audit DROP COLUMN domain",
 	} {
 		var out sql.Result

@@ -64,6 +64,7 @@ export const ApiKey = {
 	alias: "alias",
 	key: "id",
 	ids: ["id"],
+	secrets: ["secret"],
 	service: ApiKeyService,
 } as const satisfies EntityDesc
 
@@ -110,6 +111,7 @@ export const Continuation = {
 	refs: [{ field: "holder", to: "roster.Holder" }],
 	key: "id",
 	ids: ["id", "meteredBy"],
+	secrets: ["secret"],
 	service: ContinuationService,
 } as const satisfies EntityDesc
 
@@ -122,6 +124,7 @@ export const Credential = {
 	refs: [{ field: "holder", to: "roster.Holder" }],
 	key: "id",
 	ids: ["id"],
+	secrets: ["secret", "previous"],
 	service: CredentialService,
 } as const satisfies EntityDesc
 
@@ -134,6 +137,7 @@ export const Delegation = {
 	refs: [{ field: "holder", to: "roster.Holder" }],
 	key: "id",
 	ids: ["id"],
+	secrets: ["secret"],
 	service: DelegationService,
 } as const satisfies EntityDesc
 
@@ -232,6 +236,7 @@ export const Link = {
 	refs: [{ field: "holder", to: "roster.Holder" }, { field: "email", to: "roster.Email" }],
 	key: "id",
 	ids: ["id"],
+	secrets: ["secret"],
 	service: LinkService,
 } as const satisfies EntityDesc
 
@@ -291,6 +296,7 @@ export const Session = {
 	refs: [{ field: "holder", to: "roster.Holder" }],
 	key: "id",
 	ids: ["id"],
+	secrets: ["secret"],
 	service: SessionService,
 } as const satisfies EntityDesc
 

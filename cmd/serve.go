@@ -681,7 +681,9 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		log.From(ctx).InfoContext(ctx, "forget: after an erase",
 			"after", c.Holder.ForgetAfter, "archive", c.Audit.Archive != "")
 
-		s.Spin = append(s.Spin, forget.Sweep(s.Ent, c.Holder.ForgetAfter, c.Audit.Archive, c.Holder.Every))
+		// The trail's own policy, so that what it erases of somebody answers
+		// to the same holds the retention sweep does.
+		s.Spin = append(s.Spin, forget.Sweep(s.Ent, c.Holder.ForgetAfter, p, c.Holder.Every))
 	}
 
 	if c.Watch.Outbox {

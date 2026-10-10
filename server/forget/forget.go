@@ -47,7 +47,6 @@ package forget
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -87,10 +86,19 @@ type Result struct {
 
 	// Archived is how many archived rows lost theirs.
 	Archived int
+
+	// Held is the trail rows about them a legal hold kept as they were. They
+	// are erased by running this again once the hold is lifted.
+	Held trail.Held
 }
 
 func (r Result) String() string {
-	return fmt.Sprintf("%d row(s), %d trail row(s), %d archived", r.Rows, r.Trail, r.Archived)
+	v := fmt.Sprintf("%d row(s), %d trail row(s), %d archived", r.Rows, r.Trail, r.Archived)
+	if r.Held.Any() {
+		v += fmt.Sprintf(", %d kept by a legal hold", r.Held.Rows)
+	}
+
+	return v
 }
 
 // Forget destroys what this deployment holds about somebody.
@@ -100,11 +108,16 @@ func (r Result) String() string {
 // commands in an order is requiring somebody to get an order right under a
 // deadline.
 //
-// It is **not** a transaction across the archive, and cannot be -- a file and a
-// database do not commit together. The order is chosen so that an interruption
-// leaves less rather than more: the person's own rows go first, then the trail,
-// then the archive. Every step is idempotent, so running it again finishes it.
-func Forget(ctx context.Context, db *ent.Client, who pdid.Id, archive string) (Result, error) {
+// It is **not** a transaction across the archive, and cannot be -- an archive
+// and a database do not commit together. The order is chosen so that an
+// interruption leaves less rather than more: the person's own rows go first,
+// then the trail, then the archive. Every step is idempotent, so running it
+// again finishes it.
+//
+// The trail is the policy's to erase, `trail.Policy.Forget`, because a row of
+// it a legal hold is on stays as it was: that is in [Result.Held], and running
+// this again once the hold lifts finishes it too.
+func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy) (Result, error) {
 	var out Result
 
 	v, err := db.Holder.Get(ctx, who.Uuid())
@@ -159,25 +172,12 @@ func Forget(ctx context.Context, db *ent.Client, who pdid.Id, archive string) (R
 
 	out.Rows++
 
-	n, err := pd.ForgetInTrail(ctx, db, objects)
+	got, err := p.Forget(ctx, pd.TrailStore(db), objects)
+	out.Trail = got.Rows
+	out.Archived = got.Archived
+	out.Held = got.Held
 	if err != nil {
 		return out, err
-	}
-
-	out.Trail = n
-
-	if archive != "" {
-		vs := make([]string, len(objects))
-		for i, k := range objects {
-			vs[i] = base64.StdEncoding.EncodeToString(k.Bytes())
-		}
-
-		k, err := trail.Forget(archive, vs)
-		if err != nil {
-			return out, err
-		}
-
-		out.Archived = k
 	}
 
 	return out, nil
@@ -413,7 +413,7 @@ const Swept = 24 * time.Hour
 //
 // A pass that fails part way has still destroyed whoever it reached, because
 // each person is their own act -- there is no batch here to be half of.
-func Sweep(db *ent.Client, after time.Duration, archive string, every time.Duration) spin.Func {
+func Sweep(db *ent.Client, after time.Duration, p trail.Policy, every time.Duration) spin.Func {
 	if every <= 0 {
 		every = Swept
 	}
@@ -432,7 +432,7 @@ func Sweep(db *ent.Client, after time.Duration, archive string, every time.Durat
 		}
 
 		for _, who := range vs {
-			res, err := Forget(ctx, db, who, archive)
+			res, err := Forget(ctx, db, who, p)
 			if err != nil {
 				log.From(ctx).WarnContext(ctx, "forget", "holder", who.String(), "err", err)
 
@@ -440,7 +440,8 @@ func Sweep(db *ent.Client, after time.Duration, archive string, every time.Durat
 			}
 
 			log.From(ctx).InfoContext(ctx, "forget",
-				"holder", who.String(), "rows", res.Rows, "trail", res.Trail, "archived", res.Archived)
+				"holder", who.String(), "rows", res.Rows, "trail", res.Trail, "archived", res.Archived,
+				"held", res.Held.Rows)
 		}
 
 		return nil

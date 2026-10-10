@@ -895,7 +895,10 @@ audit:
 
 `retain` is operational -- what the admin console can show, what a query costs, how big
 the disk is. `destroy` is the obligation, normally years the longer of the two.
-Between them the row lives in `archive`, one gzipped file per month **per kind**.
+Between them the row lives in `archive`: a store in that directory with a namespace
+per tenant, a gzipped chunk per kind and month, and a namespace of its own for rows two
+tenants may both read. A directory a version before this one wrote files into is the
+same setting -- the first pass takes the files in.
 
 `by:` is why it is two clocks *per kind* rather than two clocks: what was done to a
 person has to stop existing eventually, and an operating record of what a machine
@@ -940,20 +943,25 @@ thing anybody wants a clock deleting from.
 roster trail prune                                # apply the policy now, per kind
 roster trail prune --older-than 2160h --dry-run   # a window of your own: how many
 roster trail read --in /var/lib/roster/audit      # read an archive back
-roster trail purge --older-than 61320h --dry-run  # which archives would go
+roster trail purge --older-than 61320h --dry-run  # which chunks would go
 ```
 
 `prune` with no window applies **the deployment's own policy**, which is what
 somebody putting it in cron means; `--older-than` makes it a manual act instead,
 and a manual window does not consult `by:`, so `--older-than 1ns` with no `--kind`
-reaches the kinds the policy keeps forever. It writes, `fsync`s and closes each
-file **before** it deletes anything, and deletes the rows that are in the file
-rather than re-running the query -- so the one failure it can leave is rows in both
-places, which is the direction to fail in. Nothing takes a lock, so read archives
-as a **set** (`--in`, or several paths at once) and a row two runs both archived is
+reaches the kinds the policy keeps forever. It writes each chunk whole **before** it
+deletes anything, and deletes the rows that are in the chunk rather than re-running
+the query -- so the one failure it can leave is rows in both places, which is the
+direction to fail in. Nothing takes a lock, so `read` reads the archive as a whole
+(`--in`, or the files named on the command line) and a row two runs both archived is
 dropped by whichever read sees both. `read` opens no database, which is the point
-of keeping the file. `purge` destroys by file and never by row, and there is
+of keeping the archive. `purge` destroys by chunk and never by row, and there is
 nothing after it.
+
+A **legal hold** is the one thing a manual window does answer to: what one is on is
+left by `prune --discard` and by `purge`, which say how much they kept and go ahead
+for everything else. A hold is a tenant's, answered by the app -- roster answers none
+yet, so nothing it keeps is held.
 
 ### A key that can read the trail can read everything
 
@@ -1019,7 +1027,9 @@ the archive both -- the actor, the action, the object and the time stay; `value`
 and `patch` go. Both halves matter and they pull against each other: a version that
 destroyed the rows would let somebody erase the evidence of what was done *to*
 them by asking to be forgotten. The archive is reached only if `audit.archive` is
-set; archives you keep elsewhere are yours to reach.
+set; archives you keep elsewhere are yours to reach. A trail row a legal hold is on
+stays as it was, and `roster forget` says how many and whose -- run it again when the
+hold is lifted.
 
 ## What it prints
 

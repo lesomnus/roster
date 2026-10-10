@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -15,12 +14,14 @@ import (
 	"github.com/lesomnus/payday/pdtest"
 	"github.com/lesomnus/payday/trail"
 
+	"github.com/lesomnus/flob"
+
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/pd"
 )
 
-// TestWhatLeavesTheDatabaseIsInTheFileBeforeItLeaves.
+// TestWhatLeavesTheDatabaseIsInTheArchiveBeforeItLeaves.
 //
 // `audit.proto` asks for this in as many words -- *an app with an obligation to
 // destroy data has to reckon with the trail, and the answer is a retention
@@ -30,7 +31,7 @@ import (
 // What the pair has to be is one act. Two commands, or one command with the
 // export optional, is a deployment that exports and forgets to delete, or
 // deletes without having exported -- and only one of those two is noticed.
-func TestWhatLeavesTheDatabaseIsInTheFileBeforeItLeaves(t *testing.T) {
+func TestWhatLeavesTheDatabaseIsInTheArchiveBeforeItLeaves(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
@@ -42,10 +43,10 @@ func TestWhatLeavesTheDatabaseIsInTheFileBeforeItLeaves(t *testing.T) {
 	x.NoError(err)
 	x.NotEmpty(was, "no trail was written, so this proves nothing")
 
-	dir := t.TempDir()
+	archive := flob.NewOsStores(t.TempDir())
 
 	// Everything, which is what a cutoff in the future means.
-	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), dir)
+	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), archive)
 	x.NoError(err)
 	x.Equal(len(was), n)
 
@@ -53,84 +54,79 @@ func TestWhatLeavesTheDatabaseIsInTheFileBeforeItLeaves(t *testing.T) {
 	x.NoError(err)
 	x.Zero(left, "the rows are still in the database")
 
-	files, err := trail.Files(dir)
+	chunks, err := trail.Chunks(ctx, archive)
 	x.NoError(err)
-	x.True(strings.HasPrefix(filepath.Base(files[0]), "audit-"+trail.Month(time.Now())+"."),
-		"the month has to come first in the name, or nothing can be purged by it: %s", files[0])
+	x.NotEmpty(chunks)
+	for _, c := range chunks {
+		x.Equal(trail.Month(time.Now()), trail.Month(c.Month),
+			"a chunk has to say its month, or nothing can be purged by it: %s", c)
+	}
 
 	got := map[string]string{}
-	x.NoError(pd.ReadTrail(files, func(v *app.Audit) error {
+	x.NoError(trail.Read(ctx, archive, pd.TrailOf(func(v *app.Audit) error {
 		got[string(v.GetId())] = v.GetAction()
 
 		return nil
-	}))
+	})))
 
-	x.Len(got, len(was), "the file holds fewer rows than the database gave up")
+	x.Len(got, len(was), "the archive holds fewer rows than the database gave up")
 	for _, v := range was {
 		x.Equal(v.Action, got[string(pdid.Id(v.Id).Bytes())],
-			"a row left the database and is not in the file")
+			"a row left the database and is not in the archive")
 	}
 }
 
-// TestTwoRunsOverOneMonthDoNotShareAFile.
+// TestTwoRunsOverOneMonthDoNotShareAChunk.
 //
 // The first version of the archive was one file per month, appended to, on the
 // reasoning that concatenated gzip members are a valid stream. That is true of
 // one writer and there is not one writer: `trail.Sweep` takes no lock -- nor
 // does the generated outbox drain, whose comment says *nothing here takes a
 // lock, so two of these drain the same rows* -- so two replicas, or an operator
-// running `roster trail prune` while the process sweeps, write into one file at
-// once. A `gzip.Writer` flushes in chunks of its own choosing, so what
-// interleaves is not two members but the inside of one, and the month stops
-// being readable at all.
+// running `roster trail prune` while the process sweeps, wrote into one file at
+// once, and the month stopped being readable at all.
 //
-// Asserted as the property that prevents it rather than by racing two writers:
-// a race that happens to lose is a test that happens to pass. What has to be
-// true is that no two runs are ever handed the same file.
-func TestTwoRunsOverOneMonthDoNotShareAFile(t *testing.T) {
+// The archive is chunks now, each one written whole by one run and never
+// appended to, so that cannot happen by construction. What is asserted is the
+// property that says so: no chunk is two runs', and between them they hold
+// every row once.
+func TestTwoRunsOverOneMonthDoNotShareAChunk(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	dir := t.TempDir()
+	archive := flob.NewOsStores(t.TempDir())
 
 	b.holder(t, ctx, b.Contoso, "first")
-	one, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), dir)
+	one, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), archive)
 	x.NoError(err)
 	x.NotZero(one)
 
 	b.holder(t, ctx, b.Contoso, "second")
-	two, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), dir)
+	two, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), archive)
 	x.NoError(err)
 	x.NotZero(two)
 
-	files, err := trail.Files(dir)
+	chunks, err := trail.Chunks(ctx, archive)
 	x.NoError(err)
-	x.NotEmpty(files)
+	x.NotEmpty(chunks)
 
-	// The run is the last part of the name before the extension, and no file
-	// may carry both.
 	runs := map[string]bool{}
-	for _, v := range files {
-		name := strings.TrimSuffix(filepath.Base(v), trail.Ext)
-
-		vs := strings.Split(name, ".")
-		x.Len(vs, 3, "a name is month.kind.run: %s", name)
-		x.Equal("audit-"+trail.Month(time.Now()), vs[0])
-
-		runs[vs[2]] = true
+	for _, c := range chunks {
+		x.NotEmpty(c.Run, "a chunk does not say which run wrote it: %s", c)
+		runs[c.Run] = true
 	}
-	x.Len(runs, 2, "two runs over the same month were handed the same file")
+	x.Len(runs, 2, "two runs over the same month wrote into one chunk")
 
 	// And between them they hold every row, once.
 	n := 0
 	seen := map[string]bool{}
-	x.NoError(pd.ReadTrail(files, func(v *app.Audit) error {
+	x.NoError(trail.Read(ctx, archive, pd.TrailOf(func(v *app.Audit) error {
 		n++
 		x.False(seen[string(v.GetId())], "a row was read twice")
 		seen[string(v.GetId())] = true
 
 		return nil
-	}))
+	})))
 	x.Equal(one+two, n)
 }
 
@@ -155,7 +151,7 @@ func TestNothingLeavesTheDatabaseThatCouldNotBeWritten(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "archive")
 	x.NoError(os.WriteFile(dir, nil, 0o600))
 
-	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), dir)
+	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), flob.NewOsStores(dir))
 	x.Error(err)
 	x.Zero(n)
 
@@ -188,7 +184,7 @@ func TestThePolicyIsAppliedByTheProcessAndNotOnlyByAnOperator(t *testing.T) {
 	dir := t.TempDir()
 
 	// A window of nothing, so that everything already written is past it.
-	p := trail.Policy{Keep: trail.Keep{Retain: time.Nanosecond}, Archive: dir, Every: time.Hour}
+	p := trail.Policy{Keep: trail.Keep{Retain: time.Nanosecond}, Archive: flob.NewOsStores(dir), Every: time.Hour}
 
 	run, stop := context.WithCancel(ctx)
 	done := make(chan error, 1)
@@ -203,9 +199,9 @@ func TestThePolicyIsAppliedByTheProcessAndNotOnlyByAnOperator(t *testing.T) {
 	stop()
 	x.NoError(<-done)
 
-	files, err := trail.Files(dir)
+	chunks, err := trail.Chunks(ctx, p.Archive)
 	x.NoError(err)
-	x.NotEmpty(files, "the rows left the database and were not written anywhere")
+	x.NotEmpty(chunks, "the rows left the database and were not written anywhere")
 }
 
 // TestTheWindowIsPerKindOfThing.
