@@ -32,11 +32,11 @@ require (
 	github.com/go-ldap/ldap/v3 v3.4.14
 	github.com/go-webauthn/webauthn v0.17.4
 	github.com/goccy/go-yaml v1.19.2
-	github.com/lesomnus/flob v0.0.0-20261007104342-79a4676dad3e
+	github.com/lesomnus/flob v0.0.0-20261010120939-21f89e60609e
 	github.com/lesomnus/grpc-dgram v0.0.0-20260912133542-a7366077bf6f
 	github.com/lesomnus/otx v0.0.0-20260807173743-977a5687d6ba
 	github.com/lesomnus/otx/otxgrpc v0.0.0-20260807173743-977a5687d6ba
-	github.com/lesomnus/payday v0.0.0-20261010121234-b808fbdc3ca9
+	github.com/lesomnus/payday v0.0.0-20261010123503-e77246bbf437
 	github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f
 	github.com/lesomnus/xli v0.0.0-20261006060415-9f2e9ce97331
 	github.com/lesomnus/xli/cfg v0.1.2
