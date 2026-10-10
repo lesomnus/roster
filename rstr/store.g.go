@@ -49,6 +49,7 @@ type Server interface {
 	TeamMembership() TeamMembershipServiceServer
 	Nomination() NominationServiceServer
 	Session() SessionServiceServer
+	Archived() ArchivedServiceServer
 	Audit() AuditServiceServer
 	Outbox() OutboxServiceServer
 }
@@ -81,6 +82,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterTeamMembershipServiceServer(g, s.TeamMembership())
 	RegisterNominationServiceServer(g, s.Nomination())
 	RegisterSessionServiceServer(g, s.Session())
+	RegisterArchivedServiceServer(g, s.Archived())
 	RegisterAuditServiceServer(g, s.Audit())
 	RegisterOutboxServiceServer(g, s.Outbox())
 }
@@ -109,6 +111,7 @@ type UnimplementedServer struct {
 	TeamMembershipServer  TeamMembershipServiceServer
 	NominationServer      NominationServiceServer
 	SessionServer         SessionServiceServer
+	ArchivedServer        ArchivedServiceServer
 	AuditServer           AuditServiceServer
 	OutboxServer          OutboxServiceServer
 }
@@ -158,8 +161,11 @@ func (UnimplementedServer) Nomination() NominationServiceServer {
 	return UnimplementedNominationServiceServer{}
 }
 func (UnimplementedServer) Session() SessionServiceServer { return UnimplementedSessionServiceServer{} }
-func (UnimplementedServer) Audit() AuditServiceServer     { return UnimplementedAuditServiceServer{} }
-func (UnimplementedServer) Outbox() OutboxServiceServer   { return UnimplementedOutboxServiceServer{} }
+func (UnimplementedServer) Archived() ArchivedServiceServer {
+	return UnimplementedArchivedServiceServer{}
+}
+func (UnimplementedServer) Audit() AuditServiceServer   { return UnimplementedAuditServiceServer{} }
+func (UnimplementedServer) Outbox() OutboxServiceServer { return UnimplementedOutboxServiceServer{} }
 
 type StaticServer struct {
 	TenantServer          TenantServiceServer
@@ -185,6 +191,7 @@ type StaticServer struct {
 	TeamMembershipServer  TeamMembershipServiceServer
 	NominationServer      NominationServiceServer
 	SessionServer         SessionServiceServer
+	ArchivedServer        ArchivedServiceServer
 	AuditServer           AuditServiceServer
 	OutboxServer          OutboxServiceServer
 }
@@ -212,6 +219,7 @@ func (s StaticServer) SiteMembership() SiteMembershipServiceServer   { return s.
 func (s StaticServer) TeamMembership() TeamMembershipServiceServer   { return s.TeamMembershipServer }
 func (s StaticServer) Nomination() NominationServiceServer           { return s.NominationServer }
 func (s StaticServer) Session() SessionServiceServer                 { return s.SessionServer }
+func (s StaticServer) Archived() ArchivedServiceServer               { return s.ArchivedServer }
 func (s StaticServer) Audit() AuditServiceServer                     { return s.AuditServer }
 func (s StaticServer) Outbox() OutboxServiceServer                   { return s.OutboxServer }
 
@@ -239,6 +247,7 @@ type Client interface {
 	TeamMembership() TeamMembershipServiceClient
 	Nomination() NominationServiceClient
 	Session() SessionServiceClient
+	Archived() ArchivedServiceClient
 	Audit() AuditServiceClient
 	Outbox() OutboxServiceClient
 }
@@ -268,6 +277,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_TeamMembership:  NewTeamMembershipServiceClient(c),
 		_Nomination:      NewNominationServiceClient(c),
 		_Session:         NewSessionServiceClient(c),
+		_Archived:        NewArchivedServiceClient(c),
 		_Audit:           NewAuditServiceClient(c),
 		_Outbox:          NewOutboxServiceClient(c),
 	}
@@ -297,6 +307,7 @@ type client struct {
 	_TeamMembership  TeamMembershipServiceClient
 	_Nomination      NominationServiceClient
 	_Session         SessionServiceClient
+	_Archived        ArchivedServiceClient
 	_Audit           AuditServiceClient
 	_Outbox          OutboxServiceClient
 }
@@ -324,6 +335,7 @@ func (c *client) SiteMembership() SiteMembershipServiceClient   { return c._Site
 func (c *client) TeamMembership() TeamMembershipServiceClient   { return c._TeamMembership }
 func (c *client) Nomination() NominationServiceClient           { return c._Nomination }
 func (c *client) Session() SessionServiceClient                 { return c._Session }
+func (c *client) Archived() ArchivedServiceClient               { return c._Archived }
 func (c *client) Audit() AuditServiceClient                     { return c._Audit }
 func (c *client) Outbox() OutboxServiceClient                   { return c._Outbox }
 

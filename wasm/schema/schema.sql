@@ -4,6 +4,7 @@
 BEGIN;
 
 CREATE TABLE `apikey` (`id` uuid NOT NULL, `alias` text NOT NULL, `desc` text NOT NULL, `methods` json NULL, `secret` blob NOT NULL, `date_used` datetime NULL, `date_expires` datetime NULL, `date_updated` datetime NOT NULL, `date_erased` datetime NULL, `date_created` datetime NULL, `holder_id` uuid NOT NULL, PRIMARY KEY (`id`), CONSTRAINT `apikey_holder_holder` FOREIGN KEY (`holder_id`) REFERENCES `holder` (`id`) ON DELETE NO ACTION);
+CREATE TABLE `archived` (`id` uuid NOT NULL, `labels` json NULL, `namespace` text NOT NULL, `digest` text NOT NULL, `intent` text NOT NULL, `state` text NOT NULL, `since` integer NOT NULL, `date_updated` datetime NOT NULL, `date_created` datetime NULL, `gone` integer NOT NULL, PRIMARY KEY (`id`));
 CREATE TABLE `audit` (`id` uuid NOT NULL, `tenant_id` uuid NOT NULL, `actor_id` uuid NOT NULL, `trace_id` blob NOT NULL, `action` text NOT NULL, `object_id` uuid NOT NULL, `patch` blob NOT NULL, `date_created` datetime NULL, `actor_tenant_id` uuid NOT NULL, `value` blob NOT NULL, `counterpart_tenant_id` uuid NULL, `domain` integer NULL, PRIMARY KEY (`id`));
 CREATE TABLE `binding` (`id` uuid NOT NULL, `labels` json NULL, `date_updated` datetime NOT NULL, `date_erased` datetime NULL, `date_created` datetime NULL, `role_id` uuid NOT NULL, `site_id` uuid NULL, `holder_id` uuid NULL, `group_id` uuid NULL, PRIMARY KEY (`id`), CONSTRAINT `binding_role_role` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`) ON DELETE NO ACTION, CONSTRAINT `binding_site_site` FOREIGN KEY (`site_id`) REFERENCES `site` (`id`) ON DELETE SET NULL, CONSTRAINT `binding_holder_holder` FOREIGN KEY (`holder_id`) REFERENCES `holder` (`id`) ON DELETE SET NULL, CONSTRAINT `binding_group_group` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE SET NULL);
 CREATE TABLE `connection` (`id` uuid NOT NULL, `name` text NOT NULL, `desc` text NOT NULL, `labels` json NULL, `issuer` text NOT NULL, `client_id` text NOT NULL, `scopes` json NULL, `secret_ref` text NOT NULL, `subject_claim` text NOT NULL, `provisions` bool NOT NULL, `date_updated` datetime NOT NULL, `date_erased` datetime NULL, `date_created` datetime NULL, `tenant_id` uuid NOT NULL, PRIMARY KEY (`id`), CONSTRAINT `connection_tenant_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenant` (`id`) ON DELETE NO ACTION);
@@ -31,6 +32,8 @@ CREATE TABLE `tenant` (`id` uuid NOT NULL, `alias` text NOT NULL, `name` text NO
 CREATE UNIQUE INDEX `apikey_alias_holder_id` ON `apikey` (`alias`, `holder_id`) WHERE date_erased IS NULL;
 CREATE INDEX `apikey_date_created_id` ON `apikey` (`date_created`, `id`);
 CREATE UNIQUE INDEX `apikey_secret` ON `apikey` (`secret`) WHERE date_erased IS NULL;
+CREATE INDEX `archived_namespace_digest` ON `archived` (`namespace`, `digest`);
+CREATE INDEX `archived_state` ON `archived` (`state`);
 CREATE INDEX `audit_actor_id_date_created` ON `audit` (`actor_id`, `date_created`);
 CREATE INDEX `audit_actor_tenant_id_date_created` ON `audit` (`actor_tenant_id`, `date_created`);
 CREATE INDEX `audit_counterpart_tenant_id_date_created` ON `audit` (`counterpart_tenant_id`, `date_created`);

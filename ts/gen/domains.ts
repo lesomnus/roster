@@ -15,6 +15,9 @@ import { pdid } from '@lesomnus/payday'
 /** The domain identifiers of roster.ApiKey carry. */
 export const ApiKeyDomain = 14
 
+/** The domain identifiers of roster.Archived carry. */
+export const ArchivedDomain = 5
+
 /** The domain identifiers of roster.Audit carry. */
 export const AuditDomain = 3
 
@@ -90,6 +93,7 @@ export const TenantDomain = 1
 // Registered as this module is loaded, which is why importing it is the
 // whole of what an app does with it.
 pdid.register("roster.ApiKey", ApiKeyDomain, "api-key")
+pdid.register("roster.Archived", ArchivedDomain, "archived")
 pdid.register("roster.Audit", AuditDomain, "audit")
 pdid.register("roster.Binding", BindingDomain, "binding")
 pdid.register("roster.Connection", ConnectionDomain, "connection")

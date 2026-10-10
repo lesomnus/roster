@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/lesomnus/roster/internal/ent/apikey"
+	"github.com/lesomnus/roster/internal/ent/archived"
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/binding"
 	"github.com/lesomnus/roster/internal/ent/connection"
@@ -98,6 +99,7 @@ func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			apikey.Table:          apikey.ValidColumn,
+			archived.Table:        archived.ValidColumn,
 			audit.Table:           audit.ValidColumn,
 			binding.Table:         binding.ValidColumn,
 			connection.Table:      connection.ValidColumn,
