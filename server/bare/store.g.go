@@ -9,6 +9,7 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	apikey "github.com/lesomnus/roster/internal/ent/apikey"
+	archived "github.com/lesomnus/roster/internal/ent/archived"
 	audit "github.com/lesomnus/roster/internal/ent/audit"
 	binding "github.com/lesomnus/roster/internal/ent/binding"
 	connection "github.com/lesomnus/roster/internal/ent/connection"
@@ -355,6 +356,7 @@ type Scope interface {
 	TeamMembershipScope(ctx context.Context) (predicate.TeamMembership, error)
 	NominationScope(ctx context.Context) (predicate.Nomination, error)
 	SessionScope(ctx context.Context) (predicate.Session, error)
+	ArchivedScope(ctx context.Context) (predicate.Archived, error)
 	AuditScope(ctx context.Context) (predicate.Audit, error)
 	OutboxScope(ctx context.Context) (predicate.Outbox, error)
 }
@@ -438,6 +440,9 @@ func (Unscoped) NominationScope(_ context.Context) (predicate.Nomination, error)
 	return nil, nil
 }
 func (Unscoped) SessionScope(_ context.Context) (predicate.Session, error) {
+	return nil, nil
+}
+func (Unscoped) ArchivedScope(_ context.Context) (predicate.Archived, error) {
 	return nil, nil
 }
 func (Unscoped) AuditScope(_ context.Context) (predicate.Audit, error) {
@@ -926,6 +931,26 @@ func (ss Scopes) SessionScope(ctx context.Context) (predicate.Session, error) {
 	return session.And(ps...), nil
 }
 
+func (ss Scopes) ArchivedScope(ctx context.Context) (predicate.Archived, error) {
+	ps := make([]predicate.Archived, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.ArchivedScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return archived.And(ps...), nil
+}
+
 func (ss Scopes) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	ps := make([]predicate.Audit, 0, len(ss))
 	for _, s := range ss {
@@ -1126,6 +1151,7 @@ func (s Server) TeamMembership() rstr.TeamMembershipServiceServer {
 func (s Server) Nomination() rstr.NominationServiceServer {
 	return NominationServiceServer{Store: s.Store}
 }
-func (s Server) Session() rstr.SessionServiceServer { return SessionServiceServer{Store: s.Store} }
-func (s Server) Audit() rstr.AuditServiceServer     { return AuditServiceServer{Store: s.Store} }
-func (s Server) Outbox() rstr.OutboxServiceServer   { return OutboxServiceServer{Store: s.Store} }
+func (s Server) Session() rstr.SessionServiceServer   { return SessionServiceServer{Store: s.Store} }
+func (s Server) Archived() rstr.ArchivedServiceServer { return ArchivedServiceServer{Store: s.Store} }
+func (s Server) Audit() rstr.AuditServiceServer       { return AuditServiceServer{Store: s.Store} }
+func (s Server) Outbox() rstr.OutboxServiceServer     { return OutboxServiceServer{Store: s.Store} }

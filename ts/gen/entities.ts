@@ -14,6 +14,7 @@
 import type { EntityDesc } from '@lesomnus/payday/store'
 
 import { ApiKeySchema } from './app/apikey_pb.js'
+import { ArchivedSchema } from './roster/payday/archived_pb.js'
 import { AuditSchema } from './roster/payday/audit_pb.js'
 import { BindingSchema, RoleSchema } from './app/role_pb.js'
 import { ConnectionSchema } from './app/connection_pb.js'
@@ -34,6 +35,7 @@ import { SiteMembershipSchema, TeamMembershipSchema } from './app/membership_pb.
 import { TeamSchema } from './app/team_pb.js'
 import { TenantSchema } from './roster/payday/tenant_pb.js'
 import { ApiKeyService } from './app/apikey_svc_pb.js'
+import { ArchivedService } from './roster/payday/archived_svc_pb.js'
 import { AuditService } from './roster/payday/audit_svc_pb.js'
 import { BindingService, RoleService } from './app/role_svc_pb.js'
 import { ConnectionService } from './app/connection_svc_pb.js'
@@ -66,6 +68,17 @@ export const ApiKey = {
 	ids: ["id"],
 	secrets: ["secret"],
 	service: ApiKeyService,
+} as const satisfies EntityDesc
+
+/** roster.Archived, as the store holds it. */
+export const Archived = {
+	typeName: "roster.Archived",
+	schema: ArchivedSchema,
+	domain: 5,
+	version: "dateUpdated",
+	key: "id",
+	ids: ["id"],
+	service: ArchivedService,
 } as const satisfies EntityDesc
 
 /** roster.Audit, as the store holds it. */
@@ -363,5 +376,5 @@ export const Tenant = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [ApiKey, Audit, Binding, Connection, Continuation, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, Session, Site, SiteMembership, Team, TeamMembership, Tenant] as const
+export const entities = [ApiKey, Archived, Audit, Binding, Connection, Continuation, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, Session, Site, SiteMembership, Team, TeamMembership, Tenant] as const
 

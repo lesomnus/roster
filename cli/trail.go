@@ -57,6 +57,8 @@ func NewCmdTrail(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			newCmdTrailPrune(c),
 			newCmdTrailRead(l, c),
 			newCmdTrailPurge(l, c),
+			newCmdTrailVerify(l, c),
+			newCmdTrailAccept(l, c),
 			newCmdTrailProfiles(),
 		},
 	}
@@ -192,7 +194,9 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 //
 // Deliberately: the reason to keep the archive is that it outlives the
 // deployment that wrote it, so a reader that needed the deployment would be
-// answering a question nobody has at the moment they have it.
+// answering a question nobody has at the moment they have it. Which is also
+// why it checks nothing: what says the archive is what was written is the
+// database's account of it, and `trail verify` is the reader that has both.
 func newCmdTrailRead(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "read",
@@ -330,10 +334,21 @@ func newCmdTrailPurge(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				return err
 			}
 
+			// And the database, which keeps the account of the archive a
+			// purge decides by: a chunk it does not account for is left
+			// alone, and said so in the log -- it is what `trail verify` is
+			// for. The dry run asks it too, so that it is the same list.
+			s, err := cmd.Build(ctx, *c)
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+
+			store := pd.TrailStore(s.Ent)
 			cut := of.CutFor(before)
 
 			if dry, _ := flg.Find[bool](cl, "dry-run"); dry {
-				vs, held, err := p.Doomed(ctx, cut)
+				vs, held, err := p.Doomed(ctx, store, cut)
 				if err != nil {
 					return err
 				}
@@ -345,7 +360,7 @@ func newCmdTrailPurge(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				return nil
 			}
 
-			vs, held, err := p.Purge(ctx, cut)
+			vs, held, err := p.Purge(ctx, store, cut)
 			if err != nil {
 				return fmt.Errorf("after %d chunk(s): %w", len(vs), err)
 			}
@@ -357,6 +372,123 @@ func newCmdTrailPurge(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			return nil
 		}),
 	}
+}
+
+// newCmdTrailVerify compares the archive with the account the database keeps
+// of it, and changes nothing.
+//
+// It is what every pass does lightly at its start -- the archive's chunks by
+// name and labels against the manifest, and the latest checkpoint against the
+// rows it was taken over -- and `--full` also reads every chunk whole and
+// checks its bytes. It fails when it found something, so it is the one to put
+// on a schedule. Unlike `read` it needs the database: the account is in it,
+// and the account is what is being compared.
+func newCmdTrailVerify(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
+	return &xli.Command{
+		Name:  "verify",
+		Brief: "compare the archive with the account the database keeps of it, and change nothing",
+
+		Flags: flg.Flags{
+			cfg.Bind(l, &c.Audit.Archive, &flg.String{Name: "in", Brief: "the archive's directory; audit.archive by default"}),
+			&flg.Switch{Name: "full", Brief: "also read every chunk whole and check its bytes"},
+		},
+
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			s, p, err := archived(ctx, c)
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+
+			full, _ := flg.Find[bool](cl, "full")
+			v, err := p.Verify(ctx, pd.TrailStore(s.Ent), full)
+			if err != nil {
+				return err
+			}
+
+			read := fmt.Sprintf("%d row(s) in the manifest, %d blob(s) in the archive", v.Rows, v.Blobs)
+			if full {
+				read += fmt.Sprintf(", %d read whole", v.Hashed)
+			}
+			if v.Checkpoint > 0 {
+				read += fmt.Sprintf("; checkpoint %d compared", v.Checkpoint)
+			}
+			fmt.Fprintf(os.Stderr, "%s\n", read)
+
+			for _, f := range v.Findings {
+				fmt.Fprintf(os.Stdout, "%s\n", f)
+			}
+			if !v.Ok() {
+				return fmt.Errorf("%d finding(s): look at each, and `roster trail accept --why ...` once the archive is right", len(v.Findings))
+			}
+
+			return nil
+		}),
+	}
+}
+
+// newCmdTrailAccept is an operator who has looked at what `verify` found and
+// decided the archive is right -- a pass a crash stopped, a chunk restored from
+// a backup -- making the account say what the archive holds.
+//
+// It does nothing about a checkpoint, which is what it is: the next one is
+// taken over the account as it is now. And it takes a why, which is logged,
+// because an acceptance nobody can explain later is a finding hidden.
+func newCmdTrailAccept(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
+	return &xli.Command{
+		Name:  "accept",
+		Brief: "make the account of the archive say what it holds, once somebody has looked",
+
+		Flags: flg.Flags{
+			cfg.Bind(l, &c.Audit.Archive, &flg.String{Name: "in", Brief: "the archive's directory; audit.archive by default"}),
+			&flg.String{Name: "why", Brief: "what was looked at and decided; it is logged"},
+		},
+
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			why, _ := flg.Find[string](cl, "why")
+			if strings.TrimSpace(why) == "" {
+				return errors.New("--why: what was looked at and decided")
+			}
+
+			s, p, err := archived(ctx, c)
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+
+			v, err := p.Accept(ctx, pd.TrailStore(s.Ent), why)
+			for _, f := range v.Findings {
+				fmt.Fprintf(os.Stdout, "%s\n", f)
+			}
+			if err != nil {
+				return err
+			}
+
+			fmt.Fprintf(os.Stderr, "accepted %d finding(s)\n", len(v.Findings))
+
+			return nil
+		}),
+	}
+}
+
+// archived is the deployment's policy and the server whose database keeps the
+// account of its archive, refused when there is no archive to account for.
+func archived(ctx context.Context, c *cmd.Config) (*cmd.Server, trail.Policy, error) {
+	if c.Audit.Archive == "" {
+		return nil, trail.Policy{}, errors.New("--in: which directory; or set audit.archive")
+	}
+
+	p, err := c.Audit.Policy()
+	if err != nil {
+		return nil, trail.Policy{}, err
+	}
+
+	s, err := cmd.Build(ctx, *c)
+	if err != nil {
+		return nil, trail.Policy{}, err
+	}
+
+	return s, p, nil
 }
 
 // kindOf is `--kind`, and every kind when it is not given.

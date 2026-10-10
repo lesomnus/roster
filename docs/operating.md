@@ -944,6 +944,8 @@ roster trail prune                                # apply the policy now, per ki
 roster trail prune --older-than 2160h --dry-run   # a window of your own: how many
 roster trail read --in /var/lib/roster/audit      # read an archive back
 roster trail purge --older-than 61320h --dry-run  # which chunks would go
+roster trail verify --full                        # the archive against the database's account of it
+roster trail accept --why "restored from backup"  # once somebody has looked
 ```
 
 `prune` with no window applies **the deployment's own policy**, which is what
@@ -957,6 +959,20 @@ direction to fail in. Nothing takes a lock, so `read` reads the archive as a who
 dropped by whichever read sees both. `read` opens no database, which is the point
 of keeping the archive. `purge` destroys by chunk and never by row, and there is
 nothing after it.
+
+**The database keeps an account of what the archive holds**, written before every
+change to it, and what a pass and `purge` destroy is decided by that account: by
+the month it recorded for a chunk rather than the labels on the chunk, and never a
+chunk it does not account for, which is left where it is and logged. So `purge`
+opens the database, where `read` still does not -- and `read` checks nothing, which
+is what `verify` is for. It compares the archive with the account and with the
+latest checkpoint, `--full` reads every chunk whole, and it fails when it found
+something, which makes it the one to schedule. What it finds is a reason to look;
+`accept --why` is somebody who has, saying the archive is right -- a chunk restored
+from a backup, a pass a crash stopped. Every pass ends with a checkpoint of the
+account: keep them apart from the archive, `audit.checkpoints.dir` on a disk that
+refuses deletion, and sign them with `audit.checkpoints.key` -- a file, or the PEM
+document itself in `ROSTER_AUDIT_CHECKPOINTS_KEY`.
 
 A **legal hold** is the one thing a manual window does answer to: what one is on is
 left by `prune --discard` and by `purge`, which say how much they kept and go ahead

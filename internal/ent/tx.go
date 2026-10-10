@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// ApiKey is the client for interacting with the ApiKey builders.
 	ApiKey *ApiKeyClient
+	// Archived is the client for interacting with the Archived builders.
+	Archived *ArchivedClient
 	// Audit is the client for interacting with the Audit builders.
 	Audit *AuditClient
 	// Binding is the client for interacting with the Binding builders.
@@ -194,6 +196,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.ApiKey = NewApiKeyClient(tx.config)
+	tx.Archived = NewArchivedClient(tx.config)
 	tx.Audit = NewAuditClient(tx.config)
 	tx.Binding = NewBindingClient(tx.config)
 	tx.Connection = NewConnectionClient(tx.config)

@@ -9,6 +9,9 @@ import (
 // ApiKey is the predicate function for apikey builders.
 type ApiKey func(*sql.Selector)
 
+// Archived is the predicate function for archived builders.
+type Archived func(*sql.Selector)
+
 // Audit is the predicate function for audit builders.
 type Audit func(*sql.Selector)
 

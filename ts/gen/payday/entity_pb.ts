@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file payday/entity.proto.
  */
 export const file_payday_entity: GenFile = /*@__PURE__*/
-  fileDesc("ChNwYXlkYXkvZW50aXR5LnByb3RvEgZwYXlkYXkihwUKBkVudGl0eRIOCgZkb21haW4YASABKA0SDAoEbmFtZRgCIAEoCRInCgZ0ZW5hbnQYAyABKAsyFS5wYXlkYXkuRW50aXR5LlRlbmFudEgAEisKCHRlbmFudGVkGAQgASgLMhcucGF5ZGF5LkVudGl0eS5UZW5hbnRlZEgAEicKBmdsb2JhbBgFIAEoCzIVLnBheWRheS5FbnRpdHkuR2xvYmFsSAASIQoEbGlzdBgGIAEoCzITLnBheWRheS5FbnRpdHkuTGlzdBIjCgV3YXRjaBgHIAEoCzIULnBheWRheS5FbnRpdHkuV2F0Y2gSIwoFZXJhc2UYCCABKAsyFC5wYXlkYXkuRW50aXR5LkVyYXNlEhgKA293bhgJIAEoDjILLnBheWRheS5Pd24aCAoGVGVuYW50GkUKCFRlbmFudGVkEgsKA3ZpYRgBIAEoCRINCgVmaWVsZBgCIAMoCRINCgVzdGFtcBgDIAEoCRIOCgZhZ3JlZXMYBCADKAkaCAoGR2xvYmFsGioKBUVyYXNlEiEKBGhhcmQYASABKAsyEy5wYXlkYXkuRW50aXR5LkhhcmQaBgoESGFyZBqFAQoETGlzdBIjCgVvcmRlchgBIAMoCzIULnBheWRheS5FbnRpdHkuT3JkZXISFgoEd2l0aBgCIAMoCzIILm9ybS5SZWYSFAoCYnkYAyADKAsyCC5vcm0uUmVmEgwKBHNpemUYBCABKA0SCwoDbWF4GAUgASgNEg8KB2ZpbHRlcnMYBiABKA0aBwoFV2F0Y2gaLgoFT3JkZXISFwoFZmllbGQYASABKAsyCC5vcm0uUmVmEgwKBGRlc2MYAiABKAhCCQoHdGVuYW5jeSIoCgVGaWVsZBIOCgZzZWNyZXQYASABKAgSDwoHc3RhbXBlZBgCIAEoCCpZCgNPd24SEwoPT1dOX1VOU1BFQ0lGSUVEEAASDgoKT1dOX1RFTkFOVBABEg4KCk9XTl9IT0xERVIQAhINCglPV05fQVVESVQQAxIOCgpPV05fT1VUQk9YEARCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9wYXlkYXkvcGRwYpIDAggCYghlZGl0aW9uc3DoBw", [file_orm_ref]);
+  fileDesc("ChNwYXlkYXkvZW50aXR5LnByb3RvEgZwYXlkYXkihwUKBkVudGl0eRIOCgZkb21haW4YASABKA0SDAoEbmFtZRgCIAEoCRInCgZ0ZW5hbnQYAyABKAsyFS5wYXlkYXkuRW50aXR5LlRlbmFudEgAEisKCHRlbmFudGVkGAQgASgLMhcucGF5ZGF5LkVudGl0eS5UZW5hbnRlZEgAEicKBmdsb2JhbBgFIAEoCzIVLnBheWRheS5FbnRpdHkuR2xvYmFsSAASIQoEbGlzdBgGIAEoCzITLnBheWRheS5FbnRpdHkuTGlzdBIjCgV3YXRjaBgHIAEoCzIULnBheWRheS5FbnRpdHkuV2F0Y2gSIwoFZXJhc2UYCCABKAsyFC5wYXlkYXkuRW50aXR5LkVyYXNlEhgKA293bhgJIAEoDjILLnBheWRheS5Pd24aCAoGVGVuYW50GkUKCFRlbmFudGVkEgsKA3ZpYRgBIAEoCRINCgVmaWVsZBgCIAMoCRINCgVzdGFtcBgDIAEoCRIOCgZhZ3JlZXMYBCADKAkaCAoGR2xvYmFsGioKBUVyYXNlEiEKBGhhcmQYASABKAsyEy5wYXlkYXkuRW50aXR5LkhhcmQaBgoESGFyZBqFAQoETGlzdBIjCgVvcmRlchgBIAMoCzIULnBheWRheS5FbnRpdHkuT3JkZXISFgoEd2l0aBgCIAMoCzIILm9ybS5SZWYSFAoCYnkYAyADKAsyCC5vcm0uUmVmEgwKBHNpemUYBCABKA0SCwoDbWF4GAUgASgNEg8KB2ZpbHRlcnMYBiABKA0aBwoFV2F0Y2gaLgoFT3JkZXISFwoFZmllbGQYASABKAsyCC5vcm0uUmVmEgwKBGRlc2MYAiABKAhCCQoHdGVuYW5jeSIoCgVGaWVsZBIOCgZzZWNyZXQYASABKAgSDwoHc3RhbXBlZBgCIAEoCCprCgNPd24SEwoPT1dOX1VOU1BFQ0lGSUVEEAASDgoKT1dOX1RFTkFOVBABEg4KCk9XTl9IT0xERVIQAhINCglPV05fQVVESVQQAxIOCgpPV05fT1VUQk9YEAQSEAoMT1dOX0FSQ0hJVkVEEAVCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9wYXlkYXkvcGRwYpIDAggCYghlZGl0aW9uc3DoBw", [file_orm_ref]);
 
 /**
  * Entity is what payday has to be told about a message that `orm` already
@@ -262,8 +262,8 @@ export type Entity_Tenanted = Message<"payday.Entity.Tenanted"> & {
    *
    * A `via` of more than one step is a subquery in the wall, on every read:
    *
-   * 	identity.HasHolderWith(holder.TenantIDIn(vs...))   // via "holder.tenant"
-   * 	role.TenantIDIn(vs...)                             // a direct edge
+   * 	identity.HasHolderWith(holder.TenantIdIn(vs...))   // via "holder.tenant"
+   * 	role.TenantIdIn(vs...)                             // a direct edge
    *
    * With a stamp the second line is what an entity gets whatever its path is.
    * It is also what makes `list: {by: [{name: "tenant"}]}` possible at all --
@@ -296,18 +296,18 @@ export type Entity_Tenanted = Message<"payday.Entity.Tenanted"> & {
    *
    * # What it adds to what is already refused
    *
-   * The generated gate reads part of an `Add` **through the wall**: the first
-   * hop of the `via` path, and the field-3 set edge where an app declared
-   * one. Those are where the row itself lands, and they are free. Every other
-   * edge is read by nothing -- that a row points at another row is
-   * referential rather than tenancy, and asking it would be a read per edge
-   * on every write.
+   * The generated gate reads every edge of an `Add` **through the wall**, and
+   * every edge a `Patch` moves: the first hop of the `via` path and the
+   * field-3 set edge because that is where the row itself lands, and every
+   * other edge because an edge is a read -- one pointing out of the caller's
+   * scope is a way through the wall one hop later.
    *
-   * A second path to a tenant is one of those, so it is looked at by nothing
-   * until it is named here. And even the hop that is read is not a
+   * What it asks of each is "may this caller see it", and that is not a
    * comparison: a caller who can see both tenants passes it with one edge in
    * each -- an operator whose scope is several -- as does a deployment
-   * writing through a server the wall was never installed on.
+   * writing through a server the wall was never installed on. So a second
+   * path to a tenant is checked against the first by nothing until it is
+   * named here.
    *
    * Each is a path like `via` -- an edge, or a dotted one. What is compared
    * is the tenant each reaches.
@@ -673,7 +673,7 @@ export const FieldSchema: GenMessage<Field> = /*@__PURE__*/
  * The numbers are of the same kind as a field number: chosen once and never
  * given to something else. They are **not** domains -- a domain is what an
  * identifier carries and an app declares, and these are what payday declares
- * about its own four.
+ * about its own.
  *
  * @generated from enum payday.Own
  */
@@ -704,6 +704,14 @@ export enum Own {
    * @generated from enum value: OWN_OUTBOX = 4;
    */
   OUTBOX = 4,
+
+  /**
+   * The trail archive's manifest: what the archive holds, as the database
+   * keeps the account of it. See `trail.Manifest`.
+   *
+   * @generated from enum value: OWN_ARCHIVED = 5;
+   */
+  ARCHIVED = 5,
 }
 
 /**
