@@ -448,7 +448,7 @@ func (a *App) begin(w http.ResponseWriter, r *http.Request) {
 	// names a client this app fronts nobody for is a misconfiguration, and the
 	// place to find out is here rather than after somebody has typed a
 	// password into a form that was never going to work.
-	v, _, err := a.whose(r.Context(), challenge)
+	v, o, err := a.whose(r.Context(), challenge)
 	if err != nil {
 		a.broken(w, r, err)
 
@@ -471,7 +471,58 @@ func (a *App) begin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// A product that drew its own buttons names the one somebody pressed, and
+	// the browser goes there rather than to a page asking them again.
+	if name := connectionNamed(v.Url); name != "" && a.offers(r.Context(), o, name) {
+		http.Redirect(w, r, "/provider?"+url.Values{Challenge: {challenge}, "connection": {name}}.Encode(), http.StatusSeeOther)
+
+		return
+	}
+
 	a.page().ServeHTTP(w, r)
+}
+
+// connectionNamed is the connection an authorization request names, as
+// `connection`, or empty.
+//
+// # Why the authorization request, and why that word
+//
+// A product whose sign-in screen is its own -- *continue with Google* beside
+// *continue with GitHub*, on the product's host -- has already asked the
+// question this app's page would ask, and the only thing that reaches here from
+// it is the request it sent Hydra. Hydra keeps that whole (`request_url`) and
+// ignores a parameter it does not know, as OAuth 2.0 says a server does, so
+// the product says which one in the request and nothing else has to change.
+// `connection` because it is this app's own word for the thing
+// (`/provider?connection=`) and the account app's (`/login?connection=`).
+//
+// It is a hint and not an order: a name this tenant has no connection by is
+// the page, which lists what there is. And it chooses only among the tenant's
+// own connections, which a link to `/provider` could do already.
+func connectionNamed(request string) string {
+	u, err := url.Parse(request)
+	if err != nil {
+		return ""
+	}
+
+	return u.Query().Get("connection")
+}
+
+// offers is whether a tenant has a connection by that name.
+func (a *App) offers(ctx context.Context, o *tenant, name string) bool {
+	cs, err := a.arrives.Connections(withAt(ctx, o.at), o.id)
+	if err != nil {
+		slog.WarnContext(ctx, "login: the connection a flow named could not be looked for; drawing the page", "err", err)
+
+		return false
+	}
+	for _, c := range cs {
+		if c.GetName() == name {
+			return true
+		}
+	}
+
+	return false
 }
 
 // accept is the last hop: this app's session becomes Hydra's answer.

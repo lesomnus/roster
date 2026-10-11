@@ -483,7 +483,14 @@ http.Redirect(w, r, a.cfg.AuthCodeURL(state), http.StatusFound)
 ```
 
 The state is a nonce and nothing else; the cookie is what binds one browser to
-one trip. `a.flows` is in memory, so a restart refuses a flow in progress and so
+one trip.
+
+A product whose sign-in screen is its own -- *continue with Google* beside
+*continue with GitHub* -- adds the button's connection to the same request,
+`connection=google`, and the Login App sends the browser straight to that
+provider rather than drawing a page that asks again ([login.md](login.md)
+§ *An account at a provider, with Hydra in front*). Hydra ignores a parameter it
+does not know, so the request is still a plain authorization request to it. `a.flows` is in memory, so a restart refuses a flow in progress and so
 does a second replica -- `no flow here started with that state`, which the log
 says and the browser does not.
 
