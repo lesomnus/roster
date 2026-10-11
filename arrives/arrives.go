@@ -288,7 +288,8 @@ func aliasOf(address string) string {
 // **The provider must say the address is verified.** Without that, a directory
 // that lets somebody type an arbitrary address into their own profile is a
 // directory that hands out whichever account carries it. `email_verified` is
-// the claim, and an unverified one is not an answer here -- it falls through to
+// the claim -- or `xms_edov`, which is how Microsoft says it (`microsoft.go`)
+// -- and an unverified one is not an answer here: it falls through to
 // whatever the policy does with a stranger.
 func invitation(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, bool, error) {
 	if who.Email == "" || !who.Verified {
@@ -383,12 +384,15 @@ func (p *Providers) Connections(ctx context.Context, tenant pdid.Id) ([]*rstr.Co
 // a subject by cannot come from a different connection than the check did.
 //
 // A GitHub connection has no token to check: GitHub issues none, and is asked
-// who signed in instead, at the API in `gitHub` (`github.go`).
+// who signed in instead, at the API in `gitHub` (`github.go`). A connection to
+// an authority of more than one directory holds each token to the directory
+// it names, by the template in `directories` (`microsoft.go`).
 type Verifier struct {
 	*oidc.IDTokenVerifier
 
-	subject string
-	gitHub  string
+	subject     string
+	gitHub      string
+	directories string
 }
 
 // Relying is this app as the relying party for one connection of one tenant:
@@ -418,6 +422,11 @@ func (p *Providers) Relying(ctx context.Context, tenant pdid.Id, name, redirect 
 		return gitHubRelying(c.GetIssuer(), c.GetClientId(), secret, redirect, c.GetScopes()), &Verifier{gitHub: api}, nil
 	}
 
+	// The issuer is checked here, against the token's own directory, for an
+	// authority whose tokens each name a different one; everywhere else it is
+	// checked against the issuer, by the verifier.
+	every := directoriesOf(c.GetIssuer(), v)
+
 	return &oauth2.Config{
 		ClientID:     c.GetClientId(),
 		ClientSecret: secret,
@@ -425,8 +434,9 @@ func (p *Providers) Relying(ctx context.Context, tenant pdid.Id, name, redirect 
 		RedirectURL:  redirect,
 		Scopes:       append([]string{oidc.ScopeOpenID}, c.GetScopes()...),
 	}, &Verifier{
-		IDTokenVerifier: v.Verifier(&oidc.Config{ClientID: c.GetClientId()}),
+		IDTokenVerifier: v.Verifier(&oidc.Config{ClientID: c.GetClientId(), SkipIssuerCheck: every != ""}),
 		subject:         c.GetSubjectClaim(),
+		directories:     every,
 	}, nil
 }
 
@@ -453,7 +463,7 @@ func (p *Providers) discover(ctx context.Context, tenant pdid.Id, name string) (
 	if had, ok := p.discovery.Load(k); ok {
 		return c, had.(*oidc.Provider), nil
 	}
-	v, err := oidc.NewProvider(ctx, c.GetIssuer())
+	v, err := discoverAt(ctx, c.GetIssuer())
 	if err != nil {
 		return nil, nil, fmt.Errorf("discovery at %s: %w", c.GetIssuer(), err)
 	}
@@ -487,11 +497,19 @@ func (p *Providers) Claim(ctx context.Context, cfg *oauth2.Config, verifier *Ver
 	if err != nil {
 		return Caller{}, err
 	}
+	if verifier.directories != "" {
+		if err := inDirectory(id, verifier.directories); err != nil {
+			return Caller{}, err
+		}
+	}
 	var claims struct {
 		Email    string `json:"email"`
 		Verified bool   `json:"email_verified"`
 		Name     string `json:"name"`
 		Picture  string `json:"picture"`
+
+		// Microsoft's word for `email_verified`, which it does not send.
+		DomainVerified any `json:"xms_edov"`
 	}
 	if err := id.Claims(&claims); err != nil {
 		return Caller{}, err
@@ -500,7 +518,7 @@ func (p *Providers) Claim(ctx context.Context, cfg *oauth2.Config, verifier *Ver
 	who := Caller{
 		Subject:  id.Subject,
 		Email:    claims.Email,
-		Verified: claims.Verified,
+		Verified: claims.Verified || domainVerified(claims.DomainVerified),
 		Name:     claims.Name,
 		Picture:  claims.Picture,
 		token:    tok,
