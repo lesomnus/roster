@@ -295,6 +295,63 @@ func TestOneCustomerIsNotToldAboutAnother(t *testing.T) {
 	}
 }
 
+// TestAnErasureIsHeardTheFirstTimeTheStreamHearsOfSomebody.
+//
+// An erasure is usually the only thing that happens to somebody in a week, so
+// it is very often the first thing a stream hears of them -- and the read
+// after it answers `NotFound`, which is also what it answers for somebody the
+// wall hides. The first draft took every such answer for the wall and said
+// nothing, which swallowed the one event an app most needs: the sessions it
+// holds for somebody who no longer exists. Somebody erased where the caller may
+// see is heard, with their own stamps; somebody erased elsewhere is not.
+func TestAnErasureIsHeardTheFirstTimeTheStreamHearsOfSomebody(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	ctx, stop := context.WithCancel(ctx)
+	defer stop()
+
+	conn := served(t, b.Server)
+	b.mayAnything(b.ContosoUser, b.Contoso)
+	as := asOverTheWire(ctx, b.ContosoUser)
+	other := b.holder(t, ctx, b.Fabrikam, "theirs")
+	b.mayAnything(other, b.Fabrikam)
+	theirs := asOverTheWire(ctx, other)
+
+	// Made before the stream opens, and never written to after: nothing it
+	// reads before their erasure is about them.
+	quiet := b.holder(t, ctx, b.Contoso, "quiet")
+	elsewhere := b.holder(t, ctx, b.Fabrikam, "elsewhere")
+
+	c := syncing(t, as, conn, b.holder(t, ctx, b.Contoso, "canary"))
+	h := app.NewHolderServiceClient(conn)
+
+	// The one the caller may not see first, so that the other arriving makes
+	// its absence a fact rather than a race.
+	_, err := h.Erase(theirs, app.HolderRef_builder{Id: elsewhere.Bytes()}.Build())
+	x.NoError(err)
+	_, err = h.Erase(as, app.HolderRef_builder{Id: quiet.Bytes()}.Build())
+	x.NoError(err)
+
+	for {
+		v := about2(t, c)
+		x.NotEqual(elsewhere.Bytes(), v.GetHolder(), "an app was told about somebody gone from a tenant it cannot read")
+		if string(v.GetHolder()) != string(quiet.Bytes()) {
+			continue
+		}
+
+		x.Equal(app.SyncReason_SYNC_REASON_ERASED, v.GetReason())
+		x.Equal(b.Contoso.Bytes(), v.GetTenant(), "and whose they were")
+
+		row, err := b.Ent.Holder.Get(ctx, quiet.Uuid())
+		x.NoError(err)
+		x.NotNil(row.DateErased)
+		x.True(row.DateErased.Equal(v.GetDateErased().AsTime()), "since when, as the row says it, and not when this heard")
+
+		break
+	}
+}
+
 // about2 reads whatever arrives next, whoever it is about.
 func about2(t *testing.T, c <-chan *app.SyncEvent) *app.SyncEvent {
 	t.Helper()
@@ -325,7 +382,7 @@ func TestADeploymentWithNoBrokerSaysSoRatherThanGoingQuiet(t *testing.T) {
 
 	// Handed no broker at all, which every other harness here does give -- so
 	// this is the one place the absence is arranged on purpose.
-	s := rostersync.Service(b.Walled, nil)
+	s := rostersync.Service(b.Walled, nil, nil)
 
 	err := s.Watch(app.SyncWatchRequest_builder{}.Build(), &collector{ctx: ctx})
 	x.ErrorIs(err, watch.ErrNoBroker, "a stream opened on a deployment that can never feed it")

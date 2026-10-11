@@ -76,6 +76,22 @@
 // the sentence the whole service is argued from -- and still carries the write
 // that mattered.
 //
+// # And the first time it hears about somebody who is gone
+//
+// The read answers `NotFound`, which is also what it answers for somebody in a
+// tenant this caller cannot see -- and the first draft of this took every one
+// of them for the second, sending nothing. That swallowed the erasure of
+// anybody nothing had been written about since the stream opened, which is
+// most people: an erasure is usually the only thing that happens to somebody
+// in a week, so it is very often the first thing a stream hears of them.
+//
+// So the two are told apart by the wall's own rule, applied past the wall that
+// now hides the row ([Erased]): an erased row in a tenant this caller may see
+// is the fact this stream exists to carry, and is sent with its own stamps.
+// Anybody else is still nobody's business. And only `NotFound` means either:
+// a read that failed for any other reason is not news about the person, and
+// ends the stream, which a client already treats as having missed things.
+//
 // # And what it costs
 //
 // One entry per person this stream has heard about, for as long as it is held.
@@ -88,12 +104,17 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/watch"
 
+	"github.com/lesomnus/roster/internal/ent"
+	"github.com/lesomnus/roster/internal/ent/holder"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 )
 
 // Service is `SyncService` over the server it is handed.
@@ -103,15 +124,74 @@ import (
 // hears theirs. That is the whole of the narrowing and there is no field beside
 // it -- two answers to *what may this caller see* is the shape of the bug
 // rather than a convenience.
-func Service(s app.Server, w *watch.Watch) app.SyncServiceServer {
-	return &server{s: s, w: w}
+//
+// `gone` is how somebody the wall hides is told apart from somebody erased
+// ([Erased]); nil hears no erasure of anybody this stream had not read before.
+func Service(s app.Server, w *watch.Watch, gone Gone) app.SyncServiceServer {
+	return &server{s: s, w: w, gone: gone}
 }
 
 type server struct {
 	app.UnimplementedSyncServiceServer
 
-	s app.Server
-	w *watch.Watch
+	s    app.Server
+	w    *watch.Watch
+	gone Gone
+}
+
+// Gone is a person the wall now hides from this caller, if they are hidden for
+// having been erased in a tenant the caller may see: their stamps as the row
+// keeps them, and false for anybody else.
+type Gone func(ctx context.Context, k pdid.Id) (Left, bool, error)
+
+// Left is what an erased row still says.
+type Left struct {
+	Tenant      []byte
+	Invalidated time.Time
+	Disabled    time.Time
+	Erased      time.Time
+}
+
+// Erased is [Gone] on this deployment's database, narrowed by `narrow` --
+// **the** scope the walled server narrows by, handed over rather than written
+// a second time, so that what may be heard of somebody gone is what could be
+// read of them while they were there.
+//
+// It reads only rows that are erased. A row that is there is the walled
+// server's to answer about, and a `NotFound` for one is the wall.
+func Erased(db *ent.Client, narrow bare.Scope) Gone {
+	return func(ctx context.Context, k pdid.Id) (Left, bool, error) {
+		q := db.Holder.Query().Where(holder.Id(k.Uuid()), holder.DateErasedNotNil())
+		p, err := narrow.HolderScope(ctx)
+		if err != nil {
+			return Left{}, false, err
+		}
+		if p != nil {
+			q = q.Where(p)
+		}
+		v, err := q.Only(ctx)
+		if ent.IsNotFound(err) {
+			return Left{}, false, nil
+		}
+		if err != nil {
+			return Left{}, false, err
+		}
+
+		return Left{
+			Tenant:      v.TenantId[:],
+			Invalidated: deref(v.DateInvalidated),
+			Disabled:    deref(v.DateDisabled),
+			Erased:      deref(v.DateErased),
+		}, true, nil
+	}
+}
+
+func deref(v *time.Time) time.Time {
+	if v == nil {
+		return time.Time{}
+	}
+
+	return *v
 }
 
 // held is the three stamps, as this stream last sent them.
@@ -197,10 +277,13 @@ func (s *server) one(
 			DateErased:      ptr(true),
 		}.Build(),
 	}.Build())
-	if err != nil {
+	if status.Code(err) == codes.NotFound {
 		prior, told := was[k]
-		if !told || !prior.erased.IsZero() {
-			// Never visible to this caller, or already known to be gone.
+		if !told {
+			return s.first(ctx, out, was, k)
+		}
+		if !prior.erased.IsZero() {
+			// Already known to be gone.
 			return nil
 		}
 
@@ -219,6 +302,11 @@ func (s *server) one(
 			DateInvalidated: stamp(prior.invalidated),
 			DateErased:      now,
 		}.Build())
+	}
+	if err != nil {
+		// Not news about the person. The stream ends, which a client already
+		// reads as having missed things.
+		return err
 	}
 
 	now := held{
@@ -255,6 +343,40 @@ func (s *server) one(
 		DateInvalidated: v.GetDateInvalidated(),
 		DateDisabled:    v.GetDateDisabled(),
 		DateErased:      v.GetDateErased(),
+	}.Build())
+}
+
+// first is the first this stream hears of somebody the wall hides: gone, if
+// they were erased where this caller may see, and otherwise nobody's business.
+// See the package comment.
+func (s *server) first(
+	ctx context.Context,
+	out grpc.ServerStreamingServer[app.SyncEvent],
+	was map[pdid.Id]held,
+	k pdid.Id,
+) error {
+	if s.gone == nil {
+		return nil
+	}
+	v, ok, err := s.gone(ctx, k)
+	if err != nil || !ok {
+		return err
+	}
+
+	// Remembered as gone, so that it is said once.
+	was[k] = held{
+		stamps: stamps{invalidated: v.Invalidated, disabled: v.Disabled, erased: v.Erased},
+		tenant: string(v.Tenant),
+	}
+
+	return out.Send(app.SyncEvent_builder{
+		Holder:          k.Bytes(),
+		Tenant:          v.Tenant,
+		Reason:          app.SyncReason_SYNC_REASON_ERASED,
+		At:              timestamppb.New(time.Now()),
+		DateInvalidated: stamp(v.Invalidated),
+		DateDisabled:    stamp(v.Disabled),
+		DateErased:      stamp(v.Erased),
 	}.Build())
 }
 
