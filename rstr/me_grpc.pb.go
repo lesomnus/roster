@@ -122,6 +122,11 @@ type MeServiceClient interface {
 	//
 	// # What it asks before it does it
 	//
+	// A tenant that is closed reaches nobody, this included: its people are
+	// refused where every call is resolved, before any of the below. A tenant
+	// under a hold still lets somebody leave -- an erase destroys nothing -- and
+	// forgets them once the hold is lifted.
+	//
 	// Three things, in this order, and each refusal says which:
 	//
 	//   - that the caller's tenant offers it (`TenantConfig.leave`), which is
@@ -297,6 +302,11 @@ type MeServiceServer interface {
 	// `cmd.Policy` waives a binding for it on that ground.
 	//
 	// # What it asks before it does it
+	//
+	// A tenant that is closed reaches nobody, this included: its people are
+	// refused where every call is resolved, before any of the below. A tenant
+	// under a hold still lets somebody leave -- an erase destroys nothing -- and
+	// forgets them once the hold is lifted.
 	//
 	// Three things, in this order, and each refusal says which:
 	//

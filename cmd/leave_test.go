@@ -264,3 +264,38 @@ func TestATerminalLeavesWithAKeyItWasJustHanded(t *testing.T) {
 	gone, _ := erasedAt(t, ctx, b.Server, b.Who)
 	x.Nil(gone)
 }
+
+// TestLeavingMeetsTheTenantsOwnLifecycle: a tenant can be closed or held
+// (#105). Somebody in a closed tenant reaches nothing, this included; somebody
+// in a held one may still leave -- an erase destroys nothing -- and is not told
+// a date the hold is there to break.
+func TestLeavingMeetsTheTenantsOwnLifecycle(t *testing.T) {
+	x := require.New(t)
+	b := keyedFor(t, func(c *cmd.Config) { c.Holder.ForgetAfter = 720 * time.Hour }, verify)
+	ctx := t.Context()
+	g, err := b.Grpc(ctx, b.Config)
+	x.NoError(err)
+	c := app.NewMeServiceClient(pdtest.Serve(t, g))
+	offersLeave(t, ctx, b.Server, b.Contoso, true)
+
+	pat := addHolder(t, ctx, b.Server, b.Contoso, "pat")
+	quin := addHolder(t, ctx, b.Server, b.Contoso, "quin")
+	pats := ownKeyAt(t, ctx, b, pat, []string{leaveMe}, time.Now())
+	quins := ownKeyAt(t, ctx, b, quin, []string{leaveMe}, time.Now())
+
+	x.NoError(forget.Hold(ctx, b.Ungated, b.Contoso, "a case"))
+	v, err := c.Leave(bearing(ctx, pats), app.MeLeaveRequest_builder{Confirm: "pat"}.Build())
+	x.NoError(err, "a hold kept somebody from leaving")
+	x.False(v.HasDateForgotten(), "promised a date a hold is there to break")
+	erased, _ := erasedAt(t, ctx, b.Server, pat)
+	x.NotNil(erased)
+
+	_, err = b.Ungated.Tenant().Close(ctx, app.TenantCloseRequest_builder{
+		Ref: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+	_, err = c.Leave(bearing(ctx, quins), app.MeLeaveRequest_builder{Confirm: "quin"}.Build())
+	x.Equal(codes.Unauthenticated, status.Code(err), "somebody in a closed tenant reached roster")
+	erased, _ = erasedAt(t, ctx, b.Server, quin)
+	x.Nil(erased)
+}

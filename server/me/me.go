@@ -542,7 +542,9 @@ func (s *Server) Leave(ctx context.Context, req *app.MeLeaveRequest) (*app.MeLea
 
 	at := time.Now()
 	out := app.MeLeaveResponse_builder{DateErased: timestamppb.New(at)}.Build()
-	if s.forgetAfter > 0 {
+	// A hold on the tenant stops the forget clock for its people (#105), so a
+	// date said now would be a promise the hold is there to break.
+	if s.forgetAfter > 0 && me.Edges.Tenant.DateHeld == nil {
 		out.SetDateForgotten(timestamppb.New(at.Add(s.forgetAfter)))
 	}
 

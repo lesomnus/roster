@@ -132,7 +132,8 @@ export type MeLeaveResponse = Message<"roster.MeLeaveResponse"> & {
   /**
    * When it will be forgotten -- the erase plus `holder.forget_after` -- and
    * unset where the deployment forgets nobody on a clock, which is a
-   * deployment where an operator's `roster forget` is the only way.
+   * deployment where an operator's `roster forget` is the only way, or while
+   * a hold on the tenant stops that clock (`roster hold`).
    *
    * @generated from field: google.protobuf.Timestamp date_forgotten = 15;
    */
@@ -629,6 +630,11 @@ export const MeService: GenService<{
    * `cmd.Policy` waives a binding for it on that ground.
    *
    * # What it asks before it does it
+   *
+   * A tenant that is closed reaches nobody, this included: its people are
+   * refused where every call is resolved, before any of the below. A tenant
+   * under a hold still lets somebody leave -- an erase destroys nothing -- and
+   * forgets them once the hold is lifted.
    *
    * Three things, in this order, and each refusal says which:
    *

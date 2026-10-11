@@ -429,7 +429,8 @@ type MeLeaveResponse_builder struct {
 	DateErased *timestamppb.Timestamp
 	// When it will be forgotten -- the erase plus `holder.forget_after` -- and
 	// unset where the deployment forgets nobody on a clock, which is a
-	// deployment where an operator's `roster forget` is the only way.
+	// deployment where an operator's `roster forget` is the only way, or while
+	// a hold on the tenant stops that clock (`roster hold`).
 	DateForgotten *timestamppb.Timestamp
 }
 
