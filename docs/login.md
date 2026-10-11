@@ -357,6 +357,7 @@ sequenceDiagram
 | | the call | what it settles |
 | --- | --- | --- |
 | the buttons | `ConnectionService.List` | what `/flow` answers beside the brand. The **name** and nothing else: the issuer is where the browser is about to go, `secret_ref` is the operator's, and what to call the button is the page's |
+| a product's own buttons | `request_url`, and `ConnectionService.List` | a product whose sign-in screen is its own names the button somebody pressed as `connection=<name>` on the authorization request. Hydra keeps the request whole and ignores the parameter, so `GET /login` reads it there and answers with a 303 to `/provider` for that connection instead of the page. A name the tenant has no connection by is the page, which lists what there is: a hint, not an order, and only ever one of the tenant's own |
 | the form | `TenantService.Get`, `config.password` | whether there is a password form at all. Not a screen setting: roster **refuses** a password for a tenant with this off (`vouch.Offers`), so the page draws what is already true. Unset is yes |
 | which operator | the challenge, again | `/provider` is in a flow, so the `Connection` rows read are the ones the tenant behind the redirect can see -- the call is narrowed to the holder that tenant nominated. fabrikam's challenge cannot reach contoso's directory |
 | the redirect | `login.base` | **one URL for the whole app**, because Hydra sends every browser here under one name. Which operator a callback belongs to comes from the state, and the state is a nonce naming a row this app kept |
@@ -415,7 +416,7 @@ functions stop agreeing, in either direction.
 
 | mounted as | what it promises a page | pinned by |
 | --- | --- | --- |
-| `GET /login` | the first screen, as a document. Hydra's own `skip` is answered here instead, with a 303 and no page drawn | `TestALoginAppTellsHydraWhoSignedIn` · `TestASecondFlowCarriesTheClaimsToo` |
+| `GET /login` | the first screen, as a document. Hydra's own `skip` is answered here instead, with a 303 and no page drawn, and so is an authorization request that named one of the tenant's connections (`connection=`), with a 303 to `/provider` for it | `TestALoginAppTellsHydraWhoSignedIn` · `TestASecondFlowCarriesTheClaimsToo` · `TestAFlowThatNamesAConnectionGoesStraightThere` |
 | `GET /flow` | `{brand, client, scope, providers, password}` for a login challenge, `{brand, logout}` for a logout one. **The only thing a page may ask**, because what a flow is about is Hydra's to say and only this app may ask Hydra | `TestATenantWithNoPasswordDrawsNoForm` · `ts/e2e/login.spec.ts` |
 | `/session`, `/session/` | mounted so `frontdoor`'s three below see the whole path. One handler, three methods | `TestALoginAppTellsHydraWhoSignedIn` |
 | `POST /session` | *frontdoor.* `{alias\|address, password}` → **204** signed in · **200** `{satisfied, available}` one factor proved and more to prove · **401** everything else | `TestALoginAppTellsHydraWhoSignedIn` · `TestASecondFactorIsAskedForAndTheFlowWaitsForIt` · `TestARosterThatIsDownIsNotAWrongPassword` |

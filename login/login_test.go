@@ -77,6 +77,10 @@ type hydra struct {
 	registered map[string][]string // client -> registered
 	granted    []string
 	refusal    string
+
+	// What else a challenge's authorization request carried, which a real
+	// Hydra keeps in `request_url` with the rest of it.
+	asking map[string]url.Values // challenge -> the extra parameters
 }
 
 func newHydra(t *testing.T) *hydra {
@@ -90,6 +94,7 @@ func newHydra(t *testing.T) *hydra {
 
 		audience:   map[string][]string{},
 		registered: map[string][]string{},
+		asking:     map[string]url.Values{},
 	}
 
 	m := http.NewServeMux()
@@ -254,6 +259,10 @@ func (h *hydra) raised(w http.ResponseWriter, r *http.Request, param string) {
 
 	h.mu.Lock()
 	asked, registered := h.audience[c], h.registered[client]
+	extra := ""
+	if v := h.asking[c]; len(v) > 0 {
+		extra = "&" + v.Encode()
+	}
 	h.mu.Unlock()
 
 	writeJson(w, map[string]any{
@@ -268,7 +277,7 @@ func (h *hydra) raised(w http.ResponseWriter, r *http.Request, param string) {
 		// harness names clients `<alias>-web` and `<alias>-mobile`, so one
 		// fixture covers both of a tenant's products reaching one sign-in.
 		"request_url": "https://issuer.test/oauth2/auth?client_id=" + client +
-			"&redirect_uri=" + url.QueryEscape("https://"+redirectHostFor(client)+"/callback"),
+			"&redirect_uri=" + url.QueryEscape("https://"+redirectHostFor(client)+"/callback") + extra,
 
 		"requested_scope": []string{"openid", "profile", "email"},
 	})
