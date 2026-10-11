@@ -185,6 +185,10 @@ type Config struct {
 	// setting (`TenantProfile`), read at each sign-in.
 	SlackAPI string
 
+	// GitHub is the issuer that is GitHub's sign-in rather than an OpenID
+	// provider's; empty is github.com's own ([arrives.Providers.GitHub]).
+	GitHub string
+
 	// InsecureCookie drops `Secure` from the session cookie, for a page served
 	// over plain http in development. It is `authsession`'s and is said there;
 	// this app sets no cookie of its own.
@@ -335,6 +339,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 	}
 	a.arrives = arrives.New(a.roster, c.Secret)
 	a.arrives.SlackAPI = c.SlackAPI
+	a.arrives.GitHub = c.GitHub
 
 	// Nothing per tenant is resolved here, because there is nothing to resolve:
 	// who this app fronts is every tenant with a `Host` row, and that is a

@@ -86,7 +86,7 @@ type Caller struct {
 	// Picture is the token's `picture` claim: where the provider says a
 	// picture of them is, when it said so in the token. Entra never does; its
 	// userinfo does, and [Providers.Fill] reads that only when a picture is
-	// wanted.
+	// wanted. GitHub's is the account's `avatar_url`.
 	Picture string
 
 	// token is what the exchange handed over, kept for [Providers.Fill] to ask
@@ -347,6 +347,12 @@ type Providers struct {
 	// filled from Slack (`TenantProfile.slack_secret_ref`). Empty is Slack's
 	// own; a test, or a deployment on another Slack, names its own.
 	SlackAPI string
+
+	// GitHub is the issuer a connection names to be GitHub's sign-in rather
+	// than an OpenID provider's (`github.go`). Empty is github.com's own,
+	// `https://github.com`; a test, or a deployment on GitHub Enterprise
+	// Server, names its own, whose REST API is then `/api/v3` beside it.
+	GitHub string
 }
 
 // New is the relying party for whatever `Connection` rows the given client can
@@ -375,10 +381,14 @@ func (p *Providers) Connections(ctx context.Context, tenant pdid.Id) ([]*rstr.Co
 //
 // One value rather than a second return, so that what [Providers.Claim] reads
 // a subject by cannot come from a different connection than the check did.
+//
+// A GitHub connection has no token to check: GitHub issues none, and is asked
+// who signed in instead, at the API in `gitHub` (`github.go`).
 type Verifier struct {
 	*oidc.IDTokenVerifier
 
 	subject string
+	gitHub  string
 }
 
 // Relying is this app as the relying party for one connection of one tenant:
@@ -397,6 +407,17 @@ func (p *Providers) Relying(ctx context.Context, tenant pdid.Id, name, redirect 
 		}
 	}
 
+	if api := p.gitHub(c.GetIssuer()); api != "" {
+		// A claim of an ID token names nobody at a provider that issues none,
+		// and reading it as `id` would be a second rule for what the field
+		// says.
+		if named := c.GetSubjectClaim(); named != "" && named != "sub" {
+			return nil, nil, fmt.Errorf("connection %s: GitHub names its people by their account's id, and %q is a claim of an ID token, which GitHub does not issue", name, named)
+		}
+
+		return gitHubRelying(c.GetIssuer(), c.GetClientId(), secret, redirect, c.GetScopes()), &Verifier{gitHub: api}, nil
+	}
+
 	return &oauth2.Config{
 		ClientID:     c.GetClientId(),
 		ClientSecret: secret,
@@ -410,7 +431,7 @@ func (p *Providers) Relying(ctx context.Context, tenant pdid.Id, name, redirect 
 }
 
 // discover is one connection of one tenant and what its issuer publishes, the
-// second fetched once.
+// second fetched once -- and nil for GitHub's, which publishes nothing.
 func (p *Providers) discover(ctx context.Context, tenant pdid.Id, name string) (*rstr.Connection, *oidc.Provider, error) {
 	c, err := p.roster.Connection().Get(ctx, rstr.ConnectionGetRequest_builder{
 		Ref: rstr.ConnectionRef_builder{
@@ -423,6 +444,9 @@ func (p *Providers) discover(ctx context.Context, tenant pdid.Id, name string) (
 	}.Build())
 	if err != nil {
 		return nil, nil, err
+	}
+	if p.gitHub(c.GetIssuer()) != "" {
+		return c, nil, nil
 	}
 
 	k := tenant.String() + "\x00" + name
@@ -451,6 +475,9 @@ func (p *Providers) Claim(ctx context.Context, cfg *oauth2.Config, verifier *Ver
 	tok, err := cfg.Exchange(ctx, code)
 	if err != nil {
 		return Caller{}, err
+	}
+	if verifier.gitHub != "" {
+		return p.fromGitHub(ctx, verifier.gitHub, tok)
 	}
 	raw, ok := tok.Extra("id_token").(string)
 	if !ok {

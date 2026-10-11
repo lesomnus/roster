@@ -143,6 +143,10 @@ type Config struct {
 	// API is, for a tenant that fills its profiles from Slack.
 	SlackAPI string
 
+	// GitHub is the Login App's `login.Config.GitHub`: the issuer that is
+	// GitHub's sign-in rather than an OpenID provider's.
+	GitHub string
+
 	// Sessions is this app's own cookie. Never roster's.
 	Sessions *authsession.Sessions
 
@@ -395,6 +399,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 	}
 	a.arrives = arrives.New(a.roster, c.Secret)
 	a.arrives.SlackAPI = c.SlackAPI
+	a.arrives.GitHub = c.GitHub
 
 	if c.Key != "" {
 		if err := a.nominated(ctx); err != nil {

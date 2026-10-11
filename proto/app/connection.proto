@@ -77,6 +77,12 @@ message Connection {
   // Separate from [Connection.name] on purpose. An issuer is a URL that can
   // move -- Entra's carries a directory id -- and a name that moved with it
   // would make the same person a new person.
+  //
+  // `https://github.com` is GitHub's, which publishes nothing to discover:
+  // GitHub signs people in with OAuth 2.0 and its API rather than OpenID
+  // Connect, so a front door asks it who signed in (`arrives/github.go`).
+  // Which provider a connection is, is read off its issuer and never off its
+  // name, which is the operator's word.
   string issuer = 8;
 
   // What the provider calls this app.
@@ -84,6 +90,10 @@ message Connection {
 
   // Scopes beyond `openid`. `email` is usual and is what enrolment needs to
   // name somebody.
+  //
+  // GitHub's are its own words, beside `user:email`, which a GitHub
+  // connection asks for whatever this says, as an OpenID one asks for
+  // `openid`.
   repeated string scopes = 10;
 
   // Where the deployment keeps the client secret, in whatever words it uses
@@ -113,8 +123,8 @@ message Connection {
   // Which claim of the ID token is a person's `Identity.subject` here.
   //
   // Empty is `sub`, which is what OIDC calls the subject and what most
-  // providers mean by one: Google's, Okta's and GitHub's name the person, the
-  // same for every app. Entra's does not. Its v2 `sub` is **pairwise** -- one
+  // providers mean by one: Google's and Okta's name the person, the same for
+  // every app. Entra's does not. Its v2 `sub` is **pairwise** -- one
   // per app registration -- so it names a person to this front door alone, and
   // nothing else that knows them can say it: not a directory provisioning them
   // (SCIM's `externalId`), not another app, not somebody reading the portal.
@@ -124,6 +134,11 @@ message Connection {
   // Entra puts `oid` in the ID token only with the `profile` scope. A sign-in
   // whose token lacks the claim is refused rather than falling back to `sub`:
   // one person under two subjects is two people.
+  //
+  // GitHub issues no ID token, so a GitHub connection names nobody by a claim:
+  // its people are their account's `id`, the number that never changes and
+  // not the username that may, and a sign-in through one that says `oid` is
+  // refused.
   //
   // # Moving a connection people already sign in through
   //

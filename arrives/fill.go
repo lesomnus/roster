@@ -106,11 +106,21 @@ func (p *Providers) Fill(ctx context.Context, holder pdid.Id, who Caller) error 
 		return err
 	}
 
-	_, v, err := p.discover(ctx, who.Tenant, who.Provider)
+	c, v, err := p.discover(ctx, who.Tenant, who.Provider)
 	if err != nil {
 		return err
 	}
-	img, where, err := p.picture(ctx, v, who)
+	var img []byte
+	var where string
+	if api := p.gitHub(c.GetIssuer()); api != "" {
+		// GitHub said where in the answer the sign-in already read, and
+		// there is no userinfo to ask: its API is the provider's own host.
+		if who.Picture != "" {
+			img, where, err = p.pictureAt(ctx, who.Picture, api, who.token)
+		}
+	} else {
+		img, where, err = p.picture(ctx, v, who)
+	}
 	if err != nil || (len(img) == 0 && where == "") {
 		return err
 	}
@@ -147,13 +157,21 @@ func (p *Providers) picture(ctx context.Context, v *oidc.Provider, who Caller) (
 			return nil, "", err
 		}
 	}
+
+	return p.pictureAt(ctx, at, v.UserInfoEndpoint(), who.token)
+}
+
+// pictureAt is the picture at a URL, fetched with the token when it is on the
+// host of the provider's own API, `api`, and otherwise as [Providers.picture]
+// says.
+func (p *Providers) pictureAt(ctx context.Context, at, api string, tok *oauth2.Token) ([]byte, string, error) {
 	u, err := url.Parse(at)
 	if err != nil || u.Host == "" {
 		return nil, "", fmt.Errorf("picture %q: not a URL", at)
 	}
 
-	if own(u, v.UserInfoEndpoint()) {
-		img, err := get(ctx, p.own, u, who.token)
+	if own(u, api) {
+		img, err := get(ctx, p.own, u, tok)
 
 		return img, "", err
 	}
