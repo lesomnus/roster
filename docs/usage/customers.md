@@ -153,6 +153,19 @@ roster forget @newco/alice           # destroys, including the trail's copy
 identities and the whole trail still there. `forget` is *destroy what you hold
 about them*, which is a different request with a legal clock on it, and
 `holder.forget_after` is the window between them.
+
+**Or they leave by themselves**, where the tenant offers it: `config.leave` on
+the tenant (the admin console's *people here may delete their own account*, or a
+resources file), and the account page draws a *delete your account* section that
+erases them exactly as the first line above does, signed out everywhere first.
+`roster restore` brings them back the same way, without any of their old
+sign-ins. It is off unless a tenant turns it on, because a directory a company
+provisions is the company's to empty -- a person deleting themselves out of it is
+somebody the next sync puts back with nothing of theirs. A consumer product's
+directory, where an account is the person's own, is the case it is for: Rove's
+SaaS turns it on for the one tenant every account is in, and links to the account
+page's `/#leave` from its own.
+[ways-in.md](ways-in.md) § *Deleting your own account* is what it asks first.
 [operating.md](../operating.md) § "Destroying somebody, which an erase does not"
 is what each one leaves behind.
 

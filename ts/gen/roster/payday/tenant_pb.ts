@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/tenant.proto.
  */
 export const file_roster_payday_tenant: GenFile = /*@__PURE__*/
-  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L3RlbmFudC5wcm90bxIGcm9zdGVyIs8ECgZUZW5hbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhUKBWFsaWFzGAQgASgJQgbqghYCMAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEioKBmxhYmVscxgHIAMoCzIaLnJvc3Rlci5UZW5hbnQuTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASJAoGY29uZmlnGAggASgLMhQucm9zdGVyLlRlbmFudENvbmZpZxI3CgtkYXRlX2Nsb3NlZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI6Cg5kYXRlX2Rlc3Ryb3llZBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI1CglkYXRlX2hlbGQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESFQoEaG9sZBgMIAEoCUIH6oIWA4IBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOj3K/BUEEgIQAYq7FjEIATIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZEICCgBIARoAImMKDFRlbmFudENvbmZpZxIXCghwYXNzd29yZBgBIAEoCEIFqgECCAESEgoKZnJvbnRfZG9vchgCIAEoCRImCgdwcm9maWxlGAMgASgLMhUucm9zdGVyLlRlbmFudFByb2ZpbGUiNwoNVGVuYW50UHJvZmlsZRIMCgRmaWxsGAEgASgIEhgKEHNsYWNrX3NlY3JldF9yZWYYAiABKAlCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L3RlbmFudC5wcm90bxIGcm9zdGVyIs8ECgZUZW5hbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhUKBWFsaWFzGAQgASgJQgbqghYCMAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEioKBmxhYmVscxgHIAMoCzIaLnJvc3Rlci5UZW5hbnQuTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASJAoGY29uZmlnGAggASgLMhQucm9zdGVyLlRlbmFudENvbmZpZxI3CgtkYXRlX2Nsb3NlZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI6Cg5kYXRlX2Rlc3Ryb3llZBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI1CglkYXRlX2hlbGQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESFQoEaG9sZBgMIAEoCUIH6oIWA4IBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOj3K/BUEEgIQAYq7FjEIATIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZEICCgBIARoAInIKDFRlbmFudENvbmZpZxIXCghwYXNzd29yZBgBIAEoCEIFqgECCAESEgoKZnJvbnRfZG9vchgCIAEoCRImCgdwcm9maWxlGAMgASgLMhUucm9zdGVyLlRlbmFudFByb2ZpbGUSDQoFbGVhdmUYBCABKAgiNwoNVGVuYW50UHJvZmlsZRIMCgRmaWxsGAEgASgIEhgKEHNsYWNrX3NlY3JldF9yZWYYAiABKAlCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Tenant is the wall an app is divided by.
@@ -259,6 +259,27 @@ export type TenantConfig = Message<"roster.TenantConfig"> & {
    * @generated from field: roster.TenantProfile profile = 3;
    */
   profile?: TenantProfile | undefined;
+
+  /**
+   * Whether this tenant's people may delete their own account
+   * (`MeService.Leave`): their holder erased as `HolderService.Erase` erases
+   * one, by themselves, from a sign-in a few minutes old.
+   *
+   * **Unset is no**, which is what every tenant written before this was. A
+   * directory a company provisions by SCIM is the company's to empty, and a
+   * person deleting themselves out of it is a person the next sync puts back
+   * with nothing of theirs -- so it is a tenant that decides to offer this,
+   * never one that finds out it did. A consumer product's directory, where an
+   * account is the person's own, is the case it was asked for: Rove's SaaS
+   * turns it on for the one tenant every account is in.
+   *
+   * A fact roster acts on and not an instruction to a screen: `MeService.Leave`
+   * refuses while this is false, and the account page draws the section only
+   * when it is true, because it would work.
+   *
+   * @generated from field: bool leave = 4;
+   */
+  leave: boolean;
 };
 
 /**

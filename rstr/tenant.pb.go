@@ -395,6 +395,7 @@ type TenantConfig struct {
 	xxx_hidden_Password    bool                   `protobuf:"varint,1,opt,name=password"`
 	xxx_hidden_FrontDoor   string                 `protobuf:"bytes,2,opt,name=front_door,json=frontDoor"`
 	xxx_hidden_Profile     *TenantProfile         `protobuf:"bytes,3,opt,name=profile"`
+	xxx_hidden_Leave       bool                   `protobuf:"varint,4,opt,name=leave"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -447,9 +448,16 @@ func (x *TenantConfig) GetProfile() *TenantProfile {
 	return nil
 }
 
+func (x *TenantConfig) GetLeave() bool {
+	if x != nil {
+		return x.xxx_hidden_Leave
+	}
+	return false
+}
+
 func (x *TenantConfig) SetPassword(v bool) {
 	x.xxx_hidden_Password = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 3)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 4)
 }
 
 func (x *TenantConfig) SetFrontDoor(v string) {
@@ -458,6 +466,10 @@ func (x *TenantConfig) SetFrontDoor(v string) {
 
 func (x *TenantConfig) SetProfile(v *TenantProfile) {
 	x.xxx_hidden_Profile = v
+}
+
+func (x *TenantConfig) SetLeave(v bool) {
+	x.xxx_hidden_Leave = v
 }
 
 func (x *TenantConfig) HasPassword() bool {
@@ -542,6 +554,22 @@ type TenantConfig_builder struct {
 	// doors read it at every sign-in through a provider, and `HolderService.Fill`
 	// is what they write with.
 	Profile *TenantProfile
+	// Whether this tenant's people may delete their own account
+	// (`MeService.Leave`): their holder erased as `HolderService.Erase` erases
+	// one, by themselves, from a sign-in a few minutes old.
+	//
+	// **Unset is no**, which is what every tenant written before this was. A
+	// directory a company provisions by SCIM is the company's to empty, and a
+	// person deleting themselves out of it is a person the next sync puts back
+	// with nothing of theirs -- so it is a tenant that decides to offer this,
+	// never one that finds out it did. A consumer product's directory, where an
+	// account is the person's own, is the case it was asked for: Rove's SaaS
+	// turns it on for the one tenant every account is in.
+	//
+	// A fact roster acts on and not an instruction to a screen: `MeService.Leave`
+	// refuses while this is false, and the account page draws the section only
+	// when it is true, because it would work.
+	Leave bool
 }
 
 func (b0 TenantConfig_builder) Build() *TenantConfig {
@@ -549,11 +577,12 @@ func (b0 TenantConfig_builder) Build() *TenantConfig {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Password != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 3)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 4)
 		x.xxx_hidden_Password = *b.Password
 	}
 	x.xxx_hidden_FrontDoor = b.FrontDoor
 	x.xxx_hidden_Profile = b.Profile
+	x.xxx_hidden_Leave = b.Leave
 	return m0
 }
 
@@ -681,12 +710,13 @@ const file_roster_payday_tenant_proto_rawDesc = "" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref \x14(dB\x02\n" +
-	"\x00H\x01\x1a\x00\"\x81\x01\n" +
+	"\x00H\x01\x1a\x00\"\x97\x01\n" +
 	"\fTenantConfig\x12!\n" +
 	"\bpassword\x18\x01 \x01(\bB\x05\xaa\x01\x02\b\x01R\bpassword\x12\x1d\n" +
 	"\n" +
 	"front_door\x18\x02 \x01(\tR\tfrontDoor\x12/\n" +
-	"\aprofile\x18\x03 \x01(\v2\x15.roster.TenantProfileR\aprofile\"M\n" +
+	"\aprofile\x18\x03 \x01(\v2\x15.roster.TenantProfileR\aprofile\x12\x14\n" +
+	"\x05leave\x18\x04 \x01(\bR\x05leave\"M\n" +
 	"\rTenantProfile\x12\x12\n" +
 	"\x04fill\x18\x01 \x01(\bR\x04fill\x12(\n" +
 	"\x10slack_secret_ref\x18\x02 \x01(\tR\x0eslackSecretRefB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"

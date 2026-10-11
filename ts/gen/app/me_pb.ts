@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/me.proto.
  */
 export const file_app_me: GenFile = /*@__PURE__*/
-  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QiHQoPTWVVbmxpbmtSZXF1ZXN0EgoKAmlkGAEgASgMIhIKEE1lVW5saW5rUmVzcG9uc2UiHAoaTWVTaWduT3V0RXZlcnl3aGVyZVJlcXVlc3QiUwobTWVTaWduT3V0RXZlcnl3aGVyZVJlc3BvbnNlEjQKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIrgCCg1NZUdldFJlc3BvbnNlEgoKAmlkGAEgASgMEg4KBnRlbmFudBgCIAEoDBINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEh8KBmVtYWlscxgIIAMoCzIPLnJvc3Rlci5NZUVtYWlsEh0KBXRlYW1zGAkgAygLMg4ucm9zdGVyLk1lVGVhbRIPCgdtZXRob2RzGAogAygJEg0KBXNpdGVzGAsgAygMEhIKCmV2ZXJ5X3NpdGUYDCABKAgSKgoKaWRlbnRpdGllcxgNIAMoCzIWLnJvc3Rlci5TaWduSW5JZGVudGl0eRItCgtjcmVkZW50aWFscxgOIAMoCzIYLnJvc3Rlci5TaWduSW5DcmVkZW50aWFsEh8KBGtleXMYDyADKAsyES5yb3N0ZXIuU2lnbkluS2V5IpgBCglTaWduSW5LZXkSCgoCaWQYASABKAwSDQoFYWxpYXMYBCABKAkSDwoHbWV0aG9kcxgIIAMoCRIwCgxkYXRlX2V4cGlyZXMYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi0KCWRhdGVfdXNlZBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAicQoOU2lnbkluSWRlbnRpdHkSCgoCaWQYASABKAwSEAoIcHJvdmlkZXIYCCABKAkSDwoHc3ViamVjdBgJIAEoCRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIpEBChBTaWduSW5DcmVkZW50aWFsEgwKBGtpbmQYCCABKAkSDAoEbmFtZRgFIAEoCRIwCgxkYXRlX3JvdGF0ZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2RhdGVfbG9ja2VkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJNCgdNZUVtYWlsEg8KB2FkZHJlc3MYCCABKAkSMQoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYQoGTWVUZWFtEgoKAmlkGAEgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDAoEc2l0ZRgIIAEoDBISCgpzaXRlX2FsaWFzGAkgASgJEgwKBHJvbGUYCiABKAky2gEKCU1lU2VydmljZRIyCgNHZXQSFC5yb3N0ZXIuTWVHZXRSZXF1ZXN0GhUucm9zdGVyLk1lR2V0UmVzcG9uc2USOwoGVW5saW5rEhcucm9zdGVyLk1lVW5saW5rUmVxdWVzdBoYLnJvc3Rlci5NZVVubGlua1Jlc3BvbnNlElwKEVNpZ25PdXRFdmVyeXdoZXJlEiIucm9zdGVyLk1lU2lnbk91dEV2ZXJ5d2hlcmVSZXF1ZXN0GiMucm9zdGVyLk1lU2lnbk91dEV2ZXJ5d2hlcmVSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
+  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QiHQoPTWVVbmxpbmtSZXF1ZXN0EgoKAmlkGAEgASgMIhIKEE1lVW5saW5rUmVzcG9uc2UiHAoaTWVTaWduT3V0RXZlcnl3aGVyZVJlcXVlc3QiUwobTWVTaWduT3V0RXZlcnl3aGVyZVJlc3BvbnNlEjQKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiEKDk1lTGVhdmVSZXF1ZXN0Eg8KB2NvbmZpcm0YASABKAkidgoPTWVMZWF2ZVJlc3BvbnNlEi8KC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIyCg5kYXRlX2ZvcmdvdHRlbhgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiuAIKDU1lR2V0UmVzcG9uc2USCgoCaWQYASABKAwSDgoGdGVuYW50GAIgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSHwoGZW1haWxzGAggAygLMg8ucm9zdGVyLk1lRW1haWwSHQoFdGVhbXMYCSADKAsyDi5yb3N0ZXIuTWVUZWFtEg8KB21ldGhvZHMYCiADKAkSDQoFc2l0ZXMYCyADKAwSEgoKZXZlcnlfc2l0ZRgMIAEoCBIqCgppZGVudGl0aWVzGA0gAygLMhYucm9zdGVyLlNpZ25JbklkZW50aXR5Ei0KC2NyZWRlbnRpYWxzGA4gAygLMhgucm9zdGVyLlNpZ25JbkNyZWRlbnRpYWwSHwoEa2V5cxgPIAMoCzIRLnJvc3Rlci5TaWduSW5LZXkimAEKCVNpZ25JbktleRIKCgJpZBgBIAEoDBINCgVhbGlhcxgEIAEoCRIPCgdtZXRob2RzGAggAygJEjAKDGRhdGVfZXhwaXJlcxgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLQoJZGF0ZV91c2VkGAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJxCg5TaWduSW5JZGVudGl0eRIKCgJpZBgBIAEoDBIQCghwcm92aWRlchgIIAEoCRIPCgdzdWJqZWN0GAkgASgJEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAikQEKEFNpZ25JbkNyZWRlbnRpYWwSDAoEa2luZBgIIAEoCRIMCgRuYW1lGAUgASgJEjAKDGRhdGVfcm90YXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLZGF0ZV9sb2NrZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIk0KB01lRW1haWwSDwoHYWRkcmVzcxgIIAEoCRIxCg1kYXRlX3ZlcmlmaWVkGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJhCgZNZVRlYW0SCgoCaWQYASABKAwSDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRzaXRlGAggASgMEhIKCnNpdGVfYWxpYXMYCSABKAkSDAoEcm9sZRgKIAEoCTKUAgoJTWVTZXJ2aWNlEjIKA0dldBIULnJvc3Rlci5NZUdldFJlcXVlc3QaFS5yb3N0ZXIuTWVHZXRSZXNwb25zZRI7CgZVbmxpbmsSFy5yb3N0ZXIuTWVVbmxpbmtSZXF1ZXN0Ghgucm9zdGVyLk1lVW5saW5rUmVzcG9uc2USXAoRU2lnbk91dEV2ZXJ5d2hlcmUSIi5yb3N0ZXIuTWVTaWduT3V0RXZlcnl3aGVyZVJlcXVlc3QaIy5yb3N0ZXIuTWVTaWduT3V0RXZlcnl3aGVyZVJlc3BvbnNlEjgKBUxlYXZlEhYucm9zdGVyLk1lTGVhdmVSZXF1ZXN0Ghcucm9zdGVyLk1lTGVhdmVSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message roster.MeGetRequest
@@ -96,6 +96,56 @@ export type MeSignOutEverywhereResponse = Message<"roster.MeSignOutEverywhereRes
  */
 export const MeSignOutEverywhereResponseSchema: GenMessage<MeSignOutEverywhereResponse> = /*@__PURE__*/
   messageDesc(file_app_me, 4);
+
+/**
+ * @generated from message roster.MeLeaveRequest
+ */
+export type MeLeaveRequest = Message<"roster.MeLeaveRequest"> & {
+  /**
+   * The caller's own alias, typed: a guard against a call made by accident,
+   * and never a *whose* -- one that is not the caller's is refused rather than
+   * looked up.
+   *
+   * @generated from field: string confirm = 1;
+   */
+  confirm: string;
+};
+
+/**
+ * Describes the message roster.MeLeaveRequest.
+ * Use `create(MeLeaveRequestSchema)` to create a new message.
+ */
+export const MeLeaveRequestSchema: GenMessage<MeLeaveRequest> = /*@__PURE__*/
+  messageDesc(file_app_me, 5);
+
+/**
+ * @generated from message roster.MeLeaveResponse
+ */
+export type MeLeaveResponse = Message<"roster.MeLeaveResponse"> & {
+  /**
+   * When the account was erased.
+   *
+   * @generated from field: google.protobuf.Timestamp date_erased = 14;
+   */
+  dateErased?: Timestamp | undefined;
+
+  /**
+   * When it will be forgotten -- the erase plus `holder.forget_after` -- and
+   * unset where the deployment forgets nobody on a clock, which is a
+   * deployment where an operator's `roster forget` is the only way, or while
+   * a hold on the tenant stops that clock (`roster hold`).
+   *
+   * @generated from field: google.protobuf.Timestamp date_forgotten = 15;
+   */
+  dateForgotten?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.MeLeaveResponse.
+ * Use `create(MeLeaveResponseSchema)` to create a new message.
+ */
+export const MeLeaveResponseSchema: GenMessage<MeLeaveResponse> = /*@__PURE__*/
+  messageDesc(file_app_me, 6);
 
 /**
  * @generated from message roster.MeGetResponse
@@ -228,7 +278,7 @@ export type MeGetResponse = Message<"roster.MeGetResponse"> & {
  * Use `create(MeGetResponseSchema)` to create a new message.
  */
 export const MeGetResponseSchema: GenMessage<MeGetResponse> = /*@__PURE__*/
-  messageDesc(file_app_me, 5);
+  messageDesc(file_app_me, 7);
 
 /**
  * SignInKey is one API key that acts as somebody.
@@ -290,7 +340,7 @@ export type SignInKey = Message<"roster.SignInKey"> & {
  * Use `create(SignInKeySchema)` to create a new message.
  */
 export const SignInKeySchema: GenMessage<SignInKey> = /*@__PURE__*/
-  messageDesc(file_app_me, 6);
+  messageDesc(file_app_me, 8);
 
 /**
  * SignInIdentity is one way somebody arrives from outside.
@@ -341,7 +391,7 @@ export type SignInIdentity = Message<"roster.SignInIdentity"> & {
  * Use `create(SignInIdentitySchema)` to create a new message.
  */
 export const SignInIdentitySchema: GenMessage<SignInIdentity> = /*@__PURE__*/
-  messageDesc(file_app_me, 7);
+  messageDesc(file_app_me, 9);
 
 /**
  * SignInCredential is one secret roster holds for somebody, and never the secret.
@@ -392,7 +442,7 @@ export type SignInCredential = Message<"roster.SignInCredential"> & {
  * Use `create(SignInCredentialSchema)` to create a new message.
  */
 export const SignInCredentialSchema: GenMessage<SignInCredential> = /*@__PURE__*/
-  messageDesc(file_app_me, 8);
+  messageDesc(file_app_me, 10);
 
 /**
  * @generated from message roster.MeEmail
@@ -414,7 +464,7 @@ export type MeEmail = Message<"roster.MeEmail"> & {
  * Use `create(MeEmailSchema)` to create a new message.
  */
 export const MeEmailSchema: GenMessage<MeEmail> = /*@__PURE__*/
-  messageDesc(file_app_me, 9);
+  messageDesc(file_app_me, 11);
 
 /**
  * @generated from message roster.MeTeam
@@ -458,7 +508,7 @@ export type MeTeam = Message<"roster.MeTeam"> & {
  * Use `create(MeTeamSchema)` to create a new message.
  */
 export const MeTeamSchema: GenMessage<MeTeam> = /*@__PURE__*/
-  messageDesc(file_app_me, 10);
+  messageDesc(file_app_me, 12);
 
 /**
  * MeService answers what a caller is, in one round trip.
@@ -485,9 +535,9 @@ export const MeTeamSchema: GenMessage<MeTeam> = /*@__PURE__*/
  *
  * # Only what no role can be asked for
  *
- * Three methods, and each is one somebody **must** be able to do with no role
+ * Four methods, and each is one somebody **must** be able to do with no role
  * at all: read their own record, take back a way in, sign out of every session
- * they no longer trust. `cmd.Policy` waives a binding for exactly these, and a
+ * they no longer trust, and -- where their tenant offers it -- leave. `cmd.Policy` waives a binding for exactly these, and a
  * method can be waived only if it takes no subject -- `cmd/asself_test.go`
  * refuses one that carries a field that could name somebody -- so these are
  * subject-less by necessity, not by preference.
@@ -565,6 +615,62 @@ export const MeService: GenService<{
     methodKind: "unary";
     input: typeof MeSignOutEverywhereRequestSchema;
     output: typeof MeSignOutEverywhereResponseSchema;
+  },
+  /**
+   * Leave deletes the caller's own account: their holder erased, exactly as
+   * `HolderService.Erase` erases one, after everything issued to them is void.
+   *
+   * # Why it is here and not on HolderService
+   *
+   * `SignOutEverywhere`'s reason. `HolderService.Erase` takes a subject and is
+   * therefore an operator's: a role naming it lets its holder erase anybody
+   * they can see, and there is no permission smaller than that to give a
+   * person who should be able to erase themselves and nobody else. This takes
+   * nothing that names anybody, so it cannot be pointed elsewhere, and
+   * `cmd.Policy` waives a binding for it on that ground.
+   *
+   * # What it asks before it does it
+   *
+   * A tenant that is closed reaches nobody, this included: its people are
+   * refused where every call is resolved, before any of the below. A tenant
+   * under a hold still lets somebody leave -- an erase destroys nothing -- and
+   * forgets them once the hold is lifted.
+   *
+   * Three things, in this order, and each refusal says which:
+   *
+   *   - that the caller's tenant offers it (`TenantConfig.leave`), which is
+   *     **off** unless a tenant said otherwise -- `PermissionDenied`;
+   *   - that the credential the call came with was minted in the last
+   *     [server/me.LeaveWithin], which is what a sign-in a few minutes old is:
+   *     a delegation a front door minted when somebody signed in there, or a
+   *     key of their own a terminal was handed in the browser a moment ago
+   *     (`roster sign-in`). A session that has been open all afternoon is a
+   *     session somebody may have walked away from -- `FailedPrecondition`,
+   *     *sign in again*;
+   *   - that `confirm` is the caller's own alias, as it is, so that nothing
+   *     calls this by accident -- `InvalidArgument`.
+   *
+   * # What happens, and what can still be undone
+   *
+   * An erase and nothing more: the person cannot sign in anywhere and every
+   * app holding a session for them hears it on `SyncService.Watch`; nothing is
+   * destroyed yet. An operator can still `roster restore` them while
+   * `holder.forget_after` lasts, and they are forgotten when it ends.
+   *
+   * Their sessions and delegations are void first -- `SignOutEverywhere`, as
+   * its own act -- so a restore brings the account back and none of its old
+   * sign-ins. Their keys come back with it: an erase leaves a key where it is,
+   * and `date_invalidated` says why it never voids one.
+   *
+   * A holder roster declares (a front door's own) is refused before anything is
+   * written, by the rule `HolderService.Erase` refuses it with.
+   *
+   * @generated from rpc roster.MeService.Leave
+   */
+  leave: {
+    methodKind: "unary";
+    input: typeof MeLeaveRequestSchema;
+    output: typeof MeLeaveResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_me, 0);

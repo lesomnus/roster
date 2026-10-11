@@ -146,6 +146,23 @@ message TenantConfig {
   // doors read it at every sign-in through a provider, and `HolderService.Fill`
   // is what they write with.
   TenantProfile profile = 3;
+
+  // Whether this tenant's people may delete their own account
+  // (`MeService.Leave`): their holder erased as `HolderService.Erase` erases
+  // one, by themselves, from a sign-in a few minutes old.
+  //
+  // **Unset is no**, which is what every tenant written before this was. A
+  // directory a company provisions by SCIM is the company's to empty, and a
+  // person deleting themselves out of it is a person the next sync puts back
+  // with nothing of theirs -- so it is a tenant that decides to offer this,
+  // never one that finds out it did. A consumer product's directory, where an
+  // account is the person's own, is the case it was asked for: Rove's SaaS
+  // turns it on for the one tenant every account is in.
+  //
+  // A fact roster acts on and not an instruction to a screen: `MeService.Leave`
+  // refuses while this is false, and the account page draws the section only
+  // when it is true, because it would work.
+  bool leave = 4;
 }
 
 // TenantProfile is how a tenant's profiles are filled at a sign-in.

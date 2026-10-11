@@ -31,9 +31,9 @@ option go_package = "github.com/lesomnus/roster/rstr";
 //
 // # Only what no role can be asked for
 //
-// Three methods, and each is one somebody **must** be able to do with no role
+// Four methods, and each is one somebody **must** be able to do with no role
 // at all: read their own record, take back a way in, sign out of every session
-// they no longer trust. `cmd.Policy` waives a binding for exactly these, and a
+// they no longer trust, and -- where their tenant offers it -- leave. `cmd.Policy` waives a binding for exactly these, and a
 // method can be waived only if it takes no subject -- `cmd/asself_test.go`
 // refuses one that carries a field that could name somebody -- so these are
 // subject-less by necessity, not by preference.
@@ -89,6 +89,55 @@ service MeService {
   // still alive*.
   rpc SignOutEverywhere(MeSignOutEverywhereRequest) returns (MeSignOutEverywhereResponse);
 
+  // Leave deletes the caller's own account: their holder erased, exactly as
+  // `HolderService.Erase` erases one, after everything issued to them is void.
+  //
+  // # Why it is here and not on HolderService
+  //
+  // `SignOutEverywhere`'s reason. `HolderService.Erase` takes a subject and is
+  // therefore an operator's: a role naming it lets its holder erase anybody
+  // they can see, and there is no permission smaller than that to give a
+  // person who should be able to erase themselves and nobody else. This takes
+  // nothing that names anybody, so it cannot be pointed elsewhere, and
+  // `cmd.Policy` waives a binding for it on that ground.
+  //
+  // # What it asks before it does it
+  //
+  // A tenant that is closed reaches nobody, this included: its people are
+  // refused where every call is resolved, before any of the below. A tenant
+  // under a hold still lets somebody leave -- an erase destroys nothing -- and
+  // forgets them once the hold is lifted.
+  //
+  // Three things, in this order, and each refusal says which:
+  //
+  //   - that the caller's tenant offers it (`TenantConfig.leave`), which is
+  //     **off** unless a tenant said otherwise -- `PermissionDenied`;
+  //   - that the credential the call came with was minted in the last
+  //     [server/me.LeaveWithin], which is what a sign-in a few minutes old is:
+  //     a delegation a front door minted when somebody signed in there, or a
+  //     key of their own a terminal was handed in the browser a moment ago
+  //     (`roster sign-in`). A session that has been open all afternoon is a
+  //     session somebody may have walked away from -- `FailedPrecondition`,
+  //     *sign in again*;
+  //   - that `confirm` is the caller's own alias, as it is, so that nothing
+  //     calls this by accident -- `InvalidArgument`.
+  //
+  // # What happens, and what can still be undone
+  //
+  // An erase and nothing more: the person cannot sign in anywhere and every
+  // app holding a session for them hears it on `SyncService.Watch`; nothing is
+  // destroyed yet. An operator can still `roster restore` them while
+  // `holder.forget_after` lasts, and they are forgotten when it ends.
+  //
+  // Their sessions and delegations are void first -- `SignOutEverywhere`, as
+  // its own act -- so a restore brings the account back and none of its old
+  // sign-ins. Their keys come back with it: an erase leaves a key where it is,
+  // and `date_invalidated` says why it never voids one.
+  //
+  // A holder roster declares (a front door's own) is refused before anything is
+  // written, by the rule `HolderService.Erase` refuses it with.
+  rpc Leave(MeLeaveRequest) returns (MeLeaveResponse);
+
 }
 
 message MeGetRequest {}
@@ -110,6 +159,24 @@ message MeSignOutEverywhereResponse {
   // The moment everything before it became void, which is what an app compares
   // a session against.
   google.protobuf.Timestamp date_invalidated = 11;
+}
+
+message MeLeaveRequest {
+  // The caller's own alias, typed: a guard against a call made by accident,
+  // and never a *whose* -- one that is not the caller's is refused rather than
+  // looked up.
+  string confirm = 1;
+}
+
+message MeLeaveResponse {
+  // When the account was erased.
+  google.protobuf.Timestamp date_erased = 14;
+
+  // When it will be forgotten -- the erase plus `holder.forget_after` -- and
+  // unset where the deployment forgets nobody on a clock, which is a
+  // deployment where an operator's `roster forget` is the only way, or while
+  // a hold on the tenant stops that clock (`roster hold`).
+  google.protobuf.Timestamp date_forgotten = 15;
 }
 
 message MeGetResponse {

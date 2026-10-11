@@ -607,6 +607,7 @@ resources:
       password: false                    # everybody arrives through a directory
       front_door: https://account.contoso.example
       profile: { fill: true }            # a sign-in fills a blank name and picture
+      leave: false                       # whether people may delete their own account
   - kind: Connection
     tenant: contoso
     name: entra
@@ -651,7 +652,10 @@ configuration by the same test a `Connection` passes. A key absent from the file
 leaves that setting as it is: `password` has presence on purpose (*unset is yes*),
 so a file that does not mention it never turns passwords off by omission, and
 `config:` left out altogether touches nothing. A `front_door` is an origin and
-nothing more, from a file exactly as from a form.
+nothing more, from a file exactly as from a form. `config.leave` is whether the
+tenant's people may delete their own account (`MeService.Leave`), off unless a
+file or the admin console says so, and like the others a file that does not mention it
+leaves it as it is.
 
 What is **not** declarable is `Holder`, `Credential`, `Identity` and `Email`:
 people and the ways into their accounts. A file that made those is a file that

@@ -1142,3 +1142,64 @@ func TestASessionIsTheTenantsItWasSignedInAt(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	x.Empty(d.sent(theirs), "a link was mailed for somebody of another tenant")
 }
+
+// TestSomebodyDeletesTheirOwnAccountAtTheAccountPage is `MeService.Leave` the
+// way a person reaches it: signed in at the page, through the app's own origin,
+// as themselves -- and only where their operator offers it, which `/providers`
+// says so that the page draws the section where it would work.
+func TestSomebodyDeletesTheirOwnAccountAtTheAccountPage(t *testing.T) {
+	d := serve(t, account.Invited())
+	offers := func(t *testing.T) string {
+		t.Helper()
+		code, body := d.browser(t, "fabrikam.test").do(t, http.MethodGet, "/providers", "", nil)
+		require.Equal(t, http.StatusOK, code, body)
+
+		return body
+	}
+	signedIn := func(t *testing.T) *browser {
+		t.Helper()
+		b := d.browser(t, "fabrikam.test")
+		code, body := b.do(t, http.MethodPost, "/session", `{"alias":"bob","password":"correct horse battery staple"}`,
+			func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+		require.Equal(t, http.StatusNoContent, code, body)
+
+		return b
+	}
+
+	t.Run("not offered, not drawn, and refused", func(t *testing.T) {
+		x := require.New(t)
+
+		x.Contains(offers(t), `"leave":false`)
+		code, _ := signedIn(t).rpc(t, "/roster.MeService/Leave", `{"confirm":"bob"}`)
+		x.Equal(http.StatusForbidden, code)
+	})
+
+	_, err := d.ungated.Tenant().Patch(t.Context(), rstr.TenantPatchRequest_builder{
+		Ref:              rstr.TenantRef_builder{Id: d.fabrikam.Bytes()}.Build(),
+		Config:           rstr.TenantConfig_builder{Leave: true}.Build(),
+		DateUpdatedForce: proto.Bool(true),
+	}.Build())
+	require.NoError(t, err)
+
+	t.Run("offered, drawn, and done", func(t *testing.T) {
+		x := require.New(t)
+		x.Contains(offers(t), `"leave":true`)
+
+		b := signedIn(t)
+		code, body := b.rpc(t, "/roster.MeService/Leave", `{"confirm":"nobody"}`)
+		x.Equal(http.StatusBadRequest, code, "deleted without the alias typed: %s", body)
+
+		code, body = b.rpc(t, "/roster.MeService/Leave", `{"confirm":"bob"}`)
+		x.Equal(http.StatusOK, code, body)
+		x.Contains(body, "dateErased")
+
+		// And the page's own session went with the account.
+		code, _ = b.rpc(t, "/roster.MeService/Get", `{}`)
+		x.Equal(http.StatusUnauthorized, code, "the session that left went on reaching roster")
+
+		code, _ = d.browser(t, "fabrikam.test").do(t, http.MethodPost, "/session",
+			`{"alias":"bob","password":"correct horse battery staple"}`,
+			func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+		x.NotEqual(http.StatusNoContent, code, "somebody who left signed in again")
+	})
+}

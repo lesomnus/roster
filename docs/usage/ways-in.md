@@ -345,6 +345,34 @@ where a new account cannot be told what it is for. `MeService/Unlink` and
 `MeService/SignOutEverywhere` are waived for the same reason -- neither can be
 pointed at anybody else, and only a subject-less method can be waived at all.
 
+### Deleting your own account
+
+```
+MeService.Leave {confirm: "alice"}   # your alias, as it is
+```
+
+Where the tenant offers it (`config.leave`, off unless somebody turned it on),
+a person deletes their own account: their holder is erased the way an operator's
+`roster holder erase` erases one, after they are signed out everywhere. Nothing
+is destroyed yet -- the operator can `roster restore` them while
+`holder.forget_after` lasts, and they are forgotten when it ends -- and every app
+holding a session for them hears it on the sync stream.
+
+It is waived like the two above, and asks for one more thing they do not: that
+the credential the call came with is a **sign-in a few minutes old**
+(`server/me.LeaveWithin`, five). The account page's is -- a delegation minted
+when somebody signed in there -- and a page open since the morning signs in again
+first and comes back to the section. From a terminal it is a key handed over in a
+browser a moment ago:
+
+```sh
+roster sign-in --allow /roster.MeService/Leave   # approve it in the browser
+roster me leave --confirm alice                  # within five minutes
+```
+
+A key that has been in a config file for a month is not a sign-in, and neither is
+a session at the admin console or the user console: both are refused with *sign in again*.
+
 Everything else a person does about their own row is the **operator's verb with
 their own reference**: `IdentityService/Add` to attach a provider account,
 `ApiKeyService/Issue` and `/Erase` for their own keys. There is no self-only twin
