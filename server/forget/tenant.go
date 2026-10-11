@@ -1,0 +1,392 @@
+package forget
+
+import (
+	"context"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"time"
+
+	"uuid"
+
+	"github.com/lesomnus/otx/log"
+	"github.com/lesomnus/z"
+
+	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/payday/spin"
+	"github.com/lesomnus/payday/trail"
+
+	"github.com/lesomnus/roster/internal/ent"
+	"github.com/lesomnus/roster/internal/ent/binding"
+	"github.com/lesomnus/roster/internal/ent/connection"
+	"github.com/lesomnus/roster/internal/ent/group"
+	"github.com/lesomnus/roster/internal/ent/groupmembership"
+	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/internal/ent/host"
+	"github.com/lesomnus/roster/internal/ent/hostproof"
+	"github.com/lesomnus/roster/internal/ent/maildomain"
+	"github.com/lesomnus/roster/internal/ent/nomination"
+	"github.com/lesomnus/roster/internal/ent/role"
+	"github.com/lesomnus/roster/internal/ent/site"
+	"github.com/lesomnus/roster/internal/ent/sitemembership"
+	"github.com/lesomnus/roster/internal/ent/team"
+	"github.com/lesomnus/roster/internal/ent/teammembership"
+	"github.com/lesomnus/roster/internal/ent/tenant"
+	app "github.com/lesomnus/roster/rstr"
+)
+
+// A tenant leaving, which is a person leaving one level up (#98).
+//
+// `TenantService.Close` shuts everybody out and destroys nothing, and
+// `Restore` undoes it while `tenant.restore_within` lasts -- both verbs on the
+// entity, in `server/core`. What is here is what comes after, and it is here
+// for this package's reason: it destroys, so it writes through ent past every
+// server, and it is reached from a shell and a sweep and never over the wire.
+//
+//	DestroyTenant  every person forgotten, every other row of the tenant gone,
+//	               the tenant row blank -- unless an operator holds it
+//	FreeAlias      the name, once `tenant.alias_hold` after that has passed
+//	Hold, Lift     the operator's hold, which also answers to the trail
+//
+// # What stays
+//
+// The tenant row, and the blank `Holder` rows, because the trail names them by
+// identifier and twelve foreign keys reach a holder. A forgotten person is a
+// pseudonym reaching nothing; a destroyed tenant is the same, and for a while
+// it keeps its alias so that nobody else can be that name to its former people
+// (`Tenant.date_destroyed`).
+//
+// And the trail, which keeps its events and follows its own windows: what a
+// destroyed tenant's people did is erased of its contents as each person is
+// forgotten, and the rest ages out like everybody's. A legal claim on it is a
+// hold, and a hold stops all of this.
+
+// ErrHeld is a tenant an operator holds, which nothing destroys until the hold
+// is lifted.
+var ErrHeld = errors.New("held")
+
+// TenantResult is what destroying one tenant did.
+type TenantResult struct {
+	// People is how many of its people were forgotten now.
+	People int
+
+	// Rows is how many of its other rows were removed.
+	Rows int
+
+	// Held is the trail rows about its people a legal hold elsewhere kept.
+	Held trail.Held
+}
+
+func (r TenantResult) String() string {
+	v := fmt.Sprintf("%d person(s) forgotten, %d other row(s) removed", r.People, r.Rows)
+	if r.Held.Any() {
+		v += fmt.Sprintf(", %d trail row(s) kept by a legal hold", r.Held.Rows)
+	}
+
+	return v
+}
+
+// DestroyTenant takes a closed tenant out.
+//
+// It refuses a tenant that is open -- closing is the step that shuts people
+// out, and destroying a tenant somebody is signed in to would be taking it
+// from under them -- and one an operator holds, with [ErrHeld].
+//
+// # In an order that leaves less, and that a restore cannot get between
+//
+// The first write is `date_destroyed`, so that from then `Restore` refuses: a
+// tenant half destroyed is not one that can come back as it was. Then its
+// people, each forgotten as [Forget] forgets anybody; then its other rows,
+// children before what they hang off; then the row itself, blank. Every step
+// is idempotent and none is undone by an interruption, so running this again
+// finishes it -- which is what the sweep does with a tenant it finds stamped
+// and not finished.
+func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Policy) (TenantResult, error) {
+	var out TenantResult
+
+	v, err := db.Tenant.Get(ctx, t.Uuid())
+	if err != nil {
+		return out, err
+	}
+	switch {
+	case v.DateHeld != nil:
+		return out, fmt.Errorf("%w since %s: %s", ErrHeld, v.DateHeld.Format(time.RFC3339), v.Hold)
+	case v.DateClosed == nil:
+		return out, fmt.Errorf("@%s is open; `roster tenant close` it first, which is what shuts its people out", v.Alias)
+	}
+
+	if v.DateDestroyed == nil {
+		if err := db.Tenant.UpdateOneId(t.Uuid()).
+			SetDateDestroyed(time.Now()).
+			SetDateUpdated(time.Now()).
+			Exec(ctx); err != nil {
+			return out, err
+		}
+	}
+
+	// Its people, including those erased and not yet forgotten. Those
+	// forgotten already have no alias, which is the row's own answer to
+	// whether there is anything left of them.
+	who, err := db.Holder.Query().
+		Where(holder.TenantId(t.Uuid()), holder.AliasNEQ("")).
+		Ids(ctx)
+	if err != nil {
+		return out, err
+	}
+	for _, h := range who {
+		res, err := Forget(ctx, db, pdid.Id(h), p)
+		if err != nil {
+			return out, fmt.Errorf("holder %s: %w", pdid.Id(h), err)
+		}
+
+		out.People++
+		out.Held.Rows += res.Held.Rows
+		out.Held.By = append(out.Held.By, res.Held.By...)
+		out.Held.Unanswered = append(out.Held.Unanswered, res.Held.Unanswered...)
+	}
+
+	for _, of := range tenanted() {
+		n, err := of.remove(ctx, db, t.Uuid())
+		if err != nil {
+			return out, fmt.Errorf("%s: %w", of.name, err)
+		}
+
+		out.Rows += n
+	}
+
+	// The row stays and stops saying anything about whose it was -- except
+	// its alias, which is held; see `Tenant.date_destroyed`.
+	if err := db.Tenant.UpdateOneId(t.Uuid()).
+		SetName("").
+		SetDesc("").
+		SetLabels(map[string]string{}).
+		SetConfig(&app.TenantConfig{}).
+		SetDateUpdated(time.Now()).
+		Exec(ctx); err != nil {
+		return out, err
+	}
+
+	return out, nil
+}
+
+// tenanted is a tenant's rows besides its people, children first: each `remove`
+// takes what hangs off the next one's rows before that one goes, since the
+// foreign keys between them are `NO ACTION`.
+//
+// Written out rather than read off the schema, for [subjects]' reason: which
+// rows are a tenant's is not something a foreign key says. What keeps it whole
+// is `TestEveryTenantedTableGoesWithItsTenant`, which holds it to the schema:
+// a table added with a key to a tenant, and not added here, fails there.
+func tenanted() []subject {
+	of := func(name string, remove func(context.Context, *ent.Client, uuid.UUID) (int, error)) subject {
+		return subject{name: name, remove: remove}
+	}
+
+	return []subject{
+		// What a role, a group or a site reaches. A person's own bindings went
+		// with them; these are the ones written to a group or held in a site.
+		of("binding", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+			return db.Binding.Delete().Where(binding.Or(
+				binding.HasRoleWith(role.TenantId(k)),
+				binding.HasGroupWith(group.TenantId(k)),
+				binding.HasSiteWith(site.TenantId(k)),
+			)).Exec(ctx)
+		}),
+		of("team membership", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+			return db.TeamMembership.Delete().Where(teammembership.HasTeamWith(team.TenantId(k))).Exec(ctx)
+		}),
+		of("team", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+			return db.Team.Delete().Where(team.TenantId(k)).Exec(ctx)
+		}),
+		of("group membership", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+			return db.GroupMembership.Delete().Where(groupmembership.HasGroupWith(group.TenantId(k))).Exec(ctx)
+		}),
+		of("group", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+			return db.Group.Delete().Where(group.TenantId(k)).Exec(ctx)
+		}),
+		of("site membership", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+			return db.SiteMembership.Delete().Where(sitemembership.HasSiteWith(site.TenantId(k))).Exec(ctx)
+		}),
+		of("role", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+			return db.Role.Delete().Where(role.TenantId(k)).Exec(ctx)
+		}),
+		of("site", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+			return db.Site.Delete().Where(site.TenantId(k)).Exec(ctx)
+		}),
+		// The ways the tenant was reached from outside: who answered as which
+		// app here, its directories, and its names. A hostname needs proof to
+		// be taken again (#42), so it is freed at once and not held.
+		of("nomination", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+			return db.Nomination.Delete().Where(nomination.TenantId(k)).Exec(ctx)
+		}),
+		of("connection", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+			return db.Connection.Delete().Where(connection.TenantId(k)).Exec(ctx)
+		}),
+		of("mail domain", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+			return db.MailDomain.Delete().Where(maildomain.TenantId(k)).Exec(ctx)
+		}),
+		of("host proof", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+			return db.HostProof.Delete().Where(hostproof.TenantId(k)).Exec(ctx)
+		}),
+		of("host", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+			return db.Host.Delete().Where(host.TenantId(k)).Exec(ctx)
+		}),
+	}
+}
+
+// Gone is what a destroyed tenant's alias becomes once its hold is over:
+// a name that is a valid alias -- so nothing that reads one has a special case
+// -- that no person would choose, and that is this tenant's alone.
+func Gone(t pdid.Id) string { return "gone-" + hex.EncodeToString(t.Bytes()) }
+
+// FreeAlias gives a destroyed tenant's alias back, now. Through `at` -- the
+// server the wall was never installed on -- rather than ent, so that the trail
+// records it: the sweep doing it when the hold is over, and an operator doing
+// it early on purpose (`roster forget --reuse`), are both acts somebody may
+// later need to have been told about.
+func FreeAlias(ctx context.Context, at app.Server, t pdid.Id) error {
+	_, err := at.Tenant().Patch(ctx, app.TenantPatchRequest_builder{
+		Ref:              app.TenantRef_builder{Id: t.Bytes()}.Build(),
+		Alias:            z.Ptr(Gone(t)),
+		DateUpdatedForce: z.Ptr(true),
+	}.Build())
+
+	return err
+}
+
+// DueTenants is every closed tenant whose grace has run out and that nobody
+// holds, and every one whose destruction began and did not finish -- which
+// [DestroyTenant] finishes.
+func DueTenants(ctx context.Context, db *ent.Client, before time.Time) ([]pdid.Id, error) {
+	due, err := db.Tenant.Query().
+		Where(
+			tenant.DateClosedNotNil(),
+			tenant.DateClosedLT(before),
+			tenant.DateDestroyedIsNil(),
+			tenant.DateHeldIsNil(),
+		).
+		Ids(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	unfinished, err := Unfinished(ctx, db)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]pdid.Id, 0, len(due)+len(unfinished))
+	for _, v := range due {
+		out = append(out, pdid.Id(v))
+	}
+
+	return append(out, unfinished...), nil
+}
+
+// Unfinished is every tenant stamped destroyed with somebody of it not yet
+// forgotten: a destruction that stopped part way, whatever the window.
+func Unfinished(ctx context.Context, db *ent.Client) ([]pdid.Id, error) {
+	vs, err := db.Holder.Query().
+		Where(
+			holder.AliasNEQ(""),
+			holder.HasTenantWith(tenant.DateDestroyedNotNil(), tenant.DateHeldIsNil()),
+		).
+		Select(holder.FieldTenantId).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := []pdid.Id{}
+	seen := map[uuid.UUID]bool{}
+	for _, v := range vs {
+		if seen[v.TenantId] {
+			continue
+		}
+		seen[v.TenantId] = true
+		out = append(out, pdid.Id(v.TenantId))
+	}
+
+	return out, nil
+}
+
+// DueAliases is every destroyed tenant whose alias has been held long enough.
+func DueAliases(ctx context.Context, db *ent.Client, before time.Time) ([]pdid.Id, error) {
+	vs, err := db.Tenant.Query().
+		Where(
+			tenant.DateDestroyedNotNil(),
+			tenant.DateDestroyedLT(before),
+			tenant.Not(tenant.AliasHasPrefix("gone-")),
+		).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]pdid.Id, 0, len(vs))
+	for _, v := range vs {
+		if id := pdid.Id(v.Id); v.Alias != Gone(id) {
+			out = append(out, id)
+		}
+	}
+
+	return out, nil
+}
+
+// SweepTenants is what the clocks of a tenant leaving do on their own: destroy
+// the closed tenants whose grace has run out -- when the deployment named one
+// -- and free the aliases whose hold is over. Daily, for [Sweep]'s reason.
+//
+// `at` is the server the wall was never installed on, for what is recorded;
+// see [FreeAlias].
+func SweepTenants(db *ent.Client, at app.Server, within, hold time.Duration, p trail.Policy, every time.Duration) spin.Func {
+	if every <= 0 {
+		every = Swept
+	}
+
+	return spin.Every(every, func(ctx context.Context) error {
+		now := time.Now()
+
+		var due []pdid.Id
+		var err error
+		if within > 0 {
+			due, err = DueTenants(ctx, db, now.Add(-within))
+		} else {
+			// No window: destroying is an operator's act, and only a
+			// destruction they began and that stopped is finished here.
+			due, err = Unfinished(ctx, db)
+		}
+		if err != nil {
+			log.From(ctx).WarnContext(ctx, "forget: which tenants are due", "err", err)
+		}
+		for _, t := range due {
+			res, err := DestroyTenant(ctx, db, t, p)
+			if err != nil {
+				log.From(ctx).WarnContext(ctx, "forget: a tenant", "tenant", t.String(), "err", err)
+
+				continue
+			}
+
+			log.From(ctx).InfoContext(ctx, "forget: a tenant",
+				"tenant", t.String(), "people", res.People, "rows", res.Rows, "held", res.Held.Rows)
+		}
+
+		free, err := DueAliases(ctx, db, now.Add(-hold))
+		if err != nil {
+			log.From(ctx).WarnContext(ctx, "forget: which aliases are free", "err", err)
+
+			return nil
+		}
+		for _, t := range free {
+			if err := FreeAlias(ctx, at, t); err != nil {
+				log.From(ctx).WarnContext(ctx, "forget: an alias", "tenant", t.String(), "err", err)
+
+				continue
+			}
+
+			log.From(ctx).InfoContext(ctx, "forget: an alias held after its tenant is free", "tenant", t.String())
+		}
+
+		return nil
+	})
+}

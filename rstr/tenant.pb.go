@@ -36,17 +36,21 @@ const (
 // overlay that touches a number here, since the merge would take it silently
 // and `alias` would quietly become whatever the overlay said.
 type Tenant struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
-	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
-	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	xxx_hidden_Config      *TenantConfig          `protobuf:"bytes,8,opt,name=config"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                    protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id            []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Alias         string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Name          string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Desc          string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels        map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_DateUpdated   *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateCreated   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	xxx_hidden_Config        *TenantConfig          `protobuf:"bytes,8,opt,name=config"`
+	xxx_hidden_DateClosed    *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=date_closed,json=dateClosed"`
+	xxx_hidden_DateDestroyed *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=date_destroyed,json=dateDestroyed"`
+	xxx_hidden_DateHeld      *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_held,json=dateHeld"`
+	xxx_hidden_Hold          string                 `protobuf:"bytes,12,opt,name=hold"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *Tenant) Reset() {
@@ -130,6 +134,34 @@ func (x *Tenant) GetConfig() *TenantConfig {
 	return nil
 }
 
+func (x *Tenant) GetDateClosed() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateClosed
+	}
+	return nil
+}
+
+func (x *Tenant) GetDateDestroyed() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateDestroyed
+	}
+	return nil
+}
+
+func (x *Tenant) GetDateHeld() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateHeld
+	}
+	return nil
+}
+
+func (x *Tenant) GetHold() string {
+	if x != nil {
+		return x.xxx_hidden_Hold
+	}
+	return ""
+}
+
 func (x *Tenant) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -165,6 +197,22 @@ func (x *Tenant) SetConfig(v *TenantConfig) {
 	x.xxx_hidden_Config = v
 }
 
+func (x *Tenant) SetDateClosed(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateClosed = v
+}
+
+func (x *Tenant) SetDateDestroyed(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateDestroyed = v
+}
+
+func (x *Tenant) SetDateHeld(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateHeld = v
+}
+
+func (x *Tenant) SetHold(v string) {
+	x.xxx_hidden_Hold = v
+}
+
 func (x *Tenant) HasDateUpdated() bool {
 	if x == nil {
 		return false
@@ -186,6 +234,27 @@ func (x *Tenant) HasConfig() bool {
 	return x.xxx_hidden_Config != nil
 }
 
+func (x *Tenant) HasDateClosed() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateClosed != nil
+}
+
+func (x *Tenant) HasDateDestroyed() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateDestroyed != nil
+}
+
+func (x *Tenant) HasDateHeld() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateHeld != nil
+}
+
 func (x *Tenant) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
 }
@@ -196,6 +265,18 @@ func (x *Tenant) ClearDateCreated() {
 
 func (x *Tenant) ClearConfig() {
 	x.xxx_hidden_Config = nil
+}
+
+func (x *Tenant) ClearDateClosed() {
+	x.xxx_hidden_DateClosed = nil
+}
+
+func (x *Tenant) ClearDateDestroyed() {
+	x.xxx_hidden_DateDestroyed = nil
+}
+
+func (x *Tenant) ClearDateHeld() {
+	x.xxx_hidden_DateHeld = nil
 }
 
 type Tenant_builder struct {
@@ -229,6 +310,53 @@ type Tenant_builder struct {
 	// What it buys is that the next setting is a field number in here rather than
 	// one of the nine an app gets on `Tenant` itself.
 	Config *TenantConfig
+	// Since when nobody of this tenant gets in: the customer left, or an
+	// operator shut them out. Nothing is destroyed by it.
+	//
+	// # What it reaches
+	//
+	// Everything a person of the tenant could arrive with, read where each one
+	// arrives -- `Vouch.Verify` and every other sign-in, a session, a tenant key
+	// and a delegation (`cmd.Resolver`, and `Introspect` for the apps in front),
+	// a nomination into the tenant, and the tenant's hosts, which answer that it
+	// is closed. Apps hear of it on the sync stream, on each of its people.
+	//
+	// # A timestamp, for `date_disabled`'s reason one level up
+	//
+	// *Since when* is the question an operator asks, and it is what the grace
+	// runs from: `tenant.restore_within` after this, the tenant is destroyed.
+	//
+	// Written by `TenantService.Close` and cleared by `Restore`, and by nothing
+	// else: `Add` refuses it and `Patch` is closed at the transport.
+	DateClosed *timestamppb.Timestamp
+	// When what this tenant held was destroyed: every person forgotten, every
+	// other row of it removed, this row blank. What stays is the identifier,
+	// which the trail names it by, and for a while the alias.
+	//
+	// # The alias stays, on purpose
+	//
+	// A name that resolved somebody is still how people and things find them
+	// after the rows are gone -- former people typing it into a sign-in form,
+	// bookmarks, mail, a QR sticker printed with it -- and a tenant that took it
+	// the next day would be that name to all of them. So the row keeps it for
+	// `tenant.alias_hold` after this, and the unique index is what holds it;
+	// then it becomes `gone-<identifier>` and the name is free. An operator may
+	// free it sooner on purpose, and the trail records that they did.
+	DateDestroyed *timestamppb.Timestamp
+	// Since when an operator holds this tenant as it is: a legal claim, a
+	// dispute. While it is set nothing of the tenant is destroyed -- closing
+	// still shuts people out, and the grace still runs, but destroying waits
+	// until the hold is lifted and then finishes -- and the trail keeps what it
+	// holds of the tenant as payday's holds do.
+	//
+	// Written by `roster hold` and by nothing a caller reaches. The tenant reads
+	// it, like everything about itself, so [Tenant.hold] is written to be read.
+	DateHeld *timestamppb.Timestamp
+	// What the hold is for: a case, a demand. Empty while nothing holds it.
+	//
+	// With a default, so that the column arrives on a deployment's existing
+	// tenants as empty rather than as a migration that cannot fill it.
+	Hold string
 }
 
 func (b0 Tenant_builder) Build() *Tenant {
@@ -243,6 +371,10 @@ func (b0 Tenant_builder) Build() *Tenant {
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateCreated = b.DateCreated
 	x.xxx_hidden_Config = b.Config
+	x.xxx_hidden_DateClosed = b.DateClosed
+	x.xxx_hidden_DateDestroyed = b.DateDestroyed
+	x.xxx_hidden_DateHeld = b.DateHeld
+	x.xxx_hidden_Hold = b.Hold
 	return m0
 }
 
@@ -523,7 +655,7 @@ var File_roster_payday_tenant_proto protoreflect.FileDescriptor
 
 const file_roster_payday_tenant_proto_rawDesc = "" +
 	"\n" +
-	"\x1aroster/payday/tenant.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xd9\x03\n" +
+	"\x1aroster/payday/tenant.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xc7\x05\n" +
 	"\x06Tenant\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x1c\n" +
 	"\x05alias\x18\x04 \x01(\tB\x06\xea\x82\x16\x020\x01R\x05alias\x12\x12\n" +
@@ -532,7 +664,13 @@ const file_roster_payday_tenant_proto_rawDesc = "" +
 	"\x06labels\x18\a \x03(\v2\x1a.roster.Tenant.LabelsEntryR\x06labels\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12H\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12,\n" +
-	"\x06config\x18\b \x01(\v2\x14.roster.TenantConfigR\x06config\x1a9\n" +
+	"\x06config\x18\b \x01(\v2\x14.roster.TenantConfigR\x06config\x12C\n" +
+	"\vdate_closed\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\n" +
+	"dateClosed\x12I\n" +
+	"\x0edate_destroyed\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\rdateDestroyed\x12?\n" +
+	"\tdate_held\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\bdateHeld\x12\x1b\n" +
+	"\x04hold\x18\f \x01(\tB\a\xea\x82\x16\x03\x82\x01\x00R\x04hold\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:=\xca\xfc\x15\x04\x12\x02\x10\x01\x8a\xbb\x161\b\x012%\n" +
@@ -566,12 +704,15 @@ var file_roster_payday_tenant_proto_depIdxs = []int32{
 	4, // 1: roster.Tenant.date_updated:type_name -> google.protobuf.Timestamp
 	4, // 2: roster.Tenant.date_created:type_name -> google.protobuf.Timestamp
 	1, // 3: roster.Tenant.config:type_name -> roster.TenantConfig
-	2, // 4: roster.TenantConfig.profile:type_name -> roster.TenantProfile
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	4, // 4: roster.Tenant.date_closed:type_name -> google.protobuf.Timestamp
+	4, // 5: roster.Tenant.date_destroyed:type_name -> google.protobuf.Timestamp
+	4, // 6: roster.Tenant.date_held:type_name -> google.protobuf.Timestamp
+	2, // 7: roster.TenantConfig.profile:type_name -> roster.TenantProfile
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_roster_payday_tenant_proto_init() }

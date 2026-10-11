@@ -73,6 +73,62 @@ func (_c *TenantCreate) SetConfig(v *rstr.TenantConfig) *TenantCreate {
 	return _c
 }
 
+// SetDateClosed sets the "date_closed" field.
+func (_c *TenantCreate) SetDateClosed(v time.Time) *TenantCreate {
+	_c.mutation.SetDateClosed(v)
+	return _c
+}
+
+// SetNillableDateClosed sets the "date_closed" field if the given value is not nil.
+func (_c *TenantCreate) SetNillableDateClosed(v *time.Time) *TenantCreate {
+	if v != nil {
+		_c.SetDateClosed(*v)
+	}
+	return _c
+}
+
+// SetDateDestroyed sets the "date_destroyed" field.
+func (_c *TenantCreate) SetDateDestroyed(v time.Time) *TenantCreate {
+	_c.mutation.SetDateDestroyed(v)
+	return _c
+}
+
+// SetNillableDateDestroyed sets the "date_destroyed" field if the given value is not nil.
+func (_c *TenantCreate) SetNillableDateDestroyed(v *time.Time) *TenantCreate {
+	if v != nil {
+		_c.SetDateDestroyed(*v)
+	}
+	return _c
+}
+
+// SetDateHeld sets the "date_held" field.
+func (_c *TenantCreate) SetDateHeld(v time.Time) *TenantCreate {
+	_c.mutation.SetDateHeld(v)
+	return _c
+}
+
+// SetNillableDateHeld sets the "date_held" field if the given value is not nil.
+func (_c *TenantCreate) SetNillableDateHeld(v *time.Time) *TenantCreate {
+	if v != nil {
+		_c.SetDateHeld(*v)
+	}
+	return _c
+}
+
+// SetHold sets the "hold" field.
+func (_c *TenantCreate) SetHold(v string) *TenantCreate {
+	_c.mutation.SetHold(v)
+	return _c
+}
+
+// SetNillableHold sets the "hold" field if the given value is not nil.
+func (_c *TenantCreate) SetNillableHold(v *string) *TenantCreate {
+	if v != nil {
+		_c.SetHold(*v)
+	}
+	return _c
+}
+
 // SetId sets the "id" field.
 func (_c *TenantCreate) SetId(v uuid.UUID) *TenantCreate {
 	_c.mutation.SetId(v)
@@ -201,6 +257,22 @@ func (_c *TenantCreate) createSpec() (*Tenant, *sqlgraph.CreateSpec, error) {
 		}
 		_spec.SetField(tenant.FieldConfig, field.TypeJson, vv)
 		_node.Config = value
+	}
+	if value, ok := _c.mutation.DateClosed(); ok {
+		_spec.SetField(tenant.FieldDateClosed, field.TypeTime, value)
+		_node.DateClosed = &value
+	}
+	if value, ok := _c.mutation.DateDestroyed(); ok {
+		_spec.SetField(tenant.FieldDateDestroyed, field.TypeTime, value)
+		_node.DateDestroyed = &value
+	}
+	if value, ok := _c.mutation.DateHeld(); ok {
+		_spec.SetField(tenant.FieldDateHeld, field.TypeTime, value)
+		_node.DateHeld = &value
+	}
+	if value, ok := _c.mutation.Hold(); ok {
+		_spec.SetField(tenant.FieldHold, field.TypeString, value)
+		_node.Hold = value
 	}
 	return _node, _spec, nil
 }

@@ -170,7 +170,7 @@ func (s *Server) WhoseHost(ctx context.Context, req *app.FrontWhoseHostRequest) 
 	v, err := s.open.Host().Get(ctx, app.HostGetRequest_builder{
 		Ref: app.HostRef_builder{Name: &name}.Build(),
 		Select: app.HostSelect_builder{
-			Tenant: app.TenantSelect_builder{}.Build(),
+			Tenant: app.TenantSelect_builder{DateClosed: ptr(true)}.Build(),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -178,6 +178,13 @@ func (s *Server) WhoseHost(ctx context.Context, req *app.FrontWhoseHostRequest) 
 		// that carried on with no tenant would look somebody up in whichever
 		// one it happened to reach.
 		return nil, err
+	}
+	if v.GetTenant().GetDateClosed() != nil {
+		// Said rather than hidden. Its people arrive at this name with
+		// bookmarks and mail, and *this organisation is closed* is the answer
+		// they need -- not a sign-in form that refuses every password, which
+		// reads as their own mistake. Nothing past this name answers anyway.
+		return nil, status.Error(codes.FailedPrecondition, "this tenant is closed")
 	}
 
 	k, err := pdid.From(v.GetTenant().GetId())

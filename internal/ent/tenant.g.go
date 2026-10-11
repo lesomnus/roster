@@ -20,5 +20,15 @@ func (e *Tenant) Proto() *rstr.Tenant {
 	if e.Config != nil {
 		x.SetConfig(e.Config)
 	}
+	if e.DateClosed != nil {
+		x.SetDateClosed(timestamppb.New(*e.DateClosed))
+	}
+	if e.DateDestroyed != nil {
+		x.SetDateDestroyed(timestamppb.New(*e.DateDestroyed))
+	}
+	if e.DateHeld != nil {
+		x.SetDateHeld(timestamppb.New(*e.DateHeld))
+	}
+	x.SetHold(e.Hold)
 	return x
 }

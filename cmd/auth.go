@@ -84,6 +84,13 @@ func Resolver(s app.Server, keys app.Server) auth.Resolver {
 			// to sign them in.
 			return nil, fmt.Errorf("%w: this holder is disabled", auth.ErrNoCredential)
 		}
+		if v.GetTenant().GetDateClosed() != nil {
+			// The same refusal one level up, and for the same reason it is
+			// here: a session, a tenant key, a delegation and a nomination into
+			// the tenant all resolve to one of its people, so this is the one
+			// place that shuts every one of them when the tenant closes.
+			return nil, fmt.Errorf("%w: this tenant is closed", auth.ErrNoCredential)
+		}
 
 		actor, err := pdid.From(v.GetId())
 		if err != nil {

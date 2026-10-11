@@ -156,6 +156,21 @@ about them*, which is a different request with a legal clock on it, and
 [operating.md](../operating.md) § "Destroying somebody, which an erase does not"
 is what each one leaves behind.
 
+## A customer leaving
+
+The same three steps one level up, and a fourth for the name:
+
+```sh
+roster tenant close @newco      # nobody of it gets in, and nothing is destroyed
+roster restore @newco           # while tenant.restore_within lasts
+roster forget @newco            # every person forgotten, every other row of it gone
+```
+
+and its alias stays taken for `tenant.alias_hold` -- a year unless the deployment
+says otherwise -- so that nobody can be *newco* to its former people the day after.
+An operator's `roster hold place --why … @newco` stops all of it.
+[operating.md](../operating.md) § "A tenant leaving" is the long version.
+
 ## Next
 
 [ways-in.md](ways-in.md) -- how somebody proves who they are.

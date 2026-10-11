@@ -19,13 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TenantService_Add_FullMethodName    = "/roster.TenantService/Add"
-	TenantService_Get_FullMethodName    = "/roster.TenantService/Get"
-	TenantService_Patch_FullMethodName  = "/roster.TenantService/Patch"
-	TenantService_Apply_FullMethodName  = "/roster.TenantService/Apply"
-	TenantService_Erase_FullMethodName  = "/roster.TenantService/Erase"
-	TenantService_List_FullMethodName   = "/roster.TenantService/List"
-	TenantService_Update_FullMethodName = "/roster.TenantService/Update"
+	TenantService_Add_FullMethodName     = "/roster.TenantService/Add"
+	TenantService_Get_FullMethodName     = "/roster.TenantService/Get"
+	TenantService_Patch_FullMethodName   = "/roster.TenantService/Patch"
+	TenantService_Apply_FullMethodName   = "/roster.TenantService/Apply"
+	TenantService_Erase_FullMethodName   = "/roster.TenantService/Erase"
+	TenantService_List_FullMethodName    = "/roster.TenantService/List"
+	TenantService_Update_FullMethodName  = "/roster.TenantService/Update"
+	TenantService_Close_FullMethodName   = "/roster.TenantService/Close"
+	TenantService_Restore_FullMethodName = "/roster.TenantService/Restore"
 )
 
 // TenantServiceClient is the client API for TenantService service.
@@ -46,6 +48,24 @@ type TenantServiceClient interface {
 	List(ctx context.Context, in *TenantListRequest, opts ...grpc.CallOption) (*TenantListResponse, error)
 	// Update replaces what a tenant says about itself, under the version read.
 	Update(ctx context.Context, in *TenantUpdateRequest, opts ...grpc.CallOption) (*Tenant, error)
+	// Close shuts everybody of a tenant out, and destroys nothing.
+	//
+	// `Holder.Disable` one level up, and its own method for that one's reason:
+	// roles are lists of methods, so a separate name is the only way to grant
+	// one without the other. What it reaches is `Tenant.date_closed`'s.
+	//
+	// The first step of a tenant leaving, of four -- close, restore while the
+	// grace lasts, destroy, and the alias held after it (`docs/usage/customers.md`
+	// § *A customer leaving*). Refused on a tenant a file declared, and on the
+	// control plane, whose one tenant is the deployment itself.
+	Close(ctx context.Context, in *TenantCloseRequest, opts ...grpc.CallOption) (*Tenant, error)
+	// Restore undoes a close, while there is still one to undo: before
+	// `tenant.restore_within` has run out, and never after the tenant was
+	// destroyed. The tenant comes back exactly as it was, alias and all.
+	//
+	// The same verb as a person's (`roster restore`), for the same reason: a
+	// grace with no undo is only a delay.
+	Restore(ctx context.Context, in *TenantRestoreRequest, opts ...grpc.CallOption) (*Tenant, error)
 }
 
 type tenantServiceClient struct {
@@ -126,6 +146,26 @@ func (c *tenantServiceClient) Update(ctx context.Context, in *TenantUpdateReques
 	return out, nil
 }
 
+func (c *tenantServiceClient) Close(ctx context.Context, in *TenantCloseRequest, opts ...grpc.CallOption) (*Tenant, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Tenant)
+	err := c.cc.Invoke(ctx, TenantService_Close_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tenantServiceClient) Restore(ctx context.Context, in *TenantRestoreRequest, opts ...grpc.CallOption) (*Tenant, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Tenant)
+	err := c.cc.Invoke(ctx, TenantService_Restore_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TenantServiceServer is the server API for TenantService service.
 // All implementations must embed UnimplementedTenantServiceServer
 // for forward compatibility.
@@ -144,6 +184,24 @@ type TenantServiceServer interface {
 	List(context.Context, *TenantListRequest) (*TenantListResponse, error)
 	// Update replaces what a tenant says about itself, under the version read.
 	Update(context.Context, *TenantUpdateRequest) (*Tenant, error)
+	// Close shuts everybody of a tenant out, and destroys nothing.
+	//
+	// `Holder.Disable` one level up, and its own method for that one's reason:
+	// roles are lists of methods, so a separate name is the only way to grant
+	// one without the other. What it reaches is `Tenant.date_closed`'s.
+	//
+	// The first step of a tenant leaving, of four -- close, restore while the
+	// grace lasts, destroy, and the alias held after it (`docs/usage/customers.md`
+	// § *A customer leaving*). Refused on a tenant a file declared, and on the
+	// control plane, whose one tenant is the deployment itself.
+	Close(context.Context, *TenantCloseRequest) (*Tenant, error)
+	// Restore undoes a close, while there is still one to undo: before
+	// `tenant.restore_within` has run out, and never after the tenant was
+	// destroyed. The tenant comes back exactly as it was, alias and all.
+	//
+	// The same verb as a person's (`roster restore`), for the same reason: a
+	// grace with no undo is only a delay.
+	Restore(context.Context, *TenantRestoreRequest) (*Tenant, error)
 	mustEmbedUnimplementedTenantServiceServer()
 }
 
@@ -174,6 +232,12 @@ func (UnimplementedTenantServiceServer) List(context.Context, *TenantListRequest
 }
 func (UnimplementedTenantServiceServer) Update(context.Context, *TenantUpdateRequest) (*Tenant, error) {
 	return nil, status.Error(codes.Unimplemented, "method Update not implemented")
+}
+func (UnimplementedTenantServiceServer) Close(context.Context, *TenantCloseRequest) (*Tenant, error) {
+	return nil, status.Error(codes.Unimplemented, "method Close not implemented")
+}
+func (UnimplementedTenantServiceServer) Restore(context.Context, *TenantRestoreRequest) (*Tenant, error) {
+	return nil, status.Error(codes.Unimplemented, "method Restore not implemented")
 }
 func (UnimplementedTenantServiceServer) mustEmbedUnimplementedTenantServiceServer() {}
 func (UnimplementedTenantServiceServer) testEmbeddedByValue()                       {}
@@ -322,6 +386,42 @@ func _TenantService_Update_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TenantService_Close_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TenantCloseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantServiceServer).Close(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantService_Close_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantServiceServer).Close(ctx, req.(*TenantCloseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TenantService_Restore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TenantRestoreRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TenantServiceServer).Restore(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TenantService_Restore_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TenantServiceServer).Restore(ctx, req.(*TenantRestoreRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TenantService_ServiceDesc is the grpc.ServiceDesc for TenantService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -356,6 +456,14 @@ var TenantService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Update",
 			Handler:    _TenantService_Update_Handler,
+		},
+		{
+			MethodName: "Close",
+			Handler:    _TenantService_Close_Handler,
+		},
+		{
+			MethodName: "Restore",
+			Handler:    _TenantService_Restore_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

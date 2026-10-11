@@ -7393,6 +7393,74 @@ func (m *TenantMutation) OldConfig(ctx context.Context) (v *rstr.TenantConfig, e
 	return oldValue.Config, nil
 }
 
+// OldDateClosed returns the old "date_closed" field's value of the Tenant entity.
+// If the Tenant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantMutation) OldDateClosed(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateClosed is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateClosed requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateClosed: %w", err)
+	}
+	return oldValue.DateClosed, nil
+}
+
+// OldDateDestroyed returns the old "date_destroyed" field's value of the Tenant entity.
+// If the Tenant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantMutation) OldDateDestroyed(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateDestroyed is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateDestroyed requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateDestroyed: %w", err)
+	}
+	return oldValue.DateDestroyed, nil
+}
+
+// OldDateHeld returns the old "date_held" field's value of the Tenant entity.
+// If the Tenant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantMutation) OldDateHeld(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateHeld is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateHeld requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateHeld: %w", err)
+	}
+	return oldValue.DateHeld, nil
+}
+
+// OldHold returns the old "hold" field's value of the Tenant entity.
+// If the Tenant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TenantMutation) OldHold(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldHold is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldHold requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHold: %w", err)
+	}
+	return oldValue.Hold, nil
+}
+
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
@@ -7412,6 +7480,14 @@ func (m *TenantMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldDateCreated(ctx)
 	case tenant.FieldConfig:
 		return m.OldConfig(ctx)
+	case tenant.FieldDateClosed:
+		return m.OldDateClosed(ctx)
+	case tenant.FieldDateDestroyed:
+		return m.OldDateDestroyed(ctx)
+	case tenant.FieldDateHeld:
+		return m.OldDateHeld(ctx)
+	case tenant.FieldHold:
+		return m.OldHold(ctx)
 	}
 	return nil, fmt.Errorf("unknown Tenant field %s", name)
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/lesomnus/flob"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/forget"
 	"github.com/lesomnus/roster/server/pd"
 )
 
@@ -156,11 +157,13 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 
 			// The deployment's policy even for a window of the operator's own:
 			// it is what knows whose trail a legal hold is on, and a removal by
-			// hand is not an exception to one.
+			// hand is not an exception to one -- nor to an operator's hold on a
+			// tenant, which roster answers it with.
 			p, err := c.Audit.Policy()
 			if err != nil {
 				return err
 			}
+			p = forget.Held(p, s.Ent)
 
 			n := 0
 			held := trail.Held{}
@@ -343,6 +346,7 @@ func newCmdTrailPurge(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				return err
 			}
 			defer s.Close()
+			p = forget.Held(p, s.Ent)
 
 			store := pd.TrailStore(s.Ent)
 			cut := of.CutFor(before)
@@ -488,7 +492,7 @@ func archived(ctx context.Context, c *cmd.Config) (*cmd.Server, trail.Policy, er
 		return nil, trail.Policy{}, err
 	}
 
-	return s, p, nil
+	return s, forget.Held(p, s.Ent), nil
 }
 
 // kindOf is `--kind`, and every kind when it is not given.
@@ -566,6 +570,9 @@ func prune(ctx context.Context, c cmd.Config) error {
 	}
 	defer s.Close()
 
+	// Asked whether there is a policy before roster's holds are added, which
+	// answer per tenant and so read as one; see `cmd.Build`.
+	p = forget.Held(p, s.Ent)
 	fmt.Fprintf(os.Stderr, "%s\n", p.String())
 
 	// It logs what it did, per kind, exactly as the sweep does -- which is why

@@ -1076,8 +1076,9 @@ document itself in `ROSTER_AUDIT_CHECKPOINTS_KEY`.
 
 A **legal hold** is the one thing a manual window does answer to: what one is on is
 left by `prune --discard` and by `purge`, which say how much they kept and go ahead
-for everything else. A hold is a tenant's, answered by the app -- roster answers none
-yet, so nothing it keeps is held.
+for everything else. A hold is a tenant's: an operator places one with `roster hold
+place --why … @tenant` (§ "A tenant leaving"), and the trail keeps what it holds of
+that tenant from then until it is lifted.
 
 ### A key that can read the trail can read everything
 
@@ -1146,6 +1147,73 @@ them by asking to be forgotten. The archive is reached only if `audit.archive` i
 set; archives you keep elsewhere are yours to reach. A trail row a legal hold is on
 stays as it was, and `roster forget` says how many and whose -- run it again when the
 hold is lifted.
+
+## A tenant leaving
+
+A person's lifecycle one level up, in four steps (#98):
+
+```sh
+roster tenant close @newco                    # nobody of it gets in; nothing is destroyed
+roster restore @newco                         # while tenant.restore_within lasts
+roster forget @newco                          # destroy it now; it has to be closed first
+roster forget                                 # and every one whose grace has run out
+roster forget --reuse @newco                  # free its alias now rather than in a year
+roster hold place --why "Contoso v. Fabrikam, 2026-123" @newco   # nothing of it is destroyed
+roster hold lift @newco
+roster hold ls
+```
+
+```yaml
+tenant:
+  restore_within: 720h   # 30 days after a close it is destroyed. empty is never: destroying is by hand
+  alias_hold: 8760h      # its alias stays taken a year after. empty is a year
+  every: 24h
+```
+
+**Close** stamps `Tenant.date_closed` and destroys nothing. From then nobody of the
+tenant gets in, on every door at once: `Vouch.Verify` and every other sign-in say
+no; a session, a tenant key and a delegation of its people stop working, at roster
+and at `Introspect` for the apps in front; a deployment key nominated into it acts
+as nobody; and its hosts answer `FrontService.WhoseHost` with *this tenant is
+closed*, which is what its people at a bookmark need to read. Apps hear of it on the
+sync stream, as an event for each person in it carrying `date_closed`, and the Login
+App makes Hydra forget each of them. `TenantService.Close` is the verb -- a role or a
+key that names it may close a tenant over the wire, including the tenant's own
+administrator, who is then locked out with everybody else. A tenant a file declared
+is the file's to close, and the control plane's one tenant cannot be.
+
+**Restore** is what makes the window a grace, as for a person: the tenant comes back
+exactly as it was, keys and all, until `restore_within` has run out -- and refused
+after it even if the sweep has not got there yet, because what decides is the window
+and not when something ran. With no window, a close can be restored until somebody
+destroys the tenant.
+
+**Destroy** takes what is left: every person forgotten as `roster forget` forgets
+anybody, every other row of the tenant removed -- roles, bindings, groups, sites and
+teams and their memberships, connections, mail domains, hosts and their proofs,
+nominations -- and the tenant row blank. What stays is its identifier, which the trail
+names it by, and the blank holders, for the same reason. The trail keeps its events
+and follows its own windows; its people's contents go as each is forgotten. The first
+write is `date_destroyed`, so a restore cannot get between, and running it again
+finishes one that stopped -- which the sweep does on its own.
+
+**A hold stops all of it.** `roster hold place` writes `Tenant.date_held` and what it
+is for; while it is there `forget` refuses the tenant, the sweep passes it by, its
+people whose own grace runs out are not forgotten on the clock, and the trail keeps
+what it holds of it. Lifted, everything carries on from where it waited. It is a
+command and not an RPC on purpose: a tenant's administrator lifting the hold on
+their own records is what a hold exists to prevent. Placing and lifting are in the
+trail.
+
+**The alias is held.** A name that found somebody still finds them after the rows
+are gone -- former people typing it into a sign-in form, bookmarks, mail, a QR
+sticker with it printed on -- and a tenant that took it the next day would be that
+name to all of them; the sharp case is somebody doing it on purpose. So the
+destroyed row keeps it for `alias_hold`, and then it becomes `gone-<identifier>` and
+anybody may take it. A restore never meets the hold, because the alias never left.
+`--reuse` frees one sooner on purpose, and the trail records that it did. A hostname
+is freed at once: taking one again needs proof (#42), which is the rule an alias hold
+only approximates.
 
 ## What it prints
 

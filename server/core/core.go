@@ -9,6 +9,8 @@ package core
 
 import (
 	"context"
+	"time"
+
 	"github.com/protobuf-orm/ent/dialect"
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 
@@ -91,6 +93,11 @@ type Core struct {
 
 	// password is what a new password has to be, beyond not being leaked.
 	password Password
+
+	// restoreWithin is `tenant.restore_within`: how long after a tenant closed
+	// [coreTenant.Restore] may still undo it. Zero is no window, which makes
+	// destroying an operator's act and leaves a close undoable until then.
+	restoreWithin time.Duration
 
 	// proving is how a tenant's claim on a hostname is checked, and nil is a
 	// deployment that cannot check one.
@@ -175,6 +182,10 @@ func Operated() Option { return func(s *Core) { s.operators = true } }
 
 // WithPassword gives the layer what a new password has to be.
 func WithPassword(v Password) Option { return func(s *Core) { s.password = v } }
+
+// WithRestoreWithin gives the layer `tenant.restore_within`, for
+// `Tenant.Restore` to refuse a close whose grace has run out.
+func WithRestoreWithin(v time.Duration) Option { return func(s *Core) { s.restoreWithin = v } }
 
 // WithProving gives the layer what answers whether a hostname's challenge is
 // published; nil is a deployment that cannot ask. See [Core.proving].

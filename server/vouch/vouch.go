@@ -306,11 +306,12 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 		return no(), nil, nil
 	}
 
-	if v.GetHolder().GetDateDisabled() != nil {
+	if v.GetHolder().GetDateDisabled() != nil || v.GetHolder().GetTenant().GetDateClosed() != nil {
 		// Not to sign in, and their rows stay -- so unlike an erasure this is a
 		// person who is still here and still readable. What it costs is the
 		// same as everything else that is not somebody proving themselves: one
-		// answer, and it takes as long as a wrong password.
+		// answer, and it takes as long as a wrong password. A tenant that
+		// closed is the same answer for everybody in it.
 		//
 		// The other half of this is in `cmd.Resolver`, which is where a
 		// credential already issued arrives. Neither covers the other: nothing

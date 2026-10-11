@@ -19,6 +19,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent"
 	entholder "github.com/lesomnus/roster/internal/ent/holder"
 	enttenant "github.com/lesomnus/roster/internal/ent/tenant"
+	"github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/forget"
 	"github.com/lesomnus/roster/server/pd"
 )
@@ -47,14 +48,15 @@ import (
 func NewCmdForget(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "forget",
-		Brief: "destroy what is held about somebody, or everybody whose grace has run out",
+		Brief: "destroy what is held about somebody or about a closed tenant, or everything whose grace has run out",
 
 		Args: arg.Args{
-			&pdcmd.ArgRef{Name: "REF", Optional: true, Brief: "who, as @tenant/alias or an identifier; everybody due by default"},
+			&pdcmd.ArgRef{Name: "REF", Optional: true, Brief: "who, as @tenant/alias or an identifier, or a closed tenant as @tenant; everything due by default"},
 		},
 
 		Flags: flg.Flags{
 			&flg.Switch{Name: "dry-run", Brief: "say who, and destroy nothing"},
+			&flg.Switch{Name: "reuse", Brief: "a tenant's: free its alias now rather than after `tenant.alias_hold`"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -68,19 +70,32 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 			if err != nil {
 				return err
 			}
+			// What a hold keeps, it keeps from this as well. See `forget.Hold`.
+			p = forget.Held(p, s.Ent)
 
 			dry, _ := flg.Find[bool](cl, "dry-run")
+			reuse, _ := flg.Find[bool](cl, "reuse")
 
 			ref, named := arg.Get[pdcmd.Ref](cl, "REF")
 			if named {
-				if err := ref.Expect(pd.HolderDomain); err != nil {
-					return err
-				}
-
-				who, err := whoIs(ctx, s.Ent, ref)
+				t, isTenant, err := tenantOrHolder(ctx, s.Ent, ref)
 				if err != nil {
 					return err
 				}
+				if isTenant {
+					if dry {
+						fmt.Fprintf(os.Stdout, "%s\n", t)
+
+						return nil
+					}
+
+					return destroyed(ctx, s, t, p, reuse)
+				}
+				if reuse {
+					return errors.New("--reuse frees a tenant's alias; a person's is free the moment they are forgotten")
+				}
+
+				who := t
 				if dry {
 					fmt.Fprintf(os.Stdout, "%s\n", who)
 
@@ -92,39 +107,165 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 				// with nothing.
 				return forgotten(ctx, s.Ent, who, p)
 			}
-
-			// Nobody named, so everybody the policy is done waiting for. Which
-			// is what somebody putting this in cron means, and it is the same
-			// shape `trail prune` has for the same reason.
-			after := c.Holder.ForgetAfter
-			if after <= 0 {
-				return errors.New("this deployment destroys nobody on a clock, so there is nobody due; " +
-					"see `holder.forget_after` in the configuration, or name who")
+			if reuse {
+				return errors.New("--reuse frees one tenant's alias, so name the tenant")
 			}
 
-			vs, err := forget.Due(ctx, s.Ent, time.Now().Add(-after))
-			if err != nil {
+			// Nobody named, so everything a clock is done waiting for. Which is
+			// what somebody putting this in cron means, and it is the same
+			// shape `trail prune` has for the same reason.
+			return due(ctx, s, c, p, dry)
+		}),
+	}
+}
+
+// due is everything a clock has finished waiting for: the people whose grace
+// ran out (`holder.forget_after`), the closed tenants whose grace did
+// (`tenant.restore_within`) and any whose destruction began and stopped, and
+// the aliases whose hold is over (`tenant.alias_hold`, which has a default).
+func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry bool) error {
+	now := time.Now()
+
+	if after := c.Holder.ForgetAfter; after > 0 {
+		vs, err := forget.Due(ctx, s.Ent, now.Add(-after))
+		if err != nil {
+			return err
+		}
+		if len(vs) == 0 {
+			fmt.Fprintf(os.Stderr, "nobody has been erased for longer than %s\n", after)
+		}
+		for _, who := range vs {
+			if dry {
+				fmt.Fprintf(os.Stdout, "%s\n", who)
+
+				continue
+			}
+			if err := forgotten(ctx, s.Ent, who, p); err != nil {
 				return err
 			}
-			if len(vs) == 0 {
-				fmt.Fprintf(os.Stderr, "nobody has been erased for longer than %s\n", after)
+		}
+	} else {
+		fmt.Fprintf(os.Stderr, "nobody is destroyed on a clock: `holder.forget_after` names no window\n")
+	}
 
-				return nil
+	var ts []pdid.Id
+	var err error
+	if within := c.Tenant.RestoreWithin; within > 0 {
+		ts, err = forget.DueTenants(ctx, s.Ent, now.Add(-within))
+	} else {
+		ts, err = forget.Unfinished(ctx, s.Ent)
+	}
+	if err != nil {
+		return err
+	}
+	for _, t := range ts {
+		if dry {
+			fmt.Fprintf(os.Stdout, "%s\n", t)
+
+			continue
+		}
+		if err := destroyed(ctx, s, t, p, false); err != nil {
+			return err
+		}
+	}
+
+	free, err := forget.DueAliases(ctx, s.Ent, now.Add(-c.Tenant.Hold()))
+	if err != nil {
+		return err
+	}
+	for _, t := range free {
+		if dry {
+			fmt.Fprintf(os.Stdout, "%s: alias\n", t)
+
+			continue
+		}
+		if err := forget.FreeAlias(ctx, s.Ungated, t); err != nil {
+			return fmt.Errorf("%s: %w", t, err)
+		}
+		fmt.Fprintf(os.Stderr, "%s: its alias is free\n", t)
+	}
+
+	return nil
+}
+
+// destroyed is one tenant destroyed, and said: what went, what a hold
+// elsewhere kept, and its alias -- freed now with `reuse`, which the trail
+// records, and otherwise held.
+func destroyed(ctx context.Context, s *cmd.Server, t pdid.Id, p trail.Policy, reuse bool) error {
+	res, err := forget.DestroyTenant(ctx, s.Ent, t, p)
+	if err != nil {
+		return fmt.Errorf("%s: %w", t, err)
+	}
+
+	fmt.Fprintf(os.Stderr, "%s destroyed: %s\n", t, res)
+	if res.Held.Any() {
+		fmt.Fprintf(os.Stderr, "%s: %d trail row(s) kept by a legal hold of %v; run this again when it is lifted\n",
+			t, res.Held.Rows, append(res.Held.By, res.Held.Unanswered...))
+	}
+
+	if reuse {
+		if err := forget.FreeAlias(ctx, s.Ungated, t); err != nil {
+			return fmt.Errorf("%s: %w", t, err)
+		}
+		fmt.Fprintf(os.Stderr, "%s: its alias is free now, ahead of its hold, and the trail says so\n", t)
+	}
+
+	return nil
+}
+
+// tenantOrHolder is what a REF names where it may be either: a tenant, by
+// `@alias`, `@alias#tenant` or its identifier, or a person, by
+// `@tenant/alias` or theirs -- answering the identifier and whether it is a
+// tenant's.
+//
+// `@acme` alone is how a person called acme in any tenant has always been
+// written here, and is now also how the tenant acme is. When both exist this
+// refuses rather than choose: destroying the wrong one of those is not a
+// mistake anybody can take back.
+func tenantOrHolder(ctx context.Context, db *ent.Client, ref pdcmd.Ref) (pdid.Id, bool, error) {
+	switch {
+	case !ref.Id.IsZero():
+		return ref.Id, ref.Id.Domain() == pd.TenantDomain, nil
+
+	case ref.Tenant != "" || ref.Domain == pd.HolderDomain:
+		who, err := whoIs(ctx, db, ref)
+
+		return who, false, err
+
+	case ref.Domain == pd.TenantDomain:
+		v, err := db.Tenant.Query().Where(enttenant.AliasEQ(ref.Alias)).Only(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return pdid.Nil, false, fmt.Errorf("no tenant is called %q", ref.Alias)
 			}
 
-			for _, who := range vs {
-				if dry {
-					fmt.Fprintf(os.Stdout, "%s\n", who)
+			return pdid.Nil, false, err
+		}
 
-					continue
-				}
-				if err := forgotten(ctx, s.Ent, who, p); err != nil {
-					return err
-				}
-			}
+		return pdid.Id(v.Id), true, nil
 
-			return nil
-		}),
+	case ref.Domain != pdid.Unknown:
+		return pdid.Nil, false, &pdid.DomainError{Want: pd.TenantDomain, Got: ref.Domain}
+	}
+
+	t, err := db.Tenant.Query().Where(enttenant.AliasEQ(ref.Alias)).Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return pdid.Nil, false, err
+	}
+	people, err := db.Holder.Query().Where(entholder.AliasEQ(ref.Alias)).Exist(ctx)
+	if err != nil {
+		return pdid.Nil, false, err
+	}
+
+	switch {
+	case t != nil && people:
+		return pdid.Nil, false, fmt.Errorf("@%[1]s is a tenant, and somebody is called %[1]s too: write @%[1]s#tenant, or @<tenant>/%[1]s", ref.Alias)
+	case t != nil:
+		return pdid.Id(t.Id), true, nil
+	default:
+		who, err := whoIs(ctx, db, ref)
+
+		return who, false, err
 	}
 }
 
@@ -138,19 +279,16 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 func NewCmdRestore(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "restore",
-		Brief: "bring back somebody who was erased and has not been forgotten",
+		Brief: "bring back somebody erased and not forgotten, or a tenant closed and not destroyed",
 
 		Args: arg.Args{
-			&pdcmd.ArgRef{Name: "REF", Brief: "who, as @tenant/alias or an identifier"},
+			&pdcmd.ArgRef{Name: "REF", Brief: "who, as @tenant/alias or an identifier, or a tenant as @tenant"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			ref, ok := arg.Get[pdcmd.Ref](cl, "REF")
 			if !ok {
 				return errors.New("REF: who to bring back")
-			}
-			if err := ref.Expect(pd.HolderDomain); err != nil {
-				return err
 			}
 
 			s, err := cmd.Build(ctx, *c)
@@ -159,9 +297,23 @@ func NewCmdRestore(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
-			who, err := whoIs(ctx, s.Ent, ref)
+			who, isTenant, err := tenantOrHolder(ctx, s.Ent, ref)
 			if err != nil {
 				return err
+			}
+			if isTenant {
+				// Through the server the wall was never installed on, which
+				// is the verb an operator over the wire reaches too: the same
+				// grace answers both, and the trail records it.
+				if _, err := s.Ungated.Tenant().Restore(ctx, rstr.TenantRestoreRequest_builder{
+					Ref: rstr.TenantRef_builder{Id: who.Bytes()}.Build(),
+				}.Build()); err != nil {
+					return err
+				}
+
+				fmt.Fprintf(os.Stderr, "%s is open again\n", who)
+
+				return nil
 			}
 			if err := forget.Restore(ctx, s.Ent, who); err != nil {
 				return err

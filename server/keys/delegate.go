@@ -171,13 +171,18 @@ func findKey(ctx context.Context, s app.Server, token string) (*bearer, error) {
 	}, nil
 }
 
-// signable refuses a token whose holder is suspended. See [findKey].
+// signable refuses a token whose holder is suspended, or whose tenant is
+// closed. See [findKey].
 //
 // The same `NotFound` everything else about a token is refused with, so that
 // telling them apart says nothing: an app hearing it stops trusting the string
 // and sends the person to authenticate again, which is where they find out.
+//
+// The tenant is the same question one level up, and has to be asked here for
+// the same reason the person's is: an app in front introspects a token, and
+// nothing about that passes the resolver.
 func signable(v *app.Holder) error {
-	if v.GetDateDisabled() != nil {
+	if v.GetDateDisabled() != nil || v.GetTenant().GetDateClosed() != nil {
 		return status.Error(codes.NotFound, "no such token")
 	}
 
@@ -222,7 +227,7 @@ func findDelegation(ctx context.Context, s app.Server, token string) (*bearer, e
 			DateCreated: z.Ptr(true),
 
 			Holder: app.HolderSelect_builder{
-				Tenant:          app.TenantSelect_builder{}.Build(),
+				Tenant:          app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
 				DateInvalidated: z.Ptr(true),
 				DateDisabled:    z.Ptr(true),
 			}.Build(),

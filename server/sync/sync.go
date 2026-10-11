@@ -92,6 +92,22 @@
 // a read that failed for any other reason is not news about the person, and
 // ends the stream, which a client already treats as having missed things.
 //
+// # And a tenant, which is everybody in it
+//
+// A tenant closing (`TenantService.Close`, #98) is a decision about everybody
+// in it at once, and what an app holds is sessions for **people**. So it is
+// heard as one event for each person the caller may see, each carrying their
+// tenant's `date_closed` beside their own three stamps -- the fourth fact,
+// compared like the others -- rather than as an event about the tenant that
+// every app would need a second index to act on. `sync.proto` says the same
+// from the other side.
+//
+// That means this stream listens to tenants as well as to people: a change to
+// a tenant's row is read, and when its closing moved, its people are read
+// through the wall and each is told like any other write about them. Which
+// costs a list of the tenant's people when a tenant moves, and nothing when a
+// tenant is renamed: what is compared for a tenant is the one stamp.
+//
 // # And what it costs
 //
 // One entry per person this stream has heard about, for as long as it is held.
@@ -101,6 +117,7 @@ package sync
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc"
@@ -115,6 +132,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/holder"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/bare"
+	"github.com/lesomnus/roster/server/pd"
 )
 
 // Service is `SyncService` over the server it is handed.
@@ -144,12 +162,13 @@ type server struct {
 // keeps them, and false for anybody else.
 type Gone func(ctx context.Context, k pdid.Id) (Left, bool, error)
 
-// Left is what an erased row still says.
+// Left is what an erased row still says, and its tenant's closing.
 type Left struct {
 	Tenant      []byte
 	Invalidated time.Time
 	Disabled    time.Time
 	Erased      time.Time
+	Closed      time.Time
 }
 
 // Erased is [Gone] on this deployment's database, narrowed by `narrow` --
@@ -169,7 +188,7 @@ func Erased(db *ent.Client, narrow bare.Scope) Gone {
 		if p != nil {
 			q = q.Where(p)
 		}
-		v, err := q.Only(ctx)
+		v, err := q.WithTenant().Only(ctx)
 		if ent.IsNotFound(err) {
 			return Left{}, false, nil
 		}
@@ -177,12 +196,17 @@ func Erased(db *ent.Client, narrow bare.Scope) Gone {
 			return Left{}, false, err
 		}
 
-		return Left{
+		out := Left{
 			Tenant:      v.TenantId[:],
 			Invalidated: deref(v.DateInvalidated),
 			Disabled:    deref(v.DateDisabled),
 			Erased:      deref(v.DateErased),
-		}, true, nil
+		}
+		if t := v.Edges.Tenant; t != nil {
+			out.Closed = deref(t.DateClosed)
+		}
+
+		return out, true, nil
 	}
 }
 
@@ -207,6 +231,14 @@ func deref(v *time.Time) time.Time {
 // and looks healthy.
 var holderService = watch.ServiceOf(app.HolderService_Get_FullMethodName)
 
+// written is the prefix of every Rpc this app serves, which is what the stream
+// subscribes with now that a tenant's row is news as well as a person's: the
+// common part of `/roster.HolderService/` and `/roster.TenantService/`. It is
+// wider than either, and what is kept is decided by the kind of the key a
+// change names -- a person, or a tenant -- which a domain says and a method
+// name, for an RPC written by hand, does not.
+var written = holderService[:strings.IndexByte(holderService, '.')+1]
+
 type held struct {
 	stamps
 
@@ -216,21 +248,26 @@ type held struct {
 	tenant string
 }
 
-// stamps is the three facts, and is its own type so that `==` compares those
-// and only those.
+// stamps is the four facts, and is its own type so that `==` compares those
+// and only those: the person's three, and their tenant's closing.
 //
 // A holder does not move between tenants, so the tenant beside them can never
 // be the thing that changed -- and a struct that compared it would make the
-// first sight of an ordinary person look like news.
+// first sight of an ordinary person look like news. Its **closing** can, and
+// is the fourth stamp for that reason.
 type stamps struct {
 	invalidated time.Time
 	disabled    time.Time
 	erased      time.Time
+	closed      time.Time
 }
 
 func (s *server) Watch(_ *app.SyncWatchRequest, out grpc.ServerStreamingServer[app.SyncEvent]) error {
 	ctx := out.Context()
 	was := map[pdid.Id]held{}
+	// And each tenant's closing as this stream last saw it, which is what
+	// decides whether a change to a tenant's row is news about its people.
+	tenants := map[pdid.Id]time.Time{}
 
 	// No snapshot, and `sync.proto` says why at length: a stream that ended is
 	// a stream that missed things, and the honest answer to a reconnect is to
@@ -242,10 +279,17 @@ func (s *server) Watch(_ *app.SyncWatchRequest, out grpc.ServerStreamingServer[a
 	// every holder this caller can see -- for a deployment key, every holder of
 	// every tenant -- which is the read the generated `Watch` refuses to do
 	// without filters, and this has none to give it.
-	return watch.Stream(ctx, s.w, holderService, nil,
+	return watch.Stream(ctx, s.w, written, nil,
 		func(ks map[pdid.Id]string, _ watch.Seen) error {
 			for k := range ks {
-				if err := s.one(ctx, out, was, k); err != nil {
+				var err error
+				switch k.Domain() {
+				case pd.HolderDomain:
+					err = s.one(ctx, out, was, k)
+				case pd.TenantDomain:
+					err = s.people(ctx, out, was, tenants, k)
+				}
+				if err != nil {
 					return err
 				}
 			}
@@ -271,7 +315,7 @@ func (s *server) one(
 	v, err := s.s.Holder().Get(ctx, app.HolderGetRequest_builder{
 		Ref: app.HolderRef_builder{Id: k.Bytes()}.Build(),
 		Select: app.HolderSelect_builder{
-			Tenant:          app.TenantSelect_builder{}.Build(),
+			Tenant:          app.TenantSelect_builder{DateClosed: ptr(true)}.Build(),
 			DateInvalidated: ptr(true),
 			DateDisabled:    ptr(true),
 			DateErased:      ptr(true),
@@ -301,6 +345,7 @@ func (s *server) one(
 			At:              now,
 			DateInvalidated: stamp(prior.invalidated),
 			DateErased:      now,
+			DateClosed:      stamp(prior.closed),
 		}.Build())
 	}
 	if err != nil {
@@ -309,13 +354,110 @@ func (s *server) one(
 		return err
 	}
 
+	return s.tell(out, was, k, v, v.GetTenant().GetId(), at(v.GetTenant().GetDateClosed()), app.SyncReason_SYNC_REASON_UNSPECIFIED)
+}
+
+// people is a tenant's row having changed, as the news it may be for an app:
+// if its closing moved, every person of it the caller may see is told, each
+// through [server.tell] like any other write about them -- which is what keeps
+// this stream's memory of each person true, so that a person's next write is a
+// comparison against what was said rather than a first sight.
+//
+// A tenant renamed, relabelled or reconfigured is read and compared and says
+// nothing: what is kept of a tenant is the one stamp.
+func (s *server) people(
+	ctx context.Context,
+	out grpc.ServerStreamingServer[app.SyncEvent],
+	was map[pdid.Id]held,
+	tenants map[pdid.Id]time.Time,
+	k pdid.Id,
+) error {
+	v, err := s.s.Tenant().Get(ctx, app.TenantGetRequest_builder{
+		Ref:    app.TenantRef_builder{Id: k.Bytes()}.Build(),
+		Select: app.TenantSelect_builder{DateClosed: ptr(true)}.Build(),
+	}.Build())
+	if status.Code(err) == codes.NotFound {
+		// A tenant this caller may not see is not their news.
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	closed := at(v.GetDateClosed())
+	prior, told := tenants[k]
+	if told && prior.Equal(closed) {
+		return nil
+	}
+	tenants[k] = closed
+	if closed.IsZero() && !told {
+		// Never seen, and open: a rename of a tenant nothing ever happened to,
+		// which is no news about anybody.
+		return nil
+	}
+
+	// The movement, when this stream saw the tenant before and so saw it
+	// move -- which is then the reason for everybody in it, including people
+	// it never heard of: what happened to them is that their tenant closed.
+	// A tenant seen for the first time already closed is the facts without
+	// the movement, as a person seen for the first time is.
+	moved := app.SyncReason_SYNC_REASON_UNSPECIFIED
+	if told {
+		moved = app.SyncReason_SYNC_REASON_CLOSED
+		if closed.IsZero() {
+			moved = app.SyncReason_SYNC_REASON_REOPENED
+		}
+	}
+
+	after := ""
+	for {
+		res, err := s.s.Holder().List(ctx, app.HolderListRequest_builder{
+			Filters: []*app.HolderFilter{app.HolderFilter_builder{
+				Tenant: app.TenantRef_builder{Id: k.Bytes()}.Build(),
+			}.Build()},
+			After: after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+		for _, h := range res.GetItems() {
+			who, err := pdid.From(h.GetId())
+			if err != nil {
+				continue
+			}
+			if err := s.tell(out, was, who, h, k.Bytes(), closed, moved); err != nil {
+				return err
+			}
+		}
+		if after = res.GetNext(); after == "" {
+			return nil
+		}
+	}
+}
+
+// tell sends what is true of a person now, if any of it moved since this
+// stream last said: the comparison and the send every event goes through.
+// `tenant` and `closed` are whose they are and that tenant's closing, which a
+// person's row read from a list does not carry -- the caller knows both. And
+// `moved` is the reason when the caller saw it happen, or `UNSPECIFIED` for
+// this to work it out.
+func (s *server) tell(
+	out grpc.ServerStreamingServer[app.SyncEvent],
+	was map[pdid.Id]held,
+	k pdid.Id,
+	v *app.Holder,
+	tenant []byte,
+	closed time.Time,
+	moved app.SyncReason,
+) error {
 	now := held{
 		stamps: stamps{
 			invalidated: at(v.GetDateInvalidated()),
 			disabled:    at(v.GetDateDisabled()),
 			erased:      at(v.GetDateErased()),
+			closed:      closed,
 		},
-		tenant: string(v.GetTenant().GetId()),
+		tenant: string(tenant),
 	}
 
 	prior, told := was[k]
@@ -335,14 +477,20 @@ func (s *server) one(
 		return nil
 	}
 
+	reason := why(prior.stamps, now.stamps, told)
+	if moved != app.SyncReason_SYNC_REASON_UNSPECIFIED {
+		reason = moved
+	}
+
 	return out.Send(app.SyncEvent_builder{
 		Holder:          k.Bytes(),
 		Tenant:          []byte(now.tenant),
-		Reason:          why(prior.stamps, now.stamps, told),
+		Reason:          reason,
 		At:              timestamppb.New(time.Now()),
 		DateInvalidated: v.GetDateInvalidated(),
 		DateDisabled:    v.GetDateDisabled(),
 		DateErased:      v.GetDateErased(),
+		DateClosed:      stamp(now.closed),
 	}.Build())
 }
 
@@ -365,7 +513,7 @@ func (s *server) first(
 
 	// Remembered as gone, so that it is said once.
 	was[k] = held{
-		stamps: stamps{invalidated: v.Invalidated, disabled: v.Disabled, erased: v.Erased},
+		stamps: stamps{invalidated: v.Invalidated, disabled: v.Disabled, erased: v.Erased, closed: v.Closed},
 		tenant: string(v.Tenant),
 	}
 
@@ -377,12 +525,14 @@ func (s *server) first(
 		DateInvalidated: stamp(v.Invalidated),
 		DateDisabled:    stamp(v.Disabled),
 		DateErased:      stamp(v.Erased),
+		DateClosed:      stamp(v.Closed),
 	}.Build())
 }
 
 // why names the movement, when there was one to see.
 //
-// Read in the order somebody would: gone, then shut, then void. Two of them
+// Read in the order somebody would: gone, then shut -- the tenant, then the
+// person -- then void. Two of them
 // moving in one write is not a thing any RPC does, and if it ever were, the
 // timestamps on the event are all there either way -- this only decides which
 // word goes on it.
@@ -395,6 +545,13 @@ func why(prior, now stamps, told bool) app.SyncReason {
 
 	case now.erased.After(prior.erased):
 		return app.SyncReason_SYNC_REASON_ERASED
+
+	case now.closed.IsZero() != prior.closed.IsZero():
+		if now.closed.IsZero() {
+			return app.SyncReason_SYNC_REASON_REOPENED
+		}
+
+		return app.SyncReason_SYNC_REASON_CLOSED
 
 	case now.disabled.IsZero() != prior.disabled.IsZero():
 		if now.disabled.IsZero() {

@@ -92,6 +92,7 @@ func Admin(s *Server) (app.Server, error) {
 			core.WithKeyring(s.Keyring),
 			core.WithLockout(s.Lockout),
 			core.WithPassword(s.Password),
+			core.WithRestoreWithin(s.RestoreWithin),
 
 			// The data plane's kind: the admin port mints `rt_` for a customer's
 			// person, the same key that plane serves through `MeService`.

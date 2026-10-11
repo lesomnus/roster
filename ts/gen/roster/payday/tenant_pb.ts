@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/tenant.proto.
  */
 export const file_roster_payday_tenant: GenFile = /*@__PURE__*/
-  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L3RlbmFudC5wcm90bxIGcm9zdGVyIowDCgZUZW5hbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhUKBWFsaWFzGAQgASgJQgbqghYCMAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEioKBmxhYmVscxgHIAMoCzIaLnJvc3Rlci5UZW5hbnQuTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASJAoGY29uZmlnGAggASgLMhQucm9zdGVyLlRlbmFudENvbmZpZxotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOj3K/BUEEgIQAYq7FjEIATIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZEICCgBIARoAImMKDFRlbmFudENvbmZpZxIXCghwYXNzd29yZBgBIAEoCEIFqgECCAESEgoKZnJvbnRfZG9vchgCIAEoCRImCgdwcm9maWxlGAMgASgLMhUucm9zdGVyLlRlbmFudFByb2ZpbGUiNwoNVGVuYW50UHJvZmlsZRIMCgRmaWxsGAEgASgIEhgKEHNsYWNrX3NlY3JldF9yZWYYAiABKAlCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L3RlbmFudC5wcm90bxIGcm9zdGVyIs8ECgZUZW5hbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhUKBWFsaWFzGAQgASgJQgbqghYCMAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEioKBmxhYmVscxgHIAMoCzIaLnJvc3Rlci5UZW5hbnQuTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASJAoGY29uZmlnGAggASgLMhQucm9zdGVyLlRlbmFudENvbmZpZxI3CgtkYXRlX2Nsb3NlZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI6Cg5kYXRlX2Rlc3Ryb3llZBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI1CglkYXRlX2hlbGQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESFQoEaG9sZBgMIAEoCUIH6oIWA4IBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOj3K/BUEEgIQAYq7FjEIATIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZEICCgBIARoAImMKDFRlbmFudENvbmZpZxIXCghwYXNzd29yZBgBIAEoCEIFqgECCAESEgoKZnJvbnRfZG9vchgCIAEoCRImCgdwcm9maWxlGAMgASgLMhUucm9zdGVyLlRlbmFudFByb2ZpbGUiNwoNVGVuYW50UHJvZmlsZRIMCgRmaWxsGAEgASgIEhgKEHNsYWNrX3NlY3JldF9yZWYYAiABKAlCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Tenant is the wall an app is divided by.
@@ -96,6 +96,73 @@ export type Tenant = Message<"roster.Tenant"> & {
    * @generated from field: roster.TenantConfig config = 8;
    */
   config?: TenantConfig | undefined;
+
+  /**
+   * Since when nobody of this tenant gets in: the customer left, or an
+   * operator shut them out. Nothing is destroyed by it.
+   *
+   * # What it reaches
+   *
+   * Everything a person of the tenant could arrive with, read where each one
+   * arrives -- `Vouch.Verify` and every other sign-in, a session, a tenant key
+   * and a delegation (`cmd.Resolver`, and `Introspect` for the apps in front),
+   * a nomination into the tenant, and the tenant's hosts, which answer that it
+   * is closed. Apps hear of it on the sync stream, on each of its people.
+   *
+   * # A timestamp, for `date_disabled`'s reason one level up
+   *
+   * *Since when* is the question an operator asks, and it is what the grace
+   * runs from: `tenant.restore_within` after this, the tenant is destroyed.
+   *
+   * Written by `TenantService.Close` and cleared by `Restore`, and by nothing
+   * else: `Add` refuses it and `Patch` is closed at the transport.
+   *
+   * @generated from field: google.protobuf.Timestamp date_closed = 9;
+   */
+  dateClosed?: Timestamp | undefined;
+
+  /**
+   * When what this tenant held was destroyed: every person forgotten, every
+   * other row of it removed, this row blank. What stays is the identifier,
+   * which the trail names it by, and for a while the alias.
+   *
+   * # The alias stays, on purpose
+   *
+   * A name that resolved somebody is still how people and things find them
+   * after the rows are gone -- former people typing it into a sign-in form,
+   * bookmarks, mail, a QR sticker printed with it -- and a tenant that took it
+   * the next day would be that name to all of them. So the row keeps it for
+   * `tenant.alias_hold` after this, and the unique index is what holds it;
+   * then it becomes `gone-<identifier>` and the name is free. An operator may
+   * free it sooner on purpose, and the trail records that they did.
+   *
+   * @generated from field: google.protobuf.Timestamp date_destroyed = 10;
+   */
+  dateDestroyed?: Timestamp | undefined;
+
+  /**
+   * Since when an operator holds this tenant as it is: a legal claim, a
+   * dispute. While it is set nothing of the tenant is destroyed -- closing
+   * still shuts people out, and the grace still runs, but destroying waits
+   * until the hold is lifted and then finishes -- and the trail keeps what it
+   * holds of the tenant as payday's holds do.
+   *
+   * Written by `roster hold` and by nothing a caller reaches. The tenant reads
+   * it, like everything about itself, so [Tenant.hold] is written to be read.
+   *
+   * @generated from field: google.protobuf.Timestamp date_held = 11;
+   */
+  dateHeld?: Timestamp | undefined;
+
+  /**
+   * What the hold is for: a case, a demand. Empty while nothing holds it.
+   *
+   * With a default, so that the column arrives on a deployment's existing
+   * tenants as empty rather than as a migration that cannot fill it.
+   *
+   * @generated from field: string hold = 12;
+   */
+  hold: string;
 };
 
 /**

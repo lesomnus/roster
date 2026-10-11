@@ -33,7 +33,15 @@ type Tenant struct {
 	// DateCreated holds the value of the "date_created" field.
 	DateCreated time.Time `json:"date_created,omitempty"`
 	// Config holds the value of the "config" field.
-	Config       *rstr.TenantConfig `json:"config,omitempty"`
+	Config *rstr.TenantConfig `json:"config,omitempty"`
+	// DateClosed holds the value of the "date_closed" field.
+	DateClosed *time.Time `json:"date_closed,omitempty"`
+	// DateDestroyed holds the value of the "date_destroyed" field.
+	DateDestroyed *time.Time `json:"date_destroyed,omitempty"`
+	// DateHeld holds the value of the "date_held" field.
+	DateHeld *time.Time `json:"date_held,omitempty"`
+	// Hold holds the value of the "hold" field.
+	Hold         string `json:"hold,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -44,9 +52,9 @@ func (*Tenant) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case tenant.FieldLabels:
 			values[i] = new([]byte)
-		case tenant.FieldAlias, tenant.FieldName, tenant.FieldDesc:
+		case tenant.FieldAlias, tenant.FieldName, tenant.FieldDesc, tenant.FieldHold:
 			values[i] = new(sql.NullString)
-		case tenant.FieldDateUpdated, tenant.FieldDateCreated:
+		case tenant.FieldDateUpdated, tenant.FieldDateCreated, tenant.FieldDateClosed, tenant.FieldDateDestroyed, tenant.FieldDateHeld:
 			values[i] = new(sql.NullTime)
 		case tenant.FieldId:
 			values[i] = new(uuid.UUID)
@@ -117,6 +125,33 @@ func (_m *Tenant) assignValues(columns []string, values []any) error {
 			} else {
 				_m.Config = value
 			}
+		case tenant.FieldDateClosed:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field date_closed", values[i])
+			} else if value.Valid {
+				_m.DateClosed = new(time.Time)
+				*_m.DateClosed = value.Time
+			}
+		case tenant.FieldDateDestroyed:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field date_destroyed", values[i])
+			} else if value.Valid {
+				_m.DateDestroyed = new(time.Time)
+				*_m.DateDestroyed = value.Time
+			}
+		case tenant.FieldDateHeld:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field date_held", values[i])
+			} else if value.Valid {
+				_m.DateHeld = new(time.Time)
+				*_m.DateHeld = value.Time
+			}
+		case tenant.FieldHold:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field hold", values[i])
+			} else if value.Valid {
+				_m.Hold = value.String
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -173,6 +208,24 @@ func (_m *Tenant) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("config=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Config))
+	builder.WriteString(", ")
+	if v := _m.DateClosed; v != nil {
+		builder.WriteString("date_closed=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.DateDestroyed; v != nil {
+		builder.WriteString("date_destroyed=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.DateHeld; v != nil {
+		builder.WriteString("date_held=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("hold=")
+	builder.WriteString(_m.Hold)
 	builder.WriteByte(')')
 	return builder.String()
 }

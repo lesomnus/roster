@@ -192,6 +192,56 @@ type Config struct {
 	// framework can read. See `server/forget`, and `docs/operating.md` §
 	// "Destroying somebody, which an erase does not" for the operator's half.
 	Holder HolderConfig `yaml:"holder"`
+
+	// Tenant is what happens to a tenant after it closes (#98): how long it
+	// may still be restored, and how long its alias is held once it is
+	// destroyed.
+	//
+	// roster's, beside `holder` and for that block's reason one level up:
+	// payday has a `Tenant` and no opinion about a customer leaving. See
+	// `server/forget`, and `docs/operating.md` § "A tenant leaving".
+	Tenant TenantLeaveConfig `yaml:"tenant"`
+}
+
+// TenantLeaveConfig is a closed tenant's grace, and its alias's after it is
+// destroyed.
+//
+// # Two windows, with opposite defaults
+//
+// `RestoreWithin` is `holder.forget_after` one level up, and empty is
+// **never**, for that one's reason: with nothing said, destroying a customer
+// is an operator's act (`roster forget @tenant`) rather than a clock a version
+// upgrade starts. A close can be restored until somebody does it.
+//
+// `AliasHold` is the other way round. Zero would be the unsafe default -- the
+// name free the moment the rows are gone, for anybody to put up and sign the
+// old organisation's people in -- so empty is a year. A deployment that wants
+// less says so; an operator frees one name early on purpose with
+// `roster forget --reuse @tenant`, and the trail records that they did.
+type TenantLeaveConfig struct {
+	// RestoreWithin is how long after a close the tenant is destroyed, and
+	// until when `Restore` may undo it. Empty is never.
+	RestoreWithin time.Duration `yaml:"restore_within"`
+
+	// AliasHold is how long a destroyed tenant's alias stays taken. Empty is
+	// [DefaultAliasHold].
+	AliasHold time.Duration `yaml:"alias_hold"`
+
+	// Every is how often both are checked. Empty is a day, as `holder.every`.
+	Every time.Duration `yaml:"every"`
+}
+
+// DefaultAliasHold is a year: long enough for the bookmarks, the mail and the
+// sign-in habits of a tenant's former people to have stopped pointing at it.
+const DefaultAliasHold = 365 * 24 * time.Hour
+
+// Hold is [TenantLeaveConfig.AliasHold], with the default filled in.
+func (c TenantLeaveConfig) Hold() time.Duration {
+	if c.AliasHold > 0 {
+		return c.AliasHold
+	}
+
+	return DefaultAliasHold
 }
 
 // HolderConfig is how long an erased person is kept before what is held about

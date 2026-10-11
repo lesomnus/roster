@@ -33,6 +33,17 @@ func (Tenant) Fields() []ent.Field {
 			Optional(),
 		field.Json("config", &rstr.TenantConfig{}).ValueScanner(entpb.ValueScanner[*rstr.TenantConfig]{}).
 			Optional(),
+		field.Time("date_closed").
+			Nillable().
+			Optional(),
+		field.Time("date_destroyed").
+			Nillable().
+			Optional(),
+		field.Time("date_held").
+			Nillable().
+			Optional(),
+		field.String("hold").
+			Optional(),
 	}
 }
 
