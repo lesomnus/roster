@@ -84,6 +84,10 @@ type Server struct {
 	// `core`'s rules, so it is held rather than handed out.
 	sink pd.Sink
 
+	// narrow is the scope the walled server narrows by, for what has to read
+	// the database the way it does (`rostersync.Erased`).
+	narrow bare.Scope
+
 	// Walled is what a caller reaches, and Ungated is what the deployment does
 	// its own work through -- putting the first tenant there, working out who
 	// is calling. Neither is a privilege anybody holds: the second is a server
@@ -424,7 +428,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	}
 
 	s := &Server{
-		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, sink: sink,
+		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, sink: sink, narrow: narrow,
 		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password,
 	}
 
@@ -830,7 +834,11 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// that will never carry anything, which `watch.Stream` decides before it
 	// reads and which is the one failure a client cannot tell from a quiet
 	// system.
-	app.RegisterSyncServiceServer(g, rostersync.Service(s.Walled, s.Watch))
+	//
+	// And the database beside it, narrowed by the same scope, for the one
+	// thing the walled server cannot answer: whether somebody it no longer
+	// shows was erased where this caller may see (`server/sync`).
+	app.RegisterSyncServiceServer(g, rostersync.Service(s.Walled, s.Watch, rostersync.Erased(s.Ent, s.narrow)))
 
 	// A customer minting a key for themselves, which until now needed a shell
 	// on the box.
