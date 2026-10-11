@@ -22,6 +22,7 @@ const (
 	MeService_Get_FullMethodName               = "/roster.MeService/Get"
 	MeService_Unlink_FullMethodName            = "/roster.MeService/Unlink"
 	MeService_SignOutEverywhere_FullMethodName = "/roster.MeService/SignOutEverywhere"
+	MeService_Leave_FullMethodName             = "/roster.MeService/Leave"
 )
 
 // MeServiceClient is the client API for MeService service.
@@ -52,9 +53,9 @@ const (
 //
 // # Only what no role can be asked for
 //
-// Three methods, and each is one somebody **must** be able to do with no role
+// Four methods, and each is one somebody **must** be able to do with no role
 // at all: read their own record, take back a way in, sign out of every session
-// they no longer trust. `cmd.Policy` waives a binding for exactly these, and a
+// they no longer trust, and -- where their tenant offers it -- leave. `cmd.Policy` waives a binding for exactly these, and a
 // method can be waived only if it takes no subject -- `cmd/asself_test.go`
 // refuses one that carries a field that could name somebody -- so these are
 // subject-less by necessity, not by preference.
@@ -107,6 +108,49 @@ type MeServiceClient interface {
 	// beside it. roster answers *invalid since when*; an app answers *what is
 	// still alive*.
 	SignOutEverywhere(ctx context.Context, in *MeSignOutEverywhereRequest, opts ...grpc.CallOption) (*MeSignOutEverywhereResponse, error)
+	// Leave deletes the caller's own account: their holder erased, exactly as
+	// `HolderService.Erase` erases one, after everything issued to them is void.
+	//
+	// # Why it is here and not on HolderService
+	//
+	// `SignOutEverywhere`'s reason. `HolderService.Erase` takes a subject and is
+	// therefore an operator's: a role naming it lets its holder erase anybody
+	// they can see, and there is no permission smaller than that to give a
+	// person who should be able to erase themselves and nobody else. This takes
+	// nothing that names anybody, so it cannot be pointed elsewhere, and
+	// `cmd.Policy` waives a binding for it on that ground.
+	//
+	// # What it asks before it does it
+	//
+	// Three things, in this order, and each refusal says which:
+	//
+	//   - that the caller's tenant offers it (`TenantConfig.leave`), which is
+	//     **off** unless a tenant said otherwise -- `PermissionDenied`;
+	//   - that the credential the call came with was minted in the last
+	//     [server/me.LeaveWithin], which is what a sign-in a few minutes old is:
+	//     a delegation a front door minted when somebody signed in there, or a
+	//     key of their own a terminal was handed in the browser a moment ago
+	//     (`roster sign-in`). A session that has been open all afternoon is a
+	//     session somebody may have walked away from -- `FailedPrecondition`,
+	//     *sign in again*;
+	//   - that `confirm` is the caller's own alias, as it is, so that nothing
+	//     calls this by accident -- `InvalidArgument`.
+	//
+	// # What happens, and what can still be undone
+	//
+	// An erase and nothing more: the person cannot sign in anywhere and every
+	// app holding a session for them hears it on `SyncService.Watch`; nothing is
+	// destroyed yet. An operator can still `roster restore` them while
+	// `holder.forget_after` lasts, and they are forgotten when it ends.
+	//
+	// Their sessions and delegations are void first -- `SignOutEverywhere`, as
+	// its own act -- so a restore brings the account back and none of its old
+	// sign-ins. Their keys come back with it: an erase leaves a key where it is,
+	// and `date_invalidated` says why it never voids one.
+	//
+	// A holder roster declares (a front door's own) is refused before anything is
+	// written, by the rule `HolderService.Erase` refuses it with.
+	Leave(ctx context.Context, in *MeLeaveRequest, opts ...grpc.CallOption) (*MeLeaveResponse, error)
 }
 
 type meServiceClient struct {
@@ -147,6 +191,16 @@ func (c *meServiceClient) SignOutEverywhere(ctx context.Context, in *MeSignOutEv
 	return out, nil
 }
 
+func (c *meServiceClient) Leave(ctx context.Context, in *MeLeaveRequest, opts ...grpc.CallOption) (*MeLeaveResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MeLeaveResponse)
+	err := c.cc.Invoke(ctx, MeService_Leave_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MeServiceServer is the server API for MeService service.
 // All implementations must embed UnimplementedMeServiceServer
 // for forward compatibility.
@@ -175,9 +229,9 @@ func (c *meServiceClient) SignOutEverywhere(ctx context.Context, in *MeSignOutEv
 //
 // # Only what no role can be asked for
 //
-// Three methods, and each is one somebody **must** be able to do with no role
+// Four methods, and each is one somebody **must** be able to do with no role
 // at all: read their own record, take back a way in, sign out of every session
-// they no longer trust. `cmd.Policy` waives a binding for exactly these, and a
+// they no longer trust, and -- where their tenant offers it -- leave. `cmd.Policy` waives a binding for exactly these, and a
 // method can be waived only if it takes no subject -- `cmd/asself_test.go`
 // refuses one that carries a field that could name somebody -- so these are
 // subject-less by necessity, not by preference.
@@ -230,6 +284,49 @@ type MeServiceServer interface {
 	// beside it. roster answers *invalid since when*; an app answers *what is
 	// still alive*.
 	SignOutEverywhere(context.Context, *MeSignOutEverywhereRequest) (*MeSignOutEverywhereResponse, error)
+	// Leave deletes the caller's own account: their holder erased, exactly as
+	// `HolderService.Erase` erases one, after everything issued to them is void.
+	//
+	// # Why it is here and not on HolderService
+	//
+	// `SignOutEverywhere`'s reason. `HolderService.Erase` takes a subject and is
+	// therefore an operator's: a role naming it lets its holder erase anybody
+	// they can see, and there is no permission smaller than that to give a
+	// person who should be able to erase themselves and nobody else. This takes
+	// nothing that names anybody, so it cannot be pointed elsewhere, and
+	// `cmd.Policy` waives a binding for it on that ground.
+	//
+	// # What it asks before it does it
+	//
+	// Three things, in this order, and each refusal says which:
+	//
+	//   - that the caller's tenant offers it (`TenantConfig.leave`), which is
+	//     **off** unless a tenant said otherwise -- `PermissionDenied`;
+	//   - that the credential the call came with was minted in the last
+	//     [server/me.LeaveWithin], which is what a sign-in a few minutes old is:
+	//     a delegation a front door minted when somebody signed in there, or a
+	//     key of their own a terminal was handed in the browser a moment ago
+	//     (`roster sign-in`). A session that has been open all afternoon is a
+	//     session somebody may have walked away from -- `FailedPrecondition`,
+	//     *sign in again*;
+	//   - that `confirm` is the caller's own alias, as it is, so that nothing
+	//     calls this by accident -- `InvalidArgument`.
+	//
+	// # What happens, and what can still be undone
+	//
+	// An erase and nothing more: the person cannot sign in anywhere and every
+	// app holding a session for them hears it on `SyncService.Watch`; nothing is
+	// destroyed yet. An operator can still `roster restore` them while
+	// `holder.forget_after` lasts, and they are forgotten when it ends.
+	//
+	// Their sessions and delegations are void first -- `SignOutEverywhere`, as
+	// its own act -- so a restore brings the account back and none of its old
+	// sign-ins. Their keys come back with it: an erase leaves a key where it is,
+	// and `date_invalidated` says why it never voids one.
+	//
+	// A holder roster declares (a front door's own) is refused before anything is
+	// written, by the rule `HolderService.Erase` refuses it with.
+	Leave(context.Context, *MeLeaveRequest) (*MeLeaveResponse, error)
 	mustEmbedUnimplementedMeServiceServer()
 }
 
@@ -248,6 +345,9 @@ func (UnimplementedMeServiceServer) Unlink(context.Context, *MeUnlinkRequest) (*
 }
 func (UnimplementedMeServiceServer) SignOutEverywhere(context.Context, *MeSignOutEverywhereRequest) (*MeSignOutEverywhereResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SignOutEverywhere not implemented")
+}
+func (UnimplementedMeServiceServer) Leave(context.Context, *MeLeaveRequest) (*MeLeaveResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Leave not implemented")
 }
 func (UnimplementedMeServiceServer) mustEmbedUnimplementedMeServiceServer() {}
 func (UnimplementedMeServiceServer) testEmbeddedByValue()                   {}
@@ -324,6 +424,24 @@ func _MeService_SignOutEverywhere_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MeService_Leave_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MeLeaveRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MeServiceServer).Leave(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MeService_Leave_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MeServiceServer).Leave(ctx, req.(*MeLeaveRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MeService_ServiceDesc is the grpc.ServiceDesc for MeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -342,6 +460,10 @@ var MeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SignOutEverywhere",
 			Handler:    _MeService_SignOutEverywhere_Handler,
+		},
+		{
+			MethodName: "Leave",
+			Handler:    _MeService_Leave_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

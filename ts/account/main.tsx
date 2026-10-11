@@ -25,6 +25,10 @@
  * their own row. The role the deployment gave them has to name each method --
  * a delegation narrows to the intersection -- so a section whose call the role
  * does not cover says so rather than drawing a button that would be refused.
+ *
+ * Three take no reference at all and need no role, because they are about
+ * nobody but the caller: `Me.SignOutEverywhere`, `Me.Unlink`, and -- where the
+ * operator offers it -- `Me.Leave`, deleting the account.
  */
 
 import { Code, ConnectError } from '@connectrpc/connect'
@@ -55,6 +59,8 @@ interface Providers {
 	providers: { name: string; issuer: string }[]
 	terminal?: boolean
 	password: boolean
+	/** Whether this operator lets its people delete their own account (`TenantConfig.leave`). */
+	leave?: boolean
 }
 
 async function providers(): Promise<Providers | null> {
@@ -102,7 +108,7 @@ function brandOf(of: Providers): string {
 }
 
 /** Account is the signed-in page, section by section. */
-function Account(props: { of: Providers; onSignOut: () => void }): React.ReactNode {
+function Account(props: { of: Providers; onSignOut: () => void; onLeft: (forgotten: string) => void }): React.ReactNode {
 	const me = useQuery(MeService.method.get, {})
 
 	if (me.state === 'pending') return <main className="loading">…</main>
@@ -136,6 +142,9 @@ function Account(props: { of: Providers; onSignOut: () => void }): React.ReactNo
 				<Sessions own={own} may={may} />
 				{props.of.terminal === true && <Terminal may={may} />}
 				<Keys own={own} keys={v.keys} may={may} />
+				{props.of.leave === true && (
+					<Leave alias={v.alias} brand={brandOf(props.of)} onSignOut={props.onSignOut} onLeft={props.onLeft} />
+				)}
 			</main>
 		</div>
 	)
@@ -1031,9 +1040,95 @@ function Expires(): React.ReactNode {
 	)
 }
 
+/**
+ * Leave is deleting your own account, where the operator offers it:
+ * `Me.Leave`, which erases you the way an operator's erase does.
+ *
+ * It asks for two things roster checks again on its side: a sign-in a few
+ * minutes old -- a page left open since the morning signs in again first, and
+ * comes back here (`#leave`) -- and your alias typed, so that nothing does it
+ * by accident. What it says it does is what roster does: nothing is destroyed
+ * at once, the operator can bring the account back until it is forgotten, and
+ * then everything held about you is.
+ */
+function Leave(props: { alias: string; brand: string; onSignOut: () => void; onLeft: (forgotten: string) => void }): React.ReactNode {
+	const leave = useCall(MeService.method.leave)
+	const [note, setNote] = useState<string | null>(null)
+	const [stale, setStale] = useState(false)
+
+	useEffect(() => {
+		if (location.hash === '#leave') document.getElementById('leave')?.scrollIntoView()
+	}, [])
+
+	return (
+		<section id="leave">
+			<h2>delete your account</h2>
+			<p className="note">
+				You will not be able to sign in to {props.brand} again, nor to anything that signs you in through
+				it, and every app that holds a session for you is told. Nothing is destroyed at once: until the
+				account is forgotten, whoever runs {props.brand} can bring it back if you ask them. After that,
+				everything held about you is destroyed.
+			</p>
+			<form
+				onSubmit={(e) => {
+					e.preventDefault()
+					const f = new FormData(e.currentTarget)
+					setNote(null)
+					setStale(false)
+					void leave
+						.call({ confirm: String(f.get('confirm') ?? '') })
+						.then((v) => props.onLeft(when(v.dateForgotten)))
+						.catch((e: unknown) => {
+							if (e instanceof ConnectError && e.code === Code.FailedPrecondition) {
+								setStale(true)
+								return
+							}
+							setNote(said(e))
+						})
+				}}
+			>
+				<input name="confirm" placeholder={`type ${props.alias} to confirm`} autoComplete="off" required />
+				<button type="submit" disabled={leave.state === 'pending'}>
+					delete my account
+				</button>
+			</form>
+			{stale && (
+				<p className="bad">
+					Deleting an account takes a sign-in made a few minutes ago.{' '}
+					<button
+						onClick={() => {
+							location.hash = 'leave'
+							props.onSignOut()
+						}}
+					>
+						sign in again
+					</button>
+				</p>
+			)}
+			{note !== null && <p className="bad">{note}</p>}
+		</section>
+	)
+}
+
+/** Left is what is left to say once the account is gone. */
+function Left(props: { brand: string; forgotten: string }): React.ReactNode {
+	return (
+		<main className="left">
+			<h1>your account is deleted</h1>
+			<p>
+				You are signed out of {props.brand} everywhere.{' '}
+				{props.forgotten !== ''
+					? `Until ${props.forgotten} whoever runs ${props.brand} can bring it back if you ask; after that, everything held about you is destroyed.`
+					: `Whoever runs ${props.brand} can bring it back if you ask them, until they forget it.`}
+			</p>
+		</main>
+	)
+}
+
 function Root(): React.ReactNode {
 	const [of, setOf] = useState<Providers | null | undefined>(undefined)
 	const [app, setApp] = useState<App | null | undefined>(undefined)
+	const [left, setLeft] = useState<string | null>(null)
 
 	useEffect(() => {
 		void providers().then(setOf)
@@ -1066,13 +1161,24 @@ function Root(): React.ReactNode {
 		})
 	}
 
+	// Gone, and the session with it: what this page held for the person is
+	// forgotten here as it is at roster.
+	const gone = (forgotten: string): void => {
+		void fetch('/session', { method: 'DELETE' }).finally(() => {
+			app?.store.forget()
+			app?.store.close()
+			setLeft(forgotten)
+		})
+	}
+
 	if (of === undefined || app === undefined) return <main className="loading">…</main>
 	if (of === null) return <main className="error">no operator here serves this name</main>
+	if (left !== null) return <Left brand={brandOf(of)} forgotten={left} />
 	if (app === null) return <SignIn brand={brandOf(of)} password={of.password} providers={of.providers} providerHref={(n: string) => `/login?connection=${encodeURIComponent(n)}`} recover="/recover" onDone={check} />
 
 	return (
 		<Provider app={app}>
-			<Account of={of} onSignOut={out} />
+			<Account of={of} onSignOut={out} onLeft={gone} />
 		</Provider>
 	)
 }

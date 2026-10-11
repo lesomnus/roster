@@ -152,6 +152,11 @@ type Settings struct {
 	Password  *bool            `yaml:"password"`
 	FrontDoor *string          `yaml:"front_door"`
 	Profile   *ProfileSettings `yaml:"profile"`
+
+	// Leave is whether the tenant's people may delete their own account
+	// (`TenantConfig.leave`). Off unless a file says so, and a file that does
+	// not mention it leaves it as it is.
+	Leave *bool `yaml:"leave"`
 }
 
 // ProfileSettings is `config.profile`: whether a sign-in fills what a profile
@@ -412,6 +417,7 @@ func settle(cur *app.TenantConfig, said *Settings) *app.TenantConfig {
 		out.SetPassword(cur.GetPassword())
 	}
 	out.SetFrontDoor(cur.GetFrontDoor())
+	out.SetLeave(cur.GetLeave())
 	profile := app.TenantProfile_builder{
 		Fill:           cur.GetProfile().GetFill(),
 		SlackSecretRef: cur.GetProfile().GetSlackSecretRef(),
@@ -423,6 +429,9 @@ func settle(cur *app.TenantConfig, said *Settings) *app.TenantConfig {
 		}
 		if said.FrontDoor != nil {
 			out.SetFrontDoor(*said.FrontDoor)
+		}
+		if said.Leave != nil {
+			out.SetLeave(*said.Leave)
 		}
 		if p := said.Profile; p != nil {
 			if p.Fill != nil {

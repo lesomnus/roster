@@ -262,6 +262,29 @@ resources:
 		x.Equal([]string{"@fresh"}, v.Same)
 	})
 
+	// Whether people may delete their own account is a key like the others:
+	// off unless the file says so, and left as it is by a file that does not
+	// mention it.
+	t.Run("leaving is declared, and not by omission", func(t *testing.T) {
+		x := require.New(t)
+		apply := func(file string) {
+			t.Helper()
+			rs, err := cmd.ReadResources(declare(t, file))
+			x.NoError(err)
+			_, err = cmd.ApplyResources(ctx, b.Server, rs, false)
+			x.NoError(err)
+		}
+
+		apply("resources:\n  - kind: Tenant\n    alias: leavers\n    name: Leavers\n")
+		x.False(tenantOf(t, ctx, b, "leavers").GetConfig().GetLeave(), "offered by a file that never said so")
+
+		apply("resources:\n  - kind: Tenant\n    alias: leavers\n    name: Leavers\n    config:\n      leave: true\n")
+		x.True(tenantOf(t, ctx, b, "leavers").GetConfig().GetLeave())
+
+		apply("resources:\n  - kind: Tenant\n    alias: leavers\n    name: Leavers\n    config:\n      password: false\n")
+		x.True(tenantOf(t, ctx, b, "leavers").GetConfig().GetLeave(), "taken away for not being mentioned")
+	})
+
 	// How the tenant's profiles are filled is declared like the rest of its
 	// settings, a key at a time -- the Slack reference included, which the
 	// file is where it is written from.

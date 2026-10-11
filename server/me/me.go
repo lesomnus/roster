@@ -24,13 +24,18 @@ package me
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
@@ -38,11 +43,13 @@ import (
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/credential"
+	"github.com/lesomnus/roster/internal/ent/delegation"
 	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
 )
 
 // Held is the union `gate.Policy` enforces, asked here so that what a page
@@ -73,6 +80,11 @@ type Server struct {
 	// Nil is a server that answers and does not write, which is what `cmd`
 	// hands the admin port and what a caller gets `Unimplemented` from.
 	walled app.Server
+
+	// forgetAfter is the deployment's `holder.forget_after`, for `Leave` to say
+	// when somebody who left will be forgotten. Zero is a deployment that
+	// forgets nobody on a clock.
+	forgetAfter time.Duration
 }
 
 func New(db *ent.Client, held Held, opts ...Option) *Server {
@@ -87,8 +99,12 @@ func New(db *ent.Client, held Held, opts ...Option) *Server {
 // Option is how a deployment says what this service may do.
 type Option func(*Server)
 
-// WithWrites gives the service the stack its two writes go through.
+// WithWrites gives the service the stack its writes go through.
 func WithWrites(v app.Server) Option { return func(s *Server) { s.walled = v } }
+
+// WithForgetAfter is how long after an erase the deployment forgets somebody,
+// which `Leave` tells the person who asked.
+func WithForgetAfter(d time.Duration) Option { return func(s *Server) { s.forgetAfter = d } }
 
 // Get answers about the caller, and takes nothing.
 func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetResponse, error) {
@@ -432,6 +448,178 @@ func (s *Server) SignOutEverywhere(ctx context.Context, _ *app.MeSignOutEverywhe
 	return app.MeSignOutEverywhereResponse_builder{
 		DateInvalidated: v.GetDateInvalidated(),
 	}.Build(), nil
+}
+
+// LeaveWithin is how fresh the credential a [Server.Leave] arrives on has to
+// be: minted this recently, it is somebody at a keyboard who just proved who
+// they are.
+//
+// Shorter than a delegation lives ([keys.DelegateFor]), so that a page open
+// since the morning signs in again before it deletes anything; longer than the
+// walk from a sign-in form to a confirmation, so that doing it at once never
+// has to.
+const LeaveWithin = 5 * time.Minute
+
+// Leave deletes the caller's own account. See `me.proto` for the rules and
+// their order; this is them in that order.
+func (s *Server) Leave(ctx context.Context, req *app.MeLeaveRequest) (*app.MeLeaveResponse, error) {
+	f, ok := frame.From(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "who is asking?")
+	}
+	if s.walled == nil {
+		return nil, status.Error(codes.Unimplemented, "this server cannot write")
+	}
+
+	me, err := s.db.Holder.Query().
+		Where(holder.IdEQ(f.Actor.Uuid()), holder.DateErasedIsNil()).
+		WithTenant().
+		Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, status.Error(codes.NotFound, "there is no such person any more")
+		}
+
+		return nil, err
+	}
+
+	// The tenant's to offer, and off unless it said so: a directory a company
+	// provisions is the company's to empty. See `TenantConfig.leave`.
+	if t := me.Edges.Tenant; t == nil || !t.Config.GetLeave() {
+		return nil, status.Error(codes.PermissionDenied,
+			"your organisation does not let its people delete their own account here; whoever runs it can")
+	}
+
+	since, err := s.signedIn(ctx, f.Actor)
+	if err != nil {
+		return nil, err
+	}
+	switch ago := time.Since(since); {
+	case since.IsZero():
+		return nil, status.Error(codes.FailedPrecondition,
+			"deleting an account takes a sign-in made for it -- the account page's, or a key a terminal was "+
+				"handed a moment ago -- and this call came with neither")
+	case ago > LeaveWithin:
+		return nil, status.Errorf(codes.FailedPrecondition,
+			"you signed in %s ago; sign in again to delete your account, within %s of doing so",
+			ago.Truncate(time.Minute), LeaveWithin)
+	}
+
+	if req.GetConfirm() != me.Alias {
+		return nil, pderr.Invalidf("confirm", "your alias, %q, as it is: that this is meant", me.Alias)
+	}
+
+	// A row a file owns is removed from the file, which is `HolderService.Erase`'s
+	// rule -- asked here first, because this writes twice and the second write
+	// is where the stack would refuse it, after the first had signed it out.
+	if by, ok := me.Labels[declaredBy]; ok {
+		return nil, status.Errorf(codes.FailedPrecondition,
+			"this account is declared in %s and is removed from there, not here", by)
+	}
+
+	ref := app.HolderRef_builder{Id: f.Actor.Bytes()}.Build()
+
+	// Void first, so that a restore brings the account back and none of the
+	// sign-ins it had: a delegation lives for minutes, and one an operator's
+	// restore found still alive would be a session the person ended. Keys are
+	// not voided by this and are not meant to be (`date_invalidated`); an
+	// erase stops them, and a restore is the operator's decision to start them.
+	if _, err := s.walled.Holder().Invalidate(ctx, app.HolderInvalidateRequest_builder{Ref: ref}.Build()); err != nil {
+		return nil, err
+	}
+
+	// Then the erase, through the stack and as them, so it is the same erase
+	// an operator's is: the trail says who, the sync stream carries it, and a
+	// declared holder is refused by the rule that refuses an operator.
+	v, err := s.walled.Holder().Erase(ctx, ref)
+	if err != nil {
+		return nil, err
+	}
+	if !v.GetErased() {
+		// Somebody else erased them between the read above and this.
+		return nil, status.Error(codes.NotFound, "there is no such person any more")
+	}
+
+	at := time.Now()
+	out := app.MeLeaveResponse_builder{DateErased: timestamppb.New(at)}.Build()
+	if s.forgetAfter > 0 {
+		out.SetDateForgotten(timestamppb.New(at.Add(s.forgetAfter)))
+	}
+
+	return out, nil
+}
+
+// signedIn is when the credential this call arrived with was minted, if it is
+// one only a sign-in mints for this person: the delegation a front door
+// presents beside its own key, or a key of their own. Zero for anything else
+// -- a deployment's key, a session at a console -- because none of those says
+// somebody is at a keyboard now.
+//
+// It reads the headers the call came with, because that is the only place the
+// credential is: what resolved it answers with a frame, and a frame says who
+// and not since when. The rows are found the way `server/keys` finds them, by
+// their verifier, and must be the caller's own.
+func (s *Server) signedIn(ctx context.Context, who pdid.Id) (time.Time, error) {
+	md, _ := metadata.FromIncomingContext(ctx)
+
+	if as := lastOf(md.Get(keys.HeaderActing)); as != "" {
+		v, err := s.db.Delegation.Query().
+			Where(
+				delegation.Secret(keys.Sum(as)),
+				delegation.DateErasedIsNil(),
+				delegation.HasHolderWith(holder.IdEQ(who.Uuid())),
+			).
+			Only(ctx)
+		if ent.IsNotFound(err) {
+			return time.Time{}, nil
+		}
+		if err != nil {
+			return time.Time{}, err
+		}
+
+		return v.DateCreated, nil
+	}
+
+	for _, h := range md.Get(auth.Header) {
+		token, ok := strings.CutPrefix(h, auth.BearerScheme+" ")
+		if !ok || !strings.HasPrefix(token, keys.PrefixTenant) {
+			continue
+		}
+
+		v, err := s.db.ApiKey.Query().
+			Where(
+				apikey.Secret(keys.Sum(token)),
+				apikey.DateErasedIsNil(),
+				apikey.HasHolderWith(holder.IdEQ(who.Uuid())),
+			).
+			Only(ctx)
+		if ent.IsNotFound(err) {
+			return time.Time{}, nil
+		}
+		if err != nil {
+			return time.Time{}, fmt.Errorf("the key this call came with: %w", err)
+		}
+
+		return v.DateCreated, nil
+	}
+
+	return time.Time{}, nil
+}
+
+// declaredBy is the label a provisioner writes on a row it owns -- `cmd.Declared`
+// by name, and `server/core/declared.go` the rule. Spelled out for core's
+// reason: `server` may not import `cmd`.
+const declaredBy = "roster.declared"
+
+func lastOf(vs []string) string {
+	out := ""
+	for _, v := range vs {
+		if v != "" {
+			out = v
+		}
+	}
+
+	return out
 }
 
 // meet is what a person holds, narrowed to what the credential in hand allows:

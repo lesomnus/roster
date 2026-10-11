@@ -913,13 +913,15 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 			console.WithTenant(Hosted(s.Ent)), console.WithArrival(ArrivedAt)))
 	}
 
-	// And what a caller is, in one round trip. None of its three methods takes
-	// a subject, so none can be pointed at anybody else -- `Unlink` names a
+	// And what a caller is, in one round trip. None of its methods takes a
+	// subject, so none can be pointed at anybody else -- `Unlink` names a
 	// *which* and never a *whose*; see `server/me` and [aboutYourself].
-	// With the stack its two writes go through. The reads go to ent because the
+	// With the stack its writes go through. The reads go to ent because the
 	// missing subject has already narrowed them; the writes have rules on them,
-	// and the rules live in a layer.
-	app.RegisterMeServiceServer(g, me.New(s.Ent, Everything(s.Ent), me.WithWrites(s.Walled)))
+	// and the rules live in a layer. And the forget window, for `Leave` to say
+	// when somebody who left will be forgotten.
+	app.RegisterMeServiceServer(g, me.New(s.Ent, Everything(s.Ent), me.WithWrites(s.Walled),
+		me.WithForgetAfter(c.Holder.ForgetAfter)))
 
 	// What a token stands for, for a product app that was handed one.
 	//

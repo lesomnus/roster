@@ -107,7 +107,7 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 // be too. Here they are named one at a time, and a method added to `MeService`
 // tomorrow needs a decision rather than inheriting one.
 //
-// # The two writes, and why they are on the list
+// # The writes, and why they are on the list
 //
 // `Unlink` and `SignOutEverywhere` write, which is the part worth
 // stopping on. They are here for `Get`'s reason and not by extension of it:
@@ -124,6 +124,21 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 // What keeps them safe is the same absence that keeps `Get` safe, plus the
 // rules in the layer: `server/core` refuses the removal of a last way in, so
 // the button cannot lock somebody out of their own account.
+//
+// # And `Leave`, which a tenant offers and a role cannot
+//
+// `Link` came off this list for being a feature a deployment offers, and
+// `Leave` is one too -- so why it is on is worth a paragraph. The alternative
+// to waiving it is a role naming it, and there is nothing such a role could
+// mean but the method itself: `Leave` takes no subject, so *may delete their
+// own account* is the whole of what it grants, and binding it to every person
+// a directory has is work for an operator that changes nothing about who may
+// do what. Whether it is offered at all is a fact about the **tenant**
+// (`TenantConfig.leave`, off unless it said so), which `server/me` enforces on
+// every call -- the same place the other thing it asks is enforced, that the
+// credential the call came with is a sign-in minutes old. So the switch is the
+// tenant's setting and the safety is the missing subject, and a binding would
+// add a third thing to keep in step with the first.
 //
 // # And `AuthService.SignOut`, which is the same call one door over
 //
@@ -162,6 +177,7 @@ func aboutYourself(method string) bool {
 	case app.MeService_Get_FullMethodName,
 		app.MeService_Unlink_FullMethodName,
 		app.MeService_SignOutEverywhere_FullMethodName,
+		app.MeService_Leave_FullMethodName,
 		app.AuthService_SignOut_FullMethodName:
 		return true
 	}

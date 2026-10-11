@@ -57,6 +57,7 @@ func newCmdMe(c *cmd.Config) *xli.Command {
 			newCmdMeLink(c),
 			newCmdMeUnlink(c),
 			newCmdMeSignOut(c),
+			newCmdMeLeave(c),
 		},
 	}
 }
@@ -363,6 +364,56 @@ func newCmdMeSignOut(c *cmd.Config) *xli.Command {
 			cl.Printf("sessions and delegations issued before %s are void.\n",
 				v.GetDateInvalidated().AsTime().Format(time.RFC3339))
 			cl.Printf("your keys are not: `me get` lists them, `me revoke-key` stops one.\n")
+
+			return nil
+		}),
+	}
+}
+
+// newCmdMeLeave is `roster me leave`: delete your own account, where your
+// tenant offers it.
+//
+// It works from a terminal for the reason it works anywhere: the credential the
+// call is made with has to be a sign-in minutes old (`server/me.LeaveWithin`).
+// A terminal's is a key, and a key minted a moment ago in a browser -- `roster
+// sign-in --allow /roster.MeService/Leave` -- is exactly that; one that has been
+// in a config file for a month is not, and is refused with *sign in again*.
+//
+// `--confirm` is your alias, as it is, and is not optional: an account is not
+// something to delete by running the wrong line of a script.
+func newCmdMeLeave(c *cmd.Config) *xli.Command {
+	return &xli.Command{
+		Name:  "leave",
+		Brief: "delete your own account: erased now, and forgotten after the deployment's window",
+
+		Flags: flg.Flags{
+			&flg.String{Name: "confirm", Brief: "your alias, as it is, to say this is meant"},
+		},
+
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			conn, err := calling(ctx, c)
+			if err != nil {
+				return err
+			}
+
+			confirm, _ := flg.Get[string](cl, "confirm")
+			if confirm == "" {
+				return errors.New("--confirm: your alias, as `me get` prints it")
+			}
+
+			v, err := app.NewMeServiceClient(conn).Leave(ctx, app.MeLeaveRequest_builder{Confirm: confirm}.Build())
+			if err != nil {
+				return err
+			}
+
+			cl.Printf("your account is erased (%s): you cannot sign in anywhere it reached.\n",
+				v.GetDateErased().AsTime().Format(time.RFC3339))
+			if f := v.GetDateForgotten(); f != nil {
+				cl.Printf("until %s whoever runs this deployment can restore it; then it is forgotten.\n",
+					f.AsTime().Format(time.RFC3339))
+			} else {
+				cl.Printf("whoever runs this deployment can restore it until they forget it.\n")
+			}
 
 			return nil
 		}),

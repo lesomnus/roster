@@ -190,6 +190,7 @@ var Methods = []string{
 	rstr.MeService_Get_FullMethodName,
 	rstr.MeService_Unlink_FullMethodName,
 	rstr.MeService_SignOutEverywhere_FullMethodName,
+	rstr.MeService_Leave_FullMethodName,
 	rstr.HolderService_Get_FullMethodName,
 	rstr.HolderService_Update_FullMethodName,
 	rstr.HolderService_Portray_FullMethodName,
@@ -672,10 +673,15 @@ func (a *App) providers(w http.ResponseWriter, r *http.Request) {
 		// section only where it would work rather than offering a form whose
 		// every answer is a 501.
 		Terminal bool `json:"terminal"`
+
+		// Whether the tenant lets its people delete their own account
+		// (`TenantConfig.leave`), so the page draws that section where roster
+		// would do it and nowhere else.
+		Leave bool `json:"leave"`
 		// What roster says, and not this app's guess. It was `true` here for as
 		// long as this endpoint existed, which made a tenant whose people all
 		// arrive through a directory draw a form nobody could use.
-	}{Password: tn.OffersPassword(), Providers: []provider{}, Terminal: a.c.Terminal}
+	}{Password: tn.OffersPassword(), Providers: []provider{}, Terminal: a.c.Terminal, Leave: tn.GetConfig().GetLeave()}
 	out.Tenant.Alias = tn.GetAlias()
 	out.Tenant.Name = tn.GetName()
 	out.Tenant.Labels = tn.GetLabels()

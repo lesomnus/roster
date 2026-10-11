@@ -140,6 +140,7 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 									fill: f.get('fill') !== null,
 									slackSecretRef: t.config?.profile?.slackSecretRef ?? '',
 								},
+								leave: f.get('leave') !== null,
 							},
 						})
 						.then(() => tell({ kind: 'done', text: 'saved' }))
@@ -183,6 +184,16 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					<input type="checkbox" name="fill" defaultChecked={t.config?.profile?.fill ?? false} />
 					a sign-in fills a blank name and picture
 					{(t.config?.profile?.slackSecretRef ?? '') !== '' ? ', from Slack' : ', from the directory'}
+				</label>
+				{/*
+					Whether people here may delete their own account
+					(`Me.Leave`). Off unless somebody turns it on: a directory a
+					company provisions is the company's to empty, and roster
+					refuses the call while this is off.
+				*/}
+				<label className="check">
+					<input type="checkbox" name="leave" defaultChecked={t.config?.leave ?? false} />
+					people here may delete their own account
 				</label>
 				<button type="submit" disabled={update.state === 'pending' || !mayWrite}>
 					save
