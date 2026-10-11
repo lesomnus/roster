@@ -165,6 +165,8 @@ func overlays(t *pdcmd.Tree) {
 		{"holder/portray", "roster.HolderService.Portray", "keep an image as somebody's picture, or take theirs away; roster makes the sizes"},
 		{"holder/fill", "roster.HolderService.Fill", "write a name or a picture where somebody's profile has none, and nothing else"},
 		{"tenant/update", "roster.TenantService.Update", "what a customer says about itself: name, note, labels; never the alias"},
+		{"tenant/close", "roster.TenantService.Close", "shut everybody of a customer out, now; nothing is destroyed"},
+		{"tenant/restore", "roster.TenantService.Restore", "undo a close while tenant.restore_within lasts"},
 		{"host/update", "roster.HostService.Update", "a host's note; never its name"},
 		{"mail-domain/update", "roster.MailDomainService.Update", "where a domain routes, and its note; never its name"},
 		{"connection/update", "roster.ConnectionService.Update", "a provider's issuer, client id, scopes, secret ref, subject claim, note; never its name"},

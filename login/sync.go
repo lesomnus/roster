@@ -141,7 +141,9 @@ func (a *App) stream(ctx context.Context) error {
 			continue
 		}
 
-		at := latest(v.GetDateInvalidated().AsTime(), v.GetDateDisabled().AsTime(), v.GetDateErased().AsTime())
+		// Their tenant closing is the fourth way, and is heard on each of its
+		// people for exactly this: a subject is what Hydra forgets.
+		at := latest(v.GetDateInvalidated().AsTime(), v.GetDateDisabled().AsTime(), v.GetDateErased().AsTime(), v.GetDateClosed().AsTime())
 		if at.IsZero() {
 			// Nothing is set: somebody in good standing, including somebody
 			// who **was** suspended and is not any more. Nothing to revoke, and
@@ -171,7 +173,7 @@ func (a *App) stream(ctx context.Context) error {
 // latest is the newest of what a [rstr.SyncEvent] carries, or zero when none of
 // it is set.
 //
-// Newest rather than any one of them, because they are three ways of having
+// Newest rather than any one of them, because they are four ways of having
 // stopped being good and an app holding a session cares only that one of them
 // happened -- and, for the comparison above, **when**.
 func latest(ts ...time.Time) time.Time {

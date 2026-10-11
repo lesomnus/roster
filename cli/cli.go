@@ -116,6 +116,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 			NewCmdTrail(l, c),
 			NewCmdForget(c),
 			NewCmdRestore(c),
+			NewCmdHold(c),
 			NewCmdServe(c),
 			NewCmdAccount(l, c),
 			NewCmdLdap(l, c),

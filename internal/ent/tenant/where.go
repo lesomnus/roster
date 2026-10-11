@@ -80,6 +80,26 @@ func DateCreated(v time.Time) predicate.Tenant {
 	return predicate.Tenant(sql.FieldEQ(FieldDateCreated, v))
 }
 
+// DateClosed applies equality check predicate on the "date_closed" field. It's identical to DateClosedEQ.
+func DateClosed(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldEQ(FieldDateClosed, v))
+}
+
+// DateDestroyed applies equality check predicate on the "date_destroyed" field. It's identical to DateDestroyedEQ.
+func DateDestroyed(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldEQ(FieldDateDestroyed, v))
+}
+
+// DateHeld applies equality check predicate on the "date_held" field. It's identical to DateHeldEQ.
+func DateHeld(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldEQ(FieldDateHeld, v))
+}
+
+// Hold applies equality check predicate on the "hold" field. It's identical to HoldEQ.
+func Hold(v string) predicate.Tenant {
+	return predicate.Tenant(sql.FieldEQ(FieldHold, v))
+}
+
 // AliasEQ applies the EQ predicate on the "alias" field.
 func AliasEQ(v string) predicate.Tenant {
 	return predicate.Tenant(sql.FieldEQ(FieldAlias, v))
@@ -383,6 +403,231 @@ func ConfigIsNil() predicate.Tenant {
 // ConfigNotNil applies the NotNil predicate on the "config" field.
 func ConfigNotNil() predicate.Tenant {
 	return predicate.Tenant(sql.FieldNotNull(FieldConfig))
+}
+
+// DateClosedEQ applies the EQ predicate on the "date_closed" field.
+func DateClosedEQ(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldEQ(FieldDateClosed, v))
+}
+
+// DateClosedNEQ applies the NEQ predicate on the "date_closed" field.
+func DateClosedNEQ(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldNEQ(FieldDateClosed, v))
+}
+
+// DateClosedIn applies the In predicate on the "date_closed" field.
+func DateClosedIn(vs ...time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldIn(FieldDateClosed, vs...))
+}
+
+// DateClosedNotIn applies the NotIn predicate on the "date_closed" field.
+func DateClosedNotIn(vs ...time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldNotIn(FieldDateClosed, vs...))
+}
+
+// DateClosedGT applies the GT predicate on the "date_closed" field.
+func DateClosedGT(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldGT(FieldDateClosed, v))
+}
+
+// DateClosedGTE applies the GTE predicate on the "date_closed" field.
+func DateClosedGTE(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldGTE(FieldDateClosed, v))
+}
+
+// DateClosedLT applies the LT predicate on the "date_closed" field.
+func DateClosedLT(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldLT(FieldDateClosed, v))
+}
+
+// DateClosedLTE applies the LTE predicate on the "date_closed" field.
+func DateClosedLTE(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldLTE(FieldDateClosed, v))
+}
+
+// DateClosedIsNil applies the IsNil predicate on the "date_closed" field.
+func DateClosedIsNil() predicate.Tenant {
+	return predicate.Tenant(sql.FieldIsNull(FieldDateClosed))
+}
+
+// DateClosedNotNil applies the NotNil predicate on the "date_closed" field.
+func DateClosedNotNil() predicate.Tenant {
+	return predicate.Tenant(sql.FieldNotNull(FieldDateClosed))
+}
+
+// DateDestroyedEQ applies the EQ predicate on the "date_destroyed" field.
+func DateDestroyedEQ(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldEQ(FieldDateDestroyed, v))
+}
+
+// DateDestroyedNEQ applies the NEQ predicate on the "date_destroyed" field.
+func DateDestroyedNEQ(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldNEQ(FieldDateDestroyed, v))
+}
+
+// DateDestroyedIn applies the In predicate on the "date_destroyed" field.
+func DateDestroyedIn(vs ...time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldIn(FieldDateDestroyed, vs...))
+}
+
+// DateDestroyedNotIn applies the NotIn predicate on the "date_destroyed" field.
+func DateDestroyedNotIn(vs ...time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldNotIn(FieldDateDestroyed, vs...))
+}
+
+// DateDestroyedGT applies the GT predicate on the "date_destroyed" field.
+func DateDestroyedGT(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldGT(FieldDateDestroyed, v))
+}
+
+// DateDestroyedGTE applies the GTE predicate on the "date_destroyed" field.
+func DateDestroyedGTE(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldGTE(FieldDateDestroyed, v))
+}
+
+// DateDestroyedLT applies the LT predicate on the "date_destroyed" field.
+func DateDestroyedLT(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldLT(FieldDateDestroyed, v))
+}
+
+// DateDestroyedLTE applies the LTE predicate on the "date_destroyed" field.
+func DateDestroyedLTE(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldLTE(FieldDateDestroyed, v))
+}
+
+// DateDestroyedIsNil applies the IsNil predicate on the "date_destroyed" field.
+func DateDestroyedIsNil() predicate.Tenant {
+	return predicate.Tenant(sql.FieldIsNull(FieldDateDestroyed))
+}
+
+// DateDestroyedNotNil applies the NotNil predicate on the "date_destroyed" field.
+func DateDestroyedNotNil() predicate.Tenant {
+	return predicate.Tenant(sql.FieldNotNull(FieldDateDestroyed))
+}
+
+// DateHeldEQ applies the EQ predicate on the "date_held" field.
+func DateHeldEQ(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldEQ(FieldDateHeld, v))
+}
+
+// DateHeldNEQ applies the NEQ predicate on the "date_held" field.
+func DateHeldNEQ(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldNEQ(FieldDateHeld, v))
+}
+
+// DateHeldIn applies the In predicate on the "date_held" field.
+func DateHeldIn(vs ...time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldIn(FieldDateHeld, vs...))
+}
+
+// DateHeldNotIn applies the NotIn predicate on the "date_held" field.
+func DateHeldNotIn(vs ...time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldNotIn(FieldDateHeld, vs...))
+}
+
+// DateHeldGT applies the GT predicate on the "date_held" field.
+func DateHeldGT(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldGT(FieldDateHeld, v))
+}
+
+// DateHeldGTE applies the GTE predicate on the "date_held" field.
+func DateHeldGTE(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldGTE(FieldDateHeld, v))
+}
+
+// DateHeldLT applies the LT predicate on the "date_held" field.
+func DateHeldLT(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldLT(FieldDateHeld, v))
+}
+
+// DateHeldLTE applies the LTE predicate on the "date_held" field.
+func DateHeldLTE(v time.Time) predicate.Tenant {
+	return predicate.Tenant(sql.FieldLTE(FieldDateHeld, v))
+}
+
+// DateHeldIsNil applies the IsNil predicate on the "date_held" field.
+func DateHeldIsNil() predicate.Tenant {
+	return predicate.Tenant(sql.FieldIsNull(FieldDateHeld))
+}
+
+// DateHeldNotNil applies the NotNil predicate on the "date_held" field.
+func DateHeldNotNil() predicate.Tenant {
+	return predicate.Tenant(sql.FieldNotNull(FieldDateHeld))
+}
+
+// HoldEQ applies the EQ predicate on the "hold" field.
+func HoldEQ(v string) predicate.Tenant {
+	return predicate.Tenant(sql.FieldEQ(FieldHold, v))
+}
+
+// HoldNEQ applies the NEQ predicate on the "hold" field.
+func HoldNEQ(v string) predicate.Tenant {
+	return predicate.Tenant(sql.FieldNEQ(FieldHold, v))
+}
+
+// HoldIn applies the In predicate on the "hold" field.
+func HoldIn(vs ...string) predicate.Tenant {
+	return predicate.Tenant(sql.FieldIn(FieldHold, vs...))
+}
+
+// HoldNotIn applies the NotIn predicate on the "hold" field.
+func HoldNotIn(vs ...string) predicate.Tenant {
+	return predicate.Tenant(sql.FieldNotIn(FieldHold, vs...))
+}
+
+// HoldGT applies the GT predicate on the "hold" field.
+func HoldGT(v string) predicate.Tenant {
+	return predicate.Tenant(sql.FieldGT(FieldHold, v))
+}
+
+// HoldGTE applies the GTE predicate on the "hold" field.
+func HoldGTE(v string) predicate.Tenant {
+	return predicate.Tenant(sql.FieldGTE(FieldHold, v))
+}
+
+// HoldLT applies the LT predicate on the "hold" field.
+func HoldLT(v string) predicate.Tenant {
+	return predicate.Tenant(sql.FieldLT(FieldHold, v))
+}
+
+// HoldLTE applies the LTE predicate on the "hold" field.
+func HoldLTE(v string) predicate.Tenant {
+	return predicate.Tenant(sql.FieldLTE(FieldHold, v))
+}
+
+// HoldContains applies the Contains predicate on the "hold" field.
+func HoldContains(v string) predicate.Tenant {
+	return predicate.Tenant(sql.FieldContains(FieldHold, v))
+}
+
+// HoldHasPrefix applies the HasPrefix predicate on the "hold" field.
+func HoldHasPrefix(v string) predicate.Tenant {
+	return predicate.Tenant(sql.FieldHasPrefix(FieldHold, v))
+}
+
+// HoldHasSuffix applies the HasSuffix predicate on the "hold" field.
+func HoldHasSuffix(v string) predicate.Tenant {
+	return predicate.Tenant(sql.FieldHasSuffix(FieldHold, v))
+}
+
+// HoldIsNil applies the IsNil predicate on the "hold" field.
+func HoldIsNil() predicate.Tenant {
+	return predicate.Tenant(sql.FieldIsNull(FieldHold))
+}
+
+// HoldNotNil applies the NotNil predicate on the "hold" field.
+func HoldNotNil() predicate.Tenant {
+	return predicate.Tenant(sql.FieldNotNull(FieldHold))
+}
+
+// HoldEqualFold applies the EqualFold predicate on the "hold" field.
+func HoldEqualFold(v string) predicate.Tenant {
+	return predicate.Tenant(sql.FieldEqualFold(FieldHold, v))
+}
+
+// HoldContainsFold applies the ContainsFold predicate on the "hold" field.
+func HoldContainsFold(v string) predicate.Tenant {
+	return predicate.Tenant(sql.FieldContainsFold(FieldHold, v))
 }
 
 // And groups predicates with the AND operator between them.

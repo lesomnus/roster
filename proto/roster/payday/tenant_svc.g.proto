@@ -22,6 +22,24 @@ service TenantService {
   rpc List(TenantListRequest) returns (TenantListResponse);
   // Update replaces what a tenant says about itself, under the version read.
   rpc Update(TenantUpdateRequest) returns (Tenant);
+  // Close shuts everybody of a tenant out, and destroys nothing.
+  //
+  // `Holder.Disable` one level up, and its own method for that one's reason:
+  // roles are lists of methods, so a separate name is the only way to grant
+  // one without the other. What it reaches is `Tenant.date_closed`'s.
+  //
+  // The first step of a tenant leaving, of four -- close, restore while the
+  // grace lasts, destroy, and the alias held after it (`docs/usage/customers.md`
+  // § *A customer leaving*). Refused on a tenant a file declared, and on the
+  // control plane, whose one tenant is the deployment itself.
+  rpc Close(TenantCloseRequest) returns (Tenant);
+  // Restore undoes a close, while there is still one to undo: before
+  // `tenant.restore_within` has run out, and never after the tenant was
+  // destroyed. The tenant comes back exactly as it was, alias and all.
+  //
+  // The same verb as a person's (`roster restore`), for the same reason: a
+  // grace with no undo is only a delay.
+  rpc Restore(TenantRestoreRequest) returns (Tenant);
 }
 
 message TenantAddRequest {
@@ -32,6 +50,10 @@ message TenantAddRequest {
   map<string, string> labels = 7;
   google.protobuf.Timestamp date_created = 15;
   TenantConfig config = 8;
+  google.protobuf.Timestamp date_closed = 9;
+  google.protobuf.Timestamp date_destroyed = 10;
+  google.protobuf.Timestamp date_held = 11;
+  string hold = 12;
 }
 
 message TenantGetRequest {
@@ -55,6 +77,10 @@ message TenantSelect {
   bool date_updated = 13;
   bool date_created = 15;
   bool config = 8;
+  bool date_closed = 9;
+  bool date_destroyed = 10;
+  bool date_held = 11;
+  bool hold = 12;
 }
 
 message TenantPatchRequest {
@@ -83,6 +109,25 @@ message TenantPatchRequest {
   // "leave it alone", so no value could have meant NULL. It wins
   // outright: setting both this and config clears.
   bool config_null = 17;
+  google.protobuf.Timestamp date_closed = 18;
+  // Clear date_closed instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_closed clears.
+  bool date_closed_null = 19;
+  google.protobuf.Timestamp date_destroyed = 20;
+  // Clear date_destroyed instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_destroyed clears.
+  bool date_destroyed_null = 21;
+  google.protobuf.Timestamp date_held = 22;
+  // Clear date_held instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and date_held clears.
+  bool date_held_null = 23;
+  string hold = 24;
 }
 
 message TenantApplyRequest {
@@ -147,4 +192,18 @@ message TenantUpdateRequest {
   // The settings, replaced whole. Absent leaves them as they are, which is why
   // a console that draws one checkbox has to send back the whole message.
   TenantConfig config = 8;
+}
+
+message TenantCloseRequest {
+  TenantRef ref = 1;
+
+  // The version this caller read, or nothing: a close is a decision about a
+  // tenant rather than an edit of it, so it does not fail because somebody
+  // edited a label -- `Holder.Disable`'s reasoning, in `server/core`.
+  google.protobuf.Timestamp date_updated = 13;
+}
+
+message TenantRestoreRequest {
+  TenantRef ref = 1;
+  google.protobuf.Timestamp date_updated = 13;
 }

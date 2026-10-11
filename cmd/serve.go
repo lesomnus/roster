@@ -145,6 +145,10 @@ type Server struct {
 	Lockout  vouch.Lockout
 	Password core.Password
 
+	// RestoreWithin is `tenant.restore_within`, for the same servers: a close
+	// undone at the admin port answers to the same grace as one undone here.
+	RestoreWithin time.Duration
+
 	// People is the cookie a **roster user** carries, minted by `AuthService`
 	// on the data plane and resolved against its holders. Nil unless
 	// `sign_in.enabled`, which is what leaves that door shut by default.
@@ -406,7 +410,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	rules := Rules(client)
 	rules.Borrower = owners.of
 
-	stacked, err := app.Build(walled.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking())), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin)), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -421,7 +425,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// what this app means -- an identity linked by `init` or by an admin console
 	// is still an identity, and a subject that is an email address is still
 	// wrong.
-	ungated, err := app.Build(sink.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking())), pd.AuditBuild())
+	ungated, err := app.Build(sink.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin)), pd.AuditBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -430,6 +434,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	s := &Server{
 		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, sink: sink, narrow: narrow,
 		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password,
+		RestoreWithin: c.Tenant.RestoreWithin,
 	}
 
 	// The door a roster user signs in at, where this deployment serves one.
@@ -667,7 +672,16 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 
 		return nil, err
 	}
-	if p.On() {
+
+	// And roster's holds, which every act that destroys answers to (#98):
+	// an operator's hold on a tenant keeps what the trail holds of it, as
+	// payday's own holds do. Asked whether there is a retention policy
+	// **before** they are added, since a policy that answers per tenant reads
+	// as one that is on -- and a deployment that named no window must not
+	// start a sweep because roster learnt to hold.
+	retains := p.On()
+	p = forget.Held(p, s.Ent)
+	if retains {
 		log.From(ctx).InfoContext(ctx, "trail: retention", "policy", p.String())
 
 		s.Spin = append(s.Spin, trail.Sweep(pd.TrailStore(s.Ent), p))
@@ -688,6 +702,20 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		// The trail's own policy, so that what it erases of somebody answers
 		// to the same holds the retention sweep does.
 		s.Spin = append(s.Spin, forget.Sweep(s.Ent, c.Holder.ForgetAfter, p, c.Holder.Every))
+	}
+
+	// And a tenant's, one level up (#98): the closed whose grace has run out,
+	// and the aliases whose hold is over. Always, because the second clock
+	// has a default -- a deployment that destroys by hand still frees the
+	// names a year later -- and only on the data plane, whose tenants are
+	// customers; the control plane's one tenant is never closed.
+	if prefix == keys.PrefixTenant {
+		if c.Tenant.RestoreWithin > 0 {
+			log.From(ctx).InfoContext(ctx, "forget: a tenant, after it closes",
+				"after", c.Tenant.RestoreWithin, "alias held", c.Tenant.Hold())
+		}
+
+		s.Spin = append(s.Spin, forget.SweepTenants(s.Ent, s.Ungated, c.Tenant.RestoreWithin, c.Tenant.Hold(), p, c.Tenant.Every))
 	}
 
 	if c.Watch.Outbox {

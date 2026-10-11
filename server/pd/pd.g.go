@@ -10674,6 +10674,16 @@ func (s interceptTenant) Update(ctx context.Context, req *rstr.TenantUpdateReque
 		rstr.TenantService_Update_FullMethodName, req, s.TenantServiceServer.Update)
 }
 
+func (s interceptTenant) Close(ctx context.Context, req *rstr.TenantCloseRequest) (*rstr.Tenant, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TenantServiceServer,
+		rstr.TenantService_Close_FullMethodName, req, s.TenantServiceServer.Close)
+}
+
+func (s interceptTenant) Restore(ctx context.Context, req *rstr.TenantRestoreRequest) (*rstr.Tenant, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.TenantServiceServer,
+		rstr.TenantService_Restore_FullMethodName, req, s.TenantServiceServer.Restore)
+}
+
 func (s Intercept) Holder() rstr.HolderServiceServer {
 	return interceptHolder{s, s.Next().Holder()}
 }
@@ -12665,6 +12675,32 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 		}
 
 		res, err := s.Tenant().Update(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.TenantService_Close_FullMethodName:
+		v := &rstr.TenantCloseRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Tenant().Close(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.TenantService_Restore_FullMethodName:
+		v := &rstr.TenantRestoreRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.Tenant().Restore(ctx, v)
 		if err != nil {
 			return nil, err
 		}

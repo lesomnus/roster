@@ -1057,6 +1057,52 @@ func TestSigningSomebodyOutEverywhereReachesHydra(t *testing.T) {
 	}
 }
 
+// TestATenantClosingReachesHydraForEverybodyInIt: a tenant closing (#98) is
+// heard on each of its people, with the tenant's moment on the event, and that
+// is a fourth way to have stopped being good -- so Hydra forgets every one of
+// them, and nobody of another tenant.
+func TestATenantClosingReachesHydraForEverybodyInIt(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+	ctx := t.Context()
+
+	go func() { _ = d.a.Watch(ctx) }()
+
+	erin := d.who["contoso"]
+	x.Eventually(func() bool {
+		_, err := rstr.NewHolderServiceClient(d.conn).Invalidate(d.ops, rstr.HolderInvalidateRequest_builder{
+			Ref: rstr.HolderRef_builder{Id: erin.Bytes()}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		return d.hydra.times(erin.String()) > 0
+	}, 10*time.Second, 100*time.Millisecond, "the stream never opened")
+
+	// Somebody else of contoso, to flush the stream with: events arrive in
+	// order on one stream, so once the marker has been acted on, every poke
+	// about erin queued before it has been too -- and what moves her count
+	// after this is the closing and nothing else.
+	marker := addPerson(t, ctx, d, "marker")
+	_, err := rstr.NewHolderServiceClient(d.conn).Invalidate(d.ops, rstr.HolderInvalidateRequest_builder{
+		Ref: rstr.HolderRef_builder{Id: marker.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+	x.Eventually(func() bool { return d.hydra.times(marker.String()) > 0 },
+		10*time.Second, 20*time.Millisecond, "the stream stopped carrying anything")
+	was := d.hydra.times(erin.String())
+
+	_, err = rstr.NewTenantServiceClient(d.conn).Close(d.ops, rstr.TenantCloseRequest_builder{
+		Ref: rstr.TenantRef_builder{Alias: proto.String("contoso")}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	x.Eventually(func() bool { return d.hydra.times(erin.String()) > was },
+		10*time.Second, 20*time.Millisecond, "her tenant closed and hydra went on remembering her")
+	for _, s := range append(d.hydra.forgot(), d.hydra.ungrants()...) {
+		x.NotEqual(d.who["fabrikam"].String(), s, "a tenant closing reached somebody of another")
+	}
+}
+
 // TestSomebodyBackInGoodStandingIsNotSignedOutAgain, which is what the stream
 // carrying **state and not a delta** costs an app that does not think about it.
 //

@@ -310,7 +310,7 @@ func lookup(ctx context.Context, s app.Server, token string) (*app.ApiKey, error
 			// And whether they are suspended, which both halves do use; see
 			// [findKey].
 			Holder: app.HolderSelect_builder{
-				Tenant:       app.TenantSelect_builder{}.Build(),
+				Tenant:       app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
 				DateDisabled: z.Ptr(true),
 			}.Build(),
 		}.Build(),

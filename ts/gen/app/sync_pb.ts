@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/sync.proto.
  */
 export const file_app_sync: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvc3luYy5wcm90bxIGcm9zdGVyIhIKEFN5bmNXYXRjaFJlcXVlc3QikQIKCVN5bmNFdmVudBIOCgZob2xkZXIYASABKAwSDgoGdGVuYW50GAIgASgMEiIKBnJlYXNvbhgIIAEoDjISLnJvc3Rlci5TeW5jUmVhc29uEiYKAmF0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBI0ChBkYXRlX2ludmFsaWRhdGVkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIxCg1kYXRlX2Rpc2FibGVkGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAqlQEKClN5bmNSZWFzb24SGwoXU1lOQ19SRUFTT05fVU5TUEVDSUZJRUQQABIbChdTWU5DX1JFQVNPTl9JTlZBTElEQVRFRBABEhkKFVNZTkNfUkVBU09OX1NVU1BFTkRFRBACEhoKFlNZTkNfUkVBU09OX1JFSU5TVEFURUQQAxIWChJTWU5DX1JFQVNPTl9FUkFTRUQQBDJFCgtTeW5jU2VydmljZRI2CgVXYXRjaBIYLnJvc3Rlci5TeW5jV2F0Y2hSZXF1ZXN0GhEucm9zdGVyLlN5bmNFdmVudDABQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
+  fileDesc("Cg5hcHAvc3luYy5wcm90bxIGcm9zdGVyIhIKEFN5bmNXYXRjaFJlcXVlc3QiwgIKCVN5bmNFdmVudBIOCgZob2xkZXIYASABKAwSDgoGdGVuYW50GAIgASgMEiIKBnJlYXNvbhgIIAEoDjISLnJvc3Rlci5TeW5jUmVhc29uEiYKAmF0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBI0ChBkYXRlX2ludmFsaWRhdGVkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIxCg1kYXRlX2Rpc2FibGVkGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLZGF0ZV9jbG9zZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wKscBCgpTeW5jUmVhc29uEhsKF1NZTkNfUkVBU09OX1VOU1BFQ0lGSUVEEAASGwoXU1lOQ19SRUFTT05fSU5WQUxJREFURUQQARIZChVTWU5DX1JFQVNPTl9TVVNQRU5ERUQQAhIaChZTWU5DX1JFQVNPTl9SRUlOU1RBVEVEEAMSFgoSU1lOQ19SRUFTT05fRVJBU0VEEAQSFgoSU1lOQ19SRUFTT05fQ0xPU0VEEAUSGAoUU1lOQ19SRUFTT05fUkVPUEVORUQQBjJFCgtTeW5jU2VydmljZRI2CgVXYXRjaBIYLnJvc3Rlci5TeW5jV2F0Y2hSZXF1ZXN0GhEucm9zdGVyLlN5bmNFdmVudDABQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
 
 /**
  * Nothing, and that is the shape rather than a first version.
@@ -126,6 +126,27 @@ export type SyncEvent = Message<"roster.SyncEvent"> & {
    * @generated from field: google.protobuf.Timestamp date_erased = 14;
    */
   dateErased?: Timestamp | undefined;
+
+  /**
+   * Their **tenant** is closed: nobody of it may sign in, and everything its
+   * people already held stopped working. Unset is a tenant that is open --
+   * including one that **was** closed and was restored.
+   *
+   * # On each person, rather than an event about the tenant
+   *
+   * Because what an app holds is sessions for people, keyed by who they are,
+   * and an event naming only a tenant would have each app keep a second index
+   * to find whose sessions those are. So a tenant closing is heard as one event
+   * for every person in it, each saying their tenant's moment -- which also
+   * keeps every event *what is true about somebody now*: the fourth fact, read
+   * with the other three.
+   *
+   * A stream reads a tenant's people when the tenant moves, so closing a
+   * tenant of ten thousand is ten thousand events, once.
+   *
+   * @generated from field: google.protobuf.Timestamp date_closed = 15;
+   */
+  dateClosed?: Timestamp | undefined;
 };
 
 /**
@@ -182,6 +203,21 @@ export enum SyncReason {
    * @generated from enum value: SYNC_REASON_ERASED = 4;
    */
   ERASED = 4,
+
+  /**
+   * [SyncEvent.date_closed] was set: their tenant was closed.
+   *
+   * @generated from enum value: SYNC_REASON_CLOSED = 5;
+   */
+  CLOSED = 5,
+
+  /**
+   * And cleared: their tenant was restored. Here for the reason
+   * `SYNC_REASON_REINSTATED` is.
+   *
+   * @generated from enum value: SYNC_REASON_REOPENED = 6;
+   */
+  REOPENED = 6,
 }
 
 /**

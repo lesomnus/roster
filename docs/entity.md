@@ -102,6 +102,13 @@ roster refuses one for a tenant that says no, on every path that ends in
 `Vouch.Verify` and on the recovery link that would hand one over. **Unset is
 yes**, so a tenant that has never said keeps what it had.
 
+And how far it has got in leaving (#98): `date_closed`, after which nobody of it
+gets in; `date_destroyed`, after which nothing of it is left but this row, which
+keeps its alias for a while so that nobody else can be that name; and
+`date_held`, an operator's hold that stops every destruction. Written by
+`TenantService.Close` and `Restore`, `roster forget` and `roster hold`, and by
+nothing else. [operating.md](operating.md) § "A tenant leaving".
+
 > **contoso** is a `Tenant`, and so is **fabrikam**. Every row below hangs off
 > one of them, and a read made in contoso cannot answer with a row of fabrikam's
 > -- not because a rule says so on each table, but because the predicate that

@@ -332,7 +332,7 @@ func (s *Server) continuation(ctx context.Context, handle string, by pdid.Id) (*
 			DateUpdated: z.Ptr(true),
 
 			Holder: app.HolderSelect_builder{
-				Tenant:       app.TenantSelect_builder{}.Build(),
+				Tenant:       app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
 				DateErased:   z.Ptr(true),
 				DateDisabled: z.Ptr(true),
 			}.Build(),
@@ -353,9 +353,10 @@ func (s *Server) continuation(ctx context.Context, handle string, by pdid.Id) (*
 		return nil, status.Error(codes.NotFound, "no such continuation")
 	}
 
-	// Somebody who has been erased or suspended since the first form is
-	// somebody the second form must not finish for.
-	if h := v.GetHolder(); h.GetDateErased() != nil || h.GetDateDisabled() != nil {
+	// Somebody who has been erased or suspended since the first form -- or
+	// whose tenant has closed -- is somebody the second form must not finish
+	// for.
+	if h := v.GetHolder(); h.GetDateErased() != nil || h.GetDateDisabled() != nil || h.GetTenant().GetDateClosed() != nil {
 		return nil, status.Error(codes.NotFound, "no such continuation")
 	}
 
@@ -442,7 +443,7 @@ func (s *Server) credentialNamed(ctx context.Context, from app.Server, ref *app.
 			DateUpdated: z.Ptr(true),
 
 			Holder: app.HolderSelect_builder{
-				Tenant:       app.TenantSelect_builder{}.Build(),
+				Tenant:       app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
 				DateErased:   z.Ptr(true),
 				DateDisabled: z.Ptr(true),
 			}.Build(),

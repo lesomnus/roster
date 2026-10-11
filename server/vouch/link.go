@@ -130,7 +130,7 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 		Select: app.HolderSelect_builder{
 			DateErased:   z.Ptr(true),
 			DateDisabled: z.Ptr(true),
-			Tenant:       app.TenantSelect_builder{Config: z.Ptr(true)}.Build(),
+			Tenant:       app.TenantSelect_builder{Config: z.Ptr(true), DateClosed: z.Ptr(true)}.Build(),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -160,9 +160,10 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 			Expires: timestamppb.New(expires),
 		}.Build(), nil
 	}
-	if who.GetDateDisabled() != nil {
-		// Somebody not to sign in is somebody not to send a way in to, and the
-		// answer is the same one a stranger gets.
+	if who.GetDateDisabled() != nil || who.GetTenant().GetDateClosed() != nil {
+		// Somebody not to sign in is somebody not to send a way in to -- and
+		// so is everybody of a tenant that closed -- and the answer is the same
+		// one a stranger gets.
 		return app.VouchLinkResponse_builder{
 			Token:   token,
 			Expires: timestamppb.New(expires),
@@ -316,7 +317,7 @@ func (s *Server) row(ctx context.Context, token string) (*app.Link, error) {
 			Email:       app.EmailSelect_builder{}.Build(),
 
 			Holder: app.HolderSelect_builder{
-				Tenant:       app.TenantSelect_builder{Alias: z.Ptr(true)}.Build(),
+				Tenant:       app.TenantSelect_builder{Alias: z.Ptr(true), DateClosed: z.Ptr(true)}.Build(),
 				DateErased:   z.Ptr(true),
 				DateDisabled: z.Ptr(true),
 			}.Build(),
@@ -335,9 +336,9 @@ func (s *Server) row(ctx context.Context, token string) (*app.Link, error) {
 		return nil, status.Error(codes.NotFound, "no such link")
 	}
 
-	// Somebody erased or suspended between the sending and the clicking is
-	// somebody this must not let in.
-	if h := v.GetHolder(); h.GetDateErased() != nil || h.GetDateDisabled() != nil {
+	// Somebody erased or suspended between the sending and the clicking, or
+	// whose tenant closed, is somebody this must not let in.
+	if h := v.GetHolder(); h.GetDateErased() != nil || h.GetDateDisabled() != nil || h.GetTenant().GetDateClosed() != nil {
 		return nil, status.Error(codes.NotFound, "no such link")
 	}
 

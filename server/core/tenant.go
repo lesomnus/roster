@@ -305,6 +305,9 @@ const (
 // already arranged a transaction -- a batch -- arrives with no driver and runs
 // inside theirs.
 func (s coreTenant) Add(ctx context.Context, req *app.TenantAddRequest) (*app.Tenant, error) {
+	if err := unlived(req); err != nil {
+		return nil, err
+	}
 	req, bad := addWithConfig(req)
 	if bad != nil {
 		return nil, bad

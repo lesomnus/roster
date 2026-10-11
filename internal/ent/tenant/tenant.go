@@ -27,6 +27,14 @@ const (
 	FieldDateCreated = "date_created"
 	// FieldConfig holds the string denoting the config field in the database.
 	FieldConfig = "config"
+	// FieldDateClosed holds the string denoting the date_closed field in the database.
+	FieldDateClosed = "date_closed"
+	// FieldDateDestroyed holds the string denoting the date_destroyed field in the database.
+	FieldDateDestroyed = "date_destroyed"
+	// FieldDateHeld holds the string denoting the date_held field in the database.
+	FieldDateHeld = "date_held"
+	// FieldHold holds the string denoting the hold field in the database.
+	FieldHold = "hold"
 	// Table holds the table name of the tenant in the database.
 	Table = "tenant"
 )
@@ -41,6 +49,10 @@ var Columns = []string{
 	FieldDateUpdated,
 	FieldDateCreated,
 	FieldConfig,
+	FieldDateClosed,
+	FieldDateDestroyed,
+	FieldDateHeld,
+	FieldHold,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -91,4 +103,24 @@ func ByDateUpdated(opts ...sql.OrderTermOption) OrderOption {
 // ByDateCreated orders the results by the date_created field.
 func ByDateCreated(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateCreated, opts...).ToFunc()
+}
+
+// ByDateClosed orders the results by the date_closed field.
+func ByDateClosed(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDateClosed, opts...).ToFunc()
+}
+
+// ByDateDestroyed orders the results by the date_destroyed field.
+func ByDateDestroyed(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDateDestroyed, opts...).ToFunc()
+}
+
+// ByDateHeld orders the results by the date_held field.
+func ByDateHeld(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDateHeld, opts...).ToFunc()
+}
+
+// ByHold orders the results by the hold field.
+func ByHold(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHold, opts...).ToFunc()
 }

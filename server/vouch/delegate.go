@@ -388,7 +388,7 @@ func (s *Server) claimed(ctx context.Context, claim *app.VouchClaim) (*app.Holde
 		// that was reading the row anyway.
 		Select: app.IdentitySelect_builder{
 			Holder: app.HolderSelect_builder{
-				Tenant:       app.TenantSelect_builder{Config: z.Ptr(true)}.Build(),
+				Tenant:       app.TenantSelect_builder{Config: z.Ptr(true), DateClosed: z.Ptr(true)}.Build(),
 				DateErased:   z.Ptr(true),
 				DateDisabled: z.Ptr(true),
 			}.Build(),
@@ -407,10 +407,11 @@ func (s *Server) claimed(ctx context.Context, claim *app.VouchClaim) (*app.Holde
 	}
 
 	who := v.GetHolder()
-	if who.GetDateDisabled() != nil {
+	if who.GetDateDisabled() != nil || who.GetTenant().GetDateClosed() != nil {
 		// The same refusal `verify` makes, and it has to be here too: a
 		// suspension that held for a password and not for a token would be a
-		// suspension that depends on which door somebody came through.
+		// suspension that depends on which door somebody came through. A
+		// tenant that closed is everybody in it suspended at once.
 		return nil, status.Error(codes.PermissionDenied, "not to sign in")
 	}
 	if who.GetDateErased() != nil {

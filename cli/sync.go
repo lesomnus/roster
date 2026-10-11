@@ -89,6 +89,9 @@ func newCmdSyncWatch(c *cmd.Config) *xli.Command {
 				if w := v.GetDateErased(); w != nil {
 					cl.Printf("\terased=%s", w.AsTime().Format(time.RFC3339))
 				}
+				if w := v.GetDateClosed(); w != nil {
+					cl.Printf("\tclosed=%s", w.AsTime().Format(time.RFC3339))
+				}
 				cl.Printf("\n")
 			}
 		}),

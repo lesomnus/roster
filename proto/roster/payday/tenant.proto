@@ -112,6 +112,53 @@ message Tenant {
   // What it buys is that the next setting is a field number in here rather than
   // one of the nine an app gets on `Tenant` itself.
   TenantConfig config = 8;
+  // Since when nobody of this tenant gets in: the customer left, or an
+  // operator shut them out. Nothing is destroyed by it.
+  //
+  // # What it reaches
+  //
+  // Everything a person of the tenant could arrive with, read where each one
+  // arrives -- `Vouch.Verify` and every other sign-in, a session, a tenant key
+  // and a delegation (`cmd.Resolver`, and `Introspect` for the apps in front),
+  // a nomination into the tenant, and the tenant's hosts, which answer that it
+  // is closed. Apps hear of it on the sync stream, on each of its people.
+  //
+  // # A timestamp, for `date_disabled`'s reason one level up
+  //
+  // *Since when* is the question an operator asks, and it is what the grace
+  // runs from: `tenant.restore_within` after this, the tenant is destroyed.
+  //
+  // Written by `TenantService.Close` and cleared by `Restore`, and by nothing
+  // else: `Add` refuses it and `Patch` is closed at the transport.
+  google.protobuf.Timestamp date_closed = 9 [(orm.field) = {nullable: true}];
+  // When what this tenant held was destroyed: every person forgotten, every
+  // other row of it removed, this row blank. What stays is the identifier,
+  // which the trail names it by, and for a while the alias.
+  //
+  // # The alias stays, on purpose
+  //
+  // A name that resolved somebody is still how people and things find them
+  // after the rows are gone -- former people typing it into a sign-in form,
+  // bookmarks, mail, a QR sticker printed with it -- and a tenant that took it
+  // the next day would be that name to all of them. So the row keeps it for
+  // `tenant.alias_hold` after this, and the unique index is what holds it;
+  // then it becomes `gone-<identifier>` and the name is free. An operator may
+  // free it sooner on purpose, and the trail records that they did.
+  google.protobuf.Timestamp date_destroyed = 10 [(orm.field) = {nullable: true}];
+  // Since when an operator holds this tenant as it is: a legal claim, a
+  // dispute. While it is set nothing of the tenant is destroyed -- closing
+  // still shuts people out, and the grace still runs, but destroying waits
+  // until the hold is lifted and then finishes -- and the trail keeps what it
+  // holds of the tenant as payday's holds do.
+  //
+  // Written by `roster hold` and by nothing a caller reaches. The tenant reads
+  // it, like everything about itself, so [Tenant.hold] is written to be read.
+  google.protobuf.Timestamp date_held = 11 [(orm.field) = {nullable: true}];
+  // What the hold is for: a case, a demand. Empty while nothing holds it.
+  //
+  // With a default, so that the column arrives on a deployment's existing
+  // tenants as empty rather than as a migration that cannot fill it.
+  string hold = 12 [(orm.field) = {default: ""}];
 }
 
 // TenantConfig is the settings, and each one is a **fact roster enforces**

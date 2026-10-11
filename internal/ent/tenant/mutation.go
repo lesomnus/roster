@@ -15,17 +15,21 @@ import (
 
 // Mutation represents an operation that mutates the Tenant nodes in the graph.
 type Mutation struct {
-	op            ent.Op
-	typ           string
-	alias         *string
-	name          *string
-	desc          *string
-	labels        *map[string]string
-	date_updated  *time.Time
-	date_created  *time.Time
-	_config       **rstr.TenantConfig
-	clearedFields map[string]struct{}
-	predicates    []predicate.Tenant
+	op             ent.Op
+	typ            string
+	alias          *string
+	name           *string
+	desc           *string
+	labels         *map[string]string
+	date_updated   *time.Time
+	date_created   *time.Time
+	_config        **rstr.TenantConfig
+	date_closed    *time.Time
+	date_destroyed *time.Time
+	date_held      *time.Time
+	hold           *string
+	clearedFields  map[string]struct{}
+	predicates     []predicate.Tenant
 }
 
 // NewMutation creates a new Mutation for the Tenant entity.
@@ -214,6 +218,134 @@ func (m *Mutation) ResetConfig() {
 	delete(m.clearedFields, FieldConfig)
 }
 
+// SetDateClosed sets the "date_closed" field.
+func (m *Mutation) SetDateClosed(t time.Time) {
+	m.date_closed = &t
+}
+
+// DateClosed returns the value of the "date_closed" field in the mutation.
+func (m *Mutation) DateClosed() (r time.Time, exists bool) {
+	v := m.date_closed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDateClosed clears the value of the "date_closed" field.
+func (m *Mutation) ClearDateClosed() {
+	m.date_closed = nil
+	m.clearedFields[FieldDateClosed] = struct{}{}
+}
+
+// DateClosedCleared returns if the "date_closed" field was cleared in this mutation.
+func (m *Mutation) DateClosedCleared() bool {
+	_, ok := m.clearedFields[FieldDateClosed]
+	return ok
+}
+
+// ResetDateClosed resets all changes to the "date_closed" field.
+func (m *Mutation) ResetDateClosed() {
+	m.date_closed = nil
+	delete(m.clearedFields, FieldDateClosed)
+}
+
+// SetDateDestroyed sets the "date_destroyed" field.
+func (m *Mutation) SetDateDestroyed(t time.Time) {
+	m.date_destroyed = &t
+}
+
+// DateDestroyed returns the value of the "date_destroyed" field in the mutation.
+func (m *Mutation) DateDestroyed() (r time.Time, exists bool) {
+	v := m.date_destroyed
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDateDestroyed clears the value of the "date_destroyed" field.
+func (m *Mutation) ClearDateDestroyed() {
+	m.date_destroyed = nil
+	m.clearedFields[FieldDateDestroyed] = struct{}{}
+}
+
+// DateDestroyedCleared returns if the "date_destroyed" field was cleared in this mutation.
+func (m *Mutation) DateDestroyedCleared() bool {
+	_, ok := m.clearedFields[FieldDateDestroyed]
+	return ok
+}
+
+// ResetDateDestroyed resets all changes to the "date_destroyed" field.
+func (m *Mutation) ResetDateDestroyed() {
+	m.date_destroyed = nil
+	delete(m.clearedFields, FieldDateDestroyed)
+}
+
+// SetDateHeld sets the "date_held" field.
+func (m *Mutation) SetDateHeld(t time.Time) {
+	m.date_held = &t
+}
+
+// DateHeld returns the value of the "date_held" field in the mutation.
+func (m *Mutation) DateHeld() (r time.Time, exists bool) {
+	v := m.date_held
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDateHeld clears the value of the "date_held" field.
+func (m *Mutation) ClearDateHeld() {
+	m.date_held = nil
+	m.clearedFields[FieldDateHeld] = struct{}{}
+}
+
+// DateHeldCleared returns if the "date_held" field was cleared in this mutation.
+func (m *Mutation) DateHeldCleared() bool {
+	_, ok := m.clearedFields[FieldDateHeld]
+	return ok
+}
+
+// ResetDateHeld resets all changes to the "date_held" field.
+func (m *Mutation) ResetDateHeld() {
+	m.date_held = nil
+	delete(m.clearedFields, FieldDateHeld)
+}
+
+// SetHold sets the "hold" field.
+func (m *Mutation) SetHold(s string) {
+	m.hold = &s
+}
+
+// Hold returns the value of the "hold" field in the mutation.
+func (m *Mutation) Hold() (r string, exists bool) {
+	v := m.hold
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearHold clears the value of the "hold" field.
+func (m *Mutation) ClearHold() {
+	m.hold = nil
+	m.clearedFields[FieldHold] = struct{}{}
+}
+
+// HoldCleared returns if the "hold" field was cleared in this mutation.
+func (m *Mutation) HoldCleared() bool {
+	_, ok := m.clearedFields[FieldHold]
+	return ok
+}
+
+// ResetHold resets all changes to the "hold" field.
+func (m *Mutation) ResetHold() {
+	m.hold = nil
+	delete(m.clearedFields, FieldHold)
+}
+
 // Where appends a list predicates to the Mutation builder.
 func (m *Mutation) Where(ps ...predicate.Tenant) {
 	m.predicates = append(m.predicates, ps...)
@@ -248,7 +380,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 11)
 	if m.alias != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -269,6 +401,18 @@ func (m *Mutation) Fields() []string {
 	}
 	if m._config != nil {
 		fields = append(fields, FieldConfig)
+	}
+	if m.date_closed != nil {
+		fields = append(fields, FieldDateClosed)
+	}
+	if m.date_destroyed != nil {
+		fields = append(fields, FieldDateDestroyed)
+	}
+	if m.date_held != nil {
+		fields = append(fields, FieldDateHeld)
+	}
+	if m.hold != nil {
+		fields = append(fields, FieldHold)
 	}
 	return fields
 }
@@ -292,6 +436,14 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateCreated()
 	case FieldConfig:
 		return m.Config()
+	case FieldDateClosed:
+		return m.DateClosed()
+	case FieldDateDestroyed:
+		return m.DateDestroyed()
+	case FieldDateHeld:
+		return m.DateHeld()
+	case FieldHold:
+		return m.Hold()
 	}
 	return nil, false
 }
@@ -357,6 +509,34 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetConfig(v)
 		return nil
+	case FieldDateClosed:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateClosed(v)
+		return nil
+	case FieldDateDestroyed:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateDestroyed(v)
+		return nil
+	case FieldDateHeld:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateHeld(v)
+		return nil
+	case FieldHold:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHold(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Tenant field %s", name)
 }
@@ -396,6 +576,18 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldConfig) {
 		fields = append(fields, FieldConfig)
 	}
+	if m.FieldCleared(FieldDateClosed) {
+		fields = append(fields, FieldDateClosed)
+	}
+	if m.FieldCleared(FieldDateDestroyed) {
+		fields = append(fields, FieldDateDestroyed)
+	}
+	if m.FieldCleared(FieldDateHeld) {
+		fields = append(fields, FieldDateHeld)
+	}
+	if m.FieldCleared(FieldHold) {
+		fields = append(fields, FieldHold)
+	}
 	return fields
 }
 
@@ -418,6 +610,18 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldConfig:
 		m.ClearConfig()
+		return nil
+	case FieldDateClosed:
+		m.ClearDateClosed()
+		return nil
+	case FieldDateDestroyed:
+		m.ClearDateDestroyed()
+		return nil
+	case FieldDateHeld:
+		m.ClearDateHeld()
+		return nil
+	case FieldHold:
+		m.ClearHold()
 		return nil
 	}
 	return fmt.Errorf("unknown Tenant nullable field %s", name)
@@ -447,6 +651,18 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldConfig:
 		m.ResetConfig()
+		return nil
+	case FieldDateClosed:
+		m.ResetDateClosed()
+		return nil
+	case FieldDateDestroyed:
+		m.ResetDateDestroyed()
+		return nil
+	case FieldDateHeld:
+		m.ResetDateHeld()
+		return nil
+	case FieldHold:
+		m.ResetHold()
 		return nil
 	}
 	return fmt.Errorf("unknown Tenant field %s", name)

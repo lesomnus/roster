@@ -110,6 +110,86 @@ func (_u *TenantUpdate) ClearConfig() *TenantUpdate {
 	return _u
 }
 
+// SetDateClosed sets the "date_closed" field.
+func (_u *TenantUpdate) SetDateClosed(v time.Time) *TenantUpdate {
+	_u.mutation.SetDateClosed(v)
+	return _u
+}
+
+// SetNillableDateClosed sets the "date_closed" field if the given value is not nil.
+func (_u *TenantUpdate) SetNillableDateClosed(v *time.Time) *TenantUpdate {
+	if v != nil {
+		_u.SetDateClosed(*v)
+	}
+	return _u
+}
+
+// ClearDateClosed clears the value of the "date_closed" field.
+func (_u *TenantUpdate) ClearDateClosed() *TenantUpdate {
+	_u.mutation.ClearDateClosed()
+	return _u
+}
+
+// SetDateDestroyed sets the "date_destroyed" field.
+func (_u *TenantUpdate) SetDateDestroyed(v time.Time) *TenantUpdate {
+	_u.mutation.SetDateDestroyed(v)
+	return _u
+}
+
+// SetNillableDateDestroyed sets the "date_destroyed" field if the given value is not nil.
+func (_u *TenantUpdate) SetNillableDateDestroyed(v *time.Time) *TenantUpdate {
+	if v != nil {
+		_u.SetDateDestroyed(*v)
+	}
+	return _u
+}
+
+// ClearDateDestroyed clears the value of the "date_destroyed" field.
+func (_u *TenantUpdate) ClearDateDestroyed() *TenantUpdate {
+	_u.mutation.ClearDateDestroyed()
+	return _u
+}
+
+// SetDateHeld sets the "date_held" field.
+func (_u *TenantUpdate) SetDateHeld(v time.Time) *TenantUpdate {
+	_u.mutation.SetDateHeld(v)
+	return _u
+}
+
+// SetNillableDateHeld sets the "date_held" field if the given value is not nil.
+func (_u *TenantUpdate) SetNillableDateHeld(v *time.Time) *TenantUpdate {
+	if v != nil {
+		_u.SetDateHeld(*v)
+	}
+	return _u
+}
+
+// ClearDateHeld clears the value of the "date_held" field.
+func (_u *TenantUpdate) ClearDateHeld() *TenantUpdate {
+	_u.mutation.ClearDateHeld()
+	return _u
+}
+
+// SetHold sets the "hold" field.
+func (_u *TenantUpdate) SetHold(v string) *TenantUpdate {
+	_u.mutation.SetHold(v)
+	return _u
+}
+
+// SetNillableHold sets the "hold" field if the given value is not nil.
+func (_u *TenantUpdate) SetNillableHold(v *string) *TenantUpdate {
+	if v != nil {
+		_u.SetHold(*v)
+	}
+	return _u
+}
+
+// ClearHold clears the value of the "hold" field.
+func (_u *TenantUpdate) ClearHold() *TenantUpdate {
+	_u.mutation.ClearHold()
+	return _u
+}
+
 // Mutation returns the TenantMutation object of the builder.
 func (_u *TenantUpdate) Mutation() *TenantMutation {
 	return _u.mutation
@@ -190,6 +270,30 @@ func (_u *TenantUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.ConfigCleared() {
 		_spec.ClearField(tenant.FieldConfig, field.TypeJson)
+	}
+	if value, ok := _u.mutation.DateClosed(); ok {
+		_spec.SetField(tenant.FieldDateClosed, field.TypeTime, value)
+	}
+	if _u.mutation.DateClosedCleared() {
+		_spec.ClearField(tenant.FieldDateClosed, field.TypeTime)
+	}
+	if value, ok := _u.mutation.DateDestroyed(); ok {
+		_spec.SetField(tenant.FieldDateDestroyed, field.TypeTime, value)
+	}
+	if _u.mutation.DateDestroyedCleared() {
+		_spec.ClearField(tenant.FieldDateDestroyed, field.TypeTime)
+	}
+	if value, ok := _u.mutation.DateHeld(); ok {
+		_spec.SetField(tenant.FieldDateHeld, field.TypeTime, value)
+	}
+	if _u.mutation.DateHeldCleared() {
+		_spec.ClearField(tenant.FieldDateHeld, field.TypeTime)
+	}
+	if value, ok := _u.mutation.Hold(); ok {
+		_spec.SetField(tenant.FieldHold, field.TypeString, value)
+	}
+	if _u.mutation.HoldCleared() {
+		_spec.ClearField(tenant.FieldHold, field.TypeString)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -290,6 +394,86 @@ func (_u *TenantUpdateOne) SetConfig(v *rstr.TenantConfig) *TenantUpdateOne {
 // ClearConfig clears the value of the "config" field.
 func (_u *TenantUpdateOne) ClearConfig() *TenantUpdateOne {
 	_u.mutation.ClearConfig()
+	return _u
+}
+
+// SetDateClosed sets the "date_closed" field.
+func (_u *TenantUpdateOne) SetDateClosed(v time.Time) *TenantUpdateOne {
+	_u.mutation.SetDateClosed(v)
+	return _u
+}
+
+// SetNillableDateClosed sets the "date_closed" field if the given value is not nil.
+func (_u *TenantUpdateOne) SetNillableDateClosed(v *time.Time) *TenantUpdateOne {
+	if v != nil {
+		_u.SetDateClosed(*v)
+	}
+	return _u
+}
+
+// ClearDateClosed clears the value of the "date_closed" field.
+func (_u *TenantUpdateOne) ClearDateClosed() *TenantUpdateOne {
+	_u.mutation.ClearDateClosed()
+	return _u
+}
+
+// SetDateDestroyed sets the "date_destroyed" field.
+func (_u *TenantUpdateOne) SetDateDestroyed(v time.Time) *TenantUpdateOne {
+	_u.mutation.SetDateDestroyed(v)
+	return _u
+}
+
+// SetNillableDateDestroyed sets the "date_destroyed" field if the given value is not nil.
+func (_u *TenantUpdateOne) SetNillableDateDestroyed(v *time.Time) *TenantUpdateOne {
+	if v != nil {
+		_u.SetDateDestroyed(*v)
+	}
+	return _u
+}
+
+// ClearDateDestroyed clears the value of the "date_destroyed" field.
+func (_u *TenantUpdateOne) ClearDateDestroyed() *TenantUpdateOne {
+	_u.mutation.ClearDateDestroyed()
+	return _u
+}
+
+// SetDateHeld sets the "date_held" field.
+func (_u *TenantUpdateOne) SetDateHeld(v time.Time) *TenantUpdateOne {
+	_u.mutation.SetDateHeld(v)
+	return _u
+}
+
+// SetNillableDateHeld sets the "date_held" field if the given value is not nil.
+func (_u *TenantUpdateOne) SetNillableDateHeld(v *time.Time) *TenantUpdateOne {
+	if v != nil {
+		_u.SetDateHeld(*v)
+	}
+	return _u
+}
+
+// ClearDateHeld clears the value of the "date_held" field.
+func (_u *TenantUpdateOne) ClearDateHeld() *TenantUpdateOne {
+	_u.mutation.ClearDateHeld()
+	return _u
+}
+
+// SetHold sets the "hold" field.
+func (_u *TenantUpdateOne) SetHold(v string) *TenantUpdateOne {
+	_u.mutation.SetHold(v)
+	return _u
+}
+
+// SetNillableHold sets the "hold" field if the given value is not nil.
+func (_u *TenantUpdateOne) SetNillableHold(v *string) *TenantUpdateOne {
+	if v != nil {
+		_u.SetHold(*v)
+	}
+	return _u
+}
+
+// ClearHold clears the value of the "hold" field.
+func (_u *TenantUpdateOne) ClearHold() *TenantUpdateOne {
+	_u.mutation.ClearHold()
 	return _u
 }
 
@@ -403,6 +587,30 @@ func (_u *TenantUpdateOne) sqlSave(ctx context.Context) (_node *Tenant, err erro
 	}
 	if _u.mutation.ConfigCleared() {
 		_spec.ClearField(tenant.FieldConfig, field.TypeJson)
+	}
+	if value, ok := _u.mutation.DateClosed(); ok {
+		_spec.SetField(tenant.FieldDateClosed, field.TypeTime, value)
+	}
+	if _u.mutation.DateClosedCleared() {
+		_spec.ClearField(tenant.FieldDateClosed, field.TypeTime)
+	}
+	if value, ok := _u.mutation.DateDestroyed(); ok {
+		_spec.SetField(tenant.FieldDateDestroyed, field.TypeTime, value)
+	}
+	if _u.mutation.DateDestroyedCleared() {
+		_spec.ClearField(tenant.FieldDateDestroyed, field.TypeTime)
+	}
+	if value, ok := _u.mutation.DateHeld(); ok {
+		_spec.SetField(tenant.FieldDateHeld, field.TypeTime, value)
+	}
+	if _u.mutation.DateHeldCleared() {
+		_spec.ClearField(tenant.FieldDateHeld, field.TypeTime)
+	}
+	if value, ok := _u.mutation.Hold(); ok {
+		_spec.SetField(tenant.FieldHold, field.TypeString, value)
+	}
+	if _u.mutation.HoldCleared() {
+		_spec.ClearField(tenant.FieldHold, field.TypeString)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Tenant{config: _u.config}

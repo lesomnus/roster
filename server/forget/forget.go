@@ -73,6 +73,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/session"
 	"github.com/lesomnus/roster/internal/ent/sitemembership"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
+	"github.com/lesomnus/roster/internal/ent/tenant"
 	"github.com/lesomnus/roster/server/pd"
 )
 
@@ -219,12 +220,17 @@ func Restore(ctx context.Context, db *ent.Client, who pdid.Id) error {
 // column saying so. [Forget] is idempotent, so including them would be correct
 // and would mean walking the whole history of a deployment's leavers on every
 // pass.
+//
+// And so is everybody of a tenant an operator holds: a hold means *keep this
+// as it is*, and a clock running out under it is not somebody asking. They are
+// forgotten on the first pass after it is lifted. See [Hold].
 func Due(ctx context.Context, db *ent.Client, before time.Time) ([]pdid.Id, error) {
 	vs, err := db.Holder.Query().
 		Where(
 			holder.DateErasedNotNil(),
 			holder.DateErasedLT(before),
 			holder.AliasNEQ(""),
+			holder.HasTenantWith(tenant.DateHeldIsNil()),
 		).
 		Ids(ctx)
 	if err != nil {

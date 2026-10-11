@@ -42,6 +42,11 @@ const (
 	SyncReason_SYNC_REASON_REINSTATED SyncReason = 3
 	// [SyncEvent.date_erased] was set.
 	SyncReason_SYNC_REASON_ERASED SyncReason = 4
+	// [SyncEvent.date_closed] was set: their tenant was closed.
+	SyncReason_SYNC_REASON_CLOSED SyncReason = 5
+	// And cleared: their tenant was restored. Here for the reason
+	// `SYNC_REASON_REINSTATED` is.
+	SyncReason_SYNC_REASON_REOPENED SyncReason = 6
 )
 
 // Enum value maps for SyncReason.
@@ -52,6 +57,8 @@ var (
 		2: "SYNC_REASON_SUSPENDED",
 		3: "SYNC_REASON_REINSTATED",
 		4: "SYNC_REASON_ERASED",
+		5: "SYNC_REASON_CLOSED",
+		6: "SYNC_REASON_REOPENED",
 	}
 	SyncReason_value = map[string]int32{
 		"SYNC_REASON_UNSPECIFIED": 0,
@@ -59,6 +66,8 @@ var (
 		"SYNC_REASON_SUSPENDED":   2,
 		"SYNC_REASON_REINSTATED":  3,
 		"SYNC_REASON_ERASED":      4,
+		"SYNC_REASON_CLOSED":      5,
+		"SYNC_REASON_REOPENED":    6,
 	}
 )
 
@@ -150,6 +159,7 @@ type SyncEvent struct {
 	xxx_hidden_DateInvalidated *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_invalidated,json=dateInvalidated"`
 	xxx_hidden_DateDisabled    *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_disabled,json=dateDisabled"`
 	xxx_hidden_DateErased      *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateClosed      *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_closed,json=dateClosed"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -228,6 +238,13 @@ func (x *SyncEvent) GetDateErased() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *SyncEvent) GetDateClosed() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateClosed
+	}
+	return nil
+}
+
 func (x *SyncEvent) SetHolder(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -262,6 +279,10 @@ func (x *SyncEvent) SetDateErased(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateErased = v
 }
 
+func (x *SyncEvent) SetDateClosed(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateClosed = v
+}
+
 func (x *SyncEvent) HasAt() bool {
 	if x == nil {
 		return false
@@ -290,6 +311,13 @@ func (x *SyncEvent) HasDateErased() bool {
 	return x.xxx_hidden_DateErased != nil
 }
 
+func (x *SyncEvent) HasDateClosed() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateClosed != nil
+}
+
 func (x *SyncEvent) ClearAt() {
 	x.xxx_hidden_At = nil
 }
@@ -304,6 +332,10 @@ func (x *SyncEvent) ClearDateDisabled() {
 
 func (x *SyncEvent) ClearDateErased() {
 	x.xxx_hidden_DateErased = nil
+}
+
+func (x *SyncEvent) ClearDateClosed() {
+	x.xxx_hidden_DateClosed = nil
 }
 
 type SyncEvent_builder struct {
@@ -345,6 +377,22 @@ type SyncEvent_builder struct {
 	// They are gone. Nothing resolves to them any more, and an app holding a
 	// session for them is holding a name for nobody.
 	DateErased *timestamppb.Timestamp
+	// Their **tenant** is closed: nobody of it may sign in, and everything its
+	// people already held stopped working. Unset is a tenant that is open --
+	// including one that **was** closed and was restored.
+	//
+	// # On each person, rather than an event about the tenant
+	//
+	// Because what an app holds is sessions for people, keyed by who they are,
+	// and an event naming only a tenant would have each app keep a second index
+	// to find whose sessions those are. So a tenant closing is heard as one event
+	// for every person in it, each saying their tenant's moment -- which also
+	// keeps every event *what is true about somebody now*: the fourth fact, read
+	// with the other three.
+	//
+	// A stream reads a tenant's people when the tenant moves, so closing a
+	// tenant of ten thousand is ten thousand events, once.
+	DateClosed *timestamppb.Timestamp
 }
 
 func (b0 SyncEvent_builder) Build() *SyncEvent {
@@ -358,6 +406,7 @@ func (b0 SyncEvent_builder) Build() *SyncEvent {
 	x.xxx_hidden_DateInvalidated = b.DateInvalidated
 	x.xxx_hidden_DateDisabled = b.DateDisabled
 	x.xxx_hidden_DateErased = b.DateErased
+	x.xxx_hidden_DateClosed = b.DateClosed
 	return m0
 }
 
@@ -366,7 +415,7 @@ var File_app_sync_proto protoreflect.FileDescriptor
 const file_app_sync_proto_rawDesc = "" +
 	"\n" +
 	"\x0eapp/sync.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\"\x12\n" +
-	"\x10SyncWatchRequest\"\xd8\x02\n" +
+	"\x10SyncWatchRequest\"\x95\x03\n" +
 	"\tSyncEvent\x12\x16\n" +
 	"\x06holder\x18\x01 \x01(\fR\x06holder\x12\x16\n" +
 	"\x06tenant\x18\x02 \x01(\fR\x06tenant\x12*\n" +
@@ -375,14 +424,18 @@ const file_app_sync_proto_rawDesc = "" +
 	"\x10date_invalidated\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\x0fdateInvalidated\x12?\n" +
 	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\fdateDisabled\x12;\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"dateErased*\x95\x01\n" +
+	"dateErased\x12;\n" +
+	"\vdate_closed\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"dateClosed*\xc7\x01\n" +
 	"\n" +
 	"SyncReason\x12\x1b\n" +
 	"\x17SYNC_REASON_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17SYNC_REASON_INVALIDATED\x10\x01\x12\x19\n" +
 	"\x15SYNC_REASON_SUSPENDED\x10\x02\x12\x1a\n" +
 	"\x16SYNC_REASON_REINSTATED\x10\x03\x12\x16\n" +
-	"\x12SYNC_REASON_ERASED\x10\x042E\n" +
+	"\x12SYNC_REASON_ERASED\x10\x04\x12\x16\n" +
+	"\x12SYNC_REASON_CLOSED\x10\x05\x12\x18\n" +
+	"\x14SYNC_REASON_REOPENED\x10\x062E\n" +
 	"\vSyncService\x126\n" +
 	"\x05Watch\x12\x18.roster.SyncWatchRequest\x1a\x11.roster.SyncEvent0\x01B&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
@@ -400,13 +453,14 @@ var file_app_sync_proto_depIdxs = []int32{
 	3, // 2: roster.SyncEvent.date_invalidated:type_name -> google.protobuf.Timestamp
 	3, // 3: roster.SyncEvent.date_disabled:type_name -> google.protobuf.Timestamp
 	3, // 4: roster.SyncEvent.date_erased:type_name -> google.protobuf.Timestamp
-	1, // 5: roster.SyncService.Watch:input_type -> roster.SyncWatchRequest
-	2, // 6: roster.SyncService.Watch:output_type -> roster.SyncEvent
-	6, // [6:7] is the sub-list for method output_type
-	5, // [5:6] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	3, // 5: roster.SyncEvent.date_closed:type_name -> google.protobuf.Timestamp
+	1, // 6: roster.SyncService.Watch:input_type -> roster.SyncWatchRequest
+	2, // 7: roster.SyncService.Watch:output_type -> roster.SyncEvent
+	7, // [7:8] is the sub-list for method output_type
+	6, // [6:7] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_app_sync_proto_init() }
