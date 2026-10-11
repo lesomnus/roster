@@ -701,6 +701,62 @@ from; the name is still yours:
   picture, and kept nowhere: roster needs who somebody is, not a credential for
   their GitHub.
 
+### Any Microsoft account
+
+One Entra directory is the connection at the top of this section. *Sign in
+with Microsoft* for anybody is Microsoft's authority for more than one
+directory, and it is a connection too:
+
+```yaml
+  - kind: Connection
+    tenant: contoso
+    name: microsoft
+    issuer: https://login.microsoftonline.com/common/v2.0   # any account
+    client_id: <the app registration>
+    scopes: [email, profile]
+    secret_ref: env:MICROSOFT_SECRET
+```
+
+| issuer | who arrives | the registration's *supported account types* |
+| --- | --- | --- |
+| `.../common/v2.0` | any work, school or personal account | any directory and personal accounts |
+| `.../organizations/v2.0` | any work or school account | any directory |
+| `.../9188040d-6c67-4c5b-b112-36a304b66dad/v2.0` | personal accounts only | personal accounts |
+
+The first two publish a document whose issuer says `{tenantid}` where a
+directory goes, and each token names the one its person is in, as `iss` and as
+`tid`. A front door accepts that one difference and holds every token to it --
+its `iss` has to be the template with its own `tid` in it -- and refuses any
+other document that names an issuer the connection does not. Personal accounts
+alone are not this shape: `consumers` publishes the one directory they are all
+in, so the connection names that directory's issuer, which is the third row.
+
+- **Who somebody is**: `sub` by default, one per app registration, or
+  `subject_claim: oid`, the same for every app and needing the `profile` scope.
+  Microsoft issues both as GUIDs that are unique on their own, so either names
+  one person whichever directory they came from.
+- **What their address is worth.** Microsoft sends no `email_verified`. What it
+  sends instead is `xms_edov`, *the address's domain is one the person's
+  directory has proved it owns* -- an optional claim the registration has to ask
+  for, in the manifest's `optionalClaims.idToken` beside `email`. An address is
+  verified on that and on nothing else. Without it, any directory's
+  administrator can put any address on a user of their own, and a front door
+  that matched an invitation by the bare `email` of a token from any directory
+  would hand that user whichever account carries it -- the mistake known as
+  nOAuth. So with no `xms_edov` every address from Microsoft is kept
+  unverified, and `expected` finds nobody through it by address. Microsoft's
+  manifest reference says a registration for personal accounts as well as
+  directories cannot use optional claims; where that holds, nothing a `common`
+  connection hands over is verified, and people are found by their subject.
+- **Leave `acceptMappedClaims` off.** It lets a claims-mapping policy rewrite
+  what the token says, and on a registration for any directory, any directory's
+  administrator can write one for it -- `xms_edov` included. Microsoft's own
+  warning says the same; a guide that adds `xms_edov` by turning it on is
+  trading the check for the claim.
+- **A directory is not a tenant here.** Everybody who arrives through the
+  connection is in the tenant it belongs to, whichever directory they came from;
+  which tenant is the front door's to say, as it is for every connection.
+
 ### A picture from the directory
 
 A tenant may have a sign-in fill what its people's profiles lack: a display

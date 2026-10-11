@@ -34,9 +34,18 @@ type Idp struct {
 	Audience string
 
 	// Subject is who the next sign-in is, and Claims is whatever else the token
-	// should carry -- `email`, `email_verified`, `name`.
+	// should carry -- `email`, `email_verified`, `name`. A claim here wins over
+	// the one the fake would have written, `iss` and `tid` included.
 	Subject string
 	Claims  map[string]any
+
+	// Tid is the directory the next sign-in is in, for the fake as Microsoft's
+	// authority of more than one: each token's `iss` is `<URL>/<Tid>/v2.0`,
+	// and it carries `tid`. What it publishes for that is at the paths
+	// Microsoft's is -- `/common/v2.0` and `/organizations/v2.0` name
+	// `{tenantid}` in their issuer, `/consumers/v2.0` names the one directory
+	// personal accounts are in, and `/<guid>/v2.0` is that directory's own.
+	Tid string
 
 	// UserInfo is what `/userinfo` answers beside `sub`, to a caller holding
 	// [AccessToken]. A `picture` here and none in [Claims] is Entra's shape.
@@ -55,6 +64,9 @@ type Idp struct {
 // `/photo` want back.
 const AccessToken = "the-access-token"
 
+// Consumers is the directory every personal Microsoft account is in.
+const Consumers = "9188040d-6c67-4c5b-b112-36a304b66dad"
+
 // New stands one up, closed when the test ends.
 func New(t *testing.T, audience string) *Idp {
 	t.Helper()
@@ -66,10 +78,10 @@ func New(t *testing.T, audience string) *Idp {
 	p := &Idp{key: k, Audience: audience}
 	m := http.NewServeMux()
 
-	m.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
+	document := func(w http.ResponseWriter, issuer string) {
 		w.Header().Set("content-type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"issuer":                 p.URL,
+			"issuer":                 issuer,
 			"authorization_endpoint": p.URL + "/authorize",
 			"token_endpoint":         p.URL + "/token",
 			"jwks_uri":               p.URL + "/keys",
@@ -81,6 +93,19 @@ func New(t *testing.T, audience string) *Idp {
 			"end_session_endpoint":                  p.URL + "/logout",
 			"id_token_signing_alg_values_supported": []string{"RS256"},
 		})
+	}
+	m.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
+		document(w, p.URL)
+	})
+	m.HandleFunc("GET /{directory}/v2.0/.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
+		switch d := r.PathValue("directory"); d {
+		case "common", "organizations":
+			document(w, p.URL+"/{tenantid}/v2.0")
+		case "consumers":
+			document(w, p.URL+"/"+Consumers+"/v2.0")
+		default:
+			document(w, p.URL+"/"+d+"/v2.0")
+		}
 	})
 	m.HandleFunc("/keys", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("content-type", "application/json")
@@ -110,6 +135,10 @@ func New(t *testing.T, audience string) *Idp {
 			"sub": p.Subject,
 			"exp": 4102444800,
 			"iat": 1700000000,
+		}
+		if p.Tid != "" {
+			claims["iss"] = p.URL + "/" + p.Tid + "/v2.0"
+			claims["tid"] = p.Tid
 		}
 		for k, v := range p.Claims {
 			claims[k] = v

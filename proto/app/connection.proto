@@ -83,6 +83,13 @@ message Connection {
   // Connect, so a front door asks it who signed in (`arrives/github.go`).
   // Which provider a connection is, is read off its issuer and never off its
   // name, which is the operator's word.
+  //
+  // `https://login.microsoftonline.com/common/v2.0` is any Microsoft account,
+  // and `.../organizations/v2.0` any work or school one: an authority of more
+  // than one directory, whose document names `{tenantid}` where a directory
+  // goes. Each token is held to the directory it names (`arrives/microsoft.go`).
+  // Personal accounts alone are the one directory they are all in,
+  // `.../9188040d-6c67-4c5b-b112-36a304b66dad/v2.0`.
   string issuer = 8;
 
   // What the provider calls this app.
@@ -134,6 +141,11 @@ message Connection {
   // Entra puts `oid` in the ID token only with the `profile` scope. A sign-in
   // whose token lacks the claim is refused rather than falling back to `sub`:
   // one person under two subjects is two people.
+  //
+  // Through an authority of more than one directory either still names one
+  // person: Microsoft issues `sub` and `oid` as GUIDs that are unique on
+  // their own, with `tid` beside them for where the person is. `sub` holds for
+  // as long as there is one app registration, and `oid` past a second.
   //
   // GitHub issues no ID token, so a GitHub connection names nobody by a claim:
   // its people are their account's `id`, the number that never changes and
