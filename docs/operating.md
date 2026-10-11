@@ -658,6 +658,49 @@ people and the ways into their accounts. A file that made those is a file that
 grants access to whoever can write it. `Role` and `Binding` are the same argument
 one step out and are left out for now rather than refused.
 
+### GitHub
+
+GitHub signs people in with OAuth 2.0 and no OpenID Connect -- there is no
+discovery document and no ID token -- so a front door asks GitHub's API who
+signed in instead (`arrives/github.go`). A connection is GitHub's when its
+**issuer** is GitHub's, the same fact the sign-in page draws GitHub's mark
+from; the name is still yours:
+
+```yaml
+  - kind: Connection
+    tenant: contoso
+    name: github
+    issuer: https://github.com           # GitHub's, and nothing else makes it so
+    client_id: <the app's client id>
+    secret_ref: env:GITHUB_SECRET        # GitHub wants the secret at its token endpoint
+```
+
+- **Register a GitHub App or an OAuth app** with the front door's callback --
+  `https://<the Login App>/callback`, and the account app's when it offers
+  GitHub too. One connection is one client id for both front doors, and an
+  OAuth app has one callback URL, so a deployment whose two front doors both
+  offer GitHub registers a GitHub App, which takes several. A GitHub App needs
+  the *Email addresses* account permission (read-only); its permissions are its
+  scopes.
+- **The person is their account's `id`**, the number GitHub never changes or
+  hands to somebody else -- not their username, which they may change and
+  somebody else may then take. `subject_claim` names a claim of an ID token, so
+  it says nothing for GitHub, and a sign-in through a GitHub connection that
+  says `oid` is refused.
+- **Their address is the primary one**, from `GET /user/emails`, and verified
+  only when GitHub says so. That is the condition `expected` matches an
+  invitation under, and the stamp on the address roster keeps. The connection
+  asks for `user:email` whatever `scopes` says; an account whose addresses
+  GitHub will not say -- a GitHub App without the permission -- signs in with
+  none.
+- **github.com.** A front door told its GitHub is elsewhere
+  (`login.Config.GitHub`, `account.Config.GitHub`) reads that host as GitHub
+  Enterprise Server, with the API at `/api/v3` beside it; nothing in the
+  configuration file says so yet.
+- **The token is spent at the sign-in**, for the two questions and the
+  picture, and kept nowhere: roster needs who somebody is, not a credential for
+  their GitHub.
+
 ### A picture from the directory
 
 A tenant may have a sign-in fill what its people's profiles lack: a display
@@ -692,6 +735,7 @@ one:
 | --- | --- | --- |
 | Google | the token's `picture`, a URL anybody can fetch | `profile` among its scopes, which a Google sign-in asks for anyway. Nothing to consent to beyond the sign-in. The URL is kept as `profile.picture`, beside roster's copy |
 | Entra | behind Microsoft Graph, where userinfo points | `User.Read` among its scopes, **consented for the whole directory first** (below). The URL is not kept, since no browser holds the token it needs |
+| GitHub | the account's `avatar_url`, which the sign-in already read | nothing. github.com's is a URL anybody can fetch and is kept as `profile.picture`; GitHub Enterprise Server's is on its own host, so it is fetched with the token and the URL is not kept |
 | anything else | the token's `picture`, else userinfo's | `profile`. A picture on the provider's own API host is fetched with the token, as Entra's is; one anywhere else only over https from an address on the internet -- so a directory inside the network that keeps pictures on another inside host gives none |
 
 **Entra: the consent before the scope.** A scope added to a connection is asked
