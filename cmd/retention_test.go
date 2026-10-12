@@ -46,7 +46,7 @@ func TestWhatLeavesTheDatabaseIsInTheArchiveBeforeItLeaves(t *testing.T) {
 	archive := flob.NewOsStores(t.TempDir())
 
 	// Everything, which is what a cutoff in the future means.
-	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), archive)
+	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Policy{Archive: archive}, trail.Kinds{}, time.Now().Add(time.Hour))
 	x.NoError(err)
 	x.Equal(len(was), n)
 
@@ -97,12 +97,12 @@ func TestTwoRunsOverOneMonthDoNotShareAChunk(t *testing.T) {
 	archive := flob.NewOsStores(t.TempDir())
 
 	b.holder(t, ctx, b.Contoso, "first")
-	one, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), archive)
+	one, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Policy{Archive: archive}, trail.Kinds{}, time.Now().Add(time.Hour))
 	x.NoError(err)
 	x.NotZero(one)
 
 	b.holder(t, ctx, b.Contoso, "second")
-	two, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), archive)
+	two, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Policy{Archive: archive}, trail.Kinds{}, time.Now().Add(time.Hour))
 	x.NoError(err)
 	x.NotZero(two)
 
@@ -151,7 +151,7 @@ func TestNothingLeavesTheDatabaseThatCouldNotBeWritten(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "archive")
 	x.NoError(os.WriteFile(dir, nil, 0o600))
 
-	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), flob.NewOsStores(dir))
+	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Policy{Archive: flob.NewOsStores(dir)}, trail.Kinds{}, time.Now().Add(time.Hour))
 	x.Error(err)
 	x.Zero(n)
 

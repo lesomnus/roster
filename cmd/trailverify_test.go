@@ -3,6 +3,10 @@ package cmd_test
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/ed25519"
+	"crypto/rand"
+	"crypto/x509"
+	"encoding/pem"
 	"slices"
 	"testing"
 	"time"
@@ -77,4 +81,55 @@ func TestTheArchiveIsCheckedAgainstTheDatabasesAccountOfIt(t *testing.T) {
 	x.Len(left, 1, "a purge destroyed a chunk the database does not account for, or left one it does")
 	err = run("trail", "verify")
 	x.ErrorContains(err, "1 finding(s)", "the chunk nobody wrote is still the one finding")
+}
+
+// TestRowsFromBeforeTheKeyAreAcceptedOnce is what a deployment that signs its
+// checkpoints does on the payday that signs the manifest's rows too
+// (lesomnus/payday#58, roster#110). A row nobody signed looks the same whether
+// it was written before rows were signed or had its signature taken off, so
+// with a key every one of them is a finding until an operator who has looked
+// runs `trail accept`, once. After that, verify is clean, and what the next
+// prune writes is signed as it goes.
+func TestRowsFromBeforeTheKeyAreAcceptedOnce(t *testing.T) {
+	x := require.New(t)
+
+	dir := t.TempDir()
+	var c cmd.Config
+	b, ctx := build(t, func(cc *cmd.Config) {
+		cc.Audit.Archive = dir
+		cc.Audit.Retain = time.Nanosecond
+		c = *cc
+	})
+	b.holder(t, ctx, b.Contoso, "before")
+
+	run := func(args ...string) error { return cli.Cmd(&c).Run(ctx, args) }
+
+	// Written while the deployment had no key.
+	x.NoError(run("trail", "prune"))
+	x.NoError(run("trail", "verify"))
+
+	_, priv, err := ed25519.GenerateKey(rand.Reader)
+	x.NoError(err)
+	der, err := x509.MarshalPKCS8PrivateKey(priv)
+	x.NoError(err)
+	c.Audit.Checkpoints.Key = string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der}))
+
+	err = run("trail", "verify")
+	x.ErrorContains(err, "finding(s)", "rows nobody signed were taken for signed ones")
+	x.NoError(run("trail", "accept", "--why", "written before this deployment signed its rows"))
+	x.NoError(run("trail", "verify"))
+
+	// And what is written now is signed as it is written.
+	b.holder(t, ctx, b.Contoso, "after")
+	x.NoError(run("trail", "prune"))
+	x.NoError(run("trail", "verify"))
+
+	t.Run("and a prune into a second archive is refused", func(t *testing.T) {
+		x := require.New(t)
+
+		err := run("trail", "prune", "--older-than", "1ns", "--to", t.TempDir())
+		x.ErrorContains(err, "--to")
+		x.ErrorContains(err, "audit.archive")
+		x.NoError(run("trail", "prune", "--older-than", "1ns", "--to", dir), "the archive it already has")
+	})
 }

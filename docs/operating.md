@@ -1080,6 +1080,27 @@ account: keep them apart from the archive, `audit.checkpoints.dir` on a disk tha
 refuses deletion, and sign them with `audit.checkpoints.key` -- a file, or the PEM
 document itself in `ROSTER_AUDIT_CHECKPOINTS_KEY`.
 
+The same key signs **every row of the account** as it is written, and each
+checkpoint names the one before it (lesomnus/payday#58), so a row changed
+after the latest checkpoint is found too. Every act ends in a checkpoint of its
+own, and while the rows do not add up to the latest one nothing is checkpointed
+and every act refuses, until `accept` (payday#66).
+
+A row with no signature is the same whether it was written before rows were
+signed or had its signature taken off, so with a key every such row is a finding.
+A deployment that already had a key when it moved to a roster with signed rows
+runs `accept` **once** after the upgrade, as somebody who has looked:
+
+```sh
+roster trail verify                                            # `unsigned`, for every row from before
+roster trail accept --why "written before rows were signed"   # once
+roster trail verify                                            # clean
+```
+
+`prune --to` names the archive `audit.archive` already is, or one for a
+deployment that names none. The account is of one archive, so rows written into
+a second would be rows the first is found to be missing, and that is refused.
+
 A **legal hold** is the one thing a manual window does answer to: what one is on is
 left by `prune --discard` and by `purge`, which say how much they kept and go ahead
 for everything else. A hold is a tenant's: an operator places one with `roster hold
