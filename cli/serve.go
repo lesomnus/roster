@@ -102,6 +102,13 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 			}
 			defer stop()
 
+			// Which process runs each loop, first: a deployment that named
+			// no lease is told so before anything is opened (payday#54).
+			lease, err := c.Spin.Build(c.Db)
+			if err != nil {
+				return err
+			}
+
 			s, err := cmd.Build(ctx, *c)
 			if err != nil {
 				return err
@@ -143,7 +150,7 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 			// that goes on answering after its outbox drain has died is one
 			// that accepts writes it will never publish.
 			g, ctx := errgroup.WithContext(ctx)
-			g.Go(func() error { return spin.Run(ctx, slices.Values(s.Spin)) })
+			g.Go(func() error { return spin.Run(ctx, slices.Values(s.Spin), spin.WithLease(lease)) })
 			g.Go(func() error { return s.Serve(ctx, *c, l) })
 
 			// The consumers, when this deployment runs them itself rather than

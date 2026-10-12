@@ -6,6 +6,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/lesomnus/payday/config"
+	"github.com/lesomnus/payday/pdtest"
+
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/server/keys"
 )
@@ -72,4 +75,20 @@ func TestAFrontDoorInThisProcessMakesItsOwnKeys(t *testing.T) {
 		x.Empty(ac.Keys)
 		x.True(strings.HasPrefix(ac.Key, keys.PrefixDeployment))
 	})
+}
+
+// TestServeIsToldWhichProcessRunsTheLoops: `spin.lease` is named rather than
+// defaulted, as `watch.broker` is -- the default would run every sweep in
+// every replica -- and `serve` refuses before it opens anything when it is not
+// (payday#54).
+func TestServeIsToldWhichProcessRunsTheLoops(t *testing.T) {
+	x := require.New(t)
+
+	c := cmd.Config{}
+	c.Db.Driver, c.Db.Dsn = pdtest.DB(t)
+	c.Watch.Broker = config.BrokerMemory
+
+	err := NewCmdServe(&c).Run(t.Context(), nil)
+	x.ErrorContains(err, "spin.lease")
+	x.ErrorContains(err, "one replica", "and why")
 }

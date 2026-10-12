@@ -25,6 +25,7 @@ import (
 	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/grpcx"
 	"github.com/lesomnus/payday/pdpb"
+	"github.com/lesomnus/payday/spin"
 	"github.com/lesomnus/payday/trail"
 	"github.com/lesomnus/payday/watch"
 	"github.com/lesomnus/payday/web"
@@ -178,6 +179,10 @@ type Server struct {
 	// Spin is whatever this deployment has to run besides answering requests.
 	// It is a slice rather than a method because a server with nothing to run
 	// should write nothing at all; see `payday/spin`.
+	//
+	// Every loop in it is named, both planes' (see [loop]): under a lease the
+	// processes of a deployment agree on a loop by its name and one of them
+	// runs it, and `spin.Run` refuses a loop with none (payday#54).
 	Spin []any
 }
 
@@ -449,7 +454,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// the people in them are who this is for.
 	if c.SignIn.Enabled {
 		s.People = authsession.New(session.New(client))
-		s.Spin = append(s.Spin, session.Sweep(client, session.Swept))
+		s.Spin = append(s.Spin, loop(prefix, "sessions", session.Sweep(client, session.Swept)))
 
 		// And with no control plane there is no chain below to join, so this
 		// is the whole of one: a cookie, and then whatever a deployment that
@@ -607,7 +612,10 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		// Appended to **this** server's `Spin` and not the control plane's, on
 		// its client. See below: what the nested `Build` collected was never
 		// run.
-		s.Spin = append(s.Spin, session.Sweep(control.Ent, session.Swept))
+		//
+		// Named as the control plane's, whose rows it collects, though it is
+		// appended by this one.
+		s.Spin = append(s.Spin, loop(keys.PrefixDeployment, "sessions", session.Sweep(control.Ent, session.Swept)))
 
 		// A console's cookie in front of a service's key, and **on this plane
 		// only**.
@@ -644,11 +652,11 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// grows one of these rows and has no sweep is a table that grows silently,
 	// and that is the failure worth being wrong towards.
 	s.Spin = append(s.Spin,
-		keys.Sweep(s.Ent, keys.Swept),
-		vouch.Sweep(s.Ent, vouch.Swept),
+		loop(prefix, "keys", keys.Sweep(s.Ent, keys.Swept)),
+		loop(prefix, "vouch", vouch.Sweep(s.Ent, vouch.Swept)),
 		// And abandoned hostname claims, which arrive at human speed rather
 		// than per sign-in -- so a day rather than the hour the two above use.
-		prove.Sweep(s.Ent, prove.Swept),
+		loop(prefix, "prove", prove.Sweep(s.Ent, prove.Swept)),
 	)
 
 	// And the trail's retention, which is the one sweep here that is a
@@ -684,7 +692,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	if retains {
 		log.From(ctx).InfoContext(ctx, "trail: retention", "policy", p.String())
 
-		s.Spin = append(s.Spin, trail.Sweep(pd.TrailStore(s.Ent), p))
+		s.Spin = append(s.Spin, loop(prefix, "trail", trail.Sweep(pd.TrailStore(s.Ent), p)))
 	}
 
 	// And the other window, which is about a person rather than about age.
@@ -701,7 +709,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 
 		// The trail's own policy, so that what it erases of somebody answers
 		// to the same holds the retention sweep does.
-		s.Spin = append(s.Spin, forget.Sweep(s.Ent, c.Holder.ForgetAfter, p, c.Holder.Every))
+		s.Spin = append(s.Spin, loop(prefix, "forget", forget.Sweep(s.Ent, c.Holder.ForgetAfter, p, c.Holder.Every)))
 	}
 
 	// And a tenant's, one level up (#98): the closed whose grace has run out,
@@ -715,7 +723,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 				"after", c.Tenant.RestoreWithin, "alias held", c.Tenant.Hold())
 		}
 
-		s.Spin = append(s.Spin, forget.SweepTenants(s.Ent, s.Ungated, c.Tenant.RestoreWithin, c.Tenant.Hold(), p, c.Tenant.Every))
+		s.Spin = append(s.Spin, loop(prefix, "tenants", forget.SweepTenants(s.Ent, s.Ungated, c.Tenant.RestoreWithin, c.Tenant.Hold(), p, c.Tenant.Every)))
 	}
 
 	if c.Watch.Outbox {
@@ -728,10 +736,29 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		// one place that decides, and a condition here as well would be the
 		// same rule written twice -- which is how a queue with nothing at the
 		// other end of it got written in the first place.
-		s.Spin = append(s.Spin, pd.Drain(client, b, c.Watch.Every()))
+		s.Spin = append(s.Spin, loop(prefix, "outbox", pd.Drain(client, b, c.Watch.Every())))
 	}
 
 	return s, nil
+}
+
+// loop names one of a plane's loops, which is what a lease holds it by
+// (`spin.lease`, payday#54): the processes of a deployment agree on a loop by
+// its name, and one of them runs it.
+//
+// By plane, because the planes are two databases and each has its own copy of
+// most of these. `roster.keys` and `roster.control.keys` sweep two tables, and
+// were they one name the lease would have them take turns -- each plane's table
+// unswept for as long as a process held the other's. It is also why the names
+// payday gives its own (`payday.trail`, `payday.outbox`) are not kept: both
+// planes may have an outbox, and two loops of one name are refused before any
+// of them starts.
+func loop(prefix string, name string, s spin.Spinner) spin.Spinner {
+	if prefix == keys.PrefixTenant {
+		return spin.Called("roster."+name, s)
+	}
+
+	return spin.Called("roster.control."+name, s)
 }
 
 // Close gives back what this deployment holds, which is **both** planes.

@@ -99,6 +99,11 @@ services:
       ROSTER_WATCH_BROKER: postgres
       ROSTER_CONTROL_WATCH_BROKER: postgres
 
+      # And which replica runs each background loop, for the same reason and
+      # on the same database: an advisory lock per loop, held by one process.
+      # One lease for both planes, since a process runs both.
+      ROSTER_SPIN_LEASE: postgres
+
       # The data plane: gRPC, and the same server over HTTP for the account
       # app's calls and anything with an HTTP client.
       ROSTER_SERVER_ADDR: ":50051"

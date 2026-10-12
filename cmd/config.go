@@ -59,6 +59,17 @@ type Config struct {
 	Otel   config.OtelConfig   `yaml:"otel"`
 	Watch  config.WatchConfig  `yaml:"watch"`
 
+	// Spin is which process of a deployment runs each background loop -- the
+	// sweeps, the trail's retention, the outbox drain -- and it is named for
+	// the reason `watch.broker` is: `local` runs every loop in this process,
+	// which is right for one replica and silently wrong for two, and nothing
+	// reports it. `postgres` holds each loop on an advisory lock on the
+	// database the rows are already in (payday#54), for both planes.
+	//
+	// Read by `serve` and nothing else, so a command that only builds the
+	// server has nothing to name.
+	Spin config.SpinConfig `yaml:"spin"`
+
 	// Resources are files declaring rows that are configuration: a customer,
 	// the names it is reached at, the directories its people arrive through.
 	// `serve` applies them before it serves.

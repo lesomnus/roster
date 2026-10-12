@@ -84,6 +84,8 @@ db:
   migrate: true
 watch:
   broker: memory
+spin:
+  lease: local
 server:
   addr: 127.0.0.1:18051
   http:
