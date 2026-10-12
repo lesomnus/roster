@@ -142,7 +142,8 @@ function Account(props: { of: Providers; onSignOut: () => void; onLeft: (forgott
 				<Sessions own={own} may={may} />
 				{props.of.terminal === true && <Terminal may={may} />}
 				<Keys own={own} keys={v.keys} may={may} />
-				{props.of.leave === true && (
+				{/* Not to somebody a directory provisions, whom roster refuses it: the directory says when they leave. */}
+				{props.of.leave === true && v.provisionedThrough === '' && (
 					<Leave alias={v.alias} brand={brandOf(props.of)} onSignOut={props.onSignOut} onLeft={props.onLeft} />
 				)}
 			</main>

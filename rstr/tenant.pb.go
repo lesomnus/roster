@@ -559,16 +559,20 @@ type TenantConfig_builder struct {
 	// one, by themselves, from a sign-in a few minutes old.
 	//
 	// **Unset is no**, which is what every tenant written before this was. A
-	// directory a company provisions by SCIM is the company's to empty, and a
-	// person deleting themselves out of it is a person the next sync puts back
-	// with nothing of theirs -- so it is a tenant that decides to offer this,
-	// never one that finds out it did. A consumer product's directory, where an
-	// account is the person's own, is the case it was asked for: Rove's SaaS
-	// turns it on for the one tenant every account is in.
+	// directory a company provisions by SCIM is the company's to empty: a person
+	// who deleted themselves out of it is one the directory can neither find nor
+	// make again until they are forgotten, and then makes again with nothing of
+	// theirs. So it is a tenant that decides to offer this, never one that finds
+	// out it did -- and where one with a directory does, the people the directory
+	// provisions are refused all the same (`MeService.Leave`). A consumer
+	// product's directory, where an account is the person's own, is the case it
+	// was asked for: Rove's SaaS turns it on for the one tenant every account is
+	// in.
 	//
 	// A fact roster acts on and not an instruction to a screen: `MeService.Leave`
 	// refuses while this is false, and the account page draws the section only
-	// when it is true, because it would work.
+	// when it is true, because it would work -- and not for somebody
+	// `MeService.Get` says a directory provisions, because for them it would not.
 	Leave bool
 }
 

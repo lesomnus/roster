@@ -216,6 +216,19 @@ export type Connection = Message<"roster.Connection"> & {
    * (`HolderService.Deactivate`). One connection a tenant at most, because a
    * directory provisioning people names them once.
    *
+   * # Only at an organisation's own door
+   *
+   * Refused, to the deployment as well, at an issuer anybody can make an
+   * account at: GitHub's, Google's, and Microsoft's for more than one directory
+   * (`common`, `organizations`) or for personal accounts. What makes
+   * `Provision` safe to hand a key a directory's cloud presents is that the
+   * identity it writes lets in nobody the organisation had not, which is true
+   * only where the organisation made every account. At an open door the same
+   * write is a way in for whoever holds the account it names: a key that leaked
+   * would name its holder's own, and sign them in. A door of the
+   * organisation's that lets anybody sign up is the same, and is not one roster
+   * can tell.
+   *
    * `docs/scim.md` is the directory that does.
    *
    * @generated from field: bool provisions = 16;

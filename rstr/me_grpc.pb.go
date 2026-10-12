@@ -127,10 +127,15 @@ type MeServiceClient interface {
 	// under a hold still lets somebody leave -- an erase destroys nothing -- and
 	// forgets them once the hold is lifted.
 	//
-	// Three things, in this order, and each refusal says which:
+	// Four things, in this order, and each refusal says which:
 	//
 	//   - that the caller's tenant offers it (`TenantConfig.leave`), which is
 	//     **off** unless a tenant said otherwise -- `PermissionDenied`;
+	//   - that the caller is not somebody their tenant's directory provisions:
+	//     whoever signs in through the connection it provisions through
+	//     (`Connection.provisions`) is the directory's to remove, and one who
+	//     erased themselves would be a person it can neither find nor make again
+	//     until they are forgotten, and then makes again -- `PermissionDenied`;
 	//   - that the credential the call came with was minted in the last
 	//     [server/me.LeaveWithin], which is what a sign-in a few minutes old is:
 	//     a delegation a front door minted when somebody signed in there, or a
@@ -308,10 +313,15 @@ type MeServiceServer interface {
 	// under a hold still lets somebody leave -- an erase destroys nothing -- and
 	// forgets them once the hold is lifted.
 	//
-	// Three things, in this order, and each refusal says which:
+	// Four things, in this order, and each refusal says which:
 	//
 	//   - that the caller's tenant offers it (`TenantConfig.leave`), which is
 	//     **off** unless a tenant said otherwise -- `PermissionDenied`;
+	//   - that the caller is not somebody their tenant's directory provisions:
+	//     whoever signs in through the connection it provisions through
+	//     (`Connection.provisions`) is the directory's to remove, and one who
+	//     erased themselves would be a person it can neither find nor make again
+	//     until they are forgotten, and then makes again -- `PermissionDenied`;
 	//   - that the credential the call came with was minted in the last
 	//     [server/me.LeaveWithin], which is what a sign-in a few minutes old is:
 	//     a delegation a front door minted when somebody signed in there, or a

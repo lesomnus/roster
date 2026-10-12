@@ -676,7 +676,8 @@ func (a *App) providers(w http.ResponseWriter, r *http.Request) {
 
 		// Whether the tenant lets its people delete their own account
 		// (`TenantConfig.leave`), so the page draws that section where roster
-		// would do it and nowhere else.
+		// would do it and nowhere else -- with `MeService.Get`'s
+		// `provisioned_through`, which names the people it would not.
 		Leave bool `json:"leave"`
 		// What roster says, and not this app's guess. It was `true` here for as
 		// long as this endpoint existed, which made a tenant whose people all

@@ -356,7 +356,11 @@ a person deletes their own account: their holder is erased the way an operator's
 `roster holder erase` erases one, after they are signed out everywhere. Nothing
 is destroyed yet -- the operator can `roster restore` them while
 `holder.forget_after` lasts, and they are forgotten when it ends -- and every app
-holding a session for them hears it on the sync stream.
+holding a session for them hears it on the sync stream. Not somebody their
+tenant's directory provisions, though: whoever signs in through the connection it
+provisions through is the directory's to remove ([scim.md](../scim.md)), and
+`MeService.Get` names that connection as `provisioned_through`, so the account
+page offers them no such section.
 
 It is waived like the two above, and asks for one more thing they do not: that
 the credential the call came with is a **sign-in a few minutes old**
