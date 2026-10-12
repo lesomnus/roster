@@ -188,7 +188,7 @@ func TestThePolicyIsAppliedByTheProcessAndNotOnlyByAnOperator(t *testing.T) {
 
 	run, stop := context.WithCancel(ctx)
 	done := make(chan error, 1)
-	go func() { done <- trail.Sweep(pd.TrailStore(b.Ent), p)(run) }()
+	go func() { done <- trail.Sweep(pd.TrailStore(b.Ent), p).Spin(run) }()
 
 	x.Eventually(func() bool {
 		n, err := b.Ent.Audit.Query().Count(ctx)
