@@ -177,8 +177,9 @@ func (s *Server) routes() {
 	m.Handle("PATCH "+Base+"/Users/{id}", s.authed(s.patchUser))
 	m.Handle("DELETE "+Base+"/Users/{id}", s.authed(s.deleteUser))
 
-	// Groups are the next step (#86), and a directory told so by status
-	// rather than by silence skips them rather than retrying them.
+	// Groups are the next step (#86). Told so by status rather than by silence,
+	// a directory that sends them anyway logs a failure that says why -- Entra
+	// does, every cycle, until its group mapping is off (`docs/scim.md`).
 	m.Handle(Base+"/Groups", s.authed(groups))
 	m.Handle(Base+"/Groups/", s.authed(groups))
 

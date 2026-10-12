@@ -116,6 +116,14 @@ func (s coreHolder) Provision(ctx context.Context, req *app.HolderProvisionReque
 	if err != nil {
 		return nil, err
 	}
+	// Asked again where the way in is written, of a row the connection's own
+	// writes never let through: one from before the rule, or written past it.
+	// Suspending is left to work there -- a leaver stopped is never the danger.
+	if who := openTo(c.GetIssuer()); who != "" {
+		return nil, status.Errorf(codes.FailedPrecondition,
+			"%s, the connection this tenant provisions through, signs in %s; a directory provisions through its own organisation's door",
+			c.GetName(), who)
+	}
 	if req.GetProvider() != c.GetName() {
 		return nil, pderr.Invalidf("provider",
 			"%q is not the connection this tenant provisions through, which is %q", req.GetProvider(), c.GetName())

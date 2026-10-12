@@ -444,21 +444,22 @@ func (b0 MeLeaveResponse_builder) Build() *MeLeaveResponse {
 }
 
 type MeGetResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Tenant      []byte                 `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
-	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Emails      *[]*MeEmail            `protobuf:"bytes,8,rep,name=emails"`
-	xxx_hidden_Teams       *[]*MeTeam             `protobuf:"bytes,9,rep,name=teams"`
-	xxx_hidden_Methods     []string               `protobuf:"bytes,10,rep,name=methods"`
-	xxx_hidden_Sites       [][]byte               `protobuf:"bytes,11,rep,name=sites"`
-	xxx_hidden_EverySite   bool                   `protobuf:"varint,12,opt,name=every_site,json=everySite"`
-	xxx_hidden_Identities  *[]*SignInIdentity     `protobuf:"bytes,13,rep,name=identities"`
-	xxx_hidden_Credentials *[]*SignInCredential   `protobuf:"bytes,14,rep,name=credentials"`
-	xxx_hidden_Keys        *[]*SignInKey          `protobuf:"bytes,15,rep,name=keys"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                         protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id                 []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant             []byte                 `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Alias              string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Name               string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Emails             *[]*MeEmail            `protobuf:"bytes,8,rep,name=emails"`
+	xxx_hidden_Teams              *[]*MeTeam             `protobuf:"bytes,9,rep,name=teams"`
+	xxx_hidden_Methods            []string               `protobuf:"bytes,10,rep,name=methods"`
+	xxx_hidden_Sites              [][]byte               `protobuf:"bytes,11,rep,name=sites"`
+	xxx_hidden_EverySite          bool                   `protobuf:"varint,12,opt,name=every_site,json=everySite"`
+	xxx_hidden_Identities         *[]*SignInIdentity     `protobuf:"bytes,13,rep,name=identities"`
+	xxx_hidden_Credentials        *[]*SignInCredential   `protobuf:"bytes,14,rep,name=credentials"`
+	xxx_hidden_Keys               *[]*SignInKey          `protobuf:"bytes,15,rep,name=keys"`
+	xxx_hidden_ProvisionedThrough string                 `protobuf:"bytes,16,opt,name=provisioned_through,json=provisionedThrough"`
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
 }
 
 func (x *MeGetResponse) Reset() {
@@ -580,6 +581,13 @@ func (x *MeGetResponse) GetKeys() []*SignInKey {
 	return nil
 }
 
+func (x *MeGetResponse) GetProvisionedThrough() string {
+	if x != nil {
+		return x.xxx_hidden_ProvisionedThrough
+	}
+	return ""
+}
+
 func (x *MeGetResponse) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -632,6 +640,10 @@ func (x *MeGetResponse) SetCredentials(v []*SignInCredential) {
 
 func (x *MeGetResponse) SetKeys(v []*SignInKey) {
 	x.xxx_hidden_Keys = &v
+}
+
+func (x *MeGetResponse) SetProvisionedThrough(v string) {
+	x.xxx_hidden_ProvisionedThrough = v
 }
 
 type MeGetResponse_builder struct {
@@ -703,6 +715,11 @@ type MeGetResponse_builder struct {
 	// stored is a hash. A key is readable exactly once, at
 	// `ApiKey.Issue` with your own reference.
 	Keys []*SignInKey
+	// The connection their tenant's directory provisions them through, and empty
+	// when it provisions nobody or not them (`Connection.provisions`). Whoever
+	// signs in through it is the directory's: it says when they leave, so `Leave`
+	// refuses them, and a page offers it to nobody this names.
+	ProvisionedThrough string
 }
 
 func (b0 MeGetResponse_builder) Build() *MeGetResponse {
@@ -721,6 +738,7 @@ func (b0 MeGetResponse_builder) Build() *MeGetResponse {
 	x.xxx_hidden_Identities = &b.Identities
 	x.xxx_hidden_Credentials = &b.Credentials
 	x.xxx_hidden_Keys = &b.Keys
+	x.xxx_hidden_ProvisionedThrough = b.ProvisionedThrough
 	return m0
 }
 
@@ -1377,7 +1395,7 @@ const file_app_me_proto_rawDesc = "" +
 	"\x0fMeLeaveResponse\x12;\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"dateErased\x12A\n" +
-	"\x0edate_forgotten\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\rdateForgotten\"\x9a\x03\n" +
+	"\x0edate_forgotten\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\rdateForgotten\"\xcb\x03\n" +
 	"\rMeGetResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x16\n" +
 	"\x06tenant\x18\x02 \x01(\fR\x06tenant\x12\x14\n" +
@@ -1394,7 +1412,8 @@ const file_app_me_proto_rawDesc = "" +
 	"identities\x18\r \x03(\v2\x16.roster.SignInIdentityR\n" +
 	"identities\x12:\n" +
 	"\vcredentials\x18\x0e \x03(\v2\x18.roster.SignInCredentialR\vcredentials\x12%\n" +
-	"\x04keys\x18\x0f \x03(\v2\x11.roster.SignInKeyR\x04keys\"\xc3\x01\n" +
+	"\x04keys\x18\x0f \x03(\v2\x11.roster.SignInKeyR\x04keys\x12/\n" +
+	"\x13provisioned_through\x18\x10 \x01(\tR\x12provisionedThrough\"\xc3\x01\n" +
 	"\tSignInKey\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x18\n" +

@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/me.proto.
  */
 export const file_app_me: GenFile = /*@__PURE__*/
-  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QiHQoPTWVVbmxpbmtSZXF1ZXN0EgoKAmlkGAEgASgMIhIKEE1lVW5saW5rUmVzcG9uc2UiHAoaTWVTaWduT3V0RXZlcnl3aGVyZVJlcXVlc3QiUwobTWVTaWduT3V0RXZlcnl3aGVyZVJlc3BvbnNlEjQKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiEKDk1lTGVhdmVSZXF1ZXN0Eg8KB2NvbmZpcm0YASABKAkidgoPTWVMZWF2ZVJlc3BvbnNlEi8KC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIyCg5kYXRlX2ZvcmdvdHRlbhgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiuAIKDU1lR2V0UmVzcG9uc2USCgoCaWQYASABKAwSDgoGdGVuYW50GAIgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSHwoGZW1haWxzGAggAygLMg8ucm9zdGVyLk1lRW1haWwSHQoFdGVhbXMYCSADKAsyDi5yb3N0ZXIuTWVUZWFtEg8KB21ldGhvZHMYCiADKAkSDQoFc2l0ZXMYCyADKAwSEgoKZXZlcnlfc2l0ZRgMIAEoCBIqCgppZGVudGl0aWVzGA0gAygLMhYucm9zdGVyLlNpZ25JbklkZW50aXR5Ei0KC2NyZWRlbnRpYWxzGA4gAygLMhgucm9zdGVyLlNpZ25JbkNyZWRlbnRpYWwSHwoEa2V5cxgPIAMoCzIRLnJvc3Rlci5TaWduSW5LZXkimAEKCVNpZ25JbktleRIKCgJpZBgBIAEoDBINCgVhbGlhcxgEIAEoCRIPCgdtZXRob2RzGAggAygJEjAKDGRhdGVfZXhwaXJlcxgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLQoJZGF0ZV91c2VkGAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJxCg5TaWduSW5JZGVudGl0eRIKCgJpZBgBIAEoDBIQCghwcm92aWRlchgIIAEoCRIPCgdzdWJqZWN0GAkgASgJEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAikQEKEFNpZ25JbkNyZWRlbnRpYWwSDAoEa2luZBgIIAEoCRIMCgRuYW1lGAUgASgJEjAKDGRhdGVfcm90YXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLZGF0ZV9sb2NrZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIk0KB01lRW1haWwSDwoHYWRkcmVzcxgIIAEoCRIxCg1kYXRlX3ZlcmlmaWVkGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJhCgZNZVRlYW0SCgoCaWQYASABKAwSDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRzaXRlGAggASgMEhIKCnNpdGVfYWxpYXMYCSABKAkSDAoEcm9sZRgKIAEoCTKUAgoJTWVTZXJ2aWNlEjIKA0dldBIULnJvc3Rlci5NZUdldFJlcXVlc3QaFS5yb3N0ZXIuTWVHZXRSZXNwb25zZRI7CgZVbmxpbmsSFy5yb3N0ZXIuTWVVbmxpbmtSZXF1ZXN0Ghgucm9zdGVyLk1lVW5saW5rUmVzcG9uc2USXAoRU2lnbk91dEV2ZXJ5d2hlcmUSIi5yb3N0ZXIuTWVTaWduT3V0RXZlcnl3aGVyZVJlcXVlc3QaIy5yb3N0ZXIuTWVTaWduT3V0RXZlcnl3aGVyZVJlc3BvbnNlEjgKBUxlYXZlEhYucm9zdGVyLk1lTGVhdmVSZXF1ZXN0Ghcucm9zdGVyLk1lTGVhdmVSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
+  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QiHQoPTWVVbmxpbmtSZXF1ZXN0EgoKAmlkGAEgASgMIhIKEE1lVW5saW5rUmVzcG9uc2UiHAoaTWVTaWduT3V0RXZlcnl3aGVyZVJlcXVlc3QiUwobTWVTaWduT3V0RXZlcnl3aGVyZVJlc3BvbnNlEjQKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiEKDk1lTGVhdmVSZXF1ZXN0Eg8KB2NvbmZpcm0YASABKAkidgoPTWVMZWF2ZVJlc3BvbnNlEi8KC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIyCg5kYXRlX2ZvcmdvdHRlbhgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAi1QIKDU1lR2V0UmVzcG9uc2USCgoCaWQYASABKAwSDgoGdGVuYW50GAIgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSHwoGZW1haWxzGAggAygLMg8ucm9zdGVyLk1lRW1haWwSHQoFdGVhbXMYCSADKAsyDi5yb3N0ZXIuTWVUZWFtEg8KB21ldGhvZHMYCiADKAkSDQoFc2l0ZXMYCyADKAwSEgoKZXZlcnlfc2l0ZRgMIAEoCBIqCgppZGVudGl0aWVzGA0gAygLMhYucm9zdGVyLlNpZ25JbklkZW50aXR5Ei0KC2NyZWRlbnRpYWxzGA4gAygLMhgucm9zdGVyLlNpZ25JbkNyZWRlbnRpYWwSHwoEa2V5cxgPIAMoCzIRLnJvc3Rlci5TaWduSW5LZXkSGwoTcHJvdmlzaW9uZWRfdGhyb3VnaBgQIAEoCSKYAQoJU2lnbkluS2V5EgoKAmlkGAEgASgMEg0KBWFsaWFzGAQgASgJEg8KB21ldGhvZHMYCCADKAkSMAoMZGF0ZV9leHBpcmVzGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBItCglkYXRlX3VzZWQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInEKDlNpZ25JbklkZW50aXR5EgoKAmlkGAEgASgMEhAKCHByb3ZpZGVyGAggASgJEg8KB3N1YmplY3QYCSABKAkSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKRAQoQU2lnbkluQ3JlZGVudGlhbBIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMZGF0ZV9yb3RhdGVkGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgtkYXRlX2xvY2tlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiTQoHTWVFbWFpbBIPCgdhZGRyZXNzGAggASgJEjEKDWRhdGVfdmVyaWZpZWQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImEKBk1lVGVhbRIKCgJpZBgBIAEoDBINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBHNpdGUYCCABKAwSEgoKc2l0ZV9hbGlhcxgJIAEoCRIMCgRyb2xlGAogASgJMpQCCglNZVNlcnZpY2USMgoDR2V0EhQucm9zdGVyLk1lR2V0UmVxdWVzdBoVLnJvc3Rlci5NZUdldFJlc3BvbnNlEjsKBlVubGluaxIXLnJvc3Rlci5NZVVubGlua1JlcXVlc3QaGC5yb3N0ZXIuTWVVbmxpbmtSZXNwb25zZRJcChFTaWduT3V0RXZlcnl3aGVyZRIiLnJvc3Rlci5NZVNpZ25PdXRFdmVyeXdoZXJlUmVxdWVzdBojLnJvc3Rlci5NZVNpZ25PdXRFdmVyeXdoZXJlUmVzcG9uc2USOAoFTGVhdmUSFi5yb3N0ZXIuTWVMZWF2ZVJlcXVlc3QaFy5yb3N0ZXIuTWVMZWF2ZVJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message roster.MeGetRequest
@@ -271,6 +271,16 @@ export type MeGetResponse = Message<"roster.MeGetResponse"> & {
    * @generated from field: repeated roster.SignInKey keys = 15;
    */
   keys: SignInKey[];
+
+  /**
+   * The connection their tenant's directory provisions them through, and empty
+   * when it provisions nobody or not them (`Connection.provisions`). Whoever
+   * signs in through it is the directory's: it says when they leave, so `Leave`
+   * refuses them, and a page offers it to nobody this names.
+   *
+   * @generated from field: string provisioned_through = 16;
+   */
+  provisionedThrough: string;
 };
 
 /**
@@ -636,10 +646,15 @@ export const MeService: GenService<{
    * under a hold still lets somebody leave -- an erase destroys nothing -- and
    * forgets them once the hold is lifted.
    *
-   * Three things, in this order, and each refusal says which:
+   * Four things, in this order, and each refusal says which:
    *
    *   - that the caller's tenant offers it (`TenantConfig.leave`), which is
    *     **off** unless a tenant said otherwise -- `PermissionDenied`;
+   *   - that the caller is not somebody their tenant's directory provisions:
+   *     whoever signs in through the connection it provisions through
+   *     (`Connection.provisions`) is the directory's to remove, and one who
+   *     erased themselves would be a person it can neither find nor make again
+   *     until they are forgotten, and then makes again -- `PermissionDenied`;
    *   - that the credential the call came with was minted in the last
    *     [server/me.LeaveWithin], which is what a sign-in a few minutes old is:
    *     a delegation a front door minted when somebody signed in there, or a

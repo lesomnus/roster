@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"strings"
 
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
@@ -132,6 +133,73 @@ func (s Core) oneProvisions(ctx context.Context, tenant []byte, self []byte) err
 	}
 }
 
+// A directory provisions the people of one organisation, linked at the door
+// they sign in through. What lets a key a directory's cloud presents write that
+// link (`HolderService.Provision`) is that it lets in nobody the organisation
+// had not: a subject at the organisation's own issuer is an account the
+// organisation made. At an issuer anybody can make an account at, the same
+// write is a way in for whoever holds the account it names -- a key that leaked
+// names its holder's own GitHub id, and they sign in as somebody new.
+//
+// openTo is who may hold an account at an issuer when that is anybody, and
+// empty for one organisation's. The shapes are the ones `arrives` reads a
+// provider off (`arrives/github.go`, `arrives/microsoft.go`); a door that lets
+// anybody sign up of its own accord is the same, and cannot be told from here.
+func openTo(issuer string) string {
+	at := strings.ToLower(strings.TrimSuffix(strings.TrimSpace(issuer), "/"))
+	switch at {
+	case "https://github.com":
+		return "anybody with a GitHub account"
+	case "https://accounts.google.com":
+		return "anybody with a Google account"
+	}
+	for _, v := range []struct{ path, who string }{
+		{"/common/v2.0", "anybody with a Microsoft account"},
+		{"/organizations/v2.0", "anybody with a work or school Microsoft account"},
+		{"/consumers/v2.0", "anybody with a personal Microsoft account"},
+		{"/" + personalAccounts + "/v2.0", "anybody with a personal Microsoft account"},
+	} {
+		if strings.HasSuffix(at, v.path) {
+			return v.who
+		}
+	}
+
+	return ""
+}
+
+// personalAccounts is the one directory every personal Microsoft account is in.
+const personalAccounts = "9188040d-6c67-4c5b-b112-36a304b66dad"
+
+// mayProvision refuses a connection that provisions at a door anybody can hold
+// an account at, whichever half of that a write moves: marking such a door as
+// the one, or moving the one to such a door. `field` is the half it moved.
+//
+// Refused to the deployment as well. Nothing about who is asking changes what
+// the write would be: a way in for strangers, held by a key on the internet.
+func mayProvision(field string, provisions bool, issuer string) error {
+	if !provisions {
+		return nil
+	}
+	who := openTo(issuer)
+	if who == "" {
+		return nil
+	}
+
+	return pderr.Invalidf(field,
+		"%s signs in %s, so an identity a directory wrote there would be a way in for whoever holds the account it names; "+
+			"a directory provisions through its own organisation's door", issuer, who)
+}
+
+// movedOf is the half a write moved, for [mayProvision] to name: the mark, when
+// it sets one, and otherwise the door.
+func movedOf(marks bool) string {
+	if marks {
+		return "provisions"
+	}
+
+	return "issuer"
+}
+
 // tenantOfConnection is the tenant a connection belongs to, through the wall.
 func (s Core) tenantOfConnection(ctx context.Context, ref *app.ConnectionRef) ([]byte, []byte, error) {
 	v, err := s.Next().Connection().Get(ctx, app.ConnectionGetRequest_builder{
@@ -152,6 +220,9 @@ func (s coreConnection) Add(ctx context.Context, req *app.ConnectionAddRequest) 
 		return nil, err
 	}
 	if err := s.maySubject(ctx, "", req.GetSubjectClaim()); err != nil {
+		return nil, err
+	}
+	if err := mayProvision("provisions", req.GetProvisions(), req.GetIssuer()); err != nil {
 		return nil, err
 	}
 	if req.GetProvisions() {
@@ -179,6 +250,26 @@ func (s coreConnection) Patch(ctx context.Context, req *app.ConnectionPatchReque
 			return nil, err
 		}
 	}
+	if req.HasIssuer() || req.GetProvisions() {
+		// Whichever half the patch moves, the other is what the row holds.
+		was, err := s.ConnectionServiceServer.Get(ctx, app.ConnectionGetRequest_builder{
+			Ref:    req.GetRef(),
+			Select: app.ConnectionSelect_builder{Issuer: z.Ptr(true), Provisions: z.Ptr(true)}.Build(),
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+		issuer, provisions := was.GetIssuer(), was.GetProvisions()
+		if req.HasIssuer() {
+			issuer = req.GetIssuer()
+		}
+		if req.HasProvisions() {
+			provisions = req.GetProvisions()
+		}
+		if err := mayProvision(movedOf(req.GetProvisions()), provisions, issuer); err != nil {
+			return nil, err
+		}
+	}
 	if req.GetProvisions() {
 		tenant, self, err := s.tenantOfConnection(ctx, req.GetRef())
 		if err != nil {
@@ -200,6 +291,7 @@ func (s coreConnection) Update(ctx context.Context, req *app.ConnectionUpdateReq
 		Ref: req.GetRef(),
 		Select: app.ConnectionSelect_builder{
 			Labels: z.Ptr(true), Issuer: z.Ptr(true), SecretRef: z.Ptr(true), SubjectClaim: z.Ptr(true),
+			Provisions: z.Ptr(true),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -221,6 +313,15 @@ func (s coreConnection) Update(ctx context.Context, req *app.ConnectionUpdateReq
 	}
 	if req.HasSubjectClaim() {
 		if err := s.maySubject(ctx, got.GetSubjectClaim(), req.GetSubjectClaim()); err != nil {
+			return nil, err
+		}
+	}
+	if req.HasIssuer() || req.GetProvisions() {
+		provisions := got.GetProvisions()
+		if req.HasProvisions() {
+			provisions = req.GetProvisions()
+		}
+		if err := mayProvision(movedOf(req.GetProvisions()), provisions, issuer); err != nil {
 			return nil, err
 		}
 	}

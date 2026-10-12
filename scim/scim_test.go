@@ -18,11 +18,13 @@ import (
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdtest"
+	"github.com/lesomnus/payday/trail"
 
 	"github.com/lesomnus/roster/cmd"
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	rstr "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/scim"
+	"github.com/lesomnus/roster/server/forget"
 	"github.com/lesomnus/roster/server/keys"
 )
 
@@ -313,6 +315,41 @@ func TestSomebodyAlreadyHereIsMatchedAndNotMadeAgain(t *testing.T) {
 	})
 	x.Equal(http.StatusOK, code, "%v", got)
 	x.Equal("Fred Park", d.holder(t, id).GetProfile().GetDisplayName())
+}
+
+// TestSomebodyErasedHereIsNeitherFoundNorMadeUntilForgotten: an erase is not
+// something a directory hears. It finds nobody by their address or their id,
+// and making them again is refused as taken -- an erase leaves the identity and
+// the address where they were -- until they are forgotten; then it makes them
+// again, as somebody new. Which is why somebody a directory still provisions is
+// unassigned there before they are erased here.
+func TestSomebodyErasedHereIsNeitherFoundNorMadeUntilForgotten(t *testing.T) {
+	d := stand(t)
+	x := require.New(t)
+	ctx := t.Context()
+
+	code, got, _ := d.call(t, d.key, http.MethodPost, scim.Base+"/Users", erin())
+	x.Equal(http.StatusCreated, code, "%v", got)
+	k, err := pdid.Parse(got["id"].(string))
+	x.NoError(err)
+
+	_, err = d.s.Ungated.Holder().Erase(ctx, rstr.HolderRef_builder{Id: k.Bytes()}.Build())
+	x.NoError(err)
+
+	for attr, value := range map[string]string{"userName": "erin@contoso.example", "externalId": erinOid} {
+		code, got, _ = d.call(t, d.key, http.MethodGet, filter(attr, value), nil)
+		x.Equal(http.StatusOK, code)
+		x.EqualValues(0, got["totalResults"], attr)
+	}
+	code, got, _ = d.call(t, d.key, http.MethodPost, scim.Base+"/Users", erin())
+	x.Equal(http.StatusConflict, code, "%v", got)
+	x.Equal("uniqueness", got["scimType"])
+
+	_, err = forget.Forget(ctx, d.s.Ent, k, trail.Policy{})
+	x.NoError(err)
+	code, got, _ = d.call(t, d.key, http.MethodPost, scim.Base+"/Users", erin())
+	x.Equal(http.StatusCreated, code, "%v", got)
+	x.NotEqual(k.String(), got["id"], "made again, and as somebody new")
 }
 
 // TestWhatTheDirectoryDoesNotSendIsLeftAlone: it owns what it sends, and a

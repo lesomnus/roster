@@ -265,6 +265,81 @@ func TestATerminalLeavesWithAKeyItWasJustHanded(t *testing.T) {
 	x.Nil(gone)
 }
 
+// TestSomebodyTheirDirectoryProvisionsDoesNotLeaveOnTheirOwn: a tenant may
+// offer leaving and have a directory provision its people as well. The people
+// the directory provisions -- anybody who signs in through its connection -- are
+// its to remove: one who erased themselves would be somebody it can neither find
+// nor make again until they are forgotten, and then made again. So they are
+// refused before anything is written -- and `MeService.Get` says so, for a page
+// to offer them nothing -- and anybody else leaves as before.
+func TestSomebodyTheirDirectoryProvisionsDoesNotLeaveOnTheirOwn(t *testing.T) {
+	x := require.New(t)
+	b := keyFor(t, verify)
+	ctx := t.Context()
+	offersLeave(t, ctx, b.Server, b.Contoso, true)
+	at := app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build()
+	c := app.NewMeServiceClient(b.Conn)
+
+	for _, v := range []*app.ConnectionAddRequest{
+		app.ConnectionAddRequest_builder{
+			Tenant: at, Name: "entra", Issuer: "https://login.microsoftonline.com/contoso/v2.0", ClientId: "the-app",
+			SubjectClaim: "oid", Provisions: true,
+		}.Build(),
+		app.ConnectionAddRequest_builder{Tenant: at, Name: "okta", Issuer: "https://contoso.okta.example", ClientId: "the-app"}.Build(),
+	} {
+		_, err := b.Ungated.Connection().Add(ctx, v)
+		x.NoError(err)
+	}
+	linked := func(alias, provider, subject string) pdid.Id {
+		t.Helper()
+		who := addHolder(t, ctx, b.Server, b.Contoso, alias)
+		_, err := b.Ungated.Identity().Add(ctx, app.IdentityAddRequest_builder{
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(), Provider: provider, Subject: subject,
+		}.Build())
+		x.NoError(err)
+
+		return who
+	}
+	leave := func(who pdid.Id, alias string) error {
+		k := ownKeyAt(t, ctx, b, who, []string{leaveMe}, time.Now())
+		_, err := c.Leave(bearing(ctx, k), app.MeLeaveRequest_builder{Confirm: alias}.Build())
+
+		return err
+	}
+	// What a page is told, so that it offers leaving to nobody it would refuse.
+	provisioned := func(who pdid.Id) string {
+		k := ownKeyAt(t, ctx, b, who, []string{getMe}, time.Now())
+		v, err := c.Get(bearing(ctx, k), app.MeGetRequest_builder{}.Build())
+		x.NoError(err)
+
+		return v.GetProvisionedThrough()
+	}
+
+	mia := linked("mia", "entra", erinOid)
+	x.Equal("entra", provisioned(mia))
+	err := leave(mia, "mia")
+	x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
+	x.Contains(status.Convert(err).Message(), "directory")
+	erased, invalidated := erasedAt(t, ctx, b.Server, mia)
+	x.Nil(erased)
+	x.Nil(invalidated, "refused, and signed out on the way to being refused")
+
+	ned := linked("ned", "okta", "00u1abcd")
+	x.Empty(provisioned(ned))
+	x.NoError(leave(ned, "ned"), "somebody who signs in another way is not the directory's")
+	erased, _ = erasedAt(t, ctx, b.Server, ned)
+	x.NotNil(erased)
+
+	// And once the tenant's directory provisions through nothing, its people
+	// are anybody else.
+	_, err = b.Ungated.Connection().Erase(ctx, app.ConnectionRef_builder{At: app.ConnectionRefByAt_builder{
+		Tenant: at, Name: proto.String("entra"),
+	}.Build()}.Build())
+	x.NoError(err)
+	x.Empty(provisioned(mia))
+	x.NoError(leave(mia, "mia"))
+}
+
 // TestLeavingMeetsTheTenantsOwnLifecycle: a tenant can be closed or held
 // (#105). Somebody in a closed tenant reaches nothing, this included; somebody
 // in a held one may still leave -- an erase destroys nothing -- and is not told

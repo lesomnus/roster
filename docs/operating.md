@@ -971,7 +971,9 @@ one `date_disabled`, refused everywhere `Disable` is. What differs is whose it i
 (`Holder.directory`). The directory lifts what it put there and nothing else, since
 restarting its provisioning says `active` for everybody in scope; an operator's
 `Disable` or `Enable` makes a suspension theirs, and somebody the directory deleted
-is an operator's to bring back ([scim.md](scim.md)).
+is an operator's to bring back ([scim.md](scim.md)). An erase it does not hear at
+all: unassign somebody in the directory before erasing them here, or it can
+neither find nor make them until they are forgotten, and makes them again after.
 
 ## The audit trail
 

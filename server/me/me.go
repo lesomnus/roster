@@ -42,12 +42,14 @@ import (
 
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/apikey"
+	"github.com/lesomnus/roster/internal/ent/connection"
 	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/delegation"
 	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
+	"github.com/lesomnus/roster/internal/ent/tenant"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
 )
@@ -149,6 +151,11 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 	}
 	if res.Keys, err = s.keys(ctx, f.Actor); err != nil {
 		return nil, err
+	}
+	if v.Edges.Tenant != nil {
+		if res.ProvisionedThrough, err = s.directoryOf(ctx, v); err != nil {
+			return nil, err
+		}
 	}
 
 	if s.held != nil {
@@ -490,6 +497,19 @@ func (s *Server) Leave(ctx context.Context, req *app.MeLeaveRequest) (*app.MeLea
 			"your organisation does not let its people delete their own account here; whoever runs it can")
 	}
 
+	// And not to the people its directory provisions, wherever it does: the
+	// directory says when they leave. One who erased themselves would be
+	// somebody it can neither find nor make again until they are forgotten --
+	// and then makes again, with nothing of theirs.
+	by, err := s.directoryOf(ctx, me)
+	if err != nil {
+		return nil, err
+	}
+	if by != "" {
+		return nil, status.Errorf(codes.PermissionDenied,
+			"your organisation's directory keeps your account, through %s, and says when you leave; whoever runs it can", by)
+	}
+
 	since, err := s.signedIn(ctx, f.Actor)
 	if err != nil {
 		return nil, err
@@ -549,6 +569,40 @@ func (s *Server) Leave(ctx context.Context, req *app.MeLeaveRequest) (*app.MeLea
 	}
 
 	return out, nil
+}
+
+// directoryOf is the connection somebody's tenant's directory provisions them
+// through, and empty when it provisions nobody or not them. The people a
+// directory speaks for are the ones who sign in through that connection
+// (`server/core/directory.go`), whether it made them or found them there.
+func (s *Server) directoryOf(ctx context.Context, who *ent.Holder) (string, error) {
+	names, err := s.db.Connection.Query().
+		Where(
+			connection.HasTenantWith(tenant.IdEQ(who.Edges.Tenant.Id)),
+			connection.Provisions(true),
+			connection.DateErasedIsNil(),
+		).
+		Select(connection.FieldName).
+		Strings(ctx)
+	if err != nil || len(names) == 0 {
+		return "", err
+	}
+
+	v, err := s.db.Identity.Query().
+		Where(
+			identity.HasHolderWith(holder.IdEQ(who.Id)),
+			identity.ProviderIn(names...),
+			identity.DateErasedIsNil(),
+		).
+		First(ctx)
+	if ent.IsNotFound(err) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+
+	return v.Provider, nil
 }
 
 // signedIn is when the credential this call arrived with was minted, if it is

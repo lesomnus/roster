@@ -13,8 +13,9 @@ OneLogin and JumpCloud all push to an endpoint of their customer's naming.
 Google Workspace does not, to an app that is not in its own catalogue -- a tenant
 on Google is still a sign-in, and a directory read is a separate plan.
 
-What this is for is the people. Groups are the next step (#86), and the endpoint
-answers `501` for them so a directory skips rather than retries.
+What this is for is the people. Groups are the next step (#86). The endpoint
+answers `501` for them, which a directory that sends them anyway logs as a
+failure every cycle -- so Entra's group mapping is turned off (§ *Entra*).
 
 ## The shape
 
@@ -53,6 +54,16 @@ printed once. Running it again is a rotation: the key is replaced, not added to.
 connection a file declares is the file's to mark, `provisions: true` beside it in
 `resources.yaml`, or the next start takes it back.
 
+**The connection is the organisation's own door.** One at an issuer anybody can
+make an account at -- GitHub's, Google's, Microsoft's `common` and
+`organizations`, personal Microsoft accounts -- is refused `provisions`, by the
+deployment as much as by the tenant, and so is moving the one that provisions to
+such an issuer. `Provision` writes a way in, and what makes that safe on a key a
+directory's cloud presents is that it lets in nobody the organisation had not: at
+an open door, a key that leaked would name its holder's own account and sign them
+in. A door of the organisation's own that lets anybody sign up is the same, and
+roster cannot tell it apart -- do not mark one.
+
 The connection should name people by the identifier the directory sends as
 `externalId`. For Entra that is the object id, which is `oid` in a token and
 `subject_claim: oid` on the connection ([login.md](login.md) § *Which claim is the
@@ -71,7 +82,13 @@ On the enterprise application, *Provisioning*, *Automatic*:
   `userPrincipalName` is how somebody already here is found. Leave `displayName`
   mapped only if names come from the directory: a tenant that keeps names in Slack
   takes it out, and the directory then writes none.
-- **Scope**: the users assigned to the application.
+- **Provision Microsoft Entra ID Groups**: off, which it is not by default. Groups
+  are not provisioned here yet, and left on, every group assigned to the
+  application is sent and refused each cycle. Off, an assigned group still brings
+  its members in as users.
+- **Scope**: the users assigned to the application. A group assigned to it brings
+  its direct members and not the members of groups inside it: Entra does not
+  follow nesting.
 
 *Provision on demand* with one person is the check before turning it on. Microsoft
 publishes a SCIM validator that walks the same requests against a URL.
@@ -108,6 +125,14 @@ and keeps the row: what becomes of it is an operator's decision, and the endpoin
 speaks of them no more. A re-hire with the same address is refused as taken until
 an operator frees it.
 
+**An erase is not something the directory hears.** Somebody erased here -- by an
+operator, or by themselves -- is somebody it no longer finds, and making them
+again is refused as taken, since an erase leaves their identity and their address
+where they were. It fails for them every cycle until they are forgotten, and
+then makes them again, as somebody new. So an operator unassigns a person in the
+directory before erasing them here, and the people a directory provisions do not
+delete their own account, whatever their tenant offers (`MeService.Leave`).
+
 **The directory lifts its own suspensions and no other.** It is one way: it never
 hears that an operator suspended somebody, and restarting its provisioning says
 `active` for everybody in scope. So `Holder.directory` says whose a suspension is,
@@ -130,7 +155,9 @@ back ([operating.md](operating.md) § *Stopping somebody*).
 answers yes for everybody who holds nothing -- which is most people. A key a
 directory's cloud presents from the internet would then be a way into all of them.
 `Provision` writes ways in only into the person it makes in the same breath, so a
-key holding it reaches the people it makes and no one else. `Deactivate` reaches
+key holding it reaches the people it makes and no one else -- and only at the
+organisation's own door, where the account it names is one the organisation made
+(§ *Setting a tenant up*). `Deactivate` reaches
 the people who sign in through the provisioning connection -- not an app's holder,
 not a front door's.
 
@@ -149,3 +176,5 @@ not a front door's.
 | somebody already here is matched and not made again | `TestSomebodyAlreadyHereIsMatchedAndNotMadeAgain` |
 | the directory lifts only its own suspensions | `TestADirectoryLiftsOnlyItsOwnSuspension` · `TestTheDirectoryDoesNotLiftAnOperatorsSuspension` |
 | its key reaches only the people it makes | `TestADirectoryMakesPeopleAndOnlyNewOnes` · `TestTheEndpointTakesATenantKeyAndNothingElse` |
+| and makes them only at the organisation's own door | `TestADirectoryProvisionsThroughItsOrganisationsOwnDoor` |
+| somebody erased is neither found nor made again until forgotten, and its people do not leave on their own | `TestSomebodyErasedHereIsNeitherFoundNorMadeUntilForgotten` · `TestSomebodyTheirDirectoryProvisionsDoesNotLeaveOnTheirOwn` |

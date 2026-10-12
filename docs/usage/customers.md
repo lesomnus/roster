@@ -161,7 +161,10 @@ erases them exactly as the first line above does, signed out everywhere first.
 `roster restore` brings them back the same way, without any of their old
 sign-ins. It is off unless a tenant turns it on, because a directory a company
 provisions is the company's to empty -- a person deleting themselves out of it is
-somebody the next sync puts back with nothing of theirs. A consumer product's
+somebody the directory can neither find nor make again until they are forgotten,
+and then makes again with nothing of theirs -- and where a tenant with a directory
+does turn it on, the people that directory provisions are refused all the same
+([scim.md](../scim.md)). A consumer product's
 directory, where an account is the person's own, is the case it is for: Rove's
 SaaS turns it on for the one tenant every account is in, and links to the account
 page's `/#leave` from its own.

@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -269,6 +270,93 @@ func TestADirectoryLiftsOnlyItsOwnSuspension(t *testing.T) {
 			Directory: "inactive",
 		}.Build())
 		require.Equal(t, codes.InvalidArgument, status.Code(err), "%v", err)
+	})
+}
+
+// TestADirectoryProvisionsThroughItsOrganisationsOwnDoor: what makes `Provision`
+// safe to hand a key a directory's cloud presents is that the identity it
+// writes lets in nobody the organisation had not -- true of an organisation's
+// own issuer, and false of one anybody can make an account at, where a key that
+// leaked would name its holder's own account and sign them in. So such a
+// connection is never the one a tenant provisions through: not marked so, by
+// the tenant or the deployment; not moved there once it is; and not provisioned
+// through if a row says so all the same.
+func TestADirectoryProvisionsThroughItsOrganisationsOwnDoor(t *testing.T) {
+	b, ctx := build(t)
+	admin := b.as(ctx, b.ContosoUser, b.Contoso)
+	at := app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build()
+
+	t.Run("not marked so", func(t *testing.T) {
+		x := require.New(t)
+		for i, issuer := range []string{
+			"https://github.com",
+			"https://accounts.google.com",
+			"https://login.microsoftonline.com/common/v2.0",
+			"https://login.microsoftonline.com/organizations/v2.0",
+			"https://login.microsoftonline.com/consumers/v2.0",
+			"https://login.microsoftonline.com/9188040d-6c67-4c5b-b112-36a304b66dad/v2.0",
+		} {
+			_, err := b.Walled.Connection().Add(admin, app.ConnectionAddRequest_builder{
+				Tenant: at, Name: fmt.Sprintf("open-%d", i), Issuer: issuer, ClientId: "the-app", Provisions: true,
+			}.Build())
+			x.Equal(codes.InvalidArgument, status.Code(err), "%s: %v", issuer, err)
+		}
+
+		_, err := b.Walled.Connection().Add(admin, app.ConnectionAddRequest_builder{
+			Tenant: at, Name: "github", Issuer: "https://github.com", ClientId: "the-app",
+		}.Build())
+		x.NoError(err, "a door anybody has an account at is still a door")
+		v := b.connectionOf(t, ctx, b.Contoso, "github")
+		_, err = b.Walled.Connection().Update(admin, app.ConnectionUpdateRequest_builder{
+			Ref:         app.ConnectionRef_builder{Id: v.GetId()}.Build(),
+			DateUpdated: v.GetDateUpdated(),
+			Provisions:  z.Ptr(true),
+		}.Build())
+		x.Equal(codes.InvalidArgument, status.Code(err), "%v", err)
+
+		// The deployment's writers -- a resources file, `roster scim provision`.
+		_, err = b.Ungated.Connection().Patch(ctx, app.ConnectionPatchRequest_builder{
+			Ref:         app.ConnectionRef_builder{Id: v.GetId()}.Build(),
+			DateUpdated: v.GetDateUpdated(),
+			Provisions:  z.Ptr(true),
+		}.Build())
+		x.Equal(codes.InvalidArgument, status.Code(err), "%v", err)
+		x.False(b.connectionOf(t, ctx, b.Contoso, "github").GetProvisions())
+	})
+
+	as := b.directory(t, ctx)
+	entra := b.connectionOf(t, ctx, b.Contoso, "entra")
+	ref := app.ConnectionRef_builder{Id: entra.GetId()}.Build()
+
+	t.Run("not moved there once it is", func(t *testing.T) {
+		x := require.New(t)
+		_, err := b.Walled.Connection().Update(admin, app.ConnectionUpdateRequest_builder{
+			Ref:         ref,
+			DateUpdated: entra.GetDateUpdated(),
+			Issuer:      z.Ptr("https://login.microsoftonline.com/common/v2.0"),
+		}.Build())
+		x.Equal(codes.InvalidArgument, status.Code(err), "%v", err)
+
+		_, err = b.Ungated.Connection().Patch(ctx, app.ConnectionPatchRequest_builder{
+			Ref:         ref,
+			DateUpdated: entra.GetDateUpdated(),
+			Issuer:      z.Ptr("https://login.microsoftonline.com/organizations/v2.0"),
+		}.Build())
+		x.Equal(codes.InvalidArgument, status.Code(err), "%v", err)
+		x.Equal("https://login.microsoftonline.com/contoso/v2.0", b.connectionOf(t, ctx, b.Contoso, "entra").GetIssuer())
+	})
+
+	t.Run("and not provisioned through if a row says so all the same", func(t *testing.T) {
+		x := require.New(t)
+
+		// Past every write above: a row from before the rule, or one a database
+		// was edited into.
+		x.NoError(b.Ent.Connection.UpdateOneId(mustId(t, entra.GetId()).Uuid()).
+			SetIssuer("https://login.microsoftonline.com/common/v2.0").
+			Exec(ctx))
+
+		_, err := b.provision(as, "zoe", fredOid, "zoe@contoso.example")
+		x.Equal(codes.FailedPrecondition, status.Code(err), "%v", err)
 	})
 }
 
