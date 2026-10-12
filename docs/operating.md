@@ -1083,8 +1083,24 @@ document itself in `ROSTER_AUDIT_CHECKPOINTS_KEY`.
 The same key signs **every row of the account** as it is written, and each
 checkpoint names the one before it (lesomnus/payday#58), so a row changed
 after the latest checkpoint is found too. Every act ends in a checkpoint of its
-own, and while the rows do not add up to the latest one nothing is checkpointed
-and every act refuses, until `accept` (payday#66).
+own, and while the rows do not add up to the latest one nothing is checkpointed:
+every act still does what it does and then fails at the checkpoint after it, and
+says so, until `accept` (payday#66). `verify` is clean as soon as `accept` is
+done.
+
+**A database restored from a backup** older than the latest checkpoint has
+numbered fewer checkpoints than the store keeps: `verify` finds it `behind`
+(and `unaccounted`, the chunks written since the backup), and nothing is
+checkpointed either. Once somebody has looked, `accept` takes it on: its
+checkpoint is numbered after the store's newest and names it as the one
+before, so the checkpoints from after the backup stay what the archive held
+(payday#70).
+
+```sh
+roster trail verify                                                     # `behind`, `unaccounted`
+roster trail accept --why "the database restored from the backup of 10-01"
+roster trail verify --full                                              # clean
+```
 
 A row with no signature is the same whether it was written before rows were
 signed or had its signature taken off, so with a key every such row is a finding.
