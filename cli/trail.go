@@ -112,6 +112,13 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 			dir, _ := flg.Find[string](cl, "to")
 			if dir == "" {
 				dir = c.Audit.Archive
+			} else if c.Audit.Archive != "" && !sameDir(dir, c.Audit.Archive) {
+				// The database keeps one account of one archive, and every
+				// check reads that one (`trail verify`, every pass). Rows
+				// written into a second are rows the first one is found to be
+				// missing.
+				return fmt.Errorf("--to: %s is not audit.archive (%s), and the database keeps an account of one archive; "+
+					"leave --to out, or name that one", dir, c.Audit.Archive)
 			}
 
 			discard, _ := flg.Find[bool](cl, "discard")
@@ -159,7 +166,15 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 			// it is what knows whose trail a legal hold is on, and a removal by
 			// hand is not an exception to one -- nor to an operator's hold on a
 			// tenant, which roster answers it with.
-			p, err := c.Audit.Policy()
+			//
+			// And its archive, which is where it writes: `--to` is that
+			// archive, or the one for this run where the configuration names
+			// none.
+			ac := c.Audit
+			if !discard {
+				ac.Archive = dir
+			}
+			p, err := ac.Policy()
 			if err != nil {
 				return err
 			}
@@ -170,7 +185,10 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 			if discard {
 				n, held, err = p.Collect(ctx, store, of, before)
 			} else {
-				n, err = trail.Archive(ctx, store, of, before, flob.NewOsStores(dir))
+				// Through the policy (payday#59): sealed with its keys, the
+				// manifest's rows signed with its key, and a checkpoint at the
+				// end, as a pass writes.
+				n, err = trail.Archive(ctx, store, p, of, before)
 			}
 			if err != nil {
 				// With the count, because a run that moved most of the table
@@ -756,4 +774,19 @@ func named(b []byte) string {
 	}
 
 	return k.String()
+}
+
+// sameDir answers whether two names are of one directory, as far as their
+// paths say.
+func sameDir(a, b string) bool {
+	x, err := filepath.Abs(a)
+	if err != nil {
+		return false
+	}
+	y, err := filepath.Abs(b)
+	if err != nil {
+		return false
+	}
+
+	return filepath.Clean(x) == filepath.Clean(y)
 }

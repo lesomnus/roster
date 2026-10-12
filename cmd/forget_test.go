@@ -247,7 +247,7 @@ func TestForgettingReachesTheArchiveToo(t *testing.T) {
 
 	// Everything into the archive first, so that the database holds none of it
 	// and the only copy left is the archive's.
-	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Kinds{}, time.Now().Add(time.Hour), archive)
+	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Policy{Archive: archive}, trail.Kinds{}, time.Now().Add(time.Hour))
 	x.NoError(err)
 	x.NotZero(n)
 
