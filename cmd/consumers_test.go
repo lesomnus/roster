@@ -35,6 +35,7 @@ func TestServeOpensTheConsumersItIsToldTo(t *testing.T) {
 	c := cmd.Config{
 		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
 		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
+		Spin:    config.SpinConfig{Lease: config.LeaseLocal},
 		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
 	}
 

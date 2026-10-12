@@ -1263,6 +1263,40 @@ reconnects. An **outbox** answers the other question -- it makes an event surviv
 crash between the commit and the publish -- and needs a broker to be worth
 anything.
 
+**The background loops run in one replica only if you say how.** The sweeps,
+the trail's retention, the forget window and the outbox drain are each a loop,
+and `spin.lease` says which process runs it -- named, like the broker, and for the
+same reason: `local` runs every loop in every process, which is right for one and
+silently wrong for two.
+
+```yaml
+spin:
+  lease: postgres
+```
+
+Each loop is then held by a session advisory lock on the database the rows are
+in, and runs in whichever replica holds it; when that replica goes, its locks go
+with its connection and another takes each loop within a few seconds. A host
+that vanishes rather than exits is noticed by TCP keepalives the lease asks for,
+within about a minute. Both planes' loops are under the one lease, named
+`roster.*` and `roster.control.*`; who holds what is the database's to say:
+
+```sql
+SELECT a.pid, a.client_addr, a.backend_start, l.objid
+FROM pg_locks l JOIN pg_stat_activity a USING (pid)
+WHERE l.locktype = 'advisory' AND l.classid = 1885631344 AND l.objsubid = 2;
+```
+
+`ROSTER_SPIN_LEASE` in an environment. Leave `spin.dsn` empty unless the
+database is reached through a pooler in transaction mode, which a session lock
+does not survive. `none` is a replica that runs no loop at all. What no lease
+promises is that a loop never runs twice at once: a replica cut off from the
+database goes on for up to a ping, five seconds, after another has taken its
+loops. roster's are fine with that. The expiry sweeps delete what is already past
+its time, the two forget windows act one person or one tenant at a time and log a
+failure and carry on, and payday's drain and retention are written for it. A loop
+added here has to be too.
+
 The rest of the checklist:
 
 - **Set a maximum connection age.** `server.keepalive.max_connection_age`, and the

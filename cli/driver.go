@@ -30,4 +30,9 @@ import (
 	// costs is a `LISTEN` client in the binary, and what the other arrangement
 	// costs is `watch.broker: postgres` reading as a typo.
 	_ "github.com/lesomnus/payday/config/brokerpg"
+
+	// And the lease, for the same reason and on the same database: with
+	// `spin.lease: postgres` each background loop runs in one replica, held by
+	// an advisory lock, and in another once that one is gone.
+	_ "github.com/lesomnus/payday/config/leasepg"
 )

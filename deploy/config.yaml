@@ -37,6 +37,11 @@ db:
   migrate: true
 watch:
   broker: memory
+# One replica, so every loop runs in it. A second needs `postgres` here and
+# above, and a database both reach -- `docs/operating.md` § "Running more than
+# one".
+spin:
+  lease: local
 
 control:
   db:

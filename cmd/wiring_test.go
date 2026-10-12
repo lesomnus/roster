@@ -306,6 +306,7 @@ func TestServeStopsOnSigterm(t *testing.T) {
 		"ROSTER_DB_DSN=file:roster.db?_pragma=foreign_keys(1)",
 		"ROSTER_DB_MIGRATE=true",
 		"ROSTER_WATCH_BROKER=memory",
+		"ROSTER_SPIN_LEASE=local",
 		"ROSTER_SERVER_ADDR=" + addr,
 	}
 	x.NoError(proc.Start())
@@ -394,6 +395,7 @@ func TestServeRefusesAControlPlaneItWasNotAllowedToMigrate(t *testing.T) {
 		"ROSTER_DB_DSN=file:roster.db?_pragma=foreign_keys(1)",
 		"ROSTER_DB_MIGRATE=true",
 		"ROSTER_WATCH_BROKER=memory",
+		"ROSTER_SPIN_LEASE=local",
 		"ROSTER_SERVER_ADDR=" + addr,
 
 		// A control plane on its own empty database, told not to migrate.

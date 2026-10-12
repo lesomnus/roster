@@ -172,3 +172,26 @@ watch:
   # console the one screen a second replica broke without saying so.
   #
   # It is `control.watch.broker`, beside `control.db` -- see the block above.
+
+spin:
+  # Which replica runs each background loop -- the sweeps, the trail's
+  # retention, the outbox drain, both planes' -- and named rather than
+  # defaulted for the reason `watch.broker` is. `local` runs every loop in this
+  # process, which is right for one replica and silently wrong for two: each
+  # sweeps what the other is sweeping and drains what the other is draining,
+  # and nothing reports it, since each did what it was built to.
+  #
+  # A deployment of two replicas on PostgreSQL names `postgres`: each loop is
+  # held by an advisory lock on the database the rows are already in, runs in
+  # the replica that holds it, and in another within a few seconds of that one
+  # going. Nothing is stored and there is nothing to run.
+  #
+  #   lease: postgres
+  #
+  # `spin.dsn` goes with it and should stay empty, for the reason `watch.dsn`
+  # should: it is for an address that reaches the database directly when the
+  # app's goes through a pooler, which a session lock does not survive.
+  #
+  # `none` runs no loop here at all, for a replica that only answers requests
+  # while another runs the loops.
+  lease: local
