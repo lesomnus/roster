@@ -28,6 +28,8 @@ on:
     branches: [main]
   pull_request:
 
+# Every job names its image rather than `ubuntu-latest`, so that the runner
+# moves when this file says so and not on GitHub's schedule.
 jobs:
   # The binaries of every platform, and the pages, compiled once: `dist` in
   # `docker-bake.hcl`, cross-compiled from this runner's architecture.
@@ -40,11 +42,11 @@ jobs:
   # derived from it and is compiled into the binary: a run that crossed midnight
   # would otherwise tag the image with a day the binary does not say.
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       timestamp: ${{ steps.when.outputs.timestamp }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - id: when
         run: echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@v4
@@ -69,14 +71,14 @@ jobs:
           retention-days: 1
 
   go:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       # The whole history, because `buf breaking` below compares against the
       # branch tip and a shallow checkout has no ref to compare against.
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -106,7 +108,7 @@ jobs:
       # of what is generated and by building the console, and both need the
       # plugin. A run without it is a run that says the generated code is fine
       # having looked at two thirds of it.
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - run: npm ci --prefix ts
@@ -132,7 +134,7 @@ jobs:
   # had been writing nil into since they were written. roster generates the same
   # SQL from the same generator and has never been run against PostgreSQL at all.
   postgres:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     services:
       postgres:
         image: postgres:17
@@ -149,8 +151,8 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -171,10 +173,10 @@ jobs:
   # covers whether `ts/gen/` matches the schema; this covers whether the code
   # written against it still compiles and bundles.
   ts:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
 
@@ -190,14 +192,14 @@ jobs:
   # a browser, and because what it checks -- that the page posts what the
   # server reads -- is what every job above has no way to see.
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
 
@@ -223,9 +225,9 @@ jobs:
   # `docker-bake.hcl` -- and handed to the script rather than built by it.
   hydra:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           name: dist
@@ -264,10 +266,10 @@ jobs:
   # under test, and the `dev` one the walks run in.
   cluster:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           name: dist
@@ -300,7 +302,7 @@ jobs:
   # the binary pushed is the one `cluster` and `hydra` ran.
   image:
     needs: [build, go, postgres, ts, e2e, hydra, cluster]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     permissions:
       contents: read
@@ -314,7 +316,7 @@ jobs:
       DIST: ./dist
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           name: dist
