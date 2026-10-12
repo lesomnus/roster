@@ -1302,6 +1302,7 @@ type GroupListRequest struct {
 	xxx_hidden_Filters *[]*GroupFilter        `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
+	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1354,6 +1355,13 @@ func (x *GroupListRequest) GetAfter() string {
 	return ""
 }
 
+func (x *GroupListRequest) GetReverse() bool {
+	if x != nil {
+		return x.xxx_hidden_Reverse
+	}
+	return false
+}
+
 func (x *GroupListRequest) SetFilters(v []*GroupFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1364,6 +1372,10 @@ func (x *GroupListRequest) SetSize(v int32) {
 
 func (x *GroupListRequest) SetAfter(v string) {
 	x.xxx_hidden_After = v
+}
+
+func (x *GroupListRequest) SetReverse(v bool) {
+	x.xxx_hidden_Reverse = v
 }
 
 type GroupListRequest_builder struct {
@@ -1381,6 +1393,11 @@ type GroupListRequest_builder struct {
 	// ahead of the page does not shift it and a caller reading through never sees
 	// one twice or misses one.
 	After string
+	// Read the order the other way round, every column of it at once -- newest
+	// first where it is oldest first -- which the index the order walks walks
+	// from the other end. A cursor is of the way it was read, so the next page
+	// carries on that way, and one of the other way is refused.
+	Reverse bool
 }
 
 func (b0 GroupListRequest_builder) Build() *GroupListRequest {
@@ -1390,6 +1407,7 @@ func (b0 GroupListRequest_builder) Build() *GroupListRequest {
 	x.xxx_hidden_Filters = &b.Filters
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
+	x.xxx_hidden_Reverse = b.Reverse
 	return m0
 }
 
@@ -2630,6 +2648,7 @@ type GroupMembershipListRequest struct {
 	xxx_hidden_Filters *[]*GroupMembershipFilter `protobuf:"bytes,1,rep,name=filters"`
 	xxx_hidden_Size    int32                     `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                    `protobuf:"bytes,3,opt,name=after"`
+	xxx_hidden_Reverse bool                      `protobuf:"varint,4,opt,name=reverse"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -2682,6 +2701,13 @@ func (x *GroupMembershipListRequest) GetAfter() string {
 	return ""
 }
 
+func (x *GroupMembershipListRequest) GetReverse() bool {
+	if x != nil {
+		return x.xxx_hidden_Reverse
+	}
+	return false
+}
+
 func (x *GroupMembershipListRequest) SetFilters(v []*GroupMembershipFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -2692,6 +2718,10 @@ func (x *GroupMembershipListRequest) SetSize(v int32) {
 
 func (x *GroupMembershipListRequest) SetAfter(v string) {
 	x.xxx_hidden_After = v
+}
+
+func (x *GroupMembershipListRequest) SetReverse(v bool) {
+	x.xxx_hidden_Reverse = v
 }
 
 type GroupMembershipListRequest_builder struct {
@@ -2709,6 +2739,11 @@ type GroupMembershipListRequest_builder struct {
 	// ahead of the page does not shift it and a caller reading through never sees
 	// one twice or misses one.
 	After string
+	// Read the order the other way round, every column of it at once -- newest
+	// first where it is oldest first -- which the index the order walks walks
+	// from the other end. A cursor is of the way it was read, so the next page
+	// carries on that way, and one of the other way is refused.
+	Reverse bool
 }
 
 func (b0 GroupMembershipListRequest_builder) Build() *GroupMembershipListRequest {
@@ -2718,6 +2753,7 @@ func (b0 GroupMembershipListRequest_builder) Build() *GroupMembershipListRequest
 	x.xxx_hidden_Filters = &b.Filters
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
+	x.xxx_hidden_Reverse = b.Reverse
 	return m0
 }
 
@@ -2965,11 +3001,12 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.GroupRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\",\n" +
 	"\x12GroupEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"y\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x9a\x01\n" +
 	"\x10GroupListRequest\x12-\n" +
 	"\afilters\x18\x01 \x03(\v2\x13.roster.GroupFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"S\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"S\n" +
 	"\x11GroupListResponse\x12#\n" +
 	"\x05items\x18\x01 \x03(\v2\r.roster.GroupR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x81\x01\n" +
@@ -3008,11 +3045,12 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x1a.roster.GroupMembershipRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"6\n" +
 	"\x1cGroupMembershipEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x8d\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xae\x01\n" +
 	"\x1aGroupMembershipListRequest\x127\n" +
 	"\afilters\x18\x01 \x03(\v2\x1d.roster.GroupMembershipFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
-	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\"g\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"g\n" +
 	"\x1bGroupMembershipListResponse\x12-\n" +
 	"\x05items\x18\x01 \x03(\v2\x17.roster.GroupMembershipR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x98\x01\n" +
