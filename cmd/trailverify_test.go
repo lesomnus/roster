@@ -17,6 +17,7 @@ import (
 
 	"github.com/lesomnus/roster/cli"
 	"github.com/lesomnus/roster/cmd"
+	"github.com/lesomnus/roster/server/pd"
 )
 
 // TestTheArchiveIsCheckedAgainstTheDatabasesAccountOfIt is `roster trail
@@ -132,4 +133,84 @@ func TestRowsFromBeforeTheKeyAreAcceptedOnce(t *testing.T) {
 		x.ErrorContains(err, "audit.archive")
 		x.NoError(run("trail", "prune", "--older-than", "1ns", "--to", dir), "the archive it already has")
 	})
+}
+
+// TestADatabaseRestoredFromABackupIsAcceptedOnce is what docs/operating.md says
+// to do after the database is restored from a backup older than the latest
+// checkpoint (lesomnus/payday#70). `verify` finds it behind the checkpoint
+// store, and nothing is checkpointed while it is, as before; but `accept` was
+// refused for the same reason, and so nothing ever was again. Now one `trail
+// accept` carries it on, numbered past the store's checkpoints, and `verify` is
+// clean at once.
+func TestADatabaseRestoredFromABackupIsAcceptedOnce(t *testing.T) {
+	x := require.New(t)
+
+	_, priv, err := ed25519.GenerateKey(rand.Reader)
+	x.NoError(err)
+	der, err := x509.MarshalPKCS8PrivateKey(priv)
+	x.NoError(err)
+
+	dir := t.TempDir()
+	var c cmd.Config
+	b, ctx := build(t, func(cc *cmd.Config) {
+		cc.Audit.Archive = dir
+		cc.Audit.Retain = time.Nanosecond
+		cc.Audit.Checkpoints.Key = string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der}))
+		c = *cc
+	})
+	run := func(args ...string) error { return cli.Cmd(&c).Run(ctx, args) }
+	latest := func() int {
+		k, _, err := pd.TrailStore(b.Ent).Latest(ctx)
+		x.NoError(err)
+		return k
+	}
+
+	b.holder(t, ctx, b.Contoso, "before")
+	x.NoError(run("trail", "prune"))
+	x.NoError(run("trail", "verify"))
+	then := latest()
+
+	// The backup, of the database's account of the archive.
+	backup, err := b.Ent.Archived.Query().All(ctx)
+	x.NoError(err)
+
+	b.holder(t, ctx, b.Contoso, "after")
+	x.NoError(run("trail", "prune"))
+	since := latest()
+	x.Greater(since, then)
+
+	// Restored, and the archive and its checkpoints not.
+	_, err = b.Ent.Archived.Delete().Exec(ctx)
+	x.NoError(err)
+	for _, v := range backup {
+		x.NoError(b.Ent.Archived.Create().
+			SetId(v.Id).
+			SetNamespace(v.Namespace).
+			SetDigest(v.Digest).
+			SetIntent(v.Intent).
+			SetLabels(v.Labels).
+			SetState(v.State).
+			SetSince(v.Since).
+			SetGone(v.Gone).
+			SetSignature(v.Signature).
+			SetSignedBy(v.SignedBy).
+			SetDateCreated(v.DateCreated).
+			SetDateUpdated(v.DateUpdated).
+			Exec(ctx))
+	}
+
+	x.ErrorContains(run("trail", "verify"), "finding(s)")
+	b.holder(t, ctx, b.Contoso, "meanwhile")
+	x.NoError(run("trail", "prune"))
+	x.Equal(then, latest(), "a checkpoint was taken over a database behind the store")
+
+	x.NoError(run("trail", "accept", "--why", "the database restored from a backup, and looked at"))
+	x.Equal(since+1, latest())
+	x.NoError(run("trail", "verify", "--full"))
+
+	// And it goes on from there.
+	b.holder(t, ctx, b.Contoso, "and-on")
+	x.NoError(run("trail", "prune"))
+	x.Greater(latest(), since+1)
+	x.NoError(run("trail", "verify", "--full"))
 }
