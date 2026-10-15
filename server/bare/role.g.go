@@ -14,14 +14,19 @@ import (
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	role "github.com/lesomnus/roster/internal/ent/role"
 	site "github.com/lesomnus/roster/internal/ent/site"
+	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -84,6 +89,53 @@ func (s RoleServiceServer) narrow(ctx context.Context, p predicate.Role) (predic
 	return RoleNarrow(ctx, s.Scope, p)
 }
 
+func (s RoleServiceServer) snapshot(ctx context.Context, p predicate.Role, lock bool) (*ent.Role, error) {
+	q := s.Db.Role.Query().Where(p)
+	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
+	q.WithSite(func(q *ent.SiteQuery) { q.Select(site.FieldId) })
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s RoleServiceServer) image(v *rstr.Role) *rstr.Role {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.Role)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(3)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*rstr.Role, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -156,9 +208,22 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *rstr.Role
+	if snapshotOptions(s.Rec, rstr.RoleService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, role.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  rstr.RoleService_Add_FullMethodName,
-		Key: u.Id,
+		By:    rstr.RoleService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -166,10 +231,6 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
 }
 
@@ -361,6 +422,18 @@ func (s RoleServiceServer) apply(ctx context.Context, ref *rstr.RoleRef, doc *pa
 		return nil, err
 	}
 
+	var previous *rstr.Role
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Role.Query().Where(p)
 		if pred != nil {
@@ -409,20 +482,25 @@ func (s RoleServiceServer) apply(ctx context.Context, ref *rstr.RoleRef, doc *pa
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *rstr.Role
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -449,8 +527,16 @@ func (s RoleServiceServer) Erase(ctx context.Context, req *rstr.RoleRef) (*rstr.
 	st.Db = tx.Db
 
 	var k any
+	var previous *rstr.Role
 	if s.Rec != nil {
-		v, err := st.Db.Role.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, rstr.RoleService_Erase_FullMethodName)
+		var v *ent.Role
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Role.Query().Where(p).Select(role.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.RoleEraseResponse{}, nil
@@ -458,8 +544,11 @@ func (s RoleServiceServer) Erase(ctx context.Context, req *rstr.RoleRef) (*rstr.
 			return nil, err
 		}
 
-		k = v
-		p = role.And(p, role.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = role.And(p, role.IdEQ(v.Id))
 	}
 
 	u := st.Db.Role.Update().Where(p)
@@ -471,8 +560,9 @@ func (s RoleServiceServer) Erase(ctx context.Context, req *rstr.RoleRef) (*rstr.
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  rstr.RoleService_Erase_FullMethodName,
-			Key: k,
+			By:       rstr.RoleService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}
@@ -588,6 +678,83 @@ func (s BindingServiceServer) narrow(ctx context.Context, p predicate.Binding) (
 	return BindingNarrow(ctx, s.Scope, p)
 }
 
+func (s BindingServiceServer) snapshot(ctx context.Context, p predicate.Binding, lock bool) (*ent.Binding, error) {
+	q := s.Db.Binding.Query().Where(p)
+	q.WithRole(func(q *ent.RoleQuery) { q.Select(role.FieldId) })
+	q.WithSite(func(q *ent.SiteQuery) { q.Select(site.FieldId) })
+	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
+	q.WithGroup(func(q *ent.GroupQuery) { q.Select(group.FieldId) })
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s BindingServiceServer) image(v *rstr.Binding) *rstr.Binding {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.Binding)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(3)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(8)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(9)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddRequest) (*rstr.Binding, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -674,9 +841,22 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *rstr.Binding
+	if snapshotOptions(s.Rec, rstr.BindingService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, binding.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  rstr.BindingService_Add_FullMethodName,
-		Key: u.Id,
+		By:    rstr.BindingService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -684,10 +864,6 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
 }
 
@@ -882,6 +1058,18 @@ func (s BindingServiceServer) apply(ctx context.Context, ref *rstr.BindingRef, d
 		return nil, err
 	}
 
+	var previous *rstr.Binding
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Binding.Query().Where(p)
 		if pred != nil {
@@ -930,20 +1118,25 @@ func (s BindingServiceServer) apply(ctx context.Context, ref *rstr.BindingRef, d
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *rstr.Binding
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -970,8 +1163,16 @@ func (s BindingServiceServer) Erase(ctx context.Context, req *rstr.BindingRef) (
 	st.Db = tx.Db
 
 	var k any
+	var previous *rstr.Binding
 	if s.Rec != nil {
-		v, err := st.Db.Binding.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, rstr.BindingService_Erase_FullMethodName)
+		var v *ent.Binding
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Binding.Query().Where(p).Select(binding.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.BindingEraseResponse{}, nil
@@ -979,8 +1180,11 @@ func (s BindingServiceServer) Erase(ctx context.Context, req *rstr.BindingRef) (
 			return nil, err
 		}
 
-		k = v
-		p = binding.And(p, binding.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = binding.And(p, binding.IdEQ(v.Id))
 	}
 
 	u := st.Db.Binding.Update().Where(p)
@@ -992,8 +1196,9 @@ func (s BindingServiceServer) Erase(ctx context.Context, req *rstr.BindingRef) (
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  rstr.BindingService_Erase_FullMethodName,
-			Key: k,
+			By:       rstr.BindingService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

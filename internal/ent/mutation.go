@@ -5603,6 +5603,23 @@ func (m *OutboxMutation) OldDateCreated(ctx context.Context) (v time.Time, err e
 	return oldValue.DateCreated, nil
 }
 
+// OldEvent returns the old "event" field's value of the Outbox entity.
+// If the Outbox object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OutboxMutation) OldEvent(ctx context.Context) (v *[]byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldEvent is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldEvent requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEvent: %w", err)
+	}
+	return oldValue.Event, nil
+}
+
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
@@ -5622,6 +5639,8 @@ func (m *OutboxMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldPatch(ctx)
 	case outbox.FieldDateCreated:
 		return m.OldDateCreated(ctx)
+	case outbox.FieldEvent:
+		return m.OldEvent(ctx)
 	}
 	return nil, fmt.Errorf("unknown Outbox field %s", name)
 }

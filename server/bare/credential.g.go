@@ -13,12 +13,16 @@ import (
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -81,6 +85,38 @@ func (s CredentialServiceServer) narrow(ctx context.Context, p predicate.Credent
 	return CredentialNarrow(ctx, s.Scope, p)
 }
 
+func (s CredentialServiceServer) snapshot(ctx context.Context, p predicate.Credential, lock bool) (*ent.Credential, error) {
+	q := s.Db.Credential.Query().Where(p)
+	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s CredentialServiceServer) image(v *rstr.Credential) *rstr.Credential {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.Credential)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 func (s CredentialServiceServer) Add(ctx context.Context, req *rstr.CredentialAddRequest) (*rstr.Credential, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -148,9 +184,22 @@ func (s CredentialServiceServer) Add(ctx context.Context, req *rstr.CredentialAd
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *rstr.Credential
+	if snapshotOptions(s.Rec, rstr.CredentialService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, credential.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  rstr.CredentialService_Add_FullMethodName,
-		Key: u.Id,
+		By:    rstr.CredentialService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -158,10 +207,6 @@ func (s CredentialServiceServer) Add(ctx context.Context, req *rstr.CredentialAd
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
 }
 
@@ -356,6 +401,18 @@ func (s CredentialServiceServer) apply(ctx context.Context, ref *rstr.Credential
 		return nil, err
 	}
 
+	var previous *rstr.Credential
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Credential.Query().Where(p)
 		if pred != nil {
@@ -404,20 +461,25 @@ func (s CredentialServiceServer) apply(ctx context.Context, ref *rstr.Credential
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *rstr.Credential
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -444,8 +506,16 @@ func (s CredentialServiceServer) Erase(ctx context.Context, req *rstr.Credential
 	st.Db = tx.Db
 
 	var k any
+	var previous *rstr.Credential
 	if s.Rec != nil {
-		v, err := st.Db.Credential.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, rstr.CredentialService_Erase_FullMethodName)
+		var v *ent.Credential
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Credential.Query().Where(p).Select(credential.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.CredentialEraseResponse{}, nil
@@ -453,8 +523,11 @@ func (s CredentialServiceServer) Erase(ctx context.Context, req *rstr.Credential
 			return nil, err
 		}
 
-		k = v
-		p = credential.And(p, credential.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = credential.And(p, credential.IdEQ(v.Id))
 	}
 
 	u := st.Db.Credential.Update().Where(p)
@@ -466,8 +539,9 @@ func (s CredentialServiceServer) Erase(ctx context.Context, req *rstr.Credential
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  rstr.CredentialService_Erase_FullMethodName,
-			Key: k,
+			By:       rstr.CredentialService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

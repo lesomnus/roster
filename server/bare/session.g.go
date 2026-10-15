@@ -13,12 +13,16 @@ import (
 	session "github.com/lesomnus/roster/internal/ent/session"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -81,6 +85,38 @@ func (s SessionServiceServer) narrow(ctx context.Context, p predicate.Session) (
 	return SessionNarrow(ctx, s.Scope, p)
 }
 
+func (s SessionServiceServer) snapshot(ctx context.Context, p predicate.Session, lock bool) (*ent.Session, error) {
+	q := s.Db.Session.Query().Where(p)
+	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s SessionServiceServer) image(v *rstr.Session) *rstr.Session {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.Session)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 func (s SessionServiceServer) Add(ctx context.Context, req *rstr.SessionAddRequest) (*rstr.Session, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -142,9 +178,22 @@ func (s SessionServiceServer) Add(ctx context.Context, req *rstr.SessionAddReque
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *rstr.Session
+	if snapshotOptions(s.Rec, rstr.SessionService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, session.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  rstr.SessionService_Add_FullMethodName,
-		Key: u.Id,
+		By:    rstr.SessionService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -152,10 +201,6 @@ func (s SessionServiceServer) Add(ctx context.Context, req *rstr.SessionAddReque
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
 }
 
@@ -338,6 +383,18 @@ func (s SessionServiceServer) apply(ctx context.Context, ref *rstr.SessionRef, d
 		return nil, err
 	}
 
+	var previous *rstr.Session
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Session.Query().Where(p)
 		if pred != nil {
@@ -386,20 +443,25 @@ func (s SessionServiceServer) apply(ctx context.Context, ref *rstr.SessionRef, d
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *rstr.Session
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -426,8 +488,16 @@ func (s SessionServiceServer) Erase(ctx context.Context, req *rstr.SessionRef) (
 	st.Db = tx.Db
 
 	var k any
+	var previous *rstr.Session
 	if s.Rec != nil {
-		v, err := st.Db.Session.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, rstr.SessionService_Erase_FullMethodName)
+		var v *ent.Session
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Session.Query().Where(p).Select(session.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.SessionEraseResponse{}, nil
@@ -435,8 +505,11 @@ func (s SessionServiceServer) Erase(ctx context.Context, req *rstr.SessionRef) (
 			return nil, err
 		}
 
-		k = v
-		p = session.And(p, session.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = session.And(p, session.IdEQ(v.Id))
 	}
 
 	u := st.Db.Session.Update().Where(p)
@@ -448,8 +521,9 @@ func (s SessionServiceServer) Erase(ctx context.Context, req *rstr.SessionRef) (
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  rstr.SessionService_Erase_FullMethodName,
-			Key: k,
+			By:       rstr.SessionService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

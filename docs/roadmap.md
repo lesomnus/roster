@@ -774,6 +774,15 @@ green and would have been green for either registration, because a gate starts
 a fresh process. That one needs a cluster **and** a step that changes the
 registration and signs in again without restarting anything.
 
+## Read-only file permissions
+
+`policy.file` adds payday's shared RBAC source to the data plane. File roles,
+groups and bindings participate in the gate, scope, delegation and credential
+target checks, and permission introspection. Immutable tenant/holder UUIDs keep
+renames and alias reuse from acquiring file grants. Valid reloads replace the
+source and close streams; invalid edits retain the previous revision. See
+[usage/file-policy.md](usage/file-policy.md).
+
 ## See also
 
 - [position.md](position.md) — the line these are all on the near side of

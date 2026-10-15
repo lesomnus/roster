@@ -12,14 +12,19 @@ import (
 	hostproof "github.com/lesomnus/roster/internal/ent/hostproof"
 	maildomain "github.com/lesomnus/roster/internal/ent/maildomain"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
+	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -82,6 +87,38 @@ func (s HostServiceServer) narrow(ctx context.Context, p predicate.Host) (predic
 	return HostNarrow(ctx, s.Scope, p)
 }
 
+func (s HostServiceServer) snapshot(ctx context.Context, p predicate.Host, lock bool) (*ent.Host, error) {
+	q := s.Db.Host.Query().Where(p)
+	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s HostServiceServer) image(v *rstr.Host) *rstr.Host {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.Host)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*rstr.Host, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -143,9 +180,22 @@ func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *rstr.Host
+	if snapshotOptions(s.Rec, rstr.HostService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, host.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  rstr.HostService_Add_FullMethodName,
-		Key: u.Id,
+		By:    rstr.HostService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -153,10 +203,6 @@ func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
 }
 
@@ -338,6 +384,18 @@ func (s HostServiceServer) apply(ctx context.Context, ref *rstr.HostRef, doc *pa
 		return nil, err
 	}
 
+	var previous *rstr.Host
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Host.Query().Where(p)
 		if pred != nil {
@@ -386,20 +444,25 @@ func (s HostServiceServer) apply(ctx context.Context, ref *rstr.HostRef, doc *pa
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *rstr.Host
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -426,8 +489,16 @@ func (s HostServiceServer) Erase(ctx context.Context, req *rstr.HostRef) (*rstr.
 	st.Db = tx.Db
 
 	var k any
+	var previous *rstr.Host
 	if s.Rec != nil {
-		v, err := st.Db.Host.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, rstr.HostService_Erase_FullMethodName)
+		var v *ent.Host
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Host.Query().Where(p).Select(host.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.HostEraseResponse{}, nil
@@ -435,8 +506,11 @@ func (s HostServiceServer) Erase(ctx context.Context, req *rstr.HostRef) (*rstr.
 			return nil, err
 		}
 
-		k = v
-		p = host.And(p, host.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = host.And(p, host.IdEQ(v.Id))
 	}
 
 	u := st.Db.Host.Update().Where(p)
@@ -448,8 +522,9 @@ func (s HostServiceServer) Erase(ctx context.Context, req *rstr.HostRef) (*rstr.
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  rstr.HostService_Erase_FullMethodName,
-			Key: k,
+			By:       rstr.HostService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}
@@ -557,6 +632,38 @@ func (s MailDomainServiceServer) narrow(ctx context.Context, p predicate.MailDom
 	return MailDomainNarrow(ctx, s.Scope, p)
 }
 
+func (s MailDomainServiceServer) snapshot(ctx context.Context, p predicate.MailDomain, lock bool) (*ent.MailDomain, error) {
+	q := s.Db.MailDomain.Query().Where(p)
+	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s MailDomainServiceServer) image(v *rstr.MailDomain) *rstr.MailDomain {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.MailDomain)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAddRequest) (*rstr.MailDomain, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -616,9 +723,22 @@ func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAd
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *rstr.MailDomain
+	if snapshotOptions(s.Rec, rstr.MailDomainService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, maildomain.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  rstr.MailDomainService_Add_FullMethodName,
-		Key: u.Id,
+		By:    rstr.MailDomainService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -626,10 +746,6 @@ func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAd
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
 }
 
@@ -811,6 +927,18 @@ func (s MailDomainServiceServer) apply(ctx context.Context, ref *rstr.MailDomain
 		return nil, err
 	}
 
+	var previous *rstr.MailDomain
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.MailDomain.Query().Where(p)
 		if pred != nil {
@@ -859,20 +987,25 @@ func (s MailDomainServiceServer) apply(ctx context.Context, ref *rstr.MailDomain
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *rstr.MailDomain
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -899,8 +1032,16 @@ func (s MailDomainServiceServer) Erase(ctx context.Context, req *rstr.MailDomain
 	st.Db = tx.Db
 
 	var k any
+	var previous *rstr.MailDomain
 	if s.Rec != nil {
-		v, err := st.Db.MailDomain.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, rstr.MailDomainService_Erase_FullMethodName)
+		var v *ent.MailDomain
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.MailDomain.Query().Where(p).Select(maildomain.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.MailDomainEraseResponse{}, nil
@@ -908,8 +1049,11 @@ func (s MailDomainServiceServer) Erase(ctx context.Context, req *rstr.MailDomain
 			return nil, err
 		}
 
-		k = v
-		p = maildomain.And(p, maildomain.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = maildomain.And(p, maildomain.IdEQ(v.Id))
 	}
 
 	u := st.Db.MailDomain.Update().Where(p)
@@ -921,8 +1065,9 @@ func (s MailDomainServiceServer) Erase(ctx context.Context, req *rstr.MailDomain
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  rstr.MailDomainService_Erase_FullMethodName,
-			Key: k,
+			By:       rstr.MailDomainService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}
@@ -1038,6 +1183,38 @@ func (s HostProofServiceServer) narrow(ctx context.Context, p predicate.HostProo
 	return HostProofNarrow(ctx, s.Scope, p)
 }
 
+func (s HostProofServiceServer) snapshot(ctx context.Context, p predicate.HostProof, lock bool) (*ent.HostProof, error) {
+	q := s.Db.HostProof.Query().Where(p)
+	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s HostProofServiceServer) image(v *rstr.HostProof) *rstr.HostProof {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.HostProof)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 func (s HostProofServiceServer) Add(ctx context.Context, req *rstr.HostProofAddRequest) (*rstr.HostProof, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -1097,9 +1274,22 @@ func (s HostProofServiceServer) Add(ctx context.Context, req *rstr.HostProofAddR
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *rstr.HostProof
+	if snapshotOptions(s.Rec, rstr.HostProofService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, hostproof.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  rstr.HostProofService_Add_FullMethodName,
-		Key: u.Id,
+		By:    rstr.HostProofService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -1107,10 +1297,6 @@ func (s HostProofServiceServer) Add(ctx context.Context, req *rstr.HostProofAddR
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
 }
 
@@ -1292,6 +1478,18 @@ func (s HostProofServiceServer) apply(ctx context.Context, ref *rstr.HostProofRe
 		return nil, err
 	}
 
+	var previous *rstr.HostProof
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.HostProof.Query().Where(p)
 		if pred != nil {
@@ -1340,20 +1538,25 @@ func (s HostProofServiceServer) apply(ctx context.Context, ref *rstr.HostProofRe
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *rstr.HostProof
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -1380,8 +1583,16 @@ func (s HostProofServiceServer) Erase(ctx context.Context, req *rstr.HostProofRe
 	st.Db = tx.Db
 
 	var k any
+	var previous *rstr.HostProof
 	if s.Rec != nil {
-		v, err := st.Db.HostProof.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, rstr.HostProofService_Erase_FullMethodName)
+		var v *ent.HostProof
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.HostProof.Query().Where(p).Select(hostproof.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.HostProofEraseResponse{}, nil
@@ -1389,8 +1600,11 @@ func (s HostProofServiceServer) Erase(ctx context.Context, req *rstr.HostProofRe
 			return nil, err
 		}
 
-		k = v
-		p = hostproof.And(p, hostproof.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = hostproof.And(p, hostproof.IdEQ(v.Id))
 	}
 
 	u := st.Db.HostProof.Update().Where(p)
@@ -1402,8 +1616,9 @@ func (s HostProofServiceServer) Erase(ctx context.Context, req *rstr.HostProofRe
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  rstr.HostProofService_Erase_FullMethodName,
-			Key: k,
+			By:       rstr.HostProofService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

@@ -14,6 +14,7 @@ import (
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/payday/rbac"
 
 	app "github.com/lesomnus/roster/rstr"
 
@@ -59,9 +60,14 @@ import (
 // their tenant, the actor's own row and the method, and never the request -- so
 // "may manage the team they are in" is not here. That is `server/core`, which
 // is given the request; see docs/position.md, § 'Authorization'.
-func Policy(db *ent.Client) gate.Policy { return policy{db} }
+func Policy(db *ent.Client, sources ...rbac.Source) gate.Policy {
+	return policy{db: db, sources: sources}
+}
 
-type policy struct{ db *ent.Client }
+type policy struct {
+	db      *ent.Client
+	sources []rbac.Source
+}
 
 var _ gate.Policy = policy{}
 
@@ -207,7 +213,9 @@ func (p policy) Where(ctx context.Context, c gate.Call) (frame.Tenants, error) {
 // where the sink is and the policy is built where the interceptors are. Both
 // read the same bindings, which is the point: what narrows a query and what
 // permits a call are one set of rows.
-func Sets(db *ent.Client) frame.Sets { return policy{db}.sets }
+func Sets(db *ent.Client, sources ...rbac.Source) frame.Sets {
+	return policy{db: db, sources: sources}.sets
+}
 
 // sets is which sites this caller is narrowed to.
 //
@@ -382,6 +390,19 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 		h.sites = append(h.sites, v.Edges.Site.Id)
 	}
 
+	extra, err := configuredGrants(ctx, p.db, who, p.sources)
+	if err != nil {
+		return held{}, err
+	}
+	for _, g := range extra {
+		if len(g.Methods) > 0 {
+			h.anySite = true
+		}
+		for _, m := range g.Methods {
+			h.methods[m] = struct{}{}
+			h.everywhere[m] = struct{}{}
+		}
+	}
 	return h, nil
 }
 
@@ -452,14 +473,14 @@ func Locking(db *ent.Client) core.Lock {
 // holds, so that putting somebody in one is weighed like writing the binding.
 // `Holding` is everything somebody **has**, by any path -- which is the one
 // `mayReach` needs, because there a path not walked allows rather than refuses.
-func Rules(db *ent.Client) core.Rules {
+func Rules(db *ent.Client, sources ...rbac.Source) core.Rules {
 	return core.Rules{
-		Holds:      Holds(db),
-		Granted:    Granted(db),
+		Holds:      Holds(db, sources...),
+		Granted:    Granted(db, sources...),
 		Joining:    Joining(db),
-		Holding:    Holding(db),
-		Held:       core.Held(Everything(db)),
-		Everywhere: Everywhere(db),
+		Holding:    Holding(db, sources...),
+		Held:       core.Held(Everything(db, sources...)),
+		Everywhere: Everywhere(db, sources...),
 		Releasing:  Releasing(db),
 	}
 }
@@ -530,14 +551,18 @@ func Releasing(db *ent.Client) core.Releasing {
 // as holding nothing, and anybody who could reset a password could become
 // them. Which is why this walks the same rows [policy.of] walks -- see
 // [bindingsReaching].
-func Granted(db *ent.Client) core.Granted {
+func Granted(db *ent.Client, sources ...rbac.Source) core.Granted {
 	return func(ctx context.Context, who pdid.Id) ([]core.Grant, error) {
 		vs, err := bindingsReaching(ctx, db, who.Uuid())
 		if err != nil {
 			return nil, err
 		}
 
-		return grantsOf(vs), nil
+		extra, err := configuredGrants(ctx, db, who.Uuid(), sources)
+		if err != nil {
+			return nil, err
+		}
+		return append(grantsOf(vs), extra...), nil
 	}
 }
 
@@ -589,7 +614,7 @@ func Joining(db *ent.Client) core.Joining {
 // narrows one back down is `core.mayChangeTeam`, which guards the membership
 // writes and nothing else. Reporting them narrower would be reporting less
 // than the person can do, which is the direction that lets somebody be reached.
-func Holding(db *ent.Client) core.Holding {
+func Holding(db *ent.Client, sources ...rbac.Source) core.Holding {
 	return func(ctx context.Context, who pdid.Id) ([]core.Grant, error) {
 		vs, err := bindingsReaching(ctx, db, who.Uuid())
 		if err != nil {
@@ -617,7 +642,11 @@ func Holding(db *ent.Client) core.Holding {
 			gs = append(gs, core.Grant{Methods: v.Edges.Role.Methods})
 		}
 
-		return gs, nil
+		extra, err := configuredGrants(ctx, db, who.Uuid(), sources)
+		if err != nil {
+			return nil, err
+		}
+		return append(gs, extra...), nil
 	}
 }
 
@@ -656,7 +685,7 @@ func grantsOf(vs []*ent.Binding) []core.Grant {
 // One function rather than two, because it is one question. The gate asks a
 // weaker version of it -- may you ever call this -- and a layer asks this one,
 // and both read the same rows.
-func Holds(db *ent.Client) core.Holds {
+func Holds(db *ent.Client, sources ...rbac.Source) core.Holds {
 	return func(ctx context.Context, who pdid.Id, method string, team pdid.Id) (bool, error) {
 		// The same set the gate let them through on -- see
 		// [bindingsReaching]. A narrower reading here would refuse the call
@@ -672,6 +701,17 @@ func Holds(db *ent.Client) core.Holds {
 			}
 		}
 
+		extra, err := configuredGrants(ctx, db, who.Uuid(), sources)
+		if err != nil {
+			return false, err
+		}
+		for _, g := range extra {
+			for _, m := range g.Methods {
+				if frame.Covers(m, method) {
+					return true, nil
+				}
+			}
+		}
 		if team == pdid.Nil {
 			return false, nil
 		}
@@ -713,8 +753,8 @@ func allows(r *ent.Role, method string) bool {
 
 // Everywhere is [Everything] without a site or a team: the patterns held
 // through a binding across the whole tenant, for `Holder.Reaches`.
-func Everywhere(db *ent.Client) core.Everywhere {
-	p := policy{db}
+func Everywhere(db *ent.Client, sources ...rbac.Source) core.Everywhere {
+	p := policy{db: db, sources: sources}
 
 	return func(ctx context.Context, who pdid.Id) ([]string, error) {
 		h, err := p.of(ctx, who.Uuid())
@@ -736,8 +776,8 @@ func Everywhere(db *ent.Client) core.Everywhere {
 //
 // The same union the gate enforces, so that what a page shows and what the
 // server allows come from one function rather than two that agree today.
-func Everything(db *ent.Client) me.Held {
-	p := policy{db}
+func Everything(db *ent.Client, sources ...rbac.Source) me.Held {
+	p := policy{db: db, sources: sources}
 
 	return func(ctx context.Context, who pdid.Id) ([]string, []pdid.Id, bool, error) {
 		h, err := p.of(ctx, who.Uuid())
@@ -766,4 +806,33 @@ func Everything(db *ent.Client) me.Held {
 
 		return ms, ks, h.anySite, nil
 	}
+}
+
+// configuredGrants uses immutable tenant/holder IDs. Aliases are writable and
+// must never select an external grant: renaming or recreating a holder would
+// otherwise bypass the permission-delegation checks. File groups have
+// their own membership; a database GroupMembership never changes these grants.
+func configuredGrants(ctx context.Context, db *ent.Client, who uuid.UUID, sources []rbac.Source) ([]core.Grant, error) {
+	if len(sources) == 0 {
+		return nil, nil
+	}
+	h, err := db.Holder.Query().Where(holder.IdEQ(who), holder.DateErasedIsNil()).WithTenant().Only(ctx)
+	if ent.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if h.Edges.Tenant == nil {
+		return nil, nil
+	}
+	gs, err := (rbac.Union(sources)).Grants(ctx, "@"+h.Edges.Tenant.Id.String()+"/"+h.Id.String())
+	if err != nil {
+		return nil, err
+	}
+	out := make([]core.Grant, 0, len(gs))
+	for _, g := range gs {
+		out = append(out, core.Grant{Methods: g.Methods})
+	}
+	return out, nil
 }

@@ -13,12 +13,16 @@ import (
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -81,6 +85,38 @@ func (s IdentityServiceServer) narrow(ctx context.Context, p predicate.Identity)
 	return IdentityNarrow(ctx, s.Scope, p)
 }
 
+func (s IdentityServiceServer) snapshot(ctx context.Context, p predicate.Identity, lock bool) (*ent.Identity, error) {
+	q := s.Db.Identity.Query().Where(p)
+	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s IdentityServiceServer) image(v *rstr.Identity) *rstr.Identity {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.Identity)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddRequest) (*rstr.Identity, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -141,9 +177,22 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddReq
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *rstr.Identity
+	if snapshotOptions(s.Rec, rstr.IdentityService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, identity.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  rstr.IdentityService_Add_FullMethodName,
-		Key: u.Id,
+		By:    rstr.IdentityService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -151,10 +200,6 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddReq
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
 }
 
@@ -334,6 +379,18 @@ func (s IdentityServiceServer) apply(ctx context.Context, ref *rstr.IdentityRef,
 		return nil, err
 	}
 
+	var previous *rstr.Identity
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Identity.Query().Where(p)
 		if pred != nil {
@@ -382,20 +439,25 @@ func (s IdentityServiceServer) apply(ctx context.Context, ref *rstr.IdentityRef,
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *rstr.Identity
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -422,8 +484,16 @@ func (s IdentityServiceServer) Erase(ctx context.Context, req *rstr.IdentityRef)
 	st.Db = tx.Db
 
 	var k any
+	var previous *rstr.Identity
 	if s.Rec != nil {
-		v, err := st.Db.Identity.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, rstr.IdentityService_Erase_FullMethodName)
+		var v *ent.Identity
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Identity.Query().Where(p).Select(identity.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.IdentityEraseResponse{}, nil
@@ -431,8 +501,11 @@ func (s IdentityServiceServer) Erase(ctx context.Context, req *rstr.IdentityRef)
 			return nil, err
 		}
 
-		k = v
-		p = identity.And(p, identity.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = identity.And(p, identity.IdEQ(v.Id))
 	}
 
 	u := st.Db.Identity.Update().Where(p)
@@ -444,8 +517,9 @@ func (s IdentityServiceServer) Erase(ctx context.Context, req *rstr.IdentityRef)
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  rstr.IdentityService_Erase_FullMethodName,
-			Key: k,
+			By:       rstr.IdentityService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

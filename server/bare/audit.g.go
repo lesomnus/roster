@@ -12,12 +12,15 @@ import (
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
 	uuid "uuid"
 )
 
@@ -76,6 +79,22 @@ func (s AuditServiceServer) narrow(ctx context.Context, p predicate.Audit) (pred
 	return AuditNarrow(ctx, s.Scope, p)
 }
 
+func (s AuditServiceServer) snapshot(ctx context.Context, p predicate.Audit, lock bool) (*ent.Audit, error) {
+	q := s.Db.Audit.Query().Where(p)
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s AuditServiceServer) image(v *rstr.Audit) *rstr.Audit {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.Audit)
+	return out
+}
 func (s AuditServiceServer) Add(ctx context.Context, req *rstr.AuditAddRequest) (*rstr.Audit, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -155,9 +174,19 @@ func (s AuditServiceServer) Add(ctx context.Context, req *rstr.AuditAddRequest) 
 		return nil, err
 	}
 
+	v := u.Proto()
+	var value *rstr.Audit
+	if snapshotOptions(s.Rec, rstr.AuditService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, audit.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  rstr.AuditService_Add_FullMethodName,
-		Key: u.Id,
+		By:    rstr.AuditService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -165,7 +194,7 @@ func (s AuditServiceServer) Add(ctx context.Context, req *rstr.AuditAddRequest) 
 		return nil, err
 	}
 
-	return u.Proto(), nil
+	return v, nil
 }
 
 func (s AuditServiceServer) Get(ctx context.Context, req *rstr.AuditGetRequest) (*rstr.Audit, error) {
@@ -352,6 +381,18 @@ func (s AuditServiceServer) apply(ctx context.Context, ref *rstr.AuditRef, doc *
 		return nil, err
 	}
 
+	var previous *rstr.Audit
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Audit.Query().Where(p)
 		if pred != nil {
@@ -397,20 +438,25 @@ func (s AuditServiceServer) apply(ctx context.Context, ref *rstr.AuditRef, doc *
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *rstr.Audit
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -437,8 +483,16 @@ func (s AuditServiceServer) Erase(ctx context.Context, req *rstr.AuditRef) (*rst
 	st.Db = tx.Db
 
 	var k any
+	var previous *rstr.Audit
 	if s.Rec != nil {
-		v, err := st.Db.Audit.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, rstr.AuditService_Erase_FullMethodName)
+		var v *ent.Audit
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Audit.Query().Where(p).Select(audit.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.AuditEraseResponse{}, nil
@@ -446,8 +500,11 @@ func (s AuditServiceServer) Erase(ctx context.Context, req *rstr.AuditRef) (*rst
 			return nil, err
 		}
 
-		k = v
-		p = audit.And(p, audit.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = audit.And(p, audit.IdEQ(v.Id))
 	}
 
 	n, err := st.Db.Audit.Delete().Where(p).Exec(ctx)
@@ -456,8 +513,9 @@ func (s AuditServiceServer) Erase(ctx context.Context, req *rstr.AuditRef) (*rst
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  rstr.AuditService_Erase_FullMethodName,
-			Key: k,
+			By:       rstr.AuditService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

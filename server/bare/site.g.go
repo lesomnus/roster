@@ -10,14 +10,19 @@ import (
 	ent "github.com/lesomnus/roster/internal/ent"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	site "github.com/lesomnus/roster/internal/ent/site"
+	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -80,6 +85,38 @@ func (s SiteServiceServer) narrow(ctx context.Context, p predicate.Site) (predic
 	return SiteNarrow(ctx, s.Scope, p)
 }
 
+func (s SiteServiceServer) snapshot(ctx context.Context, p predicate.Site, lock bool) (*ent.Site, error) {
+	q := s.Db.Site.Query().Where(p)
+	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s SiteServiceServer) image(v *rstr.Site) *rstr.Site {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.Site)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 func (s SiteServiceServer) Add(ctx context.Context, req *rstr.SiteAddRequest) (*rstr.Site, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -139,9 +176,22 @@ func (s SiteServiceServer) Add(ctx context.Context, req *rstr.SiteAddRequest) (*
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *rstr.Site
+	if snapshotOptions(s.Rec, rstr.SiteService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, site.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  rstr.SiteService_Add_FullMethodName,
-		Key: u.Id,
+		By:    rstr.SiteService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -149,10 +199,6 @@ func (s SiteServiceServer) Add(ctx context.Context, req *rstr.SiteAddRequest) (*
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
 }
 
@@ -334,6 +380,18 @@ func (s SiteServiceServer) apply(ctx context.Context, ref *rstr.SiteRef, doc *pa
 		return nil, err
 	}
 
+	var previous *rstr.Site
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Site.Query().Where(p)
 		if pred != nil {
@@ -382,20 +440,25 @@ func (s SiteServiceServer) apply(ctx context.Context, ref *rstr.SiteRef, doc *pa
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *rstr.Site
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -422,8 +485,16 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *rstr.SiteRef) (*rstr.
 	st.Db = tx.Db
 
 	var k any
+	var previous *rstr.Site
 	if s.Rec != nil {
-		v, err := st.Db.Site.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, rstr.SiteService_Erase_FullMethodName)
+		var v *ent.Site
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Site.Query().Where(p).Select(site.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.SiteEraseResponse{}, nil
@@ -431,8 +502,11 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *rstr.SiteRef) (*rstr.
 			return nil, err
 		}
 
-		k = v
-		p = site.And(p, site.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = site.And(p, site.IdEQ(v.Id))
 	}
 
 	u := st.Db.Site.Update().Where(p)
@@ -444,8 +518,9 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *rstr.SiteRef) (*rstr.
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  rstr.SiteService_Erase_FullMethodName,
-			Key: k,
+			By:       rstr.SiteService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}
