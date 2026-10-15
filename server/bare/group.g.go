@@ -13,14 +13,19 @@ import (
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	site "github.com/lesomnus/roster/internal/ent/site"
+	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -83,6 +88,53 @@ func (s GroupServiceServer) narrow(ctx context.Context, p predicate.Group) (pred
 	return GroupNarrow(ctx, s.Scope, p)
 }
 
+func (s GroupServiceServer) snapshot(ctx context.Context, p predicate.Group, lock bool) (*ent.Group, error) {
+	q := s.Db.Group.Query().Where(p)
+	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
+	q.WithSite(func(q *ent.SiteQuery) { q.Select(site.FieldId) })
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s GroupServiceServer) image(v *rstr.Group) *rstr.Group {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.Group)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(3)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) (*rstr.Group, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -149,9 +201,22 @@ func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) 
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *rstr.Group
+	if snapshotOptions(s.Rec, rstr.GroupService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, group.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  rstr.GroupService_Add_FullMethodName,
-		Key: u.Id,
+		By:    rstr.GroupService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -159,10 +224,6 @@ func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) 
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
 }
 
@@ -348,6 +409,18 @@ func (s GroupServiceServer) apply(ctx context.Context, ref *rstr.GroupRef, doc *
 		return nil, err
 	}
 
+	var previous *rstr.Group
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Group.Query().Where(p)
 		if pred != nil {
@@ -396,20 +469,25 @@ func (s GroupServiceServer) apply(ctx context.Context, ref *rstr.GroupRef, doc *
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *rstr.Group
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -436,8 +514,16 @@ func (s GroupServiceServer) Erase(ctx context.Context, req *rstr.GroupRef) (*rst
 	st.Db = tx.Db
 
 	var k any
+	var previous *rstr.Group
 	if s.Rec != nil {
-		v, err := st.Db.Group.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, rstr.GroupService_Erase_FullMethodName)
+		var v *ent.Group
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Group.Query().Where(p).Select(group.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.GroupEraseResponse{}, nil
@@ -445,8 +531,11 @@ func (s GroupServiceServer) Erase(ctx context.Context, req *rstr.GroupRef) (*rst
 			return nil, err
 		}
 
-		k = v
-		p = group.And(p, group.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = group.And(p, group.IdEQ(v.Id))
 	}
 
 	u := st.Db.Group.Update().Where(p)
@@ -458,8 +547,9 @@ func (s GroupServiceServer) Erase(ctx context.Context, req *rstr.GroupRef) (*rst
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  rstr.GroupService_Erase_FullMethodName,
-			Key: k,
+			By:       rstr.GroupService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}
@@ -575,6 +665,53 @@ func (s GroupMembershipServiceServer) narrow(ctx context.Context, p predicate.Gr
 	return GroupMembershipNarrow(ctx, s.Scope, p)
 }
 
+func (s GroupMembershipServiceServer) snapshot(ctx context.Context, p predicate.GroupMembership, lock bool) (*ent.GroupMembership, error) {
+	q := s.Db.GroupMembership.Query().Where(p)
+	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
+	q.WithGroup(func(q *ent.GroupQuery) { q.Select(group.FieldId) })
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s GroupMembershipServiceServer) image(v *rstr.GroupMembership) *rstr.GroupMembership {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.GroupMembership)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(8)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMembershipAddRequest) (*rstr.GroupMembership, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -636,9 +773,22 @@ func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMe
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *rstr.GroupMembership
+	if snapshotOptions(s.Rec, rstr.GroupMembershipService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, groupmembership.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  rstr.GroupMembershipService_Add_FullMethodName,
-		Key: u.Id,
+		By:    rstr.GroupMembershipService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -646,10 +796,6 @@ func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMe
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
 }
 
@@ -827,6 +973,18 @@ func (s GroupMembershipServiceServer) apply(ctx context.Context, ref *rstr.Group
 		return nil, err
 	}
 
+	var previous *rstr.GroupMembership
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.GroupMembership.Query().Where(p)
 		if pred != nil {
@@ -875,20 +1033,25 @@ func (s GroupMembershipServiceServer) apply(ctx context.Context, ref *rstr.Group
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *rstr.GroupMembership
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -915,8 +1078,16 @@ func (s GroupMembershipServiceServer) Erase(ctx context.Context, req *rstr.Group
 	st.Db = tx.Db
 
 	var k any
+	var previous *rstr.GroupMembership
 	if s.Rec != nil {
-		v, err := st.Db.GroupMembership.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, rstr.GroupMembershipService_Erase_FullMethodName)
+		var v *ent.GroupMembership
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.GroupMembership.Query().Where(p).Select(groupmembership.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.GroupMembershipEraseResponse{}, nil
@@ -924,8 +1095,11 @@ func (s GroupMembershipServiceServer) Erase(ctx context.Context, req *rstr.Group
 			return nil, err
 		}
 
-		k = v
-		p = groupmembership.And(p, groupmembership.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = groupmembership.And(p, groupmembership.IdEQ(v.Id))
 	}
 
 	u := st.Db.GroupMembership.Update().Where(p)
@@ -937,8 +1111,9 @@ func (s GroupMembershipServiceServer) Erase(ctx context.Context, req *rstr.Group
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  rstr.GroupMembershipService_Erase_FullMethodName,
-			Key: k,
+			By:       rstr.GroupMembershipService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

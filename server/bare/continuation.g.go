@@ -13,12 +13,16 @@ import (
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -81,6 +85,38 @@ func (s ContinuationServiceServer) narrow(ctx context.Context, p predicate.Conti
 	return ContinuationNarrow(ctx, s.Scope, p)
 }
 
+func (s ContinuationServiceServer) snapshot(ctx context.Context, p predicate.Continuation, lock bool) (*ent.Continuation, error) {
+	q := s.Db.Continuation.Query().Where(p)
+	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s ContinuationServiceServer) image(v *rstr.Continuation) *rstr.Continuation {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.Continuation)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 func (s ContinuationServiceServer) Add(ctx context.Context, req *rstr.ContinuationAddRequest) (*rstr.Continuation, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -149,9 +185,22 @@ func (s ContinuationServiceServer) Add(ctx context.Context, req *rstr.Continuati
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *rstr.Continuation
+	if snapshotOptions(s.Rec, rstr.ContinuationService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, continuation.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  rstr.ContinuationService_Add_FullMethodName,
-		Key: u.Id,
+		By:    rstr.ContinuationService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -159,10 +208,6 @@ func (s ContinuationServiceServer) Add(ctx context.Context, req *rstr.Continuati
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
 }
 
@@ -348,6 +393,18 @@ func (s ContinuationServiceServer) apply(ctx context.Context, ref *rstr.Continua
 		return nil, err
 	}
 
+	var previous *rstr.Continuation
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Continuation.Query().Where(p)
 		if pred != nil {
@@ -396,20 +453,25 @@ func (s ContinuationServiceServer) apply(ctx context.Context, ref *rstr.Continua
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *rstr.Continuation
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -436,8 +498,16 @@ func (s ContinuationServiceServer) Erase(ctx context.Context, req *rstr.Continua
 	st.Db = tx.Db
 
 	var k any
+	var previous *rstr.Continuation
 	if s.Rec != nil {
-		v, err := st.Db.Continuation.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, rstr.ContinuationService_Erase_FullMethodName)
+		var v *ent.Continuation
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Continuation.Query().Where(p).Select(continuation.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.ContinuationEraseResponse{}, nil
@@ -445,8 +515,11 @@ func (s ContinuationServiceServer) Erase(ctx context.Context, req *rstr.Continua
 			return nil, err
 		}
 
-		k = v
-		p = continuation.And(p, continuation.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = continuation.And(p, continuation.IdEQ(v.Id))
 	}
 
 	u := st.Db.Continuation.Update().Where(p)
@@ -458,8 +531,9 @@ func (s ContinuationServiceServer) Erase(ctx context.Context, req *rstr.Continua
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  rstr.ContinuationService_Erase_FullMethodName,
-			Key: k,
+			By:       rstr.ContinuationService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}
