@@ -10,6 +10,10 @@ buf.build/gen/go/connectrpc/eliza/protocolbuffers/go v1.31.0-20230822171018-8b8b
 buf.build/gen/go/connectrpc/eliza/protocolbuffers/go v1.31.0-20230822171018-8b8b971d6fde.1/go.mod h1:QiftkbxA+bQUTeN1ke64YoIoxt6diVLfuolQi3ORa9c=
 c2sp.org/CCTV/age v0.0.0-20260829155415-4448f2097b2d h1:Blprhc2SbChNZtWcU+BLTM4YdoqYAS9V7cJgOwJKyAs=
 c2sp.org/CCTV/age v0.0.0-20260829155415-4448f2097b2d/go.mod h1:SrHC2C7r5GkDk8R+NFVzYy/sdj0Ypg9htaPXQq5Cqeo=
+cel.dev/cel-go v0.32.0 h1:irvpFKr5EuGPyxeME03ERh0rii1TX+BDAnB9eL3IvNk=
+cel.dev/cel-go v0.32.0/go.mod h1:DnVip7tpJSsgZymwfT+m1tnEVy3ivAjSMXPx12YrMkU=
+cel.dev/expr v0.25.2 h1:K6j46C81hXtZQfuX60cVWQFBJahKSE2gfRbNuvr5bFs=
+cel.dev/expr v0.25.2/go.mod h1:hrXvqGP6G6gyx8UAHSHJ5RGk//1Oj5nXQ2NI02Nrsg4=
 connectrpc.com/connect v1.20.0 h1:6TNDAB+WeNd2uolWNlYczB5E0KNNaVMNUEx8JEUsPmQ=
 connectrpc.com/connect v1.20.0/go.mod h1:A2ygJrukXwWy32vkCAAHNVguZrqZ+jeZ9rGRnGR4dN4=
 connectrpc.com/cors v0.1.0 h1:f3gTXJyDZPrDIZCQ567jxfD9PAIpopHiRDnJRt3QuOQ=
@@ -28,6 +32,8 @@ github.com/agext/levenshtein v1.2.3 h1:YB2fHEn0UJagG8T1rrWknE3ZQzWM06O8AMAatNn7l
 github.com/agext/levenshtein v1.2.3/go.mod h1:JEDfjyjHDjOF/1e4FlBE/PkbqA9OfWu2ki2W0IB5558=
 github.com/alexbrainman/sspi v0.0.0-20250919150558-7d374ff0d59e h1:4dAU9FXIyQktpoUAgOJK3OTFc/xug0PCXYCqU0FgDKI=
 github.com/alexbrainman/sspi v0.0.0-20250919150558-7d374ff0d59e/go.mod h1:cEWa1LVoE5KvSD9ONXsZrj0z6KqySlCCNKHlLzbqAt4=
+github.com/antlr4-go/antlr/v4 v4.13.1 h1:SqQKkuVZ+zWkMMNkjy5FZe5mr5WURWnlpmOuzYWrPrQ=
+github.com/antlr4-go/antlr/v4 v4.13.1/go.mod h1:GKmUxMtwp6ZgGwZSva4eWPC5mS6vUAmOABFgjdkM7Nw=
 github.com/apparentlymart/go-textseg/v15 v15.0.0 h1:uYvfpb3DyLSCGWnctWKGj857c6ew1u1fNQOlOtuGxQY=
 github.com/apparentlymart/go-textseg/v15 v15.0.0/go.mod h1:K8XmNZdhEBkdlyDdvbmmsvpAG721bKi0joRfFdHIWJ4=
 github.com/apparentlymart/go-textseg/v17 v17.0.1 h1:bpMXRgQ5cEoRNuQke1a80/Nl6w3G5eoIbWo9f3gXkAs=
@@ -130,8 +136,8 @@ github.com/lesomnus/otx v0.0.0-20261013182912-d2af55df512e h1:pxxQTvewYdL1TpzJwy
 github.com/lesomnus/otx v0.0.0-20261013182912-d2af55df512e/go.mod h1:pELV84QKdWnj9caf3Gjo7Q05Y72nXIcwO7O6wLrSpd4=
 github.com/lesomnus/otx/otxgrpc v0.0.0-20261013182912-d2af55df512e h1:Gn/gSqCdHINQbIrR0tcgzx9Diyi2gsbkxqUQZuwysbM=
 github.com/lesomnus/otx/otxgrpc v0.0.0-20261013182912-d2af55df512e/go.mod h1:4f44cLB2NM6g+O4Fr5PHDdHNuL91EfbUosAipbDXSwo=
-github.com/lesomnus/payday v0.0.0-20261013184205-2288ad3f4553 h1:vxxxiChW9RiGChis0G2pbvo7FOEPcAdJ+q0kKwS1+gY=
-github.com/lesomnus/payday v0.0.0-20261013184205-2288ad3f4553/go.mod h1:aduMGnAFwr9XxWEZlXGadzC5jsCLPNjB0fichVkxwLs=
+github.com/lesomnus/payday v0.0.0-20261015093934-9afe52101185 h1:/wMMaP3O6lDi9IRJuPx6kbdA24TcJxpebbCF3/xEsag=
+github.com/lesomnus/payday v0.0.0-20261015093934-9afe52101185/go.mod h1:zmcw8LZLpsxwDpld8ICMUZk2TtTKx+PC6q5u+dqorBA=
 github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f h1:hIDTEG7vZCJ5M+j+OhI97pk6Q1mp1t3gXi1k96IB9f0=
 github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f/go.mod h1:0sqL1bt/0v8atiVioyoJ25XQnZcn8zA9GYM1DvC4i5o=
 github.com/lesomnus/sqlite3-wasm v0.0.0-20260726134538-bebcaebf933e h1:S272MwPLsKMFJ7Xl75vVixiZ6QpN9tLuJXH4Q3GsKJk=
@@ -169,8 +175,8 @@ github.com/protobuf-orm/protobuf-merge v0.0.0-20261009205601-8502fad9e678 h1:ctZ
 github.com/protobuf-orm/protobuf-merge v0.0.0-20261009205601-8502fad9e678/go.mod h1:gxSIttLrIbNDMqEDXqWMvtKWiW1izopNkZhmIj0PZ6A=
 github.com/protobuf-orm/protobuf-orm v0.0.0-20260906212449-04c0cd58f10a h1:EXbJ28yY25wzt2HbzVkw7Tk46pF1GAHV+XMcC+kir40=
 github.com/protobuf-orm/protobuf-orm v0.0.0-20260906212449-04c0cd58f10a/go.mod h1:OYlbo4/9t+Hgj/XZwdgN8Z9MyViTLPHxBWLUR4+j52o=
-github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261010070757-67358807600f h1:t6SISN+67nty8kG9kRHEo5jxx29xw1SOo54MbxDeZP4=
-github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261010070757-67358807600f/go.mod h1:IrX7VrYccY70QPWf1jmI6jj0UeurD8AtE490C/Mzg58=
+github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261014175108-4698cb92c79b h1:VXKuYlFpI1xzJIcOgZQAQ0TLCV/cPueZZAPmMZnEwiE=
+github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261014175108-4698cb92c79b/go.mod h1:IrX7VrYccY70QPWf1jmI6jj0UeurD8AtE490C/Mzg58=
 github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260906232518-fa1777a2628d h1:+AMXRkD7EN/P4MVMC745X53Mxw+5HaQuSM0/+2FabEw=
 github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260906232518-fa1777a2628d/go.mod h1:qj2tHR4lxdJ8Pl81QGG2H8Kvg3K7sCCT0jMoTMPuIfk=
 github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20261010065542-f9ac5b66df3e h1:g77on2k8uh1A8m7XwFwZI56cDpVofVohL07p8pf3W6A=

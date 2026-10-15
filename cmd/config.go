@@ -17,6 +17,7 @@ import (
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/config"
+	"github.com/lesomnus/payday/rbac/rbacfile"
 
 	"github.com/lesomnus/roster/server/prove"
 	// The two engines this app runs on, blank-imported here rather than by
@@ -80,6 +81,10 @@ type Config struct {
 	// erases, it writes as a `provisioner` the trail can name, and what it
 	// writes it owns.
 	Resources []string `yaml:"resources"`
+
+	// Policy adds read-only, tenant-wide grants from a file. Its groups and
+	// memberships belong to the file; database groups do not modify them.
+	Policy rbacfile.Config `yaml:"policy"`
 
 	// Control is who may call this deployment, and it is roster again -- a
 	// second instance, in this process, on its own database. See

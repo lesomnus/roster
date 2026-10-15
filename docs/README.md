@@ -38,6 +38,9 @@ client for exactly the RPC of that name.
 console, one process or four, the audit trail and its retention, destroying
 somebody, replicas, TLS.
 
+[usage/file-policy.md](usage/file-policy.md) — deployment-owned roles, groups
+and bindings from a read-only file.
+
 [ldap.md](ldap.md) is the directory, for the clients on a network that speak LDAP
 and nothing else.
 

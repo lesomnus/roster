@@ -11,14 +11,19 @@ import (
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	site "github.com/lesomnus/roster/internal/ent/site"
 	team "github.com/lesomnus/roster/internal/ent/team"
+	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
 	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
 
@@ -81,6 +86,53 @@ func (s TeamServiceServer) narrow(ctx context.Context, p predicate.Team) (predic
 	return TeamNarrow(ctx, s.Scope, p)
 }
 
+func (s TeamServiceServer) snapshot(ctx context.Context, p predicate.Team, lock bool) (*ent.Team, error) {
+	q := s.Db.Team.Query().Where(p)
+	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
+	q.WithSite(func(q *ent.SiteQuery) { q.Select(site.FieldId) })
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s TeamServiceServer) image(v *rstr.Team) *rstr.Team {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.Team)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(3)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*rstr.Team, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -147,9 +199,22 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *rstr.Team
+	if snapshotOptions(s.Rec, rstr.TeamService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, team.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  rstr.TeamService_Add_FullMethodName,
-		Key: u.Id,
+		By:    rstr.TeamService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -157,10 +222,6 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
 }
 
@@ -346,6 +407,18 @@ func (s TeamServiceServer) apply(ctx context.Context, ref *rstr.TeamRef, doc *pa
 		return nil, err
 	}
 
+	var previous *rstr.Team
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.Team.Query().Where(p)
 		if pred != nil {
@@ -394,20 +467,25 @@ func (s TeamServiceServer) apply(ctx context.Context, ref *rstr.TeamRef, doc *pa
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *rstr.Team
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -434,8 +512,16 @@ func (s TeamServiceServer) Erase(ctx context.Context, req *rstr.TeamRef) (*rstr.
 	st.Db = tx.Db
 
 	var k any
+	var previous *rstr.Team
 	if s.Rec != nil {
-		v, err := st.Db.Team.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, rstr.TeamService_Erase_FullMethodName)
+		var v *ent.Team
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.Team.Query().Where(p).Select(team.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.TeamEraseResponse{}, nil
@@ -443,8 +529,11 @@ func (s TeamServiceServer) Erase(ctx context.Context, req *rstr.TeamRef) (*rstr.
 			return nil, err
 		}
 
-		k = v
-		p = team.And(p, team.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = team.And(p, team.IdEQ(v.Id))
 	}
 
 	u := st.Db.Team.Update().Where(p)
@@ -456,8 +545,9 @@ func (s TeamServiceServer) Erase(ctx context.Context, req *rstr.TeamRef) (*rstr.
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  rstr.TeamService_Erase_FullMethodName,
-			Key: k,
+			By:       rstr.TeamService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

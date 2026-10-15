@@ -17,6 +17,8 @@ import (
 	teammembership "github.com/lesomnus/roster/internal/ent/teammembership"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
+	dialect "github.com/protobuf-orm/ent/dialect"
+	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	graph "github.com/protobuf-orm/protobuf-orm/graph"
 	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
@@ -24,6 +26,7 @@ import (
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	proto "google.golang.org/protobuf/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	uuid "uuid"
 )
@@ -87,6 +90,53 @@ func (s SiteMembershipServiceServer) narrow(ctx context.Context, p predicate.Sit
 	return SiteMembershipNarrow(ctx, s.Scope, p)
 }
 
+func (s SiteMembershipServiceServer) snapshot(ctx context.Context, p predicate.SiteMembership, lock bool) (*ent.SiteMembership, error) {
+	q := s.Db.SiteMembership.Query().Where(p)
+	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
+	q.WithSite(func(q *ent.SiteQuery) { q.Select(site.FieldId) })
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s SiteMembershipServiceServer) image(v *rstr.SiteMembership) *rstr.SiteMembership {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.SiteMembership)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(3)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMembershipAddRequest) (*rstr.SiteMembership, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -148,9 +198,22 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMemb
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *rstr.SiteMembership
+	if snapshotOptions(s.Rec, rstr.SiteMembershipService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, sitemembership.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  rstr.SiteMembershipService_Add_FullMethodName,
-		Key: u.Id,
+		By:    rstr.SiteMembershipService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -158,10 +221,6 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMemb
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
 }
 
@@ -339,6 +398,18 @@ func (s SiteMembershipServiceServer) apply(ctx context.Context, ref *rstr.SiteMe
 		return nil, err
 	}
 
+	var previous *rstr.SiteMembership
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.SiteMembership.Query().Where(p)
 		if pred != nil {
@@ -387,20 +458,25 @@ func (s SiteMembershipServiceServer) apply(ctx context.Context, ref *rstr.SiteMe
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *rstr.SiteMembership
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -427,8 +503,16 @@ func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMe
 	st.Db = tx.Db
 
 	var k any
+	var previous *rstr.SiteMembership
 	if s.Rec != nil {
-		v, err := st.Db.SiteMembership.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, rstr.SiteMembershipService_Erase_FullMethodName)
+		var v *ent.SiteMembership
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.SiteMembership.Query().Where(p).Select(sitemembership.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.SiteMembershipEraseResponse{}, nil
@@ -436,8 +520,11 @@ func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMe
 			return nil, err
 		}
 
-		k = v
-		p = sitemembership.And(p, sitemembership.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = sitemembership.And(p, sitemembership.IdEQ(v.Id))
 	}
 
 	u := st.Db.SiteMembership.Update().Where(p)
@@ -449,8 +536,9 @@ func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMe
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  rstr.SiteMembershipService_Erase_FullMethodName,
-			Key: k,
+			By:       rstr.SiteMembershipService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}
@@ -570,6 +658,68 @@ func (s TeamMembershipServiceServer) narrow(ctx context.Context, p predicate.Tea
 	return TeamMembershipNarrow(ctx, s.Scope, p)
 }
 
+func (s TeamMembershipServiceServer) snapshot(ctx context.Context, p predicate.TeamMembership, lock bool) (*ent.TeamMembership, error) {
+	q := s.Db.TeamMembership.Query().Where(p)
+	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
+	q.WithTeam(func(q *ent.TeamQuery) { q.Select(team.FieldId) })
+	q.WithRole(func(q *ent.RoleQuery) { q.Select(role.FieldId) })
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s TeamMembershipServiceServer) image(v *rstr.TeamMembership) *rstr.TeamMembership {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.TeamMembership)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(8)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	{
+		f := m.Descriptor().Fields().ByNumber(9)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
 func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMembershipAddRequest) (*rstr.TeamMembership, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -641,9 +791,22 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 		return nil, err
 	}
 
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *rstr.TeamMembership
+	if snapshotOptions(s.Rec, rstr.TeamMembershipService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, teammembership.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
 	if err := record(ctx, s.Rec, st.Db, Change{
-		By:  rstr.TeamMembershipService_Add_FullMethodName,
-		Key: u.Id,
+		By:    rstr.TeamMembershipService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
 	}); err != nil {
 		return nil, err
 	}
@@ -651,10 +814,6 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 		return nil, err
 	}
 
-	v := u.Proto()
-	for _, d := range ds {
-		d(v)
-	}
 	return v, nil
 }
 
@@ -849,6 +1008,18 @@ func (s TeamMembershipServiceServer) apply(ctx context.Context, ref *rstr.TeamMe
 		return nil, err
 	}
 
+	var previous *rstr.TeamMembership
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
 	if mod == nil {
 		q := st.Db.TeamMembership.Query().Where(p)
 		if pred != nil {
@@ -897,20 +1068,25 @@ func (s TeamMembershipServiceServer) apply(ctx context.Context, ref *rstr.TeamMe
 		}
 	}
 
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
 	if mod != nil {
+		var value *rstr.TeamMembership
+		if images.Value {
+			value = s.image(out)
+		}
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:    by,
-			Key:   k,
-			Patch: doc,
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
 		}); err != nil {
 			return nil, err
 		}
 	}
 
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -937,8 +1113,16 @@ func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMe
 	st.Db = tx.Db
 
 	var k any
+	var previous *rstr.TeamMembership
 	if s.Rec != nil {
-		v, err := st.Db.TeamMembership.Query().Where(p).OnlyId(ctx)
+		images := snapshotOptions(s.Rec, rstr.TeamMembershipService_Erase_FullMethodName)
+		var v *ent.TeamMembership
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.TeamMembership.Query().Where(p).Select(teammembership.FieldId).Only(ctx)
+		}
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return &rstr.TeamMembershipEraseResponse{}, nil
@@ -946,8 +1130,11 @@ func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMe
 			return nil, err
 		}
 
-		k = v
-		p = teammembership.And(p, teammembership.IdEQ(v))
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = teammembership.And(p, teammembership.IdEQ(v.Id))
 	}
 
 	u := st.Db.TeamMembership.Update().Where(p)
@@ -959,8 +1146,9 @@ func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMe
 	}
 	if n > 0 {
 		if err := record(ctx, s.Rec, st.Db, Change{
-			By:  rstr.TeamMembershipService_Erase_FullMethodName,
-			Key: k,
+			By:       rstr.TeamMembershipService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
 		}); err != nil {
 			return nil, err
 		}

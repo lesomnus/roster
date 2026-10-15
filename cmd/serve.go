@@ -25,6 +25,8 @@ import (
 	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/grpcx"
 	"github.com/lesomnus/payday/pdpb"
+	"github.com/lesomnus/payday/rbac"
+	"github.com/lesomnus/payday/rbac/rbacfile"
 	"github.com/lesomnus/payday/spin"
 	"github.com/lesomnus/payday/trail"
 	"github.com/lesomnus/payday/watch"
@@ -49,6 +51,11 @@ import (
 // Server is a built app: the database it runs on and the two stacks it answers
 // through.
 type Server struct {
+	// PolicyFile is the deployment-owned source; accepted refreshes replace its
+	// snapshot while the source set stays fixed across all authorization paths.
+	PolicyFile    *rbacfile.File
+	policySources []rbac.Source
+
 	Db  *sql.DB
 	Ent *ent.Client
 
@@ -211,6 +218,7 @@ func Build(ctx context.Context, c Config) (*Server, error) {
 // build is one plane. `leaked` is a corpus already opened and checked, handed
 // to the control plane by the data plane that read it -- see where it recurses.
 func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) (*Server, error) {
+
 	// The two blocks that are answered by silence when the one field they hang
 	// off is missing, refused before anything is opened.
 	//
@@ -277,6 +285,18 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// into this app from this app's schema, and payday has no name for it.
 	drv := entsql.OpenDB(dialect, db)
 	client := ent.NewClient(ent.Driver(drv))
+
+	var policyFile *rbacfile.File
+	var policySources []rbac.Source
+	if c.Policy.File != "" {
+		var err error
+		policyFile, err = rbacfile.Open(c.Policy, policySubjects(client))
+		if err != nil {
+			db.Close()
+			return nil, fmt.Errorf("policy: %w", err)
+		}
+		policySources = []rbac.Source{policyFile}
+	}
 
 	// The server that talks to the database, twice: once as it is, and once
 	// with the wall on it.
@@ -349,7 +369,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// `pd.Grouped` has existed since the first generation and had nothing to
 	// ask until now. What answers it is a caller's bindings: no site means the
 	// whole tenant, and otherwise the sites they were bound in.
-	narrow := bare.Scopes{pd.Wall(), pd.Grouped(Sets(client))}
+	narrow := bare.Scopes{pd.Wall(), pd.Grouped(Sets(client, policySources...))}
 
 	walled, err := pd.NewSink(client, append(opts, bare.WithScope(narrow))...)
 	if err != nil {
@@ -412,7 +432,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// this same function, and `owners` is pointed at it once it is. Until then
 	// -- and in a deployment with none -- it answers that it cannot say.
 	owners := &keyOwners{}
-	rules := Rules(client)
+	rules := Rules(client, policySources...)
 	rules.Borrower = owners.of
 
 	stacked, err := app.Build(walled.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin)), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
@@ -437,9 +457,14 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	}
 
 	s := &Server{
+		PolicyFile: policyFile, policySources: policySources,
 		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, sink: sink, narrow: narrow,
 		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password,
 		RestoreWithin: c.Tenant.RestoreWithin,
+	}
+
+	if policyFile != nil {
+		s.Spin = append(s.Spin, policyFile)
 	}
 
 	// The door a roster user signs in at, where this deployment serves one.
@@ -855,11 +880,12 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	rate := c.Server.Limiter()
 
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(c.Server.CallTimeout())).
+		With(s.policyInterceptors()).
 		WithUnary(auth.InterceptorUnary(h, r, Public)).
 		WithStream(auth.InterceptorStream(h, r, Public)).
 		WithUnary(grpcx.LimitUnary(rate, gate.ByTenant())).
 		WithStream(grpcx.LimitStream(rate, gate.ByTenant())).
-		With(gate.Interceptor(Policy(s.Ent))).
+		With(gate.Interceptor(Policy(s.Ent, s.policySources...))).
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(shut)).
 		WithStream(grpcx.ClosedStream(shut))
@@ -947,7 +973,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// missing subject has already narrowed them; the writes have rules on them,
 	// and the rules live in a layer. And the forget window, for `Leave` to say
 	// when somebody who left will be forgotten.
-	app.RegisterMeServiceServer(g, me.New(s.Ent, Everything(s.Ent), me.WithWrites(s.Walled),
+	app.RegisterMeServiceServer(g, me.New(s.Ent, Everything(s.Ent, s.policySources...), me.WithWrites(s.Walled),
 		me.WithForgetAfter(c.Holder.ForgetAfter)))
 
 	// What a token stands for, for a product app that was handed one.
@@ -981,7 +1007,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// rules a batch would otherwise reach past -- and it is not hypothetical
 	// here: a key's scope comes from the policy, so a guard without one would
 	// serve a key in a batch as a caller who may see nothing.
-	guard := c.Server.Guard(Policy(s.Ent))
+	guard := c.Server.Guard(Policy(s.Ent, s.policySources...))
 	guard.Closed = s.closed(c)
 
 	if b, err := pd.Batch(s.Walled, s.Drv, guard); err == nil {
@@ -1616,4 +1642,11 @@ func Arrived(h http.Handler) http.Handler {
 
 		h.ServeHTTP(w, r)
 	})
+}
+
+func (s *Server) policyInterceptors() grpcx.Chain {
+	if s.PolicyFile == nil {
+		return grpcx.Chain{}
+	}
+	return s.PolicyFile.Interceptor()
 }
