@@ -81,6 +81,10 @@ type hydra struct {
 	// What else a challenge's authorization request carried, which a real
 	// Hydra keeps in `request_url` with the rest of it.
 	asking map[string]url.Values // challenge -> the extra parameters
+
+	// The scopes a challenge asked for, where a test says; `openid`, `profile`
+	// and `email` otherwise.
+	scope map[string][]string
 }
 
 func newHydra(t *testing.T) *hydra {
@@ -95,6 +99,7 @@ func newHydra(t *testing.T) *hydra {
 		audience:   map[string][]string{},
 		registered: map[string][]string{},
 		asking:     map[string]url.Values{},
+		scope:      map[string][]string{},
 	}
 
 	m := http.NewServeMux()
@@ -263,7 +268,11 @@ func (h *hydra) raised(w http.ResponseWriter, r *http.Request, param string) {
 	if v := h.asking[c]; len(v) > 0 {
 		extra = "&" + v.Encode()
 	}
+	scope := h.scope[c]
 	h.mu.Unlock()
+	if scope == nil {
+		scope = []string{"openid", "profile", "email"}
+	}
 
 	writeJson(w, map[string]any{
 		"challenge": c,
@@ -279,7 +288,7 @@ func (h *hydra) raised(w http.ResponseWriter, r *http.Request, param string) {
 		"request_url": "https://issuer.test/oauth2/auth?client_id=" + client +
 			"&redirect_uri=" + url.QueryEscape("https://"+redirectHostFor(client)+"/callback") + extra,
 
-		"requested_scope": []string{"openid", "profile", "email"},
+		"requested_scope": scope,
 	})
 }
 
@@ -348,6 +357,14 @@ func (h *hydra) raise(challenge, client string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.client[challenge] = client
+}
+
+// raiseWith is [hydra.raise] for a client asking the scopes given.
+func (h *hydra) raiseWith(challenge, client string, scope ...string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.client[challenge] = client
+	h.scope[challenge] = scope
 }
 
 func (h *hydra) told() (string, map[string]any) {
@@ -779,6 +796,55 @@ func TestALoginAppTellsHydraWhoSignedIn(t *testing.T) {
 	// No `methods`, ever: it is roster's answer about roster and a copy of it
 	// in a token is a copy that goes stale without the product noticing.
 	x.NotContains(claims, "methods")
+}
+
+// TestATokenCarriesTheGroupsShownToItsClient, end to end: a client that asked
+// for `groups` is told the person's groups that a `GroupExposure` shows to it,
+// by the client id the flow is for -- and not the groups shown to another
+// client, nor the ones shown to none.
+func TestATokenCarriesTheGroupsShownToItsClient(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+	b := d.browser(t)
+	ctx := t.Context()
+
+	contoso := rstr.TenantRef_builder{Alias: proto.String("contoso")}.Build()
+	for _, v := range []struct {
+		alias  string
+		client string
+	}{
+		{"dtrack-triage", "contoso-web"},
+		{"cluster-admins", "kube"},
+		{"on-call", ""},
+	} {
+		g, err := d.s.Ungated.Group().Add(ctx, rstr.GroupAddRequest_builder{Tenant: contoso, Alias: v.alias}.Build())
+		x.NoError(err)
+		ref := rstr.GroupRef_builder{Id: g.GetId()}.Build()
+		if v.client != "" {
+			_, err = d.s.Ungated.GroupExposure().Add(ctx, rstr.GroupExposureAddRequest_builder{Group: ref, Client: v.client}.Build())
+			x.NoError(err)
+		}
+		_, err = d.s.Ungated.GroupMembership().Add(ctx, rstr.GroupMembershipAddRequest_builder{
+			Holder: rstr.HolderRef_builder{Id: d.who["contoso"].Bytes()}.Build(), Group: ref,
+		}.Build())
+		x.NoError(err)
+	}
+
+	d.hydra.raiseWith("c1", "contoso-web", "openid", "profile", "groups")
+	res, err := b.Get(d.app.URL + "/login?login_challenge=c1")
+	x.NoError(err)
+	res.Body.Close()
+	_, code := d.signIn(t, b, "c1", "erin", password)
+	x.Equal(http.StatusOK, code)
+
+	res, err = b.Get(d.app.URL + "/consent?consent_challenge=c1")
+	x.NoError(err)
+	res.Body.Close()
+	x.Equal(http.StatusSeeOther, res.StatusCode)
+
+	_, claims := d.hydra.told()
+	x.Equal([]any{"dtrack-triage"}, claims["groups"])
+	x.NotContains(claims, "email", "a scope it did not ask for")
 }
 
 // TestASecondFlowCarriesTheClaimsToo: the browser Hydra remembers, and the

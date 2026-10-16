@@ -911,7 +911,7 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 
 			return
 		}
-		claims = claimsOf(me, v.Scope)
+		claims = claimsOf(me, v.Scope, v.Client.Id)
 
 	case errors.Is(err, frontdoor.ErrNotSignedIn):
 		// Hydra remembers this browser and this app does not: its session

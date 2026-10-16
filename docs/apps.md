@@ -235,6 +235,17 @@ Nothing else changes: `sub` is the holder, and what they may call is still
 `HolderService/Reaches`, never a claim in the token. `docker/flow.sh` walks it
 against Hydra.
 
+### An app that cannot ask
+
+What this page asks of an app is that it calls `HolderService/Reaches`. Some
+relying parties cannot -- Dependency-Track, kube-apiserver -- and grant on a
+list of names in the token instead. For them a client is registered for the
+`groups` scope, and its tokens carry the person's groups that a tenant's
+administrator showed to that client and nothing else of their membership
+([login.md](login.md) § *A relying party that grants on groups*). It is a copy
+that lives as long as the token, which is why an app that can ask still does,
+and never grants on `groups` or `teams` itself.
+
 ## An app calling another app
 
 kamino calling khala about acme has to show khala it is `@acme/kamino`, and its
