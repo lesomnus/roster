@@ -264,6 +264,15 @@ message MeGetResponse {
   // signs in through it is the directory's: it says when they leave, so `Leave`
   // refuses them, and a page offers it to nobody this names.
   string provisioned_through = 16;
+
+  // The groups they are in, each with the clients it is shown to
+  // (`GroupExposure`) and the role they hold in it -- which makes them its
+  // manager.
+  //
+  // What a front door puts in a token for a client registered for the
+  // `groups` scope is read from here: the groups that name that client, and no
+  // other (`login/claims.go`).
+  repeated MeGroup groups = 17;
 }
 
 // SignInKey is one API key that acts as somebody.
@@ -348,6 +357,18 @@ message SignInCredential {
 message MeEmail {
   string address = 8;
   google.protobuf.Timestamp date_verified = 9;
+}
+
+message MeGroup {
+  bytes id = 1;
+  string alias = 4;
+  string name = 5;
+
+  // The clients whose tokens may carry it, by the id their issuer gave them.
+  repeated string clients = 8;
+
+  // What they may do in it -- a manager's role -- and empty is a plain member.
+  string role = 9;
 }
 
 message MeTeam {

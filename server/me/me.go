@@ -25,8 +25,11 @@ package me
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
+
+	"uuid"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -46,6 +49,9 @@ import (
 	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/delegation"
 	"github.com/lesomnus/roster/internal/ent/email"
+	"github.com/lesomnus/roster/internal/ent/group"
+	"github.com/lesomnus/roster/internal/ent/groupexposure"
+	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
@@ -141,6 +147,9 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 		return nil, err
 	}
 	if res.Teams, err = s.teams(ctx, f.Actor); err != nil {
+		return nil, err
+	}
+	if res.Groups, err = s.groups(ctx, f.Actor); err != nil {
 		return nil, err
 	}
 	if res.Identities, err = s.identities(ctx, f.Actor); err != nil {
@@ -253,6 +262,71 @@ func (s *Server) teams(ctx context.Context, who pdid.Id) ([]*app.MeTeam, error) 
 
 		out = append(out, m.Build())
 	}
+
+	return out, nil
+}
+
+// groups is the groups they are in, each with the clients it is shown to and
+// the role they hold in it, in the order of their aliases.
+func (s *Server) groups(ctx context.Context, who pdid.Id) ([]*app.MeGroup, error) {
+	vs, err := s.db.GroupMembership.Query().
+		Where(
+			groupmembership.DateErasedIsNil(),
+			groupmembership.HasHolderWith(holder.IdEQ(who.Uuid())),
+			groupmembership.HasGroupWith(group.DateErasedIsNil()),
+		).
+		WithRole().
+		WithGroup().
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ids := make([]uuid.UUID, 0, len(vs))
+	for _, v := range vs {
+		if v.Edges.Group != nil {
+			ids = append(ids, v.Edges.Group.Id)
+		}
+	}
+	es, err := s.db.GroupExposure.Query().
+		Where(
+			groupexposure.DateErasedIsNil(),
+			groupexposure.HasGroupWith(group.IdIn(ids...)),
+		).
+		WithGroup().
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	shown := map[uuid.UUID][]string{}
+	for _, e := range es {
+		if e.Edges.Group != nil {
+			shown[e.Edges.Group.Id] = append(shown[e.Edges.Group.Id], e.Client)
+		}
+	}
+
+	out := make([]*app.MeGroup, 0, len(vs))
+	for _, v := range vs {
+		g := v.Edges.Group
+		if g == nil {
+			continue
+		}
+
+		clients := shown[g.Id]
+		slices.Sort(clients)
+		m := app.MeGroup_builder{
+			Id:      g.Id[:],
+			Alias:   g.Alias,
+			Name:    g.Name,
+			Clients: clients,
+		}
+		if v.Edges.Role != nil {
+			m.Role = v.Edges.Role.Alias
+		}
+
+		out = append(out, m.Build())
+	}
+	slices.SortFunc(out, func(a, b *app.MeGroup) int { return strings.Compare(a.GetAlias(), b.GetAlias()) })
 
 	return out, nil
 }
