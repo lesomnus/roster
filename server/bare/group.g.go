@@ -9,6 +9,7 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	group "github.com/lesomnus/roster/internal/ent/group"
+	groupexposure "github.com/lesomnus/roster/internal/ent/groupexposure"
 	groupmembership "github.com/lesomnus/roster/internal/ent/groupmembership"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
@@ -1169,6 +1170,544 @@ func pickGroupMembership(req *rstr.GroupMembershipRef) (predicate.GroupMembershi
 		return groupmembership.And(ps...), nil
 	case rstr.GroupMembershipRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: GroupMembership")
+	default:
+		return nil, status.Errorf(codes.Unimplemented, "unknown type of key: %s", req.WhichKey())
+	}
+}
+
+type GroupExposureServiceServer struct {
+	Store
+
+	rstr.UnimplementedGroupExposureServiceServer
+}
+
+// NewGroupExposureServiceServer answers with a server that runs its queries with `db`.
+//
+// It takes the options of [Server] so that what is built here can be told
+// where to report its writes and what it may see. Built without them, it
+// reports nowhere and sees everything.
+func NewGroupExposureServiceServer(db *ent.Client, opts ...Option) rstr.GroupExposureServiceServer {
+	s := Server{Store: Store{Db: db}}
+	for _, opt := range opts {
+		opt(&s)
+	}
+	return GroupExposureServiceServer{Store: s.Store}
+}
+
+// GroupExposureNarrow answers with `p` and everything else that narrows a
+// read of a GroupExposure: the rows that have not been erased, and whatever
+// `scope` says of those.
+//
+// Every read this package makes goes through it, and a read written by
+// hand should too -- a List is the one read nothing generates, and so the
+// one that would otherwise answer with rows nobody should be given.
+func GroupExposureNarrow(ctx context.Context, scope Scope, p predicate.GroupExposure) (predicate.GroupExposure, error) {
+	ps := make([]predicate.GroupExposure, 0, 3)
+
+	// A row that was erased is not a row a read answers with.
+	ps = append(ps, groupexposure.DateErasedIsNil())
+	if p != nil {
+		ps = append(ps, p)
+	}
+	if scope != nil {
+		q, err := scope.GroupExposureScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if q != nil {
+			ps = append(ps, q)
+		}
+	}
+
+	switch len(ps) {
+	case 0:
+		return nil, nil
+	case 1:
+		return ps[0], nil
+	default:
+		return groupexposure.And(ps...), nil
+	}
+}
+
+// narrow is [GroupExposureNarrow] with this server's own scope.
+func (s GroupExposureServiceServer) narrow(ctx context.Context, p predicate.GroupExposure) (predicate.GroupExposure, error) {
+	return GroupExposureNarrow(ctx, s.Scope, p)
+}
+
+func (s GroupExposureServiceServer) snapshot(ctx context.Context, p predicate.GroupExposure, lock bool) (*ent.GroupExposure, error) {
+	q := s.Db.GroupExposure.Query().Where(p)
+	q.WithGroup(func(q *ent.GroupQuery) { q.Select(group.FieldId) })
+	q.Modify(func(q *sql.Selector) {
+		if lock && s.Db.Dialect() != dialect.SQLite {
+			q.ForUpdate()
+		}
+	})
+	return q.Only(ctx)
+}
+func (s GroupExposureServiceServer) image(v *rstr.GroupExposure) *rstr.GroupExposure {
+	if v == nil {
+		return nil
+	}
+	out := proto.Clone(v).(*rstr.GroupExposure)
+	m := out.ProtoReflect()
+	{
+		f := m.Descriptor().Fields().ByNumber(2)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
+	return out
+}
+func (s GroupExposureServiceServer) Add(ctx context.Context, req *rstr.GroupExposureAddRequest) (*rstr.GroupExposure, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	ds := make([]func(v *rstr.GroupExposure), 0, 1)
+	q := st.Db.GroupExposure.Create()
+	var k uuid.UUID
+	if req.HasId() {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+		} else {
+			k = v
+		}
+	}
+	if v, err := mint(ctx, s.Mint, "roster.GroupExposure", k, req.HasId()); err != nil {
+		return nil, err
+	} else {
+		q.SetId(v)
+	}
+	if k, err := GroupGetKey(ctx, st.Db, req.GetGroup()); err != nil {
+		return nil, err
+	} else {
+		q.SetGroupId(k)
+		ds = append(ds, func(v *rstr.GroupExposure) {
+			v.SetGroup(rstr.Group_builder{Id: k[:]}.Build())
+		})
+	}
+	q.SetClient(req.GetClient())
+	q.SetDateUpdated(st.now())
+	if req.HasDateCreated() {
+		q.SetDateCreated(req.GetDateCreated().AsTime())
+	} else {
+		q.SetDateCreated(st.now())
+	}
+
+	u, err := q.Save(ctx)
+	if err != nil {
+		if err, ok := err.(*ent.ConstraintError); ok {
+			if sqlgraph.IsUniqueConstraintError(err) {
+				return nil, status.Error(codes.AlreadyExists, "GroupExposure already exists")
+			}
+			if sqlgraph.IsForeignKeyConstraintError(err) {
+				return nil, status.Error(codes.NotFound, "GroupExposure: referenced entity not found")
+			}
+		}
+		return nil, err
+	}
+
+	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
+	var value *rstr.GroupExposure
+	if snapshotOptions(s.Rec, rstr.GroupExposureService_Add_FullMethodName).Value {
+		stored, err := st.snapshot(ctx, groupexposure.IdEQ(u.Id), false)
+		if err != nil {
+			return nil, err
+		}
+		value = s.image(stored.Proto())
+	}
+	if err := record(ctx, s.Rec, st.Db, Change{
+		By:    rstr.GroupExposureService_Add_FullMethodName,
+		Key:   u.Id,
+		Value: value,
+	}); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return v, nil
+}
+
+func (s GroupExposureServiceServer) Get(ctx context.Context, req *rstr.GroupExposureGetRequest) (*rstr.GroupExposure, error) {
+	p, err := GroupExposurePick(req.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	p, err = s.narrow(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+
+	q := s.Db.GroupExposure.Query().Where(p)
+	GroupExposureSelectInit(q, req.GetSelect())
+
+	v, err := q.Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, status.Error(codes.NotFound, "GroupExposure not found")
+		}
+		return nil, err
+	}
+	return v.Proto(), nil
+}
+
+func selectGroupExposureKey(q *ent.GroupExposureQuery) {
+	q.Select(groupexposure.FieldId)
+}
+
+func GroupExposureSelectedFields(m *rstr.GroupExposureSelect) []string {
+	if m.GetAll() {
+		return groupexposure.Columns
+	}
+
+	vs := make([]string, 0, len(groupexposure.Columns))
+	{
+		vs = append(vs, groupexposure.FieldId)
+	}
+	if m.GetClient() {
+		vs = append(vs, groupexposure.FieldClient)
+	}
+	if m.GetDateUpdated() {
+		vs = append(vs, groupexposure.FieldDateUpdated)
+	}
+	if m.GetDateErased() {
+		vs = append(vs, groupexposure.FieldDateErased)
+	}
+	if m.GetDateCreated() {
+		vs = append(vs, groupexposure.FieldDateCreated)
+	}
+
+	return vs
+}
+
+func GroupExposureSelect(q *ent.GroupExposureQuery, m *rstr.GroupExposureSelect) {
+	if !m.GetAll() {
+		fields := GroupExposureSelectedFields(m)
+		q.Select(fields...)
+	}
+	if m.HasGroup() {
+		q.WithGroup(func(q *ent.GroupQuery) {
+			q.Where(group.DateErasedIsNil())
+			GroupSelect(q, m.GetGroup())
+		})
+	}
+}
+
+func GroupExposureSelectInit(q *ent.GroupExposureQuery, m *rstr.GroupExposureSelect) {
+	if m != nil {
+		GroupExposureSelect(q, m)
+	} else {
+		q.WithGroup(selectGroupKey)
+	}
+}
+
+func (s GroupExposureServiceServer) Patch(ctx context.Context, req *rstr.GroupExposurePatchRequest) (*rstr.GroupExposure, error) {
+	doc, err := ormpatch.FromPatchRequest(groupExposureOrmEntity, req.ProtoReflect(), nil)
+	if err != nil {
+		if _, ok := status.FromError(err); ok {
+			return nil, err
+		}
+		if errors.Is(err, ormpatch.ErrRequestLayout) {
+			return nil, status.Errorf(codes.Internal, "%s", err)
+		}
+		if errors.Is(err, ormpatch.ErrUnsupported) {
+			return nil, status.Errorf(codes.Unimplemented, "%s", err)
+		}
+		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
+	}
+
+	return s.apply(ctx, req.GetRef(), doc, rstr.GroupExposureService_Patch_FullMethodName)
+}
+
+func GroupExposureGetKey(ctx context.Context, db *ent.Client, ref *rstr.GroupExposureRef) (uuid.UUID, error) {
+	var z uuid.UUID
+	if ref.HasId() {
+		if v, err := entuuid.FromBytes(ref.GetId()); err != nil {
+			return z, status.Errorf(codes.InvalidArgument, "id: %s", err)
+		} else {
+			return v, nil
+		}
+	}
+
+	p, err := GroupExposurePick(ref)
+	if err != nil {
+		return z, err
+	}
+
+	v, err := db.GroupExposure.Query().Where(p).OnlyId(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return z, status.Error(codes.NotFound, "GroupExposure not found")
+		}
+		return z, err
+	}
+
+	return v, nil
+}
+
+var groupExposureOrmEntity = ormpatch.MustEntityOf(rstr.File_app_group_proto, "GroupExposure")
+
+var groupExposurePatchColumns = entpatch.Columns{
+	1: groupexposure.FieldId, 2: groupexposure.GroupColumn, 8: groupexposure.FieldClient, 13: groupexposure.FieldDateUpdated, 14: groupexposure.FieldDateErased, 15: groupexposure.FieldDateCreated}
+
+func (s GroupExposureServiceServer) Apply(ctx context.Context, req *rstr.GroupExposureApplyRequest) (*rstr.GroupExposure, error) {
+	if !req.HasPatch() {
+		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
+	}
+	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.GroupExposureService_Apply_FullMethodName)
+}
+
+func (s GroupExposureServiceServer) apply(ctx context.Context, ref *rstr.GroupExposureRef, doc *patchpb.Patch, by string) (*rstr.GroupExposure, error) {
+	plan := &ormpatch.Plan{Entity: groupExposureOrmEntity}
+	if doc != nil {
+		v, err := ormpatch.Compile(groupExposureOrmEntity, doc)
+		if err != nil {
+			if errors.Is(err, ormpatch.ErrUnsupported) {
+				return nil, status.Errorf(codes.Unimplemented, "%s", err)
+			}
+			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
+		}
+		plan = v
+	}
+
+	pred, mod, err := entpatch.Build(plan, groupExposurePatchColumns, s.Db.Dialect())
+	if err != nil {
+		if errors.Is(err, entpatch.ErrValue) {
+			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
+		}
+		return nil, status.Errorf(codes.Internal, "%s", err)
+	}
+
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	k, err := GroupExposureGetKey(ctx, st.Db, ref)
+	if err != nil {
+		return nil, err
+	}
+	at := &rstr.GroupExposureRef{}
+	at.SetId(k[:])
+	p, err := s.narrow(ctx, groupexposure.IdEQ(k))
+	if err != nil {
+		return nil, err
+	}
+
+	var previous *rstr.GroupExposure
+	images := snapshotOptions(s.Rec, by)
+	if images.Previous && mod != nil {
+		u, err := st.snapshot(ctx, p, true)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return nil, status.Error(codes.NotFound, "resource not found")
+			}
+			return nil, err
+		}
+		previous = s.image(u.Proto())
+	}
+	if mod == nil {
+		q := st.Db.GroupExposure.Query().Where(p)
+		if pred != nil {
+			q.Where(predicate.GroupExposure(pred))
+		}
+		if ok, err := q.Exist(ctx); err != nil {
+			return nil, err
+		} else if !ok {
+			return nil, func() error {
+				if ok, err := st.Db.GroupExposure.Query().Where(p).Exist(ctx); err != nil {
+					return err
+				} else if !ok {
+					return status.Error(codes.NotFound, "GroupExposure not found")
+				}
+				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
+			}()
+		}
+	} else {
+		q := st.Db.GroupExposure.Update().Where(p)
+		if pred != nil {
+			q.Where(predicate.GroupExposure(pred))
+		}
+		q.Modify(mod)
+		if !plan.WritesTo(13) {
+			q.SetDateUpdated(st.now())
+		}
+		if n, err := q.Save(ctx); err != nil {
+			if err, ok := err.(*ent.ConstraintError); ok {
+				if sqlgraph.IsUniqueConstraintError(err) {
+					return nil, status.Error(codes.AlreadyExists, "GroupExposure already exists")
+				}
+				if sqlgraph.IsForeignKeyConstraintError(err) {
+					return nil, status.Error(codes.NotFound, "GroupExposure: referenced entity not found")
+				}
+			}
+			return nil, err
+		} else if n == 0 {
+			return nil, func() error {
+				if ok, err := st.Db.GroupExposure.Query().Where(p).Exist(ctx); err != nil {
+					return err
+				} else if !ok {
+					return status.Error(codes.NotFound, "GroupExposure not found")
+				}
+				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
+			}()
+		}
+	}
+
+	out, err := st.Get(ctx, at.Pick())
+	if err != nil {
+		return nil, err
+	}
+	if mod != nil {
+		var value *rstr.GroupExposure
+		if images.Value {
+			value = s.image(out)
+		}
+		if err := record(ctx, s.Rec, st.Db, Change{
+			By:       by,
+			Key:      k,
+			Patch:    doc,
+			Previous: previous, Value: value,
+		}); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (s GroupExposureServiceServer) Erase(ctx context.Context, req *rstr.GroupExposureRef) (*rstr.GroupExposureEraseResponse, error) {
+	p, err := GroupExposurePick(req)
+	if err != nil {
+		return nil, err
+	}
+	p, err = s.narrow(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	var k any
+	var previous *rstr.GroupExposure
+	if s.Rec != nil {
+		images := snapshotOptions(s.Rec, rstr.GroupExposureService_Erase_FullMethodName)
+		var v *ent.GroupExposure
+		var err error
+		if images.Previous {
+			v, err = st.snapshot(ctx, p, true)
+		} else {
+			v, err = st.Db.GroupExposure.Query().Where(p).Select(groupexposure.FieldId).Only(ctx)
+		}
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return &rstr.GroupExposureEraseResponse{}, nil
+			}
+			return nil, err
+		}
+
+		k = v.Id
+		if images.Previous {
+			previous = s.image(v.Proto())
+		}
+		p = groupexposure.And(p, groupexposure.IdEQ(v.Id))
+	}
+
+	u := st.Db.GroupExposure.Update().Where(p)
+	u.SetDateErased(st.now())
+	u.SetDateUpdated(st.now())
+	n, err := u.Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if n > 0 {
+		if err := record(ctx, s.Rec, st.Db, Change{
+			By:       rstr.GroupExposureService_Erase_FullMethodName,
+			Key:      k,
+			Previous: previous,
+		}); err != nil {
+			return nil, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	res := &rstr.GroupExposureEraseResponse{}
+	res.SetErased(n > 0)
+
+	return res, nil
+}
+
+// GroupExposurePick answers with the predicate this reference selects on,
+// among the rows that are still here.
+//
+// Erasure is part of the reference and not only part of a read's scope,
+// because a reference to a GroupExposure is composed into the reference of
+// whatever names one: an index over an edge asks this for a predicate and
+// puts it inside `HasGroupExposureWith`, where no narrowing of a GroupExposure
+// is ever applied. A child of an erased row would otherwise be readable by
+// naming its parent.
+func GroupExposurePick(req *rstr.GroupExposureRef) (predicate.GroupExposure, error) {
+	p, err := pickGroupExposure(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return groupexposure.And(groupexposure.DateErasedIsNil(), p), nil
+}
+
+func pickGroupExposure(req *rstr.GroupExposureRef) (predicate.GroupExposure, error) {
+	switch req.WhichKey() {
+	case rstr.GroupExposureRef_Id_case:
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+		} else {
+			return groupexposure.IdEQ(v), nil
+		}
+	case rstr.GroupExposureRef_Carried_case:
+		k := req.GetCarried()
+		ps := make([]predicate.GroupExposure, 0, 2)
+		if p, err := GroupPick(k.GetGroup()); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "carried.group: %s", err)
+		} else {
+			ps = append(ps, groupexposure.HasGroupWith(p))
+		}
+		ps = append(ps, groupexposure.ClientEQ(k.GetClient()))
+		return groupexposure.And(ps...), nil
+	case rstr.GroupExposureRef_Key_not_set_case:
+		return nil, status.Errorf(codes.InvalidArgument, "key not set: GroupExposure")
 	default:
 		return nil, status.Errorf(codes.Unimplemented, "unknown type of key: %s", req.WhichKey())
 	}

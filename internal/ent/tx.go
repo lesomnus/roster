@@ -32,6 +32,8 @@ type Tx struct {
 	Email *EmailClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
+	// GroupExposure is the client for interacting with the GroupExposure builders.
+	GroupExposure *GroupExposureClient
 	// GroupMembership is the client for interacting with the GroupMembership builders.
 	GroupMembership *GroupMembershipClient
 	// Holder is the client for interacting with the Holder builders.
@@ -205,6 +207,7 @@ func (tx *Tx) init() {
 	tx.Delegation = NewDelegationClient(tx.config)
 	tx.Email = NewEmailClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
+	tx.GroupExposure = NewGroupExposureClient(tx.config)
 	tx.GroupMembership = NewGroupMembershipClient(tx.config)
 	tx.Holder = NewHolderClient(tx.config)
 	tx.Host = NewHostClient(tx.config)

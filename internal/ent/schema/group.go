@@ -121,3 +121,52 @@ func (GroupMembership) Annotations() []schema.Annotation {
 		entsql.Annotation{Table: "groupmembership"},
 	}
 }
+
+type GroupExposure struct {
+	ent.Schema
+}
+
+func (GroupExposure) Fields() []ent.Field {
+	return []ent.Field{
+		field.Uuid("id").
+			Unique().
+			Immutable(),
+		field.String("client").
+			Immutable(),
+		field.Time("date_updated"),
+		field.Time("date_erased").
+			Nillable().
+			Optional(),
+		field.Time("date_created").
+			Immutable().
+			Optional(),
+		field.Uuid("group_id").
+			Immutable(),
+	}
+}
+
+func (GroupExposure) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.To("group", Group.Type).
+			Unique().
+			Field("group_id").
+			Required().
+			Immutable(),
+	}
+}
+
+func (GroupExposure) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("date_created", "id"),
+		index.Fields("client").
+			Edges("group").
+			Unique().
+			Annotations(entsql.IndexWhere("date_erased IS NULL")),
+	}
+}
+
+func (GroupExposure) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entsql.Annotation{Table: "groupexposure"},
+	}
+}

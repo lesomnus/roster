@@ -2955,6 +2955,1331 @@ func (b0 GroupMembershipFilter_builder) Build() *GroupMembershipFilter {
 	return m0
 }
 
+type GroupExposureAddRequest struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Group       *GroupRef              `protobuf:"bytes,2,opt,name=group"`
+	xxx_hidden_Client      string                 `protobuf:"bytes,8,opt,name=client"`
+	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *GroupExposureAddRequest) Reset() {
+	*x = GroupExposureAddRequest{}
+	mi := &file_app_group_svc_g_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupExposureAddRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupExposureAddRequest) ProtoMessage() {}
+
+func (x *GroupExposureAddRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_group_svc_g_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GroupExposureAddRequest) GetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *GroupExposureAddRequest) GetGroup() *GroupRef {
+	if x != nil {
+		return x.xxx_hidden_Group
+	}
+	return nil
+}
+
+func (x *GroupExposureAddRequest) GetClient() string {
+	if x != nil {
+		return x.xxx_hidden_Client
+	}
+	return ""
+}
+
+func (x *GroupExposureAddRequest) GetDateCreated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateCreated
+	}
+	return nil
+}
+
+func (x *GroupExposureAddRequest) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Id = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 4)
+}
+
+func (x *GroupExposureAddRequest) SetGroup(v *GroupRef) {
+	x.xxx_hidden_Group = v
+}
+
+func (x *GroupExposureAddRequest) SetClient(v string) {
+	x.xxx_hidden_Client = v
+}
+
+func (x *GroupExposureAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateCreated = v
+}
+
+func (x *GroupExposureAddRequest) HasId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *GroupExposureAddRequest) HasGroup() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Group != nil
+}
+
+func (x *GroupExposureAddRequest) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateCreated != nil
+}
+
+func (x *GroupExposureAddRequest) ClearId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Id = nil
+}
+
+func (x *GroupExposureAddRequest) ClearGroup() {
+	x.xxx_hidden_Group = nil
+}
+
+func (x *GroupExposureAddRequest) ClearDateCreated() {
+	x.xxx_hidden_DateCreated = nil
+}
+
+type GroupExposureAddRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Id          []byte
+	Group       *GroupRef
+	Client      string
+	DateCreated *timestamppb.Timestamp
+}
+
+func (b0 GroupExposureAddRequest_builder) Build() *GroupExposureAddRequest {
+	m0 := &GroupExposureAddRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Id != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 4)
+		x.xxx_hidden_Id = b.Id
+	}
+	x.xxx_hidden_Group = b.Group
+	x.xxx_hidden_Client = b.Client
+	x.xxx_hidden_DateCreated = b.DateCreated
+	return m0
+}
+
+type GroupExposureGetRequest struct {
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref    *GroupExposureRef      `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Select *GroupExposureSelect   `protobuf:"bytes,2,opt,name=select"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *GroupExposureGetRequest) Reset() {
+	*x = GroupExposureGetRequest{}
+	mi := &file_app_group_svc_g_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupExposureGetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupExposureGetRequest) ProtoMessage() {}
+
+func (x *GroupExposureGetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_group_svc_g_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GroupExposureGetRequest) GetRef() *GroupExposureRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *GroupExposureGetRequest) GetSelect() *GroupExposureSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
+func (x *GroupExposureGetRequest) SetRef(v *GroupExposureRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *GroupExposureGetRequest) SetSelect(v *GroupExposureSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *GroupExposureGetRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *GroupExposureGetRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *GroupExposureGetRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *GroupExposureGetRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
+}
+
+type GroupExposureGetRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref    *GroupExposureRef
+	Select *GroupExposureSelect
+}
+
+func (b0 GroupExposureGetRequest_builder) Build() *GroupExposureGetRequest {
+	m0 := &GroupExposureGetRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Select = b.Select
+	return m0
+}
+
+type GroupExposureRef struct {
+	state          protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Key isGroupExposureRef_Key `protobuf_oneof:"key"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *GroupExposureRef) Reset() {
+	*x = GroupExposureRef{}
+	mi := &file_app_group_svc_g_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupExposureRef) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupExposureRef) ProtoMessage() {}
+
+func (x *GroupExposureRef) ProtoReflect() protoreflect.Message {
+	mi := &file_app_group_svc_g_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GroupExposureRef) GetId() []byte {
+	if x != nil {
+		if x, ok := x.xxx_hidden_Key.(*groupExposureRef_Id); ok {
+			return x.Id
+		}
+	}
+	return nil
+}
+
+func (x *GroupExposureRef) GetCarried() *GroupExposureRefByCarried {
+	if x != nil {
+		if x, ok := x.xxx_hidden_Key.(*groupExposureRef_Carried); ok {
+			return x.Carried
+		}
+	}
+	return nil
+}
+
+func (x *GroupExposureRef) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Key = &groupExposureRef_Id{v}
+}
+
+func (x *GroupExposureRef) SetCarried(v *GroupExposureRefByCarried) {
+	if v == nil {
+		x.xxx_hidden_Key = nil
+		return
+	}
+	x.xxx_hidden_Key = &groupExposureRef_Carried{v}
+}
+
+func (x *GroupExposureRef) HasKey() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Key != nil
+}
+
+func (x *GroupExposureRef) HasId() bool {
+	if x == nil {
+		return false
+	}
+	_, ok := x.xxx_hidden_Key.(*groupExposureRef_Id)
+	return ok
+}
+
+func (x *GroupExposureRef) HasCarried() bool {
+	if x == nil {
+		return false
+	}
+	_, ok := x.xxx_hidden_Key.(*groupExposureRef_Carried)
+	return ok
+}
+
+func (x *GroupExposureRef) ClearKey() {
+	x.xxx_hidden_Key = nil
+}
+
+func (x *GroupExposureRef) ClearId() {
+	if _, ok := x.xxx_hidden_Key.(*groupExposureRef_Id); ok {
+		x.xxx_hidden_Key = nil
+	}
+}
+
+func (x *GroupExposureRef) ClearCarried() {
+	if _, ok := x.xxx_hidden_Key.(*groupExposureRef_Carried); ok {
+		x.xxx_hidden_Key = nil
+	}
+}
+
+const GroupExposureRef_Key_not_set_case case_GroupExposureRef_Key = 0
+const GroupExposureRef_Id_case case_GroupExposureRef_Key = 1
+const GroupExposureRef_Carried_case case_GroupExposureRef_Key = 2
+
+func (x *GroupExposureRef) WhichKey() case_GroupExposureRef_Key {
+	if x == nil {
+		return GroupExposureRef_Key_not_set_case
+	}
+	switch x.xxx_hidden_Key.(type) {
+	case *groupExposureRef_Id:
+		return GroupExposureRef_Id_case
+	case *groupExposureRef_Carried:
+		return GroupExposureRef_Carried_case
+	default:
+		return GroupExposureRef_Key_not_set_case
+	}
+}
+
+type GroupExposureRef_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Fields of oneof xxx_hidden_Key:
+	Id      []byte
+	Carried *GroupExposureRefByCarried
+	// -- end of xxx_hidden_Key
+}
+
+func (b0 GroupExposureRef_builder) Build() *GroupExposureRef {
+	m0 := &GroupExposureRef{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Id != nil {
+		x.xxx_hidden_Key = &groupExposureRef_Id{b.Id}
+	}
+	if b.Carried != nil {
+		x.xxx_hidden_Key = &groupExposureRef_Carried{b.Carried}
+	}
+	return m0
+}
+
+type case_GroupExposureRef_Key protoreflect.FieldNumber
+
+func (x case_GroupExposureRef_Key) String() string {
+	md := file_app_group_svc_g_proto_msgTypes[24].Descriptor()
+	if x == 0 {
+		return "not set"
+	}
+	return protoimpl.X.MessageFieldStringOf(md, protoreflect.FieldNumber(x))
+}
+
+type isGroupExposureRef_Key interface {
+	isGroupExposureRef_Key()
+}
+
+type groupExposureRef_Id struct {
+	Id []byte `protobuf:"bytes,1,opt,name=id,oneof"`
+}
+
+type groupExposureRef_Carried struct {
+	Carried *GroupExposureRefByCarried `protobuf:"bytes,2,opt,name=carried,oneof"`
+}
+
+func (*groupExposureRef_Id) isGroupExposureRef_Key() {}
+
+func (*groupExposureRef_Carried) isGroupExposureRef_Key() {}
+
+type GroupExposureRefByCarried struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Group       *GroupRef              `protobuf:"bytes,2,opt,name=group"`
+	xxx_hidden_Client      *string                `protobuf:"bytes,8,opt,name=client"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *GroupExposureRefByCarried) Reset() {
+	*x = GroupExposureRefByCarried{}
+	mi := &file_app_group_svc_g_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupExposureRefByCarried) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupExposureRefByCarried) ProtoMessage() {}
+
+func (x *GroupExposureRefByCarried) ProtoReflect() protoreflect.Message {
+	mi := &file_app_group_svc_g_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GroupExposureRefByCarried) GetGroup() *GroupRef {
+	if x != nil {
+		return x.xxx_hidden_Group
+	}
+	return nil
+}
+
+func (x *GroupExposureRefByCarried) GetClient() string {
+	if x != nil {
+		if x.xxx_hidden_Client != nil {
+			return *x.xxx_hidden_Client
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *GroupExposureRefByCarried) SetGroup(v *GroupRef) {
+	x.xxx_hidden_Group = v
+}
+
+func (x *GroupExposureRefByCarried) SetClient(v string) {
+	x.xxx_hidden_Client = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+}
+
+func (x *GroupExposureRefByCarried) HasGroup() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Group != nil
+}
+
+func (x *GroupExposureRefByCarried) HasClient() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *GroupExposureRefByCarried) ClearGroup() {
+	x.xxx_hidden_Group = nil
+}
+
+func (x *GroupExposureRefByCarried) ClearClient() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_Client = nil
+}
+
+type GroupExposureRefByCarried_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Group  *GroupRef
+	Client *string
+}
+
+func (b0 GroupExposureRefByCarried_builder) Build() *GroupExposureRefByCarried {
+	m0 := &GroupExposureRefByCarried{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Group = b.Group
+	if b.Client != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		x.xxx_hidden_Client = b.Client
+	}
+	return m0
+}
+
+type GroupExposureSelect struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_All         bool                   `protobuf:"varint,1,opt,name=all"`
+	xxx_hidden_Group       *GroupSelect           `protobuf:"bytes,2,opt,name=group"`
+	xxx_hidden_Client      bool                   `protobuf:"varint,8,opt,name=client"`
+	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *GroupExposureSelect) Reset() {
+	*x = GroupExposureSelect{}
+	mi := &file_app_group_svc_g_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupExposureSelect) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupExposureSelect) ProtoMessage() {}
+
+func (x *GroupExposureSelect) ProtoReflect() protoreflect.Message {
+	mi := &file_app_group_svc_g_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GroupExposureSelect) GetAll() bool {
+	if x != nil {
+		return x.xxx_hidden_All
+	}
+	return false
+}
+
+func (x *GroupExposureSelect) GetGroup() *GroupSelect {
+	if x != nil {
+		return x.xxx_hidden_Group
+	}
+	return nil
+}
+
+func (x *GroupExposureSelect) GetClient() bool {
+	if x != nil {
+		return x.xxx_hidden_Client
+	}
+	return false
+}
+
+func (x *GroupExposureSelect) GetDateUpdated() bool {
+	if x != nil {
+		return x.xxx_hidden_DateUpdated
+	}
+	return false
+}
+
+func (x *GroupExposureSelect) GetDateErased() bool {
+	if x != nil {
+		return x.xxx_hidden_DateErased
+	}
+	return false
+}
+
+func (x *GroupExposureSelect) GetDateCreated() bool {
+	if x != nil {
+		return x.xxx_hidden_DateCreated
+	}
+	return false
+}
+
+func (x *GroupExposureSelect) SetAll(v bool) {
+	x.xxx_hidden_All = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
+}
+
+func (x *GroupExposureSelect) SetGroup(v *GroupSelect) {
+	x.xxx_hidden_Group = v
+}
+
+func (x *GroupExposureSelect) SetClient(v bool) {
+	x.xxx_hidden_Client = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
+}
+
+func (x *GroupExposureSelect) SetDateUpdated(v bool) {
+	x.xxx_hidden_DateUpdated = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 6)
+}
+
+func (x *GroupExposureSelect) SetDateErased(v bool) {
+	x.xxx_hidden_DateErased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 6)
+}
+
+func (x *GroupExposureSelect) SetDateCreated(v bool) {
+	x.xxx_hidden_DateCreated = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 6)
+}
+
+func (x *GroupExposureSelect) HasAll() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *GroupExposureSelect) HasGroup() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Group != nil
+}
+
+func (x *GroupExposureSelect) HasClient() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *GroupExposureSelect) HasDateUpdated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *GroupExposureSelect) HasDateErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
+func (x *GroupExposureSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
+func (x *GroupExposureSelect) ClearAll() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_All = false
+}
+
+func (x *GroupExposureSelect) ClearGroup() {
+	x.xxx_hidden_Group = nil
+}
+
+func (x *GroupExposureSelect) ClearClient() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Client = false
+}
+
+func (x *GroupExposureSelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_DateUpdated = false
+}
+
+func (x *GroupExposureSelect) ClearDateErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_DateErased = false
+}
+
+func (x *GroupExposureSelect) ClearDateCreated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_DateCreated = false
+}
+
+type GroupExposureSelect_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	All         *bool
+	Group       *GroupSelect
+	Client      *bool
+	DateUpdated *bool
+	DateErased  *bool
+	DateCreated *bool
+}
+
+func (b0 GroupExposureSelect_builder) Build() *GroupExposureSelect {
+	m0 := &GroupExposureSelect{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.All != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
+		x.xxx_hidden_All = *b.All
+	}
+	x.xxx_hidden_Group = b.Group
+	if b.Client != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
+		x.xxx_hidden_Client = *b.Client
+	}
+	if b.DateUpdated != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
+		x.xxx_hidden_DateUpdated = *b.DateUpdated
+	}
+	if b.DateErased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 6)
+		x.xxx_hidden_DateErased = *b.DateErased
+	}
+	if b.DateCreated != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
+		x.xxx_hidden_DateCreated = *b.DateCreated
+	}
+	return m0
+}
+
+type GroupExposurePatchRequest struct {
+	state                       protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref              *GroupExposureRef      `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
+	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
+	XXX_presence                [1]uint32
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
+}
+
+func (x *GroupExposurePatchRequest) Reset() {
+	*x = GroupExposurePatchRequest{}
+	mi := &file_app_group_svc_g_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupExposurePatchRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupExposurePatchRequest) ProtoMessage() {}
+
+func (x *GroupExposurePatchRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_group_svc_g_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GroupExposurePatchRequest) GetRef() *GroupExposureRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *GroupExposurePatchRequest) GetDateUpdated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateUpdated
+	}
+	return nil
+}
+
+func (x *GroupExposurePatchRequest) GetDateUpdatedForce() bool {
+	if x != nil {
+		return x.xxx_hidden_DateUpdatedForce
+	}
+	return false
+}
+
+func (x *GroupExposurePatchRequest) SetRef(v *GroupExposureRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *GroupExposurePatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateUpdated = v
+}
+
+func (x *GroupExposurePatchRequest) SetDateUpdatedForce(v bool) {
+	x.xxx_hidden_DateUpdatedForce = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+}
+
+func (x *GroupExposurePatchRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *GroupExposurePatchRequest) HasDateUpdated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateUpdated != nil
+}
+
+func (x *GroupExposurePatchRequest) HasDateUpdatedForce() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *GroupExposurePatchRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *GroupExposurePatchRequest) ClearDateUpdated() {
+	x.xxx_hidden_DateUpdated = nil
+}
+
+func (x *GroupExposurePatchRequest) ClearDateUpdatedForce() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_DateUpdatedForce = false
+}
+
+type GroupExposurePatchRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref *GroupExposureRef
+	// The version this update requires the stored date_updated to be.
+	// It is a precondition, not a write: the update applies only if the row
+	// still holds this value, and the server stamps the new version itself.
+	// Setting it together with date_updated_force is an error --
+	// the version is the token every client's compare-and-swap is measured
+	// against, so it is not the caller's to choose.
+	DateUpdated *timestamppb.Timestamp
+	// Update whatever the stored date_updated is, with no precondition.
+	// The server still stamps a new version, so other clients' tokens are
+	// invalidated as usual; this declines the check for THIS update only.
+	// One of date_updated or this must be set. An omitted version is
+	// refused rather than assumed, because an unset field cannot be told
+	// apart from a caller who never considered locking at all.
+	DateUpdatedForce *bool
+}
+
+func (b0 GroupExposurePatchRequest_builder) Build() *GroupExposurePatchRequest {
+	m0 := &GroupExposurePatchRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_DateUpdated = b.DateUpdated
+	if b.DateUpdatedForce != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
+	}
+	return m0
+}
+
+type GroupExposureApplyRequest struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref   *GroupExposureRef      `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *GroupExposureApplyRequest) Reset() {
+	*x = GroupExposureApplyRequest{}
+	mi := &file_app_group_svc_g_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupExposureApplyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupExposureApplyRequest) ProtoMessage() {}
+
+func (x *GroupExposureApplyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_group_svc_g_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GroupExposureApplyRequest) GetRef() *GroupExposureRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *GroupExposureApplyRequest) GetPatch() *patchpb.Patch {
+	if x != nil {
+		return x.xxx_hidden_Patch
+	}
+	return nil
+}
+
+func (x *GroupExposureApplyRequest) SetRef(v *GroupExposureRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *GroupExposureApplyRequest) SetPatch(v *patchpb.Patch) {
+	x.xxx_hidden_Patch = v
+}
+
+func (x *GroupExposureApplyRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *GroupExposureApplyRequest) HasPatch() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Patch != nil
+}
+
+func (x *GroupExposureApplyRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *GroupExposureApplyRequest) ClearPatch() {
+	x.xxx_hidden_Patch = nil
+}
+
+type GroupExposureApplyRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref   *GroupExposureRef
+	Patch *patchpb.Patch
+}
+
+func (b0 GroupExposureApplyRequest_builder) Build() *GroupExposureApplyRequest {
+	m0 := &GroupExposureApplyRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Patch = b.Patch
+	return m0
+}
+
+type GroupExposureEraseResponse struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *GroupExposureEraseResponse) Reset() {
+	*x = GroupExposureEraseResponse{}
+	mi := &file_app_group_svc_g_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupExposureEraseResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupExposureEraseResponse) ProtoMessage() {}
+
+func (x *GroupExposureEraseResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_group_svc_g_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GroupExposureEraseResponse) GetErased() bool {
+	if x != nil {
+		return x.xxx_hidden_Erased
+	}
+	return false
+}
+
+func (x *GroupExposureEraseResponse) SetErased(v bool) {
+	x.xxx_hidden_Erased = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+}
+
+func (x *GroupExposureEraseResponse) HasErased() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *GroupExposureEraseResponse) ClearErased() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_Erased = false
+}
+
+type GroupExposureEraseResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Erased is whether this call is the one that erased the row.
+	//
+	// False for a row that was already gone, was never there, or is out
+	// of this caller's reach -- which are one answer on purpose, and the
+	// reason the RPC does not fail instead.
+	Erased *bool
+}
+
+func (b0 GroupExposureEraseResponse_builder) Build() *GroupExposureEraseResponse {
+	m0 := &GroupExposureEraseResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.Erased != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		x.xxx_hidden_Erased = *b.Erased
+	}
+	return m0
+}
+
+type GroupExposureListRequest struct {
+	state              protoimpl.MessageState  `protogen:"opaque.v1"`
+	xxx_hidden_Filters *[]*GroupExposureFilter `protobuf:"bytes,1,rep,name=filters"`
+	xxx_hidden_Size    int32                   `protobuf:"varint,2,opt,name=size"`
+	xxx_hidden_After   string                  `protobuf:"bytes,3,opt,name=after"`
+	xxx_hidden_Reverse bool                    `protobuf:"varint,4,opt,name=reverse"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *GroupExposureListRequest) Reset() {
+	*x = GroupExposureListRequest{}
+	mi := &file_app_group_svc_g_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupExposureListRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupExposureListRequest) ProtoMessage() {}
+
+func (x *GroupExposureListRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_group_svc_g_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GroupExposureListRequest) GetFilters() []*GroupExposureFilter {
+	if x != nil {
+		if x.xxx_hidden_Filters != nil {
+			return *x.xxx_hidden_Filters
+		}
+	}
+	return nil
+}
+
+func (x *GroupExposureListRequest) GetSize() int32 {
+	if x != nil {
+		return x.xxx_hidden_Size
+	}
+	return 0
+}
+
+func (x *GroupExposureListRequest) GetAfter() string {
+	if x != nil {
+		return x.xxx_hidden_After
+	}
+	return ""
+}
+
+func (x *GroupExposureListRequest) GetReverse() bool {
+	if x != nil {
+		return x.xxx_hidden_Reverse
+	}
+	return false
+}
+
+func (x *GroupExposureListRequest) SetFilters(v []*GroupExposureFilter) {
+	x.xxx_hidden_Filters = &v
+}
+
+func (x *GroupExposureListRequest) SetSize(v int32) {
+	x.xxx_hidden_Size = v
+}
+
+func (x *GroupExposureListRequest) SetAfter(v string) {
+	x.xxx_hidden_After = v
+}
+
+func (x *GroupExposureListRequest) SetReverse(v bool) {
+	x.xxx_hidden_Reverse = v
+}
+
+type GroupExposureListRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Bounded because the work is: each filter is a predicate in the same query,
+	// so this is what says how much of the database one request may read.
+	Filters []*GroupExposureFilter
+	// How many to answer with. Nothing said is what the schema declared, and more
+	// than the cap is the cap -- a caller asking for more than there is meant no
+	// harm, so it is not an error and it is not the whole table either.
+	Size int32
+	// Where to carry on from: the "next" of the answer before. It names the last
+	// row of that page rather than counting rows from the start, so a row added
+	// ahead of the page does not shift it and a caller reading through never sees
+	// one twice or misses one.
+	After string
+	// Read the order the other way round, every column of it at once -- newest
+	// first where it is oldest first -- which the index the order walks walks
+	// from the other end. A cursor is of the way it was read, so the next page
+	// carries on that way, and one of the other way is refused.
+	Reverse bool
+}
+
+func (b0 GroupExposureListRequest_builder) Build() *GroupExposureListRequest {
+	m0 := &GroupExposureListRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Filters = &b.Filters
+	x.xxx_hidden_Size = b.Size
+	x.xxx_hidden_After = b.After
+	x.xxx_hidden_Reverse = b.Reverse
+	return m0
+}
+
+type GroupExposureListResponse struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Items *[]*GroupExposure      `protobuf:"bytes,1,rep,name=items"`
+	xxx_hidden_Next  string                 `protobuf:"bytes,2,opt,name=next"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *GroupExposureListResponse) Reset() {
+	*x = GroupExposureListResponse{}
+	mi := &file_app_group_svc_g_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupExposureListResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupExposureListResponse) ProtoMessage() {}
+
+func (x *GroupExposureListResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_group_svc_g_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GroupExposureListResponse) GetItems() []*GroupExposure {
+	if x != nil {
+		if x.xxx_hidden_Items != nil {
+			return *x.xxx_hidden_Items
+		}
+	}
+	return nil
+}
+
+func (x *GroupExposureListResponse) GetNext() string {
+	if x != nil {
+		return x.xxx_hidden_Next
+	}
+	return ""
+}
+
+func (x *GroupExposureListResponse) SetItems(v []*GroupExposure) {
+	x.xxx_hidden_Items = &v
+}
+
+func (x *GroupExposureListResponse) SetNext(v string) {
+	x.xxx_hidden_Next = v
+}
+
+type GroupExposureListResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Items []*GroupExposure
+	// What to ask for next, and empty when this was the last of them.
+	//
+	// Empty means there is no more *for now*: a list is read as it is, and one
+	// that has grown since answers a fresh call. It is not empty merely because
+	// the page came back short -- a page is short when the last row of it was the
+	// last row there was, which is a thing the server can only know by having
+	// looked.
+	Next string
+}
+
+func (b0 GroupExposureListResponse_builder) Build() *GroupExposureListResponse {
+	m0 := &GroupExposureListResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Items = &b.Items
+	x.xxx_hidden_Next = b.Next
+	return m0
+}
+
+type GroupExposureFilter struct {
+	state            protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref   *GroupExposureRef      `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Group *GroupRef              `protobuf:"bytes,2,opt,name=group"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *GroupExposureFilter) Reset() {
+	*x = GroupExposureFilter{}
+	mi := &file_app_group_svc_g_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupExposureFilter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupExposureFilter) ProtoMessage() {}
+
+func (x *GroupExposureFilter) ProtoReflect() protoreflect.Message {
+	mi := &file_app_group_svc_g_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GroupExposureFilter) GetRef() *GroupExposureRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *GroupExposureFilter) GetGroup() *GroupRef {
+	if x != nil {
+		return x.xxx_hidden_Group
+	}
+	return nil
+}
+
+func (x *GroupExposureFilter) SetRef(v *GroupExposureRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *GroupExposureFilter) SetGroup(v *GroupRef) {
+	x.xxx_hidden_Group = v
+}
+
+func (x *GroupExposureFilter) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *GroupExposureFilter) HasGroup() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Group != nil
+}
+
+func (x *GroupExposureFilter) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *GroupExposureFilter) ClearGroup() {
+	x.xxx_hidden_Group = nil
+}
+
+type GroupExposureFilter_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref   *GroupExposureRef
+	Group *GroupRef
+}
+
+func (b0 GroupExposureFilter_builder) Build() *GroupExposureFilter {
+	m0 := &GroupExposureFilter{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Group = b.Group
+	return m0
+}
+
 var File_app_group_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_group_svc_g_proto_rawDesc = "" +
@@ -3057,7 +4382,50 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\x15GroupMembershipFilter\x12,\n" +
 	"\x03ref\x18\x01 \x01(\v2\x1a.roster.GroupMembershipRefR\x03ref\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12&\n" +
-	"\x05group\x18\x03 \x01(\v2\x10.roster.GroupRefR\x05group2\xc6\x02\n" +
+	"\x05group\x18\x03 \x01(\v2\x10.roster.GroupRefR\x05group\"\xaf\x01\n" +
+	"\x17GroupExposureAddRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12&\n" +
+	"\x05group\x18\x02 \x01(\v2\x10.roster.GroupRefR\x05group\x12\x1d\n" +
+	"\x06client\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\x06client\x12=\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"z\n" +
+	"\x17GroupExposureGetRequest\x12*\n" +
+	"\x03ref\x18\x01 \x01(\v2\x18.roster.GroupExposureRefR\x03ref\x123\n" +
+	"\x06select\x18\x02 \x01(\v2\x1b.roster.GroupExposureSelectR\x06select\"j\n" +
+	"\x10GroupExposureRef\x12\x10\n" +
+	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12=\n" +
+	"\acarried\x18\x02 \x01(\v2!.roster.GroupExposureRefByCarriedH\x00R\acarriedB\x05\n" +
+	"\x03key\"[\n" +
+	"\x19GroupExposureRefByCarried\x12&\n" +
+	"\x05group\x18\x02 \x01(\v2\x10.roster.GroupRefR\x05group\x12\x16\n" +
+	"\x06client\x18\b \x01(\tR\x06client\"\xd1\x01\n" +
+	"\x13GroupExposureSelect\x12\x10\n" +
+	"\x03all\x18\x01 \x01(\bR\x03all\x12)\n" +
+	"\x05group\x18\x02 \x01(\v2\x13.roster.GroupSelectR\x05group\x12\x16\n" +
+	"\x06client\x18\b \x01(\bR\x06client\x12!\n" +
+	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
+	"\vdate_erased\x18\x0e \x01(\bR\n" +
+	"dateErased\x12!\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xb4\x01\n" +
+	"\x19GroupExposurePatchRequest\x12*\n" +
+	"\x03ref\x18\x01 \x01(\v2\x18.roster.GroupExposureRefR\x03ref\x12=\n" +
+	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"k\n" +
+	"\x19GroupExposureApplyRequest\x12*\n" +
+	"\x03ref\x18\x01 \x01(\v2\x18.roster.GroupExposureRefR\x03ref\x12\"\n" +
+	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"4\n" +
+	"\x1aGroupExposureEraseResponse\x12\x16\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xaa\x01\n" +
+	"\x18GroupExposureListRequest\x125\n" +
+	"\afilters\x18\x01 \x03(\v2\x1b.roster.GroupExposureFilterR\afilters\x12\x19\n" +
+	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
+	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"c\n" +
+	"\x19GroupExposureListResponse\x12+\n" +
+	"\x05items\x18\x01 \x03(\v2\x15.roster.GroupExposureR\x05items\x12\x19\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"i\n" +
+	"\x13GroupExposureFilter\x12*\n" +
+	"\x03ref\x18\x01 \x01(\v2\x18.roster.GroupExposureRefR\x03ref\x12&\n" +
+	"\x05group\x18\x02 \x01(\v2\x10.roster.GroupRefR\x05group2\xc6\x02\n" +
 	"\fGroupService\x12-\n" +
 	"\x03Add\x12\x17.roster.GroupAddRequest\x1a\r.roster.Group\x12-\n" +
 	"\x03Get\x12\x17.roster.GroupGetRequest\x1a\r.roster.Group\x121\n" +
@@ -3071,9 +4439,16 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\x05Patch\x12#.roster.GroupMembershipPatchRequest\x1a\x17.roster.GroupMembership\x12E\n" +
 	"\x05Apply\x12#.roster.GroupMembershipApplyRequest\x1a\x17.roster.GroupMembership\x12I\n" +
 	"\x05Erase\x12\x1a.roster.GroupMembershipRef\x1a$.roster.GroupMembershipEraseResponse\x12O\n" +
-	"\x04List\x12\".roster.GroupMembershipListRequest\x1a#.roster.GroupMembershipListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
+	"\x04List\x12\".roster.GroupMembershipListRequest\x1a#.roster.GroupMembershipListResponse2\xae\x03\n" +
+	"\x14GroupExposureService\x12=\n" +
+	"\x03Add\x12\x1f.roster.GroupExposureAddRequest\x1a\x15.roster.GroupExposure\x12=\n" +
+	"\x03Get\x12\x1f.roster.GroupExposureGetRequest\x1a\x15.roster.GroupExposure\x12A\n" +
+	"\x05Patch\x12!.roster.GroupExposurePatchRequest\x1a\x15.roster.GroupExposure\x12A\n" +
+	"\x05Apply\x12!.roster.GroupExposureApplyRequest\x1a\x15.roster.GroupExposure\x12E\n" +
+	"\x05Erase\x12\x18.roster.GroupExposureRef\x1a\".roster.GroupExposureEraseResponse\x12K\n" +
+	"\x04List\x12 .roster.GroupExposureListRequest\x1a!.roster.GroupExposureListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_group_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_app_group_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
 var file_app_group_svc_g_proto_goTypes = []any{
 	(*GroupAddRequest)(nil),              // 0: roster.GroupAddRequest
 	(*GroupGetRequest)(nil),              // 1: roster.GroupGetRequest
@@ -3097,84 +4472,123 @@ var file_app_group_svc_g_proto_goTypes = []any{
 	(*GroupMembershipListRequest)(nil),   // 19: roster.GroupMembershipListRequest
 	(*GroupMembershipListResponse)(nil),  // 20: roster.GroupMembershipListResponse
 	(*GroupMembershipFilter)(nil),        // 21: roster.GroupMembershipFilter
-	(*TenantRef)(nil),                    // 22: roster.TenantRef
-	(*SiteRef)(nil),                      // 23: roster.SiteRef
-	(*timestamppb.Timestamp)(nil),        // 24: google.protobuf.Timestamp
-	(*TenantSelect)(nil),                 // 25: roster.TenantSelect
-	(*SiteSelect)(nil),                   // 26: roster.SiteSelect
-	(*patchpb.Patch)(nil),                // 27: patch.Patch
-	(*Group)(nil),                        // 28: roster.Group
-	(*HolderRef)(nil),                    // 29: roster.HolderRef
-	(*HolderSelect)(nil),                 // 30: roster.HolderSelect
-	(*GroupMembership)(nil),              // 31: roster.GroupMembership
+	(*GroupExposureAddRequest)(nil),      // 22: roster.GroupExposureAddRequest
+	(*GroupExposureGetRequest)(nil),      // 23: roster.GroupExposureGetRequest
+	(*GroupExposureRef)(nil),             // 24: roster.GroupExposureRef
+	(*GroupExposureRefByCarried)(nil),    // 25: roster.GroupExposureRefByCarried
+	(*GroupExposureSelect)(nil),          // 26: roster.GroupExposureSelect
+	(*GroupExposurePatchRequest)(nil),    // 27: roster.GroupExposurePatchRequest
+	(*GroupExposureApplyRequest)(nil),    // 28: roster.GroupExposureApplyRequest
+	(*GroupExposureEraseResponse)(nil),   // 29: roster.GroupExposureEraseResponse
+	(*GroupExposureListRequest)(nil),     // 30: roster.GroupExposureListRequest
+	(*GroupExposureListResponse)(nil),    // 31: roster.GroupExposureListResponse
+	(*GroupExposureFilter)(nil),          // 32: roster.GroupExposureFilter
+	(*TenantRef)(nil),                    // 33: roster.TenantRef
+	(*SiteRef)(nil),                      // 34: roster.SiteRef
+	(*timestamppb.Timestamp)(nil),        // 35: google.protobuf.Timestamp
+	(*TenantSelect)(nil),                 // 36: roster.TenantSelect
+	(*SiteSelect)(nil),                   // 37: roster.SiteSelect
+	(*patchpb.Patch)(nil),                // 38: patch.Patch
+	(*Group)(nil),                        // 39: roster.Group
+	(*HolderRef)(nil),                    // 40: roster.HolderRef
+	(*HolderSelect)(nil),                 // 41: roster.HolderSelect
+	(*GroupMembership)(nil),              // 42: roster.GroupMembership
+	(*GroupExposure)(nil),                // 43: roster.GroupExposure
 }
 var file_app_group_svc_g_proto_depIdxs = []int32{
-	22, // 0: roster.GroupAddRequest.tenant:type_name -> roster.TenantRef
-	23, // 1: roster.GroupAddRequest.site:type_name -> roster.SiteRef
-	24, // 2: roster.GroupAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	33, // 0: roster.GroupAddRequest.tenant:type_name -> roster.TenantRef
+	34, // 1: roster.GroupAddRequest.site:type_name -> roster.SiteRef
+	35, // 2: roster.GroupAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 3: roster.GroupGetRequest.ref:type_name -> roster.GroupRef
 	4,  // 4: roster.GroupGetRequest.select:type_name -> roster.GroupSelect
 	3,  // 5: roster.GroupRef.slug:type_name -> roster.GroupRefBySlug
-	22, // 6: roster.GroupRefBySlug.tenant:type_name -> roster.TenantRef
-	25, // 7: roster.GroupSelect.tenant:type_name -> roster.TenantSelect
-	26, // 8: roster.GroupSelect.site:type_name -> roster.SiteSelect
+	33, // 6: roster.GroupRefBySlug.tenant:type_name -> roster.TenantRef
+	36, // 7: roster.GroupSelect.tenant:type_name -> roster.TenantSelect
+	37, // 8: roster.GroupSelect.site:type_name -> roster.SiteSelect
 	2,  // 9: roster.GroupPatchRequest.ref:type_name -> roster.GroupRef
-	24, // 10: roster.GroupPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	35, // 10: roster.GroupPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 11: roster.GroupApplyRequest.ref:type_name -> roster.GroupRef
-	27, // 12: roster.GroupApplyRequest.patch:type_name -> patch.Patch
+	38, // 12: roster.GroupApplyRequest.patch:type_name -> patch.Patch
 	10, // 13: roster.GroupListRequest.filters:type_name -> roster.GroupFilter
-	28, // 14: roster.GroupListResponse.items:type_name -> roster.Group
+	39, // 14: roster.GroupListResponse.items:type_name -> roster.Group
 	2,  // 15: roster.GroupFilter.ref:type_name -> roster.GroupRef
-	22, // 16: roster.GroupFilter.tenant:type_name -> roster.TenantRef
-	23, // 17: roster.GroupFilter.site:type_name -> roster.SiteRef
-	29, // 18: roster.GroupMembershipAddRequest.holder:type_name -> roster.HolderRef
+	33, // 16: roster.GroupFilter.tenant:type_name -> roster.TenantRef
+	34, // 17: roster.GroupFilter.site:type_name -> roster.SiteRef
+	40, // 18: roster.GroupMembershipAddRequest.holder:type_name -> roster.HolderRef
 	2,  // 19: roster.GroupMembershipAddRequest.group:type_name -> roster.GroupRef
-	24, // 20: roster.GroupMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	35, // 20: roster.GroupMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	13, // 21: roster.GroupMembershipGetRequest.ref:type_name -> roster.GroupMembershipRef
 	15, // 22: roster.GroupMembershipGetRequest.select:type_name -> roster.GroupMembershipSelect
 	14, // 23: roster.GroupMembershipRef.member:type_name -> roster.GroupMembershipRefByMember
-	29, // 24: roster.GroupMembershipRefByMember.holder:type_name -> roster.HolderRef
+	40, // 24: roster.GroupMembershipRefByMember.holder:type_name -> roster.HolderRef
 	2,  // 25: roster.GroupMembershipRefByMember.group:type_name -> roster.GroupRef
-	30, // 26: roster.GroupMembershipSelect.holder:type_name -> roster.HolderSelect
+	41, // 26: roster.GroupMembershipSelect.holder:type_name -> roster.HolderSelect
 	4,  // 27: roster.GroupMembershipSelect.group:type_name -> roster.GroupSelect
 	13, // 28: roster.GroupMembershipPatchRequest.ref:type_name -> roster.GroupMembershipRef
-	24, // 29: roster.GroupMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	35, // 29: roster.GroupMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	13, // 30: roster.GroupMembershipApplyRequest.ref:type_name -> roster.GroupMembershipRef
-	27, // 31: roster.GroupMembershipApplyRequest.patch:type_name -> patch.Patch
+	38, // 31: roster.GroupMembershipApplyRequest.patch:type_name -> patch.Patch
 	21, // 32: roster.GroupMembershipListRequest.filters:type_name -> roster.GroupMembershipFilter
-	31, // 33: roster.GroupMembershipListResponse.items:type_name -> roster.GroupMembership
+	42, // 33: roster.GroupMembershipListResponse.items:type_name -> roster.GroupMembership
 	13, // 34: roster.GroupMembershipFilter.ref:type_name -> roster.GroupMembershipRef
-	29, // 35: roster.GroupMembershipFilter.holder:type_name -> roster.HolderRef
+	40, // 35: roster.GroupMembershipFilter.holder:type_name -> roster.HolderRef
 	2,  // 36: roster.GroupMembershipFilter.group:type_name -> roster.GroupRef
-	0,  // 37: roster.GroupService.Add:input_type -> roster.GroupAddRequest
-	1,  // 38: roster.GroupService.Get:input_type -> roster.GroupGetRequest
-	5,  // 39: roster.GroupService.Patch:input_type -> roster.GroupPatchRequest
-	6,  // 40: roster.GroupService.Apply:input_type -> roster.GroupApplyRequest
-	2,  // 41: roster.GroupService.Erase:input_type -> roster.GroupRef
-	8,  // 42: roster.GroupService.List:input_type -> roster.GroupListRequest
-	11, // 43: roster.GroupMembershipService.Add:input_type -> roster.GroupMembershipAddRequest
-	12, // 44: roster.GroupMembershipService.Get:input_type -> roster.GroupMembershipGetRequest
-	16, // 45: roster.GroupMembershipService.Patch:input_type -> roster.GroupMembershipPatchRequest
-	17, // 46: roster.GroupMembershipService.Apply:input_type -> roster.GroupMembershipApplyRequest
-	13, // 47: roster.GroupMembershipService.Erase:input_type -> roster.GroupMembershipRef
-	19, // 48: roster.GroupMembershipService.List:input_type -> roster.GroupMembershipListRequest
-	28, // 49: roster.GroupService.Add:output_type -> roster.Group
-	28, // 50: roster.GroupService.Get:output_type -> roster.Group
-	28, // 51: roster.GroupService.Patch:output_type -> roster.Group
-	28, // 52: roster.GroupService.Apply:output_type -> roster.Group
-	7,  // 53: roster.GroupService.Erase:output_type -> roster.GroupEraseResponse
-	9,  // 54: roster.GroupService.List:output_type -> roster.GroupListResponse
-	31, // 55: roster.GroupMembershipService.Add:output_type -> roster.GroupMembership
-	31, // 56: roster.GroupMembershipService.Get:output_type -> roster.GroupMembership
-	31, // 57: roster.GroupMembershipService.Patch:output_type -> roster.GroupMembership
-	31, // 58: roster.GroupMembershipService.Apply:output_type -> roster.GroupMembership
-	18, // 59: roster.GroupMembershipService.Erase:output_type -> roster.GroupMembershipEraseResponse
-	20, // 60: roster.GroupMembershipService.List:output_type -> roster.GroupMembershipListResponse
-	49, // [49:61] is the sub-list for method output_type
-	37, // [37:49] is the sub-list for method input_type
-	37, // [37:37] is the sub-list for extension type_name
-	37, // [37:37] is the sub-list for extension extendee
-	0,  // [0:37] is the sub-list for field type_name
+	2,  // 37: roster.GroupExposureAddRequest.group:type_name -> roster.GroupRef
+	35, // 38: roster.GroupExposureAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	24, // 39: roster.GroupExposureGetRequest.ref:type_name -> roster.GroupExposureRef
+	26, // 40: roster.GroupExposureGetRequest.select:type_name -> roster.GroupExposureSelect
+	25, // 41: roster.GroupExposureRef.carried:type_name -> roster.GroupExposureRefByCarried
+	2,  // 42: roster.GroupExposureRefByCarried.group:type_name -> roster.GroupRef
+	4,  // 43: roster.GroupExposureSelect.group:type_name -> roster.GroupSelect
+	24, // 44: roster.GroupExposurePatchRequest.ref:type_name -> roster.GroupExposureRef
+	35, // 45: roster.GroupExposurePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	24, // 46: roster.GroupExposureApplyRequest.ref:type_name -> roster.GroupExposureRef
+	38, // 47: roster.GroupExposureApplyRequest.patch:type_name -> patch.Patch
+	32, // 48: roster.GroupExposureListRequest.filters:type_name -> roster.GroupExposureFilter
+	43, // 49: roster.GroupExposureListResponse.items:type_name -> roster.GroupExposure
+	24, // 50: roster.GroupExposureFilter.ref:type_name -> roster.GroupExposureRef
+	2,  // 51: roster.GroupExposureFilter.group:type_name -> roster.GroupRef
+	0,  // 52: roster.GroupService.Add:input_type -> roster.GroupAddRequest
+	1,  // 53: roster.GroupService.Get:input_type -> roster.GroupGetRequest
+	5,  // 54: roster.GroupService.Patch:input_type -> roster.GroupPatchRequest
+	6,  // 55: roster.GroupService.Apply:input_type -> roster.GroupApplyRequest
+	2,  // 56: roster.GroupService.Erase:input_type -> roster.GroupRef
+	8,  // 57: roster.GroupService.List:input_type -> roster.GroupListRequest
+	11, // 58: roster.GroupMembershipService.Add:input_type -> roster.GroupMembershipAddRequest
+	12, // 59: roster.GroupMembershipService.Get:input_type -> roster.GroupMembershipGetRequest
+	16, // 60: roster.GroupMembershipService.Patch:input_type -> roster.GroupMembershipPatchRequest
+	17, // 61: roster.GroupMembershipService.Apply:input_type -> roster.GroupMembershipApplyRequest
+	13, // 62: roster.GroupMembershipService.Erase:input_type -> roster.GroupMembershipRef
+	19, // 63: roster.GroupMembershipService.List:input_type -> roster.GroupMembershipListRequest
+	22, // 64: roster.GroupExposureService.Add:input_type -> roster.GroupExposureAddRequest
+	23, // 65: roster.GroupExposureService.Get:input_type -> roster.GroupExposureGetRequest
+	27, // 66: roster.GroupExposureService.Patch:input_type -> roster.GroupExposurePatchRequest
+	28, // 67: roster.GroupExposureService.Apply:input_type -> roster.GroupExposureApplyRequest
+	24, // 68: roster.GroupExposureService.Erase:input_type -> roster.GroupExposureRef
+	30, // 69: roster.GroupExposureService.List:input_type -> roster.GroupExposureListRequest
+	39, // 70: roster.GroupService.Add:output_type -> roster.Group
+	39, // 71: roster.GroupService.Get:output_type -> roster.Group
+	39, // 72: roster.GroupService.Patch:output_type -> roster.Group
+	39, // 73: roster.GroupService.Apply:output_type -> roster.Group
+	7,  // 74: roster.GroupService.Erase:output_type -> roster.GroupEraseResponse
+	9,  // 75: roster.GroupService.List:output_type -> roster.GroupListResponse
+	42, // 76: roster.GroupMembershipService.Add:output_type -> roster.GroupMembership
+	42, // 77: roster.GroupMembershipService.Get:output_type -> roster.GroupMembership
+	42, // 78: roster.GroupMembershipService.Patch:output_type -> roster.GroupMembership
+	42, // 79: roster.GroupMembershipService.Apply:output_type -> roster.GroupMembership
+	18, // 80: roster.GroupMembershipService.Erase:output_type -> roster.GroupMembershipEraseResponse
+	20, // 81: roster.GroupMembershipService.List:output_type -> roster.GroupMembershipListResponse
+	43, // 82: roster.GroupExposureService.Add:output_type -> roster.GroupExposure
+	43, // 83: roster.GroupExposureService.Get:output_type -> roster.GroupExposure
+	43, // 84: roster.GroupExposureService.Patch:output_type -> roster.GroupExposure
+	43, // 85: roster.GroupExposureService.Apply:output_type -> roster.GroupExposure
+	29, // 86: roster.GroupExposureService.Erase:output_type -> roster.GroupExposureEraseResponse
+	31, // 87: roster.GroupExposureService.List:output_type -> roster.GroupExposureListResponse
+	70, // [70:88] is the sub-list for method output_type
+	52, // [52:70] is the sub-list for method input_type
+	52, // [52:52] is the sub-list for extension type_name
+	52, // [52:52] is the sub-list for extension extendee
+	0,  // [0:52] is the sub-list for field type_name
 }
 
 func init() { file_app_group_svc_g_proto_init() }
@@ -3194,15 +4608,19 @@ func file_app_group_svc_g_proto_init() {
 		(*groupMembershipRef_Id)(nil),
 		(*groupMembershipRef_Member)(nil),
 	}
+	file_app_group_svc_g_proto_msgTypes[24].OneofWrappers = []any{
+		(*groupExposureRef_Id)(nil),
+		(*groupExposureRef_Carried)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_group_svc_g_proto_rawDesc), len(file_app_group_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   22,
+			NumMessages:   33,
 			NumExtensions: 0,
-			NumServices:   2,
+			NumServices:   3,
 		},
 		GoTypes:           file_app_group_svc_g_proto_goTypes,
 		DependencyIndexes: file_app_group_svc_g_proto_depIdxs,

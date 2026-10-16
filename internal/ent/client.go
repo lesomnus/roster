@@ -20,6 +20,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/delegation"
 	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/group"
+	"github.com/lesomnus/roster/internal/ent/groupexposure"
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/host"
@@ -65,6 +66,8 @@ type Client struct {
 	Email *EmailClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
+	// GroupExposure is the client for interacting with the GroupExposure builders.
+	GroupExposure *GroupExposureClient
 	// GroupMembership is the client for interacting with the GroupMembership builders.
 	GroupMembership *GroupMembershipClient
 	// Holder is the client for interacting with the Holder builders.
@@ -117,6 +120,7 @@ func (c *Client) init() {
 	c.Delegation = NewDelegationClient(c.config)
 	c.Email = NewEmailClient(c.config)
 	c.Group = NewGroupClient(c.config)
+	c.GroupExposure = NewGroupExposureClient(c.config)
 	c.GroupMembership = NewGroupMembershipClient(c.config)
 	c.Holder = NewHolderClient(c.config)
 	c.Host = NewHostClient(c.config)
@@ -235,6 +239,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Delegation:      NewDelegationClient(cfg),
 		Email:           NewEmailClient(cfg),
 		Group:           NewGroupClient(cfg),
+		GroupExposure:   NewGroupExposureClient(cfg),
 		GroupMembership: NewGroupMembershipClient(cfg),
 		Holder:          NewHolderClient(cfg),
 		Host:            NewHostClient(cfg),
@@ -280,6 +285,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Delegation:      NewDelegationClient(cfg),
 		Email:           NewEmailClient(cfg),
 		Group:           NewGroupClient(cfg),
+		GroupExposure:   NewGroupExposureClient(cfg),
 		GroupMembership: NewGroupMembershipClient(cfg),
 		Holder:          NewHolderClient(cfg),
 		Host:            NewHostClient(cfg),
@@ -372,10 +378,10 @@ func (c *Client) InTx() bool {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.ApiKey, c.Archived, c.Audit, c.Binding, c.Connection, c.Continuation,
-		c.Credential, c.Delegation, c.Email, c.Group, c.GroupMembership, c.Holder,
-		c.Host, c.HostProof, c.Identity, c.Link, c.MailDomain, c.Nomination, c.Outbox,
-		c.Role, c.Session, c.Site, c.SiteMembership, c.Team, c.TeamMembership,
-		c.Tenant,
+		c.Credential, c.Delegation, c.Email, c.Group, c.GroupExposure,
+		c.GroupMembership, c.Holder, c.Host, c.HostProof, c.Identity, c.Link,
+		c.MailDomain, c.Nomination, c.Outbox, c.Role, c.Session, c.Site,
+		c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
 	} {
 		n.Use(hooks...)
 	}
@@ -386,10 +392,10 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.ApiKey, c.Archived, c.Audit, c.Binding, c.Connection, c.Continuation,
-		c.Credential, c.Delegation, c.Email, c.Group, c.GroupMembership, c.Holder,
-		c.Host, c.HostProof, c.Identity, c.Link, c.MailDomain, c.Nomination, c.Outbox,
-		c.Role, c.Session, c.Site, c.SiteMembership, c.Team, c.TeamMembership,
-		c.Tenant,
+		c.Credential, c.Delegation, c.Email, c.Group, c.GroupExposure,
+		c.GroupMembership, c.Holder, c.Host, c.HostProof, c.Identity, c.Link,
+		c.MailDomain, c.Nomination, c.Outbox, c.Role, c.Session, c.Site,
+		c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -418,6 +424,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Email.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
+	case *GroupExposureMutation:
+		return c.GroupExposure.mutate(ctx, m)
 	case *GroupMembershipMutation:
 		return c.GroupMembership.mutate(ctx, m)
 	case *HolderMutation:
@@ -1990,6 +1998,155 @@ func (c *GroupClient) mutate(ctx context.Context, m *GroupMutation) (Value, erro
 		return (&GroupDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Group mutation op: %q", m.Op())
+	}
+}
+
+// GroupExposureClient is a client for the GroupExposure schema.
+type GroupExposureClient struct {
+	config
+}
+
+// NewGroupExposureClient returns a client for the GroupExposure from the given config.
+func NewGroupExposureClient(c config) *GroupExposureClient {
+	return &GroupExposureClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `groupexposure.Hooks(f(g(h())))`.
+func (c *GroupExposureClient) Use(hooks ...Hook) {
+	c.hooks.GroupExposure = append(c.hooks.GroupExposure, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `groupexposure.Intercept(f(g(h())))`.
+func (c *GroupExposureClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GroupExposure = append(c.inters.GroupExposure, interceptors...)
+}
+
+// Create returns a builder for creating a GroupExposure entity.
+func (c *GroupExposureClient) Create() *GroupExposureCreate {
+	mutation := newGroupExposureMutation(c.config, OpCreate)
+	return &GroupExposureCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GroupExposure entities.
+func (c *GroupExposureClient) CreateBulk(builders ...*GroupExposureCreate) *GroupExposureCreateBulk {
+	return &GroupExposureCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GroupExposureClient) MapCreateBulk(slice any, setFunc func(*GroupExposureCreate, int)) *GroupExposureCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GroupExposureCreateBulk{err: fmt.Errorf("calling to GroupExposureClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GroupExposureCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GroupExposureCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GroupExposure.
+func (c *GroupExposureClient) Update() *GroupExposureUpdate {
+	mutation := newGroupExposureMutation(c.config, OpUpdate)
+	return &GroupExposureUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GroupExposureClient) UpdateOne(_m *GroupExposure) *GroupExposureUpdateOne {
+	mutation := newGroupExposureMutation(c.config, OpUpdateOne, withGroupExposure(_m))
+	return &GroupExposureUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *GroupExposureClient) UpdateOneId(id uuid.UUID) *GroupExposureUpdateOne {
+	mutation := newGroupExposureMutation(c.config, OpUpdateOne, withGroupExposureId(id))
+	return &GroupExposureUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GroupExposure.
+func (c *GroupExposureClient) Delete() *GroupExposureDelete {
+	mutation := newGroupExposureMutation(c.config, OpDelete)
+	return &GroupExposureDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GroupExposureClient) DeleteOne(_m *GroupExposure) *GroupExposureDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *GroupExposureClient) DeleteOneId(id uuid.UUID) *GroupExposureDeleteOne {
+	builder := c.Delete().Where(groupexposure.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &GroupExposureDeleteOne{builder}
+}
+
+// Query returns a query builder for GroupExposure.
+func (c *GroupExposureClient) Query() *GroupExposureQuery {
+	return &GroupExposureQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGroupExposure},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GroupExposure entity by its id.
+func (c *GroupExposureClient) Get(ctx context.Context, id uuid.UUID) (*GroupExposure, error) {
+	return c.Query().Where(groupexposure.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GroupExposureClient) GetX(ctx context.Context, id uuid.UUID) *GroupExposure {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGroup queries the group edge of a GroupExposure.
+func (c *GroupExposureClient) QueryGroup(_m *GroupExposure) *GroupQuery {
+	query := (&GroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(groupexposure.Table, groupexposure.FieldId, id),
+			sqlgraph.To(group.Table, group.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, groupexposure.GroupTable, groupexposure.GroupColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GroupExposureClient) Hooks() []Hook {
+	return c.hooks.GroupExposure
+}
+
+// Interceptors returns the client interceptors.
+func (c *GroupExposureClient) Interceptors() []Interceptor {
+	return c.inters.GroupExposure
+}
+
+func (c *GroupExposureClient) mutate(ctx context.Context, m *GroupExposureMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GroupExposureCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GroupExposureUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GroupExposureUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GroupExposureDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GroupExposure mutation op: %q", m.Op())
 	}
 }
 
@@ -4477,14 +4634,14 @@ func (c *TenantClient) mutate(ctx context.Context, m *TenantMutation) (Value, er
 type (
 	hooks struct {
 		ApiKey, Archived, Audit, Binding, Connection, Continuation, Credential,
-		Delegation, Email, Group, GroupMembership, Holder, Host, HostProof, Identity,
-		Link, MailDomain, Nomination, Outbox, Role, Session, Site, SiteMembership,
-		Team, TeamMembership, Tenant []ent.Hook
+		Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host,
+		HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, Session, Site,
+		SiteMembership, Team, TeamMembership, Tenant []ent.Hook
 	}
 	inters struct {
 		ApiKey, Archived, Audit, Binding, Connection, Continuation, Credential,
-		Delegation, Email, Group, GroupMembership, Holder, Host, HostProof, Identity,
-		Link, MailDomain, Nomination, Outbox, Role, Session, Site, SiteMembership,
-		Team, TeamMembership, Tenant []ent.Interceptor
+		Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host,
+		HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, Session, Site,
+		SiteMembership, Team, TeamMembership, Tenant []ent.Interceptor
 	}
 )

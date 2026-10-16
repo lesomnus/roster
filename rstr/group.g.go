@@ -135,3 +135,68 @@ func GroupMembershipByMember(holder *HolderRef, group *GroupRef) *GroupMembershi
 func GroupMembershipGetByMember(holder *HolderRef, group *GroupRef) *GroupMembershipGetRequest {
 	return GroupMembershipGetRequest_builder{Ref: GroupMembershipByMember(holder, group)}.Build()
 }
+
+func (x *GroupExposureRef) Pick() *GroupExposureGetRequest {
+	return GroupExposureGetRequest_builder{Ref: x}.Build()
+}
+
+func (x *GroupExposure) Ref() *GroupExposureRef {
+	if v := x.GetId(); len(v) > 0 {
+		return GroupExposureById(v)
+	}
+	{
+		v1 := x.GetGroup()
+		v2 := x.GetClient()
+		if v1 != nil && len(v2) > 0 {
+			return GroupExposureByCarried(v1.Ref(), v2)
+		}
+	}
+
+	return nil
+}
+
+func (x *GroupExposure) Pick() *GroupExposureGetRequest {
+	return x.Ref().Pick()
+}
+
+func (x *GroupExposureRef) Picks(v *GroupExposure) bool {
+	switch x.WhichKey() {
+	case GroupExposureRef_Id_case:
+		return bytes.Equal(x.GetId(), v.GetId())
+	case GroupExposureRef_Carried_case:
+		x := x.GetCarried()
+		return (x.GetGroup().Picks(v.GetGroup())) &&
+			(x.GetClient() == v.GetClient())
+	default:
+		return false
+	}
+}
+
+func (x *GroupExposureGetRequest) WithSelect(f func(s *GroupExposureSelect)) *GroupExposureGetRequest {
+	if !x.HasSelect() {
+		x.SetSelect(&GroupExposureSelect{})
+	}
+	f(x.GetSelect())
+	return x
+}
+
+func GroupExposureById(v []byte) *GroupExposureRef {
+	x := &GroupExposureRef{}
+	x.SetId(v)
+	return x
+}
+
+func GroupExposureGetById(v []byte) *GroupExposureGetRequest {
+	return GroupExposureGetRequest_builder{Ref: GroupExposureById(v)}.Build()
+}
+
+func GroupExposureByCarried(group *GroupRef, client string) *GroupExposureRef {
+	x := &GroupExposureRefByCarried{}
+	x.SetGroup(group)
+	x.SetClient(client)
+	return GroupExposureRef_builder{Carried: x}.Build()
+}
+
+func GroupExposureGetByCarried(group *GroupRef, client string) *GroupExposureGetRequest {
+	return GroupExposureGetRequest_builder{Ref: GroupExposureByCarried(group, client)}.Build()
+}

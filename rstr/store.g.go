@@ -38,6 +38,7 @@ type Server interface {
 	Site() SiteServiceServer
 	Group() GroupServiceServer
 	GroupMembership() GroupMembershipServiceServer
+	GroupExposure() GroupExposureServiceServer
 	Host() HostServiceServer
 	MailDomain() MailDomainServiceServer
 	HostProof() HostProofServiceServer
@@ -71,6 +72,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterSiteServiceServer(g, s.Site())
 	RegisterGroupServiceServer(g, s.Group())
 	RegisterGroupMembershipServiceServer(g, s.GroupMembership())
+	RegisterGroupExposureServiceServer(g, s.GroupExposure())
 	RegisterHostServiceServer(g, s.Host())
 	RegisterMailDomainServiceServer(g, s.MailDomain())
 	RegisterHostProofServiceServer(g, s.HostProof())
@@ -100,6 +102,7 @@ type UnimplementedServer struct {
 	SiteServer            SiteServiceServer
 	GroupServer           GroupServiceServer
 	GroupMembershipServer GroupMembershipServiceServer
+	GroupExposureServer   GroupExposureServiceServer
 	HostServer            HostServiceServer
 	MailDomainServer      MailDomainServiceServer
 	HostProofServer       HostProofServiceServer
@@ -139,6 +142,9 @@ func (UnimplementedServer) Site() SiteServiceServer   { return UnimplementedSite
 func (UnimplementedServer) Group() GroupServiceServer { return UnimplementedGroupServiceServer{} }
 func (UnimplementedServer) GroupMembership() GroupMembershipServiceServer {
 	return UnimplementedGroupMembershipServiceServer{}
+}
+func (UnimplementedServer) GroupExposure() GroupExposureServiceServer {
+	return UnimplementedGroupExposureServiceServer{}
 }
 func (UnimplementedServer) Host() HostServiceServer { return UnimplementedHostServiceServer{} }
 func (UnimplementedServer) MailDomain() MailDomainServiceServer {
@@ -180,6 +186,7 @@ type StaticServer struct {
 	SiteServer            SiteServiceServer
 	GroupServer           GroupServiceServer
 	GroupMembershipServer GroupMembershipServiceServer
+	GroupExposureServer   GroupExposureServiceServer
 	HostServer            HostServiceServer
 	MailDomainServer      MailDomainServiceServer
 	HostProofServer       HostProofServiceServer
@@ -208,6 +215,7 @@ func (s StaticServer) Delegation() DelegationServiceServer           { return s.
 func (s StaticServer) Site() SiteServiceServer                       { return s.SiteServer }
 func (s StaticServer) Group() GroupServiceServer                     { return s.GroupServer }
 func (s StaticServer) GroupMembership() GroupMembershipServiceServer { return s.GroupMembershipServer }
+func (s StaticServer) GroupExposure() GroupExposureServiceServer     { return s.GroupExposureServer }
 func (s StaticServer) Host() HostServiceServer                       { return s.HostServer }
 func (s StaticServer) MailDomain() MailDomainServiceServer           { return s.MailDomainServer }
 func (s StaticServer) HostProof() HostProofServiceServer             { return s.HostProofServer }
@@ -236,6 +244,7 @@ type Client interface {
 	Site() SiteServiceClient
 	Group() GroupServiceClient
 	GroupMembership() GroupMembershipServiceClient
+	GroupExposure() GroupExposureServiceClient
 	Host() HostServiceClient
 	MailDomain() MailDomainServiceClient
 	HostProof() HostProofServiceClient
@@ -266,6 +275,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Site:            NewSiteServiceClient(c),
 		_Group:           NewGroupServiceClient(c),
 		_GroupMembership: NewGroupMembershipServiceClient(c),
+		_GroupExposure:   NewGroupExposureServiceClient(c),
 		_Host:            NewHostServiceClient(c),
 		_MailDomain:      NewMailDomainServiceClient(c),
 		_HostProof:       NewHostProofServiceClient(c),
@@ -296,6 +306,7 @@ type client struct {
 	_Site            SiteServiceClient
 	_Group           GroupServiceClient
 	_GroupMembership GroupMembershipServiceClient
+	_GroupExposure   GroupExposureServiceClient
 	_Host            HostServiceClient
 	_MailDomain      MailDomainServiceClient
 	_HostProof       HostProofServiceClient
@@ -324,6 +335,7 @@ func (c *client) Delegation() DelegationServiceClient           { return c._Dele
 func (c *client) Site() SiteServiceClient                       { return c._Site }
 func (c *client) Group() GroupServiceClient                     { return c._Group }
 func (c *client) GroupMembership() GroupMembershipServiceClient { return c._GroupMembership }
+func (c *client) GroupExposure() GroupExposureServiceClient     { return c._GroupExposure }
 func (c *client) Host() HostServiceClient                       { return c._Host }
 func (c *client) MailDomain() MailDomainServiceClient           { return c._MailDomain }
 func (c *client) HostProof() HostProofServiceClient             { return c._HostProof }

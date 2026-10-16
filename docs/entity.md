@@ -1,6 +1,6 @@
 # The entities
 
-roster is twenty-five tables and the arguments for why each is a table. This
+roster is twenty-six tables and the arguments for why each is a table. This
 file is the map: the shape they make, and a paragraph on each.
 
 It is **not** where the reasoning lives. Every entity is declared in a `.proto`
@@ -11,7 +11,7 @@ is short enough to read in one sitting and points at them.
 `docs/position.md` is what roster is for and where it stops. `docs/roadmap.md`
 is the order it was built in.
 
-## One story, told twenty-five times
+## One story, told twenty-six times
 
 Every entity below ends with a line or two about the same deployment, so that
 what a row is **next to** is visible from its own section. Read them in order
@@ -295,6 +295,23 @@ a group bound inside their own site and not to one bound across the tenant.
 > alice puts erin into **on-call**. She names no role and hands over every
 > binding written to that group, which is why this is refused unless alice
 > already holds all of it herself.
+
+### 📣 `GroupExposure` — a client whose tokens carry a group
+
+For the relying parties that cannot ask roster anything and authorize from a
+token alone -- Dependency-Track, kube-apiserver -- by mapping a list of names to
+their own permissions. A token for a client registered for the `groups` scope
+carries the person's groups that have a row here naming that client, and none
+of their other groups. Which group a client sees is a tenant administrator's
+row; who is in the group is 🫂 `GroupMembership`'s.
+
+A row and not a list on 👥 `Group`, for every membership's reason -- many to
+many, and a fact with a date -- and because a write cannot empty a list.
+
+> contoso's Dependency-Track grants on two names, **dtrack-viewers** and
+> **dtrack-triage**, so each of those groups has a row naming Dependency-Track's
+> client. erin is in **dtrack-triage** and in **on-call**: her token for
+> Dependency-Track says `groups: [dtrack-triage]`, and nothing about on-call.
 
 ### 🎽 `Team` — a group of people within one site
 
@@ -719,6 +736,7 @@ hard (gone).
 | 📜 `Role` | 15 | `tenant` edge | -- | soft | `proto/app/role.proto` |
 | 👥 `Group` | 16 | `tenant` edge | -- | soft | `proto/app/group.proto` |
 | 🫂 `GroupMembership` | 17 | via `holder.tenant` | -- | soft | `proto/app/group.proto` |
+| 📣 `GroupExposure` | 28 | via `group.tenant` | -- | soft | `proto/app/group.proto` |
 | 🔗 `Binding` | 18 | via `role.tenant` | -- | soft | `proto/app/role.proto` |
 | 🎫 `Delegation` | 19 | via `holder.tenant` | -- | soft | `proto/app/delegation.proto` |
 | 🌐 `Host` | 20 | `tenant` edge | -- | soft | `proto/app/host.proto` |

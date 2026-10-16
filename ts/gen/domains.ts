@@ -42,6 +42,9 @@ export const EmailDomain = 9
 /** The domain identifiers of roster.Group carry. */
 export const GroupDomain = 16
 
+/** The domain identifiers of roster.GroupExposure carry. */
+export const GroupExposureDomain = 28
+
 /** The domain identifiers of roster.GroupMembership carry. */
 export const GroupMembershipDomain = 17
 
@@ -102,6 +105,7 @@ pdid.register("roster.Credential", CredentialDomain, "credential")
 pdid.register("roster.Delegation", DelegationDomain, "delegation")
 pdid.register("roster.Email", EmailDomain, "email")
 pdid.register("roster.Group", GroupDomain, "group")
+pdid.register("roster.GroupExposure", GroupExposureDomain, "group-exposure")
 pdid.register("roster.GroupMembership", GroupMembershipDomain, "group-membership")
 pdid.register("roster.Holder", HolderDomain, "holder")
 pdid.register("roster.Host", HostDomain, "host")

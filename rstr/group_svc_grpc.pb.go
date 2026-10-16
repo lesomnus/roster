@@ -626,3 +626,307 @@ var GroupMembershipService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "app/group_svc.g.proto",
 }
+
+const (
+	GroupExposureService_Add_FullMethodName   = "/roster.GroupExposureService/Add"
+	GroupExposureService_Get_FullMethodName   = "/roster.GroupExposureService/Get"
+	GroupExposureService_Patch_FullMethodName = "/roster.GroupExposureService/Patch"
+	GroupExposureService_Apply_FullMethodName = "/roster.GroupExposureService/Apply"
+	GroupExposureService_Erase_FullMethodName = "/roster.GroupExposureService/Erase"
+	GroupExposureService_List_FullMethodName  = "/roster.GroupExposureService/List"
+)
+
+// GroupExposureServiceClient is the client API for GroupExposureService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type GroupExposureServiceClient interface {
+	// Add creates a new GroupExposure
+	Add(ctx context.Context, in *GroupExposureAddRequest, opts ...grpc.CallOption) (*GroupExposure, error)
+	// Get retrieves a GroupExposure
+	Get(ctx context.Context, in *GroupExposureGetRequest, opts ...grpc.CallOption) (*GroupExposure, error)
+	// Patch updates an existing GroupExposure
+	Patch(ctx context.Context, in *GroupExposurePatchRequest, opts ...grpc.CallOption) (*GroupExposure, error)
+	// Apply applies a patch document to an existing GroupExposure
+	Apply(ctx context.Context, in *GroupExposureApplyRequest, opts ...grpc.CallOption) (*GroupExposure, error)
+	// Erase deletes a GroupExposure
+	Erase(ctx context.Context, in *GroupExposureRef, opts ...grpc.CallOption) (*GroupExposureEraseResponse, error)
+	// List reads GroupExposures a page at a time.
+	List(ctx context.Context, in *GroupExposureListRequest, opts ...grpc.CallOption) (*GroupExposureListResponse, error)
+}
+
+type groupExposureServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewGroupExposureServiceClient(cc grpc.ClientConnInterface) GroupExposureServiceClient {
+	return &groupExposureServiceClient{cc}
+}
+
+func (c *groupExposureServiceClient) Add(ctx context.Context, in *GroupExposureAddRequest, opts ...grpc.CallOption) (*GroupExposure, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GroupExposure)
+	err := c.cc.Invoke(ctx, GroupExposureService_Add_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *groupExposureServiceClient) Get(ctx context.Context, in *GroupExposureGetRequest, opts ...grpc.CallOption) (*GroupExposure, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GroupExposure)
+	err := c.cc.Invoke(ctx, GroupExposureService_Get_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *groupExposureServiceClient) Patch(ctx context.Context, in *GroupExposurePatchRequest, opts ...grpc.CallOption) (*GroupExposure, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GroupExposure)
+	err := c.cc.Invoke(ctx, GroupExposureService_Patch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *groupExposureServiceClient) Apply(ctx context.Context, in *GroupExposureApplyRequest, opts ...grpc.CallOption) (*GroupExposure, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GroupExposure)
+	err := c.cc.Invoke(ctx, GroupExposureService_Apply_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *groupExposureServiceClient) Erase(ctx context.Context, in *GroupExposureRef, opts ...grpc.CallOption) (*GroupExposureEraseResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GroupExposureEraseResponse)
+	err := c.cc.Invoke(ctx, GroupExposureService_Erase_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *groupExposureServiceClient) List(ctx context.Context, in *GroupExposureListRequest, opts ...grpc.CallOption) (*GroupExposureListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GroupExposureListResponse)
+	err := c.cc.Invoke(ctx, GroupExposureService_List_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GroupExposureServiceServer is the server API for GroupExposureService service.
+// All implementations must embed UnimplementedGroupExposureServiceServer
+// for forward compatibility.
+type GroupExposureServiceServer interface {
+	// Add creates a new GroupExposure
+	Add(context.Context, *GroupExposureAddRequest) (*GroupExposure, error)
+	// Get retrieves a GroupExposure
+	Get(context.Context, *GroupExposureGetRequest) (*GroupExposure, error)
+	// Patch updates an existing GroupExposure
+	Patch(context.Context, *GroupExposurePatchRequest) (*GroupExposure, error)
+	// Apply applies a patch document to an existing GroupExposure
+	Apply(context.Context, *GroupExposureApplyRequest) (*GroupExposure, error)
+	// Erase deletes a GroupExposure
+	Erase(context.Context, *GroupExposureRef) (*GroupExposureEraseResponse, error)
+	// List reads GroupExposures a page at a time.
+	List(context.Context, *GroupExposureListRequest) (*GroupExposureListResponse, error)
+	mustEmbedUnimplementedGroupExposureServiceServer()
+}
+
+// UnimplementedGroupExposureServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedGroupExposureServiceServer struct{}
+
+func (UnimplementedGroupExposureServiceServer) Add(context.Context, *GroupExposureAddRequest) (*GroupExposure, error) {
+	return nil, status.Error(codes.Unimplemented, "method Add not implemented")
+}
+func (UnimplementedGroupExposureServiceServer) Get(context.Context, *GroupExposureGetRequest) (*GroupExposure, error) {
+	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
+}
+func (UnimplementedGroupExposureServiceServer) Patch(context.Context, *GroupExposurePatchRequest) (*GroupExposure, error) {
+	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
+}
+func (UnimplementedGroupExposureServiceServer) Apply(context.Context, *GroupExposureApplyRequest) (*GroupExposure, error) {
+	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
+}
+func (UnimplementedGroupExposureServiceServer) Erase(context.Context, *GroupExposureRef) (*GroupExposureEraseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
+}
+func (UnimplementedGroupExposureServiceServer) List(context.Context, *GroupExposureListRequest) (*GroupExposureListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedGroupExposureServiceServer) mustEmbedUnimplementedGroupExposureServiceServer() {}
+func (UnimplementedGroupExposureServiceServer) testEmbeddedByValue()                              {}
+
+// UnsafeGroupExposureServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to GroupExposureServiceServer will
+// result in compilation errors.
+type UnsafeGroupExposureServiceServer interface {
+	mustEmbedUnimplementedGroupExposureServiceServer()
+}
+
+func RegisterGroupExposureServiceServer(s grpc.ServiceRegistrar, srv GroupExposureServiceServer) {
+	// If the following call panics, it indicates UnimplementedGroupExposureServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&GroupExposureService_ServiceDesc, srv)
+}
+
+func _GroupExposureService_Add_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GroupExposureAddRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupExposureServiceServer).Add(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupExposureService_Add_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupExposureServiceServer).Add(ctx, req.(*GroupExposureAddRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GroupExposureService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GroupExposureGetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupExposureServiceServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupExposureService_Get_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupExposureServiceServer).Get(ctx, req.(*GroupExposureGetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GroupExposureService_Patch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GroupExposurePatchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupExposureServiceServer).Patch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupExposureService_Patch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupExposureServiceServer).Patch(ctx, req.(*GroupExposurePatchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GroupExposureService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GroupExposureApplyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupExposureServiceServer).Apply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupExposureService_Apply_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupExposureServiceServer).Apply(ctx, req.(*GroupExposureApplyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GroupExposureService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GroupExposureRef)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupExposureServiceServer).Erase(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupExposureService_Erase_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupExposureServiceServer).Erase(ctx, req.(*GroupExposureRef))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GroupExposureService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GroupExposureListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupExposureServiceServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupExposureService_List_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupExposureServiceServer).List(ctx, req.(*GroupExposureListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// GroupExposureService_ServiceDesc is the grpc.ServiceDesc for GroupExposureService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var GroupExposureService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "roster.GroupExposureService",
+	HandlerType: (*GroupExposureServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Add",
+			Handler:    _GroupExposureService_Add_Handler,
+		},
+		{
+			MethodName: "Get",
+			Handler:    _GroupExposureService_Get_Handler,
+		},
+		{
+			MethodName: "Patch",
+			Handler:    _GroupExposureService_Patch_Handler,
+		},
+		{
+			MethodName: "Apply",
+			Handler:    _GroupExposureService_Apply_Handler,
+		},
+		{
+			MethodName: "Erase",
+			Handler:    _GroupExposureService_Erase_Handler,
+		},
+		{
+			MethodName: "List",
+			Handler:    _GroupExposureService_List_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "app/group_svc.g.proto",
+}

@@ -60,3 +60,21 @@ func (e *GroupMembership) Proto() *rstr.GroupMembership {
 	x.SetDateCreated(timestamppb.New(e.DateCreated))
 	return x
 }
+func (e *GroupExposure) Proto() *rstr.GroupExposure {
+	x := &rstr.GroupExposure{}
+	x.SetId(e.Id[:])
+	if v := e.Edges.Group; v != nil {
+		x.SetGroup(v.Proto())
+	} else if v := e.GroupId; v != *new(uuid.UUID) {
+		r := &rstr.Group{}
+		r.SetId(v[:])
+		x.SetGroup(r)
+	}
+	x.SetClient(e.Client)
+	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
+	if e.DateErased != nil {
+		x.SetDateErased(timestamppb.New(*e.DateErased))
+	}
+	x.SetDateCreated(timestamppb.New(e.DateCreated))
+	return x
+}

@@ -491,6 +491,206 @@ func (b0 GroupMembership_builder) Build() *GroupMembership {
 	return m0
 }
 
+// GroupExposure is a client whose tokens carry a [Group]: the `client_id` of a
+// relying party that grants on the group, by its alias.
+//
+// # Why a token carries a group at all
+//
+// Most of what reads a roster token asks roster what somebody may do
+// (`HolderService.Reaches`), and a group is never in a token for them. Some
+// relying parties cannot ask anything -- Dependency-Track, kube-apiserver --
+// and authorize from a token's claims alone: a list of names, mapped to their
+// own permissions. For them, and only for a client registered for the
+// `groups` scope, a token carries the person's groups that name that client
+// here, as `groups`, and nothing else of their membership.
+//
+// So a group reaches a client because a tenant's administrator said it does,
+// one row per client. Its managers decide who is in it (`GroupMembership`), and
+// not who sees it.
+//
+// # A row rather than a list on the group
+//
+// The reason every membership here is one: it is many-to-many, and a fact with
+// a date of its own -- the trail says who showed which group to which relying
+// party, and when. And a list is what a write could not empty: a generated
+// `Patch` leaves an empty list as it was, and a row is erased.
+type GroupExposure struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Group       *Group                 `protobuf:"bytes,2,opt,name=group"`
+	xxx_hidden_Client      string                 `protobuf:"bytes,8,opt,name=client"`
+	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *GroupExposure) Reset() {
+	*x = GroupExposure{}
+	mi := &file_app_group_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupExposure) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupExposure) ProtoMessage() {}
+
+func (x *GroupExposure) ProtoReflect() protoreflect.Message {
+	mi := &file_app_group_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GroupExposure) GetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *GroupExposure) GetGroup() *Group {
+	if x != nil {
+		return x.xxx_hidden_Group
+	}
+	return nil
+}
+
+func (x *GroupExposure) GetClient() string {
+	if x != nil {
+		return x.xxx_hidden_Client
+	}
+	return ""
+}
+
+func (x *GroupExposure) GetDateUpdated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateUpdated
+	}
+	return nil
+}
+
+func (x *GroupExposure) GetDateErased() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateErased
+	}
+	return nil
+}
+
+func (x *GroupExposure) GetDateCreated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateCreated
+	}
+	return nil
+}
+
+func (x *GroupExposure) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Id = v
+}
+
+func (x *GroupExposure) SetGroup(v *Group) {
+	x.xxx_hidden_Group = v
+}
+
+func (x *GroupExposure) SetClient(v string) {
+	x.xxx_hidden_Client = v
+}
+
+func (x *GroupExposure) SetDateUpdated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateUpdated = v
+}
+
+func (x *GroupExposure) SetDateErased(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateErased = v
+}
+
+func (x *GroupExposure) SetDateCreated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateCreated = v
+}
+
+func (x *GroupExposure) HasGroup() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Group != nil
+}
+
+func (x *GroupExposure) HasDateUpdated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateUpdated != nil
+}
+
+func (x *GroupExposure) HasDateErased() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateErased != nil
+}
+
+func (x *GroupExposure) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateCreated != nil
+}
+
+func (x *GroupExposure) ClearGroup() {
+	x.xxx_hidden_Group = nil
+}
+
+func (x *GroupExposure) ClearDateUpdated() {
+	x.xxx_hidden_DateUpdated = nil
+}
+
+func (x *GroupExposure) ClearDateErased() {
+	x.xxx_hidden_DateErased = nil
+}
+
+func (x *GroupExposure) ClearDateCreated() {
+	x.xxx_hidden_DateCreated = nil
+}
+
+type GroupExposure_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Id    []byte
+	Group *Group
+	// The client, as the issuer names it: what a token's `azp` and an ID
+	// token's `aud` say. A string because the client is the issuer's row and not
+	// roster's.
+	Client      string
+	DateUpdated *timestamppb.Timestamp
+	DateErased  *timestamppb.Timestamp
+	DateCreated *timestamppb.Timestamp
+}
+
+func (b0 GroupExposure_builder) Build() *GroupExposure {
+	m0 := &GroupExposure{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Group = b.Group
+	x.xxx_hidden_Client = b.Client
+	x.xxx_hidden_DateUpdated = b.DateUpdated
+	x.xxx_hidden_DateErased = b.DateErased
+	x.xxx_hidden_DateCreated = b.DateCreated
+	return m0
+}
+
 var File_app_group_proto protoreflect.FileDescriptor
 
 const file_app_group_proto_rawDesc = "" +
@@ -543,33 +743,60 @@ const file_app_group_proto_rawDesc = "" +
 	"\x03ref\x1a\b\n" +
 	"\x06holder\x1a\a\n" +
 	"\x05group \x14(d\"\x0f\n" +
-	"\rholder.tenantB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\rholder.tenant\"\xec\x03\n" +
+	"\rGroupExposure\x12\x1b\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12+\n" +
+	"\x05group\x18\x02 \x01(\v2\r.roster.GroupB\x06\xf2\x82\x16\x02@\x01R\x05group\x12\x1e\n" +
+	"\x06client\x18\b \x01(\tB\x06\xea\x82\x16\x02@\x01R\x06client\x12F\n" +
+	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
+	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
+	"dateErased\x12H\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\x98\x01\xca\xfc\x15J\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x10\x0f\x1a\x06\n" +
+	"\x02id\x10\x01\x1a\"\x12\acarried\x1a\t\n" +
+	"\x05group\x10\x02\x1a\n" +
+	"\n" +
+	"\x06client\x10\b0\x01\x8a\xbb\x16F\b\x1c22\n" +
+	"\x12\n" +
+	"\x10\n" +
+	"\fdate_created\x10\x0f\n" +
+	"\b\n" +
+	"\x06\n" +
+	"\x02id\x10\x01\x1a\x05\n" +
+	"\x03ref\x1a\a\n" +
+	"\x05group \x14(d\"\x0e\n" +
+	"\fgroup.tenantB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_group_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_app_group_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_app_group_proto_goTypes = []any{
 	(*Group)(nil),                 // 0: roster.Group
 	(*GroupMembership)(nil),       // 1: roster.GroupMembership
-	(*Tenant)(nil),                // 2: roster.Tenant
-	(*Site)(nil),                  // 3: roster.Site
-	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
-	(*Holder)(nil),                // 5: roster.Holder
+	(*GroupExposure)(nil),         // 2: roster.GroupExposure
+	(*Tenant)(nil),                // 3: roster.Tenant
+	(*Site)(nil),                  // 4: roster.Site
+	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
+	(*Holder)(nil),                // 6: roster.Holder
 }
 var file_app_group_proto_depIdxs = []int32{
-	2,  // 0: roster.Group.tenant:type_name -> roster.Tenant
-	3,  // 1: roster.Group.site:type_name -> roster.Site
-	4,  // 2: roster.Group.date_updated:type_name -> google.protobuf.Timestamp
-	4,  // 3: roster.Group.date_erased:type_name -> google.protobuf.Timestamp
-	4,  // 4: roster.Group.date_created:type_name -> google.protobuf.Timestamp
-	5,  // 5: roster.GroupMembership.holder:type_name -> roster.Holder
+	3,  // 0: roster.Group.tenant:type_name -> roster.Tenant
+	4,  // 1: roster.Group.site:type_name -> roster.Site
+	5,  // 2: roster.Group.date_updated:type_name -> google.protobuf.Timestamp
+	5,  // 3: roster.Group.date_erased:type_name -> google.protobuf.Timestamp
+	5,  // 4: roster.Group.date_created:type_name -> google.protobuf.Timestamp
+	6,  // 5: roster.GroupMembership.holder:type_name -> roster.Holder
 	0,  // 6: roster.GroupMembership.group:type_name -> roster.Group
-	4,  // 7: roster.GroupMembership.date_updated:type_name -> google.protobuf.Timestamp
-	4,  // 8: roster.GroupMembership.date_erased:type_name -> google.protobuf.Timestamp
-	4,  // 9: roster.GroupMembership.date_created:type_name -> google.protobuf.Timestamp
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	5,  // 7: roster.GroupMembership.date_updated:type_name -> google.protobuf.Timestamp
+	5,  // 8: roster.GroupMembership.date_erased:type_name -> google.protobuf.Timestamp
+	5,  // 9: roster.GroupMembership.date_created:type_name -> google.protobuf.Timestamp
+	0,  // 10: roster.GroupExposure.group:type_name -> roster.Group
+	5,  // 11: roster.GroupExposure.date_updated:type_name -> google.protobuf.Timestamp
+	5,  // 12: roster.GroupExposure.date_erased:type_name -> google.protobuf.Timestamp
+	5,  // 13: roster.GroupExposure.date_created:type_name -> google.protobuf.Timestamp
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_app_group_proto_init() }
@@ -586,7 +813,7 @@ func file_app_group_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_group_proto_rawDesc), len(file_app_group_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

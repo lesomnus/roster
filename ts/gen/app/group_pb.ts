@@ -21,7 +21,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/group.proto.
  */
 export const file_app_group: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvZ3JvdXAucHJvdG8SBnJvc3RlciLcAwoFR3JvdXASFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIkCgRzaXRlGAMgASgLMgwucm9zdGVyLlNpdGVCCPKCFgQ4AUABEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6jgHK/BVHEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxY/CBAyOwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGdGVuYW50GgYKBHNpdGUgFChkIs8DCg9Hcm91cE1lbWJlcnNoaXASFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIkCgVncm91cBgIIAEoCzINLnJvc3Rlci5Hcm91cEIG8oIWAkABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqiAcr8FUkSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARohEgZtZW1iZXIaCgoGaG9sZGVyEAIaCQoFZ3JvdXAQCDABirsWUQgRMjwKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBmhvbGRlchoHCgVncm91cCAUKGQiDwoNaG9sZGVyLnRlbmFudEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_tenant, file_roster_payday_holder, file_app_site, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg9hcHAvZ3JvdXAucHJvdG8SBnJvc3RlciLcAwoFR3JvdXASFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIkCgRzaXRlGAMgASgLMgwucm9zdGVyLlNpdGVCCPKCFgQ4AUABEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6jgHK/BVHEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxY/CBAyOwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGdGVuYW50GgYKBHNpdGUgFChkIs8DCg9Hcm91cE1lbWJlcnNoaXASFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIkCgVncm91cBgIIAEoCzINLnJvc3Rlci5Hcm91cEIG8oIWAkABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqiAcr8FUkSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARohEgZtZW1iZXIaCgoGaG9sZGVyEAIaCQoFZ3JvdXAQCDABirsWUQgRMjwKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBmhvbGRlchoHCgVncm91cCAUKGQiDwoNaG9sZGVyLnRlbmFudCKzAwoNR3JvdXBFeHBvc3VyZRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJAoFZ3JvdXAYAiABKAsyDS5yb3N0ZXIuR3JvdXBCBvKCFgJAARIWCgZjbGllbnQYCCABKAlCBuqCFgJAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6mAHK/BVKEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaIhIHY2FycmllZBoJCgVncm91cBACGgoKBmNsaWVudBAIMAGKuxZGCBwyMgoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaBwoFZ3JvdXAgFChkIg4KDGdyb3VwLnRlbmFudEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_tenant, file_roster_payday_holder, file_app_site, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Group is a named set of people, and nothing else.
@@ -180,4 +180,74 @@ export type GroupMembership = Message<"roster.GroupMembership"> & {
  */
 export const GroupMembershipSchema: GenMessage<GroupMembership> = /*@__PURE__*/
   messageDesc(file_app_group, 1);
+
+/**
+ * GroupExposure is a client whose tokens carry a [Group]: the `client_id` of a
+ * relying party that grants on the group, by its alias.
+ *
+ * # Why a token carries a group at all
+ *
+ * Most of what reads a roster token asks roster what somebody may do
+ * (`HolderService.Reaches`), and a group is never in a token for them. Some
+ * relying parties cannot ask anything -- Dependency-Track, kube-apiserver --
+ * and authorize from a token's claims alone: a list of names, mapped to their
+ * own permissions. For them, and only for a client registered for the
+ * `groups` scope, a token carries the person's groups that name that client
+ * here, as `groups`, and nothing else of their membership.
+ *
+ * So a group reaches a client because a tenant's administrator said it does,
+ * one row per client. Its managers decide who is in it (`GroupMembership`), and
+ * not who sees it.
+ *
+ * # A row rather than a list on the group
+ *
+ * The reason every membership here is one: it is many-to-many, and a fact with
+ * a date of its own -- the trail says who showed which group to which relying
+ * party, and when. And a list is what a write could not empty: a generated
+ * `Patch` leaves an empty list as it was, and a row is erased.
+ *
+ * @generated from message roster.GroupExposure
+ */
+export type GroupExposure = Message<"roster.GroupExposure"> & {
+  /**
+   * @generated from field: bytes id = 1;
+   */
+  id: Uint8Array;
+
+  /**
+   * @generated from field: roster.Group group = 2;
+   */
+  group?: Group | undefined;
+
+  /**
+   * The client, as the issuer names it: what a token's `azp` and an ID
+   * token's `aud` say. A string because the client is the issuer's row and not
+   * roster's.
+   *
+   * @generated from field: string client = 8;
+   */
+  client: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_updated = 13;
+   */
+  dateUpdated?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_erased = 14;
+   */
+  dateErased?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_created = 15;
+   */
+  dateCreated?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.GroupExposure.
+ * Use `create(GroupExposureSchema)` to create a new message.
+ */
+export const GroupExposureSchema: GenMessage<GroupExposure> = /*@__PURE__*/
+  messageDesc(file_app_group, 2);
 
