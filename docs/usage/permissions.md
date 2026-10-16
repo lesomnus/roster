@@ -201,9 +201,18 @@ checked *is she on the ops team* would be granting something any holder of
 `TeamMembership.Add` could hand out, past the rule above.
 
 A client that can only grant on membership -- an LDAP client reading `memberOf`
-([ldap.md](../ldap.md)), a proxy reading a token's `groups` -- gets the same
-protection one way: **bind the group to a role naming what it grants**, even
-though no RPC by that name exists:
+([ldap.md](../ldap.md)), a relying party reading a token's `groups`
+([login.md](../login.md) § *A relying party that grants on groups*) -- gets a
+guard one of two ways.
+
+**Give the group managers**, and decide who manages it (§ *Its managers*).
+Only they, and whoever may change every group's members, put somebody in; a
+token carries the group only to a client a `GroupExposure` shows it to. The
+membership is then guarded by who may change it, and what it grants is the
+relying party's mapping.
+
+**Or bind the group to a role naming what it grants**, even though no RPC by
+that name exists, and the membership is guarded like a binding:
 
 ```sh
 roster role add @newco/jenkins-admin '{"methods": ["/ext.jenkins.Admin/*"]}'
@@ -218,9 +227,12 @@ Joining that group is then refused to anybody who does not hold
 whose role from `tenant add` is `/roster.*/*` and covers no other app's methods:
 somebody has to be bound the external permission -- or a pattern over it -- before
 they can hand it out, and a roster operator on the admin listener is who starts
-that. The same is true of every app's own methods, `/hday.kamino.*/*` included. A
-team carries no such binding, so map an external permission to a group and never
-to a team.
+that. The same is true of every app's own methods, `/hday.kamino.*/*` included.
+
+The two differ in who may hand the permission out: a group's managers, appointed
+by somebody holding the membership writes across the tenant -- or only somebody
+who holds the permission itself. A team carries neither guard, so map an
+external permission to a group and never to a team.
 
 ## You cannot hand out what you do not hold
 

@@ -180,7 +180,8 @@ top of this page, so the app-side code barely moves: `authsession` asks for a
 the challenge, draws the same `frontdoor` forms **and the operator's providers**,
 and answers `acceptLoginRequest{subject}` with a `Holder.id` either way. The
 consent hop then reads the person once, *as them*, and puts `preferred_username`,
-`name`, `teams` and a **verified** address into the `id_token`, each only if the
+`name`, `teams`, a **verified** address and -- for a relying party that grants on
+names -- the `groups` shown to that client into the `id_token`, each only if the
 client asked for the scope that carries it. What it never puts there is `methods`
 -- roster's answer about roster, which a product holding a copy of would hold a
 stale one.
@@ -293,7 +294,7 @@ sequenceDiagram
 | the first form | `VouchService.Delegate` | 204 signed in · 200 one factor proved, another to prove · 401 everything else. `Delegate` and not `Verify` because a yes has to come back with the `rd_` the consent hop reads `Me.Get` with |
 | the second form | `VouchService.Delegate` with the continuation | the app holds no half-signed-in state: the continuation is roster's, short-lived and single-use |
 | the accept | `PUT …/login/accept` | **`subject` is the `Holder.id`.** Nobody is named until every form is answered -- accepting after the first would hand a product a token for somebody who proved half of what the deployment asked for |
-| the claims | `MeService.Get`, as the person | `preferred_username`, `name`, `teams`, a **verified** address -- each only if the client asked for the scope that carries it. Never `methods`. `teams` is the aliases of the person's teams -- an organisation's structure, and nothing a product should grant on. It was `groups`, which relying parties read as permission groups; roster's own `Group`s are not in a token at all -- what somebody may do is `HolderService/Reaches` ([apps.md](apps.md)) |
+| the claims | `MeService.Get`, as the person | `preferred_username`, `name`, `teams`, a **verified** address, `groups` -- each only if the client asked for the scope that carries it. Never `methods`. `teams` is the aliases of the person's teams -- an organisation's structure, and nothing a product should grant on. It was `groups`, which relying parties read as permission groups; roster's own `Group`s are in a token only as `groups`, and only the ones a `GroupExposure` shows to the client the token is for (§ *A relying party that grants on groups*) -- what somebody may do is otherwise `HolderService/Reaches` ([apps.md](apps.md)) |
 | the grant | `PUT …/consent/accept` | `consent: skip` grants and draws nothing; `ask` draws the screen and `POST /consent` is its answer |
 
 The delegation this app minted is spent at the grant and the cookie is ended there
@@ -461,6 +462,41 @@ And the rules, which are the part that is easy to get wrong and the reason
 - **`POST /accept` may not be left out.** It is the hop that turns a finished
   sign-in into Hydra's answer; a page without it signs somebody in and leaves the
   flow hanging with nothing on screen to say so.
+
+### A relying party that grants on groups
+
+Some relying parties cannot ask roster what somebody may do: Dependency-Track,
+kube-apiserver. They read a list of names out of the token and map each to
+permissions of their own. For them the token carries `groups`:
+
+- **Only for a client registered for the `groups` scope** -- in its Hydra
+  registration, beside `openid` -- which Hydra refuses to grant to any other.
+- **Only the groups shown to that client**: a `GroupExposure` naming the group
+  and the client's id, which a tenant's administrator writes
+  (`roster group-exposure add`). None of the person's other groups, whatever
+  they are in.
+- **Present whenever the scope is**, and empty when none of their groups is
+  shown to the client, so that a relying party syncing its teams from the claim
+  takes somebody out of the last one.
+
+Who is in such a group is its managers' and the tenant's administrator's
+([usage/permissions.md](usage/permissions.md) § *Its managers*), and what it
+lets somebody do is the relying party's mapping, kept there. The claim is the
+group's alias, which nothing over the wire renames -- a group has no `Update`,
+and `Patch` is closed -- so a mapping written against it stays true.
+
+**It is a copy, read at consent.** A refresh reuses it -- nothing recomputes a
+token's claims at a refresh yet -- so a name taken away reaches the relying
+party at the next sign-in. Dependency-Track re-syncs a person's teams at each
+of theirs, which bounds it; for kube-apiserver, whose clients refresh, give the
+client a short refresh lifetime in its Hydra registration. A suspension is
+not this: it ends the person's sessions and grants at Hydra, refresh included,
+and a token already issued verifies until it expires.
+
+**kube-apiserver**: map the claim with a prefix
+(`claimMappings.groups.prefix: "roster:"`), so that a group's name can never be
+one the cluster gives meaning to on its own. roster's aliases cannot spell
+`system:` anyway; the prefix keeps it so whatever an alias may hold later.
 
 ### The app's own session, and why it is not shorter
 

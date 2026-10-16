@@ -33,7 +33,14 @@ import (
 // *this is their email* -- `email_verified: false` reads as a smaller claim
 // than it is, because most consumers of it do not branch. So the claim is the
 // verified address, or there is no claim.
-func claimsOf(v *rstr.MeGetResponse, scope []string) map[string]any {
+//
+// **Any group not shown to this client.** `groups` is for the relying parties
+// that cannot ask roster and grant on a list of names -- Dependency-Track,
+// kube-apiserver -- and it carries the person's groups that a `GroupExposure`
+// shows to `client`, the one the token is for. Never the rest of their
+// membership: a client learns the groups a tenant's administrator chose for
+// it, whatever else the person is in.
+func claimsOf(v *rstr.MeGetResponse, scope []string, client string) map[string]any {
 	claims := map[string]any{}
 
 	if slices.Contains(scope, "profile") {
@@ -45,8 +52,8 @@ func claimsOf(v *rstr.MeGetResponse, scope []string) map[string]any {
 		// `teams`, and not `groups`. It was `groups`, which every relying
 		// party reads as *permission groups* -- Keycloak's, Okta's, Entra's --
 		// and a team is an organisation's structure, nothing to grant on. What
-		// somebody may do is `HolderService/Reaches`; roster's own `Group`s
-		// are not in a token at all.
+		// somebody may do is `HolderService/Reaches`, and `groups`, below, is
+		// roster's own `Group`s, for the relying parties that cannot ask.
 		teams := []string{}
 		for _, t := range v.GetTeams() {
 			teams = append(teams, t.GetAlias())
@@ -54,6 +61,19 @@ func claimsOf(v *rstr.MeGetResponse, scope []string) map[string]any {
 		if len(teams) > 0 {
 			claims["teams"] = teams
 		}
+	}
+
+	// Present whenever the scope is, and empty when none of their groups is
+	// shown to this client: a relying party that syncs its teams from the
+	// claim takes somebody out of the last one with it.
+	if slices.Contains(scope, "groups") {
+		groups := []string{}
+		for _, g := range v.GetGroups() {
+			if slices.Contains(g.GetClients(), client) {
+				groups = append(groups, g.GetAlias())
+			}
+		}
+		claims["groups"] = groups
 	}
 
 	if slices.Contains(scope, "email") {

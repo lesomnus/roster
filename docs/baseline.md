@@ -67,6 +67,7 @@ the page, one of the two is wrong and both are load-bearing.
 | patterns match whole segments and are evaluated, never expanded: `/roster.HolderService/*` is one service, `/roster.*/*` survives an upgrade, a partial segment opens nothing | `TestARoleMayNameAServiceOrAPackage` |
 | nobody grants what they do not hold, by any door — a role, a binding, a membership, a patch | `TestNobodyGrantsWhatTheyDoNotHold` · `TestNobodyWidensARoleTheyHold` · `TestNobodyAttachesARoleByPatchingAMembership` |
 | nobody writes a way into an account wider than their own — a password, a factor, a key, an unlock | `TestNobodyWritesTheCredentialOfSomebodyWiderThanThey` · `TestNobodyMintsAKeyOnSomebodyElsesHolder` · `TestUnlockIsHeldToTheRuleResetIs` |
+| a group's managers change its members and no other group's: a member is not a manager, a manager does not appoint another, a role held in a group names only its membership writes and no site, a group bound to a role still asks whoever joins somebody to hold it, and what a manager holds counts where `mayReach` and `Reaches` ask | `TestAGroupsManagersDecideItsMembers` · `TestARoleHeldInAGroupReachesNoFurther` · `TestAGroupBoundToARoleStillAsksWhoeverJoinsSomebody` · `TestAGroupsManagerIsNoWayInForSomebodyHoldingLess` · `TestAManagerReachesTheirGroupsWritesAndNotEverywhere` |
 
 ## Keys
 
@@ -188,6 +189,7 @@ the page, one of the two is wrong and both are load-bearing.
 
 | the promise | pinned by |
 | --- | --- |
+| a client registered for `groups` is told the person's groups a `GroupExposure` shows to **it**, and none of the rest -- present whenever the scope is; `MeService.Get` answers with every group, the clients each is shown to and what they manage, in the order of their aliases; one row per client, refused twice and for what no issuer calls a client | `TestATokenCarriesTheGroupsShownToItsClient` · `TestGroupsAreTheOnesShownToTheClient` · `TestMeSaysWhichGroupsAndWhoIsShownEach` · `TestAGroupIsShownToTheClientsItNames` |
 | a browser Hydra sends here signs in and Hydra is told a `Holder.id`, and the token carries what the client's scope asked for and never roster's method list — **on every flow, including the ones Hydra answers without a form**, which is most of them wherever `remember` is set | `TestALoginAppTellsHydraWhoSignedIn` · `TestASecondFlowCarriesTheClaimsToo` · `scripts/hydra.sh` |
 | which operator a flow is about comes from the challenge's OAuth client and not from a hostname: a flow raised for one client signs in that operator's person and not another's, even where both have the same alias and the same password; several clients are one operator | `TestAFlowReachesOnlyItsOwnOperator` · `TestASecondClientIsTheSameOperator` |
 | the consent hop is what a deployment said: `skip` grants what the client asked for and draws nothing, `ask` draws a screen and grants nothing until somebody says so — and a no is `access_denied` rather than a redirect that never comes | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` |
