@@ -458,6 +458,7 @@ type MeGetResponse struct {
 	xxx_hidden_Credentials        *[]*SignInCredential   `protobuf:"bytes,14,rep,name=credentials"`
 	xxx_hidden_Keys               *[]*SignInKey          `protobuf:"bytes,15,rep,name=keys"`
 	xxx_hidden_ProvisionedThrough string                 `protobuf:"bytes,16,opt,name=provisioned_through,json=provisionedThrough"`
+	xxx_hidden_Groups             *[]*MeGroup            `protobuf:"bytes,17,rep,name=groups"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -588,6 +589,15 @@ func (x *MeGetResponse) GetProvisionedThrough() string {
 	return ""
 }
 
+func (x *MeGetResponse) GetGroups() []*MeGroup {
+	if x != nil {
+		if x.xxx_hidden_Groups != nil {
+			return *x.xxx_hidden_Groups
+		}
+	}
+	return nil
+}
+
 func (x *MeGetResponse) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -644,6 +654,10 @@ func (x *MeGetResponse) SetKeys(v []*SignInKey) {
 
 func (x *MeGetResponse) SetProvisionedThrough(v string) {
 	x.xxx_hidden_ProvisionedThrough = v
+}
+
+func (x *MeGetResponse) SetGroups(v []*MeGroup) {
+	x.xxx_hidden_Groups = &v
 }
 
 type MeGetResponse_builder struct {
@@ -720,6 +734,14 @@ type MeGetResponse_builder struct {
 	// signs in through it is the directory's: it says when they leave, so `Leave`
 	// refuses them, and a page offers it to nobody this names.
 	ProvisionedThrough string
+	// The groups they are in, each with the clients it is shown to
+	// (`GroupExposure`) and the role they hold in it -- which makes them its
+	// manager.
+	//
+	// What a front door puts in a token for a client registered for the
+	// `groups` scope is read from here: the groups that name that client, and no
+	// other (`login/claims.go`).
+	Groups []*MeGroup
 }
 
 func (b0 MeGetResponse_builder) Build() *MeGetResponse {
@@ -739,6 +761,7 @@ func (b0 MeGetResponse_builder) Build() *MeGetResponse {
 	x.xxx_hidden_Credentials = &b.Credentials
 	x.xxx_hidden_Keys = &b.Keys
 	x.xxx_hidden_ProvisionedThrough = b.ProvisionedThrough
+	x.xxx_hidden_Groups = &b.Groups
 	return m0
 }
 
@@ -1244,6 +1267,124 @@ func (b0 MeEmail_builder) Build() *MeEmail {
 	return m0
 }
 
+type MeGroup struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id      []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Alias   string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Name    string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Clients []string               `protobuf:"bytes,8,rep,name=clients"`
+	xxx_hidden_Role    string                 `protobuf:"bytes,9,opt,name=role"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *MeGroup) Reset() {
+	*x = MeGroup{}
+	mi := &file_app_me_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MeGroup) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MeGroup) ProtoMessage() {}
+
+func (x *MeGroup) ProtoReflect() protoreflect.Message {
+	mi := &file_app_me_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *MeGroup) GetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *MeGroup) GetAlias() string {
+	if x != nil {
+		return x.xxx_hidden_Alias
+	}
+	return ""
+}
+
+func (x *MeGroup) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *MeGroup) GetClients() []string {
+	if x != nil {
+		return x.xxx_hidden_Clients
+	}
+	return nil
+}
+
+func (x *MeGroup) GetRole() string {
+	if x != nil {
+		return x.xxx_hidden_Role
+	}
+	return ""
+}
+
+func (x *MeGroup) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Id = v
+}
+
+func (x *MeGroup) SetAlias(v string) {
+	x.xxx_hidden_Alias = v
+}
+
+func (x *MeGroup) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *MeGroup) SetClients(v []string) {
+	x.xxx_hidden_Clients = v
+}
+
+func (x *MeGroup) SetRole(v string) {
+	x.xxx_hidden_Role = v
+}
+
+type MeGroup_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Id    []byte
+	Alias string
+	Name  string
+	// The clients whose tokens may carry it, by the id their issuer gave them.
+	Clients []string
+	// What they may do in it -- a manager's role -- and empty is a plain member.
+	Role string
+}
+
+func (b0 MeGroup_builder) Build() *MeGroup {
+	m0 := &MeGroup{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Alias = b.Alias
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Clients = b.Clients
+	x.xxx_hidden_Role = b.Role
+	return m0
+}
+
 type MeTeam struct {
 	state                protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id        []byte                 `protobuf:"bytes,1,opt,name=id"`
@@ -1258,7 +1399,7 @@ type MeTeam struct {
 
 func (x *MeTeam) Reset() {
 	*x = MeTeam{}
-	mi := &file_app_me_proto_msgTypes[12]
+	mi := &file_app_me_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1270,7 +1411,7 @@ func (x *MeTeam) String() string {
 func (*MeTeam) ProtoMessage() {}
 
 func (x *MeTeam) ProtoReflect() protoreflect.Message {
-	mi := &file_app_me_proto_msgTypes[12]
+	mi := &file_app_me_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1395,7 +1536,7 @@ const file_app_me_proto_rawDesc = "" +
 	"\x0fMeLeaveResponse\x12;\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"dateErased\x12A\n" +
-	"\x0edate_forgotten\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\rdateForgotten\"\xcb\x03\n" +
+	"\x0edate_forgotten\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\rdateForgotten\"\xf4\x03\n" +
 	"\rMeGetResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x16\n" +
 	"\x06tenant\x18\x02 \x01(\fR\x06tenant\x12\x14\n" +
@@ -1413,7 +1554,8 @@ const file_app_me_proto_rawDesc = "" +
 	"identities\x12:\n" +
 	"\vcredentials\x18\x0e \x03(\v2\x18.roster.SignInCredentialR\vcredentials\x12%\n" +
 	"\x04keys\x18\x0f \x03(\v2\x11.roster.SignInKeyR\x04keys\x12/\n" +
-	"\x13provisioned_through\x18\x10 \x01(\tR\x12provisionedThrough\"\xc3\x01\n" +
+	"\x13provisioned_through\x18\x10 \x01(\tR\x12provisionedThrough\x12'\n" +
+	"\x06groups\x18\x11 \x03(\v2\x0f.roster.MeGroupR\x06groups\"\xc3\x01\n" +
 	"\tSignInKey\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x18\n" +
@@ -1434,7 +1576,13 @@ const file_app_me_proto_rawDesc = "" +
 	"dateLocked\"d\n" +
 	"\aMeEmail\x12\x18\n" +
 	"\aaddress\x18\b \x01(\tR\aaddress\x12?\n" +
-	"\rdate_verified\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\fdateVerified\"\x89\x01\n" +
+	"\rdate_verified\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\fdateVerified\"q\n" +
+	"\aMeGroup\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\fR\x02id\x12\x14\n" +
+	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x12\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\x12\x18\n" +
+	"\aclients\x18\b \x03(\tR\aclients\x12\x12\n" +
+	"\x04role\x18\t \x01(\tR\x04role\"\x89\x01\n" +
 	"\x06MeTeam\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x12\n" +
@@ -1450,7 +1598,7 @@ const file_app_me_proto_rawDesc = "" +
 	"\x11SignOutEverywhere\x12\".roster.MeSignOutEverywhereRequest\x1a#.roster.MeSignOutEverywhereResponse\x128\n" +
 	"\x05Leave\x12\x16.roster.MeLeaveRequest\x1a\x17.roster.MeLeaveResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_me_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_app_me_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_app_me_proto_goTypes = []any{
 	(*MeGetRequest)(nil),                // 0: roster.MeGetRequest
 	(*MeUnlinkRequest)(nil),             // 1: roster.MeUnlinkRequest
@@ -1464,37 +1612,39 @@ var file_app_me_proto_goTypes = []any{
 	(*SignInIdentity)(nil),              // 9: roster.SignInIdentity
 	(*SignInCredential)(nil),            // 10: roster.SignInCredential
 	(*MeEmail)(nil),                     // 11: roster.MeEmail
-	(*MeTeam)(nil),                      // 12: roster.MeTeam
-	(*timestamppb.Timestamp)(nil),       // 13: google.protobuf.Timestamp
+	(*MeGroup)(nil),                     // 12: roster.MeGroup
+	(*MeTeam)(nil),                      // 13: roster.MeTeam
+	(*timestamppb.Timestamp)(nil),       // 14: google.protobuf.Timestamp
 }
 var file_app_me_proto_depIdxs = []int32{
-	13, // 0: roster.MeSignOutEverywhereResponse.date_invalidated:type_name -> google.protobuf.Timestamp
-	13, // 1: roster.MeLeaveResponse.date_erased:type_name -> google.protobuf.Timestamp
-	13, // 2: roster.MeLeaveResponse.date_forgotten:type_name -> google.protobuf.Timestamp
+	14, // 0: roster.MeSignOutEverywhereResponse.date_invalidated:type_name -> google.protobuf.Timestamp
+	14, // 1: roster.MeLeaveResponse.date_erased:type_name -> google.protobuf.Timestamp
+	14, // 2: roster.MeLeaveResponse.date_forgotten:type_name -> google.protobuf.Timestamp
 	11, // 3: roster.MeGetResponse.emails:type_name -> roster.MeEmail
-	12, // 4: roster.MeGetResponse.teams:type_name -> roster.MeTeam
+	13, // 4: roster.MeGetResponse.teams:type_name -> roster.MeTeam
 	9,  // 5: roster.MeGetResponse.identities:type_name -> roster.SignInIdentity
 	10, // 6: roster.MeGetResponse.credentials:type_name -> roster.SignInCredential
 	8,  // 7: roster.MeGetResponse.keys:type_name -> roster.SignInKey
-	13, // 8: roster.SignInKey.date_expires:type_name -> google.protobuf.Timestamp
-	13, // 9: roster.SignInKey.date_used:type_name -> google.protobuf.Timestamp
-	13, // 10: roster.SignInIdentity.date_created:type_name -> google.protobuf.Timestamp
-	13, // 11: roster.SignInCredential.date_rotated:type_name -> google.protobuf.Timestamp
-	13, // 12: roster.SignInCredential.date_locked:type_name -> google.protobuf.Timestamp
-	13, // 13: roster.MeEmail.date_verified:type_name -> google.protobuf.Timestamp
-	0,  // 14: roster.MeService.Get:input_type -> roster.MeGetRequest
-	1,  // 15: roster.MeService.Unlink:input_type -> roster.MeUnlinkRequest
-	3,  // 16: roster.MeService.SignOutEverywhere:input_type -> roster.MeSignOutEverywhereRequest
-	5,  // 17: roster.MeService.Leave:input_type -> roster.MeLeaveRequest
-	7,  // 18: roster.MeService.Get:output_type -> roster.MeGetResponse
-	2,  // 19: roster.MeService.Unlink:output_type -> roster.MeUnlinkResponse
-	4,  // 20: roster.MeService.SignOutEverywhere:output_type -> roster.MeSignOutEverywhereResponse
-	6,  // 21: roster.MeService.Leave:output_type -> roster.MeLeaveResponse
-	18, // [18:22] is the sub-list for method output_type
-	14, // [14:18] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	12, // 8: roster.MeGetResponse.groups:type_name -> roster.MeGroup
+	14, // 9: roster.SignInKey.date_expires:type_name -> google.protobuf.Timestamp
+	14, // 10: roster.SignInKey.date_used:type_name -> google.protobuf.Timestamp
+	14, // 11: roster.SignInIdentity.date_created:type_name -> google.protobuf.Timestamp
+	14, // 12: roster.SignInCredential.date_rotated:type_name -> google.protobuf.Timestamp
+	14, // 13: roster.SignInCredential.date_locked:type_name -> google.protobuf.Timestamp
+	14, // 14: roster.MeEmail.date_verified:type_name -> google.protobuf.Timestamp
+	0,  // 15: roster.MeService.Get:input_type -> roster.MeGetRequest
+	1,  // 16: roster.MeService.Unlink:input_type -> roster.MeUnlinkRequest
+	3,  // 17: roster.MeService.SignOutEverywhere:input_type -> roster.MeSignOutEverywhereRequest
+	5,  // 18: roster.MeService.Leave:input_type -> roster.MeLeaveRequest
+	7,  // 19: roster.MeService.Get:output_type -> roster.MeGetResponse
+	2,  // 20: roster.MeService.Unlink:output_type -> roster.MeUnlinkResponse
+	4,  // 21: roster.MeService.SignOutEverywhere:output_type -> roster.MeSignOutEverywhereResponse
+	6,  // 22: roster.MeService.Leave:output_type -> roster.MeLeaveResponse
+	19, // [19:23] is the sub-list for method output_type
+	15, // [15:19] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_app_me_proto_init() }
@@ -1508,7 +1658,7 @@ func file_app_me_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_me_proto_rawDesc), len(file_app_me_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

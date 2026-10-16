@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/me.proto.
  */
 export const file_app_me: GenFile = /*@__PURE__*/
-  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QiHQoPTWVVbmxpbmtSZXF1ZXN0EgoKAmlkGAEgASgMIhIKEE1lVW5saW5rUmVzcG9uc2UiHAoaTWVTaWduT3V0RXZlcnl3aGVyZVJlcXVlc3QiUwobTWVTaWduT3V0RXZlcnl3aGVyZVJlc3BvbnNlEjQKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiEKDk1lTGVhdmVSZXF1ZXN0Eg8KB2NvbmZpcm0YASABKAkidgoPTWVMZWF2ZVJlc3BvbnNlEi8KC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIyCg5kYXRlX2ZvcmdvdHRlbhgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAi1QIKDU1lR2V0UmVzcG9uc2USCgoCaWQYASABKAwSDgoGdGVuYW50GAIgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSHwoGZW1haWxzGAggAygLMg8ucm9zdGVyLk1lRW1haWwSHQoFdGVhbXMYCSADKAsyDi5yb3N0ZXIuTWVUZWFtEg8KB21ldGhvZHMYCiADKAkSDQoFc2l0ZXMYCyADKAwSEgoKZXZlcnlfc2l0ZRgMIAEoCBIqCgppZGVudGl0aWVzGA0gAygLMhYucm9zdGVyLlNpZ25JbklkZW50aXR5Ei0KC2NyZWRlbnRpYWxzGA4gAygLMhgucm9zdGVyLlNpZ25JbkNyZWRlbnRpYWwSHwoEa2V5cxgPIAMoCzIRLnJvc3Rlci5TaWduSW5LZXkSGwoTcHJvdmlzaW9uZWRfdGhyb3VnaBgQIAEoCSKYAQoJU2lnbkluS2V5EgoKAmlkGAEgASgMEg0KBWFsaWFzGAQgASgJEg8KB21ldGhvZHMYCCADKAkSMAoMZGF0ZV9leHBpcmVzGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBItCglkYXRlX3VzZWQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInEKDlNpZ25JbklkZW50aXR5EgoKAmlkGAEgASgMEhAKCHByb3ZpZGVyGAggASgJEg8KB3N1YmplY3QYCSABKAkSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKRAQoQU2lnbkluQ3JlZGVudGlhbBIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMZGF0ZV9yb3RhdGVkGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgtkYXRlX2xvY2tlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiTQoHTWVFbWFpbBIPCgdhZGRyZXNzGAggASgJEjEKDWRhdGVfdmVyaWZpZWQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImEKBk1lVGVhbRIKCgJpZBgBIAEoDBINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBHNpdGUYCCABKAwSEgoKc2l0ZV9hbGlhcxgJIAEoCRIMCgRyb2xlGAogASgJMpQCCglNZVNlcnZpY2USMgoDR2V0EhQucm9zdGVyLk1lR2V0UmVxdWVzdBoVLnJvc3Rlci5NZUdldFJlc3BvbnNlEjsKBlVubGluaxIXLnJvc3Rlci5NZVVubGlua1JlcXVlc3QaGC5yb3N0ZXIuTWVVbmxpbmtSZXNwb25zZRJcChFTaWduT3V0RXZlcnl3aGVyZRIiLnJvc3Rlci5NZVNpZ25PdXRFdmVyeXdoZXJlUmVxdWVzdBojLnJvc3Rlci5NZVNpZ25PdXRFdmVyeXdoZXJlUmVzcG9uc2USOAoFTGVhdmUSFi5yb3N0ZXIuTWVMZWF2ZVJlcXVlc3QaFy5yb3N0ZXIuTWVMZWF2ZVJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
+  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QiHQoPTWVVbmxpbmtSZXF1ZXN0EgoKAmlkGAEgASgMIhIKEE1lVW5saW5rUmVzcG9uc2UiHAoaTWVTaWduT3V0RXZlcnl3aGVyZVJlcXVlc3QiUwobTWVTaWduT3V0RXZlcnl3aGVyZVJlc3BvbnNlEjQKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiEKDk1lTGVhdmVSZXF1ZXN0Eg8KB2NvbmZpcm0YASABKAkidgoPTWVMZWF2ZVJlc3BvbnNlEi8KC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIyCg5kYXRlX2ZvcmdvdHRlbhgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAi9gIKDU1lR2V0UmVzcG9uc2USCgoCaWQYASABKAwSDgoGdGVuYW50GAIgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSHwoGZW1haWxzGAggAygLMg8ucm9zdGVyLk1lRW1haWwSHQoFdGVhbXMYCSADKAsyDi5yb3N0ZXIuTWVUZWFtEg8KB21ldGhvZHMYCiADKAkSDQoFc2l0ZXMYCyADKAwSEgoKZXZlcnlfc2l0ZRgMIAEoCBIqCgppZGVudGl0aWVzGA0gAygLMhYucm9zdGVyLlNpZ25JbklkZW50aXR5Ei0KC2NyZWRlbnRpYWxzGA4gAygLMhgucm9zdGVyLlNpZ25JbkNyZWRlbnRpYWwSHwoEa2V5cxgPIAMoCzIRLnJvc3Rlci5TaWduSW5LZXkSGwoTcHJvdmlzaW9uZWRfdGhyb3VnaBgQIAEoCRIfCgZncm91cHMYESADKAsyDy5yb3N0ZXIuTWVHcm91cCKYAQoJU2lnbkluS2V5EgoKAmlkGAEgASgMEg0KBWFsaWFzGAQgASgJEg8KB21ldGhvZHMYCCADKAkSMAoMZGF0ZV9leHBpcmVzGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBItCglkYXRlX3VzZWQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInEKDlNpZ25JbklkZW50aXR5EgoKAmlkGAEgASgMEhAKCHByb3ZpZGVyGAggASgJEg8KB3N1YmplY3QYCSABKAkSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKRAQoQU2lnbkluQ3JlZGVudGlhbBIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMZGF0ZV9yb3RhdGVkGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgtkYXRlX2xvY2tlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiTQoHTWVFbWFpbBIPCgdhZGRyZXNzGAggASgJEjEKDWRhdGVfdmVyaWZpZWQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlEKB01lR3JvdXASCgoCaWQYASABKAwSDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIPCgdjbGllbnRzGAggAygJEgwKBHJvbGUYCSABKAkiYQoGTWVUZWFtEgoKAmlkGAEgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDAoEc2l0ZRgIIAEoDBISCgpzaXRlX2FsaWFzGAkgASgJEgwKBHJvbGUYCiABKAkylAIKCU1lU2VydmljZRIyCgNHZXQSFC5yb3N0ZXIuTWVHZXRSZXF1ZXN0GhUucm9zdGVyLk1lR2V0UmVzcG9uc2USOwoGVW5saW5rEhcucm9zdGVyLk1lVW5saW5rUmVxdWVzdBoYLnJvc3Rlci5NZVVubGlua1Jlc3BvbnNlElwKEVNpZ25PdXRFdmVyeXdoZXJlEiIucm9zdGVyLk1lU2lnbk91dEV2ZXJ5d2hlcmVSZXF1ZXN0GiMucm9zdGVyLk1lU2lnbk91dEV2ZXJ5d2hlcmVSZXNwb25zZRI4CgVMZWF2ZRIWLnJvc3Rlci5NZUxlYXZlUmVxdWVzdBoXLnJvc3Rlci5NZUxlYXZlUmVzcG9uc2VCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message roster.MeGetRequest
@@ -281,6 +281,19 @@ export type MeGetResponse = Message<"roster.MeGetResponse"> & {
    * @generated from field: string provisioned_through = 16;
    */
   provisionedThrough: string;
+
+  /**
+   * The groups they are in, each with the clients it is shown to
+   * (`GroupExposure`) and the role they hold in it -- which makes them its
+   * manager.
+   *
+   * What a front door puts in a token for a client registered for the
+   * `groups` scope is read from here: the groups that name that client, and no
+   * other (`login/claims.go`).
+   *
+   * @generated from field: repeated roster.MeGroup groups = 17;
+   */
+  groups: MeGroup[];
 };
 
 /**
@@ -477,6 +490,47 @@ export const MeEmailSchema: GenMessage<MeEmail> = /*@__PURE__*/
   messageDesc(file_app_me, 11);
 
 /**
+ * @generated from message roster.MeGroup
+ */
+export type MeGroup = Message<"roster.MeGroup"> & {
+  /**
+   * @generated from field: bytes id = 1;
+   */
+  id: Uint8Array;
+
+  /**
+   * @generated from field: string alias = 4;
+   */
+  alias: string;
+
+  /**
+   * @generated from field: string name = 5;
+   */
+  name: string;
+
+  /**
+   * The clients whose tokens may carry it, by the id their issuer gave them.
+   *
+   * @generated from field: repeated string clients = 8;
+   */
+  clients: string[];
+
+  /**
+   * What they may do in it -- a manager's role -- and empty is a plain member.
+   *
+   * @generated from field: string role = 9;
+   */
+  role: string;
+};
+
+/**
+ * Describes the message roster.MeGroup.
+ * Use `create(MeGroupSchema)` to create a new message.
+ */
+export const MeGroupSchema: GenMessage<MeGroup> = /*@__PURE__*/
+  messageDesc(file_app_me, 12);
+
+/**
  * @generated from message roster.MeTeam
  */
 export type MeTeam = Message<"roster.MeTeam"> & {
@@ -518,7 +572,7 @@ export type MeTeam = Message<"roster.MeTeam"> & {
  * Use `create(MeTeamSchema)` to create a new message.
  */
 export const MeTeamSchema: GenMessage<MeTeam> = /*@__PURE__*/
-  messageDesc(file_app_me, 12);
+  messageDesc(file_app_me, 13);
 
 /**
  * MeService answers what a caller is, in one round trip.

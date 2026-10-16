@@ -326,3 +326,59 @@ func TestSomebodySignsThemselvesOutOfEverything(t *testing.T) {
 	x.NoError(err)
 	x.Nil(other.GetDateInvalidated())
 }
+
+// TestMeSaysWhichGroupsAndWhoIsShownEach: the groups somebody is in, each with
+// the clients its rows show it to and the role they hold in it -- what a front
+// door reads to fill a token's `groups`. A group they are not in is not here
+// however it is shown, and an exposure taken back is not either.
+func TestMeSaysWhichGroupsAndWhoIsShownEach(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+	at := app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build()
+
+	group := func(alias string, clients ...string) *app.GroupRef {
+		t.Helper()
+		v, err := b.Ungated.Group().Add(ctx, app.GroupAddRequest_builder{Tenant: at, Alias: alias}.Build())
+		x.NoError(err)
+		ref := app.GroupRef_builder{Id: v.GetId()}.Build()
+		for _, c := range clients {
+			_, err := b.Ungated.GroupExposure().Add(ctx, app.GroupExposureAddRequest_builder{Group: ref, Client: c}.Build())
+			x.NoError(err)
+		}
+
+		return ref
+	}
+	join := func(g *app.GroupRef, role *app.RoleRef) {
+		t.Helper()
+		_, err := b.Ungated.GroupMembership().Add(ctx, app.GroupMembershipAddRequest_builder{
+			Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(), Group: g, Role: role,
+		}.Build())
+		x.NoError(err)
+	}
+
+	// Made and joined out of order, so that the answer's order is the
+	// aliases' and not the rows'.
+	oncall := group("on-call")
+	triage := group("dtrack-triage", "kube", "dtrack")
+	group("cluster-admins", "kube")
+	manager := b.role(t, ctx, "group-manager", app.GroupMembershipService_Add_FullMethodName)
+	join(oncall, nil)
+	join(triage, app.RoleRef_builder{Id: manager.Bytes()}.Build())
+
+	gone, err := b.Ungated.GroupExposure().Add(ctx, app.GroupExposureAddRequest_builder{Group: oncall, Client: "wiki"}.Build())
+	x.NoError(err)
+	_, err = b.Ungated.GroupExposure().Erase(ctx, app.GroupExposureRef_builder{Id: gone.GetId()}.Build())
+	x.NoError(err)
+
+	v, err := app.NewMeServiceClient(served(t, b.Server)).Get(asOverTheWire(ctx, b.ContosoUser), app.MeGetRequest_builder{}.Build())
+	x.NoError(err)
+
+	gs := v.GetGroups()
+	x.Len(gs, 2, "a group they are not in, shown or not")
+	x.Equal("dtrack-triage", gs[0].GetAlias())
+	x.Equal([]string{"dtrack", "kube"}, gs[0].GetClients())
+	x.Equal("group-manager", gs[0].GetRole())
+	x.Equal("on-call", gs[1].GetAlias())
+	x.Empty(gs[1].GetClients(), "an exposure taken back")
+	x.Empty(gs[1].GetRole())
+}
