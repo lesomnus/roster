@@ -475,11 +475,255 @@ func (b0 TeamMembership_builder) Build() *TeamMembership {
 	return m0
 }
 
+// GroupMembership is somebody being in a [Group].
+//
+// # Writing one is a grant
+//
+// A binding written to a group is held by everybody in it -- that is what a
+// group is for -- so putting somebody in one hands them every binding that
+// names it. Which makes this a grant although it mentions no role, and it is
+// refused on the same terms `Binding.Add` is: nobody hands out what they do not
+// hold, each binding checked at the scope it was made in.
+// `server/core/escalate.go`.
+//
+// A row rather than a list on either side, for the reason every membership here
+// is one: it is many-to-many, and it is a fact with a date of its own.
+//
+// # A group's managers
+//
+// Somebody whose membership carries a [role] manages that group: they may put
+// people into it and take them out, and they may not do either to another
+// group. The rule a team's administrators have, and asked the same way -- the
+// gate lets them through for the method, and `server/core` refuses every group
+// but the one they hold it in (`mayChangeGroup`).
+//
+// A manager is a member. Keeping them out of the group would protect nothing,
+// since a manager can put an accomplice in.
+type GroupMembership struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Holder      *Holder                `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_Group       *Group                 `protobuf:"bytes,8,opt,name=group"`
+	xxx_hidden_Role        *Role                  `protobuf:"bytes,9,opt,name=role"`
+	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *GroupMembership) Reset() {
+	*x = GroupMembership{}
+	mi := &file_app_membership_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupMembership) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupMembership) ProtoMessage() {}
+
+func (x *GroupMembership) ProtoReflect() protoreflect.Message {
+	mi := &file_app_membership_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GroupMembership) GetId() []byte {
+	if x != nil {
+		return x.xxx_hidden_Id
+	}
+	return nil
+}
+
+func (x *GroupMembership) GetHolder() *Holder {
+	if x != nil {
+		return x.xxx_hidden_Holder
+	}
+	return nil
+}
+
+func (x *GroupMembership) GetGroup() *Group {
+	if x != nil {
+		return x.xxx_hidden_Group
+	}
+	return nil
+}
+
+func (x *GroupMembership) GetRole() *Role {
+	if x != nil {
+		return x.xxx_hidden_Role
+	}
+	return nil
+}
+
+func (x *GroupMembership) GetDateUpdated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateUpdated
+	}
+	return nil
+}
+
+func (x *GroupMembership) GetDateErased() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateErased
+	}
+	return nil
+}
+
+func (x *GroupMembership) GetDateCreated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateCreated
+	}
+	return nil
+}
+
+func (x *GroupMembership) SetId(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Id = v
+}
+
+func (x *GroupMembership) SetHolder(v *Holder) {
+	x.xxx_hidden_Holder = v
+}
+
+func (x *GroupMembership) SetGroup(v *Group) {
+	x.xxx_hidden_Group = v
+}
+
+func (x *GroupMembership) SetRole(v *Role) {
+	x.xxx_hidden_Role = v
+}
+
+func (x *GroupMembership) SetDateUpdated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateUpdated = v
+}
+
+func (x *GroupMembership) SetDateErased(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateErased = v
+}
+
+func (x *GroupMembership) SetDateCreated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateCreated = v
+}
+
+func (x *GroupMembership) HasHolder() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Holder != nil
+}
+
+func (x *GroupMembership) HasGroup() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Group != nil
+}
+
+func (x *GroupMembership) HasRole() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Role != nil
+}
+
+func (x *GroupMembership) HasDateUpdated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateUpdated != nil
+}
+
+func (x *GroupMembership) HasDateErased() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateErased != nil
+}
+
+func (x *GroupMembership) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateCreated != nil
+}
+
+func (x *GroupMembership) ClearHolder() {
+	x.xxx_hidden_Holder = nil
+}
+
+func (x *GroupMembership) ClearGroup() {
+	x.xxx_hidden_Group = nil
+}
+
+func (x *GroupMembership) ClearRole() {
+	x.xxx_hidden_Role = nil
+}
+
+func (x *GroupMembership) ClearDateUpdated() {
+	x.xxx_hidden_DateUpdated = nil
+}
+
+func (x *GroupMembership) ClearDateErased() {
+	x.xxx_hidden_DateErased = nil
+}
+
+func (x *GroupMembership) ClearDateCreated() {
+	x.xxx_hidden_DateCreated = nil
+}
+
+type GroupMembership_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Id     []byte
+	Holder *Holder
+	Group  *Group
+	// What they may do in this group, and empty is a plain member.
+	//
+	// Held here, it reaches this group and nothing else, so it may name only
+	// what changes the group's members -- `GroupMembershipService/Add` and
+	// `/Erase`. Anything wider would be handed out tenant-wide by the gate,
+	// which never sees which group a call is about.
+	//
+	// Attaching one is appointing a manager, and is held to what the appointer
+	// holds through a binding: a manager may put people in and may not make
+	// another manager.
+	Role        *Role
+	DateUpdated *timestamppb.Timestamp
+	DateErased  *timestamppb.Timestamp
+	DateCreated *timestamppb.Timestamp
+}
+
+func (b0 GroupMembership_builder) Build() *GroupMembership {
+	m0 := &GroupMembership{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Id = b.Id
+	x.xxx_hidden_Holder = b.Holder
+	x.xxx_hidden_Group = b.Group
+	x.xxx_hidden_Role = b.Role
+	x.xxx_hidden_DateUpdated = b.DateUpdated
+	x.xxx_hidden_DateErased = b.DateErased
+	x.xxx_hidden_DateCreated = b.DateCreated
+	return m0
+}
+
 var File_app_membership_proto protoreflect.FileDescriptor
 
 const file_app_membership_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/membership.proto\x12\x06roster\x1a\x0eapp/site.proto\x1a\x0eapp/team.proto\x1a\x0eapp/role.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x84\x04\n" +
+	"\x14app/membership.proto\x12\x06roster\x1a\x0eapp/site.proto\x1a\x0eapp/team.proto\x1a\x0fapp/group.proto\x1a\x0eapp/role.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x84\x04\n" +
 	"\x0eSiteMembership\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12(\n" +
@@ -526,35 +770,67 @@ const file_app_membership_proto_rawDesc = "" +
 	"\x03ref\x1a\b\n" +
 	"\x06holder\x1a\x06\n" +
 	"\x04team \x14(d:\x00\"\x0f\n" +
+	"\rholder.tenant\"\xb2\x04\n" +
+	"\x0fGroupMembership\x12\x1b\n" +
+	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
+	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12+\n" +
+	"\x05group\x18\b \x01(\v2\r.roster.GroupB\x06\xf2\x82\x16\x02@\x01R\x05group\x12(\n" +
+	"\x04role\x18\t \x01(\v2\f.roster.RoleB\x06\xf2\x82\x16\x028\x01R\x04role\x12F\n" +
+	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
+	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
+	"dateErased\x12H\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\xa2\x01\xca\xfc\x15I\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x10\x0f\x1a\x06\n" +
+	"\x02id\x10\x01\x1a!\x12\x06member\x1a\n" +
+	"\n" +
+	"\x06holder\x10\x02\x1a\t\n" +
+	"\x05group\x10\b0\x01\x8a\xbb\x16Q\b\x112<\n" +
+	"\x12\n" +
+	"\x10\n" +
+	"\fdate_created\x10\x0f\n" +
+	"\b\n" +
+	"\x06\n" +
+	"\x02id\x10\x01\x1a\x05\n" +
+	"\x03ref\x1a\b\n" +
+	"\x06holder\x1a\a\n" +
+	"\x05group \x14(d\"\x0f\n" +
 	"\rholder.tenantB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_membership_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_app_membership_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_app_membership_proto_goTypes = []any{
 	(*SiteMembership)(nil),        // 0: roster.SiteMembership
 	(*TeamMembership)(nil),        // 1: roster.TeamMembership
-	(*Holder)(nil),                // 2: roster.Holder
-	(*Site)(nil),                  // 3: roster.Site
-	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
-	(*Team)(nil),                  // 5: roster.Team
-	(*Role)(nil),                  // 6: roster.Role
+	(*GroupMembership)(nil),       // 2: roster.GroupMembership
+	(*Holder)(nil),                // 3: roster.Holder
+	(*Site)(nil),                  // 4: roster.Site
+	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
+	(*Team)(nil),                  // 6: roster.Team
+	(*Role)(nil),                  // 7: roster.Role
+	(*Group)(nil),                 // 8: roster.Group
 }
 var file_app_membership_proto_depIdxs = []int32{
-	2,  // 0: roster.SiteMembership.holder:type_name -> roster.Holder
-	3,  // 1: roster.SiteMembership.site:type_name -> roster.Site
-	4,  // 2: roster.SiteMembership.date_updated:type_name -> google.protobuf.Timestamp
-	4,  // 3: roster.SiteMembership.date_erased:type_name -> google.protobuf.Timestamp
-	4,  // 4: roster.SiteMembership.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 5: roster.TeamMembership.holder:type_name -> roster.Holder
-	5,  // 6: roster.TeamMembership.team:type_name -> roster.Team
-	6,  // 7: roster.TeamMembership.role:type_name -> roster.Role
-	4,  // 8: roster.TeamMembership.date_updated:type_name -> google.protobuf.Timestamp
-	4,  // 9: roster.TeamMembership.date_erased:type_name -> google.protobuf.Timestamp
-	4,  // 10: roster.TeamMembership.date_created:type_name -> google.protobuf.Timestamp
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	3,  // 0: roster.SiteMembership.holder:type_name -> roster.Holder
+	4,  // 1: roster.SiteMembership.site:type_name -> roster.Site
+	5,  // 2: roster.SiteMembership.date_updated:type_name -> google.protobuf.Timestamp
+	5,  // 3: roster.SiteMembership.date_erased:type_name -> google.protobuf.Timestamp
+	5,  // 4: roster.SiteMembership.date_created:type_name -> google.protobuf.Timestamp
+	3,  // 5: roster.TeamMembership.holder:type_name -> roster.Holder
+	6,  // 6: roster.TeamMembership.team:type_name -> roster.Team
+	7,  // 7: roster.TeamMembership.role:type_name -> roster.Role
+	5,  // 8: roster.TeamMembership.date_updated:type_name -> google.protobuf.Timestamp
+	5,  // 9: roster.TeamMembership.date_erased:type_name -> google.protobuf.Timestamp
+	5,  // 10: roster.TeamMembership.date_created:type_name -> google.protobuf.Timestamp
+	3,  // 11: roster.GroupMembership.holder:type_name -> roster.Holder
+	8,  // 12: roster.GroupMembership.group:type_name -> roster.Group
+	7,  // 13: roster.GroupMembership.role:type_name -> roster.Role
+	5,  // 14: roster.GroupMembership.date_updated:type_name -> google.protobuf.Timestamp
+	5,  // 15: roster.GroupMembership.date_erased:type_name -> google.protobuf.Timestamp
+	5,  // 16: roster.GroupMembership.date_created:type_name -> google.protobuf.Timestamp
+	17, // [17:17] is the sub-list for method output_type
+	17, // [17:17] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_app_membership_proto_init() }
@@ -564,6 +840,7 @@ func file_app_membership_proto_init() {
 	}
 	file_app_site_proto_init()
 	file_app_team_proto_init()
+	file_app_group_proto_init()
 	file_app_role_proto_init()
 	file_roster_payday_holder_proto_init()
 	type x struct{}
@@ -572,7 +849,7 @@ func file_app_membership_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_membership_proto_rawDesc), len(file_app_membership_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

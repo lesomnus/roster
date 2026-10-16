@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"uuid"
 
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/predicate"
+	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	"github.com/protobuf-orm/ent/schema/field"
@@ -63,9 +65,40 @@ func (_u *GroupMembershipUpdate) ClearDateErased() *GroupMembershipUpdate {
 	return _u
 }
 
+// SetRoleId sets the "role_id" field.
+func (_u *GroupMembershipUpdate) SetRoleId(v uuid.UUID) *GroupMembershipUpdate {
+	_u.mutation.SetRoleId(v)
+	return _u
+}
+
+// SetNillableRoleId sets the "role_id" field if the given value is not nil.
+func (_u *GroupMembershipUpdate) SetNillableRoleId(v *uuid.UUID) *GroupMembershipUpdate {
+	if v != nil {
+		_u.SetRoleId(*v)
+	}
+	return _u
+}
+
+// ClearRoleId clears the value of the "role_id" field.
+func (_u *GroupMembershipUpdate) ClearRoleId() *GroupMembershipUpdate {
+	_u.mutation.ClearRoleId()
+	return _u
+}
+
+// SetRole sets the "role" edge to the Role entity.
+func (_u *GroupMembershipUpdate) SetRole(v *Role) *GroupMembershipUpdate {
+	return _u.SetRoleId(v.Id)
+}
+
 // Mutation returns the GroupMembershipMutation object of the builder.
 func (_u *GroupMembershipUpdate) Mutation() *GroupMembershipMutation {
 	return _u.mutation
+}
+
+// ClearRole clears the "role" edge to the Role entity.
+func (_u *GroupMembershipUpdate) ClearRole() *GroupMembershipUpdate {
+	_u.mutation.ClearRole()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -136,6 +169,35 @@ func (_u *GroupMembershipUpdate) sqlSave(ctx context.Context) (_node int, err er
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(groupmembership.FieldDateCreated, field.TypeTime)
 	}
+	if _u.mutation.RoleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   groupmembership.RoleTable,
+			Columns: []string{groupmembership.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(role.FieldId, field.TypeUuid),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RoleIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   groupmembership.RoleTable,
+			Columns: []string{groupmembership.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(role.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -192,9 +254,40 @@ func (_u *GroupMembershipUpdateOne) ClearDateErased() *GroupMembershipUpdateOne 
 	return _u
 }
 
+// SetRoleId sets the "role_id" field.
+func (_u *GroupMembershipUpdateOne) SetRoleId(v uuid.UUID) *GroupMembershipUpdateOne {
+	_u.mutation.SetRoleId(v)
+	return _u
+}
+
+// SetNillableRoleId sets the "role_id" field if the given value is not nil.
+func (_u *GroupMembershipUpdateOne) SetNillableRoleId(v *uuid.UUID) *GroupMembershipUpdateOne {
+	if v != nil {
+		_u.SetRoleId(*v)
+	}
+	return _u
+}
+
+// ClearRoleId clears the value of the "role_id" field.
+func (_u *GroupMembershipUpdateOne) ClearRoleId() *GroupMembershipUpdateOne {
+	_u.mutation.ClearRoleId()
+	return _u
+}
+
+// SetRole sets the "role" edge to the Role entity.
+func (_u *GroupMembershipUpdateOne) SetRole(v *Role) *GroupMembershipUpdateOne {
+	return _u.SetRoleId(v.Id)
+}
+
 // Mutation returns the GroupMembershipMutation object of the builder.
 func (_u *GroupMembershipUpdateOne) Mutation() *GroupMembershipMutation {
 	return _u.mutation
+}
+
+// ClearRole clears the "role" edge to the Role entity.
+func (_u *GroupMembershipUpdateOne) ClearRole() *GroupMembershipUpdateOne {
+	_u.mutation.ClearRole()
+	return _u
 }
 
 // Where appends a list predicates to the GroupMembershipUpdate builder.
@@ -294,6 +387,35 @@ func (_u *GroupMembershipUpdateOne) sqlSave(ctx context.Context) (_node *GroupMe
 	}
 	if _u.mutation.DateCreatedCleared() {
 		_spec.ClearField(groupmembership.FieldDateCreated, field.TypeTime)
+	}
+	if _u.mutation.RoleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   groupmembership.RoleTable,
+			Columns: []string{groupmembership.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(role.FieldId, field.TypeUuid),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RoleIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   groupmembership.RoleTable,
+			Columns: []string{groupmembership.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(role.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &GroupMembership{config: _u.config}

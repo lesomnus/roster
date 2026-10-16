@@ -31,7 +31,22 @@ lint:
 breaking:
   use:
     - FILE
+    # A message's or a service's **file** is not its wire either, so long as the
+    # package keeps it. Moving one between files of `roster` changes neither its
+    # full name nor the Go package a client imports (`rstr`); what moves is the
+    # generated TypeScript module that exports it, and every reader of those is
+    # this repository's console. So a deletion is checked per package and not
+    # per file -- taken when `GroupMembership` moved beside the team's and the
+    # site's memberships for its role edge (#120), since `role.proto` imports
+    # `group.proto` and the edge could not be declared there.
+    #
+    # The day something outside this repository imports the TypeScript, put the
+    # file rules back.
+    - PACKAGE_MESSAGE_NO_DELETE
+    - PACKAGE_SERVICE_NO_DELETE
   except:
+    - MESSAGE_NO_DELETE
+    - SERVICE_NO_DELETE
     # A field's **name** is not its wire. The number and the type are what an
     # encoded message carries, and those are still checked -- what these two
     # rules cover is the accessor a generated client calls and the key a JSON

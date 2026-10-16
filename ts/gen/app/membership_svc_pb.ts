@@ -4,7 +4,9 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import type { SiteMembership, SiteMembershipSchema, TeamMembership, TeamMembershipSchema } from "./membership_pb.js";
+import type { GroupRef, GroupSelect } from "./group_svc_pb.js";
+import { file_app_group_svc_g } from "./group_svc_pb.js";
+import type { GroupMembership, GroupMembershipSchema, SiteMembership, SiteMembershipSchema, TeamMembership, TeamMembershipSchema } from "./membership_pb.js";
 import { file_app_membership } from "./membership_pb.js";
 import type { RoleRef, RoleSelect } from "./role_svc_pb.js";
 import { file_app_role_svc_g } from "./role_svc_pb.js";
@@ -24,7 +26,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/membership_svc.g.proto.
  */
 export const file_app_membership_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChphcHAvbWVtYmVyc2hpcF9zdmMuZy5wcm90bxIGcm9zdGVyIpoBChhTaXRlTWVtYmVyc2hpcEFkZFJlcXVlc3QSCgoCaWQYASABKAwSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIdCgRzaXRlGAMgASgLMg8ucm9zdGVyLlNpdGVSZWYSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJwChhTaXRlTWVtYmVyc2hpcEdldFJlcXVlc3QSJgoDcmVmGAEgASgLMhkucm9zdGVyLlNpdGVNZW1iZXJzaGlwUmVmEiwKBnNlbGVjdBgCIAEoCzIcLnJvc3Rlci5TaXRlTWVtYmVyc2hpcFNlbGVjdCJdChFTaXRlTWVtYmVyc2hpcFJlZhIMCgJpZBgBIAEoDEgAEjMKBm1lbWJlchgCIAEoCzIhLnJvc3Rlci5TaXRlTWVtYmVyc2hpcFJlZkJ5TWVtYmVySABCBQoDa2V5Il0KGVNpdGVNZW1iZXJzaGlwUmVmQnlNZW1iZXISIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIdCgRzaXRlGAMgASgLMg8ucm9zdGVyLlNpdGVSZWYirAEKFFNpdGVNZW1iZXJzaGlwU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EiAKBHNpdGUYAyABKAsyEi5yb3N0ZXIuU2l0ZVNlbGVjdBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIpIBChpTaXRlTWVtYmVyc2hpcFBhdGNoUmVxdWVzdBImCgNyZWYYASABKAsyGS5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBSZWYSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiYQoaU2l0ZU1lbWJlcnNoaXBBcHBseVJlcXVlc3QSJgoDcmVmGAEgASgLMhkucm9zdGVyLlNpdGVNZW1iZXJzaGlwUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giLQobU2l0ZU1lbWJlcnNoaXBFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKNAQoZU2l0ZU1lbWJlcnNoaXBMaXN0UmVxdWVzdBItCgdmaWx0ZXJzGAEgAygLMhwucm9zdGVyLlNpdGVNZW1iZXJzaGlwRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJYChpTaXRlTWVtYmVyc2hpcExpc3RSZXNwb25zZRIlCgVpdGVtcxgBIAMoCzIWLnJvc3Rlci5TaXRlTWVtYmVyc2hpcBITCgRuZXh0GAIgASgJQgWqAQIIAiKAAQoUU2l0ZU1lbWJlcnNoaXBGaWx0ZXISJgoDcmVmGAEgASgLMhkucm9zdGVyLlNpdGVNZW1iZXJzaGlwUmVmEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSHQoEc2l0ZRgDIAEoCzIPLnJvc3Rlci5TaXRlUmVmImkKGlNpdGVNZW1iZXJzaGlwV2F0Y2hSZXF1ZXN0Ei0KB2ZpbHRlcnMYASADKAsyHC5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiTQobU2l0ZU1lbWJlcnNoaXBXYXRjaFJlc3BvbnNlEi4KBWl0ZW1zGAEgAygLMh8ucm9zdGVyLlNpdGVNZW1iZXJzaGlwV2F0Y2hJdGVtImMKF1NpdGVNZW1iZXJzaGlwV2F0Y2hJdGVtEgoKAmlkGAEgASgMEiUKBXZhbHVlGAIgASgLMhYucm9zdGVyLlNpdGVNZW1iZXJzaGlwEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIiuQEKGFRlYW1NZW1iZXJzaGlwQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEh0KBHRlYW0YCCABKAsyDy5yb3N0ZXIuVGVhbVJlZhIdCgRyb2xlGAkgASgLMg8ucm9zdGVyLlJvbGVSZWYSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJwChhUZWFtTWVtYmVyc2hpcEdldFJlcXVlc3QSJgoDcmVmGAEgASgLMhkucm9zdGVyLlRlYW1NZW1iZXJzaGlwUmVmEiwKBnNlbGVjdBgCIAEoCzIcLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFNlbGVjdCJdChFUZWFtTWVtYmVyc2hpcFJlZhIMCgJpZBgBIAEoDEgAEjMKBm1lbWJlchgCIAEoCzIhLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFJlZkJ5TWVtYmVySABCBQoDa2V5Il0KGVRlYW1NZW1iZXJzaGlwUmVmQnlNZW1iZXISIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIdCgR0ZWFtGAggASgLMg8ucm9zdGVyLlRlYW1SZWYizgEKFFRlYW1NZW1iZXJzaGlwU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EiAKBHRlYW0YCCABKAsyEi5yb3N0ZXIuVGVhbVNlbGVjdBIgCgRyb2xlGAkgASgLMhIucm9zdGVyLlJvbGVTZWxlY3QSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCLEAQoaVGVhbU1lbWJlcnNoaXBQYXRjaFJlcXVlc3QSJgoDcmVmGAEgASgLMhkucm9zdGVyLlRlYW1NZW1iZXJzaGlwUmVmEh0KBHJvbGUYEiABKAsyDy5yb3N0ZXIuUm9sZVJlZhIRCglyb2xlX251bGwYEyABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiYQoaVGVhbU1lbWJlcnNoaXBBcHBseVJlcXVlc3QSJgoDcmVmGAEgASgLMhkucm9zdGVyLlRlYW1NZW1iZXJzaGlwUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giLQobVGVhbU1lbWJlcnNoaXBFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKNAQoZVGVhbU1lbWJlcnNoaXBMaXN0UmVxdWVzdBItCgdmaWx0ZXJzGAEgAygLMhwucm9zdGVyLlRlYW1NZW1iZXJzaGlwRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJYChpUZWFtTWVtYmVyc2hpcExpc3RSZXNwb25zZRIlCgVpdGVtcxgBIAMoCzIWLnJvc3Rlci5UZWFtTWVtYmVyc2hpcBITCgRuZXh0GAIgASgJQgWqAQIIAiKAAQoUVGVhbU1lbWJlcnNoaXBGaWx0ZXISJgoDcmVmGAEgASgLMhkucm9zdGVyLlRlYW1NZW1iZXJzaGlwUmVmEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSHQoEdGVhbRgDIAEoCzIPLnJvc3Rlci5UZWFtUmVmImkKGlRlYW1NZW1iZXJzaGlwV2F0Y2hSZXF1ZXN0Ei0KB2ZpbHRlcnMYASADKAsyHC5yb3N0ZXIuVGVhbU1lbWJlcnNoaXBGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiTQobVGVhbU1lbWJlcnNoaXBXYXRjaFJlc3BvbnNlEi4KBWl0ZW1zGAEgAygLMh8ucm9zdGVyLlRlYW1NZW1iZXJzaGlwV2F0Y2hJdGVtImMKF1RlYW1NZW1iZXJzaGlwV2F0Y2hJdGVtEgoKAmlkGAEgASgMEiUKBXZhbHVlGAIgASgLMhYucm9zdGVyLlRlYW1NZW1iZXJzaGlwEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIyjwQKFVNpdGVNZW1iZXJzaGlwU2VydmljZRI/CgNBZGQSIC5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBBZGRSZXF1ZXN0GhYucm9zdGVyLlNpdGVNZW1iZXJzaGlwEj8KA0dldBIgLnJvc3Rlci5TaXRlTWVtYmVyc2hpcEdldFJlcXVlc3QaFi5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXASQwoFUGF0Y2gSIi5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBQYXRjaFJlcXVlc3QaFi5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXASQwoFQXBwbHkSIi5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBBcHBseVJlcXVlc3QaFi5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXASRwoFRXJhc2USGS5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBSZWYaIy5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBFcmFzZVJlc3BvbnNlEk0KBExpc3QSIS5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBMaXN0UmVxdWVzdBoiLnJvc3Rlci5TaXRlTWVtYmVyc2hpcExpc3RSZXNwb25zZRJSCgVXYXRjaBIiLnJvc3Rlci5TaXRlTWVtYmVyc2hpcFdhdGNoUmVxdWVzdBojLnJvc3Rlci5TaXRlTWVtYmVyc2hpcFdhdGNoUmVzcG9uc2UwATKPBAoVVGVhbU1lbWJlcnNoaXBTZXJ2aWNlEj8KA0FkZBIgLnJvc3Rlci5UZWFtTWVtYmVyc2hpcEFkZFJlcXVlc3QaFi5yb3N0ZXIuVGVhbU1lbWJlcnNoaXASPwoDR2V0EiAucm9zdGVyLlRlYW1NZW1iZXJzaGlwR2V0UmVxdWVzdBoWLnJvc3Rlci5UZWFtTWVtYmVyc2hpcBJDCgVQYXRjaBIiLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFBhdGNoUmVxdWVzdBoWLnJvc3Rlci5UZWFtTWVtYmVyc2hpcBJDCgVBcHBseRIiLnJvc3Rlci5UZWFtTWVtYmVyc2hpcEFwcGx5UmVxdWVzdBoWLnJvc3Rlci5UZWFtTWVtYmVyc2hpcBJHCgVFcmFzZRIZLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFJlZhojLnJvc3Rlci5UZWFtTWVtYmVyc2hpcEVyYXNlUmVzcG9uc2USTQoETGlzdBIhLnJvc3Rlci5UZWFtTWVtYmVyc2hpcExpc3RSZXF1ZXN0GiIucm9zdGVyLlRlYW1NZW1iZXJzaGlwTGlzdFJlc3BvbnNlElIKBVdhdGNoEiIucm9zdGVyLlRlYW1NZW1iZXJzaGlwV2F0Y2hSZXF1ZXN0GiMucm9zdGVyLlRlYW1NZW1iZXJzaGlwV2F0Y2hSZXNwb25zZTABQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_membership, file_app_role_svc_g, file_app_site_svc_g, file_app_team_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChphcHAvbWVtYmVyc2hpcF9zdmMuZy5wcm90bxIGcm9zdGVyIpoBChhTaXRlTWVtYmVyc2hpcEFkZFJlcXVlc3QSCgoCaWQYASABKAwSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIdCgRzaXRlGAMgASgLMg8ucm9zdGVyLlNpdGVSZWYSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJwChhTaXRlTWVtYmVyc2hpcEdldFJlcXVlc3QSJgoDcmVmGAEgASgLMhkucm9zdGVyLlNpdGVNZW1iZXJzaGlwUmVmEiwKBnNlbGVjdBgCIAEoCzIcLnJvc3Rlci5TaXRlTWVtYmVyc2hpcFNlbGVjdCJdChFTaXRlTWVtYmVyc2hpcFJlZhIMCgJpZBgBIAEoDEgAEjMKBm1lbWJlchgCIAEoCzIhLnJvc3Rlci5TaXRlTWVtYmVyc2hpcFJlZkJ5TWVtYmVySABCBQoDa2V5Il0KGVNpdGVNZW1iZXJzaGlwUmVmQnlNZW1iZXISIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIdCgRzaXRlGAMgASgLMg8ucm9zdGVyLlNpdGVSZWYirAEKFFNpdGVNZW1iZXJzaGlwU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EiAKBHNpdGUYAyABKAsyEi5yb3N0ZXIuU2l0ZVNlbGVjdBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIpIBChpTaXRlTWVtYmVyc2hpcFBhdGNoUmVxdWVzdBImCgNyZWYYASABKAsyGS5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBSZWYSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiYQoaU2l0ZU1lbWJlcnNoaXBBcHBseVJlcXVlc3QSJgoDcmVmGAEgASgLMhkucm9zdGVyLlNpdGVNZW1iZXJzaGlwUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giLQobU2l0ZU1lbWJlcnNoaXBFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKNAQoZU2l0ZU1lbWJlcnNoaXBMaXN0UmVxdWVzdBItCgdmaWx0ZXJzGAEgAygLMhwucm9zdGVyLlNpdGVNZW1iZXJzaGlwRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJYChpTaXRlTWVtYmVyc2hpcExpc3RSZXNwb25zZRIlCgVpdGVtcxgBIAMoCzIWLnJvc3Rlci5TaXRlTWVtYmVyc2hpcBITCgRuZXh0GAIgASgJQgWqAQIIAiKAAQoUU2l0ZU1lbWJlcnNoaXBGaWx0ZXISJgoDcmVmGAEgASgLMhkucm9zdGVyLlNpdGVNZW1iZXJzaGlwUmVmEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSHQoEc2l0ZRgDIAEoCzIPLnJvc3Rlci5TaXRlUmVmImkKGlNpdGVNZW1iZXJzaGlwV2F0Y2hSZXF1ZXN0Ei0KB2ZpbHRlcnMYASADKAsyHC5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiTQobU2l0ZU1lbWJlcnNoaXBXYXRjaFJlc3BvbnNlEi4KBWl0ZW1zGAEgAygLMh8ucm9zdGVyLlNpdGVNZW1iZXJzaGlwV2F0Y2hJdGVtImMKF1NpdGVNZW1iZXJzaGlwV2F0Y2hJdGVtEgoKAmlkGAEgASgMEiUKBXZhbHVlGAIgASgLMhYucm9zdGVyLlNpdGVNZW1iZXJzaGlwEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIiuQEKGFRlYW1NZW1iZXJzaGlwQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEh0KBHRlYW0YCCABKAsyDy5yb3N0ZXIuVGVhbVJlZhIdCgRyb2xlGAkgASgLMg8ucm9zdGVyLlJvbGVSZWYSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJwChhUZWFtTWVtYmVyc2hpcEdldFJlcXVlc3QSJgoDcmVmGAEgASgLMhkucm9zdGVyLlRlYW1NZW1iZXJzaGlwUmVmEiwKBnNlbGVjdBgCIAEoCzIcLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFNlbGVjdCJdChFUZWFtTWVtYmVyc2hpcFJlZhIMCgJpZBgBIAEoDEgAEjMKBm1lbWJlchgCIAEoCzIhLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFJlZkJ5TWVtYmVySABCBQoDa2V5Il0KGVRlYW1NZW1iZXJzaGlwUmVmQnlNZW1iZXISIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIdCgR0ZWFtGAggASgLMg8ucm9zdGVyLlRlYW1SZWYizgEKFFRlYW1NZW1iZXJzaGlwU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EiAKBHRlYW0YCCABKAsyEi5yb3N0ZXIuVGVhbVNlbGVjdBIgCgRyb2xlGAkgASgLMhIucm9zdGVyLlJvbGVTZWxlY3QSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCLEAQoaVGVhbU1lbWJlcnNoaXBQYXRjaFJlcXVlc3QSJgoDcmVmGAEgASgLMhkucm9zdGVyLlRlYW1NZW1iZXJzaGlwUmVmEh0KBHJvbGUYEiABKAsyDy5yb3N0ZXIuUm9sZVJlZhIRCglyb2xlX251bGwYEyABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiYQoaVGVhbU1lbWJlcnNoaXBBcHBseVJlcXVlc3QSJgoDcmVmGAEgASgLMhkucm9zdGVyLlRlYW1NZW1iZXJzaGlwUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giLQobVGVhbU1lbWJlcnNoaXBFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKNAQoZVGVhbU1lbWJlcnNoaXBMaXN0UmVxdWVzdBItCgdmaWx0ZXJzGAEgAygLMhwucm9zdGVyLlRlYW1NZW1iZXJzaGlwRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJYChpUZWFtTWVtYmVyc2hpcExpc3RSZXNwb25zZRIlCgVpdGVtcxgBIAMoCzIWLnJvc3Rlci5UZWFtTWVtYmVyc2hpcBITCgRuZXh0GAIgASgJQgWqAQIIAiKAAQoUVGVhbU1lbWJlcnNoaXBGaWx0ZXISJgoDcmVmGAEgASgLMhkucm9zdGVyLlRlYW1NZW1iZXJzaGlwUmVmEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSHQoEdGVhbRgDIAEoCzIPLnJvc3Rlci5UZWFtUmVmImkKGlRlYW1NZW1iZXJzaGlwV2F0Y2hSZXF1ZXN0Ei0KB2ZpbHRlcnMYASADKAsyHC5yb3N0ZXIuVGVhbU1lbWJlcnNoaXBGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiTQobVGVhbU1lbWJlcnNoaXBXYXRjaFJlc3BvbnNlEi4KBWl0ZW1zGAEgAygLMh8ucm9zdGVyLlRlYW1NZW1iZXJzaGlwV2F0Y2hJdGVtImMKF1RlYW1NZW1iZXJzaGlwV2F0Y2hJdGVtEgoKAmlkGAEgASgMEiUKBXZhbHVlGAIgASgLMhYucm9zdGVyLlRlYW1NZW1iZXJzaGlwEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIivAEKGUdyb3VwTWVtYmVyc2hpcEFkZFJlcXVlc3QSCgoCaWQYASABKAwSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIfCgVncm91cBgIIAEoCzIQLnJvc3Rlci5Hcm91cFJlZhIdCgRyb2xlGAkgASgLMg8ucm9zdGVyLlJvbGVSZWYSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJzChlHcm91cE1lbWJlcnNoaXBHZXRSZXF1ZXN0EicKA3JlZhgBIAEoCzIaLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBSZWYSLQoGc2VsZWN0GAIgASgLMh0ucm9zdGVyLkdyb3VwTWVtYmVyc2hpcFNlbGVjdCJfChJHcm91cE1lbWJlcnNoaXBSZWYSDAoCaWQYASABKAxIABI0CgZtZW1iZXIYAiABKAsyIi5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwUmVmQnlNZW1iZXJIAEIFCgNrZXkiYAoaR3JvdXBNZW1iZXJzaGlwUmVmQnlNZW1iZXISIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIfCgVncm91cBgIIAEoCzIQLnJvc3Rlci5Hcm91cFJlZiLRAQoVR3JvdXBNZW1iZXJzaGlwU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EiIKBWdyb3VwGAggASgLMhMucm9zdGVyLkdyb3VwU2VsZWN0EiAKBHJvbGUYCSABKAsyEi5yb3N0ZXIuUm9sZVNlbGVjdBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIsYBChtHcm91cE1lbWJlcnNoaXBQYXRjaFJlcXVlc3QSJwoDcmVmGAEgASgLMhoucm9zdGVyLkdyb3VwTWVtYmVyc2hpcFJlZhIdCgRyb2xlGBIgASgLMg8ucm9zdGVyLlJvbGVSZWYSEQoJcm9sZV9udWxsGBMgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIImMKG0dyb3VwTWVtYmVyc2hpcEFwcGx5UmVxdWVzdBInCgNyZWYYASABKAsyGi5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giLgocR3JvdXBNZW1iZXJzaGlwRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgijwEKGkdyb3VwTWVtYmVyc2hpcExpc3RSZXF1ZXN0Ei4KB2ZpbHRlcnMYASADKAsyHS5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJaChtHcm91cE1lbWJlcnNoaXBMaXN0UmVzcG9uc2USJgoFaXRlbXMYASADKAsyFy5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwEhMKBG5leHQYAiABKAlCBaoBAggCIoQBChVHcm91cE1lbWJlcnNoaXBGaWx0ZXISJwoDcmVmGAEgASgLMhoucm9zdGVyLkdyb3VwTWVtYmVyc2hpcFJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEh8KBWdyb3VwGAMgASgLMhAucm9zdGVyLkdyb3VwUmVmMo8EChVTaXRlTWVtYmVyc2hpcFNlcnZpY2USPwoDQWRkEiAucm9zdGVyLlNpdGVNZW1iZXJzaGlwQWRkUmVxdWVzdBoWLnJvc3Rlci5TaXRlTWVtYmVyc2hpcBI/CgNHZXQSIC5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBHZXRSZXF1ZXN0GhYucm9zdGVyLlNpdGVNZW1iZXJzaGlwEkMKBVBhdGNoEiIucm9zdGVyLlNpdGVNZW1iZXJzaGlwUGF0Y2hSZXF1ZXN0GhYucm9zdGVyLlNpdGVNZW1iZXJzaGlwEkMKBUFwcGx5EiIucm9zdGVyLlNpdGVNZW1iZXJzaGlwQXBwbHlSZXF1ZXN0GhYucm9zdGVyLlNpdGVNZW1iZXJzaGlwEkcKBUVyYXNlEhkucm9zdGVyLlNpdGVNZW1iZXJzaGlwUmVmGiMucm9zdGVyLlNpdGVNZW1iZXJzaGlwRXJhc2VSZXNwb25zZRJNCgRMaXN0EiEucm9zdGVyLlNpdGVNZW1iZXJzaGlwTGlzdFJlcXVlc3QaIi5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBMaXN0UmVzcG9uc2USUgoFV2F0Y2gSIi5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBXYXRjaFJlcXVlc3QaIy5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBXYXRjaFJlc3BvbnNlMAEyjwQKFVRlYW1NZW1iZXJzaGlwU2VydmljZRI/CgNBZGQSIC5yb3N0ZXIuVGVhbU1lbWJlcnNoaXBBZGRSZXF1ZXN0GhYucm9zdGVyLlRlYW1NZW1iZXJzaGlwEj8KA0dldBIgLnJvc3Rlci5UZWFtTWVtYmVyc2hpcEdldFJlcXVlc3QaFi5yb3N0ZXIuVGVhbU1lbWJlcnNoaXASQwoFUGF0Y2gSIi5yb3N0ZXIuVGVhbU1lbWJlcnNoaXBQYXRjaFJlcXVlc3QaFi5yb3N0ZXIuVGVhbU1lbWJlcnNoaXASQwoFQXBwbHkSIi5yb3N0ZXIuVGVhbU1lbWJlcnNoaXBBcHBseVJlcXVlc3QaFi5yb3N0ZXIuVGVhbU1lbWJlcnNoaXASRwoFRXJhc2USGS5yb3N0ZXIuVGVhbU1lbWJlcnNoaXBSZWYaIy5yb3N0ZXIuVGVhbU1lbWJlcnNoaXBFcmFzZVJlc3BvbnNlEk0KBExpc3QSIS5yb3N0ZXIuVGVhbU1lbWJlcnNoaXBMaXN0UmVxdWVzdBoiLnJvc3Rlci5UZWFtTWVtYmVyc2hpcExpc3RSZXNwb25zZRJSCgVXYXRjaBIiLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFdhdGNoUmVxdWVzdBojLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFdhdGNoUmVzcG9uc2UwATLIAwoWR3JvdXBNZW1iZXJzaGlwU2VydmljZRJBCgNBZGQSIS5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwQWRkUmVxdWVzdBoXLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXASQQoDR2V0EiEucm9zdGVyLkdyb3VwTWVtYmVyc2hpcEdldFJlcXVlc3QaFy5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwEkUKBVBhdGNoEiMucm9zdGVyLkdyb3VwTWVtYmVyc2hpcFBhdGNoUmVxdWVzdBoXLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXASRQoFQXBwbHkSIy5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwQXBwbHlSZXF1ZXN0Ghcucm9zdGVyLkdyb3VwTWVtYmVyc2hpcBJJCgVFcmFzZRIaLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBSZWYaJC5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwRXJhc2VSZXNwb25zZRJPCgRMaXN0EiIucm9zdGVyLkdyb3VwTWVtYmVyc2hpcExpc3RSZXF1ZXN0GiMucm9zdGVyLkdyb3VwTWVtYmVyc2hpcExpc3RSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_group_svc_g, file_app_membership, file_app_role_svc_g, file_app_site_svc_g, file_app_team_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.SiteMembershipAddRequest
@@ -934,6 +936,370 @@ export const TeamMembershipWatchItemSchema: GenMessage<TeamMembershipWatchItem> 
   messageDesc(file_app_membership_svc_g, 27);
 
 /**
+ * @generated from message roster.GroupMembershipAddRequest
+ */
+export type GroupMembershipAddRequest = Message<"roster.GroupMembershipAddRequest"> & {
+  /**
+   * @generated from field: bytes id = 1;
+   */
+  id: Uint8Array;
+
+  /**
+   * @generated from field: roster.HolderRef holder = 2;
+   */
+  holder?: HolderRef | undefined;
+
+  /**
+   * @generated from field: roster.GroupRef group = 8;
+   */
+  group?: GroupRef | undefined;
+
+  /**
+   * @generated from field: roster.RoleRef role = 9;
+   */
+  role?: RoleRef | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_created = 15;
+   */
+  dateCreated?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.GroupMembershipAddRequest.
+ * Use `create(GroupMembershipAddRequestSchema)` to create a new message.
+ */
+export const GroupMembershipAddRequestSchema: GenMessage<GroupMembershipAddRequest> = /*@__PURE__*/
+  messageDesc(file_app_membership_svc_g, 28);
+
+/**
+ * @generated from message roster.GroupMembershipGetRequest
+ */
+export type GroupMembershipGetRequest = Message<"roster.GroupMembershipGetRequest"> & {
+  /**
+   * @generated from field: roster.GroupMembershipRef ref = 1;
+   */
+  ref?: GroupMembershipRef | undefined;
+
+  /**
+   * @generated from field: roster.GroupMembershipSelect select = 2;
+   */
+  select?: GroupMembershipSelect | undefined;
+};
+
+/**
+ * Describes the message roster.GroupMembershipGetRequest.
+ * Use `create(GroupMembershipGetRequestSchema)` to create a new message.
+ */
+export const GroupMembershipGetRequestSchema: GenMessage<GroupMembershipGetRequest> = /*@__PURE__*/
+  messageDesc(file_app_membership_svc_g, 29);
+
+/**
+ * @generated from message roster.GroupMembershipRef
+ */
+export type GroupMembershipRef = Message<"roster.GroupMembershipRef"> & {
+  /**
+   * @generated from oneof roster.GroupMembershipRef.key
+   */
+  key: {
+    /**
+     * @generated from field: bytes id = 1;
+     */
+    value: Uint8Array;
+    case: "id";
+  } | {
+    /**
+     * @generated from field: roster.GroupMembershipRefByMember member = 2;
+     */
+    value: GroupMembershipRefByMember;
+    case: "member";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message roster.GroupMembershipRef.
+ * Use `create(GroupMembershipRefSchema)` to create a new message.
+ */
+export const GroupMembershipRefSchema: GenMessage<GroupMembershipRef> = /*@__PURE__*/
+  messageDesc(file_app_membership_svc_g, 30);
+
+/**
+ * @generated from message roster.GroupMembershipRefByMember
+ */
+export type GroupMembershipRefByMember = Message<"roster.GroupMembershipRefByMember"> & {
+  /**
+   * @generated from field: roster.HolderRef holder = 2;
+   */
+  holder?: HolderRef | undefined;
+
+  /**
+   * @generated from field: roster.GroupRef group = 8;
+   */
+  group?: GroupRef | undefined;
+};
+
+/**
+ * Describes the message roster.GroupMembershipRefByMember.
+ * Use `create(GroupMembershipRefByMemberSchema)` to create a new message.
+ */
+export const GroupMembershipRefByMemberSchema: GenMessage<GroupMembershipRefByMember> = /*@__PURE__*/
+  messageDesc(file_app_membership_svc_g, 31);
+
+/**
+ * @generated from message roster.GroupMembershipSelect
+ */
+export type GroupMembershipSelect = Message<"roster.GroupMembershipSelect"> & {
+  /**
+   * @generated from field: bool all = 1;
+   */
+  all: boolean;
+
+  /**
+   * @generated from field: roster.HolderSelect holder = 2;
+   */
+  holder?: HolderSelect | undefined;
+
+  /**
+   * @generated from field: roster.GroupSelect group = 8;
+   */
+  group?: GroupSelect | undefined;
+
+  /**
+   * @generated from field: roster.RoleSelect role = 9;
+   */
+  role?: RoleSelect | undefined;
+
+  /**
+   * @generated from field: bool date_updated = 13;
+   */
+  dateUpdated: boolean;
+
+  /**
+   * @generated from field: bool date_erased = 14;
+   */
+  dateErased: boolean;
+
+  /**
+   * @generated from field: bool date_created = 15;
+   */
+  dateCreated: boolean;
+};
+
+/**
+ * Describes the message roster.GroupMembershipSelect.
+ * Use `create(GroupMembershipSelectSchema)` to create a new message.
+ */
+export const GroupMembershipSelectSchema: GenMessage<GroupMembershipSelect> = /*@__PURE__*/
+  messageDesc(file_app_membership_svc_g, 32);
+
+/**
+ * @generated from message roster.GroupMembershipPatchRequest
+ */
+export type GroupMembershipPatchRequest = Message<"roster.GroupMembershipPatchRequest"> & {
+  /**
+   * @generated from field: roster.GroupMembershipRef ref = 1;
+   */
+  ref?: GroupMembershipRef | undefined;
+
+  /**
+   * @generated from field: roster.RoleRef role = 18;
+   */
+  role?: RoleRef | undefined;
+
+  /**
+   * Clear role instead of writing it.
+   * It takes a field of its own because an unset value already means
+   * "leave it alone", so no value could have meant NULL. It wins
+   * outright: setting both this and role clears.
+   *
+   * @generated from field: bool role_null = 19;
+   */
+  roleNull: boolean;
+
+  /**
+   * The version this update requires the stored date_updated to be.
+   * It is a precondition, not a write: the update applies only if the row
+   * still holds this value, and the server stamps the new version itself.
+   * Setting it together with date_updated_force is an error --
+   * the version is the token every client's compare-and-swap is measured
+   * against, so it is not the caller's to choose.
+   *
+   * @generated from field: google.protobuf.Timestamp date_updated = 26;
+   */
+  dateUpdated?: Timestamp | undefined;
+
+  /**
+   * Update whatever the stored date_updated is, with no precondition.
+   * The server still stamps a new version, so other clients' tokens are
+   * invalidated as usual; this declines the check for THIS update only.
+   * One of date_updated or this must be set. An omitted version is
+   * refused rather than assumed, because an unset field cannot be told
+   * apart from a caller who never considered locking at all.
+   *
+   * @generated from field: bool date_updated_force = 27;
+   */
+  dateUpdatedForce: boolean;
+};
+
+/**
+ * Describes the message roster.GroupMembershipPatchRequest.
+ * Use `create(GroupMembershipPatchRequestSchema)` to create a new message.
+ */
+export const GroupMembershipPatchRequestSchema: GenMessage<GroupMembershipPatchRequest> = /*@__PURE__*/
+  messageDesc(file_app_membership_svc_g, 33);
+
+/**
+ * @generated from message roster.GroupMembershipApplyRequest
+ */
+export type GroupMembershipApplyRequest = Message<"roster.GroupMembershipApplyRequest"> & {
+  /**
+   * @generated from field: roster.GroupMembershipRef ref = 1;
+   */
+  ref?: GroupMembershipRef | undefined;
+
+  /**
+   * @generated from field: patch.Patch patch = 2;
+   */
+  patch?: Patch | undefined;
+};
+
+/**
+ * Describes the message roster.GroupMembershipApplyRequest.
+ * Use `create(GroupMembershipApplyRequestSchema)` to create a new message.
+ */
+export const GroupMembershipApplyRequestSchema: GenMessage<GroupMembershipApplyRequest> = /*@__PURE__*/
+  messageDesc(file_app_membership_svc_g, 34);
+
+/**
+ * @generated from message roster.GroupMembershipEraseResponse
+ */
+export type GroupMembershipEraseResponse = Message<"roster.GroupMembershipEraseResponse"> & {
+  /**
+   * Erased is whether this call is the one that erased the row.
+   *
+   * False for a row that was already gone, was never there, or is out
+   * of this caller's reach -- which are one answer on purpose, and the
+   * reason the RPC does not fail instead.
+   *
+   * @generated from field: bool erased = 1;
+   */
+  erased: boolean;
+};
+
+/**
+ * Describes the message roster.GroupMembershipEraseResponse.
+ * Use `create(GroupMembershipEraseResponseSchema)` to create a new message.
+ */
+export const GroupMembershipEraseResponseSchema: GenMessage<GroupMembershipEraseResponse> = /*@__PURE__*/
+  messageDesc(file_app_membership_svc_g, 35);
+
+/**
+ * @generated from message roster.GroupMembershipListRequest
+ */
+export type GroupMembershipListRequest = Message<"roster.GroupMembershipListRequest"> & {
+  /**
+   * Bounded because the work is: each filter is a predicate in the same query,
+   * so this is what says how much of the database one request may read.
+   *
+   * @generated from field: repeated roster.GroupMembershipFilter filters = 1;
+   */
+  filters: GroupMembershipFilter[];
+
+  /**
+   * How many to answer with. Nothing said is what the schema declared, and more
+   * than the cap is the cap -- a caller asking for more than there is meant no
+   * harm, so it is not an error and it is not the whole table either.
+   *
+   * @generated from field: int32 size = 2 [features.field_presence = IMPLICIT];
+   */
+  size: number;
+
+  /**
+   * Where to carry on from: the "next" of the answer before. It names the last
+   * row of that page rather than counting rows from the start, so a row added
+   * ahead of the page does not shift it and a caller reading through never sees
+   * one twice or misses one.
+   *
+   * @generated from field: string after = 3 [features.field_presence = IMPLICIT];
+   */
+  after: string;
+
+  /**
+   * Read the order the other way round, every column of it at once -- newest
+   * first where it is oldest first -- which the index the order walks walks
+   * from the other end. A cursor is of the way it was read, so the next page
+   * carries on that way, and one of the other way is refused.
+   *
+   * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
+   */
+  reverse: boolean;
+};
+
+/**
+ * Describes the message roster.GroupMembershipListRequest.
+ * Use `create(GroupMembershipListRequestSchema)` to create a new message.
+ */
+export const GroupMembershipListRequestSchema: GenMessage<GroupMembershipListRequest> = /*@__PURE__*/
+  messageDesc(file_app_membership_svc_g, 36);
+
+/**
+ * @generated from message roster.GroupMembershipListResponse
+ */
+export type GroupMembershipListResponse = Message<"roster.GroupMembershipListResponse"> & {
+  /**
+   * @generated from field: repeated roster.GroupMembership items = 1;
+   */
+  items: GroupMembership[];
+
+  /**
+   * What to ask for next, and empty when this was the last of them.
+   *
+   * Empty means there is no more *for now*: a list is read as it is, and one
+   * that has grown since answers a fresh call. It is not empty merely because
+   * the page came back short -- a page is short when the last row of it was the
+   * last row there was, which is a thing the server can only know by having
+   * looked.
+   *
+   * @generated from field: string next = 2 [features.field_presence = IMPLICIT];
+   */
+  next: string;
+};
+
+/**
+ * Describes the message roster.GroupMembershipListResponse.
+ * Use `create(GroupMembershipListResponseSchema)` to create a new message.
+ */
+export const GroupMembershipListResponseSchema: GenMessage<GroupMembershipListResponse> = /*@__PURE__*/
+  messageDesc(file_app_membership_svc_g, 37);
+
+/**
+ * @generated from message roster.GroupMembershipFilter
+ */
+export type GroupMembershipFilter = Message<"roster.GroupMembershipFilter"> & {
+  /**
+   * @generated from field: roster.GroupMembershipRef ref = 1;
+   */
+  ref?: GroupMembershipRef | undefined;
+
+  /**
+   * @generated from field: roster.HolderRef holder = 2;
+   */
+  holder?: HolderRef | undefined;
+
+  /**
+   * @generated from field: roster.GroupRef group = 3;
+   */
+  group?: GroupRef | undefined;
+};
+
+/**
+ * Describes the message roster.GroupMembershipFilter.
+ * Use `create(GroupMembershipFilterSchema)` to create a new message.
+ */
+export const GroupMembershipFilterSchema: GenMessage<GroupMembershipFilter> = /*@__PURE__*/
+  messageDesc(file_app_membership_svc_g, 38);
+
+/**
  * @generated from service roster.SiteMembershipService
  */
 export const SiteMembershipService: GenService<{
@@ -1106,4 +1472,71 @@ export const TeamMembershipService: GenService<{
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_membership_svc_g, 1);
+
+/**
+ * @generated from service roster.GroupMembershipService
+ */
+export const GroupMembershipService: GenService<{
+  /**
+   * Add creates a new GroupMembership
+   *
+   * @generated from rpc roster.GroupMembershipService.Add
+   */
+  add: {
+    methodKind: "unary";
+    input: typeof GroupMembershipAddRequestSchema;
+    output: typeof GroupMembershipSchema;
+  },
+  /**
+   * Get retrieves a GroupMembership
+   *
+   * @generated from rpc roster.GroupMembershipService.Get
+   */
+  get: {
+    methodKind: "unary";
+    input: typeof GroupMembershipGetRequestSchema;
+    output: typeof GroupMembershipSchema;
+  },
+  /**
+   * Patch updates an existing GroupMembership
+   *
+   * @generated from rpc roster.GroupMembershipService.Patch
+   */
+  patch: {
+    methodKind: "unary";
+    input: typeof GroupMembershipPatchRequestSchema;
+    output: typeof GroupMembershipSchema;
+  },
+  /**
+   * Apply applies a patch document to an existing GroupMembership
+   *
+   * @generated from rpc roster.GroupMembershipService.Apply
+   */
+  apply: {
+    methodKind: "unary";
+    input: typeof GroupMembershipApplyRequestSchema;
+    output: typeof GroupMembershipSchema;
+  },
+  /**
+   * Erase deletes a GroupMembership
+   *
+   * @generated from rpc roster.GroupMembershipService.Erase
+   */
+  erase: {
+    methodKind: "unary";
+    input: typeof GroupMembershipRefSchema;
+    output: typeof GroupMembershipEraseResponseSchema;
+  },
+  /**
+   * List reads GroupMemberships a page at a time.
+   *
+   * @generated from rpc roster.GroupMembershipService.List
+   */
+  list: {
+    methodKind: "unary";
+    input: typeof GroupMembershipListRequestSchema;
+    output: typeof GroupMembershipListResponseSchema;
+  },
+}> = /*@__PURE__*/
+  serviceDesc(file_app_membership_svc_g, 2);
 

@@ -22,10 +22,14 @@ const (
 	FieldHolderId = "holder_id"
 	// FieldGroupId holds the string denoting the group_id field in the database.
 	FieldGroupId = "group_id"
+	// FieldRoleId holds the string denoting the role_id field in the database.
+	FieldRoleId = "role_id"
 	// EdgeHolder holds the string denoting the holder edge name in mutations.
 	EdgeHolder = "holder"
 	// EdgeGroup holds the string denoting the group edge name in mutations.
 	EdgeGroup = "group"
+	// EdgeRole holds the string denoting the role edge name in mutations.
+	EdgeRole = "role"
 	// Table holds the table name of the groupmembership in the database.
 	Table = "groupmembership"
 	// HolderTable is the table that holds the holder relation/edge.
@@ -42,6 +46,13 @@ const (
 	GroupInverseTable = "group"
 	// GroupColumn is the table column denoting the group relation/edge.
 	GroupColumn = "group_id"
+	// RoleTable is the table that holds the role relation/edge.
+	RoleTable = "groupmembership"
+	// RoleInverseTable is the table name for the Role entity.
+	// It exists in this package in order to avoid circular dependency with the "role" package.
+	RoleInverseTable = "role"
+	// RoleColumn is the table column denoting the role relation/edge.
+	RoleColumn = "role_id"
 )
 
 // Columns holds all SQL columns for groupmembership fields.
@@ -52,6 +63,7 @@ var Columns = []string{
 	FieldDateCreated,
 	FieldHolderId,
 	FieldGroupId,
+	FieldRoleId,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -97,6 +109,11 @@ func ByGroupId(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldGroupId, opts...).ToFunc()
 }
 
+// ByRoleId orders the results by the role_id field.
+func ByRoleId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRoleId, opts...).ToFunc()
+}
+
 // ByHolderField orders the results by holder field.
 func ByHolderField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -108,6 +125,13 @@ func ByHolderField(field string, opts ...sql.OrderTermOption) OrderOption {
 func ByGroupField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newGroupStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByRoleField orders the results by role field.
+func ByRoleField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRoleStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newHolderStep() *sqlgraph.Step {
@@ -122,5 +146,12 @@ func newGroupStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldId),
 		sqlgraph.To(GroupInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, GroupTable, GroupColumn),
+	)
+}
+func newRoleStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(RoleInverseTable, FieldId),
+		sqlgraph.Edge(sqlgraph.M2O, false, RoleTable, RoleColumn),
 	)
 }

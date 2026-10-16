@@ -3553,6 +3553,23 @@ func (m *GroupMembershipMutation) OldGroupId(ctx context.Context) (v uuid.UUID, 
 	return oldValue.GroupId, nil
 }
 
+// OldRoleId returns the old "role_id" field's value of the GroupMembership entity.
+// If the GroupMembership object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMembershipMutation) OldRoleId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldRoleId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldRoleId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRoleId: %w", err)
+	}
+	return oldValue.RoleId, nil
+}
+
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
@@ -3568,6 +3585,8 @@ func (m *GroupMembershipMutation) OldField(ctx context.Context, name string) (en
 		return m.OldHolderId(ctx)
 	case groupmembership.FieldGroupId:
 		return m.OldGroupId(ctx)
+	case groupmembership.FieldRoleId:
+		return m.OldRoleId(ctx)
 	}
 	return nil, fmt.Errorf("unknown GroupMembership field %s", name)
 }

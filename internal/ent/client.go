@@ -2290,6 +2290,22 @@ func (c *GroupMembershipClient) QueryGroup(_m *GroupMembership) *GroupQuery {
 	return query
 }
 
+// QueryRole queries the role edge of a GroupMembership.
+func (c *GroupMembershipClient) QueryRole(_m *GroupMembership) *RoleQuery {
+	query := (&RoleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(groupmembership.Table, groupmembership.FieldId, id),
+			sqlgraph.To(role.Table, role.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, groupmembership.RoleTable, groupmembership.RoleColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *GroupMembershipClient) Hooks() []Hook {
 	return c.hooks.GroupMembership

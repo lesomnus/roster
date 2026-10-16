@@ -9,6 +9,8 @@ import type { Site } from "./site_pb.js";
 import { file_app_site } from "./site_pb.js";
 import type { Team } from "./team_pb.js";
 import { file_app_team } from "./team_pb.js";
+import type { Group } from "./group_pb.js";
+import { file_app_group } from "./group_pb.js";
 import type { Role } from "./role_pb.js";
 import { file_app_role } from "./role_pb.js";
 import type { Holder } from "../roster/payday/holder_pb.js";
@@ -23,7 +25,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/membership.proto.
  */
 export const file_app_membership: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvbWVtYmVyc2hpcC5wcm90bxIGcm9zdGVyIswDCg5TaXRlTWVtYmVyc2hpcBIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEiIKBHNpdGUYAyABKAsyDC5yb3N0ZXIuU2l0ZUIG8oIWAkABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqiAcr8FUgSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARogEgZtZW1iZXIaCgoGaG9sZGVyEAIaCAoEc2l0ZRADMAGKuxZSCAsyOwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGaG9sZGVyGgYKBHNpdGUgFChkOgAiDwoNaG9sZGVyLnRlbmFudCLwAwoOVGVhbU1lbWJlcnNoaXASFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIiCgR0ZWFtGAggASgLMgwucm9zdGVyLlRlYW1CBvKCFgJAARIiCgRyb2xlGAkgASgLMgwucm9zdGVyLlJvbGVCBvKCFgI4ARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6ogHK/BVIEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaIBIGbWVtYmVyGgoKBmhvbGRlchACGggKBHRlYW0QCDABirsWUggMMjsKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBmhvbGRlchoGCgR0ZWFtIBQoZDoAIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_app_site, file_app_team, file_app_role, file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChRhcHAvbWVtYmVyc2hpcC5wcm90bxIGcm9zdGVyIswDCg5TaXRlTWVtYmVyc2hpcBIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEiIKBHNpdGUYAyABKAsyDC5yb3N0ZXIuU2l0ZUIG8oIWAkABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqiAcr8FUgSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARogEgZtZW1iZXIaCgoGaG9sZGVyEAIaCAoEc2l0ZRADMAGKuxZSCAsyOwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGaG9sZGVyGgYKBHNpdGUgFChkOgAiDwoNaG9sZGVyLnRlbmFudCLwAwoOVGVhbU1lbWJlcnNoaXASFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIiCgR0ZWFtGAggASgLMgwucm9zdGVyLlRlYW1CBvKCFgJAARIiCgRyb2xlGAkgASgLMgwucm9zdGVyLlJvbGVCBvKCFgI4ARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6ogHK/BVIEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaIBIGbWVtYmVyGgoKBmhvbGRlchACGggKBHRlYW0QCDABirsWUggMMjsKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBmhvbGRlchoGCgR0ZWFtIBQoZDoAIg8KDWhvbGRlci50ZW5hbnQi8wMKD0dyb3VwTWVtYmVyc2hpcBIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEiQKBWdyb3VwGAggASgLMg0ucm9zdGVyLkdyb3VwQgbyghYCQAESIgoEcm9sZRgJIAEoCzIMLnJvc3Rlci5Sb2xlQgbyghYCOAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOqIByvwVSRICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGiESBm1lbWJlchoKCgZob2xkZXIQAhoJCgVncm91cBAIMAGKuxZRCBEyPAoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGaG9sZGVyGgcKBWdyb3VwIBQoZCIPCg1ob2xkZXIudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_app_site, file_app_team, file_app_group, file_app_role, file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * SiteMembership is somebody being in a site.
@@ -175,4 +177,87 @@ export type TeamMembership = Message<"roster.TeamMembership"> & {
  */
 export const TeamMembershipSchema: GenMessage<TeamMembership> = /*@__PURE__*/
   messageDesc(file_app_membership, 1);
+
+/**
+ * GroupMembership is somebody being in a [Group].
+ *
+ * # Writing one is a grant
+ *
+ * A binding written to a group is held by everybody in it -- that is what a
+ * group is for -- so putting somebody in one hands them every binding that
+ * names it. Which makes this a grant although it mentions no role, and it is
+ * refused on the same terms `Binding.Add` is: nobody hands out what they do not
+ * hold, each binding checked at the scope it was made in.
+ * `server/core/escalate.go`.
+ *
+ * A row rather than a list on either side, for the reason every membership here
+ * is one: it is many-to-many, and it is a fact with a date of its own.
+ *
+ * # A group's managers
+ *
+ * Somebody whose membership carries a [role] manages that group: they may put
+ * people into it and take them out, and they may not do either to another
+ * group. The rule a team's administrators have, and asked the same way -- the
+ * gate lets them through for the method, and `server/core` refuses every group
+ * but the one they hold it in (`mayChangeGroup`).
+ *
+ * A manager is a member. Keeping them out of the group would protect nothing,
+ * since a manager can put an accomplice in.
+ *
+ * @generated from message roster.GroupMembership
+ */
+export type GroupMembership = Message<"roster.GroupMembership"> & {
+  /**
+   * @generated from field: bytes id = 1;
+   */
+  id: Uint8Array;
+
+  /**
+   * @generated from field: roster.Holder holder = 2;
+   */
+  holder?: Holder | undefined;
+
+  /**
+   * @generated from field: roster.Group group = 8;
+   */
+  group?: Group | undefined;
+
+  /**
+   * What they may do in this group, and empty is a plain member.
+   *
+   * Held here, it reaches this group and nothing else, so it may name only
+   * what changes the group's members -- `GroupMembershipService/Add` and
+   * `/Erase`. Anything wider would be handed out tenant-wide by the gate,
+   * which never sees which group a call is about.
+   *
+   * Attaching one is appointing a manager, and is held to what the appointer
+   * holds through a binding: a manager may put people in and may not make
+   * another manager.
+   *
+   * @generated from field: roster.Role role = 9;
+   */
+  role?: Role | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_updated = 13;
+   */
+  dateUpdated?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_erased = 14;
+   */
+  dateErased?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp date_created = 15;
+   */
+  dateCreated?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.GroupMembership.
+ * Use `create(GroupMembershipSchema)` to create a new message.
+ */
+export const GroupMembershipSchema: GenMessage<GroupMembership> = /*@__PURE__*/
+  messageDesc(file_app_membership, 2);
 

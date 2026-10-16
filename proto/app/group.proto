@@ -3,7 +3,6 @@ edition = "2023";
 package roster;
 
 import "roster/payday/tenant.proto";
-import "roster/payday/holder.proto";
 import "app/site.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
@@ -106,72 +105,6 @@ message Group {
         {field: {name: "id", number: 1}}
       ]
       by: [{name: "ref"}, {name: "tenant"}, {name: "site"}]
-      size: 20
-      max: 100
-    }
-  };
-}
-
-// GroupMembership is somebody being in a [Group].
-//
-// # Writing one is a grant
-//
-// A binding written to a group is held by everybody in it -- that is what a
-// group is for -- so putting somebody in one hands them every binding that
-// names it. Which makes this a grant although it mentions no role, and it is
-// refused on the same terms `Binding.Add` is: nobody hands out what they do not
-// hold, each binding checked at the scope it was made in.
-// `server/core/escalate.go`.
-//
-// A row rather than a list on either side, for the reason every membership here
-// is one: it is many-to-many, and it is a fact with a date of its own.
-message GroupMembership {
-  bytes id = 1 [(orm.field) = {
-    type: TYPE_UUID
-    key: true
-    default: ""
-  }];
-
-  Holder holder = 2 [(orm.edge) = {immutable: true}];
-
-  Group group = 8 [(orm.edge) = {immutable: true}];
-
-  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
-  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
-  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
-    immutable: true
-    default: ""
-  }];
-
-  option (orm.message) = {
-    rpc: {crud: true}
-    indexes: [
-      {
-        name: "page"
-        refs: [
-          {name: "date_created", number: 15},
-          {name: "id", number: 1}
-        ]
-      },
-      {
-        name: "member"
-        refs: [
-          {name: "holder", number: 2},
-          {name: "group", number: 8}
-        ]
-        unique: true
-      }
-    ]
-  };
-  option (payday.entity) = {
-    domain: 17
-    tenanted: {via: "holder.tenant"}
-    list: {
-      order: [
-        {field: {name: "date_created", number: 15}},
-        {field: {name: "id", number: 1}}
-      ]
-      by: [{name: "ref"}, {name: "holder"}, {name: "group"}]
       size: 20
       max: 100
     }

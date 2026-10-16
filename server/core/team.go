@@ -47,10 +47,11 @@ import (
 // cannot itself require permission. Asking again here would be a second
 // implementation of one question, and the two would drift.
 //
-// `team` is which team the call is about, and `pdid.Nil` asks only about the
-// scopes that are not one. A nil `Holds` refuses everything a frame carries,
-// which is the safe direction for a stack somebody built without it.
-type Holds func(ctx context.Context, who pdid.Id, method string, team pdid.Id) (bool, error)
+// `scope` is which team -- or which group, for its managers (`group.go`) -- the
+// call is about, told apart by its identifier, and `pdid.Nil` asks only about
+// the scopes that are neither. A nil `Holds` refuses everything a frame
+// carries, which is the safe direction for a stack somebody built without it.
+type Holds func(ctx context.Context, who pdid.Id, method string, scope pdid.Id) (bool, error)
 
 // mayChangeTeam refuses somebody who holds nothing for this team.
 //

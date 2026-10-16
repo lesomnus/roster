@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
 	"github.com/protobuf-orm/ent/schema/field"
@@ -70,6 +71,20 @@ func (_c *GroupMembershipCreate) SetGroupId(v uuid.UUID) *GroupMembershipCreate 
 	return _c
 }
 
+// SetRoleId sets the "role_id" field.
+func (_c *GroupMembershipCreate) SetRoleId(v uuid.UUID) *GroupMembershipCreate {
+	_c.mutation.SetRoleId(v)
+	return _c
+}
+
+// SetNillableRoleId sets the "role_id" field if the given value is not nil.
+func (_c *GroupMembershipCreate) SetNillableRoleId(v *uuid.UUID) *GroupMembershipCreate {
+	if v != nil {
+		_c.SetRoleId(*v)
+	}
+	return _c
+}
+
 // SetId sets the "id" field.
 func (_c *GroupMembershipCreate) SetId(v uuid.UUID) *GroupMembershipCreate {
 	_c.mutation.SetId(v)
@@ -84,6 +99,11 @@ func (_c *GroupMembershipCreate) SetHolder(v *Holder) *GroupMembershipCreate {
 // SetGroup sets the "group" edge to the Group entity.
 func (_c *GroupMembershipCreate) SetGroup(v *Group) *GroupMembershipCreate {
 	return _c.SetGroupId(v.Id)
+}
+
+// SetRole sets the "role" edge to the Role entity.
+func (_c *GroupMembershipCreate) SetRole(v *Role) *GroupMembershipCreate {
+	return _c.SetRoleId(v.Id)
 }
 
 // Mutation returns the GroupMembershipMutation object of the builder.
@@ -218,6 +238,23 @@ func (_c *GroupMembershipCreate) createSpec() (*GroupMembership, *sqlgraph.Creat
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.GroupId = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RoleIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   groupmembership.RoleTable,
+			Columns: []string{groupmembership.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(role.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.RoleId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

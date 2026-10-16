@@ -3439,8 +3439,8 @@ type HolderReachesResponse_builder struct {
 	// A binding with no site is the tenant's whole width.
 	EverySite *bool
 	// The patterns held **across the whole tenant**: through a binding with no
-	// site, and not a role held in a team. What an app with no sites of its own
-	// grants on.
+	// site, and not a role held in a team or in a group. What an app with no
+	// sites of its own grants on.
 	//
 	// `methods` is the union the gate asks -- *may they ever call this* -- and the
 	// wall then narrows the rows a site-bound or team-bound grant reaches. An app

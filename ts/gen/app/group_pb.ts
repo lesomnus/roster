@@ -7,8 +7,6 @@ import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Tenant } from "../roster/payday/tenant_pb.js";
 import { file_roster_payday_tenant } from "../roster/payday/tenant_pb.js";
-import type { Holder } from "../roster/payday/holder_pb.js";
-import { file_roster_payday_holder } from "../roster/payday/holder_pb.js";
 import type { Site } from "./site_pb.js";
 import { file_app_site } from "./site_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
@@ -21,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/group.proto.
  */
 export const file_app_group: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvZ3JvdXAucHJvdG8SBnJvc3RlciLcAwoFR3JvdXASFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIkCgRzaXRlGAMgASgLMgwucm9zdGVyLlNpdGVCCPKCFgQ4AUABEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6jgHK/BVHEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxY/CBAyOwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGdGVuYW50GgYKBHNpdGUgFChkIs8DCg9Hcm91cE1lbWJlcnNoaXASFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIkCgVncm91cBgIIAEoCzINLnJvc3Rlci5Hcm91cEIG8oIWAkABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqiAcr8FUkSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARohEgZtZW1iZXIaCgoGaG9sZGVyEAIaCQoFZ3JvdXAQCDABirsWUQgRMjwKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBmhvbGRlchoHCgVncm91cCAUKGQiDwoNaG9sZGVyLnRlbmFudCKzAwoNR3JvdXBFeHBvc3VyZRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJAoFZ3JvdXAYAiABKAsyDS5yb3N0ZXIuR3JvdXBCBvKCFgJAARIWCgZjbGllbnQYCCABKAlCBuqCFgJAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6mAHK/BVKEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaIhIHY2FycmllZBoJCgVncm91cBACGgoKBmNsaWVudBAIMAGKuxZGCBwyMgoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaBwoFZ3JvdXAgFChkIg4KDGdyb3VwLnRlbmFudEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_tenant, file_roster_payday_holder, file_app_site, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg9hcHAvZ3JvdXAucHJvdG8SBnJvc3RlciLcAwoFR3JvdXASFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIkCgRzaXRlGAMgASgLMgwucm9zdGVyLlNpdGVCCPKCFgQ4AUABEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6jgHK/BVHEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxY/CBAyOwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGdGVuYW50GgYKBHNpdGUgFChkIrMDCg1Hcm91cEV4cG9zdXJlEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIkCgVncm91cBgCIAEoCzINLnJvc3Rlci5Hcm91cEIG8oIWAkABEhYKBmNsaWVudBgIIAEoCUIG6oIWAkABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqYAcr8FUoSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARoiEgdjYXJyaWVkGgkKBWdyb3VwEAIaCgoGY2xpZW50EAgwAYq7FkYIHDIyChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoHCgVncm91cCAUKGQiDgoMZ3JvdXAudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_tenant, file_app_site, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Group is a named set of people, and nothing else.
@@ -126,62 +124,6 @@ export const GroupSchema: GenMessage<Group> = /*@__PURE__*/
   messageDesc(file_app_group, 0);
 
 /**
- * GroupMembership is somebody being in a [Group].
- *
- * # Writing one is a grant
- *
- * A binding written to a group is held by everybody in it -- that is what a
- * group is for -- so putting somebody in one hands them every binding that
- * names it. Which makes this a grant although it mentions no role, and it is
- * refused on the same terms `Binding.Add` is: nobody hands out what they do not
- * hold, each binding checked at the scope it was made in.
- * `server/core/escalate.go`.
- *
- * A row rather than a list on either side, for the reason every membership here
- * is one: it is many-to-many, and it is a fact with a date of its own.
- *
- * @generated from message roster.GroupMembership
- */
-export type GroupMembership = Message<"roster.GroupMembership"> & {
-  /**
-   * @generated from field: bytes id = 1;
-   */
-  id: Uint8Array;
-
-  /**
-   * @generated from field: roster.Holder holder = 2;
-   */
-  holder?: Holder | undefined;
-
-  /**
-   * @generated from field: roster.Group group = 8;
-   */
-  group?: Group | undefined;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp date_updated = 13;
-   */
-  dateUpdated?: Timestamp | undefined;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp date_erased = 14;
-   */
-  dateErased?: Timestamp | undefined;
-
-  /**
-   * @generated from field: google.protobuf.Timestamp date_created = 15;
-   */
-  dateCreated?: Timestamp | undefined;
-};
-
-/**
- * Describes the message roster.GroupMembership.
- * Use `create(GroupMembershipSchema)` to create a new message.
- */
-export const GroupMembershipSchema: GenMessage<GroupMembership> = /*@__PURE__*/
-  messageDesc(file_app_group, 1);
-
-/**
  * GroupExposure is a client whose tokens carry a [Group]: the `client_id` of a
  * relying party that grants on the group, by its alias.
  *
@@ -249,5 +191,5 @@ export type GroupExposure = Message<"roster.GroupExposure"> & {
  * Use `create(GroupExposureSchema)` to create a new message.
  */
 export const GroupExposureSchema: GenMessage<GroupExposure> = /*@__PURE__*/
-  messageDesc(file_app_group, 2);
+  messageDesc(file_app_group, 1);
 

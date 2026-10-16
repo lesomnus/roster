@@ -25,6 +25,8 @@ type Mutation struct {
 	clearedholder bool
 	group         *uuid.UUID
 	clearedgroup  bool
+	role          *uuid.UUID
+	clearedrole   bool
 	predicates    []predicate.GroupMembership
 }
 
@@ -163,6 +165,38 @@ func (m *Mutation) ResetGroupId() {
 	m.group = nil
 }
 
+// SetRoleId sets the "role_id" field.
+func (m *Mutation) SetRoleId(u uuid.UUID) {
+	m.role = &u
+}
+
+// RoleId returns the value of the "role_id" field in the mutation.
+func (m *Mutation) RoleId() (r uuid.UUID, exists bool) {
+	v := m.role
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRoleId clears the value of the "role_id" field.
+func (m *Mutation) ClearRoleId() {
+	m.role = nil
+	m.clearedFields[FieldRoleId] = struct{}{}
+}
+
+// RoleIdCleared returns if the "role_id" field was cleared in this mutation.
+func (m *Mutation) RoleIdCleared() bool {
+	_, ok := m.clearedFields[FieldRoleId]
+	return ok
+}
+
+// ResetRoleId resets all changes to the "role_id" field.
+func (m *Mutation) ResetRoleId() {
+	m.role = nil
+	delete(m.clearedFields, FieldRoleId)
+}
+
 // ClearHolder clears the "holder" edge to the Holder entity.
 func (m *Mutation) ClearHolder() {
 	m.clearedholder = true
@@ -217,6 +251,33 @@ func (m *Mutation) ResetGroup() {
 	m.clearedgroup = false
 }
 
+// ClearRole clears the "role" edge to the Role entity.
+func (m *Mutation) ClearRole() {
+	m.clearedrole = true
+	m.clearedFields[FieldRoleId] = struct{}{}
+}
+
+// RoleCleared reports if the "role" edge to the Role entity was cleared.
+func (m *Mutation) RoleCleared() bool {
+	return m.RoleIdCleared() || m.clearedrole
+}
+
+// RoleIds returns the "role" edge Ids in the mutation.
+// Note that Ids always returns len(Ids) <= 1 for unique edges, and you should use
+// RoleId instead. It exists only for internal usage by the builders.
+func (m *Mutation) RoleIds() (ids []uuid.UUID) {
+	if id := m.role; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRole resets all changes to the "role" edge.
+func (m *Mutation) ResetRole() {
+	m.role = nil
+	m.clearedrole = false
+}
+
 // Where appends a list predicates to the Mutation builder.
 func (m *Mutation) Where(ps ...predicate.GroupMembership) {
 	m.predicates = append(m.predicates, ps...)
@@ -251,7 +312,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.date_updated != nil {
 		fields = append(fields, FieldDateUpdated)
 	}
@@ -266,6 +327,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.group != nil {
 		fields = append(fields, FieldGroupId)
+	}
+	if m.role != nil {
+		fields = append(fields, FieldRoleId)
 	}
 	return fields
 }
@@ -285,6 +349,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.HolderId()
 	case FieldGroupId:
 		return m.GroupId()
+	case FieldRoleId:
+		return m.RoleId()
 	}
 	return nil, false
 }
@@ -336,6 +402,13 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetGroupId(v)
 		return nil
+	case FieldRoleId:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRoleId(v)
+		return nil
 	}
 	return fmt.Errorf("unknown GroupMembership field %s", name)
 }
@@ -372,6 +445,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateCreated) {
 		fields = append(fields, FieldDateCreated)
 	}
+	if m.FieldCleared(FieldRoleId) {
+		fields = append(fields, FieldRoleId)
+	}
 	return fields
 }
 
@@ -391,6 +467,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDateCreated:
 		m.ClearDateCreated()
+		return nil
+	case FieldRoleId:
+		m.ClearRoleId()
 		return nil
 	}
 	return fmt.Errorf("unknown GroupMembership nullable field %s", name)
@@ -415,18 +494,24 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldGroupId:
 		m.ResetGroupId()
 		return nil
+	case FieldRoleId:
+		m.ResetRoleId()
+		return nil
 	}
 	return fmt.Errorf("unknown GroupMembership field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *Mutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.holder != nil {
 		edges = append(edges, EdgeHolder)
 	}
 	if m.group != nil {
 		edges = append(edges, EdgeGroup)
+	}
+	if m.role != nil {
+		edges = append(edges, EdgeRole)
 	}
 	return edges
 }
@@ -443,13 +528,17 @@ func (m *Mutation) AddedIds(name string) []ent.Value {
 		if id := m.group; id != nil {
 			return []ent.Value{*id}
 		}
+	case EdgeRole:
+		if id := m.role; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *Mutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	return edges
 }
 
@@ -461,12 +550,15 @@ func (m *Mutation) RemovedIds(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *Mutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedholder {
 		edges = append(edges, EdgeHolder)
 	}
 	if m.clearedgroup {
 		edges = append(edges, EdgeGroup)
+	}
+	if m.clearedrole {
+		edges = append(edges, EdgeRole)
 	}
 	return edges
 }
@@ -479,6 +571,8 @@ func (m *Mutation) EdgeCleared(name string) bool {
 		return m.clearedholder
 	case EdgeGroup:
 		return m.clearedgroup
+	case EdgeRole:
+		return m.clearedrole
 	}
 	return false
 }
@@ -493,6 +587,9 @@ func (m *Mutation) ClearEdge(name string) error {
 	case EdgeGroup:
 		m.ClearGroup()
 		return nil
+	case EdgeRole:
+		m.ClearRole()
+		return nil
 	}
 	return fmt.Errorf("unknown GroupMembership unique edge %s", name)
 }
@@ -506,6 +603,9 @@ func (m *Mutation) ResetEdge(name string) error {
 		return nil
 	case EdgeGroup:
 		m.ResetGroup()
+		return nil
+	case EdgeRole:
+		m.ResetRole()
 		return nil
 	}
 	return fmt.Errorf("unknown GroupMembership edge %s", name)

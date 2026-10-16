@@ -8806,7 +8806,41 @@ func (s gateGroupMembership) Add(ctx context.Context, req *rstr.GroupMembershipA
 		}
 	}
 
+	if ref := req.GetRole(); ref != nil {
+		if _, err := s.Gate.Next().Role().Get(ctx, rstr.RoleGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Role")
+			}
+
+			return nil, err
+		}
+	}
+
 	return s.GroupMembershipServiceServer.Add(ctx, req)
+}
+
+// Patch refuses an edge moved onto a row this caller cannot see.
+//
+// The wall narrows the row being written and says nothing about what the
+// write points **at**. An edge is a read -- a `Select` walks it -- so one
+// moved out of the caller's scope is a way through the wall one hop later,
+// exactly as it would have been at `Add`.
+func (s gateGroupMembership) Patch(ctx context.Context, req *rstr.GroupMembershipPatchRequest) (*rstr.GroupMembership, error) {
+	if ref := req.GetRole(); ref != nil {
+		if _, err := s.Gate.Next().Role().Get(ctx, rstr.RoleGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Role")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.GroupMembershipServiceServer.Patch(ctx, req)
 }
 
 type gateHost struct {
@@ -12308,45 +12342,6 @@ func (s interceptGroup) List(ctx context.Context, req *rstr.GroupListRequest) (*
 		rstr.GroupService_List_FullMethodName, req, s.GroupServiceServer.List)
 }
 
-func (s Intercept) GroupMembership() rstr.GroupMembershipServiceServer {
-	return interceptGroupMembership{s, s.Next().GroupMembership()}
-}
-
-type interceptGroupMembership struct {
-	Intercept
-	rstr.GroupMembershipServiceServer
-}
-
-func (s interceptGroupMembership) Add(ctx context.Context, req *rstr.GroupMembershipAddRequest) (*rstr.GroupMembership, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.GroupMembershipServiceServer,
-		rstr.GroupMembershipService_Add_FullMethodName, req, s.GroupMembershipServiceServer.Add)
-}
-
-func (s interceptGroupMembership) Get(ctx context.Context, req *rstr.GroupMembershipGetRequest) (*rstr.GroupMembership, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.GroupMembershipServiceServer,
-		rstr.GroupMembershipService_Get_FullMethodName, req, s.GroupMembershipServiceServer.Get)
-}
-
-func (s interceptGroupMembership) Patch(ctx context.Context, req *rstr.GroupMembershipPatchRequest) (*rstr.GroupMembership, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.GroupMembershipServiceServer,
-		rstr.GroupMembershipService_Patch_FullMethodName, req, s.GroupMembershipServiceServer.Patch)
-}
-
-func (s interceptGroupMembership) Apply(ctx context.Context, req *rstr.GroupMembershipApplyRequest) (*rstr.GroupMembership, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.GroupMembershipServiceServer,
-		rstr.GroupMembershipService_Apply_FullMethodName, req, s.GroupMembershipServiceServer.Apply)
-}
-
-func (s interceptGroupMembership) Erase(ctx context.Context, req *rstr.GroupMembershipRef) (*rstr.GroupMembershipEraseResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.GroupMembershipServiceServer,
-		rstr.GroupMembershipService_Erase_FullMethodName, req, s.GroupMembershipServiceServer.Erase)
-}
-
-func (s interceptGroupMembership) List(ctx context.Context, req *rstr.GroupMembershipListRequest) (*rstr.GroupMembershipListResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.GroupMembershipServiceServer,
-		rstr.GroupMembershipService_List_FullMethodName, req, s.GroupMembershipServiceServer.List)
-}
-
 func (s Intercept) GroupExposure() rstr.GroupExposureServiceServer {
 	return interceptGroupExposure{s, s.Next().GroupExposure()}
 }
@@ -12760,6 +12755,45 @@ func (s interceptTeamMembership) List(ctx context.Context, req *rstr.TeamMembers
 func (s interceptTeamMembership) Watch(req *rstr.TeamMembershipWatchRequest, out grpc.ServerStreamingServer[rstr.TeamMembershipWatchResponse]) error {
 	return grpcx.RunStream(s.stream, s.TeamMembershipServiceServer,
 		rstr.TeamMembershipService_Watch_FullMethodName, req, out, s.TeamMembershipServiceServer.Watch)
+}
+
+func (s Intercept) GroupMembership() rstr.GroupMembershipServiceServer {
+	return interceptGroupMembership{s, s.Next().GroupMembership()}
+}
+
+type interceptGroupMembership struct {
+	Intercept
+	rstr.GroupMembershipServiceServer
+}
+
+func (s interceptGroupMembership) Add(ctx context.Context, req *rstr.GroupMembershipAddRequest) (*rstr.GroupMembership, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.GroupMembershipServiceServer,
+		rstr.GroupMembershipService_Add_FullMethodName, req, s.GroupMembershipServiceServer.Add)
+}
+
+func (s interceptGroupMembership) Get(ctx context.Context, req *rstr.GroupMembershipGetRequest) (*rstr.GroupMembership, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.GroupMembershipServiceServer,
+		rstr.GroupMembershipService_Get_FullMethodName, req, s.GroupMembershipServiceServer.Get)
+}
+
+func (s interceptGroupMembership) Patch(ctx context.Context, req *rstr.GroupMembershipPatchRequest) (*rstr.GroupMembership, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.GroupMembershipServiceServer,
+		rstr.GroupMembershipService_Patch_FullMethodName, req, s.GroupMembershipServiceServer.Patch)
+}
+
+func (s interceptGroupMembership) Apply(ctx context.Context, req *rstr.GroupMembershipApplyRequest) (*rstr.GroupMembership, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.GroupMembershipServiceServer,
+		rstr.GroupMembershipService_Apply_FullMethodName, req, s.GroupMembershipServiceServer.Apply)
+}
+
+func (s interceptGroupMembership) Erase(ctx context.Context, req *rstr.GroupMembershipRef) (*rstr.GroupMembershipEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.GroupMembershipServiceServer,
+		rstr.GroupMembershipService_Erase_FullMethodName, req, s.GroupMembershipServiceServer.Erase)
+}
+
+func (s interceptGroupMembership) List(ctx context.Context, req *rstr.GroupMembershipListRequest) (*rstr.GroupMembershipListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.GroupMembershipServiceServer,
+		rstr.GroupMembershipService_List_FullMethodName, req, s.GroupMembershipServiceServer.List)
 }
 
 func (s Intercept) Nomination() rstr.NominationServiceServer {
@@ -15023,84 +15057,6 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 
 		return anypb.New(res)
 
-	case rstr.GroupMembershipService_Add_FullMethodName:
-		v := &rstr.GroupMembershipAddRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.GroupMembership().Add(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.GroupMembershipService_Get_FullMethodName:
-		v := &rstr.GroupMembershipGetRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.GroupMembership().Get(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.GroupMembershipService_Patch_FullMethodName:
-		v := &rstr.GroupMembershipPatchRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.GroupMembership().Patch(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.GroupMembershipService_Apply_FullMethodName:
-		v := &rstr.GroupMembershipApplyRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.GroupMembership().Apply(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.GroupMembershipService_Erase_FullMethodName:
-		v := &rstr.GroupMembershipRef{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.GroupMembership().Erase(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
-	case rstr.GroupMembershipService_List_FullMethodName:
-		v := &rstr.GroupMembershipListRequest{}
-		if err := op.GetRequest().UnmarshalTo(v); err != nil {
-			return nil, batch.ErrRequest(m, err)
-		}
-
-		res, err := s.GroupMembership().List(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-
-		return anypb.New(res)
-
 	case rstr.GroupExposureService_Add_FullMethodName:
 		v := &rstr.GroupExposureAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -15907,6 +15863,84 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 
 		return anypb.New(res)
 
+	case rstr.GroupMembershipService_Add_FullMethodName:
+		v := &rstr.GroupMembershipAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupMembership().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupMembershipService_Get_FullMethodName:
+		v := &rstr.GroupMembershipGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupMembership().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupMembershipService_Patch_FullMethodName:
+		v := &rstr.GroupMembershipPatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupMembership().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupMembershipService_Apply_FullMethodName:
+		v := &rstr.GroupMembershipApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupMembership().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupMembershipService_Erase_FullMethodName:
+		v := &rstr.GroupMembershipRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupMembership().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupMembershipService_List_FullMethodName:
+		v := &rstr.GroupMembershipListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupMembership().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case rstr.NominationService_Add_FullMethodName:
 		v := &rstr.NominationAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -16601,6 +16635,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard batch.Guard) reso
 				{Number: 1, Name: groupmembership.FieldId, Type: 64, Nullable: false, Key: 0},
 				{Number: 2, Name: groupmembership.HolderColumn, Type: 64, Nullable: false, Key: 1},
 				{Number: 8, Name: groupmembership.GroupColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 9, Name: groupmembership.RoleColumn, Type: 64, Nullable: true, Key: 1},
 				{Number: 13, Name: groupmembership.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
 				{Number: 14, Name: groupmembership.FieldDateErased, Type: 65, Nullable: true, Key: 0},
 				{Number: 15, Name: groupmembership.FieldDateCreated, Type: 65, Nullable: false, Key: 0},

@@ -393,7 +393,6 @@ type Scope interface {
 	DelegationScope(ctx context.Context) (predicate.Delegation, error)
 	SiteScope(ctx context.Context) (predicate.Site, error)
 	GroupScope(ctx context.Context) (predicate.Group, error)
-	GroupMembershipScope(ctx context.Context) (predicate.GroupMembership, error)
 	GroupExposureScope(ctx context.Context) (predicate.GroupExposure, error)
 	HostScope(ctx context.Context) (predicate.Host, error)
 	MailDomainScope(ctx context.Context) (predicate.MailDomain, error)
@@ -404,6 +403,7 @@ type Scope interface {
 	BindingScope(ctx context.Context) (predicate.Binding, error)
 	SiteMembershipScope(ctx context.Context) (predicate.SiteMembership, error)
 	TeamMembershipScope(ctx context.Context) (predicate.TeamMembership, error)
+	GroupMembershipScope(ctx context.Context) (predicate.GroupMembership, error)
 	NominationScope(ctx context.Context) (predicate.Nomination, error)
 	SessionScope(ctx context.Context) (predicate.Session, error)
 	ArchivedScope(ctx context.Context) (predicate.Archived, error)
@@ -456,9 +456,6 @@ func (Unscoped) SiteScope(_ context.Context) (predicate.Site, error) {
 func (Unscoped) GroupScope(_ context.Context) (predicate.Group, error) {
 	return nil, nil
 }
-func (Unscoped) GroupMembershipScope(_ context.Context) (predicate.GroupMembership, error) {
-	return nil, nil
-}
 func (Unscoped) GroupExposureScope(_ context.Context) (predicate.GroupExposure, error) {
 	return nil, nil
 }
@@ -487,6 +484,9 @@ func (Unscoped) SiteMembershipScope(_ context.Context) (predicate.SiteMembership
 	return nil, nil
 }
 func (Unscoped) TeamMembershipScope(_ context.Context) (predicate.TeamMembership, error) {
+	return nil, nil
+}
+func (Unscoped) GroupMembershipScope(_ context.Context) (predicate.GroupMembership, error) {
 	return nil, nil
 }
 func (Unscoped) NominationScope(_ context.Context) (predicate.Nomination, error) {
@@ -744,26 +744,6 @@ func (ss Scopes) GroupScope(ctx context.Context) (predicate.Group, error) {
 	return group.And(ps...), nil
 }
 
-func (ss Scopes) GroupMembershipScope(ctx context.Context) (predicate.GroupMembership, error) {
-	ps := make([]predicate.GroupMembership, 0, len(ss))
-	for _, s := range ss {
-		p, err := s.GroupMembershipScope(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if p == nil {
-			continue
-		}
-
-		ps = append(ps, p)
-	}
-	if len(ps) == 0 {
-		return nil, nil
-	}
-
-	return groupmembership.And(ps...), nil
-}
-
 func (ss Scopes) GroupExposureScope(ctx context.Context) (predicate.GroupExposure, error) {
 	ps := make([]predicate.GroupExposure, 0, len(ss))
 	for _, s := range ss {
@@ -962,6 +942,26 @@ func (ss Scopes) TeamMembershipScope(ctx context.Context) (predicate.TeamMembers
 	}
 
 	return teammembership.And(ps...), nil
+}
+
+func (ss Scopes) GroupMembershipScope(ctx context.Context) (predicate.GroupMembership, error) {
+	ps := make([]predicate.GroupMembership, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.GroupMembershipScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return groupmembership.And(ps...), nil
 }
 
 func (ss Scopes) NominationScope(ctx context.Context) (predicate.Nomination, error) {
@@ -1201,9 +1201,6 @@ func (s Server) Delegation() rstr.DelegationServiceServer {
 }
 func (s Server) Site() rstr.SiteServiceServer   { return SiteServiceServer{Store: s.Store} }
 func (s Server) Group() rstr.GroupServiceServer { return GroupServiceServer{Store: s.Store} }
-func (s Server) GroupMembership() rstr.GroupMembershipServiceServer {
-	return GroupMembershipServiceServer{Store: s.Store}
-}
 func (s Server) GroupExposure() rstr.GroupExposureServiceServer {
 	return GroupExposureServiceServer{Store: s.Store}
 }
@@ -1223,6 +1220,9 @@ func (s Server) SiteMembership() rstr.SiteMembershipServiceServer {
 }
 func (s Server) TeamMembership() rstr.TeamMembershipServiceServer {
 	return TeamMembershipServiceServer{Store: s.Store}
+}
+func (s Server) GroupMembership() rstr.GroupMembershipServiceServer {
+	return GroupMembershipServiceServer{Store: s.Store}
 }
 func (s Server) Nomination() rstr.NominationServiceServer {
 	return NominationServiceServer{Store: s.Store}
