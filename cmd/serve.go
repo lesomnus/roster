@@ -1090,6 +1090,7 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 	app.RegisterRoleServiceServer(g, s.Role())
 	app.RegisterGroupServiceServer(g, s.Group())
 	app.RegisterGroupMembershipServiceServer(g, s.GroupMembership())
+	app.RegisterGroupExposureServiceServer(g, s.GroupExposure())
 	app.RegisterBindingServiceServer(g, s.Binding())
 	app.RegisterSiteMembershipServiceServer(g, s.SiteMembership())
 	app.RegisterTeamMembershipServiceServer(g, s.TeamMembership())

@@ -40,6 +40,7 @@ import (
 	delegation "github.com/lesomnus/roster/internal/ent/delegation"
 	email "github.com/lesomnus/roster/internal/ent/email"
 	group "github.com/lesomnus/roster/internal/ent/group"
+	groupexposure "github.com/lesomnus/roster/internal/ent/groupexposure"
 	groupmembership "github.com/lesomnus/roster/internal/ent/groupmembership"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	host "github.com/lesomnus/roster/internal/ent/host"
@@ -112,6 +113,7 @@ const (
 	DelegationDomain      pdid.Domain = 19 // "delegation"
 	EmailDomain           pdid.Domain = 9  // "email"
 	GroupDomain           pdid.Domain = 16 // "group"
+	GroupExposureDomain   pdid.Domain = 28 // "group-exposure"
 	GroupMembershipDomain pdid.Domain = 17 // "group-membership"
 	HolderDomain          pdid.Domain = 2  // "holder"
 	HostDomain            pdid.Domain = 20 // "host"
@@ -141,6 +143,7 @@ func init() {
 	pdid.Register("roster.Delegation", DelegationDomain, "delegation")
 	pdid.Register("roster.Email", EmailDomain, "email")
 	pdid.Register("roster.Group", GroupDomain, "group")
+	pdid.Register("roster.GroupExposure", GroupExposureDomain, "group-exposure")
 	pdid.Register("roster.GroupMembership", GroupMembershipDomain, "group-membership")
 	pdid.Register("roster.Holder", HolderDomain, "holder")
 	pdid.Register("roster.Host", HostDomain, "host")
@@ -174,6 +177,7 @@ var Domains = map[string]pdid.Domain{
 	"roster.Delegation":      DelegationDomain,
 	"roster.Email":           EmailDomain,
 	"roster.Group":           GroupDomain,
+	"roster.GroupExposure":   GroupExposureDomain,
 	"roster.GroupMembership": GroupMembershipDomain,
 	"roster.Holder":          HolderDomain,
 	"roster.Host":            HostDomain,
@@ -328,6 +332,16 @@ func (wall) GroupScope(ctx context.Context) (predicate.Group, error) {
 	}
 
 	return group.TenantIdIn(vs...), nil
+}
+
+// GroupExposureScope: a row belongs to the tenant its "group.tenant" reaches.
+func (wall) GroupExposureScope(ctx context.Context) (predicate.GroupExposure, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return groupexposure.HasGroupWith(group.TenantIdIn(vs...)), nil
 }
 
 // GroupMembershipScope: a row belongs to the tenant its "holder.tenant" reaches.
@@ -580,6 +594,11 @@ func (x grouped) GroupScope(ctx context.Context) (predicate.Group, error) {
 	}
 
 	return group.SiteIdIn(vs...), nil
+}
+
+// GroupExposureScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) GroupExposureScope(ctx context.Context) (predicate.GroupExposure, error) {
+	return nil, nil
 }
 
 // GroupMembershipScope: in no set -- it declared no field 3, so this narrows nothing.
@@ -3202,6 +3221,204 @@ func filterGroup(f *rstr.GroupFilter) (predicate.Group, error) {
 	}
 
 	return group.And(ps...), nil
+}
+
+type sinkGroupExposure struct {
+	rstr.GroupExposureServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) GroupExposure() rstr.GroupExposureServiceServer {
+	return sinkGroupExposure{s.Server.GroupExposure(), s.Server.Store, s.w, s.namer, s.joined}
+}
+
+// orderGroupExposure is how GroupExposures come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderGroupExposure = []sqlpage.Order{
+	{Column: groupexposure.FieldDateCreated, Desc: false},
+	{Column: groupexposure.FieldId, Desc: false},
+}
+
+func afterGroupExposure(v string, by []sqlpage.Order, tag string) (func(*sql.Selector), error) {
+	var (
+		at0 time.Time
+		at1 uuid.UUID
+	)
+	if err := pdAfter(v, tag, &at0, &at1); err != nil {
+		return nil, err
+	}
+
+	return sqlpage.After(by, []any{at0, at1})
+}
+
+func nextGroupExposure(last *ent.GroupExposure, tag string) (string, error) {
+	return pdNext(tag, last.DateCreated, last.Id)
+}
+
+// orderByGroupExposure is an order as ent orders a query by it.
+func orderByGroupExposure(by []sqlpage.Order) []groupexposure.OrderOption {
+	out := make([]groupexposure.OrderOption, len(by))
+	for i, o := range by {
+		if o.Desc {
+			out[i] = sql.OrderByField(o.Column, sql.OrderDesc()).ToFunc()
+			continue
+		}
+
+		out[i] = sql.OrderByField(o.Column).ToFunc()
+	}
+
+	return out
+}
+
+const (
+	// GroupExposurePageSize is what a request that did not say gets, and
+	// GroupExposurePageLimit is the most it gets however loudly it asks.
+	GroupExposurePageSize  = 20
+	GroupExposurePageLimit = 100
+
+	// GroupExposureFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	GroupExposureFilterLimit = 32
+)
+
+// List answers with the GroupExposures that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkGroupExposure) List(ctx context.Context, req *rstr.GroupExposureListRequest) (*rstr.GroupExposureListResponse, error) {
+	q := s.store.Db.GroupExposure.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.GroupExposureNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > GroupExposureFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), GroupExposureFilterLimit)
+		}
+
+		ps := make([]predicate.GroupExposure, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterGroupExposure(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(groupexposure.Or(ps...))
+	}
+
+	// Which order, and which way: one the schema declared, and never one a
+	// request makes up, since an order is a walk of an index.
+	by, after, next, tag := orderGroupExposure, afterGroupExposure, nextGroupExposure, ""
+	if req.GetReverse() {
+		// The same index, walked from the other end.
+		by, tag = pdReverse(by), tag+"/reverse"
+	}
+
+	if v := req.GetAfter(); v != "" {
+		p, err := after(v, by, tag)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), GroupExposurePageSize, GroupExposurePageLimit)
+	us, err := q.Order(orderByGroupExposure(by)...).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.GroupExposure, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.GroupExposureListResponse_builder{Items: items}.Build()
+	if more {
+		v, err := next(us[len(us)-1], tag)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(v)
+	}
+
+	return res, nil
+}
+
+// filterGroupExposure turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterGroupExposure(f *rstr.GroupExposureFilter) (predicate.GroupExposure, error) {
+	ps := make([]predicate.GroupExposure, 0, 1)
+	if f.HasRef() {
+		p, err := bare.GroupExposurePick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasGroup() {
+		w := f.GetGroup()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "group: %s", err)
+			}
+
+			ps = append(ps, groupexposure.GroupIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.GroupPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, groupexposure.HasGroupWith(q))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return groupexposure.And(ps...), nil
 }
 
 type sinkGroupMembership struct {
@@ -8508,6 +8725,42 @@ func (s gateGroup) Add(ctx context.Context, req *rstr.GroupAddRequest) (*rstr.Gr
 	return s.GroupServiceServer.Add(ctx, req)
 }
 
+type gateGroupExposure struct {
+	Gate
+	rstr.GroupExposureServiceServer
+}
+
+func (s Gate) GroupExposure() rstr.GroupExposureServiceServer {
+	return gateGroupExposure{s, s.Next().GroupExposure()}
+}
+
+// Add refuses a GroupExposure put into a Group this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `group` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Group, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.Add`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+func (s gateGroupExposure) Add(ctx context.Context, req *rstr.GroupExposureAddRequest) (*rstr.GroupExposure, error) {
+	if ref := req.GetGroup(); ref != nil {
+		if _, err := s.Gate.Next().Group().Get(ctx, rstr.GroupGetRequest_builder{
+			Ref: ref,
+		}.Build()); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Group")
+			}
+
+			return nil, err
+		}
+	}
+
+	return s.GroupExposureServiceServer.Add(ctx, req)
+}
+
 type gateGroupMembership struct {
 	Gate
 	rstr.GroupMembershipServiceServer
@@ -9683,6 +9936,43 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id) (uuid.UUID, []byte
 
 		return k, b, nil
 
+	case GroupExposureDomain:
+		row, err := s.GroupExposure().Get(ctx, rstr.GroupExposureGetRequest_builder{
+			Ref: rstr.GroupExposureRef_builder{Id: key.Bytes()}.Build(),
+		}.Build())
+		// Erased softly is still a row; see [erasedGroupExposure].
+		if status.Code(err) == codes.NotFound {
+			row, err = erasedGroupExposure(ctx, s, key)
+		}
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return uuid.Nil(), []byte{}, nil
+			}
+
+			return uuid.Nil(), nil, err
+		}
+
+		b, err := proto.Marshal(row)
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		if !row.HasGroup() {
+			return uuid.Nil(), b, nil
+		}
+
+		up, err := pdid.From(row.GetGroup().GetId())
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		k, _, err := subject(ctx, s, up)
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		return k, b, nil
+
 	case GroupMembershipDomain:
 		row, err := s.GroupMembership().Get(ctx, rstr.GroupMembershipGetRequest_builder{
 			Ref: rstr.GroupMembershipRef_builder{Id: key.Bytes()}.Build(),
@@ -10405,6 +10695,33 @@ func erasedGroup(ctx context.Context, s bare.Server, key pdid.Id) (*rstr.Group, 
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, status.Error(codes.NotFound, "Group not found")
+		}
+
+		return nil, err
+	}
+
+	return v.Proto(), nil
+}
+
+// erasedGroupExposure is the row `key` names among the rows already erased, which no
+// bare read answers: erasure is part of every reference that server builds.
+// The recorder is the one caller that has to see past it -- the row it asks
+// about was erased by the very write it is recording, and a trail row built
+// blind was filed under the actor's tenant with an empty value, which the
+// tenant whose row was erased could not read.
+func erasedGroupExposure(ctx context.Context, s bare.Server, key pdid.Id) (*rstr.GroupExposure, error) {
+	k, err := entuuid.FromBytes(key.Bytes())
+	if err != nil {
+		return nil, err
+	}
+
+	q := s.Db.GroupExposure.Query().Where(groupexposure.IdEQ(k), groupexposure.DateErasedNotNil())
+	bare.GroupExposureSelectInit(q, nil)
+
+	v, err := q.Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, status.Error(codes.NotFound, "GroupExposure not found")
 		}
 
 		return nil, err
@@ -12028,6 +12345,45 @@ func (s interceptGroupMembership) Erase(ctx context.Context, req *rstr.GroupMemb
 func (s interceptGroupMembership) List(ctx context.Context, req *rstr.GroupMembershipListRequest) (*rstr.GroupMembershipListResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.GroupMembershipServiceServer,
 		rstr.GroupMembershipService_List_FullMethodName, req, s.GroupMembershipServiceServer.List)
+}
+
+func (s Intercept) GroupExposure() rstr.GroupExposureServiceServer {
+	return interceptGroupExposure{s, s.Next().GroupExposure()}
+}
+
+type interceptGroupExposure struct {
+	Intercept
+	rstr.GroupExposureServiceServer
+}
+
+func (s interceptGroupExposure) Add(ctx context.Context, req *rstr.GroupExposureAddRequest) (*rstr.GroupExposure, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.GroupExposureServiceServer,
+		rstr.GroupExposureService_Add_FullMethodName, req, s.GroupExposureServiceServer.Add)
+}
+
+func (s interceptGroupExposure) Get(ctx context.Context, req *rstr.GroupExposureGetRequest) (*rstr.GroupExposure, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.GroupExposureServiceServer,
+		rstr.GroupExposureService_Get_FullMethodName, req, s.GroupExposureServiceServer.Get)
+}
+
+func (s interceptGroupExposure) Patch(ctx context.Context, req *rstr.GroupExposurePatchRequest) (*rstr.GroupExposure, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.GroupExposureServiceServer,
+		rstr.GroupExposureService_Patch_FullMethodName, req, s.GroupExposureServiceServer.Patch)
+}
+
+func (s interceptGroupExposure) Apply(ctx context.Context, req *rstr.GroupExposureApplyRequest) (*rstr.GroupExposure, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.GroupExposureServiceServer,
+		rstr.GroupExposureService_Apply_FullMethodName, req, s.GroupExposureServiceServer.Apply)
+}
+
+func (s interceptGroupExposure) Erase(ctx context.Context, req *rstr.GroupExposureRef) (*rstr.GroupExposureEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.GroupExposureServiceServer,
+		rstr.GroupExposureService_Erase_FullMethodName, req, s.GroupExposureServiceServer.Erase)
+}
+
+func (s interceptGroupExposure) List(ctx context.Context, req *rstr.GroupExposureListRequest) (*rstr.GroupExposureListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.GroupExposureServiceServer,
+		rstr.GroupExposureService_List_FullMethodName, req, s.GroupExposureServiceServer.List)
 }
 
 func (s Intercept) Host() rstr.HostServiceServer {
@@ -14745,6 +15101,84 @@ func dispatch(ctx context.Context, s rstr.Server, op *pdpb.Op) (*anypb.Any, erro
 
 		return anypb.New(res)
 
+	case rstr.GroupExposureService_Add_FullMethodName:
+		v := &rstr.GroupExposureAddRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupExposure().Add(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupExposureService_Get_FullMethodName:
+		v := &rstr.GroupExposureGetRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupExposure().Get(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupExposureService_Patch_FullMethodName:
+		v := &rstr.GroupExposurePatchRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupExposure().Patch(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupExposureService_Apply_FullMethodName:
+		v := &rstr.GroupExposureApplyRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupExposure().Apply(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupExposureService_Erase_FullMethodName:
+		v := &rstr.GroupExposureRef{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupExposure().Erase(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
+	case rstr.GroupExposureService_List_FullMethodName:
+		v := &rstr.GroupExposureListRequest{}
+		if err := op.GetRequest().UnmarshalTo(v); err != nil {
+			return nil, batch.ErrRequest(m, err)
+		}
+
+		res, err := s.GroupExposure().List(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+
+		return anypb.New(res)
+
 	case rstr.HostService_Add_FullMethodName:
 		v := &rstr.HostAddRequest{}
 		if err := op.GetRequest().UnmarshalTo(v); err != nil {
@@ -15734,6 +16168,7 @@ func Resources(s rstr.Server, drv dialect.Driver, guard batch.Guard, w *watch.Wa
 		&rstr.Delegation{},
 		&rstr.Email{},
 		&rstr.Group{},
+		&rstr.GroupExposure{},
 		&rstr.GroupMembership{},
 		&rstr.Holder{},
 		&rstr.Host{},
@@ -16108,6 +16543,39 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard batch.Guard) reso
 				return nil, err
 			}
 			query := db.Group.Query()
+			if pred != nil {
+				query.Where(pred)
+			}
+			ok, err := query.Modify(func(q *sql.Selector) { q.From(row) }).Exist(ctx)
+			if err != nil || !ok {
+				return nil, err
+			}
+			return publicResource(v), nil
+		case *rstr.GroupExposure:
+			ctx, err := read.Allow(ctx, rstr.GroupExposureService_Get_FullMethodName)
+			if err != nil {
+				switch status.Code(err) {
+				case codes.PermissionDenied, codes.Unauthenticated, codes.Unimplemented:
+					return nil, nil
+				}
+				return nil, err
+			}
+			pred, err := bare.GroupExposureNarrow(ctx, scope, nil)
+			if err != nil {
+				return nil, err
+			}
+			row, err := resourcesql.Row(db.Dialect(), groupexposure.Table, []resourcesql.Column{
+				{Number: 1, Name: groupexposure.FieldId, Type: 64, Nullable: false, Key: 0},
+				{Number: 2, Name: groupexposure.GroupColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 8, Name: groupexposure.FieldClient, Type: 9, Nullable: false, Key: 0},
+				{Number: 13, Name: groupexposure.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
+				{Number: 14, Name: groupexposure.FieldDateErased, Type: 65, Nullable: true, Key: 0},
+				{Number: 15, Name: groupexposure.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
+			}, v)
+			if err != nil {
+				return nil, err
+			}
+			query := db.GroupExposure.Query()
 			if pred != nil {
 				query.Where(pred)
 			}
@@ -16752,6 +17220,14 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.GroupService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
+	case rstr.GroupExposureService_Add_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_CREATED
+	case rstr.GroupExposureService_Patch_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case rstr.GroupExposureService_Apply_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case rstr.GroupExposureService_Erase_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.GroupMembershipService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.GroupMembershipService_Patch_FullMethodName:
@@ -16890,7 +17366,7 @@ func (r resourceRecorder) Record(ctx context.Context, s bare.Server, c bare.Chan
 		return nil
 	}
 	switch image.ProtoReflect().Descriptor().FullName() {
-	case "roster.ApiKey", "roster.Audit", "roster.Binding", "roster.Connection", "roster.Continuation", "roster.Credential", "roster.Delegation", "roster.Email", "roster.Group", "roster.GroupMembership", "roster.Holder", "roster.Host", "roster.HostProof", "roster.Identity", "roster.Link", "roster.MailDomain", "roster.Nomination", "roster.Role", "roster.Session", "roster.Site", "roster.SiteMembership", "roster.Team", "roster.TeamMembership", "roster.Tenant":
+	case "roster.ApiKey", "roster.Audit", "roster.Binding", "roster.Connection", "roster.Continuation", "roster.Credential", "roster.Delegation", "roster.Email", "roster.Group", "roster.GroupExposure", "roster.GroupMembership", "roster.Holder", "roster.Host", "roster.HostProof", "roster.Identity", "roster.Link", "roster.MailDomain", "roster.Nomination", "roster.Role", "roster.Session", "roster.Site", "roster.SiteMembership", "roster.Team", "roster.TeamMembership", "roster.Tenant":
 	default:
 		return nil
 	}

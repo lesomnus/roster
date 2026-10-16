@@ -36,6 +36,9 @@ type Email func(*sql.Selector)
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
 
+// GroupExposure is the predicate function for groupexposure builders.
+type GroupExposure func(*sql.Selector)
+
 // GroupMembership is the predicate function for groupmembership builders.
 type GroupMembership func(*sql.Selector)
 

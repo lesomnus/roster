@@ -19,6 +19,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/delegation"
 	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/group"
+	"github.com/lesomnus/roster/internal/ent/groupexposure"
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/host"
@@ -108,6 +109,7 @@ func checkColumn(t, c string) error {
 			delegation.Table:      delegation.ValidColumn,
 			email.Table:           email.ValidColumn,
 			group.Table:           group.ValidColumn,
+			groupexposure.Table:   groupexposure.ValidColumn,
 			groupmembership.Table: groupmembership.ValidColumn,
 			holder.Table:          holder.ValidColumn,
 			host.Table:            host.ValidColumn,

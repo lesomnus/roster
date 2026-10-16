@@ -478,6 +478,44 @@ var (
 			},
 		},
 	}
+	// GroupexposureColumns holds the columns for the "groupexposure" table.
+	GroupexposureColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "client", Type: field.TypeString},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "group_id", Type: field.TypeUuid},
+	}
+	// GroupexposureTable holds the schema information for the "groupexposure" table.
+	GroupexposureTable = &schema.Table{
+		Name:       "groupexposure",
+		Columns:    GroupexposureColumns,
+		PrimaryKey: []*schema.Column{GroupexposureColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "groupexposure_group_group",
+				Columns:    []*schema.Column{GroupexposureColumns[5]},
+				RefColumns: []*schema.Column{GroupColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "groupexposure_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{GroupexposureColumns[4], GroupexposureColumns[0]},
+			},
+			{
+				Name:    "groupexposure_client_group_id",
+				Unique:  true,
+				Columns: []*schema.Column{GroupexposureColumns[1], GroupexposureColumns[5]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// GroupmembershipColumns holds the columns for the "groupmembership" table.
 	GroupmembershipColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -1153,6 +1191,7 @@ var (
 		DelegationTable,
 		EmailTable,
 		GroupTable,
+		GroupexposureTable,
 		GroupmembershipTable,
 		HolderTable,
 		HostTable,
@@ -1215,6 +1254,10 @@ func init() {
 	GroupTable.ForeignKeys[1].RefTable = SiteTable
 	GroupTable.Annotation = &entsql.Annotation{
 		Table: "group",
+	}
+	GroupexposureTable.ForeignKeys[0].RefTable = GroupTable
+	GroupexposureTable.Annotation = &entsql.Annotation{
+		Table: "groupexposure",
 	}
 	GroupmembershipTable.ForeignKeys[0].RefTable = HolderTable
 	GroupmembershipTable.ForeignKeys[1].RefTable = GroupTable

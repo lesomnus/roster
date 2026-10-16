@@ -256,5 +256,5 @@ see [`../operating.md`](../operating.md) § the admin console.
 | --- | --- |
 | more about roles, sites, groups, teams | [permissions.md](permissions.md) |
 | SSO instead of passwords | [ways-in.md](ways-in.md) § an account somewhere else, then [`../login.md`](../login.md) |
-| what all twenty-five entities are | [`../entity.md`](../entity.md) |
+| what all twenty-six entities are | [`../entity.md`](../entity.md) |
 | running this for real | [`../operating.md`](../operating.md) |

@@ -20,6 +20,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/binding"
 	"github.com/lesomnus/roster/internal/ent/connection"
 	"github.com/lesomnus/roster/internal/ent/group"
+	"github.com/lesomnus/roster/internal/ent/groupexposure"
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/host"
@@ -200,6 +201,9 @@ func tenanted() []subject {
 		}),
 		of("group membership", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.GroupMembership.Delete().Where(groupmembership.HasGroupWith(group.TenantId(k))).Exec(ctx)
+		}),
+		of("group exposure", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+			return db.GroupExposure.Delete().Where(groupexposure.HasGroupWith(group.TenantId(k))).Exec(ctx)
 		}),
 		of("group", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Group.Delete().Where(group.TenantId(k)).Exec(ctx)

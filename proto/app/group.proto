@@ -177,3 +177,82 @@ message GroupMembership {
     }
   };
 }
+
+// GroupExposure is a client whose tokens carry a [Group]: the `client_id` of a
+// relying party that grants on the group, by its alias.
+//
+// # Why a token carries a group at all
+//
+// Most of what reads a roster token asks roster what somebody may do
+// (`HolderService.Reaches`), and a group is never in a token for them. Some
+// relying parties cannot ask anything -- Dependency-Track, kube-apiserver --
+// and authorize from a token's claims alone: a list of names, mapped to their
+// own permissions. For them, and only for a client registered for the
+// `groups` scope, a token carries the person's groups that name that client
+// here, as `groups`, and nothing else of their membership.
+//
+// So a group reaches a client because a tenant's administrator said it does,
+// one row per client. Its managers decide who is in it (`GroupMembership`), and
+// not who sees it.
+//
+// # A row rather than a list on the group
+//
+// The reason every membership here is one: it is many-to-many, and a fact with
+// a date of its own -- the trail says who showed which group to which relying
+// party, and when. And a list is what a write could not empty: a generated
+// `Patch` leaves an empty list as it was, and a row is erased.
+message GroupExposure {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  Group group = 2 [(orm.edge) = {immutable: true}];
+
+  // The client, as the issuer names it: what a token's `azp` and an ID
+  // token's `aud` say. A string because the client is the issuer's row and not
+  // roster's.
+  string client = 8 [(orm.field) = {immutable: true}];
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "carried"
+        refs: [
+          {name: "group", number: 2},
+          {name: "client", number: 8}
+        ]
+        unique: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 28
+    tenanted: {via: "group.tenant"}
+    list: {
+      order: [
+        {field: {name: "date_created", number: 15}},
+        {field: {name: "id", number: 1}}
+      ]
+      by: [{name: "ref"}, {name: "group"}]
+      size: 20
+      max: 100
+    }
+  };
+}

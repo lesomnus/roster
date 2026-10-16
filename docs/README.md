@@ -65,7 +65,7 @@ trail, and what one client library can and cannot hide about the difference.
 
 | | |
 | --- | --- |
-| [entity.md](entity.md) | the twenty-five tables, drawn, with a paragraph each |
+| [entity.md](entity.md) | the twenty-six tables, drawn, with a paragraph each |
 | [glossary.md](glossary.md) | the words -- the wall, the gate, a grant, a layer, a plane -- and the four that name two things |
 | [baseline.md](baseline.md) | the promises a normal user relies on, each pinned to the tests that hold it |
 | [development.md](development.md) | working on roster: generation, upgrading payday, the pages, the sandbox |

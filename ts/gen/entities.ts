@@ -22,7 +22,7 @@ import { ContinuationSchema } from './app/continuation_pb.js'
 import { CredentialSchema } from './app/credential_pb.js'
 import { DelegationSchema } from './app/delegation_pb.js'
 import { EmailSchema } from './app/email_pb.js'
-import { GroupSchema, GroupMembershipSchema } from './app/group_pb.js'
+import { GroupSchema, GroupExposureSchema, GroupMembershipSchema } from './app/group_pb.js'
 import { HolderSchema } from './roster/payday/holder_pb.js'
 import { HostSchema, HostProofSchema, MailDomainSchema } from './app/host_pb.js'
 import { IdentitySchema } from './app/identity_pb.js'
@@ -43,7 +43,7 @@ import { ContinuationService } from './app/continuation_svc_pb.js'
 import { CredentialService } from './app/credential_svc_pb.js'
 import { DelegationService } from './app/delegation_svc_pb.js'
 import { EmailService } from './app/email_svc_pb.js'
-import { GroupService, GroupMembershipService } from './app/group_svc_pb.js'
+import { GroupService, GroupExposureService, GroupMembershipService } from './app/group_svc_pb.js'
 import { HolderService } from './roster/payday/holder_svc_pb.js'
 import { HostService, HostProofService, MailDomainService } from './app/host_svc_pb.js'
 import { IdentityService } from './app/identity_svc_pb.js'
@@ -177,6 +177,18 @@ export const Group = {
 	key: "id",
 	ids: ["id"],
 	service: GroupService,
+} as const satisfies EntityDesc
+
+/** roster.GroupExposure, as the store holds it. */
+export const GroupExposure = {
+	typeName: "roster.GroupExposure",
+	schema: GroupExposureSchema,
+	domain: 28,
+	version: "dateUpdated",
+	refs: [{ field: "group", to: "roster.Group" }],
+	key: "id",
+	ids: ["id"],
+	service: GroupExposureService,
 } as const satisfies EntityDesc
 
 /** roster.GroupMembership, as the store holds it. */
@@ -376,5 +388,5 @@ export const Tenant = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [ApiKey, Archived, Audit, Binding, Connection, Continuation, Credential, Delegation, Email, Group, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, Session, Site, SiteMembership, Team, TeamMembership, Tenant] as const
+export const entities = [ApiKey, Archived, Audit, Binding, Connection, Continuation, Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, Session, Site, SiteMembership, Team, TeamMembership, Tenant] as const
 
