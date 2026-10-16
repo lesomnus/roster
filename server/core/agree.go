@@ -247,7 +247,18 @@ func (s coreGroupMembership) Add(ctx context.Context, req *app.GroupMembershipAd
 	if err != nil {
 		return nil, err
 	}
-	if err := tenantsAgree("group", who, what); err != nil {
+	role, err := s.tenantOfRole(ctx, req.GetRole())
+	if err != nil {
+		return nil, err
+	}
+	if err := tenantsAgree("group", who, what, role); err != nil {
+		return nil, err
+	}
+
+	// And whether this caller may change **this** group -- through a binding,
+	// or as one of its managers -- which the gate could not ask. See
+	// `group.go`.
+	if err := s.mayChangeGroup(ctx, app.GroupMembershipService_Add_FullMethodName, req.GetGroup()); err != nil {
 		return nil, err
 	}
 
@@ -258,7 +269,92 @@ func (s coreGroupMembership) Add(ctx context.Context, req *app.GroupMembershipAd
 		return nil, err
 	}
 
+	// And, naming a role, the manager it appoints: a role that reaches no
+	// further than this group, held to what the appointer holds **through a
+	// binding** -- so a manager puts people in and does not make another.
+	if err := s.mayAppoint(ctx, req.GetRole()); err != nil {
+		return nil, err
+	}
+
 	return s.GroupMembershipServiceServer.Add(ctx, req)
+}
+
+// mayAppoint is attaching a role to somebody's membership of a group: one
+// [Core.mayHoldInGroup] lets be held there, and one the caller could bind.
+//
+// Read through [Core.mayGrant] at the whole tenant, so what counts is a
+// binding's -- the scope a role held in a group is handed out at, since the
+// gate holds it everywhere -- and a role held in a group counts for nothing.
+// `TeamMembership.Add` asks the same of a team's role.
+func (s coreGroupMembership) mayAppoint(ctx context.Context, ref *app.RoleRef) error {
+	if ref == nil {
+		return nil
+	}
+	if err := s.mayHoldInGroup(ctx, ref); err != nil {
+		return err
+	}
+	ms, err := s.methodsOf(ctx, ref)
+	if err != nil {
+		return err
+	}
+
+	return s.mayGrant(ctx, "role", ms, pdid.Nil)
+}
+
+// Patch is `Add`'s questions about a role, asked when one is attached later --
+// `TeamMembership.Patch`'s reason: a plain membership turned into a manager's
+// is the appointment `Add` is refused, one verb on.
+//
+// The group is read off the row, since the edge is immutable and the request
+// cannot say it. `role_null` takes a manager's role away, which hands out
+// nothing.
+func (s coreGroupMembership) Patch(ctx context.Context, req *app.GroupMembershipPatchRequest) (*app.GroupMembership, error) {
+	if req.GetRole() == nil {
+		return s.GroupMembershipServiceServer.Patch(ctx, req)
+	}
+
+	v, err := s.Next().GroupMembership().Get(ctx, app.GroupMembershipGetRequest_builder{
+		Ref:    req.GetRef(),
+		Select: app.GroupMembershipSelect_builder{Group: app.GroupSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	group := app.GroupRef_builder{Id: v.GetGroup().GetId()}.Build()
+	if err := s.mayChangeGroup(ctx, app.GroupMembershipService_Patch_FullMethodName, group); err != nil {
+		return nil, err
+	}
+	if err := s.mayAppoint(ctx, req.GetRole()); err != nil {
+		return nil, err
+	}
+
+	return s.GroupMembershipServiceServer.Patch(ctx, req)
+}
+
+// Erase asks [Core.mayChangeGroup] about the group the row names, which a
+// manager passes for their own group and nobody else's. A row already gone is
+// `{erased: false}`, for [coreTeamMembership.Erase]'s reason.
+func (s coreGroupMembership) Erase(ctx context.Context, req *app.GroupMembershipRef) (*app.GroupMembershipEraseResponse, error) {
+	v, err := s.Next().GroupMembership().Get(ctx, app.GroupMembershipGetRequest_builder{
+		Ref:    req,
+		Select: app.GroupMembershipSelect_builder{Group: app.GroupSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return app.GroupMembershipEraseResponse_builder{}.Build(), nil
+		}
+
+		return nil, err
+	}
+
+	err = s.mayChangeGroup(ctx, app.GroupMembershipService_Erase_FullMethodName,
+		app.GroupRef_builder{Id: v.GetGroup().GetId()}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	return s.GroupMembershipServiceServer.Erase(ctx, req)
 }
 
 type coreRole struct {

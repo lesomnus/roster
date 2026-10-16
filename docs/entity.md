@@ -296,6 +296,19 @@ a group bound inside their own site and not to one bound across the tenant.
 > binding written to that group, which is why this is refused unless alice
 > already holds all of it herself.
 
+A membership may also carry a role held **in that group**, which makes its
+holder the group's manager: they may put people into it and take them out, and
+do nothing to another group. It is a team administrator's rule, asked the same
+way (`server/core/group.go`), and such a role names only those two writes,
+since the gate holds it everywhere. Appointing one is held to what the
+appointer holds through a binding, so a manager does not make another. A
+manager is a member -- outside the group they would protect nothing, having an
+accomplice to put in.
+
+> contoso's administrator makes erin the manager of **dtrack-triage**. erin
+> adds a colleague to it, and is refused when she tries the same with
+> **on-call**, which somebody else manages.
+
 ### 📣 `GroupExposure` — a client whose tokens carry a group
 
 For the relying parties that cannot ask roster anything and authorize from a
@@ -735,7 +748,7 @@ hard (gone).
 | 🔑 `ApiKey` | 14 | via `holder.tenant` | -- | soft | `proto/app/apikey.proto` |
 | 📜 `Role` | 15 | `tenant` edge | -- | soft | `proto/app/role.proto` |
 | 👥 `Group` | 16 | `tenant` edge | -- | soft | `proto/app/group.proto` |
-| 🫂 `GroupMembership` | 17 | via `holder.tenant` | -- | soft | `proto/app/group.proto` |
+| 🫂 `GroupMembership` | 17 | via `holder.tenant` | -- | soft | `proto/app/membership.proto` |
 | 📣 `GroupExposure` | 28 | via `group.tenant` | -- | soft | `proto/app/group.proto` |
 | 🔗 `Binding` | 18 | via `role.tenant` | -- | soft | `proto/app/role.proto` |
 | 🎫 `Delegation` | 19 | via `holder.tenant` | -- | soft | `proto/app/delegation.proto` |

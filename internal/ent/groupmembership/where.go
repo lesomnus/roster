@@ -81,6 +81,11 @@ func GroupId(v uuid.UUID) predicate.GroupMembership {
 	return predicate.GroupMembership(sql.FieldEQ(FieldGroupId, v))
 }
 
+// RoleId applies equality check predicate on the "role_id" field. It's identical to RoleIdEQ.
+func RoleId(v uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldEQ(FieldRoleId, v))
+}
+
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
 func DateUpdatedEQ(v time.Time) predicate.GroupMembership {
 	return predicate.GroupMembership(sql.FieldEQ(FieldDateUpdated, v))
@@ -261,6 +266,36 @@ func GroupIdNotIn(vs ...uuid.UUID) predicate.GroupMembership {
 	return predicate.GroupMembership(sql.FieldNotIn(FieldGroupId, vs...))
 }
 
+// RoleIdEQ applies the EQ predicate on the "role_id" field.
+func RoleIdEQ(v uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldEQ(FieldRoleId, v))
+}
+
+// RoleIdNEQ applies the NEQ predicate on the "role_id" field.
+func RoleIdNEQ(v uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldNEQ(FieldRoleId, v))
+}
+
+// RoleIdIn applies the In predicate on the "role_id" field.
+func RoleIdIn(vs ...uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldIn(FieldRoleId, vs...))
+}
+
+// RoleIdNotIn applies the NotIn predicate on the "role_id" field.
+func RoleIdNotIn(vs ...uuid.UUID) predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldNotIn(FieldRoleId, vs...))
+}
+
+// RoleIdIsNil applies the IsNil predicate on the "role_id" field.
+func RoleIdIsNil() predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldIsNull(FieldRoleId))
+}
+
+// RoleIdNotNil applies the NotNil predicate on the "role_id" field.
+func RoleIdNotNil() predicate.GroupMembership {
+	return predicate.GroupMembership(sql.FieldNotNull(FieldRoleId))
+}
+
 // HasHolder applies the HasEdge predicate on the "holder" edge.
 func HasHolder() predicate.GroupMembership {
 	return predicate.GroupMembership(func(s *sql.Selector) {
@@ -299,6 +334,29 @@ func HasGroup() predicate.GroupMembership {
 func HasGroupWith(preds ...predicate.Group) predicate.GroupMembership {
 	return predicate.GroupMembership(func(s *sql.Selector) {
 		step := newGroupStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasRole applies the HasEdge predicate on the "role" edge.
+func HasRole() predicate.GroupMembership {
+	return predicate.GroupMembership(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, RoleTable, RoleColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRoleWith applies the HasEdge predicate on the "role" edge with a given conditions (other predicates).
+func HasRoleWith(preds ...predicate.Role) predicate.GroupMembership {
+	return predicate.GroupMembership(func(s *sql.Selector) {
+		step := newRoleStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

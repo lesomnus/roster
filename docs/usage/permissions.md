@@ -57,6 +57,7 @@ so it is worth reading once:
 | **Binding** → holder | a role written to one person | widens |
 | **Binding** → group | a role written to a **group**, so everybody in it | widens |
 | **TeamMembership** | a role held inside one team | widens, at the team's site |
+| **GroupMembership** with a role | a manager's, for one group's members | widens, to that group's membership writes |
 | **Binding.site** | the same role, but only within one site | narrows |
 
 > **A grant is any write that changes what the gate will answer for somebody.**
@@ -85,6 +86,40 @@ echo '{"role": {"slug":{"alias":"support","tenant":{"alias":"newco"}}},
 
 A group is a **tenant-wide** set. Its members may sit in different sites, which
 is the difference from a team.
+
+### Its managers
+
+A membership that carries a role held **in the group** makes its holder the
+group's manager:
+
+```sh
+roster role add @newco/group-manager \
+  '{"methods": ["/roster.GroupMembershipService/Add", "/roster.GroupMembershipService/Erase"]}'
+
+echo '{"group": {"slug":{"alias":"oncall","tenant":{"alias":"newco"}}},
+       "holder":{"slug": {"alias":"bob",   "tenant":{"alias":"newco"}}},
+       "role":  {"slug": {"alias":"group-manager", "tenant":{"alias":"newco"}}}}' \
+  | roster group-membership add -
+```
+
+bob may now put people into `oncall` and take them out, and do neither to any
+other group -- the gate lets him through for the method, and `server/core`
+refuses every group but the one he holds it in. Being a plain member of a group
+is not managing it.
+
+- **Such a role names those two methods and nothing else**, and belongs to no
+  site. The gate holds a role held in a group everywhere; only the membership
+  writes are narrowed back to the group.
+- **Appointing a manager is held to what the appointer holds through a
+  binding**, so a manager does not make another. A tenant's administrator does.
+- **A manager is a member.** Kept out of the group they would protect nothing,
+  since they could put an accomplice in.
+- **It does not replace the rule below.** A group bound to a role still asks
+  whoever puts somebody in to hold what it hands out; a manager is a member and
+  holds it already.
+- **Managing a group is not seeing it.** The wall narrows by where somebody's
+  bindings reach, as for every read: a group of a site through a binding there,
+  a group of no site through a binding across the tenant.
 
 ## A site
 

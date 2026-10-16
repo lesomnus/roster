@@ -22,7 +22,8 @@ import { ContinuationSchema } from './app/continuation_pb.js'
 import { CredentialSchema } from './app/credential_pb.js'
 import { DelegationSchema } from './app/delegation_pb.js'
 import { EmailSchema } from './app/email_pb.js'
-import { GroupSchema, GroupExposureSchema, GroupMembershipSchema } from './app/group_pb.js'
+import { GroupSchema, GroupExposureSchema } from './app/group_pb.js'
+import { GroupMembershipSchema, SiteMembershipSchema, TeamMembershipSchema } from './app/membership_pb.js'
 import { HolderSchema } from './roster/payday/holder_pb.js'
 import { HostSchema, HostProofSchema, MailDomainSchema } from './app/host_pb.js'
 import { IdentitySchema } from './app/identity_pb.js'
@@ -31,7 +32,6 @@ import { NominationSchema } from './app/nomination_pb.js'
 import { OutboxSchema } from './roster/payday/outbox_pb.js'
 import { SessionSchema } from './app/session_pb.js'
 import { SiteSchema } from './app/site_pb.js'
-import { SiteMembershipSchema, TeamMembershipSchema } from './app/membership_pb.js'
 import { TeamSchema } from './app/team_pb.js'
 import { TenantSchema } from './roster/payday/tenant_pb.js'
 import { ApiKeyService } from './app/apikey_svc_pb.js'
@@ -43,7 +43,8 @@ import { ContinuationService } from './app/continuation_svc_pb.js'
 import { CredentialService } from './app/credential_svc_pb.js'
 import { DelegationService } from './app/delegation_svc_pb.js'
 import { EmailService } from './app/email_svc_pb.js'
-import { GroupService, GroupExposureService, GroupMembershipService } from './app/group_svc_pb.js'
+import { GroupService, GroupExposureService } from './app/group_svc_pb.js'
+import { GroupMembershipService, SiteMembershipService, TeamMembershipService } from './app/membership_svc_pb.js'
 import { HolderService } from './roster/payday/holder_svc_pb.js'
 import { HostService, HostProofService, MailDomainService } from './app/host_svc_pb.js'
 import { IdentityService } from './app/identity_svc_pb.js'
@@ -52,7 +53,6 @@ import { NominationService } from './app/nomination_svc_pb.js'
 import { OutboxService } from './roster/payday/outbox_svc_pb.js'
 import { SessionService } from './app/session_svc_pb.js'
 import { SiteService } from './app/site_svc_pb.js'
-import { SiteMembershipService, TeamMembershipService } from './app/membership_svc_pb.js'
 import { TeamService } from './app/team_svc_pb.js'
 import { TenantService } from './roster/payday/tenant_svc_pb.js'
 
@@ -197,7 +197,7 @@ export const GroupMembership = {
 	schema: GroupMembershipSchema,
 	domain: 17,
 	version: "dateUpdated",
-	refs: [{ field: "holder", to: "roster.Holder" }, { field: "group", to: "roster.Group" }],
+	refs: [{ field: "holder", to: "roster.Holder" }, { field: "group", to: "roster.Group" }, { field: "role", to: "roster.Role" }],
 	key: "id",
 	ids: ["id"],
 	service: GroupMembershipService,

@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/protobuf-orm/ent"
 	"github.com/protobuf-orm/ent/dialect/sql"
 )
@@ -30,6 +31,8 @@ type GroupMembership struct {
 	HolderId uuid.UUID `json:"holder_id,omitempty"`
 	// GroupId holds the value of the "group_id" field.
 	GroupId uuid.UUID `json:"group_id,omitempty"`
+	// RoleId holds the value of the "role_id" field.
+	RoleId uuid.UUID `json:"role_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroupMembershipQuery when eager-loading is set.
 	Edges        GroupMembershipEdges `json:"edges"`
@@ -42,9 +45,11 @@ type GroupMembershipEdges struct {
 	Holder *Holder `json:"holder,omitempty"`
 	// Group holds the value of the group edge.
 	Group *Group `json:"group,omitempty"`
+	// Role holds the value of the role edge.
+	Role *Role `json:"role,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // HolderOrErr returns the Holder value or an error if the edge
@@ -69,6 +74,17 @@ func (e GroupMembershipEdges) GroupOrErr() (*Group, error) {
 	return nil, &NotLoadedError{edge: "group"}
 }
 
+// RoleOrErr returns the Role value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e GroupMembershipEdges) RoleOrErr() (*Role, error) {
+	if e.Role != nil {
+		return e.Role, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: role.Label}
+	}
+	return nil, &NotLoadedError{edge: "role"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*GroupMembership) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -76,6 +92,8 @@ func (*GroupMembership) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case groupmembership.FieldDateUpdated, groupmembership.FieldDateErased, groupmembership.FieldDateCreated:
 			values[i] = new(sql.NullTime)
+		case groupmembership.FieldRoleId:
+			values[i] = new(sql.Null[uuid.UUID])
 		case groupmembership.FieldId, groupmembership.FieldHolderId, groupmembership.FieldGroupId:
 			values[i] = new(uuid.UUID)
 		default:
@@ -130,6 +148,12 @@ func (_m *GroupMembership) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				_m.GroupId = *value
 			}
+		case groupmembership.FieldRoleId:
+			if value, ok := values[i].(*sql.Null[uuid.UUID]); !ok {
+				return fmt.Errorf("unexpected type %T for field role_id", values[i])
+			} else if value.Valid {
+				_m.RoleId = value.V
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -151,6 +175,11 @@ func (_m *GroupMembership) QueryHolder() *HolderQuery {
 // QueryGroup queries the "group" edge of the GroupMembership entity.
 func (_m *GroupMembership) QueryGroup() *GroupQuery {
 	return NewGroupMembershipClient(_m.config).QueryGroup(_m)
+}
+
+// QueryRole queries the "role" edge of the GroupMembership entity.
+func (_m *GroupMembership) QueryRole() *RoleQuery {
+	return NewGroupMembershipClient(_m.config).QueryRole(_m)
 }
 
 // Update returns a builder for updating this GroupMembership.
@@ -192,6 +221,9 @@ func (_m *GroupMembership) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("group_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.GroupId))
+	builder.WriteString(", ")
+	builder.WriteString("role_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RoleId))
 	builder.WriteByte(')')
 	return builder.String()
 }

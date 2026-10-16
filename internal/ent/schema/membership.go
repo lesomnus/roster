@@ -122,3 +122,61 @@ func (TeamMembership) Annotations() []schema.Annotation {
 		entsql.Annotation{Table: "teammembership"},
 	}
 }
+
+type GroupMembership struct {
+	ent.Schema
+}
+
+func (GroupMembership) Fields() []ent.Field {
+	return []ent.Field{
+		field.Uuid("id").
+			Unique().
+			Immutable(),
+		field.Time("date_updated"),
+		field.Time("date_erased").
+			Nillable().
+			Optional(),
+		field.Time("date_created").
+			Immutable().
+			Optional(),
+		field.Uuid("holder_id").
+			Immutable(),
+		field.Uuid("group_id").
+			Immutable(),
+		field.Uuid("role_id").
+			Optional(),
+	}
+}
+
+func (GroupMembership) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.To("holder", Holder.Type).
+			Unique().
+			Field("holder_id").
+			Required().
+			Immutable(),
+		edge.To("group", Group.Type).
+			Unique().
+			Field("group_id").
+			Required().
+			Immutable(),
+		edge.To("role", Role.Type).
+			Unique().
+			Field("role_id"),
+	}
+}
+
+func (GroupMembership) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("date_created", "id"),
+		index.Edges("holder", "group").
+			Unique().
+			Annotations(entsql.IndexWhere("date_erased IS NULL")),
+	}
+}
+
+func (GroupMembership) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entsql.Annotation{Table: "groupmembership"},
+	}
+}

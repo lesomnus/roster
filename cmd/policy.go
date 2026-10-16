@@ -278,6 +278,32 @@ func (h held) allows(method string) bool {
 	return false
 }
 
+// groupRoles is the roles somebody holds in the groups they are in: what makes
+// them a manager of each, and one row per group, held or not.
+func groupRoles(ctx context.Context, db *ent.Client, who uuid.UUID) ([]*ent.Role, error) {
+	vs, err := db.GroupMembership.Query().
+		Where(
+			groupmembership.DateErasedIsNil(),
+			groupmembership.HasHolderWith(holder.IdEQ(who)),
+			groupmembership.HasGroupWith(group.DateErasedIsNil()),
+			groupmembership.HasRole(),
+		).
+		WithRole().
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]*ent.Role, 0, len(vs))
+	for _, v := range vs {
+		if v.Edges.Role != nil {
+			out = append(out, v.Edges.Role)
+		}
+	}
+
+	return out, nil
+}
+
 // bindingsReaching is every live binding that reaches somebody: the ones
 // written to them, and the ones written to a group they are in.
 //
@@ -365,6 +391,22 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 		// kind of thing that leaks by being forgotten.
 		if v.Edges.Team != nil && v.Edges.Team.Edges.Site != nil {
 			h.sites = append(h.sites, v.Edges.Team.Edges.Site.Id)
+		}
+	}
+
+	// And the roles they hold **in a group**, which is what makes somebody its
+	// manager -- counted for a team role's reason: the gate never sees which
+	// group a call is about, so it lets them through, and `server/core`
+	// refuses every group but theirs (`mayChangeGroup`). Such a role names
+	// only the group's own membership writes (`mayHoldInGroup`), so what this
+	// adds is those two methods, and no site.
+	gs, err := groupRoles(ctx, p.db, who)
+	if err != nil {
+		return held{}, err
+	}
+	for _, r := range gs {
+		for _, m := range r.Methods {
+			h.methods[m] = struct{}{}
 		}
 	}
 
@@ -642,6 +684,17 @@ func Holding(db *ent.Client, sources ...rbac.Source) core.Holding {
 			gs = append(gs, core.Grant{Methods: v.Edges.Role.Methods})
 		}
 
+		// And a manager's, across the tenant for the same reason: the gate
+		// holds a role in a group everywhere, and only the membership writes
+		// are narrowed back to the group.
+		rs, err := groupRoles(ctx, db, who.Uuid())
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range rs {
+			gs = append(gs, core.Grant{Methods: r.Methods})
+		}
+
 		extra, err := configuredGrants(ctx, db, who.Uuid(), sources)
 		if err != nil {
 			return nil, err
@@ -675,18 +728,19 @@ func grantsOf(vs []*ent.Binding) []core.Grant {
 }
 
 // Holds is `server/core`'s question, answered from the rows this policy already
-// reads: may this person call this method, for this team?
+// reads: may this person call this method, for this team -- or this group?
 //
-// Two ways to yes, and they are the two scopes a role is referenced at. A
-// **binding** is the tenant or a site and is never about one team, so holding
-// one is enough by itself. A **team membership** is that team, so it counts
-// only when the call is about it.
+// Two ways to yes, and they are the scopes a role is referenced at. A
+// **binding** is the tenant or a site and is never about one team or group, so
+// holding one is enough by itself. A **team membership** is that team, and a
+// **group membership** that group -- its manager's -- so each counts only when
+// the call is about it. Which of the two `scope` names is in its identifier.
 //
 // One function rather than two, because it is one question. The gate asks a
 // weaker version of it -- may you ever call this -- and a layer asks this one,
 // and both read the same rows.
 func Holds(db *ent.Client, sources ...rbac.Source) core.Holds {
-	return func(ctx context.Context, who pdid.Id, method string, team pdid.Id) (bool, error) {
+	return func(ctx context.Context, who pdid.Id, method string, scope pdid.Id) (bool, error) {
 		// The same set the gate let them through on -- see
 		// [bindingsReaching]. A narrower reading here would refuse the call
 		// after the gate allowed it, which is the two halves of one answer
@@ -712,7 +766,27 @@ func Holds(db *ent.Client, sources ...rbac.Source) core.Holds {
 				}
 			}
 		}
-		if team == pdid.Nil {
+		if scope == pdid.Nil {
+			return false, nil
+		}
+		if scope.Domain() == pd.GroupDomain {
+			gs, err := db.GroupMembership.Query().
+				Where(
+					groupmembership.DateErasedIsNil(),
+					groupmembership.HasHolderWith(holder.IdEQ(who.Uuid())),
+					groupmembership.HasGroupWith(group.IdEQ(scope.Uuid()), group.DateErasedIsNil()),
+				).
+				WithRole().
+				All(ctx)
+			if err != nil {
+				return false, err
+			}
+			for _, v := range gs {
+				if allows(v.Edges.Role, method) {
+					return true, nil
+				}
+			}
+
 			return false, nil
 		}
 
@@ -720,7 +794,7 @@ func Holds(db *ent.Client, sources ...rbac.Source) core.Holds {
 			Where(
 				teammembership.DateErasedIsNil(),
 				teammembership.HasHolderWith(holder.IdEQ(who.Uuid())),
-				teammembership.HasTeamWith(entteam.IdEQ(team.Uuid())),
+				teammembership.HasTeamWith(entteam.IdEQ(scope.Uuid())),
 			).
 			WithRole().
 			All(ctx)

@@ -138,12 +138,12 @@ type Joining func(ctx context.Context, group pdid.Id) ([]Grant, error)
 // them. The same silence a group binding left, one edge along.
 //
 // So this is `policy.of` expressed as grants: bindings written to them,
-// bindings written to a group they are in, and the roles they hold in a team.
-// The last are reported at [pdid.Nil] -- the whole tenant -- because that is
-// what the gate will actually let them call: it is outermost and cannot know
-// which team a call is about, and the only thing that narrows a team role back
-// down is `core.mayChangeTeam`, which guards the membership writes and nothing
-// else.
+// bindings written to a group they are in, and the roles they hold in a team or
+// in a group. The last two are reported at [pdid.Nil] -- the whole tenant --
+// because that is what the gate will actually let them call: it is outermost
+// and cannot know which team or group a call is about, and the only things that
+// narrow such a role back down are `core.mayChangeTeam` and
+// `core.mayChangeGroup`, which guard the membership writes and nothing else.
 type Holding func(ctx context.Context, who pdid.Id) ([]Grant, error)
 
 // Grant is a set of patterns and where they are held.

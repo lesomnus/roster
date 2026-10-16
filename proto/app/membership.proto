@@ -4,6 +4,7 @@ package roster;
 
 import "app/site.proto";
 import "app/team.proto";
+import "app/group.proto";
 import "app/role.proto";
 import "roster/payday/holder.proto";
 import "google/protobuf/timestamp.proto";
@@ -177,5 +178,94 @@ message TeamMembership {
       max: 100
     }
     watch: {}
+  };
+}
+
+// GroupMembership is somebody being in a [Group].
+//
+// # Writing one is a grant
+//
+// A binding written to a group is held by everybody in it -- that is what a
+// group is for -- so putting somebody in one hands them every binding that
+// names it. Which makes this a grant although it mentions no role, and it is
+// refused on the same terms `Binding.Add` is: nobody hands out what they do not
+// hold, each binding checked at the scope it was made in.
+// `server/core/escalate.go`.
+//
+// A row rather than a list on either side, for the reason every membership here
+// is one: it is many-to-many, and it is a fact with a date of its own.
+//
+// # A group's managers
+//
+// Somebody whose membership carries a [role] manages that group: they may put
+// people into it and take them out, and they may not do either to another
+// group. The rule a team's administrators have, and asked the same way -- the
+// gate lets them through for the method, and `server/core` refuses every group
+// but the one they hold it in (`mayChangeGroup`).
+//
+// A manager is a member. Keeping them out of the group would protect nothing,
+// since a manager can put an accomplice in.
+message GroupMembership {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  Holder holder = 2 [(orm.edge) = {immutable: true}];
+
+  Group group = 8 [(orm.edge) = {immutable: true}];
+
+  // What they may do in this group, and empty is a plain member.
+  //
+  // Held here, it reaches this group and nothing else, so it may name only
+  // what changes the group's members -- `GroupMembershipService/Add` and
+  // `/Erase`. Anything wider would be handed out tenant-wide by the gate,
+  // which never sees which group a call is about.
+  //
+  // Attaching one is appointing a manager, and is held to what the appointer
+  // holds through a binding: a manager may put people in and may not make
+  // another manager.
+  Role role = 9 [(orm.edge) = {nullable: true}];
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        name: "member"
+        refs: [
+          {name: "holder", number: 2},
+          {name: "group", number: 8}
+        ]
+        unique: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 17
+    tenanted: {via: "holder.tenant"}
+    list: {
+      order: [
+        {field: {name: "date_created", number: 15}},
+        {field: {name: "id", number: 1}}
+      ]
+      by: [{name: "ref"}, {name: "holder"}, {name: "group"}]
+      size: 20
+      max: 100
+    }
   };
 }

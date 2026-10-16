@@ -524,6 +524,7 @@ var (
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "holder_id", Type: field.TypeUuid},
 		{Name: "group_id", Type: field.TypeUuid},
+		{Name: "role_id", Type: field.TypeUuid, Nullable: true},
 	}
 	// GroupmembershipTable holds the schema information for the "groupmembership" table.
 	GroupmembershipTable = &schema.Table{
@@ -542,6 +543,12 @@ var (
 				Columns:    []*schema.Column{GroupmembershipColumns[5]},
 				RefColumns: []*schema.Column{GroupColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "groupmembership_role_role",
+				Columns:    []*schema.Column{GroupmembershipColumns[6]},
+				RefColumns: []*schema.Column{RoleColumns[0]},
+				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1261,6 +1268,7 @@ func init() {
 	}
 	GroupmembershipTable.ForeignKeys[0].RefTable = HolderTable
 	GroupmembershipTable.ForeignKeys[1].RefTable = GroupTable
+	GroupmembershipTable.ForeignKeys[2].RefTable = RoleTable
 	GroupmembershipTable.Annotation = &entsql.Annotation{
 		Table: "groupmembership",
 	}

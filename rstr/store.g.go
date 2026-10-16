@@ -37,7 +37,6 @@ type Server interface {
 	Delegation() DelegationServiceServer
 	Site() SiteServiceServer
 	Group() GroupServiceServer
-	GroupMembership() GroupMembershipServiceServer
 	GroupExposure() GroupExposureServiceServer
 	Host() HostServiceServer
 	MailDomain() MailDomainServiceServer
@@ -48,6 +47,7 @@ type Server interface {
 	Binding() BindingServiceServer
 	SiteMembership() SiteMembershipServiceServer
 	TeamMembership() TeamMembershipServiceServer
+	GroupMembership() GroupMembershipServiceServer
 	Nomination() NominationServiceServer
 	Session() SessionServiceServer
 	Archived() ArchivedServiceServer
@@ -71,7 +71,6 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterDelegationServiceServer(g, s.Delegation())
 	RegisterSiteServiceServer(g, s.Site())
 	RegisterGroupServiceServer(g, s.Group())
-	RegisterGroupMembershipServiceServer(g, s.GroupMembership())
 	RegisterGroupExposureServiceServer(g, s.GroupExposure())
 	RegisterHostServiceServer(g, s.Host())
 	RegisterMailDomainServiceServer(g, s.MailDomain())
@@ -82,6 +81,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterBindingServiceServer(g, s.Binding())
 	RegisterSiteMembershipServiceServer(g, s.SiteMembership())
 	RegisterTeamMembershipServiceServer(g, s.TeamMembership())
+	RegisterGroupMembershipServiceServer(g, s.GroupMembership())
 	RegisterNominationServiceServer(g, s.Nomination())
 	RegisterSessionServiceServer(g, s.Session())
 	RegisterArchivedServiceServer(g, s.Archived())
@@ -101,7 +101,6 @@ type UnimplementedServer struct {
 	DelegationServer      DelegationServiceServer
 	SiteServer            SiteServiceServer
 	GroupServer           GroupServiceServer
-	GroupMembershipServer GroupMembershipServiceServer
 	GroupExposureServer   GroupExposureServiceServer
 	HostServer            HostServiceServer
 	MailDomainServer      MailDomainServiceServer
@@ -112,6 +111,7 @@ type UnimplementedServer struct {
 	BindingServer         BindingServiceServer
 	SiteMembershipServer  SiteMembershipServiceServer
 	TeamMembershipServer  TeamMembershipServiceServer
+	GroupMembershipServer GroupMembershipServiceServer
 	NominationServer      NominationServiceServer
 	SessionServer         SessionServiceServer
 	ArchivedServer        ArchivedServiceServer
@@ -140,9 +140,6 @@ func (UnimplementedServer) Delegation() DelegationServiceServer {
 }
 func (UnimplementedServer) Site() SiteServiceServer   { return UnimplementedSiteServiceServer{} }
 func (UnimplementedServer) Group() GroupServiceServer { return UnimplementedGroupServiceServer{} }
-func (UnimplementedServer) GroupMembership() GroupMembershipServiceServer {
-	return UnimplementedGroupMembershipServiceServer{}
-}
 func (UnimplementedServer) GroupExposure() GroupExposureServiceServer {
 	return UnimplementedGroupExposureServiceServer{}
 }
@@ -162,6 +159,9 @@ func (UnimplementedServer) SiteMembership() SiteMembershipServiceServer {
 }
 func (UnimplementedServer) TeamMembership() TeamMembershipServiceServer {
 	return UnimplementedTeamMembershipServiceServer{}
+}
+func (UnimplementedServer) GroupMembership() GroupMembershipServiceServer {
+	return UnimplementedGroupMembershipServiceServer{}
 }
 func (UnimplementedServer) Nomination() NominationServiceServer {
 	return UnimplementedNominationServiceServer{}
@@ -185,7 +185,6 @@ type StaticServer struct {
 	DelegationServer      DelegationServiceServer
 	SiteServer            SiteServiceServer
 	GroupServer           GroupServiceServer
-	GroupMembershipServer GroupMembershipServiceServer
 	GroupExposureServer   GroupExposureServiceServer
 	HostServer            HostServiceServer
 	MailDomainServer      MailDomainServiceServer
@@ -196,6 +195,7 @@ type StaticServer struct {
 	BindingServer         BindingServiceServer
 	SiteMembershipServer  SiteMembershipServiceServer
 	TeamMembershipServer  TeamMembershipServiceServer
+	GroupMembershipServer GroupMembershipServiceServer
 	NominationServer      NominationServiceServer
 	SessionServer         SessionServiceServer
 	ArchivedServer        ArchivedServiceServer
@@ -214,7 +214,6 @@ func (s StaticServer) Email() EmailServiceServer                     { return s.
 func (s StaticServer) Delegation() DelegationServiceServer           { return s.DelegationServer }
 func (s StaticServer) Site() SiteServiceServer                       { return s.SiteServer }
 func (s StaticServer) Group() GroupServiceServer                     { return s.GroupServer }
-func (s StaticServer) GroupMembership() GroupMembershipServiceServer { return s.GroupMembershipServer }
 func (s StaticServer) GroupExposure() GroupExposureServiceServer     { return s.GroupExposureServer }
 func (s StaticServer) Host() HostServiceServer                       { return s.HostServer }
 func (s StaticServer) MailDomain() MailDomainServiceServer           { return s.MailDomainServer }
@@ -225,6 +224,7 @@ func (s StaticServer) Role() RoleServiceServer                       { return s.
 func (s StaticServer) Binding() BindingServiceServer                 { return s.BindingServer }
 func (s StaticServer) SiteMembership() SiteMembershipServiceServer   { return s.SiteMembershipServer }
 func (s StaticServer) TeamMembership() TeamMembershipServiceServer   { return s.TeamMembershipServer }
+func (s StaticServer) GroupMembership() GroupMembershipServiceServer { return s.GroupMembershipServer }
 func (s StaticServer) Nomination() NominationServiceServer           { return s.NominationServer }
 func (s StaticServer) Session() SessionServiceServer                 { return s.SessionServer }
 func (s StaticServer) Archived() ArchivedServiceServer               { return s.ArchivedServer }
@@ -243,7 +243,6 @@ type Client interface {
 	Delegation() DelegationServiceClient
 	Site() SiteServiceClient
 	Group() GroupServiceClient
-	GroupMembership() GroupMembershipServiceClient
 	GroupExposure() GroupExposureServiceClient
 	Host() HostServiceClient
 	MailDomain() MailDomainServiceClient
@@ -254,6 +253,7 @@ type Client interface {
 	Binding() BindingServiceClient
 	SiteMembership() SiteMembershipServiceClient
 	TeamMembership() TeamMembershipServiceClient
+	GroupMembership() GroupMembershipServiceClient
 	Nomination() NominationServiceClient
 	Session() SessionServiceClient
 	Archived() ArchivedServiceClient
@@ -274,7 +274,6 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Delegation:      NewDelegationServiceClient(c),
 		_Site:            NewSiteServiceClient(c),
 		_Group:           NewGroupServiceClient(c),
-		_GroupMembership: NewGroupMembershipServiceClient(c),
 		_GroupExposure:   NewGroupExposureServiceClient(c),
 		_Host:            NewHostServiceClient(c),
 		_MailDomain:      NewMailDomainServiceClient(c),
@@ -285,6 +284,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Binding:         NewBindingServiceClient(c),
 		_SiteMembership:  NewSiteMembershipServiceClient(c),
 		_TeamMembership:  NewTeamMembershipServiceClient(c),
+		_GroupMembership: NewGroupMembershipServiceClient(c),
 		_Nomination:      NewNominationServiceClient(c),
 		_Session:         NewSessionServiceClient(c),
 		_Archived:        NewArchivedServiceClient(c),
@@ -305,7 +305,6 @@ type client struct {
 	_Delegation      DelegationServiceClient
 	_Site            SiteServiceClient
 	_Group           GroupServiceClient
-	_GroupMembership GroupMembershipServiceClient
 	_GroupExposure   GroupExposureServiceClient
 	_Host            HostServiceClient
 	_MailDomain      MailDomainServiceClient
@@ -316,6 +315,7 @@ type client struct {
 	_Binding         BindingServiceClient
 	_SiteMembership  SiteMembershipServiceClient
 	_TeamMembership  TeamMembershipServiceClient
+	_GroupMembership GroupMembershipServiceClient
 	_Nomination      NominationServiceClient
 	_Session         SessionServiceClient
 	_Archived        ArchivedServiceClient
@@ -334,7 +334,6 @@ func (c *client) Email() EmailServiceClient                     { return c._Emai
 func (c *client) Delegation() DelegationServiceClient           { return c._Delegation }
 func (c *client) Site() SiteServiceClient                       { return c._Site }
 func (c *client) Group() GroupServiceClient                     { return c._Group }
-func (c *client) GroupMembership() GroupMembershipServiceClient { return c._GroupMembership }
 func (c *client) GroupExposure() GroupExposureServiceClient     { return c._GroupExposure }
 func (c *client) Host() HostServiceClient                       { return c._Host }
 func (c *client) MailDomain() MailDomainServiceClient           { return c._MailDomain }
@@ -345,6 +344,7 @@ func (c *client) Role() RoleServiceClient                       { return c._Role
 func (c *client) Binding() BindingServiceClient                 { return c._Binding }
 func (c *client) SiteMembership() SiteMembershipServiceClient   { return c._SiteMembership }
 func (c *client) TeamMembership() TeamMembershipServiceClient   { return c._TeamMembership }
+func (c *client) GroupMembership() GroupMembershipServiceClient { return c._GroupMembership }
 func (c *client) Nomination() NominationServiceClient           { return c._Nomination }
 func (c *client) Session() SessionServiceClient                 { return c._Session }
 func (c *client) Archived() ArchivedServiceClient               { return c._Archived }

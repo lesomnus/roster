@@ -135,3 +135,68 @@ func TeamMembershipByMember(holder *HolderRef, team *TeamRef) *TeamMembershipRef
 func TeamMembershipGetByMember(holder *HolderRef, team *TeamRef) *TeamMembershipGetRequest {
 	return TeamMembershipGetRequest_builder{Ref: TeamMembershipByMember(holder, team)}.Build()
 }
+
+func (x *GroupMembershipRef) Pick() *GroupMembershipGetRequest {
+	return GroupMembershipGetRequest_builder{Ref: x}.Build()
+}
+
+func (x *GroupMembership) Ref() *GroupMembershipRef {
+	if v := x.GetId(); len(v) > 0 {
+		return GroupMembershipById(v)
+	}
+	{
+		v1 := x.GetHolder()
+		v2 := x.GetGroup()
+		if v1 != nil && v2 != nil {
+			return GroupMembershipByMember(v1.Ref(), v2.Ref())
+		}
+	}
+
+	return nil
+}
+
+func (x *GroupMembership) Pick() *GroupMembershipGetRequest {
+	return x.Ref().Pick()
+}
+
+func (x *GroupMembershipRef) Picks(v *GroupMembership) bool {
+	switch x.WhichKey() {
+	case GroupMembershipRef_Id_case:
+		return bytes.Equal(x.GetId(), v.GetId())
+	case GroupMembershipRef_Member_case:
+		x := x.GetMember()
+		return (x.GetHolder().Picks(v.GetHolder())) &&
+			(x.GetGroup().Picks(v.GetGroup()))
+	default:
+		return false
+	}
+}
+
+func (x *GroupMembershipGetRequest) WithSelect(f func(s *GroupMembershipSelect)) *GroupMembershipGetRequest {
+	if !x.HasSelect() {
+		x.SetSelect(&GroupMembershipSelect{})
+	}
+	f(x.GetSelect())
+	return x
+}
+
+func GroupMembershipById(v []byte) *GroupMembershipRef {
+	x := &GroupMembershipRef{}
+	x.SetId(v)
+	return x
+}
+
+func GroupMembershipGetById(v []byte) *GroupMembershipGetRequest {
+	return GroupMembershipGetRequest_builder{Ref: GroupMembershipById(v)}.Build()
+}
+
+func GroupMembershipByMember(holder *HolderRef, group *GroupRef) *GroupMembershipRef {
+	x := &GroupMembershipRefByMember{}
+	x.SetHolder(holder)
+	x.SetGroup(group)
+	return GroupMembershipRef_builder{Member: x}.Build()
+}
+
+func GroupMembershipGetByMember(holder *HolderRef, group *GroupRef) *GroupMembershipGetRequest {
+	return GroupMembershipGetRequest_builder{Ref: GroupMembershipByMember(holder, group)}.Build()
+}

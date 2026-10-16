@@ -17,7 +17,8 @@
 import { useState } from 'react'
 import { useCall, useQuery } from '@lesomnus/payday/react'
 
-import { GroupMembershipService, GroupService } from '#gen/app/group_svc_pb.js'
+import { GroupService } from '#gen/app/group_svc_pb.js'
+import { GroupMembershipService } from '#gen/app/membership_svc_pb.js'
 
 import { Alias, PickHolder, bytesOf, ref, said, uuid, type May } from './parts.js'
 import { Bar, Fill, Menu, Sheet } from '#lib/ui.js'
