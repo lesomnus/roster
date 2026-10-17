@@ -55,12 +55,15 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/lesomnus/payday/auth"
@@ -487,19 +490,63 @@ func (a *App) begin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Hydra already knows who this is -- a browser that signed in for another
-	// client, within `remember`. There is no form to draw and nothing to ask
-	// roster: the subject is Hydra's own and this app must not second-guess it.
+	// client, within `remember` -- and there is no form to draw **if this app
+	// knows them as well**. The subject is Hydra's own and this app does not
+	// second-guess it. What it checks is that it can still do what a skipped
+	// form leaves to it: read that person, as them, for the claims at the
+	// consent hop.
+	//
+	// It used to take that for granted, and a browser outlives this app's
+	// session in more ways than a clock. A restart under a seal key made at
+	// start opens none of the cookies the last process sealed; a person can
+	// erase the delegation from their account page; a cookie can be cleared.
+	// Each was a browser Hydra waved through and a token with `sub` and nothing
+	// else in it, for as long as Hydra remembered (#121). So a browser this app
+	// cannot read as Hydra's subject is asked again, as if Hydra had remembered
+	// nothing.
+	//
+	// Asking again is safe whoever answers. The person Hydra remembers signs in
+	// and is accepted as before. Somebody else is Hydra's to answer, and v26.2.0
+	// answers a skipped login accepted for another subject by sending the
+	// browser back to the authorization request with `prompt=login` -- a fresh
+	// sign-in, which the next flow through here is.
 	if v.Skip {
-		to, err := a.admin.acceptLogin(r.Context(), challenge, v.Subject, a.c.Remember)
-		if err != nil {
+		_, err := a.reads(r.Context(), r, o, v.Subject)
+		switch {
+		case err == nil:
+			to, err := a.admin.acceptLogin(r.Context(), challenge, v.Subject, a.c.Remember)
+			if err != nil {
+				a.broken(w, r, err)
+
+				return
+			}
+
+			http.Redirect(w, r, to, http.StatusSeeOther)
+
+			return
+
+		case !errors.Is(err, frontdoor.ErrNotSignedIn):
 			a.broken(w, r, err)
 
 			return
+
+		// Except where the client asked for no screen at all. `prompt=none` is
+		// a renewal in a frame nobody looks at, and a form drawn there is a
+		// page that never answers: `login_required` is what such a client is
+		// waiting for, and what sends it to a sign-in somebody can see.
+		case prompted(v.Url, "none"):
+			to, err := a.admin.refuseLogin(r.Context(), challenge, "login_required",
+				"this browser has to sign in again before its claims can be read")
+			if err != nil {
+				a.broken(w, r, err)
+
+				return
+			}
+
+			http.Redirect(w, r, to, http.StatusSeeOther)
+
+			return
 		}
-
-		http.Redirect(w, r, to, http.StatusSeeOther)
-
-		return
 	}
 
 	// A product that drew its own buttons names the one somebody pressed, and
@@ -537,6 +584,50 @@ func connectionNamed(request string) string {
 	}
 
 	return u.Query().Get("connection")
+}
+
+// prompted is whether the authorization request asked for `prompt` value v,
+// read from where `connectionNamed` reads: the request Hydra kept whole.
+func prompted(request, v string) bool {
+	u, err := url.Parse(request)
+	if err != nil {
+		return false
+	}
+
+	return slices.Contains(strings.Fields(u.Query().Get("prompt")), v)
+}
+
+// reads is `subject`, read as them with this browser's session: the call the
+// consent hop fills the claims from, so asking it is asking whether that hop
+// will be able to.
+//
+// [frontdoor.ErrNotSignedIn] when it cannot -- no session here, one that has
+// ended, one whose delegation roster no longer takes (erased from the person's
+// account page, or by an operator), or one that is **somebody else's**. The
+// last is a browser Hydra and this app remember as two people, or whose
+// session changed hands between the hops of one flow, and its claims are not
+// the subject's to carry: a token names one person, and what it says about
+// them is read as that person or not at all. Anything else is roster being
+// unreachable, which the caller answers as broken.
+func (a *App) reads(ctx context.Context, r *http.Request, o *tenant, subject string) (*rstr.MeGetResponse, error) {
+	as, err := a.door.Acting(withAt(ctx, o.at), r)
+	if err != nil {
+		return nil, err
+	}
+
+	me, err := a.me.Get(as, rstr.MeGetRequest_builder{}.Build())
+	switch {
+	case status.Code(err) == codes.Unauthenticated:
+		return nil, frontdoor.ErrNotSignedIn
+	case err != nil:
+		return nil, err
+	}
+
+	if id, err := pdid.From(me.GetId()); err != nil || id.String() != subject {
+		return nil, frontdoor.ErrNotSignedIn
+	}
+
+	return me, nil
 }
 
 // offers is whether a tenant has a connection by that name.
@@ -933,28 +1024,23 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 	}
 
 	claims := map[string]any{}
-	as, err := a.door.Acting(withAt(ctx, o.at), r)
+	me, err := a.reads(ctx, r, o, v.Subject)
 	switch {
 	case err == nil:
-		me, err := a.me.Get(as, rstr.MeGetRequest_builder{}.Build())
-		if err != nil {
-			a.broken(w, r, err)
-
-			return
-		}
 		claims = claimsOf(me, v.Scope, v.Client.Id)
 
 	case errors.Is(err, frontdoor.ErrNotSignedIn):
-		// Hydra remembers this browser and this app does not: its session
-		// outlived nothing, or `remember` is zero and there is no session to
-		// have. The token still gets a `sub`, which is Hydra's; what it does
-		// not get is the claims, because reading them needs a credential
-		// nobody here holds.
+		// Nobody here to read the subject with. The token still gets a `sub`,
+		// which is Hydra's; what it does not get is the claims, because reading
+		// them needs a credential nobody here holds.
 		//
 		// This used to be **every** flow after the first, because the session
-		// was closed at each redirect -- see the end of this function. It is
-		// now the edge it reads like: a browser whose session outlived Hydra's
-		// answer, or a deployment that remembers nothing.
+		// was closed at each redirect -- see the end of this function -- and
+		// then every flow from fifteen minutes after the form, because the
+		// session lasted that long whatever `remember` said (#121). A skipped
+		// login is asked again now when this app cannot read the person
+		// (`begin`), so what is left here is a session that ended between the
+		// hops of one flow.
 
 	default:
 		a.broken(w, r, err)

@@ -289,7 +289,7 @@ sequenceDiagram
 | | the call | what it settles |
 | --- | --- | --- |
 | the challenge | `GET /admin/oauth2/auth/requests/login` | which **client**, and the redirect it named -- whose host is the tenant (§ *What a front door needs*). Asked before a form is drawn, so a challenge this app fronts nobody for fails here rather than after somebody has typed a password |
-| `skip` | none | Hydra already knows this browser, within `remember`. `acceptLogin(v.Subject)` straight away: the subject is Hydra's and this app must not second-guess it |
+| `skip` | `MeService.Get`, as the person | Hydra already knows this browser, within `remember`. `acceptLogin(v.Subject)` straight away **if this app can still read that person** -- its session is there, its delegation is alive, and it is the subject's. The subject is Hydra's and this app does not second-guess it; what it checks is that the consent hop will be able to fill the claims. Otherwise the form, as if Hydra remembered nothing, and `login_required` for a client that asked for `prompt=none` |
 | the page | `GET /flow` | `{brand, client, scope}`. The page may not ask Hydra and this app may, so this is the one endpoint it has |
 | the first form | `VouchService.Delegate` | 204 signed in · 200 one factor proved, another to prove · 401 everything else. `Delegate` and not `Verify` because a yes has to come back with the `rd_` the consent hop reads `Me.Get` with |
 | the second form | `VouchService.Delegate` with the continuation | the app holds no half-signed-in state: the continuation is roster's, short-lived and single-use |
@@ -420,7 +420,7 @@ functions stop agreeing, in either direction.
 
 | mounted as | what it promises a page | pinned by |
 | --- | --- | --- |
-| `GET /login` | the first screen, as a document. Hydra's own `skip` is answered here instead, with a 303 and no page drawn, and so is an authorization request that named one of the tenant's connections (`connection=`), with a 303 to `/provider` for it | `TestALoginAppTellsHydraWhoSignedIn` · `TestASecondFlowCarriesTheClaimsToo` · `TestAFlowThatNamesAConnectionGoesStraightThere` |
+| `GET /login` | the first screen, as a document. Hydra's own `skip` is answered here instead, with a 303 and no page drawn, when this app can still read the person Hydra remembers -- and with the page when it cannot, or a 303 carrying `login_required` for `prompt=none`; so is an authorization request that named one of the tenant's connections (`connection=`), with a 303 to `/provider` for it | `TestALoginAppTellsHydraWhoSignedIn` · `TestASecondFlowCarriesTheClaimsToo` · `TestABrowserThisAppForgotIsAskedAgain` · `TestAFlowThatNamesAConnectionGoesStraightThere` |
 | `GET /flow` | `{brand, client, scope, providers, password}` for a login challenge, `{brand, logout}` for a logout one. **The only thing a page may ask**, because what a flow is about is Hydra's to say and only this app may ask Hydra | `TestATenantWithNoPasswordDrawsNoForm` · `ts/e2e/login.spec.ts` |
 | `/session`, `/session/` | mounted so `frontdoor`'s three below see the whole path. One handler, three methods | `TestALoginAppTellsHydraWhoSignedIn` |
 | `POST /session` | *frontdoor.* `{alias\|address, password}` → **204** signed in · **200** `{satisfied, available}` one factor proved and more to prove · **401** everything else | `TestALoginAppTellsHydraWhoSignedIn` · `TestASecondFactorIsAskedForAndTheFlowWaitsForIt` · `TestARosterThatIsDownIsNotAWrongPassword` |
@@ -539,6 +539,24 @@ because once it has forgotten the browser the next flow draws the form and the
 form mints a session of its own. `TestTheSessionOutlastsWhatHydraRemembers` reads
 the cookie a browser is handed, and `TestASignInLastsAsLongAsTheAppSaid` asks
 each of the front door's four ways in what it requested.
+
+**And when it is gone anyway, the browser is asked again.** A session ends in more
+ways than a clock: a restart under a seal key made at start (`login.seal` left
+out) opens none of the cookies the last process sealed, a person erases the
+delegation from their account page, a cookie is cleared. Hydra goes on skipping
+the form, and this app used to wave the browser through and hand back `sub` alone
+for as long as Hydra remembered. So a skipped login is accepted only when this app
+can read the person Hydra remembers -- the session is there, its delegation is
+alive, and it is the subject's -- and otherwise draws the form, as if Hydra
+remembered nothing (`TestABrowserThisAppForgotIsAskedAgain`, and `docker/flow.sh`
+against the real Hydra). Whoever answers it, that is safe: the person Hydra
+remembers is accepted as before, and Hydra v26.2.0 answers a skipped login accepted
+for somebody else by sending the browser back to the authorization request with
+`prompt=login`. A client that asked for `prompt=none` is told `login_required`
+rather than drawn a form nobody will see. The same check is why the consent hop
+reads only its own subject: a session that changed hands between the hops of a
+flow is not read into a token that names somebody else
+(`TestAConsentReadsOnlyItsOwnSubject`).
 
 The alternative was reading the person with the **operator's** key, which needs no
 session at all. It was refused: it would widen this app's role to `Holder.Get`

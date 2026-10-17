@@ -371,6 +371,31 @@ printf '%s' "${again}" | grep -q '"preferred_username":"'"${SEED_USER}"'"' \
 	|| die "a token from a remembered browser carries no claims: ${again}"
 step "  and it carries the claims too" "preferred_username"
 
+# And a browser Hydra remembers that **this app** does not: its own cookie gone,
+# which is what a restart under a seal key made at start does to every browser
+# at once, and what a cleared cookie does to one. Hydra still skips the form, and
+# the app used to wave the browser through and hand back `sub` alone for as long
+# as Hydra remembered (#121). It draws the form now, and the sign-in after it is
+# a skipped login accepted for the same person -- which only a real Hydra can say
+# it takes.
+#
+# Not on the second-factor walk, for the replay rule the sign-out below states.
+if [ "${FACTOR:-}" != "totp" ]; then
+	host=$(printf '%s' "${LOGIN}" | sed 's|^[a-z]*://||; s|[:/].*||')
+	awk -F '\t' -v h="${host}" '$1 != h && $1 != "#HttpOnly_" h' "${jar}" >"${jar}.kept"
+	mv "${jar}.kept" "${jar}"
+
+	begin
+	[ "${began}" = "200" ] || die "a browser the login app had forgotten was waved through (${began})"
+	step "a browser the app forgot is asked" "${began}, the form again"
+
+	sign_in
+	again=$(printf '%s' "${id}" | payload)
+	printf '%s' "${again}" | grep -q '"preferred_username":"'"${SEED_USER}"'"' \
+		|| die "signing in again handed back a token with no claims: ${again}"
+	step "  and signing in again carries them" "preferred_username"
+fi
+
 # A refresh token that works, spent once before anybody signs out -- so that the
 # refusal below is about the sign-out and not about a token that never would
 # have. Hydra rotates it, and the one kept is the one it handed back.
