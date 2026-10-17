@@ -137,33 +137,28 @@ func (s SiteMembershipServiceServer) image(v *rstr.SiteMembership) *rstr.SiteMem
 	}
 	return out
 }
-func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMembershipAddRequest) (*rstr.SiteMembership, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st SiteMembershipServiceServer) create(ctx context.Context, req *rstr.SiteMembershipAddRequest) (*ent.SiteMembershipCreate, []func(v *rstr.SiteMembership), error) {
 	ds := make([]func(v *rstr.SiteMembership), 0, 2)
 	q := st.Db.SiteMembership.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "roster.SiteMembership", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "roster.SiteMembership", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetHolderId(k)
 		ds = append(ds, func(v *rstr.SiteMembership) {
@@ -171,7 +166,7 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMemb
 		})
 	}
 	if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetSiteId(k)
 		ds = append(ds, func(v *rstr.SiteMembership) {
@@ -183,6 +178,23 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMemb
 		q.SetDateCreated(req.GetDateCreated().AsTime())
 	} else {
 		q.SetDateCreated(st.now())
+	}
+	return q, ds, nil
+}
+
+func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMembershipAddRequest) (*rstr.SiteMembership, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
 	var stored *ent.SiteMembership
@@ -223,6 +235,38 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMemb
 	}
 
 	return v, nil
+}
+
+// SiteMembershipAddRule is what a layer in front says about one row an Add of SiteMembership
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type SiteMembershipAddRule func(ctx context.Context, req *rstr.SiteMembershipAddRequest) (*rstr.SiteMembershipAddRequest, error)
+
+// SiteMembershipWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func SiteMembershipWithAddRule(next rstr.SiteMembershipServiceServer, rule SiteMembershipAddRule) rstr.SiteMembershipServiceServer {
+	return siteMembershipAddRuled{next, rule}
+}
+
+type siteMembershipAddRuled struct {
+	rstr.SiteMembershipServiceServer
+	rule SiteMembershipAddRule
+}
+
+func (s siteMembershipAddRuled) Add(ctx context.Context, req *rstr.SiteMembershipAddRequest) (*rstr.SiteMembership, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.SiteMembershipServiceServer.Add(ctx, r)
 }
 
 func (s SiteMembershipServiceServer) Get(ctx context.Context, req *rstr.SiteMembershipGetRequest) (*rstr.SiteMembership, error) {
@@ -715,33 +759,28 @@ func (s TeamMembershipServiceServer) image(v *rstr.TeamMembership) *rstr.TeamMem
 	}
 	return out
 }
-func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMembershipAddRequest) (*rstr.TeamMembership, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st TeamMembershipServiceServer) create(ctx context.Context, req *rstr.TeamMembershipAddRequest) (*ent.TeamMembershipCreate, []func(v *rstr.TeamMembership), error) {
 	ds := make([]func(v *rstr.TeamMembership), 0, 3)
 	q := st.Db.TeamMembership.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "roster.TeamMembership", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "roster.TeamMembership", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetHolderId(k)
 		ds = append(ds, func(v *rstr.TeamMembership) {
@@ -749,7 +788,7 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 		})
 	}
 	if k, err := TeamGetKey(ctx, st.Db, req.GetTeam()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetTeamId(k)
 		ds = append(ds, func(v *rstr.TeamMembership) {
@@ -758,7 +797,7 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 	}
 	if req.HasRole() {
 		if k, err := RoleGetKey(ctx, st.Db, req.GetRole()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetRoleId(k)
 			ds = append(ds, func(v *rstr.TeamMembership) {
@@ -771,6 +810,23 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 		q.SetDateCreated(req.GetDateCreated().AsTime())
 	} else {
 		q.SetDateCreated(st.now())
+	}
+	return q, ds, nil
+}
+
+func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMembershipAddRequest) (*rstr.TeamMembership, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
 	var stored *ent.TeamMembership
@@ -811,6 +867,38 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 	}
 
 	return v, nil
+}
+
+// TeamMembershipAddRule is what a layer in front says about one row an Add of TeamMembership
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type TeamMembershipAddRule func(ctx context.Context, req *rstr.TeamMembershipAddRequest) (*rstr.TeamMembershipAddRequest, error)
+
+// TeamMembershipWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func TeamMembershipWithAddRule(next rstr.TeamMembershipServiceServer, rule TeamMembershipAddRule) rstr.TeamMembershipServiceServer {
+	return teamMembershipAddRuled{next, rule}
+}
+
+type teamMembershipAddRuled struct {
+	rstr.TeamMembershipServiceServer
+	rule TeamMembershipAddRule
+}
+
+func (s teamMembershipAddRuled) Add(ctx context.Context, req *rstr.TeamMembershipAddRequest) (*rstr.TeamMembership, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.TeamMembershipServiceServer.Add(ctx, r)
 }
 
 func (s TeamMembershipServiceServer) Get(ctx context.Context, req *rstr.TeamMembershipGetRequest) (*rstr.TeamMembership, error) {
@@ -1319,33 +1407,28 @@ func (s GroupMembershipServiceServer) image(v *rstr.GroupMembership) *rstr.Group
 	}
 	return out
 }
-func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMembershipAddRequest) (*rstr.GroupMembership, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st GroupMembershipServiceServer) create(ctx context.Context, req *rstr.GroupMembershipAddRequest) (*ent.GroupMembershipCreate, []func(v *rstr.GroupMembership), error) {
 	ds := make([]func(v *rstr.GroupMembership), 0, 3)
 	q := st.Db.GroupMembership.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "roster.GroupMembership", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "roster.GroupMembership", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetHolderId(k)
 		ds = append(ds, func(v *rstr.GroupMembership) {
@@ -1353,7 +1436,7 @@ func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMe
 		})
 	}
 	if k, err := GroupGetKey(ctx, st.Db, req.GetGroup()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetGroupId(k)
 		ds = append(ds, func(v *rstr.GroupMembership) {
@@ -1362,7 +1445,7 @@ func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMe
 	}
 	if req.HasRole() {
 		if k, err := RoleGetKey(ctx, st.Db, req.GetRole()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetRoleId(k)
 			ds = append(ds, func(v *rstr.GroupMembership) {
@@ -1375,6 +1458,23 @@ func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMe
 		q.SetDateCreated(req.GetDateCreated().AsTime())
 	} else {
 		q.SetDateCreated(st.now())
+	}
+	return q, ds, nil
+}
+
+func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMembershipAddRequest) (*rstr.GroupMembership, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
 	var stored *ent.GroupMembership
@@ -1415,6 +1515,38 @@ func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMe
 	}
 
 	return v, nil
+}
+
+// GroupMembershipAddRule is what a layer in front says about one row an Add of GroupMembership
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type GroupMembershipAddRule func(ctx context.Context, req *rstr.GroupMembershipAddRequest) (*rstr.GroupMembershipAddRequest, error)
+
+// GroupMembershipWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func GroupMembershipWithAddRule(next rstr.GroupMembershipServiceServer, rule GroupMembershipAddRule) rstr.GroupMembershipServiceServer {
+	return groupMembershipAddRuled{next, rule}
+}
+
+type groupMembershipAddRuled struct {
+	rstr.GroupMembershipServiceServer
+	rule GroupMembershipAddRule
+}
+
+func (s groupMembershipAddRuled) Add(ctx context.Context, req *rstr.GroupMembershipAddRequest) (*rstr.GroupMembership, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.GroupMembershipServiceServer.Add(ctx, r)
 }
 
 func (s GroupMembershipServiceServer) Get(ctx context.Context, req *rstr.GroupMembershipGetRequest) (*rstr.GroupMembership, error) {

@@ -117,33 +117,28 @@ func (s HostServiceServer) image(v *rstr.Host) *rstr.Host {
 	}
 	return out
 }
-func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*rstr.Host, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st HostServiceServer) create(ctx context.Context, req *rstr.HostAddRequest) (*ent.HostCreate, []func(v *rstr.Host), error) {
 	ds := make([]func(v *rstr.Host), 0, 1)
 	q := st.Db.Host.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "roster.Host", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "roster.Host", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetTenantId(k)
 		ds = append(ds, func(v *rstr.Host) {
@@ -163,6 +158,23 @@ func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*
 		q.SetDateCreated(req.GetDateCreated().AsTime())
 	} else {
 		q.SetDateCreated(st.now())
+	}
+	return q, ds, nil
+}
+
+func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*rstr.Host, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
 	var stored *ent.Host
@@ -203,6 +215,38 @@ func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*
 	}
 
 	return v, nil
+}
+
+// HostAddRule is what a layer in front says about one row an Add of Host
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type HostAddRule func(ctx context.Context, req *rstr.HostAddRequest) (*rstr.HostAddRequest, error)
+
+// HostWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func HostWithAddRule(next rstr.HostServiceServer, rule HostAddRule) rstr.HostServiceServer {
+	return hostAddRuled{next, rule}
+}
+
+type hostAddRuled struct {
+	rstr.HostServiceServer
+	rule HostAddRule
+}
+
+func (s hostAddRuled) Add(ctx context.Context, req *rstr.HostAddRequest) (*rstr.Host, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.HostServiceServer.Add(ctx, r)
 }
 
 func (s HostServiceServer) Get(ctx context.Context, req *rstr.HostGetRequest) (*rstr.Host, error) {
@@ -660,33 +704,28 @@ func (s MailDomainServiceServer) image(v *rstr.MailDomain) *rstr.MailDomain {
 	}
 	return out
 }
-func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAddRequest) (*rstr.MailDomain, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st MailDomainServiceServer) create(ctx context.Context, req *rstr.MailDomainAddRequest) (*ent.MailDomainCreate, []func(v *rstr.MailDomain), error) {
 	ds := make([]func(v *rstr.MailDomain), 0, 1)
 	q := st.Db.MailDomain.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "roster.MailDomain", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "roster.MailDomain", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetTenantId(k)
 		ds = append(ds, func(v *rstr.MailDomain) {
@@ -704,6 +743,23 @@ func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAd
 		q.SetDateCreated(req.GetDateCreated().AsTime())
 	} else {
 		q.SetDateCreated(st.now())
+	}
+	return q, ds, nil
+}
+
+func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAddRequest) (*rstr.MailDomain, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
 	var stored *ent.MailDomain
@@ -744,6 +800,38 @@ func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAd
 	}
 
 	return v, nil
+}
+
+// MailDomainAddRule is what a layer in front says about one row an Add of MailDomain
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type MailDomainAddRule func(ctx context.Context, req *rstr.MailDomainAddRequest) (*rstr.MailDomainAddRequest, error)
+
+// MailDomainWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func MailDomainWithAddRule(next rstr.MailDomainServiceServer, rule MailDomainAddRule) rstr.MailDomainServiceServer {
+	return mailDomainAddRuled{next, rule}
+}
+
+type mailDomainAddRuled struct {
+	rstr.MailDomainServiceServer
+	rule MailDomainAddRule
+}
+
+func (s mailDomainAddRuled) Add(ctx context.Context, req *rstr.MailDomainAddRequest) (*rstr.MailDomain, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.MailDomainServiceServer.Add(ctx, r)
 }
 
 func (s MailDomainServiceServer) Get(ctx context.Context, req *rstr.MailDomainGetRequest) (*rstr.MailDomain, error) {
@@ -1209,33 +1297,28 @@ func (s HostProofServiceServer) image(v *rstr.HostProof) *rstr.HostProof {
 	}
 	return out
 }
-func (s HostProofServiceServer) Add(ctx context.Context, req *rstr.HostProofAddRequest) (*rstr.HostProof, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st HostProofServiceServer) create(ctx context.Context, req *rstr.HostProofAddRequest) (*ent.HostProofCreate, []func(v *rstr.HostProof), error) {
 	ds := make([]func(v *rstr.HostProof), 0, 1)
 	q := st.Db.HostProof.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "roster.HostProof", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "roster.HostProof", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetTenantId(k)
 		ds = append(ds, func(v *rstr.HostProof) {
@@ -1253,6 +1336,23 @@ func (s HostProofServiceServer) Add(ctx context.Context, req *rstr.HostProofAddR
 		q.SetDateCreated(req.GetDateCreated().AsTime())
 	} else {
 		q.SetDateCreated(st.now())
+	}
+	return q, ds, nil
+}
+
+func (s HostProofServiceServer) Add(ctx context.Context, req *rstr.HostProofAddRequest) (*rstr.HostProof, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
 	var stored *ent.HostProof
@@ -1293,6 +1393,38 @@ func (s HostProofServiceServer) Add(ctx context.Context, req *rstr.HostProofAddR
 	}
 
 	return v, nil
+}
+
+// HostProofAddRule is what a layer in front says about one row an Add of HostProof
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type HostProofAddRule func(ctx context.Context, req *rstr.HostProofAddRequest) (*rstr.HostProofAddRequest, error)
+
+// HostProofWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func HostProofWithAddRule(next rstr.HostProofServiceServer, rule HostProofAddRule) rstr.HostProofServiceServer {
+	return hostProofAddRuled{next, rule}
+}
+
+type hostProofAddRuled struct {
+	rstr.HostProofServiceServer
+	rule HostProofAddRule
+}
+
+func (s hostProofAddRuled) Add(ctx context.Context, req *rstr.HostProofAddRequest) (*rstr.HostProof, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.HostProofServiceServer.Add(ctx, r)
 }
 
 func (s HostProofServiceServer) Get(ctx context.Context, req *rstr.HostProofGetRequest) (*rstr.HostProof, error) {

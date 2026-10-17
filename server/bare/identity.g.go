@@ -116,6 +116,50 @@ func (s IdentityServiceServer) image(v *rstr.Identity) *rstr.Identity {
 	}
 	return out
 }
+
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st IdentityServiceServer) create(ctx context.Context, req *rstr.IdentityAddRequest) (*ent.IdentityCreate, []func(v *rstr.Identity), error) {
+	ds := make([]func(v *rstr.Identity), 0, 1)
+	q := st.Db.Identity.Create()
+	var k uuid.UUID
+	if req.HasId() {
+		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+		} else {
+			k = v
+		}
+	}
+	if v, err := mint(ctx, st.Mint, "roster.Identity", k, req.HasId()); err != nil {
+		return nil, nil, err
+	} else {
+		q.SetId(v)
+	}
+	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
+		return nil, nil, err
+	} else {
+		q.SetHolderId(k)
+		ds = append(ds, func(v *rstr.Identity) {
+			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
+		})
+	}
+	q.SetProvider(req.GetProvider())
+	q.SetSubject(req.GetSubject())
+	if v, err := entuuid.FromBytes(req.GetTenantId()); err != nil {
+		return nil, nil, status.Errorf(codes.InvalidArgument, "tenant_id: %s", err)
+	} else {
+		q.SetTenantId(v)
+	}
+	q.SetDateUpdated(st.now())
+	if req.HasDateCreated() {
+		q.SetDateCreated(req.GetDateCreated().AsTime())
+	} else {
+		q.SetDateCreated(st.now())
+	}
+	return q, ds, nil
+}
+
 func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddRequest) (*rstr.Identity, error) {
 	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
 	if err != nil {
@@ -126,41 +170,9 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddReq
 	st := s
 	st.Db = tx.Db
 
-	ds := make([]func(v *rstr.Identity), 0, 1)
-	q := st.Db.Identity.Create()
-	var k uuid.UUID
-	if req.HasId() {
-		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
-		} else {
-			k = v
-		}
-	}
-	if v, err := mint(ctx, s.Mint, "roster.Identity", k, req.HasId()); err != nil {
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
 		return nil, err
-	} else {
-		q.SetId(v)
-	}
-	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
-		return nil, err
-	} else {
-		q.SetHolderId(k)
-		ds = append(ds, func(v *rstr.Identity) {
-			v.SetHolder(rstr.Holder_builder{Id: k[:]}.Build())
-		})
-	}
-	q.SetProvider(req.GetProvider())
-	q.SetSubject(req.GetSubject())
-	if v, err := entuuid.FromBytes(req.GetTenantId()); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "tenant_id: %s", err)
-	} else {
-		q.SetTenantId(v)
-	}
-	q.SetDateUpdated(st.now())
-	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
-	} else {
-		q.SetDateCreated(st.now())
 	}
 
 	var stored *ent.Identity
@@ -201,6 +213,38 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddReq
 	}
 
 	return v, nil
+}
+
+// IdentityAddRule is what a layer in front says about one row an Add of Identity
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type IdentityAddRule func(ctx context.Context, req *rstr.IdentityAddRequest) (*rstr.IdentityAddRequest, error)
+
+// IdentityWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func IdentityWithAddRule(next rstr.IdentityServiceServer, rule IdentityAddRule) rstr.IdentityServiceServer {
+	return identityAddRuled{next, rule}
+}
+
+type identityAddRuled struct {
+	rstr.IdentityServiceServer
+	rule IdentityAddRule
+}
+
+func (s identityAddRuled) Add(ctx context.Context, req *rstr.IdentityAddRequest) (*rstr.Identity, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.IdentityServiceServer.Add(ctx, r)
 }
 
 func (s IdentityServiceServer) Get(ctx context.Context, req *rstr.IdentityGetRequest) (*rstr.Identity, error) {

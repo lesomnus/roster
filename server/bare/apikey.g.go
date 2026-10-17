@@ -116,33 +116,28 @@ func (s ApiKeyServiceServer) image(v *rstr.ApiKey) *rstr.ApiKey {
 	}
 	return out
 }
-func (s ApiKeyServiceServer) Add(ctx context.Context, req *rstr.ApiKeyAddRequest) (*rstr.ApiKey, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st ApiKeyServiceServer) create(ctx context.Context, req *rstr.ApiKeyAddRequest) (*ent.ApiKeyCreate, []func(v *rstr.ApiKey), error) {
 	ds := make([]func(v *rstr.ApiKey), 0, 1)
 	q := st.Db.ApiKey.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "roster.ApiKey", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "roster.ApiKey", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetHolderId(k)
 		ds = append(ds, func(v *rstr.ApiKey) {
@@ -166,6 +161,23 @@ func (s ApiKeyServiceServer) Add(ctx context.Context, req *rstr.ApiKeyAddRequest
 		q.SetDateCreated(req.GetDateCreated().AsTime())
 	} else {
 		q.SetDateCreated(st.now())
+	}
+	return q, ds, nil
+}
+
+func (s ApiKeyServiceServer) Add(ctx context.Context, req *rstr.ApiKeyAddRequest) (*rstr.ApiKey, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
 	var stored *ent.ApiKey
@@ -206,6 +218,38 @@ func (s ApiKeyServiceServer) Add(ctx context.Context, req *rstr.ApiKeyAddRequest
 	}
 
 	return v, nil
+}
+
+// ApiKeyAddRule is what a layer in front says about one row an Add of ApiKey
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type ApiKeyAddRule func(ctx context.Context, req *rstr.ApiKeyAddRequest) (*rstr.ApiKeyAddRequest, error)
+
+// ApiKeyWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func ApiKeyWithAddRule(next rstr.ApiKeyServiceServer, rule ApiKeyAddRule) rstr.ApiKeyServiceServer {
+	return apiKeyAddRuled{next, rule}
+}
+
+type apiKeyAddRuled struct {
+	rstr.ApiKeyServiceServer
+	rule ApiKeyAddRule
+}
+
+func (s apiKeyAddRuled) Add(ctx context.Context, req *rstr.ApiKeyAddRequest) (*rstr.ApiKey, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.ApiKeyServiceServer.Add(ctx, r)
 }
 
 func (s ApiKeyServiceServer) Get(ctx context.Context, req *rstr.ApiKeyGetRequest) (*rstr.ApiKey, error) {

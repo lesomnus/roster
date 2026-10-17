@@ -131,33 +131,28 @@ func (s GroupServiceServer) image(v *rstr.Group) *rstr.Group {
 	}
 	return out
 }
-func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) (*rstr.Group, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st GroupServiceServer) create(ctx context.Context, req *rstr.GroupAddRequest) (*ent.GroupCreate, []func(v *rstr.Group), error) {
 	ds := make([]func(v *rstr.Group), 0, 2)
 	q := st.Db.Group.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "roster.Group", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "roster.Group", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetTenantId(k)
 		ds = append(ds, func(v *rstr.Group) {
@@ -166,7 +161,7 @@ func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) 
 	}
 	if req.HasSite() {
 		if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetSiteId(k)
 			ds = append(ds, func(v *rstr.Group) {
@@ -182,6 +177,23 @@ func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) 
 		q.SetDateCreated(req.GetDateCreated().AsTime())
 	} else {
 		q.SetDateCreated(st.now())
+	}
+	return q, ds, nil
+}
+
+func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) (*rstr.Group, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
 	var stored *ent.Group
@@ -222,6 +234,38 @@ func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) 
 	}
 
 	return v, nil
+}
+
+// GroupAddRule is what a layer in front says about one row an Add of Group
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type GroupAddRule func(ctx context.Context, req *rstr.GroupAddRequest) (*rstr.GroupAddRequest, error)
+
+// GroupWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func GroupWithAddRule(next rstr.GroupServiceServer, rule GroupAddRule) rstr.GroupServiceServer {
+	return groupAddRuled{next, rule}
+}
+
+type groupAddRuled struct {
+	rstr.GroupServiceServer
+	rule GroupAddRule
+}
+
+func (s groupAddRuled) Add(ctx context.Context, req *rstr.GroupAddRequest) (*rstr.Group, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.GroupServiceServer.Add(ctx, r)
 }
 
 func (s GroupServiceServer) Get(ctx context.Context, req *rstr.GroupGetRequest) (*rstr.Group, error) {
@@ -690,33 +734,28 @@ func (s GroupExposureServiceServer) image(v *rstr.GroupExposure) *rstr.GroupExpo
 	}
 	return out
 }
-func (s GroupExposureServiceServer) Add(ctx context.Context, req *rstr.GroupExposureAddRequest) (*rstr.GroupExposure, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st GroupExposureServiceServer) create(ctx context.Context, req *rstr.GroupExposureAddRequest) (*ent.GroupExposureCreate, []func(v *rstr.GroupExposure), error) {
 	ds := make([]func(v *rstr.GroupExposure), 0, 1)
 	q := st.Db.GroupExposure.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "roster.GroupExposure", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "roster.GroupExposure", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := GroupGetKey(ctx, st.Db, req.GetGroup()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetGroupId(k)
 		ds = append(ds, func(v *rstr.GroupExposure) {
@@ -729,6 +768,23 @@ func (s GroupExposureServiceServer) Add(ctx context.Context, req *rstr.GroupExpo
 		q.SetDateCreated(req.GetDateCreated().AsTime())
 	} else {
 		q.SetDateCreated(st.now())
+	}
+	return q, ds, nil
+}
+
+func (s GroupExposureServiceServer) Add(ctx context.Context, req *rstr.GroupExposureAddRequest) (*rstr.GroupExposure, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
 	var stored *ent.GroupExposure
@@ -769,6 +825,38 @@ func (s GroupExposureServiceServer) Add(ctx context.Context, req *rstr.GroupExpo
 	}
 
 	return v, nil
+}
+
+// GroupExposureAddRule is what a layer in front says about one row an Add of GroupExposure
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type GroupExposureAddRule func(ctx context.Context, req *rstr.GroupExposureAddRequest) (*rstr.GroupExposureAddRequest, error)
+
+// GroupExposureWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func GroupExposureWithAddRule(next rstr.GroupExposureServiceServer, rule GroupExposureAddRule) rstr.GroupExposureServiceServer {
+	return groupExposureAddRuled{next, rule}
+}
+
+type groupExposureAddRuled struct {
+	rstr.GroupExposureServiceServer
+	rule GroupExposureAddRule
+}
+
+func (s groupExposureAddRuled) Add(ctx context.Context, req *rstr.GroupExposureAddRequest) (*rstr.GroupExposure, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.GroupExposureServiceServer.Add(ctx, r)
 }
 
 func (s GroupExposureServiceServer) Get(ctx context.Context, req *rstr.GroupExposureGetRequest) (*rstr.GroupExposure, error) {

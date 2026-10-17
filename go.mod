@@ -37,13 +37,13 @@ require (
 	github.com/lesomnus/grpc-dgram v0.0.0-20260912133542-a7366077bf6f
 	github.com/lesomnus/otx v0.0.0-20261013182912-d2af55df512e
 	github.com/lesomnus/otx/otxgrpc v0.0.0-20261013182912-d2af55df512e
-	github.com/lesomnus/payday v0.0.0-20261017181221-609818e78568
+	github.com/lesomnus/payday v0.0.0-20261017210753-e653d21b760b
 	github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f
 	github.com/lesomnus/xli v0.0.0-20261006060415-9f2e9ce97331
 	github.com/lesomnus/xli/cfg v0.1.2
 	github.com/lesomnus/z v0.0.0-20260531102454-3f1853bb4278
-	github.com/protobuf-orm/ent v0.0.0-20261017174831-c860506f95cd
-	github.com/protobuf-orm/protobuf-orm v0.0.0-20260906212449-04c0cd58f10a
+	github.com/protobuf-orm/ent v0.0.0-20261017195509-ccb638a33740
+	github.com/protobuf-orm/protobuf-orm v0.0.0-20261017194719-b1318979edf2
 	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260906232518-fa1777a2628d
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/otel/trace v1.47.0
@@ -105,9 +105,9 @@ require (
 	github.com/petermattis/goid v0.0.0-20260716134002-a9b348f0a2b9 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/protobuf-orm/protobuf-merge v0.0.0-20261009205601-8502fad9e678 // indirect
-	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261017175217-c90b390a6470 // indirect
+	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261017202428-39d596692bae // indirect
 	github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20261010065542-f9ac5b66df3e // indirect
-	github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20260906213434-46a5916d5339 // indirect
+	github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20261017200014-a5d9b32c7e9e // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/tidwall/btree v1.8.1 // indirect
 	github.com/tinylib/msgp v1.6.4 // indirect

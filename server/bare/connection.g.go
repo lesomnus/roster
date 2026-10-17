@@ -115,33 +115,28 @@ func (s ConnectionServiceServer) image(v *rstr.Connection) *rstr.Connection {
 	}
 	return out
 }
-func (s ConnectionServiceServer) Add(ctx context.Context, req *rstr.ConnectionAddRequest) (*rstr.Connection, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st ConnectionServiceServer) create(ctx context.Context, req *rstr.ConnectionAddRequest) (*ent.ConnectionCreate, []func(v *rstr.Connection), error) {
 	ds := make([]func(v *rstr.Connection), 0, 1)
 	q := st.Db.Connection.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "roster.Connection", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "roster.Connection", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetTenantId(k)
 		ds = append(ds, func(v *rstr.Connection) {
@@ -174,6 +169,23 @@ func (s ConnectionServiceServer) Add(ctx context.Context, req *rstr.ConnectionAd
 		q.SetDateCreated(req.GetDateCreated().AsTime())
 	} else {
 		q.SetDateCreated(st.now())
+	}
+	return q, ds, nil
+}
+
+func (s ConnectionServiceServer) Add(ctx context.Context, req *rstr.ConnectionAddRequest) (*rstr.Connection, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
 	var stored *ent.Connection
@@ -214,6 +226,38 @@ func (s ConnectionServiceServer) Add(ctx context.Context, req *rstr.ConnectionAd
 	}
 
 	return v, nil
+}
+
+// ConnectionAddRule is what a layer in front says about one row an Add of Connection
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type ConnectionAddRule func(ctx context.Context, req *rstr.ConnectionAddRequest) (*rstr.ConnectionAddRequest, error)
+
+// ConnectionWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func ConnectionWithAddRule(next rstr.ConnectionServiceServer, rule ConnectionAddRule) rstr.ConnectionServiceServer {
+	return connectionAddRuled{next, rule}
+}
+
+type connectionAddRuled struct {
+	rstr.ConnectionServiceServer
+	rule ConnectionAddRule
+}
+
+func (s connectionAddRuled) Add(ctx context.Context, req *rstr.ConnectionAddRequest) (*rstr.Connection, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.ConnectionServiceServer.Add(ctx, r)
 }
 
 func (s ConnectionServiceServer) Get(ctx context.Context, req *rstr.ConnectionGetRequest) (*rstr.Connection, error) {
