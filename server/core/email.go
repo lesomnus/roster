@@ -10,6 +10,7 @@ import (
 
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/payday/seen"
 	"github.com/lesomnus/roster/server/vouch"
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
@@ -457,6 +458,8 @@ func (s coreEmail) moved(ctx context.Context, l *app.Link, e *app.Email) (*app.E
 	}
 	defer tx.Rollback()
 
+	ctx = seen.For(ctx, s.drv)
+
 	// This layer again over a rebound one below it, as `coreHost.proved` does:
 	// the writes go to the server **below** this one, so `Add` does not arrive
 	// back here and ask about a claim that has just been spent.
@@ -560,6 +563,8 @@ func (s coreEmail) attested(ctx context.Context, req *app.EmailAttestRequest) (*
 		return nil, err
 	}
 	defer tx.Rollback()
+
+	ctx = seen.For(ctx, s.drv)
 
 	next, err := enttx.Rebind(s.Next(), drv)
 	if err != nil {
