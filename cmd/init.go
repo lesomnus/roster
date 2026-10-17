@@ -9,6 +9,7 @@ import (
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 
 	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/payday/seen"
 
 	"github.com/lesomnus/z"
 
@@ -273,6 +274,8 @@ func seedOperator(ctx context.Context, s *Server, alias, given string) (pdid.Id,
 		return pdid.Nil, "", err
 	}
 	defer tx.Rollback()
+
+	ctx = seen.For(ctx, s.Drv)
 
 	at, err := enttx.Rebind(s.Ungated, drv)
 	if err != nil {
