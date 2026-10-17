@@ -171,6 +171,11 @@ func (s ContinuationServiceServer) Add(ctx context.Context, req *rstr.Continuati
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.Continuation
+	if snapshotOptions(s.Rec, rstr.ContinuationService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -189,11 +194,7 @@ func (s ContinuationServiceServer) Add(ctx context.Context, req *rstr.Continuati
 		d(v)
 	}
 	var value *rstr.Continuation
-	if snapshotOptions(s.Rec, rstr.ContinuationService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, continuation.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{

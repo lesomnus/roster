@@ -149,6 +149,11 @@ func (s TenantServiceServer) Add(ctx context.Context, req *rstr.TenantAddRequest
 		q.SetHold("")
 	}
 
+	var stored *ent.Tenant
+	if snapshotOptions(s.Rec, rstr.TenantService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -164,11 +169,7 @@ func (s TenantServiceServer) Add(ctx context.Context, req *rstr.TenantAddRequest
 
 	v := u.Proto()
 	var value *rstr.Tenant
-	if snapshotOptions(s.Rec, rstr.TenantService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, tenant.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{

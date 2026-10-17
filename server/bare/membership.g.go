@@ -185,6 +185,11 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMemb
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.SiteMembership
+	if snapshotOptions(s.Rec, rstr.SiteMembershipService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -203,11 +208,7 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMemb
 		d(v)
 	}
 	var value *rstr.SiteMembership
-	if snapshotOptions(s.Rec, rstr.SiteMembershipService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, sitemembership.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{
@@ -772,6 +773,11 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.TeamMembership
+	if snapshotOptions(s.Rec, rstr.TeamMembershipService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -790,11 +796,7 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 		d(v)
 	}
 	var value *rstr.TeamMembership
-	if snapshotOptions(s.Rec, rstr.TeamMembershipService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, teammembership.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{
@@ -1375,6 +1377,11 @@ func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMe
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.GroupMembership
+	if snapshotOptions(s.Rec, rstr.GroupMembershipService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -1393,11 +1400,7 @@ func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMe
 		d(v)
 	}
 	var value *rstr.GroupMembership
-	if snapshotOptions(s.Rec, rstr.GroupMembershipService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, groupmembership.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{

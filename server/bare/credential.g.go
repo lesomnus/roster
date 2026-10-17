@@ -170,6 +170,11 @@ func (s CredentialServiceServer) Add(ctx context.Context, req *rstr.CredentialAd
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.Credential
+	if snapshotOptions(s.Rec, rstr.CredentialService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -188,11 +193,7 @@ func (s CredentialServiceServer) Add(ctx context.Context, req *rstr.CredentialAd
 		d(v)
 	}
 	var value *rstr.Credential
-	if snapshotOptions(s.Rec, rstr.CredentialService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, credential.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{

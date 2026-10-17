@@ -168,6 +168,11 @@ func (s ApiKeyServiceServer) Add(ctx context.Context, req *rstr.ApiKeyAddRequest
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.ApiKey
+	if snapshotOptions(s.Rec, rstr.ApiKeyService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -186,11 +191,7 @@ func (s ApiKeyServiceServer) Add(ctx context.Context, req *rstr.ApiKeyAddRequest
 		d(v)
 	}
 	var value *rstr.ApiKey
-	if snapshotOptions(s.Rec, rstr.ApiKeyService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, apikey.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{

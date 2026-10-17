@@ -11,7 +11,6 @@ import (
 
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
-	"github.com/lesomnus/payday/seen"
 	"github.com/lesomnus/payday/slug"
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 
@@ -197,8 +196,6 @@ func (s coreHolder) Provision(ctx context.Context, req *app.HolderProvisionReque
 		return nil, err
 	}
 	defer tx.Rollback()
-
-	ctx = seen.For(ctx, s.drv)
 
 	next, err := enttx.Rebind(s.Next(), drv)
 	if err != nil {

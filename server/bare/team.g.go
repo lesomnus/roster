@@ -183,6 +183,11 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.Team
+	if snapshotOptions(s.Rec, rstr.TeamService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -201,11 +206,7 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 		d(v)
 	}
 	var value *rstr.Team
-	if snapshotOptions(s.Rec, rstr.TeamService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, team.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{

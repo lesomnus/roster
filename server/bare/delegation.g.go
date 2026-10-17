@@ -164,6 +164,11 @@ func (s DelegationServiceServer) Add(ctx context.Context, req *rstr.DelegationAd
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.Delegation
+	if snapshotOptions(s.Rec, rstr.DelegationService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -182,11 +187,7 @@ func (s DelegationServiceServer) Add(ctx context.Context, req *rstr.DelegationAd
 		d(v)
 	}
 	var value *rstr.Delegation
-	if snapshotOptions(s.Rec, rstr.DelegationService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, delegation.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{

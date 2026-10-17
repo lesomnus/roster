@@ -191,6 +191,11 @@ func (s EmailServiceServer) Add(ctx context.Context, req *rstr.EmailAddRequest) 
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.Email
+	if snapshotOptions(s.Rec, rstr.EmailService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -209,11 +214,7 @@ func (s EmailServiceServer) Add(ctx context.Context, req *rstr.EmailAddRequest) 
 		d(v)
 	}
 	var value *rstr.Email
-	if snapshotOptions(s.Rec, rstr.EmailService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, email.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{

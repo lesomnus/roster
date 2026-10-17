@@ -13,7 +13,6 @@ import (
 
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
-	"github.com/lesomnus/payday/seen"
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -194,8 +193,6 @@ func (s coreHost) proved(ctx context.Context, req *app.HostAddRequest) (*app.Hos
 		return nil, err
 	}
 	defer tx.Rollback()
-
-	ctx = seen.For(ctx, s.drv)
 
 	// Whoever held the name lets go of it, on the driver this transaction is,
 	// and across every tenant -- which is the one thing here the wall cannot do

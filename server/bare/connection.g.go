@@ -176,6 +176,11 @@ func (s ConnectionServiceServer) Add(ctx context.Context, req *rstr.ConnectionAd
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.Connection
+	if snapshotOptions(s.Rec, rstr.ConnectionService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -194,11 +199,7 @@ func (s ConnectionServiceServer) Add(ctx context.Context, req *rstr.ConnectionAd
 		d(v)
 	}
 	var value *rstr.Connection
-	if snapshotOptions(s.Rec, rstr.ConnectionService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, connection.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{
