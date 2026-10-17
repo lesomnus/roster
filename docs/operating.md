@@ -49,6 +49,18 @@ describes, printing the SQL that is missing. That is what you want N replicas of
 run the migration as its own step. `control.db.migrate` is the same switch for the
 other plane, and both are read.
 
+**A column that comes to a table which already has rows takes the default its
+field declares** -- `(orm.field).default`, which the generator gives the column as
+well as the server -- so every row already there holds it rather than NULL. A field
+with no default is a NOT NULL column with none, and adding one to a table with
+rows is refused by SQLite and by Postgres alike: that is a release that does not
+start, so a field added to an existing entity says what the rows already there
+should hold. CI migrates empty databases and cannot see this, which is what
+`scripts/upgrade.sh` is for: it builds the release before the commit -- the nearest
+`v*` tag -- lets it make a deployment's databases, puts a row in every table, and
+starts the commit on them twice. **Tag what you deploy** and the `upgrade` job
+follows; with no tag there is nothing to upgrade from, and it says so.
+
 ## The two planes
 
 roster runs twice in one process, on two databases: the **data plane** holds

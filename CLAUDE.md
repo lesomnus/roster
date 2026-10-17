@@ -89,6 +89,7 @@ checkout.
 ./scripts/e2e.sh          # the three pages, in a browser
 ./scripts/hydra.sh        # one OAuth flow, through a real Hydra, to an id_token
 ./scripts/cluster.sh      # deploy/ in k3d, and the class a fresh process hides
+./scripts/upgrade.sh      # the last release's databases, a row in every table, brought up by this checkout
 ```
 
 **Touching `ts/` means running this too.** It stands roster up the way
