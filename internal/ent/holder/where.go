@@ -626,6 +626,16 @@ func DirectoryHasSuffix(v string) predicate.Holder {
 	return predicate.Holder(sql.FieldHasSuffix(FieldDirectory, v))
 }
 
+// DirectoryIsNil applies the IsNil predicate on the "directory" field.
+func DirectoryIsNil() predicate.Holder {
+	return predicate.Holder(sql.FieldIsNull(FieldDirectory))
+}
+
+// DirectoryNotNil applies the NotNil predicate on the "directory" field.
+func DirectoryNotNil() predicate.Holder {
+	return predicate.Holder(sql.FieldNotNull(FieldDirectory))
+}
+
 // DirectoryEqualFold applies the EqualFold predicate on the "directory" field.
 func DirectoryEqualFold(v string) predicate.Holder {
 	return predicate.Holder(sql.FieldEqualFold(FieldDirectory, v))

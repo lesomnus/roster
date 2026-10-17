@@ -161,7 +161,7 @@ message Connection {
   // them. A tenant may move forward and not back: going back would leave
   // everybody already moved unknown at their next sign-in, so it is the
   // deployment's (`server/core/connection.go`).
-  string subject_claim = 12;
+  string subject_claim = 12 [(orm.field) = {default: ""}];
 
   // Whether the tenant's directory provisions its people through this
   // connection: the people it makes (`HolderService.Provision`) are linked
@@ -183,7 +183,7 @@ message Connection {
   // can tell.
   //
   // `docs/scim.md` is the directory that does.
-  bool provisions = 16;
+  bool provisions = 16 [(orm.field) = {default: "false"}];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];

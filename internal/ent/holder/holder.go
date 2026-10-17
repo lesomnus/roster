@@ -86,6 +86,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultDirectory holds the default value on creation for the "directory" field.
+	DefaultDirectory string
 	// ValueScanner of all Holder fields.
 	ValueScanner struct {
 		Profile  field.TypeValueScanner[*rstr.Profile]

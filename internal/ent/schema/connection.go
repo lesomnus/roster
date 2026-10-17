@@ -30,8 +30,12 @@ func (Connection) Fields() []ent.Field {
 		field.Json("scopes", []string{}).
 			Optional(),
 		field.String("secret_ref"),
-		field.String("subject_claim"),
-		field.Bool("provisions"),
+		field.String("subject_claim").
+			Optional().
+			Default(""),
+		field.Bool("provisions").
+			Optional().
+			Default(false),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

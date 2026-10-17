@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 
@@ -79,7 +80,7 @@ func stand(t *testing.T) *deployment {
 
 	_, err = s.Ungated.Connection().Add(ctx, rstr.ConnectionAddRequest_builder{
 		Tenant: at, Name: "entra", Issuer: "https://login.microsoftonline.com/contoso/v2.0", ClientId: "the-app",
-		SubjectClaim: "oid", Provisions: true,
+		SubjectClaim: z.Ptr("oid"), Provisions: z.Ptr(true),
 	}.Build())
 	x.NoError(err)
 
@@ -170,7 +171,7 @@ func (d *deployment) holder(t *testing.T, id string) *rstr.Holder {
 	require.NoError(t, err)
 	v, err := d.s.Ungated.Holder().Get(t.Context(), rstr.HolderGetRequest_builder{
 		Ref:    rstr.HolderRef_builder{Id: k.Bytes()}.Build(),
-		Select: rstr.HolderSelect_builder{All: proto.Bool(true)}.Build(),
+		Select: rstr.HolderSelect_builder{All: z.Ptr(true)}.Build(),
 	}.Build())
 	require.NoError(t, err)
 

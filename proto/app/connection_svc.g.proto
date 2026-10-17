@@ -35,8 +35,8 @@ message ConnectionAddRequest {
   string client_id = 9 [features.field_presence = IMPLICIT];
   repeated string scopes = 10;
   string secret_ref = 11 [features.field_presence = IMPLICIT];
-  string subject_claim = 12 [features.field_presence = IMPLICIT];
-  bool provisions = 16 [features.field_presence = IMPLICIT];
+  string subject_claim = 12;
+  bool provisions = 16;
   google.protobuf.Timestamp date_created = 15;
 }
 

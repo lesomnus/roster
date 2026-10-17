@@ -106,7 +106,7 @@ var (
 		{Name: "actor_tenant_id", Type: field.TypeUuid},
 		{Name: "value", Type: field.TypeBytes},
 		{Name: "counterpart_tenant_id", Type: field.TypeUuid, Nullable: true},
-		{Name: "domain", Type: field.TypeUint32, Nullable: true},
+		{Name: "domain", Type: field.TypeUint32, Nullable: true, Default: 0},
 	}
 	// AuditTable holds the schema information for the "audit" table.
 	AuditTable = &schema.Table{
@@ -212,8 +212,8 @@ var (
 		{Name: "client_id", Type: field.TypeString},
 		{Name: "scopes", Type: field.TypeJson, Nullable: true},
 		{Name: "secret_ref", Type: field.TypeString},
-		{Name: "subject_claim", Type: field.TypeString},
-		{Name: "provisions", Type: field.TypeBool},
+		{Name: "subject_claim", Type: field.TypeString, Nullable: true, Default: ""},
+		{Name: "provisions", Type: field.TypeBool, Nullable: true, Default: false},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -581,7 +581,7 @@ var (
 		{Name: "data", Type: field.TypeJson, Nullable: true},
 		{Name: "date_invalidated", Type: field.TypeTime, Nullable: true},
 		{Name: "date_disabled", Type: field.TypeTime, Nullable: true},
-		{Name: "directory", Type: field.TypeString},
+		{Name: "directory", Type: field.TypeString, Nullable: true, Default: ""},
 		{Name: "portrait", Type: field.TypeJson, Nullable: true},
 		{Name: "tenant_id", Type: field.TypeUuid},
 	}
@@ -1178,7 +1178,7 @@ var (
 		{Name: "date_closed", Type: field.TypeTime, Nullable: true},
 		{Name: "date_destroyed", Type: field.TypeTime, Nullable: true},
 		{Name: "date_held", Type: field.TypeTime, Nullable: true},
-		{Name: "hold", Type: field.TypeString, Nullable: true},
+		{Name: "hold", Type: field.TypeString, Nullable: true, Default: ""},
 	}
 	// TenantTable holds the schema information for the "tenant" table.
 	TenantTable = &schema.Table{

@@ -27,8 +27,8 @@ func (b *built) directory(t *testing.T, ctx context.Context) context.Context {
 		Name:         "entra",
 		Issuer:       "https://login.microsoftonline.com/contoso/v2.0",
 		ClientId:     "the-app",
-		SubjectClaim: "oid",
-		Provisions:   true,
+		SubjectClaim: z.Ptr("oid"),
+		Provisions:   z.Ptr(true),
 	}.Build())
 	x.NoError(err)
 
@@ -267,7 +267,7 @@ func TestADirectoryLiftsOnlyItsOwnSuspension(t *testing.T) {
 		_, err := b.Walled.Holder().Add(admin, app.HolderAddRequest_builder{
 			Tenant:    app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 			Alias:     "ghost",
-			Directory: "inactive",
+			Directory: z.Ptr("inactive"),
 		}.Build())
 		require.Equal(t, codes.InvalidArgument, status.Code(err), "%v", err)
 	})
@@ -297,7 +297,7 @@ func TestADirectoryProvisionsThroughItsOrganisationsOwnDoor(t *testing.T) {
 			"https://login.microsoftonline.com/9188040d-6c67-4c5b-b112-36a304b66dad/v2.0",
 		} {
 			_, err := b.Walled.Connection().Add(admin, app.ConnectionAddRequest_builder{
-				Tenant: at, Name: fmt.Sprintf("open-%d", i), Issuer: issuer, ClientId: "the-app", Provisions: true,
+				Tenant: at, Name: fmt.Sprintf("open-%d", i), Issuer: issuer, ClientId: "the-app", Provisions: z.Ptr(true),
 			}.Build())
 			x.Equal(codes.InvalidArgument, status.Code(err), "%s: %v", issuer, err)
 		}
@@ -370,7 +370,7 @@ func TestATenantProvisionsThroughOneConnection(t *testing.T) {
 	add := func(name string, provisions bool) error {
 		t.Helper()
 		_, err := b.Walled.Connection().Add(admin, app.ConnectionAddRequest_builder{
-			Tenant: at, Name: name, Issuer: "https://idp.example/" + name, ClientId: "the-app", Provisions: provisions,
+			Tenant: at, Name: name, Issuer: "https://idp.example/" + name, ClientId: "the-app", Provisions: z.Ptr(provisions),
 		}.Build())
 
 		return err

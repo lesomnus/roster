@@ -66,6 +66,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultHold holds the default value on creation for the "hold" field.
+	DefaultHold string
 	// ValueScanner of all Tenant fields.
 	ValueScanner struct {
 		Config field.TypeValueScanner[*rstr.TenantConfig]

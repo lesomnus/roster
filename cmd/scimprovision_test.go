@@ -9,6 +9,7 @@ import (
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/pdtest"
 	"github.com/lesomnus/xli/cfg"
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 
@@ -39,7 +40,7 @@ func TestADirectorysKeyIsMintedForOneTenantAndOneConnection(t *testing.T) {
 	for _, v := range []*app.ConnectionAddRequest{
 		app.ConnectionAddRequest_builder{
 			Tenant: at, Name: "entra", Issuer: "https://login.microsoftonline.com/acme/v2.0", ClientId: "the-app",
-			SubjectClaim: "oid",
+			SubjectClaim: z.Ptr("oid"),
 		}.Build(),
 		app.ConnectionAddRequest_builder{
 			Tenant: at, Name: "okta", Issuer: "https://acme.okta.example", ClientId: "the-app",

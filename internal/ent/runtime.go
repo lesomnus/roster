@@ -3,6 +3,8 @@
 package ent
 
 import (
+	"github.com/lesomnus/roster/internal/ent/audit"
+	"github.com/lesomnus/roster/internal/ent/connection"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/schema"
 	"github.com/lesomnus/roster/internal/ent/tenant"
@@ -16,6 +18,22 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	auditFields := schema.Audit{}.Fields()
+	_ = auditFields
+	// auditDescDomain is the schema descriptor for domain field.
+	auditDescDomain := auditFields[11].Descriptor()
+	// audit.DefaultDomain holds the default value on creation for the domain field.
+	audit.DefaultDomain = auditDescDomain.Default.(uint32)
+	connectionFields := schema.Connection{}.Fields()
+	_ = connectionFields
+	// connectionDescSubjectClaim is the schema descriptor for subject_claim field.
+	connectionDescSubjectClaim := connectionFields[8].Descriptor()
+	// connection.DefaultSubjectClaim holds the default value on creation for the subject_claim field.
+	connection.DefaultSubjectClaim = connectionDescSubjectClaim.Default.(string)
+	// connectionDescProvisions is the schema descriptor for provisions field.
+	connectionDescProvisions := connectionFields[9].Descriptor()
+	// connection.DefaultProvisions holds the default value on creation for the provisions field.
+	connection.DefaultProvisions = connectionDescProvisions.Default.(bool)
 	holderFields := schema.Holder{}.Fields()
 	_ = holderFields
 	// holderDescProfile is the schema descriptor for profile field.
@@ -24,6 +42,10 @@ func init() {
 	// holderDescData is the schema descriptor for data field.
 	holderDescData := holderFields[9].Descriptor()
 	holder.ValueScanner.Data = holderDescData.ValueScanner.(field.TypeValueScanner[*anypb.Any])
+	// holderDescDirectory is the schema descriptor for directory field.
+	holderDescDirectory := holderFields[12].Descriptor()
+	// holder.DefaultDirectory holds the default value on creation for the directory field.
+	holder.DefaultDirectory = holderDescDirectory.Default.(string)
 	// holderDescPortrait is the schema descriptor for portrait field.
 	holderDescPortrait := holderFields[13].Descriptor()
 	holder.ValueScanner.Portrait = holderDescPortrait.ValueScanner.(field.TypeValueScanner[*rstr.Portrait])
@@ -32,4 +54,8 @@ func init() {
 	// tenantDescConfig is the schema descriptor for config field.
 	tenantDescConfig := tenantFields[7].Descriptor()
 	tenant.ValueScanner.Config = tenantDescConfig.ValueScanner.(field.TypeValueScanner[*rstr.TenantConfig])
+	// tenantDescHold is the schema descriptor for hold field.
+	tenantDescHold := tenantFields[11].Descriptor()
+	// tenant.DefaultHold holds the default value on creation for the hold field.
+	tenant.DefaultHold = tenantDescHold.Default.(string)
 }

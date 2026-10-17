@@ -44,6 +44,11 @@ breaking:
     # file rules back.
     - PACKAGE_MESSAGE_NO_DELETE
     - PACKAGE_SERVICE_NO_DELETE
+    # Cardinality as the wire and JSON see it, in place of `FIELD_SAME_CARDINALITY`
+    # below. A field going singular to repeated, or into a oneof, still fails;
+    # a field going from implicit to explicit presence does not, since its bytes
+    # and its JSON are the same either way.
+    - FIELD_WIRE_JSON_COMPATIBLE_CARDINALITY
   except:
     - MESSAGE_NO_DELETE
     - SERVICE_NO_DELETE
@@ -59,3 +64,14 @@ breaking:
     # then a rename is a migration somebody else has to make.
     - FIELD_SAME_NAME
     - FIELD_SAME_JSON_NAME
+    # And a field's **presence** is not its wire either. A field that declares
+    # `(orm.field).default` is one an `Add` may leave out, so the generated
+    # request gives it explicit presence -- `*string` in Go where it was
+    # `string` -- while its bytes and its JSON stay what they were. Excluded when
+    # `connection.subject_claim`, `connection.provisions` and `holder.directory`
+    # declared theirs, so that a row that predates the column holds it (#124).
+    #
+    # The day something outside this repository builds these requests, put it
+    # back: then a field that became a pointer is a compile error somebody else
+    # has to fix.
+    - FIELD_SAME_CARDINALITY

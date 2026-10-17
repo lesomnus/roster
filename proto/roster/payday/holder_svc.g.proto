@@ -287,7 +287,7 @@ message HolderAddRequest {
   google.protobuf.Any data = 10;
   google.protobuf.Timestamp date_invalidated = 11;
   google.protobuf.Timestamp date_disabled = 12;
-  string directory = 8 [features.field_presence = IMPLICIT];
+  string directory = 8;
   Portrait portrait = 16;
 }
 

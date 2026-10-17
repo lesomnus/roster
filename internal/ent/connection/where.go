@@ -511,6 +511,16 @@ func SubjectClaimHasSuffix(v string) predicate.Connection {
 	return predicate.Connection(sql.FieldHasSuffix(FieldSubjectClaim, v))
 }
 
+// SubjectClaimIsNil applies the IsNil predicate on the "subject_claim" field.
+func SubjectClaimIsNil() predicate.Connection {
+	return predicate.Connection(sql.FieldIsNull(FieldSubjectClaim))
+}
+
+// SubjectClaimNotNil applies the NotNil predicate on the "subject_claim" field.
+func SubjectClaimNotNil() predicate.Connection {
+	return predicate.Connection(sql.FieldNotNull(FieldSubjectClaim))
+}
+
 // SubjectClaimEqualFold applies the EqualFold predicate on the "subject_claim" field.
 func SubjectClaimEqualFold(v string) predicate.Connection {
 	return predicate.Connection(sql.FieldEqualFold(FieldSubjectClaim, v))
@@ -529,6 +539,16 @@ func ProvisionsEQ(v bool) predicate.Connection {
 // ProvisionsNEQ applies the NEQ predicate on the "provisions" field.
 func ProvisionsNEQ(v bool) predicate.Connection {
 	return predicate.Connection(sql.FieldNEQ(FieldProvisions, v))
+}
+
+// ProvisionsIsNil applies the IsNil predicate on the "provisions" field.
+func ProvisionsIsNil() predicate.Connection {
+	return predicate.Connection(sql.FieldIsNull(FieldProvisions))
+}
+
+// ProvisionsNotNil applies the NotNil predicate on the "provisions" field.
+func ProvisionsNotNil() predicate.Connection {
+	return predicate.Connection(sql.FieldNotNull(FieldProvisions))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.

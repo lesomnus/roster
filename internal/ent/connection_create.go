@@ -71,9 +71,25 @@ func (_c *ConnectionCreate) SetSubjectClaim(v string) *ConnectionCreate {
 	return _c
 }
 
+// SetNillableSubjectClaim sets the "subject_claim" field if the given value is not nil.
+func (_c *ConnectionCreate) SetNillableSubjectClaim(v *string) *ConnectionCreate {
+	if v != nil {
+		_c.SetSubjectClaim(*v)
+	}
+	return _c
+}
+
 // SetProvisions sets the "provisions" field.
 func (_c *ConnectionCreate) SetProvisions(v bool) *ConnectionCreate {
 	_c.mutation.SetProvisions(v)
+	return _c
+}
+
+// SetNillableProvisions sets the "provisions" field if the given value is not nil.
+func (_c *ConnectionCreate) SetNillableProvisions(v *bool) *ConnectionCreate {
+	if v != nil {
+		_c.SetProvisions(*v)
+	}
 	return _c
 }
 
@@ -135,6 +151,7 @@ func (_c *ConnectionCreate) Mutation() *ConnectionMutation {
 
 // Save creates the Connection in the database.
 func (_c *ConnectionCreate) Save(ctx context.Context) (*Connection, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -160,6 +177,18 @@ func (_c *ConnectionCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_c *ConnectionCreate) defaults() {
+	if _, ok := _c.mutation.SubjectClaim(); !ok {
+		v := connection.DefaultSubjectClaim
+		_c.mutation.SetSubjectClaim(v)
+	}
+	if _, ok := _c.mutation.Provisions(); !ok {
+		v := connection.DefaultProvisions
+		_c.mutation.SetProvisions(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_c *ConnectionCreate) check() error {
 	if _, ok := _c.mutation.Name(); !ok {
@@ -176,12 +205,6 @@ func (_c *ConnectionCreate) check() error {
 	}
 	if _, ok := _c.mutation.SecretRef(); !ok {
 		return &ValidationError{Name: "secret_ref", err: errors.New(`ent: missing required field "Connection.secret_ref"`)}
-	}
-	if _, ok := _c.mutation.SubjectClaim(); !ok {
-		return &ValidationError{Name: "subject_claim", err: errors.New(`ent: missing required field "Connection.subject_claim"`)}
-	}
-	if _, ok := _c.mutation.Provisions(); !ok {
-		return &ValidationError{Name: "provisions", err: errors.New(`ent: missing required field "Connection.provisions"`)}
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Connection.date_updated"`)}
@@ -317,6 +340,7 @@ func (_c *ConnectionCreateBulk) Save(ctx context.Context) ([]*Connection, error)
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ConnectionMutation)
 				if !ok {
