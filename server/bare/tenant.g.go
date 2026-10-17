@@ -95,27 +95,23 @@ func (s TenantServiceServer) image(v *rstr.Tenant) *rstr.Tenant {
 	out := proto.Clone(v).(*rstr.Tenant)
 	return out
 }
-func (s TenantServiceServer) Add(ctx context.Context, req *rstr.TenantAddRequest) (*rstr.Tenant, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st TenantServiceServer) create(ctx context.Context, req *rstr.TenantAddRequest) (*ent.TenantCreate, []func(v *rstr.Tenant), error) {
+	var ds []func(v *rstr.Tenant)
 	q := st.Db.Tenant.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "roster.Tenant", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "roster.Tenant", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
@@ -148,6 +144,23 @@ func (s TenantServiceServer) Add(ctx context.Context, req *rstr.TenantAddRequest
 	} else {
 		q.SetHold("")
 	}
+	return q, ds, nil
+}
+
+func (s TenantServiceServer) Add(ctx context.Context, req *rstr.TenantAddRequest) (*rstr.Tenant, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
+	}
 
 	var stored *ent.Tenant
 	if snapshotOptions(s.Rec, rstr.TenantService_Add_FullMethodName).Value {
@@ -168,6 +181,9 @@ func (s TenantServiceServer) Add(ctx context.Context, req *rstr.TenantAddRequest
 	}
 
 	v := u.Proto()
+	for _, d := range ds {
+		d(v)
+	}
 	var value *rstr.Tenant
 	if stored != nil {
 		value = s.image(stored.Proto())
@@ -184,6 +200,38 @@ func (s TenantServiceServer) Add(ctx context.Context, req *rstr.TenantAddRequest
 	}
 
 	return v, nil
+}
+
+// TenantAddRule is what a layer in front says about one row an Add of Tenant
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type TenantAddRule func(ctx context.Context, req *rstr.TenantAddRequest) (*rstr.TenantAddRequest, error)
+
+// TenantWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func TenantWithAddRule(next rstr.TenantServiceServer, rule TenantAddRule) rstr.TenantServiceServer {
+	return tenantAddRuled{next, rule}
+}
+
+type tenantAddRuled struct {
+	rstr.TenantServiceServer
+	rule TenantAddRule
+}
+
+func (s tenantAddRuled) Add(ctx context.Context, req *rstr.TenantAddRequest) (*rstr.Tenant, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.TenantServiceServer.Add(ctx, r)
 }
 
 func (s TenantServiceServer) Get(ctx context.Context, req *rstr.TenantGetRequest) (*rstr.Tenant, error) {

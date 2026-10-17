@@ -133,33 +133,28 @@ func (s RoleServiceServer) image(v *rstr.Role) *rstr.Role {
 	}
 	return out
 }
-func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*rstr.Role, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st RoleServiceServer) create(ctx context.Context, req *rstr.RoleAddRequest) (*ent.RoleCreate, []func(v *rstr.Role), error) {
 	ds := make([]func(v *rstr.Role), 0, 2)
 	q := st.Db.Role.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "roster.Role", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "roster.Role", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetTenantId(k)
 		ds = append(ds, func(v *rstr.Role) {
@@ -168,7 +163,7 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 	}
 	if req.HasSite() {
 		if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetSiteId(k)
 			ds = append(ds, func(v *rstr.Role) {
@@ -190,6 +185,23 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 		q.SetDateCreated(req.GetDateCreated().AsTime())
 	} else {
 		q.SetDateCreated(st.now())
+	}
+	return q, ds, nil
+}
+
+func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*rstr.Role, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
 	var stored *ent.Role
@@ -230,6 +242,38 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 	}
 
 	return v, nil
+}
+
+// RoleAddRule is what a layer in front says about one row an Add of Role
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type RoleAddRule func(ctx context.Context, req *rstr.RoleAddRequest) (*rstr.RoleAddRequest, error)
+
+// RoleWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func RoleWithAddRule(next rstr.RoleServiceServer, rule RoleAddRule) rstr.RoleServiceServer {
+	return roleAddRuled{next, rule}
+}
+
+type roleAddRuled struct {
+	rstr.RoleServiceServer
+	rule RoleAddRule
+}
+
+func (s roleAddRuled) Add(ctx context.Context, req *rstr.RoleAddRequest) (*rstr.Role, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.RoleServiceServer.Add(ctx, r)
 }
 
 func (s RoleServiceServer) Get(ctx context.Context, req *rstr.RoleGetRequest) (*rstr.Role, error) {
@@ -746,33 +790,28 @@ func (s BindingServiceServer) image(v *rstr.Binding) *rstr.Binding {
 	}
 	return out
 }
-func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddRequest) (*rstr.Binding, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st BindingServiceServer) create(ctx context.Context, req *rstr.BindingAddRequest) (*ent.BindingCreate, []func(v *rstr.Binding), error) {
 	ds := make([]func(v *rstr.Binding), 0, 4)
 	q := st.Db.Binding.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "roster.Binding", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "roster.Binding", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := RoleGetKey(ctx, st.Db, req.GetRole()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetRoleId(k)
 		ds = append(ds, func(v *rstr.Binding) {
@@ -781,7 +820,7 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 	}
 	if req.HasSite() {
 		if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetSiteId(k)
 			ds = append(ds, func(v *rstr.Binding) {
@@ -791,7 +830,7 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 	}
 	if req.HasHolder() {
 		if k, err := HolderGetKey(ctx, st.Db, req.GetHolder()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetHolderId(k)
 			ds = append(ds, func(v *rstr.Binding) {
@@ -801,7 +840,7 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 	}
 	if req.HasGroup() {
 		if k, err := GroupGetKey(ctx, st.Db, req.GetGroup()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetGroupId(k)
 			ds = append(ds, func(v *rstr.Binding) {
@@ -817,6 +856,23 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 		q.SetDateCreated(req.GetDateCreated().AsTime())
 	} else {
 		q.SetDateCreated(st.now())
+	}
+	return q, ds, nil
+}
+
+func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddRequest) (*rstr.Binding, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
 	var stored *ent.Binding
@@ -857,6 +913,38 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 	}
 
 	return v, nil
+}
+
+// BindingAddRule is what a layer in front says about one row an Add of Binding
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type BindingAddRule func(ctx context.Context, req *rstr.BindingAddRequest) (*rstr.BindingAddRequest, error)
+
+// BindingWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func BindingWithAddRule(next rstr.BindingServiceServer, rule BindingAddRule) rstr.BindingServiceServer {
+	return bindingAddRuled{next, rule}
+}
+
+type bindingAddRuled struct {
+	rstr.BindingServiceServer
+	rule BindingAddRule
+}
+
+func (s bindingAddRuled) Add(ctx context.Context, req *rstr.BindingAddRequest) (*rstr.Binding, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.BindingServiceServer.Add(ctx, r)
 }
 
 func (s BindingServiceServer) Get(ctx context.Context, req *rstr.BindingGetRequest) (*rstr.Binding, error) {

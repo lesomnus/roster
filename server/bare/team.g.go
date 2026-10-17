@@ -130,33 +130,28 @@ func (s TeamServiceServer) image(v *rstr.Team) *rstr.Team {
 	}
 	return out
 }
-func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*rstr.Team, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
 
-	st := s
-	st.Db = tx.Db
-
+// create is the row an Add of `req` writes, as a builder not yet saved,
+// and what the answer says about its edges. Add and AddMany both write
+// with it, so that an item of an AddMany is the row an Add of it would be.
+func (st TeamServiceServer) create(ctx context.Context, req *rstr.TeamAddRequest) (*ent.TeamCreate, []func(v *rstr.Team), error) {
 	ds := make([]func(v *rstr.Team), 0, 2)
 	q := st.Db.Team.Create()
 	var k uuid.UUID
 	if req.HasId() {
 		if v, err := entuuid.FromBytes(req.GetId()); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
+			return nil, nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
 		} else {
 			k = v
 		}
 	}
-	if v, err := mint(ctx, s.Mint, "roster.Team", k, req.HasId()); err != nil {
-		return nil, err
+	if v, err := mint(ctx, st.Mint, "roster.Team", k, req.HasId()); err != nil {
+		return nil, nil, err
 	} else {
 		q.SetId(v)
 	}
 	if k, err := TenantGetKey(ctx, st.Db, req.GetTenant()); err != nil {
-		return nil, err
+		return nil, nil, err
 	} else {
 		q.SetTenantId(k)
 		ds = append(ds, func(v *rstr.Team) {
@@ -165,7 +160,7 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 	}
 	if req.HasSite() {
 		if k, err := SiteGetKey(ctx, st.Db, req.GetSite()); err != nil {
-			return nil, err
+			return nil, nil, err
 		} else {
 			q.SetSiteId(k)
 			ds = append(ds, func(v *rstr.Team) {
@@ -181,6 +176,23 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 		q.SetDateCreated(req.GetDateCreated().AsTime())
 	} else {
 		q.SetDateCreated(st.now())
+	}
+	return q, ds, nil
+}
+
+func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*rstr.Team, error) {
+	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Close()
+
+	st := s
+	st.Db = tx.Db
+
+	q, ds, err := st.create(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
 	var stored *ent.Team
@@ -221,6 +233,38 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 	}
 
 	return v, nil
+}
+
+// TeamAddRule is what a layer in front says about one row an Add of Team
+// would write: the request to write it with -- the one it was handed, or a
+// copy it changed -- or a refusal. Nil is the request it was handed.
+type TeamAddRule func(ctx context.Context, req *rstr.TeamAddRequest) (*rstr.TeamAddRequest, error)
+
+// TeamWithAddRule answers with `next` behind `rule` for the RPCs that add.
+// An Add is asked about, and every item of an AddMany in order, and the
+// call is refused for the first one that is -- an AddMany naming the item.
+// What reaches `next` is one call either way: an AddMany stays one AddMany.
+//
+// A layer that overrides Add itself, for something an Add does that a rule
+// cannot say, still has its AddMany asked through this.
+func TeamWithAddRule(next rstr.TeamServiceServer, rule TeamAddRule) rstr.TeamServiceServer {
+	return teamAddRuled{next, rule}
+}
+
+type teamAddRuled struct {
+	rstr.TeamServiceServer
+	rule TeamAddRule
+}
+
+func (s teamAddRuled) Add(ctx context.Context, req *rstr.TeamAddRequest) (*rstr.Team, error) {
+	r, err := s.rule(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		r = req
+	}
+	return s.TeamServiceServer.Add(ctx, r)
 }
 
 func (s TeamServiceServer) Get(ctx context.Context, req *rstr.TeamGetRequest) (*rstr.Team, error) {
