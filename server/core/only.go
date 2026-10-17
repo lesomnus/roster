@@ -7,7 +7,6 @@ import (
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 
 	"github.com/lesomnus/payday/pdid"
-	"github.com/lesomnus/payday/seen"
 
 	app "github.com/lesomnus/roster/rstr"
 )
@@ -85,8 +84,6 @@ func (s Core) only(ctx context.Context, holder []byte, fn func(next app.Server) 
 	if err != nil {
 		return err
 	}
-
-	ctx = seen.For(ctx, s.drv)
 
 	next, err := enttx.Rebind(s.Next(), drv)
 	if err != nil {

@@ -161,6 +161,11 @@ func (s SiteServiceServer) Add(ctx context.Context, req *rstr.SiteAddRequest) (*
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.Site
+	if snapshotOptions(s.Rec, rstr.SiteService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -179,11 +184,7 @@ func (s SiteServiceServer) Add(ctx context.Context, req *rstr.SiteAddRequest) (*
 		d(v)
 	}
 	var value *rstr.Site
-	if snapshotOptions(s.Rec, rstr.SiteService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, site.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{

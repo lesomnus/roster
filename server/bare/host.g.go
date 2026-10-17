@@ -165,6 +165,11 @@ func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.Host
+	if snapshotOptions(s.Rec, rstr.HostService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -183,11 +188,7 @@ func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*
 		d(v)
 	}
 	var value *rstr.Host
-	if snapshotOptions(s.Rec, rstr.HostService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, host.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{
@@ -705,6 +706,11 @@ func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAd
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.MailDomain
+	if snapshotOptions(s.Rec, rstr.MailDomainService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -723,11 +729,7 @@ func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAd
 		d(v)
 	}
 	var value *rstr.MailDomain
-	if snapshotOptions(s.Rec, rstr.MailDomainService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, maildomain.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{
@@ -1253,6 +1255,11 @@ func (s HostProofServiceServer) Add(ctx context.Context, req *rstr.HostProofAddR
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.HostProof
+	if snapshotOptions(s.Rec, rstr.HostProofService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -1271,11 +1278,7 @@ func (s HostProofServiceServer) Add(ctx context.Context, req *rstr.HostProofAddR
 		d(v)
 	}
 	var value *rstr.HostProof
-	if snapshotOptions(s.Rec, rstr.HostProofService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, hostproof.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{

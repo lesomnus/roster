@@ -5,7 +5,6 @@ import (
 
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
-	"github.com/lesomnus/payday/seen"
 	"github.com/lesomnus/z"
 	"github.com/protobuf-orm/ent/dialect"
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -375,8 +374,6 @@ func (s coreTenant) Add(ctx context.Context, req *app.TenantAddRequest) (*app.Te
 		return nil, err
 	}
 	defer tx.Rollback()
-
-	ctx = seen.For(ctx, s.drv)
 
 	// This layer again over a rebound one below it, which is what
 	// [Core.WithDriver] does and what `only` does beside it: the rules carry

@@ -164,6 +164,11 @@ func (s SessionServiceServer) Add(ctx context.Context, req *rstr.SessionAddReque
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.Session
+	if snapshotOptions(s.Rec, rstr.SessionService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -182,11 +187,7 @@ func (s SessionServiceServer) Add(ctx context.Context, req *rstr.SessionAddReque
 		d(v)
 	}
 	var value *rstr.Session
-	if snapshotOptions(s.Rec, rstr.SessionService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, session.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{

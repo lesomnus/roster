@@ -163,6 +163,11 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddReq
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.Identity
+	if snapshotOptions(s.Rec, rstr.IdentityService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -181,11 +186,7 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddReq
 		d(v)
 	}
 	var value *rstr.Identity
-	if snapshotOptions(s.Rec, rstr.IdentityService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, identity.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{

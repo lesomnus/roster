@@ -184,6 +184,11 @@ func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) 
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.Group
+	if snapshotOptions(s.Rec, rstr.GroupService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -202,11 +207,7 @@ func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) 
 		d(v)
 	}
 	var value *rstr.Group
-	if snapshotOptions(s.Rec, rstr.GroupService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, group.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{
@@ -730,6 +731,11 @@ func (s GroupExposureServiceServer) Add(ctx context.Context, req *rstr.GroupExpo
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.GroupExposure
+	if snapshotOptions(s.Rec, rstr.GroupExposureService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -748,11 +754,7 @@ func (s GroupExposureServiceServer) Add(ctx context.Context, req *rstr.GroupExpo
 		d(v)
 	}
 	var value *rstr.GroupExposure
-	if snapshotOptions(s.Rec, rstr.GroupExposureService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, groupexposure.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{

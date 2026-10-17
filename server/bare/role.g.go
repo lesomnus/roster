@@ -192,6 +192,11 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.Role
+	if snapshotOptions(s.Rec, rstr.RoleService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -210,11 +215,7 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 		d(v)
 	}
 	var value *rstr.Role
-	if snapshotOptions(s.Rec, rstr.RoleService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, role.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{
@@ -818,6 +819,11 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 		q.SetDateCreated(st.now())
 	}
 
+	var stored *ent.Binding
+	if snapshotOptions(s.Rec, rstr.BindingService_Add_FullMethodName).Value {
+		q.Stored(&stored)
+	}
+
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -836,11 +842,7 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 		d(v)
 	}
 	var value *rstr.Binding
-	if snapshotOptions(s.Rec, rstr.BindingService_Add_FullMethodName).Value {
-		stored, err := st.snapshot(ctx, binding.IdEQ(u.Id), false)
-		if err != nil {
-			return nil, err
-		}
+	if stored != nil {
 		value = s.image(stored.Proto())
 	}
 	if err := record(ctx, s.Rec, st.Db, Change{
