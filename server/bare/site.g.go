@@ -10,7 +10,6 @@ import (
 	ent "github.com/lesomnus/roster/internal/ent"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	site "github.com/lesomnus/roster/internal/ent/site"
-	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
@@ -87,7 +86,6 @@ func (s SiteServiceServer) narrow(ctx context.Context, p predicate.Site) (predic
 
 func (s SiteServiceServer) snapshot(ctx context.Context, p predicate.Site, lock bool) (*ent.Site, error) {
 	q := s.Db.Site.Query().Where(p)
-	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -278,8 +276,6 @@ func SiteSelect(q *ent.SiteQuery, m *rstr.SiteSelect) {
 func SiteSelectInit(q *ent.SiteQuery, m *rstr.SiteSelect) {
 	if m != nil {
 		SiteSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
 	}
 }
 

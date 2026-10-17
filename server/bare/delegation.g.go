@@ -87,7 +87,6 @@ func (s DelegationServiceServer) narrow(ctx context.Context, p predicate.Delegat
 
 func (s DelegationServiceServer) snapshot(ctx context.Context, p predicate.Delegation, lock bool) (*ent.Delegation, error) {
 	q := s.Db.Delegation.Query().Where(p)
-	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -281,8 +280,6 @@ func DelegationSelect(q *ent.DelegationQuery, m *rstr.DelegationSelect) {
 func DelegationSelectInit(q *ent.DelegationQuery, m *rstr.DelegationSelect) {
 	if m != nil {
 		DelegationSelect(q, m)
-	} else {
-		q.WithHolder(selectHolderKey)
 	}
 }
 

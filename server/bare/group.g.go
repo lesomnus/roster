@@ -12,7 +12,6 @@ import (
 	groupexposure "github.com/lesomnus/roster/internal/ent/groupexposure"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	site "github.com/lesomnus/roster/internal/ent/site"
-	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
@@ -89,8 +88,6 @@ func (s GroupServiceServer) narrow(ctx context.Context, p predicate.Group) (pred
 
 func (s GroupServiceServer) snapshot(ctx context.Context, p predicate.Group, lock bool) (*ent.Group, error) {
 	q := s.Db.Group.Query().Where(p)
-	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
-	q.WithSite(func(q *ent.SiteQuery) { q.Select(site.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -305,9 +302,6 @@ func GroupSelect(q *ent.GroupQuery, m *rstr.GroupSelect) {
 func GroupSelectInit(q *ent.GroupQuery, m *rstr.GroupSelect) {
 	if m != nil {
 		GroupSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
-		q.WithSite(selectSiteKey)
 	}
 }
 
@@ -666,7 +660,6 @@ func (s GroupExposureServiceServer) narrow(ctx context.Context, p predicate.Grou
 
 func (s GroupExposureServiceServer) snapshot(ctx context.Context, p predicate.GroupExposure, lock bool) (*ent.GroupExposure, error) {
 	q := s.Db.GroupExposure.Query().Where(p)
-	q.WithGroup(func(q *ent.GroupQuery) { q.Select(group.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -844,8 +837,6 @@ func GroupExposureSelect(q *ent.GroupExposureQuery, m *rstr.GroupExposureSelect)
 func GroupExposureSelectInit(q *ent.GroupExposureQuery, m *rstr.GroupExposureSelect) {
 	if m != nil {
 		GroupExposureSelect(q, m)
-	} else {
-		q.WithGroup(selectGroupKey)
 	}
 }
 

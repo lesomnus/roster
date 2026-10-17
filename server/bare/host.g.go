@@ -12,7 +12,6 @@ import (
 	hostproof "github.com/lesomnus/roster/internal/ent/hostproof"
 	maildomain "github.com/lesomnus/roster/internal/ent/maildomain"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
-	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
@@ -89,7 +88,6 @@ func (s HostServiceServer) narrow(ctx context.Context, p predicate.Host) (predic
 
 func (s HostServiceServer) snapshot(ctx context.Context, p predicate.Host, lock bool) (*ent.Host, error) {
 	q := s.Db.Host.Query().Where(p)
-	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -282,8 +280,6 @@ func HostSelect(q *ent.HostQuery, m *rstr.HostSelect) {
 func HostSelectInit(q *ent.HostQuery, m *rstr.HostSelect) {
 	if m != nil {
 		HostSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
 	}
 }
 
@@ -634,7 +630,6 @@ func (s MailDomainServiceServer) narrow(ctx context.Context, p predicate.MailDom
 
 func (s MailDomainServiceServer) snapshot(ctx context.Context, p predicate.MailDomain, lock bool) (*ent.MailDomain, error) {
 	q := s.Db.MailDomain.Query().Where(p)
-	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -825,8 +820,6 @@ func MailDomainSelect(q *ent.MailDomainQuery, m *rstr.MailDomainSelect) {
 func MailDomainSelectInit(q *ent.MailDomainQuery, m *rstr.MailDomainSelect) {
 	if m != nil {
 		MailDomainSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
 	}
 }
 
@@ -1185,7 +1178,6 @@ func (s HostProofServiceServer) narrow(ctx context.Context, p predicate.HostProo
 
 func (s HostProofServiceServer) snapshot(ctx context.Context, p predicate.HostProof, lock bool) (*ent.HostProof, error) {
 	q := s.Db.HostProof.Query().Where(p)
-	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -1376,8 +1368,6 @@ func HostProofSelect(q *ent.HostProofQuery, m *rstr.HostProofSelect) {
 func HostProofSelectInit(q *ent.HostProofQuery, m *rstr.HostProofSelect) {
 	if m != nil {
 		HostProofSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
 	}
 }
 

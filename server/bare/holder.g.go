@@ -10,7 +10,6 @@ import (
 	ent "github.com/lesomnus/roster/internal/ent"
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
-	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
@@ -87,7 +86,6 @@ func (s HolderServiceServer) narrow(ctx context.Context, p predicate.Holder) (pr
 
 func (s HolderServiceServer) snapshot(ctx context.Context, p predicate.Holder, lock bool) (*ent.Holder, error) {
 	q := s.Db.Holder.Query().Where(p)
-	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -316,8 +314,6 @@ func HolderSelect(q *ent.HolderQuery, m *rstr.HolderSelect) {
 func HolderSelectInit(q *ent.HolderQuery, m *rstr.HolderSelect) {
 	if m != nil {
 		HolderSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
 	}
 }
 

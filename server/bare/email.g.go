@@ -89,8 +89,6 @@ func (s EmailServiceServer) narrow(ctx context.Context, p predicate.Email) (pred
 
 func (s EmailServiceServer) snapshot(ctx context.Context, p predicate.Email, lock bool) (*ent.Email, error) {
 	q := s.Db.Email.Query().Where(p)
-	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
-	q.WithVouchedBy(func(q *ent.IdentityQuery) { q.Select(identity.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -312,9 +310,6 @@ func EmailSelect(q *ent.EmailQuery, m *rstr.EmailSelect) {
 func EmailSelectInit(q *ent.EmailQuery, m *rstr.EmailSelect) {
 	if m != nil {
 		EmailSelect(q, m)
-	} else {
-		q.WithHolder(selectHolderKey)
-		q.WithVouchedBy(selectIdentityKey)
 	}
 }
 

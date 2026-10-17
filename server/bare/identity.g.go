@@ -87,7 +87,6 @@ func (s IdentityServiceServer) narrow(ctx context.Context, p predicate.Identity)
 
 func (s IdentityServiceServer) snapshot(ctx context.Context, p predicate.Identity, lock bool) (*ent.Identity, error) {
 	q := s.Db.Identity.Query().Where(p)
-	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -277,8 +276,6 @@ func IdentitySelect(q *ent.IdentityQuery, m *rstr.IdentitySelect) {
 func IdentitySelectInit(q *ent.IdentityQuery, m *rstr.IdentitySelect) {
 	if m != nil {
 		IdentitySelect(q, m)
-	} else {
-		q.WithHolder(selectHolderKey)
 	}
 }
 
