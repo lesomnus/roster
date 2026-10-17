@@ -35,6 +35,7 @@ the page, one of the two is wrong and both are load-bearing.
 | the password init printed signs the operator in; a wrong one, an unknown alias, and a data-plane holder do not | `TestAGivenPasswordIsTheOneThatSignsIn` · `TestAnOperatorSignsIn` |
 | the shipped `roster.yaml`, unedited, is a working first run: `init`, two SQLite files, a server that builds and passes its readiness check | `TestTheShippedConfigurationIsAFirstRun` |
 | a database that does not match the binary refuses to start, naming which plane — on **either** plane, with `migrate` off (the default) | `TestBothPlanesAreChecked` · `TestTheDataPlaneIsCheckedToo` · `TestServeRefusesAControlPlaneItWasNotAllowedToMigrate` |
+| an upgrade from the last release starts: a column that comes to a table which already has rows takes the default its field declares rather than NULL, and the databases the nearest `v*` tag made -- with a row put in every table -- are brought up by this checkout, twice, the way an init container and `serve` start | `TestAColumnComesToATableThatHasRows` · `scripts/upgrade.sh` |
 | a restart changes nothing for anybody: keys, cookies, suspensions and revocations written before it hold after it | `TestARestartKeepsEveryCredential` · `TestTheCliMintsACustomersKey` · `TestAConsoleSessionSurvivesTheProcess` |
 | `init` runs once; a second run stops before touching the operator | `TestInitRefusesToRunTwice` · `TestASecondSeedStopsBeforeTheOperator` |
 

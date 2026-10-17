@@ -165,6 +165,28 @@ jobs:
         env:
           PDTEST_POSTGRES: postgres://app:app@127.0.0.1:5432/app?sslmode=disable
 
+  # An upgrade, rehearsed: the databases the last release made, with a row in
+  # every table, brought up by this commit -- `scripts/upgrade.sh`.
+  #
+  # Every other job migrates a database that is empty, and an upgrade fails in
+  # the one way an empty database cannot: a column that comes to a table that
+  # already has rows. Three such columns came between two releases of the one
+  # deployment with every job here green, and its init container would not
+  # have finished.
+  upgrade:
+    runs-on: ubuntu-26.04
+    steps:
+      # The whole history and its tags: the release this upgrades from is the
+      # nearest `v*` tag before the commit, found rather than written down.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: ./scripts/upgrade.sh
+
   # The TypeScript half: it type-checks, and it builds.
   #
   # There is no `npm test` here because `ts/package.json` declares no test
@@ -301,7 +323,7 @@ jobs:
   # image is those files copied onto distroless, so this compiles nothing, and
   # the binary pushed is the one `cluster` and `hydra` ran.
   image:
-    needs: [build, go, postgres, ts, e2e, hydra, cluster]
+    needs: [build, go, postgres, upgrade, ts, e2e, hydra, cluster]
     runs-on: ubuntu-26.04
 
     permissions:
