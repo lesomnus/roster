@@ -36,7 +36,7 @@ type HolderAddRequest struct {
 	xxx_hidden_Data            *anypb.Any             `protobuf:"bytes,10,opt,name=data"`
 	xxx_hidden_DateInvalidated *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_invalidated,json=dateInvalidated"`
 	xxx_hidden_DateDisabled    *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_disabled,json=dateDisabled"`
-	xxx_hidden_Directory       string                 `protobuf:"bytes,8,opt,name=directory"`
+	xxx_hidden_Directory       *string                `protobuf:"bytes,8,opt,name=directory"`
 	xxx_hidden_Portrait        *Portrait              `protobuf:"bytes,16,opt,name=portrait"`
 	XXX_raceDetectHookData     protoimpl.RaceDetectHookData
 	XXX_presence               [1]uint32
@@ -148,7 +148,10 @@ func (x *HolderAddRequest) GetDateDisabled() *timestamppb.Timestamp {
 
 func (x *HolderAddRequest) GetDirectory() string {
 	if x != nil {
-		return x.xxx_hidden_Directory
+		if x.xxx_hidden_Directory != nil {
+			return *x.xxx_hidden_Directory
+		}
+		return ""
 	}
 	return ""
 }
@@ -209,7 +212,8 @@ func (x *HolderAddRequest) SetDateDisabled(v *timestamppb.Timestamp) {
 }
 
 func (x *HolderAddRequest) SetDirectory(v string) {
-	x.xxx_hidden_Directory = v
+	x.xxx_hidden_Directory = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 13)
 }
 
 func (x *HolderAddRequest) SetPortrait(v *Portrait) {
@@ -265,6 +269,13 @@ func (x *HolderAddRequest) HasDateDisabled() bool {
 	return x.xxx_hidden_DateDisabled != nil
 }
 
+func (x *HolderAddRequest) HasDirectory() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
+}
+
 func (x *HolderAddRequest) HasPortrait() bool {
 	if x == nil {
 		return false
@@ -301,6 +312,11 @@ func (x *HolderAddRequest) ClearDateDisabled() {
 	x.xxx_hidden_DateDisabled = nil
 }
 
+func (x *HolderAddRequest) ClearDirectory() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
+	x.xxx_hidden_Directory = nil
+}
+
 func (x *HolderAddRequest) ClearPortrait() {
 	x.xxx_hidden_Portrait = nil
 }
@@ -319,7 +335,7 @@ type HolderAddRequest_builder struct {
 	Data            *anypb.Any
 	DateInvalidated *timestamppb.Timestamp
 	DateDisabled    *timestamppb.Timestamp
-	Directory       string
+	Directory       *string
 	Portrait        *Portrait
 }
 
@@ -341,7 +357,10 @@ func (b0 HolderAddRequest_builder) Build() *HolderAddRequest {
 	x.xxx_hidden_Data = b.Data
 	x.xxx_hidden_DateInvalidated = b.DateInvalidated
 	x.xxx_hidden_DateDisabled = b.DateDisabled
-	x.xxx_hidden_Directory = b.Directory
+	if b.Directory != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 13)
+		x.xxx_hidden_Directory = b.Directory
+	}
 	x.xxx_hidden_Portrait = b.Portrait
 	return m0
 }
@@ -4418,7 +4437,7 @@ var File_roster_payday_holder_svc_g_proto protoreflect.FileDescriptor
 
 const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\n" +
-	" roster/payday/holder_svc.g.proto\x12\x06roster\x1a\fapp/me.proto\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x1aroster/payday/holder.proto\x1a roster/payday/tenant_svc.g.proto\"\x88\x05\n" +
+	" roster/payday/holder_svc.g.proto\x12\x06roster\x1a\fapp/me.proto\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x1aroster/payday/holder.proto\x1a roster/payday/tenant_svc.g.proto\"\x81\x05\n" +
 	"\x10HolderAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x1b\n" +
@@ -4431,8 +4450,8 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\x04data\x18\n" +
 	" \x01(\v2\x14.google.protobuf.AnyR\x04data\x12E\n" +
 	"\x10date_invalidated\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\x0fdateInvalidated\x12?\n" +
-	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\fdateDisabled\x12#\n" +
-	"\tdirectory\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\tdirectory\x12,\n" +
+	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\fdateDisabled\x12\x1c\n" +
+	"\tdirectory\x18\b \x01(\tR\tdirectory\x12,\n" +
 	"\bportrait\x18\x10 \x01(\v2\x10.roster.PortraitR\bportrait\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +

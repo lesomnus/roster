@@ -197,6 +197,12 @@ func (_u *HolderUpdate) SetNillableDirectory(v *string) *HolderUpdate {
 	return _u
 }
 
+// ClearDirectory clears the value of the "directory" field.
+func (_u *HolderUpdate) ClearDirectory() *HolderUpdate {
+	_u.mutation.ClearDirectory()
+	return _u
+}
+
 // SetPortrait sets the "portrait" field.
 func (_u *HolderUpdate) SetPortrait(v *rstr.Portrait) *HolderUpdate {
 	_u.mutation.SetPortrait(v)
@@ -334,6 +340,9 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Directory(); ok {
 		_spec.SetField(holder.FieldDirectory, field.TypeString, value)
+	}
+	if _u.mutation.DirectoryCleared() {
+		_spec.ClearField(holder.FieldDirectory, field.TypeString)
 	}
 	if value, ok := _u.mutation.Portrait(); ok {
 		vv, err := holder.ValueScanner.Portrait.Value(value)
@@ -536,6 +545,12 @@ func (_u *HolderUpdateOne) SetNillableDirectory(v *string) *HolderUpdateOne {
 	return _u
 }
 
+// ClearDirectory clears the value of the "directory" field.
+func (_u *HolderUpdateOne) ClearDirectory() *HolderUpdateOne {
+	_u.mutation.ClearDirectory()
+	return _u
+}
+
 // SetPortrait sets the "portrait" field.
 func (_u *HolderUpdateOne) SetPortrait(v *rstr.Portrait) *HolderUpdateOne {
 	_u.mutation.SetPortrait(v)
@@ -703,6 +718,9 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 	}
 	if value, ok := _u.mutation.Directory(); ok {
 		_spec.SetField(holder.FieldDirectory, field.TypeString, value)
+	}
+	if _u.mutation.DirectoryCleared() {
+		_spec.ClearField(holder.FieldDirectory, field.TypeString)
 	}
 	if value, ok := _u.mutation.Portrait(); ok {
 		vv, err := holder.ValueScanner.Portrait.Value(value)

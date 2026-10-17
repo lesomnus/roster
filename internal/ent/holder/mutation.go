@@ -366,9 +366,22 @@ func (m *Mutation) Directory() (r string, exists bool) {
 	return *v, true
 }
 
+// ClearDirectory clears the value of the "directory" field.
+func (m *Mutation) ClearDirectory() {
+	m.directory = nil
+	m.clearedFields[FieldDirectory] = struct{}{}
+}
+
+// DirectoryCleared returns if the "directory" field was cleared in this mutation.
+func (m *Mutation) DirectoryCleared() bool {
+	_, ok := m.clearedFields[FieldDirectory]
+	return ok
+}
+
 // ResetDirectory resets all changes to the "directory" field.
 func (m *Mutation) ResetDirectory() {
 	m.directory = nil
+	delete(m.clearedFields, FieldDirectory)
 }
 
 // SetPortrait sets the "portrait" field.
@@ -727,6 +740,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateDisabled) {
 		fields = append(fields, FieldDateDisabled)
 	}
+	if m.FieldCleared(FieldDirectory) {
+		fields = append(fields, FieldDirectory)
+	}
 	if m.FieldCleared(FieldPortrait) {
 		fields = append(fields, FieldPortrait)
 	}
@@ -764,6 +780,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDateDisabled:
 		m.ClearDateDisabled()
+		return nil
+	case FieldDirectory:
+		m.ClearDirectory()
 		return nil
 	case FieldPortrait:
 		m.ClearPortrait()

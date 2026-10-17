@@ -43,7 +43,8 @@ func (Tenant) Fields() []ent.Field {
 			Nillable().
 			Optional(),
 		field.String("hold").
-			Optional(),
+			Optional().
+			Default(""),
 	}
 }
 

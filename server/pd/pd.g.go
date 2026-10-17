@@ -8334,7 +8334,7 @@ func (s gateHolder) Add(ctx context.Context, req *rstr.HolderAddRequest) (*rstr.
 		return nil, err
 	}
 
-	if req.GetDirectory() != "" {
+	if req.HasDirectory() {
 		return nil, pderr.Invalidf("directory", "is established by this deployment and not asserted by a request")
 	}
 

@@ -461,7 +461,7 @@ var File_app_connection_proto protoreflect.FileDescriptor
 
 const file_app_connection_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/connection.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xfe\x05\n" +
+	"\x14app/connection.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x95\x06\n" +
 	"\n" +
 	"Connection\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
@@ -474,10 +474,10 @@ const file_app_connection_proto_rawDesc = "" +
 	"\x06scopes\x18\n" +
 	" \x03(\tR\x06scopes\x12\x1d\n" +
 	"\n" +
-	"secret_ref\x18\v \x01(\tR\tsecretRef\x12#\n" +
-	"\rsubject_claim\x18\f \x01(\tR\fsubjectClaim\x12\x1e\n" +
+	"secret_ref\x18\v \x01(\tR\tsecretRef\x12,\n" +
+	"\rsubject_claim\x18\f \x01(\tB\a\xea\x82\x16\x03\x82\x01\x00R\fsubjectClaim\x12,\n" +
 	"\n" +
-	"provisions\x18\x10 \x01(\bR\n" +
+	"provisions\x18\x10 \x01(\bB\f\xea\x82\x16\b\x82\x01\x05falseR\n" +
 	"provisions\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +

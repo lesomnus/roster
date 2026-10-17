@@ -33,7 +33,7 @@ type ConnectionAddRequest struct {
 	xxx_hidden_ClientId     string                 `protobuf:"bytes,9,opt,name=client_id,json=clientId"`
 	xxx_hidden_Scopes       []string               `protobuf:"bytes,10,rep,name=scopes"`
 	xxx_hidden_SecretRef    string                 `protobuf:"bytes,11,opt,name=secret_ref,json=secretRef"`
-	xxx_hidden_SubjectClaim string                 `protobuf:"bytes,12,opt,name=subject_claim,json=subjectClaim"`
+	xxx_hidden_SubjectClaim *string                `protobuf:"bytes,12,opt,name=subject_claim,json=subjectClaim"`
 	xxx_hidden_Provisions   bool                   `protobuf:"varint,16,opt,name=provisions"`
 	xxx_hidden_DateCreated  *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
@@ -132,7 +132,10 @@ func (x *ConnectionAddRequest) GetSecretRef() string {
 
 func (x *ConnectionAddRequest) GetSubjectClaim() string {
 	if x != nil {
-		return x.xxx_hidden_SubjectClaim
+		if x.xxx_hidden_SubjectClaim != nil {
+			return *x.xxx_hidden_SubjectClaim
+		}
+		return ""
 	}
 	return ""
 }
@@ -192,11 +195,13 @@ func (x *ConnectionAddRequest) SetSecretRef(v string) {
 }
 
 func (x *ConnectionAddRequest) SetSubjectClaim(v string) {
-	x.xxx_hidden_SubjectClaim = v
+	x.xxx_hidden_SubjectClaim = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 12)
 }
 
 func (x *ConnectionAddRequest) SetProvisions(v bool) {
 	x.xxx_hidden_Provisions = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 12)
 }
 
 func (x *ConnectionAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -217,6 +222,20 @@ func (x *ConnectionAddRequest) HasTenant() bool {
 	return x.xxx_hidden_Tenant != nil
 }
 
+func (x *ConnectionAddRequest) HasSubjectClaim() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
+}
+
+func (x *ConnectionAddRequest) HasProvisions() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
+}
+
 func (x *ConnectionAddRequest) HasDateCreated() bool {
 	if x == nil {
 		return false
@@ -231,6 +250,16 @@ func (x *ConnectionAddRequest) ClearId() {
 
 func (x *ConnectionAddRequest) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
+}
+
+func (x *ConnectionAddRequest) ClearSubjectClaim() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	x.xxx_hidden_SubjectClaim = nil
+}
+
+func (x *ConnectionAddRequest) ClearProvisions() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	x.xxx_hidden_Provisions = false
 }
 
 func (x *ConnectionAddRequest) ClearDateCreated() {
@@ -249,8 +278,8 @@ type ConnectionAddRequest_builder struct {
 	ClientId     string
 	Scopes       []string
 	SecretRef    string
-	SubjectClaim string
-	Provisions   bool
+	SubjectClaim *string
+	Provisions   *bool
 	DateCreated  *timestamppb.Timestamp
 }
 
@@ -270,8 +299,14 @@ func (b0 ConnectionAddRequest_builder) Build() *ConnectionAddRequest {
 	x.xxx_hidden_ClientId = b.ClientId
 	x.xxx_hidden_Scopes = b.Scopes
 	x.xxx_hidden_SecretRef = b.SecretRef
-	x.xxx_hidden_SubjectClaim = b.SubjectClaim
-	x.xxx_hidden_Provisions = b.Provisions
+	if b.SubjectClaim != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 12)
+		x.xxx_hidden_SubjectClaim = b.SubjectClaim
+	}
+	if b.Provisions != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 12)
+		x.xxx_hidden_Provisions = *b.Provisions
+	}
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -2267,7 +2302,7 @@ var File_app_connection_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/connection_svc.g.proto\x12\x06roster\x1a\x14app/connection.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\x97\x04\n" +
+	"\x1aapp/connection_svc.g.proto\x12\x06roster\x1a\x14app/connection.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\x89\x04\n" +
 	"\x14ConnectionAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x19\n" +
@@ -2279,10 +2314,10 @@ const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\x06scopes\x18\n" +
 	" \x03(\tR\x06scopes\x12$\n" +
 	"\n" +
-	"secret_ref\x18\v \x01(\tB\x05\xaa\x01\x02\b\x02R\tsecretRef\x12*\n" +
-	"\rsubject_claim\x18\f \x01(\tB\x05\xaa\x01\x02\b\x02R\fsubjectClaim\x12%\n" +
+	"secret_ref\x18\v \x01(\tB\x05\xaa\x01\x02\b\x02R\tsecretRef\x12#\n" +
+	"\rsubject_claim\x18\f \x01(\tR\fsubjectClaim\x12\x1e\n" +
 	"\n" +
-	"provisions\x18\x10 \x01(\bB\x05\xaa\x01\x02\b\x02R\n" +
+	"provisions\x18\x10 \x01(\bR\n" +
 	"provisions\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +

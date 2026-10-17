@@ -161,8 +161,16 @@ func (s ConnectionServiceServer) Add(ctx context.Context, req *rstr.ConnectionAd
 		q.SetScopes(u)
 	}
 	q.SetSecretRef(req.GetSecretRef())
-	q.SetSubjectClaim(req.GetSubjectClaim())
-	q.SetProvisions(req.GetProvisions())
+	if req.HasSubjectClaim() {
+		q.SetSubjectClaim(req.GetSubjectClaim())
+	} else {
+		q.SetSubjectClaim("")
+	}
+	if req.HasProvisions() {
+		q.SetProvisions(req.GetProvisions())
+	} else {
+		q.SetProvisions(false)
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())

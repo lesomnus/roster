@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -283,7 +284,7 @@ func TestSomebodyTheirDirectoryProvisionsDoesNotLeaveOnTheirOwn(t *testing.T) {
 	for _, v := range []*app.ConnectionAddRequest{
 		app.ConnectionAddRequest_builder{
 			Tenant: at, Name: "entra", Issuer: "https://login.microsoftonline.com/contoso/v2.0", ClientId: "the-app",
-			SubjectClaim: "oid", Provisions: true,
+			SubjectClaim: z.Ptr("oid"), Provisions: z.Ptr(true),
 		}.Build(),
 		app.ConnectionAddRequest_builder{Tenant: at, Name: "okta", Issuer: "https://contoso.okta.example", ClientId: "the-app"}.Build(),
 	} {

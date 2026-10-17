@@ -144,6 +144,12 @@ func (_u *ConnectionUpdate) SetNillableSubjectClaim(v *string) *ConnectionUpdate
 	return _u
 }
 
+// ClearSubjectClaim clears the value of the "subject_claim" field.
+func (_u *ConnectionUpdate) ClearSubjectClaim() *ConnectionUpdate {
+	_u.mutation.ClearSubjectClaim()
+	return _u
+}
+
 // SetProvisions sets the "provisions" field.
 func (_u *ConnectionUpdate) SetProvisions(v bool) *ConnectionUpdate {
 	_u.mutation.SetProvisions(v)
@@ -155,6 +161,12 @@ func (_u *ConnectionUpdate) SetNillableProvisions(v *bool) *ConnectionUpdate {
 	if v != nil {
 		_u.SetProvisions(*v)
 	}
+	return _u
+}
+
+// ClearProvisions clears the value of the "provisions" field.
+func (_u *ConnectionUpdate) ClearProvisions() *ConnectionUpdate {
+	_u.mutation.ClearProvisions()
 	return _u
 }
 
@@ -285,8 +297,14 @@ func (_u *ConnectionUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.SubjectClaim(); ok {
 		_spec.SetField(connection.FieldSubjectClaim, field.TypeString, value)
 	}
+	if _u.mutation.SubjectClaimCleared() {
+		_spec.ClearField(connection.FieldSubjectClaim, field.TypeString)
+	}
 	if value, ok := _u.mutation.Provisions(); ok {
 		_spec.SetField(connection.FieldProvisions, field.TypeBool, value)
+	}
+	if _u.mutation.ProvisionsCleared() {
+		_spec.ClearField(connection.FieldProvisions, field.TypeBool)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(connection.FieldDateUpdated, field.TypeTime, value)
@@ -436,6 +454,12 @@ func (_u *ConnectionUpdateOne) SetNillableSubjectClaim(v *string) *ConnectionUpd
 	return _u
 }
 
+// ClearSubjectClaim clears the value of the "subject_claim" field.
+func (_u *ConnectionUpdateOne) ClearSubjectClaim() *ConnectionUpdateOne {
+	_u.mutation.ClearSubjectClaim()
+	return _u
+}
+
 // SetProvisions sets the "provisions" field.
 func (_u *ConnectionUpdateOne) SetProvisions(v bool) *ConnectionUpdateOne {
 	_u.mutation.SetProvisions(v)
@@ -447,6 +471,12 @@ func (_u *ConnectionUpdateOne) SetNillableProvisions(v *bool) *ConnectionUpdateO
 	if v != nil {
 		_u.SetProvisions(*v)
 	}
+	return _u
+}
+
+// ClearProvisions clears the value of the "provisions" field.
+func (_u *ConnectionUpdateOne) ClearProvisions() *ConnectionUpdateOne {
+	_u.mutation.ClearProvisions()
 	return _u
 }
 
@@ -607,8 +637,14 @@ func (_u *ConnectionUpdateOne) sqlSave(ctx context.Context) (_node *Connection, 
 	if value, ok := _u.mutation.SubjectClaim(); ok {
 		_spec.SetField(connection.FieldSubjectClaim, field.TypeString, value)
 	}
+	if _u.mutation.SubjectClaimCleared() {
+		_spec.ClearField(connection.FieldSubjectClaim, field.TypeString)
+	}
 	if value, ok := _u.mutation.Provisions(); ok {
 		_spec.SetField(connection.FieldProvisions, field.TypeBool, value)
+	}
+	if _u.mutation.ProvisionsCleared() {
+		_spec.ClearField(connection.FieldProvisions, field.TypeBool)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(connection.FieldDateUpdated, field.TypeTime, value)

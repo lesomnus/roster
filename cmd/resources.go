@@ -472,8 +472,8 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 		_, err = s.Connection().Add(ctx, app.ConnectionAddRequest_builder{
 			Tenant: at, Name: r.Name, Desc: r.Desc,
 			Issuer: r.Issuer, ClientId: r.ClientId, Scopes: r.Scopes, SecretRef: r.SecretRef,
-			SubjectClaim: r.SubjectClaim,
-			Provisions:   r.Provisions,
+			SubjectClaim: proto.String(r.SubjectClaim),
+			Provisions:   proto.Bool(r.Provisions),
 			Labels:       labelsOf(r),
 		}.Build())
 

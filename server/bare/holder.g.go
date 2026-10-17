@@ -174,7 +174,11 @@ func (s HolderServiceServer) Add(ctx context.Context, req *rstr.HolderAddRequest
 	if req.HasDateDisabled() {
 		q.SetDateDisabled(req.GetDateDisabled().AsTime())
 	}
-	q.SetDirectory(req.GetDirectory())
+	if req.HasDirectory() {
+		q.SetDirectory(req.GetDirectory())
+	} else {
+		q.SetDirectory("")
+	}
 	if req.HasPortrait() {
 		q.SetPortrait(req.GetPortrait())
 	}

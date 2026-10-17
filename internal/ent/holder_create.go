@@ -129,6 +129,14 @@ func (_c *HolderCreate) SetDirectory(v string) *HolderCreate {
 	return _c
 }
 
+// SetNillableDirectory sets the "directory" field if the given value is not nil.
+func (_c *HolderCreate) SetNillableDirectory(v *string) *HolderCreate {
+	if v != nil {
+		_c.SetDirectory(*v)
+	}
+	return _c
+}
+
 // SetPortrait sets the "portrait" field.
 func (_c *HolderCreate) SetPortrait(v *rstr.Portrait) *HolderCreate {
 	_c.mutation.SetPortrait(v)
@@ -159,6 +167,7 @@ func (_c *HolderCreate) Mutation() *HolderMutation {
 
 // Save creates the Holder in the database.
 func (_c *HolderCreate) Save(ctx context.Context) (*Holder, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -184,6 +193,14 @@ func (_c *HolderCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_c *HolderCreate) defaults() {
+	if _, ok := _c.mutation.Directory(); !ok {
+		v := holder.DefaultDirectory
+		_c.mutation.SetDirectory(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_c *HolderCreate) check() error {
 	if _, ok := _c.mutation.Alias(); !ok {
@@ -197,9 +214,6 @@ func (_c *HolderCreate) check() error {
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Holder.date_updated"`)}
-	}
-	if _, ok := _c.mutation.Directory(); !ok {
-		return &ValidationError{Name: "directory", err: errors.New(`ent: missing required field "Holder.directory"`)}
 	}
 	if _, ok := _c.mutation.TenantId(); !ok {
 		return &ValidationError{Name: "tenant_id", err: errors.New(`ent: missing required field "Holder.tenant_id"`)}
@@ -360,6 +374,7 @@ func (_c *HolderCreateBulk) Save(ctx context.Context) ([]*Holder, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*HolderMutation)
 				if !ok {

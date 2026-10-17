@@ -79,6 +79,13 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+var (
+	// DefaultSubjectClaim holds the default value on creation for the "subject_claim" field.
+	DefaultSubjectClaim string
+	// DefaultProvisions holds the default value on creation for the "provisions" field.
+	DefaultProvisions bool
+)
+
 // OrderOption defines the ordering options for the Connection queries.
 type OrderOption func(*sql.Selector)
 
