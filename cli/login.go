@@ -805,12 +805,23 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 	// set, that is **most** flows, and a deployment's tokens carry no name and
 	// no address for eight hours at a time.
 	//
-	// So the session lasts exactly as long as Hydra will skip the form. Hydra
+	// So the session lasts as long as Hydra will skip the form. Hydra
 	// remembering this browser and this app remembering it are one fact, and a
 	// second clock under it is what produced the hole. No idle window for the
 	// same reason: Hydra's `remember_for` is absolute, and an idle timeout here
 	// would end the app's half early and bring the empty tokens back for
 	// anybody who steps away.
+	//
+	// **This line is not the whole of it**, though it was written as if it
+	// were. A session the front door mints carries the expiry of the
+	// delegation it holds, and `authsession` takes the store's lifetime only
+	// for a session that came without one -- so the clock that decided was the
+	// delegation's, roster's fifteen-minute default, and from fifteen minutes
+	// after the form until `remember` ran out every token Hydra issued without
+	// a form carried `sub` alone (#121). The app now asks for its delegations
+	// to last `remember` and a minute (`login.outlast`), which is the other
+	// half of this, in `login.New`. What is set here is still right: it is
+	// what a session minted without an expiry gets.
 	//
 	// What the cookie is worth is the other half of why this is safe: the
 	// delegation it holds is narrowed to [login.Methods], which is `Me.Get`

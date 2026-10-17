@@ -32,11 +32,24 @@ type vouch struct {
 	delegate  func(*rstr.VouchDelegateRequest) (*rstr.VouchDelegateResponse, error)
 	delegates int
 	revokes   int
+
+	// The other two ways a sign-in ends in a delegation, for the tests that
+	// are about every way in. Nil everywhere else, which panics if reached.
+	accept func(*rstr.VouchAcceptRequest) (*rstr.VouchDelegateResponse, error)
+	redeem func(*rstr.VouchRedeemRequest) (*rstr.VouchDelegateResponse, error)
 }
 
 func (f *vouch) Delegate(ctx context.Context, in *rstr.VouchDelegateRequest, _ ...grpc.CallOption) (*rstr.VouchDelegateResponse, error) {
 	f.delegates++
 	return f.delegate(in)
+}
+
+func (f *vouch) Accept(ctx context.Context, in *rstr.VouchAcceptRequest, _ ...grpc.CallOption) (*rstr.VouchDelegateResponse, error) {
+	return f.accept(in)
+}
+
+func (f *vouch) Redeem(ctx context.Context, in *rstr.VouchRedeemRequest, _ ...grpc.CallOption) (*rstr.VouchDelegateResponse, error) {
+	return f.redeem(in)
 }
 
 func (f *vouch) Revoke(ctx context.Context, in *rstr.DelegationRevokeRequest, _ ...grpc.CallOption) (*rstr.DelegationRevokeResponse, error) {

@@ -56,6 +56,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/frame"
@@ -133,6 +134,21 @@ type Config struct {
 	// one that gives up first and the browser is told rather than finding out
 	// from a refusal it cannot explain. Zero takes [HalfLife].
 	Half time.Duration
+
+	// Lifetime is how long a sign-in lasts: the delegation roster mints for it,
+	// and so the session, which never outlives what it holds.
+	//
+	// This and not the store's own lifetime, which a session minted here never
+	// reaches: `authsession` fills a session's expiry from the store only when
+	// the session came without one, and every session here comes with the
+	// delegation's. So a Login App whose store was set to Hydra's eight hours
+	// signed people in for fifteen minutes, and every token Hydra issued without
+	// a form for the rest of the eight carried `sub` and nothing else (#121).
+	//
+	// Zero takes roster's default, `keys.DelegateFor`, which is minutes -- right
+	// for an app whose session is somebody at its own page, and wrong for one
+	// whose session is read later by a flow nobody is watching.
+	Lifetime time.Duration
 }
 
 // HalfLife is how long a half-signed-in browser has, when nothing says
@@ -163,6 +179,11 @@ func New(c Config) (*Door, error) {
 		return nil, errors.New("frontdoor: Methods: a delegation that allows nothing opens no door")
 	case c.Tenant == nil:
 		return nil, errors.New("frontdoor: Tenant: which operator a request arrived at")
+	case c.Lifetime < 0:
+		// Refused rather than read as the default, for `keys.Delegated`'s
+		// reason: an app that computed a duration and got the sign wrong would
+		// otherwise sign people in for a length of time nobody chose.
+		return nil, errors.New("frontdoor: Lifetime: a sign-in cannot have already ended")
 	}
 
 	if c.Half <= 0 {
@@ -258,6 +279,20 @@ func (d *Door) keyOf(r *http.Request) string {
 	return d.c.Sessions.KeyOf(r.Header.Values("Cookie"))
 }
 
+// expires is when a delegation asked for now stops working: [Config.Lifetime]
+// from now, or nothing, which is roster's default.
+//
+// Asked on every way in -- both forms, a provider's claim, a link -- because the
+// session each of them mints carries this, and a way in that left it out would
+// be a sign-in that lasts minutes beside three that last hours.
+func (d *Door) expires() *timestamppb.Timestamp {
+	if d.c.Lifetime == 0 {
+		return nil
+	}
+
+	return timestamppb.New(time.Now().Add(d.c.Lifetime))
+}
+
 // signIn is the first form.
 //
 // Three answers and they are three status codes, which is what lets a page read
@@ -315,6 +350,7 @@ func (d *Door) signIn(w http.ResponseWriter, r *http.Request) {
 		Who:     who.Build(),
 		Secret:  []byte(body.Password),
 		Methods: d.c.Methods,
+		Expires: d.expires(),
 	}.Build())
 	if err != nil {
 		// A refusal roster made about the **request** rather than about the
@@ -371,6 +407,7 @@ func (d *Door) finish(w http.ResponseWriter, r *http.Request) {
 		Name:         body.Name,
 		Secret:       []byte(body.Secret),
 		Methods:      d.c.Methods,
+		Expires:      d.expires(),
 	}.Build())
 	if err != nil {
 		http.Error(w, "cannot sign in", http.StatusInternalServerError)
@@ -605,6 +642,7 @@ func (d *Door) accept(ctx context.Context, w http.ResponseWriter, tenant, provid
 			Subject:  subject,
 		}.Build(),
 		Methods: d.c.Methods,
+		Expires: d.expires(),
 		At:      at,
 	}.Build())
 	if err != nil {
@@ -716,6 +754,7 @@ func (d *Door) Redeem(ctx context.Context, w http.ResponseWriter, token string) 
 	res, err := d.c.Vouch.Redeem(ctx, rstr.VouchRedeemRequest_builder{
 		Token:   token,
 		Methods: d.c.Methods,
+		Expires: d.expires(),
 	}.Build())
 	if err != nil {
 		return err

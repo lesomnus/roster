@@ -156,6 +156,10 @@ type Config struct {
 
 	// Remember is how long Hydra should skip the form, and the consent screen,
 	// for a browser that has already been through them. Zero asks every time.
+	//
+	// It is this app's own session's clock as well, and a little more
+	// ([outlast]): every flow Hydra answers without a form reads the claims with
+	// that session, so it has to be there for the last of them.
 	Remember time.Duration
 
 	// Consent is whether the consent hop draws a screen; see [Consent].
@@ -354,6 +358,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 		Vouch:      rstr.NewVouchServiceClient(conn),
 		Delegation: rstr.NewDelegationServiceClient(conn),
 		Methods:    Methods,
+		Lifetime:   lifetime(c.Remember),
 
 		// The host is not read. `frontdoor` asks for a tenant per request and
 		// takes a `ctx` to answer from, which is the whole of what this app
@@ -375,6 +380,32 @@ func New(ctx context.Context, c Config) (*App, error) {
 	}
 
 	return a, nil
+}
+
+// outlast is how much longer this app's session lives than Hydra remembers the
+// browser.
+//
+// Hydra's clock starts when the browser comes back to it with the verifier,
+// which is after the session here was minted, so a session that lasted exactly
+// `remember` would end a moment before Hydra stops skipping the form -- and a
+// flow in that moment would find nobody to read. A minute is a great deal more
+// than the moment and nothing beside `remember`. Outliving Hydra costs nothing:
+// once Hydra has forgotten the browser the next flow draws the form, and the
+// form mints a session of its own.
+const outlast = time.Minute
+
+// lifetime is what this app asks roster's delegations to last, given how long
+// Hydra remembers a browser.
+//
+// Nothing, which is roster's default, when Hydra remembers nothing: then every
+// flow draws the form, and the session is ended at the consent hop that reads
+// it (`grant`).
+func lifetime(remember time.Duration) time.Duration {
+	if remember <= 0 {
+		return 0
+	}
+
+	return remember + outlast
 }
 
 // Close hangs up.

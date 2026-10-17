@@ -297,9 +297,12 @@ sequenceDiagram
 | the claims | `MeService.Get`, as the person | `preferred_username`, `name`, `teams`, a **verified** address, `groups` -- each only if the client asked for the scope that carries it. Never `methods`. `teams` is the aliases of the person's teams -- an organisation's structure, and nothing a product should grant on. It was `groups`, which relying parties read as permission groups; roster's own `Group`s are in a token only as `groups`, and only the ones a `GroupExposure` shows to the client the token is for (§ *A relying party that grants on groups*) -- what somebody may do is otherwise `HolderService/Reaches` ([apps.md](apps.md)) |
 | the grant | `PUT …/consent/accept` | `consent: skip` grants and draws nothing; `ask` draws the screen and `POST /consent` is its answer |
 
-The delegation this app minted is spent at the grant and the cookie is ended there
-(`Door.End`): a credential that outlives its use is one somebody has to remember
-to revoke.
+The delegation this app minted is **kept** after the grant, for as long as Hydra
+remembers the browser, because the next flow Hydra answers without a form reads
+the claims with it (§ *The app's own session, and why it is not shorter*). Only
+where `remember` is zero is it spent at the grant and the cookie ended there
+(`Door.End`): no later flow comes back for it, and a credential that outlives its
+use is one somebody has to remember to revoke.
 
 #### An account at a provider, with Hydra in front
 
@@ -500,7 +503,8 @@ one the cluster gives meaning to on its own. roster's aliases cannot spell
 
 ### The app's own session, and why it is not shorter
 
-It lasts as long as `remember` -- the same clock Hydra skips the form on.
+It lasts as long as `remember` -- the same clock Hydra skips the form on -- and a
+minute more.
 
 It was closed at the end of every flow, on a rule that is right in general: a
 credential which outlives its use is one somebody has to remember to revoke. The
@@ -519,6 +523,22 @@ and can do nothing else. It is revoked where every delegation is, by
 `Holder.Invalidate`, which this app already hears through `Sync.Watch`. And it has
 no idle window, because Hydra's `remember_for` has none -- a second clock under
 Hydra's is what produced the hole in the first place.
+
+⚠️ **The store's lifetime is not the session's.** `cli/login.go` set the store to
+`remember` and the sessions lasted fifteen minutes: every session the front door
+mints carries the expiry of the delegation it holds, payday's `authsession` keeps
+a session's own expiry over the store's, and nothing asked roster for anything
+but its default (`keys.DelegateFor`). So from fifteen minutes after the form until
+Hydra forgot the browser, every flow it answered without a form found no session
+here and handed back `sub` alone (#121). The app asks for its delegations to last
+`remember` and a minute now (`frontdoor.Config.Lifetime`, `login.outlast`). The
+minute is because Hydra's clock starts when the browser returns to it, after this
+app's session was minted, so a session lasting exactly `remember` would end a
+moment before Hydra stops skipping the form; outliving Hydra costs nothing,
+because once it has forgotten the browser the next flow draws the form and the
+form mints a session of its own. `TestTheSessionOutlastsWhatHydraRemembers` reads
+the cookie a browser is handed, and `TestASignInLastsAsLongAsTheAppSaid` asks
+each of the front door's four ways in what it requested.
 
 The alternative was reading the person with the **operator's** key, which needs no
 session at all. It was refused: it would widen this app's role to `Holder.Get`
