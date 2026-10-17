@@ -160,4 +160,60 @@ func TestAConsentReadsOnlyItsOwnSubject(t *testing.T) {
 
 	_, claims := d.hydra.told()
 	x.NotContains(claims, "preferred_username", "one person's claims went into another's token")
+
+	// Nor is it handed out with less in it: it is nobody's to read.
+	d.hydra.mu.Lock()
+	why := d.hydra.refusal
+	d.hydra.mu.Unlock()
+	x.Equal("login_required", why)
+}
+
+// TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor is the consent hop with
+// nobody to read: refused, rather than granted with `sub` alone.
+//
+// It was granted, and that is the token #121 was about. A client cannot tell a
+// token missing its claims from a person who has none, so the failure surfaced
+// far from here -- a relying party keying its accounts on `email` signing
+// nobody in. `login_required` says what happened, and the sign-in a client
+// starts on hearing it is a skipped login this app asks again.
+func TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor(t *testing.T) {
+	refusal := func(d *deployment) (string, map[string]any) {
+		d.hydra.mu.Lock()
+		defer d.hydra.mu.Unlock()
+
+		return d.hydra.refusal, d.hydra.claims
+	}
+
+	t.Run("a client that asked for the person is refused", func(t *testing.T) {
+		x := require.New(t)
+		d := serve(t)
+		b := d.browser(t)
+		d.hydra.raise("c1", "contoso-web")
+
+		res, err := b.Get(d.app.URL + "/consent?consent_challenge=c1")
+		x.NoError(err)
+		defer res.Body.Close()
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+		x.Equal("/denied", res.Header.Get("Location"))
+
+		why, claims := refusal(d)
+		x.Equal("login_required", why)
+		x.Nil(claims, "a token was handed out with sub alone")
+	})
+
+	t.Run("and one that asked for sub alone gets it", func(t *testing.T) {
+		x := require.New(t)
+		d := serve(t)
+		b := d.browser(t)
+		d.hydra.raiseWith("c1", "contoso-web", "openid", "offline")
+
+		res, err := b.Get(d.app.URL + "/consent?consent_challenge=c1")
+		x.NoError(err)
+		defer res.Body.Close()
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+		x.Equal("/done", res.Header.Get("Location"), "a client that asked for nobody's claims was refused for not having them")
+
+		why, _ := refusal(d)
+		x.Empty(why)
+	})
 }
