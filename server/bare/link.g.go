@@ -88,8 +88,6 @@ func (s LinkServiceServer) narrow(ctx context.Context, p predicate.Link) (predic
 
 func (s LinkServiceServer) snapshot(ctx context.Context, p predicate.Link, lock bool) (*ent.Link, error) {
 	q := s.Db.Link.Query().Where(p)
-	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
-	q.WithEmail(func(q *ent.EmailQuery) { q.Select(email.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -311,9 +309,6 @@ func LinkSelect(q *ent.LinkQuery, m *rstr.LinkSelect) {
 func LinkSelectInit(q *ent.LinkQuery, m *rstr.LinkSelect) {
 	if m != nil {
 		LinkSelect(q, m)
-	} else {
-		q.WithHolder(selectHolderKey)
-		q.WithEmail(selectEmailKey)
 	}
 }
 

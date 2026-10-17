@@ -10,7 +10,6 @@ import (
 	ent "github.com/lesomnus/roster/internal/ent"
 	connection "github.com/lesomnus/roster/internal/ent/connection"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
-	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
@@ -87,7 +86,6 @@ func (s ConnectionServiceServer) narrow(ctx context.Context, p predicate.Connect
 
 func (s ConnectionServiceServer) snapshot(ctx context.Context, p predicate.Connection, lock bool) (*ent.Connection, error) {
 	q := s.Db.Connection.Query().Where(p)
-	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -308,8 +306,6 @@ func ConnectionSelect(q *ent.ConnectionQuery, m *rstr.ConnectionSelect) {
 func ConnectionSelectInit(q *ent.ConnectionQuery, m *rstr.ConnectionSelect) {
 	if m != nil {
 		ConnectionSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
 	}
 }
 

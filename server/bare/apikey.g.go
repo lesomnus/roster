@@ -87,7 +87,6 @@ func (s ApiKeyServiceServer) narrow(ctx context.Context, p predicate.ApiKey) (pr
 
 func (s ApiKeyServiceServer) snapshot(ctx context.Context, p predicate.ApiKey, lock bool) (*ent.ApiKey, error) {
 	q := s.Db.ApiKey.Query().Where(p)
-	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -291,8 +290,6 @@ func ApiKeySelect(q *ent.ApiKeyQuery, m *rstr.ApiKeySelect) {
 func ApiKeySelectInit(q *ent.ApiKeyQuery, m *rstr.ApiKeySelect) {
 	if m != nil {
 		ApiKeySelect(q, m)
-	} else {
-		q.WithHolder(selectHolderKey)
 	}
 }
 

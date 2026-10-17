@@ -87,7 +87,6 @@ func (s CredentialServiceServer) narrow(ctx context.Context, p predicate.Credent
 
 func (s CredentialServiceServer) snapshot(ctx context.Context, p predicate.Credential, lock bool) (*ent.Credential, error) {
 	q := s.Db.Credential.Query().Where(p)
-	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -299,8 +298,6 @@ func CredentialSelect(q *ent.CredentialQuery, m *rstr.CredentialSelect) {
 func CredentialSelectInit(q *ent.CredentialQuery, m *rstr.CredentialSelect) {
 	if m != nil {
 		CredentialSelect(q, m)
-	} else {
-		q.WithHolder(selectHolderKey)
 	}
 }
 

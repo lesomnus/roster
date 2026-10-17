@@ -268,7 +268,6 @@ func TenantSelect(q *ent.TenantQuery, m *rstr.TenantSelect) {
 func TenantSelectInit(q *ent.TenantQuery, m *rstr.TenantSelect) {
 	if m != nil {
 		TenantSelect(q, m)
-	} else {
 	}
 }
 

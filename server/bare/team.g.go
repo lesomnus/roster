@@ -11,7 +11,6 @@ import (
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	site "github.com/lesomnus/roster/internal/ent/site"
 	team "github.com/lesomnus/roster/internal/ent/team"
-	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
@@ -88,8 +87,6 @@ func (s TeamServiceServer) narrow(ctx context.Context, p predicate.Team) (predic
 
 func (s TeamServiceServer) snapshot(ctx context.Context, p predicate.Team, lock bool) (*ent.Team, error) {
 	q := s.Db.Team.Query().Where(p)
-	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
-	q.WithSite(func(q *ent.SiteQuery) { q.Select(site.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -304,9 +301,6 @@ func TeamSelect(q *ent.TeamQuery, m *rstr.TeamSelect) {
 func TeamSelectInit(q *ent.TeamQuery, m *rstr.TeamSelect) {
 	if m != nil {
 		TeamSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
-		q.WithSite(selectSiteKey)
 	}
 }
 

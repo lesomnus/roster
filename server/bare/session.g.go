@@ -87,7 +87,6 @@ func (s SessionServiceServer) narrow(ctx context.Context, p predicate.Session) (
 
 func (s SessionServiceServer) snapshot(ctx context.Context, p predicate.Session, lock bool) (*ent.Session, error) {
 	q := s.Db.Session.Query().Where(p)
-	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -281,8 +280,6 @@ func SessionSelect(q *ent.SessionQuery, m *rstr.SessionSelect) {
 func SessionSelectInit(q *ent.SessionQuery, m *rstr.SessionSelect) {
 	if m != nil {
 		SessionSelect(q, m)
-	} else {
-		q.WithHolder(selectHolderKey)
 	}
 }
 

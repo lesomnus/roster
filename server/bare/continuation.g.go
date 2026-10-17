@@ -87,7 +87,6 @@ func (s ContinuationServiceServer) narrow(ctx context.Context, p predicate.Conti
 
 func (s ContinuationServiceServer) snapshot(ctx context.Context, p predicate.Continuation, lock bool) (*ent.Continuation, error) {
 	q := s.Db.Continuation.Query().Where(p)
-	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -291,8 +290,6 @@ func ContinuationSelect(q *ent.ContinuationQuery, m *rstr.ContinuationSelect) {
 func ContinuationSelectInit(q *ent.ContinuationQuery, m *rstr.ContinuationSelect) {
 	if m != nil {
 		ContinuationSelect(q, m)
-	} else {
-		q.WithHolder(selectHolderKey)
 	}
 }
 

@@ -11,7 +11,6 @@ import (
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	nomination "github.com/lesomnus/roster/internal/ent/nomination"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
-	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
@@ -89,8 +88,6 @@ func (s NominationServiceServer) narrow(ctx context.Context, p predicate.Nominat
 
 func (s NominationServiceServer) snapshot(ctx context.Context, p predicate.Nomination, lock bool) (*ent.Nomination, error) {
 	q := s.Db.Nomination.Query().Where(p)
-	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
-	q.WithActsAs(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -309,9 +306,6 @@ func NominationSelect(q *ent.NominationQuery, m *rstr.NominationSelect) {
 func NominationSelectInit(q *ent.NominationQuery, m *rstr.NominationSelect) {
 	if m != nil {
 		NominationSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
-		q.WithActsAs(selectHolderKey)
 	}
 }
 

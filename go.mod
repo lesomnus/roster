@@ -105,7 +105,7 @@ require (
 	github.com/petermattis/goid v0.0.0-20260716134002-a9b348f0a2b9 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/protobuf-orm/protobuf-merge v0.0.0-20261009205601-8502fad9e678 // indirect
-	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261017110838-693e48f51f85 // indirect
+	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261017122531-84992e10d5a6 // indirect
 	github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20261010065542-f9ac5b66df3e // indirect
 	github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20260906213434-46a5916d5339 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect

@@ -94,8 +94,6 @@ func (s SiteMembershipServiceServer) narrow(ctx context.Context, p predicate.Sit
 
 func (s SiteMembershipServiceServer) snapshot(ctx context.Context, p predicate.SiteMembership, lock bool) (*ent.SiteMembership, error) {
 	q := s.Db.SiteMembership.Query().Where(p)
-	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
-	q.WithSite(func(q *ent.SiteQuery) { q.Select(site.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -297,9 +295,6 @@ func SiteMembershipSelect(q *ent.SiteMembershipQuery, m *rstr.SiteMembershipSele
 func SiteMembershipSelectInit(q *ent.SiteMembershipQuery, m *rstr.SiteMembershipSelect) {
 	if m != nil {
 		SiteMembershipSelect(q, m)
-	} else {
-		q.WithHolder(selectHolderKey)
-		q.WithSite(selectSiteKey)
 	}
 }
 
@@ -662,9 +657,6 @@ func (s TeamMembershipServiceServer) narrow(ctx context.Context, p predicate.Tea
 
 func (s TeamMembershipServiceServer) snapshot(ctx context.Context, p predicate.TeamMembership, lock bool) (*ent.TeamMembership, error) {
 	q := s.Db.TeamMembership.Query().Where(p)
-	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
-	q.WithTeam(func(q *ent.TeamQuery) { q.Select(team.FieldId) })
-	q.WithRole(func(q *ent.RoleQuery) { q.Select(role.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -896,10 +888,6 @@ func TeamMembershipSelect(q *ent.TeamMembershipQuery, m *rstr.TeamMembershipSele
 func TeamMembershipSelectInit(q *ent.TeamMembershipQuery, m *rstr.TeamMembershipSelect) {
 	if m != nil {
 		TeamMembershipSelect(q, m)
-	} else {
-		q.WithHolder(selectHolderKey)
-		q.WithTeam(selectTeamKey)
-		q.WithRole(selectRoleKey)
 	}
 }
 
@@ -1272,9 +1260,6 @@ func (s GroupMembershipServiceServer) narrow(ctx context.Context, p predicate.Gr
 
 func (s GroupMembershipServiceServer) snapshot(ctx context.Context, p predicate.GroupMembership, lock bool) (*ent.GroupMembership, error) {
 	q := s.Db.GroupMembership.Query().Where(p)
-	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
-	q.WithGroup(func(q *ent.GroupQuery) { q.Select(group.FieldId) })
-	q.WithRole(func(q *ent.RoleQuery) { q.Select(role.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -1506,10 +1491,6 @@ func GroupMembershipSelect(q *ent.GroupMembershipQuery, m *rstr.GroupMembershipS
 func GroupMembershipSelectInit(q *ent.GroupMembershipQuery, m *rstr.GroupMembershipSelect) {
 	if m != nil {
 		GroupMembershipSelect(q, m)
-	} else {
-		q.WithHolder(selectHolderKey)
-		q.WithGroup(selectGroupKey)
-		q.WithRole(selectRoleKey)
 	}
 }
 

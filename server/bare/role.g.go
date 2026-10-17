@@ -14,7 +14,6 @@ import (
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	role "github.com/lesomnus/roster/internal/ent/role"
 	site "github.com/lesomnus/roster/internal/ent/site"
-	tenant "github.com/lesomnus/roster/internal/ent/tenant"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
@@ -91,8 +90,6 @@ func (s RoleServiceServer) narrow(ctx context.Context, p predicate.Role) (predic
 
 func (s RoleServiceServer) snapshot(ctx context.Context, p predicate.Role, lock bool) (*ent.Role, error) {
 	q := s.Db.Role.Query().Where(p)
-	q.WithTenant(func(q *ent.TenantQuery) { q.Select(tenant.FieldId) })
-	q.WithSite(func(q *ent.SiteQuery) { q.Select(site.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -319,9 +316,6 @@ func RoleSelect(q *ent.RoleQuery, m *rstr.RoleSelect) {
 func RoleSelectInit(q *ent.RoleQuery, m *rstr.RoleSelect) {
 	if m != nil {
 		RoleSelect(q, m)
-	} else {
-		q.WithTenant(selectTenantKey)
-		q.WithSite(selectSiteKey)
 	}
 }
 
@@ -680,10 +674,6 @@ func (s BindingServiceServer) narrow(ctx context.Context, p predicate.Binding) (
 
 func (s BindingServiceServer) snapshot(ctx context.Context, p predicate.Binding, lock bool) (*ent.Binding, error) {
 	q := s.Db.Binding.Query().Where(p)
-	q.WithRole(func(q *ent.RoleQuery) { q.Select(role.FieldId) })
-	q.WithSite(func(q *ent.SiteQuery) { q.Select(site.FieldId) })
-	q.WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldId) })
-	q.WithGroup(func(q *ent.GroupQuery) { q.Select(group.FieldId) })
 	q.Modify(func(q *sql.Selector) {
 		if lock && s.Db.Dialect() != dialect.SQLite {
 			q.ForUpdate()
@@ -953,11 +943,6 @@ func BindingSelect(q *ent.BindingQuery, m *rstr.BindingSelect) {
 func BindingSelectInit(q *ent.BindingQuery, m *rstr.BindingSelect) {
 	if m != nil {
 		BindingSelect(q, m)
-	} else {
-		q.WithRole(selectRoleKey)
-		q.WithSite(selectSiteKey)
-		q.WithHolder(selectHolderKey)
-		q.WithGroup(selectGroupKey)
 	}
 }
 
