@@ -30,6 +30,7 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
+	"github.com/lesomnus/roster/internal/idptest"
 	"github.com/lesomnus/roster/login"
 	rstr "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
@@ -892,6 +893,88 @@ func TestASecondFlowCarriesTheClaimsToo(t *testing.T) {
 	_, claims = d.hydra.told()
 	x.Equal("erin", claims["preferred_username"], "a remembered browser got a token with no claims")
 	x.Equal("Erin of contoso", claims["name"])
+}
+
+// TestTheSessionOutlastsWhatHydraRemembers is the clock that test above could
+// not see.
+//
+// Its second flow comes straight after the first, and the session it reads was
+// fifteen minutes long: the store was set to `remember`, and every session the
+// front door mints carries its delegation's expiry instead, which nothing asked
+// to be anything but roster's default. So from fifteen minutes after the form
+// until Hydra forgot the browser, every flow it answered without a form found
+// nobody here and handed back `sub` alone (#121).
+//
+// What the browser is handed is what says how long it is, so that is what this
+// reads: past Hydra's clock, which starts after this cookie is set, and not by
+// much.
+func TestTheSessionOutlastsWhatHydraRemembers(t *testing.T) {
+	cookie := func(t *testing.T, d *deployment) *http.Cookie {
+		t.Helper()
+		x := require.New(t)
+		d.hydra.raise("c1", "contoso-web")
+
+		body, err := json.Marshal(map[string]string{"alias": "erin", "password": password})
+		x.NoError(err)
+		res, err := d.browser(t).Post(d.app.URL+"/session?login_challenge=c1", "application/json", strings.NewReader(string(body)))
+		x.NoError(err)
+		defer res.Body.Close()
+		x.Equal(http.StatusNoContent, res.StatusCode)
+
+		cs := res.Cookies()
+		x.Len(cs, 1)
+
+		return cs[0]
+	}
+
+	t.Run("as long as hydra remembers the browser, and then some", func(t *testing.T) {
+		x := require.New(t)
+		const remember = 8 * time.Hour
+		d := serveAs(t, login.Skip, func(c *login.Config) { c.Remember = remember })
+
+		c := cookie(t, d)
+		x.True(c.Expires.After(time.Now().Add(remember)),
+			"the session ends at %s, before hydra stops skipping the form, and every flow after that gets sub alone", c.Expires)
+		x.WithinDuration(time.Now().Add(remember), c.Expires, 2*time.Minute)
+	})
+
+	// The other way into this app, whose session is minted from a provider's
+	// claim rather than a form -- and asks roster for its delegation on a road
+	// of its own.
+	t.Run("and the same through a provider", func(t *testing.T) {
+		x := require.New(t)
+		const remember = 8 * time.Hour
+		d := serveAs(t, login.Skip, func(c *login.Config) { c.Remember = remember })
+		p := idptest.New(t, "login-app")
+		d.connect(t, p, "entra")
+		p.Subject = "erin-at-entra"
+		_, err := d.s.Ungated.Identity().Add(t.Context(), rstr.IdentityAddRequest_builder{
+			Holder:   rstr.HolderRef_builder{Id: d.who["contoso"].Bytes()}.Build(),
+			Provider: "entra",
+			Subject:  "erin-at-entra",
+		}.Build())
+		x.NoError(err)
+		d.hydra.raise("c1", "contoso-web")
+
+		res := d.through(t, d.browser(t), "c1", "entra")
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+
+		cs := res.Cookies()
+		i := slices.IndexFunc(cs, func(c *http.Cookie) bool { return c.Name == authsession.InsecureCookie })
+		x.GreaterOrEqual(i, 0, "the callback minted no session")
+		x.True(cs[i].Expires.After(time.Now().Add(remember)),
+			"a provider's session ends at %s, before hydra stops skipping the form", cs[i].Expires)
+	})
+
+	// And remembering nothing is roster's minutes: every flow draws the form,
+	// so the session is only ever read by the consent hop straight after it.
+	t.Run("minutes, when hydra remembers nothing", func(t *testing.T) {
+		x := require.New(t)
+		d := serve(t)
+
+		c := cookie(t, d)
+		x.WithinDuration(time.Now().Add(keys.DelegateFor), c.Expires, time.Minute)
+	})
 }
 
 // TestAFlowReachesOnlyItsOwnOperator, which is what one instance fronting

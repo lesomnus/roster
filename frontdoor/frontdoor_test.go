@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -38,6 +39,7 @@ func TestAnAppHasToSayWhatItAsksFor(t *testing.T) {
 		{"no roster", func(c *Config) { c.Vouch = nil }, "Vouch"},
 		{"no methods", func(c *Config) { c.Methods = nil }, "Methods"},
 		{"no tenant", func(c *Config) { c.Tenant = nil }, "Tenant"},
+		{"a lifetime already over", func(c *Config) { c.Lifetime = -time.Hour }, "Lifetime"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			c := ok
