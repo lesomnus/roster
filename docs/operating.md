@@ -481,6 +481,16 @@ over it. The directory's key is still yours to write either way:
 `roster control key add --allow /roster.NominationService/List directory`, and
 `roster app install --tenant … --role … directory` in each tenant it serves.
 
+**A seal unsaid is one too**, and costs the same kind of thing. `account.seal` and
+`login.seal` left out are a key made at start, so a second replica opens none of
+the sessions the first sealed and neither does the process after a restart. The
+account page asks everybody to sign in again; the Login App asks each browser
+Hydra still remembers for the form once more, at the next product it opens. It
+used to wave that browser through and hand back a token carrying `sub` alone, for
+as long as Hydra remembered ([login.md](login.md) § *The app's own session, and
+why it is not shorter*). Name one -- 32 base64 bytes, as `env:` or `file:` --
+where either of those matters.
+
 Each of the three is a **consumer**: it reaches roster over the wire with its own
 key and cannot reach past it, in one process exactly as in four -- each with one
 `rk_` narrowed per request to the holder each tenant nominated for it

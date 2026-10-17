@@ -86,6 +86,16 @@ type hydra struct {
 	// The scopes a challenge asked for, where a test says; `openid`, `profile`
 	// and `email` otherwise.
 	scope map[string][]string
+
+	// Who a challenge's login was accepted as, which a real Hydra carries on to
+	// the consent request as its `subject`.
+	subjectOf map[string]string
+
+	// The browsers Hydra remembers: a login challenge raised with `skip` and
+	// the subject it already knows -- and the error a login was refused with
+	// instead of accepted.
+	remembered map[string]string
+	loginNo    map[string]string
 }
 
 func newHydra(t *testing.T) *hydra {
@@ -101,6 +111,10 @@ func newHydra(t *testing.T) *hydra {
 		registered: map[string][]string{},
 		asking:     map[string]url.Values{},
 		scope:      map[string][]string{},
+
+		subjectOf:  map[string]string{},
+		remembered: map[string]string{},
+		loginNo:    map[string]string{},
 	}
 
 	m := http.NewServeMux()
@@ -116,11 +130,26 @@ func newHydra(t *testing.T) *hydra {
 		}
 		_ = json.NewDecoder(r.Body).Decode(&body)
 
+		c := r.URL.Query().Get("login_challenge")
+
 		h.mu.Lock()
 		h.subject, h.accepted = body.Subject, h.accepted+1
+		h.subjectOf[c] = body.Subject
 		h.mu.Unlock()
 
-		writeJson(w, map[string]string{"redirect_to": "/consent?consent_challenge=" + r.URL.Query().Get("login_challenge")})
+		writeJson(w, map[string]string{"redirect_to": "/consent?consent_challenge=" + c})
+	})
+	m.HandleFunc("PUT /admin/oauth2/auth/requests/login/reject", func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			Error string `json:"error"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&body)
+
+		h.mu.Lock()
+		h.loginNo[r.URL.Query().Get("login_challenge")] = body.Error
+		h.mu.Unlock()
+
+		writeJson(w, map[string]string{"redirect_to": "/refused"})
 	})
 	// The logout challenge, and accepting it. What a real Hydra does with the
 	// second is end the session it holds for that browser; what this does is
@@ -270,6 +299,13 @@ func (h *hydra) raised(w http.ResponseWriter, r *http.Request, param string) {
 		extra = "&" + v.Encode()
 	}
 	scope := h.scope[c]
+
+	// A consent is about whoever its login was accepted as; a login is about
+	// nobody yet, unless this is a browser Hydra remembers.
+	subject, skip := h.subjectOf[c], false
+	if param == "login_challenge" {
+		subject, skip = h.remembered[c], h.remembered[c] != ""
+	}
 	h.mu.Unlock()
 	if scope == nil {
 		scope = []string{"openid", "profile", "email"}
@@ -278,6 +314,8 @@ func (h *hydra) raised(w http.ResponseWriter, r *http.Request, param string) {
 	writeJson(w, map[string]any{
 		"challenge": c,
 		"client":    map[string]any{"client_id": client, "audience": registered},
+		"subject":   subject,
+		"skip":      skip,
 
 		"requested_access_token_audience": asked,
 
@@ -366,6 +404,24 @@ func (h *hydra) raiseWith(challenge, client string, scope ...string) {
 	defer h.mu.Unlock()
 	h.client[challenge] = client
 	h.scope[challenge] = scope
+}
+
+// remembers is [hydra.raise] for a browser Hydra already knows as `subject`:
+// the challenge comes with `skip`, which is a real Hydra saying it would not
+// draw the form.
+func (h *hydra) remembers(challenge, client, subject string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.client[challenge] = client
+	h.remembered[challenge] = subject
+}
+
+// refusedLogin is the error a login challenge was refused with, or nothing.
+func (h *hydra) refusedLogin(challenge string) string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	return h.loginNo[challenge]
 }
 
 func (h *hydra) told() (string, map[string]any) {
@@ -882,8 +938,14 @@ func TestASecondFlowCarriesTheClaimsToo(t *testing.T) {
 	x.Equal("erin", claims["preferred_username"])
 
 	// A second flow for the same browser, with **no form**: another product, or
-	// this one opened again. Nothing signs in; the consent hop is all there is.
-	d.hydra.raise("c2", "contoso-web")
+	// this one opened again. Hydra remembers the browser, so nothing signs in:
+	// the login is skipped, and the consent hop is all there is.
+	d.hydra.remembers("c2", "contoso-web", d.who["contoso"].String())
+
+	res, err = b.Get(d.app.URL + "/login?login_challenge=c2")
+	x.NoError(err)
+	defer res.Body.Close()
+	x.Equal(http.StatusSeeOther, res.StatusCode, "a browser this app still knows was asked again")
 
 	res, err = b.Get(d.app.URL + "/consent?consent_challenge=c2")
 	x.NoError(err)

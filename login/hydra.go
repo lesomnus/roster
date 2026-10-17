@@ -149,6 +149,21 @@ func (a admin) acceptLogin(ctx context.Context, challenge, subject string, remem
 	return v.To, nil
 }
 
+// refuseLogin answers a login challenge with an OAuth error, which is where the
+// client is sent -- [admin.refuseConsent], one hop earlier.
+func (a admin) refuseLogin(ctx context.Context, challenge, code, why string) (string, error) {
+	v := &redirect{}
+	body := map[string]string{
+		"error":             code,
+		"error_description": why,
+	}
+	if err := a.do(ctx, http.MethodPut, "login/reject", "login_challenge", challenge, body, v); err != nil {
+		return "", err
+	}
+
+	return v.To, nil
+}
+
 // registered is what Hydra holds about a client, by id.
 //
 // Not `.../auth/requests/…`, so it does not go through `do`: that one takes a

@@ -57,8 +57,10 @@ export "ROSTER_LOGIN_KEY=$(cat "${key}")"
 # all: with nothing remembered there is nothing for roster's sign-out to reach.
 export ROSTER_LOGIN_REMEMBER="${LOGIN_REMEMBER}"
 
-# One replica, so no `--seal`: the key is made at start, and what it seals is a
-# session that lives from the form to the consent screen.
+# One replica, so no `--seal`: the key is made at start, and a restart costs each
+# browser Hydra still remembers one more sign-in, at the next product it opens --
+# the app cannot open what the last process sealed, so it draws the form again
+# (`docs/operating.md`, "A seal unsaid").
 exec roster login serve \
 	--listen ":${LOGIN_PORT}" \
 	--roster roster:50051 --insecure \
