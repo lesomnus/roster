@@ -91,3 +91,21 @@ func claimsOf(v *rstr.MeGetResponse, scope []string, client string) map[string]a
 
 	return claims
 }
+
+// claiming is every scope [claimsOf] writes a claim for. A scope that carries
+// one there is named here, and `TestEveryScopeThatCarriesAClaimIsNamed` is
+// what notices one that is not.
+var claiming = []string{"profile", "email", "groups"}
+
+// asksForClaims is whether a token for `scope` is meant to say anything about
+// the person beyond `sub` -- which is what a token handed out without reading
+// them would be missing.
+func asksForClaims(scope []string) bool {
+	for _, s := range scope {
+		if slices.Contains(claiming, s) {
+			return true
+		}
+	}
+
+	return false
+}

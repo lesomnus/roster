@@ -1030,9 +1030,8 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 		claims = claimsOf(me, v.Scope, v.Client.Id)
 
 	case errors.Is(err, frontdoor.ErrNotSignedIn):
-		// Nobody here to read the subject with. The token still gets a `sub`,
-		// which is Hydra's; what it does not get is the claims, because reading
-		// them needs a credential nobody here holds.
+		// Nobody here to read the subject with, and reading them needs a
+		// credential nobody here holds.
 		//
 		// This used to be **every** flow after the first, because the session
 		// was closed at each redirect -- see the end of this function -- and
@@ -1040,7 +1039,29 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 		// session lasted that long whatever `remember` said (#121). A skipped
 		// login is asked again now when this app cannot read the person
 		// (`begin`), so what is left here is a session that ended between the
-		// hops of one flow.
+		// hops of one flow: a consent screen left open past it, a cookie cleared
+		// in another tab.
+		//
+		// And it is refused rather than granted with `sub` alone, which it was.
+		// A token missing the claims its client asked for is not a smaller
+		// answer, it is a wrong one that looks right: the client cannot tell it
+		// from a person who has no name, and a relying party that keys accounts
+		// on `email` fails somewhere far from here. `login_required` says what
+		// happened, and the sign-in a client starts on hearing it is a skipped
+		// login this app asks again. A client that asked for nothing but `sub`
+		// still gets it, which is all it was ever going to get.
+		if asksForClaims(v.Scope) {
+			to, err := a.admin.refuseConsent(ctx, v.Challenge, "login_required",
+				"this browser has to sign in again before its claims can be read")
+			if err != nil {
+				a.broken(w, r, err)
+
+				return
+			}
+			http.Redirect(w, r, to, http.StatusSeeOther)
+
+			return
+		}
 
 	default:
 		a.broken(w, r, err)
