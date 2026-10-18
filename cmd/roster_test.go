@@ -76,6 +76,11 @@ func build(t *testing.T, with ...func(*cmd.Config)) (*built, context.Context) {
 // factor rather than wrapping a seed nothing can read back.
 func withoutKeyring(c *cmd.Config) { c.Vouch.Keys = nil }
 
+// keepingRows has the trail keep the row each write left as well as what it
+// said (`audit.content: value`, payday#92), for a test about what the trail holds
+// of a row: at the default it holds none.
+func keepingRows(c *cmd.Config) { c.Audit.Content = "value" }
+
 // served is this app's data plane on a listener that is a channel, dialed.
 //
 // A helper because [cmd.Server.Grpc] answers with an error now -- a certificate

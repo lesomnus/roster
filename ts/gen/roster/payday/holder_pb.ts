@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/holder.proto.
  */
 export const file_roster_payday_holder: GenFile = /*@__PURE__*/
-  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L2hvbGRlci5wcm90bxIGcm9zdGVyIvYFCgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSKgoGbGFiZWxzGAcgAygLMhoucm9zdGVyLkhvbGRlci5MYWJlbHNFbnRyeRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASIAoHcHJvZmlsZRgJIAEoCzIPLnJvc3Rlci5Qcm9maWxlEiIKBGRhdGEYCiABKAsyFC5nb29nbGUucHJvdG9idWYuQW55EjwKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOQoNZGF0ZV9kaXNhYmxlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIgCglkaXJlY3RvcnkYCCABKAlCDeqCFgOCAQCqwRYCEAESIgoIcG9ydHJhaXQYECABKAsyEC5yb3N0ZXIuUG9ydHJhaXQaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATpuyvwVJRICEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxZBCAIyOQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQaCAoGbGFiZWxzIBQoZDoASAIiaQoHUHJvZmlsZRIUCgxkaXNwbGF5X25hbWUYASABKAkSDwoHcGljdHVyZRgCIAEoCRISCgpkZXBhcnRtZW50GAMgASgJEhMKC2VtcGxveWVlX25vGAQgASgJEg4KBmxvY2FsZRgFIAEoCSIxCghQb3J0cmFpdBIlCgpyZW5kaXRpb25zGAEgAygLMhEucm9zdGVyLlJlbmRpdGlvbiImCglSZW5kaXRpb24SDAoEc2l6ZRgBIAEoDRILCgN1cmkYAiABKAlCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_any, file_google_protobuf_timestamp, file_orm, file_payday, file_roster_payday_tenant]);
+  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L2hvbGRlci5wcm90bxIGcm9zdGVyIq4GCgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIVCgVhbGlhcxgEIAEoCUIGqsEWAhgBEhQKBG5hbWUYBSABKAlCBqrBFgIYARIUCgRkZXNjGAYgASgJQgaqwRYCGAESMgoGbGFiZWxzGAcgAygLMhoucm9zdGVyLkhvbGRlci5MYWJlbHNFbnRyeUIGqsEWAhgBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIoCgdwcm9maWxlGAkgASgLMg8ucm9zdGVyLlByb2ZpbGVCBqrBFgIYARIqCgRkYXRhGAogASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueUIGqsEWAhgBEjwKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOQoNZGF0ZV9kaXNhYmxlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIgCglkaXJlY3RvcnkYCCABKAlCDeqCFgOCAQCqwRYCEAESKgoIcG9ydHJhaXQYECABKAsyEC5yb3N0ZXIuUG9ydHJhaXRCBqrBFgIYARotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOm7K/BUlEgIQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwAYq7FkEIAjI5ChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudBoICgZsYWJlbHMgFChkOgBIAiJpCgdQcm9maWxlEhQKDGRpc3BsYXlfbmFtZRgBIAEoCRIPCgdwaWN0dXJlGAIgASgJEhIKCmRlcGFydG1lbnQYAyABKAkSEwoLZW1wbG95ZWVfbm8YBCABKAkSDgoGbG9jYWxlGAUgASgJIjEKCFBvcnRyYWl0EiUKCnJlbmRpdGlvbnMYASADKAsyES5yb3N0ZXIuUmVuZGl0aW9uIiYKCVJlbmRpdGlvbhIMCgRzaXplGAEgASgNEgsKA3VyaRgCIAEoCUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_any, file_google_protobuf_timestamp, file_orm, file_payday, file_roster_payday_tenant]);
 
 /**
  * Holder is who a request is from.
@@ -51,6 +51,13 @@ export type Holder = Message<"roster.Holder"> & {
   /**
    * Alias is what a person writes this holder as, within its tenant:
    * `@acme/admin`. It is unique inside a tenant and not across the deployment.
+   *
+   * It and the three after it are **personal** (#92): a holder is somebody, and
+   * what they are called, what is said of them and what is labelled on them are
+   * theirs. The trail records that one of them was set, and never what to --
+   * the row is where a person is corrected and erased, and the trail is the
+   * copy nothing rewrites. Who a line of the trail is about stays on it: that
+   * is `actor_id` and `object_id`, which are identifiers.
    *
    * @generated from field: string alias = 4;
    */
@@ -114,6 +121,10 @@ export type Holder = Message<"roster.Holder"> & {
    * Product apps do not copy it. They hold the identifier and ask for this when
    * they have a screen to draw, cached for a minute or two -- which is the same
    * reason it is not in the token: a profile changes and a token does not.
+   *
+   * Personal (payday#92), and so are `data` and `portrait` below: the trail
+   * records that one was set, and never to what. A person is corrected and
+   * forgotten here, on the row, and the trail is the copy nothing rewrites.
    *
    * @generated from field: roster.Profile profile = 9;
    */
@@ -262,9 +273,9 @@ export type Holder = Message<"roster.Holder"> & {
    * # What it costs
    *
    * A few kilobytes on the row -- six or so for a photograph, at every size --
-   * in every `Get` that selects it and in the trail's copy of the row at each
-   * write to this holder. Bounded by what roster renders rather than by what
-   * a caller sends, which is why nothing writes it but roster.
+   * in every `Get` that selects it. Bounded by what roster renders rather than
+   * by what a caller sends, which is why nothing writes it but roster. Not on
+   * the trail: it is a picture of a person, and personal (payday#92).
    *
    * @generated from field: roster.Portrait portrait = 16;
    */

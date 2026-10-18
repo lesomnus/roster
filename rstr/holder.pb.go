@@ -357,6 +357,13 @@ type Holder_builder struct {
 	Tenant *Tenant
 	// Alias is what a person writes this holder as, within its tenant:
 	// `@acme/admin`. It is unique inside a tenant and not across the deployment.
+	//
+	// It and the three after it are **personal** (#92): a holder is somebody, and
+	// what they are called, what is said of them and what is labelled on them are
+	// theirs. The trail records that one of them was set, and never what to --
+	// the row is where a person is corrected and erased, and the trail is the
+	// copy nothing rewrites. Who a line of the trail is about stays on it: that
+	// is `actor_id` and `object_id`, which are identifiers.
 	Alias  string
 	Name   string
 	Desc   string
@@ -389,6 +396,10 @@ type Holder_builder struct {
 	// Product apps do not copy it. They hold the identifier and ask for this when
 	// they have a screen to draw, cached for a minute or two -- which is the same
 	// reason it is not in the token: a profile changes and a token does not.
+	//
+	// Personal (payday#92), and so are `data` and `portrait` below: the trail
+	// records that one was set, and never to what. A person is corrected and
+	// forgotten here, on the row, and the trail is the copy nothing rewrites.
 	Profile *Profile
 	// Whatever the app that put it here keeps about this holder, and roster does
 	// not read it.
@@ -512,9 +523,9 @@ type Holder_builder struct {
 	// # What it costs
 	//
 	// A few kilobytes on the row -- six or so for a photograph, at every size --
-	// in every `Get` that selects it and in the trail's copy of the row at each
-	// write to this holder. Bounded by what roster renders rather than by what
-	// a caller sends, which is why nothing writes it but roster.
+	// in every `Get` that selects it. Bounded by what roster renders rather than
+	// by what a caller sends, which is why nothing writes it but roster. Not on
+	// the trail: it is a picture of a person, and personal (payday#92).
 	Portrait *Portrait
 }
 
@@ -827,25 +838,25 @@ var File_roster_payday_holder_proto protoreflect.FileDescriptor
 
 const file_roster_payday_holder_proto_rawDesc = "" +
 	"\n" +
-	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\x92\a\n" +
+	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xca\a\n" +
 	"\x06Holder\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x14\n" +
-	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x12\n" +
-	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\x122\n" +
-	"\x06labels\x18\a \x03(\v2\x1a.roster.Holder.LabelsEntryR\x06labels\x12F\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x1c\n" +
+	"\x05alias\x18\x04 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x01R\x05alias\x12\x1a\n" +
+	"\x04name\x18\x05 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x01R\x04name\x12\x1a\n" +
+	"\x04desc\x18\x06 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x01R\x04desc\x12:\n" +
+	"\x06labels\x18\a \x03(\v2\x1a.roster.Holder.LabelsEntryB\x06\xaa\xc1\x16\x02\x18\x01R\x06labels\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12)\n" +
-	"\aprofile\x18\t \x01(\v2\x0f.roster.ProfileR\aprofile\x12(\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x121\n" +
+	"\aprofile\x18\t \x01(\v2\x0f.roster.ProfileB\x06\xaa\xc1\x16\x02\x18\x01R\aprofile\x120\n" +
 	"\x04data\x18\n" +
-	" \x01(\v2\x14.google.protobuf.AnyR\x04data\x12M\n" +
+	" \x01(\v2\x14.google.protobuf.AnyB\x06\xaa\xc1\x16\x02\x18\x01R\x04data\x12M\n" +
 	"\x10date_invalidated\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\x0fdateInvalidated\x12G\n" +
 	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateDisabled\x12+\n" +
-	"\tdirectory\x18\b \x01(\tB\r\xea\x82\x16\x03\x82\x01\x00\xaa\xc1\x16\x02\x10\x01R\tdirectory\x12,\n" +
-	"\bportrait\x18\x10 \x01(\v2\x10.roster.PortraitR\bportrait\x1a9\n" +
+	"\tdirectory\x18\b \x01(\tB\r\xea\x82\x16\x03\x82\x01\x00\xaa\xc1\x16\x02\x10\x01R\tdirectory\x124\n" +
+	"\bportrait\x18\x10 \x01(\v2\x10.roster.PortraitB\x06\xaa\xc1\x16\x02\x18\x01R\bportrait\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:n\xca\xfc\x15%\x12\x02\x10\x01\x1a\x1f\x12\x04slug\x1a\t\n" +

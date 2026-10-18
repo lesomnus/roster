@@ -25,7 +25,11 @@ message Holder {
   // Product apps do not copy it. They hold the identifier and ask for this when
   // they have a screen to draw, cached for a minute or two -- which is the same
   // reason it is not in the token: a profile changes and a token does not.
-  Profile profile = 9;
+  //
+  // Personal (payday#92), and so are `data` and `portrait` below: the trail
+  // records that one was set, and never to what. A person is corrected and
+  // forgotten here, on the row, and the trail is the copy nothing rewrites.
+  Profile profile = 9 [(payday.field) = {personal: true}];
 
   // Whatever the app that put it here keeps about this holder, and roster does
   // not read it.
@@ -53,7 +57,7 @@ message Holder {
   // How two apps writing here avoid each other is not roster's question. It is
   // one slot on a row, and who writes to it is a decision a deployment makes
   // the way it decides who may call anything else.
-  google.protobuf.Any data = 10;
+  google.protobuf.Any data = 10 [(payday.field) = {personal: true}];
 
   // Everything issued before this moment is void.
   //
@@ -156,10 +160,10 @@ message Holder {
   // # What it costs
   //
   // A few kilobytes on the row -- six or so for a photograph, at every size --
-  // in every `Get` that selects it and in the trail's copy of the row at each
-  // write to this holder. Bounded by what roster renders rather than by what
-  // a caller sends, which is why nothing writes it but roster.
-  Portrait portrait = 16;
+  // in every `Get` that selects it. Bounded by what roster renders rather than
+  // by what a caller sends, which is why nothing writes it but roster. Not on
+  // the trail: it is a picture of a person, and personal (payday#92).
+  Portrait portrait = 16 [(payday.field) = {personal: true}];
 }
 
 // Profile is what a person is called, and it is replaced whole.

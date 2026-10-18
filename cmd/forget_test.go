@@ -21,15 +21,22 @@ import (
 //
 // `Holder.Erase` writes `date_erased` and the version beside it and stops.
 // Nothing cascades, and nothing is destroyed: the row keeps the alias and the
-// name, the addresses and the external identities keep theirs, and the trail
-// holds a copy of all of it -- including the copy the erase itself wrote, since
-// `Audit.value` is the row as the event left it.
+// name, and the addresses and the external identities keep theirs.
 //
 // So "we deleted them" was not true of anything roster did, and this is the
 // test that says so out loud rather than leaving it to be rediscovered.
+//
+// What changed is the trail. It used to hold a copy of all of it -- including
+// the copy the erase itself wrote, since `Audit.value` was the row as the event
+// left it. The alias, the address and the identity are personal now
+// (payday#92), so the trail holds that each was set and never what to, even
+// where it keeps rows: the rows are the only copy, which is what makes
+// forgetting somebody a matter of the rows.
 func TestAnEraseDestroysNothing(t *testing.T) {
 	x := require.New(t)
-	b, ctx := build(t)
+	// At the content level that keeps the row (payday#92): what is under
+	// test is what the trail holds of one.
+	b, ctx := build(t, keepingRows)
 
 	who := b.holder(t, ctx, b.Contoso, "erin")
 	b.identity(t, ctx, who, "github", "gh-erin")
@@ -55,11 +62,16 @@ func TestAnEraseDestroysNothing(t *testing.T) {
 	vs, err := b.Ent.Audit.Query().All(ctx)
 	x.NoError(err)
 	for _, u := range vs {
+		for _, c := range [][]byte{u.Patch, u.Value} {
+			x.NotContains(string(c), "erin@contoso.example", "the trail holds a copy of the address")
+			x.NotContains(string(c), "gh-erin", "the trail holds a copy of the identity")
+			x.NotContains(string(c), "erin", "the trail holds a copy of the alias")
+		}
 		if len(u.Value) > 0 {
 			held++
 		}
 	}
-	x.NotZero(held, "the trail kept nothing, so this proves nothing")
+	x.NotZero(held, "the trail kept no rows, so the checks above never looked at one")
 }
 
 // TestForgettingSomebodyKeepsTheEventAndLosesTheContents.
@@ -71,7 +83,9 @@ func TestAnEraseDestroysNothing(t *testing.T) {
 // to them by asking to be forgotten.
 func TestForgettingSomebodyKeepsTheEventAndLosesTheContents(t *testing.T) {
 	x := require.New(t)
-	b, ctx := build(t)
+	// At the content level that keeps the row (payday#92): what is under
+	// test is what the trail holds of one.
+	b, ctx := build(t, keepingRows)
 
 	who := b.holder(t, ctx, b.Contoso, "erin")
 	id := b.identity(t, ctx, who, "github", "gh-erin")
@@ -238,7 +252,9 @@ func TestTheGraceCanBeUndoneUntilItIsNot(t *testing.T) {
 // answer that is wrong in the direction that matters.
 func TestForgettingReachesTheArchiveToo(t *testing.T) {
 	x := require.New(t)
-	b, ctx := build(t)
+	// At the content level that keeps the row (payday#92): what is under
+	// test is what the trail holds of one.
+	b, ctx := build(t, keepingRows)
 
 	who := b.holder(t, ctx, b.Contoso, "erin")
 	b.addressOf(t, ctx, who, "erin@contoso.example")

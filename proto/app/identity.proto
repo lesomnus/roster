@@ -61,7 +61,11 @@ message Identity {
   // Never a username and never an email address. Both get changed, and an email
   // gets reassigned to somebody else entirely -- which would silently hand one
   // person another person's account.
-  string subject = 9;
+  //
+  // Personal (payday#92): what another system calls a person identifies them
+  // as much as their name does, and the trail records that it was set and
+  // never to what.
+  string subject = 9 [(payday.field) = {personal: true}];
 
   // The tenant `holder.tenant` reaches, kept here. payday stamps it.
   //

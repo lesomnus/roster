@@ -274,8 +274,10 @@ func (x *Email) ClearDateCreated() {
 type Email_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Id      []byte
-	Holder  *Holder
+	Id     []byte
+	Holder *Holder
+	// Personal (payday#92): the trail records that an address was set, and
+	// never which.
 	Address string
 	// When somebody checked, and the zero time for never.
 	//
@@ -369,11 +371,11 @@ var File_app_email_proto protoreflect.FileDescriptor
 
 const file_app_email_proto_rawDesc = "" +
 	"\n" +
-	"\x0fapp/email.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xc5\x05\n" +
+	"\x0fapp/email.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xcd\x05\n" +
 	"\x05Email\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x18\n" +
-	"\aaddress\x18\b \x01(\tR\aaddress\x12M\n" +
+	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12 \n" +
+	"\aaddress\x18\b \x01(\tB\x06\xaa\xc1\x16\x02\x18\x01R\aaddress\x12M\n" +
 	"\rdate_verified\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\f\xea\x82\x16\x028\x01\xaa\xc1\x16\x02\x10\x01R\fdateVerified\x127\n" +
 	"\n" +
 	"vouched_by\x18\n" +

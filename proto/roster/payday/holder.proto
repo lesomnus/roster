@@ -32,10 +32,17 @@ message Holder {
   Tenant tenant = 2 [(orm.edge) = {immutable: true}];
   // Alias is what a person writes this holder as, within its tenant:
   // `@acme/admin`. It is unique inside a tenant and not across the deployment.
-  string alias = 4;
-  string name = 5;
-  string desc = 6;
-  map<string, string> labels = 7;
+  //
+  // It and the three after it are **personal** (#92): a holder is somebody, and
+  // what they are called, what is said of them and what is labelled on them are
+  // theirs. The trail records that one of them was set, and never what to --
+  // the row is where a person is corrected and erased, and the trail is the
+  // copy nothing rewrites. Who a line of the trail is about stays on it: that
+  // is `actor_id` and `object_id`, which are identifiers.
+  string alias = 4 [(payday.field) = {personal: true}];
+  string name = 5 [(payday.field) = {personal: true}];
+  string desc = 6 [(payday.field) = {personal: true}];
+  map<string, string> labels = 7 [(payday.field) = {personal: true}];
   // See [Tenant.date_updated].
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {
     version: {}
@@ -155,7 +162,11 @@ message Holder {
   // Product apps do not copy it. They hold the identifier and ask for this when
   // they have a screen to draw, cached for a minute or two -- which is the same
   // reason it is not in the token: a profile changes and a token does not.
-  Profile profile = 9;
+  //
+  // Personal (payday#92), and so are `data` and `portrait` below: the trail
+  // records that one was set, and never to what. A person is corrected and
+  // forgotten here, on the row, and the trail is the copy nothing rewrites.
+  Profile profile = 9 [(payday.field) = {personal: true}];
   // Whatever the app that put it here keeps about this holder, and roster does
   // not read it.
   //
@@ -182,7 +193,7 @@ message Holder {
   // How two apps writing here avoid each other is not roster's question. It is
   // one slot on a row, and who writes to it is a decision a deployment makes
   // the way it decides who may call anything else.
-  google.protobuf.Any data = 10;
+  google.protobuf.Any data = 10 [(payday.field) = {personal: true}];
   // Everything issued before this moment is void.
   //
   // "Sign out everywhere" as a **fact** rather than as a list. The alternative
@@ -281,10 +292,10 @@ message Holder {
   // # What it costs
   //
   // A few kilobytes on the row -- six or so for a photograph, at every size --
-  // in every `Get` that selects it and in the trail's copy of the row at each
-  // write to this holder. Bounded by what roster renders rather than by what
-  // a caller sends, which is why nothing writes it but roster.
-  Portrait portrait = 16;
+  // in every `Get` that selects it. Bounded by what roster renders rather than
+  // by what a caller sends, which is why nothing writes it but roster. Not on
+  // the trail: it is a picture of a person, and personal (payday#92).
+  Portrait portrait = 16 [(payday.field) = {personal: true}];
 }
 
 // Profile is what a person is called, and it is replaced whole.

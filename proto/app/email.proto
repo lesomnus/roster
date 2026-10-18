@@ -60,7 +60,9 @@ message Email {
   // 4 is empty: an address is not an alias. An alias is unique within a tenant
   // and is what a slug names a row by, and neither is true here.
 
-  string address = 8;
+  // Personal (payday#92): the trail records that an address was set, and
+  // never which.
+  string address = 8 [(payday.field) = {personal: true}];
 
   // When somebody checked, and the zero time for never.
   //
