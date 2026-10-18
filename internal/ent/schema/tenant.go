@@ -9,6 +9,7 @@ import (
 	entsql "github.com/protobuf-orm/ent/dialect/entsql"
 	schema "github.com/protobuf-orm/ent/schema"
 	field "github.com/protobuf-orm/ent/schema/field"
+	index "github.com/protobuf-orm/ent/schema/index"
 	entpb "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpb"
 )
 
@@ -45,6 +46,12 @@ func (Tenant) Fields() []ent.Field {
 		field.String("hold").
 			Optional().
 			Default(""),
+	}
+}
+
+func (Tenant) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("date_created", "id"),
 	}
 }
 

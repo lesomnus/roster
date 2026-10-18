@@ -53,7 +53,7 @@ func (SiteMembership) Edges() []ent.Edge {
 func (SiteMembership) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("date_created", "id"),
-		index.Edges("holder", "site").
+		index.Fields("holder_id", "site_id").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}
@@ -111,7 +111,7 @@ func (TeamMembership) Edges() []ent.Edge {
 func (TeamMembership) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("date_created", "id"),
-		index.Edges("holder", "team").
+		index.Fields("holder_id", "team_id").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}
@@ -169,7 +169,7 @@ func (GroupMembership) Edges() []ent.Edge {
 func (GroupMembership) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("date_created", "id"),
-		index.Edges("holder", "group").
+		index.Fields("holder_id", "group_id").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}

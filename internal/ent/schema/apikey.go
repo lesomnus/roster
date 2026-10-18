@@ -57,8 +57,7 @@ func (ApiKey) Edges() []ent.Edge {
 func (ApiKey) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("date_created", "id"),
-		index.Fields("alias").
-			Edges("holder").
+		index.Fields("alias", "holder_id").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 		index.Fields("secret").

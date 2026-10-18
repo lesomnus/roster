@@ -55,9 +55,8 @@ func (Team) Edges() []ent.Edge {
 
 func (Team) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("alias").
-			Edges("site").
+		index.Fields("tenant_id", "date_created", "id"),
+		index.Fields("alias", "site_id").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}

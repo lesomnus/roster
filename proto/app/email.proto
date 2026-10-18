@@ -153,6 +153,7 @@ message Email {
       {
         name: "page"
         refs: [
+          {name: "tenant_id", number: 11},
           {name: "date_created", number: 15},
           {name: "id", number: 1}
         ]

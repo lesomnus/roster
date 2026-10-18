@@ -56,9 +56,8 @@ func (Email) Edges() []ent.Edge {
 
 func (Email) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("address").
-			Edges("holder").
+		index.Fields("tenant_id", "date_created", "id"),
+		index.Fields("holder_id", "address").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 		index.Fields("tenant_id", "address").

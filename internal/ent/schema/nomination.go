@@ -55,9 +55,8 @@ func (Nomination) Edges() []ent.Edge {
 
 func (Nomination) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("borrower_id").
-			Edges("tenant").
+		index.Fields("tenant_id", "date_created", "id"),
+		index.Fields("tenant_id", "borrower_id").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}

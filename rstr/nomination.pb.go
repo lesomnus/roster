@@ -331,7 +331,7 @@ var File_app_nomination_proto protoreflect.FileDescriptor
 
 const file_app_nomination_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/nomination.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xbd\x05\n" +
+	"\x14app/nomination.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xc9\x05\n" +
 	"\n" +
 	"Nomination\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
@@ -347,7 +347,9 @@ const file_app_nomination_proto_rawDesc = "" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xa8\x01\xca\xfc\x15Q\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xb4\x01\xca\xfc\x15]\x12\x02\x10\x01\x1a,\x12\x04page\x1a\n" +
+	"\n" +
+	"\x06tenant\x10\x02\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x1a)\x12\bborrower\x1a\n" +
 	"\n" +
