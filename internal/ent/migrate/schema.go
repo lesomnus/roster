@@ -235,14 +235,14 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "connection_date_created_id",
+				Name:    "connection_tenant_id_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{ConnectionColumns[12], ConnectionColumns[0]},
+				Columns: []*schema.Column{ConnectionColumns[13], ConnectionColumns[12], ConnectionColumns[0]},
 			},
 			{
-				Name:    "connection_name_tenant_id",
+				Name:    "connection_tenant_id_name",
 				Unique:  true,
-				Columns: []*schema.Column{ConnectionColumns[1], ConnectionColumns[13]},
+				Columns: []*schema.Column{ConnectionColumns[13], ConnectionColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -327,9 +327,9 @@ var (
 				Columns: []*schema.Column{CredentialColumns[11], CredentialColumns[0]},
 			},
 			{
-				Name:    "credential_kind_name_holder_id",
+				Name:    "credential_holder_id_kind_name",
 				Unique:  true,
-				Columns: []*schema.Column{CredentialColumns[2], CredentialColumns[1], CredentialColumns[12]},
+				Columns: []*schema.Column{CredentialColumns[12], CredentialColumns[2], CredentialColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -410,14 +410,14 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "email_date_created_id",
+				Name:    "email_tenant_id_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{EmailColumns[6], EmailColumns[0]},
+				Columns: []*schema.Column{EmailColumns[3], EmailColumns[6], EmailColumns[0]},
 			},
 			{
-				Name:    "email_address_holder_id",
+				Name:    "email_holder_id_address",
 				Unique:  true,
-				Columns: []*schema.Column{EmailColumns[1], EmailColumns[7]},
+				Columns: []*schema.Column{EmailColumns[7], EmailColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -465,9 +465,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "group_date_created_id",
+				Name:    "group_tenant_id_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{GroupColumns[6], GroupColumns[0]},
+				Columns: []*schema.Column{GroupColumns[7], GroupColumns[6], GroupColumns[0]},
 			},
 			{
 				Name:    "group_alias_tenant_id",
@@ -508,9 +508,9 @@ var (
 				Columns: []*schema.Column{GroupexposureColumns[4], GroupexposureColumns[0]},
 			},
 			{
-				Name:    "groupexposure_client_group_id",
+				Name:    "groupexposure_group_id_client",
 				Unique:  true,
-				Columns: []*schema.Column{GroupexposureColumns[1], GroupexposureColumns[5]},
+				Columns: []*schema.Column{GroupexposureColumns[5], GroupexposureColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -608,6 +608,11 @@ var (
 					Where: "date_erased IS NULL",
 				},
 			},
+			{
+				Name:    "holder_tenant_id_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{HolderColumns[14], HolderColumns[7], HolderColumns[0]},
+			},
 		},
 	}
 	// HostColumns holds the columns for the "host" table.
@@ -637,9 +642,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "host_date_created_id",
+				Name:    "host_tenant_id_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{HostColumns[7], HostColumns[0]},
+				Columns: []*schema.Column{HostColumns[8], HostColumns[7], HostColumns[0]},
 			},
 			{
 				Name:    "host_name",
@@ -678,14 +683,14 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "hostproof_date_created_id",
+				Name:    "hostproof_tenant_id_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{HostproofColumns[7], HostproofColumns[0]},
+				Columns: []*schema.Column{HostproofColumns[8], HostproofColumns[7], HostproofColumns[0]},
 			},
 			{
-				Name:    "hostproof_name_tenant_id",
+				Name:    "hostproof_tenant_id_name",
 				Unique:  true,
-				Columns: []*schema.Column{HostproofColumns[1], HostproofColumns[8]},
+				Columns: []*schema.Column{HostproofColumns[8], HostproofColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -718,9 +723,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "identity_date_created_id",
+				Name:    "identity_tenant_id_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{IdentityColumns[6], IdentityColumns[0]},
+				Columns: []*schema.Column{IdentityColumns[3], IdentityColumns[6], IdentityColumns[0]},
 			},
 			{
 				Name:    "identity_tenant_id_provider_subject",
@@ -807,14 +812,14 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "maildomain_date_created_id",
+				Name:    "maildomain_tenant_id_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{MaildomainColumns[7], MaildomainColumns[0]},
+				Columns: []*schema.Column{MaildomainColumns[8], MaildomainColumns[7], MaildomainColumns[0]},
 			},
 			{
-				Name:    "maildomain_name_tenant_id",
+				Name:    "maildomain_tenant_id_name",
 				Unique:  true,
-				Columns: []*schema.Column{MaildomainColumns[1], MaildomainColumns[8]},
+				Columns: []*schema.Column{MaildomainColumns[8], MaildomainColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -854,14 +859,14 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "nomination_date_created_id",
+				Name:    "nomination_tenant_id_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{NominationColumns[6], NominationColumns[0]},
+				Columns: []*schema.Column{NominationColumns[7], NominationColumns[6], NominationColumns[0]},
 			},
 			{
-				Name:    "nomination_borrower_id_tenant_id",
+				Name:    "nomination_tenant_id_borrower_id",
 				Unique:  true,
-				Columns: []*schema.Column{NominationColumns[3], NominationColumns[7]},
+				Columns: []*schema.Column{NominationColumns[7], NominationColumns[3]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -928,9 +933,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "role_date_created_id",
+				Name:    "role_tenant_id_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{RoleColumns[8], RoleColumns[0]},
+				Columns: []*schema.Column{RoleColumns[9], RoleColumns[8], RoleColumns[0]},
 			},
 			{
 				Name:    "role_alias_tenant_id",
@@ -1010,9 +1015,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "site_date_created_id",
+				Name:    "site_tenant_id_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{SiteColumns[7], SiteColumns[0]},
+				Columns: []*schema.Column{SiteColumns[8], SiteColumns[7], SiteColumns[0]},
 			},
 			{
 				Name:    "site_alias_tenant_id",
@@ -1101,9 +1106,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "team_date_created_id",
+				Name:    "team_tenant_id_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{TeamColumns[6], TeamColumns[0]},
+				Columns: []*schema.Column{TeamColumns[7], TeamColumns[6], TeamColumns[0]},
 			},
 			{
 				Name:    "team_alias_site_id",
@@ -1186,6 +1191,13 @@ var (
 		Name:       "tenant",
 		Columns:    TenantColumns,
 		PrimaryKey: []*schema.Column{TenantColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "tenant_date_created_id",
+				Unique:  false,
+				Columns: []*schema.Column{TenantColumns[6], TenantColumns[0]},
+			},
+		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{

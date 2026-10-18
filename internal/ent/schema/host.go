@@ -52,7 +52,7 @@ func (Host) Edges() []ent.Edge {
 
 func (Host) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
+		index.Fields("tenant_id", "date_created", "id"),
 		index.Fields("name").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
@@ -103,9 +103,8 @@ func (MailDomain) Edges() []ent.Edge {
 
 func (MailDomain) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("name").
-			Edges("tenant").
+		index.Fields("tenant_id", "date_created", "id"),
+		index.Fields("tenant_id", "name").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}
@@ -158,9 +157,8 @@ func (HostProof) Edges() []ent.Edge {
 
 func (HostProof) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("name").
-			Edges("tenant").
+		index.Fields("tenant_id", "date_created", "id"),
+		index.Fields("tenant_id", "name").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}

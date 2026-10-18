@@ -55,9 +55,8 @@ func (Group) Edges() []ent.Edge {
 
 func (Group) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
-		index.Fields("alias").
-			Edges("tenant").
+		index.Fields("tenant_id", "date_created", "id"),
+		index.Fields("alias", "tenant_id").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}
@@ -105,8 +104,7 @@ func (GroupExposure) Edges() []ent.Edge {
 func (GroupExposure) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("date_created", "id"),
-		index.Fields("client").
-			Edges("group").
+		index.Fields("group_id", "client").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}

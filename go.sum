@@ -148,6 +148,8 @@ github.com/lesomnus/payday v0.0.0-20261018140204-196e30a26dc2 h1:kvNRNUwUBJ5rYH6
 github.com/lesomnus/payday v0.0.0-20261018140204-196e30a26dc2/go.mod h1:tJWiF3oP6kbS+g87AzzuZuk+CaYuS76LflEUpCR7RrI=
 github.com/lesomnus/payday v0.0.0-20261018152402-07131089e490 h1:8hzjM3be57luq3fqQlgr9J1welNv4KRbg4U37yX/XNM=
 github.com/lesomnus/payday v0.0.0-20261018152402-07131089e490/go.mod h1:tJWiF3oP6kbS+g87AzzuZuk+CaYuS76LflEUpCR7RrI=
+github.com/lesomnus/payday v0.0.0-20261018201625-2fb7e995573e h1:zhGNAlWlAtGFrmiLzulMjM5qwKfgOhWXXrZ+noy3nDc=
+github.com/lesomnus/payday v0.0.0-20261018201625-2fb7e995573e/go.mod h1:f2rdr4dQt3DZsmRpSVxCxr2/h69n/O2oGT9qBmXRVmk=
 github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f h1:hIDTEG7vZCJ5M+j+OhI97pk6Q1mp1t3gXi1k96IB9f0=
 github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f/go.mod h1:0sqL1bt/0v8atiVioyoJ25XQnZcn8zA9GYM1DvC4i5o=
 github.com/lesomnus/pwr v0.0.0-20261015171245-2ec220d490d1 h1:s3Bg92kjlJWK1bGlbJlObXZnRVRMXYDMZCRd3sqer6U=
@@ -207,6 +209,8 @@ github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261017202428-39d596692bae h1
 github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261017202428-39d596692bae/go.mod h1:x8W7/u2Y9gYgmL7iaV9uDSUyofgAfcKJmMgCadAWMnQ=
 github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261017215935-3d29dadf7073 h1:exJLE3wuMoekXHX7gBeca2v6ThYQHmdHnbs7t1hU4gQ=
 github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261017215935-3d29dadf7073/go.mod h1:eFaZrsVd6fwAbKaigROvVEk2v3JldW+kOqSLWdS4P7M=
+github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261018200936-5ccf5748ae26 h1:I9LE7H72wswv8qg8lAn0SRsRNrhiAQi9D1i/FMAJP+A=
+github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261018200936-5ccf5748ae26/go.mod h1:eFaZrsVd6fwAbKaigROvVEk2v3JldW+kOqSLWdS4P7M=
 github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260906232518-fa1777a2628d h1:+AMXRkD7EN/P4MVMC745X53Mxw+5HaQuSM0/+2FabEw=
 github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260906232518-fa1777a2628d/go.mod h1:qj2tHR4lxdJ8Pl81QGG2H8Kvg3K7sCCT0jMoTMPuIfk=
 github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20261010065542-f9ac5b66df3e h1:g77on2k8uh1A8m7XwFwZI56cDpVofVohL07p8pf3W6A=

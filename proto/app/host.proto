@@ -188,6 +188,10 @@ message Host {
         name: "page"
         refs: [
           {
+            name: "tenant"
+            number: 2
+          },
+          {
             name: "date_created"
             number: 15
           },
@@ -298,6 +302,10 @@ message MailDomain {
       {
         name: "page"
         refs: [
+          {
+            name: "tenant"
+            number: 2
+          },
           {
             name: "date_created"
             number: 15
@@ -435,6 +443,10 @@ message HostProof {
       {
         name: "page"
         refs: [
+          {
+            name: "tenant"
+            number: 2
+          },
           {
             name: "date_created"
             number: 15

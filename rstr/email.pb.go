@@ -371,7 +371,7 @@ var File_app_email_proto protoreflect.FileDescriptor
 
 const file_app_email_proto_rawDesc = "" +
 	"\n" +
-	"\x0fapp/email.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xcd\x05\n" +
+	"\x0fapp/email.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xdc\x05\n" +
 	"\x05Email\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12 \n" +
@@ -384,7 +384,8 @@ const file_app_email_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\xcd\x01\xca\xfc\x15p\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\xdc\x01\xca\xfc\x15\x7f\x12\x02\x10\x01\x1a/\x12\x04page\x1a\r\n" +
+	"\ttenant_id\x10\v\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
 	"\x02id\x10\x01\x1a$\x12\aaddress\x1a\n" +
 	"\n" +
