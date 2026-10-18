@@ -40,7 +40,9 @@ import (
 // the answer is a property of the pinned payday and not of anything here.
 func TestTheRecordOfAnEraseBelongsToWhoseRowItWas(t *testing.T) {
 	x := require.New(t)
-	b, ctx := build(t)
+	// At the content level that keeps the row (payday#92): what is under
+	// test is what the trail holds of one.
+	b, ctx := build(t, keepingRows)
 
 	// Somebody in contoso, erased by somebody who is not in contoso -- which is what
 	// makes the two tenants tell apart. The operator is fabrikam's, and through
@@ -92,7 +94,9 @@ func TestTheRecordOfAnEraseBelongsToWhoseRowItWas(t *testing.T) {
 // pinned is not an artefact of writing through the ungated server.
 func TestAnEraseThroughTheWallIsFiledTheSameWay(t *testing.T) {
 	x := require.New(t)
-	b, ctx := build(t)
+	// At the content level that keeps the row (payday#92): what is under
+	// test is what the trail holds of one.
+	b, ctx := build(t, keepingRows)
 
 	who := b.holder(t, ctx, b.Contoso, "leaver")
 	admin := b.holder(t, ctx, b.Contoso, "admin")

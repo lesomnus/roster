@@ -344,7 +344,16 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// because `WithRecorder` refuses to be given twice: neither losing one nor
 	// quietly appending in call order is a thing a framework should decide, so
 	// the order is written here where it can be read.
-	rec := bare.Recorders{pd.Recorder(), pd.WatchRecorder(w)}
+	//
+	// What the trail keeps of each kind's writes is the deployment's to say,
+	// `audit.content` (payday#92) -- read here, where the trail is wired, so
+	// that a setting nobody handed over is not a setting that does nothing.
+	content, err := c.Audit.Contents()
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+	rec := bare.Recorders{pd.Recorder(content), pd.WatchRecorder(w)}
 	if c.Watch.Outbox {
 		// Last, so that a queue this could not be written to undoes a write
 		// which the trail and the in-process publish have already agreed to
@@ -516,6 +525,15 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 			// person who runs the deployment would be backwards. The keyring
 			// is not carried over -- the control plane holds no second factors.
 			Vouch: VouchConfig{Lockout: c.Vouch.Lockout, Password: c.Vouch.Password},
+
+			// What the trail keeps of a write, and nothing else of `audit`
+			// (payday#92). It is one decision for the deployment's trail,
+			// whichever plane wrote the row -- an operator's acts are the
+			// control plane's rows, and a deployment that keeps rows keeps
+			// theirs. The clocks and the archive stay the data plane's alone,
+			// which is why this config had no `audit` before: see the policy
+			// below, which this leaves off.
+			Audit: contentOf(c.Audit),
 
 			// And the corpus, which this left out while saying the line above
 			// (#18): every tenant's password -- their own change in the
@@ -1650,4 +1668,21 @@ func (s *Server) policyInterceptors() grpcx.Chain {
 		return grpcx.Chain{}
 	}
 	return s.PolicyFile.Interceptor()
+}
+
+// contentOf is `a` with nothing in it but what the trail keeps of each kind's
+// writes, for the control plane: see where it is built.
+func contentOf(a config.AuditConfig) config.AuditConfig {
+	out := config.AuditConfig{Content: a.Content}
+	for name, v := range a.By {
+		if v.Content == "" {
+			continue
+		}
+		if out.By == nil {
+			out.By = map[string]config.AuditKeepConfig{}
+		}
+		out.By[name] = config.AuditKeepConfig{Content: v.Content}
+	}
+
+	return out
 }

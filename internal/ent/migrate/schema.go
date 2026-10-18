@@ -107,6 +107,7 @@ var (
 		{Name: "value", Type: field.TypeBytes},
 		{Name: "counterpart_tenant_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "domain", Type: field.TypeUint32, Nullable: true, Default: 0},
+		{Name: "fields", Type: field.TypeJson, Nullable: true},
 	}
 	// AuditTable holds the schema information for the "audit" table.
 	AuditTable = &schema.Table{

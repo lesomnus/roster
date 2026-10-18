@@ -33,7 +33,9 @@ import (
 // impossible.
 func TestADeploymentKeyReadsEveryTenantsTrail(t *testing.T) {
 	x := require.New(t)
-	b := keyFor(t, "/roster.AuditService/List")
+	// Keeping rows, since what is under test is that the contents come back
+	// (payday#92: the default keeps what a write said and not the row).
+	b := keyedFor(t, keepingRows, "/roster.AuditService/List")
 	ctx := t.Context()
 
 	// A second customer, with writes of its own. The harness makes `contoso`; this

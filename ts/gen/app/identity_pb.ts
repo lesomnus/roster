@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/identity.proto.
  */
 export const file_app_identity: GenFile = /*@__PURE__*/
-  fileDesc("ChJhcHAvaWRlbnRpdHkucHJvdG8SBnJvc3RlciKHBAoISWRlbnRpdHkSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIQCghwcm92aWRlchgIIAEoCRIPCgdzdWJqZWN0GAkgASgJEhsKCXRlbmFudF9pZBgKIAEoDEII6oIWBBBAQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOscByvwVXRICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGjUSB3N1YmplY3QaDQoJdGVuYW50X2lkEAoaDAoIcHJvdmlkZXIQCBoLCgdzdWJqZWN0EAkwAYq7FmIICDJAChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZob2xkZXIaCwoJdGVuYW50X2lkIBQoZDoAIhoKDWhvbGRlci50ZW5hbnQaCXRlbmFudF9pZEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChJhcHAvaWRlbnRpdHkucHJvdG8SBnJvc3RlciKPBAoISWRlbnRpdHkSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIQCghwcm92aWRlchgIIAEoCRIXCgdzdWJqZWN0GAkgASgJQgaqwRYCGAESGwoJdGVuYW50X2lkGAogASgMQgjqghYEEEBAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6xwHK/BVdEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaNRIHc3ViamVjdBoNCgl0ZW5hbnRfaWQQChoMCghwcm92aWRlchAIGgsKB3N1YmplY3QQCTABirsWYggIMkAKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBmhvbGRlchoLCgl0ZW5hbnRfaWQgFChkOgAiGgoNaG9sZGVyLnRlbmFudBoJdGVuYW50X2lkQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Identity is one way a person signs in: a subject at a provider, pointing at
@@ -77,6 +77,10 @@ export type Identity = Message<"roster.Identity"> & {
    * Never a username and never an email address. Both get changed, and an email
    * gets reassigned to somebody else entirely -- which would silently hand one
    * person another person's account.
+   *
+   * Personal (payday#92): what another system calls a person identifies them
+   * as much as their name does, and the trail records that it was set and
+   * never to what.
    *
    * @generated from field: string subject = 9;
    */

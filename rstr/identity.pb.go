@@ -242,6 +242,10 @@ type Identity_builder struct {
 	// Never a username and never an email address. Both get changed, and an email
 	// gets reassigned to somebody else entirely -- which would silently hand one
 	// person another person's account.
+	//
+	// Personal (payday#92): what another system calls a person identifies them
+	// as much as their name does, and the trail records that it was set and
+	// never to what.
 	Subject string
 	// The tenant `holder.tenant` reaches, kept here. payday stamps it.
 	//
@@ -299,12 +303,12 @@ var File_app_identity_proto protoreflect.FileDescriptor
 
 const file_app_identity_proto_rawDesc = "" +
 	"\n" +
-	"\x12app/identity.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xd6\x04\n" +
+	"\x12app/identity.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xde\x04\n" +
 	"\bIdentity\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x1a\n" +
-	"\bprovider\x18\b \x01(\tR\bprovider\x12\x18\n" +
-	"\asubject\x18\t \x01(\tR\asubject\x12%\n" +
+	"\bprovider\x18\b \x01(\tR\bprovider\x12 \n" +
+	"\asubject\x18\t \x01(\tB\x06\xaa\xc1\x16\x02\x18\x01R\asubject\x12%\n" +
 	"\ttenant_id\x18\n" +
 	" \x01(\fB\b\xea\x82\x16\x04\x10@@\x01R\btenantId\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +

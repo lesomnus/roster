@@ -34,6 +34,14 @@ import (
 // them: every row it wrote was correct and the deployment was still unusable.
 func inited(t *testing.T, args ...string) (*cmd.Server, string) {
 	t.Helper()
+
+	return initedWith(t, nil, args...)
+}
+
+// initedWith is [inited] with a say over the configuration both servers are
+// built from.
+func initedWith(t *testing.T, with func(*cmd.Config), args ...string) (*cmd.Server, string) {
+	t.Helper()
 	x := require.New(t)
 	ctx := t.Context()
 
@@ -48,6 +56,9 @@ func inited(t *testing.T, args ...string) (*cmd.Server, string) {
 		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
 		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
 		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
+	}
+	if with != nil {
+		with(&c)
 	}
 
 	out := &bytes.Buffer{}

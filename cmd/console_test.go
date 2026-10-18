@@ -430,7 +430,9 @@ func TestNoVerifierReachesTheTrail(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	s, out := inited(t)
+	// Keeping rows, so that both of the trail's copies of a write are looked
+	// in: what it said, and the row it left (payday#92).
+	s, out := initedWith(t, keepingRows)
 	x.NotEmpty(passwordFrom(t, out))
 
 	// The operator's password, hashed by the RPC that hashes it.
@@ -458,8 +460,10 @@ func TestNoVerifierReachesTheTrail(t *testing.T) {
 
 	values := 0
 	for _, v := range vs {
-		x.NotContains(string(v.Value), string(cred.Secret), "the trail holds a password hash")
-		x.NotContains(string(v.Value), string(sum), "the trail holds a key hash")
+		for _, b := range [][]byte{v.Patch, v.Value} {
+			x.NotContains(string(b), string(cred.Secret), "the trail holds a password hash")
+			x.NotContains(string(b), string(sum), "the trail holds a key hash")
+		}
 		if len(v.Value) > 0 {
 			values++
 		}

@@ -1148,9 +1148,12 @@ that tenant from then until it is lifted.
 ### A key that can read the trail can read everything
 
 A deployment key is the **deployment's**, and unnarrowed it is every tenant in it
--- the wall narrows nothing for it. `Audit.value` is the row as each write left it, so one
+-- the wall narrows nothing for it. `Audit.patch` is what each write set -- and
+`Audit.value` the row it left, for a kind kept at `audit.content: value` -- so one
 method answers every table's contents, in every tenant, across all time, including
-rows long since deleted. It is the single widest read this deployment has, and
+rows long since deleted. What it does not answer is what the schema declared
+personal or secret: a person's names, addresses and identities are on the trail as
+having been set, and never as what to (payday#92). It is the single widest read this deployment has, and
 `roster control key add` says so when a key's methods reach it. No **role** reaches
 it that way, because a holder is walled to their own tenant -- and a deployment key
 narrowed with `roster-at` is answered as one of those.
@@ -1170,8 +1173,10 @@ box, or `serve` applying the policy on its own clock.
 ## Destroying somebody, which an erase does not
 
 `roster holder erase` makes somebody **unreachable and destroys nothing**: the row
-keeps their alias, name and profile, their addresses and identities keep theirs,
-and the trail holds a copy of all of it. That is right for *this person has left*.
+keeps their alias, name and profile, and their addresses and identities keep
+theirs. The trail holds that each was set and when, and not what to -- they are
+declared personal (payday#92), so the row is the only copy. That is right for
+*this person has left*.
 For *destroy what you hold about them* there is a second act:
 
 ```sh
@@ -1206,7 +1211,10 @@ nothing.
 
 The trail keeps its **events** and loses its **contents**, in the database and in
 the archive both -- the actor, the action, the object and the time stay; `value`
-and `patch` go. Both halves matter and they pull against each other: a version that
+and `patch` go. Most of what they held of the person was never there: a field
+declared personal is on the trail as a value at no level. What `forget` blanks is
+the rest -- what was written about them in free text, and rows written before
+payday#92. Both halves matter and they pull against each other: a version that
 destroyed the rows would let somebody erase the evidence of what was done *to*
 them by asking to be forgotten. The archive is reached only if `audit.archive` is
 set; archives you keep elsewhere are yours to reach. A trail row a legal hold is on
