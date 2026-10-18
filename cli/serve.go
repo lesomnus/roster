@@ -78,7 +78,7 @@ func Ready(ctx context.Context, s *cmd.Server, c cmd.Config) error {
 // configuration would be a second answer to a question already answered.
 func ready(ctx context.Context, s *cmd.Server, c config.DbConfig) error {
 	if c.Migrate {
-		return entmigrate.NewSchema(s.Drv).Create(ctx)
+		return migrate(ctx, s)
 	}
 
 	return entschema.Check(ctx, s.Db, s.Dialect, entmigrate.Tables)
@@ -234,7 +234,7 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 // the page, so what it wants is `wasm/schema`, which is the same tables as a
 // script.
 func Migrate(ctx context.Context, s *cmd.Server) error {
-	if err := entmigrate.NewSchema(s.Drv).Create(ctx); err != nil {
+	if err := migrate(ctx, s); err != nil {
 		return err
 	}
 	if s.Control == nil {
@@ -244,11 +244,56 @@ func Migrate(ctx context.Context, s *cmd.Server) error {
 	// Both planes, named, because they are two databases configured in two
 	// blocks and an error about a table says nothing about which of them to go
 	// and look at.
-	if err := entmigrate.NewSchema(s.Control.Drv).Create(ctx); err != nil {
+	if err := migrate(ctx, s.Control); err != nil {
 		return fmt.Errorf("control: %w", err)
 	}
 
 	return nil
+}
+
+// migrate brings one plane's database into this build's shape: what the schema
+// declares is made, and then the indexes this build [Replaced] are dropped,
+// what replaced each being there by then.
+func migrate(ctx context.Context, s *cmd.Server) error {
+	if err := entmigrate.NewSchema(s.Drv).Create(ctx); err != nil {
+		return err
+	}
+	for _, v := range Replaced {
+		if _, err := s.Db.ExecContext(ctx, "DROP INDEX IF EXISTS "+v); err != nil {
+			return fmt.Errorf("%s, an index this build replaced: %w", v, err)
+		}
+	}
+
+	return nil
+}
+
+// Replaced are the indexes an earlier build made and this one does not. The
+// migration makes what the schema declares and drops nothing, so an index whose
+// columns changed would stay beside the one that replaced it -- written on every
+// insert and read by nothing.
+//
+// lesomnus/rove#122: every list index begins with the tenant now, and an index
+// that declared an edge before a field is in that order rather than with the
+// edge last.
+var Replaced = []string{
+	"connection_date_created_id",
+	"connection_name_tenant_id",
+	"credential_kind_name_holder_id",
+	"email_address_holder_id",
+	"email_date_created_id",
+	"group_date_created_id",
+	"groupexposure_client_group_id",
+	"host_date_created_id",
+	"hostproof_date_created_id",
+	"hostproof_name_tenant_id",
+	"identity_date_created_id",
+	"maildomain_date_created_id",
+	"maildomain_name_tenant_id",
+	"nomination_borrower_id_tenant_id",
+	"nomination_date_created_id",
+	"role_date_created_id",
+	"site_date_created_id",
+	"team_date_created_id",
 }
 
 // frontDoor is `account:` with what only this process knows filled in.

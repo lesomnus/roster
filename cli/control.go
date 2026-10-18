@@ -13,7 +13,6 @@ import (
 	"github.com/lesomnus/payday/pdcmd"
 
 	"github.com/lesomnus/roster/cmd"
-	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	"github.com/lesomnus/roster/server/keys"
 )
 
@@ -108,7 +107,7 @@ func newCmdControlKeyAdd(c *cmd.Config) *xli.Command {
 
 			// The control database may be new: this is often the first thing
 			// that writes to it.
-			if err := entmigrate.NewSchema(s.Control.Drv).Create(ctx); err != nil {
+			if err := migrate(ctx, s.Control); err != nil {
 				return err
 			}
 

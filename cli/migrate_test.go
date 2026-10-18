@@ -85,3 +85,50 @@ func TestAColumnComesToATableThatHasRows(t *testing.T) {
 	x.NoError(entmigrate.NewSchema(s.Drv).Create(ctx, schema.WithDiffHook(record)))
 	x.Empty(planned, "a database already migrated was planned to change again")
 }
+
+// TestAnIndexThisBuildReplacedIsDropped: an index an earlier build made and
+// this one replaced goes when the database is migrated, and what replaced it
+// is there (lesomnus/rove#122). Nothing listed as replaced is an index this
+// build makes, or every migration would drop what it had just made.
+func TestAnIndexThisBuildReplacedIsDropped(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	declared := map[string]bool{}
+	for _, tb := range entmigrate.Tables {
+		for _, i := range tb.Indexes {
+			declared[i.Name] = true
+		}
+	}
+	for _, v := range Replaced {
+		x.False(declared[v], "%s is replaced, and this build declares it", v)
+	}
+
+	s := deployment(t)
+	has := func(name string) bool {
+		q := "SELECT count(*) FROM sqlite_master WHERE type = 'index' AND name = ?"
+		if s.Dialect == "postgres" {
+			q = "SELECT count(*) FROM pg_indexes WHERE schemaname = current_schema() AND indexname = $1"
+		}
+		n := 0
+		x.NoError(s.Db.QueryRowContext(ctx, q, name).Scan(&n))
+		return n > 0
+	}
+
+	// Two the build before this one made: a list's, which began with the
+	// time, and one declared (holder, kind, name) that had the edge last.
+	for _, q := range []string{
+		`CREATE INDEX team_date_created_id ON team (date_created, id)`,
+		`CREATE INDEX credential_kind_name_holder_id ON credential (kind, name, holder_id)`,
+	} {
+		_, err := s.Db.ExecContext(ctx, q)
+		x.NoError(err, q)
+	}
+	x.True(has("team_date_created_id"))
+
+	x.NoError(Migrate(ctx, s))
+	x.False(has("team_date_created_id"))
+	x.False(has("credential_kind_name_holder_id"))
+	x.True(has("team_tenant_id_date_created_id"))
+	x.True(has("credential_holder_id_kind_name"))
+}
