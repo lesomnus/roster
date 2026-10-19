@@ -175,6 +175,7 @@ func Register(b []byte) (Registered, error) {
 		v.Challenge,
 		v.RelyingParty,
 		v.Origins,
+		nil, // no opaque origins (a native app's `android:apk-key-hash:…`): every origin this accepts is a web one
 		nil,
 		// The strictest of the three, and it decides nothing here: a
 		// cross-origin ceremony is refused a line below, so there is no top
@@ -186,6 +187,11 @@ func Register(b []byte) (Registered, error) {
 		true,  // user presence: somebody has to have touched it
 		nil,   // no metadata service; which authenticators are trusted is a policy
 		Algorithms,
+		// The zero values, which are the strictest each offers: an attestation
+		// statement held to everything its format can be held to, and an
+		// ECDSA signature only in the DER encoding the specification requires.
+		protocol.AttestationPolicy{},
+		protocol.SignaturePolicy{},
 	); err != nil {
 		return Registered{}, fmt.Errorf("attestation: %w", err)
 	}
@@ -252,12 +258,14 @@ func (v WebAuthn) Compare(row, b []byte, since int64) (bool, int64, error) {
 		p.RelyingParty,
 		"", // no appId: the U2F compatibility path is not offered
 		p.Origins,
+		nil, // no opaque origins, as at registration
 		nil,
 		protocol.TopOriginExplicitVerificationMode,
 		false,
 		false,
 		true,
 		s.Key,
+		protocol.SignaturePolicy{}, // DER only, as at registration
 	); err != nil {
 		return false, 0, nil
 	}
