@@ -28,7 +28,11 @@ services:
       timeout: 5s
       retries: 30
     volumes:
-      - postgres:/var/lib/postgresql/data
+      # The whole of /var/lib/postgresql: 18 keeps its cluster in a directory
+      # named for the version below it, and refuses a mount at the old .../data.
+      # It refuses a volume 17 made as well; `docker compose down -v` starts
+      # one again, empty.
+      - postgres:/var/lib/postgresql
 
   # The control plane's database, beside the data plane's. Two databases
   # because a key must not live in the tables it protects: with them separate

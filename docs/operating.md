@@ -1395,7 +1395,7 @@ PDTEST_POSTGRES=postgres://roster:...@localhost:5432/roster?sslmode=disable \
 ```
 
 Worth running before anything that touches spending a handle: a continuation, a
-link, a delegation. `postgres:17` as it comes is enough.
+link, a delegation. `postgres:18` as it comes is enough.
 
 ## Talking to it over TLS
 
