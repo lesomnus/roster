@@ -110,7 +110,7 @@ jobs:
       # having looked at two thirds of it.
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
       - run: npm ci --prefix ts
 
       # One step rather than seven, which is the point of the script: what CI
@@ -200,7 +200,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
 
       - run: npm ci
         working-directory: ts
@@ -223,7 +223,7 @@ jobs:
           cache: true
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
 
       - run: npm ci
         working-directory: ts

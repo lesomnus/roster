@@ -17,7 +17,7 @@
 # The two pages, on the **builder's** architecture, because a page has none.
 # Under `platforms` a naive stage would run node twice, the second time under
 # emulation, to produce the same bytes.
-FROM --platform=$BUILDPLATFORM node:22 AS page
+FROM --platform=$BUILDPLATFORM node:24 AS page
 
 WORKDIR /src/ts
 
