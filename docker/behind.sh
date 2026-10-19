@@ -28,7 +28,7 @@ set -eu
 # are Services and the issuer is https behind something that ends TLS.
 : "${ISSUER:=http://hydra.test:4444}"
 : "${LOGIN:=http://login:8091}"
-: "${PROXY:=http://behind:4180}"
+: "${PROXY:=http://behind.test:4180}"
 # Which OAuth client the proxy is, for the one URL this walk builds by hand: the
 # proxy has no way to put an `id_token_hint` on a sign-out, so the `client_id` is
 # all the issuer gets to work out whose logout this is.

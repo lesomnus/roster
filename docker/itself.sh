@@ -32,7 +32,7 @@ set -eu
 # handed. A walk that only knew one of those would only ever check one of them.
 : "${ISSUER:=http://hydra.test:4444}"
 : "${LOGIN:=http://login:8091}"
-: "${BASE:=http://product:5555}"
+: "${BASE:=http://product.test:5555}"
 : "${SEED_USER:=erin}"
 : "${SEED_PASSWORD:=correct horse battery staple}"
 
