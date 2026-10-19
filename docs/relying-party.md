@@ -350,9 +350,9 @@ The same proxy answers a browser with no session two different ways, and the
 walk pins both:
 
 ```sh
-got=$(curl ... -w '%{http_code}' "http://behind:4180/oauth2/userinfo")
+got=$(curl ... -w '%{http_code}' "http://behind.test:4180/oauth2/userinfo")
 [ "${got}" = "401" ] || die "a fetch with no session answered ${got}, not 401"
-l=$(curl ... -D - "http://behind:4180/" | loc)
+l=$(curl ... -D - "http://behind.test:4180/" | loc)
 case "${l}" in
 */oauth2/*) ;;
 *) die "a page with no session was not sent to sign in: ${l}" ;;

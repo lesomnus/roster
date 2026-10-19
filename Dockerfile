@@ -149,7 +149,7 @@ CMD ["serve"]
 # Not a production image, and the difference is the point: it runs as root, the
 # base is not pinned by digest, and its answer about secrets is an environment
 # variable. See `docker/entrypoint.sh`.
-FROM alpine:3.22 AS dev
+FROM alpine:3.24 AS dev
 
 # `curl` and `oathtool` beside the certificates because this stage is the one
 # the scripts in `docker/` run in, and `scripts/hydra.sh` walks a whole OAuth
