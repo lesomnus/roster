@@ -61,9 +61,9 @@ printf '%s' "${SEED_PASSWORD}" | roster vouch set --password-stdin "@${t}/${u}" 
 #
 #	${PUBLIC_HOST}   the user console, the account app, a browser
 #	127.0.0.1        the demo product, as the host publishes it
-#	behind           `oauth2-proxy`, inside the compose network
-#	product          the relying party that is the app itself
-for h in "${PUBLIC_HOST}" 127.0.0.1 behind product; do
+#	behind.test      `oauth2-proxy`, inside the compose network
+#	product.test     the relying party that is the app itself
+for h in "${PUBLIC_HOST}" 127.0.0.1 behind.test product.test; do
 	printf '{"tenant":{"alias":"%s"},"name":"%s"}' "${t}" "${h}" | roster host add - >/dev/null
 done
 
