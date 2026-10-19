@@ -37,4 +37,4 @@ images:
   - name: oryd/hydra
     newTag: v26.2.0
   - name: curlimages/curl
-    newTag: "8.11.1"
+    newTag: "8.23.0"
