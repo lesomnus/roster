@@ -17,7 +17,7 @@ name: roster
 
 services:
   postgres:
-    image: postgres:17
+    image: postgres:18
     environment:
       POSTGRES_USER: roster
       POSTGRES_PASSWORD: roster
@@ -38,7 +38,7 @@ services:
   # weakening of that: nothing in roster opens a connection that could join
   # across them.
   planes:
-    image: postgres:17
+    image: postgres:18
     depends_on:
       postgres:
         condition: service_healthy
