@@ -26,22 +26,22 @@ tool (
 
 require (
 	ariga.io/atlas v1.3.0
-	github.com/coreos/go-oidc/v3 v3.20.0
-	github.com/fxamacker/cbor/v2 v2.9.2
+	github.com/coreos/go-oidc/v3 v3.21.0
+	github.com/fxamacker/cbor/v2 v2.9.6
 	github.com/go-asn1-ber/asn1-ber v1.5.8
-	github.com/go-jose/go-jose/v4 v4.1.4
-	github.com/go-ldap/ldap/v3 v3.4.14
+	github.com/go-jose/go-jose/v4 v4.1.6
+	github.com/go-ldap/ldap/v3 v3.4.15
 	github.com/go-webauthn/webauthn v0.17.4
 	github.com/goccy/go-yaml v1.19.2
 	github.com/lesomnus/flob v0.0.0-20261010120939-21f89e60609e
 	github.com/lesomnus/grpc-dgram v0.0.0-20260912133542-a7366077bf6f
-	github.com/lesomnus/otx v0.0.0-20261013182912-d2af55df512e
-	github.com/lesomnus/otx/otxgrpc v0.0.0-20261013182912-d2af55df512e
+	github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155
+	github.com/lesomnus/otx/otxgrpc v0.0.0-20261017184159-4cba7a26b155
 	github.com/lesomnus/payday v0.0.0-20261019084941-56a32f4a9617
-	github.com/lesomnus/protobuf-patch v0.0.0-20260803175157-e1b7a0c2804f
-	github.com/lesomnus/xli v0.0.0-20261006060415-9f2e9ce97331
-	github.com/lesomnus/xli/cfg v0.1.2
-	github.com/lesomnus/z v0.0.0-20260531102454-3f1853bb4278
+	github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da
+	github.com/lesomnus/xli v0.0.0-20261009121920-4ce270c7448c
+	github.com/lesomnus/xli/cfg v0.1.3
+	github.com/lesomnus/z v0.0.0-20260907061127-c3858eb05878
 	github.com/protobuf-orm/ent v0.0.0-20261017215450-5460d907499b
 	github.com/protobuf-orm/protobuf-orm v0.0.0-20261017212716-3430237a8656
 	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260906232518-fa1777a2628d
@@ -51,8 +51,8 @@ require (
 	golang.org/x/image v0.45.0
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sync v0.23.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260928230214-8a89bd6388cc
-	google.golang.org/grpc v1.83.2
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20261012220534-4341edf3f941
+	google.golang.org/grpc v1.84.0
 	google.golang.org/protobuf v1.36.12
 )
 
