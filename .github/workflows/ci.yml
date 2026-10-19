@@ -328,7 +328,8 @@ jobs:
 
     permissions:
       contents: read
-      packages: write # to push to ghcr.io/lesomnus/roster
+      packages: write # to push to ghcr.io/lesomnus/roster, and the SBOM beside it
+      id-token: write # to sign the SBOM, keyless, as this workflow on this ref
 
     env:
       TAG: edge
@@ -387,3 +388,24 @@ jobs:
               | "| \(.value["image.name"] | split(",")[0]) | `\(.value["containerimage.digest"])` |"
             '
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # What the image is made of, attached to exactly the digest just pushed: a
+      # CycloneDX referrer, which a scanner reads without pulling the image, and
+      # the same document signed as a Sigstore attestation by this workflow on
+      # `main` (README, "What the image is made of").
+      #
+      # The scan of the image finds the Go modules both binaries carry and the
+      # base's Debian packages. What it cannot find is the pages: `page` bundles
+      # them, and their npm packages leave no trace in the image -- so those come
+      # from `ts/package-lock.json`, without the dev dependencies, which is why a
+      # package a page imports is a `dependency` there and not a dev one.
+      #
+      # After `Summarise`, so that a Sigstore outage failing this step still
+      # leaves the digest said, and on a push alone, which is when there is an
+      # image in the registry to attach anything to.
+      - name: SBOM
+        if: github.event_name == 'push'
+        uses: lesomnus/sbom-attach@v1
+        with:
+          metadata: ${{ steps.build.outputs.metadata }}
+          source: ts

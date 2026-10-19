@@ -116,6 +116,41 @@ every commit so the page cannot drift from the binary.
   same binary is a customer's own client (`client.addr` and their key) as well as
   a shell on the box.
 
+## What the image is made of
+
+Every image `main` pushes to
+[ghcr.io/lesomnus/roster](https://github.com/lesomnus/roster/pkgs/container/roster)
+carries its SBOM beside it: a CycloneDX document attached to the digest as an OCI
+referrer, and the same document signed as a keyless Sigstore attestation by
+`ci.yml` on `main` ([lesomnus/sbom-attach](https://github.com/lesomnus/sbom-attach)).
+It lists the Go modules both binaries carry, the base image's Debian packages, and
+the npm packages the pages are bundled from -- which the image cannot show, so they
+come from `ts/package-lock.json`, without the dev dependencies. An image pushed
+before this was added has none.
+
+Read it without pulling the image -- by digest, since a tag moves:
+
+```sh
+oras discover --artifact-type application/vnd.cyclonedx+json ghcr.io/lesomnus/roster@sha256:…
+oras pull ghcr.io/lesomnus/roster@sha256:…        # the referrer's digest: sbom.cdx.json
+trivy image --sbom-sources oci ghcr.io/lesomnus/roster@sha256:…
+```
+
+and check that this repository's workflow on `main` made it and nothing has changed
+it since:
+
+```sh
+cosign verify-attestation --type cyclonedx \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity https://github.com/lesomnus/roster/.github/workflows/ci.yml@refs/heads/main \
+  ghcr.io/lesomnus/roster@sha256:…
+```
+
+That proves where the document came from, not that it is complete: a dependency
+that leaves no trace in the image or in the lockfile is in neither scan. And the
+signing is public -- Sigstore's transparency log records the repository, the
+workflow, the commit and the digest of each one.
+
 ## Working on roster
 
 Most of this app is generated from `proto/`, so the usual shape of a change is:
