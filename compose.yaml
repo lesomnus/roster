@@ -483,7 +483,7 @@ services:
   # fetches are the ones that resolve here. A deployment discovers, and
   # `docs/operating.md` has that config.
   behind:
-    image: quay.io/oauth2-proxy/oauth2-proxy:v7.14.2
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.5
     depends_on:
       hydra-client:
         condition: service_completed_successfully
