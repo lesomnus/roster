@@ -59,6 +59,7 @@ func NewCmdTrail(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			newCmdTrailRead(l, c),
 			newCmdTrailPurge(l, c),
 			newCmdTrailVerify(l, c),
+			newCmdTrailRows(c),
 			newCmdTrailAccept(l, c),
 			newCmdTrailProfiles(),
 		},
@@ -442,6 +443,53 @@ func newCmdTrailVerify(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			}
 			if !v.Ok() {
 				return fmt.Errorf("%d finding(s): look at each, and `roster trail accept --why ...` once the archive is right", len(v.Findings))
+			}
+
+			return nil
+		}),
+	}
+}
+
+// newCmdTrailRows checks the live rows against the trail: each row of every
+// kind written through the servers, digested again and compared with the digest
+// the newest row of the trail about it keeps (`audit.digest.key`, payday#102).
+// A row somebody changed in the database past the servers is one that differs.
+//
+// `verify` is the archive against the database's account of it; this is the
+// database's rows against what the trail says the last write left of them. It
+// changes nothing, and fails when a row differs, so a schedule can run it.
+func newCmdTrailRows(c *cmd.Config) *xli.Command {
+	return &xli.Command{
+		Name:  "rows",
+		Brief: "check the live rows against the digests the trail keeps of them, and change nothing",
+
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			cs, err := c.Audit.Contents()
+			if err != nil {
+				return fmt.Errorf("audit: %w", err)
+			}
+			if cs.Digest == nil {
+				return errors.New("audit.digest.key names no key, so the trail keeps no digest to check a row against")
+			}
+
+			s, err := cmd.Build(ctx, *c)
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+
+			v, err := pd.Digests(ctx, s.Ent, cs.Digest)
+			if err != nil {
+				return err
+			}
+
+			fmt.Fprintf(os.Stderr, "%d row(s) read: %d match, %d differ, %d with no digest, %d not on the trail in the database, %d under a key not given\n",
+				v.Read, v.Matches, len(v.Differs), v.NoDigest, v.NotOnTrail, v.KeyNotHeld)
+			for _, id := range v.Differs {
+				fmt.Fprintf(os.Stdout, "%s %s\n", id.Domain(), id)
+			}
+			if !v.Ok() {
+				return fmt.Errorf("%d row(s) differ from what the trail recorded: changed past the servers; look at each", len(v.Differs))
 			}
 
 			return nil
