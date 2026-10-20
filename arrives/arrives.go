@@ -556,11 +556,27 @@ func (p *Providers) Claim(ctx context.Context, cfg *oauth2.Config, verifier *Ver
 // signed in by the row they had, which is what happened before the connection
 // moved, and an operator moves them. `who.Subject` is then that row's subject,
 // because it is what `Door.Accept` resolves them by next.
+//
+// # And it attests on every sign-in, not only the first
+//
+// Somebody already linked used to be answered before [Providers.attest] was
+// reached, so only the sign-in that made the identity ever wrote an address. A
+// directory that starts saying an address is verified after people have
+// arrived -- an Entra app registration given `xms_edov` one day -- was then
+// believed about nobody who had signed in before, and their addresses stayed
+// unproved for good. `Email.Attest` is idempotent for exactly this, so the
+// returning half calls it too.
 func (p *Providers) Known(ctx context.Context, enrol Enrol, who *Caller) (pdid.Id, error) {
 	v, err := p.identity(ctx, who, who.Subject)
 	switch status.Code(err) {
 	case codes.OK:
-		return pdid.From(v.GetHolder().GetId())
+		id, err := pdid.From(v.GetHolder().GetId())
+		if err != nil {
+			return pdid.Nil, err
+		}
+		p.attest(ctx, id, v, *who)
+
+		return id, nil
 	case codes.NotFound:
 	default:
 		return pdid.Nil, err
