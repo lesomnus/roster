@@ -233,7 +233,8 @@ type Identity_builder struct {
 	Holder *Holder
 	// Which provider said so -- "entra", "github", "ldap", "local". A string
 	// rather than an enum because adding one is a deployment's decision and a new
-	// enumerator is this schema's.
+	// enumerator is this schema's. Not personal: it names a provider, and the
+	// person is the subject below.
 	Provider string
 	// What that provider calls this person, and it must be the identifier the
 	// provider treats as **immutable**: a numeric ID for GitHub, `objectGUID` or
@@ -303,11 +304,11 @@ var File_app_identity_proto protoreflect.FileDescriptor
 
 const file_app_identity_proto_rawDesc = "" +
 	"\n" +
-	"\x12app/identity.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xed\x04\n" +
+	"\x12app/identity.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xf5\x04\n" +
 	"\bIdentity\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x1a\n" +
-	"\bprovider\x18\b \x01(\tR\bprovider\x12 \n" +
+	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\"\n" +
+	"\bprovider\x18\b \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\bprovider\x12 \n" +
 	"\asubject\x18\t \x01(\tB\x06\xaa\xc1\x16\x02\x18\x01R\asubject\x12%\n" +
 	"\ttenant_id\x18\n" +
 	" \x01(\fB\b\xea\x82\x16\x04\x10@@\x01R\btenantId\x12F\n" +

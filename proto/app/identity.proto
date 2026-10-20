@@ -51,8 +51,9 @@ message Identity {
 
   // Which provider said so -- "entra", "github", "ldap", "local". A string
   // rather than an enum because adding one is a deployment's decision and a new
-  // enumerator is this schema's.
-  string provider = 8;
+  // enumerator is this schema's. Not personal: it names a provider, and the
+  // person is the subject below.
+  string provider = 8 [(payday.field) = {personal: false}];
 
   // What that provider calls this person, and it must be the identifier the
   // provider treats as **immutable**: a numeric ID for GitHub, `objectGUID` or
