@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
 
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/pdcmd"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/trail"
@@ -73,6 +74,12 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 			// What a hold keeps, it keeps from this as well. See `forget.Hold`.
 			p = forget.Held(p, s.Ent)
 
+			// What a destruction leaves is on the trail as the act it is.
+			cs, err := c.Audit.Contents()
+			if err != nil {
+				return fmt.Errorf("audit: %w", err)
+			}
+
 			dry, _ := flg.Find[bool](cl, "dry-run")
 			reuse, _ := flg.Find[bool](cl, "reuse")
 
@@ -89,7 +96,7 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 						return nil
 					}
 
-					return destroyed(ctx, s, t, p, reuse)
+					return destroyed(ctx, s, t, p, cs, reuse)
 				}
 				if reuse {
 					return errors.New("--reuse frees a tenant's alias; a person's is free the moment they are forgotten")
@@ -126,6 +133,11 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry bool) error {
 	now := time.Now()
 
+	cs, err := c.Audit.Contents()
+	if err != nil {
+		return fmt.Errorf("audit: %w", err)
+	}
+
 	if after := c.Holder.ForgetAfter; after > 0 {
 		vs, err := forget.Due(ctx, s.Ent, now.Add(-after))
 		if err != nil {
@@ -149,7 +161,6 @@ func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry 
 	}
 
 	var ts []pdid.Id
-	var err error
 	if within := c.Tenant.RestoreWithin; within > 0 {
 		ts, err = forget.DueTenants(ctx, s.Ent, now.Add(-within))
 	} else {
@@ -164,7 +175,7 @@ func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry 
 
 			continue
 		}
-		if err := destroyed(ctx, s, t, p, false); err != nil {
+		if err := destroyed(ctx, s, t, p, cs, false); err != nil {
 			return err
 		}
 	}
@@ -191,8 +202,8 @@ func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry 
 // destroyed is one tenant destroyed, and said: what went, what a hold
 // elsewhere kept, and its alias -- freed now with `reuse`, which the trail
 // records, and otherwise held.
-func destroyed(ctx context.Context, s *cmd.Server, t pdid.Id, p trail.Policy, reuse bool) error {
-	res, err := forget.DestroyTenant(ctx, s.Ent, t, p)
+func destroyed(ctx context.Context, s *cmd.Server, t pdid.Id, p trail.Policy, cs audit.Contents, reuse bool) error {
+	res, err := forget.DestroyTenant(ctx, s.Ent, t, p, cs)
 	if err != nil {
 		return fmt.Errorf("%s: %w", t, err)
 	}
@@ -315,7 +326,11 @@ func NewCmdRestore(c *cmd.Config) *xli.Command {
 
 				return nil
 			}
-			if err := forget.Restore(ctx, s.Ent, who); err != nil {
+			cs, err := c.Audit.Contents()
+			if err != nil {
+				return fmt.Errorf("audit: %w", err)
+			}
+			if err := forget.Restore(ctx, s.Ent, who, cs); err != nil {
 				return err
 			}
 

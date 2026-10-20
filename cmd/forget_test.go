@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/trail"
 
@@ -208,7 +209,7 @@ func TestTheGraceCanBeUndoneUntilItIsNot(t *testing.T) {
 
 	who := b.holder(t, ctx, b.Contoso, "erin")
 
-	x.ErrorContains(forget.Restore(ctx, b.Ent, who), "has not been erased")
+	x.ErrorContains(forget.Restore(ctx, b.Ent, who, audit.Contents{}), "has not been erased")
 
 	_, err := b.Ungated.Holder().Erase(ctx, app.HolderRef_builder{Id: who.Bytes()}.Build())
 	x.NoError(err)
@@ -222,7 +223,7 @@ func TestTheGraceCanBeUndoneUntilItIsNot(t *testing.T) {
 	x.NoError(err)
 	x.NotContains(vs, who, "somebody inside their grace was due")
 
-	x.NoError(forget.Restore(ctx, b.Ent, who))
+	x.NoError(forget.Restore(ctx, b.Ent, who, audit.Contents{}))
 
 	v, err := b.Ent.Holder.Get(ctx, who.Uuid())
 	x.NoError(err)
@@ -235,7 +236,7 @@ func TestTheGraceCanBeUndoneUntilItIsNot(t *testing.T) {
 		_, err := forget.Forget(ctx, b.Ent, who, trail.Policy{})
 		x.NoError(err)
 
-		x.ErrorContains(forget.Restore(ctx, b.Ent, who), "has been forgotten")
+		x.ErrorContains(forget.Restore(ctx, b.Ent, who, audit.Contents{}), "has been forgotten")
 
 		// And they are not due again, which is what keeps a sweep from walking
 		// every leaver a deployment has ever had.

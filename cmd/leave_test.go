@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdtest"
 
@@ -225,7 +226,7 @@ func TestAPersonLeavesWhereTheirTenantOffersIt(t *testing.T) {
 	t.Run("and an operator can bring them back, and not how they were signed in", func(t *testing.T) {
 		x := require.New(t)
 
-		x.NoError(forget.Restore(ctx, b.Ent, b.Who))
+		x.NoError(forget.Restore(ctx, b.Ent, b.Who, audit.Contents{}))
 		erased, _ := erasedAt(t, ctx, b.Server, b.Who)
 		x.Nil(erased)
 

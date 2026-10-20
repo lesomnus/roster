@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdpb"
 	"github.com/lesomnus/payday/trail"
@@ -326,11 +327,11 @@ func TestADestroyedTenantLeavesNothingOfItsOwn(t *testing.T) {
 		x.Positive(v, "contoso had no %s to begin with, so this proves nothing", k)
 	}
 
-	_, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{})
+	_, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{})
 	x.ErrorContains(err, "is open", "an open tenant destroyed under the people signed in to it")
 
 	closes(t, ctx, b.Ungated, b.Contoso)
-	res, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{})
+	res, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{})
 	x.NoError(err)
 	x.Positive(res.People)
 	x.Positive(res.Rows)
@@ -350,7 +351,7 @@ func TestADestroyedTenantLeavesNothingOfItsOwn(t *testing.T) {
 	x.Equal(codes.FailedPrecondition, status.Code(restores(ctx, b.Ungated, b.Contoso)), "a destroyed tenant came back")
 
 	// Again is nothing new, which is what lets a sweep finish one that stopped.
-	again, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{})
+	again, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{})
 	x.NoError(err)
 	x.Zero(again.People)
 	x.Zero(again.Rows)
@@ -393,7 +394,7 @@ func TestAHoldStopsEveryDestruction(t *testing.T) {
 	x.Error(forget.Hold(ctx, b.Ungated, b.Contoso, "  "), "a hold nobody can read the reason for")
 	x.NoError(forget.Hold(ctx, b.Ungated, b.Contoso, "Contoso v. Fabrikam, 2026-123"))
 
-	_, err = forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{})
+	_, err = forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{})
 	x.ErrorIs(err, forget.ErrHeld)
 
 	vs, err := forget.DueTenants(ctx, b.Ent, time.Now().Add(-time.Hour))
@@ -441,7 +442,7 @@ func TestAnAliasIsHeldAfterItsTenantIsGone(t *testing.T) {
 	b, ctx := build(t)
 
 	closes(t, ctx, b.Ungated, b.Contoso)
-	_, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{})
+	_, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{})
 	x.NoError(err)
 
 	_, err = b.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "contoso"}.Build())
@@ -485,7 +486,7 @@ func TestTheTenantSweepDestroysAndReleases(t *testing.T) {
 	pass := func(within, hold time.Duration) {
 		t.Helper()
 		ctx, stop := context.WithCancel(ctx)
-		f := forget.SweepTenants(b.Ent, b.Ungated, within, hold, trail.Policy{}, time.Hour)
+		f := forget.SweepTenants(b.Ent, b.Ungated, within, hold, trail.Policy{}, audit.Contents{}, time.Hour)
 		done := make(chan struct{})
 		go func() { defer close(done); _ = f(ctx) }()
 		// One pass runs at once; wait for its effect, then stop the loop.

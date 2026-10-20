@@ -54,6 +54,7 @@ import (
 
 	"github.com/lesomnus/otx/log"
 
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/spin"
 	"github.com/lesomnus/payday/trail"
@@ -196,7 +197,11 @@ func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy) (R
 // [Forget] takes. Not a column, because a column would be a second answer that
 // a row written before it existed gets wrong -- and there is nothing this could
 // read that is more honest than *there is no name here any more*.
-func Restore(ctx context.Context, db *ent.Client, who pdid.Id) error {
+//
+// Written past the servers, as [Forget] is, and put on the trail as the act it
+// is in the same transaction (payday#108): the row is live again, and a check
+// of the rows finds it as the restore left it.
+func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents) error {
 	v, err := db.Holder.Get(ctx, who.Uuid())
 	if err != nil {
 		return err
@@ -208,10 +213,23 @@ func Restore(ctx context.Context, db *ent.Client, who pdid.Id) error {
 		return fmt.Errorf("%s has been forgotten; what is left is an identifier, and it names nobody", who)
 	}
 
-	return db.Holder.UpdateOneId(who.Uuid()).
+	tx, err := db.Tx(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if err := tx.Holder.UpdateOneId(who.Uuid()).
 		ClearDateErased().
 		SetDateUpdated(time.Now()).
-		Exec(ctx)
+		Exec(ctx); err != nil {
+		return err
+	}
+	if _, err := pd.Record(ctx, tx.Client(), cs, RestoredHolder, []pdid.Id{who}); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // Due is everybody whose grace has run out.

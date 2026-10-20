@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/otx/log"
 	"github.com/lesomnus/z"
 
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/spin"
 	"github.com/lesomnus/payday/trail"
@@ -34,6 +35,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/pd"
 )
 
 // A tenant leaving, which is a person leaving one level up (#98).
@@ -102,7 +104,7 @@ func (r TenantResult) String() string {
 // is idempotent and none is undone by an interruption, so running this again
 // finishes it -- which is what the sweep does with a tenant it finds stamped
 // and not finished.
-func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Policy) (TenantResult, error) {
+func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Policy, cs audit.Contents) (TenantResult, error) {
 	var out TenantResult
 
 	v, err := db.Tenant.Get(ctx, t.Uuid())
@@ -156,8 +158,17 @@ func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Polic
 	}
 
 	// The row stays and stops saying anything about whose it was -- except
-	// its alias, which is held; see `Tenant.date_destroyed`.
-	if err := db.Tenant.UpdateOneId(t.Uuid()).
+	// its alias, which is held; see `Tenant.date_destroyed`. Written past the
+	// servers, so put on the trail as the act it is, in the same transaction
+	// (payday#108): a check of the rows finds the row a destruction left as it
+	// is, and the trail says that the deployment destroyed it, and when.
+	tx, err := db.Tx(ctx)
+	if err != nil {
+		return out, err
+	}
+	defer tx.Rollback()
+
+	if err := tx.Tenant.UpdateOneId(t.Uuid()).
 		SetName("").
 		SetDesc("").
 		SetLabels(map[string]string{}).
@@ -166,9 +177,18 @@ func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Polic
 		Exec(ctx); err != nil {
 		return out, err
 	}
+	if _, err := pd.Record(ctx, tx.Client(), cs, DestroyedTenant, []pdid.Id{t}); err != nil {
+		return out, err
+	}
 
-	return out, nil
+	return out, tx.Commit()
 }
+
+// The acts this package writes past the servers, as the trail names them.
+const (
+	DestroyedTenant = "roster.tenant.destroy"
+	RestoredHolder  = "roster.holder.restore"
+)
 
 // tenanted is a tenant's rows besides its people, children first: each `remove`
 // takes what hangs off the next one's rows before that one goes, since the
@@ -343,7 +363,7 @@ func DueAliases(ctx context.Context, db *ent.Client, before time.Time) ([]pdid.I
 //
 // `at` is the server the wall was never installed on, for what is recorded;
 // see [FreeAlias].
-func SweepTenants(db *ent.Client, at app.Server, within, hold time.Duration, p trail.Policy, every time.Duration) spin.Func {
+func SweepTenants(db *ent.Client, at app.Server, within, hold time.Duration, p trail.Policy, cs audit.Contents, every time.Duration) spin.Func {
 	if every <= 0 {
 		every = Swept
 	}
@@ -364,7 +384,7 @@ func SweepTenants(db *ent.Client, at app.Server, within, hold time.Duration, p t
 			log.From(ctx).WarnContext(ctx, "forget: which tenants are due", "err", err)
 		}
 		for _, t := range due {
-			res, err := DestroyTenant(ctx, db, t, p)
+			res, err := DestroyTenant(ctx, db, t, p, cs)
 			if err != nil {
 				log.From(ctx).WarnContext(ctx, "forget: a tenant", "tenant", t.String(), "err", err)
 

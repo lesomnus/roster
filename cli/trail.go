@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lesomnus/roster/cmd"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -22,6 +24,7 @@ import (
 	"github.com/lesomnus/payday/trail"
 
 	"github.com/lesomnus/flob"
+	"github.com/lesomnus/otx/log"
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/forget"
@@ -452,18 +455,36 @@ func newCmdTrailVerify(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 
 // newCmdTrailRows checks the live rows against the trail: each row of every
 // kind written through the servers, digested again and compared with the digest
-// the newest row of the trail about it keeps (`audit.digest.key`, payday#102).
-// A row somebody changed in the database past the servers is one that differs.
+// the newest row of the trail about it keeps (`audit.digest.key`, payday#102) --
+// in the database, or in the archive once it has left (payday#108). A row
+// somebody changed in the database past the servers is one that differs, and a
+// row somebody added there is one nothing on the trail is about.
 //
 // `verify` is the archive against the database's account of it; this is the
 // database's rows against what the trail says the last write left of them. It
-// changes nothing, and fails when a row differs, so a schedule can run it.
+// changes nothing, and fails when it found either, so a schedule can run it.
+//
+// `--accept` is an operator who has looked at each and decided the rows are
+// right -- a migration rewrote them, they were written before the trail could
+// say anything about them -- and it puts what this found on the trail as that
+// act (`pd.Record`), one row each, with the why logged.
 func newCmdTrailRows(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "rows",
 		Brief: "check the live rows against the digests the trail keeps of them, and change nothing",
 
+		Flags: flg.Flags{
+			&flg.Switch{Name: "accept", Brief: "put what the check found on the trail as accepted, once somebody has looked"},
+			&flg.String{Name: "why", Brief: "what was looked at and decided, with --accept; it is logged"},
+		},
+
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			accept, _ := flg.Find[bool](cl, "accept")
+			why, _ := flg.Find[string](cl, "why")
+			if accept && strings.TrimSpace(why) == "" {
+				return errors.New("--why: what was looked at and decided")
+			}
+
 			cs, err := c.Audit.Contents()
 			if err != nil {
 				return fmt.Errorf("audit: %w", err)
@@ -472,30 +493,52 @@ func newCmdTrailRows(c *cmd.Config) *xli.Command {
 				return errors.New("audit.digest.key names no key, so the trail keeps no digest to check a row against")
 			}
 
+			p, err := c.Audit.Policy()
+			if err != nil {
+				return fmt.Errorf("audit: %w", err)
+			}
+
 			s, err := cmd.Build(ctx, *c)
 			if err != nil {
 				return err
 			}
 			defer s.Close()
 
-			v, err := pd.Digests(ctx, s.Ent, cs.Digest)
+			v, err := pd.Digests(ctx, s.Ent, cs.Digest, p)
 			if err != nil {
 				return err
 			}
 
-			fmt.Fprintf(os.Stderr, "%d row(s) read: %d match, %d differ, %d with no digest, %d not on the trail in the database, %d under a key not given\n",
-				v.Read, v.Matches, len(v.Differs), v.NoDigest, v.NotOnTrail, v.KeyNotHeld)
+			fmt.Fprintf(os.Stderr, "%d row(s) read: %d match, %d differ, %d not on the trail, %d with no digest, %d under a key not given; %d checked against the archive\n",
+				v.Read, v.Matches, len(v.Differs), len(v.NotOnTrail), v.NoDigest, v.KeyNotHeld, v.Archived)
 			for _, id := range v.Differs {
-				fmt.Fprintf(os.Stdout, "%s %s\n", id.Domain(), id)
+				fmt.Fprintf(os.Stdout, "differs %s %s\n", id.Domain(), id)
 			}
-			if !v.Ok() {
-				return fmt.Errorf("%d row(s) differ from what the trail recorded: changed past the servers; look at each", len(v.Differs))
+			for _, id := range v.NotOnTrail {
+				fmt.Fprintf(os.Stdout, "not-on-trail %s %s\n", id.Domain(), id)
 			}
+			if v.Ok() {
+				return nil
+			}
+
+			if !accept {
+				return fmt.Errorf("%d row(s) differ from what the trail recorded and %d are not on it: look at each, and `roster trail rows --accept --why ...` once they are right", len(v.Differs), len(v.NotOnTrail))
+			}
+
+			n, err := pd.Record(ctx, s.Ent, cs, acceptedRows, slices.Concat(v.Differs, v.NotOnTrail))
+			if err != nil {
+				return fmt.Errorf("accept: %w", err)
+			}
+			log.From(ctx).InfoContext(ctx, "trail: rows accepted as they are", slog.String("why", why), slog.Int("rows", n))
+			fmt.Fprintf(os.Stderr, "accepted %d row(s); the trail says they are what they are now\n", n)
 
 			return nil
 		}),
 	}
 }
+
+// acceptedRows is the act `roster trail rows --accept` is on the trail as.
+const acceptedRows = "roster.trail.rows.accept"
 
 // newCmdTrailAccept is an operator who has looked at what `verify` found and
 // decided the archive is right -- a pass a crash stopped, a chunk restored from
