@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/identity.proto.
  */
 export const file_app_identity: GenFile = /*@__PURE__*/
-  fileDesc("ChJhcHAvaWRlbnRpdHkucHJvdG8SBnJvc3RlciKeBAoISWRlbnRpdHkSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIQCghwcm92aWRlchgIIAEoCRIXCgdzdWJqZWN0GAkgASgJQgaqwRYCGAESGwoJdGVuYW50X2lkGAogASgMQgjqghYEEEBAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA61gHK/BVsEgIQARovEgRwYWdlGg0KCXRlbmFudF9pZBAKGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaNRIHc3ViamVjdBoNCgl0ZW5hbnRfaWQQChoMCghwcm92aWRlchAIGgsKB3N1YmplY3QQCTABirsWYggIMkAKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBmhvbGRlchoLCgl0ZW5hbnRfaWQgFChkOgAiGgoNaG9sZGVyLnRlbmFudBoJdGVuYW50X2lkQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChJhcHAvaWRlbnRpdHkucHJvdG8SBnJvc3RlciKmBAoISWRlbnRpdHkSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIYCghwcm92aWRlchgIIAEoCUIGqsEWAhgAEhcKB3N1YmplY3QYCSABKAlCBqrBFgIYARIbCgl0ZW5hbnRfaWQYCiABKAxCCOqCFgQQQEABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADrWAcr8FWwSAhABGi8SBHBhZ2UaDQoJdGVuYW50X2lkEAoaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARo1EgdzdWJqZWN0Gg0KCXRlbmFudF9pZBAKGgwKCHByb3ZpZGVyEAgaCwoHc3ViamVjdBAJMAGKuxZiCAgyQAoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGaG9sZGVyGgsKCXRlbmFudF9pZCAUKGQ6ACIaCg1ob2xkZXIudGVuYW50Ggl0ZW5hbnRfaWRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Identity is one way a person signs in: a subject at a provider, pointing at
@@ -63,7 +63,8 @@ export type Identity = Message<"roster.Identity"> & {
   /**
    * Which provider said so -- "entra", "github", "ldap", "local". A string
    * rather than an enum because adding one is a deployment's decision and a new
-   * enumerator is this schema's.
+   * enumerator is this schema's. Not personal: it names a provider, and the
+   * person is the subject below.
    *
    * @generated from field: string provider = 8;
    */

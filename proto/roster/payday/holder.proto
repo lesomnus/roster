@@ -283,9 +283,13 @@ message Holder {
   //
   // Written by those verbs and nothing else: a request's `Add` is refused it
   // -- `stamped`, so the generated gate says so (payday#29) -- and `Patch` is
-  // closed at the transport.
+  // closed at the transport. Not personal: it names a directory, not a
+  // person, and which one suspended somebody is the record.
   string directory = 8 [
-    (payday.field) = {stamped: true},
+    (payday.field) = {
+      stamped: true
+      personal: false
+    },
     (orm.field) = {default: ""}
   ];
   // A picture of this person, kept here: one square image at the sizes a
