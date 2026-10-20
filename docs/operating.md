@@ -1073,6 +1073,7 @@ roster trail prune --older-than 2160h --dry-run   # a window of your own: how ma
 roster trail read --in /var/lib/roster/audit      # read an archive back
 roster trail purge --older-than 61320h --dry-run  # which chunks would go
 roster trail verify --full                        # the archive against the database's account of it
+roster trail rows                                 # the live rows against what the trail says they were left as
 roster trail accept --why "restored from backup"  # once somebody has looked
 ```
 
@@ -1109,6 +1110,21 @@ own, and while the rows do not add up to the latest one nothing is checkpointed:
 every act still does what it does and then fails at the checkpoint after it, and
 says so, until `accept` (payday#66). `verify` is clean as soon as `accept` is
 done.
+
+**The live rows can be checked too** (payday#102). With `audit.digest.key`, every
+row of the trail keeps a keyed digest of the row its write left. The key is a
+file of `openssl rand -base64 32` mounted as a secret, or `base64:` and the key
+in `ROSTER_AUDIT_DIGEST_KEY`, and keys rotated out go in
+`audit.digest.previous`.
+
+`trail rows` digests every live row again and compares it with the newest row
+of the trail in the database about it. It fails when one differs: a row
+somebody changed in the database past the servers. It cannot say anything about
+three kinds of row, and counts each:
+
+- a row written before the key;
+- a row whose newest line of the trail was pruned into the archive;
+- a field declared personal, which the digest leaves out.
 
 **A database restored from a backup** older than the latest checkpoint has
 numbered fewer checkpoints than the store keeps: `verify` finds it `behind`
