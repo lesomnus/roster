@@ -1074,6 +1074,7 @@ roster trail read --in /var/lib/roster/audit      # read an archive back
 roster trail purge --older-than 61320h --dry-run  # which chunks would go
 roster trail verify --full                        # the archive against the database's account of it
 roster trail rows                                 # the live rows against what the trail says they were left as
+roster trail rows --accept --why "the 10-20 migration set them"  # once somebody has looked at each
 roster trail accept --why "restored from backup"  # once somebody has looked
 ```
 
@@ -1118,13 +1119,20 @@ in `ROSTER_AUDIT_DIGEST_KEY`, and keys rotated out go in
 `audit.digest.previous`.
 
 `trail rows` digests every live row again and compares it with the newest row
-of the trail in the database about it. It fails when one differs: a row
-somebody changed in the database past the servers. It cannot say anything about
-three kinds of row, and counts each:
+of the trail about it: in the database, or in the archive once `prune` has
+moved it there, read through the archive's account as `read` reads it. It fails
+on two findings, and prints each row:
 
-- a row written before the key;
-- a row whose newest line of the trail was pruned into the archive;
-- a field declared personal, which the digest leaves out.
+- **differs**: a row somebody changed in the database past the servers;
+- **not-on-trail**: a row nothing on the trail is about -- one somebody added in
+  the database past the servers.
+
+It cannot say anything about a row written before the key, which it counts, or a
+field declared personal, which the digest leaves out. What roster itself writes
+past its servers -- a tenant destroyed, a person brought back -- is on the trail
+as that act, so it is no finding. A row a migration rewrote is, until somebody
+has looked: `--accept --why` puts what the check found on the trail as accepted,
+one row each, and logs why.
 
 **A database restored from a backup** older than the latest checkpoint has
 numbered fewer checkpoints than the store keeps: `verify` finds it `behind`

@@ -766,7 +766,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 				"after", c.Tenant.RestoreWithin, "alias held", c.Tenant.Hold())
 		}
 
-		s.Spin = append(s.Spin, loop(prefix, "tenants", forget.SweepTenants(s.Ent, s.Ungated, c.Tenant.RestoreWithin, c.Tenant.Hold(), p, c.Tenant.Every)))
+		s.Spin = append(s.Spin, loop(prefix, "tenants", forget.SweepTenants(s.Ent, s.Ungated, c.Tenant.RestoreWithin, c.Tenant.Hold(), p, content, c.Tenant.Every)))
 	}
 
 	if c.Watch.Outbox {
