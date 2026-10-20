@@ -542,6 +542,47 @@ func TestTheAddressADirectoryHandedOverIsKept(t *testing.T) {
 		_, claims := d.hydra.told()
 		x.NotContains(claims, "email")
 	})
+
+	// The half that is about **time**: the directory starts saying so after the
+	// person has already been linked -- an app registration given `xms_edov`
+	// one day -- and the next sign-in is what writes it. It did not: `Known`
+	// answered somebody it had a row for before reaching `attest`, so only the
+	// sign-in that made the identity ever wrote an address, and everybody who
+	// had signed in before the registration changed stayed unproved for good.
+	t.Run("verified later, so the next sign-in stamps it", func(t *testing.T) {
+		x := require.New(t)
+		p := idptest.New(t, "login-app")
+		d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Enrolling() })
+		d.connect(t, p, "entra")
+
+		p.Subject = "frank-at-entra"
+		p.Claims = map[string]any{"email": "frank@contoso.example", "name": "Frank"}
+		d.hydra.raise("c1", "contoso-web")
+		res := d.through(t, d.browser(t), "c1", "entra")
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+		id, _ := d.hydra.told()
+		who := pdid.MustParse(id)
+		x.Nil(address(t, d, who).GetDateVerified())
+
+		// Microsoft's word for it, which is the case this was found on.
+		p.Claims = map[string]any{"email": "frank@contoso.example", "name": "Frank", "xms_edov": true}
+		d.hydra.raise("c2", "contoso-web")
+		b := d.browser(t)
+		res = d.through(t, b, "c2", "entra")
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+		again, _ := d.hydra.told()
+		x.Equal(id, again, "the second sign-in was somebody else")
+
+		v := address(t, d, who)
+		x.NotNil(v.GetDateVerified(), "a directory that started saying so was not believed")
+		x.Equal("entra", v.GetVouchedBy().GetProvider())
+
+		res, err := b.Get(d.app.URL + "/consent?consent_challenge=c2")
+		x.NoError(err)
+		defer res.Body.Close()
+		_, claims := d.hydra.told()
+		x.Equal("frank@contoso.example", claims["email"])
+	})
 }
 
 // TestAProfileIsFilledFromTheProviderWhereItHasNothing is a tenant's `fill`
