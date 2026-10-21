@@ -28,8 +28,21 @@ on:
     branches: [main]
   pull_request:
 
+# To read the checkout, and nothing else, unless a job says otherwise -- and
+# one does, `push`. Said here rather than left to the repository's default,
+# which is a setting nobody reviews.
+permissions:
+  contents: read
+
 # Every job names its image rather than `ubuntu-latest`, so that the runner
 # moves when this file says so and not on GitHub's schedule.
+#
+# And every action is named by the commit its version had when it was written
+# here, with that version after it: a tag is moved by whoever can push to the
+# action's repository, so a tag is code this file has never seen -- and two of
+# these are handed the token that pushes the image. Renovate moves the commit
+# and the comment together (`helpers:pinGitHubActionDigests`, in payday's
+# preset).
 jobs:
   # The binaries of every platform, and the pages, compiled once: `dist` in
   # `docker-bake.hcl`, cross-compiled from this runner's architecture.
@@ -46,12 +59,12 @@ jobs:
     outputs:
       timestamp: ${{ steps.when.outputs.timestamp }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: when
         run: echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
-      - uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - uses: docker/bake-action@v7
+      - uses: docker/bake-action@59cb1203cd42bcefd40a1b6d73b589e48c86040e # v7.5.0
         env:
           BUILD_ID: r${{ github.run_id }}
           BUILD_TIMESTAMP: ${{ steps.when.outputs.timestamp }}
@@ -64,7 +77,7 @@ jobs:
             dist.cache-from=type=gha,scope=dist
             dist.cache-to=type=gha,scope=dist,mode=max
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist
           path: dist.tar
@@ -75,14 +88,14 @@ jobs:
     steps:
       # The whole history, because `buf breaking` below compares against the
       # branch tip and a shallow checkout has no ref to compare against.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
           cache: true
-      - uses: bufbuild/buf-action@v1
+      - uses: bufbuild/buf-action@8c6a16e16f12ba20b6470afa9c2ba9b5ba8c97c3 # v1.5.0
         with:
           setup_only: true
 
@@ -108,7 +121,7 @@ jobs:
       # of what is generated and by building the console, and both need the
       # plugin. A run without it is a run that says the generated code is fine
       # having looked at two thirds of it.
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
       - run: npm ci --prefix ts
@@ -151,8 +164,8 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
           cache: true
@@ -178,10 +191,10 @@ jobs:
     steps:
       # The whole history and its tags: the release this upgrades from is the
       # nearest `v*` tag before the commit, found rather than written down.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
           cache: true
@@ -197,8 +210,8 @@ jobs:
   ts:
     runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
 
@@ -216,12 +229,12 @@ jobs:
   e2e:
     runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
           cache: true
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
 
@@ -249,8 +262,8 @@ jobs:
     needs: build
     runs-on: ubuntu-26.04
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: dist
       - run: mkdir dist && tar -xf dist.tar -C dist
@@ -291,8 +304,8 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: dist
       - run: mkdir dist && tar -xf dist.tar -C dist
@@ -319,10 +332,55 @@ jobs:
   # change that breaks the build still fails in `build` rather than on the day
   # somebody deploys.
   #
+  # Two jobs, `image` and `push`, because permissions are given to a job and
+  # not to a step: whatever runs in the job can reach its token, and with
+  # `id-token: write` ask for one that says it is this workflow -- whether or
+  # not the step that needed them runs. A pull request is code nobody has
+  # merged, and a Renovate branch is one, so its build is `image`, which may do
+  # what every other job may. `push` is the same build on `main`, and the only
+  # job here that can write to the registry or sign as this workflow.
+  #
   # Built out of `build`'s binaries and not out of the source: every platform's
   # image is those files copied onto distroless, so this compiles nothing, and
   # the binary pushed is the one `cluster` and `hydra` ran.
   image:
+    if: github.event_name != 'push'
+    needs: [build, go, postgres, upgrade, ts, e2e, hydra, cluster]
+    runs-on: ubuntu-26.04
+
+    env:
+      TAG: edge
+      BUILD_HASH: ${{ github.sha }}
+      BUILD_ID: r${{ github.run_id }}
+      BUILD_TIMESTAMP: ${{ needs.build.outputs.timestamp }}
+      DIST: ./dist
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+      - run: mkdir dist && tar -xf dist.tar -C dist
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # No QEMU. Nothing here runs: the `app` stage is copies onto distroless,
+      # and the compiling was `build`'s, cross from the runner's architecture --
+      # see `Dockerfile`. Setting it up anyway would be time spent on nothing.
+
+      - uses: docker/bake-action@59cb1203cd42bcefd40a1b6d73b589e48c86040e # v7.5.0
+        with:
+          # The checkout, not the action's default of the commit fetched again:
+          # `./dist` is in neither the repository nor its history. And no cache,
+          # because there is nothing here worth keeping -- the layers are files
+          # this run just downloaded.
+          source: .
+          files: docker-bake.hcl
+          targets: app
+
+  # `image`, on a push to `main`, and pushed. The steps up to the build are
+  # `image`'s, and so is what it says of them.
+  push:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [build, go, postgres, upgrade, ts, e2e, hydra, cluster]
     runs-on: ubuntu-26.04
 
@@ -339,19 +397,14 @@ jobs:
       DIST: ./dist
 
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v8
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: dist
       - run: mkdir dist && tar -xf dist.tar -C dist
-      - uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      # No QEMU. Nothing here runs: the `app` stage is copies onto distroless,
-      # and the compiling was `build`'s, cross from the runner's architecture --
-      # see `Dockerfile`. Setting it up anyway would be time spent on nothing.
-
-      - uses: docker/login-action@v4
-        if: github.event_name == 'push'
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -359,22 +412,17 @@ jobs:
 
       - name: Build
         id: build
-        uses: docker/bake-action@v7
+        uses: docker/bake-action@59cb1203cd42bcefd40a1b6d73b589e48c86040e # v7.5.0
         with:
-          # The checkout, not the action's default of the commit fetched again:
-          # `./dist` is in neither the repository nor its history. And no cache,
-          # because there is nothing here worth keeping -- the layers are files
-          # this run just downloaded.
           source: .
           files: docker-bake.hcl
           targets: app
-          push: ${{ github.event_name == 'push' }}
+          push: true
 
       # What was pushed, said once, rather than left for somebody to ask the
       # registry what a moving tag points at now. `:edge` moves; the digest is
       # what a deployment that means to stay put is told.
       - name: Summarise
-        if: github.event_name == 'push'
         env:
           METADATA: ${{ steps.build.outputs.metadata }}
         run: |
@@ -401,11 +449,9 @@ jobs:
       # package a page imports is a `dependency` there and not a dev one.
       #
       # After `Summarise`, so that a Sigstore outage failing this step still
-      # leaves the digest said, and on a push alone, which is when there is an
-      # image in the registry to attach anything to.
+      # leaves the digest said.
       - name: SBOM
-        if: github.event_name == 'push'
-        uses: lesomnus/sbom-attach@v1
+        uses: lesomnus/sbom-attach@08dc096ad211b6ea69f0c98fc315f091db58947e # v1.0.0
         with:
           metadata: ${{ steps.build.outputs.metadata }}
           source: ts
