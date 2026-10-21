@@ -24,7 +24,6 @@ package me
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"strings"
 	"time"
@@ -32,11 +31,9 @@ import (
 	"uuid"
 
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
@@ -47,7 +44,6 @@ import (
 	"github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/connection"
 	"github.com/lesomnus/roster/internal/ent/credential"
-	"github.com/lesomnus/roster/internal/ent/delegation"
 	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/groupexposure"
@@ -531,14 +527,24 @@ func (s *Server) SignOutEverywhere(ctx context.Context, _ *app.MeSignOutEverywhe
 	}.Build(), nil
 }
 
-// LeaveWithin is how fresh the credential a [Server.Leave] arrives on has to
-// be: minted this recently, it is somebody at a keyboard who just proved who
-// they are.
+// LeaveWithin is how recently the person a [Server.Leave] is about has to have
+// proved who they are, by the sign-in the credential it arrived on carries:
+// that recently, it is somebody at a keyboard.
 //
 // Shorter than a delegation lives ([keys.DelegateFor]), so that a page open
 // since the morning signs in again before it deletes anything; longer than the
 // walk from a sign-in form to a confirmation, so that doing it at once never
 // has to.
+//
+// # A sign-in, and not a credential minted since
+//
+// It was when the credential was **minted**, and minting is what a credential
+// does: a key whose role names `ApiKey.Issue` issued a fresh one, a session a
+// quarter of an hour old did the same, and an administrator minted one for
+// somebody narrower and called this as them -- each new, and none of them
+// anybody proving anything, the last recorded as the person erasing
+// themselves. What is read is `date_authenticated`, which a sign-in stamps and
+// whatever is minted from it inherits ([keys.Authenticated]).
 const LeaveWithin = 5 * time.Minute
 
 // Leave deletes the caller's own account. See `me.proto` for the rules and
@@ -584,18 +590,19 @@ func (s *Server) Leave(ctx context.Context, req *app.MeLeaveRequest) (*app.MeLea
 			"your organisation's directory keeps your account, through %s, and says when you leave; whoever runs it can", by)
 	}
 
-	since, err := s.signedIn(ctx, f.Actor)
+	since, err := keys.Authenticated(ctx, s.walled, f.Actor)
 	if err != nil {
 		return nil, err
 	}
 	switch ago := time.Since(since); {
 	case since.IsZero():
 		return nil, status.Error(codes.FailedPrecondition,
-			"deleting an account takes a sign-in made for it -- the account page's, or a key a terminal was "+
-				"handed a moment ago -- and this call came with neither")
+			"deleting an account takes a sign-in of yours that says when you proved who you are -- the account page's, "+
+				"or a key a terminal was handed from it -- and this call came with neither: a key somebody else "+
+				"minted for you, or a directory that did not say when it last asked you")
 	case ago > LeaveWithin:
 		return nil, status.Errorf(codes.FailedPrecondition,
-			"you signed in %s ago; sign in again to delete your account, within %s of doing so",
+			"you proved who you are %s ago; sign in again to delete your account, within %s of doing so",
 			ago.Truncate(time.Minute), LeaveWithin)
 	}
 
@@ -679,78 +686,10 @@ func (s *Server) directoryOf(ctx context.Context, who *ent.Holder) (string, erro
 	return v.Provider, nil
 }
 
-// signedIn is when the credential this call arrived with was minted, if it is
-// one only a sign-in mints for this person: the delegation a front door
-// presents beside its own key, or a key of their own. Zero for anything else
-// -- a deployment's key, a session at a console -- because none of those says
-// somebody is at a keyboard now.
-//
-// It reads the headers the call came with, because that is the only place the
-// credential is: what resolved it answers with a frame, and a frame says who
-// and not since when. The rows are found the way `server/keys` finds them, by
-// their verifier, and must be the caller's own.
-func (s *Server) signedIn(ctx context.Context, who pdid.Id) (time.Time, error) {
-	md, _ := metadata.FromIncomingContext(ctx)
-
-	if as := lastOf(md.Get(keys.HeaderActing)); as != "" {
-		v, err := s.db.Delegation.Query().
-			Where(
-				delegation.Secret(keys.Sum(as)),
-				delegation.DateErasedIsNil(),
-				delegation.HasHolderWith(holder.IdEQ(who.Uuid())),
-			).
-			Only(ctx)
-		if ent.IsNotFound(err) {
-			return time.Time{}, nil
-		}
-		if err != nil {
-			return time.Time{}, err
-		}
-
-		return v.DateCreated, nil
-	}
-
-	for _, h := range md.Get(auth.Header) {
-		token, ok := strings.CutPrefix(h, auth.BearerScheme+" ")
-		if !ok || !strings.HasPrefix(token, keys.PrefixTenant) {
-			continue
-		}
-
-		v, err := s.db.ApiKey.Query().
-			Where(
-				apikey.Secret(keys.Sum(token)),
-				apikey.DateErasedIsNil(),
-				apikey.HasHolderWith(holder.IdEQ(who.Uuid())),
-			).
-			Only(ctx)
-		if ent.IsNotFound(err) {
-			return time.Time{}, nil
-		}
-		if err != nil {
-			return time.Time{}, fmt.Errorf("the key this call came with: %w", err)
-		}
-
-		return v.DateCreated, nil
-	}
-
-	return time.Time{}, nil
-}
-
 // declaredBy is the label a provisioner writes on a row it owns -- `cmd.Declared`
 // by name, and `server/core/declared.go` the rule. Spelled out for core's
 // reason: `server` may not import `cmd`.
 const declaredBy = "roster.declared"
-
-func lastOf(vs []string) string {
-	out := ""
-	for _, v := range vs {
-		if v != "" {
-			out = v
-		}
-	}
-
-	return out
-}
 
 // meet is what a person holds, narrowed to what the credential in hand allows:
 // the patterns the grants answer, met with the actions the credential names.

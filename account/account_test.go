@@ -1203,3 +1203,73 @@ func TestSomebodyDeletesTheirOwnAccountAtTheAccountPage(t *testing.T) {
 		x.NotEqual(http.StatusNoContent, code, "somebody who left signed in again")
 	})
 }
+
+// TestDeletingAnAccountAsksTheDirectoryAgain: what `MeService.Leave` reads of a
+// sign-in through a directory is when the directory says it authenticated them
+// (`auth_time`), and not when the round trip happened -- a directory that
+// remembers somebody signs them in without asking anything. So the page asks
+// it to authenticate them again before deleting (`again=1`: `max_age=0`), and
+// what it answers is what is believed.
+func TestDeletingAnAccountAsksTheDirectoryAgain(t *testing.T) {
+	d := serve(t, account.Invited())
+	_, err := d.ungated.Tenant().Patch(t.Context(), rstr.TenantPatchRequest_builder{
+		Ref:              rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build(),
+		Config:           rstr.TenantConfig_builder{Leave: true}.Build(),
+		DateUpdatedForce: proto.Bool(true),
+	}.Build())
+	require.NoError(t, err)
+	d.idp.Subject = "3001"
+
+	// signedIn is erin, through the directory, which says it authenticated
+	// her at `at` -- or says nothing, for a zero one.
+	signedIn := func(t *testing.T, path string, at time.Time) *browser {
+		t.Helper()
+		d.idp.Claims = map[string]any{}
+		if !at.IsZero() {
+			d.idp.Claims["auth_time"] = at.Unix()
+		}
+		b := d.browser(t, "contoso.test")
+		code, body := b.do(t, http.MethodGet, path, "", nil)
+		require.Equal(t, http.StatusOK, code, body)
+
+		return b
+	}
+	leaves := func(t *testing.T, b *browser) (int, string) {
+		t.Helper()
+
+		return b.rpc(t, "/roster.MeService/Leave", `{"confirm":"erin"}`)
+	}
+
+	t.Run("the page asks the directory to ask again", func(t *testing.T) {
+		x := require.New(t)
+
+		signedIn(t, "/login?connection=example", time.Now())
+		x.False(d.idp.Asked().Has("max_age"), "an ordinary sign-in asked the directory to ask again")
+
+		signedIn(t, "/login?connection=example&again=1", time.Now())
+		x.Equal("0", d.idp.Asked().Get("max_age"))
+	})
+
+	t.Run("a directory that remembered them is not a moment ago", func(t *testing.T) {
+		x := require.New(t)
+
+		code, body := leaves(t, signedIn(t, "/login?connection=example&again=1", time.Now().Add(-time.Hour)))
+		x.Equal(http.StatusBadRequest, code, "a sign-in the directory last asked for an hour ago deleted an account: %s", body)
+		x.Contains(body, "failed_precondition")
+	})
+
+	t.Run("and one that says nothing is no time at all", func(t *testing.T) {
+		x := require.New(t)
+
+		code, body := leaves(t, signedIn(t, "/login?connection=example&again=1", time.Time{}))
+		x.Equal(http.StatusBadRequest, code, body)
+	})
+
+	t.Run("one that asked them again is", func(t *testing.T) {
+		x := require.New(t)
+
+		code, body := leaves(t, signedIn(t, "/login?connection=example&again=1", time.Now()))
+		x.Equal(http.StatusOK, code, body)
+		x.Contains(body, "dateErased")
+	})
+}

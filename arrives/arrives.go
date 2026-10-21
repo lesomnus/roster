@@ -45,6 +45,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -95,6 +96,14 @@ type Caller struct {
 	// userinfo does, and [Providers.Fill] reads that only when a picture is
 	// wanted. GitHub's is the account's `avatar_url`.
 	Picture string
+
+	// Authenticated is when the provider says it authenticated them: the
+	// token's `auth_time`, and zero when it said nothing -- GitHub issues no
+	// token to say it in. Not when this sign-in happened: a provider that
+	// remembered them answers without asking, and its `auth_time` is the
+	// last time it did ask. [Providers.Begin] with `again` is how an app asks
+	// for a moment ago.
+	Authenticated time.Time
 
 	// token is what the exchange handed over, kept for [Providers.Fill] to ask
 	// the provider with and for nothing else. Unexported, so it is never in
@@ -505,7 +514,15 @@ func callbackOf(origin, alias, connection string) string {
 // the browser reaches this app -- `https://login.example.com` -- and `state`
 // is the app's own, which the answer carries back and the app binds to the
 // browser.
-func (p *Providers) Begin(ctx context.Context, tenant pdid.Id, alias, connection, origin, state string) (*Trip, error) {
+//
+// `again` asks the provider to authenticate them again rather than remember
+// them ([askAgain]) -- for a sign-in that has to be a moment ago, as deleting
+// an account does. A provider that honours it answers
+// with an `auth_time` of now ([Caller.Authenticated]); one that does not
+// answers with the older one, or none, and that is what is believed: nothing
+// here takes having asked for a fresh sign-in as having had one. GitHub has
+// no such parameter and says no time, so a GitHub sign-in is never one.
+func (p *Providers) Begin(ctx context.Context, tenant pdid.Id, alias, connection, origin, state string, again bool) (*Trip, error) {
 	t := &Trip{tenant: tenant, alias: alias, connection: connection, redirect: callbackOf(origin, alias, connection)}
 
 	cfg, v, err := p.relying(ctx, t)
@@ -520,10 +537,31 @@ func (p *Providers) Begin(ctx context.Context, tenant pdid.Id, alias, connection
 			return nil, err
 		}
 		opts = append(opts, oidc.Nonce(t.nonce))
+		if again {
+			opts = append(opts, askAgain(v)...)
+		}
 	}
 	t.URL = cfg.AuthCodeURL(state, opts...)
 
 	return t, nil
+}
+
+// askAgain is what asks a provider to authenticate somebody again rather than
+// remember them.
+//
+// `max_age=0` is OpenID Connect's own way to ask, and the one with a rule
+// behind it: a provider asked for it has to actively authenticate them, and
+// has to say when in `auth_time`. `prompt=login` says the same in a word not
+// every provider takes -- one that does not know it may answer with an error
+// rather than ignore it -- so it goes only to Microsoft's sign-in, which
+// documents it.
+func askAgain(v *verifier) []oauth2.AuthCodeOption {
+	opts := []oauth2.AuthCodeOption{oauth2.SetAuthURLParam("max_age", "0")}
+	if v.microsoft {
+		opts = append(opts, oauth2.SetAuthURLParam("prompt", "login"))
+	}
+
+	return opts
 }
 
 // verifier is a connection's check of what came back, and which claim of a
@@ -709,6 +747,11 @@ func (p *Providers) exchange(ctx context.Context, cfg *oauth2.Config, v *verifie
 		Name     string `json:"name"`
 		Picture  string `json:"picture"`
 
+		// When the provider last asked them, in seconds since the epoch.
+		// Read loosely ([authTime]): a claim nothing here depends on to sign
+		// somebody in must not be the reason a sign-in fails.
+		AuthTime any `json:"auth_time"`
+
 		// Microsoft's word for `email_verified`, which it does not send.
 		DomainVerified any `json:"xms_edov"`
 	}
@@ -728,6 +771,7 @@ func (p *Providers) exchange(ctx context.Context, cfg *oauth2.Config, v *verifie
 		Picture:  claims.Picture,
 		token:    tok,
 	}
+	who.Authenticated = authTime(claims.AuthTime)
 	if named := v.subject; named != "" && named != "sub" {
 		var all map[string]any
 		if err := id.Claims(&all); err != nil {
@@ -744,6 +788,28 @@ func (p *Providers) exchange(ctx context.Context, cfg *oauth2.Config, v *verifie
 	}
 
 	return who, nil
+}
+
+// authTime is an `auth_time` claim as a time: seconds since the epoch, which
+// OpenID Connect says is a number and some providers write as a string. The
+// zero time for anything else, which is a provider that said nothing.
+func authTime(v any) time.Time {
+	var secs float64
+	switch v := v.(type) {
+	case float64:
+		secs = v
+	case string:
+		n, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return time.Time{}
+		}
+		secs = n
+	}
+	if secs <= 0 {
+		return time.Time{}
+	}
+
+	return time.Unix(int64(secs), 0)
 }
 
 // Known makes sure the claim names somebody here, enrolling them if the

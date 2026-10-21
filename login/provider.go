@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/roster/arrives"
+	"github.com/lesomnus/roster/frontdoor"
 )
 
 // The other way in: an account at a provider, ending where the password ends.
@@ -72,7 +73,7 @@ func (a *App) provider(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-	trip, err := a.arrives.Begin(ctx, o.id, o.alias, name, a.origin(r), state)
+	trip, err := a.arrives.Begin(ctx, o.id, o.alias, name, a.origin(r), state, false)
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
 			http.Error(w, "connection: no such provider here", http.StatusNotFound)
@@ -166,7 +167,9 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	// The session, for the same reason the password half has one: the consent
 	// hop reads this person's record **as them** to fill the token's claims,
 	// and there is no other credential here that may.
-	if err := a.door.Accept(as, w, o.id.String(), who.Provider, who.Subject); err != nil {
+	if err := a.door.Accept(as, w, frontdoor.Claim{
+		Tenant: o.id.String(), Provider: who.Provider, Subject: who.Subject, Authenticated: who.Authenticated,
+	}); err != nil {
 		a.broken(w, r, err)
 
 		return

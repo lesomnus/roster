@@ -57,6 +57,7 @@ var (
 		{Name: "secret", Type: field.TypeBytes},
 		{Name: "date_used", Type: field.TypeTime, Nullable: true},
 		{Name: "date_expires", Type: field.TypeTime, Nullable: true},
+		{Name: "date_authenticated", Type: field.TypeTime, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -70,7 +71,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "apikey_holder_holder",
-				Columns:    []*schema.Column{ApikeyColumns[10]},
+				Columns:    []*schema.Column{ApikeyColumns[11]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -79,12 +80,12 @@ var (
 			{
 				Name:    "apikey_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{ApikeyColumns[9], ApikeyColumns[0]},
+				Columns: []*schema.Column{ApikeyColumns[10], ApikeyColumns[0]},
 			},
 			{
 				Name:    "apikey_alias_holder_id",
 				Unique:  true,
-				Columns: []*schema.Column{ApikeyColumns[1], ApikeyColumns[10]},
+				Columns: []*schema.Column{ApikeyColumns[1], ApikeyColumns[11]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -384,6 +385,7 @@ var (
 		{Name: "secret", Type: field.TypeBytes},
 		{Name: "issuer", Type: field.TypeBytes},
 		{Name: "date_expires", Type: field.TypeTime, Nullable: true},
+		{Name: "date_authenticated", Type: field.TypeTime, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -397,7 +399,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "delegation_holder_holder",
-				Columns:    []*schema.Column{DelegationColumns[8]},
+				Columns:    []*schema.Column{DelegationColumns[9]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -406,7 +408,7 @@ var (
 			{
 				Name:    "delegation_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{DelegationColumns[7], DelegationColumns[0]},
+				Columns: []*schema.Column{DelegationColumns[8], DelegationColumns[0]},
 			},
 			{
 				Name:    "delegation_secret",

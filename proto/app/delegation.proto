@@ -147,6 +147,32 @@ message Delegation {
     immutable: true
   }];
 
+  // When the person it is for proved who they are, by the sign-in that minted
+  // it: a password and whatever second factor was asked, a recovery link
+  // spent, a provider's word about when it authenticated them (its
+  // `auth_time`). Unset is a sign-in that cannot say -- a provider that does
+  // not -- and a delegation minted from another credential carries that one's.
+  //
+  // # Not when it was minted
+  //
+  // `MeService.Leave` asked for a credential *minted* in the last few minutes,
+  // and minting is what a credential can do: a key whose role names
+  // `ApiKey.Issue` issues a fresh one, a session a quarter of an hour old does
+  // the same, and an administrator mints one for somebody narrower and calls
+  // `Leave` as them. Each is new and none is anybody proving anything. This is
+  // the moment that is about the person, and it travels with what is minted
+  // from it rather than starting again.
+  //
+  // **Stamped**: a request cannot say it, and the sign-in that proved somebody
+  // is the one thing that writes it.
+  google.protobuf.Timestamp date_authenticated = 12 [
+    (orm.field) = {
+      nullable: true
+      immutable: true
+    },
+    (payday.field) = {stamped: true}
+  ];
+
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
 
   // Revoking is an erase, and it is what "sign out everywhere" reaches for

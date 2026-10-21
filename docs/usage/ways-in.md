@@ -363,19 +363,33 @@ provisions through is the directory's to remove ([scim.md](../scim.md)), and
 page offers them no such section.
 
 It is waived like the two above, and asks for one more thing they do not: that
-the credential the call came with is a **sign-in a few minutes old**
-(`server/me.LeaveWithin`, five). The account page's is -- a delegation minted
-when somebody signed in there -- and a page open since the morning signs in again
-first and comes back to the section. From a terminal it is a key handed over in a
-browser a moment ago:
+the person **proved who they are a few minutes ago** (`server/me.LeaveWithin`,
+five), by the sign-in the credential the call came with carries -- its
+`date_authenticated`, and never when the credential itself was minted. The
+account page's is the sign-in made there, and a page open since the morning signs
+in again first and comes back to the section; through a directory, it asks the
+directory to authenticate them again (`max_age=0`, and `prompt=login` at
+Microsoft's), and what counts is when the directory says it did (`auth_time`). From a terminal it is a
+key handed over in a browser, which carries **the browser's** sign-in:
 
 ```sh
-roster sign-in --allow /roster.MeService/Leave   # approve it in the browser
-roster me leave --confirm alice                  # within five minutes
+roster sign-in --allow /roster.MeService/Leave   # approve it at a page you signed in to a moment ago
+roster me leave --confirm alice                  # within five minutes of that sign-in
 ```
 
-A key that has been in a config file for a month is not a sign-in, and neither is
-a session at the admin console or the user console: both are refused with *sign in again*.
+That road is narrower than `Leave` itself, and it is worth knowing why before
+offering it. `roster sign-in` mints a key, and minting one is `ApiKeyService/Issue`,
+which is not waived: a person whose role does not name it has no terminal road,
+and deletes their account from the account page. And the key is only as recent as
+the browser's sign-in, so approving it from a page signed in an hour ago is a key
+an hour old in the only sense that counts.
+
+A key issued from another key carries that one's sign-in however new it is, so a
+key that has been in a config file for a month mints nothing fresher. A key an
+administrator minted for somebody carries no sign-in of theirs at all, and neither
+does a session at the admin console or the user console, nor a directory that does
+not say when it last authenticated them -- GitHub, which has no such claim: all are
+refused with *sign in again*.
 
 Everything else a person does about their own row is the **operator's verb with
 their own reference**: `IdentityService/Add` to attach a provider account,

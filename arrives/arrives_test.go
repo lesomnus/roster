@@ -1,10 +1,13 @@
 package arrives
 
 import (
+	"net/url"
 	"testing"
+	"time"
 
 	"github.com/lesomnus/payday/slug"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 // What a directory hands out, and what roster may call a row.
@@ -62,4 +65,43 @@ func TestALongAddressIsCutToAnAlias(t *testing.T) {
 	got := aliasOf(long + "@contoso.example")
 	x.NoError(slug.Validate(got))
 	x.LessOrEqual(len(got), slug.AliasMaxLen)
+}
+
+// When a provider says it last authenticated somebody, read as a number --
+// what OpenID Connect says it is -- or as the string some providers write, and
+// nothing for anything else: a claim a sign-in does not depend on is never the
+// reason one fails.
+func TestAnAuthTimeIsReadLoosely(t *testing.T) {
+	x := require.New(t)
+
+	x.Equal(time.Unix(1700000000, 0), authTime(float64(1700000000)))
+	x.Equal(time.Unix(1700000000, 0), authTime("1700000000"))
+	for _, v := range []any{nil, "", "yesterday", float64(0), float64(-1), map[string]any{}, true} {
+		x.True(authTime(v).IsZero(), "%#v", v)
+	}
+}
+
+// What asks a provider to authenticate somebody again: OpenID Connect's
+// `max_age=0` everywhere, and `prompt=login` only where Microsoft's sign-in
+// documents it -- a provider that does not know a prompt may refuse the whole
+// request over it.
+func TestAskingAgainIsMaxAgeAndAtMicrosoftAPrompt(t *testing.T) {
+	x := require.New(t)
+	cfg := &oauth2.Config{Endpoint: oauth2.Endpoint{AuthURL: "https://idp.example.test/authorize"}}
+
+	asked := func(v *verifier) url.Values {
+		t.Helper()
+		u, err := url.Parse(cfg.AuthCodeURL("state", askAgain(v)...))
+		x.NoError(err)
+
+		return u.Query()
+	}
+
+	q := asked(&verifier{})
+	x.Equal("0", q.Get("max_age"))
+	x.False(q.Has("prompt"), "a prompt went to a provider that may not know it")
+
+	q = asked(&verifier{microsoft: true})
+	x.Equal("0", q.Get("max_age"))
+	x.Equal("login", q.Get("prompt"))
 }

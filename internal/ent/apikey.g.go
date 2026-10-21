@@ -29,6 +29,9 @@ func (e *ApiKey) Proto() *rstr.ApiKey {
 	if e.DateExpires != nil {
 		x.SetDateExpires(timestamppb.New(*e.DateExpires))
 	}
+	if e.DateAuthenticated != nil {
+		x.SetDateAuthenticated(timestamppb.New(*e.DateAuthenticated))
+	}
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

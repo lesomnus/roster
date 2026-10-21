@@ -63,20 +63,21 @@ const (
 // about: a privilege held by being a particular row cannot be revoked and
 // cannot be narrowed. A key row exists to be revoked.
 type ApiKey struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Holder      *Holder                `protobuf:"bytes,2,opt,name=holder"`
-	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
-	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
-	xxx_hidden_Methods     []string               `protobuf:"bytes,8,rep,name=methods"`
-	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
-	xxx_hidden_DateUsed    *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=date_used,json=dateUsed"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
-	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                        protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id                []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Holder            *Holder                `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_Alias             string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Desc              string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Methods           []string               `protobuf:"bytes,8,rep,name=methods"`
+	xxx_hidden_Secret            []byte                 `protobuf:"bytes,9,opt,name=secret"`
+	xxx_hidden_DateUsed          *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=date_used,json=dateUsed"`
+	xxx_hidden_DateExpires       *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateAuthenticated *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_authenticated,json=dateAuthenticated"`
+	xxx_hidden_DateUpdated       *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased        *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated       *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *ApiKey) Reset() {
@@ -160,6 +161,13 @@ func (x *ApiKey) GetDateExpires() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *ApiKey) GetDateAuthenticated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateAuthenticated
+	}
+	return nil
+}
+
 func (x *ApiKey) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -219,6 +227,10 @@ func (x *ApiKey) SetDateExpires(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateExpires = v
 }
 
+func (x *ApiKey) SetDateAuthenticated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateAuthenticated = v
+}
+
 func (x *ApiKey) SetDateUpdated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateUpdated = v
 }
@@ -252,6 +264,13 @@ func (x *ApiKey) HasDateExpires() bool {
 	return x.xxx_hidden_DateExpires != nil
 }
 
+func (x *ApiKey) HasDateAuthenticated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateAuthenticated != nil
+}
+
 func (x *ApiKey) HasDateUpdated() bool {
 	if x == nil {
 		return false
@@ -283,6 +302,10 @@ func (x *ApiKey) ClearDateUsed() {
 
 func (x *ApiKey) ClearDateExpires() {
 	x.xxx_hidden_DateExpires = nil
+}
+
+func (x *ApiKey) ClearDateAuthenticated() {
+	x.xxx_hidden_DateAuthenticated = nil
 }
 
 func (x *ApiKey) ClearDateUpdated() {
@@ -349,9 +372,20 @@ type ApiKey_builder struct {
 	// service running unattended needs and what makes rotation somebody's job
 	// rather than an outage.
 	DateExpires *timestamppb.Timestamp
-	DateUpdated *timestamppb.Timestamp
-	DateErased  *timestamppb.Timestamp
-	DateCreated *timestamppb.Timestamp
+	// When the person it acts as proved who they are, for a key they issued
+	// themselves: the authentication the credential they issued it with carried
+	// (`Delegation.date_authenticated`), inherited rather than started again. A
+	// terminal handed a key in the browser (`roster sign-in`) carries the
+	// browser's sign-in.
+	//
+	// Unset for a key somebody else minted for them -- an administrator, or
+	// `roster key add` -- because that is nobody proving anything about the
+	// person: what `MeService.Leave` refuses a key on. **Stamped**: a request
+	// cannot say it.
+	DateAuthenticated *timestamppb.Timestamp
+	DateUpdated       *timestamppb.Timestamp
+	DateErased        *timestamppb.Timestamp
+	DateCreated       *timestamppb.Timestamp
 }
 
 func (b0 ApiKey_builder) Build() *ApiKey {
@@ -366,6 +400,7 @@ func (b0 ApiKey_builder) Build() *ApiKey {
 	x.xxx_hidden_Secret = b.Secret
 	x.xxx_hidden_DateUsed = b.DateUsed
 	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateAuthenticated = b.DateAuthenticated
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -376,7 +411,7 @@ var File_app_apikey_proto protoreflect.FileDescriptor
 
 const file_app_apikey_proto_rawDesc = "" +
 	"\n" +
-	"\x10app/apikey.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xb9\x05\n" +
+	"\x10app/apikey.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x94\x06\n" +
 	"\x06ApiKey\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x14\n" +
@@ -386,7 +421,8 @@ const file_app_apikey_proto_rawDesc = "" +
 	"\x06secret\x18\t \x01(\fB\f\xea\x82\x16\x020\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12?\n" +
 	"\tdate_used\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\bdateUsed\x12E\n" +
-	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\vdateExpires\x12F\n" +
+	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\vdateExpires\x12Y\n" +
+	"\x12date_authenticated\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x0e\xea\x82\x16\x048\x01@\x01\xaa\xc1\x16\x02\x10\x01R\x11dateAuthenticated\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -416,14 +452,15 @@ var file_app_apikey_proto_depIdxs = []int32{
 	1, // 0: roster.ApiKey.holder:type_name -> roster.Holder
 	2, // 1: roster.ApiKey.date_used:type_name -> google.protobuf.Timestamp
 	2, // 2: roster.ApiKey.date_expires:type_name -> google.protobuf.Timestamp
-	2, // 3: roster.ApiKey.date_updated:type_name -> google.protobuf.Timestamp
-	2, // 4: roster.ApiKey.date_erased:type_name -> google.protobuf.Timestamp
-	2, // 5: roster.ApiKey.date_created:type_name -> google.protobuf.Timestamp
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	2, // 3: roster.ApiKey.date_authenticated:type_name -> google.protobuf.Timestamp
+	2, // 4: roster.ApiKey.date_updated:type_name -> google.protobuf.Timestamp
+	2, // 5: roster.ApiKey.date_erased:type_name -> google.protobuf.Timestamp
+	2, // 6: roster.ApiKey.date_created:type_name -> google.protobuf.Timestamp
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_app_apikey_proto_init() }

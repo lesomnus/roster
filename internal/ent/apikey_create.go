@@ -76,6 +76,20 @@ func (_c *ApiKeyCreate) SetNillableDateExpires(v *time.Time) *ApiKeyCreate {
 	return _c
 }
 
+// SetDateAuthenticated sets the "date_authenticated" field.
+func (_c *ApiKeyCreate) SetDateAuthenticated(v time.Time) *ApiKeyCreate {
+	_c.mutation.SetDateAuthenticated(v)
+	return _c
+}
+
+// SetNillableDateAuthenticated sets the "date_authenticated" field if the given value is not nil.
+func (_c *ApiKeyCreate) SetNillableDateAuthenticated(v *time.Time) *ApiKeyCreate {
+	if v != nil {
+		_c.SetDateAuthenticated(*v)
+	}
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *ApiKeyCreate) SetDateUpdated(v time.Time) *ApiKeyCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -253,6 +267,10 @@ func (_c *ApiKeyCreate) createSpec() (*ApiKey, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.DateExpires(); ok {
 		_spec.SetField(apikey.FieldDateExpires, field.TypeTime, value)
 		_node.DateExpires = &value
+	}
+	if value, ok := _c.mutation.DateAuthenticated(); ok {
+		_spec.SetField(apikey.FieldDateAuthenticated, field.TypeTime, value)
+		_node.DateAuthenticated = &value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(apikey.FieldDateUpdated, field.TypeTime, value)

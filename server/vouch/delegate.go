@@ -108,15 +108,18 @@ func (s *Server) Delegate(ctx context.Context, req *app.VouchDelegateRequest) (*
 		return nil, err
 	}
 
-	return s.mint(ctx, res, who, issuer, methods, req.GetExpires())
+	// Proved now: the last secret of the sign-in was checked a moment ago.
+	return s.mint(ctx, res, who, issuer, methods, req.GetExpires(), time.Now())
 }
 
 // mint is the credential a finished sign-in answers with.
 //
 // One function rather than two, because [Server.Redeem] finishes a sign-in the
 // same way and a second copy is a second set of rules about who it is for and
-// how long it lives.
-func (s *Server) mint(ctx context.Context, res *app.VouchVerifyResponse, who, issuer pdid.Id, methods []string, until *timestamppb.Timestamp) (*app.VouchDelegateResponse, error) {
+// how long it lives. `authenticated` is when the person proved who they are,
+// which the delegation carries (`Delegation.date_authenticated`); zero is a
+// sign-in that cannot say.
+func (s *Server) mint(ctx context.Context, res *app.VouchVerifyResponse, who, issuer pdid.Id, methods []string, until *timestamppb.Timestamp, authenticated time.Time) (*app.VouchDelegateResponse, error) {
 	expires := time.Now().Add(keys.DelegateFor)
 	if u := until; u != nil {
 		expires = u.AsTime()
@@ -127,10 +130,11 @@ func (s *Server) mint(ctx context.Context, res *app.VouchVerifyResponse, who, is
 	}
 
 	token, row, err := keys.Delegate(ctx, s.open, keys.Delegated{
-		Holder:  who,
-		Issuer:  issuer.Bytes(),
-		Methods: methods,
-		For:     time.Until(expires),
+		Holder:        who,
+		Issuer:        issuer.Bytes(),
+		Methods:       methods,
+		For:           time.Until(expires),
+		Authenticated: authenticated,
 	})
 	if err != nil {
 		return nil, err
@@ -297,7 +301,15 @@ func (s *Server) Accept(ctx context.Context, req *app.VouchAcceptRequest) (*app.
 		Tenant: tenant.Bytes(),
 	}.Build()
 
-	out, err := s.mint(ctx, res, holder, issuer, methods, req.GetExpires())
+	// When the provider says it authenticated them, which is the front door's
+	// to report and is all anybody here knows about that moment
+	// (`VouchClaim.authenticated`).
+	authenticated := time.Time{}
+	if v := req.GetClaim().GetAuthenticated(); v != nil {
+		authenticated = v.AsTime()
+	}
+
+	out, err := s.mint(ctx, res, holder, issuer, methods, req.GetExpires(), authenticated)
 	if err != nil {
 		return nil, err
 	}

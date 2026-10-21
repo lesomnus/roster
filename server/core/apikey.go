@@ -2,11 +2,14 @@ package core
 
 import (
 	"context"
+	"time"
 
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -140,6 +143,19 @@ func (s coreApiKey) Issue(ctx context.Context, req *app.ApiKeyIssueRequest) (*ap
 		add.DateExpires = v
 	}
 
+	// A key somebody issues themselves carries the sign-in they issued it
+	// with, inherited rather than started again; one issued for somebody else
+	// carries none, because that person proved nothing. Which is what keeps a
+	// key from laundering a sign-in into a fresh one: minting is not proving
+	// (`ApiKey.date_authenticated`).
+	at, err := s.authenticatedFor(ctx, ref)
+	if err != nil {
+		return nil, err
+	}
+	if !at.IsZero() {
+		add.DateAuthenticated = timestamppb.New(at)
+	}
+
 	// Through this layer's own `Add`, so the escalation rules run: `roster key
 	// add` goes around them through `Ungated`, where there is no frame at all,
 	// which is the deployment doing its own work rather than anybody asking.
@@ -156,6 +172,21 @@ func (s coreApiKey) Issue(ctx context.Context, req *app.ApiKeyIssueRequest) (*ap
 	v.SetSecret(nil)
 
 	return app.ApiKeyIssueResponse_builder{Token: token, Key: v}.Build(), nil
+}
+
+// authenticatedFor is the sign-in a key for `ref` inherits: the caller's own,
+// when the key is the caller's, and none otherwise.
+func (s coreApiKey) authenticatedFor(ctx context.Context, ref *app.HolderRef) (time.Time, error) {
+	f, ok := frame.From(ctx)
+	if !ok || f.Actor.IsZero() {
+		return time.Time{}, nil
+	}
+	whose, err := s.holderOf(ctx, ref)
+	if err != nil || whose != f.Actor {
+		return time.Time{}, err
+	}
+
+	return keys.Authenticated(ctx, s.Next(), f.Actor)
 }
 
 // whoseKey resolves whom a minted key is for, the same pair `Issue.IssueKey`

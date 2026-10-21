@@ -28,6 +28,8 @@ type Delegation struct {
 	Issuer []byte `json:"issuer,omitempty"`
 	// DateExpires holds the value of the "date_expires" field.
 	DateExpires *time.Time `json:"date_expires,omitempty"`
+	// DateAuthenticated holds the value of the "date_authenticated" field.
+	DateAuthenticated *time.Time `json:"date_authenticated,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -69,7 +71,7 @@ func (*Delegation) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case delegation.FieldMethods, delegation.FieldSecret, delegation.FieldIssuer:
 			values[i] = new([]byte)
-		case delegation.FieldDateExpires, delegation.FieldDateUpdated, delegation.FieldDateErased, delegation.FieldDateCreated:
+		case delegation.FieldDateExpires, delegation.FieldDateAuthenticated, delegation.FieldDateUpdated, delegation.FieldDateErased, delegation.FieldDateCreated:
 			values[i] = new(sql.NullTime)
 		case delegation.FieldId, delegation.FieldHolderId:
 			values[i] = new(uuid.UUID)
@@ -126,6 +128,13 @@ func (_m *Delegation) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateExpires = new(time.Time)
 				*_m.DateExpires = value.Time
+			}
+		case delegation.FieldDateAuthenticated:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field date_authenticated", values[i])
+			} else if value.Valid {
+				_m.DateAuthenticated = new(time.Time)
+				*_m.DateAuthenticated = value.Time
 			}
 		case delegation.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -204,6 +213,11 @@ func (_m *Delegation) String() string {
 	builder.WriteString(", ")
 	if v := _m.DateExpires; v != nil {
 		builder.WriteString("date_expires=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.DateAuthenticated; v != nil {
+		builder.WriteString("date_authenticated=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")

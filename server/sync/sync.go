@@ -76,7 +76,7 @@
 // the sentence the whole service is argued from -- and still carries the write
 // that mattered.
 //
-// # And the first time it hears about somebody who is gone
+// # And somebody it cannot read
 //
 // The read answers `NotFound`, which is also what it answers for somebody in a
 // tenant this caller cannot see -- and the first draft of this took every one
@@ -88,9 +88,11 @@
 // So the two are told apart by the wall's own rule, applied past the wall that
 // now hides the row ([Erased]): an erased row in a tenant this caller may see
 // is the fact this stream exists to carry, and is sent with its own stamps.
-// Anybody else is still nobody's business. And only `NotFound` means either:
-// a read that failed for any other reason is not news about the person, and
-// ends the stream, which a client already treats as having missed things.
+// Anybody else is still nobody's business -- including somebody this stream
+// had told about, who was taken for erased the moment a read of them came back
+// empty, whatever hid them. And only `NotFound` means either: a read that
+// failed for any other reason is not news about the person, and ends the
+// stream, which a client already treats as having missed things.
 //
 // # And a tenant, which is everybody in it
 //
@@ -304,8 +306,15 @@ func (s *server) Watch(_ *app.SyncWatchRequest, out grpc.ServerStreamingServer[a
 // either: the wall narrows this exactly as it narrows any read, so a person in
 // a tenant this caller cannot see simply is not their business -- and a person
 // whose row is gone is `NotFound` to the same read, which is a fact this stream
-// exists to carry. The two are told apart by whether this stream had sent
-// anything about them before.
+// exists to carry. The two are told apart by asking `gone`, which reads an
+// erased row through the same narrowing, and by nothing else.
+//
+// They were told apart by whether this stream had sent anything about them
+// before, and somebody it had told about and could no longer read was
+// announced as erased, stamped with the moment it noticed. A person something
+// hides from this caller without erasing them is not read either -- and an
+// app ended their sessions on the word of a stream that had only lost sight of
+// them.
 func (s *server) one(
 	ctx context.Context,
 	out grpc.ServerStreamingServer[app.SyncEvent],
@@ -322,31 +331,12 @@ func (s *server) one(
 		}.Build(),
 	}.Build())
 	if status.Code(err) == codes.NotFound {
-		prior, told := was[k]
-		if !told {
-			return s.first(ctx, out, was, k)
-		}
-		if !prior.erased.IsZero() {
+		if prior, told := was[k]; told && !prior.erased.IsZero() {
 			// Already known to be gone.
 			return nil
 		}
 
-		delete(was, k)
-
-		// The disappearance **is** the fact, and the row that would have said
-		// when is what disappeared -- so this is the one event stamped from
-		// here rather than read.
-		now := timestamppb.New(time.Now())
-
-		return out.Send(app.SyncEvent_builder{
-			Holder:          k.Bytes(),
-			Tenant:          []byte(prior.tenant),
-			Reason:          app.SyncReason_SYNC_REASON_ERASED,
-			At:              now,
-			DateInvalidated: stamp(prior.invalidated),
-			DateErased:      now,
-			DateClosed:      stamp(prior.closed),
-		}.Build())
+		return s.first(ctx, out, was, k)
 	}
 	if err != nil {
 		// Not news about the person. The stream ends, which a client already
@@ -494,9 +484,12 @@ func (s *server) tell(
 	}.Build())
 }
 
-// first is the first this stream hears of somebody the wall hides: gone, if
-// they were erased where this caller may see, and otherwise nobody's business.
-// See the package comment.
+// first is what this stream says of somebody the wall now hides: gone, if they
+// were erased where this caller may see, with the stamps their row keeps; and
+// otherwise nothing, since they are nobody's business here -- including
+// somebody this stream had told about, who has moved out of this caller's view.
+// They are forgotten, so that coming back into it is a first sight. See the
+// package comment.
 func (s *server) first(
 	ctx context.Context,
 	out grpc.ServerStreamingServer[app.SyncEvent],
@@ -504,11 +497,18 @@ func (s *server) first(
 	k pdid.Id,
 ) error {
 	if s.gone == nil {
+		delete(was, k)
+
 		return nil
 	}
 	v, ok, err := s.gone(ctx, k)
-	if err != nil || !ok {
+	if err != nil {
 		return err
+	}
+	if !ok {
+		delete(was, k)
+
+		return nil
 	}
 
 	// Remembered as gone, so that it is said once.

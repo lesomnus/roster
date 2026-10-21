@@ -56,6 +56,20 @@ func (_c *DelegationCreate) SetNillableDateExpires(v *time.Time) *DelegationCrea
 	return _c
 }
 
+// SetDateAuthenticated sets the "date_authenticated" field.
+func (_c *DelegationCreate) SetDateAuthenticated(v time.Time) *DelegationCreate {
+	_c.mutation.SetDateAuthenticated(v)
+	return _c
+}
+
+// SetNillableDateAuthenticated sets the "date_authenticated" field if the given value is not nil.
+func (_c *DelegationCreate) SetNillableDateAuthenticated(v *time.Time) *DelegationCreate {
+	if v != nil {
+		_c.SetDateAuthenticated(*v)
+	}
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *DelegationCreate) SetDateUpdated(v time.Time) *DelegationCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -222,6 +236,10 @@ func (_c *DelegationCreate) createSpec() (*Delegation, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.DateExpires(); ok {
 		_spec.SetField(delegation.FieldDateExpires, field.TypeTime, value)
 		_node.DateExpires = &value
+	}
+	if value, ok := _c.mutation.DateAuthenticated(); ok {
+		_spec.SetField(delegation.FieldDateAuthenticated, field.TypeTime, value)
+		_node.DateAuthenticated = &value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(delegation.FieldDateUpdated, field.TypeTime, value)

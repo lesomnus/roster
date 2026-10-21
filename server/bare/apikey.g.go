@@ -156,6 +156,9 @@ func (st ApiKeyServiceServer) create(ctx context.Context, req *rstr.ApiKeyAddReq
 	if req.HasDateExpires() {
 		q.SetDateExpires(req.GetDateExpires().AsTime())
 	}
+	if req.HasDateAuthenticated() {
+		q.SetDateAuthenticated(req.GetDateAuthenticated().AsTime())
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -306,6 +309,9 @@ func ApiKeySelectedFields(m *rstr.ApiKeySelect) []string {
 	if m.GetDateExpires() {
 		vs = append(vs, apikey.FieldDateExpires)
 	}
+	if m.GetDateAuthenticated() {
+		vs = append(vs, apikey.FieldDateAuthenticated)
+	}
 	if m.GetDateUpdated() {
 		vs = append(vs, apikey.FieldDateUpdated)
 	}
@@ -385,7 +391,7 @@ func ApiKeyGetKey(ctx context.Context, db *ent.Client, ref *rstr.ApiKeyRef) (uui
 var apiKeyOrmEntity = ormpatch.MustEntityOf(rstr.File_app_apikey_proto, "ApiKey")
 
 var apiKeyPatchColumns = entpatch.Columns{
-	1: apikey.FieldId, 2: apikey.HolderColumn, 4: apikey.FieldAlias, 6: apikey.FieldDesc, 8: apikey.FieldMethods, 9: apikey.FieldSecret, 10: apikey.FieldDateUsed, 11: apikey.FieldDateExpires, 13: apikey.FieldDateUpdated, 14: apikey.FieldDateErased, 15: apikey.FieldDateCreated}
+	1: apikey.FieldId, 2: apikey.HolderColumn, 4: apikey.FieldAlias, 6: apikey.FieldDesc, 8: apikey.FieldMethods, 9: apikey.FieldSecret, 10: apikey.FieldDateUsed, 11: apikey.FieldDateExpires, 12: apikey.FieldDateAuthenticated, 13: apikey.FieldDateUpdated, 14: apikey.FieldDateErased, 15: apikey.FieldDateCreated}
 
 func (s ApiKeyServiceServer) Apply(ctx context.Context, req *rstr.ApiKeyApplyRequest) (*rstr.ApiKey, error) {
 	if !req.HasPatch() {

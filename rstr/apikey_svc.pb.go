@@ -23,20 +23,21 @@ const (
 )
 
 type ApiKeyAddRequest struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
-	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
-	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
-	xxx_hidden_Methods     []string               `protobuf:"bytes,8,rep,name=methods"`
-	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
-	xxx_hidden_DateUsed    *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=date_used,json=dateUsed"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
-	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                        protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id                []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Holder            *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_Alias             string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Desc              string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Methods           []string               `protobuf:"bytes,8,rep,name=methods"`
+	xxx_hidden_Secret            []byte                 `protobuf:"bytes,9,opt,name=secret"`
+	xxx_hidden_DateUsed          *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=date_used,json=dateUsed"`
+	xxx_hidden_DateExpires       *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateAuthenticated *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_authenticated,json=dateAuthenticated"`
+	xxx_hidden_DateCreated       *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	XXX_raceDetectHookData       protoimpl.RaceDetectHookData
+	XXX_presence                 [1]uint32
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *ApiKeyAddRequest) Reset() {
@@ -120,6 +121,13 @@ func (x *ApiKeyAddRequest) GetDateExpires() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *ApiKeyAddRequest) GetDateAuthenticated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateAuthenticated
+	}
+	return nil
+}
+
 func (x *ApiKeyAddRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
@@ -132,7 +140,7 @@ func (x *ApiKeyAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 10)
 }
 
 func (x *ApiKeyAddRequest) SetHolder(v *HolderRef) {
@@ -164,6 +172,10 @@ func (x *ApiKeyAddRequest) SetDateUsed(v *timestamppb.Timestamp) {
 
 func (x *ApiKeyAddRequest) SetDateExpires(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateExpires = v
+}
+
+func (x *ApiKeyAddRequest) SetDateAuthenticated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateAuthenticated = v
 }
 
 func (x *ApiKeyAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -198,6 +210,13 @@ func (x *ApiKeyAddRequest) HasDateExpires() bool {
 	return x.xxx_hidden_DateExpires != nil
 }
 
+func (x *ApiKeyAddRequest) HasDateAuthenticated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateAuthenticated != nil
+}
+
 func (x *ApiKeyAddRequest) HasDateCreated() bool {
 	if x == nil {
 		return false
@@ -222,6 +241,10 @@ func (x *ApiKeyAddRequest) ClearDateExpires() {
 	x.xxx_hidden_DateExpires = nil
 }
 
+func (x *ApiKeyAddRequest) ClearDateAuthenticated() {
+	x.xxx_hidden_DateAuthenticated = nil
+}
+
 func (x *ApiKeyAddRequest) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
 }
@@ -229,15 +252,16 @@ func (x *ApiKeyAddRequest) ClearDateCreated() {
 type ApiKeyAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Id          []byte
-	Holder      *HolderRef
-	Alias       string
-	Desc        string
-	Methods     []string
-	Secret      []byte
-	DateUsed    *timestamppb.Timestamp
-	DateExpires *timestamppb.Timestamp
-	DateCreated *timestamppb.Timestamp
+	Id                []byte
+	Holder            *HolderRef
+	Alias             string
+	Desc              string
+	Methods           []string
+	Secret            []byte
+	DateUsed          *timestamppb.Timestamp
+	DateExpires       *timestamppb.Timestamp
+	DateAuthenticated *timestamppb.Timestamp
+	DateCreated       *timestamppb.Timestamp
 }
 
 func (b0 ApiKeyAddRequest_builder) Build() *ApiKeyAddRequest {
@@ -245,7 +269,7 @@ func (b0 ApiKeyAddRequest_builder) Build() *ApiKeyAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 10)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Holder = b.Holder
@@ -255,6 +279,7 @@ func (b0 ApiKeyAddRequest_builder) Build() *ApiKeyAddRequest {
 	x.xxx_hidden_Secret = b.Secret
 	x.xxx_hidden_DateUsed = b.DateUsed
 	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateAuthenticated = b.DateAuthenticated
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -669,22 +694,23 @@ func (b0 ApiKeyRefBySlug_builder) Build() *ApiKeyRefBySlug {
 }
 
 type ApiKeySelect struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_All         bool                   `protobuf:"varint,1,opt,name=all"`
-	xxx_hidden_Holder      *HolderSelect          `protobuf:"bytes,2,opt,name=holder"`
-	xxx_hidden_Alias       bool                   `protobuf:"varint,4,opt,name=alias"`
-	xxx_hidden_Desc        bool                   `protobuf:"varint,6,opt,name=desc"`
-	xxx_hidden_Methods     bool                   `protobuf:"varint,8,opt,name=methods"`
-	xxx_hidden_Secret      bool                   `protobuf:"varint,9,opt,name=secret"`
-	xxx_hidden_DateUsed    bool                   `protobuf:"varint,10,opt,name=date_used,json=dateUsed"`
-	xxx_hidden_DateExpires bool                   `protobuf:"varint,11,opt,name=date_expires,json=dateExpires"`
-	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                        protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_All               bool                   `protobuf:"varint,1,opt,name=all"`
+	xxx_hidden_Holder            *HolderSelect          `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_Alias             bool                   `protobuf:"varint,4,opt,name=alias"`
+	xxx_hidden_Desc              bool                   `protobuf:"varint,6,opt,name=desc"`
+	xxx_hidden_Methods           bool                   `protobuf:"varint,8,opt,name=methods"`
+	xxx_hidden_Secret            bool                   `protobuf:"varint,9,opt,name=secret"`
+	xxx_hidden_DateUsed          bool                   `protobuf:"varint,10,opt,name=date_used,json=dateUsed"`
+	xxx_hidden_DateExpires       bool                   `protobuf:"varint,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateAuthenticated bool                   `protobuf:"varint,12,opt,name=date_authenticated,json=dateAuthenticated"`
+	xxx_hidden_DateUpdated       bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased        bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated       bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
+	XXX_raceDetectHookData       protoimpl.RaceDetectHookData
+	XXX_presence                 [1]uint32
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *ApiKeySelect) Reset() {
@@ -768,6 +794,13 @@ func (x *ApiKeySelect) GetDateExpires() bool {
 	return false
 }
 
+func (x *ApiKeySelect) GetDateAuthenticated() bool {
+	if x != nil {
+		return x.xxx_hidden_DateAuthenticated
+	}
+	return false
+}
+
 func (x *ApiKeySelect) GetDateUpdated() bool {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -791,7 +824,7 @@ func (x *ApiKeySelect) GetDateCreated() bool {
 
 func (x *ApiKeySelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 12)
 }
 
 func (x *ApiKeySelect) SetHolder(v *HolderSelect) {
@@ -800,47 +833,52 @@ func (x *ApiKeySelect) SetHolder(v *HolderSelect) {
 
 func (x *ApiKeySelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 12)
 }
 
 func (x *ApiKeySelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 12)
 }
 
 func (x *ApiKeySelect) SetMethods(v bool) {
 	x.xxx_hidden_Methods = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 12)
 }
 
 func (x *ApiKeySelect) SetSecret(v bool) {
 	x.xxx_hidden_Secret = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 12)
 }
 
 func (x *ApiKeySelect) SetDateUsed(v bool) {
 	x.xxx_hidden_DateUsed = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 12)
 }
 
 func (x *ApiKeySelect) SetDateExpires(v bool) {
 	x.xxx_hidden_DateExpires = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 12)
+}
+
+func (x *ApiKeySelect) SetDateAuthenticated(v bool) {
+	x.xxx_hidden_DateAuthenticated = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 12)
 }
 
 func (x *ApiKeySelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 12)
 }
 
 func (x *ApiKeySelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 12)
 }
 
 func (x *ApiKeySelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 11)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 11, 12)
 }
 
 func (x *ApiKeySelect) HasAll() bool {
@@ -899,25 +937,32 @@ func (x *ApiKeySelect) HasDateExpires() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
-func (x *ApiKeySelect) HasDateUpdated() bool {
+func (x *ApiKeySelect) HasDateAuthenticated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
 }
 
-func (x *ApiKeySelect) HasDateErased() bool {
+func (x *ApiKeySelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
-func (x *ApiKeySelect) HasDateCreated() bool {
+func (x *ApiKeySelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
+}
+
+func (x *ApiKeySelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 11)
 }
 
 func (x *ApiKeySelect) ClearAll() {
@@ -959,35 +1004,41 @@ func (x *ApiKeySelect) ClearDateExpires() {
 	x.xxx_hidden_DateExpires = false
 }
 
-func (x *ApiKeySelect) ClearDateUpdated() {
+func (x *ApiKeySelect) ClearDateAuthenticated() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	x.xxx_hidden_DateAuthenticated = false
+}
+
+func (x *ApiKeySelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *ApiKeySelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *ApiKeySelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 11)
 	x.xxx_hidden_DateCreated = false
 }
 
 type ApiKeySelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	All         *bool
-	Holder      *HolderSelect
-	Alias       *bool
-	Desc        *bool
-	Methods     *bool
-	Secret      *bool
-	DateUsed    *bool
-	DateExpires *bool
-	DateUpdated *bool
-	DateErased  *bool
-	DateCreated *bool
+	All               *bool
+	Holder            *HolderSelect
+	Alias             *bool
+	Desc              *bool
+	Methods           *bool
+	Secret            *bool
+	DateUsed          *bool
+	DateExpires       *bool
+	DateAuthenticated *bool
+	DateUpdated       *bool
+	DateErased        *bool
+	DateCreated       *bool
 }
 
 func (b0 ApiKeySelect_builder) Build() *ApiKeySelect {
@@ -995,44 +1046,48 @@ func (b0 ApiKeySelect_builder) Build() *ApiKeySelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 12)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Holder = b.Holder
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 12)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 12)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	if b.Methods != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 12)
 		x.xxx_hidden_Methods = *b.Methods
 	}
 	if b.Secret != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 12)
 		x.xxx_hidden_Secret = *b.Secret
 	}
 	if b.DateUsed != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 12)
 		x.xxx_hidden_DateUsed = *b.DateUsed
 	}
 	if b.DateExpires != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 12)
 		x.xxx_hidden_DateExpires = *b.DateExpires
 	}
+	if b.DateAuthenticated != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 12)
+		x.xxx_hidden_DateAuthenticated = *b.DateAuthenticated
+	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 12)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 12)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 11)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 11, 12)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -2102,7 +2157,7 @@ var File_app_apikey_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_apikey_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x16app/apikey_svc.g.proto\x12\x06roster\x1a\x10app/apikey.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xf5\x02\n" +
+	"\x16app/apikey_svc.g.proto\x12\x06roster\x1a\x10app/apikey.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xc0\x03\n" +
 	"\x10ApiKeyAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1b\n" +
@@ -2112,7 +2167,8 @@ const file_app_apikey_svc_g_proto_rawDesc = "" +
 	"\x06secret\x18\t \x01(\fB\x05\xaa\x01\x02\b\x02R\x06secret\x127\n" +
 	"\tdate_used\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\bdateUsed\x12=\n" +
-	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12=\n" +
+	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12I\n" +
+	"\x12date_authenticated\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\x11dateAuthenticated\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"e\n" +
 	"\x10ApiKeyGetRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.ApiKeyRefR\x03ref\x12,\n" +
@@ -2124,7 +2180,7 @@ const file_app_apikey_svc_g_proto_rawDesc = "" +
 	"\x03key\"R\n" +
 	"\x0fApiKeyRefBySlug\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12)\n" +
-	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\"\xd1\x02\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\"\x80\x03\n" +
 	"\fApiKeySelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12\x14\n" +
@@ -2134,7 +2190,8 @@ const file_app_apikey_svc_g_proto_rawDesc = "" +
 	"\x06secret\x18\t \x01(\bR\x06secret\x12\x1b\n" +
 	"\tdate_used\x18\n" +
 	" \x01(\bR\bdateUsed\x12!\n" +
-	"\fdate_expires\x18\v \x01(\bR\vdateExpires\x12!\n" +
+	"\fdate_expires\x18\v \x01(\bR\vdateExpires\x12-\n" +
+	"\x12date_authenticated\x18\f \x01(\bR\x11dateAuthenticated\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
@@ -2210,44 +2267,45 @@ var file_app_apikey_svc_g_proto_depIdxs = []int32{
 	13, // 0: roster.ApiKeyAddRequest.holder:type_name -> roster.HolderRef
 	14, // 1: roster.ApiKeyAddRequest.date_used:type_name -> google.protobuf.Timestamp
 	14, // 2: roster.ApiKeyAddRequest.date_expires:type_name -> google.protobuf.Timestamp
-	14, // 3: roster.ApiKeyAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 4: roster.ApiKeyGetRequest.ref:type_name -> roster.ApiKeyRef
-	4,  // 5: roster.ApiKeyGetRequest.select:type_name -> roster.ApiKeySelect
-	3,  // 6: roster.ApiKeyRef.slug:type_name -> roster.ApiKeyRefBySlug
-	13, // 7: roster.ApiKeyRefBySlug.holder:type_name -> roster.HolderRef
-	15, // 8: roster.ApiKeySelect.holder:type_name -> roster.HolderSelect
-	2,  // 9: roster.ApiKeyPatchRequest.ref:type_name -> roster.ApiKeyRef
-	14, // 10: roster.ApiKeyPatchRequest.date_used:type_name -> google.protobuf.Timestamp
-	14, // 11: roster.ApiKeyPatchRequest.date_expires:type_name -> google.protobuf.Timestamp
-	14, // 12: roster.ApiKeyPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 13: roster.ApiKeyApplyRequest.ref:type_name -> roster.ApiKeyRef
-	16, // 14: roster.ApiKeyApplyRequest.patch:type_name -> patch.Patch
-	10, // 15: roster.ApiKeyListRequest.filters:type_name -> roster.ApiKeyFilter
-	17, // 16: roster.ApiKeyListResponse.items:type_name -> roster.ApiKey
-	2,  // 17: roster.ApiKeyFilter.ref:type_name -> roster.ApiKeyRef
-	13, // 18: roster.ApiKeyFilter.holder:type_name -> roster.HolderRef
-	14, // 19: roster.ApiKeyIssueRequest.expires:type_name -> google.protobuf.Timestamp
-	13, // 20: roster.ApiKeyIssueRequest.holder:type_name -> roster.HolderRef
-	17, // 21: roster.ApiKeyIssueResponse.key:type_name -> roster.ApiKey
-	0,  // 22: roster.ApiKeyService.Add:input_type -> roster.ApiKeyAddRequest
-	1,  // 23: roster.ApiKeyService.Get:input_type -> roster.ApiKeyGetRequest
-	5,  // 24: roster.ApiKeyService.Patch:input_type -> roster.ApiKeyPatchRequest
-	6,  // 25: roster.ApiKeyService.Apply:input_type -> roster.ApiKeyApplyRequest
-	2,  // 26: roster.ApiKeyService.Erase:input_type -> roster.ApiKeyRef
-	8,  // 27: roster.ApiKeyService.List:input_type -> roster.ApiKeyListRequest
-	11, // 28: roster.ApiKeyService.Issue:input_type -> roster.ApiKeyIssueRequest
-	17, // 29: roster.ApiKeyService.Add:output_type -> roster.ApiKey
-	17, // 30: roster.ApiKeyService.Get:output_type -> roster.ApiKey
-	17, // 31: roster.ApiKeyService.Patch:output_type -> roster.ApiKey
-	17, // 32: roster.ApiKeyService.Apply:output_type -> roster.ApiKey
-	7,  // 33: roster.ApiKeyService.Erase:output_type -> roster.ApiKeyEraseResponse
-	9,  // 34: roster.ApiKeyService.List:output_type -> roster.ApiKeyListResponse
-	12, // 35: roster.ApiKeyService.Issue:output_type -> roster.ApiKeyIssueResponse
-	29, // [29:36] is the sub-list for method output_type
-	22, // [22:29] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	14, // 3: roster.ApiKeyAddRequest.date_authenticated:type_name -> google.protobuf.Timestamp
+	14, // 4: roster.ApiKeyAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 5: roster.ApiKeyGetRequest.ref:type_name -> roster.ApiKeyRef
+	4,  // 6: roster.ApiKeyGetRequest.select:type_name -> roster.ApiKeySelect
+	3,  // 7: roster.ApiKeyRef.slug:type_name -> roster.ApiKeyRefBySlug
+	13, // 8: roster.ApiKeyRefBySlug.holder:type_name -> roster.HolderRef
+	15, // 9: roster.ApiKeySelect.holder:type_name -> roster.HolderSelect
+	2,  // 10: roster.ApiKeyPatchRequest.ref:type_name -> roster.ApiKeyRef
+	14, // 11: roster.ApiKeyPatchRequest.date_used:type_name -> google.protobuf.Timestamp
+	14, // 12: roster.ApiKeyPatchRequest.date_expires:type_name -> google.protobuf.Timestamp
+	14, // 13: roster.ApiKeyPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 14: roster.ApiKeyApplyRequest.ref:type_name -> roster.ApiKeyRef
+	16, // 15: roster.ApiKeyApplyRequest.patch:type_name -> patch.Patch
+	10, // 16: roster.ApiKeyListRequest.filters:type_name -> roster.ApiKeyFilter
+	17, // 17: roster.ApiKeyListResponse.items:type_name -> roster.ApiKey
+	2,  // 18: roster.ApiKeyFilter.ref:type_name -> roster.ApiKeyRef
+	13, // 19: roster.ApiKeyFilter.holder:type_name -> roster.HolderRef
+	14, // 20: roster.ApiKeyIssueRequest.expires:type_name -> google.protobuf.Timestamp
+	13, // 21: roster.ApiKeyIssueRequest.holder:type_name -> roster.HolderRef
+	17, // 22: roster.ApiKeyIssueResponse.key:type_name -> roster.ApiKey
+	0,  // 23: roster.ApiKeyService.Add:input_type -> roster.ApiKeyAddRequest
+	1,  // 24: roster.ApiKeyService.Get:input_type -> roster.ApiKeyGetRequest
+	5,  // 25: roster.ApiKeyService.Patch:input_type -> roster.ApiKeyPatchRequest
+	6,  // 26: roster.ApiKeyService.Apply:input_type -> roster.ApiKeyApplyRequest
+	2,  // 27: roster.ApiKeyService.Erase:input_type -> roster.ApiKeyRef
+	8,  // 28: roster.ApiKeyService.List:input_type -> roster.ApiKeyListRequest
+	11, // 29: roster.ApiKeyService.Issue:input_type -> roster.ApiKeyIssueRequest
+	17, // 30: roster.ApiKeyService.Add:output_type -> roster.ApiKey
+	17, // 31: roster.ApiKeyService.Get:output_type -> roster.ApiKey
+	17, // 32: roster.ApiKeyService.Patch:output_type -> roster.ApiKey
+	17, // 33: roster.ApiKeyService.Apply:output_type -> roster.ApiKey
+	7,  // 34: roster.ApiKeyService.Erase:output_type -> roster.ApiKeyEraseResponse
+	9,  // 35: roster.ApiKeyService.List:output_type -> roster.ApiKeyListResponse
+	12, // 36: roster.ApiKeyService.Issue:output_type -> roster.ApiKeyIssueResponse
+	30, // [30:37] is the sub-list for method output_type
+	23, // [23:30] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_app_apikey_svc_g_proto_init() }

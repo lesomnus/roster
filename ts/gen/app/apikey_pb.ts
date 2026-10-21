@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/apikey.proto.
  */
 export const file_app_apikey: GenFile = /*@__PURE__*/
-  fileDesc("ChBhcHAvYXBpa2V5LnByb3RvEgZyb3N0ZXIi0gQKBkFwaUtleRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEg0KBWFsaWFzGAQgASgJEgwKBGRlc2MYBiABKAkSDwoHbWV0aG9kcxgIIAMoCRIcCgZzZWNyZXQYCSABKAxCDOqCFgIwAarBFgIIARI1CglkYXRlX3VzZWQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqXAcr8FUcSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGaG9sZGVyEAIwAYq7FkgIDjIzChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZob2xkZXIgFChkIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChBhcHAvYXBpa2V5LnByb3RvEgZyb3N0ZXIimgUKBkFwaUtleRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEg0KBWFsaWFzGAQgASgJEgwKBGRlc2MYBiABKAkSDwoHbWV0aG9kcxgIIAMoCRIcCgZzZWNyZXQYCSABKAxCDOqCFgIwAarBFgIIARI1CglkYXRlX3VzZWQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEkYKEmRhdGVfYXV0aGVudGljYXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCDuqCFgQ4AUABqsEWAhABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqXAcr8FUcSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGaG9sZGVyEAIwAYq7FkgIDjIzChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZob2xkZXIgFChkIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * ApiKey is what one service may call this deployment for.
@@ -149,6 +149,22 @@ export type ApiKey = Message<"roster.ApiKey"> & {
    * @generated from field: google.protobuf.Timestamp date_expires = 11;
    */
   dateExpires?: Timestamp | undefined;
+
+  /**
+   * When the person it acts as proved who they are, for a key they issued
+   * themselves: the authentication the credential they issued it with carried
+   * (`Delegation.date_authenticated`), inherited rather than started again. A
+   * terminal handed a key in the browser (`roster sign-in`) carries the
+   * browser's sign-in.
+   *
+   * Unset for a key somebody else minted for them -- an administrator, or
+   * `roster key add` -- because that is nobody proving anything about the
+   * person: what `MeService.Leave` refuses a key on. **Stamped**: a request
+   * cannot say it.
+   *
+   * @generated from field: google.protobuf.Timestamp date_authenticated = 12;
+   */
+  dateAuthenticated?: Timestamp | undefined;
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

@@ -81,6 +81,11 @@ func DateExpires(v time.Time) predicate.ApiKey {
 	return predicate.ApiKey(sql.FieldEQ(FieldDateExpires, v))
 }
 
+// DateAuthenticated applies equality check predicate on the "date_authenticated" field. It's identical to DateAuthenticatedEQ.
+func DateAuthenticated(v time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldEQ(FieldDateAuthenticated, v))
+}
+
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
 func DateUpdated(v time.Time) predicate.ApiKey {
 	return predicate.ApiKey(sql.FieldEQ(FieldDateUpdated, v))
@@ -379,6 +384,56 @@ func DateExpiresIsNil() predicate.ApiKey {
 // DateExpiresNotNil applies the NotNil predicate on the "date_expires" field.
 func DateExpiresNotNil() predicate.ApiKey {
 	return predicate.ApiKey(sql.FieldNotNull(FieldDateExpires))
+}
+
+// DateAuthenticatedEQ applies the EQ predicate on the "date_authenticated" field.
+func DateAuthenticatedEQ(v time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldEQ(FieldDateAuthenticated, v))
+}
+
+// DateAuthenticatedNEQ applies the NEQ predicate on the "date_authenticated" field.
+func DateAuthenticatedNEQ(v time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldNEQ(FieldDateAuthenticated, v))
+}
+
+// DateAuthenticatedIn applies the In predicate on the "date_authenticated" field.
+func DateAuthenticatedIn(vs ...time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldIn(FieldDateAuthenticated, vs...))
+}
+
+// DateAuthenticatedNotIn applies the NotIn predicate on the "date_authenticated" field.
+func DateAuthenticatedNotIn(vs ...time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldNotIn(FieldDateAuthenticated, vs...))
+}
+
+// DateAuthenticatedGT applies the GT predicate on the "date_authenticated" field.
+func DateAuthenticatedGT(v time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldGT(FieldDateAuthenticated, v))
+}
+
+// DateAuthenticatedGTE applies the GTE predicate on the "date_authenticated" field.
+func DateAuthenticatedGTE(v time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldGTE(FieldDateAuthenticated, v))
+}
+
+// DateAuthenticatedLT applies the LT predicate on the "date_authenticated" field.
+func DateAuthenticatedLT(v time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldLT(FieldDateAuthenticated, v))
+}
+
+// DateAuthenticatedLTE applies the LTE predicate on the "date_authenticated" field.
+func DateAuthenticatedLTE(v time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldLTE(FieldDateAuthenticated, v))
+}
+
+// DateAuthenticatedIsNil applies the IsNil predicate on the "date_authenticated" field.
+func DateAuthenticatedIsNil() predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldIsNull(FieldDateAuthenticated))
+}
+
+// DateAuthenticatedNotNil applies the NotNil predicate on the "date_authenticated" field.
+func DateAuthenticatedNotNil() predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldNotNull(FieldDateAuthenticated))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.

@@ -77,7 +77,7 @@ func TestASignInLastsAsLongAsTheAppSaid(t *testing.T) {
 			}
 
 			w := httptest.NewRecorder()
-			require.NoError(t, d.Accept(t.Context(), w, somehere.String(), "entra", "dana-at-entra"))
+			require.NoError(t, d.Accept(t.Context(), w, Claim{Tenant: somehere.String(), Provider: "entra", Subject: "dana-at-entra"}))
 			cs := w.Result().Cookies()
 			require.Len(t, cs, 1)
 

@@ -1047,8 +1047,9 @@ function Expires(): React.ReactNode {
  *
  * It asks for two things roster checks again on its side: a sign-in a few
  * minutes old -- a page left open since the morning signs in again first, and
- * comes back here (`#leave`) -- and your alias typed, so that nothing does it
- * by accident. What it says it does is what roster does: nothing is destroyed
+ * comes back here (`#leave`), and a directory is asked to authenticate them
+ * again rather than remember them -- and your alias typed, so that nothing does
+ * it by accident. What it says it does is what roster does: nothing is destroyed
  * at once, the operator can bring the account back until it is forgotten, and
  * then everything held about you is.
  */
@@ -1095,7 +1096,7 @@ function Leave(props: { alias: string; brand: string; onSignOut: () => void; onL
 			</form>
 			{stale && (
 				<p className="bad">
-					Deleting an account takes a sign-in made a few minutes ago.{' '}
+					Deleting an account takes a sign-in made a few minutes ago, at which you were asked who you are.{' '}
 					<button
 						onClick={() => {
 							location.hash = 'leave'
@@ -1175,7 +1176,12 @@ function Root(): React.ReactNode {
 	if (of === undefined || app === undefined) return <main className="loading">…</main>
 	if (of === null) return <main className="error">no operator here serves this name</main>
 	if (left !== null) return <Left brand={brandOf(of)} forgotten={left} />
-	if (app === null) return <SignIn brand={brandOf(of)} password={of.password} providers={of.providers} providerHref={(n: string) => `/login?connection=${encodeURIComponent(n)}`} recover="/recover" onDone={check} />
+	// Signing in again to delete the account (`#leave`) asks the directory to
+	// ask again rather than remember them: what roster reads is when the
+	// directory last authenticated them, and a sign-in it remembered is not a
+	// moment ago.
+	const again = location.hash === '#leave' ? '&again=1' : ''
+	if (app === null) return <SignIn brand={brandOf(of)} password={of.password} providers={of.providers} providerHref={(n: string) => `/login?connection=${encodeURIComponent(n)}${again}`} recover="/recover" onDone={check} />
 
 	return (
 		<Provider app={app}>

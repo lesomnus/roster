@@ -549,7 +549,7 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	// itself, which is the same resolution `find` just made. What is passed is
 	// the tenant, because that is the fact this app established from the host
 	// and roster cannot read off a token.
-	if err := a.door.Accept(ctx, w, tenant.String(), who.Provider, who.Subject); err != nil {
+	if err := a.door.Accept(ctx, w, frontdoor.Claim{Tenant: tenant.String(), Provider: who.Provider, Subject: who.Subject}); err != nil {
 		fmt.Fprintf(os.Stderr, "sso: accept %s/%s: %v\n", who.Provider, who.Subject, err)
 		http.Error(w, "cannot sign in", http.StatusInternalServerError)
 		return

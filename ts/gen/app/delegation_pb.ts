@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/delegation.proto.
  */
 export const file_app_delegation: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvZGVsZWdhdGlvbi5wcm90bxIGcm9zdGVyIoAECgpEZWxlZ2F0aW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESFwoHbWV0aG9kcxgIIAMoCUIG6oIWAkABEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESFgoGaXNzdWVyGAogASgMQgbqghYCQAESOgoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEII6oIWBDgBQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOnLK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxZECBMyLwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZob2xkZXIgFChkIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChRhcHAvZGVsZWdhdGlvbi5wcm90bxIGcm9zdGVyIsgECgpEZWxlZ2F0aW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESFwoHbWV0aG9kcxgIIAMoCUIG6oIWAkABEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESFgoGaXNzdWVyGAogASgMQgbqghYCQAESOgoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEII6oIWBDgBQAESRgoSZGF0ZV9hdXRoZW50aWNhdGVkGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIO6oIWBDgBQAGqwRYCEAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOnLK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxZECBMyLwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZob2xkZXIgFChkIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Delegation is a product app calling roster **as** somebody it just signed in.
@@ -164,6 +164,30 @@ export type Delegation = Message<"roster.Delegation"> & {
    * @generated from field: google.protobuf.Timestamp date_expires = 11;
    */
   dateExpires?: Timestamp | undefined;
+
+  /**
+   * When the person it is for proved who they are, by the sign-in that minted
+   * it: a password and whatever second factor was asked, a recovery link
+   * spent, a provider's word about when it authenticated them (its
+   * `auth_time`). Unset is a sign-in that cannot say -- a provider that does
+   * not -- and a delegation minted from another credential carries that one's.
+   *
+   * # Not when it was minted
+   *
+   * `MeService.Leave` asked for a credential *minted* in the last few minutes,
+   * and minting is what a credential can do: a key whose role names
+   * `ApiKey.Issue` issues a fresh one, a session a quarter of an hour old does
+   * the same, and an administrator mints one for somebody narrower and calls
+   * `Leave` as them. Each is new and none is anybody proving anything. This is
+   * the moment that is about the person, and it travels with what is minted
+   * from it rather than starting again.
+   *
+   * **Stamped**: a request cannot say it, and the sign-in that proved somebody
+   * is the one thing that writes it.
+   *
+   * @generated from field: google.protobuf.Timestamp date_authenticated = 12;
+   */
+  dateAuthenticated?: Timestamp | undefined;
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

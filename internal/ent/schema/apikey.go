@@ -32,6 +32,10 @@ func (ApiKey) Fields() []ent.Field {
 		field.Time("date_expires").
 			Nillable().
 			Optional(),
+		field.Time("date_authenticated").
+			Nillable().
+			Immutable().
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

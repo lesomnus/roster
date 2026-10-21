@@ -584,10 +584,25 @@ func (d *Door) answer(w http.ResponseWriter, r *http.Request, res *rstr.VouchDel
 //
 // The exchange, the state parameter, and which tenant the browser arrived in.
 // This takes the claim and nothing about the browser's journey to it.
-func (d *Door) Accept(ctx context.Context, w http.ResponseWriter, tenant, provider, subject string) error {
-	_, err := d.accept(ctx, w, tenant, provider, subject, "")
+func (d *Door) Accept(ctx context.Context, w http.ResponseWriter, c Claim) error {
+	_, err := d.accept(ctx, w, c, "")
 
 	return err
+}
+
+// A Claim is who a provider said signed in, as this app checked it: which
+// tenant it is answering for, the connection by its name, and the subject that
+// connection names them by.
+type Claim struct {
+	Tenant   string
+	Provider string
+	Subject  string
+
+	// Authenticated is when the provider says it authenticated them -- the ID
+	// token's `auth_time` -- and zero when it did not say. It is what the
+	// delegation minted for them carries as the moment they proved who they
+	// are (`VouchClaim.authenticated`), and what deleting an account reads.
+	Authenticated time.Time
 }
 
 // HandOn is [Door.Accept] that also asks roster for a **link**: one this app
@@ -607,12 +622,12 @@ func (d *Door) Accept(ctx context.Context, w http.ResponseWriter, tenant, provid
 // which it must have checked is the tenant's **before** the round trip to the
 // provider (an open redirect with a way in attached is worse than one
 // without), and the route at that name the link is delivered to.
-func (d *Door) HandOn(ctx context.Context, w http.ResponseWriter, tenant, provider, subject, at string) (string, error) {
+func (d *Door) HandOn(ctx context.Context, w http.ResponseWriter, c Claim, at string) (string, error) {
 	if at == "" {
 		return "", ErrNotSignedIn
 	}
 
-	res, err := d.accept(ctx, w, tenant, provider, subject, at)
+	res, err := d.accept(ctx, w, c, at)
 	if err != nil {
 		return "", err
 	}
@@ -625,22 +640,27 @@ func (d *Door) HandOn(ctx context.Context, w http.ResponseWriter, tenant, provid
 
 // accept is the two above: the claim to roster, and the session that holds
 // what roster answered.
-func (d *Door) accept(ctx context.Context, w http.ResponseWriter, tenant, provider, subject, at string) (*rstr.VouchDelegateResponse, error) {
-	if provider == "" || subject == "" {
+func (d *Door) accept(ctx context.Context, w http.ResponseWriter, c Claim, at string) (*rstr.VouchDelegateResponse, error) {
+	if c.Provider == "" || c.Subject == "" {
 		return nil, ErrNotSignedIn
 	}
 
-	id, err := pdid.Parse(tenant)
+	id, err := pdid.Parse(c.Tenant)
 	if err != nil {
 		return nil, err
 	}
 
+	claim := rstr.VouchClaim_builder{
+		Tenant:   id.Bytes(),
+		Provider: c.Provider,
+		Subject:  c.Subject,
+	}
+	if !c.Authenticated.IsZero() {
+		claim.Authenticated = timestamppb.New(c.Authenticated)
+	}
+
 	res, err := d.c.Vouch.Accept(ctx, rstr.VouchAcceptRequest_builder{
-		Claim: rstr.VouchClaim_builder{
-			Tenant:   id.Bytes(),
-			Provider: provider,
-			Subject:  subject,
-		}.Build(),
+		Claim:   claim.Build(),
 		Methods: d.c.Methods,
 		Expires: d.expires(),
 		At:      at,
