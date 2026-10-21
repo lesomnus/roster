@@ -121,6 +121,7 @@ message EmailAddRequest {
   string address = 8 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_verified = 9;
   IdentityRef vouched_by = 10;
+  bytes entered_by = 12;
   bytes tenant_id = 11 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_created = 15;
 }
@@ -154,6 +155,7 @@ message EmailSelect {
   bool address = 8;
   bool date_verified = 9;
   IdentitySelect vouched_by = 10;
+  bool entered_by = 12;
   bool tenant_id = 11;
   bool date_updated = 13;
   bool date_erased = 14;

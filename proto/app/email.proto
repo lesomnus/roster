@@ -122,6 +122,43 @@ message Email {
   // to link accounts.
   Identity vouched_by = 10 [(orm.edge) = {nullable: true}];
 
+  // Who wrote it: the caller the `Add` arrived from -- the person themselves,
+  // an operator entering them, a front door keeping what a directory said, a
+  // directory provisioning them. Unset is a row written with no caller at all,
+  // which is the deployment's own command (`roster holder add`), and every row
+  // written before roster kept this.
+  //
+  // # It is what tells an invitation from a claim
+  //
+  // An address somebody wrote onto their **own** row is their claim about a
+  // mailbox, and nobody has checked it until a link or a directory proves it
+  // ([Email.date_verified]). One somebody else wrote is that somebody's word,
+  // and an operator's word about a person who has not arrived yet is the
+  // invitation `enrol: expected` admits them by (`arrives.invitation`).
+  //
+  // The sign-in that reads it once read neither. It matched whatever row held
+  // the address, so an address anybody typed onto their own account -- or one
+  // a directory handed over unchecked at their sign-in -- handed them whoever
+  // arrived at that mailbox verified later: the rightful holder's first
+  // sign-in through GitHub was linked to the account of the person who had
+  // written their address down first.
+  //
+  // # A column and not an edge
+  //
+  // The caller may be the control plane's -- an operator at the admin port, a
+  // deployment's key -- and this row is the data plane's, which is
+  // `Delegation.issuer`'s reason, word for word: an identifier compared and
+  // never followed. **Stamped**, so a request cannot say it: `server/core`
+  // writes the frame's actor, and the generated gate refuses an `Add` that
+  // asserts one.
+  bytes entered_by = 12 [
+    (orm.field) = {
+      nullable: true
+      immutable: true
+    },
+    (payday.field) = {stamped: true}
+  ];
+
   // The tenant `holder.tenant` reaches, kept here. payday stamps it, and
   // `Identity` says at length why a column is worth it.
   //

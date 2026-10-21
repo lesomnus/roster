@@ -168,14 +168,16 @@ type Config struct {
 	// Consent is whether the consent hop draws a screen; see [Consent].
 	Consent Consent
 
-	// Base is this app's public origin, the one registered with every provider
-	// as the redirect: `https://login.example.com`. Empty derives it from each
-	// request, which suits a development deployment and nothing else, since a
-	// provider will only send a browser back to a URL it was told about.
+	// Base is this app's public origin, the one every provider's redirect is
+	// under: `https://login.example.com`, and each connection registered there
+	// as `https://login.example.com/callback/<tenant>/<connection>`. Empty
+	// derives it from each request, which suits a development deployment and
+	// nothing else, since a provider will only send a browser back to a URL it
+	// was told about.
 	//
 	// One for the whole app, not one per tenant: Hydra sends every browser
-	// here under one name. Which tenant a callback belongs to comes from the
-	// state, never from the URL.
+	// here under one name. Which flow a callback belongs to comes from the
+	// state, and the URL only has to name the connection that flow went to.
 	Base *url.URL
 
 	// Secret turns a `Connection.secret_ref` into the client secret it names.
@@ -195,6 +197,10 @@ type Config struct {
 	// GitHub is the issuer that is GitHub's sign-in rather than an OpenID
 	// provider's; empty is github.com's own ([arrives.Providers.GitHub]).
 	GitHub string
+
+	// Microsoft is the origin whose tokens' `xms_edov` is Microsoft's word;
+	// empty is Microsoft's own clouds ([arrives.Providers.Microsoft]).
+	Microsoft string
 
 	// InsecureCookie drops `Secure` from the session cookie, for a page served
 	// over plain http in development. It is `authsession`'s and is said there;
@@ -347,6 +353,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 	a.arrives = arrives.New(a.roster, c.Secret)
 	a.arrives.SlackAPI = c.SlackAPI
 	a.arrives.GitHub = c.GitHub
+	a.arrives.Microsoft = c.Microsoft
 
 	// Nothing per tenant is resolved here, because there is nothing to resolve:
 	// who this app fronts is every tenant with a `Host` row, and that is a
@@ -438,10 +445,10 @@ func (a *App) Handler() http.Handler {
 	m.Handle("POST /accept", a.inFlow(http.HandlerFunc(a.accept)))
 
 	// The other way in. `/provider` is in a flow and `/callback` is not: a
-	// provider sends the browser back to one registered URL, and which flow
-	// that is comes from the state.
+	// provider sends the browser back to the one URL registered for that
+	// connection, and which flow that is comes from the state.
 	m.Handle("GET /provider", a.inFlow(http.HandlerFunc(a.provider)))
-	m.HandleFunc("GET /callback", a.callback)
+	m.HandleFunc("GET /callback/{tenant}/{connection}", a.callback)
 
 	// The third screen Hydra redirects to, and the one that is a screen only
 	// half the time: drawn when nothing proved a relying party started the

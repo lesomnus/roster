@@ -612,6 +612,10 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 				"/roster.EmailService/Attest",
 				"/roster.EmailService/Add",
 
+				// Whether somebody an address names has arrived yet, which is
+				// what an invitation is read under (`arrives.invitation`).
+				"/roster.HolderService/SignsIn",
+
 				// What `enrol: enrolling` needs, and what the key `roster login
 				// provision` mints deliberately does not hold. Here so that one
 				// test can be about the policy rather than about the grant.

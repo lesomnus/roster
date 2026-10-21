@@ -15,10 +15,13 @@ package idptest
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -35,7 +38,7 @@ type Idp struct {
 
 	// Subject is who the next sign-in is, and Claims is whatever else the token
 	// should carry -- `email`, `email_verified`, `name`. A claim here wins over
-	// the one the fake would have written, `iss` and `tid` included.
+	// the one the fake would have written, `iss`, `tid` and `nonce` included.
 	Subject string
 	Claims  map[string]any
 
@@ -57,7 +60,50 @@ type Idp struct {
 	Photo  []byte
 	Photos atomic.Int32
 
+	// Exchanges counts the requests its token endpoint was sent, answered or
+	// not: a code that reached it reached it, whatever it then said.
+	Exchanges atomic.Int32
+
 	key *rsa.PrivateKey
+
+	mu    sync.Mutex
+	asked url.Values
+}
+
+// Asked is what the last authorization request carried: `redirect_uri`,
+// `nonce`, `code_challenge`.
+func (p *Idp) Asked() url.Values {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	return p.asked
+}
+
+// heldTo is what a provider holds its one code to, from the authorization
+// request that it answered: the redirect the exchange has to repeat, the PKCE
+// challenge its verifier has to meet, and the nonce the token carries. It is
+// what a real provider does and what a relying party that skipped any of it
+// would be caught by.
+//
+// There is one code, so the last authorization request is what it is held to.
+func heldTo(asked url.Values, form url.Values) string {
+	if asked == nil {
+		return ""
+	}
+	if want := asked.Get("redirect_uri"); want != "" && form.Get("redirect_uri") != want {
+		return "the redirect_uri is not the one the code was issued for"
+	}
+	if challenge := asked.Get("code_challenge"); challenge != "" {
+		if asked.Get("code_challenge_method") != "S256" {
+			return "the challenge was not S256"
+		}
+		sum := sha256.Sum256([]byte(form.Get("code_verifier")))
+		if base64.RawURLEncoding.EncodeToString(sum[:]) != challenge {
+			return "the code_verifier does not meet the code_challenge"
+		}
+	}
+
+	return ""
 }
 
 // AccessToken is the one the token endpoint hands out, which `/userinfo` and
@@ -114,6 +160,10 @@ func New(t *testing.T, audience string) *Idp {
 		}})
 	})
 	m.HandleFunc("/authorize", func(w http.ResponseWriter, r *http.Request) {
+		p.mu.Lock()
+		p.asked = r.URL.Query()
+		p.mu.Unlock()
+
 		to, _ := url.Parse(r.URL.Query().Get("redirect_uri"))
 		q := to.Query()
 		q.Set("code", "the-code")
@@ -129,12 +179,28 @@ func New(t *testing.T, audience string) *Idp {
 		http.Redirect(w, r, to, http.StatusFound)
 	})
 	m.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
+		p.Exchanges.Add(1)
+		_ = r.ParseForm()
+		p.mu.Lock()
+		asked := p.asked
+		p.mu.Unlock()
+		if why := heldTo(asked, r.PostForm); why != "" {
+			w.Header().Set("content-type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]any{"error": "invalid_grant", "error_description": why})
+
+			return
+		}
+
 		claims := map[string]any{
 			"iss": p.URL,
 			"aud": p.Audience,
 			"sub": p.Subject,
 			"exp": 4102444800,
 			"iat": 1700000000,
+		}
+		if nonce := asked.Get("nonce"); nonce != "" {
+			claims["nonce"] = nonce
 		}
 		if p.Tid != "" {
 			claims["iss"] = p.URL + "/" + p.Tid + "/v2.0"

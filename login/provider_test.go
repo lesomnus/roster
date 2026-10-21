@@ -14,7 +14,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/roster/arrives"
@@ -197,22 +199,118 @@ func TestACallbackWithoutItsOwnStateIsRefused(t *testing.T) {
 	x.NoError(err)
 	state := to.Query().Get("state")
 	x.NotEmpty(state)
+	back := to.Query().Get("redirect_uri")
 
 	// The right state, in a browser that did not start it.
 	other := d.browser(t)
-	res, err = other.Get(d.app.URL + "/callback?code=the-code&state=" + url.QueryEscape(state))
+	res, err = other.Get(back + "?code=the-code&state=" + url.QueryEscape(state))
 	x.NoError(err)
 	defer res.Body.Close()
 	x.Equal(http.StatusBadRequest, res.StatusCode)
 
 	// And the browser that did start it, with somebody else's answer.
-	res, err = b.Get(d.app.URL + "/callback?code=the-code&state=not-the-one")
+	res, err = b.Get(back + "?code=the-code&state=not-the-one")
 	x.NoError(err)
 	defer res.Body.Close()
 	x.Equal(http.StatusBadRequest, res.StatusCode)
 
 	_, told := d.hydra.said()
 	x.False(told, "hydra was told about a flow nobody started")
+}
+
+// TestAnAnswerIsHeldToTheRoundTripThatAskedForIt: what comes back from a
+// provider is believed for the round trip that asked for it and no other --
+// the connection it went to, the PKCE verifier only this app holds, and the
+// nonce the ID token has to carry back (`arrives.Trip`).
+func TestAnAnswerIsHeldToTheRoundTripThatAskedForIt(t *testing.T) {
+	// The request carries all three, and the exchange the verifier: the fake
+	// holds its code to the challenge and the redirect, as a provider does, so
+	// a sign-in that reaches Hydra is one whose verifier met its challenge.
+	t.Run("a challenge, a nonce and the connection's own redirect", func(t *testing.T) {
+		x := require.New(t)
+		p := idptest.New(t, "login-app")
+		d := serve(t)
+		d.connect(t, p, "entra")
+		d.identity(t, "entra", "erin-at-entra")
+		p.Subject = "erin-at-entra"
+		d.hydra.raise("c1", "contoso-web")
+
+		res := d.through(t, d.browser(t), "c1", "entra")
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+
+		asked := p.Asked()
+		x.Equal(d.app.URL+"/callback/contoso/entra", asked.Get("redirect_uri"))
+		x.Equal("S256", asked.Get("code_challenge_method"))
+		x.NotEmpty(asked.Get("code_challenge"))
+		x.NotEmpty(asked.Get("nonce"))
+		x.NotEqual(asked.Get("state"), asked.Get("nonce"), "the nonce is the state again")
+	})
+
+	t.Run("a token for another sign-in is refused", func(t *testing.T) {
+		x := require.New(t)
+		p := idptest.New(t, "login-app")
+		d := serve(t)
+		d.connect(t, p, "entra")
+		d.identity(t, "entra", "erin-at-entra")
+		p.Subject = "erin-at-entra"
+		p.Claims = map[string]any{"nonce": "another-sign-ins"}
+		d.hydra.raise("c1", "contoso-web")
+
+		res := d.through(t, d.browser(t), "c1", "entra")
+		x.Equal(http.StatusBadRequest, res.StatusCode)
+		_, told := d.hydra.said()
+		x.False(told, "a token minted for another sign-in signed somebody in")
+	})
+
+	// The mix-up. A tenant's administrator may connect a server of their own;
+	// a browser sent there can be sent on to another connection's provider,
+	// and that provider's code comes back to the URL registered for **its**
+	// connection, carrying the first flow's state. With one callback for every
+	// connection that code was exchanged at the first server, which is the
+	// code handed to whoever runs it.
+	t.Run("an answer at another connection's door is refused, and its code goes nowhere", func(t *testing.T) {
+		x := require.New(t)
+		honest := idptest.New(t, "login-app")
+		theirs := idptest.New(t, "login-app")
+		d := serve(t)
+		d.connect(t, honest, "entra")
+		d.connect(t, theirs, "theirs")
+		d.hydra.raise("c1", "contoso-web")
+
+		b := d.browser(t)
+		res, err := b.Get(d.app.URL + "/provider?login_challenge=c1&connection=theirs")
+		x.NoError(err)
+		defer res.Body.Close()
+		x.Equal(http.StatusFound, res.StatusCode)
+		to, err := url.Parse(res.Header.Get("location"))
+		x.NoError(err)
+		x.Equal(d.app.URL+"/callback/contoso/theirs", to.Query().Get("redirect_uri"))
+
+		// What the other provider would have answered with, at the URL it is
+		// registered with, on this flow's state.
+		res, err = b.Get(d.app.URL + "/callback/contoso/entra?code=the-code&state=" + url.QueryEscape(to.Query().Get("state")))
+		x.NoError(err)
+		defer res.Body.Close()
+		x.Equal(http.StatusBadRequest, res.StatusCode)
+
+		x.Zero(theirs.Exchanges.Load(), "a code that came back through another connection's door was handed to this one's token endpoint")
+		x.Zero(honest.Exchanges.Load())
+		_, told := d.hydra.said()
+		x.False(told)
+	})
+}
+
+// identity links contoso's erin to a subject at a connection, the way an
+// operator would: so a sign-in through it is somebody, whatever else it says.
+func (d *deployment) identity(t *testing.T, provider, subject string) {
+	t.Helper()
+
+	_, err := d.s.Ungated.Identity().Add(t.Context(), rstr.IdentityAddRequest_builder{
+		Holder:   rstr.HolderRef_builder{Id: d.who["contoso"].Bytes()}.Build(),
+		Provider: provider,
+		Subject:  subject,
+	}.Build())
+	require.NoError(t, err)
 }
 
 // TestAProviderFlowReachesOnlyItsOwnOperator: the challenge decides which
@@ -294,26 +392,6 @@ func TestATenantWithNoPasswordDrawsNoForm(t *testing.T) {
 // first sign-in is matched by the one and linked to the other, and every sign-in
 // after it is the ordinary `Identity` lookup.
 func TestSomebodyTheOperatorEnteredIsTheSamePerson(t *testing.T) {
-	entered := func(t *testing.T, d *deployment, alias, address string) pdid.Id {
-		t.Helper()
-		x := require.New(t)
-
-		who, err := d.s.Ungated.Holder().Add(t.Context(), rstr.HolderAddRequest_builder{
-			Tenant: rstr.TenantRef_builder{Alias: proto.String("contoso")}.Build(),
-			Alias:  alias, Name: "Dana",
-		}.Build())
-		x.NoError(err)
-		_, err = d.s.Ungated.Email().Add(t.Context(), rstr.EmailAddRequest_builder{
-			Holder:  rstr.HolderRef_builder{Id: who.GetId()}.Build(),
-			Address: address,
-		}.Build())
-		x.NoError(err)
-		id, err := pdid.From(who.GetId())
-		x.NoError(err)
-
-		return id
-	}
-
 	// `expected` is the whole policy: the people an tenant entered, and
 	// nobody else. Before this existed, `invited` was the only refusing policy
 	// and it could admit nobody at all through a directory.
@@ -323,7 +401,7 @@ func TestSomebodyTheOperatorEnteredIsTheSamePerson(t *testing.T) {
 		d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Expected() })
 		d.connect(t, p, "entra")
 
-		dana := entered(t, d, "dana", "dana@contoso.example")
+		dana := d.entered(t, "dana", "dana@contoso.example")
 		p.Subject = "dana-at-entra"
 		p.Claims = map[string]any{"email": "Dana@Contoso.Example", "email_verified": true}
 		d.hydra.raise("c1", "contoso-web")
@@ -350,7 +428,7 @@ func TestSomebodyTheOperatorEnteredIsTheSamePerson(t *testing.T) {
 		d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Expected() })
 		d.connect(t, p, "entra")
 
-		entered(t, d, "dana", "dana@contoso.example")
+		d.entered(t, "dana", "dana@contoso.example")
 		p.Subject = "not-dana"
 		p.Claims = map[string]any{"email": "dana@contoso.example"}
 		d.hydra.raise("c1", "contoso-web")
@@ -369,7 +447,7 @@ func TestSomebodyTheOperatorEnteredIsTheSamePerson(t *testing.T) {
 		d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Enrolling() })
 		d.connect(t, p, "entra")
 
-		dana := entered(t, d, "dana", "dana@contoso.example")
+		dana := d.entered(t, "dana", "dana@contoso.example")
 		p.Subject = "dana-at-entra"
 		p.Claims = map[string]any{"email": "dana@contoso.example", "email_verified": true}
 		d.hydra.raise("c1", "contoso-web")
@@ -386,6 +464,208 @@ func TestSomebodyTheOperatorEnteredIsTheSamePerson(t *testing.T) {
 		res = d.through(t, d.browser(t), "c2", "entra")
 		x.Equal(http.StatusSeeOther, res.StatusCode)
 	})
+}
+
+// TestAnAddressNobodyVouchedForInvitesNobody is the other half of an invitation:
+// what is **not** one, however verified the arrival at it.
+//
+// A sign-in matched whatever row held the address, so a row nobody had checked
+// was enough -- and two roads to such a row are the holder's own. Whoever wrote
+// a victim's address down first was handed the victim when they arrived:
+// linked to the squatter's account, and signed in as it. A row names somebody
+// arriving when it is proved, or when it is an operator's invitation to
+// somebody who has not arrived yet (`arrives.invitation`), and in no other case.
+func TestAnAddressNobodyVouchedForInvitesNobody(t *testing.T) {
+	const address = "dana@contoso.example"
+
+	// whose answers whose the address is now, and whether anybody proved it.
+	whose := func(t *testing.T, d *deployment) (pdid.Id, bool) {
+		t.Helper()
+		v, err := d.s.Ungated.Email().Get(t.Context(), rstr.EmailGetRequest_builder{
+			Ref: rstr.EmailRef_builder{
+				At: rstr.EmailRefByAt_builder{TenantId: d.tenant(t).Bytes(), Address: proto.String(address)}.Build(),
+			}.Build(),
+			Select: rstr.EmailSelect_builder{
+				DateVerified: proto.Bool(true),
+				Holder:       rstr.HolderSelect_builder{}.Build(),
+			}.Build(),
+		}.Build())
+		require.NoError(t, err)
+
+		return idOf(t, v.GetHolder().GetId()), v.GetDateVerified() != nil
+	}
+
+	// A connection that lets its users say any address and checks none --
+	// any directory's administrator, through Microsoft's sign-in for any
+	// account -- and the address arriving unchecked is kept on the squatter's
+	// row, with the directory as its voucher.
+	t.Run("a directory's unchecked word", func(t *testing.T) {
+		x := require.New(t)
+		anyone := idptest.New(t, "login-app")
+		honest := idptest.New(t, "login-app")
+		d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Enrolling() })
+		d.connect(t, anyone, "anyone")
+		d.connect(t, honest, "entra")
+
+		anyone.Subject = "mallory"
+		anyone.Claims = map[string]any{"email": address}
+		d.hydra.raise("c1", "contoso-web")
+		res := d.through(t, d.browser(t), "c1", "anyone")
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+		mallory, _ := d.hydra.told()
+
+		// Dana, verified, through a directory that checks.
+		honest.Subject = "dana-at-entra"
+		honest.Claims = map[string]any{"email": address, "email_verified": true}
+		d.hydra.raise("c2", "contoso-web")
+		res = d.through(t, d.browser(t), "c2", "entra")
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+		dana, _ := d.hydra.told()
+		x.NotEqual(mallory, dana, "dana was signed in as the account that wrote her address down first")
+
+		// And the address followed the proof, to her.
+		at, proved := whose(t, d)
+		x.Equal(dana, at.String())
+		x.True(proved)
+	})
+
+	// And the same word on a row nobody signs in to -- the identity that
+	// carried it gone, the person never having arrived -- is still a word
+	// nobody checked. What a directory did not verify is no invitation,
+	// whatever else is true of the row.
+	t.Run("a directory's unchecked word, on nobody yet", func(t *testing.T) {
+		x := require.New(t)
+		p := idptest.New(t, "login-app")
+		d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Expected() })
+		d.connect(t, p, "entra")
+
+		nobody, err := d.s.Ungated.Holder().Add(t.Context(), rstr.HolderAddRequest_builder{
+			Tenant: rstr.TenantRef_builder{Id: d.tenant(t).Bytes()}.Build(),
+			Alias:  "nobody",
+		}.Build())
+		x.NoError(err)
+		voucher, err := d.s.Ungated.Identity().Add(t.Context(), rstr.IdentityAddRequest_builder{
+			Holder:   rstr.HolderRef_builder{Id: d.who["contoso"].Bytes()}.Build(),
+			Provider: "anyone",
+			Subject:  "whoever",
+		}.Build())
+		x.NoError(err)
+		_, err = d.s.Ungated.Email().Add(t.Context(), rstr.EmailAddRequest_builder{
+			Holder:    rstr.HolderRef_builder{Id: nobody.GetId()}.Build(),
+			Address:   address,
+			VouchedBy: rstr.IdentityRef_builder{Id: voucher.GetId()}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		p.Subject = "dana-at-entra"
+		p.Claims = map[string]any{"email": address, "email_verified": true}
+		d.hydra.raise("c1", "contoso-web")
+		res := d.through(t, d.browser(t), "c1", "entra")
+		x.Equal(http.StatusForbidden, res.StatusCode, "a directory's unchecked word invited whoever proved the address")
+	})
+
+	// An address a person wrote onto their own row, as themselves: their claim
+	// about a mailbox, whatever way in they wrote it with -- and they need not
+	// still have it, so the claim is read by who wrote it and not by whether
+	// they can sign in now.
+	t.Run("their own claim", func(t *testing.T) {
+		x := require.New(t)
+		p := idptest.New(t, "login-app")
+		d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Expected() })
+		d.connect(t, p, "entra")
+
+		mallory, err := d.s.Ungated.Holder().Add(t.Context(), rstr.HolderAddRequest_builder{
+			Tenant: rstr.TenantRef_builder{Id: d.tenant(t).Bytes()}.Build(),
+			Alias:  "mallory",
+		}.Build())
+		x.NoError(err)
+		// As her: a frame naming her, which is what any credential of hers
+		// resolves to.
+		as := frame.Into(t.Context(), frame.New(idOf(t, mallory.GetId()), d.tenant(t), frame.Whole()).WithScope(frame.Only(d.tenant(t))))
+		_, err = d.s.Ungated.Email().Add(as, rstr.EmailAddRequest_builder{
+			Holder:  rstr.HolderRef_builder{Id: mallory.GetId()}.Build(),
+			Address: address,
+		}.Build())
+		x.NoError(err)
+
+		p.Subject = "dana-at-entra"
+		p.Claims = map[string]any{"email": address, "email_verified": true}
+		d.hydra.raise("c1", "contoso-web")
+		res := d.through(t, d.browser(t), "c1", "entra")
+		x.Equal(http.StatusForbidden, res.StatusCode, "an address somebody wrote onto their own account invited whoever proved it")
+	})
+
+	// An operator's word is an invitation for somebody who has not arrived,
+	// and not a way into an account somebody already signs in to: erin has a
+	// password, so the address an operator added to her row is not handed to
+	// whoever proves that mailbox next.
+	t.Run("somebody who has arrived already", func(t *testing.T) {
+		x := require.New(t)
+		p := idptest.New(t, "login-app")
+		d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Expected() })
+		d.connect(t, p, "entra")
+
+		_, err := d.s.Ungated.Email().Add(t.Context(), rstr.EmailAddRequest_builder{
+			Holder:  rstr.HolderRef_builder{Id: d.who["contoso"].Bytes()}.Build(),
+			Address: address,
+		}.Build())
+		x.NoError(err)
+
+		p.Subject = "dana-at-entra"
+		p.Claims = map[string]any{"email": address, "email_verified": true}
+		d.hydra.raise("c1", "contoso-web")
+		res := d.through(t, d.browser(t), "c1", "entra")
+		x.Equal(http.StatusForbidden, res.StatusCode, "an operator's address on somebody who signs in already handed them a stranger")
+	})
+
+	// And what still names somebody, whoever wrote it: an address they proved.
+	// The verified arrival at that mailbox is the person who proved it.
+	t.Run("a proved address is still theirs", func(t *testing.T) {
+		x := require.New(t)
+		p := idptest.New(t, "login-app")
+		d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Expected() })
+		d.connect(t, p, "entra")
+
+		v, err := d.s.Ungated.Email().Add(t.Context(), rstr.EmailAddRequest_builder{
+			Holder:  rstr.HolderRef_builder{Id: d.who["contoso"].Bytes()}.Build(),
+			Address: address,
+		}.Build())
+		x.NoError(err)
+		_, err = d.s.Ungated.Email().Patch(t.Context(), rstr.EmailPatchRequest_builder{
+			Ref:          rstr.EmailRef_builder{Id: v.GetId()}.Build(),
+			DateVerified: timestamppb.Now(),
+			DateUpdated:  v.GetDateUpdated(),
+		}.Build())
+		x.NoError(err)
+
+		p.Subject = "dana-at-entra"
+		p.Claims = map[string]any{"email": address, "email_verified": true}
+		d.hydra.raise("c1", "contoso-web")
+		res := d.through(t, d.browser(t), "c1", "entra")
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+		subject, _ := d.hydra.told()
+		x.Equal(d.who["contoso"].String(), subject)
+	})
+}
+
+// tenant is contoso's identifier.
+func (d *deployment) tenant(t *testing.T) pdid.Id {
+	t.Helper()
+
+	tn, err := d.s.Ungated.Tenant().Get(t.Context(), rstr.TenantGetRequest_builder{
+		Ref: rstr.TenantRef_builder{Alias: proto.String("contoso")}.Build(),
+	}.Build())
+	require.NoError(t, err)
+
+	return idOf(t, tn.GetId())
+}
+
+func idOf(t *testing.T, b []byte) pdid.Id {
+	t.Helper()
+	id, err := pdid.From(b)
+	require.NoError(t, err)
+
+	return id
 }
 
 // TestADottedAddressSignsIn is the derivation, through the whole flow.
@@ -552,7 +832,10 @@ func TestTheAddressADirectoryHandedOverIsKept(t *testing.T) {
 	t.Run("verified later, so the next sign-in stamps it", func(t *testing.T) {
 		x := require.New(t)
 		p := idptest.New(t, "login-app")
-		d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Enrolling() })
+		d := serveAs(t, login.Skip, func(c *login.Config) {
+			c.Enrol = arrives.Enrolling()
+			c.Microsoft = p.URL
+		})
 		d.connect(t, p, "entra")
 
 		p.Subject = "frank-at-entra"

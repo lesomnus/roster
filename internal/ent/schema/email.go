@@ -25,6 +25,10 @@ func (Email) Fields() []ent.Field {
 		field.Time("date_verified").
 			Nillable().
 			Optional(),
+		field.Bytes("entered_by").
+			Nillable().
+			Immutable().
+			Optional(),
 		field.Uuid("tenant_id").
 			Immutable(),
 		field.Time("date_updated"),

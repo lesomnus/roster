@@ -383,9 +383,10 @@ func newCmdLoginDoctor(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 //
 // `Email.Get` is the invitation: an tenant who entered somebody in advance
 // knows their address and not the subject a directory will assert, so the first
-// sign-in is matched by the one and linked to the other. `Email.Attest` is the
-// other direction -- the address the directory itself handed over, kept with
-// the identity that vouched for it.
+// sign-in is matched by the one and linked to the other -- for as long as that
+// person has no way in, which `HolderService.SignsIn` says. `Email.Attest` is
+// the other direction -- the address the directory itself handed over, kept
+// with the identity that vouched for it.
 //
 // **`HolderService.Add` is not here, and that is the point of the list.** It is
 // what `enrol: enrolling` needs, and making people is a wider grant than
@@ -413,6 +414,12 @@ var LoginMethods = append([]string{
 	rstr.IdentityService_Get_FullMethodName,
 	rstr.IdentityService_Add_FullMethodName,
 	rstr.EmailService_Get_FullMethodName,
+
+	// Whether the person an invitation names has arrived yet: an address an
+	// operator entered admits somebody only while they have no way in
+	// (`arrives.invitation`), and this is the read that says so -- identities,
+	// credentials and keys, and never a verifier.
+	rstr.HolderService_SignsIn_FullMethodName,
 
 	// Moving somebody to the claim their connection now names, at their next
 	// sign-in (`Connection.subject_claim`). Held always, like `Fill`: whether a

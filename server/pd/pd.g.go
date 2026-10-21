@@ -9011,6 +9011,10 @@ func (s gateEmail) admit(ctx context.Context, req *rstr.EmailAddRequest) (*rstr.
 		return nil, pderr.Invalidf("date_verified", "is established by this deployment and not asserted by a request")
 	}
 
+	if req.HasEnteredBy() {
+		return nil, pderr.Invalidf("entered_by", "is established by this deployment and not asserted by a request")
+	}
+
 	if ref := req.GetHolder(); ref != nil {
 		if err := seen.Visible(ctx, s.Gate.drv, "Holder", ref, func() error {
 			_, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{

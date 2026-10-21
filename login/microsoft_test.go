@@ -169,21 +169,14 @@ func TestMicrosoftsWordMakesAnAddressAnInvitation(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			x := require.New(t)
 			p := idptest.New(t, "login-app")
-			d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Expected() })
+			d := serveAs(t, login.Skip, func(c *login.Config) {
+				c.Enrol = arrives.Expected()
+				// The fake, as Microsoft's sign-in: `xms_edov` is its word
+				// and nobody else's.
+				c.Microsoft = p.URL
+			})
 			d.connectAt(t, p, "microsoft", p.URL+"/common/v2.0")
-
-			who, err := d.s.Ungated.Holder().Add(t.Context(), rstr.HolderAddRequest_builder{
-				Tenant: rstr.TenantRef_builder{Alias: proto.String("contoso")}.Build(),
-				Alias:  "dana", Name: "Dana",
-			}.Build())
-			x.NoError(err)
-			_, err = d.s.Ungated.Email().Add(t.Context(), rstr.EmailAddRequest_builder{
-				Holder:  rstr.HolderRef_builder{Id: who.GetId()}.Build(),
-				Address: "dana@contoso.example",
-			}.Build())
-			x.NoError(err)
-			dana, err := pdid.From(who.GetId())
-			x.NoError(err)
+			dana := d.entered(t, "dana", "dana@contoso.example")
 
 			p.Tid, p.Subject = fabrikamTid, "AAAA"
 			p.Claims = map[string]any{"email": "dana@contoso.example"}
@@ -199,4 +192,49 @@ func TestMicrosoftsWordMakesAnAddressAnInvitation(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestMicrosoftsWordIsMicrosoftsAlone: `xms_edov` in a token some other issuer
+// signed is a claim like any other somebody may have put there -- a user's own
+// attribute, mapped into the token -- and an address is verified on the
+// provider's word. So the same token from an issuer that is not Microsoft's,
+// Microsoft's paths and all, finds nobody by address.
+func TestMicrosoftsWordIsMicrosoftsAlone(t *testing.T) {
+	x := require.New(t)
+	p := idptest.New(t, "login-app")
+	d := serveAs(t, login.Skip, func(c *login.Config) { c.Enrol = arrives.Expected() })
+	d.connectAt(t, p, "microsoft", p.URL+"/common/v2.0")
+	d.entered(t, "dana", "dana@contoso.example")
+
+	p.Tid, p.Subject = fabrikamTid, "AAAA"
+	p.Claims = map[string]any{"email": "dana@contoso.example", "xms_edov": true}
+	d.hydra.raise("c1", "contoso-web")
+	res := d.through(t, d.browser(t), "c1", "microsoft")
+	x.Equal(http.StatusForbidden, res.StatusCode, "an issuer that is not Microsoft's was believed in Microsoft's words")
+
+	_, told := d.hydra.said()
+	x.False(told)
+}
+
+// entered is somebody an operator put in by hand with the address they will
+// arrive under, and nothing else: no way in, which is what makes the address an
+// invitation.
+func (d *deployment) entered(t *testing.T, alias, address string) pdid.Id {
+	t.Helper()
+	x := require.New(t)
+
+	who, err := d.s.Ungated.Holder().Add(t.Context(), rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Alias: proto.String("contoso")}.Build(),
+		Alias:  alias, Name: "Dana",
+	}.Build())
+	x.NoError(err)
+	_, err = d.s.Ungated.Email().Add(t.Context(), rstr.EmailAddRequest_builder{
+		Holder:  rstr.HolderRef_builder{Id: who.GetId()}.Build(),
+		Address: address,
+	}.Build())
+	x.NoError(err)
+	id, err := pdid.From(who.GetId())
+	x.NoError(err)
+
+	return id
 }

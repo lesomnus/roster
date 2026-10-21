@@ -145,4 +145,62 @@ func TestAnAddressWithNoVoucherIsAllowed(t *testing.T) {
 	x.False(v.HasVouchedBy())
 }
 
+// TestAnAddressSaysWhoWroteIt, which is what tells a person's claim about their
+// own mailbox from somebody else's word about them (`Email.entered_by`).
+//
+// The writer is the frame's actor and never the request's: a caller who could
+// say who wrote an address could make their own claim read as an operator's
+// invitation, which is the shape a sign-in matching by address was taken by.
+func TestAnAddressSaysWhoWroteIt(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	got := func(v *app.Email) []byte {
+		t.Helper()
+		e, err := b.Ungated.Email().Get(ctx, app.EmailGetRequest_builder{
+			Ref:    v.Ref(),
+			Select: app.EmailSelect_builder{EnteredBy: ptr(true)}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		return e.GetEnteredBy()
+	}
+
+	// Their own, typed in as themselves.
+	own, err := b.Walled.Email().Add(b.as(ctx, b.ContosoUser, b.Contoso), app.EmailAddRequest_builder{
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Address: "mine@contoso.example",
+	}.Build())
+	x.NoError(err)
+	x.Equal(b.ContosoUser.Bytes(), got(own))
+
+	// An administrator's, about somebody else.
+	admin := b.holder(t, ctx, b.Contoso, "admin")
+	theirs, err := b.Walled.Email().Add(b.as(ctx, admin, b.Contoso), app.EmailAddRequest_builder{
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Address: "entered@contoso.example",
+	}.Build())
+	x.NoError(err)
+	x.Equal(admin.Bytes(), got(theirs))
+
+	// The deployment's own command, with nobody asking: nobody to name.
+	x.Empty(got(func() *app.Email {
+		v, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
+			Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Address: "seeded@contoso.example",
+		}.Build())
+		x.NoError(err)
+
+		return v
+	}()))
+
+	// And a request that says it itself is refused, whoever it names.
+	_, err = b.Walled.Email().Add(b.as(ctx, b.ContosoUser, b.Contoso), app.EmailAddRequest_builder{
+		Holder:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Address:   "forged@contoso.example",
+		EnteredBy: admin.Bytes(),
+	}.Build())
+	x.Equal(codes.InvalidArgument, status.Code(err), "%v", err)
+}
+
 func ptr[T any](v T) *T { return &v }

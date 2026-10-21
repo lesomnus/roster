@@ -74,7 +74,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -125,10 +124,12 @@ type Config struct {
 	// or a deployment that has not moved yet (#76).
 	Key string
 
-	// Base is this app's public origin, the one registered with every provider
-	// as the redirect: `https://login.example.com`. Empty derives it from each
-	// request, which suits one tenant behind one name and nothing else, since a
-	// provider will only send a browser back to a URL it was told about.
+	// Base is this app's public origin, the one every provider's redirect is
+	// under: `https://login.example.com`, and each connection registered there
+	// as `https://login.example.com/callback/<tenant>/<connection>`. Empty
+	// derives it from each request, which suits one tenant behind one name and
+	// nothing else, since a provider will only send a browser back to a URL it
+	// was told about.
 	Base *url.URL
 
 	// Secret turns a `Connection.secret_ref` into the client secret it names.
@@ -146,6 +147,10 @@ type Config struct {
 	// GitHub is the Login App's `login.Config.GitHub`: the issuer that is
 	// GitHub's sign-in rather than an OpenID provider's.
 	GitHub string
+
+	// Microsoft is the Login App's `login.Config.Microsoft`: the origin whose
+	// tokens' `xms_edov` is Microsoft's word.
+	Microsoft string
 
 	// Sessions is this app's own cookie. Never roster's.
 	Sessions *authsession.Sessions
@@ -239,6 +244,9 @@ var Calls = append([]string{
 	rstr.ConnectionService_List_FullMethodName,
 	rstr.ConnectionService_Get_FullMethodName,
 	rstr.IdentityService_Get_FullMethodName,
+	// Whether the person an invitation names has arrived yet
+	// (`cli.LoginMethods` says why).
+	rstr.HolderService_SignsIn_FullMethodName,
 	rstr.VouchService_Verify_FullMethodName,
 	rstr.VouchService_Delegate_FullMethodName,
 	rstr.VouchService_Accept_FullMethodName,
@@ -401,6 +409,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 	a.arrives = arrives.New(a.roster, c.Secret)
 	a.arrives.SlackAPI = c.SlackAPI
 	a.arrives.GitHub = c.GitHub
+	a.arrives.Microsoft = c.Microsoft
 
 	if c.Key != "" {
 		if err := a.nominated(ctx); err != nil {
@@ -488,7 +497,7 @@ func (a *App) Handler() http.Handler {
 	m.HandleFunc("GET /device/poll", a.devicePoll)
 	m.HandleFunc("GET /device/pending", a.devicePending)
 	m.HandleFunc("POST /device/approve", a.deviceApprove)
-	m.HandleFunc("GET /callback", a.callback)
+	m.HandleFunc("GET /callback/{tenant}/{connection}", a.callback)
 	m.HandleFunc("POST /recover", a.recover)
 	m.HandleFunc("GET /redeem", a.redeem)
 	m.HandleFunc("POST /verify", a.verify)
@@ -700,33 +709,31 @@ func (a *App) connections(ctx context.Context, t *tenant) ([]*rstr.Connection, e
 	return a.arrives.Connections(t.on(ctx), t.id)
 }
 
-// relying is this app as the relying party for one connection of one tenant.
-func (a *App) relying(ctx context.Context, t *tenant, name string, r *http.Request) (*oauth2.Config, *arrives.Verifier, error) {
-	return a.arrives.Relying(t.on(ctx), t.id, name, a.redirect(r))
-}
-
-// redirect is where a provider sends the browser back: `Base` if the
-// deployment named one, else this request's own origin.
-func (a *App) redirect(r *http.Request) string {
+// origin is where a provider sends the browser back under: `Base` if the
+// deployment named one, else this request's own origin. Each connection's
+// redirect is a path of its own beneath it (`arrives.Trip`), which is what a
+// deployment registers with that provider:
+// `https://contoso.example/callback/contoso/entra`.
+func (a *App) origin(r *http.Request) string {
 	if a.c.Base != nil {
-		return a.c.Base.JoinPath("/callback").String()
+		return a.c.Base.String()
 	}
 	scheme := "http"
 	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
 		scheme = "https"
 	}
 
-	return scheme + "://" + r.Host + "/callback"
+	return scheme + "://" + r.Host
 }
 
 // A flow is one round trip to a provider, started and not yet finished. It is
 // held by state in an [arrives.States]; the cookie below binds the browser to
 // it, so a callback carrying a state this browser did not start is refused.
 type flow struct {
-	tenant     *tenant
-	connection string
-	link       bool
-	who        pdid.Id // for a link: whose account is being added to
+	tenant *tenant
+	trip   *arrives.Trip
+	link   bool
+	who    pdid.Id // for a link: whose account is being added to
 
 	// next is where the browser goes back to when the sign-in was started from
 	// the tenant's user console rather than from this page: that console's own
@@ -781,17 +788,6 @@ func (a *App) start(w http.ResponseWriter, r *http.Request, link bool, who pdid.
 		name = cs[0].GetName()
 	}
 
-	cfg, _, err := a.relying(ctx, t, name, r)
-	if err != nil {
-		if status.Code(err) == codes.NotFound {
-			http.Error(w, "connection: no such provider here", http.StatusNotFound)
-			return
-		}
-		fmt.Fprintf(os.Stderr, "account: %s/%s: %v\n", t.alias, name, err)
-		http.Error(w, "cannot start", http.StatusInternalServerError)
-		return
-	}
-
 	// Where the browser came from, when it came from the tenant's user console:
 	// checked **before** the round trip, because an open redirect with a way in
 	// attached is worse than one without.
@@ -806,7 +802,17 @@ func (a *App) start(w http.ResponseWriter, r *http.Request, link bool, who pdid.
 		http.Error(w, "cannot start", http.StatusInternalServerError)
 		return
 	}
-	a.flows.Put(state, flow{tenant: t, connection: name, link: link, who: who, next: next}, 10*time.Minute)
+	trip, err := a.arrives.Begin(t.on(ctx), t.id, t.alias, name, a.origin(r), state)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			http.Error(w, "connection: no such provider here", http.StatusNotFound)
+			return
+		}
+		fmt.Fprintf(os.Stderr, "account: %s/%s: %v\n", t.alias, name, err)
+		http.Error(w, "cannot start", http.StatusInternalServerError)
+		return
+	}
+	a.flows.Put(state, flow{tenant: t, trip: trip, link: link, who: who, next: next}, 10*time.Minute)
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     stateCookie,
@@ -817,10 +823,11 @@ func (a *App) start(w http.ResponseWriter, r *http.Request, link bool, who pdid.
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   600,
 	})
-	http.Redirect(w, r, cfg.AuthCodeURL(state), http.StatusFound)
+	http.Redirect(w, r, trip.URL, http.StatusFound)
 }
 
-// callback finishes the round trip.
+// callback finishes the round trip: at the URL registered for the connection
+// the flow went to, which is the one it has to come back to (`arrives.Trip`).
 func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	http.SetCookie(w, &http.Cookie{Name: stateCookie, Path: "/", MaxAge: -1})
@@ -840,22 +847,19 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg, verifier, err := a.relying(ctx, f.tenant, f.connection, r)
-	if err != nil {
-		http.Error(w, "cannot finish", http.StatusInternalServerError)
-		return
-	}
+	as := f.tenant.on(ctx)
 
-	who, err := a.arrives.Claim(ctx, cfg, verifier, r.URL.Query().Get("code"))
+	who, err := a.arrives.Claim(as, f.trip, r)
 	if err != nil {
+		if errors.Is(err, arrives.ErrUnfinished) {
+			fmt.Fprintf(os.Stderr, "account: %s: %v\n", f.tenant.alias, err)
+			http.Error(w, "cannot finish", http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprintf(os.Stderr, "account: %s: a provider's answer was refused: %v\n", f.tenant.alias, err)
 		http.Error(w, "no", http.StatusBadRequest)
 		return
 	}
-	who.Tenant = f.tenant.id
-	who.TenantAlias = f.tenant.alias
-	who.Provider = f.connection
-
-	as := f.tenant.on(ctx)
 
 	if f.link {
 		_, err := a.roster.Identity().Add(as, rstr.IdentityAddRequest_builder{

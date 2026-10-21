@@ -65,16 +65,20 @@ func NewGitHub(t *testing.T, clientId, secret string) *GitHub {
 		_ = r.ParseForm()
 		g.mu.Lock()
 		g.sent = r.PostForm
+		asked := g.asked
 		g.mu.Unlock()
 
 		w.Header().Set("content-type", "application/x-www-form-urlencoded; charset=utf-8")
-		switch {
+		switch why := heldTo(asked, r.PostForm); {
 		case r.PostForm.Get("client_id") != g.ClientId || r.PostForm.Get("client_secret") != g.Secret:
 			_, _ = w.Write([]byte(url.Values{
 				"error":             {"incorrect_client_credentials"},
 				"error_description": {"The client_id and/or client_secret passed are incorrect."},
 			}.Encode()))
-		case r.PostForm.Get("code") != "the-code":
+		case r.PostForm.Get("code") != "the-code" || why != "":
+			// One error for a code GitHub did not hand out and one handed out
+			// for another redirect or another verifier, which is what GitHub
+			// answers to both.
 			_, _ = w.Write([]byte(url.Values{
 				"error":             {"bad_verification_code"},
 				"error_description": {"The code passed is incorrect or expired."},
@@ -137,7 +141,8 @@ func NewGitHub(t *testing.T, clientId, secret string) *GitHub {
 	return g
 }
 
-// Asked is what the last authorize was asked with: `scope`, `client_id`.
+// Asked is what the last authorize was asked with: `scope`, `client_id`,
+// `code_challenge`.
 func (g *GitHub) Asked() url.Values {
 	g.mu.Lock()
 	defer g.mu.Unlock()

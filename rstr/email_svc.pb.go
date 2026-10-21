@@ -29,6 +29,7 @@ type EmailAddRequest struct {
 	xxx_hidden_Address      string                 `protobuf:"bytes,8,opt,name=address"`
 	xxx_hidden_DateVerified *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=date_verified,json=dateVerified"`
 	xxx_hidden_VouchedBy    *IdentityRef           `protobuf:"bytes,10,opt,name=vouched_by,json=vouchedBy"`
+	xxx_hidden_EnteredBy    []byte                 `protobuf:"bytes,12,opt,name=entered_by,json=enteredBy"`
 	xxx_hidden_TenantId     []byte                 `protobuf:"bytes,11,opt,name=tenant_id,json=tenantId"`
 	xxx_hidden_DateCreated  *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
@@ -97,6 +98,13 @@ func (x *EmailAddRequest) GetVouchedBy() *IdentityRef {
 	return nil
 }
 
+func (x *EmailAddRequest) GetEnteredBy() []byte {
+	if x != nil {
+		return x.xxx_hidden_EnteredBy
+	}
+	return nil
+}
+
 func (x *EmailAddRequest) GetTenantId() []byte {
 	if x != nil {
 		return x.xxx_hidden_TenantId
@@ -116,7 +124,7 @@ func (x *EmailAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 8)
 }
 
 func (x *EmailAddRequest) SetHolder(v *HolderRef) {
@@ -133,6 +141,14 @@ func (x *EmailAddRequest) SetDateVerified(v *timestamppb.Timestamp) {
 
 func (x *EmailAddRequest) SetVouchedBy(v *IdentityRef) {
 	x.xxx_hidden_VouchedBy = v
+}
+
+func (x *EmailAddRequest) SetEnteredBy(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_EnteredBy = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 8)
 }
 
 func (x *EmailAddRequest) SetTenantId(v []byte) {
@@ -174,6 +190,13 @@ func (x *EmailAddRequest) HasVouchedBy() bool {
 	return x.xxx_hidden_VouchedBy != nil
 }
 
+func (x *EmailAddRequest) HasEnteredBy() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
 func (x *EmailAddRequest) HasDateCreated() bool {
 	if x == nil {
 		return false
@@ -198,6 +221,11 @@ func (x *EmailAddRequest) ClearVouchedBy() {
 	x.xxx_hidden_VouchedBy = nil
 }
 
+func (x *EmailAddRequest) ClearEnteredBy() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_EnteredBy = nil
+}
+
 func (x *EmailAddRequest) ClearDateCreated() {
 	x.xxx_hidden_DateCreated = nil
 }
@@ -210,6 +238,7 @@ type EmailAddRequest_builder struct {
 	Address      string
 	DateVerified *timestamppb.Timestamp
 	VouchedBy    *IdentityRef
+	EnteredBy    []byte
 	TenantId     []byte
 	DateCreated  *timestamppb.Timestamp
 }
@@ -219,13 +248,17 @@ func (b0 EmailAddRequest_builder) Build() *EmailAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 8)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Address = b.Address
 	x.xxx_hidden_DateVerified = b.DateVerified
 	x.xxx_hidden_VouchedBy = b.VouchedBy
+	if b.EnteredBy != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
+		x.xxx_hidden_EnteredBy = b.EnteredBy
+	}
 	x.xxx_hidden_TenantId = b.TenantId
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
@@ -759,6 +792,7 @@ type EmailSelect struct {
 	xxx_hidden_Address      bool                   `protobuf:"varint,8,opt,name=address"`
 	xxx_hidden_DateVerified bool                   `protobuf:"varint,9,opt,name=date_verified,json=dateVerified"`
 	xxx_hidden_VouchedBy    *IdentitySelect        `protobuf:"bytes,10,opt,name=vouched_by,json=vouchedBy"`
+	xxx_hidden_EnteredBy    bool                   `protobuf:"varint,12,opt,name=entered_by,json=enteredBy"`
 	xxx_hidden_TenantId     bool                   `protobuf:"varint,11,opt,name=tenant_id,json=tenantId"`
 	xxx_hidden_DateUpdated  bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased   bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
@@ -829,6 +863,13 @@ func (x *EmailSelect) GetVouchedBy() *IdentitySelect {
 	return nil
 }
 
+func (x *EmailSelect) GetEnteredBy() bool {
+	if x != nil {
+		return x.xxx_hidden_EnteredBy
+	}
+	return false
+}
+
 func (x *EmailSelect) GetTenantId() bool {
 	if x != nil {
 		return x.xxx_hidden_TenantId
@@ -859,7 +900,7 @@ func (x *EmailSelect) GetDateCreated() bool {
 
 func (x *EmailSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 10)
 }
 
 func (x *EmailSelect) SetHolder(v *HolderSelect) {
@@ -868,36 +909,41 @@ func (x *EmailSelect) SetHolder(v *HolderSelect) {
 
 func (x *EmailSelect) SetAddress(v bool) {
 	x.xxx_hidden_Address = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 10)
 }
 
 func (x *EmailSelect) SetDateVerified(v bool) {
 	x.xxx_hidden_DateVerified = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 10)
 }
 
 func (x *EmailSelect) SetVouchedBy(v *IdentitySelect) {
 	x.xxx_hidden_VouchedBy = v
 }
 
+func (x *EmailSelect) SetEnteredBy(v bool) {
+	x.xxx_hidden_EnteredBy = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 10)
+}
+
 func (x *EmailSelect) SetTenantId(v bool) {
 	x.xxx_hidden_TenantId = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 10)
 }
 
 func (x *EmailSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 10)
 }
 
 func (x *EmailSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 10)
 }
 
 func (x *EmailSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 10)
 }
 
 func (x *EmailSelect) HasAll() bool {
@@ -935,32 +981,39 @@ func (x *EmailSelect) HasVouchedBy() bool {
 	return x.xxx_hidden_VouchedBy != nil
 }
 
-func (x *EmailSelect) HasTenantId() bool {
+func (x *EmailSelect) HasEnteredBy() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *EmailSelect) HasDateUpdated() bool {
+func (x *EmailSelect) HasTenantId() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
-func (x *EmailSelect) HasDateErased() bool {
+func (x *EmailSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
-func (x *EmailSelect) HasDateCreated() bool {
+func (x *EmailSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+}
+
+func (x *EmailSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
 func (x *EmailSelect) ClearAll() {
@@ -986,23 +1039,28 @@ func (x *EmailSelect) ClearVouchedBy() {
 	x.xxx_hidden_VouchedBy = nil
 }
 
-func (x *EmailSelect) ClearTenantId() {
+func (x *EmailSelect) ClearEnteredBy() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_EnteredBy = false
+}
+
+func (x *EmailSelect) ClearTenantId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_TenantId = false
 }
 
 func (x *EmailSelect) ClearDateUpdated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *EmailSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *EmailSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_DateCreated = false
 }
 
@@ -1014,6 +1072,7 @@ type EmailSelect_builder struct {
 	Address      *bool
 	DateVerified *bool
 	VouchedBy    *IdentitySelect
+	EnteredBy    *bool
 	TenantId     *bool
 	DateUpdated  *bool
 	DateErased   *bool
@@ -1025,33 +1084,37 @@ func (b0 EmailSelect_builder) Build() *EmailSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 10)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Holder = b.Holder
 	if b.Address != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 10)
 		x.xxx_hidden_Address = *b.Address
 	}
 	if b.DateVerified != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 10)
 		x.xxx_hidden_DateVerified = *b.DateVerified
 	}
 	x.xxx_hidden_VouchedBy = b.VouchedBy
+	if b.EnteredBy != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 10)
+		x.xxx_hidden_EnteredBy = *b.EnteredBy
+	}
 	if b.TenantId != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 10)
 		x.xxx_hidden_TenantId = *b.TenantId
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 10)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 10)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 10)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -2603,7 +2666,7 @@ var File_app_email_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_email_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x15app/email_svc.g.proto\x12\x06roster\x1a\x0fapp/email.proto\x1a\x18app/identity_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xc5\x02\n" +
+	"\x15app/email_svc.g.proto\x12\x06roster\x1a\x0fapp/email.proto\x1a\x18app/identity_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xe4\x02\n" +
 	"\x0fEmailAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1f\n" +
@@ -2611,7 +2674,9 @@ const file_app_email_svc_g_proto_rawDesc = "" +
 	"\rdate_verified\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\fdateVerified\x122\n" +
 	"\n" +
 	"vouched_by\x18\n" +
-	" \x01(\v2\x13.roster.IdentityRefR\tvouchedBy\x12\"\n" +
+	" \x01(\v2\x13.roster.IdentityRefR\tvouchedBy\x12\x1d\n" +
+	"\n" +
+	"entered_by\x18\f \x01(\fR\tenteredBy\x12\"\n" +
 	"\ttenant_id\x18\v \x01(\fB\x05\xaa\x01\x02\b\x02R\btenantId\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"b\n" +
 	"\x0fEmailGetRequest\x12\"\n" +
@@ -2627,7 +2692,7 @@ const file_app_email_svc_g_proto_rawDesc = "" +
 	"\aaddress\x18\b \x01(\tR\aaddress\"E\n" +
 	"\fEmailRefByAt\x12\x1b\n" +
 	"\ttenant_id\x18\v \x01(\fR\btenantId\x12\x18\n" +
-	"\aaddress\x18\b \x01(\tR\aaddress\"\xc7\x02\n" +
+	"\aaddress\x18\b \x01(\tR\aaddress\"\xe6\x02\n" +
 	"\vEmailSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12\x18\n" +
@@ -2635,7 +2700,9 @@ const file_app_email_svc_g_proto_rawDesc = "" +
 	"\rdate_verified\x18\t \x01(\bR\fdateVerified\x125\n" +
 	"\n" +
 	"vouched_by\x18\n" +
-	" \x01(\v2\x16.roster.IdentitySelectR\tvouchedBy\x12\x1b\n" +
+	" \x01(\v2\x16.roster.IdentitySelectR\tvouchedBy\x12\x1d\n" +
+	"\n" +
+	"entered_by\x18\f \x01(\bR\tenteredBy\x12\x1b\n" +
 	"\ttenant_id\x18\v \x01(\bR\btenantId\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +

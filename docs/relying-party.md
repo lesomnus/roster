@@ -233,12 +233,12 @@ roster, below. And roster is never told what a flow is: it is asked to prove a s
 is, and to revoke a delegation.
 
 What is not in those four is the **other way in**: `GET /provider` and
-`GET /callback` on the Login App, where somebody arrives from Entra or GitHub.
-That route reads `ConnectionService` for where to send them, `IdentityService`
-(and `HolderService.Add`, for somebody new) for who came back, and
-`VouchService/Accept` instead of `Delegate` -- and then ends identically, at
-`acceptLoginRequest{subject}` with a `Holder.id`. Nothing in front of the issuer
-can tell which route a person took, which is the point.
+`GET /callback/{tenant}/{connection}` on the Login App, where somebody arrives
+from Entra or GitHub. That route reads `ConnectionService` for where to send
+them, `IdentityService` (and `HolderService.Add`, for somebody new) for who came
+back, and `VouchService/Accept` instead of `Delegate` -- and then ends
+identically, at `acceptLoginRequest{subject}` with a `Holder.id`. Nothing in
+front of the issuer can tell which route a person took, which is the point.
 [`docs/login.md`](login.md) § *Every hop* draws it beside this one.
 
 ### Why those are HTTP and not RPCs

@@ -328,11 +328,12 @@ sequenceDiagram
   R-->>L: {issuer, client_id, scopes, secret_ref}
   Note over L: secret_ref is resolved here.<br/>roster stores it and never reads it
   L-->>B: 302 → Entra, state in a cookie
+  Note over L,E: with a PKCE challenge and a nonce,<br/>and redirect_uri /callback/contoso/entra
   B->>E: the authorization request
-  E-->>B: 302 → /callback?code=…&state=…
+  E-->>B: 302 → /callback/contoso/entra?code=…&state=…
 
-  B->>L: GET /callback
-  L->>E: POST /token, and verify the id_token
+  B->>L: GET /callback/contoso/entra
+  L->>E: POST /token with the verifier, and verify the id_token and its nonce
   E-->>L: {sub, oid, email, name}
   L->>R: IdentityService.Get {tenant, provider, subject}
   Note over L,R: subject is the claim the connection names:<br/>sub, or oid for Entra
@@ -364,9 +365,10 @@ sequenceDiagram
 | a product's own buttons | `request_url`, and `ConnectionService.List` | a product whose sign-in screen is its own names the button somebody pressed as `connection=<name>` on the authorization request. Hydra keeps the request whole and ignores the parameter, so `GET /login` reads it there and answers with a 303 to `/provider` for that connection instead of the page. A name the tenant has no connection by is the page, which lists what there is: a hint, not an order, and only ever one of the tenant's own |
 | the form | `TenantService.Get`, `config.password` | whether there is a password form at all. Not a screen setting: roster **refuses** a password for a tenant with this off (`vouch.Offers`), so the page draws what is already true. Unset is yes |
 | which operator | the challenge, again | `/provider` is in a flow, so the `Connection` rows read are the ones the tenant behind the redirect can see -- the call is narrowed to the holder that tenant nominated. fabrikam's challenge cannot reach contoso's directory |
-| the redirect | `login.base` | **one URL for the whole app**, because Hydra sends every browser here under one name. Which operator a callback belongs to comes from the state, and the state is a nonce naming a row this app kept |
+| the redirect | `login.base` | **one origin for the whole app**, because Hydra sends every browser here under one name, and **one path per connection** under it: `<base>/callback/<tenant>/<connection>`, which is what a deployment registers at that provider. Which flow a callback belongs to comes from the state, a nonce naming a row this app kept; the path has to name the connection that flow went to, so a provider's code can only come back through its own connection's door -- one URL for every connection let a server of one tenant's send a browser on to another's provider and be handed the code that came back (a mix-up, RFC 9700 § 4.4) |
+| the round trip's own checks | `arrives.Trip` | a **PKCE** challenge (S256) on every connection, whose verifier the exchange sends, so a code injected into somebody else's browser is refused by the provider itself; and on an OpenID connection a **nonce**, which the ID token has to carry back. GitHub issues no ID token, so it has the first and not the second |
 | the exchange | the provider's own | the Login App is the relying party, exactly as the account app is |
-| who may sign in | `login.enrol` | `invited` admits only somebody already linked; `expected` admits somebody an operator entered, matched by the **address** on their row; `enrolling` admits a stranger too. `enrolling` needs `HolderService.Add`, which `roster login provision` puts on the nominated holder's role and never on the key |
+| who may sign in | `login.enrol`, `HolderService.SignsIn` | `invited` admits only somebody already linked; `expected` admits somebody an operator entered, matched by the **address** on their row; `enrolling` admits a stranger too. An address matches only when it is **proved**, or is an **invitation** -- written by somebody other than the person (`Email.entered_by`), vouched for by no directory, about somebody with no identity, credential or key yet, which `SignsIn` says. An address somebody wrote onto their own account, or a directory handed over unchecked, matches nobody: it would hand whoever arrived verified at that mailbox to the account that claimed it first. `enrolling` needs `HolderService.Add`, which `roster login provision` puts on the nominated holder's role and never on the key |
 | what the profile lacks | the tenant's `config.profile` | `fill` gives the profile what its source says where it has **nothing**: a display name, and a picture for somebody with none. The source is the provider -- the token's `name` and `picture`, else userinfo's, the picture fetched with the token from the provider's own API (Entra's needs `User.Read` among the connection's scopes, consented for the directory first) -- or, where the deployment named the tenant's Slack workspace, Slack's real name and the picture the person chose, found by their address. [operating.md](operating.md) § *A picture from the directory*. Only blanks, through `HolderService.Fill`, which writes nothing over a value and reads nothing back. Never a reason to refuse the sign-in |
 | the sign-in | `VouchService.Accept` | the claim this app verified, exchanged for a delegation. Not `Verify`: there is no password here to check |
 | the session | `Door.Accept` | minted here for the same reason the password path has one -- the consent hop reads the person **as them** to fill the claims |
@@ -428,7 +430,7 @@ functions stop agreeing, in either direction.
 | `DELETE /session` | *frontdoor.* Drops this app's session and revokes the delegation. Not part of the flow -- the flow's own ending is `POST /accept` -- and mounted because it is the same handler | `TestSigningOutRevokesEvenAWindowThatHasPassed` |
 | `POST /accept` | `{redirect_to}`, and **the hop no other front door has**: it turns a finished sign-in into `acceptLoginRequest{subject}`. A page that leaves this out signs somebody in and never ends the flow. 401 when nobody is signed in, or is half way | `TestALoginAppTellsHydraWhoSignedIn` · `TestAFlowReachesOnlyItsOwnOperator` |
 | `GET /provider` | 302 to the directory this operator's `Connection` names, with the state in a cookie | `TestSomebodyArrivesThroughAProvider` · `TestAProviderFlowReachesOnlyItsOwnOperator` |
-| `GET /callback` | where a directory sends the browser back. **Not** in a flow: one URL for the whole app, and which flow it belongs to comes from the state | `TestACallbackWithoutItsOwnStateIsRefused` · `TestAStrangerIsRefusedUnlessTheDeploymentEnrols` |
+| `GET /callback/{tenant}/{connection}` | where a directory sends the browser back: one URL per connection, which is what is registered at that provider. **Not** in a flow: which flow it belongs to comes from the state, and the connection the path names has to be the one that flow went to | `TestACallbackWithoutItsOwnStateIsRefused` · `TestAnAnswerIsHeldToTheRoundTripThatAskedForIt` · `TestAStrangerIsRefusedUnlessTheDeploymentEnrols` |
 | `GET /consent` | a screen when `login.consent` is `ask`, a 303 when it is `skip` or Hydra remembered -- to Hydra with the claims, or carrying `login_required` when there is nobody here to read them for a client that asked | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor` |
 | `POST /consent` | the screen's answer. A no is `consent/reject` and the browser goes back to the client with a refusal | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `ts/e2e/login.spec.ts` |
 | `GET /logout` | a screen only half the time: drawn when nothing proved a relying party started the sign-out, answered with a 303 when something did | `TestALogoutNobodyProvedAnAppAskedForIsConfirmed` · `TestSigningOutEndsWhatTheIssuerRemembers` · `docker/behind.sh` |
@@ -689,9 +691,25 @@ optimisation but a **fix**: without it, entering somebody in advance broke their
 sign-in, because the alias an operator chose is the alias `enrolling` derives and
 `Holder.Add` answers AlreadyExists.
 
-Matching adds exactly one condition over what an `Email` row already was: the
-**directory** has to say the address is verified. One that let somebody type an
-address into their own profile would hand out whichever account carries it.
+Matching asks two things. The **directory** has to say the address is verified:
+one that let somebody type an address into their own profile would hand out
+whichever account carries it. And the **row** has to be somebody's word that it
+is the person arriving -- proved (`date_verified`), or an **invitation**: written
+by somebody other than its holder (`Email.entered_by`), vouched for by no
+directory, about a holder with no identity, credential or key yet, which
+`HolderService.SignsIn` says. Anything else matches nobody.
+
+The second half was missing, and its absence was an account taken in advance. An
+address somebody wrote onto their **own** account -- typed at the account page,
+or handed over unchecked by a directory that lets its users say any address --
+is a claim nobody checked, and matching by it handed whoever arrived verified at
+that mailbox to the account that made the claim: the rightful holder's first
+sign-in through GitHub was linked to the squatter's account and signed in as it.
+Now they are a stranger to the lookup, the policy decides about them as about
+anybody, and the address follows the proof to them (`Email.Attest`). An operator
+who enters somebody with a password as well, or links them a way in, has given
+them a way in, and the address is no invitation; they prove it, or arrive by the
+way they were given and connect the directory from the account page.
 
 What `enrolling` calls somebody is derived from the address and is **not** the
 local part of it: an alias begins with a lowercase letter and holds lowercase
