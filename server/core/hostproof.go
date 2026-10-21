@@ -46,6 +46,9 @@ func (s Core) HostProof() app.HostProofServiceServer {
 // no field for a caller to say otherwise -- the same place `Continuation` landed
 // for the same argument.
 func (s coreHostProof) Add(ctx context.Context, req *app.HostProofAddRequest) (*app.HostProof, error) {
+	if err := s.acrossTheTenant(ctx, app.HostProofService_Add_FullMethodName); err != nil {
+		return nil, err
+	}
 	if err := normalised("name", req.GetName(), front.Hostname); err != nil {
 		return nil, err
 	}
@@ -82,6 +85,9 @@ func (s coreHostProof) Add(ctx context.Context, req *app.HostProofAddRequest) (*
 // `coreEmail.Patch` rests on as well -- said here too, because a deployment that
 // opened general writes would need this to refuse a cleared expiry.
 func (s coreHostProof) Patch(ctx context.Context, req *app.HostProofPatchRequest) (*app.HostProof, error) {
+	if err := s.acrossTheTenant(ctx, app.HostProofService_Patch_FullMethodName); err != nil {
+		return nil, err
+	}
 	if req.GetDateExpiresNull() {
 		return nil, status.Error(codes.InvalidArgument,
 			"date_expires: a claim that never expires is a name provable by whoever finds the record")

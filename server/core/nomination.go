@@ -43,6 +43,9 @@ func (s Core) Nomination() app.NominationServiceServer {
 // it does everywhere in that file: `roster login provision` nominates the
 // holder it made.
 func (s coreNomination) Add(ctx context.Context, req *app.NominationAddRequest) (*app.Nomination, error) {
+	if err := s.acrossTheTenant(ctx, app.NominationService_Add_FullMethodName); err != nil {
+		return nil, err
+	}
 	if err := byATenant(ctx); err != nil {
 		return nil, err
 	}
@@ -71,6 +74,9 @@ func (s coreNomination) Add(ctx context.Context, req *app.NominationAddRequest) 
 // alone, which is where every general write in this package stands and why
 // (`escalate.go`, "the one place it is not").
 func (s coreNomination) Patch(ctx context.Context, req *app.NominationPatchRequest) (*app.Nomination, error) {
+	if err := s.acrossTheTenant(ctx, app.NominationService_Patch_FullMethodName); err != nil {
+		return nil, err
+	}
 	if err := byATenant(ctx); err != nil {
 		return nil, err
 	}
@@ -113,6 +119,9 @@ func (s coreNomination) Patch(ctx context.Context, req *app.NominationPatchReque
 // nothing stops a tenant pointing an app at one -- and ending it is not a
 // reason to sign that person out of everything.
 func (s coreNomination) Erase(ctx context.Context, req *app.NominationRef) (*app.NominationEraseResponse, error) {
+	if err := s.acrossTheTenant(ctx, app.NominationService_Erase_FullMethodName); err != nil {
+		return nil, err
+	}
 	if err := byATenant(ctx); err != nil {
 		return nil, err
 	}

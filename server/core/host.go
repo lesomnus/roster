@@ -75,6 +75,9 @@ func (s Core) Host() app.HostServiceServer { return coreHost{s, s.Next().Host()}
 // gate refuses an `Add` whose edges point into a tenant the caller cannot see,
 // which is what `cmd/foreignedge_test.go` is about.
 func (s coreHost) Add(ctx context.Context, req *app.HostAddRequest) (*app.Host, error) {
+	if err := s.acrossTheTenant(ctx, app.HostService_Add_FullMethodName); err != nil {
+		return nil, err
+	}
 	if err := normalised("name", req.GetName(), front.Hostname); err != nil {
 		return nil, err
 	}
@@ -240,6 +243,9 @@ func (s coreHost) proved(ctx context.Context, req *app.HostAddRequest) (*app.Hos
 }
 
 func (s coreHost) Patch(ctx context.Context, req *app.HostPatchRequest) (*app.Host, error) {
+	if err := s.acrossTheTenant(ctx, app.HostService_Patch_FullMethodName); err != nil {
+		return nil, err
+	}
 	if req.HasName() {
 		if err := normalised("name", req.GetName(), front.Hostname); err != nil {
 			return nil, err
@@ -252,6 +258,9 @@ func (s coreHost) Patch(ctx context.Context, req *app.HostPatchRequest) (*app.Ho
 // Update is `Patch` with the name held back; `host_svc.ext.proto` says why.
 // And refused on a row a file declared, as every declarable kind's is.
 func (s coreHost) Update(ctx context.Context, req *app.HostUpdateRequest) (*app.Host, error) {
+	if err := s.acrossTheTenant(ctx, app.HostService_Update_FullMethodName); err != nil {
+		return nil, err
+	}
 	got, err := s.HostServiceServer.Get(ctx, app.HostGetRequest_builder{
 		Ref:    req.GetRef(),
 		Select: app.HostSelect_builder{Labels: z.Ptr(true)}.Build(),
@@ -284,6 +293,9 @@ func (s Core) MailDomain() app.MailDomainServiceServer {
 }
 
 func (s coreMailDomain) Add(ctx context.Context, req *app.MailDomainAddRequest) (*app.MailDomain, error) {
+	if err := s.acrossTheTenant(ctx, app.MailDomainService_Add_FullMethodName); err != nil {
+		return nil, err
+	}
 	if err := normalised("name", req.GetName(), front.Domain); err != nil {
 		return nil, err
 	}
@@ -292,6 +304,9 @@ func (s coreMailDomain) Add(ctx context.Context, req *app.MailDomainAddRequest) 
 }
 
 func (s coreMailDomain) Patch(ctx context.Context, req *app.MailDomainPatchRequest) (*app.MailDomain, error) {
+	if err := s.acrossTheTenant(ctx, app.MailDomainService_Patch_FullMethodName); err != nil {
+		return nil, err
+	}
 	if req.HasName() {
 		if err := normalised("name", req.GetName(), front.Domain); err != nil {
 			return nil, err
@@ -322,6 +337,9 @@ func normalised(field, v string, by func(string) string) error {
 // Update is `Patch` with the name held back; `host_svc.ext.proto` says why.
 // And refused on a row a file declared, as every declarable kind's is.
 func (s coreMailDomain) Update(ctx context.Context, req *app.MailDomainUpdateRequest) (*app.MailDomain, error) {
+	if err := s.acrossTheTenant(ctx, app.MailDomainService_Update_FullMethodName); err != nil {
+		return nil, err
+	}
 	got, err := s.MailDomainServiceServer.Get(ctx, app.MailDomainGetRequest_builder{
 		Ref:    req.GetRef(),
 		Select: app.MailDomainSelect_builder{Labels: z.Ptr(true)}.Build(),

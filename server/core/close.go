@@ -2,10 +2,8 @@ package core
 
 import (
 	"context"
-	"slices"
 	"time"
 
-	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/protobuf-patch/patch"
 	"github.com/lesomnus/z"
@@ -33,49 +31,6 @@ import (
 // arrives -- `cmd.Resolver`, `server/keys`, `server/vouch`, `server/front` --
 // because that is where a person's disabled flag is already read, and a
 // tenant being closed is the same refusal for everybody in it.
-
-// acrossTheTenant refuses a verb about the whole tenant to a caller who holds
-// it only somewhere smaller than the tenant.
-//
-// # Why the gate's answer is not enough here
-//
-// The gate asks whether a caller may ever call a method, and counts every place
-// a role reaches them: a binding across the tenant, a binding in a site, a role
-// held in a team (`cmd/policy.go`, `policy.of`). That is the right question for
-// a verb on rows the wall narrows by site, because the rows they reach are then
-// the site's. A tenant's own row is not one of those. `Close` shuts out
-// everybody in it, `Restore` lets them all back, and `Update` sets how every one
-// of them signs in -- `config.password`, `config.leave`, `front_door`. So a
-// Seoul administrator whose role names `TenantService/*`, or somebody holding
-// such a role in one team, closed the whole tenant: a grant made in Seoul
-// reaching everything, which is the asymmetry `mayGrant` refuses one service
-// along.
-//
-// So these ask what the caller holds **across the tenant**: a binding with no
-// site, to them or to a group they are in, which is [Rules.Everywhere] and what
-// `HolderService.Reaches` answers as `everywhere`. The deployment's own work is
-// not asked, as everywhere in this package.
-func (s Core) acrossTheTenant(ctx context.Context, method string) error {
-	if s.deployment(ctx) {
-		return nil
-	}
-	f, _ := frame.From(ctx)
-	if s.rules.Everywhere == nil {
-		return status.Error(codes.PermissionDenied,
-			"this server cannot say what you hold across the tenant, so it will not let you change all of it")
-	}
-
-	held, err := s.rules.Everywhere(ctx, f.Actor)
-	if err != nil {
-		return err
-	}
-	if slices.ContainsFunc(held, func(m string) bool { return frame.Covers(m, method) }) {
-		return nil
-	}
-
-	return status.Errorf(codes.PermissionDenied,
-		"%s is about the whole tenant, and you hold it only in part of it -- a site, or a team", method)
-}
 
 // Close stamps `date_closed` and destroys nothing. See `tenant_svc.ext.proto`.
 //
