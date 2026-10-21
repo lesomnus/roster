@@ -532,7 +532,7 @@ environment, and only when it was given, so an empty value is a value --
 `--insecure=false` turns off an `insecure: true` the file wrote. The same holds for
 the flags elsewhere that say a setting: `--hydra` of `roster login doctor` is
 `login.hydra.admin`, `--file` of `roster resources apply` is `resources`, and
-`--in` of `roster trail read` and `roster trail purge` is `audit.archive`. What is
+`--in` of `roster trail read` is `audit.archive`. What is
 not a setting is read as it was: `--key alias=rt_…` and the `--base` of
 `roster ldap serve` add to the block's map rather than replace it.
 
@@ -1195,9 +1195,11 @@ roster trail accept --why "written before rows were signed"   # once
 roster trail verify                                            # clean
 ```
 
-`prune --to` names the archive `audit.archive` already is, or one for a
-deployment that names none. The account is of one archive, so rows written into
-a second would be rows the first is found to be missing, and that is refused.
+`prune --to`, and `--in` of `purge` and `accept`, name the archive
+`audit.archive` already is, or one for a deployment that names none. The account
+is of one archive: rows written into a second would be rows the first is found to
+be missing, and an acceptance or a purge read against a second would take every
+chunk of the first for missing. Each is refused.
 
 A **legal hold** is the one thing a manual window does answer to: what one is on is
 left by `prune --discard` and by `purge`, which say how much they kept and go ahead

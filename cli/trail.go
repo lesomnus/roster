@@ -60,10 +60,10 @@ func NewCmdTrail(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 		Commands: xli.Commands{
 			newCmdTrailPrune(c),
 			newCmdTrailRead(l, c),
-			newCmdTrailPurge(l, c),
+			newCmdTrailPurge(c),
 			newCmdTrailVerify(l, c),
 			newCmdTrailRows(c),
-			newCmdTrailAccept(l, c),
+			newCmdTrailAccept(c),
 			newCmdTrailProfiles(),
 		},
 	}
@@ -316,7 +316,7 @@ func newCmdTrailRead(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 // row is past the cutoff. Rewriting a chunk to drop some of its rows would be
 // editing an archive, which only a legal hold on part of a file from before is
 // a reason for -- and that is payday's to do, not a flag here.
-func newCmdTrailPurge(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
+func newCmdTrailPurge(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "purge",
 		Brief: "destroy the archives that are old enough, and there is nothing after this",
@@ -325,7 +325,7 @@ func newCmdTrailPurge(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			&flg.String{Name: "older-than", Brief: "how old the archive has to be, e.g. 61320h for seven years"},
 			&flg.String{Name: "before", Brief: "an instant instead, RFC 3339"},
 			&flg.String{Name: "kind", Brief: "only chunks of this kind of thing; every kind by default"},
-			cfg.Bind(l, &c.Audit.Archive, &flg.String{Name: "in", Brief: "the directory to destroy from; audit.archive by default"}),
+			&flg.String{Name: "in", Brief: "the directory to destroy from, which is audit.archive when that is set"},
 			&flg.Switch{Name: "dry-run", Brief: "say which chunks and remove nothing"},
 		},
 
@@ -348,6 +348,10 @@ func newCmdTrailPurge(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				return err
 			}
 
+			c, err := inArchive(cl, c)
+			if err != nil {
+				return err
+			}
 			if c.Audit.Archive == "" {
 				return errors.New("--in: which directory")
 			}
@@ -547,13 +551,13 @@ const acceptedRows = "roster.trail.rows.accept"
 // It does nothing about a checkpoint, which is what it is: the next one is
 // taken over the account as it is now. And it takes a why, which is logged,
 // because an acceptance nobody can explain later is a finding hidden.
-func newCmdTrailAccept(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
+func newCmdTrailAccept(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "accept",
 		Brief: "make the account of the archive say what it holds, once somebody has looked",
 
 		Flags: flg.Flags{
-			cfg.Bind(l, &c.Audit.Archive, &flg.String{Name: "in", Brief: "the archive's directory; audit.archive by default"}),
+			&flg.String{Name: "in", Brief: "the archive's directory, which is audit.archive when that is set"},
 			&flg.String{Name: "why", Brief: "what was looked at and decided; it is logged"},
 		},
 
@@ -563,6 +567,10 @@ func newCmdTrailAccept(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				return errors.New("--why: what was looked at and decided")
 			}
 
+			c, err := inArchive(cl, c)
+			if err != nil {
+				return err
+			}
 			s, p, err := archived(ctx, c)
 			if err != nil {
 				return err
@@ -865,6 +873,33 @@ func named(b []byte) string {
 	}
 
 	return k.String()
+}
+
+// inArchive is the configuration an act on the archive is taken with: `--in`
+// names the archive `audit.archive` already is, or the archive of this run for
+// a deployment that names none, and nothing else.
+//
+// The database keeps an account of one archive, and every check reads that
+// one (`trail verify`, every pass). Read in place of a second, an acceptance
+// would write the account from what the second holds -- every chunk of the
+// first taken for missing, and signed as erased -- and a purge would decide
+// by an account of chunks it does not hold. So `--in` is read here, the way
+// `prune --to` is, and not bound to `audit.archive` as `read --in` is.
+func inArchive(cl *xli.Command, c *cmd.Config) (*cmd.Config, error) {
+	dir, _ := flg.Find[string](cl, "in")
+	switch {
+	case dir == "":
+		return c, nil
+	case c.Audit.Archive == "":
+		v := *c
+		v.Audit.Archive = dir
+		return &v, nil
+	case !sameDir(dir, c.Audit.Archive):
+		return nil, fmt.Errorf("--in: %s is not audit.archive (%s), and the database keeps an account of one archive; "+
+			"leave --in out, or name that one", dir, c.Audit.Archive)
+	}
+
+	return c, nil
 }
 
 // sameDir answers whether two names are of one directory, as far as their
