@@ -1169,6 +1169,30 @@ for everything else. A hold is a tenant's: an operator places one with `roster h
 place --why … @tenant` (§ "A tenant leaving"), and the trail keeps what it holds of
 that tenant from then until it is lifted.
 
+### Who read whose data
+
+Beside the trail, and kept by it: payday's access record (payday#111). The trail
+is what was **written**; this is who **saw** what -- a row for each call that
+read, wrote or carried somebody's personal data, naming who asked, from where,
+the RPC, whose rows, and how it ended. What an operator reads of a customer's
+people through `admin.addr` is filed under that customer and names the operator.
+A read's row is written a second after it, by a loop every process runs, and the
+loop writes what it holds once more as the process stops; a process killed
+outright loses its last second.
+
+It is a kind of the trail's, `access`, so the same passes keep it, on a window of
+its own:
+
+```yaml
+audit:
+  by:
+    access:
+      profile: pipa-sensitive   # two years
+```
+
+Nothing serves it yet: `AccessService` is registered on no port, and `roster
+trail read` passes over its rows, so for now it is read in the database.
+
 ### A key that can read the trail can read everything
 
 A deployment key is the **deployment's**, and unnarrowed it is every tenant in it

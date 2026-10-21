@@ -13,6 +13,7 @@
 
 import type { EntityDesc } from '@lesomnus/payday/store'
 
+import { AccessSchema } from './roster/payday/access_pb.js'
 import { ApiKeySchema } from './app/apikey_pb.js'
 import { ArchivedSchema } from './roster/payday/archived_pb.js'
 import { AuditSchema } from './roster/payday/audit_pb.js'
@@ -34,6 +35,7 @@ import { SessionSchema } from './app/session_pb.js'
 import { SiteSchema } from './app/site_pb.js'
 import { TeamSchema } from './app/team_pb.js'
 import { TenantSchema } from './roster/payday/tenant_pb.js'
+import { AccessService } from './roster/payday/access_svc_pb.js'
 import { ApiKeyService } from './app/apikey_svc_pb.js'
 import { ArchivedService } from './roster/payday/archived_svc_pb.js'
 import { AuditService } from './roster/payday/audit_svc_pb.js'
@@ -55,6 +57,16 @@ import { SessionService } from './app/session_svc_pb.js'
 import { SiteService } from './app/site_svc_pb.js'
 import { TeamService } from './app/team_svc_pb.js'
 import { TenantService } from './roster/payday/tenant_svc_pb.js'
+
+/** roster.Access, as the store holds it. */
+export const Access = {
+	typeName: "roster.Access",
+	schema: AccessSchema,
+	domain: 6,
+	key: "id",
+	ids: ["id", "tenantId", "actorId", "actorTenantId"],
+	service: AccessService,
+} as const satisfies EntityDesc
 
 /** roster.ApiKey, as the store holds it. */
 export const ApiKey = {
@@ -388,5 +400,5 @@ export const Tenant = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [ApiKey, Archived, Audit, Binding, Connection, Continuation, Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, Session, Site, SiteMembership, Team, TeamMembership, Tenant] as const
+export const entities = [Access, ApiKey, Archived, Audit, Binding, Connection, Continuation, Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, Session, Site, SiteMembership, Team, TeamMembership, Tenant] as const
 
