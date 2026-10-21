@@ -9,6 +9,45 @@ import (
 )
 
 var (
+	// AccessColumns holds the columns for the "access" table.
+	AccessColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "actor_id", Type: field.TypeUuid},
+		{Name: "trace_id", Type: field.TypeBytes},
+		{Name: "action", Type: field.TypeString},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "result", Type: field.TypeString},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "actor_tenant_id", Type: field.TypeUuid},
+		{Name: "value", Type: field.TypeBytes},
+		{Name: "domain", Type: field.TypeUint32, Nullable: true, Default: 0},
+		{Name: "subjects", Type: field.TypeJson, Nullable: true},
+		{Name: "subject_count", Type: field.TypeUint32},
+	}
+	// AccessTable holds the schema information for the "access" table.
+	AccessTable = &schema.Table{
+		Name:       "access",
+		Columns:    AccessColumns,
+		PrimaryKey: []*schema.Column{AccessColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "access_tenant_id_date_created",
+				Unique:  false,
+				Columns: []*schema.Column{AccessColumns[1], AccessColumns[7]},
+			},
+			{
+				Name:    "access_actor_tenant_id_date_created",
+				Unique:  false,
+				Columns: []*schema.Column{AccessColumns[8], AccessColumns[7]},
+			},
+			{
+				Name:    "access_actor_id_date_created",
+				Unique:  false,
+				Columns: []*schema.Column{AccessColumns[2], AccessColumns[7]},
+			},
+		},
+	}
 	// ApikeyColumns holds the columns for the "apikey" table.
 	ApikeyColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -1203,6 +1242,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AccessTable,
 		ApikeyTable,
 		ArchivedTable,
 		AuditTable,
@@ -1234,6 +1274,9 @@ var (
 )
 
 func init() {
+	AccessTable.Annotation = &entsql.Annotation{
+		Table: "access",
+	}
 	ApikeyTable.ForeignKeys[0].RefTable = HolderTable
 	ApikeyTable.Annotation = &entsql.Annotation{
 		Table: "apikey",

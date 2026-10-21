@@ -19,6 +19,7 @@ import (
 	entsql "github.com/protobuf-orm/ent/dialect/sql"
 	"google.golang.org/grpc"
 
+	"github.com/lesomnus/payday/access"
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/config"
@@ -182,6 +183,12 @@ type Server struct {
 	// `crypto/rand` rather than something signed, so there is no per-process
 	// secret to keep in step either.
 	Sessions *authsession.Sessions
+
+	// Access is this plane's access record writer (payday#111): what a read's
+	// row waits in to be written with the others of its second. Its loop is in
+	// [Server.Spin], and each process runs its own, since what it holds is in
+	// this one's memory.
+	Access *access.Writer
 
 	// Spin is whatever this deployment has to run besides answering requests.
 	// It is a slice rather than a method because a server with nothing to run
@@ -353,7 +360,10 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		db.Close()
 		return nil, err
 	}
-	rec := bare.Recorders{pd.Recorder(content), pd.WatchRecorder(w)}
+	// The access record's after the publish (payday#111): what it writes at
+	// the commit is of the data the call's writes wrote, so it is told of each
+	// and writes once, in the same transaction.
+	rec := bare.Recorders{pd.Recorder(content), pd.WatchRecorder(w), pd.AccessRecorder()}
 	if c.Watch.Outbox {
 		// Last, so that a queue this could not be written to undoes a write
 		// which the trail and the in-process publish have already agreed to
@@ -475,6 +485,13 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	if policyFile != nil {
 		s.Spin = append(s.Spin, policyFile)
 	}
+
+	// Who read or wrote whose personal data, on this plane (payday#111). A
+	// read's row is written a second later with the others, by a loop each
+	// process runs for itself and that writes what it holds once more as it
+	// stops; a write's is in its own transaction.
+	s.Access = &access.Writer{Sink: pd.AccessSink(client)}
+	s.Spin = append(s.Spin, loop(prefix, "access", s.Access))
 
 	// The door a roster user signs in at, where this deployment serves one.
 	//
@@ -903,6 +920,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 		WithStream(auth.InterceptorStream(h, r, Public)).
 		WithUnary(grpcx.LimitUnary(rate, gate.ByTenant())).
 		WithStream(grpcx.LimitStream(rate, gate.ByTenant())).
+		With(s.accessed().Interceptor()).
 		With(gate.Interceptor(Policy(s.Ent, s.policySources...))).
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(shut)).
@@ -1407,6 +1425,20 @@ func stopping(g *grpc.Server) {
 	case <-time.After(ShutdownGrace):
 		g.Stop()
 		<-done
+	}
+}
+
+// accessed is what the access record's interceptor is told of this plane
+// (payday#111): whose data a message carries, read off what the schema
+// declared `personal`, and where a call came from -- the connection's, since
+// roster is told of no proxy it would believe. Nothing roster serves hands
+// personal data out to be kept elsewhere, so it names no download.
+func (s *Server) accessed() access.Config {
+	return access.Config{
+		Subjects: pd.Subjects,
+		Refs:     pd.SubjectRefs,
+		Address:  access.Peer,
+		Writer:   s.Access,
 	}
 }
 

@@ -327,6 +327,11 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 		// because there is one answer.
 		WithUnary(grpcx.LimitUnary(rate, gate.ByTenant())).
 		WithStream(grpcx.LimitStream(rate, gate.ByTenant())).
+
+		// What an operator read or wrote of a customer's people is the access
+		// record's (payday#111), on the data plane whose rows they are: filed
+		// under the customer's tenant, and naming the operator.
+		With(s.accessed().Interceptor()).
 		With(gate.Interceptor(Policy(s.Control.Ent))).
 		WithUnary(Intent(s.Control.Ent)).
 		With(s.Watch.Interceptor()).

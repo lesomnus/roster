@@ -8,6 +8,7 @@ import (
 	fmt "fmt"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
+	access "github.com/lesomnus/roster/internal/ent/access"
 	apikey "github.com/lesomnus/roster/internal/ent/apikey"
 	archived "github.com/lesomnus/roster/internal/ent/archived"
 	audit "github.com/lesomnus/roster/internal/ent/audit"
@@ -410,6 +411,7 @@ type Scope interface {
 	GroupMembershipScope(ctx context.Context) (predicate.GroupMembership, error)
 	NominationScope(ctx context.Context) (predicate.Nomination, error)
 	SessionScope(ctx context.Context) (predicate.Session, error)
+	AccessScope(ctx context.Context) (predicate.Access, error)
 	ArchivedScope(ctx context.Context) (predicate.Archived, error)
 	AuditScope(ctx context.Context) (predicate.Audit, error)
 	OutboxScope(ctx context.Context) (predicate.Outbox, error)
@@ -497,6 +499,9 @@ func (Unscoped) NominationScope(_ context.Context) (predicate.Nomination, error)
 	return nil, nil
 }
 func (Unscoped) SessionScope(_ context.Context) (predicate.Session, error) {
+	return nil, nil
+}
+func (Unscoped) AccessScope(_ context.Context) (predicate.Access, error) {
 	return nil, nil
 }
 func (Unscoped) ArchivedScope(_ context.Context) (predicate.Archived, error) {
@@ -1008,6 +1013,26 @@ func (ss Scopes) SessionScope(ctx context.Context) (predicate.Session, error) {
 	return session.And(ps...), nil
 }
 
+func (ss Scopes) AccessScope(ctx context.Context) (predicate.Access, error) {
+	ps := make([]predicate.Access, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.AccessScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return access.And(ps...), nil
+}
+
 func (ss Scopes) ArchivedScope(ctx context.Context) (predicate.Archived, error) {
 	ps := make([]predicate.Archived, 0, len(ss))
 	for _, s := range ss {
@@ -1287,6 +1312,7 @@ func (s Server) Nomination() rstr.NominationServiceServer {
 	return NominationServiceServer{Store: s.Store}
 }
 func (s Server) Session() rstr.SessionServiceServer   { return SessionServiceServer{Store: s.Store} }
+func (s Server) Access() rstr.AccessServiceServer     { return AccessServiceServer{Store: s.Store} }
 func (s Server) Archived() rstr.ArchivedServiceServer { return ArchivedServiceServer{Store: s.Store} }
 func (s Server) Audit() rstr.AuditServiceServer       { return AuditServiceServer{Store: s.Store} }
 func (s Server) Outbox() rstr.OutboxServiceServer     { return OutboxServiceServer{Store: s.Store} }
