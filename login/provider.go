@@ -36,9 +36,9 @@ const stateCookie = "login_state"
 
 // A flow is one round trip to a provider, started and not yet finished.
 type flow struct {
-	tenant     *tenant
-	connection string
-	challenge  string
+	tenant    *tenant
+	trip      *arrives.Trip
+	challenge string
 }
 
 // provider starts a sign-in through one of the tenant's providers.
@@ -66,7 +66,13 @@ func (a *App) provider(w http.ResponseWriter, r *http.Request) {
 		name = cs[0].GetName()
 	}
 
-	cfg, _, err := a.arrives.Relying(ctx, o.id, name, a.redirect(r))
+	state, err := arrives.Nonce()
+	if err != nil {
+		a.broken(w, r, err)
+
+		return
+	}
+	trip, err := a.arrives.Begin(ctx, o.id, o.alias, name, a.origin(r), state)
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
 			http.Error(w, "connection: no such provider here", http.StatusNotFound)
@@ -77,14 +83,7 @@ func (a *App) provider(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-
-	state, err := arrives.Nonce()
-	if err != nil {
-		a.broken(w, r, err)
-
-		return
-	}
-	a.flows.Put(state, flow{tenant: o, connection: name, challenge: r.URL.Query().Get(Challenge)}, 10*time.Minute)
+	a.flows.Put(state, flow{tenant: o, trip: trip, challenge: r.URL.Query().Get(Challenge)}, 10*time.Minute)
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     stateCookie,
@@ -95,14 +94,15 @@ func (a *App) provider(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   600,
 	})
-	http.Redirect(w, r, cfg.AuthCodeURL(state), http.StatusFound)
+	http.Redirect(w, r, trip.URL, http.StatusFound)
 }
 
 // callback finishes the round trip, and the flow with it.
 //
-// It carries no challenge of its own: the redirect was registered with the
-// provider once and every tenant's flow comes back to it, so which flow this
-// is comes from the state and nowhere else.
+// It carries no challenge of its own: every flow of a connection comes back to
+// that connection's one registered URL, so which flow this is comes from the
+// state and nowhere else -- and the connection the URL names has to be the one
+// that flow went to (`arrives.Trip`).
 func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	http.SetCookie(w, &http.Cookie{Name: stateCookie, Path: "/", MaxAge: -1})
@@ -126,22 +126,19 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	o := f.tenant
 	as := withTenant(withAt(ctx, o.at), o)
 
-	cfg, verifier, err := a.arrives.Relying(as, o.id, f.connection, a.redirect(r))
+	who, err := a.arrives.Claim(as, f.trip, r)
 	if err != nil {
-		a.broken(w, r, err)
+		if errors.Is(err, arrives.ErrUnfinished) {
+			a.broken(w, r, err)
 
-		return
-	}
-
-	who, err := a.arrives.Claim(ctx, cfg, verifier, r.URL.Query().Get("code"))
-	if err != nil {
+			return
+		}
+		slog.WarnContext(ctx, "login: a provider's answer was refused",
+			"tenant", o.alias, "err", err)
 		http.Error(w, "no", http.StatusBadRequest)
 
 		return
 	}
-	who.Tenant = o.id
-	who.TenantAlias = o.alias
-	who.Provider = f.connection
 
 	// Somebody this tenant has never seen is the one decision that is not
 	// roster's and not this app's.
@@ -193,21 +190,25 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, to, http.StatusSeeOther)
 }
 
-// redirect is where a provider sends the browser back: `Base` if the deployment
-// named one, else this request's own origin.
+// origin is where a provider sends the browser back under: `Base` if the
+// deployment named one, else this request's own origin. Each connection's
+// redirect is a path of its own beneath it (`arrives.Trip`), which is what a
+// deployment registers with that provider:
+// `https://login.example.com/callback/<tenant>/<connection>`.
 //
-// One URL for every tenant, unlike the account app's -- which has a host per
+// One origin for every tenant, unlike the account app's -- which has a host per
 // tenant and derives it per request. Hydra sends every browser to this app
-// under one name, so a redirect per tenant would be a name this app does not
-// have. Which tenant a callback belongs to is the state's to say.
-func (a *App) redirect(r *http.Request) string {
+// under one name, so a host per tenant would be a name this app does not have;
+// the tenant is a path segment instead, and which flow a callback belongs to is
+// the state's to say.
+func (a *App) origin(r *http.Request) string {
 	if a.c.Base != nil {
-		return a.c.Base.JoinPath("/callback").String()
+		return a.c.Base.String()
 	}
 	scheme := "http"
 	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
 		scheme = "https"
 	}
 
-	return scheme + "://" + r.Host + "/callback"
+	return scheme + "://" + r.Host
 }

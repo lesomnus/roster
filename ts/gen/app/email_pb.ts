@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/email.proto.
  */
 export const file_app_email: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvZW1haWwucHJvdG8SBnJvc3RlciL+BAoFRW1haWwSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIXCgdhZGRyZXNzGAggASgJQgaqwRYCGAESPwoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCDOqCFgI4AarBFgIQARIsCgp2b3VjaGVkX2J5GAogASgLMhAucm9zdGVyLklkZW50aXR5QgbyghYCOAESGwoJdGVuYW50X2lkGAsgASgMQgjqghYEEEBAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA63AHK/BV/EgIQARovEgRwYWdlGg0KCXRlbmFudF9pZBALGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaJBIHYWRkcmVzcxoKCgZob2xkZXIQAhoLCgdhZGRyZXNzEAgwARoiEgJhdBoNCgl0ZW5hbnRfaWQQCxoLCgdhZGRyZXNzEAgwAYq7FlUICTIzChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZob2xkZXIgFChkOgAiGgoNaG9sZGVyLnRlbmFudBoJdGVuYW50X2lkQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_app_identity, file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg9hcHAvZW1haWwucHJvdG8SBnJvc3RlciKiBQoFRW1haWwSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIXCgdhZGRyZXNzGAggASgJQgaqwRYCGAESPwoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCDOqCFgI4AarBFgIQARIsCgp2b3VjaGVkX2J5GAogASgLMhAucm9zdGVyLklkZW50aXR5QgbyghYCOAESIgoKZW50ZXJlZF9ieRgMIAEoDEIO6oIWBDgBQAGqwRYCEAESGwoJdGVuYW50X2lkGAsgASgMQgjqghYEEEBAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA63AHK/BV/EgIQARovEgRwYWdlGg0KCXRlbmFudF9pZBALGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaJBIHYWRkcmVzcxoKCgZob2xkZXIQAhoLCgdhZGRyZXNzEAgwARoiEgJhdBoNCgl0ZW5hbnRfaWQQCxoLCgdhZGRyZXNzEAgwAYq7FlUICTIzChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZob2xkZXIgFChkOgAiGgoNaG9sZGVyLnRlbmFudBoJdGVuYW50X2lkQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_app_identity, file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Email is an address a person uses, and whether anybody has checked that they
@@ -143,6 +143,41 @@ export type Email = Message<"roster.Email"> & {
    * @generated from field: roster.Identity vouched_by = 10;
    */
   vouchedBy?: Identity | undefined;
+
+  /**
+   * Who wrote it: the caller the `Add` arrived from -- the person themselves,
+   * an operator entering them, a front door keeping what a directory said, a
+   * directory provisioning them. Unset is a row written with no caller at all,
+   * which is the deployment's own command (`roster holder add`), and every row
+   * written before roster kept this.
+   *
+   * # It is what tells an invitation from a claim
+   *
+   * An address somebody wrote onto their **own** row is their claim about a
+   * mailbox, and nobody has checked it until a link or a directory proves it
+   * ([Email.date_verified]). One somebody else wrote is that somebody's word,
+   * and an operator's word about a person who has not arrived yet is the
+   * invitation `enrol: expected` admits them by (`arrives.invitation`).
+   *
+   * The sign-in that reads it once read neither. It matched whatever row held
+   * the address, so an address anybody typed onto their own account -- or one
+   * a directory handed over unchecked at their sign-in -- handed them whoever
+   * arrived at that mailbox verified later: the rightful holder's first
+   * sign-in through GitHub was linked to the account of the person who had
+   * written their address down first.
+   *
+   * # A column and not an edge
+   *
+   * The caller may be the control plane's -- an operator at the admin port, a
+   * deployment's key -- and this row is the data plane's, which is
+   * `Delegation.issuer`'s reason, word for word: an identifier compared and
+   * never followed. **Stamped**, so a request cannot say it: `server/core`
+   * writes the frame's actor, and the generated gate refuses an `Add` that
+   * asserts one.
+   *
+   * @generated from field: bytes entered_by = 12;
+   */
+  enteredBy: Uint8Array;
 
   /**
    * The tenant `holder.tenant` reaches, kept here. payday stamps it, and

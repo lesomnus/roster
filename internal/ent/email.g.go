@@ -30,6 +30,9 @@ func (e *Email) Proto() *rstr.Email {
 		r.SetId(v[:])
 		x.SetVouchedBy(r)
 	}
+	if e.EnteredBy != nil {
+		x.SetEnteredBy(*e.EnteredBy)
+	}
 	x.SetTenantId(e.TenantId[:])
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {

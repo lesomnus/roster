@@ -452,7 +452,7 @@ login:                                    # only with Hydra in front; see login.
   # its own names it: env:ROSTER_LOGIN_KEY, or file:… from `roster login provision`
 
   consent: skip                           # ask draws a screen instead
-  base: https://login.contoso.example     # one redirect URI for the whole app
+  base: https://login.contoso.example     # the origin every connection's redirect is under
   enrol: invited                          # invited | expected | enrolling
   page: { dir: /usr/share/roster/login }
   remember: 1h
@@ -684,6 +684,36 @@ people and the ways into their accounts. A file that made those is a file that
 grants access to whoever can write it. `Role` and `Binding` are the same argument
 one step out and are left out for now rather than refused.
 
+### Where a provider sends people back
+
+Each connection has a redirect of its own, under the front door's origin
+(`login.base`, `account.base`):
+
+```
+https://login.contoso.example/callback/contoso/entra
+                                       ^tenant ^connection
+```
+
+That URL, exactly, is what is registered at the provider as the redirect URI
+-- for each front door that offers the connection, since the account app's
+origin is its own. A sign-in sent to any other is refused by the provider before
+it reaches roster, and one that comes back to a URL naming another connection
+than the flow went to is refused by the front door.
+
+**One redirect per connection is the point.** It was one URL for every tenant
+and every connection, `/callback`, and a tenant's administrator may connect a
+server of their own: a browser sent there could be sent on to another tenant's
+provider, whose code then came back to the one URL every flow shared and was
+exchanged at the first server's token endpoint -- a mix-up (RFC 9700 § 4.4).
+Beside it, every round trip carries a **PKCE** challenge (S256), so a code is
+worth nothing without the verifier only the front door that asked holds, and an
+OpenID one a **nonce** the ID token has to carry back.
+
+Upgrading from a release that used `/callback`, every connection's provider
+registration changes: register each connection's own URL, then roll the front
+doors. A provider that still has only the old one answers *redirect URI
+mismatch* at the sign-in, before anybody is signed in as anybody.
+
 ### GitHub
 
 GitHub signs people in with OAuth 2.0 and no OpenID Connect -- there is no
@@ -701,13 +731,16 @@ from; the name is still yours:
     secret_ref: env:GITHUB_SECRET        # GitHub wants the secret at its token endpoint
 ```
 
-- **Register a GitHub App or an OAuth app** with the front door's callback --
-  `https://<the Login App>/callback`, and the account app's when it offers
-  GitHub too. One connection is one client id for both front doors, and an
-  OAuth app has one callback URL, so a deployment whose two front doors both
-  offer GitHub registers a GitHub App, which takes several. A GitHub App needs
-  the *Email addresses* account permission (read-only); its permissions are its
-  scopes.
+- **Register a GitHub App or an OAuth app** with the connection's callback --
+  `https://<the Login App>/callback/<tenant>/<connection>`, and the account
+  app's when it offers GitHub too. One connection is one client id for both
+  front doors, and an OAuth app has one callback URL, so a deployment whose two
+  front doors both offer GitHub registers a GitHub App, which takes several.
+  Register the URL itself and not a path above it: GitHub sends a browser to
+  any path **under** a registered callback, so a callback of `.../callback`
+  would answer for every connection of every tenant, which is the one thing a
+  redirect per connection is there to stop. A GitHub App needs the *Email
+  addresses* account permission (read-only); its permissions are its scopes.
 - **The person is their account's `id`**, the number GitHub never changes or
   hands to somebody else -- not their username, which they may change and
   somebody else may then take. `subject_claim` names a claim of an ID token, so
@@ -765,7 +798,10 @@ in, so the connection names that directory's issuer, which is the third row.
   sends instead is `xms_edov`, *the address's domain is one the person's
   directory has proved it owns* -- an optional claim the registration has to ask
   for, in the manifest's `optionalClaims.idToken` beside `email`. An address is
-  verified on that and on nothing else. Without it, any directory's
+  verified on that and on nothing else -- and on that only in a token
+  Microsoft's own sign-in issued (`login.microsoftonline.com`, or one of its
+  national clouds): the same claim from any other issuer is whatever that
+  issuer meant by it. Without it, any directory's
   administrator can put any address on a user of their own, and a front door
   that matched an invitation by the bare `email` of a token from any directory
   would hand that user whichever account carries it -- the mistake known as

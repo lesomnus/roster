@@ -41,7 +41,8 @@ const people = [
  * The operator's `Connection` rows, as the app would have read them.
  *
  * The round trip behind a button is a real one -- the browser leaves for a
- * directory and comes back to `/callback` -- so there is nothing here to
+ * directory and comes back to that connection's `/callback/<tenant>/<connection>`
+ * -- so there is nothing here to
  * pretend with short of standing an OIDC provider up. What stands in is [away]:
  * a page that says which hop is missing, and comes back. What it cannot show is
  * the directory's own screen, and nothing here claims to.
@@ -117,15 +118,15 @@ function away(res: import('node:http').ServerResponse, connection: string): void
 <main>
   <h1>off to <code>${connection}</code></h1>
   <p>A real deployment leaves this origin here, for the operator\u2019s directory,
-     and comes back to <code>/callback</code> with a code. This is where you
-     would type your work account.</p>
+     and comes back to that connection\u2019s <code>/callback</code> with a code.
+     This is where you would type your work account.</p>
   <p class="note">There is no directory behind the sandbox, so it comes back on
      its own \u2014 as whoever the fake server says signed in.</p>
   <p><strong>back in <span id="n">3</span></strong></p>
   <button type="button" id="now">back now</button>
 </main>
 <script>
-  const go = () => location.assign('/callback')
+  const go = () => location.assign(${JSON.stringify(`/callback/contoso/${encodeURIComponent(connection)}`)})
   document.getElementById('now').addEventListener('click', go)
   let n = 3
   const t = setInterval(() => {
@@ -158,7 +159,11 @@ const sandbox = (): Connect.NextHandleFunction => async (req, res, next) => {
 		}
 	}
 
-	switch (`${req.method} ${url.pathname}`) {
+	// A connection's callback is one route whatever it names, as it is in the
+	// app: `GET /callback/{tenant}/{connection}`.
+	const route = url.pathname.startsWith('/callback/') ? '/callback/{tenant}/{connection}' : url.pathname
+
+	switch (`${req.method} ${route}`) {
 		case 'GET /flow':
 			// The sign-out screen asks nothing of anybody and offers no way
 			// in: it is drawn for a logout that arrived with no
@@ -191,7 +196,7 @@ const sandbox = (): Connect.NextHandleFunction => async (req, res, next) => {
 			return away(res, url.searchParams.get('connection') ?? 'the directory')
 		}
 
-		case 'GET /callback': {
+		case 'GET /callback/{tenant}/{connection}': {
 			// Where the directory sends the browser back, which in a real
 			// deployment carries `code` and `state`. The fake carries neither
 			// and does what the real one ends with: this is somebody now.

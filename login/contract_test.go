@@ -51,7 +51,9 @@ func TestTheContractIsTheRoutes(t *testing.T) {
 	section := between(string(doc), "### A page of your own, and the contract it writes against")
 	x.NotEmpty(section, "docs/login.md no longer has the contract section this test is about")
 
-	pattern := regexp.MustCompile("`((?:GET|POST|PUT|DELETE) )?(/[\\w/-]*)`")
+	// A path may hold wildcards, which is how the mux and the table both spell
+	// a segment the request chooses: `/callback/{tenant}/{connection}`.
+	pattern := regexp.MustCompile("`((?:GET|POST|PUT|DELETE) )?(/[\\w/{}-]*)`")
 
 	documented := map[string]bool{}
 	var rows int

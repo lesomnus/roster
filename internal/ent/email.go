@@ -24,6 +24,8 @@ type Email struct {
 	Address string `json:"address,omitempty"`
 	// DateVerified holds the value of the "date_verified" field.
 	DateVerified *time.Time `json:"date_verified,omitempty"`
+	// EnteredBy holds the value of the "entered_by" field.
+	EnteredBy *[]byte `json:"entered_by,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
@@ -80,6 +82,8 @@ func (*Email) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case email.FieldEnteredBy:
+			values[i] = new([]byte)
 		case email.FieldAddress:
 			values[i] = new(sql.NullString)
 		case email.FieldDateVerified, email.FieldDateUpdated, email.FieldDateErased, email.FieldDateCreated:
@@ -121,6 +125,12 @@ func (_m *Email) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateVerified = new(time.Time)
 				*_m.DateVerified = value.Time
+			}
+		case email.FieldEnteredBy:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field entered_by", values[i])
+			} else if value != nil {
+				_m.EnteredBy = value
 			}
 		case email.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
@@ -211,6 +221,11 @@ func (_m *Email) String() string {
 	if v := _m.DateVerified; v != nil {
 		builder.WriteString("date_verified=")
 		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.EnteredBy; v != nil {
+		builder.WriteString("entered_by=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")
 	builder.WriteString("tenant_id=")

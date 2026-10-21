@@ -54,11 +54,12 @@ func TestSomebodyArrivesFromGitHub(t *testing.T) {
 	p := &Providers{own: ownClient(), anywhere: publicClient(public), GitHub: g.URL}
 
 	cfg := gitHubRelying(g.URL, "the-app", "the-secret", "https://account.example/callback", nil)
-	verifier := &Verifier{gitHub: p.gitHub(g.URL)}
+	check := &verifier{gitHub: p.gitHub(g.URL)}
+	trip := &Trip{verifier: "the-verifier"}
 	claim := func() (Caller, error) {
 		t.Helper()
 
-		return p.Claim(ctx, cfg, verifier, "the-code")
+		return p.exchange(ctx, cfg, check, trip, "the-code")
 	}
 
 	octocat := func() {
@@ -154,11 +155,11 @@ func TestSomebodyArrivesFromGitHub(t *testing.T) {
 		x := require.New(t)
 		octocat()
 
-		_, err := p.Claim(ctx, cfg, verifier, "not-the-code")
+		_, err := p.exchange(ctx, cfg, check, trip, "not-the-code")
 		x.ErrorContains(err, "bad_verification_code")
 
 		wrong := gitHubRelying(g.URL, "the-app", "not-the-secret", "", nil)
-		_, err = p.Claim(ctx, wrong, verifier, "the-code")
+		_, err = p.exchange(ctx, wrong, check, trip, "the-code")
 		x.ErrorContains(err, "incorrect_client_credentials")
 	})
 

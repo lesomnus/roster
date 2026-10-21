@@ -91,7 +91,7 @@ test('the operator\'s providers are drawn, and one leaves for it', async ({ page
 	await expect(page.getByRole('link', { name: 'sign in with github' })).toBeVisible()
 
 	// The challenge travels on the link, because the round trip comes back to
-	// `/callback` and has to find the flow it belongs to.
+	// the connection's `/callback` and has to find the flow it belongs to.
 	await expect(entra).toHaveAttribute('href', /login_challenge=sandbox.*connection=entra/)
 
 	// And it goes somewhere. The directory's own screen is not the sandbox's to

@@ -45,6 +45,12 @@ func (_c *EmailCreate) SetNillableDateVerified(v *time.Time) *EmailCreate {
 	return _c
 }
 
+// SetEnteredBy sets the "entered_by" field.
+func (_c *EmailCreate) SetEnteredBy(v []byte) *EmailCreate {
+	_c.mutation.SetEnteredBy(v)
+	return _c
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (_c *EmailCreate) SetTenantId(v uuid.UUID) *EmailCreate {
 	_c.mutation.SetTenantId(v)
@@ -228,6 +234,10 @@ func (_c *EmailCreate) createSpec() (*Email, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.DateVerified(); ok {
 		_spec.SetField(email.FieldDateVerified, field.TypeTime, value)
 		_node.DateVerified = &value
+	}
+	if value, ok := _c.mutation.EnteredBy(); ok {
+		_spec.SetField(email.FieldEnteredBy, field.TypeBytes, value)
+		_node.EnteredBy = &value
 	}
 	if value, ok := _c.mutation.TenantId(); ok {
 		_spec.SetField(email.FieldTenantId, field.TypeUuid, value)

@@ -427,6 +427,13 @@ write one:
   second row to be had. So a claim is minted for the address on such a row, the link
   goes to the **mailbox**, and whoever reads it ends up holding it. A proved address
   does not move; see [../login.md](../login.md) § *Signing in by address*.
+- **The row above, written by you about somebody else, is an invitation** -- for as
+  long as they have no way in. Who wrote a row is stamped on it (`entered_by`, the
+  caller and never the request), and `login.enrol: expected` admits somebody
+  arriving verified at an address only when it is proved, or is an operator's word
+  about a person who has not arrived. An address somebody wrote onto their **own**
+  row invites nobody; see [../login.md](../login.md) § *Putting people in, and
+  letting them arrive*.
 
 > Writing an identity or an address onto somebody's row is a way to sign in as
 > them. Both are guarded by the same rule a password is: nobody writes a way

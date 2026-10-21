@@ -197,6 +197,9 @@ func (_u *EmailUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.DateVerifiedCleared() {
 		_spec.ClearField(email.FieldDateVerified, field.TypeTime)
 	}
+	if _u.mutation.EnteredByCleared() {
+		_spec.ClearField(email.FieldEnteredBy, field.TypeBytes)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(email.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -455,6 +458,9 @@ func (_u *EmailUpdateOne) sqlSave(ctx context.Context) (_node *Email, err error)
 	}
 	if _u.mutation.DateVerifiedCleared() {
 		_spec.ClearField(email.FieldDateVerified, field.TypeTime)
+	}
+	if _u.mutation.EnteredByCleared() {
+		_spec.ClearField(email.FieldEnteredBy, field.TypeBytes)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(email.FieldDateUpdated, field.TypeTime, value)

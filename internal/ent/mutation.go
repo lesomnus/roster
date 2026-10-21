@@ -3150,6 +3150,23 @@ func (m *EmailMutation) OldDateVerified(ctx context.Context) (v *time.Time, err 
 	return oldValue.DateVerified, nil
 }
 
+// OldEnteredBy returns the old "entered_by" field's value of the Email entity.
+// If the Email object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EmailMutation) OldEnteredBy(ctx context.Context) (v *[]byte, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldEnteredBy is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldEnteredBy requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnteredBy: %w", err)
+	}
+	return oldValue.EnteredBy, nil
+}
+
 // OldTenantId returns the old "tenant_id" field's value of the Email entity.
 // If the Email object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -3261,6 +3278,8 @@ func (m *EmailMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldAddress(ctx)
 	case email.FieldDateVerified:
 		return m.OldDateVerified(ctx)
+	case email.FieldEnteredBy:
+		return m.OldEnteredBy(ctx)
 	case email.FieldTenantId:
 		return m.OldTenantId(ctx)
 	case email.FieldDateUpdated:

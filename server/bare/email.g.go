@@ -174,6 +174,9 @@ func (st EmailServiceServer) create(ctx context.Context, req *rstr.EmailAddReque
 			})
 		}
 	}
+	if req.HasEnteredBy() {
+		q.SetEnteredBy(req.GetEnteredBy())
+	}
 	if v, err := entuuid.FromBytes(req.GetTenantId()); err != nil {
 		return nil, nil, status.Errorf(codes.InvalidArgument, "tenant_id: %s", err)
 	} else {
@@ -317,6 +320,9 @@ func EmailSelectedFields(m *rstr.EmailSelect) []string {
 	if m.GetDateVerified() {
 		vs = append(vs, email.FieldDateVerified)
 	}
+	if m.GetEnteredBy() {
+		vs = append(vs, email.FieldEnteredBy)
+	}
 	if m.GetTenantId() {
 		vs = append(vs, email.FieldTenantId)
 	}
@@ -415,7 +421,7 @@ func EmailGetKey(ctx context.Context, db *ent.Client, ref *rstr.EmailRef) (uuid.
 var emailOrmEntity = ormpatch.MustEntityOf(rstr.File_app_email_proto, "Email")
 
 var emailPatchColumns = entpatch.Columns{
-	1: email.FieldId, 2: email.HolderColumn, 8: email.FieldAddress, 9: email.FieldDateVerified, 10: email.VouchedByColumn, 11: email.FieldTenantId, 13: email.FieldDateUpdated, 14: email.FieldDateErased, 15: email.FieldDateCreated}
+	1: email.FieldId, 2: email.HolderColumn, 8: email.FieldAddress, 9: email.FieldDateVerified, 10: email.VouchedByColumn, 12: email.FieldEnteredBy, 11: email.FieldTenantId, 13: email.FieldDateUpdated, 14: email.FieldDateErased, 15: email.FieldDateCreated}
 
 func (s EmailServiceServer) Apply(ctx context.Context, req *rstr.EmailApplyRequest) (*rstr.Email, error) {
 	if !req.HasPatch() {

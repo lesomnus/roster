@@ -29,9 +29,14 @@
 // browser is sent afterwards, and which tenant it arrived in. This takes a
 // tenant it is given and never works one out: `account/` reads the host and the
 // Login App reads Hydra's challenge, and neither answer is available here.
+//
+// And the route the answer comes back to, `GET /callback/{tenant}/{connection}`
+// on the app's own mux: [Providers.Begin] tells each provider that path for
+// that connection, and [Providers.Claim] reads which connection it names.
 package arrives
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
@@ -39,6 +44,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -60,7 +66,8 @@ import (
 // whether that is anybody here.
 type Caller struct {
 	// Which operator they arrived at -- the fact the app established and
-	// roster cannot read off a token.
+	// roster cannot read off a token, carried by the round trip the app began
+	// for that tenant ([Trip]).
 	Tenant      pdid.Id
 	TenantAlias string
 
@@ -142,6 +149,12 @@ func Invited() Enrol {
 // The address is the only identifier an operator has before the first sign-in.
 // A directory's subject is issued at the directory and is not knowable in
 // advance, so a policy that matched on nothing else could never admit anybody.
+//
+// And the row has to be the operator's word: written by somebody other than
+// the person, for somebody with no way in yet -- or proved since. An address a
+// person wrote onto their own account is their claim, and admitting by it
+// would admit the next person to prove that mailbox **as them**; see
+// [invitation].
 func Expected() Enrol {
 	return func(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, error) {
 		id, ok, err := invitation(ctx, c, who)
@@ -270,8 +283,8 @@ func aliasOf(address string) string {
 	return v
 }
 
-// invitation is the `Holder` an operator entered for the address a directory
-// just vouched for, if there is one.
+// invitation is the `Holder` a verified address names to somebody arriving at
+// it, if it names one.
 //
 // # Why this is not a new grant
 //
@@ -283,14 +296,42 @@ func aliasOf(address string) string {
 // tenant so it cannot be claimed twice, and the wall means the row read is one
 // this caller could already see.
 //
-// # What it does add, and it is one condition
+// # The provider must say the address is verified
 //
-// **The provider must say the address is verified.** Without that, a directory
-// that lets somebody type an arbitrary address into their own profile is a
-// directory that hands out whichever account carries it. `email_verified` is
-// the claim -- or `xms_edov`, which is how Microsoft says it (`microsoft.go`)
-// -- and an unverified one is not an answer here: it falls through to
-// whatever the policy does with a stranger.
+// Without that, a directory that lets somebody type an arbitrary address into
+// their own profile is a directory that hands out whichever account carries
+// it. `email_verified` is the claim -- or `xms_edov`, which is how Microsoft
+// says it (`microsoft.go`) -- and an unverified one is not an answer here: it
+// falls through to whatever the policy does with a stranger.
+//
+// # And the row must be somebody's word that it is them
+//
+// Which is the half that was missing. This matched whatever row held the
+// address, and two of the roads to a row are the holder's own: an address they
+// typed onto their account, and one a directory handed over unchecked at their
+// sign-in. Each is a claim nobody has checked, and matched by address each
+// handed whoever arrived verified at that mailbox to the account that made it.
+// Somebody signs in first through a connection that lets its users say any
+// address -- any directory's administrator, through Microsoft's sign-in for
+// any account -- the address lands on their own row, and the rightful holder's
+// first sign-in through GitHub is linked to that account and signed in as it.
+// `vouch.byAddress` refuses an unproved row for the same reason.
+//
+// So a row names somebody arriving in two cases and in no other:
+//
+//   - **It is proved** (`date_verified`). Somebody showed they read that
+//     mailbox, and a verified arrival at it is them.
+//   - **It is an invitation.** Somebody other than its holder wrote it
+//     (`entered_by`), no directory vouched for it (`vouched_by`), and the
+//     holder has no way in yet -- no identity, no credential, no key
+//     (`HolderService.SignsIn`). That is an operator entering somebody before
+//     they arrive, which is what [Expected] is for, and it lasts until they
+//     do: their first sign-in stamps the address, and from then it is proved.
+//
+// Anything else is a stranger to this lookup, and the policy decides about them
+// as about anybody. The address then follows the proof the way it does
+// everywhere: [Providers.attest] hands it to `Email.Attest`, which takes an
+// address nobody proved from whoever held it.
 func invitation(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, bool, error) {
 	if who.Email == "" || !who.Verified {
 		return pdid.Nil, false, nil
@@ -307,7 +348,10 @@ func invitation(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, bool, 
 			}.Build(),
 		}.Build(),
 		Select: rstr.EmailSelect_builder{
-			Holder: rstr.HolderSelect_builder{}.Build(),
+			DateVerified: proto.Bool(true),
+			EnteredBy:    proto.Bool(true),
+			VouchedBy:    rstr.IdentitySelect_builder{}.Build(),
+			Holder:       rstr.HolderSelect_builder{}.Build(),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -323,8 +367,34 @@ func invitation(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, bool, 
 		return pdid.Nil, false, nil
 	}
 	id, err := pdid.From(h.GetId())
+	if err != nil {
+		return pdid.Nil, false, err
+	}
 
-	return id, err == nil, err
+	switch {
+	case v.GetDateVerified() != nil:
+		return id, true, nil
+	case len(v.GetVouchedBy().GetId()) > 0:
+		// A directory's word that it did not check.
+		return pdid.Nil, false, nil
+	case bytes.Equal(v.GetEnteredBy(), h.GetId()):
+		// Their own claim about a mailbox.
+		return pdid.Nil, false, nil
+	}
+
+	ways, err := c.Holder().SignsIn(ctx, rstr.HolderSignsInRequest_builder{
+		Ref: rstr.HolderRef_builder{Id: id.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		return pdid.Nil, false, err
+	}
+	if len(ways.GetIdentities()) > 0 || len(ways.GetCredentials()) > 0 || len(ways.GetKeys()) > 0 {
+		// Somebody who has arrived already: whatever wrote the address, a way
+		// into their account is not handed to whoever proves a mailbox now.
+		return pdid.Nil, false, nil
+	}
+
+	return id, true, nil
 }
 
 // Providers is one app's relying-party half.
@@ -354,6 +424,11 @@ type Providers struct {
 	// `https://github.com`; a test, or a deployment on GitHub Enterprise
 	// Server, names its own, whose REST API is then `/api/v3` beside it.
 	GitHub string
+
+	// Microsoft is the origin of the Microsoft identity platform a token's
+	// `xms_edov` is believed from (`microsoft.go`). Empty is Microsoft's own:
+	// its global cloud and its national ones. A test names its own.
+	Microsoft string
 }
 
 // New is the relying party for whatever `Connection` rows the given client can
@@ -377,28 +452,110 @@ func (p *Providers) Connections(ctx context.Context, tenant pdid.Id) ([]*rstr.Co
 	return vs.GetItems(), nil
 }
 
-// Verifier is a connection's token check, and which claim of a token it
-// passes is the person's subject there (`Connection.subject_claim`).
+// A Trip is one round trip to a connection, started and not yet finished: the
+// authorization request to send the browser with, and what the answer that
+// comes back is held to.
 //
-// One value rather than a second return, so that what [Providers.Claim] reads
-// a subject by cannot come from a different connection than the check did.
+// The app keeps it beside its own flow, by the state, and hands it back to
+// [Providers.Claim] at the callback. Nothing in it but [Trip.URL] is the app's
+// to read. The PKCE verifier leaves this process only at the exchange, to the
+// provider, and the nonce comes back only inside a token the provider signed:
+// they are what prove the answer is this trip's, and the redirect is what the
+// exchange has to repeat.
+//
+// # What it holds the answer to, and why each
+//
+//   - **The connection.** Every connection has a redirect of its own,
+//     `<origin>/callback/<tenant>/<connection>`, and the answer has to come
+//     back to the one this trip was sent with. One redirect for every tenant
+//     and connection was a mix-up waiting to happen: a tenant's administrator
+//     may add a connection to a server of their own, and that server could send
+//     the browser on to another tenant's provider, whose code then came back to
+//     the one URL every flow shares -- and was exchanged at the first server's
+//     token endpoint, on the state of the flow that began there. A redirect per
+//     connection is a code that can only arrive at its own connection's door,
+//     which is the defence RFC 9700 names; PKCE alone does not give it.
+//   - **The PKCE verifier**, S256, on every connection. A code that leaks is
+//     worth nothing without it, so a code injected into somebody else's
+//     browser -- the other half of the same attack -- is refused at the
+//     exchange by the provider itself. GitHub and Microsoft accept it, and a
+//     provider that does not ignores it (RFC 7636 § 5).
+//   - **The nonce**, on an OpenID connection, held against the ID token's own.
+//     GitHub issues no ID token, so there is nothing for one to be in.
+type Trip struct {
+	// URL is where to send the browser.
+	URL string
+
+	tenant     pdid.Id
+	alias      string
+	connection string
+	redirect   string
+	verifier   string
+	nonce      string
+}
+
+// callbackOf is where a connection's answer comes back: one path per tenant and
+// connection under the app's origin, which is what the provider is told and
+// what an operator registers there.
+func callbackOf(origin, alias, connection string) string {
+	return strings.TrimSuffix(origin, "/") + "/callback/" + url.PathEscape(alias) + "/" + url.PathEscape(connection)
+}
+
+// Begin starts a round trip to one connection of one tenant. `origin` is where
+// the browser reaches this app -- `https://login.example.com` -- and `state`
+// is the app's own, which the answer carries back and the app binds to the
+// browser.
+func (p *Providers) Begin(ctx context.Context, tenant pdid.Id, alias, connection, origin, state string) (*Trip, error) {
+	t := &Trip{tenant: tenant, alias: alias, connection: connection, redirect: callbackOf(origin, alias, connection)}
+
+	cfg, v, err := p.relying(ctx, t)
+	if err != nil {
+		return nil, err
+	}
+
+	t.verifier = oauth2.GenerateVerifier()
+	opts := []oauth2.AuthCodeOption{oauth2.S256ChallengeOption(t.verifier)}
+	if v.gitHub == "" {
+		if t.nonce, err = Nonce(); err != nil {
+			return nil, err
+		}
+		opts = append(opts, oidc.Nonce(t.nonce))
+	}
+	t.URL = cfg.AuthCodeURL(state, opts...)
+
+	return t, nil
+}
+
+// verifier is a connection's check of what came back, and which claim of a
+// token is the person's subject there (`Connection.subject_claim`).
+//
+// One value rather than a second return, so that what a subject is read by
+// cannot come from a different connection than the check did -- and unexported,
+// with the token check inside it unexported too. For an authority of more than
+// one directory the check go-oidc makes is told to skip the issuer, and what
+// stands in for it is [inDirectory]; a caller holding the check alone could run
+// the half that skips, so nothing outside this package holds it.
 //
 // A GitHub connection has no token to check: GitHub issues none, and is asked
 // who signed in instead, at the API in `gitHub` (`github.go`). A connection to
 // an authority of more than one directory holds each token to the directory
 // it names, by the template in `directories` (`microsoft.go`).
-type Verifier struct {
-	*oidc.IDTokenVerifier
+type verifier struct {
+	id *oidc.IDTokenVerifier
 
 	subject     string
 	gitHub      string
 	directories string
+
+	// microsoft is whether the issuer is Microsoft's, which is the one place
+	// `xms_edov` means anything ([Providers.microsoft]).
+	microsoft bool
 }
 
-// Relying is this app as the relying party for one connection of one tenant:
+// relying is this app as the relying party for the connection a trip is to:
 // the discovery done, the secret resolved, the redirect fixed.
-func (p *Providers) Relying(ctx context.Context, tenant pdid.Id, name, redirect string) (*oauth2.Config, *Verifier, error) {
-	c, v, err := p.discover(ctx, tenant, name)
+func (p *Providers) relying(ctx context.Context, t *Trip) (*oauth2.Config, *verifier, error) {
+	c, v, err := p.discover(ctx, t.tenant, t.connection)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -416,10 +573,10 @@ func (p *Providers) Relying(ctx context.Context, tenant pdid.Id, name, redirect 
 		// and reading it as `id` would be a second rule for what the field
 		// says.
 		if named := c.GetSubjectClaim(); named != "" && named != "sub" {
-			return nil, nil, fmt.Errorf("connection %s: GitHub names its people by their account's id, and %q is a claim of an ID token, which GitHub does not issue", name, named)
+			return nil, nil, fmt.Errorf("connection %s: GitHub names its people by their account's id, and %q is a claim of an ID token, which GitHub does not issue", t.connection, named)
 		}
 
-		return gitHubRelying(c.GetIssuer(), c.GetClientId(), secret, redirect, c.GetScopes()), &Verifier{gitHub: api}, nil
+		return gitHubRelying(c.GetIssuer(), c.GetClientId(), secret, t.redirect, c.GetScopes()), &verifier{gitHub: api}, nil
 	}
 
 	// The issuer is checked here, against the token's own directory, for an
@@ -431,12 +588,13 @@ func (p *Providers) Relying(ctx context.Context, tenant pdid.Id, name, redirect 
 		ClientID:     c.GetClientId(),
 		ClientSecret: secret,
 		Endpoint:     v.Endpoint(),
-		RedirectURL:  redirect,
+		RedirectURL:  t.redirect,
 		Scopes:       append([]string{oidc.ScopeOpenID}, c.GetScopes()...),
-	}, &Verifier{
-		IDTokenVerifier: v.Verifier(&oidc.Config{ClientID: c.GetClientId(), SkipIssuerCheck: every != ""}),
-		subject:         c.GetSubjectClaim(),
-		directories:     every,
+	}, &verifier{
+		id:          v.Verifier(&oidc.Config{ClientID: c.GetClientId(), SkipIssuerCheck: every != ""}),
+		subject:     c.GetSubjectClaim(),
+		directories: every,
+		microsoft:   p.microsoft(c.GetIssuer()),
 	}, nil
 }
 
@@ -472,35 +630,78 @@ func (p *Providers) discover(ctx context.Context, tenant pdid.Id, name string) (
 	return c, v, nil
 }
 
-// Claim is what the provider said, verified: the exchange and the token check
-// that make the app the relying party.
+// ErrUnfinished is a round trip [Providers.Claim] could not finish for a reason
+// of this side's -- the connection or the provider's document could not be
+// read, a secret could not be resolved -- rather than an answer it refused. An
+// app answers the two differently: one is its own failure, and the other is
+// the browser's.
+var ErrUnfinished = errors.New("arrives: the round trip could not be finished")
+
+// Claim finishes a round trip [Providers.Begin] started: what the provider
+// said, verified -- the exchange and the token check that make the app the
+// relying party -- and named for the tenant and connection the trip was to.
+//
+// `back` is the request the browser came back with, served at
+// `GET /callback/{tenant}/{connection}`: the two it names have to be the trip's
+// own, which is what makes a redirect per connection a defence rather than a
+// spelling ([Trip]). Its context carries whatever the app calls roster with for
+// that tenant, as [Providers.Begin]'s did.
 //
 // The subject is the claim the connection names. A token without it is
 // refused rather than read by `sub`: the person would be somebody else under
 // the other claim, and a second person is what that makes.
-func (p *Providers) Claim(ctx context.Context, cfg *oauth2.Config, verifier *Verifier, code string) (Caller, error) {
-	if code == "" {
-		return Caller{}, errors.New("no code")
+func (p *Providers) Claim(ctx context.Context, t *Trip, back *http.Request) (Caller, error) {
+	if t == nil {
+		return Caller{}, errors.New("no round trip")
 	}
-	tok, err := cfg.Exchange(ctx, code)
+	if back.PathValue("tenant") != t.alias || back.PathValue("connection") != t.connection {
+		return Caller{}, fmt.Errorf("the answer came back to the callback of %q at %q, and this round trip was to %q at %q",
+			back.PathValue("connection"), back.PathValue("tenant"), t.connection, t.alias)
+	}
+
+	cfg, v, err := p.relying(ctx, t)
+	if err != nil {
+		return Caller{}, fmt.Errorf("%w: %w", ErrUnfinished, err)
+	}
+	who, err := p.exchange(ctx, cfg, v, t, back.URL.Query().Get("code"))
 	if err != nil {
 		return Caller{}, err
 	}
-	if verifier.gitHub != "" {
-		return p.fromGitHub(ctx, verifier.gitHub, tok)
+	who.Tenant, who.TenantAlias, who.Provider = t.tenant, t.alias, t.connection
+
+	return who, nil
+}
+
+// exchange is the code turned into who signed in: the token, with the trip's
+// verifier, and then what it says -- or, for GitHub, what its API says.
+func (p *Providers) exchange(ctx context.Context, cfg *oauth2.Config, v *verifier, t *Trip, code string) (Caller, error) {
+	if code == "" {
+		return Caller{}, errors.New("no code")
+	}
+	tok, err := cfg.Exchange(ctx, code, oauth2.VerifierOption(t.verifier))
+	if err != nil {
+		return Caller{}, err
+	}
+	if v.gitHub != "" {
+		return p.fromGitHub(ctx, v.gitHub, tok)
 	}
 	raw, ok := tok.Extra("id_token").(string)
 	if !ok {
 		return Caller{}, errors.New("no id_token")
 	}
-	id, err := verifier.Verify(ctx, raw)
+	id, err := v.id.Verify(ctx, raw)
 	if err != nil {
 		return Caller{}, err
 	}
-	if verifier.directories != "" {
-		if err := inDirectory(id, verifier.directories); err != nil {
+	if v.directories != "" {
+		if err := inDirectory(id, v.directories); err != nil {
 			return Caller{}, err
 		}
+	}
+	// The token is this trip's, which is what a nonce is for. A trip with no
+	// nonce is one this package did not begin, and gets no token either.
+	if t.nonce == "" || id.Nonce != t.nonce {
+		return Caller{}, errors.New("the id_token is for another sign-in: its nonce is not this one's")
 	}
 	var claims struct {
 		Email    string `json:"email"`
@@ -516,26 +717,30 @@ func (p *Providers) Claim(ctx context.Context, cfg *oauth2.Config, verifier *Ver
 	}
 
 	who := Caller{
-		Subject:  id.Subject,
-		Email:    claims.Email,
-		Verified: claims.Verified || domainVerified(claims.DomainVerified),
+		Subject: id.Subject,
+		Email:   claims.Email,
+		// `xms_edov` is Microsoft's word, read only in a token Microsoft
+		// signed: anywhere else it is a claim like any other somebody may
+		// have put there, and an address is verified on the provider's own
+		// word and nothing else.
+		Verified: claims.Verified || (v.microsoft && domainVerified(claims.DomainVerified)),
 		Name:     claims.Name,
 		Picture:  claims.Picture,
 		token:    tok,
 	}
-	if named := verifier.subject; named != "" && named != "sub" {
+	if named := v.subject; named != "" && named != "sub" {
 		var all map[string]any
 		if err := id.Claims(&all); err != nil {
 			return Caller{}, err
 		}
-		v, _ := all[named].(string)
-		if v == "" {
+		s, _ := all[named].(string)
+		if s == "" {
 			// Entra leaves `oid` out without the `profile` scope, which is the
 			// usual reason, and the one worth saying.
 			return Caller{}, fmt.Errorf("the token carries no %q, which this connection names its people by; "+
 				"Entra sends `oid` only to a client asking for the `profile` scope", named)
 		}
-		who.sub, who.Subject = id.Subject, v
+		who.sub, who.Subject = id.Subject, s
 	}
 
 	return who, nil

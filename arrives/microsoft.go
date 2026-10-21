@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -40,9 +42,45 @@ import (
 // whichever account carries it -- the mistake called nOAuth. So an address is
 // verified on `email_verified` or on `xms_edov`, the provider's word in either
 // language, and on nothing else ([domainVerified]).
+//
+// And `xms_edov` only where Microsoft is the provider. It is Microsoft's word
+// in Microsoft's token; in anybody else's it is a claim whatever put it there
+// meant by it, which may be a user's own attribute mapped into the token. A
+// connection to any other issuer is believed on `email_verified` alone
+// ([Providers.microsoft]).
 
 // tenantID is the placeholder Microsoft's document puts where a directory goes.
 const tenantID = "{tenantid}"
+
+// microsoftHosts are where the Microsoft identity platform signs people in and
+// issues their tokens: its global cloud, and the national clouds of the United
+// States government and of China.
+var microsoftHosts = []string{
+	"login.microsoftonline.com",
+	"login.microsoftonline.us",
+	"login.partner.microsoftonline.cn",
+	"login.chinacloudapi.cn",
+}
+
+// microsoft is whether an issuer is the Microsoft identity platform's, which is
+// what decides whether a token's `xms_edov` is anybody's word.
+//
+// By the host and over https, the way [Providers.gitHub] reads GitHub off an
+// issuer: a path is the issuer's to choose, and an issuer anybody stands up
+// may mirror Microsoft's paths -- the fake in `internal/idptest` does.
+func (p *Providers) microsoft(issuer string) bool {
+	u, err := url.Parse(issuer)
+	if err != nil || u.Host == "" {
+		return false
+	}
+	if p.Microsoft != "" {
+		at, err := url.Parse(p.Microsoft)
+
+		return err == nil && at.Scheme == u.Scheme && strings.EqualFold(at.Host, u.Host)
+	}
+
+	return u.Scheme == "https" && slices.ContainsFunc(microsoftHosts, func(h string) bool { return strings.EqualFold(h, u.Host) })
+}
 
 // anyDirectory is the issuer Microsoft's document names for an authority of
 // more than one directory, and empty for an issuer that is not one.

@@ -66,6 +66,11 @@ func DateVerified(v time.Time) predicate.Email {
 	return predicate.Email(sql.FieldEQ(FieldDateVerified, v))
 }
 
+// EnteredBy applies equality check predicate on the "entered_by" field. It's identical to EnteredByEQ.
+func EnteredBy(v []byte) predicate.Email {
+	return predicate.Email(sql.FieldEQ(FieldEnteredBy, v))
+}
+
 // TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
 func TenantId(v uuid.UUID) predicate.Email {
 	return predicate.Email(sql.FieldEQ(FieldTenantId, v))
@@ -209,6 +214,56 @@ func DateVerifiedIsNil() predicate.Email {
 // DateVerifiedNotNil applies the NotNil predicate on the "date_verified" field.
 func DateVerifiedNotNil() predicate.Email {
 	return predicate.Email(sql.FieldNotNull(FieldDateVerified))
+}
+
+// EnteredByEQ applies the EQ predicate on the "entered_by" field.
+func EnteredByEQ(v []byte) predicate.Email {
+	return predicate.Email(sql.FieldEQ(FieldEnteredBy, v))
+}
+
+// EnteredByNEQ applies the NEQ predicate on the "entered_by" field.
+func EnteredByNEQ(v []byte) predicate.Email {
+	return predicate.Email(sql.FieldNEQ(FieldEnteredBy, v))
+}
+
+// EnteredByIn applies the In predicate on the "entered_by" field.
+func EnteredByIn(vs ...[]byte) predicate.Email {
+	return predicate.Email(sql.FieldIn(FieldEnteredBy, vs...))
+}
+
+// EnteredByNotIn applies the NotIn predicate on the "entered_by" field.
+func EnteredByNotIn(vs ...[]byte) predicate.Email {
+	return predicate.Email(sql.FieldNotIn(FieldEnteredBy, vs...))
+}
+
+// EnteredByGT applies the GT predicate on the "entered_by" field.
+func EnteredByGT(v []byte) predicate.Email {
+	return predicate.Email(sql.FieldGT(FieldEnteredBy, v))
+}
+
+// EnteredByGTE applies the GTE predicate on the "entered_by" field.
+func EnteredByGTE(v []byte) predicate.Email {
+	return predicate.Email(sql.FieldGTE(FieldEnteredBy, v))
+}
+
+// EnteredByLT applies the LT predicate on the "entered_by" field.
+func EnteredByLT(v []byte) predicate.Email {
+	return predicate.Email(sql.FieldLT(FieldEnteredBy, v))
+}
+
+// EnteredByLTE applies the LTE predicate on the "entered_by" field.
+func EnteredByLTE(v []byte) predicate.Email {
+	return predicate.Email(sql.FieldLTE(FieldEnteredBy, v))
+}
+
+// EnteredByIsNil applies the IsNil predicate on the "entered_by" field.
+func EnteredByIsNil() predicate.Email {
+	return predicate.Email(sql.FieldIsNull(FieldEnteredBy))
+}
+
+// EnteredByNotNil applies the NotNil predicate on the "entered_by" field.
+func EnteredByNotNil() predicate.Email {
+	return predicate.Email(sql.FieldNotNull(FieldEnteredBy))
 }
 
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.

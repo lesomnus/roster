@@ -407,7 +407,8 @@ function Root(): React.ReactNode {
 	}
 
 	// A provider button leaves this page for the operator's directory and comes
-	// back to `/callback`, which finishes the flow without ever returning here.
+	// back to that connection's `/callback`, which finishes the flow without ever
+	// returning here.
 	// So the challenge travels on the link, the way it does on every other call.
 	return (
 		<SignIn

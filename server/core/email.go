@@ -14,6 +14,7 @@ import (
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"strings"
 	"time"
@@ -73,7 +74,28 @@ func (s coreEmail) Add(ctx context.Context, req *app.EmailAddRequest) (*app.Emai
 		return nil, err
 	}
 
-	return s.EmailServiceServer.Add(ctx, req)
+	return s.EmailServiceServer.Add(ctx, entered(ctx, req))
+}
+
+// entered stamps who is writing an address: the frame's actor, which is what
+// `Email.entered_by` says and what tells a person's claim about their own
+// mailbox from somebody else's word about them.
+//
+// A request with no frame is the deployment's own work -- `init`, `roster
+// holder add` -- and keeps whatever that code said, which is nothing unless it
+// had a reason. A caller's own request never gets here saying anything: the
+// generated gate refuses an `Add` that asserts a stamp, and this layer is
+// inside it.
+func entered(ctx context.Context, req *app.EmailAddRequest) *app.EmailAddRequest {
+	f, ok := frame.From(ctx)
+	if !ok || f.Actor.IsZero() {
+		return req
+	}
+
+	req = proto.Clone(req).(*app.EmailAddRequest)
+	req.SetEnteredBy(f.Actor.Bytes())
+
+	return req
 }
 
 // Patch is the normalisation, and **not** the rule about whose row it is.
@@ -250,11 +272,11 @@ func (s coreEmail) Attest(ctx context.Context, req *app.EmailAttestRequest) (*ap
 		return nil, err
 	}
 
-	v, err := s.EmailServiceServer.Add(ctx, app.EmailAddRequest_builder{
+	v, err := s.EmailServiceServer.Add(ctx, entered(ctx, app.EmailAddRequest_builder{
 		Holder:    req.GetHolder(),
 		Address:   req.GetAddress(),
 		VouchedBy: req.GetVouchedBy(),
-	}.Build())
+	}.Build()))
 	switch {
 	case err == nil:
 	case status.Code(err) == codes.AlreadyExists:
@@ -480,10 +502,10 @@ func (s coreEmail) moved(ctx context.Context, l *app.Link, e *app.Email) (*app.E
 			"that address is no longer held by the row this link was minted against")
 	}
 
-	v, err := next.Email().Add(ctx, app.EmailAddRequest_builder{
+	v, err := next.Email().Add(ctx, entered(ctx, app.EmailAddRequest_builder{
 		Holder:  app.HolderRef_builder{Id: l.GetHolder().GetId()}.Build(),
 		Address: e.GetAddress(),
-	}.Build())
+	}.Build()))
 	if err != nil {
 		return nil, err
 	}
@@ -574,11 +596,11 @@ func (s coreEmail) attested(ctx context.Context, req *app.EmailAttestRequest) (*
 		return nil, status.Error(codes.FailedPrecondition, "that address is no longer held by the row this read")
 	}
 
-	v, err := next.Email().Add(ctx, app.EmailAddRequest_builder{
+	v, err := next.Email().Add(ctx, entered(ctx, app.EmailAddRequest_builder{
 		Holder:    req.GetHolder(),
 		Address:   req.GetAddress(),
 		VouchedBy: req.GetVouchedBy(),
-	}.Build())
+	}.Build()))
 	if err != nil {
 		return nil, err
 	}

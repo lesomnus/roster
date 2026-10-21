@@ -423,6 +423,7 @@ var (
 		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "address", Type: field.TypeString},
 		{Name: "date_verified", Type: field.TypeTime, Nullable: true},
+		{Name: "entered_by", Type: field.TypeBytes, Nullable: true},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
@@ -438,13 +439,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "email_holder_holder",
-				Columns:    []*schema.Column{EmailColumns[7]},
+				Columns:    []*schema.Column{EmailColumns[8]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "email_identity_vouched_by",
-				Columns:    []*schema.Column{EmailColumns[8]},
+				Columns:    []*schema.Column{EmailColumns[9]},
 				RefColumns: []*schema.Column{IdentityColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -453,12 +454,12 @@ var (
 			{
 				Name:    "email_tenant_id_date_created_id",
 				Unique:  false,
-				Columns: []*schema.Column{EmailColumns[3], EmailColumns[6], EmailColumns[0]},
+				Columns: []*schema.Column{EmailColumns[4], EmailColumns[7], EmailColumns[0]},
 			},
 			{
 				Name:    "email_holder_id_address",
 				Unique:  true,
-				Columns: []*schema.Column{EmailColumns[7], EmailColumns[1]},
+				Columns: []*schema.Column{EmailColumns[8], EmailColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -466,7 +467,7 @@ var (
 			{
 				Name:    "email_tenant_id_address",
 				Unique:  true,
-				Columns: []*schema.Column{EmailColumns[3], EmailColumns[1]},
+				Columns: []*schema.Column{EmailColumns[4], EmailColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

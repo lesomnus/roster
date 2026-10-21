@@ -19,6 +19,7 @@ type Mutation struct {
 	typ               string
 	address           *string
 	date_verified     *time.Time
+	entered_by        *[]byte
 	tenant_id         *uuid.UUID
 	date_updated      *time.Time
 	date_erased       *time.Time
@@ -94,6 +95,38 @@ func (m *Mutation) DateVerifiedCleared() bool {
 func (m *Mutation) ResetDateVerified() {
 	m.date_verified = nil
 	delete(m.clearedFields, FieldDateVerified)
+}
+
+// SetEnteredBy sets the "entered_by" field.
+func (m *Mutation) SetEnteredBy(b []byte) {
+	m.entered_by = &b
+}
+
+// EnteredBy returns the value of the "entered_by" field in the mutation.
+func (m *Mutation) EnteredBy() (r []byte, exists bool) {
+	v := m.entered_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearEnteredBy clears the value of the "entered_by" field.
+func (m *Mutation) ClearEnteredBy() {
+	m.entered_by = nil
+	m.clearedFields[FieldEnteredBy] = struct{}{}
+}
+
+// EnteredByCleared returns if the "entered_by" field was cleared in this mutation.
+func (m *Mutation) EnteredByCleared() bool {
+	_, ok := m.clearedFields[FieldEnteredBy]
+	return ok
+}
+
+// ResetEnteredBy resets all changes to the "entered_by" field.
+func (m *Mutation) ResetEnteredBy() {
+	m.entered_by = nil
+	delete(m.clearedFields, FieldEnteredBy)
 }
 
 // SetTenantId sets the "tenant_id" field.
@@ -337,12 +370,15 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.address != nil {
 		fields = append(fields, FieldAddress)
 	}
 	if m.date_verified != nil {
 		fields = append(fields, FieldDateVerified)
+	}
+	if m.entered_by != nil {
+		fields = append(fields, FieldEnteredBy)
 	}
 	if m.tenant_id != nil {
 		fields = append(fields, FieldTenantId)
@@ -374,6 +410,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Address()
 	case FieldDateVerified:
 		return m.DateVerified()
+	case FieldEnteredBy:
+		return m.EnteredBy()
 	case FieldTenantId:
 		return m.TenantId()
 	case FieldDateUpdated:
@@ -415,6 +453,13 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDateVerified(v)
+		return nil
+	case FieldEnteredBy:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnteredBy(v)
 		return nil
 	case FieldTenantId:
 		v, ok := value.(uuid.UUID)
@@ -491,6 +536,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateVerified) {
 		fields = append(fields, FieldDateVerified)
 	}
+	if m.FieldCleared(FieldEnteredBy) {
+		fields = append(fields, FieldEnteredBy)
+	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
@@ -517,6 +565,9 @@ func (m *Mutation) ClearField(name string) error {
 	case FieldDateVerified:
 		m.ClearDateVerified()
 		return nil
+	case FieldEnteredBy:
+		m.ClearEnteredBy()
+		return nil
 	case FieldDateErased:
 		m.ClearDateErased()
 		return nil
@@ -539,6 +590,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldDateVerified:
 		m.ResetDateVerified()
+		return nil
+	case FieldEnteredBy:
+		m.ResetEnteredBy()
 		return nil
 	case FieldTenantId:
 		m.ResetTenantId()

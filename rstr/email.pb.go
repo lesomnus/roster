@@ -67,6 +67,7 @@ type Email struct {
 	xxx_hidden_Address      string                 `protobuf:"bytes,8,opt,name=address"`
 	xxx_hidden_DateVerified *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=date_verified,json=dateVerified"`
 	xxx_hidden_VouchedBy    *Identity              `protobuf:"bytes,10,opt,name=vouched_by,json=vouchedBy"`
+	xxx_hidden_EnteredBy    []byte                 `protobuf:"bytes,12,opt,name=entered_by,json=enteredBy"`
 	xxx_hidden_TenantId     []byte                 `protobuf:"bytes,11,opt,name=tenant_id,json=tenantId"`
 	xxx_hidden_DateUpdated  *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased   *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
@@ -135,6 +136,13 @@ func (x *Email) GetVouchedBy() *Identity {
 	return nil
 }
 
+func (x *Email) GetEnteredBy() []byte {
+	if x != nil {
+		return x.xxx_hidden_EnteredBy
+	}
+	return nil
+}
+
 func (x *Email) GetTenantId() []byte {
 	if x != nil {
 		return x.xxx_hidden_TenantId
@@ -184,6 +192,13 @@ func (x *Email) SetDateVerified(v *timestamppb.Timestamp) {
 
 func (x *Email) SetVouchedBy(v *Identity) {
 	x.xxx_hidden_VouchedBy = v
+}
+
+func (x *Email) SetEnteredBy(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_EnteredBy = v
 }
 
 func (x *Email) SetTenantId(v []byte) {
@@ -332,6 +347,36 @@ type Email_builder struct {
 	// design is explicit that an unverified provider address must not be trusted
 	// to link accounts.
 	VouchedBy *Identity
+	// Who wrote it: the caller the `Add` arrived from -- the person themselves,
+	// an operator entering them, a front door keeping what a directory said, a
+	// directory provisioning them. Unset is a row written with no caller at all,
+	// which is the deployment's own command (`roster holder add`), and every row
+	// written before roster kept this.
+	//
+	// # It is what tells an invitation from a claim
+	//
+	// An address somebody wrote onto their **own** row is their claim about a
+	// mailbox, and nobody has checked it until a link or a directory proves it
+	// ([Email.date_verified]). One somebody else wrote is that somebody's word,
+	// and an operator's word about a person who has not arrived yet is the
+	// invitation `enrol: expected` admits them by (`arrives.invitation`).
+	//
+	// The sign-in that reads it once read neither. It matched whatever row held
+	// the address, so an address anybody typed onto their own account -- or one
+	// a directory handed over unchecked at their sign-in -- handed them whoever
+	// arrived at that mailbox verified later: the rightful holder's first
+	// sign-in through GitHub was linked to the account of the person who had
+	// written their address down first.
+	//
+	// # A column and not an edge
+	//
+	// The caller may be the control plane's -- an operator at the admin port, a
+	// deployment's key -- and this row is the data plane's, which is
+	// `Delegation.issuer`'s reason, word for word: an identifier compared and
+	// never followed. **Stamped**, so a request cannot say it: `server/core`
+	// writes the frame's actor, and the generated gate refuses an `Add` that
+	// asserts one.
+	EnteredBy []byte
 	// The tenant `holder.tenant` reaches, kept here. payday stamps it, and
 	// `Identity` says at length why a column is worth it.
 	//
@@ -360,6 +405,7 @@ func (b0 Email_builder) Build() *Email {
 	x.xxx_hidden_Address = b.Address
 	x.xxx_hidden_DateVerified = b.DateVerified
 	x.xxx_hidden_VouchedBy = b.VouchedBy
+	x.xxx_hidden_EnteredBy = b.EnteredBy
 	x.xxx_hidden_TenantId = b.TenantId
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
@@ -371,7 +417,7 @@ var File_app_email_proto protoreflect.FileDescriptor
 
 const file_app_email_proto_rawDesc = "" +
 	"\n" +
-	"\x0fapp/email.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xdc\x05\n" +
+	"\x0fapp/email.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x8b\x06\n" +
 	"\x05Email\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12 \n" +
@@ -379,7 +425,9 @@ const file_app_email_proto_rawDesc = "" +
 	"\rdate_verified\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\f\xea\x82\x16\x028\x01\xaa\xc1\x16\x02\x10\x01R\fdateVerified\x127\n" +
 	"\n" +
 	"vouched_by\x18\n" +
-	" \x01(\v2\x10.roster.IdentityB\x06\xf2\x82\x16\x028\x01R\tvouchedBy\x12%\n" +
+	" \x01(\v2\x10.roster.IdentityB\x06\xf2\x82\x16\x028\x01R\tvouchedBy\x12-\n" +
+	"\n" +
+	"entered_by\x18\f \x01(\fB\x0e\xea\x82\x16\x048\x01@\x01\xaa\xc1\x16\x02\x10\x01R\tenteredBy\x12%\n" +
 	"\ttenant_id\x18\v \x01(\fB\b\xea\x82\x16\x04\x10@@\x01R\btenantId\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +

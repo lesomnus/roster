@@ -16,6 +16,8 @@ const (
 	FieldAddress = "address"
 	// FieldDateVerified holds the string denoting the date_verified field in the database.
 	FieldDateVerified = "date_verified"
+	// FieldEnteredBy holds the string denoting the entered_by field in the database.
+	FieldEnteredBy = "entered_by"
 	// FieldTenantId holds the string denoting the tenant_id field in the database.
 	FieldTenantId = "tenant_id"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
@@ -55,6 +57,7 @@ var Columns = []string{
 	FieldId,
 	FieldAddress,
 	FieldDateVerified,
+	FieldEnteredBy,
 	FieldTenantId,
 	FieldDateUpdated,
 	FieldDateErased,
