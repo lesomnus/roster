@@ -104,6 +104,19 @@ func (r TenantResult) String() string {
 // is idempotent and none is undone by an interruption, so running this again
 // finishes it -- which is what the sweep does with a tenant it finds stamped
 // and not finished.
+//
+// # And a hold that arrives while it runs stops it
+//
+// The checks above are a read, and this writes for as long as a tenant has
+// people -- one person at a time, through the trail and the archive. So the
+// stamp is written on the condition the read found -- held by nobody, closed,
+// not yet destroyed -- and is no write at all if a hold was placed or a
+// restore made in between; and the hold is asked again before each person.
+// What a hold placed half way through stops is the rest of the people: those
+// forgotten before it stay forgotten, and lifting it lets the sweep finish
+// ([Unfinished] finds a destroyed tenant by the people it still has). Once
+// they are all gone, what is left is a few statements about rows that name
+// nobody, and they finish with the run.
 func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Policy, cs audit.Contents) (TenantResult, error) {
 	var out TenantResult
 
@@ -111,19 +124,34 @@ func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Polic
 	if err != nil {
 		return out, err
 	}
-	switch {
-	case v.DateHeld != nil:
-		return out, fmt.Errorf("%w since %s: %s", ErrHeld, v.DateHeld.Format(time.RFC3339), v.Hold)
-	case v.DateClosed == nil:
-		return out, fmt.Errorf("@%s is open; `roster tenant close` it first, which is what shuts its people out", v.Alias)
+	if err := destroyable(v); err != nil {
+		return out, err
 	}
 
 	if v.DateDestroyed == nil {
-		if err := db.Tenant.UpdateOneId(t.Uuid()).
+		n, err := db.Tenant.Update().
+			Where(
+				tenant.IdEQ(t.Uuid()),
+				tenant.DateHeldIsNil(),
+				tenant.DateClosedNotNil(),
+				tenant.DateDestroyedIsNil(),
+			).
 			SetDateDestroyed(time.Now()).
 			SetDateUpdated(time.Now()).
-			Exec(ctx); err != nil {
+			Save(ctx)
+		if err != nil {
 			return out, err
+		}
+		if n == 0 {
+			// Something moved since the read. Whatever it was is the answer:
+			// held, restored, or destroyed by another run, which this one then
+			// finishes beside.
+			if v, err = db.Tenant.Get(ctx, t.Uuid()); err != nil {
+				return out, err
+			}
+			if err := destroyable(v); err != nil {
+				return out, err
+			}
 		}
 	}
 
@@ -137,6 +165,9 @@ func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Polic
 		return out, err
 	}
 	for _, h := range who {
+		if err := notHeld(ctx, db, t); err != nil {
+			return out, err
+		}
 		res, err := Forget(ctx, db, pdid.Id(h), p)
 		if err != nil {
 			return out, fmt.Errorf("holder %s: %w", pdid.Id(h), err)
@@ -182,6 +213,33 @@ func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Polic
 	}
 
 	return out, tx.Commit()
+}
+
+// destroyable is whether a tenant as it was read may be destroyed: closed, and
+// held by nobody.
+func destroyable(v *ent.Tenant) error {
+	switch {
+	case v.DateHeld != nil:
+		return fmt.Errorf("%w since %s: %s", ErrHeld, v.DateHeld.Format(time.RFC3339), v.Hold)
+	case v.DateClosed == nil:
+		return fmt.Errorf("@%s is open; `roster tenant close` it first, which is what shuts its people out", v.Alias)
+	}
+
+	return nil
+}
+
+// notHeld asks again, between the steps of [DestroyTenant], whether an operator
+// has placed a hold since it began.
+func notHeld(ctx context.Context, db *ent.Client, t pdid.Id) error {
+	v, err := db.Tenant.Get(ctx, t.Uuid())
+	if err != nil {
+		return err
+	}
+	if v.DateHeld != nil {
+		return fmt.Errorf("%w since %s: %s", ErrHeld, v.DateHeld.Format(time.RFC3339), v.Hold)
+	}
+
+	return nil
 }
 
 // The acts this package writes past the servers, as the trail names them.
