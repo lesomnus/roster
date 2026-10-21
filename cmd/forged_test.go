@@ -50,6 +50,19 @@ func as(t *testing.T, who string) metadata.MD {
 // impersonating somebody, and not crossing the wall between two customers who
 // have never heard of each other.
 func TestPlainDoesNotHandOutEveryTenant(t *testing.T) {
+	// What reads the credential is not what says where keys are: a deployment
+	// with no control plane is still one without keys when it is handed a
+	// reader of its own -- as an app that runs roster in its own process hands
+	// it `auth.PlainInProcess`.
+	for name, h := range map[string]auth.Handler{
+		"with the Plain a checkout gets": nil,
+		"with Plain for its own process": auth.PlainInProcess(),
+	} {
+		t.Run(name, func(t *testing.T) { plainHandsOutNoTenant(t, h) })
+	}
+}
+
+func plainHandsOutNoTenant(t *testing.T, h auth.Handler) {
 	x := require.New(t)
 	ctx := t.Context()
 
@@ -64,6 +77,9 @@ func TestPlainDoesNotHandOutEveryTenant(t *testing.T) {
 	t.Cleanup(func() { s.Close() })
 	x.NoError(entmigrate.NewSchema(s.Drv).Create(ctx))
 	x.Nil(s.Control, "this deployment names no control plane")
+	if h != nil {
+		s.Auth = h
+	}
 
 	// Two customers who must never see each other.
 	contoso := add(t, ctx, s, "contoso")
