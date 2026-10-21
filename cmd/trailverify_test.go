@@ -133,6 +133,27 @@ func TestRowsFromBeforeTheKeyAreAcceptedOnce(t *testing.T) {
 		x.ErrorContains(err, "audit.archive")
 		x.NoError(run("trail", "prune", "--older-than", "1ns", "--to", dir), "the archive it already has")
 	})
+
+	t.Run("and so are an acceptance and a purge of one", func(t *testing.T) {
+		x := require.New(t)
+
+		// Read against an archive with nothing in it, an acceptance would take
+		// every chunk of this one for missing.
+		other := t.TempDir()
+		for _, args := range [][]string{
+			{"trail", "accept", "--in", other, "--why", "a second archive"},
+			{"trail", "purge", "--older-than", "1ns", "--in", other},
+		} {
+			err := run(args...)
+			x.ErrorContains(err, "--in", args)
+			x.ErrorContains(err, "audit.archive", args)
+		}
+		x.NoError(run("trail", "verify"), "a refused act changed the account")
+
+		x.NoError(run("trail", "accept", "--in", dir, "--why", "the archive it already has"))
+		x.NoError(run("trail", "purge", "--older-than", "1ns", "--in", dir, "--dry-run"))
+		x.NoError(run("trail", "verify"))
+	})
 }
 
 // TestADatabaseRestoredFromABackupIsAcceptedOnce is what docs/operating.md says
