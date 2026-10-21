@@ -881,20 +881,23 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// key presented to the control plane was refused with "this deployment has
 	// no keys" -- by the plane the keys are in.
 	//
-	// The two nils are told apart by `Auth`: the control plane is built with
-	// one (see `Build`), and the deployment with no control plane is the only
-	// Server without -- that absence is what wires `Plain` above. Under Plain
-	// an identifier is whatever the caller writes, including one of this
-	// domain naming a **tenant** key's row in `s.Ungated` -- a row that
-	// exists, which `keyed` would take for a deployment key and the policy
-	// would hand `frame.Everything`. That is the escalation `keys.Store`
-	// resolves tenant keys to their holder to prevent, so here it stays what
-	// it always was: no control plane, no keys, refused.
+	// The two nils are told apart by [Server.Keys], which says the plane is
+	// the one that holds them: the control plane, and nothing else. It is not
+	// told apart by `Auth`, which is how a credential is read and says nothing
+	// about where keys are -- a deployment with no control plane is given one
+	// too, by its sign-in or by an app that runs it in its own process -- and
+	// such a deployment's own rows are not keys. Under Plain an identifier is
+	// whatever the caller writes, including one of this domain naming a
+	// **tenant** key's row in `s.Ungated` -- a row that exists, which `keyed`
+	// would take for a deployment key and the policy would hand
+	// `frame.Everything`. That is the escalation `keys.Store` resolves tenant
+	// keys to their holder to prevent, so here it stays what it always was: no
+	// control plane, no keys, refused.
 	var keyrows app.Server
 	switch {
 	case s.Control != nil:
 		keyrows = s.Control.Ungated
-	case s.Auth != nil:
+	case s.Keys:
 		keyrows = s.Ungated
 	}
 
@@ -1295,7 +1298,10 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 	// been asked. Run together, the budget is the grace whatever a deployment
 	// opened.
 	var stops shutdown
-	defer stops.run()
+	defer func() {
+		stops.run()
+		s.flushAccess(ctx)
+	}()
 
 	stop, err := s.serveHttp(ctx, c, g)
 	if err != nil {
@@ -1340,12 +1346,39 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 	}
 	stops.add(stopAdminHttp)
 
+	stopped := make(chan struct{})
 	go func() {
 		<-ctx.Done()
 		stopping(g)
+		close(stopped)
 	}()
 
-	return g.Serve(l)
+	err = g.Serve(l)
+	if ctx.Err() != nil {
+		// Asked to stop: what was being answered ends before the access
+		// record is written once more, as it is on the way out.
+		<-stopped
+	}
+
+	return err
+}
+
+// flushAccess writes what each plane's access record holds once more, once
+// nothing answers: what the listeners answered while they drained is queued
+// after the writers' own last write, which they made as their loops stopped.
+func (s *Server) flushAccess(ctx context.Context) {
+	last, cancel := context.WithTimeout(context.WithoutCancel(ctx), ShutdownGrace)
+	defer cancel()
+
+	for _, v := range []*Server{s, s.Control} {
+		if v == nil || v.Access == nil {
+			continue
+		}
+		if err := v.Access.Flush(last); err != nil {
+			log.From(ctx).ErrorContext(ctx, "access: the record waiting to be written was lost as the server stopped",
+				"rows", v.Access.Pending(), "err", err)
+		}
+	}
 }
 
 // shutdown is every listener's stop, run together rather than one after
