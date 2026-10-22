@@ -485,16 +485,18 @@ and in the account app `roster serve` runs alike.
 account:
   mail:
     addr: smtp.postmarkapp.com:587          # host:port; empty sends nothing
-    username: env:SMTP_USER                 # or the provider's literal user name
+    username: env:SMTP_USER                 # or as itself: apikey
     password: env:SMTP_PASSWORD             # env:NAME or file:PATH, never the password
     from: "Contoso <no-reply@mail.contoso.example>"
     tls: starttls                           # starttls (default) | implicit (465) | none
     timeout: 30s                            # one message, dial to last answer
 ```
 
-`username` is written as it is (a provider's is often a fixed word like
-`apikey`); `password` is a **reference** and nothing else, and a value written as
-the password itself is refused at start. `tls: starttls` refuses a server that
+`username` is written as itself -- a provider's is often a fixed word like
+`apikey` -- or as a reference in the same words as the password, for a provider
+whose username is a credential too (SES's is derived from an access key);
+`password` is a **reference** and nothing else, and a value written as the
+password itself is refused at start. `tls: starttls` refuses a server that
 does not offer STARTTLS rather than speaking to it in the clear; `implicit` is TLS
 from the first byte, which is port 465; `none` is the clear, and reaches only this
 machine or a host named in `plaintext_hosts` -- a sink in development, never a

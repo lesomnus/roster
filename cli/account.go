@@ -323,33 +323,52 @@ func mailOf(c cmd.MailConfig) (func(ctx context.Context, to, subject, link strin
 		return nil, nil
 	}
 
-	password := ""
-	if c.Password != "" {
-		if !strings.HasPrefix(c.Password, "env:") && !strings.HasPrefix(c.Password, "file:") {
-			return nil, errors.New("account.mail.password: a reference, env:NAME or file:PATH, and never the password itself")
-		}
-		v, err := secretRef(c.Password)
-		if err != nil {
-			return nil, fmt.Errorf("account.mail.password: %w", err)
-		}
-		password = v
+	mc, err := mailConfigOf(c)
+	if err != nil {
+		return nil, err
 	}
-
-	s, err := mail.New(mail.Config{
-		Addr:           c.Addr,
-		Username:       c.Username,
-		Password:       password,
-		From:           c.From,
-		TLS:            mail.TLS(strings.ToLower(c.Tls)),
-		PlaintextHosts: c.PlaintextHosts,
-		Timeout:        c.Timeout,
-	})
+	s, err := mail.New(mc)
 	if err != nil {
 		return nil, fmt.Errorf("account.mail.%w", err)
 	}
 
 	return func(ctx context.Context, to, subject, link string) error {
 		return s.Send(ctx, to, subject, account.Letter(subject, link))
+	}, nil
+}
+
+// mailConfigOf is the block with its references read.
+//
+// The password is a reference and nothing else. The username may be either
+// ([tokenOrRef]): a fixed word such as `apikey` is no secret, and some
+// providers' usernames are credentials -- SES's is derived from an access key
+// -- which belong where the password is kept.
+func mailConfigOf(c cmd.MailConfig) (mail.Config, error) {
+	username, err := tokenOrRef(c.Username)
+	if err != nil {
+		return mail.Config{}, fmt.Errorf("account.mail.username: %w", err)
+	}
+
+	password := ""
+	if c.Password != "" {
+		if !strings.HasPrefix(c.Password, "env:") && !strings.HasPrefix(c.Password, "file:") {
+			return mail.Config{}, errors.New("account.mail.password: a reference, env:NAME or file:PATH, and never the password itself")
+		}
+		v, err := secretRef(c.Password)
+		if err != nil {
+			return mail.Config{}, fmt.Errorf("account.mail.password: %w", err)
+		}
+		password = v
+	}
+
+	return mail.Config{
+		Addr:           c.Addr,
+		Username:       username,
+		Password:       password,
+		From:           c.From,
+		TLS:            mail.TLS(strings.ToLower(c.Tls)),
+		PlaintextHosts: c.PlaintextHosts,
+		Timeout:        c.Timeout,
 	}, nil
 }
 

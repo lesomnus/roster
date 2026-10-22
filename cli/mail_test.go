@@ -14,8 +14,12 @@ import (
 // that is not an address, the clear to a host nobody named -- rather than at
 // the first message somebody waits for.
 //
-// Red with the reference rule gone (a literal password accepted), and with
-// the block's errors not named for it.
+// A username is read as itself or as a reference, because some providers'
+// usernames are credentials too.
+//
+// Red with the reference rule gone (a literal password accepted), with the
+// block's errors not named for it, and with the username passed on as it was
+// written.
 func TestAFrontDoorsMailIsWhatItsBlockSays(t *testing.T) {
 	x := require.New(t)
 
@@ -33,6 +37,18 @@ func TestAFrontDoorsMailIsWhatItsBlockSays(t *testing.T) {
 	withPassword.Username, withPassword.Password = "apikey", "env:ROSTER_TEST_MAIL_PASSWORD"
 	_, err = mailOf(withPassword)
 	x.NoError(err)
+	mc, err := mailConfigOf(withPassword)
+	x.NoError(err)
+	x.Equal("apikey", mc.Username, "a username written as itself was not")
+	x.Equal("hunter2", mc.Password)
+
+	// SES's, say: derived from an access key, and kept where the password is.
+	t.Setenv("ROSTER_TEST_MAIL_USER", "AKIAEXAMPLE")
+	withUser := withPassword
+	withUser.Username = "env:ROSTER_TEST_MAIL_USER"
+	mc, err = mailConfigOf(withUser)
+	x.NoError(err)
+	x.Equal("AKIAEXAMPLE", mc.Username, "a username's reference was sent as the username")
 
 	for name, c := range map[string]struct {
 		mail cmd.MailConfig
@@ -40,6 +56,7 @@ func TestAFrontDoorsMailIsWhatItsBlockSays(t *testing.T) {
 	}{
 		"a password as itself":    {cmd.MailConfig{Addr: ok.Addr, From: ok.From, Username: "apikey", Password: "hunter2"}, "account.mail.password: a reference"},
 		"a reference to nothing":  {cmd.MailConfig{Addr: ok.Addr, From: ok.From, Username: "apikey", Password: "env:NOTHING_SET_HERE"}, "account.mail.password"},
+		"a username to nothing":   {cmd.MailConfig{Addr: ok.Addr, From: ok.From, Username: "env:NOTHING_SET_HERE", Password: "env:ROSTER_TEST_MAIL_PASSWORD"}, "account.mail.username"},
 		"no sender":               {cmd.MailConfig{Addr: ok.Addr}, "account.mail.from"},
 		"the clear to a provider": {cmd.MailConfig{Addr: "smtp.example.com:25", From: ok.From, Tls: "none"}, "account.mail.tls"},
 		"a mode there is not":     {cmd.MailConfig{Addr: ok.Addr, From: ok.From, Tls: "ssl"}, "account.mail.tls"},

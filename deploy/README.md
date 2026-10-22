@@ -89,8 +89,9 @@ there -- so there is nothing of that kind to remove.
 themselves; an overlay that runs it (`roster account serve`, or `account.addr` in
 `config.yaml`) delivers the links it mails through `account.mail`
 ([operating.md](../docs/operating.md) § *The front door's mail*). The SMTP password
-is a Secret of the overlay's own, like every other here, named by reference --
-mounted and `password: file:/run/secrets/smtp/password`, or in the environment and
+-- and the username, where a provider's is a credential too, as SES's is -- is a
+Secret of the overlay's own, like every other here, named by reference -- mounted
+and `password: file:/run/secrets/smtp/password`, or in the environment and
 `password: env:SMTP_PASSWORD` -- and never written into `config.yaml`. Send from a
 domain of your own through a transactional provider, with the SPF, DKIM and DMARC
 records it gives you; a cluster that cannot reach port 587 or 465 outward has an

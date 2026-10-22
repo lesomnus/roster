@@ -152,7 +152,9 @@ type MailConfig struct {
 	// Username and Password sign in. The password is a **reference** --
 	// `env:NAME` or `file:PATH` -- and never the password itself, which this
 	// file is not a place for: [AccountConfig.Key]'s rule, for the same
-	// reason. Empty signs in as nobody.
+	// reason. The username is either: written as itself, or a reference in
+	// the same words, because some providers' usernames are credentials too
+	// (SES's is derived from an access key). Empty signs in as nobody.
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
 
