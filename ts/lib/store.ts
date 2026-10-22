@@ -86,9 +86,11 @@ export async function open(transport: Transport, at: At, sweep = true): Promise<
  *
  * Forgetting the mirror is a write on the mirror's chain like any other, so it
  * is waited for before the mirror is closed. Closed under it, the write fails
- * where nobody sees, and the mirror keeps on the disk everything it was told to
- * drop -- until somebody else signs in here and the sweep in [open] deletes it,
- * which may be never.
+ * where nobody sees, and the mirror keeps the caller's rows and answers on the
+ * disk -- until somebody else signs in here and the sweep in [open] deletes
+ * them, which may be never. Not the writes they never sent: those go at once,
+ * by a transaction of their own. From `@lesomnus/payday` 0.1.3 `close` waits
+ * for the forget itself (lesomnus/payday#148).
  */
 export async function letGo(app: App, forget: boolean): Promise<void> {
 	if (forget) {
