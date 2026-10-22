@@ -95,12 +95,21 @@ func (s *server) talk(c net.Conn) {
 		return
 	}
 
+	// Kept when the sender says goodbye, before the server answers it -- so
+	// that a send that returned is a conversation already kept -- or when the
+	// connection ends some other way.
 	v := seen{tls: s.implicit}
-	defer func() {
+	kept := false
+	keep := func() {
+		if kept {
+			return
+		}
+		kept = true
 		s.mu.Lock()
 		s.seen = append(s.seen, v)
 		s.mu.Unlock()
-	}()
+	}
+	defer keep()
 
 	tp := textproto.NewConn(c)
 	say := func(line string) { _ = tp.PrintfLine("%s", line) }
@@ -166,6 +175,7 @@ func (s *server) talk(c net.Conn) {
 			v.data = string(b)
 			say("250 queued")
 		case "QUIT":
+			keep()
 			say("221 bye")
 			return
 		default:
