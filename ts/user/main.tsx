@@ -16,14 +16,16 @@ import { createRoot } from 'react-dom/client'
 
 import { Provider } from '@lesomnus/payday/react'
 import type { App } from '@lesomnus/payday/react'
+import { identityOf } from '@lesomnus/payday/store'
 
 import { AuthService } from '#gen/app/auth_pb.js'
 import { MeService } from '#gen/app/me_pb.js'
+import { caller, type Caller } from '#lib/caller.js'
 import { writes, type Writes } from '#lib/client.js'
 import { Devtools } from '#lib/devtools.js'
 import { go } from '#lib/route.js'
 import type { Progress, Sandbox } from '#lib/sandbox.js'
-import { open } from '#lib/store.js'
+import { letGo, nobody, open } from '#lib/store.js'
 import { Page } from './page.js'
 import '#lib/style.css'
 
@@ -69,9 +71,12 @@ const root = createRoot(document.getElementById('root') as HTMLElement)
  */
 async function connect(): Promise<Transport> {
 	if (import.meta.env['VITE_SANDBOX'] === undefined) {
+		calls = caller('user', held)
+
 		return createConnectTransport({
 			baseUrl: ADDR,
 			fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
+			interceptors: [calls.interceptor],
 		})
 	}
 
@@ -130,6 +135,38 @@ function Booting(props: { at: Progress }): React.ReactNode {
 
 // The sandbox, once started, for the unwalled transport the panel offers.
 let sandbox: Sandbox | null = null
+
+/**
+ * Whose store the page draws, and when it lets go of it (`caller.ts`). Null
+ * in the sandbox, whose server believes the page rather than a cookie.
+ */
+let calls: Caller | null = null
+
+/**
+ * which is who the page draws for: the name the server gives the store of the
+ * session this browser holds (`AuthService.Which`), or null for none -- and
+ * in the sandbox, which has no session, whoever `Me.Get` answers, under a name
+ * for the page.
+ */
+async function which(transport: Transport): Promise<string | null> {
+	if (calls === null) {
+		return createClient(MeService, transport)
+			.get({})
+			.then(
+				() => identityOf('user'),
+				() => null,
+			)
+	}
+
+	return held()
+}
+
+/** held is `AuthService.Which` as the page reads it: a name, or null for nobody. */
+async function held(): Promise<string | null> {
+	const v = await auth.which({})
+
+	return v.identity === '' ? null : v.identity
+}
 
 /**
  * Signing in is an **RPC**, like everything else this app offers, and what
@@ -291,7 +328,7 @@ function ungatedTransport(): Transport | undefined {
 
 async function run(transport: Transport): Promise<void> {
 	// A link a front door handed this browser, when the address says so. Spent
-	// before anything else, because the session it ends in is what `Me.Get`
+	// before anything else, because the session it ends in is what `which`
 	// below asks about; and spent by the page rather than by a route, because a
 	// path that is not a file **is** the page (`cmd.ConsoleMount`), so there is
 	// no server route to add. The address is put back first, so that a reload or
@@ -305,26 +342,15 @@ async function run(transport: Transport): Promise<void> {
 		}
 	}
 
-	// Opened once, for the page's lifetime, and before anybody has signed in.
-	// A store is a local thing: what it would key on is who the server says the
-	// caller is, and that is answered call by call.
-	//
-	// `user` and not `console`, which is not tidiness: the two pages are two
-	// origins in a deployment and one origin in a sandbox, and a `roster.Holder`
-	// means a roster operator on one and a roster user on the other. One store
-	// name would have them overwrite each other by identifier, which is the
-	// shape of a bug rather than a cache -- the same sentence `tenants.tsx`
-	// makes about its second store.
-	const app = await open(transport, 'user')
 	const ungated = ungatedTransport()
 
-	const render = (signedIn: boolean): void => {
+	const draw = (app: App, signedIn: boolean, out: () => void): void => {
 		root.render(
 			<StrictMode>
 				<Provider app={app}>
 					<Shell
 						signedIn={signedIn}
-						onSignIn={() => render(true)}
+						onSignIn={() => void boot()}
 						onSignOut={out}
 						writes={writes(transport)}
 						{...(ungated !== undefined ? { ungated } : {})}
@@ -335,29 +361,64 @@ async function run(transport: Transport): Promise<void> {
 	}
 
 	/**
-	 * Signing out deletes the row, which is the part that matters: the key is
-	 * dead in every tab that had it, immediately.
+	 * boot draws the page for whoever the browser's session is: the form for
+	 * nobody, and otherwise their store, opened and filled from the mirror
+	 * before anything is drawn over it.
 	 *
-	 * And it drops this caller's copy — the rows, the answers, the mirror.
-	 * Nothing there is a secret, since the server only ever sent what that
-	 * caller could see, but it is *that caller's*.
+	 * The store is the caller's, so it is opened once there is one and let go
+	 * of when there stops being one -- on a sign-out in any tab, and when a
+	 * call is refused for a session that is not this store's (`caller.ts`).
+	 * It was opened once for the page's lifetime, before anybody signed in,
+	 * which made everybody who signed in on this browser one store.
+	 *
+	 * Named `roster`, as the admin console's is, and kept apart from it by
+	 * whose it is, which matters because a `roster.Holder` is a roster
+	 * operator on one page and a roster user on the other: a session of this
+	 * plane and one of the control plane are never one name, and the sandbox
+	 * names it for the page (`user`), as it did before a store was a session's.
 	 */
-	const out = (): void => {
-		void auth.signOut({}).finally(() => {
-			app.store.forget()
-			go([], true)
-			render(false)
-		})
+	async function boot(): Promise<void> {
+		let identity: string | null
+		try {
+			identity = await which(transport)
+		} catch (err) {
+			console.error('cannot tell who is signed in:', err)
+			identity = null
+		}
+		if (identity === null) {
+			calls?.drop()
+			return draw(nobody(transport), false, () => {})
+		}
+
+		const app = await open(transport, { name: 'roster', identity }, calls !== null)
+
+		// Letting go of it: forgetting it first when its caller signed out,
+		// and in either case asking again whom to draw for.
+		const leave = (forget: boolean): void => {
+			void letGo(app, forget).then(boot)
+		}
+		const hold = calls?.hold(identity, leave)
+
+		/**
+		 * Signing out deletes the row, which is the part that matters: the key
+		 * is dead in every tab that had it, immediately -- and every other tab
+		 * is told, and forgets what it held for this caller as this one does.
+		 */
+		const out = (): void => {
+			void auth.signOut({}).finally(() => {
+				go([], true)
+				if (hold !== undefined) hold.out()
+				else leave(true)
+			})
+		}
+
+		draw(app, true, out)
 	}
 
-	// Whether there is a session is `Me.Get`'s to say: it answers who, or is
-	// refused, and the cookie is the browser's to send. So a reload keeps the
-	// place the address bar names rather than asking somebody who is still
-	// signed in to sign in again.
-	void createClient(MeService, transport)
-		.get({})
-		.then(() => render(true))
-		.catch(() => render(false))
+	// Who is signed in is the server's to say, and the cookie is the browser's
+	// to send -- so a reload keeps the place the address bar names rather than
+	// asking somebody who is still signed in to sign in again.
+	void boot()
 }
 
 /**

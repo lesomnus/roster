@@ -16,11 +16,13 @@ import { createRoot } from 'react-dom/client'
 
 import { Provider } from '@lesomnus/payday/react'
 import type { App } from '@lesomnus/payday/react'
+import { identityOf } from '@lesomnus/payday/store'
 
 import { AuthService } from '#gen/app/auth_pb.js'
 import { MeService } from '#gen/app/me_pb.js'
+import { caller, type Caller } from '#lib/caller.js'
 import { writes, type Writes } from '#lib/client.js'
-import { open } from '#lib/store.js'
+import { letGo, nobody, open } from '#lib/store.js'
 import { Page } from './page.js'
 import type { Progress, Sandbox } from '#lib/sandbox.js'
 import { go, useRoute } from '#lib/route.js'
@@ -77,9 +79,12 @@ const root = createRoot(document.getElementById('root') as HTMLElement)
  */
 async function connect(): Promise<Transport> {
 	if (import.meta.env['VITE_SANDBOX'] === undefined) {
+		calls = caller('console', held)
+
 		return createConnectTransport({
 			baseUrl: ADDR,
 			fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
+			interceptors: [calls.interceptor],
 		})
 	}
 
@@ -139,6 +144,42 @@ function Booting(props: { at: Progress }): React.ReactNode {
 
 // The sandbox, once started, for `tenants()` to dial its second server on.
 let sandbox: Sandbox | null = null
+
+/**
+ * Whose store the page draws, and when it lets go of it (`caller.ts`): a
+ * served page's, whose session is a cookie every tab shares. Null in the
+ * sandbox, which has no cookie and whose server believes the page.
+ */
+let calls: Caller | null = null
+
+/**
+ * which is who the page draws for: the name the server gives the store of the
+ * session this browser holds (`AuthService.Which`), or null for none.
+ *
+ * The sandbox has no session to name: its server believes whoever the page
+ * says (`sandbox.ts`), so whether anybody is signed in is `Me.Get`'s to say,
+ * and the store is named for the page, as it was before stores were named for
+ * sessions.
+ */
+async function which(transport: Transport): Promise<string | null> {
+	if (calls === null) {
+		return createClient(MeService, transport)
+			.get({})
+			.then(
+				() => identityOf('console'),
+				() => null,
+			)
+	}
+
+	return held()
+}
+
+/** held is `AuthService.Which` as the page reads it: a name, or null for nobody. */
+async function held(): Promise<string | null> {
+	const v = await auth.which({})
+
+	return v.identity === '' ? null : v.identity
+}
 
 /**
  * Signing in is an **RPC**, like everything else this app offers.
@@ -216,12 +257,18 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
  * row: a reset answers with a secret that is never written down, so there is
  * nothing for the store to hold and nothing for it to redraw.
  */
-async function tenants(transport: Transport): Promise<{ app: App; writes: Writes } | null> {
+async function tenants(transport: Transport, identity: string): Promise<{ app: App; writes: Writes } | null> {
 	const at =
 		import.meta.env['VITE_SANDBOX'] !== undefined ? (sandbox?.dial('drpcAdmin') ?? null) : transport
 	if (at === null) return null
 
-	return { app: await open(at, 'console:admin'), writes: writes(at) }
+	// A store of its own beside the page's, for the same caller: its rows are
+	// another plane's, and one store holding both would have them overwrite
+	// each other by identifier. The same session names both, so the same
+	// name for whose they are -- and the sandbox's, named for the page.
+	const whose = calls === null ? await identityOf('console:admin') : identity
+
+	return { app: await open(at, { name: 'roster-admin', identity: whose }, calls !== null), writes: writes(at) }
 }
 
 /**
@@ -274,25 +321,15 @@ function ungatedTransports(): { control?: Transport; admin?: Transport } {
 }
 
 async function run(transport: Transport): Promise<void> {
-	// Opened once, for the page's lifetime, and before anybody has signed in.
-	// A store is a local thing: what it would key on is who the server says
-	// the caller is, and that is answered call by call. Opening it early is
-	// what lets the window above be there before the form is filled in.
-	const app = await open(transport, 'console')
-
-	// Opened beside it rather than inside the screen, so that a page which
-	// never opens the tenants tab still pays for it once and a page that does
-	// draws immediately. It is a store, not a call.
-	const theirs = await tenants(transport)
 	const ungated = ungatedTransports()
 
-	const render = (signedIn: boolean): void => {
+	const draw = (app: App, signedIn: boolean, theirs: { app: App; writes: Writes } | null, out: () => void): void => {
 		root.render(
 			<StrictMode>
 				<Provider app={app}>
 					<Shell
 						signedIn={signedIn}
-						onSignIn={() => render(true)}
+						onSignIn={() => void boot()}
 						onSignOut={out}
 						tenants={theirs?.app ?? null}
 						writes={theirs?.writes ?? null}
@@ -304,35 +341,76 @@ async function run(transport: Transport): Promise<void> {
 	}
 
 	/**
-	 * Signing out deletes the row, which is the part that matters: the key is
-	 * dead in every tab that had it, immediately, which is the thing a
-	 * self-contained token cannot do.
+	 * boot draws the page for whoever the browser's session is: the form for
+	 * nobody, and otherwise their stores, opened and filled from the mirror
+	 * before anything is drawn over them.
 	 *
-	 * And it drops this caller's copy — the rows, the answers, the mirror.
-	 * Nothing there is a secret, since the server only ever sent what that
-	 * caller could see, but it is *that caller's*. The store itself stays
-	 * open, emptied: the page outlives the session, and so does the window.
+	 * A store is the caller's now, so it is opened here, once there is a
+	 * caller, and let go of when there stops being one -- not opened once for
+	 * the page's lifetime before anybody signed in, which made everybody who
+	 * signed in on this browser one store. Asked again on a sign-in, on a
+	 * sign-out in any tab, and when a call is refused for a session that is
+	 * not this store's (`caller.ts`).
 	 */
-	const out = (): void => {
-		void auth.signOut({}).finally(() => {
-			app.store.forget()
-			// Back to the first screen, replacing rather than pushing: the
-			// screens this session was on are not somewhere the next sign-in
-			// should be able to step back into.
-			go([], true)
-			render(false)
-		})
+	async function boot(): Promise<void> {
+		let identity: string | null
+		try {
+			identity = await which(transport)
+		} catch (err) {
+			// A server that could not say is a sign-in like any other: what to
+			// do about it is the person's.
+			console.error('cannot tell who is signed in:', err)
+			identity = null
+		}
+		if (identity === null) {
+			calls?.drop()
+			// The window a development build draws beneath the form has a
+			// store to look at, and it is nobody's.
+			return draw(nobody(transport), false, null, () => {})
+		}
+
+		const app = await open(transport, { name: 'roster', identity }, calls !== null)
+		// Opened beside it rather than inside the screen, so that a page which
+		// never opens the tenants tab still pays for it once and a page that
+		// does draws immediately. It is a store, not a call.
+		const theirs = await tenants(transport, identity)
+
+		/**
+		 * Letting go of both stores: forgetting them first when their caller
+		 * signed out -- the rows, the answers, the mirror, and the writes never
+		 * sent, which are that caller's -- and in either case asking again whom
+		 * to draw for.
+		 */
+		const leave = (forget: boolean): void => {
+			const stores = theirs === null ? [app] : [app, theirs.app]
+			void Promise.all(stores.map((v) => letGo(v, forget))).then(boot)
+		}
+		const hold = calls?.hold(identity, leave)
+
+		/**
+		 * Signing out deletes the row, which is the part that matters: the key
+		 * is dead in every tab that had it, immediately, which is the thing a
+		 * self-contained token cannot do -- and every other tab is told, and
+		 * forgets what it held for this caller as this one does.
+		 */
+		const out = (): void => {
+			void auth.signOut({}).finally(() => {
+				// Back to the first screen, replacing rather than pushing: the
+				// screens this session was on are not somewhere the next sign-in
+				// should be able to step back into.
+				go([], true)
+				if (hold !== undefined) hold.out()
+				else leave(true)
+			})
+		}
+
+		draw(app, true, theirs, out)
 	}
 
-	// Whether there is a session is `Me.Get`'s to say: it answers who, or is
-	// refused, and the cookie is the browser's to send. So a reload keeps the
-	// place the address bar names rather than asking an operator who is still
-	// signed in to sign in again -- which is what a page that always drew the
-	// form did, and what made the routing pointless on a reload.
-	void createClient(MeService, transport)
-		.get({})
-		.then(() => render(true))
-		.catch(() => render(false))
+	// Who is signed in is the server's to say, and the cookie is the browser's
+	// to send -- so a reload keeps the place the address bar names rather than
+	// asking an operator who is still signed in to sign in again.
+	void boot()
 }
 
 void connect().then((transport) => {

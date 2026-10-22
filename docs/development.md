@@ -132,8 +132,20 @@ tenant shown beside a row with the one at the top of the page. That falls out of
 the reads going through the framework -- `useQuery` makes the call, so the store
 knows which rows were drawn, and everything drawing a changed row re-renders at
 once. `ts/lib/store.ts` is the whole of the local store, including the IndexedDB
-mirror that makes a reload draw the page it had; deleting two lines turns the
+mirror that makes a reload draw the page it had; leaving out one field turns the
 mirror off.
+
+**A store is its caller's.** The server names one for the session the browser
+holds -- `AuthService.Which` on a console's listener, `GET /session` at the
+account app -- every call the store's queries make says that name
+(`payday-identity`), and a call is served only as the session it names, at the
+session handler or at `frontdoor.Door.Proxy`. The cookie is every tab's, so
+whoever signed in last in any tab is who a page's next call is made as; a page
+still holding the store of the person before is refused rather than reading this
+person's rows into it. So a page opens its store once somebody is signed in, not
+for its lifetime: it asks again who is signed in when a call is refused and lets
+go of the store if that is somebody else now, forgets it on a sign-out in any tab,
+and deletes every other caller's mirror once its own is open (`ts/lib/caller.ts`).
 
 `pd gen --ts .` writes `ts/gen/`, including `entities.ts` -- one declaration per
 entity, which is what the store is built from. Nothing there is behaviour, and

@@ -1316,6 +1316,15 @@ func Public(method string) bool {
 		return true
 	}
 
+	// And which session the browser's cookie names, which a page asks before it
+	// knows whether anybody is signed in -- and asks again when a call is
+	// refused, which is exactly when the cookie may name nobody. It answers a
+	// name for a store and nothing about anybody, for the cookie the call
+	// came with.
+	if method == app.AuthService_Which_FullMethodName {
+		return true
+	}
+
 	return auth.PublicDefault(method)
 }
 

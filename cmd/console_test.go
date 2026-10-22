@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -15,6 +16,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdtest"
@@ -537,6 +539,135 @@ func TestAConsoleReachesTheAdminPortOverHttp(t *testing.T) {
 	n, err := s.Ent.Tenant.Query().Count(ctx)
 	x.NoError(err)
 	x.Equal(1, n, "the one the console made, and `init` leaves no customer beside it")
+}
+
+// page is a console page's calls to one listener, over the transcoder a browser
+// reaches it through: the cookie its jar holds, and -- for a call its store
+// makes -- the name of the store it was made for.
+type page struct {
+	url string
+	c   *http.Client
+}
+
+func pageAt(t *testing.T, url string) page {
+	t.Helper()
+
+	jar, err := cookiejar.New(nil)
+	require.NoError(t, err)
+
+	return page{url: url, c: &http.Client{Jar: jar}}
+}
+
+// call is one Connect call, made for the store `identity` names, or for none.
+func (p page) call(t *testing.T, path, body, identity string) (int, string) {
+	t.Helper()
+	x := require.New(t)
+
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, p.url+path, strings.NewReader(body))
+	x.NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Connect-Protocol-Version", "1")
+	if identity != "" {
+		req.Header.Set(authsession.IdentityHeader, identity)
+	}
+
+	res, err := p.c.Do(req)
+	x.NoError(err)
+	defer res.Body.Close()
+	b, _ := io.ReadAll(res.Body)
+
+	return res.StatusCode, string(b)
+}
+
+// which is the store the page draws: `AuthService.Which`, asked as a page asks
+// it, with nothing but the cookie.
+func (p page) which(t *testing.T) string {
+	t.Helper()
+	x := require.New(t)
+
+	code, body := p.call(t, "/roster.AuthService/Which", `{}`, "")
+	x.Equal(http.StatusOK, code, "a page could not learn whose store to draw: %s", body)
+
+	var v struct {
+		Identity string `json:"identity"`
+	}
+	x.NoError(json.Unmarshal([]byte(body), &v))
+
+	return v.Identity
+}
+
+// TestAConsolePageAsksWhoseStoreItDraws is the name an admin console page keeps
+// its store under (`AuthService.Which`), and the refusal the name is for.
+//
+// A page says its store's name on every call its store makes, and the session
+// handler serves a call only as the session that name is of: the cookie is
+// every tab's, so a page left holding the last operator's store is refused
+// rather than read into as the next one. Which puts two things on this answer.
+// It is asked by a page with no session -- that is when it is asked first --
+// so nobody is an answer there and not a refusal; and it is exactly the name
+// the handler compares a call against, or every call the page made would be
+// refused with nothing anywhere saying why.
+func TestAConsolePageAsksWhoseStoreItDraws(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	s, out := inited(t)
+
+	g, err := s.GrpcAdmin(ctx, cmd.Config{})
+	x.NoError(err)
+	h, err := web.New(config.HttpConfig{AllowWeb: true}, g)
+	x.NoError(err)
+	srv := httptest.NewServer(h)
+	t.Cleanup(srv.Close)
+
+	p := pageAt(t, srv.URL)
+	x.Empty(p.which(t), "nobody is signed in, and somebody's store was named")
+
+	signIn := func(t *testing.T) {
+		t.Helper()
+
+		code, body := p.call(t, "/roster.AuthService/SignIn",
+			`{"alias":"admin","password":"`+passwordFrom(t, out)+`"}`, "")
+		require.Equal(t, http.StatusOK, code, body)
+	}
+	signIn(t)
+
+	mine := p.which(t)
+	x.NotEmpty(mine, "signed in, and no store was named")
+
+	t.Run("a call made for that store is served", func(t *testing.T) {
+		x := require.New(t)
+
+		code, body := p.call(t, "/roster.MeService/Get", `{}`, mine)
+		x.Equal(http.StatusOK, code, body)
+		x.Contains(body, `"admin"`)
+	})
+
+	t.Run("and one made for another store is refused, and the session goes on", func(t *testing.T) {
+		x := require.New(t)
+
+		code, _ := p.call(t, "/roster.MeService/Get", `{}`, "0123456789abcdef")
+		x.Equal(http.StatusUnauthorized, code, "a call made for another store was served as this session")
+
+		// Refused for the page that made it, and not ended: the session is
+		// the browser's, and alive.
+		code, body := p.call(t, "/roster.MeService/Get", `{}`, mine)
+		x.Equal(http.StatusOK, code, body)
+	})
+
+	// Signed out, nobody's again -- and the same operator signing in again is
+	// the same store, which is what lets a page keep what somebody wrote while
+	// their session was gone and send it once they are back.
+	t.Run("signed out it is nobody's, and signed in again the same", func(t *testing.T) {
+		x := require.New(t)
+
+		code, body := p.call(t, "/roster.AuthService/SignOut", `{}`, "")
+		x.Equal(http.StatusOK, code, body)
+		x.Empty(p.which(t), "signed out, and a store was still named")
+
+		signIn(t)
+		x.Equal(mine, p.which(t))
+	})
 }
 
 // TestTheAdminPortIsTheWholeOfTheConsolesPath is the admin console's path.

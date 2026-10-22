@@ -11,7 +11,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/auth.proto.
  */
 export const file_app_auth: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvYXV0aC5wcm90bxIGcm9zdGVyIkIKEUF1dGhTaWduSW5SZXF1ZXN0Eg0KBWFsaWFzGAEgASgJEhAKCHBhc3N3b3JkGAIgASgJEgwKBGxpbmsYAyABKAkiFAoSQXV0aFNpZ25JblJlc3BvbnNlIhQKEkF1dGhTaWduT3V0UmVxdWVzdCIVChNBdXRoU2lnbk91dFJlc3BvbnNlIhMKEUF1dGhPZmZlcnNSZXF1ZXN0ImkKEkF1dGhPZmZlcnNSZXNwb25zZRIQCghwYXNzd29yZBgBIAEoCBItCglwcm92aWRlcnMYAiADKAsyGi5yb3N0ZXIuQXV0aE9mZmVyc1Byb3ZpZGVyEhIKCmZyb250X2Rvb3IYAyABKAkiMgoSQXV0aE9mZmVyc1Byb3ZpZGVyEgwKBG5hbWUYASABKAkSDgoGaXNzdWVyGAIgASgJMtMBCgtBdXRoU2VydmljZRI/CgZTaWduSW4SGS5yb3N0ZXIuQXV0aFNpZ25JblJlcXVlc3QaGi5yb3N0ZXIuQXV0aFNpZ25JblJlc3BvbnNlEkIKB1NpZ25PdXQSGi5yb3N0ZXIuQXV0aFNpZ25PdXRSZXF1ZXN0Ghsucm9zdGVyLkF1dGhTaWduT3V0UmVzcG9uc2USPwoGT2ZmZXJzEhkucm9zdGVyLkF1dGhPZmZlcnNSZXF1ZXN0Ghoucm9zdGVyLkF1dGhPZmZlcnNSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH");
+  fileDesc("Cg5hcHAvYXV0aC5wcm90bxIGcm9zdGVyIkIKEUF1dGhTaWduSW5SZXF1ZXN0Eg0KBWFsaWFzGAEgASgJEhAKCHBhc3N3b3JkGAIgASgJEgwKBGxpbmsYAyABKAkiFAoSQXV0aFNpZ25JblJlc3BvbnNlIhQKEkF1dGhTaWduT3V0UmVxdWVzdCIVChNBdXRoU2lnbk91dFJlc3BvbnNlIhIKEEF1dGhXaGljaFJlcXVlc3QiJQoRQXV0aFdoaWNoUmVzcG9uc2USEAoIaWRlbnRpdHkYASABKAkiEwoRQXV0aE9mZmVyc1JlcXVlc3QiaQoSQXV0aE9mZmVyc1Jlc3BvbnNlEhAKCHBhc3N3b3JkGAEgASgIEi0KCXByb3ZpZGVycxgCIAMoCzIaLnJvc3Rlci5BdXRoT2ZmZXJzUHJvdmlkZXISEgoKZnJvbnRfZG9vchgDIAEoCSIyChJBdXRoT2ZmZXJzUHJvdmlkZXISDAoEbmFtZRgBIAEoCRIOCgZpc3N1ZXIYAiABKAkykQIKC0F1dGhTZXJ2aWNlEj8KBlNpZ25JbhIZLnJvc3Rlci5BdXRoU2lnbkluUmVxdWVzdBoaLnJvc3Rlci5BdXRoU2lnbkluUmVzcG9uc2USQgoHU2lnbk91dBIaLnJvc3Rlci5BdXRoU2lnbk91dFJlcXVlc3QaGy5yb3N0ZXIuQXV0aFNpZ25PdXRSZXNwb25zZRI/CgZPZmZlcnMSGS5yb3N0ZXIuQXV0aE9mZmVyc1JlcXVlc3QaGi5yb3N0ZXIuQXV0aE9mZmVyc1Jlc3BvbnNlEjwKBVdoaWNoEhgucm9zdGVyLkF1dGhXaGljaFJlcXVlc3QaGS5yb3N0ZXIuQXV0aFdoaWNoUmVzcG9uc2VCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw");
 
 /**
  * @generated from message roster.AuthSignInRequest
@@ -132,6 +132,39 @@ export const AuthSignOutResponseSchema: GenMessage<AuthSignOutResponse> = /*@__P
   messageDesc(file_app_auth, 3);
 
 /**
+ * @generated from message roster.AuthWhichRequest
+ */
+export type AuthWhichRequest = Message<"roster.AuthWhichRequest"> & {
+};
+
+/**
+ * Describes the message roster.AuthWhichRequest.
+ * Use `create(AuthWhichRequestSchema)` to create a new message.
+ */
+export const AuthWhichRequestSchema: GenMessage<AuthWhichRequest> = /*@__PURE__*/
+  messageDesc(file_app_auth, 4);
+
+/**
+ * @generated from message roster.AuthWhichResponse
+ */
+export type AuthWhichResponse = Message<"roster.AuthWhichResponse"> & {
+  /**
+   * The name a page's store goes by for this session -- the value its calls
+   * say in `payday-identity` -- and empty when there is no session to name.
+   *
+   * @generated from field: string identity = 1;
+   */
+  identity: string;
+};
+
+/**
+ * Describes the message roster.AuthWhichResponse.
+ * Use `create(AuthWhichResponseSchema)` to create a new message.
+ */
+export const AuthWhichResponseSchema: GenMessage<AuthWhichResponse> = /*@__PURE__*/
+  messageDesc(file_app_auth, 5);
+
+/**
  * AuthOffersRequest is empty for the reason [AuthSignInRequest] has no tenant
  * field: which tenant is the name the browser arrived at, and a field would be a
  * caller asking to be told about one it did not arrive at.
@@ -146,7 +179,7 @@ export type AuthOffersRequest = Message<"roster.AuthOffersRequest"> & {
  * Use `create(AuthOffersRequestSchema)` to create a new message.
  */
 export const AuthOffersRequestSchema: GenMessage<AuthOffersRequest> = /*@__PURE__*/
-  messageDesc(file_app_auth, 4);
+  messageDesc(file_app_auth, 6);
 
 /**
  * @generated from message roster.AuthOffersResponse
@@ -199,7 +232,7 @@ export type AuthOffersResponse = Message<"roster.AuthOffersResponse"> & {
  * Use `create(AuthOffersResponseSchema)` to create a new message.
  */
 export const AuthOffersResponseSchema: GenMessage<AuthOffersResponse> = /*@__PURE__*/
-  messageDesc(file_app_auth, 5);
+  messageDesc(file_app_auth, 7);
 
 /**
  * AuthOffersProvider is one directory a tenant's people arrive through, as a
@@ -229,7 +262,7 @@ export type AuthOffersProvider = Message<"roster.AuthOffersProvider"> & {
  * Use `create(AuthOffersProviderSchema)` to create a new message.
  */
 export const AuthOffersProviderSchema: GenMessage<AuthOffersProvider> = /*@__PURE__*/
-  messageDesc(file_app_auth, 6);
+  messageDesc(file_app_auth, 8);
 
 /**
  * AuthService is how an operator gets a credential, and gives it up.
@@ -281,7 +314,9 @@ export const AuthOffersProviderSchema: GenMessage<AuthOffersProvider> = /*@__PUR
  *
  * Answer who you are. `MeService` does, it is already what a page asks first,
  * and a second way to ask would be a second answer to keep in step. This
- * service makes a credential and ends one; asking about it is somebody else's.
+ * service makes a credential, names it, and ends it: `Which` answers the one
+ * thing about a session a page cannot make for itself, the name its store goes
+ * by, and nothing about the person.
  *
  * # Where it is served
  *
@@ -397,6 +432,45 @@ export const AuthService: GenService<{
     methodKind: "unary";
     input: typeof AuthOffersRequestSchema;
     output: typeof AuthOffersResponseSchema;
+  },
+  /**
+   * Which is the session the caller's cookie names, as a page's store is named
+   * for it: `authsession.IdentityOf`, a digest of who it names and what it
+   * lets them see. Empty when the cookie names no session alive here.
+   *
+   * # Why a page asks
+   *
+   * A page keeps what it reads in a store named for its caller, and every call
+   * its query layer makes says that name (`payday-identity`). The session
+   * handler serves such a call only as a session the name is of: a cookie is
+   * every tab's, so whoever signed in last in any tab is who every page sends
+   * as, and a page still holding the store of the one before is refused rather
+   * than reading the next person's rows into it or sending what it kept for
+   * them as somebody else.
+   *
+   * The name is made where the session can be read, so a page cannot make it
+   * -- the cookie is `HttpOnly`, and the grant is the server's -- and asks
+   * here: before it draws anything, and again whenever a call is refused for
+   * its session, to tell a session that ended from one that is somebody
+   * else's now.
+   *
+   * # Why here, beside SignIn and SignOut
+   *
+   * Because it is about the session and not the person: who the caller is,
+   * `MeService` answers, for every credential on both planes. Which session a
+   * cookie names is this service's, which made it and ends it and is served
+   * where the sessions are. A page asks it before it knows whether anybody is
+   * signed in at all, so it is public as `SignIn` and `Offers` are; and of
+   * whoever is, whatever their role, so it needs none, as `SignOut` needs none
+   * (`aboutYourself`). It reads the cookie the call came with and nothing
+   * else, and answers nothing about anybody: a name for a store.
+   *
+   * @generated from rpc roster.AuthService.Which
+   */
+  which: {
+    methodKind: "unary";
+    input: typeof AuthWhichRequestSchema;
+    output: typeof AuthWhichResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_auth, 0);

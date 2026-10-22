@@ -23,6 +23,7 @@ package console
 
 import (
 	"context"
+	"errors"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -282,6 +283,40 @@ func (a authed) whose(ctx context.Context) (string, error) {
 	}
 
 	return v.Alias, nil
+}
+
+// Which names the session the call's cookie names, for a page's store: the
+// name its query layer says on every call, which the session handler serves
+// only as that session. See `auth.proto`.
+//
+// Read from the cookie and not from the frame, though both name the same
+// session: the name is `authsession.IdentityOf` of the session itself, which
+// is what the handler compares a call against, and a name made of anything
+// else is one that could come to differ from it -- after which every call the
+// page made would be refused, with nothing anywhere saying why.
+func (a authed) Which(ctx context.Context, _ *app.AuthWhichRequest) (*app.AuthWhichResponse, error) {
+	none := &app.AuthWhichResponse{}
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return none, nil
+	}
+	key := a.sessions.KeyOf(md.Get("cookie"))
+	if key == "" {
+		return none, nil
+	}
+	v, err := a.sessions.Read(ctx, key)
+	if err != nil {
+		if errors.Is(err, authsession.ErrNoSession) {
+			// Ended, idled out or forgotten: no session, which is a sign-in
+			// form and not a failure.
+			return none, nil
+		}
+
+		return nil, err
+	}
+
+	return app.AuthWhichResponse_builder{Identity: authsession.IdentityOf(v)}.Build(), nil
 }
 
 func (a authed) SignOut(ctx context.Context, req *app.AuthSignOutRequest) (*app.AuthSignOutResponse, error) {

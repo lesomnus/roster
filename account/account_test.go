@@ -833,6 +833,70 @@ func TestASecondReplicaOpensTheCookie(t *testing.T) {
 	x.Equal(http.StatusUnauthorized, code, "a sign-out on one replica left the delegation acting on the other: %s", body)
 }
 
+// TestThePageIsToldWhoseStoreItDraws is the account app's `GET /session`: the
+// name the page keeps its store under, for the session this browser holds, and
+// what the name is for -- a call the page's store makes for any other stops at
+// the app. The same person signed in again at the same tenant is the same name,
+// so what the page kept while their session was gone is theirs again.
+func TestThePageIsToldWhoseStoreItDraws(t *testing.T) {
+	x := require.New(t)
+	d := serve(t, account.Invited())
+
+	b := d.browser(t, "fabrikam.test")
+	which := func() (int, string) {
+		t.Helper()
+
+		code, body := b.do(t, http.MethodGet, "/session", "", nil)
+		if code != http.StatusOK {
+			return code, ""
+		}
+		var v authsession.Which
+		x.NoError(json.Unmarshal([]byte(body), &v))
+
+		return code, v.Identity
+	}
+	signIn := func() {
+		t.Helper()
+
+		code, body := b.do(t, http.MethodPost, "/session", `{"alias":"bob","password":"correct horse battery staple"}`,
+			func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+		x.Equal(http.StatusNoContent, code, body)
+	}
+	call := func(identity string) (int, string) {
+		t.Helper()
+
+		return b.do(t, http.MethodPost, "/roster.MeService/Get", `{}`, func(r *http.Request) {
+			r.Header.Set("Content-Type", "application/json")
+			r.Header.Set("Connect-Protocol-Version", "1")
+			r.Header.Set(authsession.IdentityHeader, identity)
+		})
+	}
+
+	code, _ := which()
+	x.Equal(http.StatusUnauthorized, code, "nobody is signed in, and somebody's store was named")
+
+	signIn()
+	code, bobs := which()
+	x.Equal(http.StatusOK, code)
+	x.NotEmpty(bobs)
+
+	code, body := call(bobs)
+	x.Equal(http.StatusOK, code, body)
+	x.Contains(body, `"bob"`)
+
+	code, _ = call("0123456789abcdef")
+	x.Equal(http.StatusUnauthorized, code, "a call made for another store reached roster as bob")
+
+	code, _ = b.do(t, http.MethodDelete, "/session", "", nil)
+	x.Equal(http.StatusNoContent, code)
+	code, _ = which()
+	x.Equal(http.StatusUnauthorized, code, "signed out, and a store was still named")
+
+	signIn()
+	_, again := which()
+	x.Equal(bobs, again, "the same person at the same tenant was named another store")
+}
+
 // TestSomebodyClaimsAnAddressNobodyConfirmed is the road out of a squat, from the
 // page's end.
 //

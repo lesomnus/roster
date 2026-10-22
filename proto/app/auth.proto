@@ -54,7 +54,9 @@ option go_package = "github.com/lesomnus/roster/rstr";
 //
 // Answer who you are. `MeService` does, it is already what a page asks first,
 // and a second way to ask would be a second answer to keep in step. This
-// service makes a credential and ends one; asking about it is somebody else's.
+// service makes a credential, names it, and ends it: `Which` answers the one
+// thing about a session a page cannot make for itself, the name its store goes
+// by, and nothing about the person.
 //
 // # Where it is served
 //
@@ -146,6 +148,38 @@ service AuthService {
   // it somewhere else. What comes back is the same fact `GET /providers` has
   // answered anonymously at a tenant's own host for as long as it existed.
   rpc Offers(AuthOffersRequest) returns (AuthOffersResponse);
+
+  // Which is the session the caller's cookie names, as a page's store is named
+  // for it: `authsession.IdentityOf`, a digest of who it names and what it
+  // lets them see. Empty when the cookie names no session alive here.
+  //
+  // # Why a page asks
+  //
+  // A page keeps what it reads in a store named for its caller, and every call
+  // its query layer makes says that name (`payday-identity`). The session
+  // handler serves such a call only as a session the name is of: a cookie is
+  // every tab's, so whoever signed in last in any tab is who every page sends
+  // as, and a page still holding the store of the one before is refused rather
+  // than reading the next person's rows into it or sending what it kept for
+  // them as somebody else.
+  //
+  // The name is made where the session can be read, so a page cannot make it
+  // -- the cookie is `HttpOnly`, and the grant is the server's -- and asks
+  // here: before it draws anything, and again whenever a call is refused for
+  // its session, to tell a session that ended from one that is somebody
+  // else's now.
+  //
+  // # Why here, beside SignIn and SignOut
+  //
+  // Because it is about the session and not the person: who the caller is,
+  // `MeService` answers, for every credential on both planes. Which session a
+  // cookie names is this service's, which made it and ends it and is served
+  // where the sessions are. A page asks it before it knows whether anybody is
+  // signed in at all, so it is public as `SignIn` and `Offers` are; and of
+  // whoever is, whatever their role, so it needs none, as `SignOut` needs none
+  // (`aboutYourself`). It reads the cookie the call came with and nothing
+  // else, and answers nothing about anybody: a name for a store.
+  rpc Which(AuthWhichRequest) returns (AuthWhichResponse);
 }
 
 message AuthSignInRequest {
@@ -209,6 +243,14 @@ message AuthSignInResponse {}
 message AuthSignOutRequest {}
 
 message AuthSignOutResponse {}
+
+message AuthWhichRequest {}
+
+message AuthWhichResponse {
+  // The name a page's store goes by for this session -- the value its calls
+  // say in `payday-identity` -- and empty when there is no session to name.
+  string identity = 1;
+}
 
 // AuthOffersRequest is empty for the reason [AuthSignInRequest] has no tenant
 // field: which tenant is the name the browser arrived at, and a field would be a

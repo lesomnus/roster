@@ -208,6 +208,58 @@ func TestTheUserConsoleAndItsDoorAreOneListener(t *testing.T) {
 	})
 }
 
+// TestAUserConsolePageAsksWhoseStoreItDraws is `AuthService.Which` on the user
+// console's listener, asked as somebody who holds no role at all.
+//
+// The page asks it before it draws anything and again whenever a call of its
+// store's is refused, so it needs nothing of a browser with no session --
+// nobody is an answer there -- and no binding of one with a session: behind
+// one, somebody whose role did not name it would be signed in and drawn a
+// sign-in form (`aboutYourself`). And it names the store the session handler
+// serves this person's calls for, and no other.
+func TestAUserConsolePageAsksWhoseStoreItDraws(t *testing.T) {
+	x := require.New(t)
+
+	b, ctx := build(t, func(c *cmd.Config) { c.SignIn.Enabled = true })
+
+	// Somebody in contoso with a password and no binding, which is every
+	// account the moment it is made.
+	res, err := b.Ungated.Credential().Issue(ctx, app.CredentialIssueRequest_builder{
+		Ref: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+	secret := res.GetSecret()
+
+	h, err := web.New(config.HttpConfig{AllowWeb: true}, b.grpc(t))
+	x.NoError(err)
+	srv := httptest.NewServer(cmd.Arrived(h))
+	t.Cleanup(srv.Close)
+
+	at, _, err := net.SplitHostPort(strings.TrimPrefix(srv.URL, "http://"))
+	x.NoError(err)
+	_, err = b.Ungated.Host().Add(ctx, app.HostAddRequest_builder{
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+		Name:   at,
+	}.Build())
+	x.NoError(err)
+
+	p := pageAt(t, srv.URL)
+	x.Empty(p.which(t), "nobody is signed in, and somebody's store was named")
+
+	code, body := p.call(t, "/roster.AuthService/SignIn", `{"alias":"someone","password":"`+secret+`"}`, "")
+	x.Equal(http.StatusOK, code, body)
+
+	theirs := p.which(t)
+	x.NotEmpty(theirs, "signed in with no role, and no store was named")
+
+	code, body = p.call(t, "/roster.MeService/Get", `{}`, theirs)
+	x.Equal(http.StatusOK, code, body)
+	x.Contains(body, `"alias":"someone"`)
+
+	code, _ = p.call(t, "/roster.MeService/Get", `{}`, "0123456789abcdef")
+	x.Equal(http.StatusUnauthorized, code, "a call made for another store was served as this session")
+}
+
 // TestAUserConsoleWithNoDoorIsRefused is the pair of settings that builds a
 // deployment nobody wrote down.
 //

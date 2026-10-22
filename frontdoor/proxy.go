@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"slices"
 
+	"github.com/lesomnus/payday/auth/authsession"
+
 	"github.com/lesomnus/roster/server/keys"
 )
 
@@ -40,9 +42,11 @@ import (
 // place and a path that is not an RPC never leaves this process. The request
 // must carry `Connect-Protocol-Version`, which a cross-site form cannot set and
 // `@connectrpc/connect-web` always does -- so a cookie-authenticated proxy is
-// not a CSRF sink. And the browser must be signed in, all the way: a half
+// not a CSRF sink. The browser must be signed in, all the way: a half
 // session has no delegation and is refused like no session, for
-// [Door.Acting]'s reason.
+// [Door.Acting]'s reason. And a call that names the store it was made for
+// (`authsession.IdentityHeader`) must name this session's ([Door.Which]), or
+// it is refused as no session is, for a page to ask again who is signed in.
 //
 // What goes out is the app's own credential -- `bearer`, asked per request,
 // because which credential, and which tenant it is narrowed to, is a fact about
@@ -50,13 +54,18 @@ import (
 // `roster-as`. An app fronting several operators with one deployment key
 // answers the key and the tenant to name in `roster-at`; one holding a tenant
 // key per tenant answers that tenant's key and no name. What came in as
-// `Cookie` and `Authorization` is dropped. What comes back is roster's answer,
-// untouched.
+// `Cookie` and `Authorization` is dropped, and so is the name of the store a
+// call was made for, which is this app's question and not roster's. What
+// comes back is roster's answer, untouched.
 func (d *Door) Proxy(roster *url.URL, bearer func(ctx context.Context, host string) (Bearer, error)) http.Handler {
 	rp := &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
 			pr.SetURL(roster)
 			pr.Out.Header.Del("Cookie")
+			// Which store a call was made for is this app's question, asked
+			// below; roster is asked as the delegation, which names its person
+			// itself.
+			pr.Out.Header.Del(authsession.IdentityHeader)
 			a := actingOf(pr.In.Context())
 			pr.Out.Header.Set("Authorization", "Bearer "+a.bearer.Token)
 			pr.Out.Header.Set(keys.HeaderActing, a.token)
@@ -86,10 +95,27 @@ func (d *Door) Proxy(roster *url.URL, bearer func(ctx context.Context, host stri
 			return
 		}
 
-		_, token, ok := d.whole(r.Context(), r)
+		v, _, token, ok := d.held(r.Context(), r)
 		if !ok {
 			http.Error(w, "no", http.StatusUnauthorized)
 			return
+		}
+
+		// Made for another caller's store: the cookie is every tab's, and this
+		// browser's session is somebody else's now -- or the same person's
+		// under another grant -- than the page that made the call. Refused as
+		// a session that is not theirs, so the page asks again who is signed
+		// in ([Door.Which]) rather than reading this person's rows into the
+		// store it holds for the last one, or sending what it kept for them as
+		// this one. A call that names no store is handed on as before.
+		if want := r.Header.Values(authsession.IdentityHeader); len(want) > 0 {
+			got := authsession.IdentityOf(v)
+			for _, name := range want {
+				if name != got {
+					http.Error(w, "this call was made for another caller's store", http.StatusUnauthorized)
+					return
+				}
+			}
 		}
 
 		b, err := bearer(r.Context(), r.Host)

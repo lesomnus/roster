@@ -52,6 +52,8 @@ import (
 var elsewhere = map[string]string{
 	"docs/guide/server.md":        "payday's guide, cited as payday's",
 	"docs/guide/signing-in.md":    "payday's guide",
+	"docs/migrating.md":           "payday's migration notes, cited as payday's",
+	"ts/src/session.tsx":          "the page payday's `pd new` writes into an app, cited as payday's",
 	"consent/strategy_default.go": "Hydra's source, cited with its version",
 	"auth/requests/":              "Hydra's admin API path, not a file",
 	"ts/plan.md":                  "retired, and named in docs/roadmap.md as retired",
