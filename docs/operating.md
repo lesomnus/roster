@@ -852,8 +852,8 @@ other:
   *Session age claims* turned on (Google Auth Platform, *Settings*, *Advanced
   Settings*). It is off until somebody turns it on, and while it is off nobody
   deletes their account, or gives themselves a first password, on a Google
-  sign-in: the account page points them to a recovery link where one can be
-  had, and otherwise it is you who deletes the account
+  sign-in: the account page mails them a link that deletes the account where
+  it can send mail, and otherwise it is you who deletes it
   ([usage/ways-in.md](usage/ways-in.md#deleting-your-own-account)).
 - **Google does not ask again when asked.** Its guide says it does not support
   reauthentication requests; it lists no `max_age` among the parameters it
@@ -1900,7 +1900,11 @@ own (§ "Who heard the newest checkpoint"). `roster trail verify`, run in the
   once; `Vouch.Redeem` spends it, and a person with a second factor is still asked
   for it, because a link that skipped one would turn a mailbox into an account.
   With no mail the *somebody else* is a person, and what they hand over is a
-  password from `Credential.Issue`.
+  password from `Credential.Issue`. The same holds for every link: one that
+  confirms an address, and one that deletes an account (`Vouch.LeaveLink`), are
+  minted here and delivered by a front door -- the account app's `Config.Mail`,
+  which `roster account serve` does not fill, so the front door as shipped
+  sends none of them and says so.
 - **Nothing here signs a token.** If several products need one sign-in, that is
   Hydra in front and roster answering it: [login.md](login.md). Do not reach for a
   JWT minted here -- [position.md](position.md) § "The line, in one sentence" is

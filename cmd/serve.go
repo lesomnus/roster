@@ -997,13 +997,24 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// `rt_` is at most a second copy of a credential its holder already has,
 	// and less, since it names methods. What it replaces is `roster key add`,
 	// which is a shell, and a shell is not a thing a customer has.
+	// What a caller is, in one round trip -- registered below -- built here
+	// because what leaving is belongs to it, and a link that confirms somebody
+	// leaving is the same leaving (`server/vouch/leave.go`).
+	//
+	// With the stack its writes go through. The reads go to ent because the
+	// missing subject has already narrowed them; the writes have rules on them,
+	// and the rules live in a layer. And the forget window, for `Leave` to say
+	// when somebody who left will be forgotten.
+	mine := me.New(s.Ent, Everything(s.Ent, s.policySources...), me.WithWrites(s.Walled),
+		me.WithForgetAfter(c.Holder.ForgetAfter))
+
 	// The one service that is not an entity: it answers yes or no about a row
 	// nothing else may read. See `server/vouch`.
 	// The rule about who may write whose credential travels with the service,
 	// because `VouchService` is hand-written and no layer wraps it. Same rules
 	// the gate reads, handed over rather than asked for a second time.
 	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Walled, vouch.WithLockout(s.Lockout),
-		vouch.WithKeys(s.Keyring)))
+		vouch.WithKeys(s.Keyring), vouch.WithLeaving(mine)))
 
 	// What a front door asks before it knows anything, and therefore through
 	// the server the wall was never installed on. Neither RPC answers with a
@@ -1029,12 +1040,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// And what a caller is, in one round trip. None of its methods takes a
 	// subject, so none can be pointed at anybody else -- `Unlink` names a
 	// *which* and never a *whose*; see `server/me` and [aboutYourself].
-	// With the stack its writes go through. The reads go to ent because the
-	// missing subject has already narrowed them; the writes have rules on them,
-	// and the rules live in a layer. And the forget window, for `Leave` to say
-	// when somebody who left will be forgotten.
-	app.RegisterMeServiceServer(g, me.New(s.Ent, Everything(s.Ent, s.policySources...), me.WithWrites(s.Walled),
-		me.WithForgetAfter(c.Holder.ForgetAfter)))
+	app.RegisterMeServiceServer(g, mine)
 
 	// What a token stands for, for a product app that was handed one.
 	//

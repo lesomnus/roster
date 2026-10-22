@@ -107,6 +107,10 @@ type Server struct {
 	walled  app.Server
 	keys    Keyring
 	lockout Lockout
+
+	// leaving is what leaving is, for the link that confirms it
+	// (`leave.go`); nil answers that nobody leaves by one here.
+	leaving Leaving
 }
 
 // Option is how a deployment says what this service is allowed to assume.

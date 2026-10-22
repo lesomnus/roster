@@ -5,6 +5,8 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { MeLeaveResponseSchema } from "./me_pb.js";
+import { file_app_me } from "./me_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
@@ -13,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/vouch.proto.
  */
 export const file_app_vouch: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJyCgpWb3VjaENsYWltEg4KBnRlbmFudBgBIAEoDBIQCghwcm92aWRlchgCIAEoCRIPCgdzdWJqZWN0GAMgASgJEjEKDWF1dGhlbnRpY2F0ZWQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIl8KElZvdWNoVmVyaWZ5UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJyCgtWb3VjaEZhY3RvchIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIVCg1jcmVkZW50aWFsX2lkGAkgASgJIsQBChNWb3VjaFZlcmlmeVJlc3BvbnNlEgoKAm9rGAEgASgIEg4KBmhvbGRlchgCIAEoDBIOCgZ0ZW5hbnQYAyABKAwSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCglzYXRpc2ZpZWQYCiADKAkSJgoJYXZhaWxhYmxlGAsgAygLMhMucm9zdGVyLlZvdWNoRmFjdG9yEhQKDGNvbnRpbnVhdGlvbhgMIAEoCSJYChRWb3VjaENvbnRpbnVlUmVxdWVzdBIUCgxjb250aW51YXRpb24YASABKAkSDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJGChVWb3VjaENvbnRpbnVlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZSK1AQoUVm91Y2hEZWxlZ2F0ZVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEhQKDGNvbnRpbnVhdGlvbhgMIAEoCRIMCgRuYW1lGAUgASgJEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAigQEKElZvdWNoQWNjZXB0UmVxdWVzdBIhCgVjbGFpbRgBIAEoCzISLnJvc3Rlci5Wb3VjaENsYWltEg8KB21ldGhvZHMYAiADKAkSKwoHZXhwaXJlcxgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASCgoCYXQYBCABKAkiwgEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEgwKBGxpbmsYDCABKAkSMAoMbGlua19leHBpcmVzGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJeChBWb3VjaExpbmtSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJPChFWb3VjaExpbmtSZXNwb25zZRINCgV0b2tlbhgBIAEoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJhChJWb3VjaFJlZGVlbVJlcXVlc3QSDQoFdG9rZW4YASABKAkSDwoHbWV0aG9kcxgKIAMoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcDKqAwoMVm91Y2hTZXJ2aWNlEkEKBlZlcmlmeRIaLnJvc3Rlci5Wb3VjaFZlcmlmeVJlcXVlc3QaGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRJHCghEZWxlZ2F0ZRIcLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2USOwoETGluaxIYLnJvc3Rlci5Wb3VjaExpbmtSZXF1ZXN0Ghkucm9zdGVyLlZvdWNoTGlua1Jlc3BvbnNlEkMKBlJlZGVlbRIaLnJvc3Rlci5Wb3VjaFJlZGVlbVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEkcKCENvbnRpbnVlEhwucm9zdGVyLlZvdWNoQ29udGludWVSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoQ29udGludWVSZXNwb25zZRJDCgZBY2NlcHQSGi5yb3N0ZXIuVm91Y2hBY2NlcHRSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
+  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJyCgpWb3VjaENsYWltEg4KBnRlbmFudBgBIAEoDBIQCghwcm92aWRlchgCIAEoCRIPCgdzdWJqZWN0GAMgASgJEjEKDWF1dGhlbnRpY2F0ZWQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIl8KElZvdWNoVmVyaWZ5UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJyCgtWb3VjaEZhY3RvchIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIVCg1jcmVkZW50aWFsX2lkGAkgASgJIsQBChNWb3VjaFZlcmlmeVJlc3BvbnNlEgoKAm9rGAEgASgIEg4KBmhvbGRlchgCIAEoDBIOCgZ0ZW5hbnQYAyABKAwSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCglzYXRpc2ZpZWQYCiADKAkSJgoJYXZhaWxhYmxlGAsgAygLMhMucm9zdGVyLlZvdWNoRmFjdG9yEhQKDGNvbnRpbnVhdGlvbhgMIAEoCSJYChRWb3VjaENvbnRpbnVlUmVxdWVzdBIUCgxjb250aW51YXRpb24YASABKAkSDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJGChVWb3VjaENvbnRpbnVlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZSK1AQoUVm91Y2hEZWxlZ2F0ZVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEhQKDGNvbnRpbnVhdGlvbhgMIAEoCRIMCgRuYW1lGAUgASgJEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAigQEKElZvdWNoQWNjZXB0UmVxdWVzdBIhCgVjbGFpbRgBIAEoCzISLnJvc3Rlci5Wb3VjaENsYWltEg8KB21ldGhvZHMYAiADKAkSKwoHZXhwaXJlcxgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASCgoCYXQYBCABKAkiwgEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEgwKBGxpbmsYDCABKAkSMAoMbGlua19leHBpcmVzGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJeChBWb3VjaExpbmtSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJPChFWb3VjaExpbmtSZXNwb25zZRINCgV0b2tlbhgBIAEoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJHChVWb3VjaExlYXZlTGlua1JlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEg8KB2FkZHJlc3MYAiABKAkiZQoWVm91Y2hMZWF2ZUxpbmtSZXNwb25zZRINCgV0b2tlbhgBIAEoCRIPCgdhZGRyZXNzGAIgASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjMKEVZvdWNoTGVhdmVSZXF1ZXN0Eg0KBXRva2VuGAEgASgJEg8KB2NvbmZpcm0YAiABKAkiYQoSVm91Y2hSZWRlZW1SZXF1ZXN0Eg0KBXRva2VuGAEgASgJEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAyswQKDFZvdWNoU2VydmljZRJBCgZWZXJpZnkSGi5yb3N0ZXIuVm91Y2hWZXJpZnlSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2USRwoIRGVsZWdhdGUSHC5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEjsKBExpbmsSGC5yb3N0ZXIuVm91Y2hMaW5rUmVxdWVzdBoZLnJvc3Rlci5Wb3VjaExpbmtSZXNwb25zZRJDCgZSZWRlZW0SGi5yb3N0ZXIuVm91Y2hSZWRlZW1SZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZRJKCglMZWF2ZUxpbmsSHS5yb3N0ZXIuVm91Y2hMZWF2ZUxpbmtSZXF1ZXN0Gh4ucm9zdGVyLlZvdWNoTGVhdmVMaW5rUmVzcG9uc2USOwoFTGVhdmUSGS5yb3N0ZXIuVm91Y2hMZWF2ZVJlcXVlc3QaFy5yb3N0ZXIuTWVMZWF2ZVJlc3BvbnNlEkcKCENvbnRpbnVlEhwucm9zdGVyLlZvdWNoQ29udGludWVSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoQ29udGludWVSZXNwb25zZRJDCgZBY2NlcHQSGi5yb3N0ZXIuVm91Y2hBY2NlcHRSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_app_me, file_google_protobuf_timestamp]);
 
 /**
  * VouchWho names somebody in the words a sign-in form collects.
@@ -730,6 +732,92 @@ export const VouchLinkResponseSchema: GenMessage<VouchLinkResponse> = /*@__PURE_
   messageDesc(file_app_vouch, 11);
 
 /**
+ * @generated from message roster.VouchLeaveLinkRequest
+ */
+export type VouchLeaveLinkRequest = Message<"roster.VouchLeaveLinkRequest"> & {
+  /**
+   * Who is leaving: the person signed in at the front door asking, named by
+   * what its session holds.
+   *
+   * @generated from field: roster.VouchWho who = 1;
+   */
+  who?: VouchWho | undefined;
+
+  /**
+   * Where the link goes: an address on their account that somebody proved.
+   *
+   * @generated from field: string address = 2;
+   */
+  address: string;
+};
+
+/**
+ * Describes the message roster.VouchLeaveLinkRequest.
+ * Use `create(VouchLeaveLinkRequestSchema)` to create a new message.
+ */
+export const VouchLeaveLinkRequestSchema: GenMessage<VouchLeaveLinkRequest> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 12);
+
+/**
+ * @generated from message roster.VouchLeaveLinkResponse
+ */
+export type VouchLeaveLinkResponse = Message<"roster.VouchLeaveLinkResponse"> & {
+  /**
+   * The link, and the only time it is readable.
+   *
+   * @generated from field: string token = 1;
+   */
+  token: string;
+
+  /**
+   * The address it is for, as roster holds it: what the front door mails, and
+   * not what it was asked.
+   *
+   * @generated from field: string address = 2;
+   */
+  address: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp expires = 11;
+   */
+  expires?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.VouchLeaveLinkResponse.
+ * Use `create(VouchLeaveLinkResponseSchema)` to create a new message.
+ */
+export const VouchLeaveLinkResponseSchema: GenMessage<VouchLeaveLinkResponse> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 13);
+
+/**
+ * @generated from message roster.VouchLeaveRequest
+ */
+export type VouchLeaveRequest = Message<"roster.VouchLeaveRequest"> & {
+  /**
+   * The link, as it was delivered.
+   *
+   * @generated from field: string token = 1;
+   */
+  token: string;
+
+  /**
+   * Their alias, typed, as `MeLeaveRequest.confirm` is: so that nothing does
+   * this by accident -- clicking a link is not deciding to leave.
+   *
+   * @generated from field: string confirm = 2;
+   */
+  confirm: string;
+};
+
+/**
+ * Describes the message roster.VouchLeaveRequest.
+ * Use `create(VouchLeaveRequestSchema)` to create a new message.
+ */
+export const VouchLeaveRequestSchema: GenMessage<VouchLeaveRequest> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 14);
+
+/**
  * @generated from message roster.VouchRedeemRequest
  */
 export type VouchRedeemRequest = Message<"roster.VouchRedeemRequest"> & {
@@ -762,7 +850,7 @@ export type VouchRedeemRequest = Message<"roster.VouchRedeemRequest"> & {
  * Use `create(VouchRedeemRequestSchema)` to create a new message.
  */
 export const VouchRedeemRequestSchema: GenMessage<VouchRedeemRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 12);
+  messageDesc(file_app_vouch, 15);
 
 /**
  * VouchService is how a secret is used without ever leaving the store.
@@ -914,6 +1002,87 @@ export const VouchService: GenService<{
     methodKind: "unary";
     input: typeof VouchRedeemRequestSchema;
     output: typeof VouchDelegateResponseSchema;
+  },
+  /**
+   * LeaveLink mints a link that confirms one person **leaving**, and answers
+   * with it once, for the front door to mail to an address of theirs that
+   * somebody proved.
+   *
+   * # Who it is for
+   *
+   * Somebody whose way in cannot be a sign-in a few minutes old, which is what
+   * `MeService.Leave` asks: GitHub never says when it asked anybody, Google
+   * says so only where its project lets it, and a tenant that offers no
+   * passwords has no recovery link to hand them one either. Their mailbox can
+   * say it instead. A front door asks for this about the person signed in at
+   * it -- by the identifier its session holds, never a name a browser typed --
+   * and the link goes to their mailbox, so a session somebody walked away from
+   * mints a link its holder cannot read.
+   *
+   * # What it is refused, and why here
+   *
+   * Everything `Leave` would refuse that does not depend on how somebody
+   * proved who they are: a tenant that does not offer leaving
+   * (`TenantConfig.leave`), somebody its directory provisions, a holder a file
+   * declares -- and somebody suspended, or of a tenant that closed, whom a
+   * link is not sent to at all. Refused where it is minted rather than only
+   * where it is spent, so that nothing is mailed that could not be used; and
+   * said, unlike `Link`'s one answer: the caller asks about the person signed
+   * in at it, and no refusal says what that person's own page does not show
+   * them already.
+   *
+   * `address` has to be one of theirs that somebody proved: an address nobody
+   * checked names nobody here, and mailing one would hand the proof to
+   * whoever typed it.
+   *
+   * # What a caller allowed it is trusted with
+   *
+   * `Link`'s trust and less. A caller allowed this and `Leave` can delete the
+   * account of anybody it can see -- it holds the token it was answered with
+   * -- which is why it is a front door's grant and no person's, as minting a
+   * way in for anybody is.
+   *
+   * @generated from rpc roster.VouchService.LeaveLink
+   */
+  leaveLink: {
+    methodKind: "unary";
+    input: typeof VouchLeaveLinkRequestSchema;
+    output: typeof VouchLeaveLinkResponseSchema;
+  },
+  /**
+   * Leave spends a link `LeaveLink` minted, and its person leaves: the erase
+   * `MeService.Leave` makes, after every rule it asks but the age of a
+   * sign-in, which the mailbox has just proved instead.
+   *
+   * # It signs nobody in
+   *
+   * No delegation, no session and no password is minted, whatever else
+   * happens: what a mailbox read once is worth here is one account deleted, by
+   * the person whose mailbox it is, and not an account held. And no other kind
+   * of link is spent here: a recovery link, a verification, the user
+   * console's -- each is refused, as this kind is at each of their doors.
+   *
+   * # In this order
+   *
+   *   - the link: one this caller was issued, still open, of this kind, for
+   *     somebody who may still sign in, and mailed to an address that is still
+   *     theirs and still proved -- `NotFound` for every way of being wrong,
+   *     one answer, as every link's;
+   *   - `Leave`'s rules but the one this replaces: that their tenant offers
+   *     it, that its directory does not provision them, and that `confirm` is
+   *     their alias as it is -- each refusal says which, and **none spends the
+   *     link**, so a mistyped alias costs nothing;
+   *   - and then the link is spent, by whichever caller spends it first, and
+   *     the account goes the way `Leave` sends it -- signed out everywhere,
+   *     then erased, as the person -- so the trail says who, every app hears
+   *     it, and an operator can still bring it back until it is forgotten.
+   *
+   * @generated from rpc roster.VouchService.Leave
+   */
+  leave: {
+    methodKind: "unary";
+    input: typeof VouchLeaveRequestSchema;
+    output: typeof MeLeaveResponseSchema;
   },
   /**
    * Continue proves the next factor, from where the last one left off.

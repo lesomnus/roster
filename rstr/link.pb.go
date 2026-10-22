@@ -23,7 +23,9 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Link is a way in that roster mints and somebody else delivers.
+// Link is a way in that roster mints and somebody else delivers -- or, for two
+// of its four kinds, a proof of a mailbox that lets nobody in: an address
+// confirmed (`email`), and an account deleted (`leave`).
 //
 // A magic link, and the machine behind a recovery: *a single-use opaque nonce
 // roster mints and roster checks, delivered by somebody else.* D19 admits it for
@@ -57,6 +59,7 @@ type Link struct {
 	xxx_hidden_Holder      *Holder                `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Email       *Email                 `protobuf:"bytes,12,opt,name=email"`
 	xxx_hidden_At          string                 `protobuf:"bytes,8,opt,name=at"`
+	xxx_hidden_Leave       bool                   `protobuf:"varint,16,opt,name=leave"`
 	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
 	xxx_hidden_Issuer      []byte                 `protobuf:"bytes,10,opt,name=issuer"`
 	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
@@ -120,6 +123,13 @@ func (x *Link) GetAt() string {
 	return ""
 }
 
+func (x *Link) GetLeave() bool {
+	if x != nil {
+		return x.xxx_hidden_Leave
+	}
+	return false
+}
+
 func (x *Link) GetSecret() []byte {
 	if x != nil {
 		return x.xxx_hidden_Secret
@@ -179,6 +189,10 @@ func (x *Link) SetEmail(v *Email) {
 
 func (x *Link) SetAt(v string) {
 	x.xxx_hidden_At = v
+}
+
+func (x *Link) SetLeave(v bool) {
+	x.xxx_hidden_Leave = v
 }
 
 func (x *Link) SetSecret(v []byte) {
@@ -311,6 +325,33 @@ type Link_builder struct {
 	// link that names none. A discriminator read on one side is not one --
 	// `email` above learned that the hard way.
 	At string
+	// Whether this link confirms its holder **leaving**, and nothing else: the
+	// fourth kind, `Vouch.LeaveLink`'s, spent by `Vouch.Leave`.
+	//
+	// # What it is for
+	//
+	// Deleting your own account asks that you proved who you are a few minutes
+	// ago (`MeService.Leave`), and some ways in never can: GitHub says no time at
+	// all, and Google says one only where its project lets it. In a tenant whose
+	// people have no password to sign in with again, that left deleting such an
+	// account to whoever runs the tenant. This is the road for them: a link
+	// mailed to an address of theirs somebody proved, which proves the mailbox a
+	// moment ago, and for **one** purpose.
+	//
+	// # Worth less than every other kind
+	//
+	// It signs nobody in: no delegation, no session, no password -- what it ends
+	// in is the account's erase, after the alias typed and every rule `Leave`
+	// asks but the age of a sign-in, which this is instead. So every other door
+	// refuses it -- `Vouch.Redeem`, the user console's `SpendAt`, `Email.Confirm`
+	// -- and `Vouch.Leave` refuses every link that is not one. It carries the
+	// `email` it was mailed to as well, so that an address taken off the account
+	// since, or no longer proved, is no proof of anything; and that edge is why
+	// `Email.Confirm` has to read this column too, since it is the door that
+	// spends a link naming an address.
+	//
+	// False by default, which is every link minted before the kind existed.
+	Leave bool
 	// The verifier, never the link -- the shape `ApiKey` argued and every
 	// short-lived thing here has repeated: 256 bits from `crypto/rand` have no
 	// dictionary, so the hash is fast and unsalted, and it is also how the row is
@@ -346,6 +387,7 @@ func (b0 Link_builder) Build() *Link {
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Email = b.Email
 	x.xxx_hidden_At = b.At
+	x.xxx_hidden_Leave = b.Leave
 	x.xxx_hidden_Secret = b.Secret
 	x.xxx_hidden_Issuer = b.Issuer
 	x.xxx_hidden_DateExpires = b.DateExpires
@@ -359,12 +401,14 @@ var File_app_link_proto protoreflect.FileDescriptor
 
 const file_app_link_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/link.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x0fapp/email.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xed\x04\n" +
+	"\x0eapp/link.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x0fapp/email.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x93\x05\n" +
 	"\x04Link\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12-\n" +
 	"\x05email\x18\f \x01(\v2\r.roster.EmailB\b\xf2\x82\x16\x048\x01@\x01R\x05email\x12\x16\n" +
-	"\x02at\x18\b \x01(\tB\x06\xea\x82\x16\x02@\x01R\x02at\x12&\n" +
+	"\x02at\x18\b \x01(\tB\x06\xea\x82\x16\x02@\x01R\x02at\x12$\n" +
+	"\x05leave\x18\x10 \x01(\bB\x0e\xea\x82\x16\n" +
+	"@\x01\x82\x01\x05falseR\x05leave\x12&\n" +
 	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12\x1e\n" +
 	"\x06issuer\x18\n" +
 	" \x01(\fB\x06\xea\x82\x16\x02@\x01R\x06issuer\x12G\n" +

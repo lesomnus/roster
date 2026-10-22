@@ -7,6 +7,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/connection"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/internal/ent/link"
 	"github.com/lesomnus/roster/internal/ent/schema"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	"github.com/lesomnus/roster/rstr"
@@ -56,6 +57,12 @@ func init() {
 	// holderDescPortrait is the schema descriptor for portrait field.
 	holderDescPortrait := holderFields[13].Descriptor()
 	holder.ValueScanner.Portrait = holderDescPortrait.ValueScanner.(field.TypeValueScanner[*rstr.Portrait])
+	linkFields := schema.Link{}.Fields()
+	_ = linkFields
+	// linkDescLeave is the schema descriptor for leave field.
+	linkDescLeave := linkFields[2].Descriptor()
+	// link.DefaultLeave holds the default value on creation for the leave field.
+	link.DefaultLeave = linkDescLeave.Default.(bool)
 	tenantFields := schema.Tenant{}.Fields()
 	_ = tenantFields
 	// tenantDescConfig is the schema descriptor for config field.

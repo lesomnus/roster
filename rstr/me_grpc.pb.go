@@ -151,6 +151,11 @@ type MeServiceClient interface {
 	//   - that `confirm` is the caller's own alias, as it is, so that nothing
 	//     calls this by accident -- `InvalidArgument`.
 	//
+	// Somebody whose way in can never be that sign-in -- GitHub's never is -- is
+	// mailed a link that stands for it instead (`VouchService.LeaveLink`), and
+	// leaves by `VouchService.Leave`: every rule here but the third, and the
+	// same erase, from `server/me` for both.
+	//
 	// # What happens, and what can still be undone
 	//
 	// An erase and nothing more: the person cannot sign in anywhere and every
@@ -341,6 +346,11 @@ type MeServiceServer interface {
 	//     away from -- `FailedPrecondition`, *sign in again*;
 	//   - that `confirm` is the caller's own alias, as it is, so that nothing
 	//     calls this by accident -- `InvalidArgument`.
+	//
+	// Somebody whose way in can never be that sign-in -- GitHub's never is -- is
+	// mailed a link that stands for it instead (`VouchService.LeaveLink`), and
+	// leaves by `VouchService.Leave`: every rule here but the third, and the
+	// same erase, from `server/me` for both.
 	//
 	// # What happens, and what can still be undone
 	//

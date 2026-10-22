@@ -61,6 +61,11 @@ func At(v string) predicate.Link {
 	return predicate.Link(sql.FieldEQ(FieldAt, v))
 }
 
+// Leave applies equality check predicate on the "leave" field. It's identical to LeaveEQ.
+func Leave(v bool) predicate.Link {
+	return predicate.Link(sql.FieldEQ(FieldLeave, v))
+}
+
 // Secret applies equality check predicate on the "secret" field. It's identical to SecretEQ.
 func Secret(v []byte) predicate.Link {
 	return predicate.Link(sql.FieldEQ(FieldSecret, v))
@@ -164,6 +169,26 @@ func AtEqualFold(v string) predicate.Link {
 // AtContainsFold applies the ContainsFold predicate on the "at" field.
 func AtContainsFold(v string) predicate.Link {
 	return predicate.Link(sql.FieldContainsFold(FieldAt, v))
+}
+
+// LeaveEQ applies the EQ predicate on the "leave" field.
+func LeaveEQ(v bool) predicate.Link {
+	return predicate.Link(sql.FieldEQ(FieldLeave, v))
+}
+
+// LeaveNEQ applies the NEQ predicate on the "leave" field.
+func LeaveNEQ(v bool) predicate.Link {
+	return predicate.Link(sql.FieldNEQ(FieldLeave, v))
+}
+
+// LeaveIsNil applies the IsNil predicate on the "leave" field.
+func LeaveIsNil() predicate.Link {
+	return predicate.Link(sql.FieldIsNull(FieldLeave))
+}
+
+// LeaveNotNil applies the NotNil predicate on the "leave" field.
+func LeaveNotNil() predicate.Link {
+	return predicate.Link(sql.FieldNotNull(FieldLeave))
 }
 
 // SecretEQ applies the EQ predicate on the "secret" field.

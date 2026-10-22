@@ -295,6 +295,14 @@ func (s *Server) link(ctx context.Context, token string, by pdid.Id) (*app.Link,
 		return nil, status.Error(codes.NotFound, "no such link")
 	}
 
+	// And a link that confirms somebody leaving is a way in to nothing: it
+	// ends in the account's erase and signs nobody in (`leave.go`). It names
+	// an `email` too, so the guard above refuses it already; this one says
+	// what it is refusing, so that the two do not stand or fall together.
+	if v.GetLeave() {
+		return nil, status.Error(codes.NotFound, "no such link")
+	}
+
 	return v, nil
 }
 
@@ -315,7 +323,14 @@ func (s *Server) row(ctx context.Context, token string) (*app.Link, error) {
 			Issuer:      z.Ptr(true),
 			At:          z.Ptr(true),
 			DateExpires: z.Ptr(true),
-			Email:       app.EmailSelect_builder{}.Build(),
+			Leave:       z.Ptr(true),
+			// The address a link was mailed to, for the kind that is spent on
+			// whether it is still theirs and still proved (`leave.go`).
+			Email: app.EmailSelect_builder{
+				DateVerified: z.Ptr(true),
+				DateErased:   z.Ptr(true),
+				Holder:       app.HolderSelect_builder{}.Build(),
+			}.Build(),
 
 			Holder: app.HolderSelect_builder{
 				Tenant:       app.TenantSelect_builder{Alias: z.Ptr(true), DateClosed: z.Ptr(true)}.Build(),
@@ -386,7 +401,7 @@ func (s *Server) SpendAt(ctx context.Context, token, at, tenant string) (*app.Vo
 	// another door's; and a name that has changed hands since the mint is
 	// caught by the tenant behind it, which is belt beside braces.
 	if v.GetAt() == "" || v.GetAt() != at || v.GetHolder().GetTenant().GetAlias() != tenant ||
-		len(v.GetEmail().GetId()) != 0 {
+		len(v.GetEmail().GetId()) != 0 || v.GetLeave() {
 		return no(), nil
 	}
 

@@ -615,6 +615,102 @@ func newCmdVouchRedeem(c *cmd.Config) *xli.Command {
 	}
 }
 
+// newCmdVouchLeaveLink mints a link that confirms somebody leaving, and prints
+// it once with the address it is for; delivering it is yours, there and only
+// there.
+//
+// WHO is the person and never an address: the address is where the link goes,
+// and it has to be one of theirs that somebody proved.
+func newCmdVouchLeaveLink(c *cmd.Config) *xli.Command {
+	return &xli.Command{
+		Name:  "leave-link",
+		Brief: "mint a link that confirms somebody leaving, printed once, for one proved address of theirs",
+
+		Args: arg.Args{
+			&pdcmd.ArgRef{Name: "WHO", Brief: "who is leaving, as @tenant/alias or an identifier"},
+		},
+		Flags: flg.Flags{
+			&flg.String{Name: "to", Brief: "the address it goes to: one of theirs somebody proved; required"},
+		},
+
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			client, done, err := wired(ctx, c)
+			if err != nil {
+				return err
+			}
+			defer done()
+
+			who, err := whoSaid(cl)
+			if err != nil {
+				return err
+			}
+			to, _ := flg.Find[string](cl, "to")
+			if to == "" {
+				return errors.New("--to: the address the link goes to, one of theirs that somebody proved")
+			}
+
+			v, err := client.LeaveLink(ctx, app.VouchLeaveLinkRequest_builder{Who: who, Address: to}.Build())
+			if err != nil {
+				return err
+			}
+
+			fmt.Fprintf(os.Stdout, "%s\n", v.GetToken())
+			fmt.Fprintf(os.Stderr,
+				"for %s, until %s, single use. It deletes their account once spent with their "+
+					"alias typed, and signs nobody in. This is the only time it is shown, and roster "+
+					"does not deliver it: send it to that address and nowhere else.\n",
+				v.GetAddress(), v.GetExpires().AsTime().Format(time.RFC3339))
+
+			return next(ctx)
+		}),
+	}
+}
+
+// newCmdVouchLeave spends a link `leave-link` minted, and the person it is
+// for leaves -- signed out everywhere, then erased, as `MeService.Leave`
+// erases somebody.
+func newCmdVouchLeave(c *cmd.Config) *xli.Command {
+	return &xli.Command{
+		Name:  "leave",
+		Brief: "spend a link that confirms somebody leaving: their account is deleted",
+
+		Flags: flg.Flags{
+			&flg.Switch{Name: "token-stdin", Brief: "read the link from stdin; required"},
+			&flg.String{Name: "confirm", Brief: "their alias, as it is; required"},
+		},
+
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			client, done, err := wired(ctx, c)
+			if err != nil {
+				return err
+			}
+			defer done()
+
+			token, err := secretFrom(cl, "token-stdin")
+			if err != nil {
+				return err
+			}
+			confirm, _ := flg.Find[string](cl, "confirm")
+
+			v, err := client.Leave(ctx, app.VouchLeaveRequest_builder{
+				Token:   string(token),
+				Confirm: confirm,
+			}.Build())
+			if err != nil {
+				return err
+			}
+
+			fmt.Fprintf(os.Stderr, "erased at %s", v.GetDateErased().AsTime().Format(time.RFC3339))
+			if f := v.GetDateForgotten(); f != nil {
+				fmt.Fprintf(os.Stderr, ", forgotten at %s unless an operator brings them back first", f.AsTime().Format(time.RFC3339))
+			}
+			fmt.Fprintf(os.Stderr, ".\n")
+
+			return next(ctx)
+		}),
+	}
+}
+
 // newCmdVouchRevoke ends a delegation before its expiry.
 //
 // Possession is the authorization: it takes the token itself, and a token

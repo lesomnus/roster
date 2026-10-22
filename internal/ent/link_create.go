@@ -31,6 +31,20 @@ func (_c *LinkCreate) SetAt(v string) *LinkCreate {
 	return _c
 }
 
+// SetLeave sets the "leave" field.
+func (_c *LinkCreate) SetLeave(v bool) *LinkCreate {
+	_c.mutation.SetLeave(v)
+	return _c
+}
+
+// SetNillableLeave sets the "leave" field if the given value is not nil.
+func (_c *LinkCreate) SetNillableLeave(v *bool) *LinkCreate {
+	if v != nil {
+		_c.SetLeave(*v)
+	}
+	return _c
+}
+
 // SetSecret sets the "secret" field.
 func (_c *LinkCreate) SetSecret(v []byte) *LinkCreate {
 	_c.mutation.SetSecret(v)
@@ -134,6 +148,7 @@ func (_c *LinkCreate) Mutation() *LinkMutation {
 
 // Save creates the Link in the database.
 func (_c *LinkCreate) Save(ctx context.Context) (*Link, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -156,6 +171,14 @@ func (_c *LinkCreate) Exec(ctx context.Context) error {
 func (_c *LinkCreate) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (_c *LinkCreate) defaults() {
+	if _, ok := _c.mutation.Leave(); !ok {
+		v := link.DefaultLeave
+		_c.mutation.SetLeave(v)
 	}
 }
 
@@ -236,6 +259,10 @@ func (_c *LinkCreate) createSpec() (*Link, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.At(); ok {
 		_spec.SetField(link.FieldAt, field.TypeString, value)
 		_node.At = value
+	}
+	if value, ok := _c.mutation.Leave(); ok {
+		_spec.SetField(link.FieldLeave, field.TypeBool, value)
+		_node.Leave = value
 	}
 	if value, ok := _c.mutation.Secret(); ok {
 		_spec.SetField(link.FieldSecret, field.TypeBytes, value)
@@ -342,6 +369,7 @@ func (_c *LinkCreateBulk) Save(ctx context.Context) ([]*Link, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*LinkMutation)
 				if !ok {

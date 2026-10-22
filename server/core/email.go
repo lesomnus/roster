@@ -399,6 +399,7 @@ func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*
 			Secret:      z.Ptr(true),
 			Issuer:      z.Ptr(true),
 			DateExpires: z.Ptr(true),
+			Leave:       z.Ptr(true),
 			Email:       app.EmailSelect_builder{}.Build(),
 			// Whose claim it is, which for an ordinary verification is the row's
 			// own holder and for a claim is somebody else. Read here rather than
@@ -418,7 +419,12 @@ func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*
 	case subtle.ConstantTimeCompare(l.GetSecret(), sum[:]) != 1,
 		l.GetDateExpires() == nil || !time.Now().Before(l.GetDateExpires().AsTime()),
 		subtle.ConstantTimeCompare(l.GetIssuer(), f.Actor.Bytes()) != 1,
-		len(l.GetEmail().GetId()) == 0:
+		len(l.GetEmail().GetId()) == 0,
+		// A link that confirms somebody leaving names the address it was
+		// mailed to as well, and is not a verification of it: spent here, it
+		// would be a departure somebody confirmed and nobody made (`link.proto`
+		// § `leave`).
+		l.GetLeave():
 		return nil, no
 	}
 

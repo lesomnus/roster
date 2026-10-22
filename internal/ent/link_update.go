@@ -121,6 +121,9 @@ func (_u *LinkUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
+	if _u.mutation.LeaveCleared() {
+		_spec.ClearField(link.FieldLeave, field.TypeBool)
+	}
 	if _u.mutation.DateExpiresCleared() {
 		_spec.ClearField(link.FieldDateExpires, field.TypeTime)
 	}
@@ -285,6 +288,9 @@ func (_u *LinkUpdateOne) sqlSave(ctx context.Context) (_node *Link, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if _u.mutation.LeaveCleared() {
+		_spec.ClearField(link.FieldLeave, field.TypeBool)
 	}
 	if _u.mutation.DateExpiresCleared() {
 		_spec.ClearField(link.FieldDateExpires, field.TypeTime)

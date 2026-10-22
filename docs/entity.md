@@ -502,7 +502,7 @@ concurrent spends resolve to one winner in the database.
 > opaque string and pairs it with a cookie of its own; roster never sees her
 > browser.
 
-### ✨ `Link` — a way in that roster mints and somebody else delivers
+### ✨ `Link` — a way in that roster mints and somebody else delivers, or a mailbox proved
 
 A magic link, and the machine behind a recovery. Ask *who checks this?* and only
 roster can -- it resolves nowhere else and revoking it is a delete. Delivery is
@@ -521,6 +521,18 @@ A third kind since #62: a link `Vouch.Accept` mints for a front door to hand a
 browser, spent at the user console's own name for a session of roster's own.
 `at` tells it from the other two and both doors read it -- a recovery link is
 refused at the user console, and a link for the user console at `Vouch.Redeem`.
+
+And a fourth, which lets nobody in: a link that confirms somebody **leaving**
+(`leave`), for a person whose way in cannot be the sign-in a few minutes old that
+`MeService.Leave` asks for. `Vouch.LeaveLink` mints it about the person a front
+door has signed in, for an address of theirs somebody proved; `Vouch.Leave`
+spends it with their alias typed, and they are erased as `Leave` erases them.
+Every other door refuses it, and it refuses every other kind.
+
+> erin signed in through GitHub, which never says when it asked her, and her
+> tenant offers no passwords. The account page mails her a link; she opens it on
+> her phone, types `erin`, and is gone -- and the link opened nothing else on
+> the way.
 
 ### 🍪 `Session` — a console's cookie, in a table
 

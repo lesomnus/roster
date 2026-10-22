@@ -1278,3 +1278,199 @@ func TestDeletingAnAccountAsksTheDirectoryAgain(t *testing.T) {
 		x.Contains(body, "dateErased")
 	})
 }
+
+// TestSomebodyDeletesTheirAccountByMail is the road for somebody whose way in
+// cannot be a sign-in a few minutes old, in a tenant whose people have no
+// password to sign in with again: erin arrives through a directory that says
+// nothing about when it asked her -- GitHub, say -- so deleting from the page
+// is refused, and the page mails her a link instead. The link signs nobody in;
+// clicking it asks for her alias, and only the answer spends it.
+func TestSomebodyDeletesTheirAccountByMail(t *testing.T) {
+	x := require.New(t)
+	d := serve(t, account.Invited())
+	ctx := t.Context()
+	_, err := d.ungated.Tenant().Patch(ctx, rstr.TenantPatchRequest_builder{
+		Ref:              rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build(),
+		Config:           rstr.TenantConfig_builder{Leave: true, Password: proto.Bool(false)}.Build(),
+		DateUpdatedForce: proto.Bool(true),
+	}.Build())
+	x.NoError(err)
+	proved(t, d, d.erin, "erin@contoso.com")
+
+	code, body := d.browser(t, "contoso.test").do(t, http.MethodGet, "/providers", "", nil)
+	x.Equal(http.StatusOK, code, body)
+	x.Contains(body, `"leaveLink":true`)
+	x.Contains(body, `"recover":false`, "a tenant with no passwords offered a recovery link")
+
+	// Signed in through a directory that said nothing about when it asked her.
+	d.idp.Subject = "3001"
+	d.idp.Claims = map[string]any{}
+	b := d.browser(t, "contoso.test")
+	code, body = b.do(t, http.MethodGet, "/login?connection=example&again=1", "", nil)
+	x.Equal(http.StatusOK, code, body)
+	code, body = b.rpc(t, "/roster.MeService/Leave", `{"confirm":"erin"}`)
+	x.Equal(http.StatusBadRequest, code, body)
+	x.Contains(body, "failed_precondition", "deleting is not refused for the reason this road is for")
+
+	asks := func(b *browser, address string) (int, string) {
+		return b.do(t, http.MethodPost, "/leave/link", `{"address":"`+address+`"}`,
+			func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+	}
+
+	// Not to an address that is not hers and proved, and not for nobody.
+	code, _ = asks(b, "bob@fabrikam.com")
+	x.Equal(http.StatusForbidden, code, "a link was mailed to somebody else's address")
+	code, _ = asks(d.browser(t, "contoso.test"), "erin@contoso.com")
+	x.Equal(http.StatusUnauthorized, code, "a link was mailed for a browser signed in as nobody")
+
+	// Mailed to the address as roster holds it, whatever the page typed.
+	code, body = asks(b, "Erin@Contoso.com")
+	x.Equal(http.StatusAccepted, code, body)
+	x.Contains(body, `"address":"erin@contoso.com"`)
+	x.Empty(d.sent("Erin@Contoso.com"), "mailed to what the request said rather than what roster holds")
+	link := d.sent("erin@contoso.com")
+	x.Contains(link, "/leave?")
+	x.Contains(link, "token=rl_")
+	x.Contains(link, "at="+d.contoso.String(), "the link does not name the tenant whose key spends it")
+
+	u, err := url.Parse(link)
+	x.NoError(err)
+	token, at := u.Query().Get("token"), u.Query().Get("at")
+	answers := func(confirm string) (int, string) {
+		return d.browser(t, "contoso.test").do(t, http.MethodPost, "/leave?"+url.Values{"at": {at}}.Encode(),
+			url.Values{"token": {token}, "confirm": {confirm}}.Encode(),
+			func(r *http.Request) { r.Header.Set("Content-Type", "application/x-www-form-urlencoded") })
+	}
+
+	t.Run("it signs nobody in", func(t *testing.T) {
+		x := require.New(t)
+
+		// At the door a recovery link is redeemed at, which hands over a password.
+		res, err := d.browser(t, "contoso.test").Get(strings.Replace(link, "/leave?", "/redeem?", 1))
+		x.NoError(err)
+		res.Body.Close()
+		x.Equal(http.StatusNotFound, res.StatusCode, "a link that deletes an account handed over a password")
+
+		// And following it is a page, and no session.
+		other := d.browser(t, "contoso.test")
+		res, err = other.Get(link)
+		x.NoError(err)
+		page, _ := io.ReadAll(res.Body)
+		res.Body.Close()
+		x.Equal(http.StatusOK, res.StatusCode, string(page))
+		x.Contains(string(page), "Delete your account")
+		code, _ := other.rpc(t, "/roster.MeService/Get", `{}`)
+		x.Equal(http.StatusUnauthorized, code, "a link that deletes an account signed somebody in")
+	})
+
+	t.Run("following it spends nothing", func(t *testing.T) {
+		x := require.New(t)
+
+		// What a mail client previewing it, or a scanner following every link
+		// in a message, does -- twice -- and the account is where it was.
+		for range 2 {
+			res, err := d.browser(t, "contoso.test").Get(link)
+			x.NoError(err)
+			res.Body.Close()
+			x.Equal(http.StatusOK, res.StatusCode)
+		}
+		erased, err := d.s.Ent.Holder.Get(ctx, mustUuid(t, d.erin).Uuid())
+		x.NoError(err)
+		x.Nil(erased.DateErased, "fetching the link deleted the account")
+	})
+
+	t.Run("a mistyped alias asks again, and spends nothing", func(t *testing.T) {
+		x := require.New(t)
+
+		code, page := answers("eirn")
+		x.Equal(http.StatusBadRequest, code, page)
+		x.Contains(page, "Delete your account", "the page did not ask again")
+		x.Contains(page, `&quot;erin&quot;`, "the page did not say what to type")
+	})
+
+	t.Run("and the alias deletes the account", func(t *testing.T) {
+		x := require.New(t)
+
+		code, page := answers("erin")
+		x.Equal(http.StatusOK, code, page)
+		x.Contains(page, "Your account is deleted")
+
+		v, err := d.s.Ent.Holder.Get(ctx, mustUuid(t, d.erin).Uuid())
+		x.NoError(err)
+		x.NotNil(v.DateErased)
+		code, _ = b.rpc(t, "/roster.MeService/Get", `{}`)
+		x.Equal(http.StatusUnauthorized, code, "the session that asked for the link went on reaching roster")
+	})
+
+	t.Run("once", func(t *testing.T) {
+		x := require.New(t)
+
+		code, _ := answers("erin")
+		x.Equal(http.StatusNotFound, code, "a link deleted an account twice")
+	})
+}
+
+// TestNoMailMeansNoLinkThatDeletesAnAccount: a deployment that cannot deliver
+// mail offers no such link -- the page is told so, and asking anyway is
+// refused before anything is minted -- and the road left is the operator, who
+// erases the account (`roster holder erase`).
+func TestNoMailMeansNoLinkThatDeletesAnAccount(t *testing.T) {
+	x := require.New(t)
+	d := serve(t, account.Invited(), func(c *account.Config) { c.Mail = nil })
+	ctx := t.Context()
+	_, err := d.ungated.Tenant().Patch(ctx, rstr.TenantPatchRequest_builder{
+		Ref:              rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build(),
+		Config:           rstr.TenantConfig_builder{Leave: true, Password: proto.Bool(false)}.Build(),
+		DateUpdatedForce: proto.Bool(true),
+	}.Build())
+	x.NoError(err)
+	proved(t, d, d.erin, "erin@contoso.com")
+
+	code, body := d.browser(t, "contoso.test").do(t, http.MethodGet, "/providers", "", nil)
+	x.Equal(http.StatusOK, code, body)
+	x.Contains(body, `"leave":true`)
+	x.Contains(body, `"leaveLink":false`, "a page was offered a link nothing can deliver")
+
+	d.idp.Subject = "3001"
+	d.idp.Claims = map[string]any{}
+	b := d.browser(t, "contoso.test")
+	code, body = b.do(t, http.MethodGet, "/login?connection=example", "", nil)
+	x.Equal(http.StatusOK, code, body)
+
+	code, body = b.do(t, http.MethodPost, "/leave/link", `{"address":"erin@contoso.com"}`,
+		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+	x.Equal(http.StatusNotImplemented, code, body)
+	x.Contains(body, "whoever runs it can delete yours")
+
+	n, err := d.s.Ent.Link.Query().Count(ctx)
+	x.NoError(err)
+	x.Zero(n, "a link was minted that nothing could deliver")
+}
+
+// proved writes an address on somebody's row and stamps it, below the gate --
+// the way `date_verified` is written by whatever did the checking -- because
+// a link is the thing under test.
+func proved(t *testing.T, d *deployment, who []byte, address string) {
+	t.Helper()
+	x := require.New(t)
+
+	row, err := d.ungated.Email().Add(t.Context(), rstr.EmailAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: who}.Build(), Address: address,
+	}.Build())
+	x.NoError(err)
+	_, err = d.ungated.Email().Patch(t.Context(), rstr.EmailPatchRequest_builder{
+		Ref:          rstr.EmailRef_builder{Id: row.GetId()}.Build(),
+		DateVerified: timestamppb.Now(),
+		DateUpdated:  row.GetDateUpdated(),
+	}.Build())
+	x.NoError(err)
+}
+
+// mustUuid is an identifier as the database holds it.
+func mustUuid(t *testing.T, b []byte) pdid.Id {
+	t.Helper()
+	v, err := pdid.From(b)
+	require.NoError(t, err)
+
+	return v
+}

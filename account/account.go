@@ -65,6 +65,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -256,6 +257,11 @@ var Calls = append([]string{
 	rstr.VouchService_Accept_FullMethodName,
 	rstr.VouchService_Link_FullMethodName,
 	rstr.VouchService_Redeem_FullMethodName,
+	// A link that deletes the signed-in person's account and signs nobody in,
+	// minted about them and mailed to an address of theirs, and spent from
+	// that mailbox (`/leave`).
+	rstr.VouchService_LeaveLink_FullMethodName,
+	rstr.VouchService_Leave_FullMethodName,
 	rstr.DelegationService_Revoke_FullMethodName,
 	rstr.CredentialService_Issue_FullMethodName,
 	rstr.EmailService_Confirm_FullMethodName,
@@ -516,6 +522,9 @@ func (a *App) Handler() http.Handler {
 	m.HandleFunc("POST /claim", a.claim)
 	m.HandleFunc("POST /prove", a.prove)
 	m.HandleFunc("GET /confirm", a.confirm)
+	m.HandleFunc("POST /leave/link", a.leaveLink)
+	m.HandleFunc("GET /leave", a.leaving)
+	m.HandleFunc("POST /leave", a.leave)
 	// Every `/roster.<Service>/<Method>` is the page speaking Connect to this
 	// origin, handed on as the person; everything else is the page itself. One
 	// handler for both because `ServeMux` matches a prefix only up to a slash,
@@ -706,13 +715,19 @@ func (a *App) providers(w http.ResponseWriter, r *http.Request) {
 
 		// Whether a recovery link can be had here: the tenant offers passwords,
 		// which is what a link ends in (`vouch.Offers`), and this deployment
-		// can deliver one. It is the road to deleting an account for somebody
-		// whose way in cannot say when it asked them, so the page names it
-		// only where it would arrive.
+		// can deliver one.
 		Recover bool `json:"recover"`
+
+		// Whether a link that deletes an account can be had here: the tenant
+		// lets its people leave, and this deployment can deliver one. It is
+		// the road to deleting an account for somebody whose way in cannot say
+		// when it asked them, so the page offers it only where it would arrive
+		// -- and where it would not, says whoever runs the tenant deletes it.
+		LeaveLink bool `json:"leaveLink"`
 	}{
 		Password: tn.OffersPassword(), Providers: []provider{}, Terminal: a.c.Terminal, Leave: tn.GetConfig().GetLeave(),
-		Recover: tn.OffersPassword() && a.c.Mail != nil,
+		Recover:   tn.OffersPassword() && a.c.Mail != nil,
+		LeaveLink: tn.GetConfig().GetLeave() && a.c.Mail != nil,
 	}
 	out.Tenant.Alias = tn.GetAlias()
 	out.Tenant.Name = tn.GetName()
@@ -1451,6 +1466,166 @@ func (a *App) confirm(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
 }
 
+// leaveLink mails the signed-in person a link that deletes their account, to
+// an address of theirs somebody proved: the road for somebody whose way in
+// cannot be a sign-in a few minutes old, which deleting from the page asks.
+//
+// The person is who roster says the session's delegation is -- `Me.Get`, as
+// them -- and never anything the request said, so a session roster no longer
+// honours asks for nothing. The address is checked by roster to be one of
+// theirs that somebody proved, and what is mailed to is the address roster
+// answers with. The link is minted as this app, because the key that mints it
+// is the key that spends it and the click comes from a mailbox, with no
+// session and maybe in another browser.
+func (a *App) leaveLink(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	if a.c.Mail == nil {
+		http.Error(w, "this deployment cannot send mail, so it cannot mail a link that deletes an account; "+
+			"whoever runs it can delete yours", http.StatusNotImplemented)
+		return
+	}
+	as, err := a.door.Acting(ctx, r)
+	if err != nil {
+		http.Error(w, "no", http.StatusUnauthorized)
+		return
+	}
+	t, ok := tenantFrom(ctx)
+	if !ok {
+		http.Error(w, "no operator here serves this name", http.StatusNotFound)
+		return
+	}
+
+	var body struct {
+		Address string `json:"address"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&body); err != nil || body.Address == "" {
+		http.Error(w, "address: which of your addresses to send it to", http.StatusBadRequest)
+		return
+	}
+
+	me, err := rstr.NewMeServiceClient(a.conn).Get(t.on(as), rstr.MeGetRequest_builder{}.Build())
+	if err != nil {
+		http.Error(w, "no", http.StatusUnauthorized)
+		return
+	}
+	res, err := a.vouch.LeaveLink(t.on(ctx), rstr.VouchLeaveLinkRequest_builder{
+		Who:     rstr.VouchWho_builder{Id: me.GetId()}.Build(),
+		Address: body.Address,
+	}.Build())
+	if err != nil {
+		switch status.Code(err) {
+		case codes.PermissionDenied, codes.FailedPrecondition:
+			// roster's own words, which are the person's to read: their
+			// organisation does not let them, its directory keeps them, or the
+			// address is not one of theirs that anybody proved.
+			http.Error(w, status.Convert(err).Message(), http.StatusForbidden)
+		default:
+			fmt.Fprintf(os.Stderr, "account: leave link at %s: %v\n", t.alias, err)
+			http.Error(w, "cannot start", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	link := a.finish(r, "/leave", res.GetToken(), t)
+	if err := a.c.Mail(ctx, res.GetAddress(), "Delete your account", link); err != nil {
+		fmt.Fprintf(os.Stderr, "account: mail to %s: %v\n", res.GetAddress(), err)
+		http.Error(w, "cannot send", http.StatusBadGateway)
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
+	w.Header().Set("cache-control", "no-store")
+	w.WriteHeader(http.StatusAccepted)
+	_ = json.NewEncoder(w).Encode(struct {
+		Address string    `json:"address"`
+		Expires time.Time `json:"expires"`
+	}{res.GetAddress(), res.GetExpires().AsTime()})
+}
+
+// leaving is where a link that deletes an account lands: a page that asks for
+// the alias typed before anything happens, and spends nothing.
+//
+// Nothing, because a link is fetched by more than the person it was sent to:
+// a mail client previewing it, a scanner following every link in a message.
+// One that deleted an account on a GET would delete it for them. The page asks,
+// and [App.leave] is what the answer is posted to.
+func (a *App) leaving(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	t, ok := a.linkTenant(r)
+	if token == "" || !ok {
+		http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
+		return
+	}
+
+	page(w, http.StatusOK, leaveForm(token, t, ""))
+}
+
+// leave is the page's answer: the link spent and the account deleted, as
+// `Vouch.Leave` does both -- or the page again, saying why not, with the link
+// still good where nothing about it was wrong.
+func (a *App) leave(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	t, ok := a.linkTenant(r)
+	if !ok {
+		http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "no", http.StatusBadRequest)
+		return
+	}
+	token, confirm := r.PostForm.Get("token"), r.PostForm.Get("confirm")
+	if token == "" {
+		http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
+		return
+	}
+
+	res, err := a.vouch.Leave(t.on(ctx), rstr.VouchLeaveRequest_builder{Token: token, Confirm: confirm}.Build())
+	if err != nil {
+		switch status.Code(err) {
+		case codes.NotFound:
+			http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
+		case codes.InvalidArgument:
+			// The alias, mistyped: the link is unspent, so the page asks again.
+			page(w, http.StatusBadRequest, leaveForm(token, t, status.Convert(err).Message()))
+		case codes.PermissionDenied, codes.FailedPrecondition:
+			page(w, http.StatusForbidden, fmt.Sprintf(notLeft, htmlEscape(status.Convert(err).Message())))
+		default:
+			fmt.Fprintf(os.Stderr, "account: leave at %s: %v\n", t.alias, err)
+			http.Error(w, "the account could not be deleted just now; try the link again", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	forgotten := "Until it is forgotten, whoever runs it can bring it back if you ask them."
+	if f := res.GetDateForgotten(); f != nil {
+		forgotten = fmt.Sprintf("Until %s, when it is forgotten, whoever runs it can bring it back if you ask them; "+
+			"after that, everything held about you is destroyed.", f.AsTime().UTC().Format("2 January 2006"))
+	}
+	page(w, http.StatusOK, fmt.Sprintf(left, htmlEscape(forgotten)))
+}
+
+// page answers one of the plain pages a mailed link ends at, which nothing
+// should keep: not a cache, and not the next site, since the address the page
+// was asked at carries a link that deletes an account.
+func page(w http.ResponseWriter, code int, body string) {
+	w.Header().Set("content-type", "text/html; charset=utf-8")
+	w.Header().Set("cache-control", "no-store")
+	w.Header().Set("referrer-policy", "no-referrer")
+	w.WriteHeader(code)
+	_, _ = io.WriteString(w, body)
+}
+
+// leaveForm is the question the link asks, and `note` what was wrong with the
+// last answer, or nothing.
+func leaveForm(token string, t *tenant, note string) string {
+	if note != "" {
+		note = `<p style="color:#b00">` + htmlEscape(note) + `</p>`
+	}
+
+	return fmt.Sprintf(leaveAsk, htmlEscape(url.Values{"at": {t.id.String()}}.Encode()), htmlEscape(token), note)
+}
+
 // finish is the URL a mailed link finishes at: `Base` if the deployment named
 // one, else this request's own origin.
 //
@@ -1508,6 +1683,30 @@ const confirmed = `<!doctype html><meta charset="utf-8"><title>confirmed</title>
 <h1>Address confirmed</h1>
 <p><code>%s</code> is yours, as of now. Nothing was signed in by this link.</p>
 <p><a href="/">Back to your account</a></p></main>`
+
+// And the three a link that deletes an account ends at: the question, what
+// happened, and why it did not.
+const leaveAsk = `<!doctype html><meta charset="utf-8"><title>delete your account</title>
+<main style="font-family:system-ui;max-width:32rem;margin:3rem auto;padding:0 1rem">
+<h1>Delete your account</h1>
+<p>You will not be able to sign in again, nor to anything that signs you in through this account, and every app that holds a session for you is told. Nothing is destroyed at once: until the account is forgotten, whoever runs it can bring it back if you ask them.</p>
+<form method="post" action="/leave?%s">
+<input type="hidden" name="token" value="%s">
+<p><label>Type your alias, as it is, to confirm <input name="confirm" autocomplete="off" required></label></p>
+%s
+<p><button type="submit">delete my account</button></p>
+</form>
+<p>Did not ask for this, or changed your mind? Close this page: nothing has happened, and the link stops working by itself a few minutes after it was sent. It signs nobody in.</p></main>`
+
+const left = `<!doctype html><meta charset="utf-8"><title>deleted</title>
+<main style="font-family:system-ui;max-width:32rem;margin:3rem auto;padding:0 1rem">
+<h1>Your account is deleted</h1>
+<p>You are signed out everywhere, and every app that held a session for you has been told. %s</p></main>`
+
+const notLeft = `<!doctype html><meta charset="utf-8"><title>not deleted</title>
+<main style="font-family:system-ui;max-width:32rem;margin:3rem auto;padding:0 1rem">
+<h1>Your account is not deleted</h1>
+<p>%s</p></main>`
 
 func bytesEqual(a, b []byte) bool {
 	if len(a) != len(b) {

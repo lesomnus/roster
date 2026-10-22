@@ -558,8 +558,86 @@ func (s *Server) Leave(ctx context.Context, req *app.MeLeaveRequest) (*app.MeLea
 		return nil, status.Error(codes.Unimplemented, "this server cannot write")
 	}
 
+	me, err := s.leaver(ctx, f.Actor)
+	if err != nil {
+		return nil, err
+	}
+
+	since, err := keys.Authenticated(ctx, s.walled, f.Actor)
+	if err != nil {
+		return nil, err
+	}
+	switch ago := time.Since(since); {
+	case since.IsZero():
+		return nil, status.Error(codes.FailedPrecondition,
+			"deleting an account takes a sign-in of yours that says when you proved who you are -- the account page's, "+
+				"or a key a terminal was handed from it -- and this call came with neither: a key somebody else "+
+				"minted for you, or a directory that did not say when it last asked you")
+	case ago > LeaveWithin:
+		return nil, status.Errorf(codes.FailedPrecondition,
+			"you proved who you are %s ago; sign in again to delete your account, within %s of doing so",
+			ago.Truncate(time.Minute), LeaveWithin)
+	}
+
+	if err := meant(me, req.GetConfirm()); err != nil {
+		return nil, err
+	}
+
+	return s.erase(ctx, me)
+}
+
+// MayLeave says whether somebody could leave here, by every rule [Server.Leave]
+// asks that is about them and not about how they proved who they are: their
+// tenant offers it, its directory does not provision them, and no file declares
+// them. What `Vouch.LeaveLink` asks before it mints a link anybody would mail.
+func (s *Server) MayLeave(ctx context.Context, who pdid.Id) error {
+	me, err := s.leaver(ctx, who)
+	if err != nil {
+		return err
+	}
+
+	return declared(me)
+}
+
+// Depart is [Server.Leave] for somebody who proved who they are by something
+// other than the sign-in the call came with -- a link mailed to them, spent by
+// `Vouch.Leave` -- and it is Leave's rules and Leave's erase with that one rule
+// taken out and `proved` put in its place.
+//
+// `ctx` is the person's own, as Leave's is: the erase goes through the stack
+// as them, so it is the erase an operator's is and the trail says who. And
+// `proved` is the proof itself, asked after every rule and before anything is
+// written -- so a refusal, a mistyped alias among them, leaves the proof
+// unspent, and a proof that is spent elsewhere first writes nothing here.
+func (s *Server) Depart(ctx context.Context, confirm string, proved func(context.Context) error) (*app.MeLeaveResponse, error) {
+	f, ok := frame.From(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "who is asking?")
+	}
+	if s.walled == nil {
+		return nil, status.Error(codes.Unimplemented, "this server cannot write")
+	}
+
+	me, err := s.leaver(ctx, f.Actor)
+	if err != nil {
+		return nil, err
+	}
+	if err := meant(me, confirm); err != nil {
+		return nil, err
+	}
+	if err := proved(ctx); err != nil {
+		return nil, err
+	}
+
+	return s.erase(ctx, me)
+}
+
+// leaver is somebody about to leave, read, once their tenant has said it lets
+// them -- the first two of [Server.Leave]'s rules, which are about the person
+// and their tenant and not about the call.
+func (s *Server) leaver(ctx context.Context, who pdid.Id) (*ent.Holder, error) {
 	me, err := s.db.Holder.Query().
-		Where(holder.IdEQ(f.Actor.Uuid()), holder.DateErasedIsNil()).
+		Where(holder.IdEQ(who.Uuid()), holder.DateErasedIsNil()).
 		WithTenant().
 		Only(ctx)
 	if err != nil {
@@ -590,35 +668,37 @@ func (s *Server) Leave(ctx context.Context, req *app.MeLeaveRequest) (*app.MeLea
 			"your organisation's directory keeps your account, through %s, and says when you leave; whoever runs it can", by)
 	}
 
-	since, err := keys.Authenticated(ctx, s.walled, f.Actor)
-	if err != nil {
-		return nil, err
-	}
-	switch ago := time.Since(since); {
-	case since.IsZero():
-		return nil, status.Error(codes.FailedPrecondition,
-			"deleting an account takes a sign-in of yours that says when you proved who you are -- the account page's, "+
-				"or a key a terminal was handed from it -- and this call came with neither: a key somebody else "+
-				"minted for you, or a directory that did not say when it last asked you")
-	case ago > LeaveWithin:
-		return nil, status.Errorf(codes.FailedPrecondition,
-			"you proved who you are %s ago; sign in again to delete your account, within %s of doing so",
-			ago.Truncate(time.Minute), LeaveWithin)
+	return me, nil
+}
+
+// meant is the last two of the rules: the alias typed, so that nothing does
+// this by accident, and no file declaring the row.
+func meant(me *ent.Holder, confirm string) error {
+	if confirm != me.Alias {
+		return pderr.Invalidf("confirm", "your alias, %q, as it is: that this is meant", me.Alias)
 	}
 
-	if req.GetConfirm() != me.Alias {
-		return nil, pderr.Invalidf("confirm", "your alias, %q, as it is: that this is meant", me.Alias)
-	}
+	return declared(me)
+}
 
-	// A row a file owns is removed from the file, which is `HolderService.Erase`'s
-	// rule -- asked here first, because this writes twice and the second write
-	// is where the stack would refuse it, after the first had signed it out.
+// declared refuses a row a file owns: it is removed from the file, which is
+// `HolderService.Erase`'s rule -- asked here first, because leaving writes
+// twice and the second write is where the stack would refuse it, after the
+// first had signed it out.
+func declared(me *ent.Holder) error {
 	if by, ok := me.Labels[declaredBy]; ok {
-		return nil, status.Errorf(codes.FailedPrecondition,
+		return status.Errorf(codes.FailedPrecondition,
 			"this account is declared in %s and is removed from there, not here", by)
 	}
 
-	ref := app.HolderRef_builder{Id: f.Actor.Bytes()}.Build()
+	return nil
+}
+
+// erase is what leaving is, once everything has been asked: signed out
+// everywhere, then erased, through the stack and as whoever `ctx` is -- the
+// person themselves.
+func (s *Server) erase(ctx context.Context, me *ent.Holder) (*app.MeLeaveResponse, error) {
+	ref := app.HolderRef_builder{Id: pdid.Id(me.Id).Bytes()}.Build()
 
 	// Void first, so that a restore brings the account back and none of the
 	// sign-ins it had: a delegation lives for minutes, and one an operator's
