@@ -1054,6 +1054,7 @@ audit:
   archive: /var/lib/roster/audit # where a row goes when it leaves
   checkpoints:
     key: /run/secrets/roster-checkpoints.pem  # what signs the archive's account; required with an archive
+    witnesses: ["log:", "store:/var/lib/roster-witness"]  # who hears each checkpoint outside both
   every: 24h                     # how often the policy is applied
   by:
     holder:
@@ -1229,9 +1230,23 @@ the key:
 - **`audit.digest.retired`** is the fingerprints of keys let go, as
   `unheld-key` prints them: what was digested under one is counted, not found.
 
-It does not see a field declared personal or secret, which the digest leaves
-out, and it prints the kinds kept off the trail (`not checked:`) with why, every
-run. What roster itself writes or removes past its servers is on the trail as
+**What a check covers is every field** (payday#115). The digest covers every
+field but the ones declared personal -- a credential's verifier and a sign-in
+binding among them: a keyed MAC of a secret is no copy of it, and no way to test
+a guess at it without the key. A line of the trail is copied to the archive and
+kept for years, past the row and past the person, so it keeps no MAC of what
+is personal; that is **the row's seal**, a MAC of the whole row kept beside it
+in the database alone (`rowseal`), for exactly as long as the row: written in
+the transaction of every write that leaves it, removed with it, and never on the
+trail or in the archive. Its key is derived from `audit.digest.key`, so there
+is nothing more to configure or rotate. A personal field changed past the
+servers **differs**, and so does a row whose seal was taken off; a seal put back
+from an earlier write is **forged**. A person forgotten leaves a seal that says
+so and nothing of what they were, and the check counts the row as **forgotten**
+and vouches for what its digest covers, until the next write seals it again.
+
+It prints the kinds kept off the trail (`not checked:`) with why, every run.
+What roster itself writes or removes past its servers is on the trail as
 that act, so it is no finding: a tenant destroyed and what went with it, a
 person forgotten and their rows, a person brought back, and what the sweeps
 collect -- a session, an attempt, a link, a delegation or a claim past its
@@ -1249,6 +1264,27 @@ with the ones that were (payday#115). Each row is on the trail as the act it is
 forged row and a key not given are not accepted: look at the row of the trail,
 or give the key. A deployment upgrading to this runs it once, for erasures
 recorded before erasures kept a digest.
+
+**Once, after upgrading to a roster with seals.** Every row of a kind with a
+personal field -- a holder, an address, an identity -- was written by a build
+that sealed nothing, and a check counts it **from before seals**: no finding,
+since nothing can be said of what it was, and nothing vouches for its personal
+fields either. `trail rows` says how many, every run, and an acceptance of that
+check is what seals them -- run when it found nothing else, since rows from
+before seals are no finding:
+
+```sh
+roster trail rows                                                   # `1520 row(s) from before seals: ...`, and its digest
+roster trail rows --accept --of sha256:… --why "sealing what was written before seals"
+roster trail rows                                                   # no rows from before seals
+```
+
+Each is on the trail as the act it is, and the acceptance is of what was looked
+at, as every one is: the digest names the rows it seals, and a row changed
+after the check is refused with it. Until it runs, a personal field changed
+past the servers in one of those rows is not found. Nothing else changes on the
+upgrade: a line written before it says which fields its digest covered, and is
+checked over those.
 
 **A database restored from a backup** older than the latest checkpoint has
 numbered fewer checkpoints than the store keeps: `verify` finds it `behind`
@@ -1323,6 +1359,111 @@ left by `prune --discard` and by `purge`, which say how much they kept and go ah
 for everything else. A hold is a tenant's: an operator places one with `roster hold
 place --why … @tenant` (§ "A tenant leaving"), and the trail keeps what it holds of
 that tenant from then until it is lifted.
+
+### Who heard the newest checkpoint
+
+A checkpoint names the one before it, so the chain below the newest is checked.
+The newest itself is known only to the database's count and to the checkpoint
+store, and whoever can write the database and take objects out of the store can
+cut the chain short there: take the newest checkpoints away, wind the count back,
+and the next act numbers past what is left. Nothing in the two says so. A
+**witness** is somewhere neither reaches that heard each checkpoint as it was
+taken (payday#115):
+
+```yaml
+audit:
+  checkpoints:
+    witnesses: ["log:", "store:/var/lib/roster-witness"]
+```
+
+- **`store:<dir>`** keeps every checkpoint it hears, signed as it was, in a
+  directory of its own, and answers a verification. Its worth is where it is: a
+  volume of its own, mounted with credentials neither the database's nor the
+  archive's, and best on storage that refuses deletion -- a `store:` on the disk
+  the archive is on is no witness, since whoever takes checkpoints out of the one
+  takes them out of the other.
+- **`log:`** writes a line for every checkpoint, `trail: a checkpoint, heard`
+  with `k`, `digest` and `prev`, and records the gauge `payday.trail.checkpoint`
+  at its number. It answers nothing: the monitoring outside is the witness, and
+  it is one only with the alerts below on it. It needs no volume, which makes it
+  the one a box with a single disk can name.
+
+A witness that cannot hear stops nothing: the act says so in the log, and the
+next pass tells it again, oldest first, with every checkpoint taken before it
+was named -- a hundred a pass. `serve` and the `trail` commands refuse a scheme
+this binary does not open, a witness named twice, and witnesses with no archive
+to hear. `deploy/` and `compose.yaml` name both, each store on a volume of its
+own; `roster.yaml` names none, because it keeps no archive (it says why).
+
+`verify` asks each witness what it heard last, holds the chain to every one that
+answers, and prints on stderr what each did:
+
+```
+heard by store:/var/lib/roster-witness: checkpoint 41, sha256:…, at 2026-10-22T03:12:09Z
+```
+
+No act takes a checkpoint under a number a witness has heard and the database
+has not numbered, since that is the count wound back and the number about to be
+taken again; an acceptance is numbered past every number a witness heard, and a
+database behind one is accepted only as a restore (`--restored`), as one behind
+the store is. What a verification can find of them, and what to do about each:
+
+- **`unkept` -- "the chain was cut short there"**: a witness heard a checkpoint
+  past the newest the store keeps. Somebody took the newest checkpoints away, or
+  the store or the database came back from an older copy. Look before anything
+  else -- while the database is behind what a witness heard, no act takes a
+  checkpoint, and each says so in its error. If the checkpoint store is on
+  storage that keeps versions, the checkpoints are still there behind a delete
+  marker: recover them and verify again. If the database or the store was
+  restored from a backup and the deployment's own records say so, look at every
+  `lost` and `missing` and accept it as the restore it is -- `--restored` when
+  `verify` says it is the database that is behind. If neither, it is an
+  incident: keep the witness's store and the logs as they are, which are what
+  the chain said, take the credentials that reach the database and the archive
+  away from whoever had them, and accept only once it is understood, saying what
+  happened in `--why`. An `unkept` below the newest is a checkpoint taken out of
+  the middle, and is the same.
+- **`rewritten` -- "heard it as …, and again as …: the count was wound back and
+  the number taken again"**: a witness heard one number as two statements. Every
+  witness was away, or kept from hearing, while the newest checkpoints were
+  taken away and numbered again -- told all of it once it was back, a witness's
+  newest is the deployment's newest, so only the pairs below the head say it.
+  Each pair is a finding of its own until an acceptance takes it in, and an
+  acceptance takes in only the pairs it was shown: one wound back after it is
+  found after it. Find out when the witnesses could not hear (the log says, at
+  every act that told one) and what took the numbers away -- a restore is the
+  answer that needs no incident -- then accept the pairs, naming it.
+  `rewritten` is also a checkpoint the store keeps as other than a witness heard
+  it, which is a checkpoint written over: an incident, as above.
+- **`unheard`**: the newest checkpoint the store keeps is older than
+  `audit.checkpoints.hear_within` (twice `audit.every` when it is empty), and no
+  witness that answers heard it. Either the witnesses cannot hear -- the log says
+  which and why at every act: an unmounted volume, a full disk, credentials gone
+  -- or somebody is keeping them from hearing so that a cut would go unseen.
+  Mend the witness; the next pass tells it everything it missed, and the finding
+  is gone once it has heard the newest. There is nothing to accept. A run before
+  the first checkpoint is heard says a witness heard `nothing yet`, which is no
+  finding.
+- **`forged` -- "witness … answers that it heard it, and its signature is not
+  good"**: what a witness answered is not what the deployment signed, so
+  somebody wrote to the witness. The witness's storage is meant to be written by
+  roster alone: find who else can, take that away, and put the store back from
+  its storage's own versions. Until then the chain is not held to that witness,
+  and the others still are.
+
+**And the alerts, which make `log:` a witness.** Wherever the deployment's logs
+and metrics go (`otel:`, § "What it prints"), alert on two things, and a third
+for a deployment that takes a checkpoint at least every pass:
+
+- the gauge going down -- `payday_trail_checkpoint <
+  max_over_time(payday_trail_checkpoint[30d])`, or that system's spelling of it:
+  a count wound back;
+- the logs holding two lines `trail: a checkpoint, heard` of one `k` with two
+  `digest`s: a number taken again;
+- and the gauge not moving for longer than two passes: a deployment whose
+  witnesses were stopped from hearing.
+
+Without them `log:` tells nobody. `store:` needs none, since `verify` asks it.
 
 ### Who read whose data
 
@@ -1504,7 +1645,10 @@ took, and the trace and span ids when a caller sent some. Health checks are left
 out. That is `otel:` with nothing written in it -- write a `logger` provider there
 and the same records go wherever it says, with traces and metrics beside them
 (`roster config env` for the variables). The trail is not this: the trail is what
-was written and by whom, kept; this is what was asked, as it happens.
+was written and by whom, kept; this is what was asked, as it happens. One thing
+in it is the trail's to be watched for, with a deployment that keeps an archive:
+the checkpoints the `log:` witness tells, and the alerts on them in § "Who heard
+the newest checkpoint".
 
 ## Running more than one
 
@@ -1653,6 +1797,13 @@ password in an environment variable is visible in `docker inspect` and in the
 compose file; this image is a development image and has no `_FILE` variant.
 `ROSTER_ADMIN_*` is *not* that prefix -- that one is roster's own, for the admin
 listener.
+
+The trail in that stack is kept as § "The audit trail" describes: an archive on
+the state volume, signed with a key of the deployment's own that `init` writes
+beside it on the first start -- the entrypoint names it to `serve` and not to
+`init` until it is there -- and heard by `log:` and by a store on a volume of its
+own (§ "Who heard the newest checkpoint"). `roster trail verify`, run in the
+`roster` container, says what the store heard.
 
 ## What is not here
 

@@ -991,6 +991,19 @@ var (
 			},
 		},
 	}
+	// RowsealColumns holds the columns for the "rowseal" table.
+	RowsealColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "sum", Type: field.TypeBytes},
+		{Name: "fields", Type: field.TypeJson, Nullable: true},
+	}
+	// RowsealTable holds the schema information for the "rowseal" table.
+	RowsealTable = &schema.Table{
+		Name:       "rowseal",
+		Columns:    RowsealColumns,
+		PrimaryKey: []*schema.Column{RowsealColumns[0]},
+	}
 	// SessionColumns holds the columns for the "session" table.
 	SessionColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -1267,6 +1280,7 @@ var (
 		NominationTable,
 		OutboxTable,
 		RoleTable,
+		RowsealTable,
 		SessionTable,
 		SiteTable,
 		SitemembershipTable,
@@ -1370,6 +1384,9 @@ func init() {
 	RoleTable.ForeignKeys[1].RefTable = SiteTable
 	RoleTable.Annotation = &entsql.Annotation{
 		Table: "role",
+	}
+	RowsealTable.Annotation = &entsql.Annotation{
+		Table: "rowseal",
 	}
 	SessionTable.ForeignKeys[0].RefTable = HolderTable
 	SessionTable.Annotation = &entsql.Annotation{

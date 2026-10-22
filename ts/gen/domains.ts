@@ -78,6 +78,9 @@ export const OutboxDomain = 4
 /** The domain identifiers of roster.Role carry. */
 export const RoleDomain = 15
 
+/** The domain identifiers of roster.RowSeal carry. */
+export const RowSealDomain = 255
+
 /** The domain identifiers of roster.Session carry. */
 export const SessionDomain = 24
 
@@ -120,6 +123,7 @@ pdid.register("roster.MailDomain", MailDomainDomain, "mail-domain")
 pdid.register("roster.Nomination", NominationDomain, "nomination")
 pdid.register("roster.Outbox", OutboxDomain, "outbox")
 pdid.register("roster.Role", RoleDomain, "role")
+pdid.register("roster.RowSeal", RowSealDomain, "row-seal")
 pdid.register("roster.Session", SessionDomain, "session")
 pdid.register("roster.Site", SiteDomain, "site")
 pdid.register("roster.SiteMembership", SiteMembershipDomain, "site-membership")

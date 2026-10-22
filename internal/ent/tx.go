@@ -56,6 +56,8 @@ type Tx struct {
 	Outbox *OutboxClient
 	// Role is the client for interacting with the Role builders.
 	Role *RoleClient
+	// RowSeal is the client for interacting with the RowSeal builders.
+	RowSeal *RowSealClient
 	// Session is the client for interacting with the Session builders.
 	Session *SessionClient
 	// Site is the client for interacting with the Site builders.
@@ -221,6 +223,7 @@ func (tx *Tx) init() {
 	tx.Nomination = NewNominationClient(tx.config)
 	tx.Outbox = NewOutboxClient(tx.config)
 	tx.Role = NewRoleClient(tx.config)
+	tx.RowSeal = NewRowSealClient(tx.config)
 	tx.Session = NewSessionClient(tx.config)
 	tx.Site = NewSiteClient(tx.config)
 	tx.SiteMembership = NewSiteMembershipClient(tx.config)

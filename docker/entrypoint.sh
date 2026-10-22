@@ -59,15 +59,35 @@ if [ ! -e "${seeded}" ]; then
 		echo "roster: the operator's password is the default. this is a development image." >&2
 	fi
 
+	# The trail's archive is kept with a key of this deployment's own
+	# (payday#115), and a first start has none: `init` writes one beside the
+	# archive when the archive is named and no key is, and says where. So a
+	# key that is named and not there yet -- the one `compose.yaml` names,
+	# which is where `init` writes it -- is not named to `init`. A key that
+	# is there is handed over as it is, and `init` never writes over one.
+	unnamed=""
+	if [ -n "${ROSTER_AUDIT_ARCHIVE:-}" ] && [ -n "${ROSTER_AUDIT_CHECKPOINTS_KEY:-}" ] \
+		&& [ ! -e "${ROSTER_AUDIT_CHECKPOINTS_KEY}" ]; then
+		unnamed="-u ROSTER_AUDIT_CHECKPOINTS_KEY"
+	fi
+
 	# On a pipe, so it is in neither the process list nor the history. `init`
 	# refuses an empty one rather than falling back to generating, because a
 	# container that meant to set a password and did not is one whose operator
 	# cannot sign in and does not know why.
 	# `env -u`, because the binary warns about every ROSTER_* it does not
-	# read, and these two are this script's rather than its.
-	printf '%s' "${ROSTER_ROOT_PASSWORD}" | env -u ROSTER_ROOT_USER -u ROSTER_ROOT_PASSWORD roster init \
+	# read, and these two are this script's rather than its. `unnamed` is
+	# unquoted on purpose: a flag and its argument, or nothing at all.
+	printf '%s' "${ROSTER_ROOT_PASSWORD}" | env -u ROSTER_ROOT_USER -u ROSTER_ROOT_PASSWORD ${unnamed} roster init \
 		--operator "${ROSTER_ROOT_USER}" \
 		--password-stdin
+
+	# And the key it wrote is the one named, or `serve` would be refused for
+	# want of it with nothing here to say why.
+	if [ -n "${unnamed}" ] && [ ! -e "${ROSTER_AUDIT_CHECKPOINTS_KEY}" ]; then
+		echo "roster: init wrote the trail's key somewhere other than ROSTER_AUDIT_CHECKPOINTS_KEY (${ROSTER_AUDIT_CHECKPOINTS_KEY}); name the one it printed" >&2
+		exit 1
+	fi
 
 	# After it succeeded, so a failed seed is retried rather than skipped
 	# forever.

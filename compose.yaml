@@ -147,6 +147,26 @@ services:
       # Wraps authenticator-app seeds at rest. A key in a compose file is a
       # development key; a deployment writes its own, see `vouch.keys`.
       ROSTER_VOUCH_KEYS: '["dev:XfYoVszmos0DoMNUOSy1vJfaOLVOrq7x6QiNlqRr0G8="]'
+
+      # The trail, kept: past its window a row leaves the database for the
+      # archive, whose account is signed and checkpointed, and every checkpoint
+      # is heard outside both (payday#115) -- `docs/operating.md` § "The audit
+      # trail", brought up from nothing on every `scripts/hydra.sh` run. The
+      # window is a desk's, and a starting point.
+      ROSTER_AUDIT_PROFILE: pipa
+      ROSTER_AUDIT_ARCHIVE: /var/lib/roster/audit
+      # The key the archive's account is signed with, which is this
+      # deployment's own: `init` writes it beside the archive on the first
+      # start, and `docker/entrypoint.sh` does not name it to `init` until it is
+      # there. Not one written into this file, as the vouch key above is -- a
+      # signing key everybody can read signs forgeries for anybody, which is
+      # why payday has none to fall back on.
+      ROSTER_AUDIT_CHECKPOINTS_KEY: /var/lib/roster/audit-checkpoints.pem
+      # Who hears every checkpoint outside the database and the archive: the
+      # log and its gauge, and a store on a volume of its own. The log is a
+      # witness only with the alerts on it that `docs/operating.md` gives,
+      # which a desk has none of; the store answers a verification.
+      ROSTER_AUDIT_CHECKPOINTS_WITNESSES: '["log:", "store:/var/lib/roster-witness"]'
     # Every port, including the two only a console should reach; each is a
     # line that would have to change for a deployment, and none is hidden.
     ports:
@@ -163,6 +183,9 @@ services:
       retries: 30
     volumes:
       - state:/var/lib/roster
+      # What the trail's witness heard, on a volume of its own rather than
+      # beside the archive: a witness is worth what it is apart from.
+      - witness:/var/lib/roster-witness
 
   # The first customer, once: a tenant, a person with a password, the host the
   # account app answers on, and the app's key. Reads the databases directly, as
@@ -582,4 +605,5 @@ services:
 volumes:
   postgres:
   state:
+  witness:
   account:
