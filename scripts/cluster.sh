@@ -437,11 +437,15 @@ case "${imported}" in
 esac
 
 cp -r deploy "${work}/deploy"
-# The rig runs what was just built rather than what is published.
+# The rig runs what was just built rather than what is published -- and with the
+# trail kept, the component a deployment turns on in its own overlay
+# (`deploy/README.md`), so that what its witness heard is asked below.
 cat >> "${work}/deploy/kustomization.yaml" <<EOF
 
 # Appended by scripts/cluster.sh.
 patches: []
+components:
+  - ./trail
 EOF
 python3 - "${work}/deploy/kustomization.yaml" "roster-cluster:${CLUSTER}" <<'PY'
 import sys
@@ -499,9 +503,9 @@ docker run --rm --entrypoint sh -v "${vol}:/w" alpine/openssl:3.3.2 -c '
 	mkdir -p /w/tls && cp roster-hydra.crt roster-hydra.key roster-product.crt roster-product.key \
 		roster-edge.crt roster-edge.key ca.crt /w/tls/
 
-	# And the key the trail signs its archive with, which `deploy/` names and
-	# ships no more than any other: made here for the same reason, and the way
-	# `docs/operating.md` says a deployment makes its own.
+	# And the key the trail signs its archive with, which `deploy/trail/` names
+	# and ships no more than any other: made here for the same reason, and the
+	# way `docs/operating.md` says a deployment makes its own.
 	openssl genpkey -algorithm ed25519 -out /w/tls/checkpoints.pem >/dev/null 2>&1
 ' >/dev/null
 
@@ -570,7 +574,7 @@ kube "kubectl -n ${NS} logs deploy/roster --tail=200 | grep -E 'login - addr'" \
 # **And who heard the trail's newest checkpoint** (payday#115).
 #
 # Every start runs a pass, the pass ends in a checkpoint, and the checkpoint is
-# told to the witnesses `deploy/config.yaml` names -- so by now one has been at
+# told to the witnesses `deploy/trail/` names -- so by now one has been at
 # least, and `store:` kept it on its own claim. Asked of a
 # verification inside the pod, because that is the one thing that says all
 # three of what only a running deployment can: that the witness is linked into

@@ -1,0 +1,65 @@
+# What roster is told to keep, and where. Through the environment rather than
+# `config.yaml`, because a component cannot add to a file inside a ConfigMap
+# -- and the environment wins over the file, so an overlay that includes this
+# and wants another window or witness patches these variables rather than its
+# `config.yaml`. A strategic merge: `env`, `volumeMounts` and `volumes` merge by
+# name, so the base's are inherited and these are added.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roster
+spec:
+  template:
+    spec:
+      initContainers:
+        # The settings and the key, because what this runs builds the server,
+        # and the server refuses an archive it has no key for. Not the archive
+        # or the witness: nothing here writes either.
+        - name: provision
+          env:
+            # A window is a starting point and the deployment's to decide; it
+            # is written so that the shape is, and so that the pass every start
+            # runs ends in a checkpoint the witnesses below hear.
+            - { name: ROSTER_AUDIT_PROFILE, value: pipa }
+            - { name: ROSTER_AUDIT_ARCHIVE, value: /audit }
+            # From the Secret `roster-checkpoints`, which nothing here ships, as
+            # nothing ships any other: the rig makes its own, and a deployment
+            # brings its own under that name (`openssl genpkey -algorithm
+            # ed25519`, as `key.pem`).
+            - { name: ROSTER_AUDIT_CHECKPOINTS_KEY, value: /run/checkpoints/key.pem }
+            # Where the newest checkpoint is heard outside the database and the
+            # archive, so that whoever can write both cannot cut the chain short
+            # at its head without something they do not hold saying so. `log:`
+            # is the log and the gauge `payday.trail.checkpoint`, a witness only
+            # with the alerts on it that `docs/operating.md` § "Who heard the
+            # newest checkpoint" gives; `store:` keeps what it hears on a claim
+            # of its own, `roster-witness`, which a deployment puts on storage
+            # that refuses deletion and mounts with credentials neither the
+            # database's nor the archive's.
+            - { name: ROSTER_AUDIT_CHECKPOINTS_WITNESSES, value: '["log:", "store:/witness"]' }
+          volumeMounts:
+            - { name: checkpoints, mountPath: /run/checkpoints, readOnly: true }
+      containers:
+        # The same four, written out again rather than by a YAML alias, which
+        # not every kustomize a deployment runs expands.
+        - name: roster
+          env:
+            - { name: ROSTER_AUDIT_PROFILE, value: pipa }
+            - { name: ROSTER_AUDIT_ARCHIVE, value: /audit }
+            - { name: ROSTER_AUDIT_CHECKPOINTS_KEY, value: /run/checkpoints/key.pem }
+            - { name: ROSTER_AUDIT_CHECKPOINTS_WITNESSES, value: '["log:", "store:/witness"]' }
+          volumeMounts:
+            - { name: audit, mountPath: /audit }
+            - { name: witness, mountPath: /witness }
+            - { name: checkpoints, mountPath: /run/checkpoints, readOnly: true }
+      volumes:
+        - name: audit
+          persistentVolumeClaim: { claimName: roster-audit }
+        - name: witness
+          persistentVolumeClaim: { claimName: roster-witness }
+        # The key the archive's account and its checkpoints are signed with.
+        # **Optional**, so that a deployment that forgets the Secret is refused
+        # where the process comes up, told how to make a key, rather than left
+        # with a pod that waits for a volume. Readable by the pod's group alone.
+        - name: checkpoints
+          secret: { secretName: roster-checkpoints, optional: true, defaultMode: 0440 }

@@ -77,7 +77,7 @@ What an overlay is expected to bring, and what it should leave alone:
 
 | | |
 | --- | --- |
-| its own | hosts, secrets (`roster-checkpoints` among them, `key.pem`, for a `config.yaml` that keeps an archive), storage class, image digests, the products it actually runs, and `config.yaml` -- by a `configMapGenerator` for `roster` with `behavior: replace` |
+| its own | hosts, secrets (`roster-checkpoints` among them, `key.pem`, with the `trail` component), storage class, image digests, the products it actually runs, whether it keeps the trail's archive (below), and `config.yaml` -- by a `configMapGenerator` for `roster` with `behavior: replace` |
 | the base's | what a client has to be registered with, which `URLS_*` Hydra needs, that the clients are applied and then **checked** -- the four things that were wrong when they were written twice |
 
 The piece of the rig that a deployment does not want is `product.yaml`, there to
@@ -98,26 +98,44 @@ worked example of everything on this list except the secrets.
 
 ## The trail, kept and heard
 
-`config.yaml` keeps the trail the way `docs/operating.md` § "The audit trail"
-says to: past its window a row leaves the database for an archive on a claim of
-its own (`roster-audit`), the archive's account is signed with the key in
-`roster-checkpoints`, and every checkpoint is heard outside the database and the
-archive (payday#115) -- by the log, and by a store on a claim of its own,
-`roster-witness`. A witness is worth what it is apart from, so the two claims
-are separate from `roster-data` and from each other, and a deployment puts the
+The base keeps the trail in the database, for as long as the database is: no
+window, so nothing leaves it and there is no archive to keep. Keeping it the way
+`docs/operating.md` § "The audit trail" says to is the component `trail/`, which
+a deployment turns on in its own overlay:
+
+```yaml
+resources:
+  - github.com/lesomnus/roster//deploy?ref=<a commit>
+components:
+  - github.com/lesomnus/roster//deploy/trail?ref=<the same commit>
+```
+
+With it, past its window a row leaves the database for an archive on a claim of
+its own (`roster-audit`), the archive's account is signed with the key in the
+Secret `roster-checkpoints` (`key.pem`, which the overlay brings: `openssl
+genpkey -algorithm ed25519`), and every checkpoint is heard outside the database
+and the archive (payday#115) -- by the log, and by a store on a claim of its own,
+`roster-witness`. A witness is worth what it is apart from, so the two claims are
+separate from `roster-data` and from each other, and a deployment puts the
 witness on storage that refuses deletion, mounted with credentials neither the
-database's nor the archive's.
+database's nor the archive's. The component says what it keeps through roster's
+environment -- `ROSTER_AUDIT_PROFILE`, `ROSTER_AUDIT_ARCHIVE`,
+`ROSTER_AUDIT_CHECKPOINTS_KEY` and `ROSTER_AUDIT_CHECKPOINTS_WITNESSES` -- which
+wins over `config.yaml`, so another window or witness is a patch of those
+variables. Forgetting the Secret is a refusal in
+roster's log where the process comes up, told how to make a key, rather than a
+pod that waits.
 
-`scripts/cluster.sh` asks a verification inside the pod what the store heard,
-because a witness that cannot hear stops nothing -- so whether it is linked,
-whether the pod's user can write its claim, and whether the chain is held to it
-are each something only a running deployment can say, and nothing else in the rig
-would go red for them.
+A component and not the base, because what it brings is storage a deployment
+chooses: an overlay that inherited the two claims and did not keep an archive
+carried two empty volumes for nothing.
 
-An overlay whose own `config.yaml` keeps no archive needs no key: the Secret's
-mount is optional. The two claims it inherits are made and stay empty; taking
-them out is a `$patch: delete` of each and of the volume in `roster.yaml` that
-names it.
+`scripts/cluster.sh` includes it, and asks a verification inside the pod what
+the store heard, because a witness that cannot hear stops nothing -- so whether
+it is linked, whether the pod's user can write its claim, and whether the chain
+is held to it are each something only a running deployment can say, and nothing
+else in the rig would go red for them. `compose.yaml` keeps the trail the same
+way, and `scripts/hydra.sh` asks it the same.
 
 ## TLS, and the `--dev` that is not here
 
