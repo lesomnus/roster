@@ -485,13 +485,19 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 func Locking(db *ent.Client) core.Lock {
 	return func(ctx context.Context, drv dialect.Driver, who pdid.Id) error {
 		// On the driver it is handed, which is the transaction `server/core`
-		// opened. A write on the client this was built from would be a write
-		// outside it, and then there is nothing to contend for.
+		// opened or was rebuilt on. A write on the client this was built from
+		// would be a write outside it, and then there is nothing to contend
+		// for.
+		//
+		// Into a client of this call's own, and not into `db`: that is the
+		// variable every call shares, and writing it made the next call's
+		// lock -- or a concurrent one's -- land on this call's transaction.
+		c := db
 		if drv != nil {
-			db = ent.NewClient(ent.Driver(drv))
+			c = ent.NewClient(ent.Driver(drv))
 		}
 
-		n, err := db.Holder.Update().
+		n, err := c.Holder.Update().
 			Where(holder.IdEQ(who.Uuid())).
 			SetDateUpdated(time.Now()).
 			Save(ctx)
@@ -547,14 +553,16 @@ func Releasing(db *ent.Client) core.Releasing {
 	return func(ctx context.Context, drv dialect.Driver, name string) error {
 		// On the driver it is handed, which is the transaction `server/core`
 		// opened, for `Locking`'s reason: a write outside it could not be undone
-		// with the rest.
+		// with the rest -- and into a client of this call's own, for the other
+		// half of `Locking`'s.
+		c := db
 		if drv != nil {
-			db = ent.NewClient(ent.Driver(drv))
+			c = ent.NewClient(ent.Driver(drv))
 		}
 
 		// Not an error when nothing holds it. Taking a free name is the ordinary
 		// case, and refusing here would make the caller read first.
-		_, err := db.Host.Update().
+		_, err := c.Host.Update().
 			Where(host.NameEQ(name), host.DateErasedIsNil()).
 			SetDateErased(time.Now()).
 			Save(ctx)

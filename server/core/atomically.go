@@ -17,8 +17,8 @@ import (
 //
 // Its own transaction where this stack has a driver to begin one on
 // ([Core.drv]), with `fn` handed the server rebound onto it. And where the
-// stack is itself running on somebody else's -- a batch ([Core.rebound]) --
-// `fn` runs in that one, on the server this layer is over: a transaction begun
+// stack is itself running on somebody else's -- a batch ([Core.tx]) -- `fn`
+// runs in that one, on the server this layer is over: a transaction begun
 // inside it would be a second one, and refusing, which this did, made the rule
 // one that no batch could carry.
 //
@@ -27,7 +27,7 @@ import (
 // will not do.
 func (s Core) atomically(ctx context.Context, what string, fn func(next app.Server) error) error {
 	if s.drv == nil {
-		if !s.rebound {
+		if s.tx == nil {
 			return status.Errorf(codes.FailedPrecondition, "this server cannot open a transaction, so it will not %s", what)
 		}
 

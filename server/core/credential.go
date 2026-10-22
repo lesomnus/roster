@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/z"
+	"github.com/protobuf-orm/ent/dialect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -388,11 +389,11 @@ func (s coreCredential) Issue(ctx context.Context, req *app.CredentialIssueReque
 		return nil, status.Error(codes.Internal, "a secret cannot be made just now")
 	}
 
-	if err := s.only(ctx, ref.GetId(), func(next app.Server) error {
+	if err := s.only(ctx, ref.GetId(), func(next app.Server, tx dialect.Driver) error {
 		// This layer again over the transaction's server, so `Set`'s rules run
 		// inside it rather than beside it. `Next()` alone would be the bare
 		// server, where a credential write has no rules at all.
-		in := s.over(next)
+		in := s.over(next, tx)
 		if _, err := (coreCredential{in, next.Credential()}).Set(ctx, app.CredentialSetRequest_builder{
 			Ref:    ref,
 			Kind:   kind,
@@ -697,7 +698,7 @@ func (s coreCredential) Erase(ctx context.Context, req *app.CredentialRef) (*app
 	}
 
 	var out *app.CredentialEraseResponse
-	err = s.only(ctx, v.GetHolder().GetId(), func(next app.Server) error {
+	err = s.only(ctx, v.GetHolder().GetId(), func(next app.Server, _ dialect.Driver) error {
 		if vouch.Begins(v.GetKind()) {
 			if err := notTheirLastCredential(ctx, next, v.GetHolder().GetId(), v.GetId()); err != nil {
 				return err

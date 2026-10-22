@@ -56,13 +56,15 @@ type Core struct {
 	// what it does inside a batch.
 	drv dialect.Driver
 
-	// rebound is whether this stack runs on a transaction somebody else opened:
-	// a batch, or anything payday puts several writes of into one
-	// ([Core.WithDriver]). It has no driver then, and a rule that writes more
-	// than once makes its writes in what it was handed rather than refusing for
-	// want of one -- which is how such a rule tells this apart from a stack
-	// built without a driver at all ([Core.atomically]).
-	rebound bool
+	// tx is the transaction this stack runs on when somebody else opened it: a
+	// batch, or anything payday puts several writes of into one
+	// ([Core.WithDriver]), or a rule of this layer's own that began one ([over]).
+	// It has no driver then, and a rule that writes more than once makes its
+	// writes in this one rather than refusing for want of one -- which is how
+	// such a rule tells it apart from a stack built without a driver at all
+	// ([Core.atomically]) -- and the write `only` contends on is made on it
+	// ([Core.only]).
+	tx dialect.Driver
 
 	// breached answers whether a secret is one somebody has already lost, when
 	// the deployment has a corpus. It is the same question `server/vouch` asks,
@@ -361,28 +363,32 @@ func (s Core) WithDriver(drv dialect.Driver) (app.Server, error) {
 
 	// The driver is **not** carried over: this stack is being rebound onto a
 	// transaction somebody else opened, and a rule that began its own inside
-	// that one would be a transaction nested in a transaction. Nil is how
-	// [Core.only] is told the caller has already arranged one, and `rebound`
-	// is how [Core.atomically] is.
+	// that one would be a transaction nested in a transaction. What it is told
+	// instead is that transaction ([Core.tx]).
 	//
-	// The corpus and the keyring **are**, for the reason `Rules` is: a
-	// `Credential.Set` or `Enrol` made inside a batch is still a write that must
-	// refuse a leaked secret and must wrap a seed with the deployment's key.
-	// Dropped, a rebuilt stack would accept a breached password and refuse every
-	// second factor the moment two writes shared a transaction.
-	in := s.over(next)
-	in.rebound = true
-
-	return in, nil
+	// Everything else is, because the rebuilt stack is the same stack: a
+	// `Credential.Set` inside a batch still refuses a leaked secret and wraps a
+	// seed with the deployment's key, a `Tenant.Restore` still keeps its grace,
+	// and `only` still takes its lock. See [over].
+	return s.over(next, drv), nil
 }
 
-// over is this layer again, over a server somebody else has already rebound.
+// over is this layer again, over a server rebound onto the transaction `tx`.
 //
-// The list of what carries over is [Core.WithDriver]'s and was written out
-// twice for a while, which is one option added in one place away from a stack
-// that quietly stops refusing leaked passwords inside a transaction. A rule
-// that has to be remembered in two places is a rule with a half-life.
-func (s Core) over(next app.Server) Core {
-	return New(next, s.rules, WithBreached(s.breached), WithKeyring(s.keyring), WithPrefix(s.prefix),
-		WithLockout(s.lockout), WithPassword(s.password), WithProving(s.proving))
+// A copy of this one with the server and the driver swapped, and not a list of
+// what to carry. The list was written out twice for a while, which is one
+// option added in one place away from a stack that quietly stops refusing
+// leaked passwords inside a transaction -- and then it was written once and
+// still fell behind the options: the restore grace, the lock `only` takes and
+// whether everybody at the port is an operator stayed behind, so a batch could
+// restore a tenant whose grace had run out, two batches each removed one of
+// somebody's last two ways in, and the admin port's operators were nobody in
+// particular inside a transaction. A copy carries what is added next.
+func (s Core) over(next app.Server, tx dialect.Driver) Core {
+	in := s
+	in.Overlay = app.NewOverlay(next)
+	in.drv = nil
+	in.tx = tx
+
+	return in
 }

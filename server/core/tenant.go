@@ -389,7 +389,7 @@ func (s coreTenant) Add(ctx context.Context, req *app.TenantAddRequest) (*app.Te
 	if err != nil {
 		return nil, err
 	}
-	if err := run(s.over(next), next.Tenant()); err != nil {
+	if err := run(s.over(next, drv), next.Tenant()); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {
