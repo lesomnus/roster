@@ -5,13 +5,13 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 // deletes it. The mailbox is Mailpit's (`scripts/e2e.sh`), read through its
 // API the way a person reads theirs -- by the one link in the message.
 //
-// frank of fabrikam, in order: his address confirmed, which the link that
+// frank of tailspin, in order: his address confirmed, which the link that
 // deletes his account needs; then his password recovered; then his account
 // deleted, which is why he is nobody another spec signs in as.
 
-const base = process.env['E2E_FABRIKAM'] ?? 'http://127.0.0.1:18090'
+const base = process.env['E2E_TAILSPIN'] ?? 'http://127.0.0.1:18090'
 const mailpit = process.env['E2E_MAILPIT']
-const address = 'frank@fabrikam.example'
+const address = 'frank@tailspin.example'
 let password = process.env['E2E_FRANK_PASSWORD'] ?? ''
 
 test.describe.configure({ mode: 'serial' })
@@ -37,7 +37,7 @@ async function linkIn(request: APIRequestContext, to: string, subject: string): 
 		.not.toBe('')
 
 	const m = (await (await request.get(`${mailpit}/api/v1/message/${id}`)).json()) as Read
-	expect(m.From).toEqual({ Name: 'Fabrikam', Address: 'no-reply@fabrikam.example' })
+	expect(m.From).toEqual({ Name: 'Tailspin', Address: 'no-reply@tailspin.example' })
 	const links = m.Text.match(/https?:\/\/\S+/g) ?? []
 	expect(links, 'the message has more to follow than its link, or nothing').toHaveLength(1)
 	await request.delete(`${mailpit}/api/v1/messages`, { data: { IDs: [id] } })
@@ -56,7 +56,10 @@ async function signIn(page: Page): Promise<void> {
 test('a link confirms an address of his', async ({ page, request }) => {
 	await signIn(page)
 	const row = page.locator('section', { has: page.getByRole('heading', { name: 'addresses' }) }).locator('tr', { hasText: address })
+	const asked = page.waitForResponse((r) => r.url().endsWith('/verify'))
 	await row.locator('button', { hasText: 'confirm' }).click()
+	const res = await asked
+	expect(res.status(), `/verify answered ${res.status()}: ${await res.text()}`).toBe(202)
 	await expect(page.locator('.note', { hasText: `a link is on its way to ${address}` })).toBeVisible()
 
 	const link = await linkIn(request, address, 'Confirm your address')
@@ -72,7 +75,10 @@ test('a link recovers his account, with a password shown once', async ({ page, r
 	await page.goto(base)
 	await page.locator('button', { hasText: 'forgot?' }).click()
 	await page.locator('input[name=address]').fill(address)
+	const asked = page.waitForResponse((r) => r.url().endsWith('/recover'))
 	await page.locator('button', { hasText: 'send a link' }).click()
+	const res = await asked
+	expect(res.status(), `/recover answered ${res.status()}: ${await res.text()}`).toBe(202)
 	await expect(page.locator('.note', { hasText: 'if that address is here, a link is on its way' })).toBeVisible()
 
 	const link = await linkIn(request, address, 'Recover your account')
@@ -91,7 +97,7 @@ test('a link deletes his account, once he types who he is', async ({ page, reque
 	// them (`account/account.go`, `leaveLink`); a password says, so the page
 	// asks for it instead, and the link is asked for here as it would be.
 	const res = await page.request.post(`${base}/leave/link`, { data: { address } })
-	expect(res.status()).toBe(202)
+	expect(res.status(), `/leave/link answered ${res.status()}: ${await res.text()}`).toBe(202)
 
 	const link = await linkIn(request, address, 'Delete your account')
 	expect(link).toContain('/leave?')

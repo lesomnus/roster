@@ -111,9 +111,10 @@ func TestAMailThatFailsLeavesNoLinkInTheLog(t *testing.T) {
 		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
 	x.Equal(http.StatusBadGateway, code)
 
+	x.Eventually(func() bool { return strings.Contains(log(), "account: mail to …@contoso.com") }, 5*time.Second, 20*time.Millisecond,
+		"a confirmation that could not be sent was not logged")
 	got := log()
 	x.Contains(got, "account: mail to …@fabrikam.com")
-	x.Contains(got, "account: mail to …@contoso.com")
 	for _, leak := range []string{"bob@", "erin@contoso.com", "token=", "rl_", "/redeem", "/confirm", "://"} {
 		x.NotContains(got, leak, "the log carries what it must not:\n%s", got)
 	}

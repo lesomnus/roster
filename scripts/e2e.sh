@@ -87,13 +87,14 @@ export E2E_TENANT_ADMIN_PASSWORD="contoso-$(head -c 12 /dev/urandom | base64 | t
 # nothing of the first (`user.spec.ts`). Nobody else signs in as her.
 export E2E_GRACE_PASSWORD="grace-$(head -c 12 /dev/urandom | base64 | tr -d '/+=')"
 admin_http="http://127.0.0.1:18072"
-# fabrikam, whose person the mail spec walks through what the account app
+# tailspin, whose person the mail spec walks through what the account app
 # mails: a link that confirms an address, one that recovers the account, one
 # that deletes it. A tenant of its own, at an address of its own (the account
 # app answers whichever tenant the name a browser arrived at is), so that the
-# account it deletes is nobody another spec signs in as.
-export E2E_FABRIKAM="http://127.0.0.1:18090"
-export E2E_FRANK_PASSWORD="fabrikam-$(head -c 12 /dev/urandom | base64 | tr -d '/+=')"
+# account it deletes is nobody another spec signs in as -- and not fabrikam,
+# which the console spec stands up itself.
+export E2E_TAILSPIN="http://127.0.0.1:18090"
+export E2E_FRANK_PASSWORD="tailspin-$(head -c 12 /dev/urandom | base64 | tr -d '/+=')"
 
 # A mailbox for what the account app sends: Mailpit, which takes any message
 # on its SMTP port and answers what it holds on its API, as a person reads
@@ -159,7 +160,7 @@ if [ -n "${E2E_MAILPIT:-}" ]; then
 account:
   mail:
     addr: 127.0.0.1:18025
-    from: "Fabrikam <no-reply@fabrikam.example>"
+    from: "Tailspin <no-reply@tailspin.example>"
     tls: none
 YAML
 fi
@@ -182,17 +183,24 @@ r holder add @contoso/grace >/dev/null
 echo "${E2E_GRACE_PASSWORD}" | r vouch set --password-stdin @contoso/grace >/dev/null
 r host add '{"tenant":{"alias":"contoso"},"name":"localhost"}' >/dev/null
 
-# fabrikam: frank, with a password, the role the tenant arrived with, and an
-# address nobody has confirmed yet -- and a tenant that lets its people leave,
-# which is what a link that deletes an account is for. Before the account app
-# is provisioned, which reaches every tenant with a name.
-r tenant add @fabrikam '{"name":"Fabrikam","config":{"leave":true}}' >/dev/null
-r holder add @fabrikam/frank >/dev/null
-echo '{"role":{"slug":{"alias":"everything","tenant":{"alias":"fabrikam"}}},"holder":{"slug":{"alias":"frank","tenant":{"alias":"fabrikam"}}}}' \
+# tailspin: frank, with a password and an address nobody has confirmed yet --
+# and a tenant that lets its people leave, which is what a link that deletes an
+# account is for. Before the account app is provisioned, which reaches every
+# tenant with a name.
+#
+# frank holds a role of his own, the calls his page makes about his
+# addresses, and not the `everything` the tenant arrived with: what the app
+# does for him as itself -- a link minted for his address, a password handed
+# over, his account deleted -- is writing a way into him, which is held to his
+# permissions being within the app's (`mayReach`), and `everything` is not.
+r tenant add @tailspin '{"name":"Tailspin","config":{"leave":true}}' >/dev/null
+r holder add @tailspin/frank >/dev/null
+r role add '{"tenant":{"alias":"tailspin"},"alias":"self","methods":["/roster.EmailService/List","/roster.EmailService/Get","/roster.EmailService/Add","/roster.EmailService/Verify"]}' >/dev/null
+echo '{"role":{"slug":{"alias":"self","tenant":{"alias":"tailspin"}}},"holder":{"slug":{"alias":"frank","tenant":{"alias":"tailspin"}}}}' \
 	| r binding add - >/dev/null
-echo "${E2E_FRANK_PASSWORD}" | r vouch set --password-stdin @fabrikam/frank >/dev/null 2>&1
-r email add '{"holder":{"slug":{"alias":"frank","tenant":{"alias":"fabrikam"}}},"address":"frank@fabrikam.example"}' >/dev/null
-r host add '{"tenant":{"alias":"fabrikam"},"name":"127.0.0.1"}' >/dev/null
+echo "${E2E_FRANK_PASSWORD}" | r vouch set --password-stdin @tailspin/frank >/dev/null 2>&1
+r email add '{"holder":{"slug":{"alias":"frank","tenant":{"alias":"tailspin"}}},"address":"frank@tailspin.example"}' >/dev/null
+r host add '{"tenant":{"alias":"tailspin"},"name":"127.0.0.1"}' >/dev/null
 
 # Two directories, and erin arrived through one of them.
 #
