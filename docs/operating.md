@@ -530,9 +530,10 @@ and unlimited it would be a stranger filling somebody's mailbox from your
 address -- and your provider suspending the account for the complaints. So:
 
 - **An address** is sent three of one kind -- recovery, confirmation, deletion --
-  and then one every twenty minutes. A link lasts fifteen, so that is a fresh one
-  about as often as the last runs out, and three is somebody asking again while
-  the first is slow to arrive.
+  and then one every twenty minutes, counted for each person signed in who asks,
+  and for the recovery form by the address alone. A link lasts fifteen, so that
+  is a fresh one about as often as the last runs out, and three is somebody
+  asking again while the first is slow to arrive.
 - **A person signed in** may have five sent, of every kind together, and then one
   every ten minutes: enough to confirm a few addresses and ask again, and the
   limit that holds one account, since `/verify` mails whatever address somebody
@@ -542,10 +543,16 @@ address -- and your provider suspending the account for the complaints. So:
   well under a second; a server that stops answering then holds eight
   connections, not one per request.
 
-What is counted is a message that went, never a request refused before one
-would, so nobody spends another's allowance by asking about their address; and
-the recovery form counts only what it sends, to an address somebody proved. It
-answers 202 whatever the limits did, so a message held back there is the log's
+Per person, because shared it could be held spent: somebody who wrote another's
+address onto their own row and asked for its confirmation every twenty minutes
+would keep its owner from ever being sent the confirmation that claims it back.
+What one person has sent an address spends nothing of what another may send it,
+and the person's own allowance is what bounds them. The recovery form has nobody
+to count by, so a stranger there can spend an address's allowance -- with links
+sent to its owner, which work for them. What is counted is a message that went,
+never a request refused before one would, and the recovery form counts only what
+it sends, so a stranger typing addresses adds nothing. It answers 202 whatever
+the limits did, so a message held back there is the log's
 (`not sent, its recovery messages are spent`). Confirming, claiming and the
 deletion link are asked for by somebody signed in, and answer them 429 with
 `Retry-After`, or 503 when eight are already on their way (`dropped`, in the
