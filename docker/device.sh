@@ -40,7 +40,7 @@ set -eu
 . "$(dirname "$0")/dial.sh"
 
 : "${ISSUER:=http://hydra.test:4444}"
-: "${LOGIN:=http://login:8091}"
+: "${LOGIN:=http://login.test:8091}"
 : "${SEED_USER:=erin}"
 : "${SEED_PASSWORD:=correct horse battery staple}"
 # The public client with no secret, registered by `compose.yaml`. Its
@@ -142,8 +142,8 @@ cookie=$(printf '%s' "${head}" | awk '/^[Ss]et-[Cc]ookie:/{print $2}' | sed 's/;
 [ -n "${cookie}" ] || die "the password was not accepted; a device flow resolved no tenant"
 step "${SEED_USER} types the password" "$(printf '%s' "${head}" | code), ${cookie%%=*}"
 
-# The jar carries that cookie, as `docker/flow.sh` says: sent by hand beside
-# it, it is two of one name, and `authsession` reads two as none.
+# The jar carries that cookie, as `docker/flow.sh` says, and nothing sends it
+# by hand: beside the jar's, a second is none to `authsession`.
 to=$(c -X POST "${LOGIN}/accept?login_challenge=${login_challenge}" \
 	| json redirect_to | sed 's|\\u0026|\&|g; s|\\/|/|g' | fix)
 case "${to}" in http*) ;; *) die "nothing was accepted: ${to}";; esac

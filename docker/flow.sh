@@ -181,13 +181,13 @@ sign_in() {
 	forget_consent
 
 	# The jar carries the app's cookie from here, as a browser's does, and
-	# `cookie` is only what this says about it. It was sent by hand as well, on
-	# the belief that a jar will not send one to a host `--resolve` invented: it
-	# does -- the browser the app forgets, below, is the jar edited for that
-	# reason -- so every call carried the session twice. Two cookies of the
-	# session's name are no session to `authsession`, which will not guess
-	# which of two a browser meant, and the half-signed-in 401 below was being
-	# answered for that rather than for being half way.
+	# `cookie` is only what this says about it. It went by hand as well, and
+	# the jar sent it too -- `login.test` has a dot in it, so the jar keeps it,
+	# and the browser the app forgets, below, is the jar edited for that
+	# reason. Two cookies of the session's name are none to `authsession`
+	# (payday#117: which of two a browser meant is not a thing to guess), so
+	# every call after the password was nobody's, and the half-signed-in 401
+	# below was answered for the pair rather than for being half way.
 	head=$(c -o /dev/null -D - -X POST "${LOGIN}/session?login_challenge=${challenge}" \
 		-H 'content-type: application/json' \
 		-d "$(printf '{"alias":"%s","password":"%s"}' "${SEED_USER}" "${SEED_PASSWORD}")" | tr -d '\r')

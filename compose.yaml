@@ -468,6 +468,13 @@ services:
       - "8091:8091"
     volumes:
       - account:/var/lib/roster-account:ro
+    networks:
+      default:
+        # A name with a dot in it, as the issuer's: curl 8.22 will not read a
+        # cookie for a single-label host back out of its jar, and the walks
+        # carry the app's session in theirs. They sent it by hand beside the
+        # jar until payday#117 read two cookies of the session's name as none.
+        aliases: ["login.test"]
 
   # A relying party that is **not ours**, which is the whole of what it is for.
   #

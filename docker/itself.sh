@@ -31,7 +31,7 @@ set -eu
 # where they are Services and the issuer is https on a certificate that Job is
 # handed. A walk that only knew one of those would only ever check one of them.
 : "${ISSUER:=http://hydra.test:4444}"
-: "${LOGIN:=http://login:8091}"
+: "${LOGIN:=http://login.test:8091}"
 : "${BASE:=http://product.test:5555}"
 : "${SEED_USER:=erin}"
 : "${SEED_PASSWORD:=correct horse battery staple}"
@@ -94,8 +94,8 @@ head=$(c -o /dev/null -D - -X POST "${LOGIN}/session?login_challenge=${challenge
 cookie=$(printf '%s' "${head}" | awk '/^[Ss]et-[Cc]ookie:/{print $2}' | sed 's/;$//')
 [ -n "${cookie}" ] || die "the password was not accepted"
 
-# The jar carries that cookie, as `docker/flow.sh` says: sent by hand beside
-# it, it is two of one name, and `authsession` reads two as none.
+# The jar carries that cookie, as `docker/flow.sh` says, and nothing sends it
+# by hand: beside the jar's, a second is none to `authsession`.
 to=$(c -X POST "${LOGIN}/accept?login_challenge=${challenge}" \
 	| sed 's/.*"redirect_to":"//; s/".*//; s|\\u0026|\&|g' | fix)
 l=$(c -o /dev/null -D - "${to}" | loc | fix)
