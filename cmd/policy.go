@@ -166,6 +166,18 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 // ago, somebody who no longer trusts the machine they are on: each of them is
 // exactly who wants this, and each of them is who a binding check refuses.
 //
+// # And `AuthService.Which`, which a page asks before it draws anything
+//
+// The name a page keeps its store under, for the session the call's cookie
+// names (`auth.proto`). An empty request and the cookie in the caller's own
+// metadata, which is `SignOut`'s shape exactly, and what comes back is a
+// digest of that session: nothing it could be pointed at anybody with, and
+// nothing about anybody. It is public, for a page nobody is signed in to; it
+// is here for a page somebody is, which asks it before it draws and again
+// whenever a call is refused. Behind a binding check, a person whose role did
+// not happen to name it would be signed in and drawn a sign-in form -- every
+// person at the user console whose role is anything less than all of roster.
+//
 // # And nothing else, which is now a rule rather than a list
 //
 // `Link`, `IssueKey` and `RevokeKey` sat beside these for a while, not waived
@@ -184,7 +196,8 @@ func aboutYourself(method string) bool {
 		app.MeService_Unlink_FullMethodName,
 		app.MeService_SignOutEverywhere_FullMethodName,
 		app.MeService_Leave_FullMethodName,
-		app.AuthService_SignOut_FullMethodName:
+		app.AuthService_SignOut_FullMethodName,
+		app.AuthService_Which_FullMethodName:
 		return true
 	}
 

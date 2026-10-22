@@ -169,14 +169,23 @@ func TestNothingTheWallIsWaivedForCanNameAnybody(t *testing.T) {
 		Actor: nobody, Tenant: b.Contoso, Action: app.AuthService_SignOut_FullMethodName,
 	}), "an operator whose role does not name it cannot sign out")
 
-	// And it is waivable at all only because it takes nothing -- the same
+	// And which session the cookie names, which a page asks before it draws:
+	// refused, somebody whose role does not name it is signed in and drawn a
+	// sign-in form.
+	x.NoError(p.May(ctx, gate.Call{
+		Actor: nobody, Tenant: b.Contoso, Action: app.AuthService_Which_FullMethodName,
+	}), "somebody whose role does not name it cannot learn whose store to draw")
+
+	// And each is waivable at all only because it takes nothing -- the same
 	// property the loop above enforces for everything it found.
 	out, err := protoregistry.GlobalFiles.FindDescriptorByName("roster.AuthService")
 	x.NoError(err)
-	md := out.(protoreflect.ServiceDescriptor).Methods().ByName("SignOut")
-	x.NotNil(md)
-	where, named := subjectIn(md.Input(), map[protoreflect.FullName]bool{})
-	x.False(named, "AuthService.SignOut is waived and names a subject at %s", where)
+	for _, name := range []protoreflect.Name{"SignOut", "Which"} {
+		md := out.(protoreflect.ServiceDescriptor).Methods().ByName(name)
+		x.NotNil(md)
+		where, named := subjectIn(md.Input(), map[protoreflect.FullName]bool{})
+		x.False(named, "AuthService.%s is waived and names a subject at %s", name, where)
+	}
 }
 
 // subjectIn is the first field of this message that names a person, looked for

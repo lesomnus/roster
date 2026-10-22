@@ -282,6 +282,108 @@ func (b0 AuthSignOutResponse_builder) Build() *AuthSignOutResponse {
 	return m0
 }
 
+type AuthWhichRequest struct {
+	state         protoimpl.MessageState `protogen:"opaque.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AuthWhichRequest) Reset() {
+	*x = AuthWhichRequest{}
+	mi := &file_app_auth_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuthWhichRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuthWhichRequest) ProtoMessage() {}
+
+func (x *AuthWhichRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_auth_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+type AuthWhichRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+}
+
+func (b0 AuthWhichRequest_builder) Build() *AuthWhichRequest {
+	m0 := &AuthWhichRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	return m0
+}
+
+type AuthWhichResponse struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Identity string                 `protobuf:"bytes,1,opt,name=identity"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *AuthWhichResponse) Reset() {
+	*x = AuthWhichResponse{}
+	mi := &file_app_auth_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuthWhichResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuthWhichResponse) ProtoMessage() {}
+
+func (x *AuthWhichResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_auth_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *AuthWhichResponse) GetIdentity() string {
+	if x != nil {
+		return x.xxx_hidden_Identity
+	}
+	return ""
+}
+
+func (x *AuthWhichResponse) SetIdentity(v string) {
+	x.xxx_hidden_Identity = v
+}
+
+type AuthWhichResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The name a page's store goes by for this session -- the value its calls
+	// say in `payday-identity` -- and empty when there is no session to name.
+	Identity string
+}
+
+func (b0 AuthWhichResponse_builder) Build() *AuthWhichResponse {
+	m0 := &AuthWhichResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Identity = b.Identity
+	return m0
+}
+
 // AuthOffersRequest is empty for the reason [AuthSignInRequest] has no tenant
 // field: which tenant is the name the browser arrived at, and a field would be a
 // caller asking to be told about one it did not arrive at.
@@ -293,7 +395,7 @@ type AuthOffersRequest struct {
 
 func (x *AuthOffersRequest) Reset() {
 	*x = AuthOffersRequest{}
-	mi := &file_app_auth_proto_msgTypes[4]
+	mi := &file_app_auth_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -305,7 +407,7 @@ func (x *AuthOffersRequest) String() string {
 func (*AuthOffersRequest) ProtoMessage() {}
 
 func (x *AuthOffersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_auth_proto_msgTypes[4]
+	mi := &file_app_auth_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -339,7 +441,7 @@ type AuthOffersResponse struct {
 
 func (x *AuthOffersResponse) Reset() {
 	*x = AuthOffersResponse{}
-	mi := &file_app_auth_proto_msgTypes[5]
+	mi := &file_app_auth_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -351,7 +453,7 @@ func (x *AuthOffersResponse) String() string {
 func (*AuthOffersResponse) ProtoMessage() {}
 
 func (x *AuthOffersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_auth_proto_msgTypes[5]
+	mi := &file_app_auth_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -450,7 +552,7 @@ type AuthOffersProvider struct {
 
 func (x *AuthOffersProvider) Reset() {
 	*x = AuthOffersProvider{}
-	mi := &file_app_auth_proto_msgTypes[6]
+	mi := &file_app_auth_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -462,7 +564,7 @@ func (x *AuthOffersProvider) String() string {
 func (*AuthOffersProvider) ProtoMessage() {}
 
 func (x *AuthOffersProvider) ProtoReflect() protoreflect.Message {
-	mi := &file_app_auth_proto_msgTypes[6]
+	mi := &file_app_auth_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -525,7 +627,10 @@ const file_app_auth_proto_rawDesc = "" +
 	"\x04link\x18\x03 \x01(\tR\x04link\"\x14\n" +
 	"\x12AuthSignInResponse\"\x14\n" +
 	"\x12AuthSignOutRequest\"\x15\n" +
-	"\x13AuthSignOutResponse\"\x13\n" +
+	"\x13AuthSignOutResponse\"\x12\n" +
+	"\x10AuthWhichRequest\"/\n" +
+	"\x11AuthWhichResponse\x12\x1a\n" +
+	"\bidentity\x18\x01 \x01(\tR\bidentity\"\x13\n" +
 	"\x11AuthOffersRequest\"\x89\x01\n" +
 	"\x12AuthOffersResponse\x12\x1a\n" +
 	"\bpassword\x18\x01 \x01(\bR\bpassword\x128\n" +
@@ -534,32 +639,37 @@ const file_app_auth_proto_rawDesc = "" +
 	"front_door\x18\x03 \x01(\tR\tfrontDoor\"@\n" +
 	"\x12AuthOffersProvider\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
-	"\x06issuer\x18\x02 \x01(\tR\x06issuer2\xd3\x01\n" +
+	"\x06issuer\x18\x02 \x01(\tR\x06issuer2\x91\x02\n" +
 	"\vAuthService\x12?\n" +
 	"\x06SignIn\x12\x19.roster.AuthSignInRequest\x1a\x1a.roster.AuthSignInResponse\x12B\n" +
 	"\aSignOut\x12\x1a.roster.AuthSignOutRequest\x1a\x1b.roster.AuthSignOutResponse\x12?\n" +
-	"\x06Offers\x12\x19.roster.AuthOffersRequest\x1a\x1a.roster.AuthOffersResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\x06Offers\x12\x19.roster.AuthOffersRequest\x1a\x1a.roster.AuthOffersResponse\x12<\n" +
+	"\x05Which\x12\x18.roster.AuthWhichRequest\x1a\x19.roster.AuthWhichResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_app_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_app_auth_proto_goTypes = []any{
 	(*AuthSignInRequest)(nil),   // 0: roster.AuthSignInRequest
 	(*AuthSignInResponse)(nil),  // 1: roster.AuthSignInResponse
 	(*AuthSignOutRequest)(nil),  // 2: roster.AuthSignOutRequest
 	(*AuthSignOutResponse)(nil), // 3: roster.AuthSignOutResponse
-	(*AuthOffersRequest)(nil),   // 4: roster.AuthOffersRequest
-	(*AuthOffersResponse)(nil),  // 5: roster.AuthOffersResponse
-	(*AuthOffersProvider)(nil),  // 6: roster.AuthOffersProvider
+	(*AuthWhichRequest)(nil),    // 4: roster.AuthWhichRequest
+	(*AuthWhichResponse)(nil),   // 5: roster.AuthWhichResponse
+	(*AuthOffersRequest)(nil),   // 6: roster.AuthOffersRequest
+	(*AuthOffersResponse)(nil),  // 7: roster.AuthOffersResponse
+	(*AuthOffersProvider)(nil),  // 8: roster.AuthOffersProvider
 }
 var file_app_auth_proto_depIdxs = []int32{
-	6, // 0: roster.AuthOffersResponse.providers:type_name -> roster.AuthOffersProvider
+	8, // 0: roster.AuthOffersResponse.providers:type_name -> roster.AuthOffersProvider
 	0, // 1: roster.AuthService.SignIn:input_type -> roster.AuthSignInRequest
 	2, // 2: roster.AuthService.SignOut:input_type -> roster.AuthSignOutRequest
-	4, // 3: roster.AuthService.Offers:input_type -> roster.AuthOffersRequest
-	1, // 4: roster.AuthService.SignIn:output_type -> roster.AuthSignInResponse
-	3, // 5: roster.AuthService.SignOut:output_type -> roster.AuthSignOutResponse
-	5, // 6: roster.AuthService.Offers:output_type -> roster.AuthOffersResponse
-	4, // [4:7] is the sub-list for method output_type
-	1, // [1:4] is the sub-list for method input_type
+	6, // 3: roster.AuthService.Offers:input_type -> roster.AuthOffersRequest
+	4, // 4: roster.AuthService.Which:input_type -> roster.AuthWhichRequest
+	1, // 5: roster.AuthService.SignIn:output_type -> roster.AuthSignInResponse
+	3, // 6: roster.AuthService.SignOut:output_type -> roster.AuthSignOutResponse
+	7, // 7: roster.AuthService.Offers:output_type -> roster.AuthOffersResponse
+	5, // 8: roster.AuthService.Which:output_type -> roster.AuthWhichResponse
+	5, // [5:9] is the sub-list for method output_type
+	1, // [1:5] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -576,7 +686,7 @@ func file_app_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_auth_proto_rawDesc), len(file_app_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

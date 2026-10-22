@@ -246,25 +246,69 @@ func (d *Door) Who(ctx context.Context, r *http.Request) (pdid.Id, bool) {
 // signed in there: the proxy and roster refused what it asked, but the account
 // app's `/claim` had a link minted and mailed.
 func (d *Door) whole(ctx context.Context, r *http.Request) (pdid.Id, string, bool) {
+	_, who, token, ok := d.held(ctx, r)
+
+	return who, token, ok
+}
+
+// held is [Door.whole] with the session it was read from, for what is named
+// after the session itself: the store a page keeps for it ([Door.Which]).
+func (d *Door) held(ctx context.Context, r *http.Request) (authsession.Session, pdid.Id, string, bool) {
 	v, err := d.c.Sessions.Read(ctx, d.keyOf(r))
 	if err != nil {
-		return pdid.Nil, "", false
+		return authsession.Session{}, pdid.Nil, "", false
 	}
 	token := v.Held[heldToken]
 	if token == "" {
-		return pdid.Nil, "", false
+		return authsession.Session{}, pdid.Nil, "", false
 	}
 	if d.c.TenantOf != nil {
 		if here, err := d.c.TenantOf(ctx, r.Host); err != nil || here.String() != v.TenantId {
-			return pdid.Nil, "", false
+			return authsession.Session{}, pdid.Nil, "", false
 		}
 	}
 	who, err := pdid.Parse(v.Id)
 	if err != nil {
-		return pdid.Nil, "", false
+		return authsession.Session{}, pdid.Nil, "", false
 	}
 
-	return who, token, true
+	return v, who, token, true
+}
+
+// Which is `GET /session` for an app whose page keeps a store: the session
+// this browser holds, as payday names a store for it -- `authsession.Which`,
+// its `identity` made by `authsession.IdentityOf` -- or 401 for none, and for
+// one that is only half way.
+//
+// # Why a page asks
+//
+// A page's query layer says its store's name on every call
+// (`authsession.IdentityHeader`), and [Door.Proxy] hands on only a call whose
+// name is the session's: the cookie is every tab's, so whoever signed in last
+// in any tab is who the next call is made as, and a page still holding the
+// store of the one before is refused rather than reading this person's rows
+// into it. The name is made of the session, which the page cannot read; so it
+// asks here before it draws, and again whenever a call is refused.
+//
+// It is apart from [Door.Handler] because not every app that signs people in
+// draws a store -- the Login App does not, and a route it mounted without
+// using would be one its own contract has to keep.
+func (d *Door) Which() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		v, _, _, ok := d.held(r.Context(), r)
+		if !ok {
+			http.Error(w, "nobody is signed in", http.StatusUnauthorized)
+			return
+		}
+
+		w.Header().Set("content-type", "application/json")
+		w.Header().Set("cache-control", "no-store")
+		_ = json.NewEncoder(w).Encode(authsession.Which{
+			Identity: authsession.IdentityOf(v),
+			Id:       v.Id,
+			TenantId: v.TenantId,
+		})
+	})
 }
 
 // keyOf is the session key this request carries.

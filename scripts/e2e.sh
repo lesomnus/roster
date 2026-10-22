@@ -75,6 +75,10 @@ export E2E_ERIN_PASSWORD="correct horse battery staple"
 # being broken. `admin` is the holder `Tenant.Add` wrote and nothing else
 # touches.
 export E2E_TENANT_ADMIN_PASSWORD="contoso-$(head -c 12 /dev/urandom | base64 | tr -d '/+=')"
+# And somebody else of contoso's, for the user console to be handed over to: a
+# page signed in as one person and then as another, on one browser, keeps
+# nothing of the first (`user.spec.ts`). Nobody else signs in as her.
+export E2E_GRACE_PASSWORD="grace-$(head -c 12 /dev/urandom | base64 | tr -d '/+=')"
 admin_http="http://127.0.0.1:18072"
 
 cat > "${work}/roster.yaml" <<YAML
@@ -136,8 +140,10 @@ echo '{"role":{"slug":{"alias":"everything","tenant":{"alias":"contoso"}}},"hold
 	| r binding add - >/dev/null
 echo "${E2E_ERIN_PASSWORD}" | r vouch set --password-stdin @contoso/erin >/dev/null 2>&1
 # And a way in for the administrator the tenant arrived with, which is who the
-# user console signs in.
+# user console signs in -- and for grace, who signs in at it after them.
 echo "${E2E_TENANT_ADMIN_PASSWORD}" | r vouch set --password-stdin @contoso/admin >/dev/null
+r holder add @contoso/grace >/dev/null
+echo "${E2E_GRACE_PASSWORD}" | r vouch set --password-stdin @contoso/grace >/dev/null
 r host add '{"tenant":{"alias":"contoso"},"name":"localhost"}' >/dev/null
 
 # Two directories, and erin arrived through one of them.

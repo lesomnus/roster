@@ -22,6 +22,7 @@ const (
 	AuthService_SignIn_FullMethodName  = "/roster.AuthService/SignIn"
 	AuthService_SignOut_FullMethodName = "/roster.AuthService/SignOut"
 	AuthService_Offers_FullMethodName  = "/roster.AuthService/Offers"
+	AuthService_Which_FullMethodName   = "/roster.AuthService/Which"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -77,7 +78,9 @@ const (
 //
 // Answer who you are. `MeService` does, it is already what a page asks first,
 // and a second way to ask would be a second answer to keep in step. This
-// service makes a credential and ends one; asking about it is somebody else's.
+// service makes a credential, names it, and ends it: `Which` answers the one
+// thing about a session a page cannot make for itself, the name its store goes
+// by, and nothing about the person.
 //
 // # Where it is served
 //
@@ -167,6 +170,37 @@ type AuthServiceClient interface {
 	// it somewhere else. What comes back is the same fact `GET /providers` has
 	// answered anonymously at a tenant's own host for as long as it existed.
 	Offers(ctx context.Context, in *AuthOffersRequest, opts ...grpc.CallOption) (*AuthOffersResponse, error)
+	// Which is the session the caller's cookie names, as a page's store is named
+	// for it: `authsession.IdentityOf`, a digest of who it names and what it
+	// lets them see. Empty when the cookie names no session alive here.
+	//
+	// # Why a page asks
+	//
+	// A page keeps what it reads in a store named for its caller, and every call
+	// its query layer makes says that name (`payday-identity`). The session
+	// handler serves such a call only as a session the name is of: a cookie is
+	// every tab's, so whoever signed in last in any tab is who every page sends
+	// as, and a page still holding the store of the one before is refused rather
+	// than reading the next person's rows into it or sending what it kept for
+	// them as somebody else.
+	//
+	// The name is made where the session can be read, so a page cannot make it
+	// -- the cookie is `HttpOnly`, and the grant is the server's -- and asks
+	// here: before it draws anything, and again whenever a call is refused for
+	// its session, to tell a session that ended from one that is somebody
+	// else's now.
+	//
+	// # Why here, beside SignIn and SignOut
+	//
+	// Because it is about the session and not the person: who the caller is,
+	// `MeService` answers, for every credential on both planes. Which session a
+	// cookie names is this service's, which made it and ends it and is served
+	// where the sessions are. A page asks it before it knows whether anybody is
+	// signed in at all, so it is public as `SignIn` and `Offers` are; and of
+	// whoever is, whatever their role, so it needs none, as `SignOut` needs none
+	// (`aboutYourself`). It reads the cookie the call came with and nothing
+	// else, and answers nothing about anybody: a name for a store.
+	Which(ctx context.Context, in *AuthWhichRequest, opts ...grpc.CallOption) (*AuthWhichResponse, error)
 }
 
 type authServiceClient struct {
@@ -201,6 +235,16 @@ func (c *authServiceClient) Offers(ctx context.Context, in *AuthOffersRequest, o
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AuthOffersResponse)
 	err := c.cc.Invoke(ctx, AuthService_Offers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) Which(ctx context.Context, in *AuthWhichRequest, opts ...grpc.CallOption) (*AuthWhichResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuthWhichResponse)
+	err := c.cc.Invoke(ctx, AuthService_Which_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +304,9 @@ func (c *authServiceClient) Offers(ctx context.Context, in *AuthOffersRequest, o
 //
 // Answer who you are. `MeService` does, it is already what a page asks first,
 // and a second way to ask would be a second answer to keep in step. This
-// service makes a credential and ends one; asking about it is somebody else's.
+// service makes a credential, names it, and ends it: `Which` answers the one
+// thing about a session a page cannot make for itself, the name its store goes
+// by, and nothing about the person.
 //
 // # Where it is served
 //
@@ -350,6 +396,37 @@ type AuthServiceServer interface {
 	// it somewhere else. What comes back is the same fact `GET /providers` has
 	// answered anonymously at a tenant's own host for as long as it existed.
 	Offers(context.Context, *AuthOffersRequest) (*AuthOffersResponse, error)
+	// Which is the session the caller's cookie names, as a page's store is named
+	// for it: `authsession.IdentityOf`, a digest of who it names and what it
+	// lets them see. Empty when the cookie names no session alive here.
+	//
+	// # Why a page asks
+	//
+	// A page keeps what it reads in a store named for its caller, and every call
+	// its query layer makes says that name (`payday-identity`). The session
+	// handler serves such a call only as a session the name is of: a cookie is
+	// every tab's, so whoever signed in last in any tab is who every page sends
+	// as, and a page still holding the store of the one before is refused rather
+	// than reading the next person's rows into it or sending what it kept for
+	// them as somebody else.
+	//
+	// The name is made where the session can be read, so a page cannot make it
+	// -- the cookie is `HttpOnly`, and the grant is the server's -- and asks
+	// here: before it draws anything, and again whenever a call is refused for
+	// its session, to tell a session that ended from one that is somebody
+	// else's now.
+	//
+	// # Why here, beside SignIn and SignOut
+	//
+	// Because it is about the session and not the person: who the caller is,
+	// `MeService` answers, for every credential on both planes. Which session a
+	// cookie names is this service's, which made it and ends it and is served
+	// where the sessions are. A page asks it before it knows whether anybody is
+	// signed in at all, so it is public as `SignIn` and `Offers` are; and of
+	// whoever is, whatever their role, so it needs none, as `SignOut` needs none
+	// (`aboutYourself`). It reads the cookie the call came with and nothing
+	// else, and answers nothing about anybody: a name for a store.
+	Which(context.Context, *AuthWhichRequest) (*AuthWhichResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -368,6 +445,9 @@ func (UnimplementedAuthServiceServer) SignOut(context.Context, *AuthSignOutReque
 }
 func (UnimplementedAuthServiceServer) Offers(context.Context, *AuthOffersRequest) (*AuthOffersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Offers not implemented")
+}
+func (UnimplementedAuthServiceServer) Which(context.Context, *AuthWhichRequest) (*AuthWhichResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Which not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -444,6 +524,24 @@ func _AuthService_Offers_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_Which_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthWhichRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).Which(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_Which_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).Which(ctx, req.(*AuthWhichRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -462,6 +560,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Offers",
 			Handler:    _AuthService_Offers_Handler,
+		},
+		{
+			MethodName: "Which",
+			Handler:    _AuthService_Which_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

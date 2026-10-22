@@ -496,7 +496,9 @@ func (a *App) Close() error { return a.conn.Close() }
 
 // Handler is the whole app on one mux.
 //
-// The two forms and the sign-out at `/session`; `/login` and `/callback` for a
+// The two forms and the sign-out at `/session`, and which session the browser
+// holds at its `GET`, by the name the page's store goes by; `/login` and
+// `/callback` for a
 // provider's round trip, `/ways` for the same round trip by somebody already
 // signed in who is attaching a second account; `/providers` for what the
 // sign-in page draws; every `/roster.*` call handed on as the person; and the
@@ -506,6 +508,10 @@ func (a *App) Handler() http.Handler {
 
 	m.Handle("/session", a.door.Handler())
 	m.Handle("/session/", a.door.Handler())
+	// Which session this browser holds, by the name the page's store goes by
+	// for it (`frontdoor.Door.Which`): asked before the page draws, and again
+	// when a call is refused for its session.
+	m.Handle("GET /session", a.door.Which())
 	m.HandleFunc("GET /providers", a.providers)
 	m.HandleFunc("GET /login", a.login)
 	m.HandleFunc("POST /ways", a.addWay)

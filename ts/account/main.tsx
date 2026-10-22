@@ -48,7 +48,8 @@ import { covers } from '#lib/covers.js'
 import { expiries, expiresAt, until } from '#lib/expiry.js'
 import { b64url, SignIn, vendor, type Vendor } from '#lib/signin.js'
 import { Picture } from '#lib/picture.js'
-import { open } from '#lib/store.js'
+import { caller } from '#lib/caller.js'
+import { letGo, open } from '#lib/store.js'
 import '#lib/style.css'
 
 const root = createRoot(document.getElementById('root') as HTMLElement)
@@ -1279,71 +1280,123 @@ function Left(props: { brand: string; forgotten: string }): React.ReactNode {
 	)
 }
 
-function Root(): React.ReactNode {
-	const [of, setOf] = useState<Providers | null | undefined>(undefined)
-	const [app, setApp] = useState<App | null | undefined>(undefined)
-	const [left, setLeft] = useState<string | null>(null)
+/**
+ * which is the session this browser holds at this app, by the name the page's
+ * store goes by for it -- `GET /session`, `frontdoor.Door.Which` -- or null
+ * for none.
+ */
+async function which(): Promise<string | null> {
+	const res = await fetch('/session', { credentials: 'include' })
+	if (res.status === 401) return null
+	if (!res.ok) throw new Error(`cannot tell who is signed in (${res.status})`)
 
-	useEffect(() => {
-		void providers().then(setOf)
-	}, [])
+	return ((await res.json()) as { identity: string }).identity
+}
 
-	// Whether there is a session is a question for roster: `Me.Get` through the
-	// proxy answers who, or 401 -- which is the page's cue to draw the form.
-	const check = (): void => {
-		const transport = createConnectTransport({
-			baseUrl: location.origin,
-			fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
-		})
-		void fetch('/roster.MeService/Get', {
-			method: 'POST',
-			headers: { 'content-type': 'application/json', 'connect-protocol-version': '1' },
-			body: '{}',
-			credentials: 'include',
-		}).then(async (res) => {
-			if (!res.ok) return setApp(null)
-			setApp(await open(transport, 'account:' + location.host))
-		})
+/**
+ * Whose store the page draws, and when it lets go of it (`caller.ts`): every
+ * call through the proxy says the store's name, and the app hands on only a
+ * call whose name is the browser's session's (`frontdoor.Door.Proxy`).
+ */
+const calls = caller('account', which)
+
+const transport = createConnectTransport({
+	baseUrl: location.origin,
+	fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
+	interceptors: [calls.interceptor],
+})
+
+/**
+ * boot draws the page for whoever the browser's session is: the form for
+ * nobody, and otherwise their store, opened and filled from its mirror.
+ *
+ * Asked again on a sign-in, on a sign-out in any tab, and when a call is
+ * refused for a session that is not this store's -- which is how a page left
+ * holding one person's store learns somebody else signed in, in another tab,
+ * and lets go of it rather than drawing that person's rows into it.
+ */
+async function boot(): Promise<void> {
+	const of = await providers()
+	if (of === null) {
+		root.render(
+			<StrictMode>
+				<main className="error">no operator here serves this name</main>
+			</StrictMode>,
+		)
+		return
 	}
-	useEffect(check, [])
 
+	let identity: string | null
+	try {
+		identity = await which()
+	} catch (err) {
+		console.error('cannot tell who is signed in:', err)
+		identity = null
+	}
+	if (identity === null) {
+		calls.drop()
+		// Signing in again to delete the account (`#leave`) asks the directory
+		// to ask again rather than remember them: what roster reads is when the
+		// directory last authenticated them, and a sign-in it remembered is not
+		// a moment ago.
+		const again = location.hash === '#leave' ? '&again=1' : ''
+		root.render(
+			<StrictMode>
+				<SignIn
+					brand={brandOf(of)}
+					password={of.password}
+					providers={of.providers}
+					providerHref={(n: string) => `/login?connection=${encodeURIComponent(n)}${again}`}
+					recover="/recover"
+					onDone={() => void boot()}
+				/>
+			</StrictMode>,
+		)
+		return
+	}
+
+	const app = await open(transport, { name: 'roster', identity })
+
+	// What the page does once it has let go of the store: ask again whom to
+	// draw for, unless the account is gone and there is something to say.
+	let then = (): void => void boot()
+	const held = calls.hold(identity, (forget) => {
+		void letGo(app, forget).then(() => then())
+	})
+
+	// Signing out ends the session -- the delegation it held is revoked at
+	// roster -- and every other tab is told, and forgets what it held for this
+	// person, as this one does.
 	const out = (): void => {
-		void fetch('/session', { method: 'DELETE' }).finally(() => {
-			app?.store.forget()
-			app?.store.close()
-			setApp(null)
-		})
+		void fetch('/session', { method: 'DELETE' }).finally(() => held.out())
 	}
 
 	// Gone, and the session with it: what this page held for the person is
-	// forgotten here as it is at roster.
+	// forgotten here, and in every tab, as it is at roster.
 	const gone = (forgotten: string): void => {
 		void fetch('/session', { method: 'DELETE' }).finally(() => {
-			app?.store.forget()
-			app?.store.close()
-			setLeft(forgotten)
+			then = () =>
+				root.render(
+					<StrictMode>
+						<Left brand={brandOf(of)} forgotten={forgotten} />
+					</StrictMode>,
+				)
+			held.out()
 		})
 	}
 
-	if (of === undefined || app === undefined) return <main className="loading">…</main>
-	if (of === null) return <main className="error">no operator here serves this name</main>
-	if (left !== null) return <Left brand={brandOf(of)} forgotten={left} />
-	// Signing in again to delete the account (`#leave`) asks the directory to
-	// ask again rather than remember them: what roster reads is when the
-	// directory last authenticated them, and a sign-in it remembered is not a
-	// moment ago.
-	const again = location.hash === '#leave' ? '&again=1' : ''
-	if (app === null) return <SignIn brand={brandOf(of)} password={of.password} providers={of.providers} providerHref={(n: string) => `/login?connection=${encodeURIComponent(n)}${again}`} recover="/recover" onDone={check} />
-
-	return (
-		<Provider app={app}>
-			<Account of={of} onSignOut={out} onLeft={gone} />
-		</Provider>
+	root.render(
+		<StrictMode>
+			<Provider app={app}>
+				<Account of={of} onSignOut={out} onLeft={gone} />
+			</Provider>
+		</StrictMode>,
 	)
 }
 
 root.render(
 	<StrictMode>
-		<Root />
+		<main className="loading">…</main>
 	</StrictMode>,
 )
+void boot()

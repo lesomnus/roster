@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 // The user console, as somebody in a tenant uses it: sign in at the name their
 // tenant answers at, and see their own organisation.
@@ -35,9 +35,9 @@ test('a tenant administrator signs in and sees their own tenant', async ({ page 
 	// host and the tenant is the whole of what it is.
 	await expect(page.locator('nav button.head')).toHaveText('contoso')
 
-	// The people of contoso, and nobody else's: the seed makes `admin`, `erin`
-	// and `account` here, and fabrikam's people do not appear because they do
-	// not exist to this caller.
+	// The people of contoso, and nobody else's: the seed makes `admin`, `erin`,
+	// `grace` and `account` here, and fabrikam's people do not appear because
+	// they do not exist to this caller.
 	await expect(page.getByRole('cell', { name: 'erin', exact: true })).toBeVisible()
 	await expect(page.getByRole('cell', { name: 'account', exact: true })).toBeVisible()
 
@@ -148,4 +148,142 @@ test('a tenant names its front door, and the sign-in page sends people there', a
 		`${account}/login?connection=entra&next=${encodeURIComponent(origin)}`,
 	)
 	await expect(page.locator('p.or')).toHaveText('or')
+})
+
+// A browser one person signs out of and another signs in at keeps nothing of
+// the first. The page's store is its caller's, named by the server for their
+// session (`AuthService.Which`): signing out forgets what it held, and the next
+// person's sign-in deletes every mirror but their own -- whether the one
+// before signed out, or only went away and left a session to end by itself.
+const grace = process.env['E2E_GRACE_PASSWORD'] ?? ''
+
+/**
+ * The browser's IndexedDB, as far as `mirrors` and `kept` read it: what they
+ * hand `page.evaluate` runs in the page, and this file is compiled for node,
+ * which has none.
+ */
+interface Req<T> {
+	readonly result: T
+	onsuccess: (() => void) | null
+	onerror: (() => void) | null
+}
+declare const indexedDB: {
+	databases(): Promise<{ name?: string }[]>
+	open(name: string): Req<{
+		readonly objectStoreNames: ArrayLike<string>
+		transaction(names: string[], mode: 'readonly'): { objectStore(name: string): { count(): Req<number> } }
+		close(): void
+	}>
+}
+
+/** mirrors is the stores this page has on the browser's disk. */
+async function mirrors(page: Page): Promise<string[]> {
+	return page.evaluate(async () =>
+		(await indexedDB.databases()).map((d) => d.name ?? '').filter((n) => n.startsWith('payday/roster:')),
+	)
+}
+
+/**
+ * kept is how much of its caller's one mirror holds: every table of it but
+ * `meta`, the stamp payday keeps of what the rows were written against. Asked
+ * only of a mirror that is there, since asking would make one.
+ */
+async function kept(page: Page, mirror: string): Promise<number> {
+	return page.evaluate(async (name) => {
+		const done = <T>(req: Req<T>): Promise<T> =>
+			new Promise((ok, no) => {
+				req.onsuccess = () => ok(req.result)
+				req.onerror = () => no(new Error(`cannot read ${name}`))
+			})
+
+		const db = await done(indexedDB.open(name))
+		try {
+			const tables = Array.from(db.objectStoreNames).filter((t) => t !== 'meta')
+			const tx = db.transaction(tables, 'readonly')
+			const counts = await Promise.all(tables.map((t) => done(tx.objectStore(t).count())))
+
+			return counts.reduce((a, b) => a + b, 0)
+		} finally {
+			db.close()
+		}
+	}, mirror)
+}
+
+async function signIn(page: Page, alias: string, secret: string): Promise<void> {
+	await page.locator('input[name=alias]').fill(alias)
+	await page.locator('input[name=password]').fill(secret)
+	await page.locator('button[type=submit]', { hasText: 'sign in' }).click()
+	await expect(page.locator('nav .who')).toHaveText(alias)
+}
+
+test('the next person to sign in finds nothing of the one before', async ({ page, context }) => {
+	await page.goto(base)
+	await signIn(page, who, password)
+	await expect.poll(() => mirrors(page)).toHaveLength(1)
+	const [theirs = ''] = await mirrors(page)
+	await expect.poll(() => kept(page, theirs)).toBeGreaterThan(0)
+
+	// Forgotten, and not only let go of: nothing of theirs is left on the disk,
+	// before anybody else has signed in here and whether or not anybody does.
+	await page.getByRole('button', { name: 'sign out' }).click()
+	await expect(page.locator('input[name=password]')).toBeVisible()
+	await expect.poll(() => kept(page, theirs)).toBe(0)
+
+	await signIn(page, 'grace', grace)
+	await expect.poll(() => mirrors(page)).not.toContain(theirs)
+	await expect.poll(() => mirrors(page)).toHaveLength(1)
+
+	// And somebody who went away without signing out. Their mirror is kept
+	// while nobody else has signed in -- a session that ended by itself is the
+	// same person when they come back, with what they wrote meanwhile -- and
+	// goes the moment somebody else does.
+	const [hers] = await mirrors(page)
+	await context.clearCookies()
+	await page.reload()
+	await expect(page.locator('input[name=password]')).toBeVisible()
+	expect(await mirrors(page)).toContain(hers)
+	await signIn(page, who, password)
+	await expect.poll(() => mirrors(page)).not.toContain(hers)
+})
+
+test('a sign-out in one tab is a sign-out in every tab', async ({ context }) => {
+	const one = await context.newPage()
+	await one.goto(base)
+	await signIn(one, who, password)
+	const two = await context.newPage()
+	await two.goto(base)
+	await expect(two.locator('nav .who')).toHaveText(who)
+
+	await one.getByRole('button', { name: 'sign out' }).click()
+	await expect(two.locator('input[name=password]')).toBeVisible()
+})
+
+test('a page left holding one person\'s store lets go of it when somebody else signs in', async ({ context }) => {
+	const one = await context.newPage()
+	await one.goto(base)
+	await signIn(one, who, password)
+
+	// Somebody else signs in, in another tab, without anybody signing out: the
+	// cookie is the browser's, so it is hers now in every tab.
+	const two = await context.newPage()
+	await two.goto(base)
+	const signed = await two.evaluate(
+		async (secret) =>
+			(
+				await fetch('/roster.AuthService/SignIn', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json', 'connect-protocol-version': '1' },
+					body: JSON.stringify({ alias: 'grace', password: secret }),
+					credentials: 'include',
+				})
+			).status,
+		grace,
+	)
+	expect(signed).toBe(200)
+
+	// The first tab's next call is made for the first person's store, and is
+	// refused rather than answered as her: it asks who is signed in now, lets
+	// go of the store, and draws hers.
+	await one.locator('nav button', { hasText: 'apps' }).click()
+	await expect(one.locator('nav .who')).toHaveText('grace')
 })
