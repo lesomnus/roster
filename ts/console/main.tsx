@@ -22,7 +22,7 @@ import { AuthService } from '#gen/app/auth_pb.js'
 import { MeService } from '#gen/app/me_pb.js'
 import { caller, type Caller } from '#lib/caller.js'
 import { writes, type Writes } from '#lib/client.js'
-import { letGo, nobody, open } from '#lib/store.js'
+import { letGo, nobody, open, stillHere } from '#lib/store.js'
 import { Page } from './page.js'
 import type { Progress, Sandbox } from '#lib/sandbox.js'
 import { go, useRoute } from '#lib/route.js'
@@ -194,7 +194,7 @@ async function held(): Promise<string | null> {
  */
 let auth: Client<typeof AuthService>
 
-function SignIn(props: { onDone: () => void }): React.ReactNode {
+function SignIn(props: { onDone: () => void; said?: string | undefined }): React.ReactNode {
 	const [bad, setBad] = useState(false)
 
 	return (
@@ -219,6 +219,11 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
 			}}
 		>
 			<h1>roster</h1>
+			{props.said !== undefined && (
+				<p className="bad" role="alert">
+					{props.said}
+				</p>
+			)}
 			<label>
 				operator
 				<input name="alias" defaultValue="admin" autoFocus />
@@ -286,6 +291,7 @@ function Shell(props: {
 	tenants: App | null
 	writes: Writes | null
 	ungated: { control?: Transport; admin?: Transport }
+	said?: string | undefined
 }): React.ReactNode {
 	const route = useRoute()
 	const here = !(props.signedIn && route[0] === 'tenants')
@@ -300,7 +306,7 @@ function Shell(props: {
 					ungated={props.ungated.admin}
 				/>
 			) : (
-				<SignIn onDone={props.onSignIn} />
+				<SignIn onDone={props.onSignIn} said={props.said} />
 			)}
 			{here && <Devtools {...(props.ungated.control !== undefined ? { ungated: props.ungated.control } : {})} />}
 		</>
@@ -323,7 +329,13 @@ function ungatedTransports(): { control?: Transport; admin?: Transport } {
 async function run(transport: Transport): Promise<void> {
 	const ungated = ungatedTransports()
 
-	const draw = (app: App, signedIn: boolean, theirs: { app: App; writes: Writes } | null, out: () => void): void => {
+	const draw = (
+		app: App,
+		signedIn: boolean,
+		theirs: { app: App; writes: Writes } | null,
+		out: () => void,
+		said?: string,
+	): void => {
 		root.render(
 			<StrictMode>
 				<Provider app={app}>
@@ -334,6 +346,7 @@ async function run(transport: Transport): Promise<void> {
 						tenants={theirs?.app ?? null}
 						writes={theirs?.writes ?? null}
 						ungated={ungated}
+						said={said}
 					/>
 				</Provider>
 			</StrictMode>,
@@ -351,8 +364,11 @@ async function run(transport: Transport): Promise<void> {
 	 * signed in on this browser one store. Asked again on a sign-in, on a
 	 * sign-out in any tab, and when a call is refused for a session that is
 	 * not this store's (`caller.ts`).
+	 *
+	 * `said` is what the form says first, when there is one to draw: that the
+	 * sign-out before it could not clear this browser (`stillHere`).
 	 */
-	async function boot(): Promise<void> {
+	async function boot(said?: string): Promise<void> {
 		let identity: string | null
 		try {
 			identity = await which(transport)
@@ -366,7 +382,7 @@ async function run(transport: Transport): Promise<void> {
 			calls?.drop()
 			// The window a development build draws beneath the form has a
 			// store to look at, and it is nobody's.
-			return draw(nobody(transport), false, null, () => {})
+			return draw(nobody(transport), false, null, () => {}, said)
 		}
 
 		const app = await open(transport, { name: 'roster', identity }, calls !== null)
@@ -379,11 +395,15 @@ async function run(transport: Transport): Promise<void> {
 		 * Letting go of both stores: forgetting them first when their caller
 		 * signed out -- the rows, the answers, the mirror, and the writes never
 		 * sent, which are that caller's -- and in either case asking again whom
-		 * to draw for.
+		 * to draw for, once both are closed. A forget that did not reach this
+		 * browser's copy is said on the form, rather than left for the person
+		 * to believe nothing of theirs is here.
 		 */
 		const leave = (forget: boolean): void => {
 			const stores = theirs === null ? [app] : [app, theirs.app]
-			void Promise.all(stores.map((v) => letGo(v, forget))).then(boot)
+			void Promise.allSettled(stores.map((v) => letGo(v, forget))).then((vs) =>
+				boot(vs.some((v) => v.status === 'rejected') ? stillHere : undefined),
+			)
 		}
 		const hold = calls?.hold(identity, leave)
 

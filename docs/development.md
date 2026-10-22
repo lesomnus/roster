@@ -146,6 +146,9 @@ person's rows into it. So a page opens its store once somebody is signed in, not
 for its lifetime: it asks again who is signed in when a call is refused and lets
 go of the store if that is somebody else now, forgets it on a sign-out in any tab,
 and deletes every other caller's mirror once its own is open (`ts/lib/caller.ts`).
+A sign-out whose forget could not reach this browser's copy is said on the form
+it ends at (`stillHere`), since only the person can take it off the browser
+then.
 
 `pd gen --ts .` writes `ts/gen/`, including `entities.ts` -- one declaration per
 entity, which is what the store is built from. Nothing there is behaviour, and

@@ -25,7 +25,7 @@ import { writes, type Writes } from '#lib/client.js'
 import { Devtools } from '#lib/devtools.js'
 import { go } from '#lib/route.js'
 import type { Progress, Sandbox } from '#lib/sandbox.js'
-import { letGo, nobody, open } from '#lib/store.js'
+import { letGo, nobody, open, stillHere } from '#lib/store.js'
 import { Page } from './page.js'
 import '#lib/style.css'
 
@@ -187,7 +187,7 @@ interface Offers {
 	frontDoor: string
 }
 
-function SignIn(props: { onDone: () => void }): React.ReactNode {
+function SignIn(props: { onDone: () => void; said?: string | undefined }): React.ReactNode {
 	const [bad, setBad] = useState(false)
 
 	// What this name lets somebody in with, asked before the form is drawn.
@@ -233,6 +233,12 @@ function SignIn(props: { onDone: () => void }): React.ReactNode {
 	return (
 		<main className="sign-in">
 			<h1>roster</h1>
+
+			{props.said !== undefined && (
+				<p className="bad" role="alert">
+					{props.said}
+				</p>
+			)}
 
 			{/*
 				Not a form nobody can use. `Vouch.Verify` refuses a password here
@@ -344,7 +350,7 @@ async function run(transport: Transport): Promise<void> {
 
 	const ungated = ungatedTransport()
 
-	const draw = (app: App, signedIn: boolean, out: () => void): void => {
+	const draw = (app: App, signedIn: boolean, out: () => void, said?: string): void => {
 		root.render(
 			<StrictMode>
 				<Provider app={app}>
@@ -354,6 +360,7 @@ async function run(transport: Transport): Promise<void> {
 						onSignOut={out}
 						writes={writes(transport)}
 						{...(ungated !== undefined ? { ungated } : {})}
+						said={said}
 					/>
 				</Provider>
 			</StrictMode>,
@@ -376,8 +383,11 @@ async function run(transport: Transport): Promise<void> {
 	 * operator on one page and a roster user on the other: a session of this
 	 * plane and one of the control plane are never one name, and the sandbox
 	 * names it for the page (`user`), as it did before a store was a session's.
+	 *
+	 * `said` is what the form says first, when there is one to draw: that the
+	 * sign-out before it could not clear this browser (`stillHere`).
 	 */
-	async function boot(): Promise<void> {
+	async function boot(said?: string): Promise<void> {
 		let identity: string | null
 		try {
 			identity = await which(transport)
@@ -387,15 +397,20 @@ async function run(transport: Transport): Promise<void> {
 		}
 		if (identity === null) {
 			calls?.drop()
-			return draw(nobody(transport), false, () => {})
+			return draw(nobody(transport), false, () => {}, said)
 		}
 
 		const app = await open(transport, { name: 'roster', identity }, calls !== null)
 
 		// Letting go of it: forgetting it first when its caller signed out,
-		// and in either case asking again whom to draw for.
+		// and in either case asking again whom to draw for, once it is closed
+		// -- saying on the form when the forget did not reach this browser's
+		// copy, rather than leaving the person to believe nothing is here.
 		const leave = (forget: boolean): void => {
-			void letGo(app, forget).then(boot)
+			void letGo(app, forget).then(
+				() => boot(),
+				() => boot(stillHere),
+			)
 		}
 		const hold = calls?.hold(identity, leave)
 
@@ -433,13 +448,14 @@ function Shell(props: {
 	onSignOut: () => void
 	writes: Writes
 	ungated?: Transport | undefined
+	said?: string | undefined
 }): React.ReactNode {
 	return (
 		<>
 			{props.signedIn ? (
 				<Page onSignOut={props.onSignOut} writes={props.writes} />
 			) : (
-				<SignIn onDone={props.onSignIn} />
+				<SignIn onDone={props.onSignIn} said={props.said} />
 			)}
 			<Devtools {...(props.ungated !== undefined ? { ungated: props.ungated } : {})} />
 		</>
