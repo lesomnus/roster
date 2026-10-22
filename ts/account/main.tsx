@@ -46,7 +46,7 @@ import { MeService } from '#gen/app/me_pb.js'
 import { HolderService } from '#gen/roster/payday/holder_svc_pb.js'
 import { covers } from '#lib/covers.js'
 import { expiries, expiresAt, until } from '#lib/expiry.js'
-import { b64url, SignIn } from '#lib/signin.js'
+import { b64url, SignIn, vendor, type Vendor } from '#lib/signin.js'
 import { Picture } from '#lib/picture.js'
 import { open } from '#lib/store.js'
 import '#lib/style.css'
@@ -61,6 +61,8 @@ interface Providers {
 	password: boolean
 	/** Whether this operator lets its people delete their own account (`TenantConfig.leave`). */
 	leave?: boolean
+	/** Whether a recovery link can be had here: passwords offered, and mail to send it by. */
+	recover?: boolean
 }
 
 async function providers(): Promise<Providers | null> {
@@ -137,14 +139,21 @@ function Account(props: { of: Providers; onSignOut: () => void; onLeft: (forgott
 				<Profile own={own} alias={v.alias} may={may} />
 				<Ways of={props.of} own={own} identities={v.identities} credentials={v.credentials} may={may} />
 				<Addresses own={own} may={may} />
-				<Password own={own} may={may} />
+				<Password own={own} has={v.credentials.some((c) => c.kind === 'password')} offered={props.of.password} may={may} />
 				<Factors own={own} alias={v.alias} brand={props.of.tenant.name || props.of.tenant.alias} may={may} />
 				<Sessions own={own} may={may} />
 				{props.of.terminal === true && <Terminal may={may} />}
 				<Keys own={own} keys={v.keys} may={may} />
 				{/* Not to somebody a directory provisions, whom roster refuses it: the directory says when they leave. */}
 				{props.of.leave === true && v.provisionedThrough === '' && (
-					<Leave alias={v.alias} brand={brandOf(props.of)} onSignOut={props.onSignOut} onLeft={props.onLeft} />
+					<Leave
+						of={props.of}
+						alias={v.alias}
+						identities={v.identities}
+						password={v.credentials.some((c) => c.kind === 'password')}
+						onSignOut={props.onSignOut}
+						onLeft={props.onLeft}
+					/>
 				)}
 			</main>
 		</div>
@@ -503,11 +512,26 @@ function Addresses(props: { own: Uint8Array; may: (m: string) => boolean }): Rea
 	)
 }
 
-/** Password is `Credential.Set` on your own row, which asks for the one you hold. */
-function Password(props: { own: Uint8Array; may: (m: string) => boolean }): React.ReactNode {
+/**
+ * Password is `Credential.Set` on your own row, which asks for the one you hold
+ * -- and, of somebody who holds none, for a sign-in a few minutes old instead,
+ * since there is no password to prove (`server/core/credential.go`, *a first
+ * password of your own*). The form asked for a current password whatever they
+ * held, which somebody who never had one could not give.
+ *
+ * Not drawn for somebody with none where the operator offers no passwords: a
+ * first one there is a row no sign-in reads.
+ */
+function Password(props: { own: Uint8Array; has: boolean; offered: boolean; may: (m: string) => boolean }): React.ReactNode {
 	const set = useCall(CredentialService.method.set)
 	const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
 	const allowed = props.may('/roster.CredentialService/Set')
+	// The record says which ways in there are, and no write here answers with
+	// it: told to ask again, the sections that read it -- the ways in, and what
+	// deleting the account says -- read the password just set.
+	const app = useApp()
+
+	if (!props.has && !props.offered) return null
 
 	return (
 		<section>
@@ -529,22 +553,31 @@ function Password(props: { own: Uint8Array; may: (m: string) => boolean }): Reac
 							})
 							.then(() => {
 								form.reset()
-								setNote({ ok: true, text: 'changed' })
+								setNote({ ok: true, text: props.has ? 'changed' : 'set; you can sign in with it' })
+								if (!props.has) app.queries.forget(MeService.method.get)
 							})
 							.catch((e: unknown) => setNote({ ok: false, text: said(e) }))
 					}}
 				>
-					<input name="current" type="password" placeholder="current" autoComplete="current-password" required />
+					{props.has && <input name="current" type="password" placeholder="current" autoComplete="current-password" required />}
 					<input name="next" type="password" placeholder="new" autoComplete="new-password" required />
 					<button type="submit" disabled={set.state === 'pending'}>
-						change
+						{props.has ? 'change' : 'set'}
 					</button>
 				</form>
 			)}
-			<p className="note">
-				Your own row asks for the password you hold, so a credential that merely acts as you cannot
-				replace it. Lost it? Sign out and use <em>forgot?</em>
-			</p>
+			{props.has ? (
+				<p className="note">
+					Your own row asks for the password you hold, so a credential that merely acts as you cannot
+					replace it. Lost it? Sign out and use <em>forgot?</em>
+				</p>
+			) : (
+				<p className="note">
+					You have none: you sign in through a directory. Setting one takes a sign-in made a few minutes
+					ago, at which you were asked who you are; where yours cannot be that, <em>forgot?</em> mails
+					you a link that hands you one.
+				</p>
+			)}
 			{note !== null && <p className={note.ok ? 'note' : 'bad'}>{note.text}</p>}
 		</section>
 	)
@@ -1052,11 +1085,37 @@ function Expires(): React.ReactNode {
  * it by accident. What it says it does is what roster does: nothing is destroyed
  * at once, the operator can bring the account back until it is forgotten, and
  * then everything held about you is.
+ *
+ * Not every way in can be that sign-in, and a refusal says which of the
+ * person's cannot and what is left. GitHub never says when it asked anybody;
+ * Google says so only where its project lets it, and does not ask again when
+ * asked; a password always can. Somebody with none has a recovery link, where
+ * one can be had: it hands them a password, and a sign-in with it is one. Where
+ * none can, it is the operator who deletes the account.
  */
-function Leave(props: { alias: string; brand: string; onSignOut: () => void; onLeft: (forgotten: string) => void }): React.ReactNode {
+function Leave(props: {
+	of: Providers
+	alias: string
+	identities: { provider: string }[]
+	password: boolean
+	onSignOut: () => void
+	onLeft: (forgotten: string) => void
+}): React.ReactNode {
 	const leave = useCall(MeService.method.leave)
 	const [note, setNote] = useState<string | null>(null)
 	const [stale, setStale] = useState(false)
+	const brand = brandOf(props.of)
+
+	// Which of the person's own ways in cannot be a sign-in a moment ago, by
+	// whose sign-in each connection is -- so a refusal names the road that is
+	// left rather than the one they just took. `arrives/google.go` is why
+	// Google is one of them.
+	const through = (who: Vendor): boolean =>
+		props.identities.some((i) => vendor(props.of.providers.find((p) => p.name === i.provider)?.issuer) === who)
+	const github = through('github')
+	const google = through('google')
+	// A password they can sign in with, which is one wherever passwords are.
+	const password = props.password && props.of.password
 
 	useEffect(() => {
 		if (location.hash === '#leave') document.getElementById('leave')?.scrollIntoView()
@@ -1066,9 +1125,9 @@ function Leave(props: { alias: string; brand: string; onSignOut: () => void; onL
 		<section id="leave">
 			<h2>delete your account</h2>
 			<p className="note">
-				You will not be able to sign in to {props.brand} again, nor to anything that signs you in through
+				You will not be able to sign in to {brand} again, nor to anything that signs you in through
 				it, and every app that holds a session for you is told. Nothing is destroyed at once: until the
-				account is forgotten, whoever runs {props.brand} can bring it back if you ask them. After that,
+				account is forgotten, whoever runs {brand} can bring it back if you ask them. After that,
 				everything held about you is destroyed.
 			</p>
 			<form
@@ -1095,17 +1154,37 @@ function Leave(props: { alias: string; brand: string; onSignOut: () => void; onL
 				</button>
 			</form>
 			{stale && (
-				<p className="bad">
-					Deleting an account takes a sign-in made a few minutes ago, at which you were asked who you are.{' '}
-					<button
-						onClick={() => {
-							location.hash = 'leave'
-							props.onSignOut()
-						}}
-					>
-						sign in again
-					</button>
-				</p>
+				<>
+					<p className="bad">
+						Deleting an account takes a sign-in made a few minutes ago, at which you were asked who you are.{' '}
+						<button
+							onClick={() => {
+								location.hash = 'leave'
+								props.onSignOut()
+							}}
+						>
+							sign in again
+						</button>
+					</p>
+					{github && <p className="note">A sign-in through GitHub never is one: GitHub does not say when it asked you.</p>}
+					{google && (
+						<p className="note">
+							One through Google is, if whoever runs {brand} has let Google say when it asked you and
+							Google just did. It does not ask again when asked, so sign in through it from a private
+							window, where it has to.
+						</p>
+					)}
+					{password && <p className="note">Your password always is one.</p>}
+					{!password && props.of.recover === true && (
+						<p className="note">
+							So is a recovery link: sign out and use <em>forgot?</em> with an address on your account that has
+							been checked. The link hands you a password, and a sign-in with it can delete your account.
+						</p>
+					)}
+					{!password && props.of.recover !== true && (
+						<p className="note">If none of your ways in can be, whoever runs {brand} can delete your account.</p>
+					)}
+				</>
 			)}
 			{note !== null && <p className="bad">{note}</p>}
 		</section>

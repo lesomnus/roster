@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/vouch"
 )
 
@@ -180,22 +182,17 @@ func TestAPersonChangesTheirOwnPassword(t *testing.T) {
 	})
 }
 
-// TestAFirstPasswordOfYourOwnAsksForNothing is the case with nothing to prove,
-// and the trade it is.
+// TestAFirstPasswordOfYourOwnTakesAFreshSignIn is the case with no password to
+// prove, and what it asks for instead.
 //
 // Somebody who arrived through a provider has no password, so the reauth the
-// change above rests on has nothing to compare. That was refused, and the
-// refusal was right on its own terms: a bearer that merely acts as them can now
-// set a password they never chose, and unlike the bearer it does not expire and
-// they are not told.
-//
-// What changed is the alternative. The refusal pointed at an operator or the
-// recovery flow, and recovery needs mail, which most deployments never
-// configure -- so in the common case it pointed at nothing. `server/core` has
-// the argument at length; this asks that both halves are true: the first one
-// goes in with nothing, and the second still cannot be replaced without the
-// first.
-func TestAFirstPasswordOfYourOwnAsksForNothing(t *testing.T) {
+// change above rests on has nothing to compare. It was allowed with nothing at
+// all, and that let a bearer that merely acts as them -- a session left open, a
+// key somebody else minted for them -- set a password they never chose, which
+// unlike the bearer does not expire and which they are not told of. So it asks
+// for a sign-in a few minutes old, by the credential the call came with, the
+// way deleting an account does (`keys.Authenticated`).
+func TestAFirstPasswordOfYourOwnTakesAFreshSignIn(t *testing.T) {
 	const set = "/roster.CredentialService/Set"
 
 	x := require.New(t)
@@ -205,36 +202,69 @@ func TestAFirstPasswordOfYourOwnAsksForNothing(t *testing.T) {
 	const first, next = "correct horse battery staple", "a whole new set of words entirely"
 
 	own := app.HolderRef_builder{Id: b.Who.Bytes()}.Build()
+	cl := app.NewCredentialServiceClient(b.Conn)
+	sets := func(as context.Context, current, secret string) error {
+		_, err := cl.Set(as, app.CredentialSetRequest_builder{
+			Ref:     own,
+			Current: []byte(current),
+			Secret:  []byte(secret),
+		}.Build())
+
+		return err
+	}
 
 	// No operator write first: this is somebody a provider vouched for and who
 	// has never had a password.
 	permits(t, ctx, b, b.Contoso, b.Who, "self", set)
-	hers := mintFor(t, ctx, b, b.Who, "laptop", []string{set}, time.Time{})
-	cl := app.NewCredentialServiceClient(b.Conn)
+	stale := acting(ctx, b.Token, signedInAt(t, ctx, b, b.Who, []string{set}, time.Now().Add(-2*core.FirstPasswordWithin)))
 
-	_, err := cl.Set(bearing(ctx, hers), app.CredentialSetRequest_builder{
-		Ref:    own,
-		Secret: []byte(first),
-	}.Build())
-	x.NoError(err, "somebody with no password could not give themselves one")
+	t.Run("not from a key with no sign-in of theirs behind it", func(t *testing.T) {
+		x := require.New(t)
 
-	// It is the password now, which is the half that says the write landed
-	// rather than being accepted and dropped.
+		k := mintFor(t, ctx, b, b.Who, "laptop", []string{set}, time.Time{})
+		err := sets(bearing(ctx, k), "", first)
+		x.Equal(codes.FailedPrecondition, status.Code(err), "a key nobody signed in for gave its holder a password")
+	})
+
+	t.Run("nor from a sign-in that is not minutes old", func(t *testing.T) {
+		x := require.New(t)
+
+		err := sets(stale, "", first)
+		x.Equal(codes.FailedPrecondition, status.Code(err), "a session open all afternoon minted a password")
+		x.Contains(status.Convert(err).Message(), "sign in again")
+	})
+
+	// Neither wrote anything: there is still no password to sign in with.
 	v := vouch.New(b.Ungated, b.Ungated)
 	res, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
 		Who: app.VouchWho_builder{Id: b.Who.Bytes()}.Build(), Secret: []byte(first),
 	}.Build())
 	x.NoError(err)
-	x.True(res.GetOk(), "the first password does not sign in")
+	x.False(res.GetOk(), "a refused first password signs in")
+
+	t.Run("but from one that is", func(t *testing.T) {
+		x := require.New(t)
+
+		fresh := acting(ctx, b.Token, signedInAt(t, ctx, b, b.Who, []string{set}, time.Now()))
+		x.NoError(sets(fresh, "", first), "a sign-in a moment ago could not give its holder a password")
+
+		res, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
+			Who: app.VouchWho_builder{Id: b.Who.Bytes()}.Build(), Secret: []byte(first),
+		}.Build())
+		x.NoError(err)
+		x.True(res.GetOk(), "the first password does not sign in")
+	})
 
 	// And the door closes behind it: there is something to prove now, so the
-	// next change asks for it.
-	_, err = cl.Set(bearing(ctx, hers), app.CredentialSetRequest_builder{
-		Ref:    own,
-		Secret: []byte(next),
-	}.Build())
-	x.Equal(codes.PermissionDenied, status.Code(err),
-		"the second password was replaced with nothing proved")
+	// next change asks for it -- and a change that proves it asks for nothing
+	// else, however long ago the caller signed in.
+	t.Run("and the next change asks for the one held, from any sign-in", func(t *testing.T) {
+		x := require.New(t)
+
+		err := sets(stale, "", next)
+		x.Equal(codes.PermissionDenied, status.Code(err), "the second password was replaced with nothing proved")
+		x.NoError(sets(stale, first, next))
+	})
 
 	// A `current` sent when there is none is ignored rather than refused: a
 	// page that sent one has guessed about a row it cannot read, which is not
@@ -245,9 +275,9 @@ func TestAFirstPasswordOfYourOwnAsksForNothing(t *testing.T) {
 		cx := t.Context()
 		c := keyFor(t, set)
 		permits(t, cx, c, c.Contoso, c.Who, "self", set)
-		theirs := mintFor(t, cx, c, c.Who, "laptop", []string{set}, time.Time{})
+		theirs := acting(cx, c.Token, signedInAt(t, cx, c, c.Who, []string{set}, time.Now()))
 
-		_, err := app.NewCredentialServiceClient(c.Conn).Set(bearing(cx, theirs),
+		_, err := app.NewCredentialServiceClient(c.Conn).Set(theirs,
 			app.CredentialSetRequest_builder{
 				Ref:     app.HolderRef_builder{Id: c.Who.Bytes()}.Build(),
 				Current: []byte("nothing is stored under this"),
@@ -255,4 +285,43 @@ func TestAFirstPasswordOfYourOwnAsksForNothing(t *testing.T) {
 			}.Build())
 		x.NoError(err)
 	})
+}
+
+// TestALinkSignInSetsAFirstPasswordAndLeaves is the road for somebody whose
+// way in cannot say when it asked them: a recovery link, spent, is a sign-in
+// made now (`Vouch.Redeem`), so the person it signs in may give themselves a
+// first password, or delete their account, as they could a moment after
+// typing one.
+func TestALinkSignInSetsAFirstPasswordAndLeaves(t *testing.T) {
+	const set = "/roster.CredentialService/Set"
+
+	x := require.New(t)
+	b := keyFor(t, link, redeem, set, leaveMe, getMe)
+	ctx := t.Context()
+	offersLeave(t, ctx, b.Server, b.Contoso, true)
+	permits(t, ctx, b, b.Contoso, b.Who, "self", set)
+
+	c := app.NewVouchServiceClient(b.Conn)
+	made, err := c.Link(bearing(ctx, b.Token), app.VouchLinkRequest_builder{
+		Who: app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+	spent, err := c.Redeem(bearing(ctx, b.Token), app.VouchRedeemRequest_builder{
+		Token:   made.GetToken(),
+		Methods: []string{set, leaveMe, getMe},
+	}.Build())
+	x.NoError(err)
+	x.True(spent.GetVerified().GetOk())
+	as := acting(ctx, b.Token, spent.GetToken())
+
+	_, err = app.NewCredentialServiceClient(b.Conn).Set(as, app.CredentialSetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
+		Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err, "a link spent a moment ago could not give its holder a password")
+
+	_, err = app.NewMeServiceClient(b.Conn).Leave(as, app.MeLeaveRequest_builder{Confirm: "someone"}.Build())
+	x.NoError(err, "a link spent a moment ago could not delete its holder's account")
+	erased, _ := erasedAt(t, ctx, b.Server, b.Who)
+	x.NotNil(erased)
 }

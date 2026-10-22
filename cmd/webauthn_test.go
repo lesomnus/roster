@@ -44,8 +44,8 @@ func TestAKeyIsEnrolledAndThenSignsSomebodyIn(t *testing.T) {
 	// A password, because a security key is a **second** factor here and
 	// `vouch.Begins` answers no for it: somebody whose only credential is a key
 	// has nothing that can start a sign-in. Set the operator way -- no frame --
-	// since a person's own first password is not theirs to set (`Set` asks
-	// them for the one they hold, and there is none).
+	// since a person's own first password takes a sign-in a few minutes old,
+	// which this call has no credential to say.
 	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
 		Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
