@@ -6,6 +6,7 @@
 #     http://localhost:8081/   admin console   admin / admin
 #     http://localhost:8080/   user console    erin / correct horse battery staple
 #     http://localhost:8090/   account app     the same person, through an app
+#     http://localhost:8025/   Mailpit         what the account app mailed
 #
 # `PUBLIC_HOST` is the name a browser reaches this by, `localhost` unless said
 # otherwise: the account app and the user console both resolve the customer by
@@ -228,8 +229,22 @@ services:
     environment:
       SEED_CUSTOMER: ${SEED_CUSTOMER:-contoso}
       PUBLIC_HOST: ${PUBLIC_HOST:-localhost}
+      # The links it mails -- recovery, a confirmed address, a deleted
+      # account -- to the sink below, in the clear, which `tls: none` reaches
+      # because it is named (docs/operating.md, "The front door's mail").
+      ROSTER_ACCOUNT_MAIL_ADDR: mailpit:1025
+      ROSTER_ACCOUNT_MAIL_FROM: "Contoso <no-reply@contoso.example>"
+      ROSTER_ACCOUNT_MAIL_TLS: none
+      ROSTER_ACCOUNT_MAIL_PLAINTEXT_HOSTS: '["mailpit"]'
     ports:
       - "8090:8090"
+
+  # A mailbox that catches what the account app sends and sends nothing on:
+  # http://localhost:8025 reads it.
+  mailpit:
+    image: axllent/mailpit:v1.31.6@sha256:23fe39e81bde596a918000b3135c0f85dc8bb4c9ea6be274b051143f3e300387
+    ports:
+      - "8025:8025"
     volumes:
       - account:/var/lib/roster-account:ro
 

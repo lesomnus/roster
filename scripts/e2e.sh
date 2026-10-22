@@ -32,7 +32,14 @@ cd "${__root}"
 
 work="$(mktemp -d)"
 pids=()
-trap 'kill "${pids[@]}" 2>/dev/null; wait 2>/dev/null; rm -rf "${work}"' EXIT
+mailpit=""
+cleanup() {
+	kill "${pids[@]}" 2>/dev/null
+	wait 2>/dev/null
+	if [ -n "${mailpit}" ]; then docker rm -f "${mailpit}" >/dev/null 2>&1; fi
+	rm -rf "${work}"
+}
+trap cleanup EXIT
 
 echo "== build"
 go build -o "${work}/roster" ./cmd/roster
@@ -48,7 +55,7 @@ fi
 # server left over from a `--hold` the day before answered for the sandbox,
 # serving the modules it had cached, and a change to the library it served
 # was invisible for an afternoon.
-for port in 18051 18052 18061 18062 18071 18072 18090 18100 18101 18102; do
+for port in 18025 18026 18051 18052 18061 18062 18071 18072 18090 18100 18101 18102; do
 	if (exec 3<>"/dev/tcp/127.0.0.1/${port}") 2>/dev/null; then
 		echo "something is already listening on 127.0.0.1:${port}; stop it first (a --hold left running?)" >&2
 		exit 1
@@ -80,6 +87,24 @@ export E2E_TENANT_ADMIN_PASSWORD="contoso-$(head -c 12 /dev/urandom | base64 | t
 # nothing of the first (`user.spec.ts`). Nobody else signs in as her.
 export E2E_GRACE_PASSWORD="grace-$(head -c 12 /dev/urandom | base64 | tr -d '/+=')"
 admin_http="http://127.0.0.1:18072"
+# fabrikam, whose person the mail spec walks through what the account app
+# mails: a link that confirms an address, one that recovers the account, one
+# that deletes it. A tenant of its own, at an address of its own (the account
+# app answers whichever tenant the name a browser arrived at is), so that the
+# account it deletes is nobody another spec signs in as.
+export E2E_FABRIKAM="http://127.0.0.1:18090"
+export E2E_FRANK_PASSWORD="fabrikam-$(head -c 12 /dev/urandom | base64 | tr -d '/+=')"
+
+# A mailbox for what the account app sends: Mailpit, which takes any message
+# on its SMTP port and answers what it holds on its API, as a person reads
+# theirs. `E2E_MAIL=0` leaves it out, and the mail spec with it -- for a desk
+# with no Docker.
+if [ "${E2E_MAIL:-1}" != "0" ]; then
+	mailpit="roster-e2e-mailpit-$$"
+	docker run -d --rm --name "${mailpit}" -p 127.0.0.1:18025:1025 -p 127.0.0.1:18026:8025 \
+		axllent/mailpit:v1.31.6@sha256:23fe39e81bde596a918000b3135c0f85dc8bb4c9ea6be274b051143f3e300387 >/dev/null
+	export E2E_MAILPIT="http://127.0.0.1:18026"
+fi
 
 cat > "${work}/roster.yaml" <<YAML
 db:
@@ -127,6 +152,17 @@ admin:
 vouch:
   keys: ["e2e:$(head -c 32 /dev/urandom | base64)"]
 YAML
+# The account app's mail, to the sink: in the clear, which `tls: none` allows
+# to this machine and nowhere it was not told.
+if [ -n "${E2E_MAILPIT:-}" ]; then
+	cat >> "${work}/roster.yaml" <<YAML
+account:
+  mail:
+    addr: 127.0.0.1:18025
+    from: "Fabrikam <no-reply@fabrikam.example>"
+    tls: none
+YAML
+fi
 r() { "${work}/roster" --config "${work}/roster.yaml" "$@"; }
 
 echo "== init and seed"
@@ -145,6 +181,18 @@ echo "${E2E_TENANT_ADMIN_PASSWORD}" | r vouch set --password-stdin @contoso/admi
 r holder add @contoso/grace >/dev/null
 echo "${E2E_GRACE_PASSWORD}" | r vouch set --password-stdin @contoso/grace >/dev/null
 r host add '{"tenant":{"alias":"contoso"},"name":"localhost"}' >/dev/null
+
+# fabrikam: frank, with a password, the role the tenant arrived with, and an
+# address nobody has confirmed yet -- and a tenant that lets its people leave,
+# which is what a link that deletes an account is for. Before the account app
+# is provisioned, which reaches every tenant with a name.
+r tenant add @fabrikam '{"name":"Fabrikam","config":{"leave":true}}' >/dev/null
+r holder add @fabrikam/frank >/dev/null
+echo '{"role":{"slug":{"alias":"everything","tenant":{"alias":"fabrikam"}}},"holder":{"slug":{"alias":"frank","tenant":{"alias":"fabrikam"}}}}' \
+	| r binding add - >/dev/null
+echo "${E2E_FRANK_PASSWORD}" | r vouch set --password-stdin @fabrikam/frank >/dev/null 2>&1
+r email add '{"holder":{"slug":{"alias":"frank","tenant":{"alias":"fabrikam"}}},"address":"frank@fabrikam.example"}' >/dev/null
+r host add '{"tenant":{"alias":"fabrikam"},"name":"127.0.0.1"}' >/dev/null
 
 # Two directories, and erin arrived through one of them.
 #

@@ -414,12 +414,13 @@ to somebody who wants to leave, which is why the page offers the other link
 instead.
 
 And that is where the cost lands. A link can be had only where the deployment
-can send mail -- the account app's `Config.Mail`, which nothing in `roster
-account serve` fills: roster sends no mail, so the front door as it ships has
-none to send with -- and only to an address that was checked. Where it cannot,
-somebody whose only way in is GitHub, or Google without the setting, cannot
-delete their own account, the account page says so, and whoever runs the tenant
-does it for them (`roster holder erase`).
+can send mail -- `account.mail`, the SMTP server the front door delivers through
+([operating.md](../operating.md) § *The front door's mail*): roster mints the
+link and sends nothing, and the front door sends it -- and only to an address that
+was checked. Where the block is left out, as it ships, somebody whose only way in
+is GitHub, or Google without the setting, cannot delete their own account, the
+account page says so, and whoever runs the tenant does it for them (`roster holder
+erase`).
 
 From a terminal it is a key handed over in a browser, which carries **the
 browser's** sign-in:

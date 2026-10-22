@@ -89,6 +89,7 @@ import (
 
 	"github.com/lesomnus/roster/arrives"
 	"github.com/lesomnus/roster/frontdoor"
+	"github.com/lesomnus/roster/mail"
 	rstr "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
 )
@@ -182,11 +183,19 @@ type Config struct {
 	// Static is the page, or nil for a placeholder that says where the API is.
 	Static http.Handler
 
-	// Mail delivers what roster mints and does not deliver: a recovery link, a
-	// verification link. `to` is the address on the row and never anything a
-	// request said; `link` is the URL that finishes the flow at this app. Nil
-	// is a deployment that cannot, and the two flows say so with 501 rather
-	// than minting a link nobody will ever read.
+	// Mail delivers what roster mints and does not deliver: a recovery link,
+	// a verification link, a link that deletes an account. `to` is the address
+	// on the row and never anything a request said; `link` is the URL that
+	// finishes the flow at this app, and [Letter] is the message it goes out
+	// in. Nil is a deployment that cannot, and the flows say so with 501 --
+	// and `/providers` with `recover` and `leaveLink` false -- rather than
+	// minting a link nobody will ever read.
+	//
+	// What fills it is the deployment's (`account.mail`, `package mail`):
+	// roster mints, and this app delivers, which is D19's line. An error it
+	// answers is logged with the address cut to its domain and nothing of the
+	// link, and the recovery form answers the browser the same whatever it
+	// was.
 	Mail func(ctx context.Context, to, subject, link string) error
 }
 
@@ -1209,19 +1218,26 @@ func (a *App) recover(w http.ResponseWriter, r *http.Request) {
 	// fill in is not a way to have this deployment send mail anywhere. The
 	// browser is answered the same either way, and in the background, so the
 	// timing says nothing either.
+	//
+	// Somebody's is what roster says it is: an address somebody proved. An
+	// unproved row resolves nobody at roster (`vouch.byAddress`), so the token
+	// it answered for one is a link to nothing -- and mailing it would be this
+	// deployment sending a dead link to whatever mailbox somebody wrote onto
+	// their own account.
 	link := a.finish(r, "/redeem", res.GetToken(), t)
 	go func() {
 		ctx := context.WithoutCancel(ctx)
-		_, err := a.roster.Email().Get(t.on(ctx), rstr.EmailGetRequest_builder{
+		row, err := a.roster.Email().Get(t.on(ctx), rstr.EmailGetRequest_builder{
 			Ref: rstr.EmailRef_builder{
 				At: rstr.EmailRefByAt_builder{TenantId: t.id.Bytes(), Address: proto.String(address)}.Build(),
 			}.Build(),
+			Select: rstr.EmailSelect_builder{DateVerified: proto.Bool(true)}.Build(),
 		}.Build())
-		if err != nil {
+		if err != nil || row.GetDateVerified() == nil {
 			return
 		}
 		if err := a.c.Mail(ctx, address, "Recover your account", link); err != nil {
-			fmt.Fprintf(os.Stderr, "account: mail to %s: %v\n", address, err)
+			unsent(address, err)
 		}
 	}()
 
@@ -1335,14 +1351,14 @@ func (a *App) verify(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "no", http.StatusForbidden)
 			return
 		}
-		fmt.Fprintf(os.Stderr, "account: verify %s: %v\n", row.GetAddress(), err)
+		fmt.Fprintf(os.Stderr, "account: verify %s: %s\n", mail.Mask(row.GetAddress()), mail.Redact(err.Error()))
 		http.Error(w, "cannot start", http.StatusInternalServerError)
 		return
 	}
 
 	link := a.finish(r, "/confirm", res.GetToken(), t)
 	if err := a.c.Mail(ctx, row.GetAddress(), "Confirm your address", link); err != nil {
-		fmt.Fprintf(os.Stderr, "account: mail to %s: %v\n", row.GetAddress(), err)
+		unsent(row.GetAddress(), err)
 		http.Error(w, "cannot send", http.StatusBadGateway)
 		return
 	}
@@ -1430,7 +1446,7 @@ func (a *App) claim(w http.ResponseWriter, r *http.Request) {
 		case codes.PermissionDenied:
 			http.Error(w, "no", http.StatusForbidden)
 		default:
-			fmt.Fprintf(os.Stderr, "account: claim %s: %v\n", address, err)
+			fmt.Fprintf(os.Stderr, "account: claim %s: %s\n", mail.Mask(address), mail.Redact(err.Error()))
 			http.Error(w, "cannot start", http.StatusInternalServerError)
 		}
 		return
@@ -1438,7 +1454,7 @@ func (a *App) claim(w http.ResponseWriter, r *http.Request) {
 
 	link := a.finish(r, "/confirm", res.GetToken(), t)
 	if err := a.c.Mail(ctx, address, "Confirm your address", link); err != nil {
-		fmt.Fprintf(os.Stderr, "account: mail to %s: %v\n", address, err)
+		unsent(address, err)
 		http.Error(w, "cannot send", http.StatusBadGateway)
 		return
 	}
@@ -1534,7 +1550,7 @@ func (a *App) leaveLink(w http.ResponseWriter, r *http.Request) {
 
 	link := a.finish(r, "/leave", res.GetToken(), t)
 	if err := a.c.Mail(ctx, res.GetAddress(), "Delete your account", link); err != nil {
-		fmt.Fprintf(os.Stderr, "account: mail to %s: %v\n", res.GetAddress(), err)
+		unsent(res.GetAddress(), err)
 		http.Error(w, "cannot send", http.StatusBadGateway)
 		return
 	}

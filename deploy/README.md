@@ -85,6 +85,17 @@ have something to sign in *to*; it comes out with a `$patch: delete`. The base
 ships no Secret at all -- an overlay's own collides with one that is already
 there -- so there is nothing of that kind to remove.
 
+**Nor is the account app**, the front door a customer's people sign in at
+themselves; an overlay that runs it (`roster account serve`, or `account.addr` in
+`config.yaml`) delivers the links it mails through `account.mail`
+([operating.md](../docs/operating.md) § *The front door's mail*). The SMTP password
+is a Secret of the overlay's own, like every other here, named by reference --
+mounted and `password: file:/run/secrets/smtp/password`, or in the environment and
+`password: env:SMTP_PASSWORD` -- and never written into `config.yaml`. Send from a
+domain of your own through a transactional provider, with the SPF, DKIM and DMARC
+records it gives you; a cluster that cannot reach port 587 or 465 outward has an
+egress rule to write first.
+
 **And the other shape of relying party is deliberately not here.** `oauth2-proxy`
 in front of a page is half of what a deployment runs
 (`docs/relying-party.md`), and it was moved into this directory and moved

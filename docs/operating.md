@@ -471,6 +471,77 @@ control is a different thing and turns off more: grant no role naming
 `ApiKey.Issue` and **no** self-service key can be minted, the page's own app
 passwords included.
 
+### The front door's mail
+
+The account app mails three links roster mints for it: one that **recovers** an
+account (a password, shown once), one that **confirms** an address, and one that
+**deletes** an account for somebody whose way in cannot say when it asked them
+([usage/ways-in.md](usage/ways-in.md)). roster mints and sends nothing; the front
+door delivers -- D19's line, held: the SMTP client is `package mail`, which only
+the front door's process builds, from `account.mail`, in `roster account serve`
+and in the account app `roster serve` runs alike.
+
+```yaml
+account:
+  mail:
+    addr: smtp.postmarkapp.com:587          # host:port; empty sends nothing
+    username: env:SMTP_USER                 # or the provider's literal user name
+    password: env:SMTP_PASSWORD             # env:NAME or file:PATH, never the password
+    from: "Contoso <no-reply@mail.contoso.example>"
+    tls: starttls                           # starttls (default) | implicit (465) | none
+    timeout: 30s                            # one message, dial to last answer
+```
+
+`username` is written as it is (a provider's is often a fixed word like
+`apikey`); `password` is a **reference** and nothing else, and a value written as
+the password itself is refused at start. `tls: starttls` refuses a server that
+does not offer STARTTLS rather than speaking to it in the clear; `implicit` is TLS
+from the first byte, which is port 465; `none` is the clear, and reaches only this
+machine or a host named in `plaintext_hosts` -- a sink in development, never a
+provider -- and never with a password. A port left out is 587, 465 or 25 by the
+mode. Every one of those is checked when the process starts, not at the first
+message somebody waits for.
+
+**Left out, the door cannot send, which is how it shipped.** The three flows
+answer 501, `/providers` says `recover: false` and `leaveLink: false`, and the
+page says to ask whoever runs the tenant. Nothing else changes.
+
+**What goes out** is plain text in the account app's language: what the link is
+for, the link on a line of its own, and what to do with a message nobody asked
+for -- the link is the one thing in it to follow. A recovery link goes only to an
+address somebody proved, the one roster would resolve, and the recovery form
+answers the browser the same whether a message went or not; a failure to send is
+the log's, never the form's. The confirmation and deletion links are asked for by
+somebody signed in, and a failure is said to them as *cannot send*.
+
+**What the log carries** is the address cut to its domain and the server's code:
+never the link, its token, or a whole address. A server that refuses a recipient
+says who, and that is cut out too.
+
+**Deliverability is the provider's and yours.** Send from a domain of your own
+through a transactional provider -- Amazon SES, Postmark, Mailgun, Resend, NHN
+Cloud Email, or whichever your organisation already has -- and publish the SPF,
+DKIM and DMARC records it gives you for that domain, so that what it signs is
+what `from` says. A message from a domain that says nothing about who may send
+for it goes to spam, or nowhere, and a recovery link that never arrives is a
+person locked out. Gmail's SMTP is for development only: it caps how much a day,
+its terms are a person's mailbox and not a deployment's, and it sends as the
+Gmail account rather than as your domain.
+
+**In development, Mailpit** catches everything and sends nothing. `compose.yaml`
+runs one beside the account app and reads it at `http://localhost:8025`;
+`scripts/e2e.sh` runs one for the browser specs, which read what was sent through
+its API. The block for one:
+
+```yaml
+account:
+  mail:
+    addr: mailpit:1025
+    from: "Contoso <no-reply@contoso.example>"
+    tls: none
+    plaintext_hosts: [mailpit]              # a sink on the network, named
+```
+
 **Named is a listener and empty is nowhere**, which is what `control` and `admin`
 already do. `roster serve` opens whichever are named, in the same errgroup as the
 server, so a front door that cannot come up is a start-up failure rather than a
