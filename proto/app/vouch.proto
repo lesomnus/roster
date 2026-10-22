@@ -290,6 +290,18 @@ message VouchClaim {
 
   // The `sub`, as the provider issued it and as `Identity` stored it.
   string subject = 3;
+
+  // When the provider says it authenticated them: the ID token's `auth_time`.
+  // Unset is a provider that did not say -- GitHub never does -- and then
+  // nothing claims they proved anything at a given moment.
+  //
+  // What the delegation this mints carries as `date_authenticated`, and so
+  // what `MeService.Leave` reads. A front door that wants it to be a moment
+  // ago asks the provider to authenticate them again (`max_age=0`) and sends
+  // what comes back; a provider that remembered them
+  // instead answers with the older time, and that is what is believed. A time
+  // after now is read as now.
+  google.protobuf.Timestamp authenticated = 4;
 }
 
 message VouchVerifyRequest {

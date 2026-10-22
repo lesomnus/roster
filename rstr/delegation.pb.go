@@ -81,18 +81,19 @@ const (
 // comparison has something to compare, and one that leaks is worth nothing
 // without the key it was minted for. `keys.Acting` reads the pair.
 type Delegation struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Holder      *Holder                `protobuf:"bytes,2,opt,name=holder"`
-	xxx_hidden_Methods     []string               `protobuf:"bytes,8,rep,name=methods"`
-	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
-	xxx_hidden_Issuer      []byte                 `protobuf:"bytes,10,opt,name=issuer"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
-	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                        protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id                []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Holder            *Holder                `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_Methods           []string               `protobuf:"bytes,8,rep,name=methods"`
+	xxx_hidden_Secret            []byte                 `protobuf:"bytes,9,opt,name=secret"`
+	xxx_hidden_Issuer            []byte                 `protobuf:"bytes,10,opt,name=issuer"`
+	xxx_hidden_DateExpires       *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateAuthenticated *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_authenticated,json=dateAuthenticated"`
+	xxx_hidden_DateUpdated       *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased        *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated       *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *Delegation) Reset() {
@@ -162,6 +163,13 @@ func (x *Delegation) GetDateExpires() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *Delegation) GetDateAuthenticated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateAuthenticated
+	}
+	return nil
+}
+
 func (x *Delegation) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -216,6 +224,10 @@ func (x *Delegation) SetDateExpires(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateExpires = v
 }
 
+func (x *Delegation) SetDateAuthenticated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateAuthenticated = v
+}
+
 func (x *Delegation) SetDateUpdated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateUpdated = v
 }
@@ -240,6 +252,13 @@ func (x *Delegation) HasDateExpires() bool {
 		return false
 	}
 	return x.xxx_hidden_DateExpires != nil
+}
+
+func (x *Delegation) HasDateAuthenticated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateAuthenticated != nil
 }
 
 func (x *Delegation) HasDateUpdated() bool {
@@ -269,6 +288,10 @@ func (x *Delegation) ClearHolder() {
 
 func (x *Delegation) ClearDateExpires() {
 	x.xxx_hidden_DateExpires = nil
+}
+
+func (x *Delegation) ClearDateAuthenticated() {
+	x.xxx_hidden_DateAuthenticated = nil
 }
 
 func (x *Delegation) ClearDateUpdated() {
@@ -341,7 +364,26 @@ type Delegation_builder struct {
 	// delegation is never extended, because extending one is how a credential
 	// that was meant to live for minutes comes to live for a day.
 	DateExpires *timestamppb.Timestamp
-	DateUpdated *timestamppb.Timestamp
+	// When the person it is for proved who they are, by the sign-in that minted
+	// it: a password and whatever second factor was asked, a recovery link
+	// spent, a provider's word about when it authenticated them (its
+	// `auth_time`). Unset is a sign-in that cannot say -- a provider that does
+	// not -- and a delegation minted from another credential carries that one's.
+	//
+	// # Not when it was minted
+	//
+	// `MeService.Leave` asked for a credential *minted* in the last few minutes,
+	// and minting is what a credential can do: a key whose role names
+	// `ApiKey.Issue` issues a fresh one, a session a quarter of an hour old does
+	// the same, and an administrator mints one for somebody narrower and calls
+	// `Leave` as them. Each is new and none is anybody proving anything. This is
+	// the moment that is about the person, and it travels with what is minted
+	// from it rather than starting again.
+	//
+	// **Stamped**: a request cannot say it, and the sign-in that proved somebody
+	// is the one thing that writes it.
+	DateAuthenticated *timestamppb.Timestamp
+	DateUpdated       *timestamppb.Timestamp
 	// Revoking is an erase, and it is what "sign out everywhere" reaches for
 	// first. Softly, so that a trail naming this row still finds something.
 	DateErased  *timestamppb.Timestamp
@@ -358,6 +400,7 @@ func (b0 Delegation_builder) Build() *Delegation {
 	x.xxx_hidden_Secret = b.Secret
 	x.xxx_hidden_Issuer = b.Issuer
 	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateAuthenticated = b.DateAuthenticated
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -368,7 +411,7 @@ var File_app_delegation_proto protoreflect.FileDescriptor
 
 const file_app_delegation_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/delegation.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xd8\x04\n" +
+	"\x14app/delegation.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xb3\x05\n" +
 	"\n" +
 	"Delegation\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
@@ -377,7 +420,8 @@ const file_app_delegation_proto_rawDesc = "" +
 	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12\x1e\n" +
 	"\x06issuer\x18\n" +
 	" \x01(\fB\x06\xea\x82\x16\x02@\x01R\x06issuer\x12G\n" +
-	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpires\x12F\n" +
+	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpires\x12Y\n" +
+	"\x12date_authenticated\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x0e\xea\x82\x16\x048\x01@\x01\xaa\xc1\x16\x02\x10\x01R\x11dateAuthenticated\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -403,14 +447,15 @@ var file_app_delegation_proto_goTypes = []any{
 var file_app_delegation_proto_depIdxs = []int32{
 	1, // 0: roster.Delegation.holder:type_name -> roster.Holder
 	2, // 1: roster.Delegation.date_expires:type_name -> google.protobuf.Timestamp
-	2, // 2: roster.Delegation.date_updated:type_name -> google.protobuf.Timestamp
-	2, // 3: roster.Delegation.date_erased:type_name -> google.protobuf.Timestamp
-	2, // 4: roster.Delegation.date_created:type_name -> google.protobuf.Timestamp
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	2, // 2: roster.Delegation.date_authenticated:type_name -> google.protobuf.Timestamp
+	2, // 3: roster.Delegation.date_updated:type_name -> google.protobuf.Timestamp
+	2, // 4: roster.Delegation.date_erased:type_name -> google.protobuf.Timestamp
+	2, // 5: roster.Delegation.date_created:type_name -> google.protobuf.Timestamp
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_app_delegation_proto_init() }

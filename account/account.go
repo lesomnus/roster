@@ -754,6 +754,11 @@ const stateCookie = "account_state"
 // from it: the round trip ends there instead of here, with a link roster
 // minted for that name (`VouchAcceptRequest.at`). See [App.nextOf] for what is
 // accepted.
+//
+// `&again=1` asks the provider to authenticate them again rather than remember
+// them, for a sign-in that has to be a moment ago -- the page asks for one
+// before somebody deletes their account (`MeService.Leave`). What the provider
+// answers is what is believed ([arrives.Providers.Begin]).
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	a.start(w, r, false, pdid.Nil)
 }
@@ -802,7 +807,7 @@ func (a *App) start(w http.ResponseWriter, r *http.Request, link bool, who pdid.
 		http.Error(w, "cannot start", http.StatusInternalServerError)
 		return
 	}
-	trip, err := a.arrives.Begin(t.on(ctx), t.id, t.alias, name, a.origin(r), state)
+	trip, err := a.arrives.Begin(t.on(ctx), t.id, t.alias, name, a.origin(r), state, !link && r.URL.Query().Get("again") == "1")
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
 			http.Error(w, "connection: no such provider here", http.StatusNotFound)
@@ -913,7 +918,7 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 		// session as well, as `HandOn` says, so the person is signed in at both
 		// doors they passed through.
 		at := front.Hostname(f.next.Host)
-		handed, err := a.door.HandOn(as, w, f.tenant.id.String(), who.Provider, who.Subject, at)
+		handed, err := a.door.HandOn(as, w, claimOf(f.tenant, who), at)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "account: hand %s/%s on to %s: %v\n", who.Provider, who.Subject, at, err)
 			http.Error(w, "cannot sign in", http.StatusInternalServerError)
@@ -926,12 +931,22 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 
 	// `Accept` resolves the claim on roster's side and mints the delegation;
 	// the session is this app's and says nothing about the provider.
-	if err := a.door.Accept(as, w, f.tenant.id.String(), who.Provider, who.Subject); err != nil {
+	if err := a.door.Accept(as, w, claimOf(f.tenant, who)); err != nil {
 		fmt.Fprintf(os.Stderr, "account: accept %s/%s: %v\n", who.Provider, who.Subject, err)
 		http.Error(w, "cannot sign in", http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+// claimOf is what this app checked at a provider, as roster is handed it.
+func claimOf(t *tenant, who arrives.Caller) frontdoor.Claim {
+	return frontdoor.Claim{
+		Tenant:        t.id.String(),
+		Provider:      who.Provider,
+		Subject:       who.Subject,
+		Authenticated: who.Authenticated,
+	}
 }
 
 // nextOf is the origin a sign-in started from the user console goes back to,

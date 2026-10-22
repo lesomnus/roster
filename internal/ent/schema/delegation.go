@@ -32,6 +32,10 @@ func (Delegation) Fields() []ent.Field {
 			Nillable().
 			Immutable().
 			Optional(),
+		field.Time("date_authenticated").
+			Nillable().
+			Immutable().
+			Optional(),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

@@ -254,7 +254,8 @@ func (s *Server) Redeem(ctx context.Context, req *app.VouchRedeemRequest) (*app.
 		return nil, err
 	}
 
-	return s.mint(ctx, res, holder, issuer, methods, req.GetExpires())
+	// Proved now: the link was in the mailbox, and it has just been spent.
+	return s.mint(ctx, res, holder, issuer, methods, req.GetExpires(), time.Now())
 }
 
 // link finds the row a token names, if it is the caller's and still open.

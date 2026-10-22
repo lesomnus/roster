@@ -709,13 +709,18 @@ export const MeService: GenService<{
    *     (`Connection.provisions`) is the directory's to remove, and one who
    *     erased themselves would be a person it can neither find nor make again
    *     until they are forgotten, and then makes again -- `PermissionDenied`;
-   *   - that the credential the call came with was minted in the last
-   *     [server/me.LeaveWithin], which is what a sign-in a few minutes old is:
-   *     a delegation a front door minted when somebody signed in there, or a
-   *     key of their own a terminal was handed in the browser a moment ago
-   *     (`roster sign-in`). A session that has been open all afternoon is a
-   *     session somebody may have walked away from -- `FailedPrecondition`,
-   *     *sign in again*;
+   *   - that they proved who they are in the last [server/me.LeaveWithin], by
+   *     the sign-in the credential the call came with carries
+   *     (`Delegation.date_authenticated`): a delegation a front door minted
+   *     when somebody signed in there, or a key of their own a terminal was
+   *     handed in the browser (`roster sign-in`), which carries the browser's
+   *     sign-in. **Not** when the credential was minted: a key issued from
+   *     another, however new, carries the first one's; a key somebody else
+   *     minted for them carries none; and a sign-in through a directory
+   *     counts from when the directory says it last authenticated them
+   *     (`auth_time`), which the account page asks to be now. A session that
+   *     has been open all afternoon is a session somebody may have walked
+   *     away from -- `FailedPrecondition`, *sign in again*;
    *   - that `confirm` is the caller's own alias, as it is, so that nothing
    *     calls this by accident -- `InvalidArgument`.
    *

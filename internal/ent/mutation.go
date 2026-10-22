@@ -643,6 +643,23 @@ func (m *ApiKeyMutation) OldDateExpires(ctx context.Context) (v *time.Time, err 
 	return oldValue.DateExpires, nil
 }
 
+// OldDateAuthenticated returns the old "date_authenticated" field's value of the ApiKey entity.
+// If the ApiKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiKeyMutation) OldDateAuthenticated(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateAuthenticated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateAuthenticated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateAuthenticated: %w", err)
+	}
+	return oldValue.DateAuthenticated, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the ApiKey entity.
 // If the ApiKey object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -728,6 +745,8 @@ func (m *ApiKeyMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldDateUsed(ctx)
 	case apikey.FieldDateExpires:
 		return m.OldDateExpires(ctx)
+	case apikey.FieldDateAuthenticated:
+		return m.OldDateAuthenticated(ctx)
 	case apikey.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case apikey.FieldDateErased:
@@ -2912,6 +2931,23 @@ func (m *DelegationMutation) OldDateExpires(ctx context.Context) (v *time.Time, 
 	return oldValue.DateExpires, nil
 }
 
+// OldDateAuthenticated returns the old "date_authenticated" field's value of the Delegation entity.
+// If the Delegation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DelegationMutation) OldDateAuthenticated(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateAuthenticated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateAuthenticated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateAuthenticated: %w", err)
+	}
+	return oldValue.DateAuthenticated, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the Delegation entity.
 // If the Delegation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -2993,6 +3029,8 @@ func (m *DelegationMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldIssuer(ctx)
 	case delegation.FieldDateExpires:
 		return m.OldDateExpires(ctx)
+	case delegation.FieldDateAuthenticated:
+		return m.OldDateAuthenticated(ctx)
 	case delegation.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case delegation.FieldDateErased:

@@ -32,6 +32,8 @@ type ApiKey struct {
 	DateUsed *time.Time `json:"date_used,omitempty"`
 	// DateExpires holds the value of the "date_expires" field.
 	DateExpires *time.Time `json:"date_expires,omitempty"`
+	// DateAuthenticated holds the value of the "date_authenticated" field.
+	DateAuthenticated *time.Time `json:"date_authenticated,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -75,7 +77,7 @@ func (*ApiKey) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case apikey.FieldAlias, apikey.FieldDesc:
 			values[i] = new(sql.NullString)
-		case apikey.FieldDateUsed, apikey.FieldDateExpires, apikey.FieldDateUpdated, apikey.FieldDateErased, apikey.FieldDateCreated:
+		case apikey.FieldDateUsed, apikey.FieldDateExpires, apikey.FieldDateAuthenticated, apikey.FieldDateUpdated, apikey.FieldDateErased, apikey.FieldDateCreated:
 			values[i] = new(sql.NullTime)
 		case apikey.FieldId, apikey.FieldHolderId:
 			values[i] = new(uuid.UUID)
@@ -142,6 +144,13 @@ func (_m *ApiKey) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateExpires = new(time.Time)
 				*_m.DateExpires = value.Time
+			}
+		case apikey.FieldDateAuthenticated:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field date_authenticated", values[i])
+			} else if value.Valid {
+				_m.DateAuthenticated = new(time.Time)
+				*_m.DateAuthenticated = value.Time
 			}
 		case apikey.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -228,6 +237,11 @@ func (_m *ApiKey) String() string {
 	builder.WriteString(", ")
 	if v := _m.DateExpires; v != nil {
 		builder.WriteString("date_expires=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.DateAuthenticated; v != nil {
+		builder.WriteString("date_authenticated=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")

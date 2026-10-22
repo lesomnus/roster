@@ -114,6 +114,24 @@ message ApiKey {
   // rather than an outage.
   google.protobuf.Timestamp date_expires = 11 [(orm.field) = {nullable: true}];
 
+  // When the person it acts as proved who they are, for a key they issued
+  // themselves: the authentication the credential they issued it with carried
+  // (`Delegation.date_authenticated`), inherited rather than started again. A
+  // terminal handed a key in the browser (`roster sign-in`) carries the
+  // browser's sign-in.
+  //
+  // Unset for a key somebody else minted for them -- an administrator, or
+  // `roster key add` -- because that is nobody proving anything about the
+  // person: what `MeService.Leave` refuses a key on. **Stamped**: a request
+  // cannot say it.
+  google.protobuf.Timestamp date_authenticated = 12 [
+    (orm.field) = {
+      nullable: true
+      immutable: true
+    },
+    (payday.field) = {stamped: true}
+  ];
+
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {

@@ -237,10 +237,19 @@ func (s coreDelegation) Exchange(ctx context.Context, req *app.DelegationExchang
 		}
 	}
 
+	// About the caller, so it carries the caller's own sign-in rather than
+	// starting one: a token minted from a credential is not anybody proving
+	// anything again (`Delegation.date_authenticated`).
+	at, err := keys.Authenticated(ctx, s.Next(), f.Actor)
+	if err != nil {
+		return nil, err
+	}
+
 	token, v, err := keys.Delegate(ctx, s.Next(), keys.Delegated{
-		Holder:  f.Actor,
-		Issuer:  to.Bytes(),
-		Methods: req.GetMethods(),
+		Holder:        f.Actor,
+		Issuer:        to.Bytes(),
+		Methods:       req.GetMethods(),
+		Authenticated: at,
 	})
 	if err != nil {
 		return nil, err

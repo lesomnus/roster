@@ -46,6 +46,12 @@ type Delegated struct {
 	// duration and got the sign wrong is a caller whose credential would
 	// otherwise quietly live for the default.
 	For time.Duration
+
+	// When the person proved who they are, by the sign-in this is minted for:
+	// now for a secret just checked, the provider's word for one it checked,
+	// and the zero time for a sign-in that cannot say. A time after now is
+	// read as now. See `Delegation.date_authenticated`.
+	Authenticated time.Time
 }
 
 // Delegate mints a delegation and writes what verifies it, answering with the
@@ -93,13 +99,21 @@ func Delegate(ctx context.Context, s app.Server, req Delegated) (string, *app.De
 		return "", nil, err
 	}
 
-	v, err := s.Delegation().Add(ctx, app.DelegationAddRequest_builder{
+	add := app.DelegationAddRequest_builder{
 		Holder:      app.HolderRef_builder{Id: req.Holder.Bytes()}.Build(),
 		Secret:      sum,
 		Issuer:      req.Issuer,
 		Methods:     req.Methods,
 		DateExpires: timestamppb.New(time.Now().Add(d)),
-	}.Build())
+	}
+	if at := req.Authenticated; !at.IsZero() {
+		if now := time.Now(); at.After(now) {
+			at = now
+		}
+		add.DateAuthenticated = timestamppb.New(at)
+	}
+
+	v, err := s.Delegation().Add(ctx, add.Build())
 	if err != nil {
 		return "", nil, err
 	}

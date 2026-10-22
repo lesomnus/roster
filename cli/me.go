@@ -373,11 +373,16 @@ func newCmdMeSignOut(c *cmd.Config) *xli.Command {
 // newCmdMeLeave is `roster me leave`: delete your own account, where your
 // tenant offers it.
 //
-// It works from a terminal for the reason it works anywhere: the credential the
-// call is made with has to be a sign-in minutes old (`server/me.LeaveWithin`).
-// A terminal's is a key, and a key minted a moment ago in a browser -- `roster
-// sign-in --allow /roster.MeService/Leave` -- is exactly that; one that has been
-// in a config file for a month is not, and is refused with *sign in again*.
+// It works from a terminal for the reason it works anywhere: the person has to
+// have proved who they are minutes ago, by the sign-in the credential the call
+// is made with carries (`server/me.LeaveWithin`). A terminal's is a key, and a
+// key handed over in a browser -- `roster sign-in --allow
+// /roster.MeService/Leave` -- carries the browser's sign-in, so it works within
+// minutes of that one. One that has been in a config file for a month carries
+// a month, and so does any key issued from it; both are refused with *sign in
+// again*. Minting the key is `ApiKeyService/Issue`, which `Leave`'s waiver does
+// not cover, so somebody whose role names no `Issue` leaves from the account
+// page instead (`docs/usage/ways-in.md`).
 //
 // `--confirm` is your alias, as it is, and is not optional: an account is not
 // something to delete by running the wrong line of a script.

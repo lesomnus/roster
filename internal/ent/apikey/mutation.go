@@ -15,22 +15,23 @@ import (
 
 // Mutation represents an operation that mutates the ApiKey nodes in the graph.
 type Mutation struct {
-	op            ent.Op
-	typ           string
-	alias         *string
-	desc          *string
-	methods       *[]string
-	appendmethods []string
-	secret        *[]byte
-	date_used     *time.Time
-	date_expires  *time.Time
-	date_updated  *time.Time
-	date_erased   *time.Time
-	date_created  *time.Time
-	clearedFields map[string]struct{}
-	holder        *uuid.UUID
-	clearedholder bool
-	predicates    []predicate.ApiKey
+	op                 ent.Op
+	typ                string
+	alias              *string
+	desc               *string
+	methods            *[]string
+	appendmethods      []string
+	secret             *[]byte
+	date_used          *time.Time
+	date_expires       *time.Time
+	date_authenticated *time.Time
+	date_updated       *time.Time
+	date_erased        *time.Time
+	date_created       *time.Time
+	clearedFields      map[string]struct{}
+	holder             *uuid.UUID
+	clearedholder      bool
+	predicates         []predicate.ApiKey
 }
 
 // NewMutation creates a new Mutation for the ApiKey entity.
@@ -216,6 +217,38 @@ func (m *Mutation) ResetDateExpires() {
 	delete(m.clearedFields, FieldDateExpires)
 }
 
+// SetDateAuthenticated sets the "date_authenticated" field.
+func (m *Mutation) SetDateAuthenticated(t time.Time) {
+	m.date_authenticated = &t
+}
+
+// DateAuthenticated returns the value of the "date_authenticated" field in the mutation.
+func (m *Mutation) DateAuthenticated() (r time.Time, exists bool) {
+	v := m.date_authenticated
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDateAuthenticated clears the value of the "date_authenticated" field.
+func (m *Mutation) ClearDateAuthenticated() {
+	m.date_authenticated = nil
+	m.clearedFields[FieldDateAuthenticated] = struct{}{}
+}
+
+// DateAuthenticatedCleared returns if the "date_authenticated" field was cleared in this mutation.
+func (m *Mutation) DateAuthenticatedCleared() bool {
+	_, ok := m.clearedFields[FieldDateAuthenticated]
+	return ok
+}
+
+// ResetDateAuthenticated resets all changes to the "date_authenticated" field.
+func (m *Mutation) ResetDateAuthenticated() {
+	m.date_authenticated = nil
+	delete(m.clearedFields, FieldDateAuthenticated)
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (m *Mutation) SetDateUpdated(t time.Time) {
 	m.date_updated = &t
@@ -379,7 +412,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.alias != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -397,6 +430,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.date_expires != nil {
 		fields = append(fields, FieldDateExpires)
+	}
+	if m.date_authenticated != nil {
+		fields = append(fields, FieldDateAuthenticated)
 	}
 	if m.date_updated != nil {
 		fields = append(fields, FieldDateUpdated)
@@ -430,6 +466,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateUsed()
 	case FieldDateExpires:
 		return m.DateExpires()
+	case FieldDateAuthenticated:
+		return m.DateAuthenticated()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
@@ -495,6 +533,13 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDateExpires(v)
+		return nil
+	case FieldDateAuthenticated:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDateAuthenticated(v)
 		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
@@ -563,6 +608,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateExpires) {
 		fields = append(fields, FieldDateExpires)
 	}
+	if m.FieldCleared(FieldDateAuthenticated) {
+		fields = append(fields, FieldDateAuthenticated)
+	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
@@ -591,6 +639,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDateExpires:
 		m.ClearDateExpires()
+		return nil
+	case FieldDateAuthenticated:
+		m.ClearDateAuthenticated()
 		return nil
 	case FieldDateErased:
 		m.ClearDateErased()
@@ -623,6 +674,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldDateExpires:
 		m.ResetDateExpires()
+		return nil
+	case FieldDateAuthenticated:
+		m.ResetDateAuthenticated()
 		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()

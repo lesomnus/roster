@@ -8698,6 +8698,10 @@ func (s Gate) ApiKey() rstr.ApiKeyServiceServer {
 // It is what an Add is asked, and an AddMany of every item it carries;
 // see [Gate.ApiKey].
 func (s gateApiKey) admit(ctx context.Context, req *rstr.ApiKeyAddRequest) (*rstr.ApiKeyAddRequest, error) {
+	if req.HasDateAuthenticated() {
+		return nil, pderr.Invalidf("date_authenticated", "is established by this deployment and not asserted by a request")
+	}
+
 	if ref := req.GetHolder(); ref != nil {
 		if err := seen.Visible(ctx, s.Gate.drv, "Holder", ref, func() error {
 			_, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
@@ -8963,6 +8967,10 @@ func (s Gate) Delegation() rstr.DelegationServiceServer {
 // It is what an Add is asked, and an AddMany of every item it carries;
 // see [Gate.Delegation].
 func (s gateDelegation) admit(ctx context.Context, req *rstr.DelegationAddRequest) (*rstr.DelegationAddRequest, error) {
+	if req.HasDateAuthenticated() {
+		return nil, pderr.Invalidf("date_authenticated", "is established by this deployment and not asserted by a request")
+	}
+
 	if ref := req.GetHolder(); ref != nil {
 		if err := seen.Visible(ctx, s.Gate.drv, "Holder", ref, func() error {
 			_, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
@@ -19533,6 +19541,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard batch.Guard) reso
 				{Number: 6, Name: apikey.FieldDesc, Type: 9, Nullable: false, Key: 0},
 				{Number: 10, Name: apikey.FieldDateUsed, Type: 65, Nullable: true, Key: 0},
 				{Number: 11, Name: apikey.FieldDateExpires, Type: 65, Nullable: true, Key: 0},
+				{Number: 12, Name: apikey.FieldDateAuthenticated, Type: 65, Nullable: true, Key: 0},
 				{Number: 13, Name: apikey.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
 				{Number: 14, Name: apikey.FieldDateErased, Type: 65, Nullable: true, Key: 0},
 				{Number: 15, Name: apikey.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
@@ -19752,6 +19761,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard batch.Guard) reso
 				{Number: 2, Name: delegation.HolderColumn, Type: 64, Nullable: false, Key: 1},
 				{Number: 10, Name: delegation.FieldIssuer, Type: 12, Nullable: false, Key: 0},
 				{Number: 11, Name: delegation.FieldDateExpires, Type: 65, Nullable: true, Key: 0},
+				{Number: 12, Name: delegation.FieldDateAuthenticated, Type: 65, Nullable: true, Key: 0},
 				{Number: 13, Name: delegation.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
 				{Number: 14, Name: delegation.FieldDateErased, Type: 65, Nullable: true, Key: 0},
 				{Number: 15, Name: delegation.FieldDateCreated, Type: 65, Nullable: false, Key: 0},

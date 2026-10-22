@@ -2,16 +2,20 @@ package cmd_test
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/watch"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/pd"
 	rostersync "github.com/lesomnus/roster/server/sync"
 )
 
@@ -494,4 +498,120 @@ func TestTheSyncStreamAnswersToRealKeys(t *testing.T) {
 			}
 		}
 	})
+}
+
+// TestSomebodyOutOfSightIsNotSaidToBeGone: a person this stream has told about
+// and can no longer read is erased only if their row says so, read by the
+// erased-row reader through the same narrowing. It was taken as erased, at
+// that moment, whatever the reason the read came back empty -- so somebody the
+// caller merely stopped seeing had every session an app held for them ended.
+//
+// Holders are narrowed by tenant alone today, so this stands up the stream
+// over a walled server that stops showing one person: the shape any narrowing
+// that hides somebody alive has to it.
+func TestSomebodyOutOfSightIsNotSaidToBeGone(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	ctx, stop := context.WithCancel(ctx)
+	defer stop()
+
+	conn := served(t, b.Server)
+	b.mayAnything(b.ContosoUser, b.Contoso)
+	as := asOverTheWire(ctx, b.ContosoUser)
+	h := app.NewHolderServiceClient(conn)
+	poke := func(who pdid.Id) {
+		t.Helper()
+		_, err := h.Invalidate(as, app.HolderInvalidateRequest_builder{Ref: app.HolderRef_builder{Id: who.Bytes()}.Build()}.Build())
+		x.NoError(err)
+	}
+
+	dana := b.holder(t, ctx, b.Contoso, "dana")
+	canary := b.holder(t, ctx, b.Contoso, "canary")
+
+	hidden := &atomic.Bool{}
+	s := rostersync.Service(hiding{Overlay: app.NewOverlay(b.Walled), who: dana, hidden: hidden},
+		b.Watch, rostersync.Erased(b.Ent, pd.Wall()))
+	c := make(chan *app.SyncEvent, 32)
+	go func() {
+		_ = s.Watch(app.SyncWatchRequest_builder{}.Build(), &streaming{ctx: b.asNobody(ctx, b.ContosoUser, b.Contoso), c: c})
+	}()
+
+	// Subscribed once the canary is heard.
+	for {
+		poke(canary)
+		select {
+		case <-c:
+		case <-time.After(50 * time.Millisecond):
+			continue
+		}
+
+		break
+	}
+
+	poke(dana)
+	x.Equal(app.SyncReason_SYNC_REASON_UNSPECIFIED, about(t, c, dana).GetReason(), "the first the stream hears of her")
+
+	// Out of sight, and written to: the read comes back empty, and she is not
+	// erased.
+	hidden.Store(true)
+	poke(dana)
+	poke(canary)
+	for v := about2(t, c); ; v = about2(t, c) {
+		x.NotEqual(dana.Bytes(), v.GetHolder(), "somebody this stream stopped seeing was said to be %s", v.GetReason())
+		if string(v.GetHolder()) == string(canary.Bytes()) {
+			break
+		}
+	}
+
+	// And erased, she is heard as erased, with her row's own time.
+	hidden.Store(false)
+	_, err := h.Erase(as, app.HolderRef_builder{Id: dana.Bytes()}.Build())
+	x.NoError(err)
+	v := about(t, c, dana)
+	x.Equal(app.SyncReason_SYNC_REASON_ERASED, v.GetReason())
+	row, err := b.Ent.Holder.Get(ctx, dana.Uuid())
+	x.NoError(err)
+	x.True(row.DateErased.Equal(v.GetDateErased().AsTime()), "since when, as the row says it")
+}
+
+// hiding is a walled server that answers `NotFound` for one person while
+// `hidden` is set.
+type hiding struct {
+	app.Overlay
+	who    pdid.Id
+	hidden *atomic.Bool
+}
+
+func (s hiding) Holder() app.HolderServiceServer {
+	return hidingHolder{HolderServiceServer: s.Next().Holder(), s: s}
+}
+
+type hidingHolder struct {
+	app.HolderServiceServer
+	s hiding
+}
+
+func (h hidingHolder) Get(ctx context.Context, req *app.HolderGetRequest) (*app.Holder, error) {
+	if h.s.hidden.Load() && string(req.GetRef().GetId()) == string(h.s.who.Bytes()) {
+		return nil, status.Error(codes.NotFound, "Holder not found")
+	}
+
+	return h.HolderServiceServer.Get(ctx, req)
+}
+
+// streaming is a server stream that hands on what it is sent.
+type streaming struct {
+	grpc.ServerStream
+
+	ctx context.Context
+	c   chan<- *app.SyncEvent
+}
+
+func (s *streaming) Context() context.Context { return s.ctx }
+
+func (s *streaming) Send(v *app.SyncEvent) error {
+	s.c <- v
+
+	return nil
 }

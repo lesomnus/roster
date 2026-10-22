@@ -198,12 +198,13 @@ func (b0 VouchWho_builder) Build() *VouchWho {
 // tenant comes from -- the name the browser arrived at -- and never from the
 // token.
 type VouchClaim struct {
-	state               protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Tenant   []byte                 `protobuf:"bytes,1,opt,name=tenant"`
-	xxx_hidden_Provider string                 `protobuf:"bytes,2,opt,name=provider"`
-	xxx_hidden_Subject  string                 `protobuf:"bytes,3,opt,name=subject"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                    protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Tenant        []byte                 `protobuf:"bytes,1,opt,name=tenant"`
+	xxx_hidden_Provider      string                 `protobuf:"bytes,2,opt,name=provider"`
+	xxx_hidden_Subject       string                 `protobuf:"bytes,3,opt,name=subject"`
+	xxx_hidden_Authenticated *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=authenticated"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *VouchClaim) Reset() {
@@ -252,6 +253,13 @@ func (x *VouchClaim) GetSubject() string {
 	return ""
 }
 
+func (x *VouchClaim) GetAuthenticated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_Authenticated
+	}
+	return nil
+}
+
 func (x *VouchClaim) SetTenant(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -267,6 +275,21 @@ func (x *VouchClaim) SetSubject(v string) {
 	x.xxx_hidden_Subject = v
 }
 
+func (x *VouchClaim) SetAuthenticated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Authenticated = v
+}
+
+func (x *VouchClaim) HasAuthenticated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Authenticated != nil
+}
+
+func (x *VouchClaim) ClearAuthenticated() {
+	x.xxx_hidden_Authenticated = nil
+}
+
 type VouchClaim_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -279,6 +302,17 @@ type VouchClaim_builder struct {
 	Provider string
 	// The `sub`, as the provider issued it and as `Identity` stored it.
 	Subject string
+	// When the provider says it authenticated them: the ID token's `auth_time`.
+	// Unset is a provider that did not say -- GitHub never does -- and then
+	// nothing claims they proved anything at a given moment.
+	//
+	// What the delegation this mints carries as `date_authenticated`, and so
+	// what `MeService.Leave` reads. A front door that wants it to be a moment
+	// ago asks the provider to authenticate them again (`max_age=0`) and sends
+	// what comes back; a provider that remembered them
+	// instead answers with the older time, and that is what is believed. A time
+	// after now is read as now.
+	Authenticated *timestamppb.Timestamp
 }
 
 func (b0 VouchClaim_builder) Build() *VouchClaim {
@@ -288,6 +322,7 @@ func (b0 VouchClaim_builder) Build() *VouchClaim {
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Provider = b.Provider
 	x.xxx_hidden_Subject = b.Subject
+	x.xxx_hidden_Authenticated = b.Authenticated
 	return m0
 }
 
@@ -1762,12 +1797,13 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x16\n" +
 	"\x06tenant\x18\x02 \x01(\tR\x06tenant\x12\x14\n" +
 	"\x05alias\x18\x03 \x01(\tR\x05alias\x12\x18\n" +
-	"\aaddress\x18\x04 \x01(\tR\aaddress\"Z\n" +
+	"\aaddress\x18\x04 \x01(\tR\aaddress\"\x9c\x01\n" +
 	"\n" +
 	"VouchClaim\x12\x16\n" +
 	"\x06tenant\x18\x01 \x01(\fR\x06tenant\x12\x1a\n" +
 	"\bprovider\x18\x02 \x01(\tR\bprovider\x12\x18\n" +
-	"\asubject\x18\x03 \x01(\tR\asubject\"x\n" +
+	"\asubject\x18\x03 \x01(\tR\asubject\x12@\n" +
+	"\rauthenticated\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\rauthenticated\"x\n" +
 	"\x12VouchVerifyRequest\x12\"\n" +
 	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x16\n" +
@@ -1852,39 +1888,40 @@ var file_app_vouch_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil), // 13: google.protobuf.Timestamp
 }
 var file_app_vouch_proto_depIdxs = []int32{
-	0,  // 0: roster.VouchVerifyRequest.who:type_name -> roster.VouchWho
-	13, // 1: roster.VouchFactor.locked_until:type_name -> google.protobuf.Timestamp
-	13, // 2: roster.VouchVerifyResponse.locked_until:type_name -> google.protobuf.Timestamp
-	3,  // 3: roster.VouchVerifyResponse.available:type_name -> roster.VouchFactor
-	4,  // 4: roster.VouchContinueResponse.verified:type_name -> roster.VouchVerifyResponse
-	0,  // 5: roster.VouchDelegateRequest.who:type_name -> roster.VouchWho
-	13, // 6: roster.VouchDelegateRequest.expires:type_name -> google.protobuf.Timestamp
-	1,  // 7: roster.VouchAcceptRequest.claim:type_name -> roster.VouchClaim
-	13, // 8: roster.VouchAcceptRequest.expires:type_name -> google.protobuf.Timestamp
-	4,  // 9: roster.VouchDelegateResponse.verified:type_name -> roster.VouchVerifyResponse
-	13, // 10: roster.VouchDelegateResponse.expires:type_name -> google.protobuf.Timestamp
-	13, // 11: roster.VouchDelegateResponse.link_expires:type_name -> google.protobuf.Timestamp
-	0,  // 12: roster.VouchLinkRequest.who:type_name -> roster.VouchWho
-	13, // 13: roster.VouchLinkRequest.expires:type_name -> google.protobuf.Timestamp
-	13, // 14: roster.VouchLinkResponse.expires:type_name -> google.protobuf.Timestamp
-	13, // 15: roster.VouchRedeemRequest.expires:type_name -> google.protobuf.Timestamp
-	2,  // 16: roster.VouchService.Verify:input_type -> roster.VouchVerifyRequest
-	7,  // 17: roster.VouchService.Delegate:input_type -> roster.VouchDelegateRequest
-	10, // 18: roster.VouchService.Link:input_type -> roster.VouchLinkRequest
-	12, // 19: roster.VouchService.Redeem:input_type -> roster.VouchRedeemRequest
-	5,  // 20: roster.VouchService.Continue:input_type -> roster.VouchContinueRequest
-	8,  // 21: roster.VouchService.Accept:input_type -> roster.VouchAcceptRequest
-	4,  // 22: roster.VouchService.Verify:output_type -> roster.VouchVerifyResponse
-	9,  // 23: roster.VouchService.Delegate:output_type -> roster.VouchDelegateResponse
-	11, // 24: roster.VouchService.Link:output_type -> roster.VouchLinkResponse
-	9,  // 25: roster.VouchService.Redeem:output_type -> roster.VouchDelegateResponse
-	6,  // 26: roster.VouchService.Continue:output_type -> roster.VouchContinueResponse
-	9,  // 27: roster.VouchService.Accept:output_type -> roster.VouchDelegateResponse
-	22, // [22:28] is the sub-list for method output_type
-	16, // [16:22] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	13, // 0: roster.VouchClaim.authenticated:type_name -> google.protobuf.Timestamp
+	0,  // 1: roster.VouchVerifyRequest.who:type_name -> roster.VouchWho
+	13, // 2: roster.VouchFactor.locked_until:type_name -> google.protobuf.Timestamp
+	13, // 3: roster.VouchVerifyResponse.locked_until:type_name -> google.protobuf.Timestamp
+	3,  // 4: roster.VouchVerifyResponse.available:type_name -> roster.VouchFactor
+	4,  // 5: roster.VouchContinueResponse.verified:type_name -> roster.VouchVerifyResponse
+	0,  // 6: roster.VouchDelegateRequest.who:type_name -> roster.VouchWho
+	13, // 7: roster.VouchDelegateRequest.expires:type_name -> google.protobuf.Timestamp
+	1,  // 8: roster.VouchAcceptRequest.claim:type_name -> roster.VouchClaim
+	13, // 9: roster.VouchAcceptRequest.expires:type_name -> google.protobuf.Timestamp
+	4,  // 10: roster.VouchDelegateResponse.verified:type_name -> roster.VouchVerifyResponse
+	13, // 11: roster.VouchDelegateResponse.expires:type_name -> google.protobuf.Timestamp
+	13, // 12: roster.VouchDelegateResponse.link_expires:type_name -> google.protobuf.Timestamp
+	0,  // 13: roster.VouchLinkRequest.who:type_name -> roster.VouchWho
+	13, // 14: roster.VouchLinkRequest.expires:type_name -> google.protobuf.Timestamp
+	13, // 15: roster.VouchLinkResponse.expires:type_name -> google.protobuf.Timestamp
+	13, // 16: roster.VouchRedeemRequest.expires:type_name -> google.protobuf.Timestamp
+	2,  // 17: roster.VouchService.Verify:input_type -> roster.VouchVerifyRequest
+	7,  // 18: roster.VouchService.Delegate:input_type -> roster.VouchDelegateRequest
+	10, // 19: roster.VouchService.Link:input_type -> roster.VouchLinkRequest
+	12, // 20: roster.VouchService.Redeem:input_type -> roster.VouchRedeemRequest
+	5,  // 21: roster.VouchService.Continue:input_type -> roster.VouchContinueRequest
+	8,  // 22: roster.VouchService.Accept:input_type -> roster.VouchAcceptRequest
+	4,  // 23: roster.VouchService.Verify:output_type -> roster.VouchVerifyResponse
+	9,  // 24: roster.VouchService.Delegate:output_type -> roster.VouchDelegateResponse
+	11, // 25: roster.VouchService.Link:output_type -> roster.VouchLinkResponse
+	9,  // 26: roster.VouchService.Redeem:output_type -> roster.VouchDelegateResponse
+	6,  // 27: roster.VouchService.Continue:output_type -> roster.VouchContinueResponse
+	9,  // 28: roster.VouchService.Accept:output_type -> roster.VouchDelegateResponse
+	23, // [23:29] is the sub-list for method output_type
+	17, // [17:23] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_app_vouch_proto_init() }

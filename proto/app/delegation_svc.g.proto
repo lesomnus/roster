@@ -70,6 +70,7 @@ message DelegationAddRequest {
   bytes secret = 9 [features.field_presence = IMPLICIT];
   bytes issuer = 10 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_expires = 11;
+  google.protobuf.Timestamp date_authenticated = 12;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -92,6 +93,7 @@ message DelegationSelect {
   bool secret = 9;
   bool issuer = 10;
   bool date_expires = 11;
+  bool date_authenticated = 12;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
