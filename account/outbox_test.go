@@ -139,7 +139,10 @@ func TestAConfirmationPastItsShareIsRefusedAndMintsNothing(t *testing.T) {
 	x.Contains(body, "ask again in 20 minutes")
 	secs, err := strconv.Atoi(h.Get("Retry-After"))
 	x.NoError(err, "no Retry-After: %v", h)
-	x.InDelta(20*60, secs, 2)
+	// Twenty minutes from the first of the three, less however long the
+	// four took to ask.
+	x.LessOrEqual(secs, 20*60)
+	x.Greater(secs, 19*60)
 	x.Equal(before, d.links(t), "a link was minted for a message that was refused")
 	x.Equal(3, d.count("erin@contoso.com"))
 }
