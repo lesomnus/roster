@@ -689,7 +689,12 @@ func TestSomebodyVerifiesAnAddressOfTheirOwn(t *testing.T) {
 	x := require.New(t)
 	d := serve(t, account.Invited())
 	d.idp.Subject = "3001"
-	d.idp.Claims = map[string]any{"email": "erin@contoso.com"}
+
+	// The directory hands over no address, so the one on the row is the
+	// page's. One a sign-in hands over is written down at the sign-in
+	// (`TestTheAddressADirectoryHandedOverIsKeptHereToo`), and this used to
+	// send one that nothing kept.
+	d.idp.Claims = map[string]any{}
 
 	b := d.browser(t, "contoso.test")
 	code, _ := b.do(t, http.MethodGet, "/login?connection=example", "", nil)

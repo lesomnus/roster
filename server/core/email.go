@@ -5,8 +5,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/subtle"
-	"github.com/protobuf-orm/ent/dialect"
-	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
@@ -261,6 +259,18 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 // Idempotent, because a person signs in more than once: an address already on
 // that row is stamped rather than refused, so the second sign-in after a
 // directory started saying `email_verified` writes what the first could not.
+//
+// # It reads before it writes
+//
+// It wrote first, and read on `AlreadyExists` -- which is every sign-in after
+// the first, since a front door attests on each one. Outside a transaction that
+// cost an error in the database's log per sign-in. Inside one it cost the call:
+// a write the database refused ends the transaction it was in -- on PostgreSQL
+// at once, so the read after it failed too, and on SQLite at the commit, which
+// payday refuses after a write that failed (payday#128) -- so a batch could not
+// attest an address somebody already had. So who holds the address is read
+// first, by address within the holder's tenant, and the one write that follows
+// is the one that answer calls for.
 func (s coreEmail) Attest(ctx context.Context, req *app.EmailAttestRequest) (*app.Email, error) {
 	if err := normalised("address", req.GetAddress(), front.Address); err != nil {
 		return nil, err
@@ -272,65 +282,77 @@ func (s coreEmail) Attest(ctx context.Context, req *app.EmailAttestRequest) (*ap
 		return nil, err
 	}
 
-	v, err := s.EmailServiceServer.Add(ctx, entered(ctx, app.EmailAddRequest_builder{
-		Holder:    req.GetHolder(),
-		Address:   req.GetAddress(),
-		VouchedBy: req.GetVouchedBy(),
-	}.Build()))
-	switch {
-	case err == nil:
-	case status.Code(err) == codes.AlreadyExists:
-		// Theirs already, or somebody else's -- and the read below is narrowed
-		// by the wall, so an address held in another tenant is not found here
-		// and this answers what a stranger's does.
-		v, err = s.EmailServiceServer.Get(ctx, app.EmailGetRequest_builder{
-			Ref: app.EmailRef_builder{
-				Address: app.EmailRefByAddress_builder{
-					Holder:  req.GetHolder(),
-					Address: z.Ptr(front.Address(req.GetAddress())),
-				}.Build(),
-			}.Build(),
-			Select: app.EmailSelect_builder{
-				DateUpdated:  z.Ptr(true),
-				DateVerified: z.Ptr(true),
-			}.Build(),
-		}.Build())
-		if err != nil {
-			if status.Code(err) != codes.NotFound {
-				return nil, err
-			}
-
-			// Looked up on **this holder's** row, so a NotFound here is the
-			// address being somebody else's. Which used to end here, and that
-			// refusal is what made an address squattable: a row nobody proved
-			// held the address against the index, so the person a directory
-			// vouches for could not be given it by any road.
-			//
-			// A directory saying `email_verified` is a proof, so it takes an
-			// address **nobody proved** the way a link does. Only that, and only
-			// on `verified`: a provider's word is its own word, where a link is a
-			// round trip to the mailbox -- so this is the narrower of the two
-			// roads to the same move and stays that way.
-			if !req.GetVerified() {
-				return nil, err
-			}
-
-			return s.attested(ctx, req)
-		}
-
-	default:
+	who, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref:    req.GetHolder(),
+		Select: app.HolderSelect_builder{Tenant: app.TenantSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
 		return nil, err
 	}
 
-	if !req.GetVerified() || v.GetDateVerified() != nil {
+	// Through the wall, by address alone -- which is the read `Email`'s `at`
+	// index exists for -- so this finds the row whoever holds it, within the
+	// holder's tenant and no further, and only where the caller may see.
+	held, err := s.EmailServiceServer.Get(ctx, app.EmailGetRequest_builder{
+		Ref: app.EmailRef_builder{
+			At: app.EmailRefByAt_builder{
+				TenantId: who.GetTenant().GetId(),
+				Address:  z.Ptr(front.Address(req.GetAddress())),
+			}.Build(),
+		}.Build(),
+		Select: app.EmailSelect_builder{
+			DateUpdated:  z.Ptr(true),
+			DateVerified: z.Ptr(true),
+			Holder:       app.HolderSelect_builder{}.Build(),
+		}.Build(),
+	}.Build())
+	switch {
+	case status.Code(err) == codes.NotFound:
+		held, err = s.EmailServiceServer.Add(ctx, entered(ctx, app.EmailAddRequest_builder{
+			Holder:    req.GetHolder(),
+			Address:   req.GetAddress(),
+			VouchedBy: req.GetVouchedBy(),
+		}.Build()))
+		if status.Code(err) == codes.AlreadyExists {
+			// A row the read did not find: one the wall keeps from this caller,
+			// or one written since. Neither is this call's to take, and the
+			// answer is the one a stranger's address gets.
+			return nil, status.Error(codes.NotFound, "that address is somebody else's")
+		}
+		if err != nil {
+			return nil, err
+		}
+
+	case err != nil:
+		return nil, err
+
+	case !bytes.Equal(held.GetHolder().GetId(), who.GetId()):
+		// Somebody else's. Which used to end here, and that refusal is what
+		// made an address squattable: a row nobody proved held the address
+		// against the index, so the person a directory vouches for could not be
+		// given it by any road.
+		//
+		// A directory saying `email_verified` is a proof, so it takes an address
+		// **nobody proved** the way a link does. Only that, and only on
+		// `verified`: a provider's word is its own word, where a link is a
+		// round trip to the mailbox -- so this is the narrower of the two roads
+		// to the same move and stays that way.
+		if !req.GetVerified() {
+			return nil, status.Error(codes.NotFound, "that address is somebody else's")
+		}
+
+		return s.attested(ctx, req, held)
+	}
+
+	if !req.GetVerified() || held.GetDateVerified() != nil {
 		// Nothing the provider said to write down, or it is already written.
-		return v, nil
+		return held, nil
 	}
 
 	return s.Next().Email().Patch(ctx, app.EmailPatchRequest_builder{
-		Ref:          app.EmailRef_builder{Id: v.GetId()}.Build(),
+		Ref:          app.EmailRef_builder{Id: held.GetId()}.Build(),
 		DateVerified: timestamppb.Now(),
-		DateUpdated:  v.GetDateUpdated(),
+		DateUpdated:  held.GetDateUpdated(),
 	}.Build())
 }
 
@@ -468,60 +490,45 @@ func (s coreEmail) moved(ctx context.Context, l *app.Link, e *app.Email) (*app.E
 		return nil, status.Error(codes.FailedPrecondition,
 			"somebody proved that address while this link was out, and a proved address does not change hands here")
 	}
-	if s.drv == nil {
-		return nil, status.Error(codes.FailedPrecondition,
-			"this server cannot open a transaction, so it will not move an address in three writes")
-	}
 
-	drv, tx, err := dialect.BeginTx(ctx, s.drv)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
+	// The writes go to the server **below** this one, rebound onto the
+	// transaction, as `coreHost.proved`'s do: so `Add` does not arrive back
+	// here and ask about a claim that has just been spent.
+	var out *app.Email
+	if err := s.atomically(ctx, "move an address in three writes", func(next app.Server) error {
+		// Let go first. A soft erase, which is what every other row here does,
+		// and it is enough: the unique index covers the living only, so an
+		// erased row holds no address.
+		gone, err := next.Email().Erase(ctx, app.EmailRef_builder{Id: e.GetId()}.Build())
+		if err != nil {
+			return err
+		}
+		if !gone.GetErased() {
+			// Somebody else took it out from under this call. Which is not a
+			// failure worth a special answer: the address is nobody's now, and
+			// the claimant may write it with `Email.Add` like anybody else.
+			return status.Error(codes.FailedPrecondition,
+				"that address is no longer held by the row this link was minted against")
+		}
 
-	// This layer again over a rebound one below it, as `coreHost.proved` does:
-	// the writes go to the server **below** this one, so `Add` does not arrive
-	// back here and ask about a claim that has just been spent.
-	next, err := enttx.Rebind(s.Next(), drv)
-	if err != nil {
-		return nil, err
-	}
+		v, err := next.Email().Add(ctx, entered(ctx, app.EmailAddRequest_builder{
+			Holder:  app.HolderRef_builder{Id: l.GetHolder().GetId()}.Build(),
+			Address: e.GetAddress(),
+		}.Build()))
+		if err != nil {
+			return err
+		}
 
-	// Let go first. A soft erase, which is what every other row here does, and it
-	// is enough: the unique index covers the living only, so an erased row holds
-	// no address.
-	gone, err := next.Email().Erase(ctx, app.EmailRef_builder{Id: e.GetId()}.Build())
-	if err != nil {
-		return nil, err
-	}
-	if !gone.GetErased() {
-		// Somebody else took it out from under this call. Which is not a failure
-		// worth a special answer: the address is nobody's now, and the claimant
-		// may write it with `Email.Add` like anybody else.
-		return nil, status.Error(codes.FailedPrecondition,
-			"that address is no longer held by the row this link was minted against")
-	}
+		// And the stamp, which is the whole point of having proved it. Through
+		// `Patch` because `date_verified` is `stamped:` and refused to an `Add`.
+		out, err = next.Email().Patch(ctx, app.EmailPatchRequest_builder{
+			Ref:          app.EmailRef_builder{Id: v.GetId()}.Build(),
+			DateVerified: timestamppb.Now(),
+			DateUpdated:  v.GetDateUpdated(),
+		}.Build())
 
-	v, err := next.Email().Add(ctx, entered(ctx, app.EmailAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: l.GetHolder().GetId()}.Build(),
-		Address: e.GetAddress(),
-	}.Build()))
-	if err != nil {
-		return nil, err
-	}
-
-	// And the stamp, which is the whole point of having proved it. Through
-	// `Patch` because `date_verified` is `stamped:` and refused to an `Add`.
-	out, err := next.Email().Patch(ctx, app.EmailPatchRequest_builder{
-		Ref:          app.EmailRef_builder{Id: v.GetId()}.Build(),
-		DateVerified: timestamppb.Now(),
-		DateUpdated:  v.GetDateUpdated(),
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
+		return err
+	}); err != nil {
 		return nil, err
 	}
 
@@ -533,39 +540,14 @@ func (s coreEmail) moved(ctx context.Context, l *app.Link, e *app.Email) (*app.E
 // [coreEmail.moved]'s three writes with the other kind of evidence in front of
 // them, and a separate function rather than a branch because what each one has
 // already established is different: `moved` holds a spent link and knows the row
-// from it, and this holds a `verified` attestation and has to go and find the row.
+// from it, and this holds a `verified` attestation and the row `Attest` found
+// holding the address, through the wall and within the holder's tenant.
 //
 // The rules it meets are `Attest`'s own, already run by the time this is reached:
 // the address is normalised, a voucher is required, and `mayWriteAWayIn` has
 // passed for the holder it is writing onto. What is left is the one this adds --
-// the incumbent must be **unproved** -- and it is read here rather than taken on
-// trust, because the caller named an address and not a row.
-func (s coreEmail) attested(ctx context.Context, req *app.EmailAttestRequest) (*app.Email, error) {
-	if s.drv == nil {
-		return nil, status.Error(codes.FailedPrecondition,
-			"this server cannot open a transaction, so it will not move an address in three writes")
-	}
-
-	address := front.Address(req.GetAddress())
-
-	// Through the wall, by address alone -- which is the read `Email`'s `at` index
-	// exists for and the one `Attest` above could not make, because that one is
-	// narrowed to a holder. So this finds the row whoever holds it, within the
-	// caller's tenant and no further.
-	tenant, err := s.tenantOfHolder(ctx, req.GetHolder())
-	if err != nil {
-		return nil, err
-	}
-
-	held, err := s.EmailServiceServer.Get(ctx, app.EmailGetRequest_builder{
-		Ref: app.EmailRef_builder{
-			At: app.EmailRefByAt_builder{TenantId: tenant.Bytes(), Address: z.Ptr(address)}.Build(),
-		}.Build(),
-		Select: app.EmailSelect_builder{DateVerified: z.Ptr(true)}.Build(),
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
+// the incumbent must be **unproved**.
+func (s coreEmail) attested(ctx context.Context, req *app.EmailAttestRequest, held *app.Email) (*app.Email, error) {
 	if held.GetDateVerified() != nil {
 		// A proved address does not move, and this is the road where that matters
 		// most: a directory's claim about an address is cheaper to come by than a
@@ -577,44 +559,33 @@ func (s coreEmail) attested(ctx context.Context, req *app.EmailAttestRequest) (*
 		return nil, status.Error(codes.NotFound, "that address is somebody else's")
 	}
 
-	drv, tx, err := dialect.BeginTx(ctx, s.drv)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
+	var out *app.Email
+	if err := s.atomically(ctx, "move an address in three writes", func(next app.Server) error {
+		gone, err := next.Email().Erase(ctx, app.EmailRef_builder{Id: held.GetId()}.Build())
+		if err != nil {
+			return err
+		}
+		if !gone.GetErased() {
+			return status.Error(codes.FailedPrecondition, "that address is no longer held by the row this read")
+		}
 
-	next, err := enttx.Rebind(s.Next(), drv)
-	if err != nil {
-		return nil, err
-	}
+		v, err := next.Email().Add(ctx, entered(ctx, app.EmailAddRequest_builder{
+			Holder:    req.GetHolder(),
+			Address:   req.GetAddress(),
+			VouchedBy: req.GetVouchedBy(),
+		}.Build()))
+		if err != nil {
+			return err
+		}
 
-	gone, err := next.Email().Erase(ctx, app.EmailRef_builder{Id: held.GetId()}.Build())
-	if err != nil {
-		return nil, err
-	}
-	if !gone.GetErased() {
-		return nil, status.Error(codes.FailedPrecondition, "that address is no longer held by the row this read")
-	}
+		out, err = next.Email().Patch(ctx, app.EmailPatchRequest_builder{
+			Ref:          app.EmailRef_builder{Id: v.GetId()}.Build(),
+			DateVerified: timestamppb.Now(),
+			DateUpdated:  v.GetDateUpdated(),
+		}.Build())
 
-	v, err := next.Email().Add(ctx, entered(ctx, app.EmailAddRequest_builder{
-		Holder:    req.GetHolder(),
-		Address:   req.GetAddress(),
-		VouchedBy: req.GetVouchedBy(),
-	}.Build()))
-	if err != nil {
-		return nil, err
-	}
-
-	out, err := next.Email().Patch(ctx, app.EmailPatchRequest_builder{
-		Ref:          app.EmailRef_builder{Id: v.GetId()}.Build(),
-		DateVerified: timestamppb.Now(),
-		DateUpdated:  v.GetDateUpdated(),
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
+		return err
+	}); err != nil {
 		return nil, err
 	}
 
