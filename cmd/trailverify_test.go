@@ -3,7 +3,13 @@ package cmd_test
 import (
 	"bytes"
 	"compress/gzip"
+	"io"
+	"os"
+	"path/filepath"
+	"regexp"
 	"slices"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,12 +17,50 @@ import (
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/pdtest"
 	"github.com/lesomnus/payday/trail"
+	"github.com/lesomnus/xli"
 	"github.com/stretchr/testify/require"
 
 	"github.com/lesomnus/roster/cli"
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/server/pd"
 )
+
+// stderrOf runs a command and answers with what it wrote to stderr, beside
+// its error: where `trail verify` and `trail rows` say the digest of what they
+// found, apart from the findings themselves.
+func stderrOf(t *testing.T, k *xli.Command, args ...string) (string, error) {
+	t.Helper()
+
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+
+	read := make(chan []byte)
+	go func() {
+		b, _ := io.ReadAll(r)
+		read <- b
+	}()
+
+	was := os.Stderr
+	os.Stderr = w
+	err = k.Run(t.Context(), args)
+	os.Stderr = was
+	require.NoError(t, w.Close())
+
+	return string(<-read), err
+}
+
+// digestOf is the digest a check printed of what it found.
+func digestOf(t *testing.T, out string) string {
+	t.Helper()
+
+	m := regexp.MustCompile(`(?m)^digest (sha256:[0-9a-f]+)$`).FindStringSubmatch(out)
+	require.NotNil(t, m, "no digest in what it printed:\n%s", out)
+
+	return m[1]
+}
+
+// nothingLookedAt is a digest no check printed.
+var nothingLookedAt = "sha256:" + strings.Repeat("0", 64)
 
 // TestTheArchiveIsCheckedAgainstTheDatabasesAccountOfIt is `roster trail
 // verify`, `accept` and `purge` at a shell.
@@ -67,11 +111,23 @@ func TestTheArchiveIsCheckedAgainstTheDatabasesAccountOfIt(t *testing.T) {
 	}
 
 	plant()
-	err = run("trail", "verify")
+	out, err := stderrOf(t, cli.Cmd(&c), "trail", "verify")
 	x.ErrorContains(err, "1 finding(s)")
-	x.ErrorContains(run("trail", "accept"), "--why")
-	x.NoError(run("trail", "accept", "--why", "put there by this test, and looked at"))
-	x.NoError(run("trail", "verify"))
+	of := digestOf(t, out)
+	x.ErrorContains(err, "--of "+of, "verify does not say what an acceptance of it names")
+
+	x.ErrorContains(run("trail", "accept", "--why", "looked at"), "--of")
+	x.ErrorContains(run("trail", "accept", "--of", of), "--why")
+
+	// Of findings other than these, it is refused, and says to verify again.
+	err = run("trail", "accept", "--of", nothingLookedAt, "--why", "not what was looked at")
+	x.ErrorIs(err, trail.ErrUnreviewed)
+	x.ErrorContains(err, "roster trail verify")
+
+	x.NoError(run("trail", "accept", "--of", of, "--by", "the test", "--why", "put there by this test, and looked at"))
+	out, err = stderrOf(t, cli.Cmd(&c), "trail", "verify")
+	x.NoError(err)
+	x.Contains(out, "by the test: put there by this test, and looked at (unaccounted 1)", "verify does not say what was accepted")
 
 	// And one more, which a purge of everything leaves where it is.
 	plant()
@@ -81,6 +137,59 @@ func TestTheArchiveIsCheckedAgainstTheDatabasesAccountOfIt(t *testing.T) {
 	x.Len(left, 1, "a purge destroyed a chunk the database does not account for, or left one it does")
 	err = run("trail", "verify")
 	x.ErrorContains(err, "1 finding(s)", "the chunk nobody wrote is still the one finding")
+}
+
+// TestAFullCheckIsAcceptedAsAFullOne is `trail accept --full`. Only `verify
+// --full` reads a chunk's bytes, which is the one way a chunk whose bytes are
+// not its digest is found (`altered`), so a full check's digest is not what a
+// light one finds: an acceptance verifies again the way the check it names did,
+// and one of a full check made without `--full` is of findings it never looked
+// at (payday#115).
+func TestAFullCheckIsAcceptedAsAFullOne(t *testing.T) {
+	x := require.New(t)
+
+	dir := t.TempDir()
+	var c cmd.Config
+	b, ctx := build(t, func(cc *cmd.Config) {
+		cc.Audit.Archive = dir
+		cc.Audit.Retain = time.Nanosecond
+		cc.Audit.Checkpoints.Key = pdtest.Key(t)
+		c = *cc
+	})
+	b.holder(t, ctx, b.Contoso, "another")
+
+	run := func(args ...string) error { return cli.Cmd(&c).Run(ctx, args) }
+	x.NoError(run("trail", "prune"))
+
+	// A chunk's bytes written again beneath its name, as somebody who can
+	// write the archive's disk would.
+	cs, err := trail.Chunks(ctx, flob.NewOsStores(dir))
+	x.NoError(err)
+	x.NotEmpty(cs, "the pass archived nothing, so this proves nothing")
+	d := cs[0].Digest
+	enc := d.Encoded()
+	path := filepath.Join(dir, "share", d.Algorithm().String(), enc[0:2], enc[2:4], enc[4:])
+	var buf bytes.Buffer
+	z := gzip.NewWriter(&buf)
+	_, err = z.Write([]byte(`{"id":"nobody wrote this"}` + "\n"))
+	x.NoError(err)
+	x.NoError(z.Close())
+	x.NoError(os.Chmod(path, 0o600))
+	x.NoError(os.WriteFile(path, buf.Bytes(), 0o600))
+
+	x.NoError(run("trail", "verify"), "a light check read a chunk's bytes")
+	out, err := stderrOf(t, cli.Cmd(&c), "trail", "verify", "--full")
+	x.ErrorContains(err, "1 finding(s)")
+	x.ErrorContains(err, "--full --why", "verify --full does not say its acceptance is a full one")
+	of := digestOf(t, out)
+
+	x.ErrorIs(run("trail", "accept", "--of", of, "--why", "looked at"), trail.ErrUnreviewed,
+		"a full check was accepted by a light one")
+	x.NoError(run("trail", "accept", "--of", of, "--full", "--why", "the chunk's bytes, looked at"))
+
+	out, err = stderrOf(t, cli.Cmd(&c), "trail", "verify")
+	x.NoError(err)
+	x.Contains(out, ": the chunk's bytes, looked at (altered 1)", "verify does not say what was accepted")
 }
 
 // TestRowsNobodySignedAreAcceptedOnce is what a deployment does whose
@@ -115,9 +224,9 @@ func TestRowsNobodySignedAreAcceptedOnce(t *testing.T) {
 	x.NoError(err)
 	x.NotZero(n, "the account has no rows, so this proves nothing")
 
-	err = run("trail", "verify")
+	out, err := stderrOf(t, cli.Cmd(&c), "trail", "verify")
 	x.ErrorContains(err, "finding(s)", "rows nobody signed were taken for signed ones")
-	x.NoError(run("trail", "accept", "--why", "written before this deployment signed its rows"))
+	x.NoError(run("trail", "accept", "--of", digestOf(t, out), "--why", "written before this deployment signed its rows"))
 	x.NoError(run("trail", "verify"))
 
 	// And what is written now is signed as it is written.
@@ -141,16 +250,17 @@ func TestRowsNobodySignedAreAcceptedOnce(t *testing.T) {
 		// every chunk of this one for missing.
 		other := t.TempDir()
 		for _, args := range [][]string{
-			{"trail", "accept", "--in", other, "--why", "a second archive"},
+			{"trail", "accept", "--in", other, "--of", nothingLookedAt, "--why", "a second archive"},
 			{"trail", "purge", "--older-than", "1ns", "--in", other},
 		} {
 			err := run(args...)
 			x.ErrorContains(err, "--in", args)
 			x.ErrorContains(err, "audit.archive", args)
 		}
-		x.NoError(run("trail", "verify"), "a refused act changed the account")
+		out, err := stderrOf(t, cli.Cmd(&c), "trail", "verify")
+		x.NoError(err, "a refused act changed the account")
 
-		x.NoError(run("trail", "accept", "--in", dir, "--why", "the archive it already has"))
+		x.NoError(run("trail", "accept", "--in", dir, "--of", digestOf(t, out), "--why", "the archive it already has"))
 		x.NoError(run("trail", "purge", "--older-than", "1ns", "--in", dir, "--dry-run"))
 		x.NoError(run("trail", "verify"))
 	})
@@ -220,7 +330,17 @@ func TestADatabaseRestoredFromABackupIsAcceptedOnce(t *testing.T) {
 	x.NoError(run("trail", "prune"))
 	x.Equal(then, latest(), "a checkpoint was taken over a database behind the store")
 
-	x.NoError(run("trail", "accept", "--why", "the database restored from a backup, and looked at"))
+	out, err := stderrOf(t, cli.Cmd(&c), "trail", "verify")
+	x.ErrorContains(err, "--restored", "verify does not say a restore names its checkpoint")
+	of := digestOf(t, out)
+
+	// A restore is accepted as one, naming the checkpoint its backup holds.
+	err = run("trail", "accept", "--of", of, "--why", "the database restored from a backup")
+	x.ErrorIs(err, trail.ErrRestored)
+	x.ErrorContains(err, "roster trail verify")
+	x.ErrorIs(run("trail", "accept", "--of", of, "--restored", strconv.Itoa(then+1), "--why", "the wrong backup"), trail.ErrRestored)
+
+	x.NoError(run("trail", "accept", "--of", of, "--restored", strconv.Itoa(then), "--why", "the database restored from a backup, and looked at"))
 	x.Equal(since+1, latest())
 	x.NoError(run("trail", "verify", "--full"))
 
