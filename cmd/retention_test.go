@@ -46,7 +46,7 @@ func TestWhatLeavesTheDatabaseIsInTheArchiveBeforeItLeaves(t *testing.T) {
 	archive := flob.NewOsStores(t.TempDir())
 
 	// Everything, which is what a cutoff in the future means.
-	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Policy{Archive: archive}, trail.Kinds{}, time.Now().Add(time.Hour))
+	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Policy{Archive: archive, Signer: pdtest.Signer(t)}, trail.Kinds{}, time.Now().Add(time.Hour))
 	x.NoError(err)
 	x.Equal(len(was), n)
 
@@ -94,15 +94,17 @@ func TestTwoRunsOverOneMonthDoNotShareAChunk(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
-	archive := flob.NewOsStores(t.TempDir())
+	// One archive, so one key that signs its account.
+	p := trail.Policy{Archive: flob.NewOsStores(t.TempDir()), Signer: pdtest.Signer(t)}
+	archive := p.Archive
 
 	b.holder(t, ctx, b.Contoso, "first")
-	one, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Policy{Archive: archive}, trail.Kinds{}, time.Now().Add(time.Hour))
+	one, err := trail.Archive(ctx, pd.TrailStore(b.Ent), p, trail.Kinds{}, time.Now().Add(time.Hour))
 	x.NoError(err)
 	x.NotZero(one)
 
 	b.holder(t, ctx, b.Contoso, "second")
-	two, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Policy{Archive: archive}, trail.Kinds{}, time.Now().Add(time.Hour))
+	two, err := trail.Archive(ctx, pd.TrailStore(b.Ent), p, trail.Kinds{}, time.Now().Add(time.Hour))
 	x.NoError(err)
 	x.NotZero(two)
 
@@ -151,8 +153,11 @@ func TestNothingLeavesTheDatabaseThatCouldNotBeWritten(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "archive")
 	x.NoError(os.WriteFile(dir, nil, 0o600))
 
-	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Policy{Archive: flob.NewOsStores(dir)}, trail.Kinds{}, time.Now().Add(time.Hour))
+	// With a key, so that what refuses is the directory and not the archive's
+	// account, which an archive without one never gets as far as writing.
+	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Policy{Archive: flob.NewOsStores(dir), Signer: pdtest.Signer(t)}, trail.Kinds{}, time.Now().Add(time.Hour))
 	x.Error(err)
+	x.NotErrorIs(err, trail.ErrNoKey)
 	x.Zero(n)
 
 	left, err := b.Ent.Audit.Query().Count(ctx)
@@ -184,7 +189,7 @@ func TestThePolicyIsAppliedByTheProcessAndNotOnlyByAnOperator(t *testing.T) {
 	dir := t.TempDir()
 
 	// A window of nothing, so that everything already written is past it.
-	p := trail.Policy{Keep: trail.Keep{Retain: time.Nanosecond}, Archive: flob.NewOsStores(dir), Every: time.Hour}
+	p := trail.Policy{Keep: trail.Keep{Retain: time.Nanosecond}, Archive: flob.NewOsStores(dir), Signer: pdtest.Signer(t), Every: time.Hour}
 
 	run, stop := context.WithCancel(ctx)
 	done := make(chan error, 1)

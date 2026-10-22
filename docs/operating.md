@@ -1049,6 +1049,8 @@ the values.
 audit:
   profile: pipa                  # a starting point, with its arithmetic
   archive: /var/lib/roster/audit # where a row goes when it leaves
+  checkpoints:
+    key: /run/secrets/roster-checkpoints.pem  # what signs the archive's account; required with an archive
   every: 24h                     # how often the policy is applied
   by:
     holder:
@@ -1137,8 +1139,23 @@ something, which makes it the one to schedule. What it finds is a reason to look
 `accept --why` is somebody who has, saying the archive is right -- a chunk restored
 from a backup, a pass a crash stopped. Every pass ends with a checkpoint of the
 account: keep them apart from the archive, `audit.checkpoints.dir` on a disk that
-refuses deletion, and sign them with `audit.checkpoints.key` -- a file, or the PEM
-document itself in `ROSTER_AUDIT_CHECKPOINTS_KEY`.
+refuses deletion.
+
+**An archive is kept with a key** that signs its account and its checkpoints
+(payday#115): `audit.checkpoints.key`, a file or the PEM document itself in
+`ROSTER_AUDIT_CHECKPOINTS_KEY`. `serve` and every `trail` command refuse an
+`audit.archive` without one, and the refusal says how to make one:
+
+```sh
+openssl genpkey -algorithm ed25519 -out checkpoints.pem   # mounted as a secret, apart from the database's and the archive's credentials
+```
+
+There is no key everybody knows to fall back on: one would sign forgeries for
+anybody the day it reached a deployment. For a deployment being tried, `roster init`
+gives a configuration that names an archive and no key one of its own,
+`<archive>-checkpoints.pem` beside the archive, and prints where; name it before
+`serve`. `.gitignore` keeps it out of a commit, since a key that signs is never
+committed.
 
 The same key signs **every row of the account** as it is written, and each
 checkpoint names the one before it (lesomnus/payday#58), so a row changed
@@ -1231,6 +1248,25 @@ roster trail verify                                            # `unsigned`, for
 roster trail accept --why "written before rows were signed"   # once
 roster trail verify                                            # clean
 ```
+
+**An archive kept without a key until now** (an earlier roster kept one that
+nothing signed) is the same once the key is set, and more of it. Every row and
+every checkpoint it has is `unsigned`. Nothing is destroyed on their word, and no
+act takes a checkpoint after them: each does what it does and then says so in its
+error (`no trusted key signed the checkpoints the store keeps`). Set
+`audit.checkpoints.key`, look, and run `accept` once. It signs the rows as they
+stand and names the checkpoint the database numbered last as the one before its
+own, which takes in the history from before the key:
+
+```sh
+roster trail verify                                           # `unsigned`, every row and checkpoint
+roster trail accept --why "kept without a key until 10-22"   # once
+roster trail verify                                           # clean
+```
+
+A deployment that changed its key without trusting the old one is told the same.
+It puts the old key's public half in `audit.checkpoints.trust` instead of
+accepting.
 
 `prune --to`, and `--in` of `purge` and `accept`, name the archive
 `audit.archive` already is, or one for a deployment that names none. The account

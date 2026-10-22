@@ -9,3 +9,7 @@ node_modules/
 # second is version-coupled to whichever compiler built the first -- a
 # committed copy pins the wrong one.
 ts/public/
+
+# A key the trail's archive is signed with, which `roster init` writes beside
+# an archive that names none. A key that signs is never committed.
+*-checkpoints.pem

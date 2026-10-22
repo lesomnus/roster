@@ -8,6 +8,7 @@ import (
 
 	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/payday/pdtest"
 	"github.com/lesomnus/payday/trail"
 
 	"github.com/lesomnus/flob"
@@ -263,10 +264,11 @@ func TestForgettingReachesTheArchiveToo(t *testing.T) {
 	b.addressOf(t, ctx, who, "erin@contoso.example")
 
 	archive := flob.NewOsStores(t.TempDir())
+	p := trail.Policy{Archive: archive, Signer: pdtest.Signer(t)}
 
 	// Everything into the archive first, so that the database holds none of it
 	// and the only copy left is the archive's.
-	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Policy{Archive: archive}, trail.Kinds{}, time.Now().Add(time.Hour))
+	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), p, trail.Kinds{}, time.Now().Add(time.Hour))
 	x.NoError(err)
 	x.NotZero(n)
 
@@ -280,7 +282,7 @@ func TestForgettingReachesTheArchiveToo(t *testing.T) {
 	})))
 	x.NotZero(held, "the archive holds nothing about them, so this proves nothing")
 
-	res, err := forget.Forget(ctx, b.Ent, who, trail.Policy{Archive: archive}, audit.Contents{})
+	res, err := forget.Forget(ctx, b.Ent, who, p, audit.Contents{})
 	x.NoError(err)
 	x.NotZero(res.Archived, "the archive was not reached")
 

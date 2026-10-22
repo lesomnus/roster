@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
@@ -20,6 +21,7 @@ import (
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdtest"
+	"github.com/lesomnus/payday/trail"
 
 	"github.com/lesomnus/roster/cmd"
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
@@ -621,6 +623,62 @@ func TestInitLeavesTheTwoFilesTheTutorialNames(t *testing.T) {
 	}.Build())
 	x.NoError(err, "the identifier init printed names nobody")
 	x.Equal("admin", v.GetAlias())
+}
+
+// TestInitGivesAnArchiveAKeyOfItsOwn: an archive is kept with a key that signs
+// its account (payday#115), and a deployment that names one and no key is
+// refused where it comes up. `init` on such a configuration writes a key of the
+// deployment's own beside the archive and says where -- there is no key
+// everybody knows to fall back on -- and the deployment builds once the key is
+// named. A file already there is somebody's key, and is not written over.
+func TestInitGivesAnArchiveAKeyOfItsOwn(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	drv, dsn := pdtest.DB(t)
+	cdrv, cdsn := pdtest.DB(t)
+	archive := filepath.Join(t.TempDir(), "audit")
+	c := cmd.Config{
+		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
+		Audit:   config.AuditConfig{Archive: archive, Retain: 90 * 24 * time.Hour},
+	}
+
+	_, err := cmd.Build(ctx, c)
+	x.ErrorContains(err, "audit.checkpoints.key", "an archive with no key came up")
+
+	out, err := initRun(t, c)
+	x.NoError(err, "init: %s", out)
+
+	path := archive + "-checkpoints.pem"
+	x.Contains(out, path, "init did not say where the key is")
+	info, err := os.Stat(path)
+	x.NoError(err)
+	x.Equal(os.FileMode(0o600), info.Mode().Perm(), "a key anybody on the machine can read")
+	doc, err := os.ReadFile(path)
+	x.NoError(err)
+	_, err = trail.ParseKey(doc)
+	x.NoError(err, "what init wrote is not a key")
+
+	// Named, as init said to.
+	c.Audit.Checkpoints.Key = path
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	x.NoError(s.Close())
+
+	t.Run("and a key already there is not written over", func(t *testing.T) {
+		x := require.New(t)
+
+		c := c
+		c.Audit.Checkpoints.Key = ""
+		out, err := initRun(t, c)
+		x.ErrorContains(err, "is one already", "init: %s", out)
+
+		again, err := os.ReadFile(path)
+		x.NoError(err)
+		x.Equal(doc, again, "init wrote over a key that was there")
+	})
 }
 
 // TestTheShippedConfigurationIsAFirstRun is `roster.yaml` as it ships, run the
