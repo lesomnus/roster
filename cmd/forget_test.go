@@ -15,6 +15,7 @@ import (
 
 	"github.com/lesomnus/flob"
 
+	"github.com/lesomnus/roster/internal/ent"
 	entaudit "github.com/lesomnus/roster/internal/ent/audit"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/forget"
@@ -342,9 +343,19 @@ func TestForgettingIsOneTransactionWithTheTrail(t *testing.T) {
 	was, err := b.Ent.Audit.Query().Count(ctx)
 	x.NoError(err)
 
-	// The trail's turn refused, so its erasure fails inside the transaction.
-	_, err = forget.Forget(ctx, b.Ent, who, trail.Policy{Lease: refusing{}}, audit.Contents{})
-	x.ErrorIs(err, errRefused)
+	// The trail's rows refused a write, so its erasure fails inside the
+	// transaction: the one update of the trail a forget makes is its blank.
+	refused := errors.New("the trail refused")
+	b.Ent.Audit.Use(func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if m.Op().Is(ent.OpUpdate) {
+				return nil, refused
+			}
+			return next.Mutate(ctx, m)
+		})
+	})
+	_, err = forget.Forget(ctx, b.Ent, who, trail.Policy{}, audit.Contents{})
+	x.ErrorIs(err, refused)
 
 	v, err := b.Ent.Holder.Get(ctx, who.Uuid())
 	x.NoError(err)
@@ -359,15 +370,6 @@ func TestForgettingIsOneTransactionWithTheTrail(t *testing.T) {
 	owed, err := b.Ent.Owed.Query().Count(ctx)
 	x.NoError(err)
 	x.Zero(owed, "a debt outlived the transaction that owed it")
-}
-
-// refusing is a lease that holds nothing: the trail's turn, refused.
-type refusing struct{}
-
-var errRefused = errors.New("refused")
-
-func (refusing) Hold(context.Context, string) (context.Context, func(), error) {
-	return nil, nil, errRefused
 }
 
 // TestAnArchiveNotPaidIsOwedToTheNextPass (payday#115).

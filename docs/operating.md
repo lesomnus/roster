@@ -1157,6 +1157,7 @@ roster trail verify --full                        # the archive against the data
 roster trail accept --of sha256:… --full --why "a pass the 10-21 crash stopped"  # once somebody has looked at that
 roster trail rows                                 # the live rows against what the trail says they were left as, and its digest
 roster trail rows --accept --of sha256:… --why "the 10-20 migration set them"  # once somebody has looked at each
+roster trail owed                                 # the erasures owed and not paid yet: how many, since when, and what a legal hold keeps
 ```
 
 `prune` with no window applies **the deployment's own policy**, which is what
@@ -1612,7 +1613,10 @@ process that stops before it, leaves the debt to the trail's next pass, which pa
 what is owed before it moves anything, and `roster forget` says how much is still
 owed. A trail row a legal hold is on stays as it was, and its debt with it:
 `roster forget` says how many and whose, and the pass after the hold is lifted erases
-them -- nobody runs anything again.
+them -- nobody runs anything again. `roster trail owed` says what the deployment owes
+at any moment: how many, since when, and how many each tenant's hold keeps. The rows'
+seals are owed with the archive's half and paid with it (payday#144), so the
+transaction takes no turn with a pass.
 
 **What somebody consented to stays past them.** An app's record of their
 consents (`ConsentService`, [apps.md](apps.md) § *What an app keeps here*) is

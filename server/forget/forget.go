@@ -124,10 +124,12 @@ func (r Result) String() string {
 // The person's own rows, the holder blanked and the trail's rows about them
 // in the database go in one transaction: the trail's erasure is asked of the
 // transaction's store (`trail.Policy.Forget`), which blanks those rows there
-// and owes the archive's half there (payday#115) -- one row of payday's
-// `Owed` per identifier, which a rollback takes with the rest. The archive
-// takes no part in a transaction, so its half is paid once the transaction
-// has committed, naming what was forgotten (`trail.Policy.Pay`); a payment
+// and owes the archive's half there (payday#115), and the rows' seals with it
+// (payday#144) -- one row of payday's `Owed` per identifier, which a rollback
+// takes with the rest. It takes no turn with a pass in the transaction: what a
+// pass could write back is what is owed. The archive takes no part in a
+// transaction, so its half is paid once the transaction has committed,
+// naming what was forgotten (`trail.Policy.Pay`); a payment
 // that fails, or a process that stops before it, leaves the debt to the
 // trail's next pass, which pays what is owed before it moves anything. What
 // is still owed is [Result.Owed]. A commit that never happened forgot
