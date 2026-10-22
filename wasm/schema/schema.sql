@@ -25,6 +25,7 @@ CREATE TABLE `link` (`id` uuid NOT NULL, `at` text NOT NULL, `secret` blob NOT N
 CREATE TABLE `maildomain` (`id` uuid NOT NULL, `name` text NOT NULL, `provider` text NOT NULL, `desc` text NOT NULL, `labels` json NULL, `date_updated` datetime NOT NULL, `date_erased` datetime NULL, `date_created` datetime NULL, `tenant_id` uuid NOT NULL, PRIMARY KEY (`id`), CONSTRAINT `maildomain_tenant_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenant` (`id`) ON DELETE NO ACTION);
 CREATE TABLE `nomination` (`id` uuid NOT NULL, `labels` json NULL, `name` text NOT NULL, `borrower_id` uuid NOT NULL, `date_updated` datetime NOT NULL, `date_erased` datetime NULL, `date_created` datetime NULL, `tenant_id` uuid NOT NULL, `acts_as_id` uuid NOT NULL, PRIMARY KEY (`id`), CONSTRAINT `nomination_tenant_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenant` (`id`) ON DELETE NO ACTION, CONSTRAINT `nomination_holder_acts_as` FOREIGN KEY (`acts_as_id`) REFERENCES `holder` (`id`) ON DELETE NO ACTION);
 CREATE TABLE `outbox` (`id` uuid NOT NULL, `tenant_id` uuid NOT NULL, `actor_id` uuid NOT NULL, `method` text NOT NULL, `by` text NOT NULL, `object_id` uuid NOT NULL, `patch` blob NOT NULL, `date_created` datetime NULL, `event` blob NULL, PRIMARY KEY (`id`));
+CREATE TABLE `owed` (`id` uuid NOT NULL, `object` uuid NOT NULL, `held_by` json NULL, `date_created` datetime NULL, PRIMARY KEY (`id`));
 CREATE TABLE `role` (`id` uuid NOT NULL, `alias` text NOT NULL, `name` text NOT NULL, `desc` text NOT NULL, `labels` json NULL, `methods` json NULL, `date_updated` datetime NOT NULL, `date_erased` datetime NULL, `date_created` datetime NULL, `tenant_id` uuid NOT NULL, `site_id` uuid NULL, PRIMARY KEY (`id`), CONSTRAINT `role_tenant_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenant` (`id`) ON DELETE NO ACTION, CONSTRAINT `role_site_site` FOREIGN KEY (`site_id`) REFERENCES `site` (`id`) ON DELETE SET NULL);
 CREATE TABLE `rowseal` (`id` uuid NOT NULL, `tenant_id` uuid NOT NULL, `sum` blob NOT NULL, `fields` json NULL, PRIMARY KEY (`id`));
 CREATE TABLE `session` (`id` uuid NOT NULL, `grant` blob NOT NULL, `secret` blob NOT NULL, `date_expires` datetime NULL, `date_idle` datetime NULL, `date_updated` datetime NOT NULL, `date_erased` datetime NULL, `date_created` datetime NULL, `holder_id` uuid NOT NULL, PRIMARY KEY (`id`), CONSTRAINT `session_holder_holder` FOREIGN KEY (`holder_id`) REFERENCES `holder` (`id`) ON DELETE NO ACTION);
@@ -83,6 +84,7 @@ CREATE INDEX `maildomain_page` ON `maildomain` (`tenant_id`, `date_created`, `id
 CREATE UNIQUE INDEX `nomination_borrower` ON `nomination` (`tenant_id`, `borrower_id`) WHERE date_erased IS NULL;
 CREATE INDEX `nomination_page` ON `nomination` (`tenant_id`, `date_created`, `id`);
 CREATE INDEX `outbox_queue` ON `outbox` (`id`);
+CREATE INDEX `owed_owed` ON `owed` (`date_created`, `id`);
 CREATE INDEX `role_page` ON `role` (`tenant_id`, `date_created`, `id`);
 CREATE UNIQUE INDEX `role_slug` ON `role` (`alias`, `tenant_id`) WHERE date_erased IS NULL;
 CREATE INDEX `session_page` ON `session` (`date_created`, `id`);

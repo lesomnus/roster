@@ -56,6 +56,8 @@ type Tx struct {
 	Nomination *NominationClient
 	// Outbox is the client for interacting with the Outbox builders.
 	Outbox *OutboxClient
+	// Owed is the client for interacting with the Owed builders.
+	Owed *OwedClient
 	// Role is the client for interacting with the Role builders.
 	Role *RoleClient
 	// RowSeal is the client for interacting with the RowSeal builders.
@@ -225,6 +227,7 @@ func (tx *Tx) init() {
 	tx.MailDomain = NewMailDomainClient(tx.config)
 	tx.Nomination = NewNominationClient(tx.config)
 	tx.Outbox = NewOutboxClient(tx.config)
+	tx.Owed = NewOwedClient(tx.config)
 	tx.Role = NewRoleClient(tx.config)
 	tx.RowSeal = NewRowSealClient(tx.config)
 	tx.Session = NewSessionClient(tx.config)

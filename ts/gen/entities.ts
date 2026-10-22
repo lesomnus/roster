@@ -32,6 +32,7 @@ import { IdentitySchema } from './app/identity_pb.js'
 import { LinkSchema } from './app/link_pb.js'
 import { NominationSchema } from './app/nomination_pb.js'
 import { OutboxSchema } from './roster/payday/outbox_pb.js'
+import { OwedSchema } from './roster/payday/owed_pb.js'
 import { RowSealSchema } from './roster/payday/rowseal_pb.js'
 import { SessionSchema } from './app/session_pb.js'
 import { SiteSchema } from './app/site_pb.js'
@@ -56,6 +57,7 @@ import { IdentityService } from './app/identity_svc_pb.js'
 import { LinkService } from './app/link_svc_pb.js'
 import { NominationService } from './app/nomination_svc_pb.js'
 import { OutboxService } from './roster/payday/outbox_svc_pb.js'
+import { OwedService } from './roster/payday/owed_svc_pb.js'
 import { RowSealService } from './roster/payday/rowseal_svc_pb.js'
 import { SessionService } from './app/session_svc_pb.js'
 import { SiteService } from './app/site_svc_pb.js'
@@ -327,6 +329,16 @@ export const Outbox = {
 	service: OutboxService,
 } as const satisfies EntityDesc
 
+/** roster.Owed, as the store holds it. */
+export const Owed = {
+	typeName: "roster.Owed",
+	schema: OwedSchema,
+	domain: 254,
+	key: "id",
+	ids: ["id", "object"],
+	service: OwedService,
+} as const satisfies EntityDesc
+
 /** roster.Role, as the store holds it. */
 export const Role = {
 	typeName: "roster.Role",
@@ -426,5 +438,5 @@ export const Tenant = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [Access, ApiKey, Archived, Audit, Binding, Connection, Consent, Continuation, Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, RowSeal, Session, Site, SiteMembership, Team, TeamMembership, Tenant] as const
+export const entities = [Access, ApiKey, Archived, Audit, Binding, Connection, Consent, Continuation, Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Owed, Role, RowSeal, Session, Site, SiteMembership, Team, TeamMembership, Tenant] as const
 

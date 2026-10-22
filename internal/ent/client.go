@@ -33,6 +33,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/maildomain"
 	"github.com/lesomnus/roster/internal/ent/nomination"
 	"github.com/lesomnus/roster/internal/ent/outbox"
+	"github.com/lesomnus/roster/internal/ent/owed"
 	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/rowseal"
 	"github.com/lesomnus/roster/internal/ent/session"
@@ -94,6 +95,8 @@ type Client struct {
 	Nomination *NominationClient
 	// Outbox is the client for interacting with the Outbox builders.
 	Outbox *OutboxClient
+	// Owed is the client for interacting with the Owed builders.
+	Owed *OwedClient
 	// Role is the client for interacting with the Role builders.
 	Role *RoleClient
 	// RowSeal is the client for interacting with the RowSeal builders.
@@ -142,6 +145,7 @@ func (c *Client) init() {
 	c.MailDomain = NewMailDomainClient(c.config)
 	c.Nomination = NewNominationClient(c.config)
 	c.Outbox = NewOutboxClient(c.config)
+	c.Owed = NewOwedClient(c.config)
 	c.Role = NewRoleClient(c.config)
 	c.RowSeal = NewRowSealClient(c.config)
 	c.Session = NewSessionClient(c.config)
@@ -264,6 +268,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		MailDomain:      NewMailDomainClient(cfg),
 		Nomination:      NewNominationClient(cfg),
 		Outbox:          NewOutboxClient(cfg),
+		Owed:            NewOwedClient(cfg),
 		Role:            NewRoleClient(cfg),
 		RowSeal:         NewRowSealClient(cfg),
 		Session:         NewSessionClient(cfg),
@@ -313,6 +318,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		MailDomain:      NewMailDomainClient(cfg),
 		Nomination:      NewNominationClient(cfg),
 		Outbox:          NewOutboxClient(cfg),
+		Owed:            NewOwedClient(cfg),
 		Role:            NewRoleClient(cfg),
 		RowSeal:         NewRowSealClient(cfg),
 		Session:         NewSessionClient(cfg),
@@ -399,8 +405,8 @@ func (c *Client) Use(hooks ...Hook) {
 		c.Access, c.ApiKey, c.Archived, c.Audit, c.Binding, c.Connection, c.Consent,
 		c.Continuation, c.Credential, c.Delegation, c.Email, c.Group, c.GroupExposure,
 		c.GroupMembership, c.Holder, c.Host, c.HostProof, c.Identity, c.Link,
-		c.MailDomain, c.Nomination, c.Outbox, c.Role, c.RowSeal, c.Session, c.Site,
-		c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
+		c.MailDomain, c.Nomination, c.Outbox, c.Owed, c.Role, c.RowSeal, c.Session,
+		c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
 	} {
 		n.Use(hooks...)
 	}
@@ -413,8 +419,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.Access, c.ApiKey, c.Archived, c.Audit, c.Binding, c.Connection, c.Consent,
 		c.Continuation, c.Credential, c.Delegation, c.Email, c.Group, c.GroupExposure,
 		c.GroupMembership, c.Holder, c.Host, c.HostProof, c.Identity, c.Link,
-		c.MailDomain, c.Nomination, c.Outbox, c.Role, c.RowSeal, c.Session, c.Site,
-		c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
+		c.MailDomain, c.Nomination, c.Outbox, c.Owed, c.Role, c.RowSeal, c.Session,
+		c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -467,6 +473,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Nomination.mutate(ctx, m)
 	case *OutboxMutation:
 		return c.Outbox.mutate(ctx, m)
+	case *OwedMutation:
+		return c.Owed.mutate(ctx, m)
 	case *RoleMutation:
 		return c.Role.mutate(ctx, m)
 	case *RowSealMutation:
@@ -3846,6 +3854,139 @@ func (c *OutboxClient) mutate(ctx context.Context, m *OutboxMutation) (Value, er
 	}
 }
 
+// OwedClient is a client for the Owed schema.
+type OwedClient struct {
+	config
+}
+
+// NewOwedClient returns a client for the Owed from the given config.
+func NewOwedClient(c config) *OwedClient {
+	return &OwedClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `owed.Hooks(f(g(h())))`.
+func (c *OwedClient) Use(hooks ...Hook) {
+	c.hooks.Owed = append(c.hooks.Owed, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `owed.Intercept(f(g(h())))`.
+func (c *OwedClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Owed = append(c.inters.Owed, interceptors...)
+}
+
+// Create returns a builder for creating a Owed entity.
+func (c *OwedClient) Create() *OwedCreate {
+	mutation := newOwedMutation(c.config, OpCreate)
+	return &OwedCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Owed entities.
+func (c *OwedClient) CreateBulk(builders ...*OwedCreate) *OwedCreateBulk {
+	return &OwedCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *OwedClient) MapCreateBulk(slice any, setFunc func(*OwedCreate, int)) *OwedCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &OwedCreateBulk{err: fmt.Errorf("calling to OwedClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*OwedCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &OwedCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Owed.
+func (c *OwedClient) Update() *OwedUpdate {
+	mutation := newOwedMutation(c.config, OpUpdate)
+	return &OwedUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *OwedClient) UpdateOne(_m *Owed) *OwedUpdateOne {
+	mutation := newOwedMutation(c.config, OpUpdateOne, withOwed(_m))
+	return &OwedUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *OwedClient) UpdateOneId(id uuid.UUID) *OwedUpdateOne {
+	mutation := newOwedMutation(c.config, OpUpdateOne, withOwedId(id))
+	return &OwedUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Owed.
+func (c *OwedClient) Delete() *OwedDelete {
+	mutation := newOwedMutation(c.config, OpDelete)
+	return &OwedDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *OwedClient) DeleteOne(_m *Owed) *OwedDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *OwedClient) DeleteOneId(id uuid.UUID) *OwedDeleteOne {
+	builder := c.Delete().Where(owed.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &OwedDeleteOne{builder}
+}
+
+// Query returns a query builder for Owed.
+func (c *OwedClient) Query() *OwedQuery {
+	return &OwedQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeOwed},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Owed entity by its id.
+func (c *OwedClient) Get(ctx context.Context, id uuid.UUID) (*Owed, error) {
+	return c.Query().Where(owed.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *OwedClient) GetX(ctx context.Context, id uuid.UUID) *Owed {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *OwedClient) Hooks() []Hook {
+	return c.hooks.Owed
+}
+
+// Interceptors returns the client interceptors.
+func (c *OwedClient) Interceptors() []Interceptor {
+	return c.inters.Owed
+}
+
+func (c *OwedClient) mutate(ctx context.Context, m *OwedMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&OwedCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&OwedUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&OwedUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&OwedDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Owed mutation op: %q", m.Op())
+	}
+}
+
 // RoleClient is a client for the Role schema.
 type RoleClient struct {
 	config
@@ -5091,13 +5232,14 @@ type (
 	hooks struct {
 		Access, ApiKey, Archived, Audit, Binding, Connection, Consent, Continuation,
 		Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder,
-		Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, RowSeal,
-		Session, Site, SiteMembership, Team, TeamMembership, Tenant []ent.Hook
+		Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Owed, Role,
+		RowSeal, Session, Site, SiteMembership, Team, TeamMembership, Tenant []ent.Hook
 	}
 	inters struct {
 		Access, ApiKey, Archived, Audit, Binding, Connection, Consent, Continuation,
 		Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder,
-		Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, RowSeal,
-		Session, Site, SiteMembership, Team, TeamMembership, Tenant []ent.Interceptor
+		Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Owed, Role,
+		RowSeal, Session, Site, SiteMembership, Team, TeamMembership,
+		Tenant []ent.Interceptor
 	}
 )
