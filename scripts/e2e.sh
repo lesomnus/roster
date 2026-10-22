@@ -100,7 +100,7 @@ sign_in:
 # This rig cannot publish a TXT record, so it says so rather than spending a
 # lookup on a name nothing will ever answer for. What the browser then drives is
 # the claim, the record it is told to publish, and the refusal -- the success
-# path is `cmd/hostproof_test.go`, over a zone written down in Go.
+# path is \`cmd/hostproof_test.go\`, over a zone written down in Go.
 host:
   resolver: none
 user_console:
