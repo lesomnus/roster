@@ -1,0 +1,27 @@
+# The trail's archive: where a row goes when it leaves the database, and the
+# checkpoints of the account the database keeps of it. A claim apart from
+# `roster-data`, because it is kept for years where the database keeps a
+# window, and a deployment puts the two on different storage.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: roster-audit
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+# What the trail's witness heard: every checkpoint, on a claim of its own. A
+# witness is worth what it is apart from -- somewhere whoever can write the
+# database and the archive does not also reach -- so it shares a disk with
+# neither, and a deployment puts it on storage that refuses deletion.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: roster-witness
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi

@@ -1431,8 +1431,9 @@ A witness that cannot hear stops nothing: the act says so in the log, and the
 next pass tells it again, oldest first, with every checkpoint taken before it
 was named -- a hundred a pass. `serve` and the `trail` commands refuse a scheme
 this binary does not open, a witness named twice, and witnesses with no archive
-to hear. `deploy/` and `compose.yaml` name both, each store on a volume of its
-own; `roster.yaml` names none, because it keeps no archive (it says why).
+to hear. `deploy/`'s `trail` component and `compose.yaml` name both, each store
+on a volume of its own; `deploy/`'s base and `roster.yaml` name none, because
+they keep no archive (the component and the file say why).
 
 `verify` asks each witness what it heard last, holds the chain to every one that
 answers, and prints on stderr what each did:

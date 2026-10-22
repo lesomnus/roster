@@ -21,34 +21,6 @@ spec:
     requests:
       storage: 1Gi
 ---
-# The trail's archive: where a row goes when it leaves the database, and the
-# checkpoints of the account the database keeps of it. A claim apart from
-# `roster-data`, because it is kept for years where the database keeps a
-# window, and a deployment puts the two on different storage.
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: roster-audit
-spec:
-  accessModes: [ReadWriteOnce]
-  resources:
-    requests:
-      storage: 1Gi
----
-# What the trail's witness heard: every checkpoint, on a claim of its own. A
-# witness is worth what it is apart from -- somewhere whoever can write the
-# database and the archive does not also reach -- so it shares a disk with
-# neither, and a deployment puts it on storage that refuses deletion.
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: roster-witness
-spec:
-  accessModes: [ReadWriteOnce]
-  resources:
-    requests:
-      storage: 1Gi
----
 # The admin console, which is the one listener a **person** opens and the one this file
 # had no Service for at all.
 #
@@ -155,10 +127,6 @@ spec:
             - { name: control, mountPath: /control }
             - { name: login, mountPath: /run/login }
             - { name: tmp, mountPath: /tmp }
-            # The archive's key, because what this runs builds the server, and
-            # the server refuses an archive it has no key for. Not the archive
-            # or the witness: nothing here writes either.
-            - { name: checkpoints, mountPath: /run/checkpoints, readOnly: true }
 
       containers:
         - name: roster
@@ -211,11 +179,6 @@ spec:
             # not the thing that mints its own credential.
             - { name: login, mountPath: /run/login, readOnly: true }
             - { name: tmp, mountPath: /tmp }
-            # The trail's archive, its key, and what its witness heard -- see
-            # `audit:` in `config.yaml`.
-            - { name: audit, mountPath: /audit }
-            - { name: witness, mountPath: /witness }
-            - { name: checkpoints, mountPath: /run/checkpoints, readOnly: true }
 
       volumes:
         - name: config
@@ -241,16 +204,3 @@ spec:
         # toolchain and TLS both want a temporary directory anyway.
         - name: tmp
           emptyDir: {}
-        # The trail's: the archive, and what its witness heard, each on a claim
-        # of its own (above).
-        - name: audit
-          persistentVolumeClaim: { claimName: roster-audit }
-        - name: witness
-          persistentVolumeClaim: { claimName: roster-witness }
-        # The key the archive's account and its checkpoints are signed with.
-        # **Optional**, so that an overlay whose own `config.yaml` keeps no
-        # archive needs no Secret for one; an overlay that names
-        # `audit.archive` and forgets the Secret is refused where the process
-        # comes up, told how to make a key. Readable by the pod's group alone.
-        - name: checkpoints
-          secret: { secretName: roster-checkpoints, optional: true, defaultMode: 0440 }

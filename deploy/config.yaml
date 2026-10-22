@@ -43,30 +43,12 @@ watch:
 spin:
   lease: local
 
-# The trail, kept the way `docs/operating.md` § "The audit trail" says to: a
-# row past its window leaves the database for the archive, the archive's
-# account is signed and checkpointed, and every checkpoint is heard outside
-# both (payday#115). The window is a starting point and the deployment's to
-# decide. It is written here so that the shape is, and so that the pass every
-# start runs ends in a checkpoint the witnesses below hear -- which is what
-# `scripts/cluster.sh` asks a verification inside the pod to say.
-audit:
-  profile: pipa
-  archive: /audit
-  checkpoints:
-    # From the Secret `roster-checkpoints`, which this base ships none of, as
-    # it ships no other: the rig makes its own, and a deployment brings its own
-    # under that name (`openssl genpkey -algorithm ed25519`).
-    key: /run/checkpoints/key.pem
-    # Where the newest checkpoint is heard outside the database and the
-    # archive, so that whoever can write both cannot cut the chain short at its
-    # head without something they do not hold saying so. `log:` is the log and
-    # the gauge `payday.trail.checkpoint`, a witness only with the alerts on it
-    # that `docs/operating.md` § "Who heard the newest checkpoint" gives;
-    # `store:` keeps what it hears on a claim of its own, `roster-witness`,
-    # which a deployment puts on storage that refuses deletion and mounts with
-    # credentials neither the database's nor the archive's.
-    witnesses: ["log:", "store:/witness"]
+# The trail is kept in the database, for as long as the database is: no window,
+# so nothing leaves it and there is no archive to keep. Keeping it the way
+# `docs/operating.md` § "The audit trail" says to -- a window, an archive whose
+# account is signed and checkpointed, and every checkpoint heard outside both --
+# is the component `trail/`, which the rig includes and a deployment turns on in
+# its own overlay (`deploy/README.md`).
 
 control:
   db:

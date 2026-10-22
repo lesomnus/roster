@@ -1,0 +1,18 @@
+# The trail, kept the way `docs/operating.md` § "The audit trail" says to: past
+# its window a row leaves the database for an archive, the archive's account is
+# signed and checkpointed, and every checkpoint is heard outside both
+# (payday#115). A component and not the base, because it brings storage a
+# deployment chooses -- two claims and a Secret -- and an overlay that inherited
+# them empty would carry two volumes it never uses. `deploy/README.md` says how
+# to turn it on; `scripts/cluster.sh` does, and asks what the witness heard.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  # The archive and the witness, each on a claim of its own.
+  - ./claims.yaml
+
+patches:
+  # The settings, the key, and the two claims mounted where the settings name
+  # them.
+  - path: ./roster.yaml
