@@ -216,6 +216,9 @@ func (s Core) tenantOfConnection(ctx context.Context, ref *app.ConnectionRef) ([
 // Add refuses a secret from a tenant, for [maySend]'s reason: a new connection
 // is a new reference and a new issuer at once.
 func (s coreConnection) Add(ctx context.Context, req *app.ConnectionAddRequest) (*app.Connection, error) {
+	if err := s.acrossTheTenant(ctx, app.ConnectionService_Add_FullMethodName); err != nil {
+		return nil, err
+	}
 	if err := s.maySend(ctx, nil, req.GetSecretRef(), req.GetIssuer()); err != nil {
 		return nil, err
 	}
@@ -245,6 +248,9 @@ func (s coreConnection) Add(ctx context.Context, req *app.ConnectionAddRequest) 
 // to the claims a front door can read: everything that reaches it is the
 // deployment, which [Core.maySubject] lets move either way.
 func (s coreConnection) Patch(ctx context.Context, req *app.ConnectionPatchRequest) (*app.Connection, error) {
+	if err := s.acrossTheTenant(ctx, app.ConnectionService_Patch_FullMethodName); err != nil {
+		return nil, err
+	}
 	if req.HasSubjectClaim() {
 		if err := s.maySubject(ctx, req.GetSubjectClaim(), req.GetSubjectClaim()); err != nil {
 			return nil, err
@@ -287,6 +293,9 @@ func (s coreConnection) Patch(ctx context.Context, req *app.ConnectionPatchReque
 // file declared, which `declared.go` argues for -- and where a secret goes held
 // to [maySend].
 func (s coreConnection) Update(ctx context.Context, req *app.ConnectionUpdateRequest) (*app.Connection, error) {
+	if err := s.acrossTheTenant(ctx, app.ConnectionService_Update_FullMethodName); err != nil {
+		return nil, err
+	}
 	got, err := s.ConnectionServiceServer.Get(ctx, app.ConnectionGetRequest_builder{
 		Ref: req.GetRef(),
 		Select: app.ConnectionSelect_builder{

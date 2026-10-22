@@ -405,8 +405,16 @@ func TestAFrontDoorsOwnRowsAreDeclared(t *testing.T) {
 	x.Equal("config: login", role.GetLabels()[cmd.Declared])
 	x.Equal("config: login", ns.GetItems()[0].GetLabels()[cmd.Declared])
 
-	// The tenant's administrator, at a port: narrowed to their tenant.
+	// The tenant's administrator, at a port: narrowed to their tenant, and
+	// holding everything across it -- so that what refuses below is the file.
 	admin, err := s.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{Tenant: at, Alias: "boss"}.Build())
+	x.NoError(err)
+	everything, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{Tenant: at, Alias: "boss", Methods: []string{"/roster.*/*"}}.Build())
+	x.NoError(err)
+	_, err = s.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
+		Role:   app.RoleRef_builder{Id: everything.GetId()}.Build(),
+		Holder: app.HolderRef_builder{Id: admin.GetId()}.Build(),
+	}.Build())
 	x.NoError(err)
 	as := frame.Into(ctx, frame.New(cmd.MustFrom(admin.GetId()), cmd.MustFrom(tn.GetId()), frame.Whole()).WithScope(frame.Only(cmd.MustFrom(tn.GetId()))))
 

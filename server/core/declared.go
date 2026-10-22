@@ -171,6 +171,9 @@ func (s coreTenant) Erase(ctx context.Context, req *app.TenantRef) (*app.TenantE
 }
 
 func (s coreConnection) Erase(ctx context.Context, req *app.ConnectionRef) (*app.ConnectionEraseResponse, error) {
+	if err := s.acrossTheTenant(ctx, app.ConnectionService_Erase_FullMethodName); err != nil {
+		return nil, err
+	}
 	got, err := s.ConnectionServiceServer.Get(ctx, app.ConnectionGetRequest_builder{
 		Ref: req, Select: app.ConnectionSelect_builder{Labels: z.Ptr(true)}.Build(),
 	}.Build())
@@ -185,6 +188,9 @@ func (s coreConnection) Erase(ctx context.Context, req *app.ConnectionRef) (*app
 }
 
 func (s coreHost) Erase(ctx context.Context, req *app.HostRef) (*app.HostEraseResponse, error) {
+	if err := s.acrossTheTenant(ctx, app.HostService_Erase_FullMethodName); err != nil {
+		return nil, err
+	}
 	got, err := s.HostServiceServer.Get(ctx, app.HostGetRequest_builder{
 		Ref: req, Select: app.HostSelect_builder{Labels: z.Ptr(true)}.Build(),
 	}.Build())
@@ -199,6 +205,9 @@ func (s coreHost) Erase(ctx context.Context, req *app.HostRef) (*app.HostEraseRe
 }
 
 func (s coreMailDomain) Erase(ctx context.Context, req *app.MailDomainRef) (*app.MailDomainEraseResponse, error) {
+	if err := s.acrossTheTenant(ctx, app.MailDomainService_Erase_FullMethodName); err != nil {
+		return nil, err
+	}
 	got, err := s.MailDomainServiceServer.Get(ctx, app.MailDomainGetRequest_builder{
 		Ref: req, Select: app.MailDomainSelect_builder{Labels: z.Ptr(true)}.Build(),
 	}.Build())

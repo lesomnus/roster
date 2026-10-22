@@ -196,6 +196,12 @@ func (s Core) Tenant() app.TenantServiceServer { return coreTenant{s, s.Next().T
 // a password switch flipped in a console that the next start flips back is the
 // "right on Tuesday, wrong on Wednesday" that file is about.
 func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*app.Tenant, error) {
+	// The settings are how everybody in the tenant signs in, so they are
+	// written by somebody who holds this across it ([Core.acrossTheTenant]).
+	if err := s.acrossTheTenant(ctx, app.TenantService_Update_FullMethodName); err != nil {
+		return nil, err
+	}
+
 	got, err := s.TenantServiceServer.Get(ctx, app.TenantGetRequest_builder{
 		Ref:    req.GetRef(),
 		Select: app.TenantSelect_builder{Labels: z.Ptr(true), Config: z.Ptr(true)}.Build(),

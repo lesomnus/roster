@@ -1337,9 +1337,11 @@ as nobody; and its hosts answer `FrontService.WhoseHost` with *this tenant is
 closed*, which is what its people at a bookmark need to read. Apps hear of it on the
 sync stream, as an event for each person in it carrying `date_closed`, and the Login
 App makes Hydra forget each of them. `TenantService.Close` is the verb -- a role or a
-key that names it may close a tenant over the wire, including the tenant's own
-administrator, who is then locked out with everybody else. A tenant a file declared
-is the file's to close, and the control plane's one tenant cannot be.
+key that names it **through a binding across the tenant** may close a tenant over the
+wire, including the tenant's own administrator, who is then locked out with everybody
+else; one that names it only in a site or a team is refused, since a close reaches
+everybody ([usage/permissions.md](usage/permissions.md) § *A site*). A tenant a file
+declared is the file's to close, and the control plane's one tenant cannot be.
 
 **Restore** is what makes the window a grace, as for a person: the tenant comes back
 exactly as it was, keys and all, until `restore_within` has run out -- and refused
@@ -1354,12 +1356,16 @@ nominations -- and the tenant row blank. What stays is its identifier, which the
 names it by, and the blank holders, for the same reason. The trail keeps its events
 and follows its own windows; its people's contents go as each is forgotten. The first
 write is `date_destroyed`, so a restore cannot get between, and running it again
-finishes one that stopped -- which the sweep does on its own.
+finishes one that stopped -- which the sweep does on its own. Each of those writes is
+made on what was decided: the stamp only on a tenant still closed and held by nobody,
+and a restore only on one not yet stamped, so the two cannot cross.
 
 **A hold stops all of it.** `roster hold place` writes `Tenant.date_held` and what it
 is for; while it is there `forget` refuses the tenant, the sweep passes it by, its
 people whose own grace runs out are not forgotten on the clock, and the trail keeps
-what it holds of it. Lifted, everything carries on from where it waited. It is a
+what it holds of it. A hold placed while a tenant is being destroyed stops it at the
+next person: those forgotten before it stay forgotten. Lifted, everything carries on
+from where it waited. It is a
 command and not an RPC on purpose: a tenant's administrator lifting the hold on
 their own records is what a hold exists to prevent. Placing and lifting are in the
 trail.

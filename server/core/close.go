@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/lesomnus/payday/pderr"
+	"github.com/lesomnus/protobuf-patch/patch"
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -48,6 +49,9 @@ func (s coreTenant) Close(ctx context.Context, req *app.TenantCloseRequest) (*ap
 		return nil, status.Error(codes.FailedPrecondition,
 			"the control plane's tenant is this deployment, and closing it would leave nobody to restore it")
 	}
+	if err := s.acrossTheTenant(ctx, app.TenantService_Close_FullMethodName); err != nil {
+		return nil, err
+	}
 
 	got, err := s.TenantServiceServer.Get(ctx, app.TenantGetRequest_builder{
 		Ref: req.GetRef(),
@@ -66,13 +70,13 @@ func (s coreTenant) Close(ctx context.Context, req *app.TenantCloseRequest) (*ap
 		return nil, status.Errorf(codes.FailedPrecondition, "closed already, since %s", v.AsTime().Format(time.RFC3339))
 	}
 
-	patch := app.TenantPatchRequest_builder{
-		Ref:        req.GetRef(),
-		DateClosed: timestamppb.Now(),
-	}
-	lockTenant(&patch, req.GetDateUpdated())
-
-	return s.TenantServiceServer.Patch(ctx, patch.Build())
+	// On the condition it was decided on, as [coreTenant.Restore] is written:
+	// two closes that both read an open tenant would otherwise both stamp it,
+	// and the second would restart the grace the first began.
+	return s.written(ctx, req.GetRef(), req.GetDateUpdated(),
+		patch.Target(patch.Name("date_closed")).Exists(false),
+		patch.Target(patch.Name("date_closed")).Assign(stamp(timestamppb.Now())),
+	)
 }
 
 // Restore clears `date_closed` while the grace lasts. See
@@ -85,6 +89,10 @@ func (s coreTenant) Close(ctx context.Context, req *app.TenantCloseRequest) (*ap
 // is an operator's act and the tenant can be brought back until somebody does
 // it.
 func (s coreTenant) Restore(ctx context.Context, req *app.TenantRestoreRequest) (*app.Tenant, error) {
+	if err := s.acrossTheTenant(ctx, app.TenantService_Restore_FullMethodName); err != nil {
+		return nil, err
+	}
+
 	got, err := s.TenantServiceServer.Get(ctx, app.TenantGetRequest_builder{
 		Ref: req.GetRef(),
 		Select: app.TenantSelect_builder{
@@ -110,26 +118,53 @@ func (s coreTenant) Restore(ctx context.Context, req *app.TenantRestoreRequest) 
 			closed.AsTime().Add(s.restoreWithin).Format(time.RFC3339))
 	}
 
-	patch := app.TenantPatchRequest_builder{
-		Ref:            req.GetRef(),
-		DateClosedNull: z.Ptr(true),
-	}
-	lockTenant(&patch, req.GetDateUpdated())
-
-	return s.TenantServiceServer.Patch(ctx, patch.Build())
+	// # Written on the condition it was decided on
+	//
+	// The read above and this write are two statements, and `server/forget`
+	// stamps `date_destroyed` from a sweep that does not ask this layer. A
+	// restore that read before that stamp and wrote after it cleared
+	// `date_closed` on a tenant whose people were being forgotten: open,
+	// and half gone. So the write carries what was decided on as its own
+	// condition -- not destroyed, and still closed -- and is no write at all
+	// when either has moved ([coreTenant.written]).
+	return s.written(ctx, req.GetRef(), req.GetDateUpdated(),
+		patch.Target(patch.Name("date_destroyed")).Exists(false),
+		patch.Target(patch.Name("date_closed")).Exists(true),
+		patch.Target(patch.Name("date_closed")).Remove(),
+	)
 }
 
-// lockTenant is [lock] for a tenant: the caller's version when they sent one,
-// and otherwise none, for that function's reason -- a decision about a tenant
-// that fails because somebody edited a label is one that can be prevented.
-func lockTenant(patch *app.TenantPatchRequest_builder, was *timestamppb.Timestamp) {
+// written applies a tenant's decision as one statement whose condition is what
+// the decision read: the tests in `ops`, and the caller's version when they
+// sent one. Not the version otherwise, for [lock]'s reason: a decision about a
+// tenant that fails because somebody edited a label is one anybody who may
+// edit a label can hold off. A condition that no longer holds is no write, and
+// is answered as the decision would have been had it read the row as it is
+// now: read it again.
+func (s coreTenant) written(ctx context.Context, ref *app.TenantRef, was *timestamppb.Timestamp, ops ...patch.Op) (*app.Tenant, error) {
 	if was != nil {
-		patch.DateUpdated = was
-
-		return
+		ops = append([]patch.Op{patch.Target(patch.Name("date_updated")).Test(stamp(was))}, ops...)
+	}
+	doc, err := patch.New(string((&app.Tenant{}).ProtoReflect().Descriptor().FullName()), ops[0], ops[1:]...)
+	if err != nil {
+		return nil, err
 	}
 
-	patch.DateUpdatedForce = z.Ptr(true)
+	v, err := s.TenantServiceServer.Apply(ctx, app.TenantApplyRequest_builder{Ref: ref, Patch: doc}.Build())
+	if status.Code(err) == codes.FailedPrecondition {
+		return nil, status.Error(codes.FailedPrecondition,
+			"the tenant changed while this was being decided -- closed, restored, destroyed, or edited since the version you sent; read it again")
+	}
+
+	return v, err
+}
+
+// stamp is a timestamp as a patch writes one: the message, field by field.
+func stamp(v *timestamppb.Timestamp) patch.Value {
+	return patch.Msg(
+		patch.F(patch.Name("seconds"), patch.Int64(v.GetSeconds())),
+		patch.F(patch.Name("nanos"), patch.Int32(v.GetNanos())),
+	)
 }
 
 // unlived refuses an `Add` that arrives already somewhere along the way out.

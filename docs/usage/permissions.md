@@ -142,6 +142,23 @@ A binding with no site reaches the whole tenant. One made in a site reaches that
 site alone — and that is also the scope the escalation rule compares, so a site
 administrator can grant inside their site and not across the tenant.
 
+**And what is the tenant's as a whole needs a binding across it.** A role that
+reaches somebody only in a site or only in a team writes none of these, whatever
+its methods say:
+
+- the tenant itself: `TenantService`'s `Close`, `Restore` and `Update` --
+  shutting everybody out, letting them back, and setting how all of them sign in
+  (`config.password`, `config.leave`, `front_door`);
+- the directories its people arrive through (`Connection`), the names it answers
+  at and the claims to them (`Host`, `HostProof`), where an address at its
+  domains signs in (`MailDomain`), who an app's key is answered as
+  (`Nomination`), and the sites it is divided into (`Site`) -- every write of
+  each.
+
+The gate counts every place a role reaches, which is right for rows a site
+narrows; none of these is a site's. Rows that carry a site -- roles, bindings,
+teams, groups -- are scoped by it, and the granting rules above hold them to it.
+
 A role that names a site may only be bound in that site.
 
 `SiteMembership` exists and **is read by nothing**: it records where somebody

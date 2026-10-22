@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -35,8 +36,10 @@ import (
 	entsite "github.com/lesomnus/roster/internal/ent/site"
 	entteam "github.com/lesomnus/roster/internal/ent/team"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/forget"
 	"github.com/lesomnus/roster/server/front"
+	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/vouch"
 )
 
@@ -207,8 +210,10 @@ func TestClosingIsRefusedWhereNobodyCouldUndoIt(t *testing.T) {
 		// The mark `roster resources` leaves, written as it writes it.
 		x.NoError(b.Ent.Tenant.UpdateOneId(t0.Uuid()).SetLabels(map[string]string{cmd.Declared: "customers.yaml"}).Exec(ctx))
 
+		// As somebody who may close it -- across the tenant, since a close
+		// reaches all of it -- so that what refuses is the file.
 		bt := &built{Server: b.Server}
-		_, err := b.Ungated.Tenant().Close(bt.asNobody(ctx, who, t0), app.TenantCloseRequest_builder{
+		_, err := b.Ungated.Tenant().Close(bt.as(ctx, who, t0), app.TenantCloseRequest_builder{
 			Ref: app.TenantRef_builder{Id: t0.Bytes()}.Build(),
 		}.Build())
 		x.Equal(codes.FailedPrecondition, status.Code(err))
@@ -672,4 +677,196 @@ func term(t *testing.T, k *xli.Command, args ...string) (string, error) {
 	err := k.Run(t.Context(), args)
 
 	return out.String(), err
+}
+
+// TestAHoldPlacedWhileATenantIsDestroyedStopsIt: destroying a tenant forgets its
+// people one at a time, through the trail and the archive, and a hold an
+// operator places while that runs stops it at the next person. Those forgotten
+// already stay forgotten; the rest wait, and the sweep finishes once the hold
+// is lifted.
+func TestAHoldPlacedWhileATenantIsDestroyedStopsIt(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	b.holder(t, ctx, b.Contoso, "erin")
+	b.holder(t, ctx, b.Contoso, "frank")
+	closes(t, ctx, b.Ungated, b.Contoso)
+
+	left := func() int {
+		t.Helper()
+		n, err := b.Ent.Holder.Query().Where(entholder.TenantId(b.Contoso.Uuid()), entholder.AliasNEQ("")).Count(ctx)
+		x.NoError(err)
+
+		return n
+	}
+	before := left()
+	x.Greater(before, 2)
+
+	// The first person forgotten is the moment a claim arrives.
+	var once sync.Once
+	b.Ent.Holder.Use(func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			v, err := next.Mutate(ctx, m)
+			if err == nil && m.Op().Is(ent.OpUpdateOne) {
+				once.Do(func() {
+					x.NoError(forget.Hold(ctx, b.Ungated, b.Contoso, "a claim that arrived while it ran"))
+				})
+			}
+
+			return v, err
+		})
+	})
+
+	_, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{})
+	x.ErrorIs(err, forget.ErrHeld, "a hold placed while the tenant was destroyed did not stop it")
+	x.Equal(before-1, left(), "more than the one person before the hold was forgotten")
+
+	// Lifted, the sweep's list has it, and it finishes.
+	x.NoError(forget.Lift(ctx, b.Ungated, b.Contoso))
+	vs, err := forget.Unfinished(ctx, b.Ent)
+	x.NoError(err)
+	x.Contains(vs, b.Contoso)
+	_, err = forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{})
+	x.NoError(err)
+	x.Zero(left())
+}
+
+// TestAHoldBeforeTheStampLeavesTheTenantWhole: what `DestroyTenant` checks and
+// what it stamps are two statements, and a hold placed between them is a
+// tenant nothing may destroy. The stamp is written on the condition the check
+// found, so it is no write at all -- and the tenant is not left stamped
+// destroyed, which is a tenant that can no longer be restored.
+func TestAHoldBeforeTheStampLeavesTheTenantWhole(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	closes(t, ctx, b.Ungated, b.Contoso)
+
+	// The read `DestroyTenant` makes first is the moment the hold lands.
+	var once sync.Once
+	b.Ent.Tenant.Intercept(ent.InterceptFunc(func(next ent.Querier) ent.Querier {
+		return ent.QuerierFunc(func(ctx context.Context, q ent.Query) (ent.Value, error) {
+			v, err := next.Query(ctx, q)
+			once.Do(func() {
+				x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).
+					SetDateHeld(time.Now()).SetHold("a claim that arrived in between").Exec(ctx))
+			})
+
+			return v, err
+		})
+	}))
+
+	_, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{})
+	x.ErrorIs(err, forget.ErrHeld)
+
+	v, err := b.Ent.Tenant.Get(ctx, b.Contoso.Uuid())
+	x.NoError(err)
+	x.Nil(v.DateDestroyed, "a held tenant was stamped destroyed")
+	n, err := b.Ent.Holder.Query().Where(entholder.TenantId(b.Contoso.Uuid()), entholder.AliasNEQ("")).Count(ctx)
+	x.NoError(err)
+	x.NotZero(n)
+}
+
+// TestARestoreThatReadBeforeADestroyLeavesItClosed: `Restore` reads the tenant
+// and then writes, and the sweep that stamps `date_destroyed` does not ask the
+// layer `Restore` is in. A restore that read before the stamp and wrote after
+// it opened a tenant whose people were being forgotten. So the write is made
+// on what the read decided on -- not destroyed, still closed -- and is refused
+// when either moved.
+func TestARestoreThatReadBeforeADestroyLeavesItClosed(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	closes(t, ctx, b.Ungated, b.Contoso)
+
+	// A stack whose read of the tenant is followed, before anything else, by
+	// the stamp: the order two processes can put the two in.
+	racing := tenantsRacing{Overlay: app.NewOverlay(b.Ungated), after: func() {
+		x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).
+			SetDateDestroyed(time.Now()).SetDateUpdated(time.Now()).Exec(ctx))
+	}}
+	s, err := app.Build(racing, core.Build(cmd.Rules(b.Ent), core.WithPrefix(keys.PrefixTenant)))
+	x.NoError(err)
+
+	err = restores(ctx, s, b.Contoso)
+	x.Equal(codes.FailedPrecondition, status.Code(err), "%v", err)
+
+	v, err := b.Ent.Tenant.Get(ctx, b.Contoso.Uuid())
+	x.NoError(err)
+	x.NotNil(v.DateDestroyed)
+	x.NotNil(v.DateClosed, "a restore that read before the tenant was stamped destroyed opened it after")
+}
+
+// tenantsRacing is a stack below `server/core` whose tenant read is followed,
+// once, by `after`.
+type tenantsRacing struct {
+	app.Overlay
+	after func()
+}
+
+func (s tenantsRacing) Tenant() app.TenantServiceServer {
+	return tenantRead{TenantServiceServer: s.Next().Tenant(), after: s.after}
+}
+
+type tenantRead struct {
+	app.TenantServiceServer
+	after func()
+}
+
+func (s tenantRead) Get(ctx context.Context, req *app.TenantGetRequest) (*app.Tenant, error) {
+	v, err := s.TenantServiceServer.Get(ctx, req)
+	if s.after != nil {
+		s.after()
+	}
+
+	return v, err
+}
+
+// TestTwoClosesStampOnce: a close that read an open tenant while another closed
+// it is refused rather than stamping again -- the stamp is what the grace runs
+// from, and a second one would quietly restart the clock on destroying it. And
+// the version a caller sends is still the condition it was.
+func TestTwoClosesStampOnce(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	first := time.Now().Add(-time.Minute).Truncate(time.Second)
+	racing := tenantsRacing{Overlay: app.NewOverlay(b.Ungated), after: func() {
+		x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(first).SetDateUpdated(time.Now()).Exec(ctx))
+	}}
+	s, err := app.Build(racing, core.Build(cmd.Rules(b.Ent), core.WithPrefix(keys.PrefixTenant)))
+	x.NoError(err)
+
+	_, err = s.Tenant().Close(ctx, app.TenantCloseRequest_builder{
+		Ref: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+	}.Build())
+	x.Equal(codes.FailedPrecondition, status.Code(err), "%v", err)
+
+	v, err := b.Ent.Tenant.Get(ctx, b.Contoso.Uuid())
+	x.NoError(err)
+	x.True(first.Equal(*v.DateClosed), "a second close restarted the grace: %s", v.DateClosed)
+
+	t.Run("with the version the caller read", func(t *testing.T) {
+		x := require.New(t)
+		ref := app.TenantRef_builder{Id: b.Fabrikam.Bytes()}.Build()
+		was, err := b.Ungated.Tenant().Get(ctx, app.TenantGetRequest_builder{
+			Ref: ref, Select: app.TenantSelect_builder{DateUpdated: z.Ptr(true)}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		// Somebody else wrote in between, so the version is not this one's.
+		_, err = b.Ungated.Tenant().Update(ctx, app.TenantUpdateRequest_builder{
+			Ref: ref, DateUpdated: was.GetDateUpdated(), Desc: z.Ptr("edited"),
+		}.Build())
+		x.NoError(err)
+		_, err = b.Ungated.Tenant().Close(ctx, app.TenantCloseRequest_builder{Ref: ref, DateUpdated: was.GetDateUpdated()}.Build())
+		x.Equal(codes.FailedPrecondition, status.Code(err), "a close made on a version that was not the row's")
+
+		now, err := b.Ungated.Tenant().Get(ctx, app.TenantGetRequest_builder{
+			Ref: ref, Select: app.TenantSelect_builder{DateUpdated: z.Ptr(true)}.Build(),
+		}.Build())
+		x.NoError(err)
+		_, err = b.Ungated.Tenant().Close(ctx, app.TenantCloseRequest_builder{Ref: ref, DateUpdated: now.GetDateUpdated()}.Build())
+		x.NoError(err)
+	})
 }
