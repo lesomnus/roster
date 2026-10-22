@@ -23,6 +23,19 @@
       "datasourceTemplate": "docker",
       "versioningTemplate": "docker",
       "autoReplaceStringTemplate": "image={{{depName}}}:{{{newValue}}}@{{{newDigest}}}"
+    },
+    {
+      "customType": "regex",
+      "description": "The Mailpit `scripts/e2e.sh` runs for the mail spec, by its version and digest; `compose.yaml`'s is the docker-compose manager's.",
+      "managerFilePatterns": [
+        "/^scripts/[^/]+\\.sh$/"
+      ],
+      "matchStrings": [
+        "(?<depName>axllent/mailpit):(?<currentValue>v[0-9]+\\.[0-9]+\\.[0-9]+)@(?<currentDigest>sha256:[a-f0-9]{64})"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker",
+      "autoReplaceStringTemplate": "{{{depName}}}:{{{newValue}}}@{{{newDigest}}}"
     }
   ],
   "vulnerabilityAlerts": {

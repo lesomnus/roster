@@ -22,6 +22,7 @@ import (
 
 	"github.com/lesomnus/roster/account"
 	"github.com/lesomnus/roster/cmd"
+	"github.com/lesomnus/roster/mail"
 )
 
 // NewCmdAccount is `roster account`: the front door a customer's people sign in
@@ -260,6 +261,9 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 	if ac.Page.Dir != "" {
 		cfg.Static = cmd.Page(ac.Page.Dir)
 	}
+	if cfg.Mail, err = mailOf(ac.Mail); err != nil {
+		return err
+	}
 
 	// The cookie is this app's, and the session is **in** it: sealed under a
 	// key every replica holds, so there is no store and no replica a browser is
@@ -304,6 +308,68 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 	}
 
 	return nil
+}
+
+// mailOf is `account.mail` as the account app's deliverer, or nil where it
+// names no server -- a front door that cannot send, which says so.
+//
+// roster mints the links and this sends them: the front door's process, never
+// a server of roster's, which is D19's line. Refused at start rather than at
+// the first message, so that a deployment learns it when it starts: a password
+// written as itself rather than a reference, a sender that is not an address,
+// the clear to a host nobody named.
+func mailOf(c cmd.MailConfig) (func(ctx context.Context, to, subject, link string) error, error) {
+	if !c.On() {
+		return nil, nil
+	}
+
+	mc, err := mailConfigOf(c)
+	if err != nil {
+		return nil, err
+	}
+	s, err := mail.New(mc)
+	if err != nil {
+		return nil, fmt.Errorf("account.mail.%w", err)
+	}
+
+	return func(ctx context.Context, to, subject, link string) error {
+		return s.Send(ctx, to, subject, account.Letter(subject, link))
+	}, nil
+}
+
+// mailConfigOf is the block with its references read.
+//
+// The password is a reference and nothing else. The username may be either
+// ([tokenOrRef]): a fixed word such as `apikey` is no secret, and some
+// providers' usernames are credentials -- SES's is derived from an access key
+// -- which belong where the password is kept.
+func mailConfigOf(c cmd.MailConfig) (mail.Config, error) {
+	username, err := tokenOrRef(c.Username)
+	if err != nil {
+		return mail.Config{}, fmt.Errorf("account.mail.username: %w", err)
+	}
+
+	password := ""
+	if c.Password != "" {
+		if !strings.HasPrefix(c.Password, "env:") && !strings.HasPrefix(c.Password, "file:") {
+			return mail.Config{}, errors.New("account.mail.password: a reference, env:NAME or file:PATH, and never the password itself")
+		}
+		v, err := secretRef(c.Password)
+		if err != nil {
+			return mail.Config{}, fmt.Errorf("account.mail.password: %w", err)
+		}
+		password = v
+	}
+
+	return mail.Config{
+		Addr:           c.Addr,
+		Username:       username,
+		Password:       password,
+		From:           c.From,
+		TLS:            mail.TLS(strings.ToLower(c.Tls)),
+		PlaintextHosts: c.PlaintextHosts,
+		Timeout:        c.Timeout,
+	}, nil
 }
 
 // secretRef is how this binary reads a secret somebody wrote down: `env:NAME`,

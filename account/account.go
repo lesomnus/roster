@@ -89,6 +89,7 @@ import (
 
 	"github.com/lesomnus/roster/arrives"
 	"github.com/lesomnus/roster/frontdoor"
+	"github.com/lesomnus/roster/mail"
 	rstr "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
 )
@@ -182,11 +183,20 @@ type Config struct {
 	// Static is the page, or nil for a placeholder that says where the API is.
 	Static http.Handler
 
-	// Mail delivers what roster mints and does not deliver: a recovery link, a
-	// verification link. `to` is the address on the row and never anything a
-	// request said; `link` is the URL that finishes the flow at this app. Nil
-	// is a deployment that cannot, and the two flows say so with 501 rather
-	// than minting a link nobody will ever read.
+	// Mail delivers what roster mints and does not deliver: a recovery link,
+	// a verification link, a link that deletes an account. `to` is the address
+	// on the row and never anything a request said; `link` is the URL that
+	// finishes the flow at this app, and [Letter] is the message it goes out
+	// in. Nil is a deployment that cannot, and the flows say so with 501 --
+	// and `/providers` with `recover` and `leaveLink` false -- rather than
+	// minting a link nobody will ever read.
+	//
+	// What fills it is the deployment's (`account.mail`, `package mail`):
+	// roster mints, and this app delivers, which is D19's line. An error it
+	// answers is logged with the address cut to its domain and nothing of the
+	// link, and the recovery form answers the browser the same whatever it
+	// was. How much is handed to it is this app's to limit, and `outbox.go`
+	// says how.
 	Mail func(ctx context.Context, to, subject, link string) error
 }
 
@@ -356,6 +366,10 @@ type App struct {
 	// See `device.go` for why the flow is here and not in roster.
 	devices *devices
 
+	// out is what this app has mailed lately and what is on its way: the
+	// limits `outbox.go` says, which every route to [Config.Mail] asks first.
+	out *outbox
+
 	// flows is every sign-in or link started and not yet finished, by state.
 	flows *arrives.States[flow]
 }
@@ -422,6 +436,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 		byAlias: map[string]*tenant{},
 		flows:   arrives.Held[flow](),
 		devices: held(),
+		out:     newOutbox(),
 	}
 	a.arrives = arrives.New(a.roster, c.Secret)
 	a.arrives.SlackAPI = c.SlackAPI
@@ -1173,6 +1188,11 @@ func (a *App) nominated(ctx context.Context) error {
 // The link proves the mailbox and nothing more, and what it buys is decided in
 // `redeem`: a new password, shown once, rather than a session -- so a mailbox
 // read once is a password the person changes, not an account somebody holds.
+//
+// Everything that depends on the address happens after the answer, in the
+// background: whether it is somebody's, whether it has had its allowance of
+// these (`outbox.go`), the link, the message. So the form answers the same, and
+// as fast, whatever was typed and however often.
 func (a *App) recover(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	t, ok := tenantFrom(ctx)
@@ -1194,34 +1214,64 @@ func (a *App) recover(w http.ResponseWriter, r *http.Request) {
 	}
 	address := front.Address(body.Address)
 
-	res, err := a.vouch.Link(t.on(ctx), rstr.VouchLinkRequest_builder{
-		Who: rstr.VouchWho_builder{Tenant: t.alias, Address: address}.Build(),
-	}.Build())
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "account: recover at %s: %v\n", t.alias, err)
-		http.Error(w, "cannot start", http.StatusInternalServerError)
+	// One of the messages that may be on their way at once, taken here and not
+	// in the background, so that a flood of this form is a flood of 202s and
+	// not of goroutines each holding a connection.
+	done, ok := a.out.slot()
+	if !ok {
+		dropped(address)
+		w.WriteHeader(http.StatusAccepted)
 		return
 	}
 
-	// roster answers a token whether or not the address is here, so that the
-	// answer says nothing; this app, holding the tenant's key, may ask -- and
-	// mails only an address that is somebody's, so that a form a stranger can
-	// fill in is not a way to have this deployment send mail anywhere. The
-	// browser is answered the same either way, and in the background, so the
-	// timing says nothing either.
-	link := a.finish(r, "/redeem", res.GetToken(), t)
+	base := a.redirectBase(r)
 	go func() {
+		defer done()
+
+		// A minute for roster's two answers, so that a roster that stops
+		// answering cannot hold a slot for ever. The message bounds itself
+		// (`account.mail.timeout`).
 		ctx := context.WithoutCancel(ctx)
-		_, err := a.roster.Email().Get(t.on(ctx), rstr.EmailGetRequest_builder{
+		ask, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+
+		// roster would answer a token whether or not the address is here, so
+		// that the answer says nothing; this app, holding the tenant's key, may
+		// ask -- and mails only an address that is somebody's, so that a form a
+		// stranger can fill in is not a way to have this deployment send mail
+		// anywhere.
+		//
+		// Somebody's is what roster says it is: an address somebody proved. An
+		// unproved row resolves nobody at roster (`vouch.byAddress`), so the
+		// token it answers for one is a link to nothing -- and mailing it would
+		// be this deployment sending a dead link to whatever mailbox somebody
+		// wrote onto their own account.
+		row, err := a.roster.Email().Get(t.on(ask), rstr.EmailGetRequest_builder{
 			Ref: rstr.EmailRef_builder{
 				At: rstr.EmailRefByAt_builder{TenantId: t.id.Bytes(), Address: proto.String(address)}.Build(),
 			}.Build(),
+			Select: rstr.EmailSelect_builder{DateVerified: proto.Bool(true)}.Build(),
 		}.Build())
-		if err != nil {
+		if err != nil || row.GetDateVerified() == nil {
 			return
 		}
-		if err := a.c.Mail(ctx, address, "Recover your account", link); err != nil {
-			fmt.Fprintf(os.Stderr, "account: mail to %s: %v\n", address, err)
+
+		// Counted before the link is minted, so that a form asked again and
+		// again about one person writes nothing once their allowance is spent.
+		if wait, ok := a.out.take(forRecovery, address, ""); !ok {
+			spent(address, wait)
+			return
+		}
+
+		res, err := a.vouch.Link(t.on(ask), rstr.VouchLinkRequest_builder{
+			Who: rstr.VouchWho_builder{Tenant: t.alias, Address: address}.Build(),
+		}.Build())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "account: recover at %s: %s\n", t.alias, mail.Redact(err.Error()))
+			return
+		}
+		if err := a.c.Mail(ctx, address, "Recover your account", linkAt(base, "/redeem", res.GetToken(), t)); err != nil {
+			unsent(address, err)
 		}
 	}()
 
@@ -1329,21 +1379,25 @@ func (a *App) verify(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no", http.StatusNotFound)
 		return
 	}
+	by := string(who.Bytes())
+	done, ok := a.sending(w, forConfirm, row.GetAddress(), by)
+	if !ok {
+		return
+	}
+	defer done()
+
 	res, err := a.roster.Email().Verify(t.on(ctx), rstr.EmailVerifyRequest_builder{Ref: ref}.Build())
 	if err != nil {
 		if status.Code(err) == codes.PermissionDenied {
 			http.Error(w, "no", http.StatusForbidden)
 			return
 		}
-		fmt.Fprintf(os.Stderr, "account: verify %s: %v\n", row.GetAddress(), err)
+		fmt.Fprintf(os.Stderr, "account: verify %s: %s\n", mail.Mask(row.GetAddress()), mail.Redact(err.Error()))
 		http.Error(w, "cannot start", http.StatusInternalServerError)
 		return
 	}
 
-	link := a.finish(r, "/confirm", res.GetToken(), t)
-	if err := a.c.Mail(ctx, row.GetAddress(), "Confirm your address", link); err != nil {
-		fmt.Fprintf(os.Stderr, "account: mail to %s: %v\n", row.GetAddress(), err)
-		http.Error(w, "cannot send", http.StatusBadGateway)
+	if !a.post(ctx, w, forConfirm, row.GetAddress(), by, "Confirm your address", a.finish(r, "/confirm", res.GetToken(), t)) {
 		return
 	}
 
@@ -1409,6 +1463,12 @@ func (a *App) claim(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "address: which address", http.StatusBadRequest)
 		return
 	}
+	by := string(who.Bytes())
+	done, ok := a.sending(w, forConfirm, address, by)
+	if !ok {
+		return
+	}
+	defer done()
 
 	res, err := a.roster.Email().Verify(t.on(ctx), rstr.EmailVerifyRequest_builder{
 		Ref: rstr.EmailRef_builder{
@@ -1430,20 +1490,57 @@ func (a *App) claim(w http.ResponseWriter, r *http.Request) {
 		case codes.PermissionDenied:
 			http.Error(w, "no", http.StatusForbidden)
 		default:
-			fmt.Fprintf(os.Stderr, "account: claim %s: %v\n", address, err)
+			fmt.Fprintf(os.Stderr, "account: claim %s: %s\n", mail.Mask(address), mail.Redact(err.Error()))
 			http.Error(w, "cannot start", http.StatusInternalServerError)
 		}
 		return
 	}
 
-	link := a.finish(r, "/confirm", res.GetToken(), t)
-	if err := a.c.Mail(ctx, address, "Confirm your address", link); err != nil {
-		fmt.Fprintf(os.Stderr, "account: mail to %s: %v\n", address, err)
-		http.Error(w, "cannot send", http.StatusBadGateway)
+	if !a.post(ctx, w, forConfirm, address, by, "Confirm your address", a.finish(r, "/confirm", res.GetToken(), t)) {
 		return
 	}
 
 	w.WriteHeader(http.StatusAccepted)
+}
+
+// sending asks the limits `outbox.go` says about a message somebody signed in
+// asked for, before its link is minted -- so that a refusal mints nothing --
+// and holds one of the slots for messages on their way. It answers 429 or 503
+// itself when the message may not go.
+func (a *App) sending(w http.ResponseWriter, kind, to, by string) (func(), bool) {
+	if wait, ok := a.out.may(kind, to, by); !ok {
+		tooSoon(w, wait)
+		return nil, false
+	}
+	done, ok := a.out.slot()
+	if !ok {
+		busy(w, to)
+		return nil, false
+	}
+
+	return done, true
+}
+
+// post spends the allowances for a message whose link is minted, and sends it.
+// It answers 429 or 502 itself when the message does not go, and true when it
+// went.
+//
+// Spent here, after roster minted the link and so said the message may go,
+// rather than in [App.sending]: a request roster refuses -- an address that is
+// not the asker's -- then costs the address nothing, and one person cannot
+// spend another's allowance by asking about their address.
+func (a *App) post(ctx context.Context, w http.ResponseWriter, kind, to, by, subject, link string) bool {
+	if wait, ok := a.out.take(kind, to, by); !ok {
+		tooSoon(w, wait)
+		return false
+	}
+	if err := a.c.Mail(ctx, to, subject, link); err != nil {
+		unsent(to, err)
+		http.Error(w, "cannot send", http.StatusBadGateway)
+		return false
+	}
+
+	return true
 }
 
 // confirm spends a verification link. Nobody is signed in by it, and nobody
@@ -1514,6 +1611,13 @@ func (a *App) leaveLink(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no", http.StatusUnauthorized)
 		return
 	}
+	by := string(me.GetId())
+	done, ok := a.sending(w, forLeaving, front.Address(body.Address), by)
+	if !ok {
+		return
+	}
+	defer done()
+
 	res, err := a.vouch.LeaveLink(t.on(ctx), rstr.VouchLeaveLinkRequest_builder{
 		Who:     rstr.VouchWho_builder{Id: me.GetId()}.Build(),
 		Address: body.Address,
@@ -1532,10 +1636,7 @@ func (a *App) leaveLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link := a.finish(r, "/leave", res.GetToken(), t)
-	if err := a.c.Mail(ctx, res.GetAddress(), "Delete your account", link); err != nil {
-		fmt.Fprintf(os.Stderr, "account: mail to %s: %v\n", res.GetAddress(), err)
-		http.Error(w, "cannot send", http.StatusBadGateway)
+	if !a.post(ctx, w, forLeaving, res.GetAddress(), by, "Delete your account", a.finish(r, "/leave", res.GetToken(), t)) {
 		return
 	}
 
@@ -1640,7 +1741,13 @@ func leaveForm(token string, t *tenant, note string) string {
 // trying every tenant's key in turn -- for a request anybody can send, which
 // was one call to roster per tenant this app fronts, per request.
 func (a *App) finish(r *http.Request, path, token string, t *tenant) string {
-	u := a.redirectBase(r)
+	return linkAt(a.redirectBase(r), path, token, t)
+}
+
+// linkAt is [App.finish] from a base read off the request already, for a link
+// minted after the request was answered.
+func linkAt(base *url.URL, path, token string, t *tenant) string {
+	u := *base
 	u.Path = path
 	u.RawQuery = url.Values{"token": {token}, "at": {t.id.String()}}.Encode()
 
