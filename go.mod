@@ -37,7 +37,7 @@ require (
 	github.com/lesomnus/grpc-dgram v0.0.0-20260912133542-a7366077bf6f
 	github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155
 	github.com/lesomnus/otx/otxgrpc v0.0.0-20261017184159-4cba7a26b155
-	github.com/lesomnus/payday v0.0.0-20261022063116-c30c7cf0c6a1
+	github.com/lesomnus/payday v0.0.0-20261022070235-e9c34183bade
 	github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da
 	github.com/lesomnus/xli v0.0.0-20261009121920-4ce270c7448c
 	github.com/lesomnus/xli/cfg v0.1.3
