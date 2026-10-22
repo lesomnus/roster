@@ -89,15 +89,24 @@ type Result struct {
 	// Archived is how many archived rows lost theirs.
 	Archived int
 
-	// Held is the trail rows about them a legal hold kept as they were. They
-	// are erased by running this again once the hold is lifted.
+	// Held is the trail rows about them a legal hold kept as they were. What
+	// a hold keeps stays owed, and the trail's pass erases it once the hold
+	// lifts: nobody has to run this again.
 	Held trail.Held
+
+	// Owed is how many of what was forgotten the archive's half is still
+	// owed for (payday#115): what a hold keeps part of, or all of it when
+	// paying after the transaction failed. The trail's next pass pays it.
+	Owed int
 }
 
 func (r Result) String() string {
 	v := fmt.Sprintf("%d row(s), %d trail row(s), %d archived", r.Rows, r.Trail, r.Archived)
 	if r.Held.Any() {
 		v += fmt.Sprintf(", %d kept by a legal hold", r.Held.Rows)
+	}
+	if r.Owed > 0 {
+		v += fmt.Sprintf(", %d owed to the archive", r.Owed)
 	}
 
 	return v
@@ -110,15 +119,24 @@ func (r Result) String() string {
 // commands in an order is requiring somebody to get an order right under a
 // deadline.
 //
-// It is **not** a transaction across the archive, and cannot be -- an archive
-// and a database do not commit together. The order is chosen so that an
-// interruption leaves less rather than more: the person's own rows go first,
-// then the trail, then the archive. Every step is idempotent, so running it
-// again finishes it.
+// # And the trail's erasure is one with it
 //
-// The trail is the policy's to erase, `trail.Policy.Forget`, because a row of
-// it a legal hold is on stays as it was: that is in [Result.Held], and running
-// this again once the hold lifts finishes it too.
+// The person's own rows, the holder blanked and the trail's rows about them
+// in the database go in one transaction: the trail's erasure is asked of the
+// transaction's store (`trail.Policy.Forget`), which blanks those rows there
+// and owes the archive's half there (payday#115) -- one row of payday's
+// `Owed` per identifier, which a rollback takes with the rest. The archive
+// takes no part in a transaction, so its half is paid once the transaction
+// has committed, naming what was forgotten (`trail.Policy.Pay`); a payment
+// that fails, or a process that stops before it, leaves the debt to the
+// trail's next pass, which pays what is owed before it moves anything. What
+// is still owed is [Result.Owed]. A commit that never happened forgot
+// nothing anywhere, and one that did owes the rest, so there is nothing left
+// to lose in between, and nothing an operator has to run again.
+//
+// The trail is the policy's to erase because a row of it a legal hold is on
+// stays as it was: that is in [Result.Held], and the debt stays with it until
+// the hold lifts, when the pass after pays the rest.
 //
 // # And what it removes is on the trail as the act it is
 //
@@ -199,17 +217,34 @@ func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 	if _, err := pd.Record(ctx, tx.Client(), cs, ForgottenHolder, []pdid.Id{who}); err != nil {
 		return out, err
 	}
+
+	// The trail's, in the same transaction: its rows in the database
+	// blanked, and the archive's half owed.
+	got, err := p.Forget(ctx, pd.TrailStore(tx.Client()), objects)
+	if err != nil {
+		return out, fmt.Errorf("trail: %w", err)
+	}
 	if err := tx.Commit(); err != nil {
 		return out, err
 	}
-
-	got, err := p.Forget(ctx, pd.TrailStore(db), objects)
 	out.Trail = got.Rows
-	out.Archived = got.Archived
 	out.Held = got.Held
+	out.Owed = got.Owed
+
+	// And the archive's half, paid now that it is owed: this erasure's alone,
+	// so that what it answers is theirs. A payment that fails has destroyed
+	// nothing less -- the debt is written, and the trail's next pass pays it.
+	paid, err := p.Pay(ctx, pd.TrailStore(db), objects...)
+	out.Archived = paid.Archived
 	if err != nil {
-		return out, err
+		log.From(ctx).WarnContext(ctx, "forget: the archive's half is owed, for the trail's next pass to pay", "holder", who.String(), "err", err)
+
+		return out, nil
 	}
+
+	// What paying answers is both halves of it, the database's reached again.
+	out.Held = paid.Held
+	out.Owed = paid.Owed
 
 	return out, nil
 }
@@ -494,7 +529,7 @@ func Sweep(db *ent.Client, after time.Duration, p trail.Policy, cs audit.Content
 
 			log.From(ctx).InfoContext(ctx, "forget",
 				"holder", who.String(), "rows", res.Rows, "trail", res.Trail, "archived", res.Archived,
-				"held", res.Held.Rows)
+				"held", res.Held.Rows, "owed", res.Owed)
 		}
 
 		return nil

@@ -30,6 +30,7 @@ import (
 	maildomain "github.com/lesomnus/roster/internal/ent/maildomain"
 	nomination "github.com/lesomnus/roster/internal/ent/nomination"
 	outbox "github.com/lesomnus/roster/internal/ent/outbox"
+	owed "github.com/lesomnus/roster/internal/ent/owed"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	role "github.com/lesomnus/roster/internal/ent/role"
 	rowseal "github.com/lesomnus/roster/internal/ent/rowseal"
@@ -418,6 +419,7 @@ type Scope interface {
 	ArchivedScope(ctx context.Context) (predicate.Archived, error)
 	AuditScope(ctx context.Context) (predicate.Audit, error)
 	OutboxScope(ctx context.Context) (predicate.Outbox, error)
+	OwedScope(ctx context.Context) (predicate.Owed, error)
 	RowSealScope(ctx context.Context) (predicate.RowSeal, error)
 }
 
@@ -518,6 +520,9 @@ func (Unscoped) AuditScope(_ context.Context) (predicate.Audit, error) {
 	return nil, nil
 }
 func (Unscoped) OutboxScope(_ context.Context) (predicate.Outbox, error) {
+	return nil, nil
+}
+func (Unscoped) OwedScope(_ context.Context) (predicate.Owed, error) {
 	return nil, nil
 }
 func (Unscoped) RowSealScope(_ context.Context) (predicate.RowSeal, error) {
@@ -1123,6 +1128,26 @@ func (ss Scopes) OutboxScope(ctx context.Context) (predicate.Outbox, error) {
 	return outbox.And(ps...), nil
 }
 
+func (ss Scopes) OwedScope(ctx context.Context) (predicate.Owed, error) {
+	ps := make([]predicate.Owed, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.OwedScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return owed.And(ps...), nil
+}
+
 func (ss Scopes) RowSealScope(ctx context.Context) (predicate.RowSeal, error) {
 	ps := make([]predicate.RowSeal, 0, len(ss))
 	for _, s := range ss {
@@ -1367,4 +1392,5 @@ func (s Server) Access() rstr.AccessServiceServer     { return AccessServiceServ
 func (s Server) Archived() rstr.ArchivedServiceServer { return ArchivedServiceServer{Store: s.Store} }
 func (s Server) Audit() rstr.AuditServiceServer       { return AuditServiceServer{Store: s.Store} }
 func (s Server) Outbox() rstr.OutboxServiceServer     { return OutboxServiceServer{Store: s.Store} }
+func (s Server) Owed() rstr.OwedServiceServer         { return OwedServiceServer{Store: s.Store} }
 func (s Server) RowSeal() rstr.RowSealServiceServer   { return RowSealServiceServer{Store: s.Store} }

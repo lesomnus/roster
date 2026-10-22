@@ -83,6 +83,9 @@ type Nomination func(*sql.Selector)
 // Outbox is the predicate function for outbox builders.
 type Outbox func(*sql.Selector)
 
+// Owed is the predicate function for owed builders.
+type Owed func(*sql.Selector)
+
 // Role is the predicate function for role builders.
 type Role func(*sql.Selector)
 

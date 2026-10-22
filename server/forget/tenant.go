@@ -79,12 +79,19 @@ type TenantResult struct {
 
 	// Held is the trail rows about its people a legal hold elsewhere kept.
 	Held trail.Held
+
+	// Owed is what of its people the archive's half is still owed for: see
+	// [Result.Owed].
+	Owed int
 }
 
 func (r TenantResult) String() string {
 	v := fmt.Sprintf("%d person(s) forgotten, %d other row(s) removed", r.People, r.Rows)
 	if r.Held.Any() {
 		v += fmt.Sprintf(", %d trail row(s) kept by a legal hold", r.Held.Rows)
+	}
+	if r.Owed > 0 {
+		v += fmt.Sprintf(", %d owed to the archive", r.Owed)
 	}
 
 	return v
@@ -175,6 +182,7 @@ func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Polic
 		}
 
 		out.People++
+		out.Owed += res.Owed
 		out.Held.Rows += res.Held.Rows
 		out.Held.By = append(out.Held.By, res.Held.By...)
 		out.Held.Unanswered = append(out.Held.Unanswered, res.Held.Unanswered...)
@@ -510,7 +518,7 @@ func SweepTenants(db *ent.Client, at app.Server, within, hold time.Duration, p t
 			}
 
 			log.From(ctx).InfoContext(ctx, "forget: a tenant",
-				"tenant", t.String(), "people", res.People, "rows", res.Rows, "held", res.Held.Rows)
+				"tenant", t.String(), "people", res.People, "rows", res.Rows, "held", res.Held.Rows, "owed", res.Owed)
 		}
 
 		free, err := DueAliases(ctx, db, now.Add(-hold))

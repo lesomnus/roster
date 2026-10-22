@@ -210,7 +210,8 @@ func destroyed(ctx context.Context, s *cmd.Server, t pdid.Id, p trail.Policy, cs
 
 	fmt.Fprintf(os.Stderr, "%s destroyed: %s\n", t, res)
 	if res.Held.Any() {
-		fmt.Fprintf(os.Stderr, "%s: %d trail row(s) kept by a legal hold of %v; run this again when it is lifted\n",
+		// What a hold keeps stays owed (payday#115), as for a person.
+		fmt.Fprintf(os.Stderr, "%s: %d trail row(s) kept by a legal hold of %v; the trail's pass erases them once it is lifted\n",
 			t, res.Held.Rows, append(res.Held.By, res.Held.Unanswered...))
 	}
 
@@ -350,8 +351,9 @@ func forgotten(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy,
 	fmt.Fprintf(os.Stderr, "%s forgotten: %s\n", who, res)
 	if res.Held.Any() {
 		// Not an error: what a hold keeps is not this command's to destroy.
-		// It is the list of what to run this again for.
-		fmt.Fprintf(os.Stderr, "%s: %d trail row(s) kept by a legal hold of %v; run this again when it is lifted\n",
+		// It stays owed (payday#115), and the trail's pass erases it once
+		// the hold is lifted.
+		fmt.Fprintf(os.Stderr, "%s: %d trail row(s) kept by a legal hold of %v; the trail's pass erases them once it is lifted\n",
 			who, res.Held.Rows, append(res.Held.By, res.Held.Unanswered...))
 	}
 

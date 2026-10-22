@@ -988,6 +988,26 @@ var (
 			},
 		},
 	}
+	// OwedColumns holds the columns for the "owed" table.
+	OwedColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "object", Type: field.TypeUuid},
+		{Name: "held_by", Type: field.TypeJson, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+	}
+	// OwedTable holds the schema information for the "owed" table.
+	OwedTable = &schema.Table{
+		Name:       "owed",
+		Columns:    OwedColumns,
+		PrimaryKey: []*schema.Column{OwedColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "owed_owed",
+				Unique:  false,
+				Columns: []*schema.Column{OwedColumns[3], OwedColumns[0]},
+			},
+		},
+	}
 	// RoleColumns holds the columns for the "role" table.
 	RoleColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -1326,6 +1346,7 @@ var (
 		MaildomainTable,
 		NominationTable,
 		OutboxTable,
+		OwedTable,
 		RoleTable,
 		RowsealTable,
 		SessionTable,
@@ -1430,6 +1451,9 @@ func init() {
 	}
 	OutboxTable.Annotation = &entsql.Annotation{
 		Table: "outbox",
+	}
+	OwedTable.Annotation = &entsql.Annotation{
+		Table: "owed",
 	}
 	RoleTable.ForeignKeys[0].RefTable = TenantTable
 	RoleTable.ForeignKeys[1].RefTable = SiteTable

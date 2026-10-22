@@ -1,6 +1,8 @@
 package cmd_test
 
 import (
+	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -282,9 +284,19 @@ func TestForgettingReachesTheArchiveToo(t *testing.T) {
 	})))
 	x.NotZero(held, "the archive holds nothing about them, so this proves nothing")
 
+	// A debt somebody else's erasure owes, which is theirs or the pass's to
+	// pay: a forget pays its own (payday#115).
+	other := pdid.New(pd.HolderDomain)
+	x.NoError(pd.TrailStore(b.Ent).Owe(ctx, []pdid.Id{other}))
+
 	res, err := forget.Forget(ctx, b.Ent, who, p, audit.Contents{})
 	x.NoError(err)
 	x.NotZero(res.Archived, "the archive was not reached")
+	x.Zero(res.Owed, "an archive that was paid is said to be owed")
+	owed, err := b.Ent.Owed.Query().All(ctx)
+	x.NoError(err)
+	x.Len(owed, 1, "their debt is still owed, or somebody else's was paid")
+	x.Equal(other.Uuid(), owed[0].Object, "somebody else's debt was paid, and theirs is still owed")
 
 	left := 0
 	events := 0
@@ -302,4 +314,113 @@ func TestForgettingReachesTheArchiveToo(t *testing.T) {
 	})))
 	x.Zero(left, "an archived row still holds what it said about them")
 	x.NotZero(events, "the archived events went as well as their contents")
+}
+
+// TestForgettingIsOneTransactionWithTheTrail (payday#115).
+//
+// The person's rows, the holder blanked and the trail's rows about them in the
+// database are one transaction, and the archive's half is owed in it. So a
+// trail that cannot be erased takes the rest with it: nothing of theirs is
+// removed or blanked, nothing is owed, and nothing on the trail says they were
+// forgotten. A forget that committed first and erased the trail after left
+// their rows gone and the trail saying who they were whenever the second step
+// did not happen.
+func TestForgettingIsOneTransactionWithTheTrail(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t, keepingRows)
+
+	who := b.holder(t, ctx, b.Contoso, "erin")
+	b.addressOf(t, ctx, who, "erin@contoso.example")
+
+	said := func() int {
+		n, err := b.Ent.Audit.Query().Where(entaudit.ObjectIdEQ(who.Uuid()), entaudit.ValueNEQ([]byte{})).Count(ctx)
+		x.NoError(err)
+
+		return n
+	}
+	x.NotZero(said(), "the trail says nothing about them, so this proves nothing")
+	was, err := b.Ent.Audit.Query().Count(ctx)
+	x.NoError(err)
+
+	// The trail's turn refused, so its erasure fails inside the transaction.
+	_, err = forget.Forget(ctx, b.Ent, who, trail.Policy{Lease: refusing{}}, audit.Contents{})
+	x.ErrorIs(err, errRefused)
+
+	v, err := b.Ent.Holder.Get(ctx, who.Uuid())
+	x.NoError(err)
+	x.Equal("erin", v.Alias, "a forget that failed blanked the holder")
+	n, err := b.Ent.Email.Query().Count(ctx)
+	x.NoError(err)
+	x.NotZero(n, "a forget that failed removed their address")
+	x.NotZero(said(), "a forget that failed blanked the trail")
+	now, err := b.Ent.Audit.Query().Count(ctx)
+	x.NoError(err)
+	x.Equal(was, now, "a forget that failed is on the trail")
+	owed, err := b.Ent.Owed.Query().Count(ctx)
+	x.NoError(err)
+	x.Zero(owed, "a debt outlived the transaction that owed it")
+}
+
+// refusing is a lease that holds nothing: the trail's turn, refused.
+type refusing struct{}
+
+var errRefused = errors.New("refused")
+
+func (refusing) Hold(context.Context, string) (context.Context, func(), error) {
+	return nil, nil, errRefused
+}
+
+// TestAnArchiveNotPaidIsOwedToTheNextPass (payday#115).
+//
+// The archive takes no part in the transaction, so its half is paid after the
+// commit -- and a payment that fails has destroyed nothing less. The person is
+// forgotten, their debt is written, the forget says what is owed rather than
+// failing, and the trail's next pass pays it.
+func TestAnArchiveNotPaidIsOwedToTheNextPass(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t, keepingRows)
+
+	who := b.holder(t, ctx, b.Contoso, "erin")
+	b.addressOf(t, ctx, who, "erin@contoso.example")
+
+	archive := flob.NewOsStores(t.TempDir())
+	p := trail.Policy{Archive: archive, Signer: pdtest.Signer(t)}
+	_, err := trail.Archive(ctx, pd.TrailStore(b.Ent), p, trail.Kinds{}, time.Now().Add(time.Hour))
+	x.NoError(err)
+	archived := func() int {
+		n := 0
+		x.NoError(trail.Read(ctx, archive, pd.TrailOf(func(v *app.Audit) error {
+			if string(v.GetObjectId()) == string(who.Bytes()) && (len(v.GetValue()) > 0 || len(v.GetPatch()) > 0) {
+				n++
+			}
+
+			return nil
+		})))
+
+		return n
+	}
+	x.NotZero(archived(), "the archive holds nothing about them, so this proves nothing")
+
+	// With no key the transaction's half needs none and a payment is refused
+	// (`trail.ErrNoKey`): any payment that fails after the commit.
+	keyless := p
+	keyless.Signer = nil
+	res, err := forget.Forget(ctx, b.Ent, who, keyless, audit.Contents{})
+	x.NoError(err, "a payment that failed failed the forget, which had committed")
+	x.Positive(res.Owed, "what is owed is not said")
+	x.Zero(res.Archived)
+
+	v, err := b.Ent.Holder.Get(ctx, who.Uuid())
+	x.NoError(err)
+	x.Empty(v.Alias, "the person was not forgotten")
+	x.NotZero(archived(), "the archive was paid by a payment that failed, so this proves nothing")
+	owed, err := b.Ent.Owed.Query().Count(ctx)
+	x.NoError(err)
+	x.Equal(res.Owed, owed, "what is owed is not what it said")
+
+	p.Pass(ctx, pd.TrailStore(b.Ent))
+	x.Zero(archived(), "the next pass did not pay what was owed")
+	owed, err = b.Ent.Owed.Query().Count(ctx)
+	x.NoError(err)
+	x.Zero(owed, "a debt paid is still owed")
 }

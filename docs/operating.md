@@ -1601,9 +1601,18 @@ the rest -- what was written about them in free text, and rows written before
 payday#92. Both halves matter and they pull against each other: a version that
 destroyed the rows would let somebody erase the evidence of what was done *to*
 them by asking to be forgotten. The archive is reached only if `audit.archive` is
-set; archives you keep elsewhere are yours to reach. A trail row a legal hold is on
-stays as it was, and `roster forget` says how many and whose -- run it again when the
-hold is lifted.
+set; archives you keep elsewhere are yours to reach.
+
+**One transaction, and the archive's half owed in it.** The person's rows, the
+holder blanked and the trail's rows about them in the database are one transaction,
+and the archive, which takes part in no transaction, is *owed* in it (payday#115): a
+row of payday's `owed` table for each thing forgotten, which a rollback takes with
+the rest. It is paid as soon as the transaction commits; a payment that fails, or a
+process that stops before it, leaves the debt to the trail's next pass, which pays
+what is owed before it moves anything, and `roster forget` says how much is still
+owed. A trail row a legal hold is on stays as it was, and its debt with it:
+`roster forget` says how many and whose, and the pass after the hold is lifted erases
+them -- nobody runs anything again.
 
 **What somebody consented to stays past them.** An app's record of their
 consents (`ConsentService`, [apps.md](apps.md) § *What an app keeps here*) is
