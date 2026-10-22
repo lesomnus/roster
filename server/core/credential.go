@@ -126,27 +126,30 @@ func (s coreCredential) Unlock(ctx context.Context, req *app.CredentialUnlockReq
 // that a person and an operator call one method about one row and only the
 // layer knows the difference.
 //
-// # A first password of your own, and what it costs
+// # A first password of your own takes a sign-in a few minutes old
 //
-// It is allowed, with no `current`, because there is nothing to hold. That was
-// refused until now and the refusal was right on its own terms: a bearer that
-// merely acts as somebody -- their session, a delegation -- can then set a
-// password they never chose, and unlike the bearer it does not expire and they
-// are not told. Temporary access becomes permanent access, quietly.
+// With no `current`, because there is nothing to hold -- and on a sign-in made
+// within [FirstPasswordWithin], by the credential the call arrived with
+// (`keys.Authenticated`): a password typed, a provider that says it just asked,
+// a recovery link spent.
 //
-// What changed is the alternative. The refusal pointed at an operator or the
-// recovery flow, and **recovery needs mail**, which most deployments never
-// configure -- so in the common case it pointed at nothing, and somebody who
-// signed in with a provider could not give themselves a password at all. That
-// is a real cost against a modest risk: the bearer in question is the account
-// app's own session cookie, and lifting one means XSS on that app or the
-// person's device, at which point their live provider session is there too.
+// It was allowed from any session at all, and that was the wrong trade. A
+// bearer that merely acts as somebody -- a session left open since the
+// morning, a cookie lifted from a browser -- could set a password they never
+// chose, and unlike the bearer it does not expire and they are not told:
+// temporary access became permanent access, quietly, which is a takeover that
+// outlives everything a sign-out ends. It was allowed because the one thing
+// that would close it without mail was a fresh credential and nothing said
+// which credential a call arrived on. `Delegation.date_authenticated` says so
+// now, and `MeService.Leave` reads it for the same reason.
 //
-// The one thing that would close it without mail is a **fresh** credential --
-// roster minted the delegation and knows when -- and `frame.Frame` does not
-// carry which credential a call arrived on, only who it makes the caller. That
-// is a payday change, and the note is here so the next reader knows the door
-// exists rather than rediscovering the argument.
+// What it costs is somebody whose way in cannot say when it asked them --
+// GitHub never does, Google only where its project lets it -- and who has never
+// had a password. The road for them is a recovery link to an address of theirs
+// somebody proved, where the tenant offers one, which hands them a password and
+// a sign-in with it is minutes old; where it does not, an operator. An
+// operator giving somebody a password (`Issue`) and a change that proves the
+// one held are not this rule: neither is a bearer minting itself a way in.
 func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) (*app.CredentialSetResponse, error) {
 	if len(req.GetSecret()) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "secret: must not be empty")
@@ -249,11 +252,15 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 		if status.Code(err) != codes.NotFound {
 			return nil, err
 		}
-		// None yet: add it, and for your own row that means with nothing
-		// proved. There is nothing to prove -- see the method comment for what
-		// is being accepted and why the alternative was worse. `current` is
-		// ignored rather than refused: a page that sent one has not done
-		// anything wrong, it has guessed about a row it cannot read.
+		// None yet: add it, and for your own row that means with nothing to
+		// prove but a sign-in a few minutes old -- see the method comment.
+		// `current` is ignored rather than refused: a page that sent one has
+		// not done anything wrong, it has guessed about a row it cannot read.
+		if own {
+			if err := s.freshlySignedIn(ctx, holder); err != nil {
+				return nil, err
+			}
+		}
 		if _, err := s.Next().Credential().Add(ctx, app.CredentialAddRequest_builder{
 			Holder: ref,
 			Kind:   kind,
@@ -309,6 +316,36 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 	}
 
 	return &app.CredentialSetResponse{}, nil
+}
+
+// FirstPasswordWithin is how recently somebody has to have proved who they are
+// to give themselves a first password: five minutes, `me.LeaveWithin`'s, for
+// its reason. Shorter than a delegation lives, so a page open since the morning
+// signs in again first; longer than the walk from a sign-in to the form, so
+// doing it at once never has to.
+const FirstPasswordWithin = 5 * time.Minute
+
+// freshlySignedIn refuses a call whose credential does not say `who` proved who
+// they are within [FirstPasswordWithin].
+func (s coreCredential) freshlySignedIn(ctx context.Context, who pdid.Id) error {
+	since, err := keys.Authenticated(ctx, s.Next(), who)
+	if err != nil {
+		return err
+	}
+
+	switch ago := time.Since(since); {
+	case since.IsZero():
+		return status.Error(codes.FailedPrecondition,
+			"a first password of your own takes a sign-in that says when you proved who you are, and this call "+
+				"came with none -- a key somebody else minted for you, or a directory that does not say when it "+
+				"asked you; a recovery link mailed to your address hands you one instead")
+	case ago > FirstPasswordWithin:
+		return status.Errorf(codes.FailedPrecondition,
+			"you proved who you are %s ago; sign in again to give yourself a first password, within %s of doing so",
+			ago.Truncate(time.Minute), FirstPasswordWithin)
+	}
+
+	return nil
 }
 
 // Issue makes a password nobody chose, answers with it once, and ends every

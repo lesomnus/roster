@@ -822,6 +822,45 @@ in, so the connection names that directory's issuer, which is the third row.
   connection is in the tenant it belongs to, whichever directory they came from;
   which tenant is the front door's to say, as it is for every connection.
 
+### Google
+
+Google's sign-in is an OpenID provider, and a connection to it is one like any
+other:
+
+```yaml
+  - kind: Connection
+    tenant: contoso
+    name: google
+    issuer: https://accounts.google.com
+    client_id: <the OAuth client's id>
+    scopes: [email, profile]
+    secret_ref: env:GOOGLE_SECRET
+```
+
+- **Register an OAuth client** of the *Web application* type in the project's
+  Google Auth Platform (*Clients*), with the connection's callback as an
+  authorized redirect URI -- `https://<the Login App>/callback/<tenant>/<connection>`,
+  and the account app's when it offers Google too. One client takes several.
+- **The person is their `sub`**, which Google never hands to anybody else, and
+  their address is verified on Google's `email_verified`.
+- **When Google asked them** is the one thing to set up beyond the client.
+  Somebody deleting their own account (`MeService.Leave`) has to have proved who
+  they are a few minutes ago, which through a directory is when the directory
+  says it asked them (`auth_time`). Google says it only to an app that asks for
+  it by name -- every round trip to Google's issuer does, in the `claims`
+  parameter -- and only where the project is published, verified, and has
+  *Session age claims* turned on (Google Auth Platform, *Settings*, *Advanced
+  Settings*). It is off until somebody turns it on, and while it is off nobody
+  deletes their account, or gives themselves a first password, on a Google
+  sign-in: the account page points them to a recovery link where one can be
+  had, and otherwise it is you who deletes the account
+  ([usage/ways-in.md](usage/ways-in.md#deleting-your-own-account)).
+- **Google does not ask again when asked.** Its guide says it does not support
+  reauthentication requests; it lists no `max_age` among the parameters it
+  takes, and its `prompt` has no `login`. So a front door sends it neither, and a
+  Google sign-in is a moment ago only when Google has just asked them -- which it
+  does in a browser it has not signed in, such as a private window.
+
 ### A picture from the directory
 
 A tenant may have a sign-in fill what its people's profiles lack: a display

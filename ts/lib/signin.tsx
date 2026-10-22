@@ -111,6 +111,33 @@ export interface Provider {
 	issuer?: string
 }
 
+/** Vendor is whose sign-in an issuer is, as far as its host says. */
+export type Vendor = 'microsoft' | 'github' | 'google' | 'okta' | ''
+
+/**
+ * vendor is whose sign-in an issuer is, from the host it names, and empty for
+ * a host that is nobody's in particular. It is what a mark is drawn from, and
+ * what the account page says a way in can and cannot tell roster -- a fact
+ * about the host, never the operator's name for the connection.
+ */
+export function vendor(issuer: string | undefined): Vendor {
+	let host = ''
+	try {
+		host = new URL(issuer ?? '').hostname.toLowerCase()
+	} catch {
+		return ''
+	}
+
+	const is = (...vs: string[]): boolean => vs.some((v) => host === v || host.endsWith('.' + v))
+
+	if (is('microsoftonline.com', 'windows.net', 'microsoftonline.us', 'microsoft.com')) return 'microsoft'
+	if (is('github.com')) return 'github'
+	if (is('google.com', 'accounts.google.com')) return 'google'
+	if (is('okta.com', 'oktapreview.com')) return 'okta'
+
+	return ''
+}
+
 /**
  * mark is the vendor's own, from the host the issuer names.
  *
@@ -121,17 +148,10 @@ export interface Provider {
  * simply has no mark, which is a button with a name on it and nothing wrong.
  */
 function mark(issuer: string | undefined): React.ReactNode {
-	let host = ''
-	try {
-		host = new URL(issuer ?? '').hostname.toLowerCase()
-	} catch {
-		return null
-	}
-
-	const is = (...vs: string[]): boolean => vs.some((v) => host === v || host.endsWith('.' + v))
+	const v = vendor(issuer)
 
 	// Microsoft's four squares, which Entra signs in with.
-	if (is('microsoftonline.com', 'windows.net', 'microsoftonline.us', 'microsoft.com')) {
+	if (v === 'microsoft') {
 		return (
 			<svg viewBox="0 0 21 21" aria-hidden="true">
 				<path fill="#f25022" d="M0 0h10v10H0z" />
@@ -142,7 +162,7 @@ function mark(issuer: string | undefined): React.ReactNode {
 		)
 	}
 
-	if (is('github.com')) {
+	if (v === 'github') {
 		return (
 			<svg viewBox="0 0 16 16" aria-hidden="true">
 				<path
@@ -153,7 +173,7 @@ function mark(issuer: string | undefined): React.ReactNode {
 		)
 	}
 
-	if (is('google.com', 'accounts.google.com')) {
+	if (v === 'google') {
 		return (
 			<svg viewBox="0 0 48 48" aria-hidden="true">
 				<path fill="#4285f4" d="M45 24c0-1.6-.1-2.7-.4-4H24v7.5h12c-.2 2-1.5 5-4.4 7l6.7 5.2C42.2 36 45 30.6 45 24Z" />
@@ -164,7 +184,7 @@ function mark(issuer: string | undefined): React.ReactNode {
 		)
 	}
 
-	if (is('okta.com', 'oktapreview.com')) {
+	if (v === 'okta') {
 		return (
 			<svg viewBox="0 0 24 24" aria-hidden="true">
 				<path fill="currentColor" d="M12 5.5A6.5 6.5 0 1 0 12 18.5 6.5 6.5 0 0 0 12 5.5Zm0 3.25a3.25 3.25 0 1 1 0 6.5 3.25 3.25 0 0 1 0-6.5Z" />

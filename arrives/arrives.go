@@ -99,10 +99,11 @@ type Caller struct {
 
 	// Authenticated is when the provider says it authenticated them: the
 	// token's `auth_time`, and zero when it said nothing -- GitHub issues no
-	// token to say it in. Not when this sign-in happened: a provider that
+	// token to say it in, and Google says it only where its project lets it
+	// (`google.go`). Not when this sign-in happened: a provider that
 	// remembered them answers without asking, and its `auth_time` is the
 	// last time it did ask. [Providers.Begin] with `again` is how an app asks
-	// for a moment ago.
+	// for a moment ago, of a provider that takes the request.
 	Authenticated time.Time
 
 	// token is what the exchange handed over, kept for [Providers.Fill] to ask
@@ -438,6 +439,12 @@ type Providers struct {
 	// `xms_edov` is believed from (`microsoft.go`). Empty is Microsoft's own:
 	// its global cloud and its national ones. A test names its own.
 	Microsoft string
+
+	// Google is the origin of Google's sign-in, which is asked for
+	// `auth_time` by name on every round trip and never to authenticate
+	// somebody again (`google.go`). Empty is Google's own,
+	// `https://accounts.google.com`. A test names its own.
+	Google string
 }
 
 // New is the relying party for whatever `Connection` rows the given client can
@@ -516,12 +523,15 @@ func callbackOf(origin, alias, connection string) string {
 // browser.
 //
 // `again` asks the provider to authenticate them again rather than remember
-// them ([askAgain]) -- for a sign-in that has to be a moment ago, as deleting
+// them ([asking]) -- for a sign-in that has to be a moment ago, as deleting
 // an account does. A provider that honours it answers
 // with an `auth_time` of now ([Caller.Authenticated]); one that does not
 // answers with the older one, or none, and that is what is believed: nothing
 // here takes having asked for a fresh sign-in as having had one. GitHub has
 // no such parameter and says no time, so a GitHub sign-in is never one.
+// Google takes no such request either, and says when it last asked only
+// where its project lets it (`google.go`): a Google sign-in is one when Google
+// asked them a moment ago, which it does in a browser it has not signed in.
 func (p *Providers) Begin(ctx context.Context, tenant pdid.Id, alias, connection, origin, state string, again bool) (*Trip, error) {
 	t := &Trip{tenant: tenant, alias: alias, connection: connection, redirect: callbackOf(origin, alias, connection)}
 
@@ -537,25 +547,43 @@ func (p *Providers) Begin(ctx context.Context, tenant pdid.Id, alias, connection
 			return nil, err
 		}
 		opts = append(opts, oidc.Nonce(t.nonce))
-		if again {
-			opts = append(opts, askAgain(v)...)
-		}
+		opts = append(opts, asking(v, again)...)
 	}
 	t.URL = cfg.AuthCodeURL(state, opts...)
 
 	return t, nil
 }
 
-// askAgain is what asks a provider to authenticate somebody again rather than
-// remember them.
+// asking is what an OpenID connection's authorization request asks for beyond
+// the PKCE challenge and the nonce every one carries: when the person was last
+// authenticated, of the provider that says so only when asked by name, and --
+// with `again` -- that they be authenticated again rather than remembered.
+// Each provider is sent what it documents, and nothing it does not.
 //
-// `max_age=0` is OpenID Connect's own way to ask, and the one with a rule
-// behind it: a provider asked for it has to actively authenticate them, and
-// has to say when in `auth_time`. `prompt=login` says the same in a word not
-// every provider takes -- one that does not know it may answer with an error
-// rather than ignore it -- so it goes only to Microsoft's sign-in, which
+// `max_age=0` is OpenID Connect's own way to ask again, and the one with a
+// rule behind it: a provider asked for it has to actively authenticate them,
+// and has to say when in `auth_time`. `prompt=login` says the same in a word
+// not every provider takes -- one that does not know it may answer with an
+// error rather than ignore it -- so it goes only to Microsoft's sign-in, which
 // documents it.
-func askAgain(v *verifier) []oauth2.AuthCodeOption {
+//
+// Google is sent neither. Its list of the parameters it takes has no
+// `max_age`, its `prompt` has no `login`, and it says it does not support a
+// request to authenticate somebody again -- so either is at best ignored
+// (RFC 6749 § 3.1) and at worst the reason it refuses the whole request, on
+// the very round trip somebody takes before deleting their account. What it
+// documents is `auth_time` asked for by name ([authTimeClaims]), and that goes
+// on every round trip to it, `again` or not: every sign-in stamps the time its
+// provider says ([Caller.Authenticated]), and Google answers an ordinary one
+// exactly as it answers one that asked to be a moment ago.
+func asking(v *verifier, again bool) []oauth2.AuthCodeOption {
+	if v.google {
+		return []oauth2.AuthCodeOption{oauth2.SetAuthURLParam("claims", authTimeClaims)}
+	}
+	if !again {
+		return nil
+	}
+
 	opts := []oauth2.AuthCodeOption{oauth2.SetAuthURLParam("max_age", "0")}
 	if v.microsoft {
 		opts = append(opts, oauth2.SetAuthURLParam("prompt", "login"))
@@ -588,6 +616,11 @@ type verifier struct {
 	// microsoft is whether the issuer is Microsoft's, which is the one place
 	// `xms_edov` means anything ([Providers.microsoft]).
 	microsoft bool
+
+	// google is whether the issuer is Google's, which is asked for
+	// `auth_time` by name and never to authenticate somebody again
+	// ([Providers.google]).
+	google bool
 }
 
 // relying is this app as the relying party for the connection a trip is to:
@@ -633,6 +666,7 @@ func (p *Providers) relying(ctx context.Context, t *Trip) (*oauth2.Config, *veri
 		subject:     c.GetSubjectClaim(),
 		directories: every,
 		microsoft:   p.microsoft(c.GetIssuer()),
+		google:      p.google(c.GetIssuer()),
 	}, nil
 }
 

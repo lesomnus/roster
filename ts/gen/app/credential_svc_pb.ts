@@ -992,13 +992,14 @@ export const CredentialService: GenService<{
    * empty one is refused without counting, so holding somebody's session is
    * not a way to lock them out.
    *
-   * A **first** password has nothing to prove against and is written with
-   * nothing. That was refused, and the refusal was right on its own terms: a
-   * bearer can now set a password its holder never chose, and unlike the bearer
-   * it does not expire and they are not told. What changed is the alternative
-   * -- it pointed at an operator or the recovery flow, and recovery needs mail,
-   * which most deployments never configure. `server/core/credential.go` carries
-   * the argument and the one thing that would close it without mail.
+   * A **first** password has nothing to prove against, so it asks for the one
+   * thing that is not in the request: a sign-in a few minutes old, by the
+   * credential the call arrived with (`Delegation.date_authenticated`, which
+   * says when and not how). From any session at all, a bearer that merely acts
+   * as somebody could set a password its holder never chose, which does not
+   * expire and which they are not told of. Somebody whose way in cannot say
+   * when it asked them gets one from a recovery link instead, or an operator.
+   * `server/core/credential.go` carries the argument.
    *
    * @generated from rpc roster.CredentialService.Set
    */

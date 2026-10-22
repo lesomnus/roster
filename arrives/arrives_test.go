@@ -1,6 +1,7 @@
 package arrives
 
 import (
+	"encoding/json"
 	"net/url"
 	"testing"
 	"time"
@@ -81,27 +82,74 @@ func TestAnAuthTimeIsReadLoosely(t *testing.T) {
 	}
 }
 
-// What asks a provider to authenticate somebody again: OpenID Connect's
-// `max_age=0` everywhere, and `prompt=login` only where Microsoft's sign-in
-// documents it -- a provider that does not know a prompt may refuse the whole
-// request over it.
-func TestAskingAgainIsMaxAgeAndAtMicrosoftAPrompt(t *testing.T) {
-	x := require.New(t)
+// What each provider is asked for beside the challenge and the nonce, which is
+// what it documents and nothing else: OpenID Connect's `max_age=0` to ask
+// again, everywhere but Google; `prompt=login` beside it only at Microsoft's
+// sign-in, since a provider that does not know a prompt may refuse the whole
+// request over it; and at Google, which takes neither, `auth_time` asked for by
+// name on every round trip, again or not.
+func TestEachProviderIsAskedWhatItDocuments(t *testing.T) {
 	cfg := &oauth2.Config{Endpoint: oauth2.Endpoint{AuthURL: "https://idp.example.test/authorize"}}
 
-	asked := func(v *verifier) url.Values {
-		t.Helper()
-		u, err := url.Parse(cfg.AuthCodeURL("state", askAgain(v)...))
-		x.NoError(err)
+	for _, c := range []struct {
+		name  string
+		v     *verifier
+		again bool
+		want  url.Values
+	}{
+		{"an OpenID provider", &verifier{}, false, url.Values{}},
+		{"an OpenID provider, again", &verifier{}, true, url.Values{"max_age": {"0"}}},
+		{"Microsoft", &verifier{microsoft: true}, false, url.Values{}},
+		{"Microsoft, again", &verifier{microsoft: true}, true, url.Values{"max_age": {"0"}, "prompt": {"login"}}},
+		{"Google", &verifier{google: true}, false, url.Values{"claims": {authTimeClaims}}},
+		{"Google, again", &verifier{google: true}, true, url.Values{"claims": {authTimeClaims}}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			x := require.New(t)
+			u, err := url.Parse(cfg.AuthCodeURL("state", asking(c.v, c.again)...))
+			x.NoError(err)
 
-		return u.Query()
+			got := u.Query()
+			for _, k := range []string{"client_id", "response_type", "state"} {
+				got.Del(k)
+			}
+			x.Equal(c.want, got)
+		})
 	}
 
-	q := asked(&verifier{})
-	x.Equal("0", q.Get("max_age"))
-	x.False(q.Has("prompt"), "a prompt went to a provider that may not know it")
+	// And what Google is asked for is what its guide says to send: the
+	// `auth_time` of the ID token, essential.
+	var claims struct {
+		IdToken map[string]struct {
+			Essential bool `json:"essential"`
+		} `json:"id_token"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(authTimeClaims), &claims))
+	require.True(t, claims.IdToken["auth_time"].Essential)
+}
 
-	q = asked(&verifier{microsoft: true})
-	x.Equal("0", q.Get("max_age"))
-	x.Equal("login", q.Get("prompt"))
+// Google's sign-in is its host over https, and nothing that only looks like it
+// -- and, told its Google is elsewhere, that and nothing else.
+func TestGoogleIsGooglesHost(t *testing.T) {
+	x := require.New(t)
+
+	p := &Providers{}
+	x.True(p.google("https://accounts.google.com"))
+	x.True(p.google("https://accounts.google.com/"))
+	x.True(p.google("https://Accounts.Google.com"))
+
+	for _, issuer := range []string{
+		"http://accounts.google.com",
+		"https://accounts.google.com.example.test",
+		"https://example.test/accounts.google.com",
+		"https://google.com",
+		"accounts.google.com",
+		"",
+	} {
+		x.False(p.google(issuer), issuer)
+	}
+
+	p.Google = "http://127.0.0.1:8080"
+	x.True(p.google("http://127.0.0.1:8080"))
+	x.False(p.google("https://accounts.google.com"), "a front door told its Google is elsewhere took Google's own for it too")
 }

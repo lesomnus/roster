@@ -152,6 +152,10 @@ type Config struct {
 	// tokens' `xms_edov` is Microsoft's word.
 	Microsoft string
 
+	// Google is the Login App's `login.Config.Google`: the origin of Google's
+	// sign-in, which is asked for `auth_time` the way Google documents it.
+	Google string
+
 	// Sessions is this app's own cookie. Never roster's.
 	Sessions *authsession.Sessions
 
@@ -417,6 +421,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 	a.arrives.SlackAPI = c.SlackAPI
 	a.arrives.GitHub = c.GitHub
 	a.arrives.Microsoft = c.Microsoft
+	a.arrives.Google = c.Google
 
 	if c.Key != "" {
 		if err := a.nominated(ctx); err != nil {
@@ -698,7 +703,17 @@ func (a *App) providers(w http.ResponseWriter, r *http.Request) {
 		// What roster says, and not this app's guess. It was `true` here for as
 		// long as this endpoint existed, which made a tenant whose people all
 		// arrive through a directory draw a form nobody could use.
-	}{Password: tn.OffersPassword(), Providers: []provider{}, Terminal: a.c.Terminal, Leave: tn.GetConfig().GetLeave()}
+
+		// Whether a recovery link can be had here: the tenant offers passwords,
+		// which is what a link ends in (`vouch.Offers`), and this deployment
+		// can deliver one. It is the road to deleting an account for somebody
+		// whose way in cannot say when it asked them, so the page names it
+		// only where it would arrive.
+		Recover bool `json:"recover"`
+	}{
+		Password: tn.OffersPassword(), Providers: []provider{}, Terminal: a.c.Terminal, Leave: tn.GetConfig().GetLeave(),
+		Recover: tn.OffersPassword() && a.c.Mail != nil,
+	}
 	out.Tenant.Alias = tn.GetAlias()
 	out.Tenant.Name = tn.GetName()
 	out.Tenant.Labels = tn.GetLabels()
@@ -765,7 +780,8 @@ const stateCookie = "account_state"
 // `&again=1` asks the provider to authenticate them again rather than remember
 // them, for a sign-in that has to be a moment ago -- the page asks for one
 // before somebody deletes their account (`MeService.Leave`). What the provider
-// answers is what is believed ([arrives.Providers.Begin]).
+// answers is what is believed, and one that takes no such request -- GitHub,
+// Google -- is asked nothing more ([arrives.Providers.Begin]).
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	a.start(w, r, false, pdid.Nil)
 }

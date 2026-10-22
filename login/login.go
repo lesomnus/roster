@@ -202,6 +202,11 @@ type Config struct {
 	// empty is Microsoft's own clouds ([arrives.Providers.Microsoft]).
 	Microsoft string
 
+	// Google is the origin of Google's sign-in, which is asked for `auth_time`
+	// the way Google documents it; empty is Google's own
+	// ([arrives.Providers.Google]).
+	Google string
+
 	// InsecureCookie drops `Secure` from the session cookie, for a page served
 	// over plain http in development. It is `authsession`'s and is said there;
 	// this app sets no cookie of its own.
@@ -354,6 +359,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 	a.arrives.SlackAPI = c.SlackAPI
 	a.arrives.GitHub = c.GitHub
 	a.arrives.Microsoft = c.Microsoft
+	a.arrives.Google = c.Google
 
 	// Nothing per tenant is resolved here, because there is nothing to resolve:
 	// who this app fronts is every tenant with a `Host` row, and that is a

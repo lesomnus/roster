@@ -369,8 +369,33 @@ five), by the sign-in the credential the call came with carries -- its
 account page's is the sign-in made there, and a page open since the morning signs
 in again first and comes back to the section; through a directory, it asks the
 directory to authenticate them again (`max_age=0`, and `prompt=login` at
-Microsoft's), and what counts is when the directory says it did (`auth_time`). From a terminal it is a
-key handed over in a browser, which carries **the browser's** sign-in:
+Microsoft's), and what counts is when the directory says it did (`auth_time`).
+
+Not every directory can say. GitHub never does. Google takes no request to
+authenticate anybody again, and says when it last did only to an app that asks
+for it by name -- every round trip to it does -- and only where the app's Google
+project lets it ([operating.md](../operating.md#google)): a sign-in through
+Google counts when Google has just asked them, which it does in a browser it has
+not signed in, and never where the project does not let it say. Somebody whose
+ways in are those signs in with a password instead -- and a first password of
+their own asks for what deleting does, a sign-in a few minutes old
+(`CredentialService/Set`), so the session that could not delete cannot get them
+one either: a way in that outlives the session asking for it is worth more to
+whoever holds that session than the deletion was. Their road is a **recovery
+link**. Mailed to an address on their account that somebody proved, it hands
+them a password, and a sign-in with it is a moment ago, so they can delete at
+once, or set the password they want. The account page names that road when it
+refuses them, where one can be had.
+
+And that is where the cost lands. A link can be had only where the tenant offers
+passwords -- a link ends in one (`vouch.Offers`) -- and where the deployment can
+send mail, to an address that was checked. In a tenant that offers no
+passwords, or a deployment with no mail, somebody whose only way in is GitHub,
+or Google without the setting, cannot delete their own account: whoever runs
+the tenant does it for them (`roster holder erase`).
+
+From a terminal it is a key handed over in a browser, which carries **the
+browser's** sign-in:
 
 ```sh
 roster sign-in --allow /roster.MeService/Leave   # approve it at a page you signed in to a moment ago
@@ -388,8 +413,8 @@ A key issued from another key carries that one's sign-in however new it is, so a
 key that has been in a config file for a month mints nothing fresher. A key an
 administrator minted for somebody carries no sign-in of theirs at all, and neither
 does a session at the admin console or the user console, nor a directory that does
-not say when it last authenticated them -- GitHub, which has no such claim: all are
-refused with *sign in again*.
+not say when it last authenticated them -- GitHub, which has no such claim, and
+Google where its project does not let it: all are refused with *sign in again*.
 
 Everything else a person does about their own row is the **operator's verb with
 their own reference**: `IdentityService/Add` to attach a provider account,

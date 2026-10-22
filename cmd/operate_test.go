@@ -145,16 +145,17 @@ func TestNobodyWritesTheCredentialOfSomebodyWiderThanThey(t *testing.T) {
 		x := require.New(t)
 
 		// Their own row, through `Set`, which is the only row `Set` writes.
-		// The first one goes in with nothing proved -- there is nothing to
-		// prove -- and `cmd/ownpassword_test.go` is where that trade is
-		// argued.
-		asBossOwn := frame.Into(ctx, frame.New(boss, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
-		_, err := b.Walled.Credential().Set(asBossOwn, app.CredentialSetRequest_builder{
+		// The first one is the deployment's, written with no frame: a first
+		// password of your own takes a sign-in a few minutes old, which this
+		// call has no credential to say, and `cmd/ownpassword_test.go` is
+		// where that rule is pinned.
+		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
 			Ref:    app.HolderRef_builder{Id: boss.Bytes()}.Build(),
 			Secret: []byte("a new one"),
 		}.Build())
-		x.NoError(err, "the administrator could not give themselves a first password")
+		x.NoError(err)
 
+		asBossOwn := frame.Into(ctx, frame.New(boss, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
 		_, err = b.Walled.Credential().Set(asBossOwn, app.CredentialSetRequest_builder{
 			Ref:     app.HolderRef_builder{Id: boss.Bytes()}.Build(),
 			Current: []byte("a new one"),
