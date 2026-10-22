@@ -127,8 +127,14 @@ func (_u *SiteMembershipUpdate) sqlSave(ctx context.Context) (_node int, err err
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(sitemembership.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sitemembership.FieldDateUpdated); ok {
+		_spec.SetField(sitemembership.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(sitemembership.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sitemembership.FieldDateErased); ok {
+		_spec.SetField(sitemembership.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(sitemembership.FieldDateErased, field.TypeTime)
@@ -286,8 +292,14 @@ func (_u *SiteMembershipUpdateOne) sqlSave(ctx context.Context) (_node *SiteMemb
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(sitemembership.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(sitemembership.FieldDateUpdated); ok {
+		_spec.SetField(sitemembership.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(sitemembership.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(sitemembership.FieldDateErased); ok {
+		_spec.SetField(sitemembership.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(sitemembership.FieldDateErased, field.TypeTime)

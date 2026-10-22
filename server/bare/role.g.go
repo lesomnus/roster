@@ -209,6 +209,7 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -499,6 +500,7 @@ func (s RoleServiceServer) apply(ctx context.Context, ref *rstr.RoleRef, doc *pa
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -590,6 +592,7 @@ func (s RoleServiceServer) Erase(ctx context.Context, req *rstr.RoleRef) (*rstr.
 		p = role.And(p, role.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Role.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -880,6 +883,7 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -1171,6 +1175,7 @@ func (s BindingServiceServer) apply(ctx context.Context, ref *rstr.BindingRef, d
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -1262,6 +1267,7 @@ func (s BindingServiceServer) Erase(ctx context.Context, req *rstr.BindingRef) (
 		p = binding.And(p, binding.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Binding.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())

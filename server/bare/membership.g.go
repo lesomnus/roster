@@ -202,6 +202,7 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMemb
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -478,6 +479,7 @@ func (s SiteMembershipServiceServer) apply(ctx context.Context, ref *rstr.SiteMe
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -569,6 +571,7 @@ func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMe
 		p = sitemembership.And(p, sitemembership.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.SiteMembership.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -834,6 +837,7 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -1126,6 +1130,7 @@ func (s TeamMembershipServiceServer) apply(ctx context.Context, ref *rstr.TeamMe
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -1217,6 +1222,7 @@ func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMe
 		p = teammembership.And(p, teammembership.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.TeamMembership.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -1482,6 +1488,7 @@ func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMe
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -1774,6 +1781,7 @@ func (s GroupMembershipServiceServer) apply(ctx context.Context, ref *rstr.Group
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -1865,6 +1873,7 @@ func (s GroupMembershipServiceServer) Erase(ctx context.Context, req *rstr.Group
 		p = groupmembership.And(p, groupmembership.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.GroupMembership.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())

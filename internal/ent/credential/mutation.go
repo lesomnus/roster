@@ -32,6 +32,7 @@ type Mutation struct {
 	date_erased    *time.Time
 	date_created   *time.Time
 	clearedFields  map[string]struct{}
+	exprs          map[string]sql.Querier
 	holder         *uuid.UUID
 	clearedholder  bool
 	predicates     []predicate.Credential
@@ -54,6 +55,7 @@ func (m *Mutation) Predicates() []predicate.Credential {
 // SetName sets the "name" field.
 func (m *Mutation) SetName(s string) {
 	m.name = &s
+	delete(m.exprs, FieldName)
 }
 
 // Name returns the value of the "name" field in the mutation.
@@ -68,11 +70,13 @@ func (m *Mutation) Name() (r string, exists bool) {
 // ResetName resets all changes to the "name" field.
 func (m *Mutation) ResetName() {
 	m.name = nil
+	delete(m.exprs, FieldName)
 }
 
 // SetKind sets the "kind" field.
 func (m *Mutation) SetKind(s string) {
 	m.kind = &s
+	delete(m.exprs, FieldKind)
 }
 
 // Kind returns the value of the "kind" field in the mutation.
@@ -87,11 +91,13 @@ func (m *Mutation) Kind() (r string, exists bool) {
 // ResetKind resets all changes to the "kind" field.
 func (m *Mutation) ResetKind() {
 	m.kind = nil
+	delete(m.exprs, FieldKind)
 }
 
 // SetSecret sets the "secret" field.
 func (m *Mutation) SetSecret(b []byte) {
 	m.secret = &b
+	delete(m.exprs, FieldSecret)
 }
 
 // Secret returns the value of the "secret" field in the mutation.
@@ -106,12 +112,14 @@ func (m *Mutation) Secret() (r []byte, exists bool) {
 // ResetSecret resets all changes to the "secret" field.
 func (m *Mutation) ResetSecret() {
 	m.secret = nil
+	delete(m.exprs, FieldSecret)
 }
 
 // SetFailures sets the "failures" field.
 func (m *Mutation) SetFailures(i int32) {
 	m.failures = &i
 	m.addfailures = nil
+	delete(m.exprs, FieldFailures)
 }
 
 // Failures returns the value of the "failures" field in the mutation.
@@ -145,11 +153,14 @@ func (m *Mutation) AddedFailures() (r int32, exists bool) {
 func (m *Mutation) ResetFailures() {
 	m.failures = nil
 	m.addfailures = nil
+	delete(m.exprs, FieldFailures)
 }
 
 // SetDateLocked sets the "date_locked" field.
 func (m *Mutation) SetDateLocked(t time.Time) {
 	m.date_locked = &t
+	delete(m.clearedFields, FieldDateLocked)
+	delete(m.exprs, FieldDateLocked)
 }
 
 // DateLocked returns the value of the "date_locked" field in the mutation.
@@ -164,6 +175,7 @@ func (m *Mutation) DateLocked() (r time.Time, exists bool) {
 // ClearDateLocked clears the value of the "date_locked" field.
 func (m *Mutation) ClearDateLocked() {
 	m.date_locked = nil
+	delete(m.exprs, FieldDateLocked)
 	m.clearedFields[FieldDateLocked] = struct{}{}
 }
 
@@ -177,11 +189,14 @@ func (m *Mutation) DateLockedCleared() bool {
 func (m *Mutation) ResetDateLocked() {
 	m.date_locked = nil
 	delete(m.clearedFields, FieldDateLocked)
+	delete(m.exprs, FieldDateLocked)
 }
 
 // SetDateRotated sets the "date_rotated" field.
 func (m *Mutation) SetDateRotated(t time.Time) {
 	m.date_rotated = &t
+	delete(m.clearedFields, FieldDateRotated)
+	delete(m.exprs, FieldDateRotated)
 }
 
 // DateRotated returns the value of the "date_rotated" field in the mutation.
@@ -196,6 +211,7 @@ func (m *Mutation) DateRotated() (r time.Time, exists bool) {
 // ClearDateRotated clears the value of the "date_rotated" field.
 func (m *Mutation) ClearDateRotated() {
 	m.date_rotated = nil
+	delete(m.exprs, FieldDateRotated)
 	m.clearedFields[FieldDateRotated] = struct{}{}
 }
 
@@ -209,12 +225,14 @@ func (m *Mutation) DateRotatedCleared() bool {
 func (m *Mutation) ResetDateRotated() {
 	m.date_rotated = nil
 	delete(m.clearedFields, FieldDateRotated)
+	delete(m.exprs, FieldDateRotated)
 }
 
 // SetLastStep sets the "last_step" field.
 func (m *Mutation) SetLastStep(i int64) {
 	m.last_step = &i
 	m.addlast_step = nil
+	delete(m.exprs, FieldLastStep)
 }
 
 // LastStep returns the value of the "last_step" field in the mutation.
@@ -248,12 +266,15 @@ func (m *Mutation) AddedLastStep() (r int64, exists bool) {
 func (m *Mutation) ResetLastStep() {
 	m.last_step = nil
 	m.addlast_step = nil
+	delete(m.exprs, FieldLastStep)
 }
 
 // SetPrevious sets the "previous" field.
 func (m *Mutation) SetPrevious(u [][]uint8) {
 	m.previous = &u
 	m.appendprevious = nil
+	delete(m.clearedFields, FieldPrevious)
+	delete(m.exprs, FieldPrevious)
 }
 
 // Previous returns the value of the "previous" field in the mutation.
@@ -282,6 +303,7 @@ func (m *Mutation) AppendedPrevious() ([][]uint8, bool) {
 func (m *Mutation) ClearPrevious() {
 	m.previous = nil
 	m.appendprevious = nil
+	delete(m.exprs, FieldPrevious)
 	m.clearedFields[FieldPrevious] = struct{}{}
 }
 
@@ -296,11 +318,13 @@ func (m *Mutation) ResetPrevious() {
 	m.previous = nil
 	m.appendprevious = nil
 	delete(m.clearedFields, FieldPrevious)
+	delete(m.exprs, FieldPrevious)
 }
 
 // SetDateUpdated sets the "date_updated" field.
 func (m *Mutation) SetDateUpdated(t time.Time) {
 	m.date_updated = &t
+	delete(m.exprs, FieldDateUpdated)
 }
 
 // DateUpdated returns the value of the "date_updated" field in the mutation.
@@ -315,11 +339,14 @@ func (m *Mutation) DateUpdated() (r time.Time, exists bool) {
 // ResetDateUpdated resets all changes to the "date_updated" field.
 func (m *Mutation) ResetDateUpdated() {
 	m.date_updated = nil
+	delete(m.exprs, FieldDateUpdated)
 }
 
 // SetDateErased sets the "date_erased" field.
 func (m *Mutation) SetDateErased(t time.Time) {
 	m.date_erased = &t
+	delete(m.clearedFields, FieldDateErased)
+	delete(m.exprs, FieldDateErased)
 }
 
 // DateErased returns the value of the "date_erased" field in the mutation.
@@ -334,6 +361,7 @@ func (m *Mutation) DateErased() (r time.Time, exists bool) {
 // ClearDateErased clears the value of the "date_erased" field.
 func (m *Mutation) ClearDateErased() {
 	m.date_erased = nil
+	delete(m.exprs, FieldDateErased)
 	m.clearedFields[FieldDateErased] = struct{}{}
 }
 
@@ -347,11 +375,13 @@ func (m *Mutation) DateErasedCleared() bool {
 func (m *Mutation) ResetDateErased() {
 	m.date_erased = nil
 	delete(m.clearedFields, FieldDateErased)
+	delete(m.exprs, FieldDateErased)
 }
 
 // SetDateCreated sets the "date_created" field.
 func (m *Mutation) SetDateCreated(t time.Time) {
 	m.date_created = &t
+	delete(m.clearedFields, FieldDateCreated)
 }
 
 // DateCreated returns the value of the "date_created" field in the mutation.
@@ -462,34 +492,34 @@ func (m *Mutation) Type() string {
 // AddedFields().
 func (m *Mutation) Fields() []string {
 	fields := make([]string, 0, 12)
-	if m.name != nil {
+	if m.name != nil || m.exprs[FieldName] != nil {
 		fields = append(fields, FieldName)
 	}
-	if m.kind != nil {
+	if m.kind != nil || m.exprs[FieldKind] != nil {
 		fields = append(fields, FieldKind)
 	}
-	if m.secret != nil {
+	if m.secret != nil || m.exprs[FieldSecret] != nil {
 		fields = append(fields, FieldSecret)
 	}
-	if m.failures != nil {
+	if m.failures != nil || m.exprs[FieldFailures] != nil {
 		fields = append(fields, FieldFailures)
 	}
-	if m.date_locked != nil {
+	if m.date_locked != nil || m.exprs[FieldDateLocked] != nil {
 		fields = append(fields, FieldDateLocked)
 	}
-	if m.date_rotated != nil {
+	if m.date_rotated != nil || m.exprs[FieldDateRotated] != nil {
 		fields = append(fields, FieldDateRotated)
 	}
-	if m.last_step != nil {
+	if m.last_step != nil || m.exprs[FieldLastStep] != nil {
 		fields = append(fields, FieldLastStep)
 	}
-	if m.previous != nil {
+	if m.previous != nil || m.exprs[FieldPrevious] != nil {
 		fields = append(fields, FieldPrevious)
 	}
-	if m.date_updated != nil {
+	if m.date_updated != nil || m.exprs[FieldDateUpdated] != nil {
 		fields = append(fields, FieldDateUpdated)
 	}
-	if m.date_erased != nil {
+	if m.date_erased != nil || m.exprs[FieldDateErased] != nil {
 		fields = append(fields, FieldDateErased)
 	}
 	if m.date_created != nil {
@@ -504,7 +534,13 @@ func (m *Mutation) Fields() []string {
 // Field returns the value of a field with the given name. The second boolean
 // return value indicates that this field was not set, or was not defined in the
 // schema.
+//
+// A field assigned an expression with SetFieldExpr returns that expression, a
+// sql.Querier, since the value it stands for is the database's to compute.
 func (m *Mutation) Field(name string) (ent.Value, bool) {
+	if e, ok := m.exprs[name]; ok {
+		return e, true
+	}
 	switch name {
 	case FieldName:
 		return m.Name()
@@ -544,11 +580,17 @@ func (m *Mutation) OldField(ctx context.Context, name string) (ent.Value, error)
 // SetField sets the value of a field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
+//
+// A sql.Querier that is not of the field's type is handed to SetFieldExpr, so
+// that what Field returns for a field can be set back on it.
 func (m *Mutation) SetField(name string, value ent.Value) error {
 	switch name {
 	case FieldName:
 		v, ok := value.(string)
 		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
@@ -556,6 +598,9 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 	case FieldKind:
 		v, ok := value.(string)
 		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetKind(v)
@@ -563,6 +608,9 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 	case FieldSecret:
 		v, ok := value.([]byte)
 		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetSecret(v)
@@ -570,6 +618,9 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 	case FieldFailures:
 		v, ok := value.(int32)
 		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetFailures(v)
@@ -577,6 +628,9 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 	case FieldDateLocked:
 		v, ok := value.(time.Time)
 		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDateLocked(v)
@@ -584,6 +638,9 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 	case FieldDateRotated:
 		v, ok := value.(time.Time)
 		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDateRotated(v)
@@ -591,6 +648,9 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 	case FieldLastStep:
 		v, ok := value.(int64)
 		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetLastStep(v)
@@ -598,6 +658,9 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 	case FieldPrevious:
 		v, ok := value.([][]uint8)
 		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPrevious(v)
@@ -605,6 +668,9 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
 		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDateUpdated(v)
@@ -612,6 +678,9 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 	case FieldDateErased:
 		v, ok := value.(time.Time)
 		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDateErased(v)
@@ -619,6 +688,9 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 	case FieldDateCreated:
 		v, ok := value.(time.Time)
 		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDateCreated(v)
@@ -626,12 +698,111 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 	case FieldHolderId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetHolderId(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Credential field %s", name)
+}
+
+// SetFieldExpr assigns the field with the given name a SQL expression, which
+// the database evaluates as the UPDATE writes the row. It replaces any value
+// the field was set, added, appended or cleared with, as setting it again
+// would, and so the column is assigned once.
+//
+// The field is listed by Fields and Field returns the expression, so a hook
+// sees it as it sees any other. What it does not have is a value: a field
+// with a validator is refused, since there is nothing for the validator to
+// check, and so is one that only a create could write. A create refuses a
+// mutation holding an expression at all.
+func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
+	if expr == nil {
+		return fmt.Errorf("no expression for field %s", name)
+	}
+	if m.op.Is(ent.OpCreate) {
+		return fmt.Errorf("field %s cannot be assigned an expression: a create writes values, and an expression is written only by an update", name)
+	}
+	switch name {
+	case FieldName:
+		m.ResetName()
+	case FieldKind:
+		m.ResetKind()
+	case FieldSecret:
+		m.ResetSecret()
+	case FieldFailures:
+		m.ResetFailures()
+	case FieldDateLocked:
+		m.ResetDateLocked()
+	case FieldDateRotated:
+		m.ResetDateRotated()
+	case FieldLastStep:
+		m.ResetLastStep()
+	case FieldPrevious:
+		m.ResetPrevious()
+	case FieldDateUpdated:
+		m.ResetDateUpdated()
+	case FieldDateErased:
+		m.ResetDateErased()
+	case FieldDateCreated:
+		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
+	case FieldHolderId:
+		return fmt.Errorf("field %s cannot be assigned an expression: it holds an edge, which is set through the edge", name)
+	default:
+		return fmt.Errorf("unknown Credential field %s", name)
+	}
+	if m.exprs == nil {
+		m.exprs = make(map[string]sql.Querier)
+	}
+	m.exprs[name] = expr
+	return nil
+}
+
+// FieldExpr returns the expression the field with the given name was assigned
+// by SetFieldExpr. The second return value reports whether it was.
+func (m *Mutation) FieldExpr(name string) (sql.Querier, bool) {
+	e, ok := m.exprs[name]
+	return e, ok
+}
+
+// ExprFields returns the fields that were assigned an expression by
+// SetFieldExpr.
+func (m *Mutation) ExprFields() []string {
+	var fields []string
+	if _, ok := m.exprs[FieldName]; ok {
+		fields = append(fields, FieldName)
+	}
+	if _, ok := m.exprs[FieldKind]; ok {
+		fields = append(fields, FieldKind)
+	}
+	if _, ok := m.exprs[FieldSecret]; ok {
+		fields = append(fields, FieldSecret)
+	}
+	if _, ok := m.exprs[FieldFailures]; ok {
+		fields = append(fields, FieldFailures)
+	}
+	if _, ok := m.exprs[FieldDateLocked]; ok {
+		fields = append(fields, FieldDateLocked)
+	}
+	if _, ok := m.exprs[FieldDateRotated]; ok {
+		fields = append(fields, FieldDateRotated)
+	}
+	if _, ok := m.exprs[FieldLastStep]; ok {
+		fields = append(fields, FieldLastStep)
+	}
+	if _, ok := m.exprs[FieldPrevious]; ok {
+		fields = append(fields, FieldPrevious)
+	}
+	if _, ok := m.exprs[FieldDateUpdated]; ok {
+		fields = append(fields, FieldDateUpdated)
+	}
+	if _, ok := m.exprs[FieldDateErased]; ok {
+		fields = append(fields, FieldDateErased)
+	}
+	return fields
 }
 
 // AddedFields returns all numeric fields that were incremented/decremented during

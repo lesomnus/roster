@@ -1149,26 +1149,63 @@ says so, until `accept` (payday#66). `verify` is clean as soon as `accept` is
 done.
 
 **The live rows can be checked too** (payday#102). With `audit.digest.key`, every
-row of the trail keeps a keyed digest of the row its write left. The key is a
-file of `openssl rand -base64 32` mounted as a secret, or `base64:` and the key
-in `ROSTER_AUDIT_DIGEST_KEY`, and keys rotated out go in
-`audit.digest.previous`.
+row of the trail keeps a keyed digest of the row its write left, bound to the
+row of the trail that keeps it (payday#115). The key is a file of `openssl rand
+-base64 32` mounted as a secret, or `base64:` and the key in
+`ROSTER_AUDIT_DIGEST_KEY`, and keys rotated out go in `audit.digest.previous`.
 
-`trail rows` digests every live row again and compares it with the newest row
-of the trail about it: in the database, or in the archive once `prune` has
-moved it there, read through the archive's account as `read` reads it. It fails
-on two findings, and prints each row:
+`trail rows` digests every row again -- live, or erased and not yet forgotten --
+and compares it with the newest row of the trail about it: in the database, or
+in the archive once `prune` has moved it there, read through the archive's
+account as `read` reads it. Then it goes the other way, over everything the
+trail is about that is no row. It fails on any finding, and prints each:
 
-- **differs**: a row somebody changed in the database past the servers;
+- **differs**: a row somebody changed in the database past the servers, or
+  brought back from an erase;
+- **forged**: a row whose newest line of the trail keeps a digest that is not
+  that line's -- copied onto it from another, or not one roster made;
+- **no-digest**: a row whose newest line keeps none, though it was written
+  after digests began;
 - **not-on-trail**: a row nothing on the trail is about -- one somebody added in
-  the database past the servers.
+  the database past the servers;
+- **key-not-held**: a row digested under a key `trail rows` was not given, and
+  `unheld-key` names the key;
+- **missing**: a row the trail says is there and is not -- one somebody removed
+  in the database past the servers.
 
-It cannot say anything about a row written before the key, which it counts, or a
-field declared personal, which the digest leaves out. What roster itself writes
-past its servers -- a tenant destroyed, a person brought back -- is on the trail
-as that act, so it is no finding. A row a migration rewrote is, until somebody
-has looked: `--accept --why` puts what the check found on the trail as accepted,
-one row each, and logs why.
+A check run with a key other than the one `serve` writes with, or against a
+deployment that writes with none, finds every row, rather than passing. Two
+things it may count instead, and only because the deployment says so beside
+the key:
+
+- **`audit.digest.since`** is when the deployment began keeping digests, RFC
+  3339 or a date (`ROSTER_AUDIT_DIGEST_SINCE`). A row of the trail written before
+  it with no digest is counted as from before, not found. A deployment that had
+  a key from its first write leaves it out. One that was given its key later
+  sets it to when -- the earliest row of the trail that keeps a digest is no
+  later, and a since later than that is refused by the check -- and takes it
+  out once those rows are accepted, since a row made to look as old as that is
+  counted with them.
+- **`audit.digest.retired`** is the fingerprints of keys let go, as
+  `unheld-key` prints them: what was digested under one is counted, not found.
+
+It does not see a field declared personal or secret, which the digest leaves
+out, and it prints the kinds kept off the trail (`not checked:`) with why, every
+run. What roster itself writes or removes past its servers is on the trail as
+that act, so it is no finding: a tenant destroyed and what went with it, a
+person forgotten and their rows, a person brought back, and what the sweeps
+collect -- a session, an attempt, a link, a delegation or a claim past its
+expiry. Before a pass destroys the newest row of the trail about a row that is
+still there, it carries that row's digest forward, so a row nobody wrote since
+its window is still checked.
+
+A row a migration rewrote is a finding until somebody has looked: `--accept
+--why` puts what the check found on the trail as accepted, one row each --
+gone ones as gone -- and logs why. The why is in the log and not on the trail:
+an acceptance that says on the record what was reviewed and why is payday#115
+B's. A forged row and a key not given are not accepted: look at the row of the
+trail, or give the key. A deployment upgrading to this runs it once, for
+erasures recorded before erasures kept a digest.
 
 **A database restored from a backup** older than the latest checkpoint has
 numbered fewer checkpoints than the store keeps: `verify` finds it `behind`

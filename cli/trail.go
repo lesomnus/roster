@@ -357,8 +357,10 @@ func newCmdTrailPurge(c *cmd.Config) *xli.Command {
 			}
 
 			// The deployment's policy, for its archive and for its holds: a
-			// purge by hand leaves what a hold is on, and says how much.
-			p, err := c.Audit.Policy()
+			// purge by hand leaves what a hold is on, and says how much. And
+			// in the trail's turn, which a pass of the running deployment
+			// takes too.
+			p, err := cmd.TrailPolicy(ctx, *c)
 			if err != nil {
 				return err
 			}
@@ -457,21 +459,29 @@ func newCmdTrailVerify(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	}
 }
 
-// newCmdTrailRows checks the live rows against the trail: each row of every
-// kind written through the servers, digested again and compared with the digest
-// the newest row of the trail about it keeps (`audit.digest.key`, payday#102) --
-// in the database, or in the archive once it has left (payday#108). A row
-// somebody changed in the database past the servers is one that differs, and a
-// row somebody added there is one nothing on the trail is about.
+// newCmdTrailRows checks the rows against the trail: each row of every kind
+// on it, digested again and compared with the digest the newest line of the
+// trail about it keeps (`audit.digest.key`, payday#102) -- in the database, or
+// in the archive once it has left (payday#108) -- and every thing the trail is
+// about that is no row (payday#115). A row somebody changed in the database
+// past the servers is one that differs, a row somebody added there is one
+// nothing on the trail is about, and a row somebody removed is missing. A line
+// whose digest is not its own, a line with none, and one under a key this was
+// not given say nothing about the row beside them, and are findings too: each
+// is what whoever can write the database can make of a line.
 //
 // `verify` is the archive against the database's account of it; this is the
 // database's rows against what the trail says the last write left of them. It
-// changes nothing, and fails when it found either, so a schedule can run it.
+// changes nothing, and fails on any finding, so a schedule can run it.
 //
 // `--accept` is an operator who has looked at each and decided the rows are
 // right -- a migration rewrote them, they were written before the trail could
 // say anything about them -- and it puts what this found on the trail as that
-// act (`pd.Record`), one row each, with the why logged.
+// act, one line each: `pd.Record` of the rows there are, `pd.RecordErased` of
+// the ones that are gone, with the why logged. Not on the trail: `pd.Record`
+// takes no reason, and an acceptance that says what was reviewed and why, on
+// the record, is payday#115 B's. A forged line and a key not given are not
+// accepted here: one is a line to look at, and the other a key to give.
 func newCmdTrailRows(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "rows",
@@ -513,28 +523,61 @@ func newCmdTrailRows(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			fmt.Fprintf(os.Stderr, "%d row(s) read: %d match, %d differ, %d not on the trail, %d with no digest, %d under a key not given; %d checked against the archive\n",
-				v.Read, v.Matches, len(v.Differs), len(v.NotOnTrail), v.NoDigest, v.KeyNotHeld, v.Archived)
-			for _, id := range v.Differs {
-				fmt.Fprintf(os.Stdout, "differs %s %s\n", id.Domain(), id)
+			fmt.Fprintf(os.Stderr, "%d row(s) read: %d match, %d differ, %d forged, %d with no digest, %d not on the trail, %d under a key not given; %d missing; "+
+				"%d from before digests began, %d under a key let go; %d checked against the archive\n",
+				v.Read, v.Matches, len(v.Differs), len(v.Forged), len(v.NoDigest), len(v.NotOnTrail), len(v.KeyNotHeld), len(v.Missing),
+				v.BeforeDigests, v.Retired, v.Archived)
+
+			// Each finding a line, by what it is, then its kind and the row:
+			// what a schedule greps and an operator looks up.
+			for _, f := range []struct {
+				what string
+				ids  []pdid.Id
+			}{
+				{"differs", v.Differs},
+				{"forged", v.Forged},
+				{"no-digest", v.NoDigest},
+				{"not-on-trail", v.NotOnTrail},
+				{"key-not-held", v.KeyNotHeld},
+				{"missing", v.Missing},
+			} {
+				for _, id := range f.ids {
+					fmt.Fprintf(os.Stdout, "%s %s %s\n", f.what, id.Domain(), id)
+				}
 			}
-			for _, id := range v.NotOnTrail {
-				fmt.Fprintf(os.Stdout, "not-on-trail %s %s\n", id.Domain(), id)
+			// And the keys those were made under, for `audit.digest.previous`
+			// or, once somebody has decided they are gone, `retired`.
+			for _, k := range v.Unheld {
+				fmt.Fprintf(os.Stdout, "unheld-key %s\n", k)
+			}
+			// What was not looked at, every time, so that a check that found
+			// nothing says what it did not read.
+			for _, k := range v.Skipped {
+				fmt.Fprintf(os.Stderr, "not checked: %s, kept off the trail: %s\n", k.Kind, k.Why)
 			}
 			if v.Ok() {
 				return nil
 			}
 
+			findings := len(v.Differs) + len(v.Forged) + len(v.NoDigest) + len(v.NotOnTrail) + len(v.KeyNotHeld) + len(v.Missing)
 			if !accept {
-				return fmt.Errorf("%d row(s) differ from what the trail recorded and %d are not on it: look at each, and `roster trail rows --accept --why ...` once they are right", len(v.Differs), len(v.NotOnTrail))
+				return fmt.Errorf("%d finding(s): look at each, and `roster trail rows --accept --why ...` once the rows are right", findings)
+			}
+			if n := len(v.Forged) + len(v.KeyNotHeld); n > 0 {
+				return fmt.Errorf("%d line(s) whose digest is not their own or under a key not given: those are not accepted here -- "+
+					"look at the line, or give the key in audit.digest.previous or retired", n)
 			}
 
-			n, err := pd.Record(ctx, s.Ent, cs, acceptedRows, slices.Concat(v.Differs, v.NotOnTrail))
+			there, err := pd.Record(ctx, s.Ent, cs, acceptedRows, slices.Concat(v.Differs, v.NoDigest, v.NotOnTrail))
 			if err != nil {
 				return fmt.Errorf("accept: %w", err)
 			}
-			log.From(ctx).InfoContext(ctx, "trail: rows accepted as they are", slog.String("why", why), slog.Int("rows", n))
-			fmt.Fprintf(os.Stderr, "accepted %d row(s); the trail says they are what they are now\n", n)
+			gone, err := pd.RecordErased(ctx, s.Ent, cs, acceptedRows, v.Missing)
+			if err != nil {
+				return fmt.Errorf("accept: %w", err)
+			}
+			log.From(ctx).InfoContext(ctx, "trail: rows accepted as they are", slog.String("why", why), slog.Int("rows", there), slog.Int("gone", gone))
+			fmt.Fprintf(os.Stderr, "accepted %d row(s) and %d gone; the trail says they are what they are now\n", there, gone)
 
 			return nil
 		}),
@@ -672,7 +715,7 @@ func dur(v time.Duration) string {
 // prune is one pass of the deployment's own policy, which is what this command
 // does when it was given no window.
 func prune(ctx context.Context, c cmd.Config) error {
-	p, err := c.Audit.Policy()
+	p, err := cmd.TrailPolicy(ctx, c)
 	if err != nil {
 		return err
 	}

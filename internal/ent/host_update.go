@@ -184,11 +184,20 @@ func (_u *HostUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(host.FieldName, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(host.FieldName); ok {
+		_spec.SetField(host.FieldName, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(host.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(host.FieldDesc); ok {
+		_spec.SetField(host.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(host.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(host.FieldLabels); ok {
+		_spec.SetField(host.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(host.FieldLabels, field.TypeJson)
@@ -196,14 +205,23 @@ func (_u *HostUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateProved(); ok {
 		_spec.SetField(host.FieldDateProved, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(host.FieldDateProved); ok {
+		_spec.SetField(host.FieldDateProved, field.TypeTime, e)
+	}
 	if _u.mutation.DateProvedCleared() {
 		_spec.ClearField(host.FieldDateProved, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(host.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(host.FieldDateUpdated); ok {
+		_spec.SetField(host.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(host.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(host.FieldDateErased); ok {
+		_spec.SetField(host.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(host.FieldDateErased, field.TypeTime)
@@ -418,11 +436,20 @@ func (_u *HostUpdateOne) sqlSave(ctx context.Context) (_node *Host, err error) {
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(host.FieldName, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(host.FieldName); ok {
+		_spec.SetField(host.FieldName, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(host.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(host.FieldDesc); ok {
+		_spec.SetField(host.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(host.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(host.FieldLabels); ok {
+		_spec.SetField(host.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(host.FieldLabels, field.TypeJson)
@@ -430,14 +457,23 @@ func (_u *HostUpdateOne) sqlSave(ctx context.Context) (_node *Host, err error) {
 	if value, ok := _u.mutation.DateProved(); ok {
 		_spec.SetField(host.FieldDateProved, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(host.FieldDateProved); ok {
+		_spec.SetField(host.FieldDateProved, field.TypeTime, e)
+	}
 	if _u.mutation.DateProvedCleared() {
 		_spec.ClearField(host.FieldDateProved, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(host.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(host.FieldDateUpdated); ok {
+		_spec.SetField(host.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(host.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(host.FieldDateErased); ok {
+		_spec.SetField(host.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(host.FieldDateErased, field.TypeTime)

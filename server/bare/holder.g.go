@@ -198,6 +198,7 @@ func (s HolderServiceServer) Add(ctx context.Context, req *rstr.HolderAddRequest
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -497,6 +498,7 @@ func (s HolderServiceServer) apply(ctx context.Context, ref *rstr.HolderRef, doc
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -588,6 +590,7 @@ func (s HolderServiceServer) Erase(ctx context.Context, req *rstr.HolderRef) (*r
 		p = holder.And(p, holder.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Holder.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())

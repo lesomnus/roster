@@ -15,10 +15,12 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/lesomnus/payday/config"
+	"github.com/lesomnus/payday/rename"
 	"github.com/lesomnus/payday/spin"
 
 	"github.com/lesomnus/roster/cmd"
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
+	"github.com/lesomnus/roster/server/pd"
 )
 
 // Ready is the databases, before anything is served on them.
@@ -104,7 +106,7 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 
 			// Which process runs each loop, first: a deployment that named
 			// no lease is told so before anything is opened (payday#54).
-			lease, err := c.Spin.Build(c.Db)
+			lease, err := c.Spin.Build(ctx, c.Db)
 			if err != nil {
 				return err
 			}
@@ -251,49 +253,22 @@ func Migrate(ctx context.Context, s *cmd.Server) error {
 	return nil
 }
 
-// migrate brings one plane's database into this build's shape: what the schema
-// declares is made, and then the indexes this build [Replaced] are dropped,
-// what replaced each being there by then.
+// migrate brings one plane's database into this build's shape: the indexes an
+// earlier build made under another name moved to this build's first, then what
+// the schema declares made.
+//
+// First, because a migration finds an index by its name, and one it does not
+// find it makes again, from every row, beside the old one, which it leaves --
+// it drops no index. An index stored under the name it declares is found under
+// it whatever its columns, so a reordered one is made again where it stands and
+// the list of replaced names this used to drop by hand (lesomnus/rove#122) has
+// nothing left to say (payday#132).
 func migrate(ctx context.Context, s *cmd.Server) error {
-	if err := entmigrate.NewSchema(s.Drv).Create(ctx); err != nil {
+	if err := rename.Indexes(ctx, s.Db, s.Dialect, pd.IndexRenames); err != nil {
 		return err
 	}
-	for _, v := range Replaced {
-		if _, err := s.Db.ExecContext(ctx, "DROP INDEX IF EXISTS "+v); err != nil {
-			return fmt.Errorf("%s, an index this build replaced: %w", v, err)
-		}
-	}
 
-	return nil
-}
-
-// Replaced are the indexes an earlier build made and this one does not. The
-// migration makes what the schema declares and drops nothing, so an index whose
-// columns changed would stay beside the one that replaced it -- written on every
-// insert and read by nothing.
-//
-// lesomnus/rove#122: every list index begins with the tenant now, and an index
-// that declared an edge before a field is in that order rather than with the
-// edge last.
-var Replaced = []string{
-	"connection_date_created_id",
-	"connection_name_tenant_id",
-	"credential_kind_name_holder_id",
-	"email_address_holder_id",
-	"email_date_created_id",
-	"group_date_created_id",
-	"groupexposure_client_group_id",
-	"host_date_created_id",
-	"hostproof_date_created_id",
-	"hostproof_name_tenant_id",
-	"identity_date_created_id",
-	"maildomain_date_created_id",
-	"maildomain_name_tenant_id",
-	"nomination_borrower_id_tenant_id",
-	"nomination_date_created_id",
-	"role_date_created_id",
-	"site_date_created_id",
-	"team_date_created_id",
+	return entmigrate.NewSchema(s.Drv).Create(ctx)
 }
 
 // frontDoor is `account:` with what only this process knows filled in.

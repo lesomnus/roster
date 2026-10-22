@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/payday/audit"
+
 	app "github.com/lesomnus/roster/rstr"
 
 	entcontinuation "github.com/lesomnus/roster/internal/ent/continuation"
@@ -95,7 +97,7 @@ func TestExpiredAttemptsAndLinksAreCollectedAndLiveOnesAreNot(t *testing.T) {
 	// they are the same fact one shape apart, and a collector that quietly
 	// stopped after the first table would leave the other growing with nothing
 	// to say it had.
-	n, err := vouch.Collect(ctx, b.Ent)
+	n, err := vouch.Collect(ctx, b.Ent, audit.Contents{})
 	x.NoError(err)
 	x.Equal(2, n, "the expired pair was not collected, or a live row went with it")
 
@@ -116,7 +118,7 @@ func TestExpiredAttemptsAndLinksAreCollectedAndLiveOnesAreNot(t *testing.T) {
 
 	// Idempotent, which is what lets every replica run it on its own timer
 	// without any of them coordinating.
-	n, err = vouch.Collect(ctx, b.Ent)
+	n, err = vouch.Collect(ctx, b.Ent, audit.Contents{})
 	x.NoError(err)
 	x.Zero(n)
 }
@@ -151,7 +153,7 @@ func TestASpentAttemptIsCollectedOnItsOwnClockAndNotBefore(t *testing.T) {
 	x.NoError(err)
 	x.True(spent.GetErased())
 
-	n, err := vouch.Collect(ctx, b.Ent)
+	n, err := vouch.Collect(ctx, b.Ent, audit.Contents{})
 	x.NoError(err)
 	x.Zero(n, "a spent attempt was collected before its own clock ran out")
 	x.True(hasContinuation(t, b, secret), "a spent attempt was collected before its own clock ran out")

@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdpb"
@@ -704,7 +705,7 @@ func TestExpiredDelegationsAreCollected(t *testing.T) {
 	x.NoError(err)
 	x.Equal(2, n)
 
-	gone, err := keys.Collect(ctx, b.Ent)
+	gone, err := keys.Collect(ctx, b.Ent, audit.Contents{})
 	x.NoError(err)
 	x.Equal(1, gone)
 

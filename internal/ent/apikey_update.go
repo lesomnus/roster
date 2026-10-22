@@ -217,11 +217,20 @@ func (_u *ApiKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(apikey.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldAlias); ok {
+		_spec.SetField(apikey.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(apikey.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldDesc); ok {
+		_spec.SetField(apikey.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Methods(); ok {
 		_spec.SetField(apikey.FieldMethods, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldMethods); ok {
+		_spec.SetField(apikey.FieldMethods, field.TypeJson, e)
 	}
 	if value, ok := _u.mutation.AppendedMethods(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -234,14 +243,23 @@ func (_u *ApiKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Secret(); ok {
 		_spec.SetField(apikey.FieldSecret, field.TypeBytes, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldSecret); ok {
+		_spec.SetField(apikey.FieldSecret, field.TypeBytes, e)
+	}
 	if value, ok := _u.mutation.DateUsed(); ok {
 		_spec.SetField(apikey.FieldDateUsed, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldDateUsed); ok {
+		_spec.SetField(apikey.FieldDateUsed, field.TypeTime, e)
 	}
 	if _u.mutation.DateUsedCleared() {
 		_spec.ClearField(apikey.FieldDateUsed, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateExpires(); ok {
 		_spec.SetField(apikey.FieldDateExpires, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldDateExpires); ok {
+		_spec.SetField(apikey.FieldDateExpires, field.TypeTime, e)
 	}
 	if _u.mutation.DateExpiresCleared() {
 		_spec.ClearField(apikey.FieldDateExpires, field.TypeTime)
@@ -252,8 +270,14 @@ func (_u *ApiKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(apikey.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldDateUpdated); ok {
+		_spec.SetField(apikey.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(apikey.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldDateErased); ok {
+		_spec.SetField(apikey.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(apikey.FieldDateErased, field.TypeTime)
@@ -500,11 +524,20 @@ func (_u *ApiKeyUpdateOne) sqlSave(ctx context.Context) (_node *ApiKey, err erro
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(apikey.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldAlias); ok {
+		_spec.SetField(apikey.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(apikey.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldDesc); ok {
+		_spec.SetField(apikey.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Methods(); ok {
 		_spec.SetField(apikey.FieldMethods, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldMethods); ok {
+		_spec.SetField(apikey.FieldMethods, field.TypeJson, e)
 	}
 	if value, ok := _u.mutation.AppendedMethods(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -517,14 +550,23 @@ func (_u *ApiKeyUpdateOne) sqlSave(ctx context.Context) (_node *ApiKey, err erro
 	if value, ok := _u.mutation.Secret(); ok {
 		_spec.SetField(apikey.FieldSecret, field.TypeBytes, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldSecret); ok {
+		_spec.SetField(apikey.FieldSecret, field.TypeBytes, e)
+	}
 	if value, ok := _u.mutation.DateUsed(); ok {
 		_spec.SetField(apikey.FieldDateUsed, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldDateUsed); ok {
+		_spec.SetField(apikey.FieldDateUsed, field.TypeTime, e)
 	}
 	if _u.mutation.DateUsedCleared() {
 		_spec.ClearField(apikey.FieldDateUsed, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateExpires(); ok {
 		_spec.SetField(apikey.FieldDateExpires, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldDateExpires); ok {
+		_spec.SetField(apikey.FieldDateExpires, field.TypeTime, e)
 	}
 	if _u.mutation.DateExpiresCleared() {
 		_spec.ClearField(apikey.FieldDateExpires, field.TypeTime)
@@ -535,8 +577,14 @@ func (_u *ApiKeyUpdateOne) sqlSave(ctx context.Context) (_node *ApiKey, err erro
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(apikey.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldDateUpdated); ok {
+		_spec.SetField(apikey.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(apikey.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldDateErased); ok {
+		_spec.SetField(apikey.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(apikey.FieldDateErased, field.TypeTime)

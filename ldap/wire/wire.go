@@ -384,7 +384,7 @@ func (s *Server) ServeConn(nc net.Conn) {
 		p, err := ber.ReadPacket(rc)
 		if err != nil {
 			if !errors.Is(err, io.EOF) && !errors.Is(err, net.ErrClosed) {
-				s.log().Debug("ldap: connection ended", slog.String("from", nc.RemoteAddr().String()), slog.String("err", err.Error()))
+				s.log().Debug("ldap: connection ended", slog.String("from", nc.RemoteAddr().String()), slog.Any("err", err))
 			}
 
 			return
@@ -394,7 +394,7 @@ func (s *Server) ServeConn(nc net.Conn) {
 		if err != nil {
 			// Nothing to answer with: without an identifier the client could
 			// not match a response, and RFC 4511 § 4.1.1 says to disconnect.
-			s.log().Debug("ldap: not a message", slog.String("err", err.Error()))
+			s.log().Debug("ldap: not a message", slog.Any("err", err))
 
 			return
 		}
@@ -539,7 +539,7 @@ func (s *Server) extended(ctx context.Context, c *Conn, msg *message) (hangup bo
 			}
 			tc := tls.Server(c.nc, s.TLS)
 			if err := tc.HandshakeContext(ctx); err != nil {
-				s.log().Debug("ldap: StartTLS handshake failed", slog.String("err", err.Error()))
+				s.log().Debug("ldap: StartTLS handshake failed", slog.Any("err", err))
 
 				return true
 			}

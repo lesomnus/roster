@@ -67,7 +67,7 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
-			p, err := c.Holder.Trail(*c)
+			p, err := c.Holder.Trail(ctx, *c)
 			if err != nil {
 				return err
 			}
@@ -112,7 +112,7 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 				// No grace. They asked, and the clock a regulator counts is
 				// already running -- a window inside it would be risk bought
 				// with nothing.
-				return forgotten(ctx, s.Ent, who, p)
+				return forgotten(ctx, s.Ent, who, p, cs)
 			}
 			if reuse {
 				return errors.New("--reuse frees one tenant's alias, so name the tenant")
@@ -152,7 +152,7 @@ func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry 
 
 				continue
 			}
-			if err := forgotten(ctx, s.Ent, who, p); err != nil {
+			if err := forgotten(ctx, s.Ent, who, p, cs); err != nil {
 				return err
 			}
 		}
@@ -341,8 +341,8 @@ func NewCmdRestore(c *cmd.Config) *xli.Command {
 	}
 }
 
-func forgotten(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy) error {
-	res, err := forget.Forget(ctx, db, who, p)
+func forgotten(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs audit.Contents) error {
+	res, err := forget.Forget(ctx, db, who, p, cs)
 	if err != nil {
 		return fmt.Errorf("%s: %w", who, err)
 	}

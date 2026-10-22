@@ -193,6 +193,7 @@ func (s ConnectionServiceServer) Add(ctx context.Context, req *rstr.ConnectionAd
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -489,6 +490,7 @@ func (s ConnectionServiceServer) apply(ctx context.Context, ref *rstr.Connection
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -580,6 +582,7 @@ func (s ConnectionServiceServer) Erase(ctx context.Context, req *rstr.Connection
 		p = connection.And(p, connection.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Connection.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())

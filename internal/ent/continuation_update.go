@@ -133,8 +133,14 @@ func (_u *ContinuationUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(continuation.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(continuation.FieldDateUpdated); ok {
+		_spec.SetField(continuation.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(continuation.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(continuation.FieldDateErased); ok {
+		_spec.SetField(continuation.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(continuation.FieldDateErased, field.TypeTime)
@@ -298,8 +304,14 @@ func (_u *ContinuationUpdateOne) sqlSave(ctx context.Context) (_node *Continuati
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(continuation.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(continuation.FieldDateUpdated); ok {
+		_spec.SetField(continuation.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(continuation.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(continuation.FieldDateErased); ok {
+		_spec.SetField(continuation.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(continuation.FieldDateErased, field.TypeTime)

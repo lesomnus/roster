@@ -60,11 +60,14 @@ func (Email) Edges() []ent.Edge {
 
 func (Email) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("tenant_id", "date_created", "id"),
+		index.Fields("tenant_id", "date_created", "id").
+			StorageKey("email_page"),
 		index.Fields("holder_id", "address").
+			StorageKey("email_address").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 		index.Fields("tenant_id", "address").
+			StorageKey("email_at").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}

@@ -158,17 +158,29 @@ func (_u *HostProofUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateExpires(); ok {
 		_spec.SetField(hostproof.FieldDateExpires, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(hostproof.FieldDateExpires); ok {
+		_spec.SetField(hostproof.FieldDateExpires, field.TypeTime, e)
+	}
 	if _u.mutation.DateExpiresCleared() {
 		_spec.ClearField(hostproof.FieldDateExpires, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(hostproof.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(hostproof.FieldDesc); ok {
+		_spec.SetField(hostproof.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(hostproof.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(hostproof.FieldDateUpdated); ok {
+		_spec.SetField(hostproof.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(hostproof.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(hostproof.FieldDateErased); ok {
+		_spec.SetField(hostproof.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(hostproof.FieldDateErased, field.TypeTime)
@@ -357,17 +369,29 @@ func (_u *HostProofUpdateOne) sqlSave(ctx context.Context) (_node *HostProof, er
 	if value, ok := _u.mutation.DateExpires(); ok {
 		_spec.SetField(hostproof.FieldDateExpires, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(hostproof.FieldDateExpires); ok {
+		_spec.SetField(hostproof.FieldDateExpires, field.TypeTime, e)
+	}
 	if _u.mutation.DateExpiresCleared() {
 		_spec.ClearField(hostproof.FieldDateExpires, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(hostproof.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(hostproof.FieldDesc); ok {
+		_spec.SetField(hostproof.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(hostproof.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(hostproof.FieldDateUpdated); ok {
+		_spec.SetField(hostproof.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(hostproof.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(hostproof.FieldDateErased); ok {
+		_spec.SetField(hostproof.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(hostproof.FieldDateErased, field.TypeTime)

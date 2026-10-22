@@ -152,14 +152,26 @@ func (_u *IdentityUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Provider(); ok {
 		_spec.SetField(identity.FieldProvider, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(identity.FieldProvider); ok {
+		_spec.SetField(identity.FieldProvider, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Subject(); ok {
 		_spec.SetField(identity.FieldSubject, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(identity.FieldSubject); ok {
+		_spec.SetField(identity.FieldSubject, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(identity.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(identity.FieldDateUpdated); ok {
+		_spec.SetField(identity.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(identity.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(identity.FieldDateErased); ok {
+		_spec.SetField(identity.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(identity.FieldDateErased, field.TypeTime)
@@ -342,14 +354,26 @@ func (_u *IdentityUpdateOne) sqlSave(ctx context.Context) (_node *Identity, err 
 	if value, ok := _u.mutation.Provider(); ok {
 		_spec.SetField(identity.FieldProvider, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(identity.FieldProvider); ok {
+		_spec.SetField(identity.FieldProvider, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Subject(); ok {
 		_spec.SetField(identity.FieldSubject, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(identity.FieldSubject); ok {
+		_spec.SetField(identity.FieldSubject, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(identity.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(identity.FieldDateUpdated); ok {
+		_spec.SetField(identity.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(identity.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(identity.FieldDateErased); ok {
+		_spec.SetField(identity.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(identity.FieldDateErased, field.TypeTime)

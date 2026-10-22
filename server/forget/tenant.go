@@ -168,7 +168,7 @@ func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Polic
 		if err := notHeld(ctx, db, t); err != nil {
 			return out, err
 		}
-		res, err := Forget(ctx, db, pdid.Id(h), p)
+		res, err := Forget(ctx, db, pdid.Id(h), p, cs)
 		if err != nil {
 			return out, fmt.Errorf("holder %s: %w", pdid.Id(h), err)
 		}
@@ -179,26 +179,43 @@ func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Polic
 		out.Held.Unanswered = append(out.Held.Unanswered, res.Held.Unanswered...)
 	}
 
-	for _, of := range tenanted() {
-		n, err := of.remove(ctx, db, t.Uuid())
-		if err != nil {
-			return out, fmt.Errorf("%s: %w", of.name, err)
-		}
-
-		out.Rows += n
-	}
-
-	// The row stays and stops saying anything about whose it was -- except
-	// its alias, which is held; see `Tenant.date_destroyed`. Written past the
-	// servers, so put on the trail as the act it is, in the same transaction
-	// (payday#108): a check of the rows finds the row a destruction left as it
-	// is, and the trail says that the deployment destroyed it, and when.
+	// Its other rows, and then the row itself, in one transaction that puts
+	// each on the trail as the act it is (payday#108, #115): the rows it
+	// removed with a digest that says they went, so a check of the rows does
+	// not find them things the trail says are rows, and the tenant's row as a
+	// destruction leaves it.
 	tx, err := db.Tx(ctx)
 	if err != nil {
 		return out, err
 	}
 	defer tx.Rollback()
 
+	removed := []pdid.Id{}
+	for _, of := range tenanted() {
+		ids, err := of.ids(ctx, tx.Client(), t.Uuid())
+		if err != nil {
+			return out, fmt.Errorf("%s: %w", of.name, err)
+		}
+		for _, id := range ids {
+			removed = append(removed, pdid.Id(id))
+		}
+
+		n, err := of.remove(ctx, tx.Client(), t.Uuid())
+		if err != nil {
+			return out, fmt.Errorf("%s: %w", of.name, err)
+		}
+
+		out.Rows += n
+	}
+	if _, err := pd.RecordErased(ctx, tx.Client(), cs, DestroyedTenant, removed); err != nil {
+		return out, err
+	}
+
+	// The row stays and stops saying anything about whose it was -- except
+	// its alias, which is held; see `Tenant.date_destroyed`. Written past the
+	// servers, so put on the trail as the act it is: a check of the rows finds
+	// the row a destruction left as it is, and the trail says that the
+	// deployment destroyed it, and when.
 	if err := tx.Tenant.UpdateOneId(t.Uuid()).
 		SetName("").
 		SetDesc("").
@@ -245,6 +262,7 @@ func notHeld(ctx context.Context, db *ent.Client, t pdid.Id) error {
 // The acts this package writes past the servers, as the trail names them.
 const (
 	DestroyedTenant = "roster.tenant.destroy"
+	ForgottenHolder = "roster.holder.forget"
 	RestoredHolder  = "roster.holder.restore"
 )
 
@@ -257,60 +275,92 @@ const (
 // is `TestEveryTenantedTableGoesWithItsTenant`, which holds it to the schema:
 // a table added with a key to a tenant, and not added here, fails there.
 func tenanted() []subject {
-	of := func(name string, remove func(context.Context, *ent.Client, uuid.UUID) (int, error)) subject {
-		return subject{name: name, remove: remove}
+	of := func(name string, ids func(context.Context, *ent.Client, uuid.UUID) ([]uuid.UUID, error), remove func(context.Context, *ent.Client, uuid.UUID) (int, error)) subject {
+		return subject{name: name, ids: ids, remove: remove}
 	}
 
 	return []subject{
 		// What a role, a group or a site reaches. A person's own bindings went
 		// with them; these are the ones written to a group or held in a site.
-		of("binding", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+		of("binding", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+			return db.Binding.Query().Where(binding.Or(
+				binding.HasRoleWith(role.TenantId(k)),
+				binding.HasGroupWith(group.TenantId(k)),
+				binding.HasSiteWith(site.TenantId(k)),
+			)).Ids(ctx)
+		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Binding.Delete().Where(binding.Or(
 				binding.HasRoleWith(role.TenantId(k)),
 				binding.HasGroupWith(group.TenantId(k)),
 				binding.HasSiteWith(site.TenantId(k)),
 			)).Exec(ctx)
 		}),
-		of("team membership", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+		of("team membership", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+			return db.TeamMembership.Query().Where(teammembership.HasTeamWith(team.TenantId(k))).Ids(ctx)
+		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.TeamMembership.Delete().Where(teammembership.HasTeamWith(team.TenantId(k))).Exec(ctx)
 		}),
-		of("team", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+		of("team", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+			return db.Team.Query().Where(team.TenantId(k)).Ids(ctx)
+		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Team.Delete().Where(team.TenantId(k)).Exec(ctx)
 		}),
-		of("group membership", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+		of("group membership", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+			return db.GroupMembership.Query().Where(groupmembership.HasGroupWith(group.TenantId(k))).Ids(ctx)
+		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.GroupMembership.Delete().Where(groupmembership.HasGroupWith(group.TenantId(k))).Exec(ctx)
 		}),
-		of("group exposure", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+		of("group exposure", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+			return db.GroupExposure.Query().Where(groupexposure.HasGroupWith(group.TenantId(k))).Ids(ctx)
+		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.GroupExposure.Delete().Where(groupexposure.HasGroupWith(group.TenantId(k))).Exec(ctx)
 		}),
-		of("group", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+		of("group", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+			return db.Group.Query().Where(group.TenantId(k)).Ids(ctx)
+		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Group.Delete().Where(group.TenantId(k)).Exec(ctx)
 		}),
-		of("site membership", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+		of("site membership", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+			return db.SiteMembership.Query().Where(sitemembership.HasSiteWith(site.TenantId(k))).Ids(ctx)
+		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.SiteMembership.Delete().Where(sitemembership.HasSiteWith(site.TenantId(k))).Exec(ctx)
 		}),
-		of("role", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+		of("role", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+			return db.Role.Query().Where(role.TenantId(k)).Ids(ctx)
+		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Role.Delete().Where(role.TenantId(k)).Exec(ctx)
 		}),
-		of("site", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+		of("site", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+			return db.Site.Query().Where(site.TenantId(k)).Ids(ctx)
+		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Site.Delete().Where(site.TenantId(k)).Exec(ctx)
 		}),
 		// The ways the tenant was reached from outside: who answered as which
 		// app here, its directories, and its names. A hostname needs proof to
 		// be taken again (#42), so it is freed at once and not held.
-		of("nomination", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+		of("nomination", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+			return db.Nomination.Query().Where(nomination.TenantId(k)).Ids(ctx)
+		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Nomination.Delete().Where(nomination.TenantId(k)).Exec(ctx)
 		}),
-		of("connection", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+		of("connection", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+			return db.Connection.Query().Where(connection.TenantId(k)).Ids(ctx)
+		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Connection.Delete().Where(connection.TenantId(k)).Exec(ctx)
 		}),
-		of("mail domain", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+		of("mail domain", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+			return db.MailDomain.Query().Where(maildomain.TenantId(k)).Ids(ctx)
+		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.MailDomain.Delete().Where(maildomain.TenantId(k)).Exec(ctx)
 		}),
-		of("host proof", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+		of("host proof", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+			return db.HostProof.Query().Where(hostproof.TenantId(k)).Ids(ctx)
+		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.HostProof.Delete().Where(hostproof.TenantId(k)).Exec(ctx)
 		}),
-		of("host", func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+		of("host", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+			return db.Host.Query().Where(host.TenantId(k)).Ids(ctx)
+		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Host.Delete().Where(host.TenantId(k)).Exec(ctx)
 		}),
 	}

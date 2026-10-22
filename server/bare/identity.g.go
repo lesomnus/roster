@@ -180,6 +180,7 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddReq
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -459,6 +460,7 @@ func (s IdentityServiceServer) apply(ctx context.Context, ref *rstr.IdentityRef,
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -550,6 +552,7 @@ func (s IdentityServiceServer) Erase(ctx context.Context, req *rstr.IdentityRef)
 		p = identity.And(p, identity.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Identity.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())

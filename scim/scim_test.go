@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdtest"
@@ -346,7 +347,7 @@ func TestSomebodyErasedHereIsNeitherFoundNorMadeUntilForgotten(t *testing.T) {
 	x.Equal(http.StatusConflict, code, "%v", got)
 	x.Equal("uniqueness", got["scimType"])
 
-	_, err = forget.Forget(ctx, d.s.Ent, k, trail.Policy{})
+	_, err = forget.Forget(ctx, d.s.Ent, k, trail.Policy{}, audit.Contents{})
 	x.NoError(err)
 	code, got, _ = d.call(t, d.key, http.MethodPost, scim.Base+"/Users", erin())
 	x.Equal(http.StatusCreated, code, "%v", got)

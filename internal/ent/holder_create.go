@@ -197,13 +197,18 @@ func (_c *HolderCreate) ExecX(ctx context.Context) {
 // defaults sets the default values of the builder before save.
 func (_c *HolderCreate) defaults() {
 	if _, ok := _c.mutation.Directory(); !ok {
-		v := holder.DefaultDirectory
-		_c.mutation.SetDirectory(v)
+		if _, ok := _c.mutation.FieldExpr(holder.FieldDirectory); !ok {
+			v := holder.DefaultDirectory
+			_c.mutation.SetDirectory(v)
+		}
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *HolderCreate) check() error {
+	if fs := _c.mutation.ExprFields(); len(fs) > 0 {
+		return &ValidationError{Name: fs[0], err: fmt.Errorf(`ent: field "Holder.%s" was assigned an expression, which only an update writes`, fs[0])}
+	}
 	if _, ok := _c.mutation.Alias(); !ok {
 		return &ValidationError{Name: "alias", err: errors.New(`ent: missing required field "Holder.alias"`)}
 	}

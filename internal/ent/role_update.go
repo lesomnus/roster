@@ -197,20 +197,35 @@ func (_u *RoleUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(role.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(role.FieldAlias); ok {
+		_spec.SetField(role.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(role.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(role.FieldName); ok {
+		_spec.SetField(role.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(role.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(role.FieldDesc); ok {
+		_spec.SetField(role.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(role.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(role.FieldLabels); ok {
+		_spec.SetField(role.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(role.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Methods(); ok {
 		_spec.SetField(role.FieldMethods, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(role.FieldMethods); ok {
+		_spec.SetField(role.FieldMethods, field.TypeJson, e)
 	}
 	if value, ok := _u.mutation.AppendedMethods(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -223,8 +238,14 @@ func (_u *RoleUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(role.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(role.FieldDateUpdated); ok {
+		_spec.SetField(role.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(role.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(role.FieldDateErased); ok {
+		_spec.SetField(role.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(role.FieldDateErased, field.TypeTime)
@@ -451,20 +472,35 @@ func (_u *RoleUpdateOne) sqlSave(ctx context.Context) (_node *Role, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(role.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(role.FieldAlias); ok {
+		_spec.SetField(role.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(role.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(role.FieldName); ok {
+		_spec.SetField(role.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(role.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(role.FieldDesc); ok {
+		_spec.SetField(role.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(role.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(role.FieldLabels); ok {
+		_spec.SetField(role.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(role.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Methods(); ok {
 		_spec.SetField(role.FieldMethods, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(role.FieldMethods); ok {
+		_spec.SetField(role.FieldMethods, field.TypeJson, e)
 	}
 	if value, ok := _u.mutation.AppendedMethods(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -477,8 +513,14 @@ func (_u *RoleUpdateOne) sqlSave(ctx context.Context) (_node *Role, err error) {
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(role.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(role.FieldDateUpdated); ok {
+		_spec.SetField(role.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(role.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(role.FieldDateErased); ok {
+		_spec.SetField(role.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(role.FieldDateErased, field.TypeTime)

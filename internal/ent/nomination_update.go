@@ -180,17 +180,29 @@ func (_u *NominationUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(nomination.FieldLabels, field.TypeJson, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(nomination.FieldLabels); ok {
+		_spec.SetField(nomination.FieldLabels, field.TypeJson, e)
+	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(nomination.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(nomination.FieldName, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(nomination.FieldName); ok {
+		_spec.SetField(nomination.FieldName, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(nomination.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(nomination.FieldDateUpdated); ok {
+		_spec.SetField(nomination.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(nomination.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(nomination.FieldDateErased); ok {
+		_spec.SetField(nomination.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(nomination.FieldDateErased, field.TypeTime)
@@ -428,17 +440,29 @@ func (_u *NominationUpdateOne) sqlSave(ctx context.Context) (_node *Nomination, 
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(nomination.FieldLabels, field.TypeJson, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(nomination.FieldLabels); ok {
+		_spec.SetField(nomination.FieldLabels, field.TypeJson, e)
+	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(nomination.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(nomination.FieldName, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(nomination.FieldName); ok {
+		_spec.SetField(nomination.FieldName, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(nomination.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(nomination.FieldDateUpdated); ok {
+		_spec.SetField(nomination.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(nomination.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(nomination.FieldDateErased); ok {
+		_spec.SetField(nomination.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(nomination.FieldDateErased, field.TypeTime)

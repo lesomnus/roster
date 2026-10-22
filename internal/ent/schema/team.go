@@ -55,8 +55,10 @@ func (Team) Edges() []ent.Edge {
 
 func (Team) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("tenant_id", "date_created", "id"),
+		index.Fields("tenant_id", "date_created", "id").
+			StorageKey("team_page"),
 		index.Fields("alias", "site_id").
+			StorageKey("team_slug").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}

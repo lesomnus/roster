@@ -259,14 +259,26 @@ func (_u *CredentialUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(credential.FieldName, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldName); ok {
+		_spec.SetField(credential.FieldName, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Kind(); ok {
 		_spec.SetField(credential.FieldKind, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldKind); ok {
+		_spec.SetField(credential.FieldKind, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Secret(); ok {
 		_spec.SetField(credential.FieldSecret, field.TypeBytes, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldSecret); ok {
+		_spec.SetField(credential.FieldSecret, field.TypeBytes, e)
+	}
 	if value, ok := _u.mutation.Failures(); ok {
 		_spec.SetField(credential.FieldFailures, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldFailures); ok {
+		_spec.SetField(credential.FieldFailures, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedFailures(); ok {
 		_spec.AddField(credential.FieldFailures, field.TypeInt32, value)
@@ -274,11 +286,17 @@ func (_u *CredentialUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.DateLocked(); ok {
 		_spec.SetField(credential.FieldDateLocked, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldDateLocked); ok {
+		_spec.SetField(credential.FieldDateLocked, field.TypeTime, e)
+	}
 	if _u.mutation.DateLockedCleared() {
 		_spec.ClearField(credential.FieldDateLocked, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateRotated(); ok {
 		_spec.SetField(credential.FieldDateRotated, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldDateRotated); ok {
+		_spec.SetField(credential.FieldDateRotated, field.TypeTime, e)
 	}
 	if _u.mutation.DateRotatedCleared() {
 		_spec.ClearField(credential.FieldDateRotated, field.TypeTime)
@@ -286,11 +304,17 @@ func (_u *CredentialUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.LastStep(); ok {
 		_spec.SetField(credential.FieldLastStep, field.TypeInt64, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldLastStep); ok {
+		_spec.SetField(credential.FieldLastStep, field.TypeInt64, e)
+	}
 	if value, ok := _u.mutation.AddedLastStep(); ok {
 		_spec.AddField(credential.FieldLastStep, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.Previous(); ok {
 		_spec.SetField(credential.FieldPrevious, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldPrevious); ok {
+		_spec.SetField(credential.FieldPrevious, field.TypeJson, e)
 	}
 	if value, ok := _u.mutation.AppendedPrevious(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -303,8 +327,14 @@ func (_u *CredentialUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(credential.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldDateUpdated); ok {
+		_spec.SetField(credential.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(credential.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldDateErased); ok {
+		_spec.SetField(credential.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(credential.FieldDateErased, field.TypeTime)
@@ -593,14 +623,26 @@ func (_u *CredentialUpdateOne) sqlSave(ctx context.Context) (_node *Credential, 
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(credential.FieldName, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldName); ok {
+		_spec.SetField(credential.FieldName, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Kind(); ok {
 		_spec.SetField(credential.FieldKind, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldKind); ok {
+		_spec.SetField(credential.FieldKind, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Secret(); ok {
 		_spec.SetField(credential.FieldSecret, field.TypeBytes, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldSecret); ok {
+		_spec.SetField(credential.FieldSecret, field.TypeBytes, e)
+	}
 	if value, ok := _u.mutation.Failures(); ok {
 		_spec.SetField(credential.FieldFailures, field.TypeInt32, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldFailures); ok {
+		_spec.SetField(credential.FieldFailures, field.TypeInt32, e)
 	}
 	if value, ok := _u.mutation.AddedFailures(); ok {
 		_spec.AddField(credential.FieldFailures, field.TypeInt32, value)
@@ -608,11 +650,17 @@ func (_u *CredentialUpdateOne) sqlSave(ctx context.Context) (_node *Credential, 
 	if value, ok := _u.mutation.DateLocked(); ok {
 		_spec.SetField(credential.FieldDateLocked, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldDateLocked); ok {
+		_spec.SetField(credential.FieldDateLocked, field.TypeTime, e)
+	}
 	if _u.mutation.DateLockedCleared() {
 		_spec.ClearField(credential.FieldDateLocked, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateRotated(); ok {
 		_spec.SetField(credential.FieldDateRotated, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldDateRotated); ok {
+		_spec.SetField(credential.FieldDateRotated, field.TypeTime, e)
 	}
 	if _u.mutation.DateRotatedCleared() {
 		_spec.ClearField(credential.FieldDateRotated, field.TypeTime)
@@ -620,11 +668,17 @@ func (_u *CredentialUpdateOne) sqlSave(ctx context.Context) (_node *Credential, 
 	if value, ok := _u.mutation.LastStep(); ok {
 		_spec.SetField(credential.FieldLastStep, field.TypeInt64, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldLastStep); ok {
+		_spec.SetField(credential.FieldLastStep, field.TypeInt64, e)
+	}
 	if value, ok := _u.mutation.AddedLastStep(); ok {
 		_spec.AddField(credential.FieldLastStep, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.Previous(); ok {
 		_spec.SetField(credential.FieldPrevious, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldPrevious); ok {
+		_spec.SetField(credential.FieldPrevious, field.TypeJson, e)
 	}
 	if value, ok := _u.mutation.AppendedPrevious(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -637,8 +691,14 @@ func (_u *CredentialUpdateOne) sqlSave(ctx context.Context) (_node *Credential, 
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(credential.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldDateUpdated); ok {
+		_spec.SetField(credential.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(credential.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(credential.FieldDateErased); ok {
+		_spec.SetField(credential.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(credential.FieldDateErased, field.TypeTime)

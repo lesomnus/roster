@@ -124,8 +124,14 @@ func (_u *GroupExposureUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(groupexposure.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(groupexposure.FieldDateUpdated); ok {
+		_spec.SetField(groupexposure.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(groupexposure.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(groupexposure.FieldDateErased); ok {
+		_spec.SetField(groupexposure.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(groupexposure.FieldDateErased, field.TypeTime)
@@ -280,8 +286,14 @@ func (_u *GroupExposureUpdateOne) sqlSave(ctx context.Context) (_node *GroupExpo
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(groupexposure.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(groupexposure.FieldDateUpdated); ok {
+		_spec.SetField(groupexposure.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(groupexposure.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(groupexposure.FieldDateErased); ok {
+		_spec.SetField(groupexposure.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(groupexposure.FieldDateErased, field.TypeTime)

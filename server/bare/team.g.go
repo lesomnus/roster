@@ -200,6 +200,7 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -484,6 +485,7 @@ func (s TeamServiceServer) apply(ctx context.Context, ref *rstr.TeamRef, doc *pa
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -575,6 +577,7 @@ func (s TeamServiceServer) Erase(ctx context.Context, req *rstr.TeamRef) (*rstr.
 		p = team.And(p, team.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Team.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())

@@ -313,7 +313,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// the servers that do the writing, since every RPC that changes anything
 	// has to report itself from inside the transaction that changes it. The
 	// wall is a predicate and a predicate belongs in the WHERE.
-	b, err := c.Watch.Build(c.Db)
+	b, err := c.Watch.Build(ctx, c.Db)
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -505,7 +505,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// the people in them are who this is for.
 	if c.SignIn.Enabled {
 		s.People = authsession.New(session.New(client))
-		s.Spin = append(s.Spin, loop(prefix, "sessions", session.Sweep(client, session.Swept)))
+		s.Spin = append(s.Spin, loop(prefix, "sessions", session.Sweep(client, content, session.Swept)))
 
 		// And with no control plane there is no chain below to join, so this
 		// is the whole of one: a cookie, and then whatever a deployment that
@@ -675,7 +675,15 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		//
 		// Named as the control plane's, whose rows it collects, though it is
 		// appended by this one.
-		s.Spin = append(s.Spin, loop(keys.PrefixDeployment, "sessions", session.Sweep(control.Ent, session.Swept)))
+		//
+		// What it records of a session it collects is what the control plane's
+		// own recorder is handed: `contentOf`, which keeps no digest.
+		controlContent, err := contentOf(c.Audit).Contents()
+		if err != nil {
+			db.Close()
+			return nil, err
+		}
+		s.Spin = append(s.Spin, loop(keys.PrefixDeployment, "sessions", session.Sweep(control.Ent, controlContent, session.Swept)))
 
 		// A console's cookie in front of a service's key, and **on this plane
 		// only**.
@@ -712,11 +720,11 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// grows one of these rows and has no sweep is a table that grows silently,
 	// and that is the failure worth being wrong towards.
 	s.Spin = append(s.Spin,
-		loop(prefix, "keys", keys.Sweep(s.Ent, keys.Swept)),
-		loop(prefix, "vouch", vouch.Sweep(s.Ent, vouch.Swept)),
+		loop(prefix, "keys", keys.Sweep(s.Ent, content, keys.Swept)),
+		loop(prefix, "vouch", vouch.Sweep(s.Ent, content, vouch.Swept)),
 		// And abandoned hostname claims, which arrive at human speed rather
 		// than per sign-in -- so a day rather than the hour the two above use.
-		loop(prefix, "prove", prove.Sweep(s.Ent, prove.Swept)),
+		loop(prefix, "prove", prove.Sweep(s.Ent, content, prove.Swept)),
 	)
 
 	// And the trail's retention, which is the one sweep here that is a
@@ -734,7 +742,10 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// that is the direction to be wrong in: the failure of a sweep that does
 	// not exist is a table that grows, and the failure of one that does is
 	// evidence that is gone.
-	p, err := c.Audit.Policy()
+	//
+	// With the deployment's lease on it, for the turns the passes take with
+	// what erases from the trail beside them; see [TrailPolicy].
+	p, err := TrailPolicy(ctx, c)
 	if err != nil {
 		db.Close()
 
@@ -769,7 +780,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 
 		// The trail's own policy, so that what it erases of somebody answers
 		// to the same holds the retention sweep does.
-		s.Spin = append(s.Spin, loop(prefix, "forget", forget.Sweep(s.Ent, c.Holder.ForgetAfter, p, c.Holder.Every)))
+		s.Spin = append(s.Spin, loop(prefix, "forget", forget.Sweep(s.Ent, c.Holder.ForgetAfter, p, content, c.Holder.Every)))
 	}
 
 	// And a tenant's, one level up (#98): the closed whose grace has run out,
@@ -921,7 +932,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 		With(s.policyInterceptors()).
 		WithUnary(auth.InterceptorUnary(h, r, Public)).
 		WithStream(auth.InterceptorStream(h, r, Public)).
-		WithUnary(grpcx.LimitUnary(rate, gate.ByTenant())).
+		WithUnary(grpcx.LimitUnary(rate, gate.ByTenant(), pd.Cost)).
 		WithStream(grpcx.LimitStream(rate, gate.ByTenant())).
 		With(s.accessed().Interceptor()).
 		With(gate.Interceptor(Policy(s.Ent, s.policySources...))).
@@ -1055,7 +1066,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 		// A deployment that closed nothing, limits nothing and has no policy.
 		// It is a real thing to be and it is also what a guard nobody filled in
 		// looks like, so the batch is not served rather than served open.
-		log.From(ctx).WarnContext(ctx, "no batch", slog.String("why", err.Error()))
+		log.From(ctx).WarnContext(ctx, "no batch", slog.Any("err", err))
 	}
 
 	return g, nil
@@ -1692,7 +1703,7 @@ func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *
 	srv := &http.Server{Handler: Arrived(h)}
 	go func() {
 		if err := srv.Serve(l); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.From(ctx).ErrorContext(ctx, name, slog.String("err", err.Error()))
+			log.From(ctx).ErrorContext(ctx, name, slog.Any("err", err))
 		}
 	}()
 
