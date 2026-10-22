@@ -498,33 +498,50 @@ func TestTheTenantSweepDestroysAndReleases(t *testing.T) {
 	closes(t, ctx, b.Ungated, b.Contoso)
 	x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(time.Now().Add(-2 * time.Hour)).Exec(ctx))
 
-	pass := func(within, hold time.Duration) {
+	// And one an operator began destroying and that stopped part way, which a
+	// pass finishes whatever the window -- so that a pass with none has
+	// something to be seen to have done.
+	halfway := b.tenant(t, ctx, "halfway")
+	b.holder(t, ctx, halfway, "left")
+	closes(t, ctx, b.Ungated, halfway)
+	x.NoError(b.Ent.Tenant.UpdateOneId(halfway.Uuid()).SetDateDestroyed(time.Now()).Exec(ctx))
+
+	contoso := func() *ent.Tenant {
+		t.Helper()
+		v, err := b.Ent.Tenant.Get(ctx, b.Contoso.Uuid())
+		x.NoError(err)
+
+		return v
+	}
+
+	// One pass runs at once; it is waited for by what it does, and then the
+	// loop is stopped. It waited a fixed time, which a suite under load on
+	// PostgreSQL outran.
+	pass := func(within, hold time.Duration, done func() bool, why string) {
 		t.Helper()
 		ctx, stop := context.WithCancel(ctx)
 		f := forget.SweepTenants(b.Ent, b.Ungated, within, hold, trail.Policy{}, audit.Contents{}, time.Hour)
-		done := make(chan struct{})
-		go func() { defer close(done); _ = f(ctx) }()
-		// One pass runs at once; wait for its effect, then stop the loop.
-		time.Sleep(200 * time.Millisecond)
+		over := make(chan struct{})
+		go func() { defer close(over); _ = f(ctx) }()
+		x.Eventually(done, 30*time.Second, 10*time.Millisecond, why)
 		stop()
-		<-done
+		<-over
 	}
 
-	pass(0, time.Hour)
-	v, err := b.Ent.Tenant.Get(ctx, b.Contoso.Uuid())
-	x.NoError(err)
-	x.Nil(v.DateDestroyed, "with no window, destroying is an operator's act")
+	pass(0, time.Hour, func() bool {
+		vs, err := forget.Unfinished(ctx, b.Ent)
+		x.NoError(err)
 
-	pass(time.Hour, time.Hour)
-	v, err = b.Ent.Tenant.Get(ctx, b.Contoso.Uuid())
-	x.NoError(err)
-	x.NotNil(v.DateDestroyed, "the grace ran out and nothing destroyed it")
-	x.Equal("contoso", v.Alias)
+		return len(vs) == 0
+	}, "a destruction that stopped part way was not finished")
+	x.Nil(contoso().DateDestroyed, "with no window, destroying is an operator's act")
 
-	pass(time.Hour, time.Nanosecond)
-	v, err = b.Ent.Tenant.Get(ctx, b.Contoso.Uuid())
-	x.NoError(err)
-	x.Equal(forget.Gone(b.Contoso), v.Alias, "the hold ran out and the name was not released")
+	pass(time.Hour, time.Hour, func() bool { return contoso().DateDestroyed != nil },
+		"the grace ran out and nothing destroyed it")
+	x.Equal("contoso", contoso().Alias)
+
+	pass(time.Hour, time.Nanosecond, func() bool { return contoso().Alias == forget.Gone(b.Contoso) },
+		"the hold ran out and the name was not released")
 }
 
 // TestATenantClosingIsHeardOnEachOfItsPeople: what an app holds is sessions for

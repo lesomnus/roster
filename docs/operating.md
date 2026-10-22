@@ -1816,6 +1816,16 @@ PDTEST_POSTGRES=postgres://roster:...@localhost:5432/roster?sslmode=disable \
 Worth running before anything that touches spending a handle: a continuation, a
 link, a delegation. `postgres:18` as it comes is enough.
 
+And under the race detector, for anything two callers can reach at once. The
+tests that race callers against each other -- in `cmd` -- check what the database
+ends with, and that can be right while the code races on the way there; CI's
+`race` job runs them this way on every push:
+
+```sh
+PDTEST_POSTGRES=postgres://roster:...@localhost:5432/roster?sslmode=disable \
+  go test -race -count=1 -timeout 30m ./cmd/
+```
+
 ## Talking to it over TLS
 
 A key travels on **every call**, so a cleartext connection between two machines has
