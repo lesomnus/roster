@@ -377,22 +377,49 @@ for it by name -- every round trip to it does -- and only where the app's Google
 project lets it ([operating.md](../operating.md#google)): a sign-in through
 Google counts when Google has just asked them, which it does in a browser it has
 not signed in, and never where the project does not let it say. Somebody whose
-ways in are those signs in with a password instead -- and a first password of
-their own asks for what deleting does, a sign-in a few minutes old
-(`CredentialService/Set`), so the session that could not delete cannot get them
-one either: a way in that outlives the session asking for it is worth more to
-whoever holds that session than the deletion was. Their road is a **recovery
-link**. Mailed to an address on their account that somebody proved, it hands
-them a password, and a sign-in with it is a moment ago, so they can delete at
-once, or set the password they want. The account page names that road when it
-refuses them, where one can be had.
+ways in are those signs in with a password instead, where they have one -- and a
+first password of their own asks for what deleting does, a sign-in a few minutes
+old (`CredentialService/Set`), so the session that could not delete cannot get
+them one either: a way in that outlives the session asking for it is worth more
+to whoever holds that session than the deletion was.
 
-And that is where the cost lands. A link can be had only where the tenant offers
-passwords -- a link ends in one (`vouch.Offers`) -- and where the deployment can
-send mail, to an address that was checked. In a tenant that offers no
-passwords, or a deployment with no mail, somebody whose only way in is GitHub,
-or Google without the setting, cannot delete their own account: whoever runs
-the tenant does it for them (`roster holder erase`).
+Their road is a **link that deletes the account**, and does nothing else. The
+account page offers it when it refuses them, and mails it to an address on
+their account that somebody proved: `VouchService.LeaveLink`, which the front
+door asks about the person signed in at it, for the address they pick. It lasts
+a quarter of an hour (`server/vouch.LeaveFor`, the recovery link's window, for
+the recovery link's reason), and following it opens a page that asks for their
+alias, typed, before anything happens -- so a mail client previewing the link,
+or a scanner following every link in a message, deletes nothing. The answer
+spends it (`VouchService.Leave`), and they leave as `Leave` would have them
+leave: signed out everywhere, erased as themselves, restorable by the operator
+until they are forgotten.
+
+It is held to every rule `Leave` asks but the age of a sign-in, which the
+mailbox has just proved instead: the tenant offers leaving, its directory does
+not provision them, no file declares them. Those are asked when the link is
+minted, so that nothing is mailed that could not be spent, and again when it is
+spent, since anything may have changed in between; a mistyped alias, or any
+other refusal, leaves the link unspent. The address has to still be theirs and
+still proved when it is spent. And it signs nobody in: it mints no delegation,
+no session and no password, and the doors the other links are spent at --
+`Vouch.Redeem`, the user console, `Email.Confirm` -- each refuse it. A caller
+allowed both methods can delete anybody it can see, which is why they are a
+front door's grant and nobody's own; from a shell, as the front door's key,
+they are `roster vouch leave-link` and `roster vouch leave`.
+
+A **recovery link**, where the tenant offers passwords, is the longer way round:
+it hands them a password, and a sign-in with it is a moment ago. It is a way in,
+to somebody who wants to leave, which is why the page offers the other link
+instead.
+
+And that is where the cost lands. A link can be had only where the deployment
+can send mail -- the account app's `Config.Mail`, which nothing in `roster
+account serve` fills: roster sends no mail, so the front door as it ships has
+none to send with -- and only to an address that was checked. Where it cannot,
+somebody whose only way in is GitHub, or Google without the setting, cannot
+delete their own account, the account page says so, and whoever runs the tenant
+does it for them (`roster holder erase`).
 
 From a terminal it is a key handed over in a browser, which carries **the
 browser's** sign-in:

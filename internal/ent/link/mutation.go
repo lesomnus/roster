@@ -18,6 +18,7 @@ type Mutation struct {
 	op            ent.Op
 	typ           string
 	at            *string
+	leave         *bool
 	secret        *[]byte
 	issuer        *[]byte
 	date_expires  *time.Time
@@ -64,6 +65,39 @@ func (m *Mutation) At() (r string, exists bool) {
 // ResetAt resets all changes to the "at" field.
 func (m *Mutation) ResetAt() {
 	m.at = nil
+}
+
+// SetLeave sets the "leave" field.
+func (m *Mutation) SetLeave(b bool) {
+	m.leave = &b
+	delete(m.clearedFields, FieldLeave)
+}
+
+// Leave returns the value of the "leave" field in the mutation.
+func (m *Mutation) Leave() (r bool, exists bool) {
+	v := m.leave
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearLeave clears the value of the "leave" field.
+func (m *Mutation) ClearLeave() {
+	m.leave = nil
+	m.clearedFields[FieldLeave] = struct{}{}
+}
+
+// LeaveCleared returns if the "leave" field was cleared in this mutation.
+func (m *Mutation) LeaveCleared() bool {
+	_, ok := m.clearedFields[FieldLeave]
+	return ok
+}
+
+// ResetLeave resets all changes to the "leave" field.
+func (m *Mutation) ResetLeave() {
+	m.leave = nil
+	delete(m.clearedFields, FieldLeave)
 }
 
 // SetSecret sets the "secret" field.
@@ -367,9 +401,12 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.at != nil {
 		fields = append(fields, FieldAt)
+	}
+	if m.leave != nil {
+		fields = append(fields, FieldLeave)
 	}
 	if m.secret != nil {
 		fields = append(fields, FieldSecret)
@@ -411,6 +448,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case FieldAt:
 		return m.At()
+	case FieldLeave:
+		return m.Leave()
 	case FieldSecret:
 		return m.Secret()
 	case FieldIssuer:
@@ -455,6 +494,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetAt(v)
+		return nil
+	case FieldLeave:
+		v, ok := value.(bool)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLeave(v)
 		return nil
 	case FieldSecret:
 		v, ok := value.([]byte)
@@ -560,6 +609,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 	switch name {
 	case FieldAt:
 		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
+	case FieldLeave:
+		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
 	case FieldSecret:
 		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
 	case FieldIssuer:
@@ -632,6 +683,9 @@ func (m *Mutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *Mutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(FieldLeave) {
+		fields = append(fields, FieldLeave)
+	}
 	if m.FieldCleared(FieldDateExpires) {
 		fields = append(fields, FieldDateExpires)
 	}
@@ -658,6 +712,9 @@ func (m *Mutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *Mutation) ClearField(name string) error {
 	switch name {
+	case FieldLeave:
+		m.ClearLeave()
+		return nil
 	case FieldDateExpires:
 		m.ClearDateExpires()
 		return nil
@@ -680,6 +737,9 @@ func (m *Mutation) ResetField(name string) error {
 	switch name {
 	case FieldAt:
 		m.ResetAt()
+		return nil
+	case FieldLeave:
+		m.ResetLeave()
 		return nil
 	case FieldSecret:
 		m.ResetSecret()

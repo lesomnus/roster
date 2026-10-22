@@ -14,6 +14,8 @@ const (
 	FieldId = "id"
 	// FieldAt holds the string denoting the at field in the database.
 	FieldAt = "at"
+	// FieldLeave holds the string denoting the leave field in the database.
+	FieldLeave = "leave"
 	// FieldSecret holds the string denoting the secret field in the database.
 	FieldSecret = "secret"
 	// FieldIssuer holds the string denoting the issuer field in the database.
@@ -56,6 +58,7 @@ const (
 var Columns = []string{
 	FieldId,
 	FieldAt,
+	FieldLeave,
 	FieldSecret,
 	FieldIssuer,
 	FieldDateExpires,
@@ -76,6 +79,11 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+var (
+	// DefaultLeave holds the default value on creation for the "leave" field.
+	DefaultLeave bool
+)
+
 // OrderOption defines the ordering options for the Link queries.
 type OrderOption func(*sql.Selector)
 
@@ -87,6 +95,11 @@ func ById(opts ...sql.OrderTermOption) OrderOption {
 // ByAt orders the results by the at field.
 func ByAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAt, opts...).ToFunc()
+}
+
+// ByLeave orders the results by the leave field.
+func ByLeave(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLeave, opts...).ToFunc()
 }
 
 // ByDateExpires orders the results by the date_expires field.

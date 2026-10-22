@@ -11,7 +11,9 @@ import "payday.proto";
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/roster/rstr";
 
-// Link is a way in that roster mints and somebody else delivers.
+// Link is a way in that roster mints and somebody else delivers -- or, for two
+// of its four kinds, a proof of a mailbox that lets nobody in: an address
+// confirmed (`email`), and an account deleted (`leave`).
 //
 // A magic link, and the machine behind a recovery: *a single-use opaque nonce
 // roster mints and roster checks, delivered by somebody else.* D19 admits it for
@@ -81,6 +83,37 @@ message Link {
   // link that names none. A discriminator read on one side is not one --
   // `email` above learned that the hard way.
   string at = 8 [(orm.field) = {immutable: true}];
+
+  // Whether this link confirms its holder **leaving**, and nothing else: the
+  // fourth kind, `Vouch.LeaveLink`'s, spent by `Vouch.Leave`.
+  //
+  // # What it is for
+  //
+  // Deleting your own account asks that you proved who you are a few minutes
+  // ago (`MeService.Leave`), and some ways in never can: GitHub says no time at
+  // all, and Google says one only where its project lets it. In a tenant whose
+  // people have no password to sign in with again, that left deleting such an
+  // account to whoever runs the tenant. This is the road for them: a link
+  // mailed to an address of theirs somebody proved, which proves the mailbox a
+  // moment ago, and for **one** purpose.
+  //
+  // # Worth less than every other kind
+  //
+  // It signs nobody in: no delegation, no session, no password -- what it ends
+  // in is the account's erase, after the alias typed and every rule `Leave`
+  // asks but the age of a sign-in, which this is instead. So every other door
+  // refuses it -- `Vouch.Redeem`, the user console's `SpendAt`, `Email.Confirm`
+  // -- and `Vouch.Leave` refuses every link that is not one. It carries the
+  // `email` it was mailed to as well, so that an address taken off the account
+  // since, or no longer proved, is no proof of anything; and that edge is why
+  // `Email.Confirm` has to read this column too, since it is the door that
+  // spends a link naming an address.
+  //
+  // False by default, which is every link minted before the kind existed.
+  bool leave = 16 [(orm.field) = {
+    immutable: true
+    default: "false"
+  }];
 
   // The verifier, never the link -- the shape `ApiKey` argued and every
   // short-lived thing here has repeated: 256 bits from `crypto/rand` have no

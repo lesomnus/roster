@@ -831,6 +831,7 @@ var (
 	LinkColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "at", Type: field.TypeString},
+		{Name: "leave", Type: field.TypeBool, Nullable: true, Default: false},
 		{Name: "secret", Type: field.TypeBytes},
 		{Name: "issuer", Type: field.TypeBytes},
 		{Name: "date_expires", Type: field.TypeTime, Nullable: true},
@@ -848,13 +849,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "link_holder_holder",
-				Columns:    []*schema.Column{LinkColumns[8]},
+				Columns:    []*schema.Column{LinkColumns[9]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "link_email_email",
-				Columns:    []*schema.Column{LinkColumns[9]},
+				Columns:    []*schema.Column{LinkColumns[10]},
 				RefColumns: []*schema.Column{EmailColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -863,12 +864,12 @@ var (
 			{
 				Name:    "link_page",
 				Unique:  false,
-				Columns: []*schema.Column{LinkColumns[7], LinkColumns[0]},
+				Columns: []*schema.Column{LinkColumns[8], LinkColumns[0]},
 			},
 			{
 				Name:    "link_secret",
 				Unique:  true,
-				Columns: []*schema.Column{LinkColumns[2]},
+				Columns: []*schema.Column{LinkColumns[3]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

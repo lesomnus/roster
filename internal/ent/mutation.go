@@ -5739,6 +5739,23 @@ func (m *LinkMutation) OldAt(ctx context.Context) (v string, err error) {
 	return oldValue.At, nil
 }
 
+// OldLeave returns the old "leave" field's value of the Link entity.
+// If the Link object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LinkMutation) OldLeave(ctx context.Context) (v bool, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLeave is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLeave requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLeave: %w", err)
+	}
+	return oldValue.Leave, nil
+}
+
 // OldSecret returns the old "secret" field's value of the Link entity.
 // If the Link object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -5882,6 +5899,8 @@ func (m *LinkMutation) OldField(ctx context.Context, name string) (ent.Value, er
 	switch name {
 	case link.FieldAt:
 		return m.OldAt(ctx)
+	case link.FieldLeave:
+		return m.OldLeave(ctx)
 	case link.FieldSecret:
 		return m.OldSecret(ctx)
 	case link.FieldIssuer:

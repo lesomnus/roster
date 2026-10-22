@@ -19,12 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	VouchService_Verify_FullMethodName   = "/roster.VouchService/Verify"
-	VouchService_Delegate_FullMethodName = "/roster.VouchService/Delegate"
-	VouchService_Link_FullMethodName     = "/roster.VouchService/Link"
-	VouchService_Redeem_FullMethodName   = "/roster.VouchService/Redeem"
-	VouchService_Continue_FullMethodName = "/roster.VouchService/Continue"
-	VouchService_Accept_FullMethodName   = "/roster.VouchService/Accept"
+	VouchService_Verify_FullMethodName    = "/roster.VouchService/Verify"
+	VouchService_Delegate_FullMethodName  = "/roster.VouchService/Delegate"
+	VouchService_Link_FullMethodName      = "/roster.VouchService/Link"
+	VouchService_Redeem_FullMethodName    = "/roster.VouchService/Redeem"
+	VouchService_LeaveLink_FullMethodName = "/roster.VouchService/LeaveLink"
+	VouchService_Leave_FullMethodName     = "/roster.VouchService/Leave"
+	VouchService_Continue_FullMethodName  = "/roster.VouchService/Continue"
+	VouchService_Accept_FullMethodName    = "/roster.VouchService/Accept"
 )
 
 // VouchServiceClient is the client API for VouchService service.
@@ -146,6 +148,71 @@ type VouchServiceClient interface {
 	// password, because a link that skipped one would be a way to turn a mailbox
 	// into an account.
 	Redeem(ctx context.Context, in *VouchRedeemRequest, opts ...grpc.CallOption) (*VouchDelegateResponse, error)
+	// LeaveLink mints a link that confirms one person **leaving**, and answers
+	// with it once, for the front door to mail to an address of theirs that
+	// somebody proved.
+	//
+	// # Who it is for
+	//
+	// Somebody whose way in cannot be a sign-in a few minutes old, which is what
+	// `MeService.Leave` asks: GitHub never says when it asked anybody, Google
+	// says so only where its project lets it, and a tenant that offers no
+	// passwords has no recovery link to hand them one either. Their mailbox can
+	// say it instead. A front door asks for this about the person signed in at
+	// it -- by the identifier its session holds, never a name a browser typed --
+	// and the link goes to their mailbox, so a session somebody walked away from
+	// mints a link its holder cannot read.
+	//
+	// # What it is refused, and why here
+	//
+	// Everything `Leave` would refuse that does not depend on how somebody
+	// proved who they are: a tenant that does not offer leaving
+	// (`TenantConfig.leave`), somebody its directory provisions, a holder a file
+	// declares -- and somebody suspended, or of a tenant that closed, whom a
+	// link is not sent to at all. Refused where it is minted rather than only
+	// where it is spent, so that nothing is mailed that could not be used; and
+	// said, unlike `Link`'s one answer: the caller asks about the person signed
+	// in at it, and no refusal says what that person's own page does not show
+	// them already.
+	//
+	// `address` has to be one of theirs that somebody proved: an address nobody
+	// checked names nobody here, and mailing one would hand the proof to
+	// whoever typed it.
+	//
+	// # What a caller allowed it is trusted with
+	//
+	// `Link`'s trust and less. A caller allowed this and `Leave` can delete the
+	// account of anybody it can see -- it holds the token it was answered with
+	// -- which is why it is a front door's grant and no person's, as minting a
+	// way in for anybody is.
+	LeaveLink(ctx context.Context, in *VouchLeaveLinkRequest, opts ...grpc.CallOption) (*VouchLeaveLinkResponse, error)
+	// Leave spends a link `LeaveLink` minted, and its person leaves: the erase
+	// `MeService.Leave` makes, after every rule it asks but the age of a
+	// sign-in, which the mailbox has just proved instead.
+	//
+	// # It signs nobody in
+	//
+	// No delegation, no session and no password is minted, whatever else
+	// happens: what a mailbox read once is worth here is one account deleted, by
+	// the person whose mailbox it is, and not an account held. And no other kind
+	// of link is spent here: a recovery link, a verification, the user
+	// console's -- each is refused, as this kind is at each of their doors.
+	//
+	// # In this order
+	//
+	//   - the link: one this caller was issued, still open, of this kind, for
+	//     somebody who may still sign in, and mailed to an address that is still
+	//     theirs and still proved -- `NotFound` for every way of being wrong,
+	//     one answer, as every link's;
+	//   - `Leave`'s rules but the one this replaces: that their tenant offers
+	//     it, that its directory does not provision them, and that `confirm` is
+	//     their alias as it is -- each refusal says which, and **none spends the
+	//     link**, so a mistyped alias costs nothing;
+	//   - and then the link is spent, by whichever caller spends it first, and
+	//     the account goes the way `Leave` sends it -- signed out everywhere,
+	//     then erased, as the person -- so the trail says who, every app hears
+	//     it, and an operator can still bring it back until it is forgotten.
+	Leave(ctx context.Context, in *VouchLeaveRequest, opts ...grpc.CallOption) (*MeLeaveResponse, error)
 	// Continue proves the next factor, from where the last one left off.
 	//
 	// # Why it is a method and Begin is not
@@ -256,6 +323,26 @@ func (c *vouchServiceClient) Redeem(ctx context.Context, in *VouchRedeemRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(VouchDelegateResponse)
 	err := c.cc.Invoke(ctx, VouchService_Redeem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vouchServiceClient) LeaveLink(ctx context.Context, in *VouchLeaveLinkRequest, opts ...grpc.CallOption) (*VouchLeaveLinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VouchLeaveLinkResponse)
+	err := c.cc.Invoke(ctx, VouchService_LeaveLink_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vouchServiceClient) Leave(ctx context.Context, in *VouchLeaveRequest, opts ...grpc.CallOption) (*MeLeaveResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MeLeaveResponse)
+	err := c.cc.Invoke(ctx, VouchService_Leave_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -401,6 +488,71 @@ type VouchServiceServer interface {
 	// password, because a link that skipped one would be a way to turn a mailbox
 	// into an account.
 	Redeem(context.Context, *VouchRedeemRequest) (*VouchDelegateResponse, error)
+	// LeaveLink mints a link that confirms one person **leaving**, and answers
+	// with it once, for the front door to mail to an address of theirs that
+	// somebody proved.
+	//
+	// # Who it is for
+	//
+	// Somebody whose way in cannot be a sign-in a few minutes old, which is what
+	// `MeService.Leave` asks: GitHub never says when it asked anybody, Google
+	// says so only where its project lets it, and a tenant that offers no
+	// passwords has no recovery link to hand them one either. Their mailbox can
+	// say it instead. A front door asks for this about the person signed in at
+	// it -- by the identifier its session holds, never a name a browser typed --
+	// and the link goes to their mailbox, so a session somebody walked away from
+	// mints a link its holder cannot read.
+	//
+	// # What it is refused, and why here
+	//
+	// Everything `Leave` would refuse that does not depend on how somebody
+	// proved who they are: a tenant that does not offer leaving
+	// (`TenantConfig.leave`), somebody its directory provisions, a holder a file
+	// declares -- and somebody suspended, or of a tenant that closed, whom a
+	// link is not sent to at all. Refused where it is minted rather than only
+	// where it is spent, so that nothing is mailed that could not be used; and
+	// said, unlike `Link`'s one answer: the caller asks about the person signed
+	// in at it, and no refusal says what that person's own page does not show
+	// them already.
+	//
+	// `address` has to be one of theirs that somebody proved: an address nobody
+	// checked names nobody here, and mailing one would hand the proof to
+	// whoever typed it.
+	//
+	// # What a caller allowed it is trusted with
+	//
+	// `Link`'s trust and less. A caller allowed this and `Leave` can delete the
+	// account of anybody it can see -- it holds the token it was answered with
+	// -- which is why it is a front door's grant and no person's, as minting a
+	// way in for anybody is.
+	LeaveLink(context.Context, *VouchLeaveLinkRequest) (*VouchLeaveLinkResponse, error)
+	// Leave spends a link `LeaveLink` minted, and its person leaves: the erase
+	// `MeService.Leave` makes, after every rule it asks but the age of a
+	// sign-in, which the mailbox has just proved instead.
+	//
+	// # It signs nobody in
+	//
+	// No delegation, no session and no password is minted, whatever else
+	// happens: what a mailbox read once is worth here is one account deleted, by
+	// the person whose mailbox it is, and not an account held. And no other kind
+	// of link is spent here: a recovery link, a verification, the user
+	// console's -- each is refused, as this kind is at each of their doors.
+	//
+	// # In this order
+	//
+	//   - the link: one this caller was issued, still open, of this kind, for
+	//     somebody who may still sign in, and mailed to an address that is still
+	//     theirs and still proved -- `NotFound` for every way of being wrong,
+	//     one answer, as every link's;
+	//   - `Leave`'s rules but the one this replaces: that their tenant offers
+	//     it, that its directory does not provision them, and that `confirm` is
+	//     their alias as it is -- each refusal says which, and **none spends the
+	//     link**, so a mistyped alias costs nothing;
+	//   - and then the link is spent, by whichever caller spends it first, and
+	//     the account goes the way `Leave` sends it -- signed out everywhere,
+	//     then erased, as the person -- so the trail says who, every app hears
+	//     it, and an operator can still bring it back until it is forgotten.
+	Leave(context.Context, *VouchLeaveRequest) (*MeLeaveResponse, error)
 	// Continue proves the next factor, from where the last one left off.
 	//
 	// # Why it is a method and Begin is not
@@ -488,6 +640,12 @@ func (UnimplementedVouchServiceServer) Link(context.Context, *VouchLinkRequest) 
 }
 func (UnimplementedVouchServiceServer) Redeem(context.Context, *VouchRedeemRequest) (*VouchDelegateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Redeem not implemented")
+}
+func (UnimplementedVouchServiceServer) LeaveLink(context.Context, *VouchLeaveLinkRequest) (*VouchLeaveLinkResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LeaveLink not implemented")
+}
+func (UnimplementedVouchServiceServer) Leave(context.Context, *VouchLeaveRequest) (*MeLeaveResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Leave not implemented")
 }
 func (UnimplementedVouchServiceServer) Continue(context.Context, *VouchContinueRequest) (*VouchContinueResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Continue not implemented")
@@ -588,6 +746,42 @@ func _VouchService_Redeem_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _VouchService_LeaveLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VouchLeaveLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VouchServiceServer).LeaveLink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VouchService_LeaveLink_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VouchServiceServer).LeaveLink(ctx, req.(*VouchLeaveLinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VouchService_Leave_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VouchLeaveRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VouchServiceServer).Leave(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: VouchService_Leave_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VouchServiceServer).Leave(ctx, req.(*VouchLeaveRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _VouchService_Continue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(VouchContinueRequest)
 	if err := dec(in); err != nil {
@@ -646,6 +840,14 @@ var VouchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Redeem",
 			Handler:    _VouchService_Redeem_Handler,
+		},
+		{
+			MethodName: "LeaveLink",
+			Handler:    _VouchService_LeaveLink_Handler,
+		},
+		{
+			MethodName: "Leave",
+			Handler:    _VouchService_Leave_Handler,
 		},
 		{
 			MethodName: "Continue",

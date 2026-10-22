@@ -78,6 +78,8 @@ func NewCmdVouch(c *cmd.Config) *xli.Command {
 			newCmdVouchContinue(c),
 			newCmdVouchLink(c),
 			newCmdVouchRedeem(c),
+			newCmdVouchLeaveLink(c),
+			newCmdVouchLeave(c),
 			newCmdVouchRevoke(c),
 			newCmdVouchEnrol(c),
 			newCmdVouchAccept(c),

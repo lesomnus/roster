@@ -23,6 +23,10 @@ func (Link) Fields() []ent.Field {
 			Immutable(),
 		field.String("at").
 			Immutable(),
+		field.Bool("leave").
+			Immutable().
+			Optional().
+			Default(false),
 		field.Bytes("secret").
 			Immutable(),
 		field.Bytes("issuer").

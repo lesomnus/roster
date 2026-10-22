@@ -1687,6 +1687,264 @@ func (b0 VouchLinkResponse_builder) Build() *VouchLinkResponse {
 	return m0
 }
 
+type VouchLeaveLinkRequest struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Who     *VouchWho              `protobuf:"bytes,1,opt,name=who"`
+	xxx_hidden_Address string                 `protobuf:"bytes,2,opt,name=address"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *VouchLeaveLinkRequest) Reset() {
+	*x = VouchLeaveLinkRequest{}
+	mi := &file_app_vouch_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VouchLeaveLinkRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VouchLeaveLinkRequest) ProtoMessage() {}
+
+func (x *VouchLeaveLinkRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_vouch_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *VouchLeaveLinkRequest) GetWho() *VouchWho {
+	if x != nil {
+		return x.xxx_hidden_Who
+	}
+	return nil
+}
+
+func (x *VouchLeaveLinkRequest) GetAddress() string {
+	if x != nil {
+		return x.xxx_hidden_Address
+	}
+	return ""
+}
+
+func (x *VouchLeaveLinkRequest) SetWho(v *VouchWho) {
+	x.xxx_hidden_Who = v
+}
+
+func (x *VouchLeaveLinkRequest) SetAddress(v string) {
+	x.xxx_hidden_Address = v
+}
+
+func (x *VouchLeaveLinkRequest) HasWho() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Who != nil
+}
+
+func (x *VouchLeaveLinkRequest) ClearWho() {
+	x.xxx_hidden_Who = nil
+}
+
+type VouchLeaveLinkRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Who is leaving: the person signed in at the front door asking, named by
+	// what its session holds.
+	Who *VouchWho
+	// Where the link goes: an address on their account that somebody proved.
+	Address string
+}
+
+func (b0 VouchLeaveLinkRequest_builder) Build() *VouchLeaveLinkRequest {
+	m0 := &VouchLeaveLinkRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Who = b.Who
+	x.xxx_hidden_Address = b.Address
+	return m0
+}
+
+type VouchLeaveLinkResponse struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Token   string                 `protobuf:"bytes,1,opt,name=token"`
+	xxx_hidden_Address string                 `protobuf:"bytes,2,opt,name=address"`
+	xxx_hidden_Expires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=expires"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *VouchLeaveLinkResponse) Reset() {
+	*x = VouchLeaveLinkResponse{}
+	mi := &file_app_vouch_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VouchLeaveLinkResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VouchLeaveLinkResponse) ProtoMessage() {}
+
+func (x *VouchLeaveLinkResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_app_vouch_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *VouchLeaveLinkResponse) GetToken() string {
+	if x != nil {
+		return x.xxx_hidden_Token
+	}
+	return ""
+}
+
+func (x *VouchLeaveLinkResponse) GetAddress() string {
+	if x != nil {
+		return x.xxx_hidden_Address
+	}
+	return ""
+}
+
+func (x *VouchLeaveLinkResponse) GetExpires() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_Expires
+	}
+	return nil
+}
+
+func (x *VouchLeaveLinkResponse) SetToken(v string) {
+	x.xxx_hidden_Token = v
+}
+
+func (x *VouchLeaveLinkResponse) SetAddress(v string) {
+	x.xxx_hidden_Address = v
+}
+
+func (x *VouchLeaveLinkResponse) SetExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_Expires = v
+}
+
+func (x *VouchLeaveLinkResponse) HasExpires() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Expires != nil
+}
+
+func (x *VouchLeaveLinkResponse) ClearExpires() {
+	x.xxx_hidden_Expires = nil
+}
+
+type VouchLeaveLinkResponse_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The link, and the only time it is readable.
+	Token string
+	// The address it is for, as roster holds it: what the front door mails, and
+	// not what it was asked.
+	Address string
+	Expires *timestamppb.Timestamp
+}
+
+func (b0 VouchLeaveLinkResponse_builder) Build() *VouchLeaveLinkResponse {
+	m0 := &VouchLeaveLinkResponse{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Token = b.Token
+	x.xxx_hidden_Address = b.Address
+	x.xxx_hidden_Expires = b.Expires
+	return m0
+}
+
+type VouchLeaveRequest struct {
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Token   string                 `protobuf:"bytes,1,opt,name=token"`
+	xxx_hidden_Confirm string                 `protobuf:"bytes,2,opt,name=confirm"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *VouchLeaveRequest) Reset() {
+	*x = VouchLeaveRequest{}
+	mi := &file_app_vouch_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VouchLeaveRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VouchLeaveRequest) ProtoMessage() {}
+
+func (x *VouchLeaveRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_vouch_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *VouchLeaveRequest) GetToken() string {
+	if x != nil {
+		return x.xxx_hidden_Token
+	}
+	return ""
+}
+
+func (x *VouchLeaveRequest) GetConfirm() string {
+	if x != nil {
+		return x.xxx_hidden_Confirm
+	}
+	return ""
+}
+
+func (x *VouchLeaveRequest) SetToken(v string) {
+	x.xxx_hidden_Token = v
+}
+
+func (x *VouchLeaveRequest) SetConfirm(v string) {
+	x.xxx_hidden_Confirm = v
+}
+
+type VouchLeaveRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// The link, as it was delivered.
+	Token string
+	// Their alias, typed, as `MeLeaveRequest.confirm` is: so that nothing does
+	// this by accident -- clicking a link is not deciding to leave.
+	Confirm string
+}
+
+func (b0 VouchLeaveRequest_builder) Build() *VouchLeaveRequest {
+	m0 := &VouchLeaveRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Token = b.Token
+	x.xxx_hidden_Confirm = b.Confirm
+	return m0
+}
+
 type VouchRedeemRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Token   string                 `protobuf:"bytes,1,opt,name=token"`
@@ -1698,7 +1956,7 @@ type VouchRedeemRequest struct {
 
 func (x *VouchRedeemRequest) Reset() {
 	*x = VouchRedeemRequest{}
-	mi := &file_app_vouch_proto_msgTypes[12]
+	mi := &file_app_vouch_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1710,7 +1968,7 @@ func (x *VouchRedeemRequest) String() string {
 func (*VouchRedeemRequest) ProtoMessage() {}
 
 func (x *VouchRedeemRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_vouch_proto_msgTypes[12]
+	mi := &file_app_vouch_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1792,7 +2050,7 @@ var File_app_vouch_proto protoreflect.FileDescriptor
 
 const file_app_vouch_proto_rawDesc = "" +
 	"\n" +
-	"\x0fapp/vouch.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\"b\n" +
+	"\x0fapp/vouch.proto\x12\x06roster\x1a\fapp/me.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"b\n" +
 	"\bVouchWho\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x16\n" +
 	"\x06tenant\x18\x02 \x01(\tR\x06tenant\x12\x14\n" +
@@ -1856,72 +2114,94 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"_\n" +
 	"\x11VouchLinkResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x124\n" +
-	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"z\n" +
+	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"U\n" +
+	"\x15VouchLeaveLinkRequest\x12\"\n" +
+	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x12\x18\n" +
+	"\aaddress\x18\x02 \x01(\tR\aaddress\"~\n" +
+	"\x16VouchLeaveLinkResponse\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12\x18\n" +
+	"\aaddress\x18\x02 \x01(\tR\aaddress\x124\n" +
+	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"C\n" +
+	"\x11VouchLeaveRequest\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12\x18\n" +
+	"\aconfirm\x18\x02 \x01(\tR\aconfirm\"z\n" +
 	"\x12VouchRedeemRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x18\n" +
 	"\amethods\x18\n" +
 	" \x03(\tR\amethods\x124\n" +
-	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires2\xaa\x03\n" +
+	"\aexpires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\aexpires2\xb3\x04\n" +
 	"\fVouchService\x12A\n" +
 	"\x06Verify\x12\x1a.roster.VouchVerifyRequest\x1a\x1b.roster.VouchVerifyResponse\x12G\n" +
 	"\bDelegate\x12\x1c.roster.VouchDelegateRequest\x1a\x1d.roster.VouchDelegateResponse\x12;\n" +
 	"\x04Link\x12\x18.roster.VouchLinkRequest\x1a\x19.roster.VouchLinkResponse\x12C\n" +
-	"\x06Redeem\x12\x1a.roster.VouchRedeemRequest\x1a\x1d.roster.VouchDelegateResponse\x12G\n" +
+	"\x06Redeem\x12\x1a.roster.VouchRedeemRequest\x1a\x1d.roster.VouchDelegateResponse\x12J\n" +
+	"\tLeaveLink\x12\x1d.roster.VouchLeaveLinkRequest\x1a\x1e.roster.VouchLeaveLinkResponse\x12;\n" +
+	"\x05Leave\x12\x19.roster.VouchLeaveRequest\x1a\x17.roster.MeLeaveResponse\x12G\n" +
 	"\bContinue\x12\x1c.roster.VouchContinueRequest\x1a\x1d.roster.VouchContinueResponse\x12C\n" +
 	"\x06Accept\x12\x1a.roster.VouchAcceptRequest\x1a\x1d.roster.VouchDelegateResponseB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
-var file_app_vouch_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_app_vouch_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_app_vouch_proto_goTypes = []any{
-	(*VouchWho)(nil),              // 0: roster.VouchWho
-	(*VouchClaim)(nil),            // 1: roster.VouchClaim
-	(*VouchVerifyRequest)(nil),    // 2: roster.VouchVerifyRequest
-	(*VouchFactor)(nil),           // 3: roster.VouchFactor
-	(*VouchVerifyResponse)(nil),   // 4: roster.VouchVerifyResponse
-	(*VouchContinueRequest)(nil),  // 5: roster.VouchContinueRequest
-	(*VouchContinueResponse)(nil), // 6: roster.VouchContinueResponse
-	(*VouchDelegateRequest)(nil),  // 7: roster.VouchDelegateRequest
-	(*VouchAcceptRequest)(nil),    // 8: roster.VouchAcceptRequest
-	(*VouchDelegateResponse)(nil), // 9: roster.VouchDelegateResponse
-	(*VouchLinkRequest)(nil),      // 10: roster.VouchLinkRequest
-	(*VouchLinkResponse)(nil),     // 11: roster.VouchLinkResponse
-	(*VouchRedeemRequest)(nil),    // 12: roster.VouchRedeemRequest
-	(*timestamppb.Timestamp)(nil), // 13: google.protobuf.Timestamp
+	(*VouchWho)(nil),               // 0: roster.VouchWho
+	(*VouchClaim)(nil),             // 1: roster.VouchClaim
+	(*VouchVerifyRequest)(nil),     // 2: roster.VouchVerifyRequest
+	(*VouchFactor)(nil),            // 3: roster.VouchFactor
+	(*VouchVerifyResponse)(nil),    // 4: roster.VouchVerifyResponse
+	(*VouchContinueRequest)(nil),   // 5: roster.VouchContinueRequest
+	(*VouchContinueResponse)(nil),  // 6: roster.VouchContinueResponse
+	(*VouchDelegateRequest)(nil),   // 7: roster.VouchDelegateRequest
+	(*VouchAcceptRequest)(nil),     // 8: roster.VouchAcceptRequest
+	(*VouchDelegateResponse)(nil),  // 9: roster.VouchDelegateResponse
+	(*VouchLinkRequest)(nil),       // 10: roster.VouchLinkRequest
+	(*VouchLinkResponse)(nil),      // 11: roster.VouchLinkResponse
+	(*VouchLeaveLinkRequest)(nil),  // 12: roster.VouchLeaveLinkRequest
+	(*VouchLeaveLinkResponse)(nil), // 13: roster.VouchLeaveLinkResponse
+	(*VouchLeaveRequest)(nil),      // 14: roster.VouchLeaveRequest
+	(*VouchRedeemRequest)(nil),     // 15: roster.VouchRedeemRequest
+	(*timestamppb.Timestamp)(nil),  // 16: google.protobuf.Timestamp
+	(*MeLeaveResponse)(nil),        // 17: roster.MeLeaveResponse
 }
 var file_app_vouch_proto_depIdxs = []int32{
-	13, // 0: roster.VouchClaim.authenticated:type_name -> google.protobuf.Timestamp
+	16, // 0: roster.VouchClaim.authenticated:type_name -> google.protobuf.Timestamp
 	0,  // 1: roster.VouchVerifyRequest.who:type_name -> roster.VouchWho
-	13, // 2: roster.VouchFactor.locked_until:type_name -> google.protobuf.Timestamp
-	13, // 3: roster.VouchVerifyResponse.locked_until:type_name -> google.protobuf.Timestamp
+	16, // 2: roster.VouchFactor.locked_until:type_name -> google.protobuf.Timestamp
+	16, // 3: roster.VouchVerifyResponse.locked_until:type_name -> google.protobuf.Timestamp
 	3,  // 4: roster.VouchVerifyResponse.available:type_name -> roster.VouchFactor
 	4,  // 5: roster.VouchContinueResponse.verified:type_name -> roster.VouchVerifyResponse
 	0,  // 6: roster.VouchDelegateRequest.who:type_name -> roster.VouchWho
-	13, // 7: roster.VouchDelegateRequest.expires:type_name -> google.protobuf.Timestamp
+	16, // 7: roster.VouchDelegateRequest.expires:type_name -> google.protobuf.Timestamp
 	1,  // 8: roster.VouchAcceptRequest.claim:type_name -> roster.VouchClaim
-	13, // 9: roster.VouchAcceptRequest.expires:type_name -> google.protobuf.Timestamp
+	16, // 9: roster.VouchAcceptRequest.expires:type_name -> google.protobuf.Timestamp
 	4,  // 10: roster.VouchDelegateResponse.verified:type_name -> roster.VouchVerifyResponse
-	13, // 11: roster.VouchDelegateResponse.expires:type_name -> google.protobuf.Timestamp
-	13, // 12: roster.VouchDelegateResponse.link_expires:type_name -> google.protobuf.Timestamp
+	16, // 11: roster.VouchDelegateResponse.expires:type_name -> google.protobuf.Timestamp
+	16, // 12: roster.VouchDelegateResponse.link_expires:type_name -> google.protobuf.Timestamp
 	0,  // 13: roster.VouchLinkRequest.who:type_name -> roster.VouchWho
-	13, // 14: roster.VouchLinkRequest.expires:type_name -> google.protobuf.Timestamp
-	13, // 15: roster.VouchLinkResponse.expires:type_name -> google.protobuf.Timestamp
-	13, // 16: roster.VouchRedeemRequest.expires:type_name -> google.protobuf.Timestamp
-	2,  // 17: roster.VouchService.Verify:input_type -> roster.VouchVerifyRequest
-	7,  // 18: roster.VouchService.Delegate:input_type -> roster.VouchDelegateRequest
-	10, // 19: roster.VouchService.Link:input_type -> roster.VouchLinkRequest
-	12, // 20: roster.VouchService.Redeem:input_type -> roster.VouchRedeemRequest
-	5,  // 21: roster.VouchService.Continue:input_type -> roster.VouchContinueRequest
-	8,  // 22: roster.VouchService.Accept:input_type -> roster.VouchAcceptRequest
-	4,  // 23: roster.VouchService.Verify:output_type -> roster.VouchVerifyResponse
-	9,  // 24: roster.VouchService.Delegate:output_type -> roster.VouchDelegateResponse
-	11, // 25: roster.VouchService.Link:output_type -> roster.VouchLinkResponse
-	9,  // 26: roster.VouchService.Redeem:output_type -> roster.VouchDelegateResponse
-	6,  // 27: roster.VouchService.Continue:output_type -> roster.VouchContinueResponse
-	9,  // 28: roster.VouchService.Accept:output_type -> roster.VouchDelegateResponse
-	23, // [23:29] is the sub-list for method output_type
-	17, // [17:23] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	16, // 14: roster.VouchLinkRequest.expires:type_name -> google.protobuf.Timestamp
+	16, // 15: roster.VouchLinkResponse.expires:type_name -> google.protobuf.Timestamp
+	0,  // 16: roster.VouchLeaveLinkRequest.who:type_name -> roster.VouchWho
+	16, // 17: roster.VouchLeaveLinkResponse.expires:type_name -> google.protobuf.Timestamp
+	16, // 18: roster.VouchRedeemRequest.expires:type_name -> google.protobuf.Timestamp
+	2,  // 19: roster.VouchService.Verify:input_type -> roster.VouchVerifyRequest
+	7,  // 20: roster.VouchService.Delegate:input_type -> roster.VouchDelegateRequest
+	10, // 21: roster.VouchService.Link:input_type -> roster.VouchLinkRequest
+	15, // 22: roster.VouchService.Redeem:input_type -> roster.VouchRedeemRequest
+	12, // 23: roster.VouchService.LeaveLink:input_type -> roster.VouchLeaveLinkRequest
+	14, // 24: roster.VouchService.Leave:input_type -> roster.VouchLeaveRequest
+	5,  // 25: roster.VouchService.Continue:input_type -> roster.VouchContinueRequest
+	8,  // 26: roster.VouchService.Accept:input_type -> roster.VouchAcceptRequest
+	4,  // 27: roster.VouchService.Verify:output_type -> roster.VouchVerifyResponse
+	9,  // 28: roster.VouchService.Delegate:output_type -> roster.VouchDelegateResponse
+	11, // 29: roster.VouchService.Link:output_type -> roster.VouchLinkResponse
+	9,  // 30: roster.VouchService.Redeem:output_type -> roster.VouchDelegateResponse
+	13, // 31: roster.VouchService.LeaveLink:output_type -> roster.VouchLeaveLinkResponse
+	17, // 32: roster.VouchService.Leave:output_type -> roster.MeLeaveResponse
+	6,  // 33: roster.VouchService.Continue:output_type -> roster.VouchContinueResponse
+	9,  // 34: roster.VouchService.Accept:output_type -> roster.VouchDelegateResponse
+	27, // [27:35] is the sub-list for method output_type
+	19, // [19:27] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_app_vouch_proto_init() }
@@ -1929,13 +2209,14 @@ func file_app_vouch_proto_init() {
 	if File_app_vouch_proto != nil {
 		return
 	}
+	file_app_me_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_vouch_proto_rawDesc), len(file_app_vouch_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -20447,6 +20447,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard batch.Guard) reso
 				{Number: 2, Name: link.HolderColumn, Type: 64, Nullable: false, Key: 1},
 				{Number: 12, Name: link.EmailColumn, Type: 64, Nullable: true, Key: 1},
 				{Number: 8, Name: link.FieldAt, Type: 9, Nullable: false, Key: 0},
+				{Number: 16, Name: link.FieldLeave, Type: 8, Nullable: false, Key: 0},
 				{Number: 10, Name: link.FieldIssuer, Type: 12, Nullable: false, Key: 0},
 				{Number: 11, Name: link.FieldDateExpires, Type: 65, Nullable: true, Key: 0},
 				{Number: 13, Name: link.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},

@@ -63,6 +63,8 @@ interface Providers {
 	leave?: boolean
 	/** Whether a recovery link can be had here: passwords offered, and mail to send it by. */
 	recover?: boolean
+	/** Whether a link that deletes an account can be had here: leaving offered, and mail to send it by. */
+	leaveLink?: boolean
 }
 
 async function providers(): Promise<Providers | null> {
@@ -151,6 +153,7 @@ function Account(props: { of: Providers; onSignOut: () => void; onLeft: (forgott
 						alias={v.alias}
 						identities={v.identities}
 						password={v.credentials.some((c) => c.kind === 'password')}
+						proved={v.emails.filter((e) => e.dateVerified !== undefined).map((e) => e.address)}
 						onSignOut={props.onSignOut}
 						onLeft={props.onLeft}
 					/>
@@ -411,8 +414,10 @@ function Addresses(props: { own: Uint8Array; may: (m: string) => boolean }): Rea
 	return (
 		<section>
 			<h2>addresses</h2>
-			<p className="note">where a recovery link goes. An address counts once it is confirmed from your mailbox.</p>
-			{items.length === 0 && <p className="none">none — a recovery link has nowhere to go</p>}
+			<p className="note">
+				where a link that recovers or deletes your account goes. An address counts once it is confirmed from your mailbox.
+			</p>
+			{items.length === 0 && <p className="none">none — a link has nowhere to go</p>}
 			{items.length > 0 && (
 				<table>
 					<tbody>
@@ -1089,15 +1094,19 @@ function Expires(): React.ReactNode {
  * Not every way in can be that sign-in, and a refusal says which of the
  * person's cannot and what is left. GitHub never says when it asked anybody;
  * Google says so only where its project lets it, and does not ask again when
- * asked; a password always can. Somebody with none has a recovery link, where
- * one can be had: it hands them a password, and a sign-in with it is one. Where
- * none can, it is the operator who deletes the account.
+ * asked; a password always can. Somebody with none is mailed a link that
+ * deletes the account and does nothing else (`/leave/link`, `Vouch.LeaveLink`):
+ * to an address of theirs that has been checked, where the deployment can
+ * send mail, and clicking it asks for the alias typed before anything happens.
+ * Where no link can be had, it is the operator who deletes the account.
  */
 function Leave(props: {
 	of: Providers
 	alias: string
 	identities: { provider: string }[]
 	password: boolean
+	/** The addresses on the account somebody has checked: where a link may go. */
+	proved: string[]
 	onSignOut: () => void
 	onLeft: (forgotten: string) => void
 }): React.ReactNode {
@@ -1175,19 +1184,83 @@ function Leave(props: {
 						</p>
 					)}
 					{password && <p className="note">Your password always is one.</p>}
-					{!password && props.of.recover === true && (
+					{!password && props.of.leaveLink === true && props.proved.length > 0 && (
+						<ByMail alias={props.alias} proved={props.proved} />
+					)}
+					{!password && props.of.leaveLink === true && props.proved.length === 0 && (
 						<p className="note">
-							So is a recovery link: sign out and use <em>forgot?</em> with an address on your account that has
-							been checked. The link hands you a password, and a sign-in with it can delete your account.
+							A link mailed to you can delete it instead, to an address on your account that has been checked:
+							confirm one under <em>addresses</em> first.
 						</p>
 					)}
-					{!password && props.of.recover !== true && (
+					{!password && props.of.leaveLink !== true && (
 						<p className="note">If none of your ways in can be, whoever runs {brand} can delete your account.</p>
 					)}
 				</>
 			)}
 			{note !== null && <p className="bad">{note}</p>}
 		</section>
+	)
+}
+
+/**
+ * ByMail asks for a link that deletes the account, mailed to an address of
+ * theirs somebody checked: the road for somebody whose way in cannot be the
+ * sign-in deleting asks for. The link signs nobody in -- clicking it asks for
+ * the alias typed, and only that deletes anything -- so a page somebody walked
+ * away from sends a link only its owner's mailbox can use.
+ */
+function ByMail(props: { alias: string; proved: string[] }): React.ReactNode {
+	const [to, setTo] = useState(props.proved[0] ?? '')
+	const [sent, setSent] = useState<{ address: string; expires: string } | null>(null)
+	const [bad, setBad] = useState<string | null>(null)
+	const [busy, setBusy] = useState(false)
+
+	return (
+		<>
+			<p className="note">
+				Or have a link mailed to you instead. It deletes your account once you type <strong>{props.alias}</strong>{' '}
+				on the page it opens, and it signs nobody in.
+			</p>
+			<form
+				onSubmit={(e) => {
+					e.preventDefault()
+					setBad(null)
+					setBusy(true)
+					void fetch('/leave/link', json({ address: to }))
+						.then(async (res) => {
+							if (res.status === 202) {
+								setSent((await res.json()) as { address: string; expires: string })
+								return
+							}
+							setBad(await why(res))
+						})
+						.catch(() => setBad('the link could not be asked for just now'))
+						.finally(() => setBusy(false))
+				}}
+			>
+				{props.proved.length > 1 && (
+					<select value={to} onChange={(e) => setTo(e.currentTarget.value)} aria-label="the address to send it to">
+						{props.proved.map((a) => (
+							<option key={a} value={a}>
+								{a}
+							</option>
+						))}
+					</select>
+				)}
+				<button type="submit" disabled={busy}>
+					mail a link to {props.proved.length > 1 ? 'this address' : to}
+				</button>
+			</form>
+			{sent !== null && (
+				<p className="note">
+					A link is on its way to {sent.address}. Open it before{' '}
+					{new Date(sent.expires).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}; after that it is
+					nothing, and you can ask for another.
+				</p>
+			)}
+			{bad !== null && <p className="bad">{bad}</p>}
+		</>
 	)
 }
 

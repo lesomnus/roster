@@ -22,6 +22,8 @@ type Link struct {
 	Id uuid.UUID `json:"id,omitempty"`
 	// At holds the value of the "at" field.
 	At string `json:"at,omitempty"`
+	// Leave holds the value of the "leave" field.
+	Leave bool `json:"leave,omitempty"`
 	// Secret holds the value of the "secret" field.
 	Secret []byte `json:"secret,omitempty"`
 	// Issuer holds the value of the "issuer" field.
@@ -84,6 +86,8 @@ func (*Link) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case link.FieldSecret, link.FieldIssuer:
 			values[i] = new([]byte)
+		case link.FieldLeave:
+			values[i] = new(sql.NullBool)
 		case link.FieldAt:
 			values[i] = new(sql.NullString)
 		case link.FieldDateExpires, link.FieldDateUpdated, link.FieldDateErased, link.FieldDateCreated:
@@ -118,6 +122,12 @@ func (_m *Link) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field at", values[i])
 			} else if value.Valid {
 				_m.At = value.String
+			}
+		case link.FieldLeave:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field leave", values[i])
+			} else if value.Valid {
+				_m.Leave = value.Bool
 			}
 		case link.FieldSecret:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -223,6 +233,9 @@ func (_m *Link) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.Id))
 	builder.WriteString("at=")
 	builder.WriteString(_m.At)
+	builder.WriteString(", ")
+	builder.WriteString("leave=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Leave))
 	builder.WriteString(", ")
 	builder.WriteString("secret=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Secret))

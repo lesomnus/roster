@@ -19,10 +19,12 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/link.proto.
  */
 export const file_app_link: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvbGluay5wcm90bxIGcm9zdGVyIpMECgRMaW5rEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESJgoFZW1haWwYDCABKAsyDS5yb3N0ZXIuRW1haWxCCPKCFgQ4AUABEhIKAmF0GAggASgJQgbqghYCQAESHgoGc2VjcmV0GAkgASgMQg7qghYEMAFAAarBFgIIARIWCgZpc3N1ZXIYCiABKAxCBuqCFgJAARI6CgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgjqghYEOAFAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6aMr8FSYSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7FjoIFzIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZCIPCg1ob2xkZXIudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_app_email, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvbGluay5wcm90bxIGcm9zdGVyIrIECgRMaW5rEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESJgoFZW1haWwYDCABKAsyDS5yb3N0ZXIuRW1haWxCCPKCFgQ4AUABEhIKAmF0GAggASgJQgbqghYCQAESHQoFbGVhdmUYECABKAhCDuqCFgpAAYIBBWZhbHNlEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESFgoGaXNzdWVyGAogASgMQgbqghYCQAESOgoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEII6oIWBDgBQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOmjK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxY6CBcyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGQiDwoNaG9sZGVyLnRlbmFudEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_app_email, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
- * Link is a way in that roster mints and somebody else delivers.
+ * Link is a way in that roster mints and somebody else delivers -- or, for two
+ * of its four kinds, a proof of a mailbox that lets nobody in: an address
+ * confirmed (`email`), and an account deleted (`leave`).
  *
  * A magic link, and the machine behind a recovery: *a single-use opaque nonce
  * roster mints and roster checks, delivered by somebody else.* D19 admits it for
@@ -103,6 +105,38 @@ export type Link = Message<"roster.Link"> & {
    * @generated from field: string at = 8;
    */
   at: string;
+
+  /**
+   * Whether this link confirms its holder **leaving**, and nothing else: the
+   * fourth kind, `Vouch.LeaveLink`'s, spent by `Vouch.Leave`.
+   *
+   * # What it is for
+   *
+   * Deleting your own account asks that you proved who you are a few minutes
+   * ago (`MeService.Leave`), and some ways in never can: GitHub says no time at
+   * all, and Google says one only where its project lets it. In a tenant whose
+   * people have no password to sign in with again, that left deleting such an
+   * account to whoever runs the tenant. This is the road for them: a link
+   * mailed to an address of theirs somebody proved, which proves the mailbox a
+   * moment ago, and for **one** purpose.
+   *
+   * # Worth less than every other kind
+   *
+   * It signs nobody in: no delegation, no session, no password -- what it ends
+   * in is the account's erase, after the alias typed and every rule `Leave`
+   * asks but the age of a sign-in, which this is instead. So every other door
+   * refuses it -- `Vouch.Redeem`, the user console's `SpendAt`, `Email.Confirm`
+   * -- and `Vouch.Leave` refuses every link that is not one. It carries the
+   * `email` it was mailed to as well, so that an address taken off the account
+   * since, or no longer proved, is no proof of anything; and that edge is why
+   * `Email.Confirm` has to read this column too, since it is the door that
+   * spends a link naming an address.
+   *
+   * False by default, which is every link minted before the kind existed.
+   *
+   * @generated from field: bool leave = 16;
+   */
+  leave: boolean;
 
   /**
    * The verifier, never the link -- the shape `ApiKey` argued and every

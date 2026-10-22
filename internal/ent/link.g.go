@@ -27,6 +27,7 @@ func (e *Link) Proto() *rstr.Link {
 		x.SetEmail(r)
 	}
 	x.SetAt(e.At)
+	x.SetLeave(e.Leave)
 	x.SetSecret(e.Secret)
 	x.SetIssuer(e.Issuer)
 	if e.DateExpires != nil {
