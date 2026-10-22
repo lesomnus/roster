@@ -66,6 +66,7 @@ func NewCmdTrail(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			newCmdTrailVerify(l, c),
 			newCmdTrailRows(c),
 			newCmdTrailAccept(c),
+			newCmdTrailOwed(c),
 			newCmdTrailProfiles(),
 		},
 	}
@@ -875,6 +876,52 @@ func kindOf(cl *xli.Command) (trail.Kinds, error) {
 
 // newCmdTrailProfiles prints the table, because a number in a configuration
 // file that nobody can trace is a number nobody will change.
+// newCmdTrailOwed is what is owed of the trail's erasures and not paid yet
+// (payday#115, `trail.Policy.Owing`). Somebody forgotten has the trail's rows
+// about them blanked in the transaction that forgets them, and the archive's
+// half and the rows' seals owed there; `forget` pays them once it has
+// committed, and what it could not pay is the next pass's. So what stays owed
+// for long is one a legal hold keeps part of, which waits for the hold to lift
+// and is said by tenant, or one that cannot be done -- an archive that cannot
+// be written, a chunk whose bytes are not its digest (`roster trail verify`).
+// It reads the database and changes nothing.
+func newCmdTrailOwed(c *cmd.Config) *xli.Command {
+	return &xli.Command{
+		Name:  "owed",
+		Brief: "what is owed of the trail's erasures and not paid yet: how many, since when, and what a legal hold keeps",
+
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			s, err := cmd.Build(ctx, *c)
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+
+			// A question of the store's, which no part of the policy answers.
+			o, err := trail.Policy{}.Owing(ctx, pd.TrailStore(s.Ent))
+			if err != nil {
+				return err
+			}
+			if o.Objects == 0 {
+				fmt.Fprintf(os.Stdout, "nothing of the trail's erasures is owed\n")
+
+				return nil
+			}
+
+			fmt.Fprintf(os.Stdout, "%d erasure(s) owed, the oldest since %s\n", o.Objects, o.Oldest.UTC().Format(time.RFC3339))
+			for _, id := range slices.SortedFunc(maps.Keys(o.Held), func(a, b pdid.Id) int { return strings.Compare(a.String(), b.String()) }) {
+				name := id.String()
+				if t, err := s.Ent.Tenant.Get(ctx, id.Uuid()); err == nil && t.Alias != "" {
+					name = "@" + t.Alias + " (" + name + ")"
+				}
+				fmt.Fprintf(os.Stdout, "  %d kept by a legal hold of %s, until it lifts\n", o.Held[id], name)
+			}
+
+			return nil
+		}),
+	}
+}
+
 func newCmdTrailProfiles() *xli.Command {
 	return &xli.Command{
 		Name:  "profiles",
