@@ -56,6 +56,14 @@ type Core struct {
 	// what it does inside a batch.
 	drv dialect.Driver
 
+	// rebound is whether this stack runs on a transaction somebody else opened:
+	// a batch, or anything payday puts several writes of into one
+	// ([Core.WithDriver]). It has no driver then, and a rule that writes more
+	// than once makes its writes in what it was handed rather than refusing for
+	// want of one -- which is how such a rule tells this apart from a stack
+	// built without a driver at all ([Core.atomically]).
+	rebound bool
+
 	// breached answers whether a secret is one somebody has already lost, when
 	// the deployment has a corpus. It is the same question `server/vouch` asks,
 	// handed to this layer because `Credential.Set` now writes here -- nil is a
@@ -354,14 +362,18 @@ func (s Core) WithDriver(drv dialect.Driver) (app.Server, error) {
 	// The driver is **not** carried over: this stack is being rebound onto a
 	// transaction somebody else opened, and a rule that began its own inside
 	// that one would be a transaction nested in a transaction. Nil is how
-	// [Core.only] is told the caller has already arranged one.
+	// [Core.only] is told the caller has already arranged one, and `rebound`
+	// is how [Core.atomically] is.
 	//
 	// The corpus and the keyring **are**, for the reason `Rules` is: a
 	// `Credential.Set` or `Enrol` made inside a batch is still a write that must
 	// refuse a leaked secret and must wrap a seed with the deployment's key.
 	// Dropped, a rebuilt stack would accept a breached password and refuse every
 	// second factor the moment two writes shared a transaction.
-	return s.over(next), nil
+	in := s.over(next)
+	in.rebound = true
+
+	return in, nil
 }
 
 // over is this layer again, over a server somebody else has already rebound.

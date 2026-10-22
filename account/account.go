@@ -263,6 +263,13 @@ var Calls = append([]string{
 	// Moving somebody to the claim their connection now names, at their next
 	// sign-in here (`cli.LoginMethods` says why it is held always).
 	rstr.IdentityService_Resubject_FullMethodName,
+
+	// The address a directory hands over at a sign-in here, written down on
+	// that directory's word (`arrives.Providers.attest`; `cli.LoginMethods`
+	// says why it is held always). It was missing from this list, and the
+	// write's failure is not a failure -- the sign-in worked -- so a sign-in
+	// here never wrote the address down, and nothing said so.
+	rstr.EmailService_Attest_FullMethodName,
 }, Methods...)
 
 // EnvSecret resolves `env:NAME` and refuses every other scheme. A second scheme

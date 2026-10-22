@@ -489,7 +489,10 @@ the first request for that name without one. In four processes nothing is made
 for you: each `provision` writes its keys into a directory the app's own process
 reads with `file:`, and a key that was written down is left exactly as written --
 a reference that resolves to nothing is a refusal, never a fresh key made quietly
-over it. The directory's key is still yours to write either way:
+over it. The role is written as exactly the app's list on every run, so a release
+whose app calls something more -- the account app's `EmailService/Attest`, which
+it was missing -- is a restart in one process and `provision` run again in four.
+The directory's key is still yours to write either way:
 `roster control key add --allow /roster.NominationService/List directory`, and
 `roster app install --tenant … --role … directory` in each tenant it serves.
 
