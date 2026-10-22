@@ -8,6 +8,7 @@ import (
 
 	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/payday/pdtest"
 	"github.com/lesomnus/payday/trail"
 
 	"github.com/lesomnus/flob"
@@ -109,7 +110,7 @@ func TestForgettingSomebodyKeepsTheEventAndLosesTheContents(t *testing.T) {
 	was, err := b.Ent.Audit.Query().Count(ctx)
 	x.NoError(err)
 
-	res, err := forget.Forget(ctx, b.Ent, who, trail.Policy{})
+	res, err := forget.Forget(ctx, b.Ent, who, trail.Policy{}, audit.Contents{})
 	x.NoError(err)
 	x.NotZero(res.Rows)
 	x.NotZero(res.Trail)
@@ -149,9 +150,11 @@ func TestForgettingSomebodyKeepsTheEventAndLosesTheContents(t *testing.T) {
 	t.Run("the trail keeps every event", func(t *testing.T) {
 		x := require.New(t)
 
+		// And one more for each row it removed or blanked: the act that
+		// forgot them, on the trail as what it is (payday#115).
 		now, err := b.Ent.Audit.Query().Count(ctx)
 		x.NoError(err)
-		x.Equal(was, now, "the record of what happened was destroyed with the contents")
+		x.Equal(was+res.Rows, now, "the record of what happened was destroyed with the contents, or what forgot them is not on it")
 	})
 
 	t.Run("and loses what they said", func(t *testing.T) {
@@ -233,7 +236,7 @@ func TestTheGraceCanBeUndoneUntilItIsNot(t *testing.T) {
 	t.Run("and not after they are forgotten", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := forget.Forget(ctx, b.Ent, who, trail.Policy{})
+		_, err := forget.Forget(ctx, b.Ent, who, trail.Policy{}, audit.Contents{})
 		x.NoError(err)
 
 		x.ErrorContains(forget.Restore(ctx, b.Ent, who, audit.Contents{}), "has been forgotten")
@@ -261,10 +264,11 @@ func TestForgettingReachesTheArchiveToo(t *testing.T) {
 	b.addressOf(t, ctx, who, "erin@contoso.example")
 
 	archive := flob.NewOsStores(t.TempDir())
+	p := trail.Policy{Archive: archive, Signer: pdtest.Signer(t)}
 
 	// Everything into the archive first, so that the database holds none of it
 	// and the only copy left is the archive's.
-	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), trail.Policy{Archive: archive}, trail.Kinds{}, time.Now().Add(time.Hour))
+	n, err := trail.Archive(ctx, pd.TrailStore(b.Ent), p, trail.Kinds{}, time.Now().Add(time.Hour))
 	x.NoError(err)
 	x.NotZero(n)
 
@@ -278,7 +282,7 @@ func TestForgettingReachesTheArchiveToo(t *testing.T) {
 	})))
 	x.NotZero(held, "the archive holds nothing about them, so this proves nothing")
 
-	res, err := forget.Forget(ctx, b.Ent, who, trail.Policy{Archive: archive})
+	res, err := forget.Forget(ctx, b.Ent, who, p, audit.Contents{})
 	x.NoError(err)
 	x.NotZero(res.Archived, "the archive was not reached")
 

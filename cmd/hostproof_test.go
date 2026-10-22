@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/roster/cmd"
@@ -322,7 +323,7 @@ func TestAnExpiredClaimIsRefusedRatherThanCollected(t *testing.T) {
 	t.Run("and the sweep collects it", func(t *testing.T) {
 		x := require.New(t)
 
-		n, err := prove.Collect(ctx, b.Ent)
+		n, err := prove.Collect(ctx, b.Ent, audit.Contents{})
 		x.NoError(err)
 		x.Equal(1, n)
 	})

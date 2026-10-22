@@ -205,6 +205,7 @@ func (s NominationServiceServer) Add(ctx context.Context, req *rstr.NominationAd
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -499,6 +500,7 @@ func (s NominationServiceServer) apply(ctx context.Context, ref *rstr.Nomination
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -590,6 +592,7 @@ func (s NominationServiceServer) Erase(ctx context.Context, req *rstr.Nomination
 		p = nomination.And(p, nomination.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Nomination.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())

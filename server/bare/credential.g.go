@@ -187,6 +187,7 @@ func (s CredentialServiceServer) Add(ctx context.Context, req *rstr.CredentialAd
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -481,6 +482,7 @@ func (s CredentialServiceServer) apply(ctx context.Context, ref *rstr.Credential
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -572,6 +574,7 @@ func (s CredentialServiceServer) Erase(ctx context.Context, req *rstr.Credential
 		p = credential.And(p, credential.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Credential.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())

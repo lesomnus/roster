@@ -178,14 +178,26 @@ func (_u *MailDomainUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(maildomain.FieldName, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(maildomain.FieldName); ok {
+		_spec.SetField(maildomain.FieldName, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Provider(); ok {
 		_spec.SetField(maildomain.FieldProvider, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(maildomain.FieldProvider); ok {
+		_spec.SetField(maildomain.FieldProvider, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(maildomain.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(maildomain.FieldDesc); ok {
+		_spec.SetField(maildomain.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(maildomain.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(maildomain.FieldLabels); ok {
+		_spec.SetField(maildomain.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(maildomain.FieldLabels, field.TypeJson)
@@ -193,8 +205,14 @@ func (_u *MailDomainUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(maildomain.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(maildomain.FieldDateUpdated); ok {
+		_spec.SetField(maildomain.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(maildomain.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(maildomain.FieldDateErased); ok {
+		_spec.SetField(maildomain.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(maildomain.FieldDateErased, field.TypeTime)
@@ -403,14 +421,26 @@ func (_u *MailDomainUpdateOne) sqlSave(ctx context.Context) (_node *MailDomain, 
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(maildomain.FieldName, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(maildomain.FieldName); ok {
+		_spec.SetField(maildomain.FieldName, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Provider(); ok {
 		_spec.SetField(maildomain.FieldProvider, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(maildomain.FieldProvider); ok {
+		_spec.SetField(maildomain.FieldProvider, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(maildomain.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(maildomain.FieldDesc); ok {
+		_spec.SetField(maildomain.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(maildomain.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(maildomain.FieldLabels); ok {
+		_spec.SetField(maildomain.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(maildomain.FieldLabels, field.TypeJson)
@@ -418,8 +448,14 @@ func (_u *MailDomainUpdateOne) sqlSave(ctx context.Context) (_node *MailDomain, 
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(maildomain.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(maildomain.FieldDateUpdated); ok {
+		_spec.SetField(maildomain.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(maildomain.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(maildomain.FieldDateErased); ok {
+		_spec.SetField(maildomain.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(maildomain.FieldDateErased, field.TypeTime)

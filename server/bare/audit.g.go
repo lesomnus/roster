@@ -190,6 +190,7 @@ func (s AuditServiceServer) Add(ctx context.Context, req *rstr.AuditAddRequest) 
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -484,6 +485,7 @@ func (s AuditServiceServer) apply(ctx context.Context, ref *rstr.AuditRef, doc *
 			q.Where(predicate.Audit(pred))
 		}
 		q.Modify(mod)
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -575,6 +577,7 @@ func (s AuditServiceServer) Erase(ctx context.Context, req *rstr.AuditRef) (*rst
 		p = audit.And(p, audit.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	n, err := st.Db.Audit.Delete().Where(p).Exec(ctx)
 	if err != nil {
 		return nil, err

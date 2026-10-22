@@ -60,7 +60,8 @@ func (Continuation) Edges() []ent.Edge {
 
 func (Continuation) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
+		index.Fields("date_created", "id").
+			StorageKey("continuation_page"),
 		index.Fields("secret").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),

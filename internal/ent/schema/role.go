@@ -59,8 +59,10 @@ func (Role) Edges() []ent.Edge {
 
 func (Role) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("tenant_id", "date_created", "id"),
+		index.Fields("tenant_id", "date_created", "id").
+			StorageKey("role_page"),
 		index.Fields("alias", "tenant_id").
+			StorageKey("role_slug").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}
@@ -128,7 +130,8 @@ func (Binding) Edges() []ent.Edge {
 
 func (Binding) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
+		index.Fields("date_created", "id").
+			StorageKey("binding_page"),
 	}
 }
 

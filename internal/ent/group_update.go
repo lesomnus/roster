@@ -166,17 +166,32 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(group.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(group.FieldAlias); ok {
+		_spec.SetField(group.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(group.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(group.FieldName); ok {
+		_spec.SetField(group.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(group.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(group.FieldDesc); ok {
+		_spec.SetField(group.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(group.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(group.FieldDateUpdated); ok {
+		_spec.SetField(group.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(group.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(group.FieldDateErased); ok {
+		_spec.SetField(group.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(group.FieldDateErased, field.TypeTime)
@@ -373,17 +388,32 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(group.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(group.FieldAlias); ok {
+		_spec.SetField(group.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(group.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(group.FieldName); ok {
+		_spec.SetField(group.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(group.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(group.FieldDesc); ok {
+		_spec.SetField(group.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(group.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(group.FieldDateUpdated); ok {
+		_spec.SetField(group.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(group.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(group.FieldDateErased); ok {
+		_spec.SetField(group.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(group.FieldDateErased, field.TypeTime)

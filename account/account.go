@@ -1097,7 +1097,7 @@ func (a *App) nominated(ctx context.Context) error {
 			}.Build())
 			if err != nil {
 				slog.Warn("account: a tenant nominated a holder for this app that cannot read it; not fronting it",
-					slog.String("tenant", id.String()), slog.String("err", err.Error()))
+					slog.String("tenant", id.String()), slog.Any("err", err))
 				continue
 			}
 			t.alias = tn.GetAlias()

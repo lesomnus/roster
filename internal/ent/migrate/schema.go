@@ -32,17 +32,17 @@ var (
 		PrimaryKey: []*schema.Column{AccessColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "access_tenant_id_date_created",
+				Name:    "access_access",
 				Unique:  false,
 				Columns: []*schema.Column{AccessColumns[1], AccessColumns[7]},
 			},
 			{
-				Name:    "access_actor_tenant_id_date_created",
+				Name:    "access_by_actor_tenant",
 				Unique:  false,
 				Columns: []*schema.Column{AccessColumns[8], AccessColumns[7]},
 			},
 			{
-				Name:    "access_actor_id_date_created",
+				Name:    "access_by_actor",
 				Unique:  false,
 				Columns: []*schema.Column{AccessColumns[2], AccessColumns[7]},
 			},
@@ -78,12 +78,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "apikey_date_created_id",
+				Name:    "apikey_page",
 				Unique:  false,
 				Columns: []*schema.Column{ApikeyColumns[10], ApikeyColumns[0]},
 			},
 			{
-				Name:    "apikey_alias_holder_id",
+				Name:    "apikey_slug",
 				Unique:  true,
 				Columns: []*schema.Column{ApikeyColumns[1], ApikeyColumns[11]},
 				Annotation: &entsql.IndexAnnotation{
@@ -122,7 +122,7 @@ var (
 		PrimaryKey: []*schema.Column{ArchivedColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "archived_namespace_digest",
+				Name:    "archived_blob",
 				Unique:  false,
 				Columns: []*schema.Column{ArchivedColumns[2], ArchivedColumns[3]},
 			},
@@ -158,37 +158,37 @@ var (
 		PrimaryKey: []*schema.Column{AuditColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "audit_object_id",
+				Name:    "audit_object",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[5]},
 			},
 			{
-				Name:    "audit_tenant_id_date_created",
+				Name:    "audit_trail",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[1], AuditColumns[7]},
 			},
 			{
-				Name:    "audit_actor_tenant_id_date_created",
+				Name:    "audit_by_actor_tenant",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[8], AuditColumns[7]},
 			},
 			{
-				Name:    "audit_counterpart_tenant_id_date_created",
+				Name:    "audit_by_counterpart",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[10], AuditColumns[7]},
 			},
 			{
-				Name:    "audit_domain_date_created",
+				Name:    "audit_by_domain",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[11], AuditColumns[7]},
 			},
 			{
-				Name:    "audit_tenant_id_domain_date_created",
+				Name:    "audit_by_tenant_domain",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[1], AuditColumns[11], AuditColumns[7]},
 			},
 			{
-				Name:    "audit_actor_id_date_created",
+				Name:    "audit_by_actor",
 				Unique:  false,
 				Columns: []*schema.Column{AuditColumns[2], AuditColumns[7]},
 			},
@@ -239,7 +239,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "binding_date_created_id",
+				Name:    "binding_page",
 				Unique:  false,
 				Columns: []*schema.Column{BindingColumns[4], BindingColumns[0]},
 			},
@@ -277,12 +277,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "connection_tenant_id_date_created_id",
+				Name:    "connection_page",
 				Unique:  false,
 				Columns: []*schema.Column{ConnectionColumns[13], ConnectionColumns[12], ConnectionColumns[0]},
 			},
 			{
-				Name:    "connection_tenant_id_name",
+				Name:    "connection_at",
 				Unique:  true,
 				Columns: []*schema.Column{ConnectionColumns[13], ConnectionColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
@@ -319,7 +319,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "continuation_date_created_id",
+				Name:    "continuation_page",
 				Unique:  false,
 				Columns: []*schema.Column{ContinuationColumns[8], ContinuationColumns[0]},
 			},
@@ -364,12 +364,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "credential_date_created_id",
+				Name:    "credential_page",
 				Unique:  false,
 				Columns: []*schema.Column{CredentialColumns[11], CredentialColumns[0]},
 			},
 			{
-				Name:    "credential_holder_id_kind_name",
+				Name:    "credential_kind",
 				Unique:  true,
 				Columns: []*schema.Column{CredentialColumns[12], CredentialColumns[2], CredentialColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
@@ -406,7 +406,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "delegation_date_created_id",
+				Name:    "delegation_page",
 				Unique:  false,
 				Columns: []*schema.Column{DelegationColumns[8], DelegationColumns[0]},
 			},
@@ -454,12 +454,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "email_tenant_id_date_created_id",
+				Name:    "email_page",
 				Unique:  false,
 				Columns: []*schema.Column{EmailColumns[4], EmailColumns[7], EmailColumns[0]},
 			},
 			{
-				Name:    "email_holder_id_address",
+				Name:    "email_address",
 				Unique:  true,
 				Columns: []*schema.Column{EmailColumns[8], EmailColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
@@ -467,7 +467,7 @@ var (
 				},
 			},
 			{
-				Name:    "email_tenant_id_address",
+				Name:    "email_at",
 				Unique:  true,
 				Columns: []*schema.Column{EmailColumns[4], EmailColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
@@ -509,12 +509,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "group_tenant_id_date_created_id",
+				Name:    "group_page",
 				Unique:  false,
 				Columns: []*schema.Column{GroupColumns[7], GroupColumns[6], GroupColumns[0]},
 			},
 			{
-				Name:    "group_alias_tenant_id",
+				Name:    "group_slug",
 				Unique:  true,
 				Columns: []*schema.Column{GroupColumns[1], GroupColumns[7]},
 				Annotation: &entsql.IndexAnnotation{
@@ -547,12 +547,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "groupexposure_date_created_id",
+				Name:    "groupexposure_page",
 				Unique:  false,
 				Columns: []*schema.Column{GroupexposureColumns[4], GroupexposureColumns[0]},
 			},
 			{
-				Name:    "groupexposure_group_id_client",
+				Name:    "groupexposure_carried",
 				Unique:  true,
 				Columns: []*schema.Column{GroupexposureColumns[5], GroupexposureColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
@@ -598,12 +598,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "groupmembership_date_created_id",
+				Name:    "groupmembership_page",
 				Unique:  false,
 				Columns: []*schema.Column{GroupmembershipColumns[3], GroupmembershipColumns[0]},
 			},
 			{
-				Name:    "groupmembership_holder_id_group_id",
+				Name:    "groupmembership_member",
 				Unique:  true,
 				Columns: []*schema.Column{GroupmembershipColumns[4], GroupmembershipColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
@@ -645,7 +645,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "holder_alias_tenant_id",
+				Name:    "holder_slug",
 				Unique:  true,
 				Columns: []*schema.Column{HolderColumns[1], HolderColumns[14]},
 				Annotation: &entsql.IndexAnnotation{
@@ -653,7 +653,7 @@ var (
 				},
 			},
 			{
-				Name:    "holder_tenant_id_date_created_id",
+				Name:    "holder_page",
 				Unique:  false,
 				Columns: []*schema.Column{HolderColumns[14], HolderColumns[7], HolderColumns[0]},
 			},
@@ -686,7 +686,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "host_tenant_id_date_created_id",
+				Name:    "host_page",
 				Unique:  false,
 				Columns: []*schema.Column{HostColumns[8], HostColumns[7], HostColumns[0]},
 			},
@@ -727,12 +727,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "hostproof_tenant_id_date_created_id",
+				Name:    "hostproof_page",
 				Unique:  false,
 				Columns: []*schema.Column{HostproofColumns[8], HostproofColumns[7], HostproofColumns[0]},
 			},
 			{
-				Name:    "hostproof_tenant_id_name",
+				Name:    "hostproof_at",
 				Unique:  true,
 				Columns: []*schema.Column{HostproofColumns[8], HostproofColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
@@ -767,12 +767,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "identity_tenant_id_date_created_id",
+				Name:    "identity_page",
 				Unique:  false,
 				Columns: []*schema.Column{IdentityColumns[3], IdentityColumns[6], IdentityColumns[0]},
 			},
 			{
-				Name:    "identity_tenant_id_provider_subject",
+				Name:    "identity_subject",
 				Unique:  true,
 				Columns: []*schema.Column{IdentityColumns[3], IdentityColumns[1], IdentityColumns[2]},
 				Annotation: &entsql.IndexAnnotation{
@@ -815,7 +815,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "link_date_created_id",
+				Name:    "link_page",
 				Unique:  false,
 				Columns: []*schema.Column{LinkColumns[7], LinkColumns[0]},
 			},
@@ -856,12 +856,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "maildomain_tenant_id_date_created_id",
+				Name:    "maildomain_page",
 				Unique:  false,
 				Columns: []*schema.Column{MaildomainColumns[8], MaildomainColumns[7], MaildomainColumns[0]},
 			},
 			{
-				Name:    "maildomain_tenant_id_name",
+				Name:    "maildomain_at",
 				Unique:  true,
 				Columns: []*schema.Column{MaildomainColumns[8], MaildomainColumns[1]},
 				Annotation: &entsql.IndexAnnotation{
@@ -903,12 +903,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "nomination_tenant_id_date_created_id",
+				Name:    "nomination_page",
 				Unique:  false,
 				Columns: []*schema.Column{NominationColumns[7], NominationColumns[6], NominationColumns[0]},
 			},
 			{
-				Name:    "nomination_tenant_id_borrower_id",
+				Name:    "nomination_borrower",
 				Unique:  true,
 				Columns: []*schema.Column{NominationColumns[7], NominationColumns[3]},
 				Annotation: &entsql.IndexAnnotation{
@@ -936,7 +936,7 @@ var (
 		PrimaryKey: []*schema.Column{OutboxColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "outbox_id",
+				Name:    "outbox_queue",
 				Unique:  false,
 				Columns: []*schema.Column{OutboxColumns[0]},
 			},
@@ -977,12 +977,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "role_tenant_id_date_created_id",
+				Name:    "role_page",
 				Unique:  false,
 				Columns: []*schema.Column{RoleColumns[9], RoleColumns[8], RoleColumns[0]},
 			},
 			{
-				Name:    "role_alias_tenant_id",
+				Name:    "role_slug",
 				Unique:  true,
 				Columns: []*schema.Column{RoleColumns[1], RoleColumns[9]},
 				Annotation: &entsql.IndexAnnotation{
@@ -1018,7 +1018,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "session_date_created_id",
+				Name:    "session_page",
 				Unique:  false,
 				Columns: []*schema.Column{SessionColumns[7], SessionColumns[0]},
 			},
@@ -1059,12 +1059,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "site_tenant_id_date_created_id",
+				Name:    "site_page",
 				Unique:  false,
 				Columns: []*schema.Column{SiteColumns[8], SiteColumns[7], SiteColumns[0]},
 			},
 			{
-				Name:    "site_alias_tenant_id",
+				Name:    "site_slug",
 				Unique:  true,
 				Columns: []*schema.Column{SiteColumns[1], SiteColumns[8]},
 				Annotation: &entsql.IndexAnnotation{
@@ -1103,12 +1103,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "sitemembership_date_created_id",
+				Name:    "sitemembership_page",
 				Unique:  false,
 				Columns: []*schema.Column{SitemembershipColumns[3], SitemembershipColumns[0]},
 			},
 			{
-				Name:    "sitemembership_holder_id_site_id",
+				Name:    "sitemembership_member",
 				Unique:  true,
 				Columns: []*schema.Column{SitemembershipColumns[4], SitemembershipColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
@@ -1150,12 +1150,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "team_tenant_id_date_created_id",
+				Name:    "team_page",
 				Unique:  false,
 				Columns: []*schema.Column{TeamColumns[7], TeamColumns[6], TeamColumns[0]},
 			},
 			{
-				Name:    "team_alias_site_id",
+				Name:    "team_slug",
 				Unique:  true,
 				Columns: []*schema.Column{TeamColumns[1], TeamColumns[8]},
 				Annotation: &entsql.IndexAnnotation{
@@ -1201,12 +1201,12 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "teammembership_date_created_id",
+				Name:    "teammembership_page",
 				Unique:  false,
 				Columns: []*schema.Column{TeammembershipColumns[3], TeammembershipColumns[0]},
 			},
 			{
-				Name:    "teammembership_holder_id_team_id",
+				Name:    "teammembership_member",
 				Unique:  true,
 				Columns: []*schema.Column{TeammembershipColumns[4], TeammembershipColumns[5]},
 				Annotation: &entsql.IndexAnnotation{
@@ -1237,7 +1237,7 @@ var (
 		PrimaryKey: []*schema.Column{TenantColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "tenant_date_created_id",
+				Name:    "tenant_page",
 				Unique:  false,
 				Columns: []*schema.Column{TenantColumns[6], TenantColumns[0]},
 			},

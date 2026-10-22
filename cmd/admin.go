@@ -325,7 +325,7 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 		// past a rate on either port. Written as `LimitUnary` alone here and on
 		// the data plane, where it was the same omission -- one line each,
 		// because there is one answer.
-		WithUnary(grpcx.LimitUnary(rate, gate.ByTenant())).
+		WithUnary(grpcx.LimitUnary(rate, gate.ByTenant(), pd.Cost)).
 		WithStream(grpcx.LimitStream(rate, gate.ByTenant())).
 
 		// What an operator read or wrote of a customer's people is the access

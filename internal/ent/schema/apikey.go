@@ -60,8 +60,10 @@ func (ApiKey) Edges() []ent.Edge {
 
 func (ApiKey) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
+		index.Fields("date_created", "id").
+			StorageKey("apikey_page"),
 		index.Fields("alias", "holder_id").
+			StorageKey("apikey_slug").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 		index.Fields("secret").

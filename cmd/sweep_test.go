@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/frame"
@@ -66,7 +67,7 @@ func TestExpiredSessionsAreCollected(t *testing.T) {
 	x.NoError(err)
 	x.True(stale.Dead(time.Now()), "an expired session did not read as dead")
 
-	n, err := session.Collect(ctx, db)
+	n, err := session.Collect(ctx, db, audit.Contents{})
 	x.NoError(err)
 	x.Equal(1, n, "the expired one was not collected, or the live one was")
 
@@ -75,7 +76,7 @@ func TestExpiredSessionsAreCollected(t *testing.T) {
 	x.Equal(who.String(), got.Id)
 
 	// Idempotent, which is what lets every replica run it.
-	n, err = session.Collect(ctx, db)
+	n, err = session.Collect(ctx, db, audit.Contents{})
 	x.NoError(err)
 	x.Zero(n)
 }
@@ -109,7 +110,7 @@ func TestSigningOutLeavesARowUntilItsOwnClockRuns(t *testing.T) {
 	_, err := store.Get(ctx, v.Key)
 	x.Error(err, "a signed-out session resolved")
 
-	n, err := session.Collect(ctx, db)
+	n, err := session.Collect(ctx, db, audit.Contents{})
 	x.NoError(err)
 	x.Zero(n, "a revoked session was collected before its own clock ran out")
 

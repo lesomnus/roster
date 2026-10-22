@@ -56,7 +56,8 @@ func (Session) Edges() []ent.Edge {
 
 func (Session) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
+		index.Fields("date_created", "id").
+			StorageKey("session_page"),
 		index.Fields("secret").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),

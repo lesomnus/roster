@@ -181,6 +181,7 @@ func (s SessionServiceServer) Add(ctx context.Context, req *rstr.SessionAddReque
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -463,6 +464,7 @@ func (s SessionServiceServer) apply(ctx context.Context, ref *rstr.SessionRef, d
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -554,6 +556,7 @@ func (s SessionServiceServer) Erase(ctx context.Context, req *rstr.SessionRef) (
 		p = session.And(p, session.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Session.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())

@@ -8,11 +8,15 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	payaudit "github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/trail"
 
 	"github.com/lesomnus/roster/cli"
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/internal/ent/audit"
+	"github.com/lesomnus/roster/internal/ent/email"
+	"github.com/lesomnus/roster/internal/ent/holder"
+	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/forget"
 )
 
@@ -33,7 +37,7 @@ func TestTheLiveRowsAreCheckedAgainstTheTrail(t *testing.T) {
 	x.NoError(run("trail", "rows"))
 
 	x.NoError(b.Ent.Holder.UpdateOneId(h.Uuid()).SetDateDisabled(time.Now()).Exec(ctx))
-	x.ErrorContains(run("trail", "rows"), "1 row(s) differ")
+	x.ErrorContains(run("trail", "rows"), "1 finding(s)")
 
 	// And somebody who has looked accepts it as it is, which is an act on the
 	// trail -- and needs saying why (payday#108).
@@ -61,7 +65,61 @@ func TestARowNothingOnTheTrailIsAboutFailsTheCheck(t *testing.T) {
 	_, err := b.Ent.Audit.Delete().Where(audit.ObjectId(h.Uuid())).Exec(ctx)
 	x.NoError(err)
 
-	x.ErrorContains(cli.Cmd(&c).Run(ctx, []string{"trail", "rows"}), "1 are not on it")
+	x.ErrorContains(cli.Cmd(&c).Run(ctx, []string{"trail", "rows"}), "1 finding(s)")
+}
+
+// TestARowRemovedPastTheServersFailsTheCheck: an address deleted in the
+// database is a thing the trail says is a row and is not -- what a row
+// somebody removed past the servers looks like (payday#115) -- and accepted, it
+// is on the trail as gone.
+func TestARowRemovedPastTheServersFailsTheCheck(t *testing.T) {
+	x := require.New(t)
+
+	var c cmd.Config
+	b, ctx := build(t, func(cc *cmd.Config) {
+		cc.Audit.Digest.Key = "base64:" + base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{7}, 32))
+		c = *cc
+	})
+	run := func(args ...string) error { return cli.Cmd(&c).Run(ctx, args) }
+
+	h := b.holder(t, ctx, b.Contoso, "another")
+	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
+		Holder:  app.HolderRef_builder{Id: h.Bytes()}.Build(),
+		Address: "another@contoso.example",
+	}.Build())
+	x.NoError(err)
+	x.NoError(run("trail", "rows"))
+
+	n, err := b.Ent.Email.Delete().Where(email.HasHolderWith(holder.IdEQ(h.Uuid()))).Exec(ctx)
+	x.NoError(err)
+	x.Equal(1, n)
+	x.ErrorContains(run("trail", "rows"), "1 finding(s)")
+
+	x.NoError(run("trail", "rows", "--accept", "--why", "the address was removed by hand on 2026-10-22"))
+	x.NoError(run("trail", "rows"))
+}
+
+// TestACheckWithAnotherKeyFindsEveryRow: a check handed a key other than the
+// one the trail was written under does not pass (payday#115) -- it finds every
+// row under a key it was not given -- and told that key was let go, it counts
+// them instead.
+func TestACheckWithAnotherKeyFindsEveryRow(t *testing.T) {
+	x := require.New(t)
+
+	server := bytes.Repeat([]byte{7}, 32)
+	var c cmd.Config
+	b, ctx := build(t, func(cc *cmd.Config) {
+		cc.Audit.Digest.Key = "base64:" + base64.StdEncoding.EncodeToString(server)
+		c = *cc
+	})
+	b.holder(t, ctx, b.Contoso, "another")
+
+	other := c
+	other.Audit.Digest.Key = "base64:" + base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{8}, 32))
+	x.ErrorContains(cli.Cmd(&other).Run(ctx, []string{"trail", "rows"}), "finding(s)")
+
+	other.Audit.Digest.Retired = []string{payaudit.FingerprintOf(server).String()}
+	x.NoError(cli.Cmd(&other).Run(ctx, []string{"trail", "rows"}))
 }
 
 // TestWhatTheDeploymentWritesPastItsServersIsOnTheTrailAsItsAct: a tenant
@@ -83,6 +141,12 @@ func TestWhatTheDeploymentWritesPastItsServersIsOnTheTrailAsItsAct(t *testing.T)
 	h := b.holder(t, ctx, b.Contoso, "another")
 	x.NoError(b.Ent.Holder.UpdateOneId(h.Uuid()).SetDateErased(time.Now()).Exec(ctx))
 	x.NoError(forget.Restore(ctx, b.Ent, h, cs))
+	x.NoError(run("trail", "rows"))
+
+	// Forgotten: their rows removed and the holder blanked, each on the trail
+	// as the act that did it (payday#115).
+	_, err = forget.Forget(ctx, b.Ent, h, trail.Policy{}, cs)
+	x.NoError(err)
 	x.NoError(run("trail", "rows"))
 
 	x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(time.Now()).Exec(ctx))

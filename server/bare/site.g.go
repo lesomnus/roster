@@ -178,6 +178,7 @@ func (s SiteServiceServer) Add(ctx context.Context, req *rstr.SiteAddRequest) (*
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -459,6 +460,7 @@ func (s SiteServiceServer) apply(ctx context.Context, ref *rstr.SiteRef, doc *pa
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -550,6 +552,7 @@ func (s SiteServiceServer) Erase(ctx context.Context, req *rstr.SiteRef) (*rstr.
 		p = site.And(p, site.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Site.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())

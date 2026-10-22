@@ -276,14 +276,26 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(holder.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldAlias); ok {
+		_spec.SetField(holder.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(holder.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldName); ok {
+		_spec.SetField(holder.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(holder.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDesc); ok {
+		_spec.SetField(holder.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(holder.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldLabels); ok {
+		_spec.SetField(holder.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(holder.FieldLabels, field.TypeJson)
@@ -291,8 +303,14 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(holder.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDateUpdated); ok {
+		_spec.SetField(holder.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(holder.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDateErased); ok {
+		_spec.SetField(holder.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(holder.FieldDateErased, field.TypeTime)
@@ -310,6 +328,9 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.SetField(holder.FieldProfile, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldProfile); ok {
+		_spec.SetField(holder.FieldProfile, field.TypeJson, e)
+	}
 	if _u.mutation.ProfileCleared() {
 		_spec.ClearField(holder.FieldProfile, field.TypeJson)
 	}
@@ -323,11 +344,17 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.SetField(holder.FieldData, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldData); ok {
+		_spec.SetField(holder.FieldData, field.TypeJson, e)
+	}
 	if _u.mutation.DataCleared() {
 		_spec.ClearField(holder.FieldData, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateInvalidated(); ok {
 		_spec.SetField(holder.FieldDateInvalidated, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDateInvalidated); ok {
+		_spec.SetField(holder.FieldDateInvalidated, field.TypeTime, e)
 	}
 	if _u.mutation.DateInvalidatedCleared() {
 		_spec.ClearField(holder.FieldDateInvalidated, field.TypeTime)
@@ -335,11 +362,17 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateDisabled(); ok {
 		_spec.SetField(holder.FieldDateDisabled, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDateDisabled); ok {
+		_spec.SetField(holder.FieldDateDisabled, field.TypeTime, e)
+	}
 	if _u.mutation.DateDisabledCleared() {
 		_spec.ClearField(holder.FieldDateDisabled, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Directory(); ok {
 		_spec.SetField(holder.FieldDirectory, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDirectory); ok {
+		_spec.SetField(holder.FieldDirectory, field.TypeString, e)
 	}
 	if _u.mutation.DirectoryCleared() {
 		_spec.ClearField(holder.FieldDirectory, field.TypeString)
@@ -353,6 +386,9 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			return 0, err
 		}
 		_spec.SetField(holder.FieldPortrait, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldPortrait); ok {
+		_spec.SetField(holder.FieldPortrait, field.TypeJson, e)
 	}
 	if _u.mutation.PortraitCleared() {
 		_spec.ClearField(holder.FieldPortrait, field.TypeJson)
@@ -654,14 +690,26 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 	if value, ok := _u.mutation.Alias(); ok {
 		_spec.SetField(holder.FieldAlias, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldAlias); ok {
+		_spec.SetField(holder.FieldAlias, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(holder.FieldName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldName); ok {
+		_spec.SetField(holder.FieldName, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(holder.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDesc); ok {
+		_spec.SetField(holder.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(holder.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldLabels); ok {
+		_spec.SetField(holder.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(holder.FieldLabels, field.TypeJson)
@@ -669,8 +717,14 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(holder.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDateUpdated); ok {
+		_spec.SetField(holder.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(holder.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDateErased); ok {
+		_spec.SetField(holder.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(holder.FieldDateErased, field.TypeTime)
@@ -688,6 +742,9 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 		}
 		_spec.SetField(holder.FieldProfile, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldProfile); ok {
+		_spec.SetField(holder.FieldProfile, field.TypeJson, e)
+	}
 	if _u.mutation.ProfileCleared() {
 		_spec.ClearField(holder.FieldProfile, field.TypeJson)
 	}
@@ -701,11 +758,17 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 		}
 		_spec.SetField(holder.FieldData, field.TypeJson, vv)
 	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldData); ok {
+		_spec.SetField(holder.FieldData, field.TypeJson, e)
+	}
 	if _u.mutation.DataCleared() {
 		_spec.ClearField(holder.FieldData, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateInvalidated(); ok {
 		_spec.SetField(holder.FieldDateInvalidated, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDateInvalidated); ok {
+		_spec.SetField(holder.FieldDateInvalidated, field.TypeTime, e)
 	}
 	if _u.mutation.DateInvalidatedCleared() {
 		_spec.ClearField(holder.FieldDateInvalidated, field.TypeTime)
@@ -713,11 +776,17 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 	if value, ok := _u.mutation.DateDisabled(); ok {
 		_spec.SetField(holder.FieldDateDisabled, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDateDisabled); ok {
+		_spec.SetField(holder.FieldDateDisabled, field.TypeTime, e)
+	}
 	if _u.mutation.DateDisabledCleared() {
 		_spec.ClearField(holder.FieldDateDisabled, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Directory(); ok {
 		_spec.SetField(holder.FieldDirectory, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDirectory); ok {
+		_spec.SetField(holder.FieldDirectory, field.TypeString, e)
 	}
 	if _u.mutation.DirectoryCleared() {
 		_spec.ClearField(holder.FieldDirectory, field.TypeString)
@@ -731,6 +800,9 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 			return nil, err
 		}
 		_spec.SetField(holder.FieldPortrait, field.TypeJson, vv)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldPortrait); ok {
+		_spec.SetField(holder.FieldPortrait, field.TypeJson, e)
 	}
 	if _u.mutation.PortraitCleared() {
 		_spec.ClearField(holder.FieldPortrait, field.TypeJson)

@@ -201,6 +201,7 @@ func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) 
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -485,6 +486,7 @@ func (s GroupServiceServer) apply(ctx context.Context, ref *rstr.GroupRef, doc *
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -576,6 +578,7 @@ func (s GroupServiceServer) Erase(ctx context.Context, req *rstr.GroupRef) (*rst
 		p = group.And(p, group.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Group.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -792,6 +795,7 @@ func (s GroupExposureServiceServer) Add(ctx context.Context, req *rstr.GroupExpo
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -1065,6 +1069,7 @@ func (s GroupExposureServiceServer) apply(ctx context.Context, ref *rstr.GroupEx
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -1156,6 +1161,7 @@ func (s GroupExposureServiceServer) Erase(ctx context.Context, req *rstr.GroupEx
 		p = groupexposure.And(p, groupexposure.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.GroupExposure.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())

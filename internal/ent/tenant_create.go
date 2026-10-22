@@ -172,13 +172,18 @@ func (_c *TenantCreate) ExecX(ctx context.Context) {
 // defaults sets the default values of the builder before save.
 func (_c *TenantCreate) defaults() {
 	if _, ok := _c.mutation.Hold(); !ok {
-		v := tenant.DefaultHold
-		_c.mutation.SetHold(v)
+		if _, ok := _c.mutation.FieldExpr(tenant.FieldHold); !ok {
+			v := tenant.DefaultHold
+			_c.mutation.SetHold(v)
+		}
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *TenantCreate) check() error {
+	if fs := _c.mutation.ExprFields(); len(fs) > 0 {
+		return &ValidationError{Name: fs[0], err: fmt.Errorf(`ent: field "Tenant.%s" was assigned an expression, which only an update writes`, fs[0])}
+	}
 	if _, ok := _c.mutation.Alias(); !ok {
 		return &ValidationError{Name: "alias", err: errors.New(`ent: missing required field "Tenant.alias"`)}
 	}

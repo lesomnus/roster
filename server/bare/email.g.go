@@ -211,6 +211,7 @@ func (s EmailServiceServer) Add(ctx context.Context, req *rstr.EmailAddRequest) 
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -509,6 +510,7 @@ func (s EmailServiceServer) apply(ctx context.Context, ref *rstr.EmailRef, doc *
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -600,6 +602,7 @@ func (s EmailServiceServer) Erase(ctx context.Context, req *rstr.EmailRef) (*rst
 		p = email.And(p, email.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Email.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())

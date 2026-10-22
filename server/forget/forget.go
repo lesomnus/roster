@@ -119,7 +119,18 @@ func (r Result) String() string {
 // The trail is the policy's to erase, `trail.Policy.Forget`, because a row of
 // it a legal hold is on stays as it was: that is in [Result.Held], and running
 // this again once the hold lifts finishes it too.
-func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy) (Result, error) {
+//
+// # And what it removes is on the trail as the act it is
+//
+// Every row of theirs it takes is written past the servers, and a check of the
+// rows finds a thing the trail says is a row and is not -- what a row somebody
+// removed in the database looks like -- unless the removal is recorded. So the
+// rows go, and the holder is blanked, in one transaction that also puts each
+// on the trail as [ForgottenHolder] (payday#115): the ones it removed with a
+// digest that says they went (`pd.RecordErased`), and the holder with one of
+// the row as it is left (`pd.Record`). What that writes is which rows and when,
+// and nothing of what they held. `cs` is what the recorder is handed.
+func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs audit.Contents) (Result, error) {
 	var out Result
 
 	v, err := db.Holder.Get(ctx, who.Uuid())
@@ -127,35 +138,43 @@ func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy) (R
 		return out, err
 	}
 
+	tx, err := db.Tx(ctx)
+	if err != nil {
+		return out, err
+	}
+	defer tx.Rollback()
+
 	// Every identifier whose trail rows are about this person. Not the holder
 	// alone: `Audit.value` for a write to an `Email` row holds the address, and
 	// that row's `object_id` is the email's. A pass that named only the holder
 	// would blank the record of the person and leave every address they ever
 	// had in the trail beside it.
 	objects := []pdid.Id{who}
+	removed := []pdid.Id{}
 
 	for _, of := range subjects() {
-		ids, err := of.ids(ctx, db, who.Uuid())
+		ids, err := of.ids(ctx, tx.Client(), who.Uuid())
 		if err != nil {
 			return out, fmt.Errorf("%s: %w", of.name, err)
 		}
 		for _, id := range ids {
-			objects = append(objects, pdid.Id(id))
+			removed = append(removed, pdid.Id(id))
 		}
 
-		n, err := of.remove(ctx, db, who.Uuid())
+		n, err := of.remove(ctx, tx.Client(), who.Uuid())
 		if err != nil {
 			return out, fmt.Errorf("%s: %w", of.name, err)
 		}
 
 		out.Rows += n
 	}
+	objects = append(objects, removed...)
 
 	// The row itself stays and stops naming anybody. Through ent, like every
 	// other write here: the servers refuse most of this, and the ones that do
 	// not would record it -- and a record of *what was destroyed* is the thing
 	// being destroyed.
-	u := db.Holder.UpdateOneId(who.Uuid()).
+	u := tx.Holder.UpdateOneId(who.Uuid()).
 		SetAlias("").
 		SetName("").
 		SetDesc("").
@@ -173,6 +192,16 @@ func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy) (R
 	}
 
 	out.Rows++
+
+	if _, err := pd.RecordErased(ctx, tx.Client(), cs, ForgottenHolder, removed); err != nil {
+		return out, err
+	}
+	if _, err := pd.Record(ctx, tx.Client(), cs, ForgottenHolder, []pdid.Id{who}); err != nil {
+		return out, err
+	}
+	if err := tx.Commit(); err != nil {
+		return out, err
+	}
 
 	got, err := p.Forget(ctx, pd.TrailStore(db), objects)
 	out.Trail = got.Rows
@@ -437,7 +466,7 @@ const Swept = 24 * time.Hour
 //
 // A pass that fails part way has still destroyed whoever it reached, because
 // each person is their own act -- there is no batch here to be half of.
-func Sweep(db *ent.Client, after time.Duration, p trail.Policy, every time.Duration) spin.Func {
+func Sweep(db *ent.Client, after time.Duration, p trail.Policy, cs audit.Contents, every time.Duration) spin.Func {
 	if every <= 0 {
 		every = Swept
 	}
@@ -456,7 +485,7 @@ func Sweep(db *ent.Client, after time.Duration, p trail.Policy, every time.Durat
 		}
 
 		for _, who := range vs {
-			res, err := Forget(ctx, db, who, p)
+			res, err := Forget(ctx, db, who, p, cs)
 			if err != nil {
 				log.From(ctx).WarnContext(ctx, "forget", "holder", who.String(), "err", err)
 

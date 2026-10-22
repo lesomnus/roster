@@ -180,8 +180,14 @@ sign_in() {
 	# caller, because a caller that has to remember is a caller that will not.
 	forget_consent
 
-	# The cookie by hand for the rest, because a jar will not send one to a host
-	# `--resolve` invented. Everything else about the walk is the browser's.
+	# The jar carries the app's cookie from here, as a browser's does, and
+	# `cookie` is only what this says about it. It went by hand as well, and
+	# the jar sent it too -- `login.test` has a dot in it, so the jar keeps it,
+	# and the browser the app forgets, below, is the jar edited for that
+	# reason. Two cookies of the session's name are none to `authsession`
+	# (payday#117: which of two a browser meant is not a thing to guess), so
+	# every call after the password was nobody's, and the half-signed-in 401
+	# below was answered for the pair rather than for being half way.
 	head=$(c -o /dev/null -D - -X POST "${LOGIN}/session?login_challenge=${challenge}" \
 		-H 'content-type: application/json' \
 		-d "$(printf '{"alias":"%s","password":"%s"}' "${SEED_USER}" "${SEED_PASSWORD}")" | tr -d '\r')
@@ -196,13 +202,12 @@ sign_in() {
 		[ "${got}" = "200" ] || die "a password alone finished a sign-in with a factor on it (${got})"
 		step "${SEED_USER} types the password" "${got}, one more to prove"
 
-		got=$(c -o /dev/null -w '%{http_code}' -X POST "${LOGIN}/accept?login_challenge=${challenge}" \
-			-H "Cookie: ${cookie}")
+		got=$(c -o /dev/null -w '%{http_code}' -X POST "${LOGIN}/accept?login_challenge=${challenge}")
 		[ "${got}" = "401" ] || die "a half-signed-in browser was accepted (${got})"
 		step "and hydra is told nobody yet" "${got}"
 
 		head=$(c -o /dev/null -D - -X POST "${LOGIN}/session/continue?login_challenge=${challenge}" \
-			-H "Cookie: ${cookie}" -H 'content-type: application/json' \
+			-H 'content-type: application/json' \
 			-d "$(printf '{"kind":"totp","secret":"%s"}' "$(oathtool --totp -b "${seed}")")" | tr -d '\r')
 		got=$(printf '%s' "${head}" | code)
 		[ "${got}" = "204" ] || die "the code from her authenticator was refused (${got})"
@@ -216,7 +221,7 @@ sign_in() {
 		step "${SEED_USER} types the password" "204, ${cookie%%=*}"
 	fi
 
-	to=$(c -X POST "${LOGIN}/accept?login_challenge=${challenge}" -H "Cookie: ${cookie}" \
+	to=$(c -X POST "${LOGIN}/accept?login_challenge=${challenge}" \
 		| sed 's/.*"redirect_to":"//; s/".*//; s|\\u0026|\&|g' | fix)
 	case "${to}" in http*) ;; *) die "nothing was accepted: ${to}";; esac
 	step "hydra is told the subject" "$(printf '%s' "${to}" | cut -c1-40)…"
@@ -233,17 +238,17 @@ sign_in() {
 		# 200 and not a redirect: a screen was drawn. **What** it says is `/flow`,
 		# because the page is one document for both screens and asks the app which
 		# it is -- so grepping the HTML would be grepping a bundle.
-		got=$(c -o /dev/null -w '%{http_code}' "${l}" -H "Cookie: ${cookie}")
+		got=$(c -o /dev/null -w '%{http_code}' "${l}")
 		[ "${got}" = "200" ] || die "consent=ask answered ${got} where a screen was asked for"
-		asking=$(c "${LOGIN}/flow?consent_challenge=${consent}" -H "Cookie: ${cookie}")
+		asking=$(c "${LOGIN}/flow?consent_challenge=${consent}")
 		printf '%s' "${asking}" | grep -q "${OAUTH_CLIENT}" || die "the screen has nothing to say which app is asking: ${asking}"
 		step "consent, drawn and not yet granted" "a screen"
 
-		l=$(c -o /dev/null -D - -X POST "${LOGIN}/consent" -H "Cookie: ${cookie}" \
+		l=$(c -o /dev/null -D - -X POST "${LOGIN}/consent" \
 			-d "consent_challenge=${consent}" -d "allow=1" | loc | fix)
 		step "somebody says allow" "$(printf '%s' "${l}" | cut -c1-40)…"
 	else
-		l=$(c -o /dev/null -D - "${l}" -H "Cookie: ${cookie}" | loc | fix)
+		l=$(c -o /dev/null -D - "${l}" | loc | fix)
 		step "consent -> hydra" "$(printf '%s' "${l}" | cut -c1-40)…"
 	fi
 

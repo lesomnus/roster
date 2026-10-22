@@ -58,8 +58,10 @@ func (Credential) Edges() []ent.Edge {
 
 func (Credential) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
+		index.Fields("date_created", "id").
+			StorageKey("credential_page"),
 		index.Fields("holder_id", "kind", "name").
+			StorageKey("credential_kind").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}

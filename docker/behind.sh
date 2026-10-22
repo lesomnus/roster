@@ -27,7 +27,7 @@ set -eu
 # `scripts/cluster.sh` runs this same script as a Job inside a cluster where they
 # are Services and the issuer is https behind something that ends TLS.
 : "${ISSUER:=http://hydra.test:4444}"
-: "${LOGIN:=http://login:8091}"
+: "${LOGIN:=http://login.test:8091}"
 : "${PROXY:=http://behind.test:4180}"
 # Which OAuth client the proxy is, for the one URL this walk builds by hand: the
 # proxy has no way to put an `id_token_hint` on a sign-out, so the `client_id` is
@@ -94,10 +94,12 @@ cookie=$(printf '%s' "${head}" | awk '/^[Ss]et-[Cc]ookie:/{print $2}' | sed 's/;
 # looks like. It cost a CI run to read the first sentence as the only one.
 [ -n "${cookie}" ] || die "no session from the first form: $(printf '%s' "${head}" | code) -- a wrong password, or a challenge for a client this app fronts nobody for"
 
-to=$(c -X POST "${LOGIN}/accept?login_challenge=${challenge}" -H "Cookie: ${cookie}" \
+# The jar carries that cookie, as `docker/flow.sh` says, and nothing sends it
+# by hand: beside the jar's, a second is none to `authsession`.
+to=$(c -X POST "${LOGIN}/accept?login_challenge=${challenge}" \
 	| sed 's/.*"redirect_to":"//; s/".*//; s|\\u0026|\&|g' | fix)
 l=$(c -o /dev/null -D - "${to}" | loc | fix)
-l=$(c -o /dev/null -D - "${l}" -H "Cookie: ${cookie}" | loc | fix)
+l=$(c -o /dev/null -D - "${l}" | loc | fix)
 step "${SEED_USER} signs in" "-> back to the proxy"
 
 # The callback, and then the page.

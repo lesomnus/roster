@@ -62,7 +62,8 @@ func (Link) Edges() []ent.Edge {
 
 func (Link) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("date_created", "id"),
+		index.Fields("date_created", "id").
+			StorageKey("link_page"),
 		index.Fields("secret").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),

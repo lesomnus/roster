@@ -4,11 +4,15 @@ import (
 	"context"
 	"time"
 
+	"uuid"
+
 	"github.com/lesomnus/otx/log"
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/spin"
 
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/delegation"
+	"github.com/lesomnus/roster/server/expire"
 )
 
 // Swept is how often expired delegations are collected.
@@ -39,10 +43,12 @@ const Swept = time.Hour
 //
 // It takes the ent client rather than an `app.Server`, and that is the one
 // place in this package that does. A sweep is not a caller: there is nobody to
-// narrow it to, nothing to record about it in a trail, and no version to
-// compare -- and going through the stack would produce a `Watch` event and an
-// `Audit` row per collected row, which is the cost this is trying to remove
-// arriving in a different table.
+// narrow it to and no version to compare -- and going through the stack would
+// produce a `Watch` event and a write through the servers per collected row,
+// which is the cost this is trying to remove arriving in a different table.
+// What it keeps is a line of the trail per row saying it went (`expire.Rows`,
+// payday#115), since a delegation the trail says is there and is not is
+// otherwise what one revoked by deleting it in the database looks like.
 //
 // # What it does not do
 //
@@ -50,13 +56,13 @@ const Swept = time.Hour
 // row is out of reach the moment it is erased -- `<Entity>Pick` narrows to the
 // live rows -- so what is left is a row taking up space until its own clock
 // runs out, and one pass rather than two is worth more than the space.
-func Sweep(db *ent.Client, every time.Duration) spin.Func {
+func Sweep(db *ent.Client, cs audit.Contents, every time.Duration) spin.Func {
 	if every <= 0 {
 		every = Swept
 	}
 
 	return spin.Every(every, func(ctx context.Context) error {
-		n, err := Collect(ctx, db)
+		n, err := Collect(ctx, db, cs)
 		if err != nil {
 			// A pass that failed is a pass, and the next one is in an hour: a
 			// database that blinked is not a reason to take the process down,
@@ -79,8 +85,18 @@ func Sweep(db *ent.Client, every time.Duration) spin.Func {
 // Separate so that a test can run one rather than start a loop, and so that a
 // deployment with an opinion about when this happens -- a cron, a maintenance
 // window -- has something to call.
-func Collect(ctx context.Context, db *ent.Client) (int, error) {
-	return db.Delegation.Delete().
-		Where(delegation.DateExpiresLT(time.Now())).
-		Exec(ctx)
+func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error) {
+	now := time.Now()
+
+	return expire.Rows(ctx, db, cs, Expired,
+		func(ctx context.Context, db *ent.Client) ([]uuid.UUID, error) {
+			return db.Delegation.Query().Where(delegation.DateExpiresLT(now)).Limit(audit.RowsPage).Ids(ctx)
+		},
+		func(ctx context.Context, db *ent.Client, ids []uuid.UUID) (int, error) {
+			return db.Delegation.Delete().Where(delegation.IdIn(ids...)).Exec(ctx)
+		},
+	)
 }
+
+// Expired is the act a delegation the sweep collected is on the trail as.
+const Expired = "roster.keys.expire"

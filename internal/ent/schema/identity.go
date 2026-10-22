@@ -49,8 +49,10 @@ func (Identity) Edges() []ent.Edge {
 
 func (Identity) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("tenant_id", "date_created", "id"),
+		index.Fields("tenant_id", "date_created", "id").
+			StorageKey("identity_page"),
 		index.Fields("tenant_id", "provider", "subject").
+			StorageKey("identity_subject").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}

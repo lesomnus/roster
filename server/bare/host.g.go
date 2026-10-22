@@ -182,6 +182,7 @@ func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -463,6 +464,7 @@ func (s HostServiceServer) apply(ctx context.Context, ref *rstr.HostRef, doc *pa
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -554,6 +556,7 @@ func (s HostServiceServer) Erase(ctx context.Context, req *rstr.HostRef) (*rstr.
 		p = host.And(p, host.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Host.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -767,6 +770,7 @@ func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAd
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -1048,6 +1052,7 @@ func (s MailDomainServiceServer) apply(ctx context.Context, ref *rstr.MailDomain
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -1139,6 +1144,7 @@ func (s MailDomainServiceServer) Erase(ctx context.Context, req *rstr.MailDomain
 		p = maildomain.And(p, maildomain.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.MailDomain.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())
@@ -1360,6 +1366,7 @@ func (s HostProofServiceServer) Add(ctx context.Context, req *rstr.HostProofAddR
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -1641,6 +1648,7 @@ func (s HostProofServiceServer) apply(ctx context.Context, ref *rstr.HostProofRe
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -1732,6 +1740,7 @@ func (s HostProofServiceServer) Erase(ctx context.Context, req *rstr.HostProofRe
 		p = hostproof.And(p, hostproof.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.HostProof.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())

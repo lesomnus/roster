@@ -127,8 +127,14 @@ func (_u *LinkUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(link.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(link.FieldDateUpdated); ok {
+		_spec.SetField(link.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(link.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(link.FieldDateErased); ok {
+		_spec.SetField(link.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(link.FieldDateErased, field.TypeTime)
@@ -286,8 +292,14 @@ func (_u *LinkUpdateOne) sqlSave(ctx context.Context) (_node *Link, err error) {
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(link.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(link.FieldDateUpdated); ok {
+		_spec.SetField(link.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(link.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(link.FieldDateErased); ok {
+		_spec.SetField(link.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(link.FieldDateErased, field.TypeTime)

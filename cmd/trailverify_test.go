@@ -3,15 +3,13 @@ package cmd_test
 import (
 	"bytes"
 	"compress/gzip"
-	"crypto/ed25519"
-	"crypto/rand"
-	"crypto/x509"
-	"encoding/pem"
 	"slices"
 	"testing"
 	"time"
 
 	"github.com/lesomnus/flob"
+	"github.com/lesomnus/payday/config"
+	"github.com/lesomnus/payday/pdtest"
 	"github.com/lesomnus/payday/trail"
 	"github.com/stretchr/testify/require"
 
@@ -36,6 +34,7 @@ func TestTheArchiveIsCheckedAgainstTheDatabasesAccountOfIt(t *testing.T) {
 	b, ctx := build(t, func(cc *cmd.Config) {
 		cc.Audit.Archive = dir
 		cc.Audit.Retain = time.Nanosecond
+		cc.Audit.Checkpoints.Key = pdtest.Key(t)
 		c = *cc
 	})
 	b.holder(t, ctx, b.Contoso, "another")
@@ -84,14 +83,16 @@ func TestTheArchiveIsCheckedAgainstTheDatabasesAccountOfIt(t *testing.T) {
 	x.ErrorContains(err, "1 finding(s)", "the chunk nobody wrote is still the one finding")
 }
 
-// TestRowsFromBeforeTheKeyAreAcceptedOnce is what a deployment that signs its
-// checkpoints does on the payday that signs the manifest's rows too
-// (lesomnus/payday#58, roster#110). A row nobody signed looks the same whether
-// it was written before rows were signed or had its signature taken off, so
-// with a key every one of them is a finding until an operator who has looked
-// runs `trail accept`, once. After that, verify is clean, and what the next
-// prune writes is signed as it goes.
-func TestRowsFromBeforeTheKeyAreAcceptedOnce(t *testing.T) {
+// TestRowsNobodySignedAreAcceptedOnce is what a deployment does whose
+// archive's account has rows nobody signed: written by a build from before rows
+// were signed (lesomnus/payday#58, roster#110), or by one that kept the archive
+// without a key at all (payday#115) -- which is not a state this build can
+// make, since it keeps no archive without one. A row nobody signed looks the
+// same whether it was written so or had its signature taken off, which is how
+// this makes one, and each is a finding until an operator who has looked runs
+// `trail accept`, once. After that, verify is clean, and what the next prune
+// writes is signed as it goes.
+func TestRowsNobodySignedAreAcceptedOnce(t *testing.T) {
 	x := require.New(t)
 
 	dir := t.TempDir()
@@ -99,21 +100,20 @@ func TestRowsFromBeforeTheKeyAreAcceptedOnce(t *testing.T) {
 	b, ctx := build(t, func(cc *cmd.Config) {
 		cc.Audit.Archive = dir
 		cc.Audit.Retain = time.Nanosecond
+		cc.Audit.Checkpoints.Key = pdtest.Key(t)
 		c = *cc
 	})
 	b.holder(t, ctx, b.Contoso, "before")
 
 	run := func(args ...string) error { return cli.Cmd(&c).Run(ctx, args) }
 
-	// Written while the deployment had no key.
 	x.NoError(run("trail", "prune"))
 	x.NoError(run("trail", "verify"))
 
-	_, priv, err := ed25519.GenerateKey(rand.Reader)
+	// The rows as a build that did not sign them left them.
+	n, err := b.Ent.Archived.Update().SetSignature([]byte{}).SetSignedBy([]byte{}).Save(ctx)
 	x.NoError(err)
-	der, err := x509.MarshalPKCS8PrivateKey(priv)
-	x.NoError(err)
-	c.Audit.Checkpoints.Key = string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der}))
+	x.NotZero(n, "the account has no rows, so this proves nothing")
 
 	err = run("trail", "verify")
 	x.ErrorContains(err, "finding(s)", "rows nobody signed were taken for signed ones")
@@ -166,17 +166,12 @@ func TestRowsFromBeforeTheKeyAreAcceptedOnce(t *testing.T) {
 func TestADatabaseRestoredFromABackupIsAcceptedOnce(t *testing.T) {
 	x := require.New(t)
 
-	_, priv, err := ed25519.GenerateKey(rand.Reader)
-	x.NoError(err)
-	der, err := x509.MarshalPKCS8PrivateKey(priv)
-	x.NoError(err)
-
 	dir := t.TempDir()
 	var c cmd.Config
 	b, ctx := build(t, func(cc *cmd.Config) {
 		cc.Audit.Archive = dir
 		cc.Audit.Retain = time.Nanosecond
-		cc.Audit.Checkpoints.Key = string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der}))
+		cc.Audit.Checkpoints.Key = pdtest.Key(t)
 		c = *cc
 	})
 	run := func(args ...string) error { return cli.Cmd(&c).Run(ctx, args) }
@@ -234,4 +229,41 @@ func TestADatabaseRestoredFromABackupIsAcceptedOnce(t *testing.T) {
 	x.NoError(run("trail", "prune"))
 	x.Greater(latest(), since+1)
 	x.NoError(run("trail", "verify", "--full"))
+}
+
+// TestAnArchiveIsKeptWithAKey: the account of an archive is signed, and there
+// is no key everybody knows to sign it with (payday#115). So a deployment that
+// names an archive and no `audit.checkpoints.key` is refused where it comes up,
+// and so is a trail command handed an archive of its own -- with the setting
+// that means it, and how to make one -- rather than writing an account the
+// first verification finds nothing signed.
+func TestAnArchiveIsKeptWithAKey(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	drv, dsn := pdtest.DB(t)
+	_, err := cmd.Build(ctx, cmd.Config{
+		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch: config.WatchConfig{Broker: config.BrokerMemory},
+		Audit: config.AuditConfig{Archive: t.TempDir(), Retain: 90 * 24 * time.Hour},
+	})
+	x.ErrorIs(err, trail.ErrNoKey)
+	x.ErrorContains(err, "audit.checkpoints.key")
+
+	t.Run("and a trail command handed one", func(t *testing.T) {
+		x := require.New(t)
+
+		var c cmd.Config
+		b, ctx := build(t, func(cc *cmd.Config) { c = *cc })
+		b.holder(t, ctx, b.Contoso, "another")
+		was, err := b.Ent.Audit.Query().Count(ctx)
+		x.NoError(err)
+
+		err = cli.Cmd(&c).Run(ctx, []string{"trail", "prune", "--older-than", "1ns", "--to", t.TempDir()})
+		x.ErrorContains(err, "audit.checkpoints.key")
+
+		now, err := b.Ent.Audit.Query().Count(ctx)
+		x.NoError(err)
+		x.Equal(was, now, "a prune refused for its key took rows out of the database")
+	})
 }

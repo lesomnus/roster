@@ -191,8 +191,14 @@ func (_u *EmailUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Address(); ok {
 		_spec.SetField(email.FieldAddress, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(email.FieldAddress); ok {
+		_spec.SetField(email.FieldAddress, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.DateVerified(); ok {
 		_spec.SetField(email.FieldDateVerified, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(email.FieldDateVerified); ok {
+		_spec.SetField(email.FieldDateVerified, field.TypeTime, e)
 	}
 	if _u.mutation.DateVerifiedCleared() {
 		_spec.ClearField(email.FieldDateVerified, field.TypeTime)
@@ -203,8 +209,14 @@ func (_u *EmailUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(email.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(email.FieldDateUpdated); ok {
+		_spec.SetField(email.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(email.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(email.FieldDateErased); ok {
+		_spec.SetField(email.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(email.FieldDateErased, field.TypeTime)
@@ -453,8 +465,14 @@ func (_u *EmailUpdateOne) sqlSave(ctx context.Context) (_node *Email, err error)
 	if value, ok := _u.mutation.Address(); ok {
 		_spec.SetField(email.FieldAddress, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(email.FieldAddress); ok {
+		_spec.SetField(email.FieldAddress, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.DateVerified(); ok {
 		_spec.SetField(email.FieldDateVerified, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(email.FieldDateVerified); ok {
+		_spec.SetField(email.FieldDateVerified, field.TypeTime, e)
 	}
 	if _u.mutation.DateVerifiedCleared() {
 		_spec.ClearField(email.FieldDateVerified, field.TypeTime)
@@ -465,8 +483,14 @@ func (_u *EmailUpdateOne) sqlSave(ctx context.Context) (_node *Email, err error)
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(email.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(email.FieldDateUpdated); ok {
+		_spec.SetField(email.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(email.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(email.FieldDateErased); ok {
+		_spec.SetField(email.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(email.FieldDateErased, field.TypeTime)

@@ -265,11 +265,20 @@ func (_u *ConnectionUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(connection.FieldName, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldName); ok {
+		_spec.SetField(connection.FieldName, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(connection.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldDesc); ok {
+		_spec.SetField(connection.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(connection.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldLabels); ok {
+		_spec.SetField(connection.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(connection.FieldLabels, field.TypeJson)
@@ -277,11 +286,20 @@ func (_u *ConnectionUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.Issuer(); ok {
 		_spec.SetField(connection.FieldIssuer, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldIssuer); ok {
+		_spec.SetField(connection.FieldIssuer, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.ClientId(); ok {
 		_spec.SetField(connection.FieldClientId, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldClientId); ok {
+		_spec.SetField(connection.FieldClientId, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Scopes(); ok {
 		_spec.SetField(connection.FieldScopes, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldScopes); ok {
+		_spec.SetField(connection.FieldScopes, field.TypeJson, e)
 	}
 	if value, ok := _u.mutation.AppendedScopes(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -294,8 +312,14 @@ func (_u *ConnectionUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.SecretRef(); ok {
 		_spec.SetField(connection.FieldSecretRef, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldSecretRef); ok {
+		_spec.SetField(connection.FieldSecretRef, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.SubjectClaim(); ok {
 		_spec.SetField(connection.FieldSubjectClaim, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldSubjectClaim); ok {
+		_spec.SetField(connection.FieldSubjectClaim, field.TypeString, e)
 	}
 	if _u.mutation.SubjectClaimCleared() {
 		_spec.ClearField(connection.FieldSubjectClaim, field.TypeString)
@@ -303,14 +327,23 @@ func (_u *ConnectionUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.Provisions(); ok {
 		_spec.SetField(connection.FieldProvisions, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldProvisions); ok {
+		_spec.SetField(connection.FieldProvisions, field.TypeBool, e)
+	}
 	if _u.mutation.ProvisionsCleared() {
 		_spec.ClearField(connection.FieldProvisions, field.TypeBool)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(connection.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldDateUpdated); ok {
+		_spec.SetField(connection.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(connection.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldDateErased); ok {
+		_spec.SetField(connection.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(connection.FieldDateErased, field.TypeTime)
@@ -605,11 +638,20 @@ func (_u *ConnectionUpdateOne) sqlSave(ctx context.Context) (_node *Connection, 
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(connection.FieldName, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldName); ok {
+		_spec.SetField(connection.FieldName, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(connection.FieldDesc, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldDesc); ok {
+		_spec.SetField(connection.FieldDesc, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Labels(); ok {
 		_spec.SetField(connection.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldLabels); ok {
+		_spec.SetField(connection.FieldLabels, field.TypeJson, e)
 	}
 	if _u.mutation.LabelsCleared() {
 		_spec.ClearField(connection.FieldLabels, field.TypeJson)
@@ -617,11 +659,20 @@ func (_u *ConnectionUpdateOne) sqlSave(ctx context.Context) (_node *Connection, 
 	if value, ok := _u.mutation.Issuer(); ok {
 		_spec.SetField(connection.FieldIssuer, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldIssuer); ok {
+		_spec.SetField(connection.FieldIssuer, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.ClientId(); ok {
 		_spec.SetField(connection.FieldClientId, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldClientId); ok {
+		_spec.SetField(connection.FieldClientId, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.Scopes(); ok {
 		_spec.SetField(connection.FieldScopes, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldScopes); ok {
+		_spec.SetField(connection.FieldScopes, field.TypeJson, e)
 	}
 	if value, ok := _u.mutation.AppendedScopes(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
@@ -634,8 +685,14 @@ func (_u *ConnectionUpdateOne) sqlSave(ctx context.Context) (_node *Connection, 
 	if value, ok := _u.mutation.SecretRef(); ok {
 		_spec.SetField(connection.FieldSecretRef, field.TypeString, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldSecretRef); ok {
+		_spec.SetField(connection.FieldSecretRef, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.SubjectClaim(); ok {
 		_spec.SetField(connection.FieldSubjectClaim, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldSubjectClaim); ok {
+		_spec.SetField(connection.FieldSubjectClaim, field.TypeString, e)
 	}
 	if _u.mutation.SubjectClaimCleared() {
 		_spec.ClearField(connection.FieldSubjectClaim, field.TypeString)
@@ -643,14 +700,23 @@ func (_u *ConnectionUpdateOne) sqlSave(ctx context.Context) (_node *Connection, 
 	if value, ok := _u.mutation.Provisions(); ok {
 		_spec.SetField(connection.FieldProvisions, field.TypeBool, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldProvisions); ok {
+		_spec.SetField(connection.FieldProvisions, field.TypeBool, e)
+	}
 	if _u.mutation.ProvisionsCleared() {
 		_spec.ClearField(connection.FieldProvisions, field.TypeBool)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(connection.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldDateUpdated); ok {
+		_spec.SetField(connection.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(connection.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(connection.FieldDateErased); ok {
+		_spec.SetField(connection.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(connection.FieldDateErased, field.TypeTime)

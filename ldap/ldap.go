@@ -462,7 +462,7 @@ func (d *Directory) fronted(ctx context.Context) (map[string]*tenant, error) {
 				// so the tenant goes unfronted and the directory serves everybody
 				// else. Failing here failed the directory for every tenant.
 				d.c.Log.Warn("ldap: a tenant nominated a holder for this directory that cannot read it; not fronting it",
-					slog.String("tenant", id.String()), slog.String("err", err.Error()))
+					slog.String("tenant", id.String()), slog.Any("err", err))
 				continue
 			}
 			t.alias = tn.GetAlias()

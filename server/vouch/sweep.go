@@ -4,12 +4,16 @@ import (
 	"context"
 	"time"
 
+	"uuid"
+
 	"github.com/lesomnus/otx/log"
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/spin"
 
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/continuation"
 	"github.com/lesomnus/roster/internal/ent/link"
+	"github.com/lesomnus/roster/server/expire"
 )
 
 // Swept is how often expired attempts and links are collected.
@@ -33,13 +37,15 @@ const Swept = 10 * time.Minute
 // It also collects **spent** ones once they expire. Spending is an erase, so a
 // spent row is out of reach immediately and takes up space until its own clock
 // runs out -- one pass rather than two is worth more than the space.
-func Sweep(db *ent.Client, every time.Duration) spin.Func {
+//
+// Each one collected is on the trail as [Expired], for `expire.Rows`' reason.
+func Sweep(db *ent.Client, cs audit.Contents, every time.Duration) spin.Func {
 	if every <= 0 {
 		every = Swept
 	}
 
 	return spin.Every(every, func(ctx context.Context) error {
-		n, err := Collect(ctx, db)
+		n, err := Collect(ctx, db, cs)
 		if err != nil {
 			log.From(ctx).WarnContext(ctx, "sweep: attempts and links", "err", err)
 
@@ -58,19 +64,33 @@ func Sweep(db *ent.Client, every time.Duration) spin.Func {
 // Both tables, because they are the same fact one shape apart -- a row that
 // exists for minutes between two requests -- and two loops on two clocks would
 // be two things to notice had stopped.
-func Collect(ctx context.Context, db *ent.Client) (int, error) {
+func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error) {
 	now := time.Now()
 
-	n, err := db.Continuation.Delete().
-		Where(continuation.DateExpiresLT(now)).
-		Exec(ctx)
+	n, err := expire.Rows(ctx, db, cs, Expired,
+		func(ctx context.Context, db *ent.Client) ([]uuid.UUID, error) {
+			return db.Continuation.Query().Where(continuation.DateExpiresLT(now)).Limit(audit.RowsPage).Ids(ctx)
+		},
+		func(ctx context.Context, db *ent.Client, ids []uuid.UUID) (int, error) {
+			return db.Continuation.Delete().Where(continuation.IdIn(ids...)).Exec(ctx)
+		},
+	)
 	if err != nil {
 		return n, err
 	}
 
-	m, err := db.Link.Delete().
-		Where(link.DateExpiresLT(now)).
-		Exec(ctx)
+	m, err := expire.Rows(ctx, db, cs, Expired,
+		func(ctx context.Context, db *ent.Client) ([]uuid.UUID, error) {
+			return db.Link.Query().Where(link.DateExpiresLT(now)).Limit(audit.RowsPage).Ids(ctx)
+		},
+		func(ctx context.Context, db *ent.Client, ids []uuid.UUID) (int, error) {
+			return db.Link.Delete().Where(link.IdIn(ids...)).Exec(ctx)
+		},
+	)
 
 	return n + m, err
 }
+
+// Expired is the act an attempt or a link the sweep collected is on the trail
+// as.
+const Expired = "roster.vouch.expire"

@@ -188,6 +188,7 @@ func (s ContinuationServiceServer) Add(ctx context.Context, req *rstr.Continuati
 		q.Stored(&stored)
 	}
 
+	tx.Writing()
 	u, err := q.Save(ctx)
 	if err != nil {
 		if err, ok := err.(*ent.ConstraintError); ok {
@@ -473,6 +474,7 @@ func (s ContinuationServiceServer) apply(ctx context.Context, ref *rstr.Continua
 		if !plan.WritesTo(13) {
 			q.SetDateUpdated(st.now())
 		}
+		tx.Writing()
 		if n, err := q.Save(ctx); err != nil {
 			if err, ok := err.(*ent.ConstraintError); ok {
 				if sqlgraph.IsUniqueConstraintError(err) {
@@ -564,6 +566,7 @@ func (s ContinuationServiceServer) Erase(ctx context.Context, req *rstr.Continua
 		p = continuation.And(p, continuation.IdEQ(v.Id))
 	}
 
+	tx.Writing()
 	u := st.Db.Continuation.Update().Where(p)
 	u.SetDateErased(st.now())
 	u.SetDateUpdated(st.now())

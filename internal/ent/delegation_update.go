@@ -133,8 +133,14 @@ func (_u *DelegationUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(delegation.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(delegation.FieldDateUpdated); ok {
+		_spec.SetField(delegation.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(delegation.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(delegation.FieldDateErased); ok {
+		_spec.SetField(delegation.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(delegation.FieldDateErased, field.TypeTime)
@@ -298,8 +304,14 @@ func (_u *DelegationUpdateOne) sqlSave(ctx context.Context) (_node *Delegation, 
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(delegation.FieldDateUpdated, field.TypeTime, value)
 	}
+	if e, ok := _u.mutation.FieldExpr(delegation.FieldDateUpdated); ok {
+		_spec.SetField(delegation.FieldDateUpdated, field.TypeTime, e)
+	}
 	if value, ok := _u.mutation.DateErased(); ok {
 		_spec.SetField(delegation.FieldDateErased, field.TypeTime, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(delegation.FieldDateErased); ok {
+		_spec.SetField(delegation.FieldDateErased, field.TypeTime, e)
 	}
 	if _u.mutation.DateErasedCleared() {
 		_spec.ClearField(delegation.FieldDateErased, field.TypeTime)

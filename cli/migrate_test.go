@@ -1,14 +1,19 @@
 package cli
 
 import (
+	"slices"
+	"strings"
 	"testing"
 
 	atlas "ariga.io/atlas/sql/schema"
 	"github.com/protobuf-orm/ent/dialect/sql/schema"
 	"github.com/stretchr/testify/require"
 
+	"github.com/lesomnus/payday/rename"
+
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	rstr "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/pd"
 )
 
 // TestAColumnComesToATableThatHasRows is an upgrade, which no other test here
@@ -86,22 +91,24 @@ func TestAColumnComesToATableThatHasRows(t *testing.T) {
 	x.Empty(planned, "a database already migrated was planned to change again")
 }
 
-// TestAnIndexThisBuildReplacedIsDropped: an index an earlier build made and
-// this one replaced goes when the database is migrated, and what replaced it
-// is there (lesomnus/rove#122). Nothing listed as replaced is an index this
-// build makes, or every migration would drop what it had just made.
-func TestAnIndexThisBuildReplacedIsDropped(t *testing.T) {
+// TestAnIndexAnEarlierBuildMadeIsMovedToItsName: an index an earlier build
+// stored under the name of its columns is moved to the name the schema
+// declares when the database is migrated (payday#132), rather than made again
+// beside it -- which is what the list of replaced names this replaces dropped
+// by hand (lesomnus/rove#122). Every name it moves one to is an index this
+// build declares, or every migration would rename into nothing.
+func TestAnIndexAnEarlierBuildMadeIsMovedToItsName(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
 
-	declared := map[string]bool{}
+	declared := map[string]*schema.Index{}
 	for _, tb := range entmigrate.Tables {
 		for _, i := range tb.Indexes {
-			declared[i.Name] = true
+			declared[i.Name] = i
 		}
 	}
-	for _, v := range Replaced {
-		x.False(declared[v], "%s is replaced, and this build declares it", v)
+	for _, v := range pd.IndexRenames {
+		x.Contains(declared, v.To, "%s is moved to an index this build does not declare", v.From)
 	}
 
 	s := deployment(t)
@@ -115,20 +122,26 @@ func TestAnIndexThisBuildReplacedIsDropped(t *testing.T) {
 		return n > 0
 	}
 
-	// Two the build before this one made: a list's, which began with the
-	// time, and one declared (holder, kind, name) that had the edge last.
+	// A list's index, where the build before this one left it: under the
+	// name of its columns.
+	i := slices.IndexFunc(pd.IndexRenames, func(v rename.Index) bool { return v.Table == "team" && v.To == "team_page" })
+	x.GreaterOrEqual(i, 0)
+	page := pd.IndexRenames[i]
+	cols := []string{}
+	for _, c := range declared[page.To].Columns {
+		cols = append(cols, c.Name)
+	}
 	for _, q := range []string{
-		`CREATE INDEX team_date_created_id ON team (date_created, id)`,
-		`CREATE INDEX credential_kind_name_holder_id ON credential (kind, name, holder_id)`,
+		"DROP INDEX " + page.To,
+		"CREATE INDEX " + page.From + " ON team (" + strings.Join(cols, ", ") + ")",
 	} {
 		_, err := s.Db.ExecContext(ctx, q)
 		x.NoError(err, q)
 	}
-	x.True(has("team_date_created_id"))
+	x.True(has(page.From))
+	x.False(has(page.To))
 
 	x.NoError(Migrate(ctx, s))
-	x.False(has("team_date_created_id"))
-	x.False(has("credential_kind_name_holder_id"))
-	x.True(has("team_tenant_id_date_created_id"))
-	x.True(has("credential_holder_id_kind_name"))
+	x.False(has(page.From), "the old name stayed beside the new one")
+	x.True(has(page.To))
 }

@@ -9,6 +9,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"reflect"
@@ -298,8 +299,35 @@ type HolderConfig struct {
 // Read off `audit:` rather than repeated here, because there is one archive and
 // two things that write to it. A deployment that kept them apart would have a
 // person destroyed in one copy and not the other, which is the failure this
-// whole act exists to prevent.
-func (c HolderConfig) Trail(from Config) (trail.Policy, error) { return from.Audit.Policy() }
+// whole act exists to prevent. It is [TrailPolicy], lease and all.
+func (c HolderConfig) Trail(ctx context.Context, from Config) (trail.Policy, error) {
+	return TrailPolicy(ctx, from)
+}
+
+// TrailPolicy is `audit:` as the policy every act of this process that moves
+// or erases the trail's rows applies -- a pass, a person forgotten, a tenant
+// destroyed, an archive purged by hand -- holding the deployment's lease for the
+// turns those acts take (`trail.Policy.Lease`, payday#115), so that none undoes
+// another: a pass writing back into the archive what an erasure had just taken
+// out, in this process or another.
+//
+// Its own lease, and not the one the loops are run under: a loop's lease is
+// which process runs it, and the trail's turn is a lock any process takes for a
+// moment. A deployment that runs no loops (`spin.lease: none`) has nothing to
+// take turns on, and its policy says so where it is logged.
+func TrailPolicy(ctx context.Context, c Config) (trail.Policy, error) {
+	p, err := c.Audit.Policy()
+	if err != nil {
+		return trail.Policy{}, err
+	}
+	if c.Spin.Lease != "" && c.Spin.Lease != config.LeaseNone {
+		if p.Lease, err = c.Spin.Build(ctx, c.Db); err != nil {
+			return trail.Policy{}, fmt.Errorf("spin: %w", err)
+		}
+	}
+
+	return p, nil
+}
 
 // VouchConfig is what checking secrets needs beyond the rows.
 type VouchConfig struct {
