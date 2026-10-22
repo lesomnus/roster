@@ -225,6 +225,8 @@ services:
     depends_on:
       customer:
         condition: service_completed_successfully
+      mailpit:
+        condition: service_started
     entrypoint: ["/usr/local/bin/account.sh"]
     environment:
       SEED_CUSTOMER: ${SEED_CUSTOMER:-contoso}
@@ -238,15 +240,15 @@ services:
       ROSTER_ACCOUNT_MAIL_PLAINTEXT_HOSTS: '["mailpit"]'
     ports:
       - "8090:8090"
+    volumes:
+      - account:/var/lib/roster-account:ro
 
   # A mailbox that catches what the account app sends and sends nothing on:
-  # http://localhost:8025 reads it.
+  # http://localhost:8025 reads it. It is handed nothing of roster's.
   mailpit:
     image: axllent/mailpit:v1.31.6@sha256:23fe39e81bde596a918000b3135c0f85dc8bb4c9ea6be274b051143f3e300387
     ports:
       - "8025:8025"
-    volumes:
-      - account:/var/lib/roster-account:ro
 
   # The directory: roster over LDAP, its own process with its own key, for
   # anything on the network that speaks nothing else. Bind with an app
