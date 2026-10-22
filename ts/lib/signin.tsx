@@ -220,6 +220,12 @@ export interface SignInProps {
 	 */
 	at?: (path: string) => string
 
+	/**
+	 * What the page has to tell the person before anything else: that the
+	 * sign-out which brought them here left what they saw on this browser.
+	 */
+	said?: string
+
 	onDone: () => void
 }
 
@@ -298,6 +304,12 @@ export function SignIn(props: SignInProps): React.ReactNode {
 	return (
 		<main className="sign-in">
 			<h1>{brand}</h1>
+
+			{props.said !== undefined && (
+				<p className="bad" role="alert">
+					{props.said}
+				</p>
+			)}
 
 			{mode === 'in' && props.password && step === null && (
 				<form onSubmit={first}>

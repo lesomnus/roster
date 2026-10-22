@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+import { kept, mirrors, movedOn } from './mirror.js'
+
 // The admin console, as an operator uses it: sign in with the password `roster init`
 // took, stand a tenant up from the tenants screen -- which is the page
 // reaching the admin listener from another origin, with the session cookie
@@ -98,4 +100,25 @@ test('an operator signs in and stands a customer up', async ({ page }) => {
 	await row.locator('input[name=desc]').fill('production')
 	await row.locator('button', { hasText: 'save' }).click()
 	await expect(names.locator('tr', { hasText: 'fabrikam.test' })).toContainText('production')
+})
+
+// A sign-out that could not clear this browser's copy of what the operator saw
+// says so, rather than leave them believing nothing of it is here: the mirror
+// was moved on by another page, as a later deploy's would, so the forget
+// cannot reach it.
+test('a sign-out that leaves what was seen on this browser says so', async ({ page }) => {
+	await page.goto(base)
+	await page.locator('input[name=alias]').fill(operator)
+	await page.locator('input[name=password]').fill(password)
+	await page.locator('button[type=submit]', { hasText: 'sign in' }).click()
+	await expect(page.locator('nav .who')).toHaveText(operator)
+	await expect.poll(() => mirrors(page)).toHaveLength(1)
+	const [theirs = ''] = await mirrors(page)
+	await expect.poll(() => kept(page, theirs)).toBeGreaterThan(0)
+
+	await movedOn(page, theirs)
+	await page.getByRole('button', { name: 'sign out' }).click()
+
+	await expect(page.getByRole('alert')).toContainText('this browser still holds what you saw here')
+	await expect(page.locator('input[name=password]')).toBeVisible()
 })

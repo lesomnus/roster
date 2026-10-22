@@ -49,7 +49,7 @@ import { expiries, expiresAt, until } from '#lib/expiry.js'
 import { b64url, SignIn, vendor, type Vendor } from '#lib/signin.js'
 import { Picture } from '#lib/picture.js'
 import { caller } from '#lib/caller.js'
-import { letGo, open } from '#lib/store.js'
+import { letGo, open, stillHere } from '#lib/store.js'
 import '#lib/style.css'
 
 const root = createRoot(document.getElementById('root') as HTMLElement)
@@ -1266,10 +1266,15 @@ function ByMail(props: { alias: string; proved: string[] }): React.ReactNode {
 }
 
 /** Left is what is left to say once the account is gone. */
-function Left(props: { brand: string; forgotten: string }): React.ReactNode {
+function Left(props: { brand: string; forgotten: string; said?: string | undefined }): React.ReactNode {
 	return (
 		<main className="left">
 			<h1>your account is deleted</h1>
+			{props.said !== undefined && (
+				<p className="bad" role="alert">
+					{props.said}
+				</p>
+			)}
 			<p>
 				You are signed out of {props.brand} everywhere.{' '}
 				{props.forgotten !== ''
@@ -1314,8 +1319,11 @@ const transport = createConnectTransport({
  * refused for a session that is not this store's -- which is how a page left
  * holding one person's store learns somebody else signed in, in another tab,
  * and lets go of it rather than drawing that person's rows into it.
+ *
+ * `said` is what the form says first, when there is one to draw: that the
+ * sign-out before it could not clear this browser (`stillHere`).
  */
-async function boot(): Promise<void> {
+async function boot(said?: string): Promise<void> {
 	const of = await providers()
 	if (of === null) {
 		root.render(
@@ -1349,6 +1357,7 @@ async function boot(): Promise<void> {
 					providerHref={(n: string) => `/login?connection=${encodeURIComponent(n)}${again}`}
 					recover="/recover"
 					onDone={() => void boot()}
+					{...(said !== undefined ? { said } : {})}
 				/>
 			</StrictMode>,
 		)
@@ -1358,10 +1367,15 @@ async function boot(): Promise<void> {
 	const app = await open(transport, { name: 'roster', identity })
 
 	// What the page does once it has let go of the store: ask again whom to
-	// draw for, unless the account is gone and there is something to say.
-	let then = (): void => void boot()
+	// draw for, unless the account is gone and there is something to say --
+	// and say too when the forget did not reach this browser's copy, rather
+	// than leave the person to believe nothing of theirs is here.
+	let then = (said?: string): void => void boot(said)
 	const held = calls.hold(identity, (forget) => {
-		void letGo(app, forget).then(() => then())
+		void letGo(app, forget).then(
+			() => then(),
+			() => then(stillHere),
+		)
 	})
 
 	// Signing out ends the session -- the delegation it held is revoked at
@@ -1375,10 +1389,10 @@ async function boot(): Promise<void> {
 	// forgotten here, and in every tab, as it is at roster.
 	const gone = (forgotten: string): void => {
 		void fetch('/session', { method: 'DELETE' }).finally(() => {
-			then = () =>
+			then = (said) =>
 				root.render(
 					<StrictMode>
-						<Left brand={brandOf(of)} forgotten={forgotten} />
+						<Left brand={brandOf(of)} forgotten={forgotten} said={said} />
 					</StrictMode>,
 				)
 			held.out()

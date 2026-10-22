@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
+import { kept, mirrors, movedOn } from './mirror.js'
+
 // The user console, as somebody in a tenant uses it: sign in at the name their
 // tenant answers at, and see their own organisation.
 //
@@ -157,58 +159,6 @@ test('a tenant names its front door, and the sign-in page sends people there', a
 // before signed out, or only went away and left a session to end by itself.
 const grace = process.env['E2E_GRACE_PASSWORD'] ?? ''
 
-/**
- * The browser's IndexedDB, as far as `mirrors` and `kept` read it: what they
- * hand `page.evaluate` runs in the page, and this file is compiled for node,
- * which has none.
- */
-interface Req<T> {
-	readonly result: T
-	onsuccess: (() => void) | null
-	onerror: (() => void) | null
-}
-declare const indexedDB: {
-	databases(): Promise<{ name?: string }[]>
-	open(name: string): Req<{
-		readonly objectStoreNames: ArrayLike<string>
-		transaction(names: string[], mode: 'readonly'): { objectStore(name: string): { count(): Req<number> } }
-		close(): void
-	}>
-}
-
-/** mirrors is the stores this page has on the browser's disk. */
-async function mirrors(page: Page): Promise<string[]> {
-	return page.evaluate(async () =>
-		(await indexedDB.databases()).map((d) => d.name ?? '').filter((n) => n.startsWith('payday/roster:')),
-	)
-}
-
-/**
- * kept is how much of its caller's one mirror holds: every table of it but
- * `meta`, the stamp payday keeps of what the rows were written against. Asked
- * only of a mirror that is there, since asking would make one.
- */
-async function kept(page: Page, mirror: string): Promise<number> {
-	return page.evaluate(async (name) => {
-		const done = <T>(req: Req<T>): Promise<T> =>
-			new Promise((ok, no) => {
-				req.onsuccess = () => ok(req.result)
-				req.onerror = () => no(new Error(`cannot read ${name}`))
-			})
-
-		const db = await done(indexedDB.open(name))
-		try {
-			const tables = Array.from(db.objectStoreNames).filter((t) => t !== 'meta')
-			const tx = db.transaction(tables, 'readonly')
-			const counts = await Promise.all(tables.map((t) => done(tx.objectStore(t).count())))
-
-			return counts.reduce((a, b) => a + b, 0)
-		} finally {
-			db.close()
-		}
-	}, mirror)
-}
-
 async function signIn(page: Page, alias: string, secret: string): Promise<void> {
 	await page.locator('input[name=alias]').fill(alias)
 	await page.locator('input[name=password]').fill(secret)
@@ -244,6 +194,24 @@ test('the next person to sign in finds nothing of the one before', async ({ page
 	expect(await mirrors(page)).toContain(hers)
 	await signIn(page, who, password)
 	await expect.poll(() => mirrors(page)).not.toContain(hers)
+})
+
+// And a sign-out that could not clear the browser's copy says so, rather than
+// leave somebody believing nothing of theirs is here: the mirror was moved on
+// by another page, as a later deploy's would, so the forget cannot reach it.
+test('a sign-out that leaves what was seen on this browser says so', async ({ page }) => {
+	await page.goto(base)
+	await signIn(page, who, password)
+	await expect.poll(() => mirrors(page)).toHaveLength(1)
+	const [theirs = ''] = await mirrors(page)
+	await expect.poll(() => kept(page, theirs)).toBeGreaterThan(0)
+
+	await movedOn(page, theirs)
+	await page.getByRole('button', { name: 'sign out' }).click()
+
+	await expect(page.getByRole('alert')).toContainText('this browser still holds what you saw here')
+	await expect(page.locator('input[name=password]')).toBeVisible()
+	expect(await kept(page, theirs), 'the page said so of a mirror that is empty').toBeGreaterThan(0)
 })
 
 test('a sign-out in one tab is a sign-out in every tab', async ({ context }) => {

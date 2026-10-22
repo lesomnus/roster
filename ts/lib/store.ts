@@ -84,24 +84,26 @@ export async function open(transport: Transport, at: At, sweep = true): Promise<
  * letGo closes one of this app's stores, forgetting it first when `forget` is
  * set: the rows, the answers, the writes it kept, and its mirror.
  *
- * Forgetting the mirror is a write on the mirror's chain like any other, so it
- * is waited for before the mirror is closed. Closed under it, the write fails
- * where nobody sees, and the mirror keeps the caller's rows and answers on the
- * disk -- until somebody else signs in here and the sweep in [open] deletes
- * them, which may be never. Not the writes they never sent: those go at once,
- * by a transaction of their own. From `@lesomnus/payday` 0.1.3 `close` waits
- * for the forget itself (lesomnus/payday#148).
+ * Nothing waits between the two: `close` closes the mirror once what it was
+ * told has reached it, the forget above all (lesomnus/payday#148). And it
+ * rejects when the forget did not -- the mirror is closed all the same, and
+ * what was forgotten is still on this browser -- so this does too, and what a
+ * page does then is say so to the person ([stillHere]). Rows that did not
+ * reach the mirror on the way are no part of it.
  */
 export async function letGo(app: App, forget: boolean): Promise<void> {
-	if (forget) {
-		app.store.forget()
-		// A mirror that cannot be cleared is still closed: what is in it is
-		// past this page's reach either way, and the next sign-in's sweep is
-		// the other road it goes by.
-		await app.store.flushed().catch(() => {})
-	}
-	app.store.close()
+	if (forget) void app.store.forget()
+	await app.store.close()
 }
+
+/**
+ * stillHere is what a page tells somebody whose sign-out did not reach this
+ * browser's copy of what they saw ([letGo]): it is theirs, it stays until
+ * somebody else signs in here and the sweep in [open] takes it, and they are
+ * the one who can take it off sooner.
+ */
+export const stillHere =
+	"you are signed out, but this browser still holds what you saw here: clear this site's data in your browser to remove it"
 
 /**
  * nobody is a store for a page nobody is signed in to: in memory and nowhere

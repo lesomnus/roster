@@ -1,4 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
+
+import { kept, mirrors, movedOn } from './mirror.js'
 import { totp } from './totp.js'
 
 // The account app, as erin uses it: what `account/account_test.go` walks
@@ -221,4 +223,25 @@ test('a security key is enrolled by the ceremony, and the page asks for that key
 	await expect(page.locator('input[name=code]')).toHaveCount(0)
 	await key.click()
 	await signedIn(page)
+})
+
+// A sign-out that could not clear this browser's copy of what somebody saw
+// says so, rather than leave them believing nothing of it is here: the mirror
+// was moved on by another page, as a later deploy's would, so the forget
+// cannot reach it. grace, whom nothing above changes.
+test('a sign-out that leaves what was seen on this browser says so', async ({ page }) => {
+	await page.goto(base)
+	await page.locator('input[name=alias]').fill('grace')
+	await page.locator('input[name=password]').fill(process.env['E2E_GRACE_PASSWORD'] ?? '')
+	await page.locator('form button[type=submit]', { hasText: 'sign in' }).click()
+	await expect(page.getByRole('heading', { name: 'you', exact: true })).toBeVisible()
+	await expect.poll(() => mirrors(page)).toHaveLength(1)
+	const [theirs = ''] = await mirrors(page)
+	await expect.poll(() => kept(page, theirs)).toBeGreaterThan(0)
+
+	await movedOn(page, theirs)
+	await page.locator('button', { hasText: 'sign out' }).first().click()
+
+	await expect(page.getByRole('alert')).toContainText('this browser still holds what you saw here')
+	await expect(page.locator('input[name=password]')).toBeVisible()
 })
