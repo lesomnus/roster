@@ -201,7 +201,7 @@ func (s coreHolder) Provision(ctx context.Context, req *app.HolderProvisionReque
 	if err != nil {
 		return nil, err
 	}
-	if err := run(s.over(next)); err != nil {
+	if err := run(s.over(next, drv)); err != nil {
 		return nil, err
 	}
 	if err := tx.Commit(); err != nil {

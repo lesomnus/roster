@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/lesomnus/z"
+	"github.com/protobuf-orm/ent/dialect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -233,7 +234,7 @@ func (s coreIdentity) Resubject(ctx context.Context, req *app.IdentityResubjectR
 	}
 
 	var out *app.Identity
-	err = s.only(ctx, holder, func(next app.Server) error {
+	err = s.only(ctx, holder, func(next app.Server, _ dialect.Driver) error {
 		patch := app.IdentityPatchRequest_builder{
 			Ref:     app.IdentityRef_builder{Id: v.GetId()}.Build(),
 			Subject: z.Ptr(to),
@@ -422,7 +423,7 @@ func (s coreIdentity) Erase(ctx context.Context, req *app.IdentityRef) (*app.Ide
 	// See [Core.only] for why a count on its own decides nothing, and what the
 	// two callers contend for.
 	var out *app.IdentityEraseResponse
-	err = s.only(ctx, v.GetHolder().GetId(), func(next app.Server) error {
+	err = s.only(ctx, v.GetHolder().GetId(), func(next app.Server, _ dialect.Driver) error {
 		if err := s.on(next).notTheirLastWayIn(ctx, v.GetHolder().GetId(), v.GetId()); err != nil {
 			return err
 		}
