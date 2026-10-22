@@ -42,6 +42,7 @@ import (
 	audit "github.com/lesomnus/roster/internal/ent/audit"
 	binding "github.com/lesomnus/roster/internal/ent/binding"
 	connection "github.com/lesomnus/roster/internal/ent/connection"
+	consent "github.com/lesomnus/roster/internal/ent/consent"
 	continuation "github.com/lesomnus/roster/internal/ent/continuation"
 	credential "github.com/lesomnus/roster/internal/ent/credential"
 	delegation "github.com/lesomnus/roster/internal/ent/delegation"
@@ -121,6 +122,7 @@ const (
 	AuditDomain           pdid.Domain = 3   // "audit"
 	BindingDomain         pdid.Domain = 18  // "binding"
 	ConnectionDomain      pdid.Domain = 25  // "connection"
+	ConsentDomain         pdid.Domain = 29  // "consent"
 	ContinuationDomain    pdid.Domain = 22  // "continuation"
 	CredentialDomain      pdid.Domain = 13  // "credential"
 	DelegationDomain      pdid.Domain = 19  // "delegation"
@@ -153,6 +155,7 @@ func init() {
 	pdid.Register("roster.Audit", AuditDomain, "audit")
 	pdid.Register("roster.Binding", BindingDomain, "binding")
 	pdid.Register("roster.Connection", ConnectionDomain, "connection")
+	pdid.Register("roster.Consent", ConsentDomain, "consent")
 	pdid.Register("roster.Continuation", ContinuationDomain, "continuation")
 	pdid.Register("roster.Credential", CredentialDomain, "credential")
 	pdid.Register("roster.Delegation", DelegationDomain, "delegation")
@@ -189,6 +192,7 @@ var Domains = map[string]pdid.Domain{
 	"roster.Audit":           AuditDomain,
 	"roster.Binding":         BindingDomain,
 	"roster.Connection":      ConnectionDomain,
+	"roster.Consent":         ConsentDomain,
 	"roster.Continuation":    ContinuationDomain,
 	"roster.Credential":      CredentialDomain,
 	"roster.Delegation":      DelegationDomain,
@@ -235,6 +239,8 @@ var IndexRenames = []rename.Index{
 	{Table: "binding", From: "binding_date_created_id", To: "binding_page"},
 	{Table: "connection", From: "connection_tenant_id_date_created_id", To: "connection_page"},
 	{Table: "connection", From: "connection_tenant_id_name", To: "connection_at"},
+	{Table: "consent", From: "consent_tenant_id_date_created_id", To: "consent_page"},
+	{Table: "consent", From: "consent_holder_id_app_scope_document_version_seq", To: "consent_acts"},
 	{Table: "continuation", From: "continuation_date_created_id", To: "continuation_page"},
 	{Table: "credential", From: "credential_date_created_id", To: "credential_page"},
 	{Table: "credential", From: "credential_holder_id_kind_name", To: "credential_kind"},
@@ -370,6 +376,17 @@ func (wall) ConnectionScope(ctx context.Context) (predicate.Connection, error) {
 	}
 
 	return connection.TenantIdIn(vs...), nil
+}
+
+// ConsentScope: a row belongs to the tenant its "holder.tenant" reaches, read off "tenant_id" -- which the
+// server stamped when the row was written and no step of that path can move.
+func (wall) ConsentScope(ctx context.Context) (predicate.Consent, error) {
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return consent.TenantIdIn(vs...), nil
 }
 
 // ContinuationScope: a row belongs to the tenant its "holder.tenant" reaches.
@@ -667,6 +684,11 @@ func (x grouped) BindingScope(ctx context.Context) (predicate.Binding, error) {
 
 // ConnectionScope: in no set -- it declared no field 3, so this narrows nothing.
 func (x grouped) ConnectionScope(ctx context.Context) (predicate.Connection, error) {
+	return nil, nil
+}
+
+// ConsentScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) ConsentScope(ctx context.Context) (predicate.Consent, error) {
 	return nil, nil
 }
 
@@ -2154,6 +2176,314 @@ func filterConnection(f *rstr.ConnectionFilter) (predicate.Connection, error) {
 	}
 
 	return connection.And(ps...), nil
+}
+
+type sinkConsent struct {
+	rstr.ConsentServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Consent() rstr.ConsentServiceServer {
+	v := sinkConsent{s.Server.Consent(), s.Server.Store, s.w, s.namer, s.joined}
+	v.ConsentServiceServer = bare.ConsentWithAddRule(v.ConsentServiceServer, v.admit)
+	return v
+}
+
+// admit is what is said of the tenancy of a row an Add of Consent writes:
+// it stamps its tenant.
+//
+// It is asked of an Add and of every item of an AddMany; see [Sink.Consent].
+func (s sinkConsent) admit(ctx context.Context, req *rstr.ConsentAddRequest) (*rstr.ConsentAddRequest, error) {
+	// Copied rather than written to: the request belongs to whoever called,
+	// and for a call made in this process that is a message they may still
+	// be holding -- a server that changed a caller's own field would be
+	// changing a value they can read back.
+	r := proto.CloneOf(req)
+
+	if err := s.tenancy(ctx, r); err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+// Erase forgets what the transaction was told about the row, before it is
+// erased: whether a frame may see it, and where a walk from it arrives.
+// Neither is true of a row that is gone, nor of another put under its
+// key. See [seen.Forget].
+func (s sinkConsent) Erase(ctx context.Context, req *rstr.ConsentRef) (*rstr.ConsentEraseResponse, error) {
+	seen.Forget(s.store.Db.Driver(), "Consent", req)
+
+	return s.ConsentServiceServer.Erase(ctx, req)
+}
+
+// Apply forgets what the transaction was told about the row, before it is
+// written: a document may move it to a set the caller cannot see. See
+// [seen.Forget].
+func (s sinkConsent) Apply(ctx context.Context, req *rstr.ConsentApplyRequest) (*rstr.Consent, error) {
+	seen.Forget(s.store.Db.Driver(), "Consent", req.GetRef())
+
+	return s.ConsentServiceServer.Apply(ctx, req)
+}
+
+// Patch forgets what the transaction was told about the row, before it is
+// written; see [sinkConsent.Apply].
+func (s sinkConsent) Patch(ctx context.Context, req *rstr.ConsentPatchRequest) (*rstr.Consent, error) {
+	seen.Forget(s.store.Db.Driver(), "Consent", req.GetRef())
+
+	return s.ConsentServiceServer.Patch(ctx, req)
+}
+
+// tenantAtHolderTenant is the tenant "holder.tenant" arrives at.
+func (s sinkConsent) tenantAtHolderTenant(ctx context.Context, ref *rstr.HolderRef) ([]byte, error) {
+	if ref == nil {
+		return nil, pderr.Invalidf("holder", "required: it is what says which tenant this belongs to")
+	}
+
+	// Asked once a transaction: no step past the first can be repointed, so
+	// where this walk arrives from a row is decided until the row is
+	// written. See [seen.Tenant].
+	return seen.Tenant(s.store.Db.Driver(), "Holder", "tenant", ref, func() ([]byte, error) {
+		// The row the edge names, picked the way every other reference is.
+		pick, err := bare.HolderPick(ref)
+		if err != nil {
+			return nil, pderr.At("holder", err)
+		}
+
+		k, err := s.store.Db.Holder.Query().Where(pick).QueryTenant().OnlyId(ctx)
+		if err != nil {
+			// Not there, or more than one -- both are the reference being wrong,
+			// and both are the caller's to fix.
+			return nil, pderr.Invalidf("holder", "it does not name one row")
+		}
+
+		return k[:], nil
+	})
+}
+
+// tenancy fills what the schema says this row's tenant is, and refuses a
+// row whose other paths do not agree with it.
+//
+// The request is already this server's copy by the time it arrives, so it
+// is written to rather than cloned again.
+func (s sinkConsent) tenancy(ctx context.Context, req *rstr.ConsentAddRequest) error {
+	want, err := s.tenantAtHolderTenant(ctx, req.GetHolder())
+	if err != nil {
+		return err
+	}
+
+	// Stamped, whatever the caller said. It is not a field of the request
+	// and a caller that reached this server another way does not get to
+	// keep what they put there.
+	req.SetTenantId(want)
+
+	return nil
+}
+
+// orderConsent is how Consents come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderConsent = []sqlpage.Order{
+	{Column: consent.FieldDateCreated, Desc: false},
+	{Column: consent.FieldId, Desc: false},
+}
+
+func afterConsent(v string, by []sqlpage.Order, tag string) (func(*sql.Selector), error) {
+	var (
+		at0 time.Time
+		at1 uuid.UUID
+	)
+	if err := pdAfter(v, tag, &at0, &at1); err != nil {
+		return nil, err
+	}
+
+	return sqlpage.After(by, []any{at0, at1})
+}
+
+func nextConsent(last *ent.Consent, tag string) (string, error) {
+	return pdNext(tag, last.DateCreated, last.Id)
+}
+
+// orderByConsent is an order as ent orders a query by it.
+func orderByConsent(by []sqlpage.Order) []consent.OrderOption {
+	out := make([]consent.OrderOption, len(by))
+	for i, o := range by {
+		if o.Desc {
+			out[i] = sql.OrderByField(o.Column, sql.OrderDesc()).ToFunc()
+			continue
+		}
+
+		out[i] = sql.OrderByField(o.Column).ToFunc()
+	}
+
+	return out
+}
+
+const (
+	// ConsentPageSize is what a request that did not say gets, and
+	// ConsentPageLimit is the most it gets however loudly it asks.
+	ConsentPageSize  = 20
+	ConsentPageLimit = 100
+
+	// ConsentFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	ConsentFilterLimit = 32
+)
+
+// List answers with the Consents that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkConsent) List(ctx context.Context, req *rstr.ConsentListRequest) (*rstr.ConsentListResponse, error) {
+	q := s.store.Db.Consent.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.ConsentNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > ConsentFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), ConsentFilterLimit)
+		}
+
+		ps := make([]predicate.Consent, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterConsent(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(consent.Or(ps...))
+	}
+
+	// Which order, and which way: one the schema declared, and never one a
+	// request makes up, since an order is a walk of an index.
+	by, after, next, tag := orderConsent, afterConsent, nextConsent, ""
+	if req.GetReverse() {
+		// The same index, walked from the other end.
+		by, tag = pdReverse(by), tag+"/reverse"
+	}
+
+	if v := req.GetAfter(); v != "" {
+		p, err := after(v, by, tag)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), ConsentPageSize, ConsentPageLimit)
+	us, err := q.Order(orderByConsent(by)...).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.Consent, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.ConsentListResponse_builder{Items: items}.Build()
+	if more {
+		v, err := next(us[len(us)-1], tag)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(v)
+	}
+
+	return res, nil
+}
+
+// filterConsent turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterConsent(f *rstr.ConsentFilter) (predicate.Consent, error) {
+	ps := make([]predicate.Consent, 0, 1)
+	if f.HasRef() {
+		p, err := bare.ConsentPick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasHolder() {
+		w := f.GetHolder()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "holder: %s", err)
+			}
+
+			ps = append(ps, consent.HolderIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.HolderPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, consent.HasHolderWith(q))
+		}
+	}
+	if f.HasApp() {
+		k, err := entuuid.FromBytes(f.GetApp())
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "app: %s", err)
+		}
+
+		ps = append(ps, consent.AppEQ(k))
+	}
+	if f.HasScope() {
+		ps = append(ps, consent.ScopeEQ(f.GetScope()))
+	}
+	if f.HasDocument() {
+		ps = append(ps, consent.DocumentEQ(f.GetDocument()))
+	}
+	if f.HasVersion() {
+		ps = append(ps, consent.VersionEQ(f.GetVersion()))
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return consent.And(ps...), nil
 }
 
 type sinkContinuation struct {
@@ -9590,6 +9920,62 @@ func (s gateConnection) admit(ctx context.Context, req *rstr.ConnectionAddReques
 	return req, nil
 }
 
+type gateConsent struct {
+	Gate
+	rstr.ConsentServiceServer
+}
+
+func (s Gate) Consent() rstr.ConsentServiceServer {
+	v := gateConsent{s, s.Next().Consent()}
+	v.ConsentServiceServer = bare.ConsentWithAddRule(v.ConsentServiceServer, v.admit)
+	return v
+}
+
+// admit refuses a Consent put into a Holder this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `holder` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Holder, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.admit`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+//
+// It is what an Add is asked, and an AddMany of every item it carries;
+// see [Gate.Consent].
+func (s gateConsent) admit(ctx context.Context, req *rstr.ConsentAddRequest) (*rstr.ConsentAddRequest, error) {
+	if len(req.GetApp()) != 0 {
+		return nil, pderr.Invalidf("app", "is established by this deployment and not asserted by a request")
+	}
+
+	if req.GetAct() != 0 {
+		return nil, pderr.Invalidf("act", "is established by this deployment and not asserted by a request")
+	}
+
+	if req.GetSeq() != 0 {
+		return nil, pderr.Invalidf("seq", "is established by this deployment and not asserted by a request")
+	}
+
+	if ref := req.GetHolder(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Holder", ref, func() error {
+			_, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
+	return req, nil
+}
+
 type gateContinuation struct {
 	Gate
 	rstr.ContinuationServiceServer
@@ -11177,6 +11563,8 @@ func described(key pdid.Id) (protoreflect.MessageDescriptor, []protoreflect.Fiel
 		return describedBinding.md, describedBinding.secret, describedBinding.personal
 	case ConnectionDomain:
 		return describedConnection.md, describedConnection.secret, describedConnection.personal
+	case ConsentDomain:
+		return describedConsent.md, describedConsent.secret, describedConsent.personal
 	case ContinuationDomain:
 		return describedContinuation.md, describedContinuation.secret, describedContinuation.personal
 	case CredentialDomain:
@@ -11264,6 +11652,9 @@ var (
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
 	describedConnection = describe((*rstr.Connection)(nil),
+		[]protoreflect.FieldNumber{},
+		[]protoreflect.FieldNumber{})
+	describedConsent = describe((*rstr.Consent)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
 	describedContinuation = describe((*rstr.Continuation)(nil),
@@ -11359,6 +11750,7 @@ func added(by string) bool {
 		rstr.AuditService_Add_FullMethodName,
 		rstr.BindingService_Add_FullMethodName,
 		rstr.ConnectionService_Add_FullMethodName,
+		rstr.ConsentService_Add_FullMethodName,
 		rstr.ContinuationService_Add_FullMethodName,
 		rstr.CredentialService_Add_FullMethodName,
 		rstr.DelegationService_Add_FullMethodName,
@@ -11544,6 +11936,43 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id, image proto.Messag
 		}
 
 		k, err := entuuid.FromBytes(row.GetTenant().GetId())
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		return k, b, nil
+
+	case ConsentDomain:
+		row, ok := image.(*rstr.Consent)
+		if !ok {
+			return uuid.Nil(), []byte{}, nil
+		}
+
+		b := []byte{}
+		if keep {
+			kept := row
+			v, err := proto.Marshal(kept)
+			if err != nil {
+				return uuid.Nil(), nil, err
+			}
+			b = v
+		}
+
+		if !row.HasHolder() {
+			return uuid.Nil(), b, nil
+		}
+
+		up, err := pdid.From(row.GetHolder().GetId())
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		parent, err := left(ctx, s, up, nil)
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		k, _, err := subject(ctx, s, up, parent, false)
 		if err != nil {
 			return uuid.Nil(), nil, err
 		}
@@ -12289,6 +12718,8 @@ func left(ctx context.Context, s bare.Server, key pdid.Id, image proto.Message) 
 		vs, err = rowsBinding(ctx, s.Db, binding.IdEQ(uuid.UUID(key)))
 	case ConnectionDomain:
 		vs, err = rowsConnection(ctx, s.Db, connection.IdEQ(uuid.UUID(key)))
+	case ConsentDomain:
+		vs, err = rowsConsent(ctx, s.Db, consent.IdEQ(uuid.UUID(key)))
 	case ContinuationDomain:
 		vs, err = rowsContinuation(ctx, s.Db, continuation.IdEQ(uuid.UUID(key)))
 	case CredentialDomain:
@@ -12702,6 +13133,9 @@ func Digests(ctx context.Context, db *ent.Client, d *audit1.Digest, p trail.Poli
 	if err := audit1.CheckKind(ctx, d, checkedConnection(db), archived, &out); err != nil {
 		return out, fmt.Errorf("connection: %w", err)
 	}
+	if err := audit1.CheckKind(ctx, d, checkedConsent(db), archived, &out); err != nil {
+		return out, fmt.Errorf("consent: %w", err)
+	}
 	if err := audit1.CheckKind(ctx, d, checkedContinuation(db), archived, &out); err != nil {
 		return out, fmt.Errorf("continuation: %w", err)
 	}
@@ -12894,6 +13328,52 @@ func checkedConnection(db *ent.Client) audit1.Kind {
 			var out map[pdid.Id]*audit1.Recorded
 			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
 				rows, err := rowsConnection(ctx, db, connection.IdIn(uuids(ids)...))
+				if err != nil {
+					return err
+				}
+
+				out, err = goneOf(ctx, db, ids, rows)
+				return err
+			})
+
+			return out, err
+		},
+	}
+}
+
+// checkedConsent is what a check of the rows reads of the consent kind.
+func checkedConsent(db *ent.Client) audit1.Kind {
+	read := func(ctx context.Context, ps ...predicate.Consent) (audit1.Page, error) {
+		var out audit1.Page
+		err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+			rows, err := rowsConsent(ctx, db, ps...)
+			if err != nil {
+				return err
+			}
+
+			recorded, err := newestDigests(ctx, db, objects(rows))
+			out = audit1.Page{Rows: rows, Recorded: recorded}
+			return err
+		})
+
+		return out, err
+	}
+
+	return audit1.Kind{
+		Domain: ConsentDomain,
+		After: func(ctx context.Context, after pdid.Id) (audit1.Page, error) {
+			return read(ctx, consent.IdGT(uuid.UUID(after)))
+		},
+		Of: func(ctx context.Context, ids []pdid.Id) (audit1.Page, error) {
+			return read(ctx, consent.IdIn(uuids(ids)...))
+		},
+		Trail: func(ctx context.Context, yield func([]pdid.Id) error) error {
+			return trailObjects(ctx, db, ConsentDomain, yield)
+		},
+		Gone: func(ctx context.Context, ids []pdid.Id) (map[pdid.Id]*audit1.Recorded, error) {
+			var out map[pdid.Id]*audit1.Recorded
+			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+				rows, err := rowsConsent(ctx, db, consent.IdIn(uuids(ids)...))
 				if err != nil {
 					return err
 				}
@@ -13951,6 +14431,26 @@ func rowsConnection(ctx context.Context, db *ent.Client, ps ...predicate.Connect
 	return out, nil
 }
 
+// rowsConsent is the rows `ps` says of the consent kind -- every row there is,
+// live or erased softly -- at most a page of them in identifier order, each as
+// a Get reads it.
+func rowsConsent(ctx context.Context, db *ent.Client, ps ...predicate.Consent) ([]audit1.Live, error) {
+	q := db.Consent.Query().Where(ps...)
+	bare.ConsentSelectInit(q, nil)
+
+	vs, err := q.Order(consent.ById()).Limit(audit1.RowsPage).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]audit1.Live, len(vs))
+	for i, v := range vs {
+		out[i] = audit1.Live{Object: pdid.Id(v.Id), Row: v.Proto()}
+	}
+
+	return out, nil
+}
+
 // rowsContinuation is the rows `ps` says of the continuation kind -- every row there is,
 // live or erased softly -- at most a page of them in identifier order, each as
 // a Get reads it.
@@ -14597,6 +15097,8 @@ func record(ctx context.Context, db *ent.Client, content audit1.Contents, action
 				rows, err = rowsBinding(ctx, db, binding.IdIn(uuids(page)...))
 			case ConnectionDomain:
 				rows, err = rowsConnection(ctx, db, connection.IdIn(uuids(page)...))
+			case ConsentDomain:
+				rows, err = rowsConsent(ctx, db, consent.IdIn(uuids(page)...))
 			case ContinuationDomain:
 				rows, err = rowsContinuation(ctx, db, continuation.IdIn(uuids(page)...))
 			case CredentialDomain:
@@ -14759,6 +15261,8 @@ func (s trailStore) Carry(ctx context.Context, digest *audit1.Digest, d pdid.Dom
 			rows, err = rowsBinding(ctx, s.db, binding.IdIn(uuids(ids)...))
 		case ConnectionDomain:
 			rows, err = rowsConnection(ctx, s.db, connection.IdIn(uuids(ids)...))
+		case ConsentDomain:
+			rows, err = rowsConsent(ctx, s.db, consent.IdIn(uuids(ids)...))
 		case ContinuationDomain:
 			rows, err = rowsContinuation(ctx, s.db, continuation.IdIn(uuids(ids)...))
 		case CredentialDomain:
@@ -15734,6 +16238,60 @@ func (s interceptConnection) List(ctx context.Context, req *rstr.ConnectionListR
 func (s interceptConnection) Update(ctx context.Context, req *rstr.ConnectionUpdateRequest) (*rstr.Connection, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ConnectionServiceServer,
 		rstr.ConnectionService_Update_FullMethodName, req, s.ConnectionServiceServer.Update)
+}
+
+func (s Intercept) Consent() rstr.ConsentServiceServer {
+	return interceptConsent{s, s.Next().Consent()}
+}
+
+type interceptConsent struct {
+	Intercept
+	rstr.ConsentServiceServer
+}
+
+func (s interceptConsent) Add(ctx context.Context, req *rstr.ConsentAddRequest) (*rstr.Consent, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ConsentServiceServer,
+		rstr.ConsentService_Add_FullMethodName, req, s.ConsentServiceServer.Add)
+}
+
+func (s interceptConsent) Get(ctx context.Context, req *rstr.ConsentGetRequest) (*rstr.Consent, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ConsentServiceServer,
+		rstr.ConsentService_Get_FullMethodName, req, s.ConsentServiceServer.Get)
+}
+
+func (s interceptConsent) Patch(ctx context.Context, req *rstr.ConsentPatchRequest) (*rstr.Consent, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ConsentServiceServer,
+		rstr.ConsentService_Patch_FullMethodName, req, s.ConsentServiceServer.Patch)
+}
+
+func (s interceptConsent) Apply(ctx context.Context, req *rstr.ConsentApplyRequest) (*rstr.Consent, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ConsentServiceServer,
+		rstr.ConsentService_Apply_FullMethodName, req, s.ConsentServiceServer.Apply)
+}
+
+func (s interceptConsent) Erase(ctx context.Context, req *rstr.ConsentRef) (*rstr.ConsentEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ConsentServiceServer,
+		rstr.ConsentService_Erase_FullMethodName, req, s.ConsentServiceServer.Erase)
+}
+
+func (s interceptConsent) List(ctx context.Context, req *rstr.ConsentListRequest) (*rstr.ConsentListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ConsentServiceServer,
+		rstr.ConsentService_List_FullMethodName, req, s.ConsentServiceServer.List)
+}
+
+func (s interceptConsent) Agree(ctx context.Context, req *rstr.ConsentAgreeRequest) (*rstr.ConsentAgreeResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ConsentServiceServer,
+		rstr.ConsentService_Agree_FullMethodName, req, s.ConsentServiceServer.Agree)
+}
+
+func (s interceptConsent) Withdraw(ctx context.Context, req *rstr.ConsentWithdrawRequest) (*rstr.Consent, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ConsentServiceServer,
+		rstr.ConsentService_Withdraw_FullMethodName, req, s.ConsentServiceServer.Withdraw)
+}
+
+func (s interceptConsent) Settled(ctx context.Context, req *rstr.ConsentSettledRequest) (*rstr.ConsentSettledResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ConsentServiceServer,
+		rstr.ConsentService_Settled_FullMethodName, req, s.ConsentServiceServer.Settled)
 }
 
 func (s Intercept) Continuation() rstr.ContinuationServiceServer {
@@ -18378,6 +18936,24 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &rstr.ConnectionListRequest{}
 	case rstr.ConnectionService_Update_FullMethodName:
 		v = &rstr.ConnectionUpdateRequest{}
+	case rstr.ConsentService_Add_FullMethodName:
+		v = &rstr.ConsentAddRequest{}
+	case rstr.ConsentService_Get_FullMethodName:
+		v = &rstr.ConsentGetRequest{}
+	case rstr.ConsentService_Patch_FullMethodName:
+		v = &rstr.ConsentPatchRequest{}
+	case rstr.ConsentService_Apply_FullMethodName:
+		v = &rstr.ConsentApplyRequest{}
+	case rstr.ConsentService_Erase_FullMethodName:
+		v = &rstr.ConsentRef{}
+	case rstr.ConsentService_List_FullMethodName:
+		v = &rstr.ConsentListRequest{}
+	case rstr.ConsentService_Agree_FullMethodName:
+		v = &rstr.ConsentAgreeRequest{}
+	case rstr.ConsentService_Withdraw_FullMethodName:
+		v = &rstr.ConsentWithdrawRequest{}
+	case rstr.ConsentService_Settled_FullMethodName:
+		v = &rstr.ConsentSettledRequest{}
 	case rstr.ContinuationService_Add_FullMethodName:
 		v = &rstr.ContinuationAddRequest{}
 	case rstr.ContinuationService_Get_FullMethodName:
@@ -18754,6 +19330,24 @@ func dispatch(ctx context.Context, s rstr.Server, m string, v proto.Message) (*a
 		res, err = s.Connection().List(ctx, v.(*rstr.ConnectionListRequest))
 	case rstr.ConnectionService_Update_FullMethodName:
 		res, err = s.Connection().Update(ctx, v.(*rstr.ConnectionUpdateRequest))
+	case rstr.ConsentService_Add_FullMethodName:
+		res, err = s.Consent().Add(ctx, v.(*rstr.ConsentAddRequest))
+	case rstr.ConsentService_Get_FullMethodName:
+		res, err = s.Consent().Get(ctx, v.(*rstr.ConsentGetRequest))
+	case rstr.ConsentService_Patch_FullMethodName:
+		res, err = s.Consent().Patch(ctx, v.(*rstr.ConsentPatchRequest))
+	case rstr.ConsentService_Apply_FullMethodName:
+		res, err = s.Consent().Apply(ctx, v.(*rstr.ConsentApplyRequest))
+	case rstr.ConsentService_Erase_FullMethodName:
+		res, err = s.Consent().Erase(ctx, v.(*rstr.ConsentRef))
+	case rstr.ConsentService_List_FullMethodName:
+		res, err = s.Consent().List(ctx, v.(*rstr.ConsentListRequest))
+	case rstr.ConsentService_Agree_FullMethodName:
+		res, err = s.Consent().Agree(ctx, v.(*rstr.ConsentAgreeRequest))
+	case rstr.ConsentService_Withdraw_FullMethodName:
+		res, err = s.Consent().Withdraw(ctx, v.(*rstr.ConsentWithdrawRequest))
+	case rstr.ConsentService_Settled_FullMethodName:
+		res, err = s.Consent().Settled(ctx, v.(*rstr.ConsentSettledRequest))
 	case rstr.ContinuationService_Add_FullMethodName:
 		res, err = s.Continuation().Add(ctx, v.(*rstr.ContinuationAddRequest))
 	case rstr.ContinuationService_Get_FullMethodName:
@@ -19043,6 +19637,7 @@ func Resources(s rstr.Server, drv dialect.Driver, guard batch.Guard, w *watch.Wa
 		&rstr.Audit{},
 		&rstr.Binding{},
 		&rstr.Connection{},
+		&rstr.Consent{},
 		&rstr.Continuation{},
 		&rstr.Credential{},
 		&rstr.Delegation{},
@@ -19287,6 +19882,47 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard batch.Guard) reso
 				return nil, err
 			}
 			query := db.Connection.Query()
+			if pred != nil {
+				query.Where(pred)
+			}
+			ok, err := query.Modify(func(q *sql.Selector) { q.From(row) }).Exist(ctx)
+			if err != nil || !ok {
+				return nil, err
+			}
+			return publicResource(v), nil
+		case *rstr.Consent:
+			ctx, err := read.Allow(ctx, rstr.ConsentService_Get_FullMethodName, 1)
+			if err != nil {
+				switch status.Code(err) {
+				case codes.PermissionDenied, codes.Unauthenticated, codes.Unimplemented:
+					return nil, nil
+				}
+				return nil, err
+			}
+			pred, err := bare.ConsentNarrow(ctx, scope, nil)
+			if err != nil {
+				return nil, err
+			}
+			row, err := resourcesql.Row(db.Dialect(), consent.Table, []resourcesql.Column{
+				{Number: 1, Name: consent.FieldId, Type: 64, Nullable: false, Key: 0},
+				{Number: 2, Name: consent.HolderColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 8, Name: consent.FieldApp, Type: 64, Nullable: false, Key: 0},
+				{Number: 9, Name: consent.FieldScope, Type: 9, Nullable: false, Key: 0},
+				{Number: 10, Name: consent.FieldDocument, Type: 9, Nullable: false, Key: 0},
+				{Number: 11, Name: consent.FieldTenantId, Type: 64, Nullable: false, Key: 0},
+				{Number: 12, Name: consent.FieldVersion, Type: 9, Nullable: false, Key: 0},
+				{Number: 16, Name: consent.FieldAct, Type: 14, Nullable: false, Key: 0},
+				{Number: 17, Name: consent.FieldOptional, Type: 8, Nullable: false, Key: 0},
+				{Number: 18, Name: consent.FieldClient, Type: 9, Nullable: false, Key: 0},
+				{Number: 19, Name: consent.FieldSeq, Type: 3, Nullable: false, Key: 0},
+				{Number: 13, Name: consent.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
+				{Number: 14, Name: consent.FieldDateErased, Type: 65, Nullable: true, Key: 0},
+				{Number: 15, Name: consent.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
+			}, v)
+			if err != nil {
+				return nil, err
+			}
+			query := db.Consent.Query()
 			if pred != nil {
 				query.Where(pred)
 			}
@@ -20104,6 +20740,14 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.ConnectionService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
+	case rstr.ConsentService_Add_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_CREATED
+	case rstr.ConsentService_Patch_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case rstr.ConsentService_Apply_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case rstr.ConsentService_Erase_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.ContinuationService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.ContinuationService_Patch_FullMethodName:
@@ -20290,7 +20934,7 @@ func (r resourceRecorder) Record(ctx context.Context, s bare.Server, c bare.Chan
 		return nil
 	}
 	switch image.ProtoReflect().Descriptor().FullName() {
-	case "roster.Access", "roster.ApiKey", "roster.Audit", "roster.Binding", "roster.Connection", "roster.Continuation", "roster.Credential", "roster.Delegation", "roster.Email", "roster.Group", "roster.GroupExposure", "roster.GroupMembership", "roster.Holder", "roster.Host", "roster.HostProof", "roster.Identity", "roster.Link", "roster.MailDomain", "roster.Nomination", "roster.Role", "roster.Session", "roster.Site", "roster.SiteMembership", "roster.Team", "roster.TeamMembership", "roster.Tenant":
+	case "roster.Access", "roster.ApiKey", "roster.Audit", "roster.Binding", "roster.Connection", "roster.Consent", "roster.Continuation", "roster.Credential", "roster.Delegation", "roster.Email", "roster.Group", "roster.GroupExposure", "roster.GroupMembership", "roster.Holder", "roster.Host", "roster.HostProof", "roster.Identity", "roster.Link", "roster.MailDomain", "roster.Nomination", "roster.Role", "roster.Session", "roster.Site", "roster.SiteMembership", "roster.Team", "roster.TeamMembership", "roster.Tenant":
 	default:
 		return nil
 	}

@@ -30,6 +30,7 @@ type Server interface {
 	Holder() HolderServiceServer
 	ApiKey() ApiKeyServiceServer
 	Connection() ConnectionServiceServer
+	Consent() ConsentServiceServer
 	Continuation() ContinuationServiceServer
 	Credential() CredentialServiceServer
 	Identity() IdentityServiceServer
@@ -66,6 +67,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterHolderServiceServer(g, s.Holder())
 	RegisterApiKeyServiceServer(g, s.ApiKey())
 	RegisterConnectionServiceServer(g, s.Connection())
+	RegisterConsentServiceServer(g, s.Consent())
 	RegisterContinuationServiceServer(g, s.Continuation())
 	RegisterCredentialServiceServer(g, s.Credential())
 	RegisterIdentityServiceServer(g, s.Identity())
@@ -98,6 +100,7 @@ type UnimplementedServer struct {
 	HolderServer          HolderServiceServer
 	ApiKeyServer          ApiKeyServiceServer
 	ConnectionServer      ConnectionServiceServer
+	ConsentServer         ConsentServiceServer
 	ContinuationServer    ContinuationServiceServer
 	CredentialServer      CredentialServiceServer
 	IdentityServer        IdentityServiceServer
@@ -131,6 +134,7 @@ func (UnimplementedServer) ApiKey() ApiKeyServiceServer { return UnimplementedAp
 func (UnimplementedServer) Connection() ConnectionServiceServer {
 	return UnimplementedConnectionServiceServer{}
 }
+func (UnimplementedServer) Consent() ConsentServiceServer { return UnimplementedConsentServiceServer{} }
 func (UnimplementedServer) Continuation() ContinuationServiceServer {
 	return UnimplementedContinuationServiceServer{}
 }
@@ -186,6 +190,7 @@ type StaticServer struct {
 	HolderServer          HolderServiceServer
 	ApiKeyServer          ApiKeyServiceServer
 	ConnectionServer      ConnectionServiceServer
+	ConsentServer         ConsentServiceServer
 	ContinuationServer    ContinuationServiceServer
 	CredentialServer      CredentialServiceServer
 	IdentityServer        IdentityServiceServer
@@ -217,6 +222,7 @@ func (s StaticServer) Tenant() TenantServiceServer                   { return s.
 func (s StaticServer) Holder() HolderServiceServer                   { return s.HolderServer }
 func (s StaticServer) ApiKey() ApiKeyServiceServer                   { return s.ApiKeyServer }
 func (s StaticServer) Connection() ConnectionServiceServer           { return s.ConnectionServer }
+func (s StaticServer) Consent() ConsentServiceServer                 { return s.ConsentServer }
 func (s StaticServer) Continuation() ContinuationServiceServer       { return s.ContinuationServer }
 func (s StaticServer) Credential() CredentialServiceServer           { return s.CredentialServer }
 func (s StaticServer) Identity() IdentityServiceServer               { return s.IdentityServer }
@@ -248,6 +254,7 @@ type Client interface {
 	Holder() HolderServiceClient
 	ApiKey() ApiKeyServiceClient
 	Connection() ConnectionServiceClient
+	Consent() ConsentServiceClient
 	Continuation() ContinuationServiceClient
 	Credential() CredentialServiceClient
 	Identity() IdentityServiceClient
@@ -281,6 +288,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Holder:          NewHolderServiceClient(c),
 		_ApiKey:          NewApiKeyServiceClient(c),
 		_Connection:      NewConnectionServiceClient(c),
+		_Consent:         NewConsentServiceClient(c),
 		_Continuation:    NewContinuationServiceClient(c),
 		_Credential:      NewCredentialServiceClient(c),
 		_Identity:        NewIdentityServiceClient(c),
@@ -314,6 +322,7 @@ type client struct {
 	_Holder          HolderServiceClient
 	_ApiKey          ApiKeyServiceClient
 	_Connection      ConnectionServiceClient
+	_Consent         ConsentServiceClient
 	_Continuation    ContinuationServiceClient
 	_Credential      CredentialServiceClient
 	_Identity        IdentityServiceClient
@@ -345,6 +354,7 @@ func (c *client) Tenant() TenantServiceClient                   { return c._Tena
 func (c *client) Holder() HolderServiceClient                   { return c._Holder }
 func (c *client) ApiKey() ApiKeyServiceClient                   { return c._ApiKey }
 func (c *client) Connection() ConnectionServiceClient           { return c._Connection }
+func (c *client) Consent() ConsentServiceClient                 { return c._Consent }
 func (c *client) Continuation() ContinuationServiceClient       { return c._Continuation }
 func (c *client) Credential() CredentialServiceClient           { return c._Credential }
 func (c *client) Identity() IdentityServiceClient               { return c._Identity }

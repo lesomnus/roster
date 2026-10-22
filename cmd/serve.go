@@ -783,6 +783,16 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		s.Spin = append(s.Spin, loop(prefix, "forget", forget.Sweep(s.Ent, c.Holder.ForgetAfter, p, content, c.Holder.Every)))
 	}
 
+	// And what somebody consented to, kept past them as proof for
+	// `consent.keep` and then destroyed -- by the deployment, so that no app
+	// sweeps a ledger it shares with others. Nothing is appended when no
+	// window is named: kept for good.
+	if c.Consent.Keep > 0 {
+		log.From(ctx).InfoContext(ctx, "consent: after an erase", "keep", c.Consent.Keep)
+
+		s.Spin = append(s.Spin, loop(prefix, "consent", forget.SweepConsents(s.Ent, c.Consent.Keep, content, c.Consent.Every)))
+	}
+
 	// And a tenant's, one level up (#98): the closed whose grace has run out,
 	// and the aliases whose hold is over. Always, because the second clock
 	// has a default -- a deployment that destroys by hand still frees the
@@ -1146,6 +1156,10 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 	app.RegisterTeamMembershipServiceServer(g, s.TeamMembership())
 	app.RegisterAuditServiceServer(g, s.Audit())
 	app.RegisterOutboxServiceServer(g, s.Outbox())
+	// For its overlays (`Agree`, `Withdraw`, `Settled`) and its reads, which
+	// `server/core` narrows to the calling app's own. Its generated writes are
+	// shut by method in `closed`: a consent is never written as a row.
+	app.RegisterConsentServiceServer(g, s.Consent())
 }
 
 // closed is what this server does not answer at all.
@@ -1202,6 +1216,12 @@ func (s *Server) closed(c Config) func(method string) bool {
 		app.DelegationService_Add_FullMethodName,
 		app.DelegationService_Patch_FullMethodName,
 		app.DelegationService_Apply_FullMethodName,
+		// `Consent` is a ledger: `Agree` and `Withdraw` add to it, stamping
+		// what a request must not say, and nothing changes or removes a row of
+		// it -- the deployment destroys them once their account is gone.
+		// `Patch`/`Apply` are off by `GeneralWrite` beside these.
+		app.ConsentService_Add_FullMethodName,
+		app.ConsentService_Erase_FullMethodName,
 	}
 	if !s.Keys {
 		// Everywhere but the one port whose reason for existing is managing

@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/binding"
 	"github.com/lesomnus/roster/internal/ent/connection"
+	"github.com/lesomnus/roster/internal/ent/consent"
 	"github.com/lesomnus/roster/internal/ent/continuation"
 	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/delegation"
@@ -107,6 +108,7 @@ func checkColumn(t, c string) error {
 			audit.Table:           audit.ValidColumn,
 			binding.Table:         binding.ValidColumn,
 			connection.Table:      connection.ValidColumn,
+			consent.Table:         consent.ValidColumn,
 			continuation.Table:    continuation.ValidColumn,
 			credential.Table:      credential.ValidColumn,
 			delegation.Table:      delegation.ValidColumn,

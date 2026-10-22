@@ -30,6 +30,9 @@ export const BindingDomain = 18
 /** The domain identifiers of roster.Connection carry. */
 export const ConnectionDomain = 25
 
+/** The domain identifiers of roster.Consent carry. */
+export const ConsentDomain = 29
+
 /** The domain identifiers of roster.Continuation carry. */
 export const ContinuationDomain = 22
 
@@ -107,6 +110,7 @@ pdid.register("roster.Archived", ArchivedDomain, "archived")
 pdid.register("roster.Audit", AuditDomain, "audit")
 pdid.register("roster.Binding", BindingDomain, "binding")
 pdid.register("roster.Connection", ConnectionDomain, "connection")
+pdid.register("roster.Consent", ConsentDomain, "consent")
 pdid.register("roster.Continuation", ContinuationDomain, "continuation")
 pdid.register("roster.Credential", CredentialDomain, "credential")
 pdid.register("roster.Delegation", DelegationDomain, "delegation")

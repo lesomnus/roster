@@ -14,6 +14,7 @@ import (
 	audit "github.com/lesomnus/roster/internal/ent/audit"
 	binding "github.com/lesomnus/roster/internal/ent/binding"
 	connection "github.com/lesomnus/roster/internal/ent/connection"
+	consent "github.com/lesomnus/roster/internal/ent/consent"
 	continuation "github.com/lesomnus/roster/internal/ent/continuation"
 	credential "github.com/lesomnus/roster/internal/ent/credential"
 	delegation "github.com/lesomnus/roster/internal/ent/delegation"
@@ -392,6 +393,7 @@ type Scope interface {
 	HolderScope(ctx context.Context) (predicate.Holder, error)
 	ApiKeyScope(ctx context.Context) (predicate.ApiKey, error)
 	ConnectionScope(ctx context.Context) (predicate.Connection, error)
+	ConsentScope(ctx context.Context) (predicate.Consent, error)
 	ContinuationScope(ctx context.Context) (predicate.Continuation, error)
 	CredentialScope(ctx context.Context) (predicate.Credential, error)
 	IdentityScope(ctx context.Context) (predicate.Identity, error)
@@ -441,6 +443,9 @@ func (Unscoped) ApiKeyScope(_ context.Context) (predicate.ApiKey, error) {
 	return nil, nil
 }
 func (Unscoped) ConnectionScope(_ context.Context) (predicate.Connection, error) {
+	return nil, nil
+}
+func (Unscoped) ConsentScope(_ context.Context) (predicate.Consent, error) {
 	return nil, nil
 }
 func (Unscoped) ContinuationScope(_ context.Context) (predicate.Continuation, error) {
@@ -616,6 +621,26 @@ func (ss Scopes) ConnectionScope(ctx context.Context) (predicate.Connection, err
 	}
 
 	return connection.And(ps...), nil
+}
+
+func (ss Scopes) ConsentScope(ctx context.Context) (predicate.Consent, error) {
+	ps := make([]predicate.Consent, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.ConsentScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return consent.And(ps...), nil
 }
 
 func (ss Scopes) ContinuationScope(ctx context.Context) (predicate.Continuation, error) {
@@ -1253,7 +1278,7 @@ func ItemError(i int, err error) error {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. ApiKey, Binding, Connection, Continuation, Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Role, Session, Site, SiteMembership, Team and TeamMembership free the names they held when a row
+// check. ApiKey, Binding, Connection, Consent, Continuation, Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Role, Session, Site, SiteMembership, Team and TeamMembership free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -1297,6 +1322,7 @@ func (s Server) ApiKey() rstr.ApiKeyServiceServer { return ApiKeyServiceServer{S
 func (s Server) Connection() rstr.ConnectionServiceServer {
 	return ConnectionServiceServer{Store: s.Store}
 }
+func (s Server) Consent() rstr.ConsentServiceServer { return ConsentServiceServer{Store: s.Store} }
 func (s Server) Continuation() rstr.ContinuationServiceServer {
 	return ContinuationServiceServer{Store: s.Store}
 }

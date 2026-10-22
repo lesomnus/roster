@@ -1,0 +1,97 @@
+edition = "2023";
+
+package roster;
+
+import "app/consent.proto";
+import "roster/payday/holder_svc.g.proto";
+
+// What this app adds to the generated contract for `Consent`: the three verbs
+// an app records and asks consent by.
+//
+// They are this entity's own and not a service beside it (CLAUDE.md, *Overlay
+// before service*): each reads or writes `Consent` rows and nothing else. The
+// generated writes are closed on the wire -- a consent is written by `Agree`
+// and `Withdraw`, which stamp what a request must not say -- and the reads that
+// stay open are narrowed to the calling app's own rows (`server/core`).
+service ConsentService {
+  // Agree records an account agreeing to an app's documents, each at the
+  // version it read: all of them in one transaction, or none.
+  //
+  // Idempotent per document. One whose act in force is already an agreement
+  // at that version writes nothing, and answers with that act; any other --
+  // never agreed to, or withdrawn -- gets an act of its own after the ones
+  // before it. So an app may send everything it asks for at every sign-in,
+  // and the ledger grows only when the account did something.
+  rpc Agree(ConsentAgreeRequest) returns (ConsentAgreeResponse);
+
+  // Withdraw records an account withdrawing its agreement to an optional
+  // document. Refused for a required one -- leaving what is required is
+  // leaving the app, which is the account's erase -- and for a document whose
+  // act in force is not an agreement, since there is nothing to withdraw.
+  rpc Withdraw(ConsentWithdrawRequest) returns (Consent);
+
+  // Settled says which of the documents an app names an account has not
+  // agreed to in a scope: the ones whose act in force, at that version, is not
+  // an agreement. Empty is an account that owes nothing, and that is the one
+  // question an app asks before it serves somebody -- so it is one indexed
+  // read, and it writes nothing.
+  rpc Settled(ConsentSettledRequest) returns (ConsentSettledResponse);
+}
+
+// ConsentDocument is one of an app's documents at a version, as the app has it
+// in force: its key, the version, and whether an account may decline it.
+message ConsentDocument {
+  string document = 1 [features.field_presence = IMPLICIT];
+  string version = 2 [features.field_presence = IMPLICIT];
+  bool optional = 3 [features.field_presence = IMPLICIT];
+}
+
+message ConsentAgreeRequest {
+  // Whose consent: the account.
+  HolderRef holder = 1;
+
+  // Where it holds: empty for the whole deployment, or a string of the app's
+  // own.
+  string scope = 2 [features.field_presence = IMPLICIT];
+
+  // What it agreed to, each at the version it read. At least one.
+  repeated ConsentDocument documents = 3;
+
+  // What it agreed through, in the app's words: `web`, `cli`.
+  string client = 4 [features.field_presence = IMPLICIT];
+}
+
+message ConsentAgreeResponse {
+  // The act in force for each document, in the order they were named: the one
+  // this call wrote, or the agreement that was already there.
+  repeated Consent acts = 1;
+}
+
+message ConsentWithdrawRequest {
+  HolderRef holder = 1;
+  string scope = 2 [features.field_presence = IMPLICIT];
+
+  // Which agreement, by document and version.
+  string document = 3 [features.field_presence = IMPLICIT];
+  string version = 4 [features.field_presence = IMPLICIT];
+
+  // What it was withdrawn through.
+  string client = 5 [features.field_presence = IMPLICIT];
+}
+
+message ConsentSettledRequest {
+  HolderRef holder = 1;
+  string scope = 2 [features.field_presence = IMPLICIT];
+
+  // What the app asks for now. `optional` is read for nothing here: an app
+  // that names an optional document is asking whether it was agreed to.
+  repeated ConsentDocument documents = 3;
+}
+
+message ConsentSettledResponse {
+  // Whether nothing named is owed.
+  bool settled = 1 [features.field_presence = IMPLICIT];
+
+  // What is owed, in the order it was named.
+  repeated ConsentDocument owed = 2;
+}

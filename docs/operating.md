@@ -1605,6 +1605,23 @@ set; archives you keep elsewhere are yours to reach. A trail row a legal hold is
 stays as it was, and `roster forget` says how many and whose -- run it again when the
 hold is lifted.
 
+**What somebody consented to stays past them.** An app's record of their
+consents (`ConsentService`, [apps.md](apps.md) § *What an app keeps here*) is
+what shows afterwards that they agreed, so neither the erase nor `forget` takes
+it: the blank holder is what it points at. It is destroyed `consent.keep` after
+the erase, by the deployment and not by any app, with each row on the trail as
+destroyed:
+
+```yaml
+consent:
+  keep: 26280h   # three years after an erase. empty is for good
+  every: 24h
+```
+
+A tenant an operator holds keeps them as it keeps everything, a restore inside
+the window gives them back with the person, and a tenant destroyed takes them
+with it.
+
 ## A tenant leaving
 
 A person's lifecycle one level up, in four steps (#98):

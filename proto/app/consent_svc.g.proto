@@ -1,0 +1,232 @@
+edition = "2023";
+package roster;
+
+import "app/consent.proto";
+import "google/protobuf/timestamp.proto";
+import "patch/patch.proto";
+import "roster/payday/holder_svc.g.proto";
+
+option go_package = "github.com/lesomnus/roster/rstr";
+
+service ConsentService {
+  // Add creates a new Consent
+  rpc Add(ConsentAddRequest) returns (Consent);
+  // Get retrieves a Consent
+  rpc Get(ConsentGetRequest) returns (Consent);
+  // Patch updates an existing Consent
+  rpc Patch(ConsentPatchRequest) returns (Consent);
+  // Apply applies a patch document to an existing Consent
+  rpc Apply(ConsentApplyRequest) returns (Consent);
+  // Erase deletes a Consent
+  rpc Erase(ConsentRef) returns (ConsentEraseResponse);
+  // List reads Consents a page at a time.
+  rpc List(ConsentListRequest) returns (ConsentListResponse);
+  // Agree records an account agreeing to an app's documents, each at the
+  // version it read: all of them in one transaction, or none.
+  //
+  // Idempotent per document. One whose act in force is already an agreement
+  // at that version writes nothing, and answers with that act; any other --
+  // never agreed to, or withdrawn -- gets an act of its own after the ones
+  // before it. So an app may send everything it asks for at every sign-in,
+  // and the ledger grows only when the account did something.
+  rpc Agree(ConsentAgreeRequest) returns (ConsentAgreeResponse);
+  // Withdraw records an account withdrawing its agreement to an optional
+  // document. Refused for a required one -- leaving what is required is
+  // leaving the app, which is the account's erase -- and for a document whose
+  // act in force is not an agreement, since there is nothing to withdraw.
+  rpc Withdraw(ConsentWithdrawRequest) returns (Consent);
+  // Settled says which of the documents an app names an account has not
+  // agreed to in a scope: the ones whose act in force, at that version, is not
+  // an agreement. Empty is an account that owes nothing, and that is the one
+  // question an app asks before it serves somebody -- so it is one indexed
+  // read, and it writes nothing.
+  rpc Settled(ConsentSettledRequest) returns (ConsentSettledResponse);
+}
+
+message ConsentAddRequest {
+  bytes id = 1;
+  HolderRef holder = 2;
+  bytes app = 8 [features.field_presence = IMPLICIT];
+  string scope = 9 [features.field_presence = IMPLICIT];
+  string document = 10 [features.field_presence = IMPLICIT];
+  bytes tenant_id = 11 [features.field_presence = IMPLICIT];
+  string version = 12 [features.field_presence = IMPLICIT];
+  ConsentAct act = 16 [features.field_presence = IMPLICIT];
+  bool optional = 17 [features.field_presence = IMPLICIT];
+  string client = 18 [features.field_presence = IMPLICIT];
+  int64 seq = 19 [features.field_presence = IMPLICIT];
+  google.protobuf.Timestamp date_created = 15;
+}
+
+message ConsentGetRequest {
+  ConsentRef ref = 1;
+  ConsentSelect select = 2;
+}
+
+message ConsentRef {
+  oneof key {
+    bytes id = 1;
+    ConsentRefByActs acts = 2;
+  }
+}
+
+message ConsentRefByActs {
+  HolderRef holder = 2;
+  bytes app = 8;
+  string scope = 9;
+  string document = 10;
+  string version = 12;
+  int64 seq = 19;
+}
+
+message ConsentSelect {
+  bool all = 1;
+  HolderSelect holder = 2;
+  bool app = 8;
+  bool scope = 9;
+  bool document = 10;
+  bool tenant_id = 11;
+  bool version = 12;
+  bool act = 16;
+  bool optional = 17;
+  bool client = 18;
+  bool seq = 19;
+  bool date_updated = 13;
+  bool date_erased = 14;
+  bool date_created = 15;
+}
+
+message ConsentPatchRequest {
+  ConsentRef ref = 1;
+  // The version this update requires the stored date_updated to be.
+  // It is a precondition, not a write: the update applies only if the row
+  // still holds this value, and the server stamps the new version itself.
+  // Setting it together with date_updated_force is an error --
+  // the version is the token every client's compare-and-swap is measured
+  // against, so it is not the caller's to choose.
+  google.protobuf.Timestamp date_updated = 26;
+  // Update whatever the stored date_updated is, with no precondition.
+  // The server still stamps a new version, so other clients' tokens are
+  // invalidated as usual; this declines the check for THIS update only.
+  // One of date_updated or this must be set. An omitted version is
+  // refused rather than assumed, because an unset field cannot be told
+  // apart from a caller who never considered locking at all.
+  bool date_updated_force = 27;
+}
+
+message ConsentApplyRequest {
+  ConsentRef ref = 1;
+  patch.Patch patch = 2;
+}
+
+message ConsentEraseResponse {
+  // Erased is whether this call is the one that erased the row.
+  //
+  // False for a row that was already gone, was never there, or is out
+  // of this caller's reach -- which are one answer on purpose, and the
+  // reason the RPC does not fail instead.
+  bool erased = 1;
+}
+
+message ConsentListRequest {
+  // Bounded because the work is: each filter is a predicate in the same query,
+  // so this is what says how much of the database one request may read.
+  repeated ConsentFilter filters = 1;
+
+  // How many to answer with. Nothing said is what the schema declared, and more
+  // than the cap is the cap -- a caller asking for more than there is meant no
+  // harm, so it is not an error and it is not the whole table either.
+  int32 size = 2 [features.field_presence = IMPLICIT];
+
+  // Where to carry on from: the "next" of the answer before. It names the last
+  // row of that page rather than counting rows from the start, so a row added
+  // ahead of the page does not shift it and a caller reading through never sees
+  // one twice or misses one.
+  string after = 3 [features.field_presence = IMPLICIT];
+
+  // Read the order the other way round, every column of it at once -- newest
+  // first where it is oldest first -- which the index the order walks walks
+  // from the other end. A cursor is of the way it was read, so the next page
+  // carries on that way, and one of the other way is refused.
+  bool reverse = 4 [features.field_presence = IMPLICIT];
+}
+
+message ConsentListResponse {
+  repeated Consent items = 1;
+
+  // What to ask for next, and empty when this was the last of them.
+  //
+  // Empty means there is no more *for now*: a list is read as it is, and one
+  // that has grown since answers a fresh call. It is not empty merely because
+  // the page came back short -- a page is short when the last row of it was the
+  // last row there was, which is a thing the server can only know by having
+  // looked.
+  string next = 2 [features.field_presence = IMPLICIT];
+}
+
+message ConsentFilter {
+  ConsentRef ref = 1;
+  HolderRef holder = 2;
+  bytes app = 3;
+  string scope = 4;
+  string document = 5;
+  string version = 6;
+}
+
+message ConsentAgreeRequest {
+  // Whose consent: the account.
+  HolderRef holder = 1;
+
+  // Where it holds: empty for the whole deployment, or a string of the app's
+  // own.
+  string scope = 2 [features.field_presence = IMPLICIT];
+
+  // What it agreed to, each at the version it read. At least one.
+  repeated ConsentDocument documents = 3;
+
+  // What it agreed through, in the app's words: `web`, `cli`.
+  string client = 4 [features.field_presence = IMPLICIT];
+}
+
+message ConsentAgreeResponse {
+  // The act in force for each document, in the order they were named: the one
+  // this call wrote, or the agreement that was already there.
+  repeated Consent acts = 1;
+}
+
+// ConsentDocument is one of an app's documents at a version, as the app has it
+// in force: its key, the version, and whether an account may decline it.
+message ConsentDocument {
+  string document = 1 [features.field_presence = IMPLICIT];
+  string version = 2 [features.field_presence = IMPLICIT];
+  bool optional = 3 [features.field_presence = IMPLICIT];
+}
+
+message ConsentWithdrawRequest {
+  HolderRef holder = 1;
+  string scope = 2 [features.field_presence = IMPLICIT];
+
+  // Which agreement, by document and version.
+  string document = 3 [features.field_presence = IMPLICIT];
+  string version = 4 [features.field_presence = IMPLICIT];
+
+  // What it was withdrawn through.
+  string client = 5 [features.field_presence = IMPLICIT];
+}
+
+message ConsentSettledRequest {
+  HolderRef holder = 1;
+  string scope = 2 [features.field_presence = IMPLICIT];
+
+  // What the app asks for now. `optional` is read for nothing here: an app
+  // that names an optional document is asking whether it was agreed to.
+  repeated ConsentDocument documents = 3;
+}
+
+message ConsentSettledResponse {
+  // Whether nothing named is owed.
+  bool settled = 1 [features.field_presence = IMPLICIT];
+
+  // What is owed, in the order it was named.
+  repeated ConsentDocument owed = 2;
+}

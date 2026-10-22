@@ -81,6 +81,18 @@ func (f ConnectionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConnectionMutation", m)
 }
 
+// The ConsentFunc type is an adapter to allow the use of ordinary
+// function as Consent mutator.
+type ConsentFunc func(context.Context, *ent.ConsentMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ConsentFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ConsentMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConsentMutation", m)
+}
+
 // The ContinuationFunc type is an adapter to allow the use of ordinary
 // function as Continuation mutator.
 type ContinuationFunc func(context.Context, *ent.ContinuationMutation) (ent.Value, error)

@@ -398,6 +398,44 @@ What this layer **cannot** hide, and should not try to:
 - **The database.** B on a shared database is confined in roster and nowhere
   else unless the app's database login is.
 
+## What an app keeps here
+
+An app asks roster who somebody is, and it may also keep one thing of its own
+here: **what they agreed to** of its documents -- its terms of use, its privacy
+policy, a newsletter somebody may decline. `ConsentService` is a ledger of it,
+for every app that asks (`proto/app/consent.proto`).
+
+Which documents are in force, at which version, and which may be declined stays
+the app's configuration; roster stores what each account did about them. An
+app records with `Agree` -- every document it asks for at once, each at the
+version that was read, which writes nothing for one already agreed to -- and
+`Withdraw` for an optional one, and before it serves somebody it asks `Settled`
+which of its documents they owe. Each act is a row and none is changed, so the
+agreement, its withdrawal and an agreement again are three rows, and the one in
+force is the latest.
+
+**An app's consents are its own.** The app is the holder the call is made as --
+its key's, or the one a deployment key is answered as in the tenant -- written
+onto every act and compared on every read: `List` and `Get` answer nothing of
+another app's, and `Settled` counts nothing of theirs. A **scope** is the app's
+word for where a consent holds, empty for the whole deployment: Rove keeps its
+deployment's terms at the empty scope, and a workspace's own policy later is the
+same rows with the workspace as their scope.
+
+The role an app is installed with names the methods it uses:
+
+```sh
+roster app install --tenant acme \
+  --role '/roster.ConsentService/Agree,/roster.ConsentService/Withdraw,/roster.ConsentService/Settled,/roster.ConsentService/List,/roster.ConsentService/Get' \
+  rove
+```
+
+Nothing writes a consent as a row: the generated writes are closed on the wire,
+and the app, the act and its place in the ledger are stamped. Once the account
+is erased its consents stay as proof, and the deployment destroys them
+`consent.keep` later ([operating.md](operating.md) § *Destroying somebody*) --
+no app sweeps a ledger it shares.
+
 ## Where each fact is
 
 | | |
@@ -408,6 +446,7 @@ What this layer **cannot** hide, and should not try to:
 | `cli/control.go`, `narrowedFlag` | a deployment key with nothing on it |
 | `cli/login.go`, `nominate` | the Login App setting itself up in every tenant |
 | `cli/app.go` | `roster app install` / `uninstall` |
+| `proto/app/consent.proto`, `server/core/consent.go` | an app's ledger of consent, and why every act is a row |
 | `account/account.go`, `ldap/ldap.go` | two consumers in the A shape |
 | `ts/lib/tenant/apps.tsx` | the *apps* tab, in both consoles |
 | `docker/flow.sh` | an access token for one API, naming the client that asked for it |

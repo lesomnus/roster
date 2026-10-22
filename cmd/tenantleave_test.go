@@ -25,6 +25,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent"
 	entaudit "github.com/lesomnus/roster/internal/ent/audit"
 	entbinding "github.com/lesomnus/roster/internal/ent/binding"
+	entconsent "github.com/lesomnus/roster/internal/ent/consent"
 	entcredential "github.com/lesomnus/roster/internal/ent/credential"
 	entemail "github.com/lesomnus/roster/internal/ent/email"
 	entgroup "github.com/lesomnus/roster/internal/ent/group"
@@ -270,7 +271,14 @@ func TestADestroyedTenantLeavesNothingOfItsOwn(t *testing.T) {
 		who := b.holder(t, ctx, in, "erin")
 		b.identity(t, ctx, who, "github", "gh-erin-"+alias)
 		b.addressOf(t, ctx, who, "erin@"+alias+".example")
-		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
+		// And what she consented to, which forgetting her leaves and
+		// destroying the tenant does not.
+		_, err := b.Ungated.Consent().Add(ctx, app.ConsentAddRequest_builder{
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(), App: who.Bytes(),
+			Document: "terms", Version: "1", Act: app.ConsentAct_CONSENT_ACT_AGREE, Seq: 1,
+		}.Build())
+		x.NoError(err)
+		_, err = b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
 			Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
@@ -323,6 +331,8 @@ func TestADestroyedTenantLeavesNothingOfItsOwn(t *testing.T) {
 		n["credential"], err = b.Ent.Credential.Query().Where(entcredential.HasHolderWith(entholder.TenantId(k))).Count(ctx)
 		x.NoError(err)
 		n["binding"], err = b.Ent.Binding.Query().Where(entbinding.Or(entbinding.HasRoleWith(entrole.TenantId(k)), entbinding.HasHolderWith(entholder.TenantId(k)))).Count(ctx)
+		x.NoError(err)
+		n["consent"], err = b.Ent.Consent.Query().Where(entconsent.TenantId(k)).Count(ctx)
 		x.NoError(err)
 
 		return n

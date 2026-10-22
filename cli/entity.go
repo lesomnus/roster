@@ -173,6 +173,9 @@ func overlays(t *pdcmd.Tree) {
 		{"identity/resubject", "roster.IdentityService.Resubject", "move somebody's identity to the claim their connection now names; once, and only from `sub`"},
 		{"email/verify", "roster.EmailService.Verify", "mint a link that proves an address, printed once; delivering it is yours"},
 		{"email/confirm", "roster.EmailService.Confirm", "spend a verify link, and stamp the address it was minted for"},
+		{"consent/agree", "roster.ConsentService.Agree", "record somebody agreeing to an app's documents, each at the version they read; as the app"},
+		{"consent/withdraw", "roster.ConsentService.Withdraw", "record somebody withdrawing their agreement to an optional document; as the app"},
+		{"consent/settled", "roster.ConsentService.Settled", "which of an app's documents somebody has not agreed to in a scope; as the app"},
 	} {
 		u, err := t.Unary(v.method)
 		if err != nil {

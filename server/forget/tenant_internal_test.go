@@ -66,4 +66,14 @@ func TestEveryTenantedTableGoesWithItsTenant(t *testing.T) {
 			}
 		}
 	}
+
+	// And what hangs off a person, which goes with them or, when it is kept
+	// past them -- a consent -- with their tenant. A table with a key to the
+	// holder in neither list outlives everybody.
+	for _, v := range migrate.Tables {
+		if v.Name != "holder" && reaches(v.Name, "holder") {
+			x.True(removed[v.Name] || persons[v.Name],
+				"%s hangs off a holder and nothing destroys it, with them or with their tenant", v.Name)
+		}
+	}
 }
