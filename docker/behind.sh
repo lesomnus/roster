@@ -94,10 +94,12 @@ cookie=$(printf '%s' "${head}" | awk '/^[Ss]et-[Cc]ookie:/{print $2}' | sed 's/;
 # looks like. It cost a CI run to read the first sentence as the only one.
 [ -n "${cookie}" ] || die "no session from the first form: $(printf '%s' "${head}" | code) -- a wrong password, or a challenge for a client this app fronts nobody for"
 
-to=$(c -X POST "${LOGIN}/accept?login_challenge=${challenge}" -H "Cookie: ${cookie}" \
+# The jar carries that cookie, as `docker/flow.sh` says: sent by hand beside
+# it, it is two of one name, and `authsession` reads two as none.
+to=$(c -X POST "${LOGIN}/accept?login_challenge=${challenge}" \
 	| sed 's/.*"redirect_to":"//; s/".*//; s|\\u0026|\&|g' | fix)
 l=$(c -o /dev/null -D - "${to}" | loc | fix)
-l=$(c -o /dev/null -D - "${l}" -H "Cookie: ${cookie}" | loc | fix)
+l=$(c -o /dev/null -D - "${l}" | loc | fix)
 step "${SEED_USER} signs in" "-> back to the proxy"
 
 # The callback, and then the page.

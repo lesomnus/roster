@@ -16,6 +16,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/forget"
 )
 
@@ -82,9 +83,17 @@ func TestARowRemovedPastTheServersFailsTheCheck(t *testing.T) {
 	run := func(args ...string) error { return cli.Cmd(&c).Run(ctx, args) }
 
 	h := b.holder(t, ctx, b.Contoso, "another")
-	_, err := b.Ent.Email.Delete().Where(email.HasHolderWith(holder.IdEQ(h.Uuid()))).Exec(ctx)
+	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
+		Holder:  app.HolderRef_builder{Id: h.Bytes()}.Build(),
+		Address: "another@contoso.example",
+	}.Build())
 	x.NoError(err)
-	x.ErrorContains(run("trail", "rows"), "finding(s)")
+	x.NoError(run("trail", "rows"))
+
+	n, err := b.Ent.Email.Delete().Where(email.HasHolderWith(holder.IdEQ(h.Uuid()))).Exec(ctx)
+	x.NoError(err)
+	x.Equal(1, n)
+	x.ErrorContains(run("trail", "rows"), "1 finding(s)")
 
 	x.NoError(run("trail", "rows", "--accept", "--why", "the address was removed by hand on 2026-10-22"))
 	x.NoError(run("trail", "rows"))

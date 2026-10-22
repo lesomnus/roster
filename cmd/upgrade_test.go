@@ -48,10 +48,12 @@ func TestADatabaseFromBeforeTheDomainColumnUpgrades(t *testing.T) {
 
 	// The indexes go first, because the column they are on cannot: an old
 	// database has none of them, and taking them away in the order the
-	// migration put them there is the only way to get back to that shape.
+	// migration put them there is the only way to get back to that shape. By
+	// the names a migration stores them under now, the table's and the one
+	// `audit.proto` declares, rather than their columns' (`pd.IndexRenames`).
 	for _, q := range []string{
-		"DROP INDEX audit_domain_date_created",
-		"DROP INDEX audit_tenant_id_domain_date_created",
+		"DROP INDEX audit_by_domain",
+		"DROP INDEX audit_by_tenant_domain",
 		"ALTER TABLE audit DROP COLUMN domain",
 	} {
 		var out sql.Result

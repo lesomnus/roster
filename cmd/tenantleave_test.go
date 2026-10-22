@@ -702,12 +702,17 @@ func TestAHoldPlacedWhileATenantIsDestroyedStopsIt(t *testing.T) {
 	before := left()
 	x.Greater(before, 2)
 
-	// The first person forgotten is the moment a claim arrives.
+	// The first person forgotten is the moment a claim arrives: their rows gone
+	// in the transaction that forgets them, and the trail about them blanked
+	// after it. The blanking and not the holder's own row, which is written
+	// inside that transaction -- a hold placed from there is a second writer
+	// waiting on the first, which SQLite answers with "locked" and no
+	// operator's claim ever arrives as.
 	var once sync.Once
-	b.Ent.Holder.Use(func(next ent.Mutator) ent.Mutator {
+	b.Ent.Audit.Use(func(next ent.Mutator) ent.Mutator {
 		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
 			v, err := next.Mutate(ctx, m)
-			if err == nil && m.Op().Is(ent.OpUpdateOne) {
+			if err == nil && m.Op().Is(ent.OpUpdate) {
 				once.Do(func() {
 					x.NoError(forget.Hold(ctx, b.Ungated, b.Contoso, "a claim that arrived while it ran"))
 				})

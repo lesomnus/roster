@@ -142,7 +142,9 @@ cookie=$(printf '%s' "${head}" | awk '/^[Ss]et-[Cc]ookie:/{print $2}' | sed 's/;
 [ -n "${cookie}" ] || die "the password was not accepted; a device flow resolved no tenant"
 step "${SEED_USER} types the password" "$(printf '%s' "${head}" | code), ${cookie%%=*}"
 
-to=$(c -X POST "${LOGIN}/accept?login_challenge=${login_challenge}" -H "Cookie: ${cookie}" \
+# The jar carries that cookie, as `docker/flow.sh` says: sent by hand beside
+# it, it is two of one name, and `authsession` reads two as none.
+to=$(c -X POST "${LOGIN}/accept?login_challenge=${login_challenge}" \
 	| json redirect_to | sed 's|\\u0026|\&|g; s|\\/|/|g' | fix)
 case "${to}" in http*) ;; *) die "nothing was accepted: ${to}";; esac
 
@@ -151,7 +153,7 @@ case "${to}" in http*) ;; *) die "nothing was accepted: ${to}";; esac
 # *you may close this* page rather than a callback, because a device flow has no
 # browser to send a code to. That is the difference worth seeing.
 l=$(c -o /dev/null -D - "${to}" | loc | fix)
-l=$(c -o /dev/null -D - "${l}" -H "Cookie: ${cookie}" | loc | fix)
+l=$(c -o /dev/null -D - "${l}" | loc | fix)
 step "consent -> the issuer" "$(printf '%s' "${l}" | cut -c1-40)…"
 c -o /dev/null "${l}" || true
 
