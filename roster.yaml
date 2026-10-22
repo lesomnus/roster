@@ -195,3 +195,28 @@ spin:
   # `none` runs no loop here at all, for a replica that only answers requests
   # while another runs the loops.
   lease: local
+
+# The trail stays in the database, forever, until this says otherwise -- and
+# what this file is for is a box somebody is trying roster on, so it does not
+# say otherwise. How long the evidence lasts is a deployment's to decide, not a
+# default's; `docs/operating.md` § "The audit trail".
+#
+# Which is also why it names no **witness**. A witness hears each checkpoint
+# of the archive's account (payday#115), a database that keeps the whole trail
+# has no archive and takes no checkpoint, and payday refuses witnesses with no
+# archive to hear -- so a default that named one would not start. A deployment
+# that keeps an archive names its witnesses beside it, and each of the two
+# needs a disk of its own but the log:
+#
+#   audit:
+#     profile: pipa
+#     archive: /var/lib/roster/audit
+#     checkpoints:
+#       key: /run/secrets/roster-checkpoints.pem   # openssl genpkey -algorithm ed25519
+#       witnesses: ["log:", "store:/var/lib/roster-witness"]
+#
+# A box with one disk names `["log:"]` alone: it needs no volume, and is a
+# witness only with the alerts on it that the operating guide gives -- the
+# gauge `payday.trail.checkpoint` going down, and two log lines of one `k`
+# with two digests. A `store:` on the disk the archive is on is no witness:
+# whoever can take checkpoints out of the one takes them out of the other.

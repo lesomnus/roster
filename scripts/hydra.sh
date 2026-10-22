@@ -104,6 +104,27 @@ if [ -z "${sub}" ]; then
 fi
 echo "   ${sub}"
 
+# **And who heard the trail's newest checkpoint** (payday#115). Not a flow, and
+# here anyway, because this is the one gate that brings `compose.yaml` up: it
+# keeps an archive under a key `init` writes on the first start
+# (`docker/entrypoint.sh`), and names two witnesses, and the pass every start
+# runs ends in a checkpoint they are told of. A witness that cannot hear stops
+# nothing -- the act logs it and carries on -- so a key written somewhere other
+# than where it is named, or a witness's volume it cannot write, is red here or
+# nowhere.
+echo "== who heard the trail's newest checkpoint"
+heard="$(docker compose exec -T roster sh -lc 'roster trail verify 2>&1')" || {
+	printf 'the trail does not verify:\n%s\n' "${heard}" >&2
+	exit 1
+}
+case "${heard}" in
+*"heard by store:/var/lib/roster-witness: checkpoint "*) echo "   the store witness, and the chain held to it" ;;
+*)
+	printf "the trail's witness heard no checkpoint:\n%s\n" "${heard}" >&2
+	exit 1
+	;;
+esac
+
 # A key that may sign her out and give her an authenticator, for the steps of
 # the walk that are about her rather than about a flow. `erin` holds the seeded
 # `everything` role and `mayReach` passes for your own row, so this is her doing

@@ -31,6 +31,7 @@ import (
 	outbox "github.com/lesomnus/roster/internal/ent/outbox"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	role "github.com/lesomnus/roster/internal/ent/role"
+	rowseal "github.com/lesomnus/roster/internal/ent/rowseal"
 	session "github.com/lesomnus/roster/internal/ent/session"
 	site "github.com/lesomnus/roster/internal/ent/site"
 	sitemembership "github.com/lesomnus/roster/internal/ent/sitemembership"
@@ -415,6 +416,7 @@ type Scope interface {
 	ArchivedScope(ctx context.Context) (predicate.Archived, error)
 	AuditScope(ctx context.Context) (predicate.Audit, error)
 	OutboxScope(ctx context.Context) (predicate.Outbox, error)
+	RowSealScope(ctx context.Context) (predicate.RowSeal, error)
 }
 
 // Unscoped is a [Scope] that narrows nothing. Embed it and write out the
@@ -511,6 +513,9 @@ func (Unscoped) AuditScope(_ context.Context) (predicate.Audit, error) {
 	return nil, nil
 }
 func (Unscoped) OutboxScope(_ context.Context) (predicate.Outbox, error) {
+	return nil, nil
+}
+func (Unscoped) RowSealScope(_ context.Context) (predicate.RowSeal, error) {
 	return nil, nil
 }
 
@@ -1093,6 +1098,26 @@ func (ss Scopes) OutboxScope(ctx context.Context) (predicate.Outbox, error) {
 	return outbox.And(ps...), nil
 }
 
+func (ss Scopes) RowSealScope(ctx context.Context) (predicate.RowSeal, error) {
+	ps := make([]predicate.RowSeal, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.RowSealScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return rowseal.And(ps...), nil
+}
+
 // Minter decides the key a row is stored under. It is asked once per Add,
 // for an entity whose key is a uuid, and only for those.
 //
@@ -1316,3 +1341,4 @@ func (s Server) Access() rstr.AccessServiceServer     { return AccessServiceServ
 func (s Server) Archived() rstr.ArchivedServiceServer { return ArchivedServiceServer{Store: s.Store} }
 func (s Server) Audit() rstr.AuditServiceServer       { return AuditServiceServer{Store: s.Store} }
 func (s Server) Outbox() rstr.OutboxServiceServer     { return OutboxServiceServer{Store: s.Store} }
+func (s Server) RowSeal() rstr.RowSealServiceServer   { return RowSealServiceServer{Store: s.Store} }

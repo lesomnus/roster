@@ -6,17 +6,19 @@ import (
 	"testing"
 	"time"
 
+	entsql "github.com/protobuf-orm/ent/dialect/sql"
 	"github.com/stretchr/testify/require"
 
 	payaudit "github.com/lesomnus/payday/audit"
-	"github.com/lesomnus/payday/trail"
 
 	"github.com/lesomnus/roster/cli"
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/email"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/internal/ent/rowseal"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/forget"
 )
 
@@ -151,19 +153,85 @@ func TestWhatTheDeploymentWritesPastItsServersIsOnTheTrailAsItsAct(t *testing.T)
 	x.NoError(run("trail", "rows"))
 
 	// Forgotten: their rows removed and the holder blanked, each on the trail
-	// as the act that did it (payday#115).
-	_, err = forget.Forget(ctx, b.Ent, h, trail.Policy{}, cs)
+	// as the act that did it (payday#115) -- under the deployment's own
+	// policy, as `roster forget` and the sweep hand it, which carries the
+	// digest key the forgetting leaves a seal that says so under. The check
+	// counts the holder as forgotten, and vouches for what its digest covers.
+	p, err := c.Audit.Policy()
 	x.NoError(err)
-	x.NoError(run("trail", "rows"))
+	_, err = forget.Forget(ctx, b.Ent, h, p, cs)
+	x.NoError(err)
+	out, err := stderrOf(t, cli.Cmd(&c), "trail", "rows")
+	x.NoError(err)
+	x.Contains(out, "; 1 forgotten;")
 
 	x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(time.Now()).Exec(ctx))
-	_, err = forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, cs)
+	_, err = forget.DestroyTenant(ctx, b.Ent, b.Contoso, p, cs)
 	x.NoError(err)
 
 	vs, err := b.Ent.Audit.Query().Where(audit.ObjectId(b.Contoso.Uuid())).Order(audit.ByDateCreated()).All(ctx)
 	x.NoError(err)
 	x.Equal(forget.DestroyedTenant, vs[len(vs)-1].Action)
 	x.NoError(run("trail", "rows"))
+}
+
+// TestRowsFromBeforeSealsAreSealedByAnAcceptance is the one acceptance an
+// operator runs after the upgrade that brought seals (payday#115). A holder
+// whose newest write sealed nothing -- made here by writing its newest line's
+// digest as a build before seals would have, and taking its seal off -- is
+// counted as from before seals, and is no finding. `--accept` of that check
+// seals it, though the check found nothing, and the next one counts none.
+func TestRowsFromBeforeSealsAreSealedByAnAcceptance(t *testing.T) {
+	x := require.New(t)
+
+	var c cmd.Config
+	b, ctx := build(t, func(cc *cmd.Config) {
+		cc.Audit.Digest.Key = "base64:" + base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{7}, 32))
+		c = *cc
+	})
+	cs, err := c.Audit.Contents()
+	x.NoError(err)
+	run := func(args ...string) error { return cli.Cmd(&c).Run(ctx, args) }
+
+	h := b.holder(t, ctx, b.Contoso, "another")
+	newest, err := b.Ent.Audit.Query().Where(audit.ObjectId(h.Uuid())).Order(audit.ByDateCreated(entsql.OrderDesc())).First(ctx)
+	x.NoError(err)
+	q := b.Ent.Holder.Query().Where(holder.IdEQ(h.Uuid()))
+	bare.HolderSelectInit(q, nil)
+	row, err := q.Only(ctx)
+	x.NoError(err)
+	sum, err := cs.Digest.Of(h, row.Proto(), newest.DigestFields, payaudit.Line{Id: newest.Id, Created: newest.DateCreated, Action: newest.Action})
+	x.NoError(err)
+	x.False(payaudit.Sealing(sum))
+	x.NoError(b.Ent.Audit.UpdateOneId(newest.Id).SetDigest(sum).Exec(ctx))
+	x.NoError(b.Ent.RowSeal.DeleteOneId(h.Uuid()).Exec(ctx))
+
+	sealed := func() bool {
+		ok, err := b.Ent.RowSeal.Query().Where(rowseal.IdEQ(h.Uuid())).Exist(ctx)
+		x.NoError(err)
+		return ok
+	}
+
+	out, err := stderrOf(t, cli.Cmd(&c), "trail", "rows")
+	x.NoError(err, "a row from before seals was taken for a finding")
+	x.Contains(out, "1 row(s) from before seals")
+	of := digestOf(t, out)
+
+	x.ErrorContains(run("trail", "rows", "--accept", "--of", nothingLookedAt, "--why", "not what was looked at"), "`roster trail rows` again")
+	x.False(sealed(), "an acceptance of another check sealed it")
+
+	out, err = stderrOf(t, cli.Cmd(&c), "trail", "rows", "--accept", "--of", of, "--why", "written before seals")
+	x.NoError(err)
+	x.Contains(out, "sealed 1 from before seals")
+	x.True(sealed(), "the acceptance sealed nothing")
+
+	out, err = stderrOf(t, cli.Cmd(&c), "trail", "rows")
+	x.NoError(err)
+	x.NotContains(out, "from before seals")
+
+	vs, err := b.Ent.Audit.Query().Where(audit.ObjectId(h.Uuid())).Order(audit.ByDateCreated()).All(ctx)
+	x.NoError(err)
+	x.Equal("roster.trail.rows.accept", vs[len(vs)-1].Action)
 }
 
 // TestRowsAreNotCheckedWithoutAKey: a trail with no key keeps no digest, and

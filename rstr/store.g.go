@@ -54,6 +54,7 @@ type Server interface {
 	Archived() ArchivedServiceServer
 	Audit() AuditServiceServer
 	Outbox() OutboxServiceServer
+	RowSeal() RowSealServiceServer
 }
 
 // RegisterServer registers every service of `s` with `g`.
@@ -89,6 +90,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterArchivedServiceServer(g, s.Archived())
 	RegisterAuditServiceServer(g, s.Audit())
 	RegisterOutboxServiceServer(g, s.Outbox())
+	RegisterRowSealServiceServer(g, s.RowSeal())
 }
 
 type UnimplementedServer struct {
@@ -120,6 +122,7 @@ type UnimplementedServer struct {
 	ArchivedServer        ArchivedServiceServer
 	AuditServer           AuditServiceServer
 	OutboxServer          OutboxServiceServer
+	RowSealServer         RowSealServiceServer
 }
 
 func (UnimplementedServer) Tenant() TenantServiceServer { return UnimplementedTenantServiceServer{} }
@@ -174,8 +177,9 @@ func (UnimplementedServer) Access() AccessServiceServer   { return Unimplemented
 func (UnimplementedServer) Archived() ArchivedServiceServer {
 	return UnimplementedArchivedServiceServer{}
 }
-func (UnimplementedServer) Audit() AuditServiceServer   { return UnimplementedAuditServiceServer{} }
-func (UnimplementedServer) Outbox() OutboxServiceServer { return UnimplementedOutboxServiceServer{} }
+func (UnimplementedServer) Audit() AuditServiceServer     { return UnimplementedAuditServiceServer{} }
+func (UnimplementedServer) Outbox() OutboxServiceServer   { return UnimplementedOutboxServiceServer{} }
+func (UnimplementedServer) RowSeal() RowSealServiceServer { return UnimplementedRowSealServiceServer{} }
 
 type StaticServer struct {
 	TenantServer          TenantServiceServer
@@ -206,6 +210,7 @@ type StaticServer struct {
 	ArchivedServer        ArchivedServiceServer
 	AuditServer           AuditServiceServer
 	OutboxServer          OutboxServiceServer
+	RowSealServer         RowSealServiceServer
 }
 
 func (s StaticServer) Tenant() TenantServiceServer                   { return s.TenantServer }
@@ -236,6 +241,7 @@ func (s StaticServer) Access() AccessServiceServer                   { return s.
 func (s StaticServer) Archived() ArchivedServiceServer               { return s.ArchivedServer }
 func (s StaticServer) Audit() AuditServiceServer                     { return s.AuditServer }
 func (s StaticServer) Outbox() OutboxServiceServer                   { return s.OutboxServer }
+func (s StaticServer) RowSeal() RowSealServiceServer                 { return s.RowSealServer }
 
 type Client interface {
 	Tenant() TenantServiceClient
@@ -266,6 +272,7 @@ type Client interface {
 	Archived() ArchivedServiceClient
 	Audit() AuditServiceClient
 	Outbox() OutboxServiceClient
+	RowSeal() RowSealServiceClient
 }
 
 func NewClient(c *grpc.ClientConn) Client {
@@ -298,6 +305,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Archived:        NewArchivedServiceClient(c),
 		_Audit:           NewAuditServiceClient(c),
 		_Outbox:          NewOutboxServiceClient(c),
+		_RowSeal:         NewRowSealServiceClient(c),
 	}
 }
 
@@ -330,6 +338,7 @@ type client struct {
 	_Archived        ArchivedServiceClient
 	_Audit           AuditServiceClient
 	_Outbox          OutboxServiceClient
+	_RowSeal         RowSealServiceClient
 }
 
 func (c *client) Tenant() TenantServiceClient                   { return c._Tenant }
@@ -360,6 +369,7 @@ func (c *client) Access() AccessServiceClient                   { return c._Acce
 func (c *client) Archived() ArchivedServiceClient               { return c._Archived }
 func (c *client) Audit() AuditServiceClient                     { return c._Audit }
 func (c *client) Outbox() OutboxServiceClient                   { return c._Outbox }
+func (c *client) RowSeal() RowSealServiceClient                 { return c._RowSeal }
 
 // Middleware is a server that delegates to another server.
 type Middleware interface {

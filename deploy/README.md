@@ -77,7 +77,7 @@ What an overlay is expected to bring, and what it should leave alone:
 
 | | |
 | --- | --- |
-| its own | hosts, secrets, storage class, image digests, the products it actually runs, and `config.yaml` -- by a `configMapGenerator` for `roster` with `behavior: replace` |
+| its own | hosts, secrets (`roster-checkpoints` among them, `key.pem`, for a `config.yaml` that keeps an archive), storage class, image digests, the products it actually runs, and `config.yaml` -- by a `configMapGenerator` for `roster` with `behavior: replace` |
 | the base's | what a client has to be registered with, which `URLS_*` Hydra needs, that the clients are applied and then **checked** -- the four things that were wrong when they were written twice |
 
 The piece of the rig that a deployment does not want is `product.yaml`, there to
@@ -95,6 +95,29 @@ of it -- an **ingress**, which is the deployment's and not this base's.
 So the proxy demo lives in whatever has a terminator: `scripts/cluster.sh`'s
 overlay, or a deployment beside its own ingress. `scripts/cluster.sh`'s own overlay (`--behind`'s phases) is a
 worked example of everything on this list except the secrets.
+
+## The trail, kept and heard
+
+`config.yaml` keeps the trail the way `docs/operating.md` § "The audit trail"
+says to: past its window a row leaves the database for an archive on a claim of
+its own (`roster-audit`), the archive's account is signed with the key in
+`roster-checkpoints`, and every checkpoint is heard outside the database and the
+archive (payday#115) -- by the log, and by a store on a claim of its own,
+`roster-witness`. A witness is worth what it is apart from, so the two claims
+are separate from `roster-data` and from each other, and a deployment puts the
+witness on storage that refuses deletion, mounted with credentials neither the
+database's nor the archive's.
+
+`scripts/cluster.sh` asks a verification inside the pod what the store heard,
+because a witness that cannot hear stops nothing -- so whether it is linked,
+whether the pod's user can write its claim, and whether the chain is held to it
+are each something only a running deployment can say, and nothing else in the rig
+would go red for them.
+
+An overlay whose own `config.yaml` keeps no archive needs no key: the Secret's
+mount is optional. The two claims it inherits are made and stay empty; taking
+them out is a `$patch: delete` of each and of the volume in `roster.yaml` that
+names it.
 
 ## TLS, and the `--dev` that is not here
 

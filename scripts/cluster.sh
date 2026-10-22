@@ -498,6 +498,11 @@ docker run --rm --entrypoint sh -v "${vol}:/w" alpine/openssl:3.3.2 -c '
 
 	mkdir -p /w/tls && cp roster-hydra.crt roster-hydra.key roster-product.crt roster-product.key \
 		roster-edge.crt roster-edge.key ca.crt /w/tls/
+
+	# And the key the trail signs its archive with, which `deploy/` names and
+	# ships no more than any other: made here for the same reason, and the way
+	# `docs/operating.md` says a deployment makes its own.
+	openssl genpkey -algorithm ed25519 -out /w/tls/checkpoints.pem >/dev/null 2>&1
 ' >/dev/null
 
 carry
@@ -533,6 +538,11 @@ kube "kubectl -n ${NS} create secret generic roster-product-tls \
 kube "kubectl -n ${NS} create secret generic roster-edge-tls \
 	--from-file=tls.crt=/w/tls/roster-edge.crt \
 	--from-file=tls.key=/w/tls/roster-edge.key >/dev/null"
+# Before the manifests too: roster will not start on an archive it has no key
+# for, and the mount is optional, so a missing one is a refusal in the log
+# rather than a pod that waits.
+kube "kubectl -n ${NS} create secret generic roster-checkpoints \
+	--from-file=key.pem=/w/tls/checkpoints.pem >/dev/null"
 kube "kubectl -n ${NS} apply -k /w/deploy >/dev/null"
 kube "kubectl -n ${NS} rollout status deploy/roster-hydra --timeout=300s"
 
@@ -556,6 +566,21 @@ echo
 echo "== is the login app fronting anybody"
 kube "kubectl -n ${NS} logs deploy/roster --tail=200 | grep -E 'login - addr'" \
 	|| { echo "cluster: the login app is not serving; the log above says why" >&2; exit 1; }
+
+# **And who heard the trail's newest checkpoint** (payday#115).
+#
+# Every start runs a pass, the pass ends in a checkpoint, and the checkpoint is
+# told to the witnesses `deploy/config.yaml` names -- so by now one has been at
+# least, and `store:` kept it on its own claim. Asked of a
+# verification inside the pod, because that is the one thing that says all
+# three of what only a running deployment can: that the witness is linked into
+# this binary, that its claim is writable by the user the pod runs as, and that
+# the chain is held to what it heard. A witness that cannot hear stops nothing
+# -- the act logs it and carries on -- so nothing else here would go red.
+echo
+echo "== the trail's newest checkpoint, as its witness heard it"
+said "heard by store:/witness: checkpoint " "the trail's witness heard no checkpoint; the verification said:" \
+	"kubectl -n ${NS} exec deploy/roster -c roster -- roster --config /config/config.yaml trail verify 2>&1"
 
 echo
 echo "== the clients, as hydra has them"

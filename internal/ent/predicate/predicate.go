@@ -83,6 +83,9 @@ type Outbox func(*sql.Selector)
 // Role is the predicate function for role builders.
 type Role func(*sql.Selector)
 
+// RowSeal is the predicate function for rowseal builders.
+type RowSeal func(*sql.Selector)
+
 // Session is the predicate function for session builders.
 type Session func(*sql.Selector)
 

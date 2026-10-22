@@ -387,3 +387,38 @@ func TestAnArchiveIsKeptWithAKey(t *testing.T) {
 		x.Equal(was, now, "a prune refused for its key took rows out of the database")
 	})
 }
+
+// TestAVerificationSaysWhatEachWitnessHeard: a deployment that names
+// witnesses has every checkpoint heard outside the database and the archive
+// (payday#115) -- `log:` and `store:`, which this binary links -- and `trail
+// verify` says what each that answers heard last, beside the digest: nothing
+// yet before the first checkpoint, and then the newest checkpoint's number and
+// what the store keeps it under. A witness that only tells answers nothing,
+// and is not among them.
+func TestAVerificationSaysWhatEachWitnessHeard(t *testing.T) {
+	x := require.New(t)
+
+	var c cmd.Config
+	b, ctx := build(t, func(cc *cmd.Config) {
+		cc.Audit.Archive = t.TempDir()
+		cc.Audit.Retain = time.Nanosecond
+		cc.Audit.Checkpoints.Key = pdtest.Key(t)
+		cc.Audit.Checkpoints.Witnesses = []string{"log:", "store:" + t.TempDir()}
+		c = *cc
+	})
+	b.holder(t, ctx, b.Contoso, "another")
+
+	out, err := stderrOf(t, cli.Cmd(&c), "trail", "verify")
+	x.NoError(err)
+	x.Contains(out, "heard by "+c.Audit.Checkpoints.Witnesses[1]+": nothing yet\n")
+
+	x.NoError(cli.Cmd(&c).Run(ctx, []string{"trail", "prune"}))
+	out, err = stderrOf(t, cli.Cmd(&c), "trail", "verify")
+	x.NoError(err)
+
+	m := regexp.MustCompile(`(?m)^heard by (store:\S+): checkpoint ([0-9]+), (sha256:[0-9a-f]{64}), at \S+$`).FindStringSubmatch(out)
+	x.NotNil(m, "verify does not say what the store witness heard:\n%s", out)
+	x.Equal(c.Audit.Checkpoints.Witnesses[1], m[1])
+	x.Contains(out, "checkpoint "+m[2]+" compared", "the witness heard another checkpoint than the newest")
+	x.NotContains(out, "heard by log:", "a witness that only tells answered")
+}
