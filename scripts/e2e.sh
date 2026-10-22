@@ -92,7 +92,7 @@ admin_http="http://127.0.0.1:18072"
 # that deletes it. A tenant of its own, at an address of its own (the account
 # app answers whichever tenant the name a browser arrived at is), so that the
 # account it deletes is nobody another spec signs in as -- and not fabrikam,
-# which the console spec stands up itself.
+# which `console.spec.ts` stands up itself.
 export E2E_TAILSPIN="http://127.0.0.1:18090"
 export E2E_FRANK_PASSWORD="tailspin-$(head -c 12 /dev/urandom | base64 | tr -d '/+=')"
 

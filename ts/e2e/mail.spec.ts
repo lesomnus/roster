@@ -1,4 +1,4 @@
-import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
+import { expect, test, type APIRequestContext, type Page, type Response } from '@playwright/test'
 
 // What the account app mails, walked from the page to a mailbox and back: a
 // link that confirms an address, one that recovers the account, and one that
@@ -45,6 +45,15 @@ async function linkIn(request: APIRequestContext, to: string, subject: string): 
 	return links[0] ?? ''
 }
 
+// answered is a request the page made, held to the status it should have had,
+// with its body said when it had another. Read only then: a 202 here has no
+// body, and asking a browser for the body of one is an error of its own.
+async function answered(res: Response, want: number): Promise<void> {
+	if (res.status() !== want) {
+		expect(res.status(), `${new URL(res.url()).pathname} answered ${res.status()}: ${await res.text()}`).toBe(want)
+	}
+}
+
 async function signIn(page: Page): Promise<void> {
 	await page.goto(base)
 	await page.locator('input[name=alias]').fill('frank')
@@ -58,8 +67,7 @@ test('a link confirms an address of his', async ({ page, request }) => {
 	const row = page.locator('section', { has: page.getByRole('heading', { name: 'addresses' }) }).locator('tr', { hasText: address })
 	const asked = page.waitForResponse((r) => r.url().endsWith('/verify'))
 	await row.locator('button', { hasText: 'confirm' }).click()
-	const res = await asked
-	expect(res.status(), `/verify answered ${res.status()}: ${await res.text()}`).toBe(202)
+	await answered(await asked, 202)
 	await expect(page.locator('.note', { hasText: `a link is on its way to ${address}` })).toBeVisible()
 
 	const link = await linkIn(request, address, 'Confirm your address')
@@ -77,8 +85,7 @@ test('a link recovers his account, with a password shown once', async ({ page, r
 	await page.locator('input[name=address]').fill(address)
 	const asked = page.waitForResponse((r) => r.url().endsWith('/recover'))
 	await page.locator('button', { hasText: 'send a link' }).click()
-	const res = await asked
-	expect(res.status(), `/recover answered ${res.status()}: ${await res.text()}`).toBe(202)
+	await answered(await asked, 202)
 	await expect(page.locator('.note', { hasText: 'if that address is here, a link is on its way' })).toBeVisible()
 
 	const link = await linkIn(request, address, 'Recover your account')
