@@ -20,6 +20,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/binding"
 	"github.com/lesomnus/roster/internal/ent/connection"
+	"github.com/lesomnus/roster/internal/ent/consent"
 	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/groupexposure"
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
@@ -362,6 +363,15 @@ func tenanted() []subject {
 			return db.Host.Query().Where(host.TenantId(k)).Ids(ctx)
 		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Host.Delete().Where(host.TenantId(k)).Exec(ctx)
+		}),
+		// What its people consented to, which [Forget] leaves: a consent is kept
+		// past its account as proof, for `consent.keep` ([SweepConsents]). Not
+		// past its tenant -- a tenant destroyed is one whose people are all gone
+		// and whose apps answer nobody, so there is nobody left to show it to.
+		of("consent", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+			return db.Consent.Query().Where(consent.TenantId(k)).Ids(ctx)
+		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+			return db.Consent.Delete().Where(consent.TenantId(k)).Exec(ctx)
 		}),
 	}
 }

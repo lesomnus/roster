@@ -24,6 +24,9 @@ type Binding func(*sql.Selector)
 // Connection is the predicate function for connection builders.
 type Connection func(*sql.Selector)
 
+// Consent is the predicate function for consent builders.
+type Consent func(*sql.Selector)
+
 // Continuation is the predicate function for continuation builders.
 type Continuation func(*sql.Selector)
 

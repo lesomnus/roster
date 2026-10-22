@@ -17,6 +17,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/binding"
 	"github.com/lesomnus/roster/internal/ent/connection"
+	"github.com/lesomnus/roster/internal/ent/consent"
 	"github.com/lesomnus/roster/internal/ent/continuation"
 	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/delegation"
@@ -61,6 +62,8 @@ type Client struct {
 	Binding *BindingClient
 	// Connection is the client for interacting with the Connection builders.
 	Connection *ConnectionClient
+	// Consent is the client for interacting with the Consent builders.
+	Consent *ConsentClient
 	// Continuation is the client for interacting with the Continuation builders.
 	Continuation *ContinuationClient
 	// Credential is the client for interacting with the Credential builders.
@@ -123,6 +126,7 @@ func (c *Client) init() {
 	c.Audit = NewAuditClient(c.config)
 	c.Binding = NewBindingClient(c.config)
 	c.Connection = NewConnectionClient(c.config)
+	c.Consent = NewConsentClient(c.config)
 	c.Continuation = NewContinuationClient(c.config)
 	c.Credential = NewCredentialClient(c.config)
 	c.Delegation = NewDelegationClient(c.config)
@@ -244,6 +248,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Audit:           NewAuditClient(cfg),
 		Binding:         NewBindingClient(cfg),
 		Connection:      NewConnectionClient(cfg),
+		Consent:         NewConsentClient(cfg),
 		Continuation:    NewContinuationClient(cfg),
 		Credential:      NewCredentialClient(cfg),
 		Delegation:      NewDelegationClient(cfg),
@@ -292,6 +297,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Audit:           NewAuditClient(cfg),
 		Binding:         NewBindingClient(cfg),
 		Connection:      NewConnectionClient(cfg),
+		Consent:         NewConsentClient(cfg),
 		Continuation:    NewContinuationClient(cfg),
 		Credential:      NewCredentialClient(cfg),
 		Delegation:      NewDelegationClient(cfg),
@@ -390,7 +396,7 @@ func (c *Client) InTx() bool {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Access, c.ApiKey, c.Archived, c.Audit, c.Binding, c.Connection,
+		c.Access, c.ApiKey, c.Archived, c.Audit, c.Binding, c.Connection, c.Consent,
 		c.Continuation, c.Credential, c.Delegation, c.Email, c.Group, c.GroupExposure,
 		c.GroupMembership, c.Holder, c.Host, c.HostProof, c.Identity, c.Link,
 		c.MailDomain, c.Nomination, c.Outbox, c.Role, c.RowSeal, c.Session, c.Site,
@@ -404,7 +410,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Access, c.ApiKey, c.Archived, c.Audit, c.Binding, c.Connection,
+		c.Access, c.ApiKey, c.Archived, c.Audit, c.Binding, c.Connection, c.Consent,
 		c.Continuation, c.Credential, c.Delegation, c.Email, c.Group, c.GroupExposure,
 		c.GroupMembership, c.Holder, c.Host, c.HostProof, c.Identity, c.Link,
 		c.MailDomain, c.Nomination, c.Outbox, c.Role, c.RowSeal, c.Session, c.Site,
@@ -429,6 +435,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Binding.mutate(ctx, m)
 	case *ConnectionMutation:
 		return c.Connection.mutate(ctx, m)
+	case *ConsentMutation:
+		return c.Consent.mutate(ctx, m)
 	case *ContinuationMutation:
 		return c.Continuation.mutate(ctx, m)
 	case *CredentialMutation:
@@ -1371,6 +1379,155 @@ func (c *ConnectionClient) mutate(ctx context.Context, m *ConnectionMutation) (V
 		return (&ConnectionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Connection mutation op: %q", m.Op())
+	}
+}
+
+// ConsentClient is a client for the Consent schema.
+type ConsentClient struct {
+	config
+}
+
+// NewConsentClient returns a client for the Consent from the given config.
+func NewConsentClient(c config) *ConsentClient {
+	return &ConsentClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `consent.Hooks(f(g(h())))`.
+func (c *ConsentClient) Use(hooks ...Hook) {
+	c.hooks.Consent = append(c.hooks.Consent, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `consent.Intercept(f(g(h())))`.
+func (c *ConsentClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Consent = append(c.inters.Consent, interceptors...)
+}
+
+// Create returns a builder for creating a Consent entity.
+func (c *ConsentClient) Create() *ConsentCreate {
+	mutation := newConsentMutation(c.config, OpCreate)
+	return &ConsentCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Consent entities.
+func (c *ConsentClient) CreateBulk(builders ...*ConsentCreate) *ConsentCreateBulk {
+	return &ConsentCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ConsentClient) MapCreateBulk(slice any, setFunc func(*ConsentCreate, int)) *ConsentCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ConsentCreateBulk{err: fmt.Errorf("calling to ConsentClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ConsentCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ConsentCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Consent.
+func (c *ConsentClient) Update() *ConsentUpdate {
+	mutation := newConsentMutation(c.config, OpUpdate)
+	return &ConsentUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ConsentClient) UpdateOne(_m *Consent) *ConsentUpdateOne {
+	mutation := newConsentMutation(c.config, OpUpdateOne, withConsent(_m))
+	return &ConsentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *ConsentClient) UpdateOneId(id uuid.UUID) *ConsentUpdateOne {
+	mutation := newConsentMutation(c.config, OpUpdateOne, withConsentId(id))
+	return &ConsentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Consent.
+func (c *ConsentClient) Delete() *ConsentDelete {
+	mutation := newConsentMutation(c.config, OpDelete)
+	return &ConsentDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ConsentClient) DeleteOne(_m *Consent) *ConsentDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *ConsentClient) DeleteOneId(id uuid.UUID) *ConsentDeleteOne {
+	builder := c.Delete().Where(consent.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &ConsentDeleteOne{builder}
+}
+
+// Query returns a query builder for Consent.
+func (c *ConsentClient) Query() *ConsentQuery {
+	return &ConsentQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeConsent},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Consent entity by its id.
+func (c *ConsentClient) Get(ctx context.Context, id uuid.UUID) (*Consent, error) {
+	return c.Query().Where(consent.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ConsentClient) GetX(ctx context.Context, id uuid.UUID) *Consent {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryHolder queries the holder edge of a Consent.
+func (c *ConsentClient) QueryHolder(_m *Consent) *HolderQuery {
+	query := (&HolderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(consent.Table, consent.FieldId, id),
+			sqlgraph.To(holder.Table, holder.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, consent.HolderTable, consent.HolderColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ConsentClient) Hooks() []Hook {
+	return c.hooks.Consent
+}
+
+// Interceptors returns the client interceptors.
+func (c *ConsentClient) Interceptors() []Interceptor {
+	return c.inters.Consent
+}
+
+func (c *ConsentClient) mutate(ctx context.Context, m *ConsentMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ConsentCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ConsentUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ConsentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ConsentDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Consent mutation op: %q", m.Op())
 	}
 }
 
@@ -4932,15 +5089,15 @@ func (c *TenantClient) mutate(ctx context.Context, m *TenantMutation) (Value, er
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Access, ApiKey, Archived, Audit, Binding, Connection, Continuation, Credential,
-		Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host,
-		HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, RowSeal,
+		Access, ApiKey, Archived, Audit, Binding, Connection, Consent, Continuation,
+		Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder,
+		Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, RowSeal,
 		Session, Site, SiteMembership, Team, TeamMembership, Tenant []ent.Hook
 	}
 	inters struct {
-		Access, ApiKey, Archived, Audit, Binding, Connection, Continuation, Credential,
-		Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host,
-		HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, RowSeal,
+		Access, ApiKey, Archived, Audit, Binding, Connection, Consent, Continuation,
+		Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder,
+		Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, RowSeal,
 		Session, Site, SiteMembership, Team, TeamMembership, Tenant []ent.Interceptor
 	}
 )

@@ -24,6 +24,8 @@ type Tx struct {
 	Binding *BindingClient
 	// Connection is the client for interacting with the Connection builders.
 	Connection *ConnectionClient
+	// Consent is the client for interacting with the Consent builders.
+	Consent *ConsentClient
 	// Continuation is the client for interacting with the Continuation builders.
 	Continuation *ContinuationClient
 	// Credential is the client for interacting with the Credential builders.
@@ -207,6 +209,7 @@ func (tx *Tx) init() {
 	tx.Audit = NewAuditClient(tx.config)
 	tx.Binding = NewBindingClient(tx.config)
 	tx.Connection = NewConnectionClient(tx.config)
+	tx.Consent = NewConsentClient(tx.config)
 	tx.Continuation = NewContinuationClient(tx.config)
 	tx.Credential = NewCredentialClient(tx.config)
 	tx.Delegation = NewDelegationClient(tx.config)

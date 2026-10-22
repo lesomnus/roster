@@ -1,6 +1,6 @@
 # The entities
 
-roster is twenty-six tables and the arguments for why each is a table. This
+roster is twenty-seven tables and the arguments for why each is a table. This
 file is the map: the shape they make, and a paragraph on each.
 
 It is **not** where the reasoning lives. Every entity is declared in a `.proto`
@@ -11,7 +11,7 @@ is short enough to read in one sitting and points at them.
 `docs/position.md` is what roster is for and where it stops. `docs/roadmap.md`
 is the order it was built in.
 
-## One story, told twenty-six times
+## One story, told twenty-seven times
 
 Every entity below ends with a line or two about the same deployment, so that
 what a row is **next to** is visible from its own section. Read them in order
@@ -663,6 +663,34 @@ stranger under the old claim -- so going back is the deployment's.
 > roster stores that string and never reads it, because reading it would mean
 > doing the exchange, and doing the exchange is being the relying party.
 
+## What an app keeps here
+
+roster stores facts about people for the apps in front of it, and one kind of
+fact is an app's own rather than a person's: what they agreed to of the app's.
+
+### ✍️ `Consent` — one act of somebody's consent to an app's document
+
+An agreement to a document at a version, or the withdrawal of one to a document
+the person was free to decline -- each a row, in order, and none ever changed.
+The one in force is the latest ([`Consent.seq`](../proto/app/consent.proto)),
+which is what `ConsentService.Settled` reads, one index range per document. Every
+act is a row because consent is kept as proof: overwriting an agreement with a
+withdrawal would leave the trail as the only record of either, and the trail
+keeps a write's values only for as long as its own retention does.
+
+What is in force -- which documents, which versions, which may be declined -- is
+the app's configuration. The app is the holder the call is made as, stamped and
+compared, so an app reads and answers for its own documents and nobody else's.
+A scope is the app's word for where a consent holds: empty for the deployment,
+or a workspace of the app's. An erase and `forget` leave the rows, and
+`consent.keep` after the erase the deployment destroys them.
+
+> When erin first signs in to the product contoso runs, the product records that
+> she agreed to its terms at `2026-10` and its privacy policy at `3`: two rows,
+> their app the product's own holder in contoso. She signs in again and nothing
+> is written. The terms move to `2026-11` and the product asks for them again,
+> because a version is a document of its own.
+
 ## The record
 
 Neither of these has a foreign key, which is the one place in payday's own
@@ -760,6 +788,7 @@ hard (gone).
 | ✨ `Link` | 23 | via `holder.tenant` | -- | soft | `proto/app/link.proto` |
 | 🍪 `Session` | 24 | via `holder.tenant` | -- | soft | `proto/app/session.proto` |
 | 🔌 `Connection` | 25 | `tenant` edge | -- | soft | `proto/app/connection.proto` |
+| ✍️ `Consent` | 29 | via `holder.tenant`, stamped | -- | soft | `proto/app/consent.proto` |
 
 `id` and `date_created` are on everything and are left out above, and so are
 `date_updated` and `date_erased` wherever an entity has them. Neither is

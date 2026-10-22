@@ -210,6 +210,13 @@ type Config struct {
 	// "Destroying somebody, which an erase does not" for the operator's half.
 	Holder HolderConfig `yaml:"holder"`
 
+	// Consent is how long what somebody consented to is kept once they are
+	// gone (`proto/app/consent.proto`).
+	//
+	// roster's, beside `holder` and for its reason: which rows are kept past
+	// a person as proof, and for how long, is this app's to say.
+	Consent ConsentConfig `yaml:"consent"`
+
 	// Tenant is what happens to a tenant after it closes (#98): how long it
 	// may still be restored, and how long its alias is held once it is
 	// destroyed.
@@ -289,6 +296,27 @@ type HolderConfig struct {
 	// Every is how often that is checked. Empty is a day, which is what
 	// `trail.Swept` is and for the same reason: what this period decides is
 	// only how far past the window somebody may sit.
+	Every time.Duration `yaml:"every"`
+}
+
+// ConsentConfig is how long an account's consents outlive it.
+//
+// A consent is what shows afterwards that somebody agreed, so erasing the
+// account leaves its consents, and so does forgetting the person: the holder
+// stays, blank, for them to point at. Keep is how long after the erase they
+// are kept, and then the deployment destroys them; an app sweeps nothing.
+//
+// Empty is **for good**, which is the default the trail's retention and
+// `holder.forget_after` have, for their reason -- a version upgrade is not the
+// right thing to start destroying a deployment's proof -- and what Rove's own
+// `app.consent.keep` said before its consents moved here.
+type ConsentConfig struct {
+	// Keep is how long after its account was erased a consent is kept. Empty
+	// is for good.
+	Keep time.Duration `yaml:"keep"`
+
+	// Every is how often that is checked. Empty is a day, `holder.every`'s
+	// default and for its reason.
 	Every time.Duration `yaml:"every"`
 }
 

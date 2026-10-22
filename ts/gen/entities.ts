@@ -19,6 +19,7 @@ import { ArchivedSchema } from './roster/payday/archived_pb.js'
 import { AuditSchema } from './roster/payday/audit_pb.js'
 import { BindingSchema, RoleSchema } from './app/role_pb.js'
 import { ConnectionSchema } from './app/connection_pb.js'
+import { ConsentSchema } from './app/consent_pb.js'
 import { ContinuationSchema } from './app/continuation_pb.js'
 import { CredentialSchema } from './app/credential_pb.js'
 import { DelegationSchema } from './app/delegation_pb.js'
@@ -42,6 +43,7 @@ import { ArchivedService } from './roster/payday/archived_svc_pb.js'
 import { AuditService } from './roster/payday/audit_svc_pb.js'
 import { BindingService, RoleService } from './app/role_svc_pb.js'
 import { ConnectionService } from './app/connection_svc_pb.js'
+import { ConsentService } from './app/consent_svc_pb.js'
 import { ContinuationService } from './app/continuation_svc_pb.js'
 import { CredentialService } from './app/credential_svc_pb.js'
 import { DelegationService } from './app/delegation_svc_pb.js'
@@ -127,6 +129,18 @@ export const Connection = {
 	key: "id",
 	ids: ["id"],
 	service: ConnectionService,
+} as const satisfies EntityDesc
+
+/** roster.Consent, as the store holds it. */
+export const Consent = {
+	typeName: "roster.Consent",
+	schema: ConsentSchema,
+	domain: 29,
+	version: "dateUpdated",
+	refs: [{ field: "holder", to: "roster.Holder" }],
+	key: "id",
+	ids: ["id", "app", "tenantId"],
+	service: ConsentService,
 } as const satisfies EntityDesc
 
 /** roster.Continuation, as the store holds it. */
@@ -412,5 +426,5 @@ export const Tenant = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [Access, ApiKey, Archived, Audit, Binding, Connection, Continuation, Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, RowSeal, Session, Site, SiteMembership, Team, TeamMembership, Tenant] as const
+export const entities = [Access, ApiKey, Archived, Audit, Binding, Connection, Consent, Continuation, Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Role, RowSeal, Session, Site, SiteMembership, Team, TeamMembership, Tenant] as const
 

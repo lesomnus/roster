@@ -291,6 +291,52 @@ var (
 			},
 		},
 	}
+	// ConsentColumns holds the columns for the "consent" table.
+	ConsentColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "app", Type: field.TypeUuid},
+		{Name: "scope", Type: field.TypeString},
+		{Name: "document", Type: field.TypeString},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "version", Type: field.TypeString},
+		{Name: "act", Type: field.TypeInt32},
+		{Name: "optional", Type: field.TypeBool},
+		{Name: "client", Type: field.TypeString},
+		{Name: "seq", Type: field.TypeInt64},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "holder_id", Type: field.TypeUuid},
+	}
+	// ConsentTable holds the schema information for the "consent" table.
+	ConsentTable = &schema.Table{
+		Name:       "consent",
+		Columns:    ConsentColumns,
+		PrimaryKey: []*schema.Column{ConsentColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "consent_holder_holder",
+				Columns:    []*schema.Column{ConsentColumns[13]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "consent_page",
+				Unique:  false,
+				Columns: []*schema.Column{ConsentColumns[4], ConsentColumns[12], ConsentColumns[0]},
+			},
+			{
+				Name:    "consent_acts",
+				Unique:  true,
+				Columns: []*schema.Column{ConsentColumns[13], ConsentColumns[1], ConsentColumns[2], ConsentColumns[3], ConsentColumns[5], ConsentColumns[9]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// ContinuationColumns holds the columns for the "continuation" table.
 	ContinuationColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -1264,6 +1310,7 @@ var (
 		AuditTable,
 		BindingTable,
 		ConnectionTable,
+		ConsentTable,
 		ContinuationTable,
 		CredentialTable,
 		DelegationTable,
@@ -1314,6 +1361,10 @@ func init() {
 	ConnectionTable.ForeignKeys[0].RefTable = TenantTable
 	ConnectionTable.Annotation = &entsql.Annotation{
 		Table: "connection",
+	}
+	ConsentTable.ForeignKeys[0].RefTable = HolderTable
+	ConsentTable.Annotation = &entsql.Annotation{
+		Table: "consent",
 	}
 	ContinuationTable.ForeignKeys[0].RefTable = HolderTable
 	ContinuationTable.Annotation = &entsql.Annotation{
