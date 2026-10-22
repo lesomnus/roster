@@ -1110,10 +1110,10 @@ roster trail prune                                # apply the policy now, per ki
 roster trail prune --older-than 2160h --dry-run   # a window of your own: how many
 roster trail read --in /var/lib/roster/audit      # read an archive back
 roster trail purge --older-than 61320h --dry-run  # which chunks would go
-roster trail verify --full                        # the archive against the database's account of it
-roster trail rows                                 # the live rows against what the trail says they were left as
-roster trail rows --accept --why "the 10-20 migration set them"  # once somebody has looked at each
-roster trail accept --why "restored from backup"  # once somebody has looked
+roster trail verify --full                        # the archive against the database's account of it, and the digest of what it found
+roster trail accept --of sha256:… --full --why "a pass the 10-21 crash stopped"  # once somebody has looked at that
+roster trail rows                                 # the live rows against what the trail says they were left as, and its digest
+roster trail rows --accept --of sha256:… --why "the 10-20 migration set them"  # once somebody has looked at each
 ```
 
 `prune` with no window applies **the deployment's own policy**, which is what
@@ -1136,10 +1136,30 @@ opens the database, where `read` still does not -- and `read` checks nothing, wh
 is what `verify` is for. It compares the archive with the account and with the
 latest checkpoint, `--full` reads every chunk whole, and it fails when it found
 something, which makes it the one to schedule. What it finds is a reason to look;
-`accept --why` is somebody who has, saying the archive is right -- a chunk restored
-from a backup, a pass a crash stopped. Every pass ends with a checkpoint of the
+`accept` is somebody who has, saying the archive is right -- a chunk restored from
+a backup, a pass a crash stopped. Every pass ends with a checkpoint of the
 account: keep them apart from the archive, `audit.checkpoints.dir` on a disk that
 refuses deletion.
+
+**An acceptance is of what was looked at** (payday#115). `verify` prints, on
+stderr, the digest of what it found and the latest acceptances the checkpoints
+keep, newest first:
+
+```
+digest sha256:…
+accepted at checkpoint 41, 2026-10-21T03:12:09Z, by ops@bastion: a pass the 10-21 crash stopped (unaccounted 2)
+```
+
+`accept` takes that digest back, `--of`, and verifies again -- `--full` when the
+one looked at was -- and is refused when that finds anything else: a finding
+that turned up after somebody looked is not taken in beside the ones they
+did. Run `verify` again, look at what it finds now, and accept its digest. Who
+accepts is `--by`, the user and host of the shell when it does not say, and
+`--why` is required. Both are kept where the archive's own word is: in the
+checkpoint the acceptance ends in, which every checkpoint after it names, so
+that what was accepted is held to the key as the archive is, and in a receipt
+of its own (`accept`). An acceptance nobody can explain later is a finding
+hidden, so it says who, why and of what.
 
 **An archive is kept with a key** that signs its account and its checkpoints
 (payday#115): `audit.checkpoints.key`, a file or the PEM document itself in
@@ -1216,26 +1236,42 @@ expiry. Before a pass destroys the newest row of the trail about a row that is
 still there, it carries that row's digest forward, so a row nobody wrote since
 its window is still checked.
 
-A row a migration rewrote is a finding until somebody has looked: `--accept
---why` puts what the check found on the trail as accepted, one row each --
-gone ones as gone -- and logs why. The why is in the log and not on the trail:
-an acceptance that says on the record what was reviewed and why is payday#115
-B's. A forged row and a key not given are not accepted: look at the row of the
-trail, or give the key. A deployment upgrading to this runs it once, for
-erasures recorded before erasures kept a digest.
+A row a migration rewrote is a finding until somebody has looked. `trail rows`
+prints, on stderr, the digest of what it found, and `--accept --of <that digest>
+--why` checks again and puts what it found on the trail as accepted, one row
+each -- gone ones as gone -- and is refused when the check now finds anything
+else: a row somebody changed after the check that was looked at is not accepted
+with the ones that were (payday#115). Each row is on the trail as the act it is
+(`roster.trail.rows.accept`), and the digest and the why are logged with it. A
+forged row and a key not given are not accepted: look at the row of the trail,
+or give the key. A deployment upgrading to this runs it once, for erasures
+recorded before erasures kept a digest.
 
 **A database restored from a backup** older than the latest checkpoint has
 numbered fewer checkpoints than the store keeps: `verify` finds it `behind`
 (and `unaccounted`, the chunks written since the backup), and nothing is
-checkpointed either. Once somebody has looked, `accept` takes it on: its
-checkpoint is numbered after the store's newest and names it as the one
-before, so the checkpoints from after the backup stay what the archive held
-(payday#70).
+checkpointed either. Its own latest checkpoints are from before the backup, so
+a chunk taken away since would look like one the backup never had -- and so
+would one somebody took away and then hid by rolling the database back. So a
+database behind the store is also checked against the newest checkpoint the
+deployment vouches for: each chunk that one says the archive held, and it holds
+no more and the database has no row of, is `lost`. Look at every `lost` and
+every `missing` before accepting: the restore accounts for what was written
+since the backup, and a chunk gone since is either one a pass destroyed at the
+end of its window, which the deployment's log says, or one somebody took.
+
+Once somebody has looked, `accept` takes it on only as the restore it is:
+`--restored` names the checkpoint the backup holds, which is the number `behind`
+says the database has numbered (0 for a backup from before the first), and an
+acceptance with none, with another number, or of a database that is not behind
+is refused. Its checkpoint is numbered after the store's newest and names it as
+the one before, so the checkpoints from after the backup stay what the archive
+held (payday#70).
 
 ```sh
-roster trail verify                                                     # `behind`, `unaccounted`
-roster trail accept --why "the database restored from the backup of 10-01"
-roster trail verify --full                                              # clean
+roster trail verify --full   # `behind` (the database has numbered 38 checkpoints, and the store keeps one numbered 41), `unaccounted`, `lost`
+roster trail accept --of sha256:… --full --restored 38 --why "the database restored from the backup of 10-01; each lost chunk looked at"
+roster trail verify --full   # clean
 ```
 
 A row with no signature is the same whether it was written before rows were
@@ -1244,9 +1280,9 @@ A deployment that already had a key when it moved to a roster with signed rows
 runs `accept` **once** after the upgrade, as somebody who has looked:
 
 ```sh
-roster trail verify                                            # `unsigned`, for every row from before
-roster trail accept --why "written before rows were signed"   # once
-roster trail verify                                            # clean
+roster trail verify                                                         # `unsigned`, for every row from before
+roster trail accept --of sha256:… --why "written before rows were signed"   # once
+roster trail verify                                                         # clean
 ```
 
 **An archive kept without a key until now** (an earlier roster kept one that
@@ -1254,14 +1290,19 @@ nothing signed) is the same once the key is set, and more of it. Every row and
 every checkpoint it has is `unsigned`. Nothing is destroyed on their word, and no
 act takes a checkpoint after them: each does what it does and then says so in its
 error (`no trusted key signed the checkpoints the store keeps`). Set
-`audit.checkpoints.key`, look, and run `accept` once. It signs the rows as they
+`audit.checkpoints.key`, look, and run `accept`. It signs the rows as they
 stand and names the checkpoint the database numbered last as the one before its
-own, which takes in the history from before the key:
+own, which takes in the history from before the key. Signing the rows brings
+their chunks into the comparison, and what that finds -- a chunk a row nobody
+signed said the archive held, and it does not -- is not what was looked at:
+the next `verify` finds it, and it takes an acceptance of its own. So such an
+archive may take two:
 
 ```sh
-roster trail verify                                           # `unsigned`, every row and checkpoint
-roster trail accept --why "kept without a key until 10-22"   # once
-roster trail verify                                           # clean
+roster trail verify                                                         # `unsigned`, every row and checkpoint
+roster trail accept --of sha256:… --why "kept without a key until 10-22"
+roster trail verify                                                         # clean, or what the signed rows brought to light
+roster trail accept --of sha256:… --why "the chunks the 10-22 acceptance brought to light, looked at"   # only if it was not
 ```
 
 A deployment that changed its key without trusting the old one is told the same.

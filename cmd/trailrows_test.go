@@ -37,12 +37,18 @@ func TestTheLiveRowsAreCheckedAgainstTheTrail(t *testing.T) {
 	x.NoError(run("trail", "rows"))
 
 	x.NoError(b.Ent.Holder.UpdateOneId(h.Uuid()).SetDateDisabled(time.Now()).Exec(ctx))
-	x.ErrorContains(run("trail", "rows"), "1 finding(s)")
+	out, err := stderrOf(t, cli.Cmd(&c), "trail", "rows")
+	x.ErrorContains(err, "1 finding(s)")
+	of := digestOf(t, out)
+	x.ErrorContains(err, "--of "+of, "a check does not say what an acceptance of it names")
 
 	// And somebody who has looked accepts it as it is, which is an act on the
-	// trail -- and needs saying why (payday#108).
-	x.ErrorContains(run("trail", "rows", "--accept"), "--why")
-	x.NoError(run("trail", "rows", "--accept", "--why", "the migration of 2026-10-20 set it"))
+	// trail -- of what they looked at (payday#115), and saying why
+	// (payday#108).
+	x.ErrorContains(run("trail", "rows", "--accept", "--why", "looked at"), "--of: the digest")
+	x.ErrorContains(run("trail", "rows", "--accept", "--of", of), "--why")
+	x.ErrorContains(run("trail", "rows", "--accept", "--of", nothingLookedAt, "--why", "not what was looked at"), "`roster trail rows` again")
+	x.NoError(run("trail", "rows", "--accept", "--of", of, "--why", "the migration of 2026-10-20 set it"))
 	x.NoError(run("trail", "rows"))
 
 	vs, err := b.Ent.Audit.Query().Where(audit.ObjectId(h.Uuid())).Order(audit.ByDateCreated()).All(ctx)
@@ -93,9 +99,10 @@ func TestARowRemovedPastTheServersFailsTheCheck(t *testing.T) {
 	n, err := b.Ent.Email.Delete().Where(email.HasHolderWith(holder.IdEQ(h.Uuid()))).Exec(ctx)
 	x.NoError(err)
 	x.Equal(1, n)
-	x.ErrorContains(run("trail", "rows"), "1 finding(s)")
+	out, err := stderrOf(t, cli.Cmd(&c), "trail", "rows")
+	x.ErrorContains(err, "1 finding(s)")
 
-	x.NoError(run("trail", "rows", "--accept", "--why", "the address was removed by hand on 2026-10-22"))
+	x.NoError(run("trail", "rows", "--accept", "--of", digestOf(t, out), "--why", "the address was removed by hand on 2026-10-22"))
 	x.NoError(run("trail", "rows"))
 }
 
