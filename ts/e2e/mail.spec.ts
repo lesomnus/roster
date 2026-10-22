@@ -114,6 +114,9 @@ test('a link deletes his account, once he types who he is', async ({ page, reque
 	await page.locator('button', { hasText: 'delete my account' }).click()
 	await expect(page.getByRole('heading', { name: 'Your account is deleted' })).toBeVisible()
 
+	// From a browser that holds nothing of his, as anybody trying his password
+	// would be.
+	await page.context().clearCookies()
 	await page.goto(base)
 	await page.locator('input[name=alias]').fill('frank')
 	await page.locator('input[name=password]').fill(password)
