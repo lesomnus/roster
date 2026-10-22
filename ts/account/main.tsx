@@ -431,13 +431,21 @@ function Addresses(props: { own: Uint8Array; may: (m: string) => boolean }): Rea
 											disabled={!props.may('/roster.EmailService/Verify')}
 											onClick={() => {
 												setNote(null)
-												void fetch('/verify', json({ id: b64url(v.id) })).then((res) =>
-													setNote(
-														res.status === 202
-															? { ok: true, text: `a link is on its way to ${v.address}` }
-															: { ok: false, text: res.status === 501 ? 'this deployment cannot send mail' : 'no' },
-													),
-												)
+												void fetch('/verify', json({ id: b64url(v.id) })).then(async (res) => {
+													if (res.status === 202) {
+														setNote({ ok: true, text: `a link is on its way to ${v.address}` })
+
+														return
+													}
+
+													// The app's own words otherwise, which say when to ask
+													// again after one too many (429) or a moment of too
+													// many on their way (503).
+													setNote({
+														ok: false,
+														text: res.status === 501 ? 'this deployment cannot send mail' : await why(res),
+													})
+												})
 											}}
 										>
 											confirm

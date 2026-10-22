@@ -520,6 +520,38 @@ somebody signed in, and a failure is said to them as *cannot send*.
 never the link, its token, or a whole address. A server that refuses a recipient
 says who, and that is cut out too.
 
+**How much it sends is limited.** The recovery form is one anybody may fill in,
+and unlimited it would be a stranger filling somebody's mailbox from your
+address -- and your provider suspending the account for the complaints. So:
+
+- **An address** is sent three of one kind -- recovery, confirmation, deletion --
+  and then one every twenty minutes. A link lasts fifteen, so that is a fresh one
+  about as often as the last runs out, and three is somebody asking again while
+  the first is slow to arrive.
+- **A person signed in** may have five sent, of every kind together, and then one
+  every ten minutes: enough to confirm a few addresses and ask again, and the
+  limit that holds one account, since `/verify` mails whatever address somebody
+  writes onto their own row.
+- **Eight at most are on their way at once**, and one more is dropped and logged
+  rather than queued. A front door's mail is a trickle and a provider answers in
+  well under a second; a server that stops answering then holds eight
+  connections, not one per request.
+
+What is counted is a message that went, never a request refused before one
+would, so nobody spends another's allowance by asking about their address; and
+the recovery form counts only what it sends, to an address somebody proved. It
+answers 202 whatever the limits did, so a message held back there is the log's
+(`not sent, its recovery messages are spent`). Confirming, claiming and the
+deletion link are asked for by somebody signed in, and answer them 429 with
+`Retry-After`, or 503 when eight are already on their way (`dropped`, in the
+log). `account/outbox.go` holds the numbers.
+
+**The limits are per process.** They are counted in memory, as the codes of a
+terminal signing in are: a restart forgets them, and N replicas of the account app
+allow N times as much. Nor do they bound a list: somebody holding many real
+addresses can have each sent its allowance. Put the front door behind an edge that
+limits each client, as you would any form a stranger can fill in.
+
 **Deliverability is the provider's and yours.** Send from a domain of your own
 through a transactional provider -- Amazon SES, Postmark, Mailgun, Resend, NHN
 Cloud Email, or whichever your organisation already has -- and publish the SPF,
@@ -1875,7 +1907,8 @@ The rest of the checklist:
   attempt and accepted on the retry.
 - **Rate limits are per process.** `grpcx.Limiter`'s memory implementation counts
   in one, so N replicas mean N times the limit. The interface is the seam if that
-  matters.
+  matters. The account app's limits on mail are counted the same way (*The front
+  door's mail*, above).
 - **Seed once, out of band.** `docker/entrypoint.sh` keeps an *already seeded*
   marker on a local volume; that is a dev-image convenience and not a lock.
 

@@ -95,7 +95,8 @@ and `password: file:/run/secrets/smtp/password`, or in the environment and
 `password: env:SMTP_PASSWORD` -- and never written into `config.yaml`. Send from a
 domain of your own through a transactional provider, with the SPF, DKIM and DMARC
 records it gives you; a cluster that cannot reach port 587 or 465 outward has an
-egress rule to write first.
+egress rule to write first. How much it mails is limited in each replica's memory,
+so two replicas allow twice as much.
 
 **And the other shape of relying party is deliberately not here.** `oauth2-proxy`
 in front of a page is half of what a deployment runs
