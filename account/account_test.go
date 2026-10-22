@@ -631,6 +631,23 @@ func TestSomebodyRecoversTheirAccountByMail(t *testing.T) {
 	x.Equal(http.StatusAccepted, code)
 	x.Empty(d.sent("nobody@fabrikam.com"), "a link was mailed to nobody")
 
+	// Nor to an address somebody wrote onto their account and nobody proved:
+	// it resolves nobody at roster, so the link would be a dud, and mailing it
+	// would be sending a dead link to a mailbox nobody here has the word of.
+	carol, err := d.s.Ungated.Holder().Add(t.Context(), rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.fabrikam.Bytes()}.Build(), Alias: "carol",
+	}.Build())
+	x.NoError(err)
+	_, err = d.s.Ungated.Email().Add(t.Context(), rstr.EmailAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: carol.GetId()}.Build(), Address: "carol@fabrikam.com",
+	}.Build())
+	x.NoError(err)
+	code, _ = b.do(t, http.MethodPost, "/recover", `{"address":"carol@fabrikam.com"}`,
+		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+	x.Equal(http.StatusAccepted, code)
+	x.Never(func() bool { return d.sent("carol@fabrikam.com") != "" }, 500*time.Millisecond, 20*time.Millisecond,
+		"a dud link was mailed to an address nobody proved")
+
 	code, _ = b.do(t, http.MethodPost, "/recover", `{"address":"bob@fabrikam.com"}`,
 		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
 	x.Equal(http.StatusAccepted, code)

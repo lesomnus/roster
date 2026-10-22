@@ -128,7 +128,60 @@ type AccountConfig struct {
 	// InsecureCookie drops `Secure`, for a page served over plain http in
 	// development.
 	InsecureCookie bool `yaml:"insecure_cookie"`
+
+	// Mail is how this front door delivers the links roster mints for it: a
+	// recovery link, a link that confirms an address, a link that deletes an
+	// account. Empty is a door that cannot, which is what it was: the flows
+	// answer 501 and `/providers` offers none of them.
+	Mail MailConfig `yaml:"mail"`
 }
+
+// MailConfig is the SMTP server the front door sends through
+// (`package mail`). roster mints the links and this delivers them, which is
+// D19's line: no server of roster's sends mail.
+//
+// One server, in the shape every transactional provider documents -- an
+// address, a username, a password, a sender -- because the provider is the
+// deployment's choice and SMTP is what all of them speak.
+type MailConfig struct {
+	// Addr is the server, `host:port`, as every dial in this file is
+	// written. Empty sends nothing. A port left out is the one `tls` uses:
+	// 587, 465, or 25.
+	Addr string `yaml:"addr"`
+
+	// Username and Password sign in. The password is a **reference** --
+	// `env:NAME` or `file:PATH` -- and never the password itself, which this
+	// file is not a place for: [AccountConfig.Key]'s rule, for the same
+	// reason. The username is either: written as itself, or a reference in
+	// the same words, because some providers' usernames are credentials too
+	// (SES's is derived from an access key). Empty signs in as nobody.
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+
+	// From is who a message is from: `Contoso <no-reply@contoso.example>`.
+	// An address of a domain the provider was told is yours, so that what it
+	// signs for that domain (SPF, DKIM) is what the message says it is from.
+	From string `yaml:"from"`
+
+	// Tls is how the connection is protected: `starttls`, the default, which
+	// refuses a server that does not offer it; `implicit`, TLS from the first
+	// byte, which is port 465; or `none`, in the clear, which reaches only this
+	// machine or a host [MailConfig.PlaintextHosts] names.
+	Tls string `yaml:"tls"`
+
+	// PlaintextHosts is the hosts besides this machine that `tls: none` may
+	// reach: a sink on the network in development, `mailpit` in a compose
+	// file. Named rather than a switch, so that pointing `addr` at a provider
+	// does not leave the connection in the clear.
+	PlaintextHosts []string `yaml:"plaintext_hosts"`
+
+	// Timeout bounds one message, from the dial to the server's last answer.
+	// Empty is 30s.
+	Timeout time.Duration `yaml:"timeout"`
+}
+
+// On is whether the front door sends mail.
+func (c MailConfig) On() bool { return c.Addr != "" }
 
 // Serves is whether this deployment answers a front door.
 func (c AccountConfig) Serves() bool { return c.Addr != "" }
