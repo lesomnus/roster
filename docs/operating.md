@@ -510,11 +510,16 @@ page says to ask whoever runs the tenant. Nothing else changes.
 
 **What goes out** is plain text in the account app's language: what the link is
 for, the link on a line of its own, and what to do with a message nobody asked
-for -- the link is the one thing in it to follow. A recovery link goes only to an
-address somebody proved, the one roster would resolve, and the recovery form
-answers the browser the same whether a message went or not; a failure to send is
-the log's, never the form's. The confirmation and deletion links are asked for by
-somebody signed in, and a failure is said to them as *cannot send*.
+for -- the link is the one thing in it to follow. A recovery link goes only where
+it would work: to an address somebody proved, of somebody not suspended, in a
+tenant that is open and offers passwords -- exactly what roster mints a working
+link for, asked by the front door before it asks roster for one. The recovery
+form answers the browser the same whether a message went or not, and a failure
+to send is the log's, never the form's. At a tenant whose people have no
+password, the form answers 403 instead, as `/providers` has already told the page
+with `recover: false`: that is the tenant's configuration and says nothing about
+anybody. The confirmation and deletion links are asked for by somebody signed
+in, and a failure is said to them as *cannot send*.
 
 **What the log carries** is the address cut to its domain and the server's code:
 never the link, its token, or a whole address. A server that refuses a recipient

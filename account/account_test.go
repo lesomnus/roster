@@ -56,6 +56,10 @@ type deployment struct {
 	// roster operator running one for everybody (#76).
 	tokens map[string]string
 
+	// grpc is where roster speaks gRPC, for a test that asks it something
+	// directly with one of `tokens`.
+	grpc string
+
 	// mail is what the app asked to have delivered: the mailbox, and the link.
 	mu   sync.Mutex
 	mail []struct{ to, link string }
@@ -252,6 +256,7 @@ func serve(t *testing.T, enrol account.Enrol, with ...func(*account.Config)) *de
 	x.NoError(err)
 	go func() { _ = g.Serve(l) }()
 	t.Cleanup(func() { g.Stop() })
+	d.grpc = l.Addr().String()
 
 	h, err := web.New(config.HttpConfig{AllowWeb: true}, g)
 	x.NoError(err)
