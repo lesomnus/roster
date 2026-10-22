@@ -178,6 +178,51 @@ jobs:
         env:
           PDTEST_POSTGRES: postgres://app:app@127.0.0.1:5432/app?sslmode=disable
 
+  # The tests that race callers against each other, under the race detector, on
+  # the database where two transactions really do run at once.
+  #
+  # `cmd` is where they are: two callers removing somebody's last two ways in,
+  # two batches doing it, two agreements to one document. A test like that
+  # checks what the database ends with, and it can pass while the code races
+  # underneath -- `cmd.Locking` wrote the transaction a call handed it into the
+  # client every call shares, so one call's lock could land on another's
+  # transaction, and every job above was green on it. `go test -race` on
+  # PostgreSQL said so on the first run, in a test that already existed
+  # (roster#174). SQLite serialises its writers, so the calls rarely overlap
+  # there and the detector has little to see; PostgreSQL is where they do.
+  #
+  # `cmd` alone because the race detector costs what it costs, and the other
+  # packages' goroutines are servers standing up for a test rather than callers
+  # meeting. A package that grows tests of the second kind joins the list.
+  race:
+    runs-on: ubuntu-26.04
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # A longer timeout than go's ten minutes for one package: the detector
+      # makes the same tests several times slower, and running out of time is
+      # not the finding this job is for.
+      - run: go test -race -count=1 -timeout 30m ./cmd/
+        env:
+          PDTEST_POSTGRES: postgres://app:app@127.0.0.1:5432/app?sslmode=disable
+
   # An upgrade, rehearsed: the databases the last release made, with a row in
   # every table, brought up by this commit -- `scripts/upgrade.sh`.
   #
@@ -345,7 +390,7 @@ jobs:
   # the binary pushed is the one `cluster` and `hydra` ran.
   image:
     if: github.event_name != 'push'
-    needs: [build, go, postgres, upgrade, ts, e2e, hydra, cluster]
+    needs: [build, go, postgres, race, upgrade, ts, e2e, hydra, cluster]
     runs-on: ubuntu-26.04
 
     env:
@@ -381,7 +426,7 @@ jobs:
   # `image`'s, and so is what it says of them.
   push:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [build, go, postgres, upgrade, ts, e2e, hydra, cluster]
+    needs: [build, go, postgres, race, upgrade, ts, e2e, hydra, cluster]
     runs-on: ubuntu-26.04
 
     permissions:
