@@ -220,6 +220,46 @@ func TestOnePersonIsHeldToTheirShareWhateverTheAddress(t *testing.T) {
 	x.Zero(d.count("erin5@contoso.com"))
 }
 
+// TestNobodyCanHoldAnAddressFromItsOwner: erin writes dana's address onto her
+// own row and asks for its confirmation as often as she may; dana, claiming the
+// address back, is still sent the confirmation that would -- because what erin
+// had sent the address is counted against erin, not against the address.
+//
+// Red with an address's allowance shared by everybody who asks.
+func TestNobodyCanHoldAnAddressFromItsOwner(t *testing.T) {
+	x := require.New(t)
+	d := serve(t, account.Invited())
+	ctx := t.Context()
+	const theirs = "dana@contoso.com"
+
+	dana, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build(), Alias: "dana",
+	}.Build())
+	x.NoError(err)
+	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
+		Ref: rstr.HolderRef_builder{Id: dana.GetId()}.Build(), Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err)
+
+	// erin's row, and its confirmation as many times as it goes.
+	e := erinSignsIn(t, d)
+	id := added(t, e, d, theirs)
+	for range 3 {
+		code, _, body := e.asks(t, "/verify", id)
+		x.Equal(http.StatusAccepted, code, body)
+	}
+	code, _, body := e.asks(t, "/verify", id)
+	x.Equal(http.StatusTooManyRequests, code, body)
+
+	// dana, claiming it.
+	b := d.browser(t, "contoso.test")
+	code, _, body = b.asks(t, "/session", `{"alias":"dana","password":"correct horse battery staple"}`)
+	x.Equal(http.StatusNoContent, code, body)
+	code, _, body = b.asks(t, "/claim", `{"address":"`+theirs+`"}`)
+	x.Equal(http.StatusAccepted, code, "dana was held off her own address: %s", body)
+	x.Equal(4, d.count(theirs))
+}
+
 // TestOnePastAsManyAsMayBeOnTheirWayIsDropped: with eight messages on their
 // way, a ninth is dropped and logged -- the recovery form answering 202 as
 // ever, somebody signed in told 503 -- and the eight still go once the server

@@ -25,8 +25,9 @@ import (
 // So three limits:
 //
 //   - **An address** is sent [addressBurst] of one kind of message, then one
-//     more every [addressEvery]. This is what keeps a mailbox from being
-//     filled, by a stranger at the recovery form or by anybody signed in.
+//     more every [addressEvery] -- by each person signed in who asks, and by
+//     the recovery form, which nobody is signed in at. This is what keeps a
+//     mailbox from being filled.
 //   - **A person signed in** may have [accountBurst] sent, of every kind
 //     together, then one more every [accountEvery]. `verify` reaches whatever
 //     address somebody writes onto their own row, so an address's limit cannot
@@ -35,10 +36,20 @@ import (
 //     dropped and logged rather than queued: the recovery form still answers
 //     202, and a person signed in is told 503.
 //
-// The first two count messages that went out, and never requests refused
-// before one would, so that one person's refusals never spend another's
-// allowance: a request about an address that is not the asker's is refused by
-// roster before anything is counted against that address.
+// An address's allowance is counted per person on the routes a person signed
+// in asks by: what one account has had sent to an address never spends what
+// another may have sent there. Shared, it could be held spent: write somebody's
+// address onto your own row, ask for its confirmation three times and then once
+// every twenty minutes, all well within your own allowance, and its owner
+// could never be sent the confirmation that would claim it back (`claim`). The
+// account's own allowance is what bounds how much one person can send
+// anywhere. The recovery form has nobody to count by, so there the allowance
+// is the address's alone, and a stranger can spend it -- but only with links
+// sent to that address's owner, which work for them.
+//
+// The first two count messages that went out, never requests refused before
+// one would: a request about an address that is not the asker's is refused by
+// roster before anything is counted.
 //
 // # What it holds, and for how long
 //
@@ -51,8 +62,8 @@ import (
 // growing a kind for a front door's counters, or a store the deployment does
 // not otherwise run.
 //
-// One time per address and per account, the one GCRA keeps: when its allowance
-// is whole again. An entry goes once it is, so what is held is what was sent
+// One time per address (with whoever asked) and per account, the one GCRA
+// keeps: when its allowance is whole again. An entry goes once it is, so what is held is what was sent
 // in the last hour and no more. The recovery form counts only what it sends, to
 // an address somebody proved, so a stranger typing addresses by the thousand
 // adds nothing here.
@@ -125,7 +136,7 @@ type outbox struct {
 	mu  sync.Mutex
 	now func() time.Time
 
-	to map[string]time.Time // by kind and address: when its allowance is whole
+	to map[sentTo]time.Time // when an address's allowance is whole again
 	by map[string]time.Time // by account, the same
 
 	toAddress allowance
@@ -137,7 +148,7 @@ type outbox struct {
 func newOutbox() *outbox {
 	return &outbox{
 		now:       time.Now,
-		to:        map[string]time.Time{},
+		to:        map[sentTo]time.Time{},
 		by:        map[string]time.Time{},
 		toAddress: allowance{addressBurst, addressEvery},
 		byAccount: allowance{accountBurst, accountEvery},
@@ -145,8 +156,13 @@ func newOutbox() *outbox {
 	}
 }
 
-func addressKey(kind, to string) string {
-	return kind + " " + strings.ToLower(strings.TrimSpace(to))
+// sentTo is what an address's allowance is counted by: what the message is
+// for, the address, and who asked -- an account, or nobody at the recovery
+// form.
+type sentTo struct{ kind, to, by string }
+
+func addressKey(kind, to, by string) sentTo {
+	return sentTo{kind, strings.ToLower(strings.TrimSpace(to)), by}
 }
 
 // may answers how long until a message of `kind` to `to` would fit, for `by`
@@ -184,7 +200,7 @@ func (o *outbox) take(kind, to, by string) (time.Duration, bool) {
 		return wait, false
 	}
 
-	key := addressKey(kind, to)
+	key := addressKey(kind, to, by)
 	o.to[key] = o.toAddress.spend(o.to[key], now)
 	if by != "" {
 		o.by[by] = o.byAccount.spend(o.by[by], now)
@@ -195,7 +211,7 @@ func (o *outbox) take(kind, to, by string) (time.Duration, bool) {
 
 // waitFor is the longer of the two waits, the address's and the account's.
 func (o *outbox) waitFor(kind, to, by string, now time.Time) time.Duration {
-	wait := o.toAddress.wait(o.to[addressKey(kind, to)], now)
+	wait := o.toAddress.wait(o.to[addressKey(kind, to, by)], now)
 	if by != "" {
 		wait = max(wait, o.byAccount.wait(o.by[by], now))
 	}

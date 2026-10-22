@@ -1189,10 +1189,14 @@ func (a *App) nominated(ctx context.Context) error {
 // `redeem`: a new password, shown once, rather than a session -- so a mailbox
 // read once is a password the person changes, not an account somebody holds.
 //
-// Everything that depends on the address happens after the answer, in the
-// background: whether it is somebody's, whether it has had its allowance of
-// these (`outbox.go`), the link, the message. So the form answers the same, and
-// as fast, whatever was typed and however often.
+// What does not depend on the address is answered at once: a deployment that
+// cannot send mail, and a tenant whose people have no password -- which
+// `/providers` has said to the page already, and which says nothing about
+// anybody. Everything that does depend on the address happens after the
+// answer, in the background: whether a link would work for whoever it names
+// ([redeemable]), whether the address has had its allowance of these
+// (`outbox.go`), the link, the message. So the form answers the same, and as
+// fast, whatever was typed and however often.
 func (a *App) recover(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	t, ok := tenantFrom(ctx)
@@ -1202,6 +1206,25 @@ func (a *App) recover(w http.ResponseWriter, r *http.Request) {
 	}
 	if a.c.Mail == nil {
 		http.Error(w, "this deployment cannot send mail, so it cannot recover an account this way", http.StatusNotImplemented)
+		return
+	}
+
+	// A recovery ends in a password (`redeem`), and a tenant that offers none
+	// has nothing for one to hand over: roster mints such a tenant nothing but
+	// a link that resolves to nobody (`vouch.Offers`). Refused as `/providers`
+	// says `recover: false` -- the tenant's configuration, which the page reads
+	// already -- and in the words leaving's refusal uses for the same kind of
+	// no.
+	tn, err := a.roster.Tenant().Get(t.on(ctx), rstr.TenantGetRequest_builder{
+		Ref:    rstr.TenantRef_builder{Id: t.id.Bytes()}.Build(),
+		Select: rstr.TenantSelect_builder{Config: proto.Bool(true)}.Build(),
+	}.Build())
+	if err != nil {
+		http.Error(w, "cannot read the operator", http.StatusBadGateway)
+		return
+	}
+	if !tn.OffersPassword() {
+		http.Error(w, "nobody here signs in with a password, so there is none to recover; sign in the way you do", http.StatusForbidden)
 		return
 	}
 
@@ -1237,22 +1260,22 @@ func (a *App) recover(w http.ResponseWriter, r *http.Request) {
 
 		// roster would answer a token whether or not the address is here, so
 		// that the answer says nothing; this app, holding the tenant's key, may
-		// ask -- and mails only an address that is somebody's, so that a form a
+		// ask -- and mails only a link that would work, so that a form a
 		// stranger can fill in is not a way to have this deployment send mail
-		// anywhere.
-		//
-		// Somebody's is what roster says it is: an address somebody proved. An
-		// unproved row resolves nobody at roster (`vouch.byAddress`), so the
-		// token it answers for one is a link to nothing -- and mailing it would
-		// be this deployment sending a dead link to whatever mailbox somebody
-		// wrote onto their own account.
+		// anywhere, nor dead links to anybody.
 		row, err := a.roster.Email().Get(t.on(ask), rstr.EmailGetRequest_builder{
 			Ref: rstr.EmailRef_builder{
 				At: rstr.EmailRefByAt_builder{TenantId: t.id.Bytes(), Address: proto.String(address)}.Build(),
 			}.Build(),
-			Select: rstr.EmailSelect_builder{DateVerified: proto.Bool(true)}.Build(),
+			Select: rstr.EmailSelect_builder{
+				DateVerified: proto.Bool(true),
+				Holder: rstr.HolderSelect_builder{
+					DateDisabled: proto.Bool(true),
+					Tenant:       rstr.TenantSelect_builder{Config: proto.Bool(true), DateClosed: proto.Bool(true)}.Build(),
+				}.Build(),
+			}.Build(),
 		}.Build())
-		if err != nil || row.GetDateVerified() == nil {
+		if err != nil || !redeemable(row) {
 			return
 		}
 
@@ -1276,6 +1299,47 @@ func (a *App) recover(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	w.WriteHeader(http.StatusAccepted)
+}
+
+// redeemable is whether a recovery link minted for the address on `row` would
+// work: exactly what `Vouch.Link` mints a real link for, and nothing it would
+// answer with a link to nobody. Read with the row's holder and its tenant
+// selected.
+//
+// roster cannot say which it minted -- its answer is the same token-shaped
+// thing either way, so that asking is not a way to learn who is here -- and so
+// this app, which holds the tenant's key and may ask, asks what roster asks
+// before it mints, in the same order:
+//
+//   - `byAddress`: a row at that address (an erased one is not read), a holder
+//     on it (an erased holder is not read either), and the address proved --
+//     an unproved row names nobody (#42);
+//   - `Link`: the tenant offers passwords, through the same predicate
+//     `vouch.Offers` asks (`rstr.Tenant.OffersPassword`), since a recovery
+//     ends in one; the holder is not suspended; the tenant is not closed.
+//
+// What spending a link refuses of its holder -- erased, suspended, a tenant
+// closed (`vouch.row`) -- is in that list too, so a link this says would work
+// is one that works when it is followed, unless one of those changes first.
+// `TestARecoveryLinkGoesOutOnlyWhereItWouldWork` holds this and roster to the
+// same answer, state by state.
+//
+// A tenant that did not come back with the holder is a no rather than
+// `OffersPassword`'s yes for a tenant nobody read: unread, the last two
+// questions would pass without being asked.
+func redeemable(row *rstr.Email) bool {
+	h := row.GetHolder()
+	switch {
+	case len(h.GetId()) == 0,
+		row.GetDateVerified() == nil,
+		h.GetTenant() == nil,
+		!h.GetTenant().OffersPassword(),
+		h.GetDateDisabled() != nil,
+		h.GetTenant().GetDateClosed() != nil:
+		return false
+	}
+
+	return true
 }
 
 // redeem finishes a recovery: the link proves the mailbox, and the person is

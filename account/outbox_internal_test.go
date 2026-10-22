@@ -62,37 +62,62 @@ func TestAnAllowanceIsABurstAndThenARate(t *testing.T) {
 
 // TestBothAllowancesOrNeither: a message counts against its address and the
 // person who asked for it, and one that either refuses spends neither -- so
-// an address that has had its share costs the next asker nothing. Kinds are
-// counted apart, and the recovery form, which nobody is signed in at, counts
-// only the address.
+// an address that has had its share from somebody costs them nothing more.
 //
-// Red with the account spent when the address refuses, and with one allowance
-// for every kind.
+// Red with the account spent when the address refuses.
 func TestBothAllowancesOrNeither(t *testing.T) {
 	x := require.New(t)
 	o, _ := stopped()
 
-	for i := range addressBurst {
-		_, ok := o.take(forConfirm, "shared@fabrikam.com", fmt.Sprint("someone ", i))
+	for range addressBurst {
+		_, ok := o.take(forConfirm, "shared@fabrikam.com", "erin")
 		x.True(ok)
 	}
 	_, ok := o.take(forConfirm, "shared@fabrikam.com", "erin")
-	x.False(ok, "the address took a fourth")
+	x.False(ok, "the address took a fourth from erin")
 
-	for i := range accountBurst {
+	for i := range accountBurst - addressBurst {
 		_, ok := o.take(forConfirm, fmt.Sprintf("erin%d@contoso.com", i), "erin")
-		x.True(ok, "a refusal about another address spent erin's message %d", i+1)
+		x.True(ok, "a refusal about one address spent erin's message %d", addressBurst+i+1)
 	}
 	wait, ok := o.take(forConfirm, "erin9@contoso.com", "erin")
 	x.False(ok, "erin had a sixth sent at once")
 	x.Equal(accountEvery, wait)
 	_, ok = o.take(forConfirm, "erin9@contoso.com", "")
 	x.True(ok, "erin's allowance held a message nobody signed in asked for")
+}
 
-	_, ok = o.take(forRecovery, "shared@fabrikam.com", "")
-	x.True(ok, "a recovery message was held to the confirmations")
-	_, ok = o.take(forLeaving, "shared@fabrikam.com", "frank")
+// TestAnAddressIsCountedForWhoeverAsks: what one person has had sent to an
+// address spends nothing of what another may have sent there, so nobody holds
+// an address's owner off it by asking about it themselves. Kinds are counted
+// apart, and the recovery form, which nobody is signed in at, counts the
+// address alone.
+//
+// Red with an address's allowance shared by everybody who asks, and with one
+// allowance for every kind.
+func TestAnAddressIsCountedForWhoeverAsks(t *testing.T) {
+	x := require.New(t)
+	o, _ := stopped()
+
+	for range addressBurst {
+		_, ok := o.take(forConfirm, "dana@contoso.com", "erin")
+		x.True(ok)
+	}
+	_, ok := o.take(forConfirm, "dana@contoso.com", "erin")
+	x.False(ok)
+	for range addressBurst {
+		_, ok := o.take(forConfirm, "dana@contoso.com", "dana")
+		x.True(ok, "what erin had sent the address spent what dana may")
+	}
+
+	_, ok = o.take(forLeaving, "dana@contoso.com", "dana")
 	x.True(ok, "a deletion link was held to the confirmations")
+	for range addressBurst {
+		_, ok := o.take(forRecovery, "dana@contoso.com", "")
+		x.True(ok, "a recovery message was held to the confirmations")
+	}
+	_, ok = o.take(forRecovery, "dana@contoso.com", "")
+	x.False(ok, "the recovery form had a fourth sent to one address")
 }
 
 // TestWhatIsWholeAgainIsForgotten: an address or a person whose allowance has
