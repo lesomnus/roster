@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/email.proto.
  */
 export const file_app_email: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvZW1haWwucHJvdG8SBnJvc3RlciKiBQoFRW1haWwSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIXCgdhZGRyZXNzGAggASgJQgaqwRYCGAESPwoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCDOqCFgI4AarBFgIQARIsCgp2b3VjaGVkX2J5GAogASgLMhAucm9zdGVyLklkZW50aXR5QgbyghYCOAESIgoKZW50ZXJlZF9ieRgMIAEoDEIO6oIWBDgBQAGqwRYCEAESGwoJdGVuYW50X2lkGAsgASgMQgjqghYEEEBAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA63AHK/BV/EgIQARovEgRwYWdlGg0KCXRlbmFudF9pZBALGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaJBIHYWRkcmVzcxoKCgZob2xkZXIQAhoLCgdhZGRyZXNzEAgwARoiEgJhdBoNCgl0ZW5hbnRfaWQQCxoLCgdhZGRyZXNzEAgwAYq7FlUICTIzChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZob2xkZXIgFChkOgAiGgoNaG9sZGVyLnRlbmFudBoJdGVuYW50X2lkQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_app_identity, file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg9hcHAvZW1haWwucHJvdG8SBnJvc3RlciKkBQoFRW1haWwSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIXCgdhZGRyZXNzGAggASgJQgaqwRYCGAESPwoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCDOqCFgI4AarBFgIQARIsCgp2b3VjaGVkX2J5GAogASgLMhAucm9zdGVyLklkZW50aXR5QgbyghYCOAESJAoKZW50ZXJlZF9ieRgMIAEoDEIQ6oIWBDgBQAGqwRYEEAEYABIbCgl0ZW5hbnRfaWQYCyABKAxCCOqCFgQQQEABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADrcAcr8FX8SAhABGi8SBHBhZ2UaDQoJdGVuYW50X2lkEAsaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARokEgdhZGRyZXNzGgoKBmhvbGRlchACGgsKB2FkZHJlc3MQCDABGiISAmF0Gg0KCXRlbmFudF9pZBALGgsKB2FkZHJlc3MQCDABirsWVQgJMjMKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBmhvbGRlciAUKGQ6ACIaCg1ob2xkZXIudGVuYW50Ggl0ZW5hbnRfaWRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_app_identity, file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Email is an address a person uses, and whether anybody has checked that they
@@ -174,6 +174,10 @@ export type Email = Message<"roster.Email"> & {
    * never followed. **Stamped**, so a request cannot say it: `server/core`
    * writes the frame's actor, and the generated gate refuses an `Add` that
    * asserts one.
+   *
+   * Not personal: it is an identifier, the same one the trail keeps as the
+   * actor of the `Add` that wrote it, and who wrote an address down is the
+   * record. The address it was written beside is what is about a person.
    *
    * @generated from field: bytes entered_by = 12;
    */
