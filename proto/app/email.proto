@@ -151,12 +151,16 @@ message Email {
   // never followed. **Stamped**, so a request cannot say it: `server/core`
   // writes the frame's actor, and the generated gate refuses an `Add` that
   // asserts one.
+  //
+  // Not personal: it is an identifier, the same one the trail keeps as the
+  // actor of the `Add` that wrote it, and who wrote an address down is the
+  // record. The address it was written beside is what is about a person.
   bytes entered_by = 12 [
     (orm.field) = {
       nullable: true
       immutable: true
     },
-    (payday.field) = {stamped: true}
+    (payday.field) = {stamped: true, personal: false}
   ];
 
   // The tenant `holder.tenant` reaches, kept here. payday stamps it, and

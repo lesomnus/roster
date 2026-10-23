@@ -376,6 +376,10 @@ type Email_builder struct {
 	// never followed. **Stamped**, so a request cannot say it: `server/core`
 	// writes the frame's actor, and the generated gate refuses an `Add` that
 	// asserts one.
+	//
+	// Not personal: it is an identifier, the same one the trail keeps as the
+	// actor of the `Add` that wrote it, and who wrote an address down is the
+	// record. The address it was written beside is what is about a person.
 	EnteredBy []byte
 	// The tenant `holder.tenant` reaches, kept here. payday stamps it, and
 	// `Identity` says at length why a column is worth it.
@@ -417,7 +421,7 @@ var File_app_email_proto protoreflect.FileDescriptor
 
 const file_app_email_proto_rawDesc = "" +
 	"\n" +
-	"\x0fapp/email.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x8b\x06\n" +
+	"\x0fapp/email.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x8d\x06\n" +
 	"\x05Email\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12 \n" +
@@ -425,9 +429,9 @@ const file_app_email_proto_rawDesc = "" +
 	"\rdate_verified\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\f\xea\x82\x16\x028\x01\xaa\xc1\x16\x02\x10\x01R\fdateVerified\x127\n" +
 	"\n" +
 	"vouched_by\x18\n" +
-	" \x01(\v2\x10.roster.IdentityB\x06\xf2\x82\x16\x028\x01R\tvouchedBy\x12-\n" +
+	" \x01(\v2\x10.roster.IdentityB\x06\xf2\x82\x16\x028\x01R\tvouchedBy\x12/\n" +
 	"\n" +
-	"entered_by\x18\f \x01(\fB\x0e\xea\x82\x16\x048\x01@\x01\xaa\xc1\x16\x02\x10\x01R\tenteredBy\x12%\n" +
+	"entered_by\x18\f \x01(\fB\x10\xea\x82\x16\x048\x01@\x01\xaa\xc1\x16\x04\x10\x01\x18\x00R\tenteredBy\x12%\n" +
 	"\ttenant_id\x18\v \x01(\fB\b\xea\x82\x16\x04\x10@@\x01R\btenantId\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
