@@ -37,7 +37,7 @@ require (
 	github.com/lesomnus/grpc-dgram v0.0.0-20260912133542-a7366077bf6f
 	github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155
 	github.com/lesomnus/otx/otxgrpc v0.0.0-20261017184159-4cba7a26b155
-	github.com/lesomnus/payday v0.0.0-20261023153604-eb110becdb88
+	github.com/lesomnus/payday v0.0.0-20261023200152-c0f5e7d173bb
 	github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da
 	github.com/lesomnus/xli v0.0.0-20261009121920-4ce270c7448c
 	github.com/lesomnus/xli/cfg v0.1.3
@@ -58,8 +58,6 @@ require (
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20260709200747-435963d16310.1 // indirect
-	cel.dev/cel-go v0.32.0 // indirect
-	cel.dev/expr v0.25.2 // indirect
 	connectrpc.com/connect v1.20.0 // indirect
 	connectrpc.com/cors v0.1.0 // indirect
 	connectrpc.com/vanguard v0.4.0 // indirect
@@ -67,7 +65,6 @@ require (
 	filippo.io/hpke v0.4.0 // indirect
 	github.com/Azure/go-ntlmssp v0.1.1 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
-	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/apparentlymart/go-textseg/v17 v17.0.1 // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
@@ -93,8 +90,6 @@ require (
 	github.com/lesomnus/mkot v0.0.0-20261013182918-46d8b05a79b3 // indirect
 	github.com/lesomnus/mkot/mkotx v0.0.0-20261013182918-46d8b05a79b3 // indirect
 	github.com/lesomnus/mkot/pretty v0.0.0-20261013182918-46d8b05a79b3 // indirect
-	github.com/lesomnus/pwr v0.0.0-20261015171245-2ec220d490d1 // indirect
-	github.com/lesomnus/pwr/cel v0.0.0-20261015172325-de464a5ef1fa // indirect
 	github.com/lesomnus/sqlite3-wasm v0.0.0-20260726134538-bebcaebf933e // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.23 // indirect

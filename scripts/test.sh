@@ -113,6 +113,17 @@ if GOOS=js GOARCH=wasm go list -deps ./wasm | grep -E '^(ariga\.io/atlas|github.
 	echo "the wasm module links a migration engine or a driver it cannot open; see cli/cli.go" >&2
 	exit 1
 fi
+# Nor the language a `Watch` filter is written in. CEL compiles the filters of
+# payday's `ResourceService`, which roster serves from neither the process nor
+# the page, and it was in both by an import alone: `server/pd` imports
+# `payday/resource` for the recorder every app wires, and that package carried
+# cel-go until payday#163 moved it into a package of its own. That was 9.8 MB
+# of the module and 36 packages, for a filter nothing here reads. A process
+# that one day serves the filters imports it in `cli/`, as it does a driver.
+if GOOS=js GOARCH=wasm go list -deps ./wasm | grep -E '^(cel\.dev/|github.com/google/cel-go|github.com/antlr4-go/)'; then
+	echo "the wasm module links CEL, which compiles Watch filters for a ResourceService it does not serve; see payday's docs/migrating.md" >&2
+	exit 1
+fi
 
 # That roster still builds for the browser, which is a promise `ts/` already
 # makes -- there is a `wasm` script and a sandbox that loads what it produces --
