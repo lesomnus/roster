@@ -43,6 +43,7 @@ import { CredentialService } from '#gen/app/credential_svc_pb.js'
 import { DelegationService } from '#gen/app/delegation_svc_pb.js'
 import { EmailService } from '#gen/app/email_svc_pb.js'
 import { MeService } from '#gen/app/me_pb.js'
+import { events } from '#gen/events.js'
 import { HolderService } from '#gen/roster/payday/holder_svc_pb.js'
 import { covers } from '#lib/covers.js'
 import { expiries, expiresAt, until } from '#lib/expiry.js'
@@ -1316,6 +1317,9 @@ const calls = caller('account', which)
 const transport = createConnectTransport({
 	baseUrl: location.origin,
 	fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
+	// What an event's `Any` holds, which Connect's JSON reads only with its type
+	// registered (`ts/gen/events.ts`): empty while roster keeps no past.
+	jsonOptions: { registry: events },
 	interceptors: [calls.interceptor],
 })
 
