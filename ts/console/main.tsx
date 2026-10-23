@@ -20,6 +20,7 @@ import { identityOf } from '@lesomnus/payday/store'
 
 import { AuthService } from '#gen/app/auth_pb.js'
 import { MeService } from '#gen/app/me_pb.js'
+import { events } from '#gen/events.js'
 import { caller, type Caller } from '#lib/caller.js'
 import { writes, type Writes } from '#lib/client.js'
 import { letGo, nobody, open, stillHere } from '#lib/store.js'
@@ -84,6 +85,9 @@ async function connect(): Promise<Transport> {
 		return createConnectTransport({
 			baseUrl: ADDR,
 			fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
+			// What an event's `Any` holds, which Connect's JSON reads only with its
+			// type registered (`ts/gen/events.ts`): empty while roster keeps no past.
+			jsonOptions: { registry: events },
 			interceptors: [calls.interceptor],
 		})
 	}
