@@ -37,6 +37,7 @@ CREATE TABLE `tenant` (`id` uuid NOT NULL, `alias` text NOT NULL, `name` text NO
 CREATE INDEX `access_access` ON `access` (`tenant_id`, `date_created`);
 CREATE INDEX `access_by_actor` ON `access` (`actor_id`, `date_created`);
 CREATE INDEX `access_by_actor_tenant` ON `access` (`actor_tenant_id`, `date_created`);
+CREATE INDEX `access_by_time` ON `access` (`date_created`, `id`);
 CREATE INDEX `apikey_page` ON `apikey` (`date_created`, `id`);
 CREATE UNIQUE INDEX `apikey_secret` ON `apikey` (`secret`) WHERE date_erased IS NULL;
 CREATE UNIQUE INDEX `apikey_slug` ON `apikey` (`alias`, `holder_id`) WHERE date_erased IS NULL;
@@ -47,6 +48,7 @@ CREATE INDEX `audit_by_actor_tenant` ON `audit` (`actor_tenant_id`, `date_create
 CREATE INDEX `audit_by_counterpart` ON `audit` (`counterpart_tenant_id`, `date_created`);
 CREATE INDEX `audit_by_domain` ON `audit` (`domain`, `date_created`);
 CREATE INDEX `audit_by_tenant_domain` ON `audit` (`tenant_id`, `domain`, `date_created`);
+CREATE INDEX `audit_by_time` ON `audit` (`date_created`, `id`);
 CREATE INDEX `audit_object` ON `audit` (`object_id`);
 CREATE INDEX `audit_trail` ON `audit` (`tenant_id`, `date_created`);
 CREATE INDEX `binding_page` ON `binding` (`date_created`, `id`);
