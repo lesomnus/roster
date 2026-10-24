@@ -122,6 +122,57 @@ func about(t *testing.T, c <-chan *app.SyncEvent, who pdid.Id) *app.SyncEvent {
 	}
 }
 
+// caughtUp returns once the stream has read every write made before it was
+// called, with whatever it heard meanwhile of anybody but the canary -- for a
+// test whose next step depends on the stream having read a write that is no
+// news, which nothing arrives to say.
+//
+// Nor does the next write's event. The stream reads a row when it gets to it,
+// as the row is then (`server/sync`), and reads what it took at once
+// (`watch.Next`) in no order. So a write it reads only once the next has
+// committed is read as the next one's result, seen for the first time -- the
+// facts, with no movement to name: a tenant renamed and then closed is heard
+// as a tenant first seen closed, `UNSPECIFIED` for everybody in it, which is
+// the stream as documented and was a test failing on a busy machine. And the
+// next write can be heard before whatever the first would have said, so its
+// event is no proof the first said nothing.
+//
+// So this makes writes that are heard -- the canary invalidated, each waited
+// for by the stamp it wrote -- and three of them, because an event after a
+// write is not the stream having read past it. The first can come of a poke
+// [syncing] left behind, taken before anything here was written and read late
+// enough to see the new stamp. The second comes of what the stream took after
+// that read, which is with every write this waits for or after it -- and
+// among what it took with them, the canary may have been read first. The
+// third comes of what it took once that was done.
+func caughtUp(t *testing.T, ctx context.Context, conn *grpc.ClientConn, c <-chan *app.SyncEvent, canary pdid.Id) []*app.SyncEvent {
+	t.Helper()
+	x := require.New(t)
+
+	h := app.NewHolderServiceClient(conn)
+	ref := app.HolderRef_builder{Id: canary.Bytes()}.Build()
+
+	var heard []*app.SyncEvent
+	for range 3 {
+		res, err := h.Invalidate(ctx, app.HolderInvalidateRequest_builder{Ref: ref}.Build())
+		x.NoError(err)
+
+		for {
+			v := about2(t, c)
+			if string(v.GetHolder()) != string(canary.Bytes()) {
+				heard = append(heard, v)
+
+				continue
+			}
+			if !v.GetDateInvalidated().AsTime().Before(res.GetDateInvalidated().AsTime()) {
+				break
+			}
+		}
+	}
+
+	return heard
+}
+
 // TestAnAppHearsThatADecisionStoppedBeingGood.
 //
 // An app that has signed somebody in holds a copy of a decision. It is true
@@ -219,13 +270,16 @@ func TestNobodyIsWokenForARename(t *testing.T) {
 	who := b.holder(t, ctx, b.Contoso, "renamed")
 	ref := app.HolderRef_builder{Id: who.Bytes()}.Build()
 
-	c := syncing(t, as, conn, b.holder(t, ctx, b.Contoso, "canary"))
+	canary := b.holder(t, ctx, b.Contoso, "canary")
+	c := syncing(t, as, conn, canary)
 	h := app.NewHolderServiceClient(conn)
 
 	// Two writes that mean nothing to a session, then one that means
-	// everything. A stream that woke for the first two would deliver them
-	// before the third, and this asserts the third arrives **first** -- which
-	// it can only do if the first two sent nothing at all.
+	// everything. Nothing is heard of the first two by the time the stream has
+	// read them, and the third is then heard as the movement it is -- which it
+	// is only because they were read first. Read after it, the first of them
+	// would have been this stream's first sight of somebody suspended, with no
+	// movement to name: the facts, and `UNSPECIFIED`.
 	for _, name := range []string{"one", "two"} {
 		was, err := h.Get(as, app.HolderGetRequest_builder{Ref: ref}.Build())
 		x.NoError(err)
@@ -237,13 +291,14 @@ func TestNobodyIsWokenForARename(t *testing.T) {
 		}.Build())
 		x.NoError(err)
 	}
+	x.Empty(caughtUp(t, as, conn, c, canary), "a rename woke an app that had nothing to do about it")
 
 	_, err := h.Disable(as, app.HolderDisableRequest_builder{Ref: ref}.Build())
 	x.NoError(err)
 
 	v := about(t, c, who)
 	x.Equal(app.SyncReason_SYNC_REASON_SUSPENDED, v.GetReason(),
-		"a rename woke an app that had nothing to do about it")
+		"somebody the stream read when they were renamed was suspended as if it had never heard of them")
 }
 
 // TestOneCustomerIsNotToldAboutAnother.
@@ -270,7 +325,8 @@ func TestOneCustomerIsNotToldAboutAnother(t *testing.T) {
 	b.mayAnything(other, b.Fabrikam)
 	theirs := asOverTheWire(ctx, other)
 
-	c := syncing(t, as, conn, b.holder(t, ctx, b.Contoso, "canary"))
+	canary := b.holder(t, ctx, b.Contoso, "canary")
+	c := syncing(t, as, conn, canary)
 	h := app.NewHolderServiceClient(conn)
 
 	_, err := h.Disable(theirs, app.HolderDisableRequest_builder{
@@ -278,10 +334,13 @@ func TestOneCustomerIsNotToldAboutAnother(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	// And then one in the caller's own tenant, after it. The contoso event
-	// arriving is what makes the fabrikam one's absence a fact rather than a race:
-	// the write that would have produced it landed first, so if it were coming
-	// it would already be here.
+	// The stream having read the write is what makes the fabrikam one's
+	// absence a fact rather than a race. An event for a later write arriving
+	// is not that: two writes it takes at once it reads in no order, so the
+	// later one can be heard first.
+	x.Empty(caughtUp(t, as, conn, c, canary), "an app was told about somebody in a tenant it cannot read")
+
+	// And then one in the caller's own tenant, which is heard.
 	mine := b.holder(t, ctx, b.Contoso, "mine")
 	_, err = h.Disable(as, app.HolderDisableRequest_builder{
 		Ref: app.HolderRef_builder{Id: mine.Bytes()}.Build(),
@@ -327,13 +386,16 @@ func TestAnErasureIsHeardTheFirstTimeTheStreamHearsOfSomebody(t *testing.T) {
 	quiet := b.holder(t, ctx, b.Contoso, "quiet")
 	elsewhere := b.holder(t, ctx, b.Fabrikam, "elsewhere")
 
-	c := syncing(t, as, conn, b.holder(t, ctx, b.Contoso, "canary"))
+	canary := b.holder(t, ctx, b.Contoso, "canary")
+	c := syncing(t, as, conn, canary)
 	h := app.NewHolderServiceClient(conn)
 
-	// The one the caller may not see first, so that the other arriving makes
-	// its absence a fact rather than a race.
+	// The one the caller may not see first, and read, so that its absence is a
+	// fact rather than a race -- the other arriving after it would not make it
+	// one, since two writes the stream takes at once it reads in no order.
 	_, err := h.Erase(theirs, app.HolderRef_builder{Id: elsewhere.Bytes()}.Build())
 	x.NoError(err)
+	x.Empty(caughtUp(t, as, conn, c, canary), "an app was told about somebody gone from a tenant it cannot read")
 	_, err = h.Erase(as, app.HolderRef_builder{Id: quiet.Bytes()}.Build())
 	x.NoError(err)
 
@@ -479,13 +541,16 @@ func TestTheSyncStreamAnswersToRealKeys(t *testing.T) {
 		permits(t, ctx, b, b.Contoso, b.Who, "sync-reader", watchSync, invalidate)
 		key := mintFor(t, ctx, b, b.Who, "their-app", []string{watchSync, invalidate}, time.Time{})
 
-		c := syncing(t, bearing(ctx, key), b.Conn, addHolder(t, ctx, b.Server, b.Contoso, "canary-2"))
+		canary := addHolder(t, ctx, b.Server, b.Contoso, "canary-2")
+		c := syncing(t, bearing(ctx, key), b.Conn, canary)
 
-		// Theirs first, then ours: the ordering is what makes the absence
-		// below a fact rather than a race, as in the Plain variant.
+		// Theirs first, and read: that is what makes the absence a fact
+		// rather than a race, as in the Plain variant.
 		theirs := addHolder(t, ctx, b.Server, fabrikam, "victim-2")
 		disable(theirs)
+		x.Empty(caughtUp(t, bearing(ctx, key), b.Conn, c, canary), "a tenant key heard another customer's suspension")
 
+		// Then ours, which is heard.
 		mine := addHolder(t, ctx, b.Server, b.Contoso, "mine")
 		disable(mine)
 
@@ -553,16 +618,11 @@ func TestSomebodyOutOfSightIsNotSaidToBeGone(t *testing.T) {
 	x.Equal(app.SyncReason_SYNC_REASON_UNSPECIFIED, about(t, c, dana).GetReason(), "the first the stream hears of her")
 
 	// Out of sight, and written to: the read comes back empty, and she is not
-	// erased.
+	// erased. Read while she is out of sight -- a stream that read the write
+	// once she was back would have news of her, and be right.
 	hidden.Store(true)
 	poke(dana)
-	poke(canary)
-	for v := about2(t, c); ; v = about2(t, c) {
-		x.NotEqual(dana.Bytes(), v.GetHolder(), "somebody this stream stopped seeing was said to be %s", v.GetReason())
-		if string(v.GetHolder()) == string(canary.Bytes()) {
-			break
-		}
-	}
+	x.Empty(caughtUp(t, as, conn, c, canary), "somebody this stream stopped seeing was said to be gone")
 
 	// And erased, she is heard as erased, with her row's own time.
 	hidden.Store(false)
