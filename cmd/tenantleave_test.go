@@ -562,13 +562,16 @@ func TestATenantClosingIsHeardOnEachOfItsPeople(t *testing.T) {
 	other := b.holder(t, ctx, b.Contoso, "other")
 	elsewhere := b.holder(t, ctx, b.Fabrikam, "elsewhere")
 
-	c := syncing(t, as, conn, b.holder(t, ctx, b.Contoso, "canary"))
+	canary := b.holder(t, ctx, b.Contoso, "canary")
+	c := syncing(t, as, conn, canary)
 	tenants := app.NewTenantServiceClient(conn)
 	ref := app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build()
 
 	// The stream sees the tenant before it closes, which is what makes the
 	// closing a movement it can name for everybody -- a rename says nothing
-	// about anybody, and nothing arrives for it.
+	// about anybody, and nothing arrives for it. So it is waited for: a stream
+	// that reads the rename once the close has committed sees a tenant for the
+	// first time already closed, and has the facts and no movement for anybody.
 	was, err := tenants.Get(as, app.TenantGetRequest_builder{
 		Ref: ref, Select: app.TenantSelect_builder{DateUpdated: z.Ptr(true)}.Build(),
 	}.Build())
@@ -577,6 +580,7 @@ func TestATenantClosingIsHeardOnEachOfItsPeople(t *testing.T) {
 		Ref: ref, DateUpdated: was.GetDateUpdated(), Name: z.Ptr("Contoso Ltd"),
 	}.Build())
 	x.NoError(err)
+	x.Empty(caughtUp(t, as, conn, c, canary), "a rename said something about somebody")
 
 	_, err = tenants.Close(as, app.TenantCloseRequest_builder{Ref: ref}.Build())
 	x.NoError(err)
@@ -615,16 +619,20 @@ func TestARestoredTenantIsHeardToo(t *testing.T) {
 	defer stop()
 
 	as := bearing(ctx, b.Token)
-	c := syncing(t, as, b.Conn, addHolder(t, ctx, b.Server, b.Contoso, "canary"))
+	canary := addHolder(t, ctx, b.Server, b.Contoso, "canary")
+	c := syncing(t, as, b.Conn, canary)
 	tenants := app.NewTenantServiceClient(b.Conn)
 	ref := app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build()
 
+	// Seen open before it closes, and waited for, as in
+	// TestATenantClosingIsHeardOnEachOfItsPeople.
 	was, err := tenants.Get(as, app.TenantGetRequest_builder{
 		Ref: ref, Select: app.TenantSelect_builder{DateUpdated: z.Ptr(true)}.Build(),
 	}.Build())
 	x.NoError(err)
 	_, err = tenants.Update(as, app.TenantUpdateRequest_builder{Ref: ref, DateUpdated: was.GetDateUpdated(), Desc: z.Ptr("seen")}.Build())
 	x.NoError(err)
+	x.Empty(caughtUp(t, as, b.Conn, c, canary), "a tenant's description said something about somebody")
 
 	_, err = tenants.Close(as, app.TenantCloseRequest_builder{Ref: ref}.Build())
 	x.NoError(err)
