@@ -75,3 +75,18 @@ breaking:
     # back: then a field that became a pointer is a compile error somebody else
     # has to fix.
     - FIELD_SAME_CARDINALITY
+  # One change, payday's and on purpose (lesomnus/payday#171), read here
+  # because `buf breaking` reads the imports too: an event message declares the
+  # kinds it holds, `repeated string kinds = 1`, where it declared one,
+  # `string kind = 1`. It is the option an app writes on its event messages,
+  # and roster writes none -- and it keeps the number, so an option compiled
+  # against the old one reads as its one kind. Nothing on roster's wire moves.
+  #
+  # payday took the same exception for its own check and took it out once its
+  # baselines had the change (payday#172). This one comes out with the first
+  # change after it reaches `main`, which is the only baseline here: left in,
+  # it is a hole in the check for the next change to that file. The path is the
+  # import's, under the module it is read into.
+  ignore_only:
+    FIELD_WIRE_JSON_COMPATIBLE_CARDINALITY:
+      - proto/payday/past.proto
