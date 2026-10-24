@@ -124,6 +124,11 @@ if GOOS=js GOARCH=wasm go list -deps ./wasm | grep -E '^(cel\.dev/|github.com/go
 	echo "the wasm module links CEL, which compiles Watch filters for a ResourceService it does not serve; see payday's docs/migrating.md" >&2
 	exit 1
 fi
+# And what no graph shows: a method called by index anywhere the sandbox can
+# reach keeps every exported method of every type, used or not -- 33 MB of the
+# module until payday#170, through a package the sandbox has to link. Only the
+# linker's own dump says so, and reading it is a test in the suite above,
+# `wasm/sandbox/link_test.go`.
 
 # That roster still builds for the browser, which is a promise `ts/` already
 # makes -- there is a `wasm` script and a sandbox that loads what it produces --
