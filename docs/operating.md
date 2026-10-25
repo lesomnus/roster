@@ -49,6 +49,19 @@ describes, printing the SQL that is missing. That is what you want N replicas of
 run the migration as its own step. `control.db.migrate` is the same switch for the
 other plane, and both are read.
 
+**A migration refuses an index the schema declares that PostgreSQL left
+invalid** (payday#176). A build `CONCURRENTLY` writes the index into the catalog
+before it builds it, and one that does not finish -- a timeout, a cancel, a
+deadlock -- leaves it there, kept up by every write and read by nothing; a
+migration finds an index by its name, so it would take that one for made. It is
+how a deployment that builds an index ahead of an upgrade, so that the table
+takes writes meanwhile, ends up with one. The refusal names the plane, the index
+and its table, and gives the statements that make it again: run each on its own
+and outside a transaction, then migrate again. With `db.migrate` off, `serve`
+logs one and starts, since an index that only costs time is not worth an outage
+on the next restart; and an invalid index the schema does not declare -- your
+own, or the `_ccnew` a `REINDEX CONCURRENTLY` left -- is only logged.
+
 **A column that comes to a table which already has rows takes the default its
 field declares** -- `(orm.field).default`, which the generator gives the column as
 well as the server -- so every row already there holds it rather than NULL. A field
