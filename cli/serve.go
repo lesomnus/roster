@@ -17,6 +17,7 @@ import (
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/rename"
 	"github.com/lesomnus/payday/spin"
+	"github.com/lesomnus/payday/valid"
 
 	"github.com/lesomnus/roster/cmd"
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
@@ -63,8 +64,8 @@ func Ready(ctx context.Context, s *cmd.Server, c cmd.Config) error {
 
 	// Named, because the two databases are configured in two blocks and an
 	// error saying a table is missing says nothing about which of them to go
-	// and look at.
-	if err := ready(ctx, s.Control, c.Control.Db); err != nil {
+	// and look at -- and what it logs, for the same reason.
+	if err := ready(log.Into(ctx, log.From(ctx).With(slog.String("plane", "control"))), s.Control, c.Control.Db); err != nil {
 		return fmt.Errorf("control: %w", err)
 	}
 
@@ -82,8 +83,20 @@ func ready(ctx context.Context, s *cmd.Server, c config.DbConfig) error {
 	if c.Migrate {
 		return migrate(ctx, s)
 	}
+	if err := entschema.Check(ctx, s.Db, s.Dialect, entmigrate.Tables); err != nil {
+		return err
+	}
 
-	return entschema.Check(ctx, s.Db, s.Dialect, entmigrate.Tables)
+	// An index PostgreSQL left invalid is said, and served over: it is found by
+	// its name, so the check above passes it. It costs every write and the
+	// reads that wanted it, which is a thing to fix and not a reason to stop
+	// serving -- refused here, the next restart would be an outage until
+	// somebody had built it again. Migrating is what refuses it (payday#176).
+	if err := valid.Indexes(ctx, s.Db, s.Dialect, entmigrate.Tables); err != nil {
+		log.From(ctx).WarnContext(ctx, "db: serving over an index PostgreSQL left invalid", slog.Any("err", err))
+	}
+
+	return nil
 }
 
 // NewCmdServe is `<app> serve`.
@@ -254,8 +267,9 @@ func Migrate(ctx context.Context, s *cmd.Server) error {
 }
 
 // migrate brings one plane's database into this build's shape: the indexes an
-// earlier build made under another name moved to this build's first, then what
-// the schema declares made.
+// earlier build made under another name moved to this build's first, then an
+// index the schema declares that PostgreSQL left invalid refused, then what the
+// schema declares made.
 //
 // First, because a migration finds an index by its name, and one it does not
 // find it makes again, from every row, beside the old one, which it leaves --
@@ -263,8 +277,18 @@ func Migrate(ctx context.Context, s *cmd.Server) error {
 // it whatever its columns, so a reordered one is made again where it stands and
 // the list of replaced names this used to drop by hand (lesomnus/rove#122) has
 // nothing left to say (payday#132).
+//
+// And the refusal before anything is made, because found by its name is also
+// how an index a build `CONCURRENTLY` did not finish is taken for made. A
+// deployment that built `audit_by_time` ahead of the migration declaring it,
+// so the trail took writes meanwhile, and had the build cancelled, was told
+// its database was in this build's shape while the index served no read
+// (payday#176). The refusal says what to run to make it again.
 func migrate(ctx context.Context, s *cmd.Server) error {
 	if err := rename.Indexes(ctx, s.Db, s.Dialect, pd.IndexRenames); err != nil {
+		return err
+	}
+	if err := valid.Indexes(ctx, s.Db, s.Dialect, entmigrate.Tables); err != nil {
 		return err
 	}
 
