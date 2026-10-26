@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/tenant.proto.
  */
 export const file_roster_payday_tenant: GenFile = /*@__PURE__*/
-  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L3RlbmFudC5wcm90bxIGcm9zdGVyIvEECgZUZW5hbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhUKBWFsaWFzGAQgASgJQgbqghYCMAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEioKBmxhYmVscxgHIAMoCzIaLnJvc3Rlci5UZW5hbnQuTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASJAoGY29uZmlnGAggASgLMhQucm9zdGVyLlRlbmFudENvbmZpZxI3CgtkYXRlX2Nsb3NlZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI6Cg5kYXRlX2Rlc3Ryb3llZBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI1CglkYXRlX2hlbGQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESFQoEaG9sZBgMIAEoCUIH6oIWA4IBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOl/K/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxYxCAEyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGRCAgoASAEaACJyCgxUZW5hbnRDb25maWcSFwoIcGFzc3dvcmQYASABKAhCBaoBAggBEhIKCmZyb250X2Rvb3IYAiABKAkSJgoHcHJvZmlsZRgDIAEoCzIVLnJvc3Rlci5UZW5hbnRQcm9maWxlEg0KBWxlYXZlGAQgASgIIjcKDVRlbmFudFByb2ZpbGUSDAoEZmlsbBgBIAEoCBIYChBzbGFja19zZWNyZXRfcmVmGAIgASgJQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L3RlbmFudC5wcm90bxIGcm9zdGVyIo8FCgZUZW5hbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhsKBWFsaWFzGAQgASgJQgzqghYCMAGqwRYCGAASFAoEbmFtZRgFIAEoCUIGqsEWAhgAEhQKBGRlc2MYBiABKAlCBqrBFgIYABIyCgZsYWJlbHMYByADKAsyGi5yb3N0ZXIuVGVuYW50LkxhYmVsc0VudHJ5QgaqwRYCGAASOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASJAoGY29uZmlnGAggASgLMhQucm9zdGVyLlRlbmFudENvbmZpZxI3CgtkYXRlX2Nsb3NlZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI6Cg5kYXRlX2Rlc3Ryb3llZBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI1CglkYXRlX2hlbGQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESFQoEaG9sZBgMIAEoCUIH6oIWA4IBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOl/K/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxYxCAEyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGRCAgoASAEaACJyCgxUZW5hbnRDb25maWcSFwoIcGFzc3dvcmQYASABKAhCBaoBAggBEhIKCmZyb250X2Rvb3IYAiABKAkSJgoHcHJvZmlsZRgDIAEoCzIVLnJvc3Rlci5UZW5hbnRQcm9maWxlEg0KBWxlYXZlGAQgASgIIjcKDVRlbmFudFByb2ZpbGUSDAoEZmlsbBgBIAEoCBIYChBzbGFja19zZWNyZXRfcmVmGAIgASgJQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Tenant is the wall an app is divided by.
@@ -42,6 +42,21 @@ export type Tenant = Message<"roster.Tenant"> & {
   /**
    * Alias is what a person writes this tenant as, and it is unique across the
    * deployment: `@acme/arm-01` says which tenant before it says which row.
+   *
+   * It and the three after it are **not personal** (#92, #105): a tenant is an
+   * organisation, and what it is called, what is said of it and what is
+   * labelled on it are its own, which the trail keeps -- who renamed which
+   * tenant to what is the record. Said rather than left unsaid because an app
+   * whose overlay declares a field of its tenant personal -- why one was
+   * closed, in somebody's words -- has made it an entity that holds people,
+   * and `pd doctor` asks about each field of free text on it, these too, which
+   * no overlay may declare.
+   *
+   * So an app writes nobody into them. One that would name a tenant after a
+   * person -- the one somebody is given when they sign up -- leaves the name
+   * empty and says it where it is read, after whoever has the tenant now: a
+   * name written here is on the trail as a value, where nothing that forgets
+   * the person reaches it.
    *
    * @generated from field: string alias = 4;
    */
