@@ -1,4 +1,4 @@
-// Package idptest is a provider that agrees with everybody.
+// Package idptest is a provider of synthetic identities for relying-party tests.
 //
 // Discovery, a key, an authorize endpoint that redirects back at once, and a
 // token endpoint that signs whatever [Idp.Subject] and [Idp.Claims] say. Both
@@ -66,8 +66,25 @@ type Idp struct {
 
 	key *rsa.PrivateKey
 
-	mu    sync.Mutex
-	asked url.Values
+	mu        sync.Mutex
+	asked     url.Values
+	redirects map[string]struct{}
+}
+
+// RegisterRedirects replaces this client's preregistered callback allowlist.
+// Call it before the browser starts the round trip, using literal expected
+// paths, never the redirect_uri the app sent. An empty list refuses every URI;
+// leaving it unset keeps the permissive fake used by unrelated protocol tests.
+// A provider that simply echoes the requested URI cannot catch a deployment
+// whose callback changed before its external app registration did.
+func (p *Idp) RegisterRedirects(uris ...string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.redirects = make(map[string]struct{}, len(uris))
+	for _, uri := range uris {
+		p.redirects[uri] = struct{}{}
+	}
 }
 
 // Asked is what the last authorization request carried: `redirect_uri`,
@@ -160,15 +177,26 @@ func New(t *testing.T, audience string) *Idp {
 		}})
 	})
 	m.HandleFunc("/authorize", func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
 		p.mu.Lock()
-		p.asked = r.URL.Query()
+		if p.redirects != nil {
+			_, registered := p.redirects[q.Get("redirect_uri")]
+			if !registered || len(q["redirect_uri"]) != 1 || len(q["client_id"]) != 1 || q.Get("client_id") != p.Audience {
+				p.mu.Unlock()
+				// In particular, do not redirect an error to an unregistered URI.
+				http.Error(w, "client or redirect_uri is not registered", http.StatusBadRequest)
+
+				return
+			}
+		}
+		p.asked = q
 		p.mu.Unlock()
 
-		to, _ := url.Parse(r.URL.Query().Get("redirect_uri"))
-		q := to.Query()
-		q.Set("code", "the-code")
-		q.Set("state", r.URL.Query().Get("state"))
-		to.RawQuery = q.Encode()
+		to, _ := url.Parse(q.Get("redirect_uri"))
+		back := to.Query()
+		back.Set("code", "the-code")
+		back.Set("state", q.Get("state"))
+		to.RawQuery = back.Encode()
 		http.Redirect(w, r, to.String(), http.StatusFound)
 	})
 	m.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
@@ -183,8 +211,13 @@ func New(t *testing.T, audience string) *Idp {
 		_ = r.ParseForm()
 		p.mu.Lock()
 		asked := p.asked
+		unissued := p.redirects != nil && asked == nil
 		p.mu.Unlock()
-		if why := heldTo(asked, r.PostForm); why != "" {
+		why := heldTo(asked, r.PostForm)
+		if unissued {
+			why = "no authorization code was issued"
+		}
+		if why != "" {
 			w.Header().Set("content-type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			_ = json.NewEncoder(w).Encode(map[string]any{"error": "invalid_grant", "error_description": why})
