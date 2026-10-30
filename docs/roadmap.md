@@ -733,6 +733,8 @@ is not a request* -- which survives because the generated check sits in the
 
 | — | provider callbacks must be registered before upgrading | **done** — `Idp.RegisterRedirects` (`internal/idptest`) holds a client to literal preregistered callbacks and refuses unknown clients, duplicate parameters and unregistered URIs without redirecting or issuing a code. Login and Account App regressions reproduce an old `/callback` registration refusing the new per-tenant/connection callback; adding the new URI before upgrading admits the expected holder, while retaining the old URI for rollback. The Account App checks the protected `MeService.Get` and refuses that session under another tenant. This is an in-process provider contract regression; deployment-overlay E2E and live Entra/MFA validation remain deployment gates (Holiday-Robot/roster.hday.dev#33). |
 
+| — | Microsoft reauthentication without an already expired token | **done** — Microsoft is asked with `prompt=login` and an explicit ID-token `auth_time` claim instead of `max_age=0`, which some Entra tenants answer with a token already expired at the callback. `TestMicrosoftReauthenticationDoesNotRequestAnExpiredToken` walks ordinary and `again=1` Account App login through a request-sensitive synthetic provider, then checks the protected holder. Expired tokens still create no session; missing or old authentication times still cannot erase an account. Generic OIDC and Google keep their existing requests. Human live Entra validation remains a deployment gate. |
+
 ## Open, for whoever picks this up next
 
 **`Vouch.Link` and `Vouch.Accept`, and the case for leaving them.** The audit
