@@ -737,6 +737,8 @@ is not a request* -- which survives because the generated check sits in the
 
 | — | company source checks without a hosted runner | **implemented** — `company-ci.yml` runs the same nine gates and image export through reviewed tooling in a one-job KVM runner supplied by the company controller. Actual phase results are reported using this repository's short-lived GitHub Actions token; the existing ten required checks remain. The controller uses a short-lived registration token, verifies the public source run and checks, and discards the VM. The legacy hosted workflow stays disabled. No company or Entra credential enters the source runner. |
 
+| — | cluster API readiness and an optional registry mirror | **implemented** — the company KVM run reached image import but its first Kubernetes API operation was refused. `scripts/cluster.sh` now waits for the real `/readyz` before that first operation, retains every protocol assertion, and prints the node container log when the API cannot answer. `K3D_REGISTRIES_CONFIG` lets the consumer pass its prepared guest's registry cache configuration; it remains optional elsewhere. |
+
 ## Open, for whoever picks this up next
 
 **`Vouch.Link` and `Vouch.Accept`, and the case for leaving them.** The audit
