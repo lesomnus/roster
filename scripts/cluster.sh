@@ -266,12 +266,7 @@ echo "== from nothing"
 k3d cluster delete "${CLUSTER}" >/dev/null 2>&1 || true
 # No load balancer and no Traefik: nothing here is reached from outside the
 # cluster's network, and the ingress is the next commit's problem.
-registry_args=()
-if [ -n "${K3D_REGISTRIES_CONFIG:-}" ]; then
-	test -r "${K3D_REGISTRIES_CONFIG}"
-	registry_args=(--registry-config "${K3D_REGISTRIES_CONFIG}")
-fi
-k3d cluster create "${CLUSTER}" "${registry_args[@]}" --servers 1 --agents 0 --no-lb \
+k3d cluster create "${CLUSTER}" --servers 1 --agents 0 --no-lb \
 	--k3s-arg "--disable=traefik@server:0" \
 	--k3s-arg "--disable=metrics-server@server:0" \
 	--wait >/dev/null
