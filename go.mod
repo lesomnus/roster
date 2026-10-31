@@ -2,6 +2,8 @@ module github.com/lesomnus/roster
 
 go 1.27.0
 
+toolchain go1.27.3
+
 // The generators, as tools of this module.
 //
 // They are pinned here rather than by payday because a plugin is a Go program
@@ -37,7 +39,7 @@ require (
 	github.com/lesomnus/grpc-dgram v0.0.0-20260912133542-a7366077bf6f
 	github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155
 	github.com/lesomnus/otx/otxgrpc v0.0.0-20261017184159-4cba7a26b155
-	github.com/lesomnus/payday v0.0.0-20261026134109-c0bdc0508efe
+	github.com/lesomnus/payday v0.0.0-20261031085636-0d342d896262
 	github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da
 	github.com/lesomnus/xli v0.0.0-20261009121920-4ce270c7448c
 	github.com/lesomnus/xli/cfg v0.1.3
