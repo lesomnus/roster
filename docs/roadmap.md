@@ -735,7 +735,7 @@ is not a request* -- which survives because the generated check sits in the
 
 | — | Microsoft reauthentication without an already expired token | **done** — Microsoft is asked with `prompt=login` and an explicit ID-token `auth_time` claim instead of `max_age=0`, which some Entra tenants answer with a token already expired at the callback. `TestMicrosoftReauthenticationDoesNotRequestAnExpiredToken` walks ordinary and `again=1` Account App login through a request-sensitive synthetic provider, then checks the protected holder. Expired tokens still create no session; missing or old authentication times still cannot erase an account. Generic OIDC and Google keep their existing requests. Human live Entra validation remains a deployment gate. |
 
-| — | cluster API readiness and an optional registry mirror | **implemented** — the company KVM run reached image import but its first Kubernetes API operation was refused. `scripts/cluster.sh` now waits for the real `/readyz` before that first operation, retains every protocol assertion, and prints the node container log when the API cannot answer. `K3D_REGISTRIES_CONFIG` lets the consumer pass its prepared guest's registry cache configuration; it remains optional elsewhere. |
+| — | cluster API readiness | **implemented** — `scripts/cluster.sh` waits for the API's own `/readyz` before its first operation, since the API can restart while cold image imports run after `k3d --wait`; every deployment and protocol assertion still runs once. A run that fails before the cluster answers prints the server container's log, because kubectl-only diagnostics say nothing then. |
 
 ## Open, for whoever picks this up next
 
