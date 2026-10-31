@@ -326,7 +326,8 @@ khala  ─ Reaches(erin), Reaches(@acme/kamino) → both cover → serves it, or
   issuer's session and every client's grant -- and not a JWT already issued,
   which verifies until it expires. A receiver that must stop sooner follows `SyncService/Watch` and
   refuses a token issued before `date_invalidated`, the way `login/sync.go`
-  ends sessions; one holding something that lasts -- a stream, a media session
+  ends sessions -- `standing` is that follower as a package
+  ([relying-app.md](relying-app.md)); one holding something that lasts -- a stream, a media session
   -- ends that there too. roster down is a refusal: the JWT verifies, and
   `Reaches` does not answer.
 - **A page left open renews with the receiver's session, not a refresh

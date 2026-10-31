@@ -229,7 +229,8 @@ that is what made *sign out* a lie.
 Two things that table says better than prose. The product and the proxy never
 reach roster -- **no roster key, no RPC, nothing but a token** -- because neither
 decides anything about the person beyond who they are; a product that does asks
-roster, below. And roster is never told what a flow is: it is asked to prove a secret, to say who the caller
+roster, below -- and keeps asking after the sign-in, which is
+[relying-app.md](relying-app.md). And roster is never told what a flow is: it is asked to prove a secret, to say who the caller
 is, and to revoke a delegation.
 
 What is not in those four is the **other way in**: `GET /provider` and
@@ -727,6 +728,8 @@ stack serves its own TLS.
 
 ## See also
 
+- [`docs/relying-app.md`](relying-app.md) — what a product that keeps a session
+  of its own keeps asking roster afterwards, and the package that asks
 - [`docs/login.md`](login.md) § *What changes when Hydra is in front* — the same
   loop from the issuer's side, hop by hop
 - [`docs/position.md`](position.md) § *It does not replace a reverse proxy* — why

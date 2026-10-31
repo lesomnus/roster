@@ -92,8 +92,12 @@ go tool pd gen --check --ts .
 #
 # So is the Login App (`login/`), which needs neither exception: what it reads
 # of roster is `rstr` and `frontdoor` and nothing else.
+#
+# And `standing/`, which no process here is either: it is what an app in
+# another repository imports to keep asking roster after a sign-in, and an app
+# beside roster has the wire and nothing else.
 echo "== the consumers reach roster only over the wire"
-for pkg in ./account/ ./arrives/ ./ldap/ ./login/ ./scim/; do
+for pkg in ./account/ ./arrives/ ./ldap/ ./login/ ./scim/ ./standing/; do
 	if go list -f '{{join .Imports "\n"}}' "${pkg}" | grep -E '^github.com/lesomnus/roster/(internal|cmd|server/)' | grep -v '^github.com/lesomnus/roster/server/front$'; then
 		echo "${pkg} imports a server package; it is a consumer and reaches roster over the wire" >&2
 		exit 1
