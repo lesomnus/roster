@@ -419,6 +419,9 @@ a browser holds and `auth` reads credentials rather than making them.
   baseline test is never weakened to let a change pass.**
 - `docs/relying-party.md` — the two shapes an app takes in front of the issuer,
   the two runnable ones, and the API each uses
+- `docs/relying-app.md` — what an app keeps asking roster after a sign-in, and
+  `standing/`, the package that asks: an account's standing, the sync stream,
+  and what the stream cannot carry
 - `docs/README.md` — the map of all of it, by the question each page answers
 - `docs/development.md` — the mechanics above at length: generation, upgrading
   payday, the three pages, the sandbox, and what the generator refuses
