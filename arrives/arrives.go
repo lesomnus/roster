@@ -560,12 +560,15 @@ func (p *Providers) Begin(ctx context.Context, tenant pdid.Id, alias, connection
 // with `again` -- that they be authenticated again rather than remembered.
 // Each provider is sent what it documents, and nothing it does not.
 //
-// `max_age=0` is OpenID Connect's own way to ask again, and the one with a
-// rule behind it: a provider asked for it has to actively authenticate them,
-// and has to say when in `auth_time`. `prompt=login` says the same in a word
-// not every provider takes -- one that does not know it may answer with an
-// error rather than ignore it -- so it goes only to Microsoft's sign-in, which
-// documents it.
+// `max_age=0` is OpenID Connect's own way to ask again. Microsoft is asked
+// with its documented `prompt=login` instead: some Entra tenants answer
+// `max_age=0` with an ID token already expired when it reaches the callback.
+// Ask for `auth_time` explicitly, since without `max_age` it is optional.
+// Its absence remains unknown, never the time this app received the token;
+// sensitive operations still require the provider's actual recent time.
+// See https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc
+// and the reproducer at
+// https://learn.microsoft.com/en-sg/answers/questions/1377508/oauth-tokens-endpoint-issues-expired-token.
 //
 // Google is sent neither. Its list of the parameters it takes has no
 // `max_age`, its `prompt` has no `login`, and it says it does not support a
@@ -584,12 +587,14 @@ func asking(v *verifier, again bool) []oauth2.AuthCodeOption {
 		return nil
 	}
 
-	opts := []oauth2.AuthCodeOption{oauth2.SetAuthURLParam("max_age", "0")}
 	if v.microsoft {
-		opts = append(opts, oauth2.SetAuthURLParam("prompt", "login"))
+		return []oauth2.AuthCodeOption{
+			oauth2.SetAuthURLParam("prompt", "login"),
+			oauth2.SetAuthURLParam("claims", authTimeClaims),
+		}
 	}
 
-	return opts
+	return []oauth2.AuthCodeOption{oauth2.SetAuthURLParam("max_age", "0")}
 }
 
 // verifier is a connection's check of what came back, and which claim of a

@@ -1,0 +1,37 @@
+name: Company source validation
+
+# The ephemeral runner is a disposable KVM guest on company h1x4. The legacy
+# hosted ci.yml stays disabled; never enable it to obtain the required checks.
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Reviewed full source commit
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  checks: write
+
+concurrency:
+  group: company-source-${{ github.event.pull_request.number || inputs.source_sha }}
+  cancel-in-progress: true
+
+jobs:
+  source:
+    name: company-native-source
+    if: github.actor_id == '10667035' && (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, roster-company-kvm, "${{ format('source-{0}', github.event.pull_request.head.sha || inputs.source_sha) }}"]
+    timeout-minutes: 120
+    steps:
+      - name: Run the nine source gates and image export on the company VM
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || inputs.source_sha }}
+          GH_TOKEN: ${{ github.token }}
+        # The company controller supplies reviewed, generic test tooling to
+        # the guest before registering this one-job runner. It runs the real
+        # tests, then reports their results to this repository as GitHub Actions.
+        # No company GitHub token, Entra credential or registry key enters it.
+        run: python3 /home/ubuntu/auth-ci/ci/source-report.py "$SOURCE_SHA"

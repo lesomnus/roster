@@ -83,11 +83,10 @@ func TestAnAuthTimeIsReadLoosely(t *testing.T) {
 }
 
 // What each provider is asked for beside the challenge and the nonce, which is
-// what it documents and nothing else: OpenID Connect's `max_age=0` to ask
-// again, everywhere but Google; `prompt=login` beside it only at Microsoft's
-// sign-in, since a provider that does not know a prompt may refuse the whole
-// request over it; and at Google, which takes neither, `auth_time` asked for by
-// name on every round trip, again or not.
+// what it documents: OpenID Connect's `max_age=0` for an ordinary provider;
+// Microsoft's `prompt=login` with `auth_time` requested explicitly, avoiding
+// the expired-token response some Entra tenants give `max_age=0`; and at
+// Google, `auth_time` on every round trip, again or not.
 func TestEachProviderIsAskedWhatItDocuments(t *testing.T) {
 	cfg := &oauth2.Config{Endpoint: oauth2.Endpoint{AuthURL: "https://idp.example.test/authorize"}}
 
@@ -100,7 +99,7 @@ func TestEachProviderIsAskedWhatItDocuments(t *testing.T) {
 		{"an OpenID provider", &verifier{}, false, url.Values{}},
 		{"an OpenID provider, again", &verifier{}, true, url.Values{"max_age": {"0"}}},
 		{"Microsoft", &verifier{microsoft: true}, false, url.Values{}},
-		{"Microsoft, again", &verifier{microsoft: true}, true, url.Values{"max_age": {"0"}, "prompt": {"login"}}},
+		{"Microsoft, again", &verifier{microsoft: true}, true, url.Values{"prompt": {"login"}, "claims": {authTimeClaims}}},
 		{"Google", &verifier{google: true}, false, url.Values{"claims": {authTimeClaims}}},
 		{"Google, again", &verifier{google: true}, true, url.Values{"claims": {authTimeClaims}}},
 	} {

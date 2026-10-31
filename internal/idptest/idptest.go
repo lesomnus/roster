@@ -42,6 +42,11 @@ type Idp struct {
 	Subject string
 	Claims  map[string]any
 
+	// Answer adds claims derived from this authorization request, after Claims.
+	// It lets a regression model a provider whose token depends on a parameter,
+	// rather than issuing the same token for ordinary login and reauthentication.
+	Answer func(url.Values) map[string]any
+
 	// Tid is the directory the next sign-in is in, for the fake as Microsoft's
 	// authority of more than one: each token's `iss` is `<URL>/<Tid>/v2.0`,
 	// and it carries `tid`. What it publishes for that is at the paths
@@ -241,6 +246,11 @@ func New(t *testing.T, audience string) *Idp {
 		}
 		for k, v := range p.Claims {
 			claims[k] = v
+		}
+		if p.Answer != nil {
+			for k, v := range p.Answer(asked) {
+				claims[k] = v
+			}
 		}
 		w.Header().Set("content-type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{

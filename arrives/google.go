@@ -32,8 +32,9 @@ import (
 // googleHosts is where Google signs people in and issues their ID tokens.
 var googleHosts = []string{"accounts.google.com"}
 
-// authTimeClaims asks for `auth_time` by name, as Google documents it: in the
-// ID token, and essential.
+// authTimeClaims asks for `auth_time` by name in the ID token, essential.
+// Google uses it on every trip; Microsoft uses it when asking again without
+// `max_age`, which otherwise makes the claim mandatory.
 const authTimeClaims = `{"id_token":{"auth_time":{"essential":true}}}`
 
 // google is whether an issuer is Google's sign-in, which decides what its

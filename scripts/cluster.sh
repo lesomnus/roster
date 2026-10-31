@@ -155,6 +155,8 @@ cleanup() {
 	# before one existed says what it fell over on and nothing else.
 	local out=$?
 	if [ "${out}" -ne 0 ] && docker inspect "k3d-${CLUSTER}-server-0" >/dev/null 2>&1; then
+		# The API itself can be down; kubectl-only diagnostics then say nothing.
+		docker logs --tail 60 "k3d-${CLUSTER}-server-0" >&2 2>&1 || true
 		resolver
 	fi
 
@@ -264,7 +266,12 @@ echo "== from nothing"
 k3d cluster delete "${CLUSTER}" >/dev/null 2>&1 || true
 # No load balancer and no Traefik: nothing here is reached from outside the
 # cluster's network, and the ingress is the next commit's problem.
-k3d cluster create "${CLUSTER}" --servers 1 --agents 0 --no-lb \
+registry_args=()
+if [ -n "${K3D_REGISTRIES_CONFIG:-}" ]; then
+	test -r "${K3D_REGISTRIES_CONFIG}"
+	registry_args=(--registry-config "${K3D_REGISTRIES_CONFIG}")
+fi
+k3d cluster create "${CLUSTER}" "${registry_args[@]}" --servers 1 --agents 0 --no-lb \
 	--k3s-arg "--disable=traefik@server:0" \
 	--k3s-arg "--disable=metrics-server@server:0" \
 	--wait >/dev/null
@@ -512,6 +519,14 @@ docker run --rm --entrypoint sh -v "${vol}:/w" alpine/openssl:3.3.2 -c '
 carry
 
 echo "== up"
+# Imports need containerd; the first API operation needs the API itself too.
+# It can restart while cold image imports run after k3d --wait. Probe readiness
+# only; every deployment and protocol assertion below still runs once.
+api_deadline=$(( $(date +%s) + 180 ))
+until kube "kubectl --request-timeout=5s get --raw=/readyz" >/dev/null 2>&1; do
+	[ "$(date +%s)" -lt "${api_deadline}" ] || { echo "cluster: API did not become ready" >&2; exit 1; }
+	sleep 2
+done
 kube "kubectl create ns ${NS} >/dev/null"
 
 # **The secrets, which `deploy/` deliberately ships none of.**
