@@ -20,6 +20,10 @@ set -eu
 
 : "${SEED_CUSTOMER:=contoso}"
 : "${SEED_USER:=erin}"
+# Who is at the shell: the operator `docker/entrypoint.sh` had `init` make. A
+# command here that reads or writes the database names them, and what it writes
+# of anybody is on the access record under that name (#221).
+: "${SEED_OPERATOR:=admin}"
 : "${SEED_PASSWORD:=correct horse battery staple}"
 : "${PUBLIC_HOST:=localhost}"
 : "${ACCOUNT_STATE:=/var/lib/roster-account}"
@@ -42,12 +46,12 @@ echo "roster: standing ${SEED_CUSTOMER} up, once" >&2
 
 t="${SEED_CUSTOMER}"
 u="${SEED_USER}"
-roster tenant add "@${t}" >/dev/null
-roster holder add "@${t}/${u}" >/dev/null
+roster --as "${SEED_OPERATOR}" tenant add "@${t}" >/dev/null
+roster --as "${SEED_OPERATOR}" holder add "@${t}/${u}" >/dev/null
 # The `everything` role arrives with the tenant (`server/core/tenant.go`), so
 # this binds to it rather than writing a second one.
 printf '{"role":{"slug":{"alias":"everything","tenant":{"alias":"%s"}}},"holder":{"slug":{"alias":"%s","tenant":{"alias":"%s"}}}}' "${t}" "${u}" "${t}" \
-	| roster binding add - >/dev/null
+	| roster --as "${SEED_OPERATOR}" binding add - >/dev/null
 printf '%s' "${SEED_PASSWORD}" | roster vouch set --password-stdin "@${t}/${u}" >/dev/null 2>&1
 # Every name a browser reaches this tenant at, and there are four of them
 # because this rig publishes on some and resolves others inside its own network.
@@ -64,7 +68,7 @@ printf '%s' "${SEED_PASSWORD}" | roster vouch set --password-stdin "@${t}/${u}" 
 #	behind.test      `oauth2-proxy`, inside the compose network
 #	product.test     the relying party that is the app itself
 for h in "${PUBLIC_HOST}" 127.0.0.1 behind.test product.test; do
-	printf '{"tenant":{"alias":"%s"},"name":"%s"}' "${t}" "${h}" | roster host add - >/dev/null
+	printf '{"tenant":{"alias":"%s"},"name":"%s"}' "${t}" "${h}" | roster --as "${SEED_OPERATOR}" host add - >/dev/null
 done
 
 # The directory is installed into the tenant like any roster-hosted app: its

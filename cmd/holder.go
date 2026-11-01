@@ -18,6 +18,7 @@ import (
 
 	"uuid"
 
+	"github.com/lesomnus/payday/access"
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
@@ -302,44 +303,67 @@ const MintsForAnybody = "mints a credential for anybody, on the caller's word.\n
 // holds no bindings, so it reaches exactly the first case, where there is
 // nothing to become. The wiring says it now instead of the warning.
 
-// listKeys writes one plane's keys, in the shape `roster key list` prints them.
+// ListKeys writes this plane's keys, in the shape `roster key list` prints
+// them, as `by` read them at the shell (#221).
 //
 // The tenant is printed as well as the alias, which the control plane's version
 // did not need and this one does: an alias is unique within a tenant, so
 // `@alice/laptop` is ambiguous across customers and `@newco/alice/laptop` is
 // not.
-func ListKeys(ctx context.Context, w io.Writer, db *ent.Client, _ string) error {
-	// Erased rows left out, which reading ent directly does not do for you:
-	// erasure is applied by the servers and this is under them. A `list` that
-	// showed a key somebody had just revoked would be worse than one that is a
-	// moment behind.
-	vs, err := db.ApiKey.Query().
-		Where(entapikey.DateErasedIsNil()).
-		WithHolder(func(q *ent.HolderQuery) { q.WithTenant() }).
-		All(ctx)
+//
+// # On the access record, before anything is printed
+//
+// A holder's alias is declared `personal`, so the list is a read of every key
+// holder's data -- a column of names no declaration can see, since it is read
+// past the servers and printed as text. So it says what it showed
+// (`access.Saw`) in a call of `ApiKeyService/List` made at the shell, which is
+// the RPC it stands for, and prints only once that row is written: a list
+// whose row could not be written is not printed at all.
+func ListKeys(ctx context.Context, w io.Writer, at *Server, by Operator) error {
+	var out strings.Builder
+	err := at.AtTheShell(ctx, by, app.ApiKeyService_List_FullMethodName, func(ctx context.Context) error {
+		// Erased rows left out, which reading ent directly does not do for
+		// you: erasure is applied by the servers and this is under them. A
+		// `list` that showed a key somebody had just revoked would be worse
+		// than one that is a moment behind.
+		vs, err := at.Ent.ApiKey.Query().
+			Where(entapikey.DateErasedIsNil()).
+			WithHolder(func(q *ent.HolderQuery) { q.WithTenant() }).
+			All(ctx)
+		if err != nil {
+			return err
+		}
+
+		for _, v := range vs {
+			who := "?"
+			if h := v.Edges.Holder; h != nil {
+				who = h.Alias
+				var t pdid.Id
+				if e := h.Edges.Tenant; e != nil {
+					who = e.Alias + "/" + who
+					t = pdid.Id(e.Id)
+				}
+				access.Saw(ctx, access.Subject{Id: pdid.Id(h.Id), Tenant: t})
+			}
+
+			used := "never"
+			if v.DateUsed != nil {
+				used = v.DateUsed.Format(time.RFC3339)
+			}
+
+			fmt.Fprintf(&out, "%s\t@%s/%s\tused=%s\t%s\n",
+				pdid.Id(v.Id), who, v.Alias, used, strings.Join(v.Methods, ","))
+		}
+
+		return nil
+	})
 	if err != nil {
 		return err
 	}
 
-	for _, v := range vs {
-		who := "?"
-		if h := v.Edges.Holder; h != nil {
-			who = h.Alias
-			if t := h.Edges.Tenant; t != nil {
-				who = t.Alias + "/" + who
-			}
-		}
+	_, err = io.WriteString(w, out.String())
 
-		used := "never"
-		if v.DateUsed != nil {
-			used = v.DateUsed.Format(time.RFC3339)
-		}
-
-		fmt.Fprintf(w, "%s\t@%s/%s\tused=%s\t%s\n",
-			pdid.Id(v.Id), who, v.Alias, used, strings.Join(v.Methods, ","))
-	}
-
-	return nil
+	return err
 }
 
 // keyPlane is the server holding the key with this identifier.

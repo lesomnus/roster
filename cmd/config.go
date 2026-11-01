@@ -455,6 +455,16 @@ type ClientConfig struct {
 	// block does, and anybody who can pass this flag is already holding the
 	// file the `db` block is in. A second lock would guard nothing.
 	Local bool `yaml:"-"`
+
+	// As is `--as`: who is at this shell, an operator of the control plane by
+	// alias, for the access record to name as the one who read or wrote what a
+	// local command did (#221). See [OperatorNamed].
+	//
+	// Not in the file and not in the environment, for `Local`'s reason and one
+	// of its own: a deployment's file and its environment are everybody's who
+	// opens a shell on it, so a name written there would be one person named
+	// for whoever ran the command. It is said by the person, each time.
+	As string `yaml:"-"`
 }
 
 // ClientAuthConfig is the credential a command presents, and how.

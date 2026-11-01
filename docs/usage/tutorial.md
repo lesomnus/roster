@@ -46,10 +46,15 @@ roster serve
 
 ## 2. A customer
 
+Every command from here that reads the database directly says who is at the
+shell -- `--as admin`, the operator `init` just made. What it shows or writes of
+anybody is on the access record under that name, and a command that does not
+say is refused before it opens anything ([cli.md](cli.md#locally-say-who-you-are)).
+
 One write, and it stands the whole thing up:
 
 ```sh
-roster tenant add @newco '{"name":"Newco Ltd"}'
+roster --as admin tenant add @newco '{"name":"Newco Ltd"}'
 ```
 
 The tenant, `@newco/admin` in it, a role called `everything` that holds
@@ -58,7 +63,7 @@ somebody who can administer it, because the state where one exists and nobody
 can do anything in it is only finishable by an operator reaching inside.
 
 ```sh
-roster tenant ls -o table
+roster --as admin tenant ls -o table
 ```
 ```
 ALIAS   NAME        AGE
@@ -73,13 +78,13 @@ she is Ada — that is step 4.
 Alice, with a narrower role:
 
 ```sh
-roster holder add @newco/alice '{"name":"Alice Nguyen"}'
-roster role   add @newco/support \
+roster --as admin holder add @newco/alice '{"name":"Alice Nguyen"}'
+roster --as admin role   add @newco/support \
   '{"methods":["/roster.HolderService/Get","/roster.HolderService/List","/roster.MeService/Get"]}'
 
 echo '{"role":  {"slug":{"alias":"support","tenant":{"alias":"newco"}}},
        "holder":{"slug": {"alias":"alice",   "tenant":{"alias":"newco"}}}}' \
-  | roster binding add -
+  | roster --as admin binding add -
 ```
 
 ## 4. Ways in
@@ -121,7 +126,7 @@ KEY=$(roster key add --tenant newco --holder alice \
 ```
 
 ```sh
-roster key list
+roster --as admin key list
 ```
 ```
 01a0332f-d634-87ba-860e-4c5bf8e59fc9	@owner/portal/default	used=never	/roster.VouchService/Verify,/roster.MeService/Get
@@ -203,7 +208,7 @@ Alice may call it. Her laptop may not.
 If your product resolves a customer by hostname:
 
 ```sh
-roster host add '{"tenant":{"alias":"newco"},"name":"newco.example.com"}'
+roster --as admin host add '{"tenant":{"alias":"newco"},"name":"newco.example.com"}'
 
 FD=$(roster control key add \
        --allow '/roster.FrontService/WhoseHost,/roster.VouchService/Verify' frontdoor)

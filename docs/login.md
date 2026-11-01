@@ -726,7 +726,7 @@ Nothing above applies to them, because `login.enrol` decides where somebody who
 **arrived through a directory** lands.
 
 ```sh
-roster holder add @contoso/intern-kim
+roster --as admin holder add @contoso/intern-kim
 roster vouch reset @contoso/intern-kim      # thirty-two bytes, printed once
 ```
 
@@ -752,7 +752,7 @@ makes a **second** `Holder`. One person, two `sub`s, and the first one holds the
 history.
 
 ```sh
-roster email add '{"holder":{"slug":{"alias":"intern-kim","tenant":{"alias":"contoso"}}},
+roster --as admin email add '{"holder":{"slug":{"alias":"intern-kim","tenant":{"alias":"contoso"}}},
                    "address":"kim@contoso.example"}'
 ```
 

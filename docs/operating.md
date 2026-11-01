@@ -275,7 +275,7 @@ what it should say, so pressing the button again is the whole of what a retry is
 The operator's road is the same second call and nothing before it:
 
 ```sh
-roster host add '{"tenant":{"alias":"contoso"},"name":"contoso.example.com"}'
+roster --as admin host add '{"tenant":{"alias":"contoso"},"name":"contoso.example.com"}'
 ```
 
 Which is what the CLI run **locally** already is. A local command has no caller
@@ -1131,6 +1131,56 @@ starts. `forget` and `restore`, which write past the servers, put the person
 there themselves. With `watch.broker: none` there is no stream, and nothing is
 queued.
 
+**What it reads and writes of anybody is on the access record, naming you**
+([below](#who-read-whose-data)). Say who you are with `--as`, an operator of the
+control plane by alias -- the same person the admin console signs in, so a
+reviewer finds your reads at the admin console and at the shell under one name:
+
+```sh
+roster --as admin holder get @newco/alice
+roster --as admin control holder ls
+roster --as admin key list
+```
+
+- **Every entity command, and `key list`**, on a deployment with a control
+  plane, is refused without it before anything is opened, and refused when it
+  names nobody or a disabled operator. It is a flag only, never the file or the
+  environment: those are everybody's who opens a shell on the box, and a name
+  written there would be one person named for whoever ran the command.
+- A row is written **before the answer is printed**, and a read whose row cannot
+  be written is refused rather than shown. A row of a write is in the write's own
+  transaction, as over the wire, so a write whose row cannot be written is not
+  made.
+- The row names the operator as `actor_id`, held by the control plane's tenant,
+  and says where the call came from as `shell:<user>@<host>` -- the shell's user
+  and host, which in a pod is the image's user and the pod's name. What the
+  control tree reads is on the control plane's own record.
+- It is your word and not a credential. Whoever holds a shell here holds the
+  database and could read it with no command at all; the record is for the
+  operator who reads through the command, and what it guarantees is that such a
+  read is never left out of it, nor recorded as nobody's.
+- What the call may do is unchanged: it carries no frame, so it is still the
+  deployment's own work, under no rule about callers. `--as` is read by the
+  record and by nothing else.
+- A deployment with no control plane has no operators to name: its rows name
+  nobody, from this shell, and `--as` is refused there.
+
+The other commands -- `init`, `key add`, `vouch`, `forget`, `restore`, `hold`,
+`trail`, `login provision` -- print no field anybody's row declares personal:
+identifiers, keys, secrets made for the occasion. They need no `--as`, and
+leave no row; `cli/recorded_test.go` holds every read of a person's rows a
+command makes to one or the other.
+
+**A watch at the box is refused under `watch.broker: memory`.** It would
+subscribe to this process's own broker, which nothing the deployment does
+publishes to, and after its first answer hear nothing on a stream that looks
+open. Watch over the wire (`client.addr`), where the serving process answers and
+records it; or name a broker every process hears (`postgres`), under which the
+watch at the box hears the deployment and each message is on the record before
+it is printed. It does not follow the outbox: the serving process deletes what
+it drains, so a command reading it would race the drain, and one draining it
+would take the events from the subscribers they were for.
+
 ## Passwords, and what closes an account
 
 ```yaml
@@ -1658,6 +1708,11 @@ A read's row is written a second after it, by a loop every process runs, and the
 loop writes what it holds once more as the process stops; a process killed
 outright loses its last second.
 
+A command at a shell on the box is recorded too, naming the operator `--as`
+named and the shell it ran in ([above](#the-cli-on-the-box-is-the-deployment));
+its reads are written before they are printed, since a command's process ends
+before a second is up.
+
 It is a kind of the trail's, `access`, so the same passes keep it, on a window of
 its own:
 
@@ -1668,8 +1723,24 @@ audit:
       profile: pipa-sensitive   # two years
 ```
 
-Nothing serves it yet: `AccessService` is registered on no port, and `roster
-trail read` passes over its rows, so for now it is read in the database.
+Nothing serves it over the wire yet: `AccessService` is registered on no port,
+and `roster trail read` passes over its rows. At the box it is the `access`
+table of each plane, and the entity commands read it like any other: `actor_id`
+and `actor_tenant_id` say who, `tenant_id` whose record it is, `action` the
+RPC, `kind` `read`, `write` or `download`, `subjects` whose rows, and `value` an
+`AccessDetail` holding where the call came from and what a read asked for.
+
+```sh
+roster --as admin access ls -o json '{"filters":[{"actor_id":"019ff2ab-..."}]}'   # what one operator did
+roster --as admin access ls -o json '{"filters":[{"tenant_id":"019ff2ab-..."}]}'  # whose data, by customer
+roster --as admin control access ls -o json                                       # the control plane's own
+roster --as admin access get 019ff2ab-...                                         # one row, whole
+```
+
+Reading it names nobody's personal data -- a row holds identifiers -- so it
+leaves no row of its own. The same columns answer SQL, for a review that wants
+a window of time: `SELECT ... FROM access WHERE actor_id = '019ff2ab-...' AND
+date_created >= ...`.
 
 ### A key that can read the trail can read everything
 
@@ -1781,7 +1852,7 @@ with it.
 A person's lifecycle one level up, in four steps (#98):
 
 ```sh
-roster tenant close @newco                    # nobody of it gets in; nothing is destroyed
+roster --as admin tenant close @newco         # nobody of it gets in; nothing is destroyed
 roster restore @newco                         # while tenant.restore_within lasts
 roster forget @newco                          # destroy it now; it has to be closed first
 roster forget                                 # and every one whose grace has run out

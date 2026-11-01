@@ -235,6 +235,12 @@ func TestClientAddrChoosesTheWire(t *testing.T) {
 	g, err := b.Grpc(ctx, c)
 	x.NoError(err)
 
+	// Somebody at the box, which a deployment with a control plane asks of a
+	// command there (#221): an operator of its own.
+	_, err = cmd.HolderNamed(ctx, b.Control, "admin")
+	x.NoError(err)
+	c.Client.As = "admin"
+
 	lis, err := net.Listen("tcp", "127.0.0.1:0")
 	x.NoError(err)
 	go g.Serve(lis)

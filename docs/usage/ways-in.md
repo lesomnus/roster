@@ -269,7 +269,7 @@ first one:
   do this hold a role naming both:
 
   ```sh
-  roster role add @contoso/terminals \
+  roster --as admin role add @contoso/terminals \
     '{"methods":["/roster.ApiKeyService/Issue","/roster.MeService/Get"]}'
   ```
 
@@ -458,7 +458,7 @@ Not a secret and not something roster checks. It is the fact *this person is
 roster who that is.
 
 ```sh
-roster identity add '{"holder":{"slug":{"alias":"alice","tenant":{"alias":"newco"}}},
+roster --as admin identity add '{"holder":{"slug":{"alias":"alice","tenant":{"alias":"newco"}}},
                       "provider":"entra","subject":"e1b2c3"}'
 ```
 
@@ -472,7 +472,7 @@ is configuration rather than proof.
 recovery link to:
 
 ```sh
-roster email add '{"holder":{"slug":{"alias":"alice","tenant":{"alias":"newco"}}},
+roster --as admin email add '{"holder":{"slug":{"alias":"alice","tenant":{"alias":"newco"}}},
                    "address":"alice@newco.example"}'
 ```
 
@@ -553,7 +553,7 @@ sign in with it.
 ## Stopping one
 
 ```sh
-roster key list                             # both planes, with what each may call
+roster --as admin key list                  # both planes, with what each may call
 roster key revoke --id 01a03322-…           # now, on whichever plane holds it
 ```
 
@@ -583,9 +583,9 @@ Each is a verb of its own on the CLI, and they are ordinary RPCs — remote with
 a role that names them, local through `Ungated` like everything else:
 
 ```sh
-roster holder disable @newco/alice          # and what they hold stops working
-roster holder enable @newco/alice           # the other direction
-roster holder invalidate @newco/alice       # everything issued before now is void
+roster --as admin holder disable @newco/alice     # and what they hold stops working
+roster --as admin holder enable @newco/alice      # the other direction
+roster --as admin holder invalidate @newco/alice  # everything issued before now is void
 ```
 
 The server stamps the time — there is none to give, so a stale clock cannot

@@ -213,7 +213,10 @@ func TestTheDocumentationNamesCommandsThatExist(t *testing.T) {
 	x.Greater(len(have), 100, "the command tree did not build")
 
 	word := regexp.MustCompile(`^[a-z][\w-]*$`)
-	named := regexp.MustCompile(`(?:^|[^-\w])roster\s+([a-z][\w-]*(?:\s+[a-z][\w-]*)*)`)
+	// Past the root's own flags, which come before the command: `roster --as
+	// admin holder get` names `holder get`, and a line that said who is at the
+	// shell is checked as one that did not.
+	named := regexp.MustCompile(`(?:^|[^-\w])roster\s+(?:(?:--as|--config)\s+\S+\s+|--HAL\s+)*([a-z][\w-]*(?:\s+[a-z][\w-]*)*)`)
 
 	for _, f := range docs(t, root) {
 		src, err := os.ReadFile(filepath.Join(root, f))

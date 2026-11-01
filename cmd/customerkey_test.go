@@ -236,6 +236,10 @@ func TestRevokingReachesTheKeyItNames(t *testing.T) {
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
 
+	// Who is at the shell, which `key list` names on the access record of
+	// what it prints (#221): the operator `init` made.
+	c.Client.As = "admin"
+
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })

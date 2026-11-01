@@ -77,6 +77,9 @@ type Server struct {
 	// for two, since a subscriber on one never hears about a write on another.
 	Watch *watch.Watch
 
+	// broker is what `watch.broker` named for this plane, for [Server.HearsOnlyItself].
+	broker string
+
 	// Queue is how a write made **past** the servers is put on the stream:
 	// the outbox's recorder, told of it inside the transaction that makes it,
 	// as the servers' own recorders are told of theirs. What it queues the
@@ -496,7 +499,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 
 	s := &Server{
 		PolicyFile: policyFile, policySources: policySources,
-		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, Queue: queue, sink: sink, narrow: narrow,
+		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, broker: c.Watch.Broker, Queue: queue, sink: sink, narrow: narrow,
 		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password,
 		RestoreWithin: c.Tenant.RestoreWithin,
 	}

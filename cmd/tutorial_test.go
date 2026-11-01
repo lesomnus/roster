@@ -60,27 +60,30 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
 
-	// §2 -- a customer, and it is one write that makes four rows.
-	_, err = entities(t, &c, "tenant", "add", "@newco", `{"name":"Newco Ltd"}`)
+	// §2 -- a customer, and it is one write that makes four rows. Said as
+	// the operator `init` made, which every command at the box that reads the
+	// database names (#221): what it shows or writes of anybody is on the
+	// access record under that name.
+	_, err = entities(t, &c, "--as", "admin", "tenant", "add", "@newco", `{"name":"Newco Ltd"}`)
 	x.NoError(err)
 
 	// The three the page says arrive with it, read back rather than taken on
 	// trust: a tenant with nobody who can administer it is the state this
 	// stopped being possible.
-	_, err = entities(t, &c, "holder", "get", "@newco/admin")
+	_, err = entities(t, &c, "--as", "admin", "holder", "get", "@newco/admin")
 	x.NoError(err, "the tenant arrived with nobody in it")
-	_, err = entities(t, &c, "role", "get", "@newco/everything")
+	_, err = entities(t, &c, "--as", "admin", "role", "get", "@newco/everything")
 	x.NoError(err, "the tenant arrived with no role to administer it")
 
-	table, err := entities(t, &c, "tenant", "ls", "-o", "table")
+	table, err := entities(t, &c, "--as", "admin", "tenant", "ls", "-o", "table")
 	x.NoError(err)
 	x.Contains(table, "newco")
 	x.Contains(table, "Newco Ltd")
 
 	// §3 -- somebody who works there.
-	_, err = entities(t, &c, "holder", "add", "@newco/alice", `{"name":"Alice Nguyen"}`)
+	_, err = entities(t, &c, "--as", "admin", "holder", "add", "@newco/alice", `{"name":"Alice Nguyen"}`)
 	x.NoError(err)
-	_, err = entities(t, &c, "role", "add", "@newco/support",
+	_, err = entities(t, &c, "--as", "admin", "role", "add", "@newco/support",
 		`{"methods":["/roster.HolderService/Get","/roster.HolderService/List","/roster.MeService/Get"]}`)
 	x.NoError(err)
 	bind(t, &c, `{"role":  {"slug":{"alias":"support","tenant":{"alias":"newco"}}},
@@ -102,7 +105,7 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 	x.True(strings.HasPrefix(key, keys.PrefixTenant), "a person's key: %.3q", key)
 
 	// "Two planes in one listing."
-	listing := stdoutOf(t, cli.NewCmdKey(&c), "list")
+	listing := stdoutOf(t, cli.Cmd(&c), "--as", "admin", "key", "list")
 	x.Contains(listing, "/portal/")
 	x.Contains(listing, "@newco/alice/laptop")
 
@@ -195,7 +198,7 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 	})
 
 	// §7 -- which customer is this request for?
-	_, err = entities(t, &c, "host", "add", `{"tenant":{"alias":"newco"},"name":"newco.example.com"}`)
+	_, err = entities(t, &c, "--as", "admin", "host", "add", `{"tenant":{"alias":"newco"},"name":"newco.example.com"}`)
 	x.NoError(err)
 
 	fd := stdoutOf(t, cli.NewCmdControl(&c), "key", "add",
@@ -255,7 +258,7 @@ func bind(t *testing.T, c *cmd.Config, req string) {
 	root.ReadCloser = io.NopCloser(strings.NewReader(req))
 	root.Writer = io.Discard
 
-	require.NoError(t, root.Run(t.Context(), []string{"binding", "add", "-"}))
+	require.NoError(t, root.Run(t.Context(), []string{"--as", "admin", "binding", "add", "-"}))
 }
 
 // fieldOf is the string value of a field in a one-level protojson answer,

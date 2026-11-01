@@ -770,7 +770,7 @@ func newCmdTrailAccept(c *cmd.Config) *xli.Command {
 			}
 			by, _ := flg.Find[string](cl, "by")
 			if strings.TrimSpace(by) == "" {
-				by = operator()
+				by = thisShell()
 			}
 			if strings.TrimSpace(by) == "" {
 				return errors.New("--by: who accepts, since this shell does not say")
@@ -815,9 +815,10 @@ func newCmdTrailAccept(c *cmd.Config) *xli.Command {
 	}
 }
 
-// operator is who accepts when `--by` does not say: the user and the host of
-// the shell it is run from, and empty when neither can be told.
-func operator() string {
+// thisShell is the user and the host of the shell a command is run from, and
+// empty when neither can be told: who accepts when `--by` does not say, and
+// where a call made at the box came from, beside the operator `--as` names.
+func thisShell() string {
 	name := ""
 	if u, err := user.Current(); err == nil {
 		name = u.Username

@@ -670,10 +670,15 @@ echo "== somebody to sign in as"
 # to give a script to -- which is right for what it ships and is a thing to
 # find out here rather than in a deployment's runbook.
 seed() { kube "kubectl -n ${NS} exec -i deploy/roster -c roster -- roster --config /config/config.yaml $*"; }
-seed "holder add @acme/erin" >/dev/null 2>&1 || true
-seed "role add @acme/everything '{\"methods\":[\"/roster.*/*\"]}'" >/dev/null 2>&1 || true
+# Who is at the shell, which a command there that reads or writes the database
+# names on the access record (#221). `deploy/` runs no `init`, so the rig makes
+# an operator of its own on the control plane -- naming one makes it, and the
+# key that comes with it is thrown away.
+seed "control key add --allow /roster.MeService/Get rig" >/dev/null 2>&1 || true
+seed "--as rig holder add @acme/erin" >/dev/null 2>&1 || true
+seed "--as rig role add @acme/everything '{\"methods\":[\"/roster.*/*\"]}'" >/dev/null 2>&1 || true
 kube "printf '%s' '{\"role\":{\"slug\":{\"alias\":\"everything\",\"tenant\":{\"alias\":\"acme\"}}},\"holder\":{\"slug\":{\"alias\":\"erin\",\"tenant\":{\"alias\":\"acme\"}}}}' \
-	| kubectl -n ${NS} exec -i deploy/roster -c roster -- roster --config /config/config.yaml binding add -" >/dev/null 2>&1 || true
+	| kubectl -n ${NS} exec -i deploy/roster -c roster -- roster --config /config/config.yaml --as rig binding add -" >/dev/null 2>&1 || true
 kube "printf '%s' 'correct horse battery staple' \
 	| kubectl -n ${NS} exec -i deploy/roster -c roster -- roster --config /config/config.yaml vouch set --password-stdin @acme/erin" >/dev/null
 echo "erin, with a password"
@@ -1224,7 +1229,7 @@ echo "== the other two walks, over the manifests"
 # so that pipeline does hold today, but it holds by size, and past `sed`'s output
 # buffer it is `said`'s SIGPIPE again (`scripts/hydra.sh` says it at length). `tr`
 # stays in the pipe -- it reads to the end, so nothing upstream of it is killed.
-sub="$(kube "kubectl -n ${NS} exec deploy/roster -c roster -- roster --config /config/config.yaml holder get -o json @acme/erin" \
+sub="$(kube "kubectl -n ${NS} exec deploy/roster -c roster -- roster --config /config/config.yaml --as rig holder get -o json @acme/erin" \
 	| sed -n 's/.*"id": "\([^"]*\)".*/\1/p' | tr -d '\r')"
 sub="${sub%%$'\n'*}"
 [ -n "${sub}" ] || { echo "cluster: the seeded person has no id" >&2; exit 1; }

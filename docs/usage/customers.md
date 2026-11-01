@@ -6,8 +6,8 @@ roster hangs off those two. How anything is named is [cli.md](cli.md).
 ## A tenant
 
 ```sh
-roster tenant add @newco
-roster tenant add @newco '{"name": "Newco Ltd"}'
+roster --as admin tenant add @newco
+roster --as admin tenant add @newco '{"name": "Newco Ltd"}'
 ```
 
 `alias` is what people type; `name` is what they read. Neither is an identifier --
@@ -16,7 +16,7 @@ that is minted, and it is what every other row points at.
 ### Giving it an identifier
 
 ```sh
-roster tenant add @newco '{"id": "019ff2ab-…"}'
+roster --as admin tenant add @newco '{"id": "019ff2ab-…"}'
 ```
 
 Almost never, and once in a way that matters: an app served by this roster anchors
@@ -32,8 +32,8 @@ tenant-domain identifier, and `Tenant.Add` refuses anything else.
 ## A person
 
 ```sh
-roster holder add @newco/alice
-roster holder add @newco/alice '{"name": "Alice Nguyen"}'
+roster --as admin holder add @newco/alice
+roster --as admin holder add @newco/alice '{"name": "Alice Nguyen"}'
 ```
 
 That row is not yet somebody who can do anything, or somebody who can sign in.
@@ -51,7 +51,7 @@ and one that created them with permissions would decide something only you know.
 One write, and then a way in:
 
 ```sh
-roster tenant add @newco '{"name":"Newco Ltd"}'
+roster --as admin tenant add @newco '{"name":"Newco Ltd"}'
 roster vouch reset @newco/admin          # a password, printed once
 ```
 
@@ -115,7 +115,7 @@ The operator's road is one call, and it is the one to take when you route the na
 and run the zone:
 
 ```sh
-roster host add '{"tenant":{"alias":"newco"},"name":"newco.example.com"}'
+roster --as admin host add '{"tenant":{"alias":"newco"},"name":"newco.example.com"}'
 ```
 
 The customer's road is two calls and a TXT record, and is what makes it safe for
@@ -138,13 +138,13 @@ unique only *within* a tenant, so two operators saying something about
 `@gmail.com` are two facts and this one is safe to hand out.
 
 ```sh
-roster mail-domain add '{"tenant":{"alias":"newco"},"name":"newco.com","routes":"entra"}'
+roster --as admin mail-domain add '{"tenant":{"alias":"newco"},"name":"newco.com","routes":"entra"}'
 ```
 
 ## Removing somebody
 
 ```sh
-roster holder erase @newco/alice     # unreachable, and destroys nothing
+roster --as admin holder erase @newco/alice  # unreachable, and destroys nothing
 roster restore @newco/alice          # while the grace lasts
 roster forget @newco/alice           # destroys, including the trail's copy
 ```
@@ -177,7 +177,7 @@ is what each one leaves behind.
 The same three steps one level up, and a fourth for the name:
 
 ```sh
-roster tenant close @newco      # nobody of it gets in, and nothing is destroyed
+roster --as admin tenant close @newco  # nobody of it gets in, and nothing is destroyed
 roster restore @newco           # while tenant.restore_within lasts
 roster forget @newco            # every person forgotten, every other row of it gone
 ```

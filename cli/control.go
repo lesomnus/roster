@@ -198,10 +198,16 @@ func newCmdControlEntities(c *cmd.Config) xli.Commands {
 }
 
 // controlConnector is the control plane's `Ungated`, on a pipe with no address
-// -- [local], one database over.
+// -- [local], one database over, and recorded the same way: what it shows or
+// writes of the deployment's own holders is on the control plane's access
+// record, naming the operator `--as` names (#221).
 type controlConnector struct{ c *cmd.Config }
 
 func (v controlConnector) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
+	if err := saidWho(v.c); err != nil {
+		return nil, nil, err
+	}
+
 	// Said out loud, for [local]'s reason.
 	fmt.Fprintln(os.Stderr, "roster: reading this deployment's control database directly")
 
@@ -210,7 +216,13 @@ func (v controlConnector) Connect(ctx context.Context) (pdcmd.Conn, func(), erro
 		return nil, nil, err
 	}
 
-	return piped(s, s.Control.Ungated)
+	by, err := atTheBox(ctx, v.c, s)
+	if err != nil {
+		s.Close()
+		return nil, nil, err
+	}
+
+	return piped(s, s.Control, by)
 }
 
 // controlled is the deployment, refused if it has no control plane to write to.

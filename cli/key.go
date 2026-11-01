@@ -241,12 +241,20 @@ func (m minting) mint(ctx context.Context, at app.Server, who pdid.Id, prefix st
 }
 
 // newCmdKeyList says what exists, and never what any of them are.
+//
+// Whose each is, too, which is a read of every key holder's alias: on the
+// access record of each plane, naming who `--as` says is at the shell, before
+// a line is printed (#221).
 func newCmdKeyList(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "list",
 		Brief: "what keys exist, and what each may call",
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			if err := saidWho(c); err != nil {
+				return err
+			}
+
 			s, err := built(ctx, *c)
 			if err != nil {
 				return err
@@ -257,16 +265,21 @@ func newCmdKeyList(c *cmd.Config) *xli.Command {
 				return errors.New("this deployment has no control plane")
 			}
 
+			by, err := atTheBox(ctx, c, s)
+			if err != nil {
+				return err
+			}
+
 			// Both planes, because `add` writes to both. This listed the
 			// control plane's alone, so a customer's `rt_` -- which the command
 			// beside it mints -- appeared nowhere, and the only way to see one
 			// was `roster apikey ls`, which is a different command answering a
 			// different question.
-			if err := cmd.ListKeys(ctx, os.Stdout, s.Control.Ent, ""); err != nil {
+			if err := cmd.ListKeys(ctx, os.Stdout, s.Control, by); err != nil {
 				return err
 			}
 
-			return cmd.ListKeys(ctx, os.Stdout, s.Ent, "")
+			return cmd.ListKeys(ctx, os.Stdout, s, by)
 		}),
 	}
 }
