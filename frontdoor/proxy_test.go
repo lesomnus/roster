@@ -135,8 +135,9 @@ func TestABrowserSpeaksConnectToTheAppAndRosterAnswersAsThePerson(t *testing.T) 
 
 	// The door, and the app's mux: the two forms at `/session`, and everything
 	// else the page says to roster through the proxy.
+	store := authsession.NewMemStore()
 	d, err := frontdoor.New(frontdoor.Config{
-		Sessions:   authsession.New(authsession.NewMemStore(), authsession.Insecure()),
+		Sessions:   authsession.New(store, authsession.Insecure()),
 		Vouch:      rstr.NewVouchServiceClient(conn),
 		Delegation: rstr.NewDelegationServiceClient(conn),
 		Methods:    []string{rstr.MeService_Get_FullMethodName, rstr.HolderService_List_FullMethodName},
@@ -221,8 +222,27 @@ func TestABrowserSpeaksConnectToTheAppAndRosterAnswersAsThePerson(t *testing.T) 
 	t.Run("and the delegation never reached the browser", func(t *testing.T) {
 		x := require.New(t)
 
-		for _, c := range jar.Cookies(mustURL(t, app.URL)) {
-			x.NotContains(c.Value, keys.PrefixDelegation, "a delegation is in a cookie")
+		// The session holds the delegation, and the browser only the session's
+		// key. Each cookie is held to the token itself, not to its prefix: a
+		// key is 43 random characters, and `rd_` turns up in one now and then.
+		cookies := jar.Cookies(mustURL(t, app.URL))
+		var held []string
+		for _, c := range cookies {
+			v, err := store.Get(ctx, c.Value)
+			if err != nil {
+				continue
+			}
+			for _, token := range v.Held {
+				if strings.HasPrefix(token, keys.PrefixDelegation) {
+					held = append(held, token)
+				}
+			}
+		}
+		x.NotEmpty(held, "the session holds no delegation")
+		for _, token := range held {
+			for _, c := range cookies {
+				x.NotContains(c.Value, token, "a delegation is in a cookie")
+			}
 		}
 	})
 }
