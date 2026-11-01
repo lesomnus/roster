@@ -6,6 +6,18 @@ import (
 	"log/slog"
 	"runtime/debug"
 
+	// The exporter a collector is reached with. mkot knows an exporter by the
+	// name a package registers, and without this one an `otel:` naming `otlp`
+	// is refused as an unknown type when the configuration is read: what is
+	// left is `pretty`, and so stderr, in a cluster whose apps send to a
+	// collector on the node (#214). Loft and levyan link the same module at
+	// the same version.
+	//
+	// Here and not in `cmd`, for the reason a database driver is: it is a
+	// client for something only a process reaches, and the Wasm sandbox
+	// imports `cmd`.
+	_ "github.com/lesomnus/mkot/otlp"
+
 	"github.com/lesomnus/otx"
 	otlog "github.com/lesomnus/otx/log"
 	"github.com/lesomnus/payday/config"
