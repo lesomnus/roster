@@ -128,8 +128,8 @@ github.com/lesomnus/mkot v0.0.0-20261013182918-46d8b05a79b3 h1:5BGqjEg5NmTlh6O6/
 github.com/lesomnus/mkot v0.0.0-20261013182918-46d8b05a79b3/go.mod h1:g5UbjQTLO4FPAqekFLHPhoKupAJoM7AVqlz3qYfhePA=
 github.com/lesomnus/mkot/mkotx v0.0.0-20261013182918-46d8b05a79b3 h1:lx23mtt9FD3fhJhQGEsD2Q+kvTyX494XyqM66ZP76IQ=
 github.com/lesomnus/mkot/mkotx v0.0.0-20261013182918-46d8b05a79b3/go.mod h1:aK3083jk/DoHbuEgTIEkHBo4S/MRkAdVxoYQmW9/2b8=
-github.com/lesomnus/mkot/otlp v0.0.0-20261013182918-46d8b05a79b3 h1:MIWxKPp2DGApKusSQa0mYARmW5nt7g/JjIA9EIrBfAM=
-github.com/lesomnus/mkot/otlp v0.0.0-20261013182918-46d8b05a79b3/go.mod h1:j4g4stL3DyBC60wGpI6gq2xkI3aS5kcCDR4DY1HH6Ac=
+github.com/lesomnus/mkot/otlp v0.0.0-20261017184153-a69c4c1f08ca h1:8//77Nl1tn3n9SYyy05KL1ToVMikLB/NAmR4wQdUmFw=
+github.com/lesomnus/mkot/otlp v0.0.0-20261017184153-a69c4c1f08ca/go.mod h1:j4g4stL3DyBC60wGpI6gq2xkI3aS5kcCDR4DY1HH6Ac=
 github.com/lesomnus/mkot/pretty v0.0.0-20261013182918-46d8b05a79b3 h1:/B0jQVB/299IvK7VI29TSNJtanceAhuC7vb9Nlx+FX0=
 github.com/lesomnus/mkot/pretty v0.0.0-20261013182918-46d8b05a79b3/go.mod h1:CxeMsbImfuXKQJrRfDqMbb2okI77mGxsqgwR24nTjx8=
 github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155 h1:6+fiPhbQ3o6yA/LT8S4+9iwQ34p7D2nCsn9rRYq8lg8=
