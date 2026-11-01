@@ -1855,7 +1855,21 @@ One line per call, on stderr, pretty-printed: the method, the status, how long i
 took, and the trace and span ids when a caller sent some. Health checks are left
 out. That is `otel:` with nothing written in it -- write a `logger` provider there
 and the same records go wherever it says, with traces and metrics beside them
-(`roster config env` for the variables). The trail is not this: the trail is what
+(`roster config env` for the variables). A collector is an `otlp` exporter, in the
+collector's own words, which is how a cluster whose apps send to a collector on
+the node has roster's records go with theirs:
+
+```yaml
+otel:
+  exporters:
+    otlp:
+      endpoint: http://otel-collector.observability:4317   # http:// is plaintext
+  providers:
+    logger:
+      exporters: [otlp]
+```
+
+The trail is not this: the trail is what
 was written and by whom, kept; this is what was asked, as it happens. One thing
 in it is the trail's to be watched for, with a deployment that keeps an archive:
 the checkpoints the `log:` witness tells, and the alerts on them in § "Who heard
