@@ -152,19 +152,28 @@ spec:
             - { name: admin-grpc, containerPort: 8070 }
             - { name: admin-http, containerPort: 8071 }
             - { name: login-http, containerPort: 8091 }
-          # `/` on the **admin** listener, which is where the page is served:
-          # a real answer from the process that would be serving RPCs, needing
-          # no endpoint added for a probe's sake. Three ways this was written
-          # wrong, each a pod that never becomes ready and none of which says
-          # so: `/healthz`, a 404 because there is no such path; `control`,
-          # the gRPC port, which answers HTTP/2 frames; and `control-http`,
-          # which was right until the admin console moved here and became a listener
-          # with no root to answer.
+          # A connect to the **data plane's** gRPC port: the one listener
+          # every deployment of this binary opens, since it is what apps call,
+          # and one `serve` opens only once the database is migrated and
+          # `resources:` applied (`cli/serve.go`) -- so a pod is ready when a
+          # caller would find it configured. A connect, because that port
+          # answers nothing else unasked: it is gRPC, serving no health
+          # service and no page.
+          #
+          # It was `/` on `admin-http`, the admin console's page -- a real
+          # answer, from a listener a deployment may leave out, and one that
+          # left the admin console out had to replace both probes or never come
+          # up (#214). Three ways before that were wrong, each a pod that never
+          # becomes ready and none of which says so: `/healthz`, a 404 because
+          # there is no such path; `control`, the gRPC port, which answers an
+          # HTTP GET with HTTP/2 frames; and `control-http`, which was right
+          # until the admin console moved and left it a listener with no root
+          # to answer.
           readinessProbe:
-            httpGet: { path: /, port: admin-http }
+            tcpSocket: { port: data-grpc }
             initialDelaySeconds: 3
           livenessProbe:
-            httpGet: { path: /, port: admin-http }
+            tcpSocket: { port: data-grpc }
             initialDelaySeconds: 10
             periodSeconds: 30
           securityContext:
