@@ -179,7 +179,7 @@ func TestALinkThatConfirmsLeavingIsGoodOnce(t *testing.T) {
 	x.NoError(err)
 
 	// Brought back by an operator, and the same link is still nothing.
-	x.NoError(forget.Restore(ctx, l.Ent, l.Who, audit.Contents{}))
+	x.NoError(forget.Restore(ctx, l.Ent, l.Who, audit.Contents{}, nil))
 	_, err = l.leave(t, token, "someone")
 	x.Equal(codes.NotFound, status.Code(err), "a link deleted an account twice")
 	erased, _ = erasedAt(t, ctx, l.Server, l.Who)

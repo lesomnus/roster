@@ -342,11 +342,11 @@ func TestADestroyedTenantLeavesNothingOfItsOwn(t *testing.T) {
 		x.Positive(v, "contoso had no %s to begin with, so this proves nothing", k)
 	}
 
-	_, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{})
+	_, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{}, nil)
 	x.ErrorContains(err, "is open", "an open tenant destroyed under the people signed in to it")
 
 	closes(t, ctx, b.Ungated, b.Contoso)
-	res, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{})
+	res, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{}, nil)
 	x.NoError(err)
 	x.Positive(res.People)
 	x.Positive(res.Rows)
@@ -366,7 +366,7 @@ func TestADestroyedTenantLeavesNothingOfItsOwn(t *testing.T) {
 	x.Equal(codes.FailedPrecondition, status.Code(restores(ctx, b.Ungated, b.Contoso)), "a destroyed tenant came back")
 
 	// Again is nothing new, which is what lets a sweep finish one that stopped.
-	again, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{})
+	again, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{}, nil)
 	x.NoError(err)
 	x.Zero(again.People)
 	x.Zero(again.Rows)
@@ -409,7 +409,7 @@ func TestAHoldStopsEveryDestruction(t *testing.T) {
 	x.Error(forget.Hold(ctx, b.Ungated, b.Contoso, "  "), "a hold nobody can read the reason for")
 	x.NoError(forget.Hold(ctx, b.Ungated, b.Contoso, "Contoso v. Fabrikam, 2026-123"))
 
-	_, err = forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{})
+	_, err = forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{}, nil)
 	x.ErrorIs(err, forget.ErrHeld)
 
 	vs, err := forget.DueTenants(ctx, b.Ent, time.Now().Add(-time.Hour))
@@ -457,7 +457,7 @@ func TestAnAliasIsHeldAfterItsTenantIsGone(t *testing.T) {
 	b, ctx := build(t)
 
 	closes(t, ctx, b.Ungated, b.Contoso)
-	_, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{})
+	_, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{}, nil)
 	x.NoError(err)
 
 	_, err = b.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "contoso"}.Build())
@@ -520,7 +520,7 @@ func TestTheTenantSweepDestroysAndReleases(t *testing.T) {
 	pass := func(within, hold time.Duration, done func() bool, why string) {
 		t.Helper()
 		ctx, stop := context.WithCancel(ctx)
-		f := forget.SweepTenants(b.Ent, b.Ungated, within, hold, trail.Policy{}, audit.Contents{}, time.Hour)
+		f := forget.SweepTenants(b.Ent, b.Ungated, within, hold, trail.Policy{}, audit.Contents{}, nil, time.Hour)
 		over := make(chan struct{})
 		go func() { defer close(over); _ = f(ctx) }()
 		x.Eventually(done, 30*time.Second, 10*time.Millisecond, why)
@@ -757,7 +757,7 @@ func TestAHoldPlacedWhileATenantIsDestroyedStopsIt(t *testing.T) {
 		})
 	})
 
-	_, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{})
+	_, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{}, nil)
 	x.ErrorIs(err, forget.ErrHeld, "a hold placed while the tenant was destroyed did not stop it")
 	x.Equal(before-1, left(), "more than the one person before the hold was forgotten")
 
@@ -766,7 +766,7 @@ func TestAHoldPlacedWhileATenantIsDestroyedStopsIt(t *testing.T) {
 	vs, err := forget.Unfinished(ctx, b.Ent)
 	x.NoError(err)
 	x.Contains(vs, b.Contoso)
-	_, err = forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{})
+	_, err = forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{}, nil)
 	x.NoError(err)
 	x.Zero(left())
 }
@@ -796,7 +796,7 @@ func TestAHoldBeforeTheStampLeavesTheTenantWhole(t *testing.T) {
 		})
 	}))
 
-	_, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{})
+	_, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{}, nil)
 	x.ErrorIs(err, forget.ErrHeld)
 
 	v, err := b.Ent.Tenant.Get(ctx, b.Contoso.Uuid())

@@ -54,7 +54,7 @@ func newCmdResourcesApply(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command
 				return err
 			}
 
-			s, err := cmd.Build(ctx, *c)
+			s, err := built(ctx, *c)
 			if err != nil {
 				return err
 			}

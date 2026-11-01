@@ -75,6 +75,8 @@ import (
 	"github.com/lesomnus/roster/internal/ent/sitemembership"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	"github.com/lesomnus/roster/internal/ent/tenant"
+	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/pd"
 )
 
@@ -150,7 +152,16 @@ func (r Result) String() string {
 // digest that says they went (`pd.RecordErased`), and the holder with one of
 // the row as it is left (`pd.Record`). What that writes is which rows and when,
 // and nothing of what they held. `cs` is what the recorder is handed.
-func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs audit.Contents) (Result, error) {
+//
+// # And on the stream, as the erasure it is
+//
+// The same transaction puts the person in the outbox through `q` (#214), so an
+// app following the stream hears that they are gone -- which is news about
+// somebody nobody had erased, the person who asked to be destroyed, and the
+// erasure said again about anybody else. A write past the servers is published
+// by nothing else: what publishes a write is the call that made it, and this is
+// none. Nil is a deployment that publishes nowhere; see [heard].
+func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs audit.Contents, q bare.Recorder) (Result, error) {
 	var out Result
 
 	v, err := db.Holder.Get(ctx, who.Uuid())
@@ -219,6 +230,9 @@ func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 	if _, err := pd.Record(ctx, tx.Client(), cs, ForgottenHolder, []pdid.Id{who}); err != nil {
 		return out, err
 	}
+	if err := heard(ctx, q, tx.Client(), ForgottenHolder, app.HolderService_Erase_FullMethodName, who); err != nil {
+		return out, err
+	}
 
 	// The trail's, in the same transaction: its rows in the database
 	// blanked, and the archive's half owed.
@@ -266,8 +280,11 @@ func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 //
 // Written past the servers, as [Forget] is, and put on the trail as the act it
 // is in the same transaction (payday#108): the row is live again, and a check
-// of the rows finds it as the restore left it.
-func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents) error {
+// of the rows finds it as the restore left it. And on the stream through `q`,
+// in the same transaction, as [Forget] puts itself there (#214): an app that
+// marked them as leaving hears them back when they are, rather than at the
+// next thing that happens to them.
+func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents, q bare.Recorder) error {
 	v, err := db.Holder.Get(ctx, who.Uuid())
 	if err != nil {
 		return err
@@ -294,8 +311,32 @@ func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents
 	if _, err := pd.Record(ctx, tx.Client(), cs, RestoredHolder, []pdid.Id{who}); err != nil {
 		return err
 	}
+	if err := heard(ctx, q, tx.Client(), RestoredHolder, app.HolderService_Patch_FullMethodName, who); err != nil {
+		return err
+	}
 
 	return tx.Commit()
+}
+
+// heard puts a person's row on the stream apps follow, as the act `act` names:
+// queued through `q` on `db`, the transaction that wrote it, for the serving
+// process's drain to publish once that has committed -- and gone with it if it
+// does not.
+//
+// `by` is the kind of write it was, named as the generated server that would
+// have made it is: a stream knows whose row an event is about by the service
+// that wrote it, and reads the row again to say what it is now, so the name is
+// the entity and what happened, and the row is the news. `act` is what was
+// asked for, as the trail has it.
+//
+// Nil queues nothing, and is a deployment that publishes nowhere
+// (`watch.broker: none`): a row there is a row nothing drains.
+func heard(ctx context.Context, q bare.Recorder, db *ent.Client, act, by string, who pdid.Id) error {
+	if q == nil {
+		return nil
+	}
+
+	return q.Record(ctx, bare.Server{Store: bare.Store{Db: db}}, bare.Change{Method: act, By: by, Key: who.Uuid()})
 }
 
 // Due is everybody whose grace has run out.
@@ -502,8 +543,9 @@ const Swept = 24 * time.Hour
 // fails says so rather than being counted.
 //
 // A pass that fails part way has still destroyed whoever it reached, because
-// each person is their own act -- there is no batch here to be half of.
-func Sweep(db *ent.Client, after time.Duration, p trail.Policy, cs audit.Contents, every time.Duration) spin.Func {
+// each person is their own act -- there is no batch here to be half of. Each
+// is put on the stream through `q`, as [Forget] says.
+func Sweep(db *ent.Client, after time.Duration, p trail.Policy, cs audit.Contents, q bare.Recorder, every time.Duration) spin.Func {
 	if every <= 0 {
 		every = Swept
 	}
@@ -522,7 +564,7 @@ func Sweep(db *ent.Client, after time.Duration, p trail.Policy, cs audit.Content
 		}
 
 		for _, who := range vs {
-			res, err := Forget(ctx, db, who, p, cs)
+			res, err := Forget(ctx, db, who, p, cs, q)
 			if err != nil {
 				log.From(ctx).WarnContext(ctx, "forget", "holder", who.String(), "err", err)
 

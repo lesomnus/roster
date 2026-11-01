@@ -12,16 +12,17 @@ import (
 // A mark is what an app writes down of an account roster said was erased --
 // Loft's `date_leaving` on each membership, levyan's payer whose links end
 // with the period -- and acts on later: once roster's own grace is over, or
-// the period is. It is a copy of roster's word, and the two writes that undo
-// that word do not reach the stream. roster's `restore` brings somebody erased
-// back and `forget` destroys what was left of them, and both write past
-// roster's servers -- where the stream is published from -- so neither is
-// ever heard.
+// the period is. It is a copy of roster's word, and the word can be taken
+// back: roster's `restore` brings somebody erased back while the grace lasts.
+// A restore is on the stream, as `forget` is (roster#214), and an app
+// following it hears the account back when it is -- but the stream replays
+// nothing, so a restore made while the app was not listening is never heard
+// by it.
 //
 // Which gives the rule, and the two calls below keep it: **a mark is acted on
-// only after asking roster again**, which is also how a restore is heard; and
-// what the stream did not carry at all -- an erasure while the app was not
-// listening -- is found by asking about everybody, now and then.
+// only after asking roster again**; and what the stream did not carry at all
+// -- an erasure while the app was not listening -- is found by asking about
+// everybody, now and then.
 
 // Reconciled is what roster says of the accounts an app holds, against the
 // marks the app keeps on them.

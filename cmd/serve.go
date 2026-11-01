@@ -77,6 +77,18 @@ type Server struct {
 	// for two, since a subscriber on one never hears about a write on another.
 	Watch *watch.Watch
 
+	// Queue is how a write made **past** the servers is put on the stream:
+	// the outbox's recorder, told of it inside the transaction that makes it,
+	// as the servers' own recorders are told of theirs. What it queues the
+	// drain publishes ([Build] runs one wherever there is a broker).
+	//
+	// It is for the writes nothing would otherwise say -- `forget` destroying
+	// somebody and `restore` bringing them back, both through ent on purpose
+	// (`server/forget`) -- in the way `pd.Record` is what puts the same writes
+	// on the trail. Nil where this plane publishes nowhere: a row queued there
+	// is a row nothing drains.
+	Queue bare.Recorder
+
 	// sink is this plane with no wall and no gate: the minter and the recorders
 	// exactly as [Build] settled them, **including whether the outbox is among
 	// them**.
@@ -343,6 +355,13 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 
 	w := watch.New(b)
 
+	// What a write made past the servers is queued through, where there is
+	// anything to publish it to; see [Server.Queue].
+	var queue bare.Recorder
+	if b != nil {
+		queue = pd.OutboxRecorder()
+	}
+
 	// The recorders, in the order they are told. The trail is required -- a
 	// write it could not account for is undone -- and the rest say for
 	// themselves whether they are; see `bare.Recorders`.
@@ -477,7 +496,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 
 	s := &Server{
 		PolicyFile: policyFile, policySources: policySources,
-		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, sink: sink, narrow: narrow,
+		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, Queue: queue, sink: sink, narrow: narrow,
 		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password,
 		RestoreWithin: c.Tenant.RestoreWithin,
 	}
@@ -780,7 +799,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 
 		// The trail's own policy, so that what it erases of somebody answers
 		// to the same holds the retention sweep does.
-		s.Spin = append(s.Spin, loop(prefix, "forget", forget.Sweep(s.Ent, c.Holder.ForgetAfter, p, content, c.Holder.Every)))
+		s.Spin = append(s.Spin, loop(prefix, "forget", forget.Sweep(s.Ent, c.Holder.ForgetAfter, p, content, s.Queue, c.Holder.Every)))
 	}
 
 	// And what somebody consented to, kept past them as proof for
@@ -804,19 +823,28 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 				"after", c.Tenant.RestoreWithin, "alias held", c.Tenant.Hold())
 		}
 
-		s.Spin = append(s.Spin, loop(prefix, "tenants", forget.SweepTenants(s.Ent, s.Ungated, c.Tenant.RestoreWithin, c.Tenant.Hold(), p, content, c.Tenant.Every)))
+		s.Spin = append(s.Spin, loop(prefix, "tenants", forget.SweepTenants(s.Ent, s.Ungated, c.Tenant.RestoreWithin, c.Tenant.Hold(), p, content, s.Queue, c.Tenant.Every)))
 	}
 
-	if c.Watch.Outbox {
-		// The loop that makes an event durable. It is not a layer and not a
+	if b != nil {
+		// The loop that publishes what is queued. It is not a layer and not a
 		// method on any server -- `spin.Run` finds it in whatever is handed
 		// over, which is what keeps a server that has no background work from
 		// carrying an empty method saying so.
 		//
-		// No second look at whether there is a broker: the refusal above is the
-		// one place that decides, and a condition here as well would be the
-		// same rule written twice -- which is how a queue with nothing at the
-		// other end of it got written in the first place.
+		// **Wherever there is a broker**, and not on `watch.outbox` alone,
+		// because this process is not the only one that writes to the queue.
+		// Every command at a shell beside it does, whatever this file says of
+		// the outbox -- a process that ends with its command has nobody to
+		// publish to, so it leaves its writes there for this one
+		// ([Config.Queued], #214) -- and so does whatever is written past the
+		// servers ([Server.Queue]). Spun on the setting alone, the drain was
+		// missing from exactly the deployments those rows are for: one replica
+		// on `memory`, where a write made at the shell was heard by nobody
+		// until an app asked again.
+		//
+		// What it costs a deployment that queues nothing is a read of an empty
+		// table every `watch.drain_every`, against an index.
 		s.Spin = append(s.Spin, loop(prefix, "outbox", pd.Drain(client, b, c.Watch.Every())))
 	}
 

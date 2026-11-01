@@ -22,8 +22,9 @@ import (
 // what a caller experiences, and `cmd` is where the served stack is stood up
 // whole -- and `account/` and `frontdoor/` are where it is stood up whole and
 // then reached from outside, as the front door a customer's people arrive at,
-// which is a caller's experience too. A promise that seems to need a deeper
-// test's name is a promise that should be re-stated at the wire.
+// which is a caller's experience too, as `standing/` is the stream an app
+// follows. A promise that seems to need a deeper test's name is a promise that
+// should be re-stated at the wire.
 func TestBaselineNamesRealTests(t *testing.T) {
 	x := require.New(t)
 
@@ -32,7 +33,7 @@ func TestBaselineNamesRealTests(t *testing.T) {
 
 	have := map[string]bool{}
 	var files []string
-	for _, dir := range []string{".", filepath.Join("..", "account"), filepath.Join("..", "arrives"), filepath.Join("..", "examples", "product"), filepath.Join("..", "frontdoor"), filepath.Join("..", "wasm", "sandbox"), filepath.Join("..", "ldap"), filepath.Join("..", "ldap", "wire"), filepath.Join("..", "login"), filepath.Join("..", "scim"), filepath.Join("..", "cli")} {
+	for _, dir := range []string{".", filepath.Join("..", "account"), filepath.Join("..", "arrives"), filepath.Join("..", "examples", "product"), filepath.Join("..", "frontdoor"), filepath.Join("..", "wasm", "sandbox"), filepath.Join("..", "ldap"), filepath.Join("..", "ldap", "wire"), filepath.Join("..", "login"), filepath.Join("..", "scim"), filepath.Join("..", "cli"), filepath.Join("..", "standing")} {
 		vs, err := filepath.Glob(filepath.Join(dir, "*_test.go"))
 		x.NoError(err)
 		files = append(files, vs...)

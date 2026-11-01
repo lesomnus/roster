@@ -149,7 +149,7 @@ func TestWhatTheDeploymentWritesPastItsServersIsOnTheTrailAsItsAct(t *testing.T)
 
 	h := b.holder(t, ctx, b.Contoso, "another")
 	x.NoError(b.Ent.Holder.UpdateOneId(h.Uuid()).SetDateErased(time.Now()).Exec(ctx))
-	x.NoError(forget.Restore(ctx, b.Ent, h, cs))
+	x.NoError(forget.Restore(ctx, b.Ent, h, cs, nil))
 	x.NoError(run("trail", "rows"))
 
 	// Forgotten: their rows removed and the holder blanked, each on the trail
@@ -159,14 +159,14 @@ func TestWhatTheDeploymentWritesPastItsServersIsOnTheTrailAsItsAct(t *testing.T)
 	// counts the holder as forgotten, and vouches for what its digest covers.
 	p, err := c.Audit.Policy()
 	x.NoError(err)
-	_, err = forget.Forget(ctx, b.Ent, h, p, cs)
+	_, err = forget.Forget(ctx, b.Ent, h, p, cs, nil)
 	x.NoError(err)
 	out, err := stderrOf(t, cli.Cmd(&c), "trail", "rows")
 	x.NoError(err)
 	x.Contains(out, "; 1 forgotten;")
 
 	x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(time.Now()).Exec(ctx))
-	_, err = forget.DestroyTenant(ctx, b.Ent, b.Contoso, p, cs)
+	_, err = forget.DestroyTenant(ctx, b.Ent, b.Contoso, p, cs, nil)
 	x.NoError(err)
 
 	vs, err := b.Ent.Audit.Query().Where(audit.ObjectId(b.Contoso.Uuid())).Order(audit.ByDateCreated()).All(ctx)

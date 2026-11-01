@@ -240,7 +240,7 @@ func TestAPersonLeavesWhereTheirTenantOffersIt(t *testing.T) {
 	t.Run("and an operator can bring them back, and not how they were signed in", func(t *testing.T) {
 		x := require.New(t)
 
-		x.NoError(forget.Restore(ctx, b.Ent, b.Who, audit.Contents{}))
+		x.NoError(forget.Restore(ctx, b.Ent, b.Who, audit.Contents{}, nil))
 		erased, _ := erasedAt(t, ctx, b.Server, b.Who)
 		x.Nil(erased)
 

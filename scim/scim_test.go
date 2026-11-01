@@ -347,7 +347,7 @@ func TestSomebodyErasedHereIsNeitherFoundNorMadeUntilForgotten(t *testing.T) {
 	x.Equal(http.StatusConflict, code, "%v", got)
 	x.Equal("uniqueness", got["scimType"])
 
-	_, err = forget.Forget(ctx, d.s.Ent, k, trail.Policy{}, audit.Contents{})
+	_, err = forget.Forget(ctx, d.s.Ent, k, trail.Policy{}, audit.Contents{}, nil)
 	x.NoError(err)
 	code, got, _ = d.call(t, d.key, http.MethodPost, scim.Base+"/Users", erin())
 	x.Equal(http.StatusCreated, code, "%v", got)

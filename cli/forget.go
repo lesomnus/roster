@@ -61,7 +61,7 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
-			s, err := cmd.Build(ctx, *c)
+			s, err := built(ctx, *c)
 			if err != nil {
 				return err
 			}
@@ -112,7 +112,7 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 				// No grace. They asked, and the clock a regulator counts is
 				// already running -- a window inside it would be risk bought
 				// with nothing.
-				return forgotten(ctx, s.Ent, who, p, cs)
+				return forgotten(ctx, s, who, p, cs)
 			}
 			if reuse {
 				return errors.New("--reuse frees one tenant's alias, so name the tenant")
@@ -152,7 +152,7 @@ func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry 
 
 				continue
 			}
-			if err := forgotten(ctx, s.Ent, who, p, cs); err != nil {
+			if err := forgotten(ctx, s, who, p, cs); err != nil {
 				return err
 			}
 		}
@@ -203,7 +203,7 @@ func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry 
 // elsewhere kept, and its alias -- freed now with `reuse`, which the trail
 // records, and otherwise held.
 func destroyed(ctx context.Context, s *cmd.Server, t pdid.Id, p trail.Policy, cs audit.Contents, reuse bool) error {
-	res, err := forget.DestroyTenant(ctx, s.Ent, t, p, cs)
+	res, err := forget.DestroyTenant(ctx, s.Ent, t, p, cs, s.Queue)
 	if err != nil {
 		return fmt.Errorf("%s: %w", t, err)
 	}
@@ -303,7 +303,7 @@ func NewCmdRestore(c *cmd.Config) *xli.Command {
 				return errors.New("REF: who to bring back")
 			}
 
-			s, err := cmd.Build(ctx, *c)
+			s, err := built(ctx, *c)
 			if err != nil {
 				return err
 			}
@@ -331,7 +331,7 @@ func NewCmdRestore(c *cmd.Config) *xli.Command {
 			if err != nil {
 				return fmt.Errorf("audit: %w", err)
 			}
-			if err := forget.Restore(ctx, s.Ent, who, cs); err != nil {
+			if err := forget.Restore(ctx, s.Ent, who, cs, s.Queue); err != nil {
 				return err
 			}
 
@@ -342,8 +342,8 @@ func NewCmdRestore(c *cmd.Config) *xli.Command {
 	}
 }
 
-func forgotten(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs audit.Contents) error {
-	res, err := forget.Forget(ctx, db, who, p, cs)
+func forgotten(ctx context.Context, s *cmd.Server, who pdid.Id, p trail.Policy, cs audit.Contents) error {
+	res, err := forget.Forget(ctx, s.Ent, who, p, cs, s.Queue)
 	if err != nil {
 		return fmt.Errorf("%s: %w", who, err)
 	}

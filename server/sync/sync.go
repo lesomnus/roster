@@ -565,8 +565,11 @@ func why(prior, now stamps, told bool) app.SyncReason {
 
 	default:
 		// Something moved -- the caller checked -- and it was none of the
-		// three going forward. A stamp being cleared or wound back is the only
-		// way here, and no RPC does it; the facts are on the event regardless.
+		// three going forward. A stamp cleared or wound back is the only way
+		// here, which is a restore -- `forget.Restore` clearing `date_erased`,
+		// and putting the person on the stream as it does (#214) -- and no
+		// RPC. There is no word for it; the facts are on the event regardless,
+		// and say they are back.
 		return app.SyncReason_SYNC_REASON_UNSPECIFIED
 	}
 }

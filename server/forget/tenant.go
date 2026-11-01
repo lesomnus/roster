@@ -36,6 +36,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/pd"
 )
 
@@ -125,7 +126,11 @@ func (r TenantResult) String() string {
 // ([Unfinished] finds a destroyed tenant by the people it still has). Once
 // they are all gone, what is left is a few statements about rows that name
 // nobody, and they finish with the run.
-func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Policy, cs audit.Contents) (TenantResult, error) {
+//
+// Each person goes on the stream through `q` as [Forget] puts them there: a
+// closed tenant's people were heard shut out when it closed, and this is them
+// heard erased.
+func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Policy, cs audit.Contents, q bare.Recorder) (TenantResult, error) {
 	var out TenantResult
 
 	v, err := db.Tenant.Get(ctx, t.Uuid())
@@ -176,7 +181,7 @@ func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Polic
 		if err := notHeld(ctx, db, t); err != nil {
 			return out, err
 		}
-		res, err := Forget(ctx, db, pdid.Id(h), p, cs)
+		res, err := Forget(ctx, db, pdid.Id(h), p, cs, q)
 		if err != nil {
 			return out, fmt.Errorf("holder %s: %w", pdid.Id(h), err)
 		}
@@ -488,8 +493,9 @@ func DueAliases(ctx context.Context, db *ent.Client, before time.Time) ([]pdid.I
 // -- and free the aliases whose hold is over. Daily, for [Sweep]'s reason.
 //
 // `at` is the server the wall was never installed on, for what is recorded;
-// see [FreeAlias].
-func SweepTenants(db *ent.Client, at app.Server, within, hold time.Duration, p trail.Policy, cs audit.Contents, every time.Duration) spin.Func {
+// see [FreeAlias]. `q` is what each person forgotten is put on the stream
+// through; see [Forget].
+func SweepTenants(db *ent.Client, at app.Server, within, hold time.Duration, p trail.Policy, cs audit.Contents, q bare.Recorder, every time.Duration) spin.Func {
 	if every <= 0 {
 		every = Swept
 	}
@@ -510,7 +516,7 @@ func SweepTenants(db *ent.Client, at app.Server, within, hold time.Duration, p t
 			log.From(ctx).WarnContext(ctx, "forget: which tenants are due", "err", err)
 		}
 		for _, t := range due {
-			res, err := DestroyTenant(ctx, db, t, p, cs)
+			res, err := DestroyTenant(ctx, db, t, p, cs, q)
 			if err != nil {
 				log.From(ctx).WarnContext(ctx, "forget: a tenant", "tenant", t.String(), "err", err)
 

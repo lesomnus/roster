@@ -747,3 +747,43 @@ func (c ControlConfig) watch(data config.WatchConfig) config.WatchConfig {
 
 	return c.Watch
 }
+
+// Queued is this configuration as a command at a shell builds the deployment
+// with: `watch.outbox` on, on each plane that publishes anywhere (#214).
+//
+// # Why a command writes to the outbox rather than publishing
+//
+// A write reaches a stream in two halves (`payday/watch`): the recorder notes
+// it inside its transaction, and the interceptor of the call that made it
+// publishes it once the call has answered -- in this process, to this
+// process's broker. A command beside a serving deployment is a process of its
+// own, and from there neither half reaches anybody. Its broker is its own:
+// under `memory`, which is what one replica runs, nobody is subscribed to it,
+// and under `postgres` it publishes from a queue nothing waits for before the
+// process ends. And most of what the commands write is not a call at all --
+// `app install`, `key add`, `provision`, `restore @tenant` call the server as
+// Go, where there is no interceptor.
+//
+// The outbox is the half that outlives a process -- *a write that has to be
+// published even if this process does not live long enough to publish it*,
+// `outbox.proto` says -- and its recorder is told of every write the servers
+// make, however they were called, in that write's own transaction. So a
+// command's writes go there, and the process that serves publishes them: its
+// drain runs wherever there is a broker ([Build]). That is how `roster holder
+// disable` at a shell reaches an app following the stream, within
+// `watch.drain_every` of being said.
+//
+// Not on a plane that publishes nowhere: that would be a queue nothing drains,
+// which [Build] refuses, and a plane with no stream has nobody to tell.
+func (c Config) Queued() Config {
+	if c.Watch.Broker != config.BrokerNone {
+		c.Watch.Outbox = true
+	}
+	// Only where there is a control plane: a `control:` block saying anything
+	// but its database is refused, and this would be such a block.
+	if c.Control.Serves() && c.Control.watch(c.Watch).Broker != config.BrokerNone {
+		c.Control.Watch.Outbox = true
+	}
+
+	return c
+}

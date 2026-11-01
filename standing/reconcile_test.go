@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -46,13 +45,15 @@ func (e *external) erase(t *testing.T, who ...pdid.Id) {
 	}
 }
 
-// restore is `roster restore`: an erasure undone past roster's servers, where
-// no stream is published from.
+// restore is an erasure undone past roster's servers that nobody was there to
+// hear: `forget.Restore` with nothing to queue it through, as a restore made
+// while the app was not following is to that app. `roster restore` at a shell
+// is [external.shell]'s, and heard (`TestARestoreIsHeardAsItIsMade`).
 func (e *external) restore(t *testing.T, who pdid.Id) {
 	t.Helper()
 	cs, err := e.c.Audit.Contents()
 	require.NoError(t, err)
-	require.NoError(t, forget.Restore(t.Context(), e.s.Ent, who, cs))
+	require.NoError(t, forget.Restore(t.Context(), e.s.Ent, who, cs, nil))
 }
 
 // TestAReconcileFindsWhatTheStreamMissed: every account the app holds is asked
@@ -129,11 +130,12 @@ func TestAReconcileThatCannotAskDecidesNothing(t *testing.T) {
 	x.Equal(codes.Unavailable, status.Code(err))
 }
 
-// TestAMarkIsActedOnOnlyOnceRosterIsAskedAgain is the rule restore and forget
-// make: neither is on the stream, so an account marked as gone is asked about
-// again before the mark is acted on. One roster still has nobody by is gone;
-// one it has again was restored, and its mark is taken back; and about one
-// roster cannot answer for, nothing is decided until the next look.
+// TestAMarkIsActedOnOnlyOnceRosterIsAskedAgain is the rule a stream with no
+// memory makes: a restore said while the app was not listening is never heard
+// by it, so an account marked as gone is asked about again before the mark is
+// acted on. One roster still has nobody by is gone; one it has again was
+// restored, and its mark is taken back; and about one roster cannot answer
+// for, nothing is decided until the next look.
 func TestAMarkIsActedOnOnlyOnceRosterIsAskedAgain(t *testing.T) {
 	x := require.New(t)
 	e := newExternal(t)
@@ -171,38 +173,4 @@ func TestAMarkIsActedOnOnlyOnceRosterIsAskedAgain(t *testing.T) {
 	x.True(restored[0].Erased.IsZero())
 	x.Contains(l.String(), "asked again next time")
 	x.Contains(l.String(), unanswered.String())
-}
-
-// TestARestoreIsNotHeardUntilSomethingElseIs is why: the stream is published
-// from roster's servers, and a restore writes past them. So it is heard as the
-// next event about the account that is not an erasure -- whenever there is
-// one -- and not when it happens.
-func TestARestoreIsNotHeardUntilSomethingElseIs(t *testing.T) {
-	x := require.New(t)
-	e := newExternal(t)
-	got := follow(t, accounts(t, standing.Config{Conn: e.dial(t), As: at(e.key, "acme")}))
-	op, as := e.asOperator(t)
-	ref := rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build()
-
-	invalidate := func() error {
-		_, err := op.Invalidate(as, rstr.HolderInvalidateRequest_builder{Ref: ref}.Build())
-		return err
-	}
-
-	// Invalidated first, for the stream to be known to be open: an erasure is
-	// made once, and one made before the stream is open is heard by nobody.
-	heard(t, got, e.kim, invalidate, func(v standing.Standing) bool { return !v.Invalidated.IsZero() })
-	_, err := op.Erase(as, ref)
-	x.NoError(err)
-	heard(t, got, e.kim, func() error { return nil }, func(v standing.Standing) bool { return !v.Erased.IsZero() })
-
-	e.restore(t, e.kim)
-	select {
-	case v := <-got:
-		t.Fatalf("a restore was heard: %+v", v)
-	case <-time.After(time.Second):
-	}
-
-	v := heard(t, got, e.kim, invalidate, func(v standing.Standing) bool { return v.Erased.IsZero() })
-	x.False(v.Invalidated.IsZero(), "the next thing heard of them, which says they are back")
 }

@@ -157,7 +157,7 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 				cl.Printf("name it as audit.checkpoints.key, or ROSTER_AUDIT_CHECKPOINTS_KEY, before serving\n\n")
 			}
 
-			s, err := cmd.Build(ctx, *c)
+			s, err := built(ctx, *c)
 			if err != nil {
 				return err
 			}

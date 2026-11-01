@@ -215,7 +215,7 @@ func (v controlConnector) Connect(ctx context.Context) (pdcmd.Conn, func(), erro
 
 // controlled is the deployment, refused if it has no control plane to write to.
 func controlled(ctx context.Context, c *cmd.Config) (*cmd.Server, error) {
-	s, err := cmd.Build(ctx, *c)
+	s, err := built(ctx, *c)
 	if err != nil {
 		return nil, err
 	}

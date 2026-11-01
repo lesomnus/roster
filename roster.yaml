@@ -161,6 +161,12 @@ watch:
   # whatever broker is named here. So with `memory` it is durability and not
   # fan-out; with `postgres` it is both, which is what a deployment that can
   # lose neither wants.
+  #
+  # The drainer runs wherever a broker is named, outbox or not: every command
+  # run beside this deployment -- `roster holder disable` at a shell on the box
+  # -- writes its changes there whatever this says, because it ends before it
+  # could publish one, and `serve` is what publishes them, within
+  # `drain_every`.
   broker: memory
 
   # The control plane publishes its own changes, to its own broker, and this is
