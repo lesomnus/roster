@@ -192,7 +192,7 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			s, err := cmd.Build(ctx, *c)
+			s, err := built(ctx, *c)
 			if err != nil {
 				return err
 			}
@@ -323,7 +323,7 @@ func newCmdLoginDoctor(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			// to read a pass that did not happen, which is `--public`'s
 			// arrangement one field over.
 			var whose login.Whose
-			if s, err := cmd.Build(ctx, *c); err == nil {
+			if s, err := built(ctx, *c); err == nil {
 				defer s.Close()
 				whose = func(ctx context.Context, host string) (string, error) {
 					res, err := front.New(s.Ungated).WhoseHost(ctx, rstr.FrontWhoseHostRequest_builder{Host: host}.Build())

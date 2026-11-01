@@ -112,7 +112,7 @@ func newCmdAccountProvision(c *cmd.Config) *xli.Command {
 				out = "/run/roster-account"
 			}
 
-			s, err := cmd.Build(ctx, *c)
+			s, err := built(ctx, *c)
 			if err != nil {
 				return err
 			}

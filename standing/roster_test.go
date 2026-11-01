@@ -66,8 +66,10 @@ func newExternal(t *testing.T) *external {
 	drv, dsn := pdtest.DB(t)
 	cdrv, cdsn := pdtest.DB(t)
 	c := cmd.Config{
-		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
-		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
+		Db: config.DbConfig{Driver: drv, Dsn: dsn},
+		// The drain looked at often, for a test that waits on what a shell
+		// left in the outbox (`shell_test.go`); a second otherwise.
+		Watch:   config.WatchConfig{Broker: config.BrokerMemory, DrainEvery: 50 * time.Millisecond},
 		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
 	}
 	k := cli.NewCmdInit(&c)

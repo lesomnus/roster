@@ -92,7 +92,7 @@ func NewCmdVouch(c *cmd.Config) *xli.Command {
 // `Ungated` on both arguments, which is what `cmd/admin.go` passes as well:
 // the wall narrows by a tenant the caller belongs to, and there is no caller.
 func vouching(ctx context.Context, c *cmd.Config) (*cmd.Server, *vouch.Server, error) {
-	s, err := cmd.Build(ctx, *c)
+	s, err := built(ctx, *c)
 	if err != nil {
 		return nil, nil, err
 	}

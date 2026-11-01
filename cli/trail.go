@@ -150,7 +150,7 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 				}
 			}
 
-			s, err := cmd.Build(ctx, *c)
+			s, err := built(ctx, *c)
 			if err != nil {
 				return err
 			}
@@ -372,7 +372,7 @@ func newCmdTrailPurge(c *cmd.Config) *xli.Command {
 			// purge decides by: a chunk it does not account for is left
 			// alone, and said so in the log -- it is what `trail verify` is
 			// for. The dry run asks it too, so that it is the same list.
-			s, err := cmd.Build(ctx, *c)
+			s, err := built(ctx, *c)
 			if err != nil {
 				return err
 			}
@@ -619,7 +619,7 @@ func newCmdTrailRows(c *cmd.Config) *xli.Command {
 				return fmt.Errorf("audit: %w", err)
 			}
 
-			s, err := cmd.Build(ctx, *c)
+			s, err := built(ctx, *c)
 			if err != nil {
 				return err
 			}
@@ -846,7 +846,7 @@ func archived(ctx context.Context, c *cmd.Config) (*cmd.Server, trail.Policy, er
 		return nil, trail.Policy{}, err
 	}
 
-	s, err := cmd.Build(ctx, *c)
+	s, err := built(ctx, *c)
 	if err != nil {
 		return nil, trail.Policy{}, err
 	}
@@ -891,7 +891,7 @@ func newCmdTrailOwed(c *cmd.Config) *xli.Command {
 		Brief: "what is owed of the trail's erasures and not paid yet: how many, since when, and what a legal hold keeps",
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
-			s, err := cmd.Build(ctx, *c)
+			s, err := built(ctx, *c)
 			if err != nil {
 				return err
 			}
@@ -969,7 +969,7 @@ func prune(ctx context.Context, c cmd.Config) error {
 			"see `audit:` in the configuration, or name a window with --older-than")
 	}
 
-	s, err := cmd.Build(ctx, c)
+	s, err := built(ctx, c)
 	if err != nil {
 		return err
 	}

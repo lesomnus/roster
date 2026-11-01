@@ -163,6 +163,16 @@ What it promises:
   `TestAnErasureIsHeardOfSomebodyNothingElseHappenedTo`), and a directory closed
   is heard as an event about each person in it (roster#105,
   `TestADirectoryClosedShutsOutEveryoneInIt`).
+- **What roster's operator says at a shell is heard as the same call over the
+  wire is** (roster#214). `roster holder disable` on the server's own box is a process
+  of its own, which ends once it has answered: what it published itself would
+  reach nobody, since the broker it would publish to is its own. So it leaves
+  each write in the outbox, in that write's transaction, and the roster that
+  serves publishes it -- within `watch.drain_every`, a second unless the
+  deployment says otherwise, where it used to be heard only when the app next
+  asked. Every command does, `restore @tenant` and `forget` among them
+  (`TestWhatAShellSaysArrivesAsItIsSaid`,
+  `TestADirectoryRestoredAtTheShellIsHeard`).
 - **A refusal is said once, as an error, and asked again rarely.** A role
   without `SyncService/Watch`, or a roster with no broker, is not something a
   retry fixes, so it is said in so many words -- `roster role patch`, or
@@ -179,16 +189,22 @@ and needs none: every change to its people is the app's own, which calls
 ## Looked again: what the stream cannot carry
 
 roster's `restore` brings back somebody erased, while the grace lasts, and
-`forget` destroys what was left of them. **Both write past roster's servers**,
-and the stream is published from the servers -- so neither is ever heard. A
-restore reaches the app as the next event about that person that is not an
-erasure, whenever there is one (`TestARestoreIsNotHeardUntilSomethingElseIs`).
+`forget` destroys what was left of them. Both write past roster's servers, on
+purpose (`server/forget`), and each puts the person on the stream itself, in the
+transaction that writes them: a restore is heard as the person back -- an event
+with no erasure on it, about somebody the stream said was erased -- and a
+forget as the erasure it is, which is news about anybody nobody had erased yet
+(`TestARestoreIsHeardAsItIsMade`, `TestAForgetIsHeardAsTheErasureItIs`). They
+were not, until roster#214: a restore reached the app as the next event about that
+person that was not an erasure, whenever there was one.
 
-What an app does on hearing of an erasure is usually not done at once: Loft
-marks each membership as leaving and waits out roster's grace before
-pseudonymizing anything; levyan stops a payer at the end of the period. That
-mark is a copy of roster's word, and the word may have been taken back. Hence the
-rule:
+What the stream cannot carry is what was said while the app was not listening,
+since it replays nothing. And what an app does on hearing of an erasure is
+usually not done at once: Loft marks each membership as leaving and waits out
+roster's grace before pseudonymizing anything; levyan stops a payer at the end
+of the period. That mark is a copy of roster's word, and the word may have been
+taken back -- by a restore made while the stream was dropped, or before the app
+came up. Hence the rule:
 
 > **A mark is acted on only after asking roster again.**
 
@@ -259,5 +275,6 @@ invitation found by an unchecked address goes to whoever typed it
 | `standing/reconcile.go` | the mark, the rule, `Settle` and `Reconcile` |
 | `proto/app/sync.proto` | what the stream promises, and why it carries state |
 | `server/sync/sync.go` | how roster works out what changed, and an erasure heard on first sight |
-| `server/forget/forget.go` | `forget` and `restore`, written past the servers |
+| `server/forget/forget.go` | `forget` and `restore`, written past the servers and put on the stream by hand |
+| `cmd/config.go` | `Config.Queued`, which is how what a command at a shell writes reaches the stream |
 | `login/sync.go` | the Login App's own follower, which carries a sign-out across to Hydra |

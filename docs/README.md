@@ -64,7 +64,8 @@ trail, and what one client library can and cannot hide about the difference.
 [relying-app.md](relying-app.md) -- what an app keeps asking roster about the
 people it signed in, and `standing`, the package that does it: an account's
 standing held to on every call, the sync stream followed in every process, and
-what the stream cannot carry -- a restore -- asked about again before an app acts.
+what the stream cannot carry -- whatever was said while the app was not
+listening -- asked about again before an app acts.
 
 ## Reference
 

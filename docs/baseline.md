@@ -125,6 +125,7 @@ the page, one of the two is wrong and both are load-bearing.
 | --- | --- |
 | `Introspect` answers who a token stands for — the holder, not the key — and answers **no more than no** about everything else, real `rk_` included; and it is not public | `TestATokenSaysWhoItIs` · `TestATokenNarrowedToNothingStaysThatWay` · `TestIntrospectSaysNoMoreThanNo` · `TestIntrospectIsNotPublic` |
 | the sync stream carries state, wall-narrowed by the credential alone: an `rk_` hears every tenant, an `rt_` hears its own, nobody is woken for a rename | `TestAnAppHearsThatADecisionStoppedBeingGood` · `TestTheSyncStreamAnswersToRealKeys` · `TestOneCustomerIsNotToldAboutAnother` · `TestNobodyIsWokenForARename` |
+| what roster's operator does at a shell on the box -- every command, `restore` and `forget` included -- reaches the sync stream as the same change over the wire does, within `watch.drain_every` and not at an app's next ask | `TestWhatAShellSaysArrivesAsItIsSaid` · `TestADirectoryRestoredAtTheShellIsHeard` · `TestARestoreIsHeardAsItIsMade` · `TestAForgetIsHeardAsTheErasureItIs` |
 | `Me` answers the caller about themselves with no role needed for it, and no more than themselves | `TestMeAnswersAboutTheCaller` · `TestSomebodyWithNothingCanStillAskWhatTheyHave` · `TestMeAnswersWithNothingOfAnybodyElseS` |
 | no verifier column leaves the building: not in an answer, not in the trail, not in the queue | `TestNoVerifierIsAnsweredByThePortThatServesItsRow` · `TestNoVerifierReachesTheTrailInEitherColumn` · `TestNoVerifierReachesTheQueueEither` |
 

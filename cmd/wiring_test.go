@@ -21,8 +21,10 @@ import (
 
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/pdtest"
+	"github.com/lesomnus/payday/spin"
 
 	"github.com/lesomnus/roster/cmd"
+	"github.com/lesomnus/roster/internal/ent"
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
@@ -560,15 +562,12 @@ func TestTheControlPlaneKeepsItsOwnOutbox(t *testing.T) {
 	// And something to publish and delete them, which is the other half of the
 	// same setting: a recorder with no drain is a table that only grows.
 	//
-	// Compared against the same deployment without the setting, rather than
-	// counted. A bare length was what was written, and it says the right thing
-	// only until somebody adds a background loop -- then it fails with a
-	// message about an outbox that has nothing to do with what changed, and it
-	// would equally have passed with three sweeps and no drain. `pd.Drain`
-	// answers an unexported type, so what can be asked is what the setting
-	// added.
-	bare := withoutOutbox(t)
-	x.Equal(len(bare.Control.Spin)+1, len(s.Control.Spin),
+	// Asked by the loop's name rather than counted. A bare length was what was
+	// written first, and it says the right thing only until somebody adds a
+	// background loop; then it was what the setting added to the same
+	// deployment without it, which stopped meaning anything once the drain ran
+	// wherever there is a broker (#214).
+	x.Contains(loops(s.Control.Spin), "roster.control.outbox",
 		"the control plane's outbox has no drain behind it")
 
 	// The data plane said nothing about an outbox and still has none -- the
@@ -578,28 +577,139 @@ func TestTheControlPlaneKeepsItsOwnOutbox(t *testing.T) {
 	x.Zero(n, "the control plane's outbox was inherited by the data plane")
 }
 
-// withoutOutbox is the same two-plane deployment with the setting off, which
-// is what makes the count above about the setting rather than about how many
-// loops this app happens to run.
-func withoutOutbox(t *testing.T) *cmd.Server {
-	t.Helper()
+// loops is the name of each loop a plane would run, which is what a lease
+// knows it by.
+func loops(vs []any) []string {
+	out := []string{}
+	for _, v := range vs {
+		if n, ok := v.(spin.Named); ok {
+			out = append(out, n.SpinName())
+		}
+	}
+
+	return out
+}
+
+// TestTheQueueIsDrainedWhereverThereIsABroker (#214): the outbox is written by
+// more than the process whose `watch.outbox` is on -- every command at a shell
+// beside it leaves its writes there ([cmd.Config.Queued]), and `forget` and
+// `restore` put what they write past the servers there ([cmd.Server.Queue]) --
+// so the process that serves drains it on both planes whatever that setting
+// says. It drained on the setting alone, and a deployment on `memory` with the
+// outbox off -- the one `roster.yaml` and `deploy/` describe -- published
+// nothing a shell said.
+func TestTheQueueIsDrainedWhereverThereIsABroker(t *testing.T) {
 	x := require.New(t)
+	ctx := t.Context()
 
 	drv, dsn := pdtest.DB(t)
 	cdrv, cdsn := pdtest.DB(t)
 
-	s, err := cmd.Build(t.Context(), cmd.Config{
-		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
-		Watch: config.WatchConfig{Broker: config.BrokerMemory},
-		Control: cmd.ControlConfig{
-			Db:    config.DbConfig{Driver: cdrv, Dsn: cdsn},
-			Watch: config.WatchConfig{Broker: config.BrokerMemory},
-		},
+	s, err := cmd.Build(ctx, cmd.Config{
+		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
 	})
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
 
-	return s
+	x.Contains(loops(s.Spin), "roster.outbox", "the data plane drains nothing a shell queues")
+	x.Contains(loops(s.Spin), "roster.control.outbox", "the control plane drains nothing a shell queues")
+	x.NotNil(s.Queue)
+	x.NotNil(s.Control.Queue)
+
+	// And nothing where there is nothing to publish to: a drain there is a
+	// loop with nowhere to put what it takes, and a queue a table nothing
+	// empties.
+	drv, dsn = pdtest.DB(t)
+	none, err := cmd.Build(ctx, cmd.Config{
+		Db:    config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch: config.WatchConfig{Broker: config.BrokerNone},
+	})
+	x.NoError(err)
+	t.Cleanup(func() { none.Close() })
+
+	x.NotContains(loops(none.Spin), "roster.outbox")
+	x.Nil(none.Queue)
+}
+
+// TestACommandQueuesWhatItWrites is [cmd.Config.Queued]: a deployment built
+// for a command at a shell writes every change to the outbox in the change's
+// own transaction -- a call through the server as Go as much as one over a
+// pipe, which no interceptor would see -- on each plane that publishes
+// anywhere, and the configuration it answers is one [cmd.Build] takes as it is.
+func TestACommandQueuesWhatItWrites(t *testing.T) {
+	ctx := t.Context()
+
+	queued := func(t *testing.T, c cmd.Config) *cmd.Server {
+		t.Helper()
+		x := require.New(t)
+
+		s, err := cmd.Build(ctx, c.Queued())
+		x.NoError(err, "a configuration Queued answered was refused")
+		t.Cleanup(func() { s.Close() })
+		x.NoError(entmigrate.NewSchema(s.Drv).Create(ctx))
+		if s.Control != nil {
+			x.NoError(entmigrate.NewSchema(s.Control.Drv).Create(ctx))
+		}
+
+		return s
+	}
+	queue := func(t *testing.T, db *ent.Client) int {
+		t.Helper()
+		n, err := db.Outbox.Query().Count(ctx)
+		require.NoError(t, err)
+
+		return n
+	}
+
+	t.Run("both planes, where each publishes", func(t *testing.T) {
+		x := require.New(t)
+
+		drv, dsn := pdtest.DB(t)
+		cdrv, cdsn := pdtest.DB(t)
+		s := queued(t, cmd.Config{
+			Db:      config.DbConfig{Driver: drv, Dsn: dsn},
+			Watch:   config.WatchConfig{Broker: config.BrokerMemory},
+			Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
+		})
+
+		_, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "contoso"}.Build())
+		x.NoError(err)
+		x.NotZero(queue(t, s.Ent), "a command's write left nothing for the serving process to publish")
+
+		_, err = s.Control.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "deployment"}.Build())
+		x.NoError(err)
+		x.NotZero(queue(t, s.Control.Ent), "a command's write to the control plane left nothing to publish")
+	})
+
+	t.Run("and not where one publishes nowhere", func(t *testing.T) {
+		x := require.New(t)
+
+		drv, dsn := pdtest.DB(t)
+		cdrv, cdsn := pdtest.DB(t)
+		s := queued(t, cmd.Config{
+			Db:    config.DbConfig{Driver: drv, Dsn: dsn},
+			Watch: config.WatchConfig{Broker: config.BrokerMemory},
+			Control: cmd.ControlConfig{
+				Db:    config.DbConfig{Driver: cdrv, Dsn: cdsn},
+				Watch: config.WatchConfig{Broker: config.BrokerNone},
+			},
+		})
+
+		_, err := s.Control.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "deployment"}.Build())
+		x.NoError(err)
+		x.Zero(queue(t, s.Control.Ent), "a queue on a plane with no stream is a table nothing empties")
+	})
+
+	t.Run("and says nothing of a control plane there is not", func(t *testing.T) {
+		drv, dsn := pdtest.DB(t)
+		s := queued(t, cmd.Config{
+			Db:    config.DbConfig{Driver: drv, Dsn: dsn},
+			Watch: config.WatchConfig{Broker: config.BrokerMemory},
+		})
+		require.Nil(t, s.Control)
+	})
 }
 
 // TestAnOutboxWithNowhereToPublishIsRefused.

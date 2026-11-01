@@ -78,6 +78,20 @@ import (
 // API key is one. The two are not the same view and are not meant to be; see
 // [remote] for which port it reaches and why the operator's is not it yet.
 //
+// # What local writes is heard, by way of the outbox
+//
+// A served call is published by an interceptor once it has answered, to the
+// broker of the process that served it. This process is not the one that
+// serves, and it ends with the command -- so it builds the deployment with
+// every write queued in the outbox instead ([built]), and the process that
+// serves publishes them. `roster holder disable` at a shell reaches an app
+// following the stream that way, within `watch.drain_every`, where it reached
+// nobody until the app asked again (#214).
+//
+// The pipe carries none of the serving chain's interceptors for that reason,
+// the publishing one included: what it would publish, it would publish to this
+// process's own broker. See [cmd.Config.Queued].
+//
 // # Why the connection is made by a [pdcmd.Connector]
 //
 // Because the tree is built here, while the command set is being assembled, and
@@ -233,7 +247,8 @@ func (v connector) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 // `add` goes through the same layers, the same minter and the same trail a
 // request does -- a command that reached the ent client directly would be a
 // second way to write a row, and the first thing a second way does is disagree
-// with the first.
+// with the first. And the same stream, through the outbox: see
+// [NewCmdEntities].
 //
 // A type rather than a closure because this is where the three decisions
 // `pdcmd` refuses to make for an app are written down: no address, no
@@ -263,7 +278,7 @@ func (l local) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 	fmt.Fprintln(os.Stderr,
 		"roster: reading this deployment's database directly; "+why)
 
-	s, err := cmd.Build(ctx, *l.c)
+	s, err := built(ctx, *l.c)
 	if err != nil {
 		return nil, nil, err
 	}

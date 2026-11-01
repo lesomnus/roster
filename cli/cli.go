@@ -130,6 +130,20 @@ func Cmd(c *cmd.Config) *xli.Command {
 	}
 }
 
+// built is this deployment as a command at a shell stands it up: the same
+// `cmd.Build`, with every write it makes queued in the outbox for the process
+// that serves to publish ([cmd.Config.Queued], #214).
+//
+// A command is a process of its own that ends once it has answered, so what it
+// would publish itself reaches nobody -- the broker it would publish to is its
+// own -- and an app following the stream heard of `roster holder disable` only
+// when it next asked. Every command but `serve` builds through this, and
+// `TestEveryCommandBuildsWhatItWritesQueued` holds them to it: one that called
+// `cmd.Build` itself would be back to writing rows the stream never carries.
+func built(ctx context.Context, c cmd.Config) (*cmd.Server, error) {
+	return cmd.Build(ctx, c.Queued())
+}
+
 // hal is `--HAL`, read on the way down.
 //
 // A handler and not something the connector asks for itself, because a

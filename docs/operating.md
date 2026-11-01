@@ -1120,6 +1120,17 @@ write the rows without the CLI. What guards it is who may open that shell
 `client.addr` with your own credential (`roster sign-in` makes one for a
 terminal) -- where the gate decides and the trail names you.
 
+**What it writes reaches the apps that follow the stream**, as a call over the
+wire does. A command is a process of its own that ends once it has answered, so
+it publishes nothing itself -- the broker it would publish to is its own -- and
+instead leaves every write in the outbox, in that write's own transaction. The
+`serve` process drains the outbox wherever there is a broker, whatever
+`watch.outbox` says, so `roster holder disable` reaches an app within
+`watch.drain_every` (a second) -- and with no `serve` running, when one next
+starts. `forget` and `restore`, which write past the servers, put the person
+there themselves. With `watch.broker: none` there is no stream, and nothing is
+queued.
+
 ## Passwords, and what closes an account
 
 ```yaml
@@ -1883,7 +1894,9 @@ a notification reaches whoever is listening at that moment and is then forgotten
 so a subscriber that falls behind is cut and re-reads a snapshot when it
 reconnects. An **outbox** answers the other question -- it makes an event survive a
 crash between the commit and the publish -- and needs a broker to be worth
-anything.
+anything. Its drain runs wherever there is a broker, with the setting or
+without: a command at a shell writes there whatever this file says (§ *The CLI
+on the box is the deployment*).
 
 **The background loops run in one replica only if you say how.** The sweeps,
 the trail's retention, the forget window and the outbox drain are each a loop,

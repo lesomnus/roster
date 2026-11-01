@@ -327,7 +327,7 @@ func TestAConsentOutlivesItsAccountForAsLongAsItIsKept(t *testing.T) {
 	x.Equal(kept, of(), "erasing the account took its consents")
 	x.Zero(due(time.Hour), "a consent was due as soon as its account left")
 
-	_, err = forget.Forget(c.ctx, c.Ent, c.account, trail.Policy{}, audit.Contents{})
+	_, err = forget.Forget(c.ctx, c.Ent, c.account, trail.Policy{}, audit.Contents{}, nil)
 	x.NoError(err)
 	x.Equal(kept, of(), "forgetting the person took their consents")
 
@@ -372,7 +372,7 @@ func TestARestoredAccountKeepsItsConsents(t *testing.T) {
 	_, err = c.Ungated.Holder().Erase(c.ctx, c.erin())
 	x.NoError(err)
 	x.NoError(c.Ent.Holder.UpdateOneId(c.account.Uuid()).SetDateErased(time.Now().Add(-2 * time.Hour)).Exec(c.ctx))
-	x.NoError(forget.Restore(c.ctx, c.Ent, c.account, audit.Contents{}))
+	x.NoError(forget.Restore(c.ctx, c.Ent, c.account, audit.Contents{}, nil))
 
 	vs, err := forget.DueConsents(c.ctx, c.Ent, time.Now().Add(-time.Hour))
 	x.NoError(err)

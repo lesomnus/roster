@@ -112,7 +112,7 @@ func newCmdKeyAdd(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			s, err := cmd.Build(ctx, *c)
+			s, err := built(ctx, *c)
 			if err != nil {
 				return err
 			}
@@ -247,7 +247,7 @@ func newCmdKeyList(c *cmd.Config) *xli.Command {
 		Brief: "what keys exist, and what each may call",
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
-			s, err := cmd.Build(ctx, *c)
+			s, err := built(ctx, *c)
 			if err != nil {
 				return err
 			}
@@ -296,7 +296,7 @@ func newCmdKeyRevoke(c *cmd.Config) *xli.Command {
 				return fmt.Errorf("--id: %w", err)
 			}
 
-			s, err := cmd.Build(ctx, *c)
+			s, err := built(ctx, *c)
 			if err != nil {
 				return err
 			}

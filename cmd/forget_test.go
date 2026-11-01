@@ -113,7 +113,7 @@ func TestForgettingSomebodyKeepsTheEventAndLosesTheContents(t *testing.T) {
 	was, err := b.Ent.Audit.Query().Count(ctx)
 	x.NoError(err)
 
-	res, err := forget.Forget(ctx, b.Ent, who, trail.Policy{}, audit.Contents{})
+	res, err := forget.Forget(ctx, b.Ent, who, trail.Policy{}, audit.Contents{}, nil)
 	x.NoError(err)
 	x.NotZero(res.Rows)
 	x.NotZero(res.Trail)
@@ -215,7 +215,7 @@ func TestTheGraceCanBeUndoneUntilItIsNot(t *testing.T) {
 
 	who := b.holder(t, ctx, b.Contoso, "erin")
 
-	x.ErrorContains(forget.Restore(ctx, b.Ent, who, audit.Contents{}), "has not been erased")
+	x.ErrorContains(forget.Restore(ctx, b.Ent, who, audit.Contents{}, nil), "has not been erased")
 
 	_, err := b.Ungated.Holder().Erase(ctx, app.HolderRef_builder{Id: who.Bytes()}.Build())
 	x.NoError(err)
@@ -229,7 +229,7 @@ func TestTheGraceCanBeUndoneUntilItIsNot(t *testing.T) {
 	x.NoError(err)
 	x.NotContains(vs, who, "somebody inside their grace was due")
 
-	x.NoError(forget.Restore(ctx, b.Ent, who, audit.Contents{}))
+	x.NoError(forget.Restore(ctx, b.Ent, who, audit.Contents{}, nil))
 
 	v, err := b.Ent.Holder.Get(ctx, who.Uuid())
 	x.NoError(err)
@@ -239,10 +239,10 @@ func TestTheGraceCanBeUndoneUntilItIsNot(t *testing.T) {
 	t.Run("and not after they are forgotten", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := forget.Forget(ctx, b.Ent, who, trail.Policy{}, audit.Contents{})
+		_, err := forget.Forget(ctx, b.Ent, who, trail.Policy{}, audit.Contents{}, nil)
 		x.NoError(err)
 
-		x.ErrorContains(forget.Restore(ctx, b.Ent, who, audit.Contents{}), "has been forgotten")
+		x.ErrorContains(forget.Restore(ctx, b.Ent, who, audit.Contents{}, nil), "has been forgotten")
 
 		// And they are not due again, which is what keeps a sweep from walking
 		// every leaver a deployment has ever had.
@@ -290,7 +290,7 @@ func TestForgettingReachesTheArchiveToo(t *testing.T) {
 	other := pdid.New(pd.HolderDomain)
 	x.NoError(pd.TrailStore(b.Ent).Owe(ctx, []pdid.Id{other}))
 
-	res, err := forget.Forget(ctx, b.Ent, who, p, audit.Contents{})
+	res, err := forget.Forget(ctx, b.Ent, who, p, audit.Contents{}, nil)
 	x.NoError(err)
 	x.NotZero(res.Archived, "the archive was not reached")
 	x.Zero(res.Owed, "an archive that was paid is said to be owed")
@@ -354,7 +354,7 @@ func TestForgettingIsOneTransactionWithTheTrail(t *testing.T) {
 			return next.Mutate(ctx, m)
 		})
 	})
-	_, err = forget.Forget(ctx, b.Ent, who, trail.Policy{}, audit.Contents{})
+	_, err = forget.Forget(ctx, b.Ent, who, trail.Policy{}, audit.Contents{}, nil)
 	x.ErrorIs(err, refused)
 
 	v, err := b.Ent.Holder.Get(ctx, who.Uuid())
@@ -407,7 +407,7 @@ func TestAnArchiveNotPaidIsOwedToTheNextPass(t *testing.T) {
 	// (`trail.ErrNoKey`): any payment that fails after the commit.
 	keyless := p
 	keyless.Signer = nil
-	res, err := forget.Forget(ctx, b.Ent, who, keyless, audit.Contents{})
+	res, err := forget.Forget(ctx, b.Ent, who, keyless, audit.Contents{}, nil)
 	x.NoError(err, "a payment that failed failed the forget, which had committed")
 	x.Positive(res.Owed, "what is owed is not said")
 	x.Zero(res.Archived)

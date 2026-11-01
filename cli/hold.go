@@ -79,7 +79,7 @@ func NewCmdHold(c *cmd.Config) *xli.Command {
 				Name:  "ls",
 				Brief: "every tenant held, since when, and what for",
 				Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
-					s, err := cmd.Build(ctx, *c)
+					s, err := built(ctx, *c)
 					if err != nil {
 						return err
 					}
@@ -109,7 +109,7 @@ func onHeld(ctx context.Context, c *cmd.Config, cl *xli.Command, f func(s *cmd.S
 		return errors.New("TENANT: which tenant")
 	}
 
-	s, err := cmd.Build(ctx, *c)
+	s, err := built(ctx, *c)
 	if err != nil {
 		return err
 	}
