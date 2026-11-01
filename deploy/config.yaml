@@ -61,8 +61,9 @@ control:
   # The control plane's HTTP listener, for a caller that cannot speak gRPC.
   # `control.addr` above is **gRPC** -- anything pointed at it gets an HTTP/2
   # SETTINGS frame and reads it as a malformed response, which is a probe that
-  # never passes and says nothing about why. The probe asks `admin.http` now,
-  # because that is where the page is.
+  # never passes and says nothing about why. The probes connect to the data
+  # plane's gRPC port instead, which every deployment opens -- see
+  # `deploy/roster.yaml`.
   http:
     addr: 0.0.0.0:8061
   # No page here. The admin console is served by `admin.http` below, which is
