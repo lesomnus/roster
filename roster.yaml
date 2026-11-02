@@ -89,6 +89,11 @@ admin:
 # a shell on the box who wants to look at the rows under a deployment configured
 # for the wire.
 #
+# And `--as` says who that somebody is, an operator of the control plane: what a
+# local command shows or writes of anybody is on the access record under that
+# name, and one that does not say is refused (`roster --as admin holder ls`). A
+# flag and never a setting here, since this file is everybody's who has a shell.
+#
 # Set, it is a caller like any other, so the wall runs and what comes back is
 # what the credential may see. Naming `auth` with no `addr` is **refused**: a
 # credential with nowhere to send it would otherwise read the database directly

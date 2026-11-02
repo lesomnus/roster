@@ -46,10 +46,16 @@ func (e *external) serving(t *testing.T) {
 // configuration, and its database read directly.
 func (e *external) shell(t *testing.T, args ...string) {
 	t.Helper()
+
+	// As the operator `init` made: a command at the box names who is at the
+	// shell, for the access record (#221).
+	c := e.c
+	c.Client.As = "admin"
+
 	k := &xli.Command{Name: "roster", Commands: append(xli.Commands{
-		cli.NewCmdForget(&e.c),
-		cli.NewCmdRestore(&e.c),
-	}, cli.NewCmdEntities(&e.c)...)}
+		cli.NewCmdForget(&c),
+		cli.NewCmdRestore(&c),
+	}, cli.NewCmdEntities(&c)...)}
 	require.NoError(t, k.Run(t.Context(), args), strings.Join(args, " "))
 }
 

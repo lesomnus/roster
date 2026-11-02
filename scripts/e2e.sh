@@ -165,23 +165,27 @@ account:
 YAML
 fi
 r() { "${work}/roster" --config "${work}/roster.yaml" "$@"; }
+# The entity commands, as the operator `init` makes below: a command at the box
+# that reads the database names who is at the shell, and what it writes of
+# anybody is on the access record under that name (#221).
+op() { r --as admin "$@"; }
 
 echo "== init and seed"
 echo "${E2E_OPS_PASSWORD}" | r init --operator admin --password-stdin >/dev/null
 # The tenant arrives with `@contoso/admin`, the `everything` role and the
 # binding between them: `Tenant.Add` writes all four (`server/core/tenant.go`).
 # What this adds is erin, bound to the role that is already there.
-r tenant add @contoso '{"name":"Contoso"}' >/dev/null
-r holder add @contoso/erin >/dev/null
+op tenant add @contoso '{"name":"Contoso"}' >/dev/null
+op holder add @contoso/erin >/dev/null
 echo '{"role":{"slug":{"alias":"everything","tenant":{"alias":"contoso"}}},"holder":{"slug":{"alias":"erin","tenant":{"alias":"contoso"}}}}' \
-	| r binding add - >/dev/null
+	| op binding add - >/dev/null
 echo "${E2E_ERIN_PASSWORD}" | r vouch set --password-stdin @contoso/erin >/dev/null 2>&1
 # And a way in for the administrator the tenant arrived with, which is who the
 # user console signs in -- and for grace, who signs in at it after them.
 echo "${E2E_TENANT_ADMIN_PASSWORD}" | r vouch set --password-stdin @contoso/admin >/dev/null
-r holder add @contoso/grace >/dev/null
+op holder add @contoso/grace >/dev/null
 echo "${E2E_GRACE_PASSWORD}" | r vouch set --password-stdin @contoso/grace >/dev/null
-r host add '{"tenant":{"alias":"contoso"},"name":"localhost"}' >/dev/null
+op host add '{"tenant":{"alias":"contoso"},"name":"localhost"}' >/dev/null
 
 # tailspin: frank, with a password and an address nobody has confirmed yet --
 # and a tenant that lets its people leave, which is what a link that deletes an
@@ -193,14 +197,14 @@ r host add '{"tenant":{"alias":"contoso"},"name":"localhost"}' >/dev/null
 # does for him as itself -- a link minted for his address, a password handed
 # over, his account deleted -- is writing a way into him, which is held to his
 # permissions being within the app's (`mayReach`), and `everything` is not.
-r tenant add @tailspin '{"name":"Tailspin","config":{"leave":true}}' >/dev/null
-r holder add @tailspin/frank >/dev/null
-r role add '{"tenant":{"alias":"tailspin"},"alias":"self","methods":["/roster.EmailService/List","/roster.EmailService/Get","/roster.EmailService/Add","/roster.EmailService/Verify"]}' >/dev/null
+op tenant add @tailspin '{"name":"Tailspin","config":{"leave":true}}' >/dev/null
+op holder add @tailspin/frank >/dev/null
+op role add '{"tenant":{"alias":"tailspin"},"alias":"self","methods":["/roster.EmailService/List","/roster.EmailService/Get","/roster.EmailService/Add","/roster.EmailService/Verify"]}' >/dev/null
 echo '{"role":{"slug":{"alias":"self","tenant":{"alias":"tailspin"}}},"holder":{"slug":{"alias":"frank","tenant":{"alias":"tailspin"}}}}' \
-	| r binding add - >/dev/null
+	| op binding add - >/dev/null
 echo "${E2E_FRANK_PASSWORD}" | r vouch set --password-stdin @tailspin/frank >/dev/null 2>&1
-r email add '{"holder":{"slug":{"alias":"frank","tenant":{"alias":"tailspin"}}},"address":"frank@tailspin.example"}' >/dev/null
-r host add '{"tenant":{"alias":"tailspin"},"name":"127.0.0.1"}' >/dev/null
+op email add '{"holder":{"slug":{"alias":"frank","tenant":{"alias":"tailspin"}}},"address":"frank@tailspin.example"}' >/dev/null
+op host add '{"tenant":{"alias":"tailspin"},"name":"127.0.0.1"}' >/dev/null
 
 # Two directories, and erin arrived through one of them.
 #
@@ -211,11 +215,11 @@ r host add '{"tenant":{"alias":"tailspin"},"name":"127.0.0.1"}' >/dev/null
 # `add entra` used to be drawn beside `add github`, and clicking it was a round
 # trip to a directory that ends in roster refusing a second identity there.
 for c in entra github; do
-	r connection add "{\"tenant\":{\"alias\":\"contoso\"},\"name\":\"${c}\",
+	op connection add "{\"tenant\":{\"alias\":\"contoso\"},\"name\":\"${c}\",
 		\"issuer\":\"https://${c}.invalid/v2.0\",\"client_id\":\"e2e\",
 		\"scopes\":[\"openid\",\"email\"],\"secret_ref\":\"env:E2E_${c}_SECRET\"}" >/dev/null
 done
-r identity add '{"holder":{"slug":{"alias":"erin","tenant":{"alias":"contoso"}}},
+op identity add '{"holder":{"slug":{"alias":"erin","tenant":{"alias":"contoso"}}},
 	"provider":"entra","subject":"e2e-erin-at-entra"}' >/dev/null
 # The account app's own key: a person of the tenant's, holding what the app
 # calls as itself (`account.Calls`) and nothing wider, through the command a

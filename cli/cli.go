@@ -102,6 +102,13 @@ func Cmd(c *cmd.Config) *xli.Command {
 			// A switch on the root rather than on each command, because it is
 			// about where this invocation runs and not about what it asks for.
 			&flg.Switch{Name: "HAL", Brief: "read the database directly, whatever client.addr says"},
+
+			// Who is at this shell, for the access record (#221). On the root
+			// for `--HAL`'s reason: it is about the invocation, and every
+			// command that reads the database directly needs it said once.
+			// And a flag only, never the file or the environment, which are
+			// everybody's who opens a shell here; see `cmd.ClientConfig.As`.
+			&flg.String{Name: "as", Brief: "who is at this shell: an operator of the control plane, by alias; what a command here shows or writes of anybody names them"},
 		},
 
 		Commands: append([]*xli.Command{
@@ -144,10 +151,10 @@ func built(ctx context.Context, c cmd.Config) (*cmd.Server, error) {
 	return cmd.Build(ctx, c.Queued())
 }
 
-// hal is `--HAL`, read on the way down.
+// hal is `--HAL` and `--as`, read on the way down.
 //
 // A handler and not something the connector asks for itself, because a
-// connector is handed a context and not the command -- and the flag is on the
+// connector is handed a context and not the command -- and the flags are on the
 // root, several commands above whichever one is running. This is the same seam
 // `cfg.Load` uses to put the configuration where a leaf can find it.
 func hal(c *cmd.Config) xli.Handler {
@@ -160,6 +167,9 @@ func hal(c *cmd.Config) xli.Handler {
 		// what the loader reads, so there is no field of its for it to bind to.
 		if v, ok := flg.Find[bool](cl, "HAL"); ok && v {
 			c.Client.Local = true
+		}
+		if v, ok := flg.Find[string](cl, "as"); ok && v != "" {
+			c.Client.As = v
 		}
 
 		return next(ctx)

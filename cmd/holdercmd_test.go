@@ -107,9 +107,14 @@ func cliUp(t *testing.T, methods ...string) *cliServed {
 	t.Cleanup(func() { g.Stop() })
 	go func() { _ = g.Serve(l) }()
 
+	// At the box, as the operator `init` made: a command there names who is at
+	// the shell (#221).
+	local := c
+	local.Client.As = "admin"
+
 	return &cliServed{
 		Server: s2,
-		Local:  c,
+		Local:  local,
 		Hers: cmd.Config{
 			Client: cmd.ClientConfig{
 				Addr:     l.Addr().String(),

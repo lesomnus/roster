@@ -40,11 +40,35 @@ could make it.** The local mode is outside every rule, which is why the first
 role in a tenant can be written at all. If you are working out what a role needs,
 test it remotely with a key.
 
+### Locally, say who you are
+
+```sh
+roster --as admin holder ls -o table
+roster --as admin control holder ls
+roster --as admin key list
+```
+
+What a local command shows or writes of anybody is on the access record, and
+the record names a person: `--as`, an operator of the control plane by alias --
+who `init` made, or anybody the admin console signs in. The entity commands and
+`key list` refuse to open anything without it on a deployment with a control
+plane, and refuse a name that matches nobody or a disabled operator. A row is
+written before the answer is printed, and a read whose row cannot be written is
+refused rather than shown. It is a flag on the root, before the command, and
+deliberately not a setting: the configuration and the environment are
+everybody's who opens a shell on the box. It changes nothing a command may do --
+local is still outside every rule -- and remote needs none, since the credential
+says who is asking. See [operating.md](../operating.md#the-cli-on-the-box-is-the-deployment).
+
+A local `watch` is refused where `watch.broker` is `memory`: that broker is
+this process's own, and nothing the deployment does reaches it. Watch remotely,
+or under a broker every process hears.
+
 ### Which commands have only one mode
 
 | | |
 | --- | --- |
-| local only | `init`, `key add`, `vouch reset\|set\|unlock`, `trail`, `forget`, `restore`, `resources`, and all of `control` -- what they write is not served, which is the whole reason they are commands |
+| local only | `init`, `key add`, `key list`, `vouch reset\|set\|unlock`, `trail`, `forget`, `restore`, `resources`, and all of `control` -- what they write is not served, which is the whole reason they are commands |
 | remote only | the rest of `vouch` (`verify`, `delegate`, `continue`, `link`, `redeem`, `revoke`, `enrol`, `accept`), `issue`, `me` -- those calls are a *caller's*, and a local run has none |
 
 ### The control plane is `roster control`
@@ -55,7 +79,7 @@ The operators and this deployment's own callers live on a second database,
 ```sh
 roster control key add --allow '/roster.VouchService/Verify' portal   # an rk_; naming it makes it
 roster control vouch reset @admin                                     # the operator's way back in
-roster control holder ls                                              # every holder of the control plane
+roster --as admin control holder ls                                   # every holder of the control plane
 ```
 
 The entity commands are all there except `tenant add`: the control plane has
@@ -82,9 +106,9 @@ roster <entity> <verb> [NAME] [REQ...] [options]
 - **Flags come before arguments**: `roster tenant ls -o json`, not `... ls json -o`.
 
 ```sh
-roster tenant ls -o table
-roster holder get @newco/alice
-roster holder ls -o wide
+roster --as admin tenant ls -o table
+roster --as admin holder get @newco/alice
+roster --as admin holder ls -o wide
 ```
 
 `-o` is `pretty` (the default), `json`, `protojson`, `prototext`, `name`, `table`,

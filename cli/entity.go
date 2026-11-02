@@ -6,14 +6,18 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	"net"
 	"os"
+	"strings"
 
 	"github.com/lesomnus/xli"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
 	"github.com/lesomnus/payday/auth"
+	"github.com/lesomnus/payday/grpcx"
 	"github.com/lesomnus/payday/pdcmd"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -88,9 +92,41 @@ import (
 // following the stream that way, within `watch.drain_every`, where it reached
 // nobody until the app asked again (#214).
 //
-// The pipe carries none of the serving chain's interceptors for that reason,
-// the publishing one included: what it would publish, it would publish to this
-// process's own broker. See [cmd.Config.Queued].
+// The pipe carries none of the serving chain's publishing for that reason:
+// what it would publish, it would publish to this process's own broker. See
+// [cmd.Config.Queued].
+//
+// # What local reads is on the access record, naming who is at the shell
+//
+// A read over the wire is a row of payday's access record (payday#111), naming
+// the caller its frame names. A read here named nobody, because nothing on the
+// pipe recorded it -- so `roster holder ls` at the box showed people's rows to
+// whoever ran it and left no trace that it had (#221). The pipe records now,
+// with what an RPC's record reads ([cmd.Server.Shell]):
+//
+//   - who: the operator `--as` names, an operator of the control plane,
+//     looked up and refused when it names nobody. A command here that is not
+//     told is refused before anything is opened, wherever there are operators
+//     to name ([cmd.ErrUnnamed]); a deployment with no control plane has none,
+//     and its rows name the deployment and the shell.
+//   - when: before the answer leaves. A read whose row cannot be written is
+//     refused, so what this prints is never data the record did not hear of.
+//
+// It is the record and nothing else: the call carries no frame, so what it may
+// do is the deployment's, as it was. See `cmd/shell.go` for why the operator
+// is not a frame, and why the person names themselves.
+//
+// # A watch here, and the broker it hears
+//
+// `watch` subscribes to this process's broker, and under `memory` -- what
+// `deploy/` and `roster.yaml` run -- that is a broker nothing but this command
+// publishes to: after its first answer it would hear nothing the deployment
+// did. So the pipe refuses it there, naming the wire (`client.addr`), where the
+// serving process answers it. Under a broker every process hears (`postgres`)
+// it hears the deployment, and each message is recorded before it is sent.
+// What it does not do is follow the outbox: the serving process deletes what
+// it drains, so a command reading it would race the drain, and one draining it
+// would take the events away from the subscribers the server publishes to.
 //
 // # Why the connection is made by a [pdcmd.Connector]
 //
@@ -124,7 +160,7 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 	// `Run|Pass`, so one dial covers whichever verb was typed and closes after
 	// it. `RequireSubcommand` because `roster me` alone is not a question.
 	me := newCmdMe(c)
-	me.Handler = xli.Chain(t.WithConn(), xli.RequireSubcommand())
+	me.Handler = xli.Chain(wireOnly(c, t), xli.RequireSubcommand())
 
 	if err := t.Add("me", me); err != nil {
 		// A path that is already there, which is a mistake in this file rather
@@ -138,18 +174,38 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 	// reason each: they are questions to a served deployment, and the local
 	// pipe mounts the entity services alone.
 	front := newCmdFront(c)
-	front.Handler = xli.Chain(t.WithConn(), xli.RequireSubcommand())
+	front.Handler = xli.Chain(wireOnly(c, t), xli.RequireSubcommand())
 	if err := t.Add("front", front); err != nil {
 		panic(err)
 	}
 
 	sy := newCmdSync(c)
-	sy.Handler = xli.Chain(t.WithConn(), xli.RequireSubcommand())
+	sy.Handler = xli.Chain(wireOnly(c, t), xli.RequireSubcommand())
 	if err := t.Add("sync", sy); err != nil {
 		panic(err)
 	}
 
 	return t.Commands()
+}
+
+// wireOnly is `t.WithConn()` for a tree of questions only a served deployment
+// answers -- `me`, `front`, `sync` -- which opens nothing in local mode, where
+// each of its commands says what to name instead (`calling`).
+//
+// It used to open the deployment there anyway, a database and both planes'
+// servers built to say "name client.addr"; and opening it is now also where a
+// command at the box is asked who is at the shell (#221), which a command that
+// reads nobody and answers with that sentence has no reason to be asked.
+func wireOnly(c *cmd.Config, t *pdcmd.Tree) xli.Handler {
+	conn := t.WithConn()
+
+	return xli.Handle(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+		if c.Client.Local || c.Client.Addr == "" {
+			return next(ctx)
+		}
+
+		return conn.Handle(ctx, cl, next)
+	})
 }
 
 // overlays mounts the methods the overlays declared on `t`, which the six
@@ -221,6 +277,16 @@ func (v connector) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 	}
 
 	if v.c.Client.Addr != "" {
+		// Who is at a shell is the box's question. Over the wire the
+		// credential says who is calling and the record names it, so a name
+		// given here would be read by nothing -- and somebody who gave it
+		// would believe the record says it.
+		if strings.TrimSpace(v.c.Client.As) != "" {
+			return nil, nil, fmt.Errorf(
+				"--as names who is at a shell reading the database directly, and this goes over the wire to %s, "+
+					"where the credential says who is calling; drop --as, or add --HAL to read the database", v.c.Client.Addr)
+		}
+
 		return remote{v.c}.Connect(ctx)
 	}
 
@@ -254,9 +320,18 @@ func (v connector) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 // `pdcmd` refuses to make for an app are written down: no address, no
 // credential, and the ungated stack. A reader looking for "what do these
 // commands connect to" finds them here.
+//
+// And the fourth, which is not `pdcmd`'s either: who is at the shell, which the
+// access record names for what a command here reads or writes ([atTheBox]).
 type local struct{ c *cmd.Config }
 
 func (l local) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
+	// Before anything is opened, so a command that was not told who is at the
+	// shell is refused without a database being touched.
+	if err := saidWho(l.c); err != nil {
+		return nil, nil, err
+	}
+
 	// Said out loud, every time, the way `oas` says it. Reading the database
 	// under a deployment is a thing somebody does on purpose and should not be
 	// able to do by forgetting -- and the way it happens by accident is a
@@ -283,14 +358,87 @@ func (l local) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 		return nil, nil, err
 	}
 
-	return piped(s, s.Ungated)
+	by, err := atTheBox(ctx, l.c, s)
+	if err != nil {
+		s.Close()
+		return nil, nil, err
+	}
+
+	return piped(s, s, by)
 }
 
-// piped is `at` on a listener with no address, and a connection to it. The
-// returned func closes all of it and `s` with it.
-func piped(s *cmd.Server, at app.Server) (pdcmd.Conn, func(), error) {
-	g := grpc.NewServer()
-	app.RegisterServer(g, at)
+// saidWho refuses a command at the box that was not told who is at the shell,
+// where the deployment has operators to name: one with a control plane.
+//
+// Asked of the configuration, before anything is opened. Without a control
+// plane there is nobody `--as` could name, and [atTheBox] says the deployment.
+func saidWho(c *cmd.Config) error {
+	if c.Control.Serves() && strings.TrimSpace(c.Client.As) == "" {
+		return cmd.ErrUnnamed
+	}
+
+	return nil
+}
+
+// atTheBox is who is at this shell, as `--as` named them on the control plane,
+// and the shell's user and host beside them -- what the access record names for
+// what a command here reads or writes (#221).
+//
+// A deployment with no control plane has no operators, and nobody is named:
+// its rows are the deployment's, and say which shell. `--as` there is refused,
+// since it names somebody who cannot be there.
+func atTheBox(ctx context.Context, c *cmd.Config, s *cmd.Server) (cmd.Operator, error) {
+	where := thisShell()
+	if s.Control == nil && strings.TrimSpace(c.Client.As) == "" {
+		return cmd.Operator{Where: where}, nil
+	}
+
+	by, err := cmd.OperatorNamed(ctx, s, c.Client.As)
+	if err != nil {
+		return cmd.Operator{}, err
+	}
+	by.Where = where
+
+	return by, nil
+}
+
+// piped is [pipe] on `at`, a plane of `s`, and closes `s` with it: what a
+// connector hands `pdcmd`, which calls the close once the command is done.
+func piped(s *cmd.Server, at *cmd.Server, by cmd.Operator) (pdcmd.Conn, func(), error) {
+	conn, stop, err := pipe(at, by)
+	if err != nil {
+		s.Close()
+
+		return nil, nil, err
+	}
+
+	// The database after the server, which `stop` has stopped: closing it under
+	// a server that is still answering is a panic rather than an error.
+	return conn, func() {
+		stop()
+		s.Close()
+	}, nil
+}
+
+// pipe is `at`'s ungated server on a listener with no address, and a
+// connection to it, with what reaches it recorded as `by`'s (#221). The
+// returned func closes the connection and the server, and not `at`.
+//
+// Two things are in front of the server, and nothing else of the serving
+// chain is: the access record, as [cmd.Server.Shell] configures it for a call
+// at a shell, and -- where this plane's broker hears no other process -- a
+// refusal of every stream, which here is a watch that would hear nothing.
+// `TestEveryPipeIsRecorded` holds every server a command stands up to this
+// function.
+func pipe(at *cmd.Server, by cmd.Operator) (pdcmd.Conn, func(), error) {
+	chain := grpcx.Chain{}
+	if at.HearsOnlyItself() {
+		chain = chain.WithStream(unheard)
+	}
+	chain = chain.With(at.Shell(by).Interceptor())
+
+	g := grpc.NewServer(chain.ServerOptions()...)
+	app.RegisterServer(g, at.Ungated)
 
 	lis := bufconn.Listen(1 << 20)
 	go g.Serve(lis)
@@ -302,20 +450,30 @@ func piped(s *cmd.Server, at app.Server) (pdcmd.Conn, func(), error) {
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		g.Stop()
-		s.Close()
 
 		return nil, nil, err
 	}
 
 	// In this order: the client first, so nothing is in flight; then the
-	// server, so the listener is done with; then the database. Closing the
-	// database under a server that is still answering is a panic rather than
-	// an error.
+	// server, so the listener is done with.
 	return conn, func() {
 		conn.Close()
 		g.Stop()
-		s.Close()
 	}, nil
+}
+
+// unheard refuses a watch at the box whose broker hears only this process: it
+// would answer once, and then hear nothing the deployment did (#221).
+//
+// `FailedPrecondition`, because it is the configuration that makes it so, and
+// the sentence names both ways out.
+func unheard(_ any, _ grpc.ServerStream, info *grpc.StreamServerInfo, _ grpc.StreamHandler) error {
+	return status.Errorf(codes.FailedPrecondition,
+		"%s: a watch here would hear only this command. watch.broker is memory, which publishes inside "+
+			"the process that serves, and this one does not -- after its first answer nothing the deployment "+
+			"did would reach it. Watch over the wire instead: set client.addr and client.auth, and the serving "+
+			"process answers it (and records what it shows); or name a broker every process hears, watch.broker: postgres",
+		info.FullMethod)
 }
 
 // remote is this deployment over the wire, as whoever `client.token` names.

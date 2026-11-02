@@ -151,8 +151,13 @@ func (e *external) asOperator(t *testing.T) (rstr.HolderServiceClient, context.C
 func (e *external) role(t *testing.T, methods []string) {
 	t.Helper()
 	x := require.New(t)
+	// At the box as the operator `init` made, whom the access record of a
+	// command there names (#221).
+	c := e.c
+	c.Client.As = "admin"
+
 	var entity *xli.Command
-	for _, k := range cli.NewCmdEntities(&e.c) {
+	for _, k := range cli.NewCmdEntities(&c) {
 		if k.Name == "role" {
 			entity = k
 		}

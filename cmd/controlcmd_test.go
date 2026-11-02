@@ -23,6 +23,9 @@ func TestTheControlPlaneHasCommandsOfItsOwn(t *testing.T) {
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
 
+	// Who is at the shell: the operator `init` made (#221).
+	c.Client.As = "admin"
+
 	t.Run("its holders are the operators, and the data plane's are not", func(t *testing.T) {
 		x := require.New(t)
 

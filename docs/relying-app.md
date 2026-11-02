@@ -87,7 +87,7 @@ installed before it held the stream is widened by patching the role with the
 whole list:
 
 ```sh
-roster role patch @acme/levyan-app '{"methods": ["…"], "date_updated_force": true}'
+roster --as admin role patch @acme/levyan-app '{"methods": ["…"], "date_updated_force": true}'
 ```
 
 Until then the stream is refused, and says so (below).

@@ -50,19 +50,22 @@ it all away.
 go run ./cmd/roster init                      # the operator who runs this deployment
 go run ./cmd/roster serve &                   # the listeners roster.yaml names
 
-roster tenant add @newco                      # your first customer
-roster holder add @newco/admin                # somebody in it
-roster role   add @newco/everything '{"methods":["/roster.*/*"]}'
+roster --as admin tenant add @newco           # your first customer
+roster --as admin holder add @newco/admin     # somebody in it
+roster --as admin role   add @newco/everything '{"methods":["/roster.*/*"]}'
 echo '{"role":  {"slug":{"alias":"everything","tenant":{"alias":"newco"}}},
        "holder":{"slug":{"alias":"admin",     "tenant":{"alias":"newco"}}}}' \
-  | roster binding add -
+  | roster --as admin binding add -
 
 KEY=$(roster key add --tenant newco --holder admin --allow '/roster.*/*')
 ```
 
 `init` writes the operator and **no customer** -- a tenant is a customer, and one
-written by a command is a customer nobody asked for. The key is printed once and
-resolves to that person, so the loop closes with a call:
+written by a command is a customer nobody asked for. `--as admin` is that
+operator: a command that reads the database directly says who is at the shell,
+and what it shows or writes of anybody is on the access record under that name.
+The key is printed once and resolves to that person, so the loop closes with a
+call:
 
 ```sh
 curl -sS -X POST http://127.0.0.1:8080/roster.MeService/Get \

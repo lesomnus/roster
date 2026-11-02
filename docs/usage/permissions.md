@@ -8,12 +8,12 @@ and nothing does until you write it.
 A **role** is a list of methods. A **binding** attaches one to somebody.
 
 ```sh
-roster role add @newco/support '{"methods":["/roster.HolderService/Get",
+roster --as admin role add @newco/support '{"methods":["/roster.HolderService/Get",
                                             "/roster.HolderService/List"]}'
 
 echo '{"role":  {"slug":{"alias":"support","tenant":{"alias":"newco"}}},
        "holder":{"slug": {"alias":"alice",  "tenant":{"alias":"newco"}}}}' \
-  | roster binding add -
+  | roster --as admin binding add -
 ```
 
 A method is written in full — `/roster.HolderService/Get` — and `*` is allowed
@@ -73,15 +73,15 @@ of them are refused unless the caller already holds what they are handing out.
 People who belong together for the purpose of being granted things at once.
 
 ```sh
-roster group add @newco/oncall
+roster --as admin group add @newco/oncall
 
 echo '{"group": {"slug":{"alias":"oncall","tenant":{"alias":"newco"}}},
        "holder":{"slug": {"alias":"alice", "tenant":{"alias":"newco"}}}}' \
-  | roster group-membership add -
+  | roster --as admin group-membership add -
 
 echo '{"role": {"slug":{"alias":"support","tenant":{"alias":"newco"}}},
        "group":{"slug":{"alias":"oncall", "tenant":{"alias":"newco"}}}}' \
-  | roster binding add -
+  | roster --as admin binding add -
 ```
 
 A group is a **tenant-wide** set. Its members may sit in different sites, which
@@ -93,13 +93,13 @@ A membership that carries a role held **in the group** makes its holder the
 group's manager:
 
 ```sh
-roster role add @newco/group-manager \
+roster --as admin role add @newco/group-manager \
   '{"methods": ["/roster.GroupMembershipService/Add", "/roster.GroupMembershipService/Erase"]}'
 
 echo '{"group": {"slug":{"alias":"oncall","tenant":{"alias":"newco"}}},
        "holder":{"slug": {"alias":"bob",   "tenant":{"alias":"newco"}}},
        "role":  {"slug": {"alias":"group-manager", "tenant":{"alias":"newco"}}}}' \
-  | roster group-membership add -
+  | roster --as admin group-membership add -
 ```
 
 bob may now put people into `oncall` and take them out, and do neither to any
@@ -126,16 +126,16 @@ is not managing it.
 A place: a region, an office, a subsidiary. It bounds what a binding reaches.
 
 ```sh
-roster site add @newco/eu
+roster --as admin site add @newco/eu
 
-roster role add @newco/eu-support \
+roster --as admin role add @newco/eu-support \
   '{"site":{"slug":{"alias":"eu","tenant":{"alias":"newco"}}},
     "methods":["/roster.HolderService/Get"]}'
 
 echo '{"role":  {"slug":{"alias":"eu-support","tenant":{"alias":"newco"}}},
        "holder":{"slug": {"alias":"alice",     "tenant":{"alias":"newco"}}},
        "site":  {"slug": {"alias":"eu",        "tenant":{"alias":"newco"}}}}' \
-  | roster binding add -
+  | roster --as admin binding add -
 ```
 
 A binding with no site reaches the whole tenant. One made in a site reaches that
@@ -170,19 +170,19 @@ binding.
 A set of people **within a site**, each holding a role in it.
 
 ```sh
-roster team add @newco/eu-ops '{"site":{"slug":{"alias":"eu","tenant":{"alias":"newco"}}}}'
+roster --as admin team add @newco/eu-ops '{"site":{"slug":{"alias":"eu","tenant":{"alias":"newco"}}}}'
 
 echo '{"team":  {"slug": {"alias":"eu-ops","site":{"slug":{"alias":"eu","tenant":{"alias":"newco"}}}}},
        "holder":{"slug": {"alias":"alice", "tenant":{"alias":"newco"}}},
        "role":  {"slug":{"alias":"eu-support","tenant":{"alias":"newco"}}}}' \
-  | roster team-membership add -
+  | roster --as admin team-membership add -
 ```
 
 **A team is named within its site, not its tenant.** `TeamRefBySlug` carries a
 `site`, so a team created without one can only be referred to by identifier:
 
 ```sh
-roster team ls -o name        # and use the identifier
+roster --as admin team ls -o name  # and use the identifier
 ```
 
 The role a team membership names is granted at the team's site — a team with no
@@ -232,11 +232,11 @@ relying party's mapping.
 that name exists, and the membership is guarded like a binding:
 
 ```sh
-roster role add @newco/jenkins-admin '{"methods": ["/ext.jenkins.Admin/*"]}'
+roster --as admin role add @newco/jenkins-admin '{"methods": ["/ext.jenkins.Admin/*"]}'
 
 echo '{"role": {"slug":{"alias":"jenkins-admin","tenant":{"alias":"newco"}}},
        "group":{"slug":{"alias":"jenkins-admins","tenant":{"alias":"newco"}}}}' \
-  | roster binding add -
+  | roster --as admin binding add -
 ```
 
 Joining that group is then refused to anybody who does not hold
@@ -320,9 +320,9 @@ admin port waives" is the whole of it.
 ## Seeing what somebody holds
 
 ```sh
-roster binding ls -o wide
-roster role get @newco/support
-roster role ls -o wide
+roster --as admin binding ls -o wide
+roster --as admin role get @newco/support
+roster --as admin role ls -o wide
 ```
 
 and, as the person themselves, over the wire:

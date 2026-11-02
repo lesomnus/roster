@@ -211,6 +211,7 @@ services:
       SEED_CUSTOMER: ${SEED_CUSTOMER:-contoso}
       SEED_USER: ${SEED_USER:-erin}
       SEED_PASSWORD: ${SEED_PASSWORD:-correct horse battery staple}
+      SEED_OPERATOR: ${ROSTER_ROOT_USER:-admin}
       PUBLIC_HOST: ${PUBLIC_HOST:-localhost}
     volumes:
       - account:/var/lib/roster-account

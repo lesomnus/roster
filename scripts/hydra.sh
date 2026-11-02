@@ -94,8 +94,10 @@ docker compose up -d ${build} login >/dev/null
 # `scripts/cluster.sh` is the same class with the size against it, which is how
 # that one was found.
 echo "== who erin is, to roster"
-ids="$(docker compose exec -T roster sh -lc \
-	'roster holder get -o json "@${SEED_CUSTOMER:-contoso}/${SEED_USER:-erin}" 2>/dev/null' \
+# As the operator `init` made, which a read at the box names on the access
+# record (#221).
+ids="$(docker compose exec -T -e "OPERATOR=${ROSTER_ROOT_USER:-admin}" roster sh -lc \
+	'roster --as "${OPERATOR}" holder get -o json "@${SEED_CUSTOMER:-contoso}/${SEED_USER:-erin}" 2>/dev/null' \
 	| sed -n 's/.*"id": "\([^"]*\)".*/\1/p')"
 sub="${ids%%$'\n'*}"
 if [ -z "${sub}" ]; then
