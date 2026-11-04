@@ -86,7 +86,7 @@ func TestTenantLs(t *testing.T) {
 
 	c := seeded(t)
 
-	out, err := entities(t, c, "tenant", "ls")
+	out, err := entities(t, c, "tenant", "list")
 	x.NoError(err)
 
 	x.Contains(out, "contoso")
@@ -119,16 +119,17 @@ func TestAnEntityCommandWritesThroughTheWholeStack(t *testing.T) {
 	_, err := entities(t, c, "tenant", "add", "@initech")
 	x.NoError(err)
 
-	out, err := entities(t, c, "tenant", "ls")
+	out, err := entities(t, c, "tenant", "list")
 	x.NoError(err)
 	x.Contains(out, "initech")
 }
 
 // TestTheCommandsAreWhatTheSchemaDeclared.
 //
-// Nothing in this repository lists them. `identity` has a `ls` because
-// `Identity` declared `list:`; an entity that declared none has no `ls` and
-// nobody wrote that down twice.
+// Nothing in this repository lists them. `identity` has a `list` because
+// `Identity` declared `list:`; an entity that declared none has no `list` and
+// nobody wrote that down twice. A verb is the RPC it calls, and `ls` is only
+// another word for `list` (payday#207).
 func TestTheCommandsAreWhatTheSchemaDeclared(t *testing.T) {
 	x := require.New(t)
 
@@ -151,9 +152,12 @@ func TestTheCommandsAreWhatTheSchemaDeclared(t *testing.T) {
 	verbs := []string{}
 	for _, v := range at("tenant").Commands {
 		verbs = append(verbs, v.Name)
+		if v.Name == "list" {
+			x.Contains(v.Aliases, "ls", "`ls` is still what lists")
+		}
 	}
 	x.Contains(verbs, "get")
-	x.Contains(verbs, "ls")
+	x.Contains(verbs, "list")
 
 	// And the ones roster wrote are still there.
 	for _, name := range []string{"init", "key", "serve", "config", "version"} {
@@ -172,9 +176,9 @@ func TestHelpOpensNoDatabase(t *testing.T) {
 
 	c := &cmd.Config{Db: config.DbConfig{Driver: "nothing-of-the-sort", Dsn: "no"}}
 
-	out, err := entities(t, c, "tenant", "ls", "--help")
+	out, err := entities(t, c, "tenant", "list", "--help")
 	x.NoError(err)
-	x.Contains(out, "ls")
+	x.Contains(out, "list")
 }
 
 // TestAConfigurationThatCannotBeOpenedIsTheCommandsAnswer, and not the app's
@@ -188,7 +192,7 @@ func TestAConfigurationThatCannotBeOpenedIsTheCommandsAnswer(t *testing.T) {
 	root := cli.Cmd(c)
 	x.NotNil(root)
 
-	_, err := entities(t, c, "tenant", "ls")
+	_, err := entities(t, c, "tenant", "list")
 	x.Error(err)
 }
 
@@ -248,7 +252,7 @@ func TestClientAddrChoosesTheWire(t *testing.T) {
 
 	// Locally: every tenant, because the server a command builds for itself has
 	// no wall on it.
-	out, err := entities(t, &c, "tenant", "ls")
+	out, err := entities(t, &c, "tenant", "list")
 	x.NoError(err)
 	x.Contains(out, "contoso")
 	x.Contains(out, "fabrikam")
@@ -261,7 +265,7 @@ func TestClientAddrChoosesTheWire(t *testing.T) {
 		Auth:     cmd.ClientAuthConfig{Scheme: "bearer", Credential: token},
 	}
 
-	out, err = entities(t, &c, "tenant", "ls")
+	out, err = entities(t, &c, "tenant", "list")
 	x.NoError(err)
 	x.Contains(out, "contoso")
 	x.NotContains(out, "fabrikam", "the wall did not run, so this did not go over the wire")
@@ -301,7 +305,7 @@ func TestPlainReachesADeploymentWithNoControlPlane(t *testing.T) {
 		Auth:     cmd.ClientAuthConfig{Scheme: "plain", Credential: "@contoso/admin"},
 	}
 
-	out, err := entities(t, c, "holder", "ls")
+	out, err := entities(t, c, "holder", "list")
 	x.NoError(err)
 	x.Contains(out, "admin")
 
@@ -309,7 +313,7 @@ func TestPlainReachesADeploymentWithNoControlPlane(t *testing.T) {
 	// claim that says the setting is doing something.
 	c.Client.Auth = cmd.ClientAuthConfig{Scheme: "bearer", Credential: "@contoso/admin"}
 
-	_, err = entities(t, c, "holder", "ls")
+	_, err = entities(t, c, "holder", "list")
 	x.Error(err)
 }
 
@@ -328,7 +332,7 @@ func TestACredentialFileThatIsNotThereIsRefused(t *testing.T) {
 		Auth:     cmd.ClientAuthConfig{Scheme: "bearer", CredentialFile: "/nowhere/at/all"},
 	}
 
-	_, err := entities(t, c, "tenant", "ls")
+	_, err := entities(t, c, "tenant", "list")
 	x.ErrorContains(err, "client.auth.credential_file")
 }
 
@@ -437,14 +441,14 @@ func TestACredentialWithNowhereToSendItIsRefused(t *testing.T) {
 		Auth: cmd.ClientAuthConfig{Scheme: "bearer", Credential: "a-key"},
 	}
 
-	_, err := entities(t, c, "tenant", "ls")
+	_, err := entities(t, c, "tenant", "list")
 	x.ErrorContains(err, "nowhere to send it")
 
 	// And a file that says nothing about a client is left alone: that is the
 	// default and it is what every deployment starts as.
 	c.Client = cmd.ClientConfig{}
 
-	out, err := entities(t, c, "tenant", "ls")
+	out, err := entities(t, c, "tenant", "list")
 	x.NoError(err)
 	x.Contains(out, "contoso")
 }
@@ -468,11 +472,11 @@ func TestHalReadsTheDatabaseWhateverTheFileSays(t *testing.T) {
 	}
 
 	// Without it: the wire, and nothing is listening there.
-	_, err := entities(t, c, "tenant", "ls")
+	_, err := entities(t, c, "tenant", "list")
 	x.Error(err)
 
 	// With it: the database, and the credential is deliberately unused.
-	out, err := entities(t, c, "--HAL", "tenant", "ls")
+	out, err := entities(t, c, "--HAL", "tenant", "list")
 	x.NoError(err)
 	x.Contains(out, "contoso")
 	x.Contains(out, "fabrikam", "the local one has no wall, which is what it is for")

@@ -389,7 +389,7 @@ a header. It is opaque: 32 bytes from `crypto/rand` naming a row, `HttpOnly`,
 effect at once.
 
 **The control listener serves no page.** What it answers is what a shell asks --
-`roster control holder ls`, `roster control key add`, the deployment's own rows
+`roster control holder list`, `roster control key add`, the deployment's own rows
 -- and it takes an `rk_` rather than a cookie. Managing who runs the deployment
 is a terminal's job; a browser's is customers.
 
@@ -1138,7 +1138,7 @@ reviewer finds your reads at the admin console and at the shell under one name:
 
 ```sh
 roster --as admin holder get @newco/alice
-roster --as admin control holder ls
+roster --as admin control holder list
 roster --as admin key list
 ```
 
@@ -1731,9 +1731,9 @@ RPC, `kind` `read`, `write` or `download`, `subjects` whose rows, and `value` an
 `AccessDetail` holding where the call came from and what a read asked for.
 
 ```sh
-roster --as admin access ls -o json '{"filters":[{"actor_id":"019ff2ab-..."}]}'   # what one operator did
-roster --as admin access ls -o json '{"filters":[{"tenant_id":"019ff2ab-..."}]}'  # whose data, by customer
-roster --as admin control access ls -o json                                       # the control plane's own
+roster --as admin access list -o json '{"filters":[{"actor_id":"019ff2ab-..."}]}'   # what one operator did
+roster --as admin access list -o json '{"filters":[{"tenant_id":"019ff2ab-..."}]}'  # whose data, by customer
+roster --as admin control access list -o json                                       # the control plane's own
 roster --as admin access get 019ff2ab-...                                         # one row, whole
 ```
 

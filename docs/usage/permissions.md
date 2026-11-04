@@ -182,7 +182,7 @@ echo '{"team":  {"slug": {"alias":"eu-ops","site":{"slug":{"alias":"eu","tenant"
 `site`, so a team created without one can only be referred to by identifier:
 
 ```sh
-roster --as admin team ls -o name  # and use the identifier
+roster --as admin team list -o name  # and use the identifier
 ```
 
 The role a team membership names is granted at the team's site — a team with no
@@ -320,9 +320,9 @@ admin port waives" is the whole of it.
 ## Seeing what somebody holds
 
 ```sh
-roster --as admin binding ls -o wide
+roster --as admin binding list -o wide
 roster --as admin role get @newco/support
-roster --as admin role ls -o wide
+roster --as admin role list -o wide
 ```
 
 and, as the person themselves, over the wire:
