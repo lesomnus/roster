@@ -1,9 +1,10 @@
 # The CLI
 
 `roster tenant add` and `TenantService.Add` are the same call. Every entity has
-the same six verbs -- `get`, `ls`, `watch`, `add`, `patch`, `erase` -- and each
-command is a client for exactly the RPC of that name, so what you learn typing is
-what you write in code. `roster <entity> <verb> --help` prints the request shape.
+the same six verbs -- `get`, `list` (or `ls`), `watch`, `add`, `patch`, `erase`
+-- and each command is a client for exactly the RPC of that name, so what you
+learn typing is what you write in code. `roster <entity> <verb> --help` prints
+the request shape.
 
 ## Two modes, and the configuration decides which
 
@@ -24,9 +25,9 @@ client:
 ```
 
 ```sh
-roster holder ls -o table    # the people in their tenant, and no others
+roster holder list -o table    # the people in their tenant, and no others
 roster me get                # who this credential is, and every method it may call
-roster tenant ls             # PermissionDenied, if their role does not say so
+roster tenant list             # PermissionDenied, if their role does not say so
 ```
 
 `--HAL` on the root forces the local mode whatever the file says, for somebody
@@ -43,8 +44,8 @@ test it remotely with a key.
 ### Locally, say who you are
 
 ```sh
-roster --as admin holder ls -o table
-roster --as admin control holder ls
+roster --as admin holder list -o table
+roster --as admin control holder list
 roster --as admin key list
 ```
 
@@ -79,7 +80,7 @@ The operators and this deployment's own callers live on a second database,
 ```sh
 roster control key add --allow '/roster.VouchService/Verify' portal   # an rk_; naming it makes it
 roster control vouch reset @admin                                     # the operator's way back in
-roster --as admin control holder ls                                   # every holder of the control plane
+roster --as admin control holder list                                   # every holder of the control plane
 ```
 
 The entity commands are all there except `tenant add`: the control plane has
@@ -103,12 +104,12 @@ roster <entity> <verb> [NAME] [REQ...] [options]
 
 - `NAME` is a **reference**: an identifier, `@tenant`, or `@tenant/alias`.
 - `REQ` is the rest of the request as JSON, merged over it. `-` reads stdin.
-- **Flags come before arguments**: `roster tenant ls -o json`, not `... ls json -o`.
+- **Flags come before arguments**: `roster tenant list -o json`, not `... list json -o`.
 
 ```sh
-roster --as admin tenant ls -o table
+roster --as admin tenant list -o table
 roster --as admin holder get @newco/alice
-roster --as admin holder ls -o wide
+roster --as admin holder list -o wide
 ```
 
 `-o` is `pretty` (the default), `json`, `protojson`, `prototext`, `name`, `table`,

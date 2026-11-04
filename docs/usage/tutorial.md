@@ -63,7 +63,7 @@ somebody who can administer it, because the state where one exists and nobody
 can do anything in it is only finishable by an operator reaching inside.
 
 ```sh
-roster --as admin tenant ls -o table
+roster --as admin tenant list -o table
 ```
 ```
 ALIAS   NAME        AGE

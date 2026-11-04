@@ -41,7 +41,7 @@ require (
 	github.com/lesomnus/mkot/otlp v0.0.0-20261017184153-a69c4c1f08ca
 	github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155
 	github.com/lesomnus/otx/otxgrpc v0.0.0-20261017184159-4cba7a26b155
-	github.com/lesomnus/payday v0.0.0-20261101212044-36f2dcfbf3a8
+	github.com/lesomnus/payday v0.0.0-20261104101932-efee829cf808
 	github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da
 	github.com/lesomnus/xli v0.0.0-20261009121920-4ce270c7448c
 	github.com/lesomnus/xli/cfg v0.1.3
