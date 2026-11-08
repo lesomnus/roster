@@ -266,10 +266,18 @@ func Migrate(ctx context.Context, s *cmd.Server) error {
 	return nil
 }
 
-// migrate brings one plane's database into this build's shape: the columns and
-// indexes an earlier build made under another name moved to this build's
-// first, then an index the schema declares that PostgreSQL left invalid
-// refused, then what the schema declares made.
+// migrate brings one plane's database into this build's shape: the tables,
+// columns and indexes an earlier build made under another name moved to this
+// build's first, then an index the schema declares that PostgreSQL left
+// invalid refused, then what the schema declares made.
+//
+// The tables are those of the entities the schema renamed and says it did
+// (`formerly`, `pd.TableRenames`). roster has renamed none, so the list is
+// empty, and the call is here so that the day it renames one, the table is
+// moved with its rows rather than made again empty beside them, which is what
+// a migration does with a table it does not find (lesomnus/payday#212). Before
+// the other two, which look for a column and an index on a table by the name
+// it has now, and find nothing on one still under its old name.
 //
 // The columns are payday's own (`pd.ColumnRenames`): none of the entities
 // roster declares has one today -- it declares no past, no notifications and no
@@ -291,6 +299,9 @@ func Migrate(ctx context.Context, s *cmd.Server) error {
 // its database was in this build's shape while the index served no read
 // (payday#176). The refusal says what to run to make it again.
 func migrate(ctx context.Context, s *cmd.Server) error {
+	if err := rename.Tables(ctx, s.Db, s.Dialect, pd.TableRenames); err != nil {
+		return err
+	}
 	if err := rename.Columns(ctx, s.Db, s.Dialect, pd.ColumnRenames); err != nil {
 		return err
 	}
