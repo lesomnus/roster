@@ -63,10 +63,10 @@ func TestTheLockoutIsTheDeploymentsNumbers(t *testing.T) {
 	}
 	first := wrong()
 	x.False(first.GetOk())
-	x.Nil(first.GetLockedUntil(), "locked one answer early")
+	x.Nil(first.GetDateLocked(), "locked one answer early")
 	res := wrong()
-	x.NotNil(res.GetLockedUntil(), "two wrong answers did not lock, as the deployment said they should")
-	x.WithinDuration(time.Now().Add(time.Hour), res.GetLockedUntil().AsTime(), time.Minute, "locked for the default rather than for what was said")
+	x.NotNil(res.GetDateLocked(), "two wrong answers did not lock, as the deployment said they should")
+	x.WithinDuration(time.Now().Add(time.Hour), res.GetDateLocked().AsTime(), time.Minute, "locked for the default rather than for what was said")
 
 	t.Run("and unset is the default", func(t *testing.T) {
 		x := require.New(t)

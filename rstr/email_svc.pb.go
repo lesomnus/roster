@@ -2148,12 +2148,12 @@ func (b0 EmailWatchItem_builder) Build() *EmailWatchItem {
 }
 
 type EmailVerifyRequest struct {
-	state              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref     *EmailRef              `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Holder  *HolderRef             `protobuf:"bytes,3,opt,name=holder"`
-	xxx_hidden_Expires *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=expires"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref         *EmailRef              `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,3,opt,name=holder"`
+	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=date_expires,json=dateExpires"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *EmailVerifyRequest) Reset() {
@@ -2195,9 +2195,9 @@ func (x *EmailVerifyRequest) GetHolder() *HolderRef {
 	return nil
 }
 
-func (x *EmailVerifyRequest) GetExpires() *timestamppb.Timestamp {
+func (x *EmailVerifyRequest) GetDateExpires() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_Expires
+		return x.xxx_hidden_DateExpires
 	}
 	return nil
 }
@@ -2210,8 +2210,8 @@ func (x *EmailVerifyRequest) SetHolder(v *HolderRef) {
 	x.xxx_hidden_Holder = v
 }
 
-func (x *EmailVerifyRequest) SetExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_Expires = v
+func (x *EmailVerifyRequest) SetDateExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpires = v
 }
 
 func (x *EmailVerifyRequest) HasRef() bool {
@@ -2228,11 +2228,11 @@ func (x *EmailVerifyRequest) HasHolder() bool {
 	return x.xxx_hidden_Holder != nil
 }
 
-func (x *EmailVerifyRequest) HasExpires() bool {
+func (x *EmailVerifyRequest) HasDateExpires() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Expires != nil
+	return x.xxx_hidden_DateExpires != nil
 }
 
 func (x *EmailVerifyRequest) ClearRef() {
@@ -2243,8 +2243,8 @@ func (x *EmailVerifyRequest) ClearHolder() {
 	x.xxx_hidden_Holder = nil
 }
 
-func (x *EmailVerifyRequest) ClearExpires() {
-	x.xxx_hidden_Expires = nil
+func (x *EmailVerifyRequest) ClearDateExpires() {
+	x.xxx_hidden_DateExpires = nil
 }
 
 type EmailVerifyRequest_builder struct {
@@ -2273,7 +2273,7 @@ type EmailVerifyRequest_builder struct {
 	Holder *HolderRef
 	// When the link stops working; unset, or later than the default, is the
 	// default (`vouch.LinkFor`).
-	Expires *timestamppb.Timestamp
+	DateExpires *timestamppb.Timestamp
 }
 
 func (b0 EmailVerifyRequest_builder) Build() *EmailVerifyRequest {
@@ -2282,16 +2282,16 @@ func (b0 EmailVerifyRequest_builder) Build() *EmailVerifyRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_Holder = b.Holder
-	x.xxx_hidden_Expires = b.Expires
+	x.xxx_hidden_DateExpires = b.DateExpires
 	return m0
 }
 
 type EmailVerifyResponse struct {
-	state              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Token   string                 `protobuf:"bytes,1,opt,name=token"`
-	xxx_hidden_Expires *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=expires"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Token       string                 `protobuf:"bytes,1,opt,name=token"`
+	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=date_expires,json=dateExpires"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *EmailVerifyResponse) Reset() {
@@ -2326,9 +2326,9 @@ func (x *EmailVerifyResponse) GetToken() string {
 	return ""
 }
 
-func (x *EmailVerifyResponse) GetExpires() *timestamppb.Timestamp {
+func (x *EmailVerifyResponse) GetDateExpires() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_Expires
+		return x.xxx_hidden_DateExpires
 	}
 	return nil
 }
@@ -2337,27 +2337,27 @@ func (x *EmailVerifyResponse) SetToken(v string) {
 	x.xxx_hidden_Token = v
 }
 
-func (x *EmailVerifyResponse) SetExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_Expires = v
+func (x *EmailVerifyResponse) SetDateExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpires = v
 }
 
-func (x *EmailVerifyResponse) HasExpires() bool {
+func (x *EmailVerifyResponse) HasDateExpires() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Expires != nil
+	return x.xxx_hidden_DateExpires != nil
 }
 
-func (x *EmailVerifyResponse) ClearExpires() {
-	x.xxx_hidden_Expires = nil
+func (x *EmailVerifyResponse) ClearDateExpires() {
+	x.xxx_hidden_DateExpires = nil
 }
 
 type EmailVerifyResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// The link, and the only time it is readable. What is stored is a hash.
-	Token   string
-	Expires *timestamppb.Timestamp
+	Token       string
+	DateExpires *timestamppb.Timestamp
 }
 
 func (b0 EmailVerifyResponse_builder) Build() *EmailVerifyResponse {
@@ -2365,7 +2365,7 @@ func (b0 EmailVerifyResponse_builder) Build() *EmailVerifyResponse {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Token = b.Token
-	x.xxx_hidden_Expires = b.Expires
+	x.xxx_hidden_DateExpires = b.DateExpires
 	return m0
 }
 
@@ -2742,14 +2742,14 @@ const file_app_email_svc_g_proto_rawDesc = "" +
 	"\x0eEmailWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12#\n" +
 	"\x05value\x18\x02 \x01(\v2\r.roster.EmailR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\x99\x01\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xa2\x01\n" +
 	"\x12EmailVerifyRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.EmailRefR\x03ref\x12)\n" +
-	"\x06holder\x18\x03 \x01(\v2\x11.roster.HolderRefR\x06holder\x124\n" +
-	"\aexpires\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"h\n" +
+	"\x06holder\x18\x03 \x01(\v2\x11.roster.HolderRefR\x06holder\x12=\n" +
+	"\fdate_expires\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"q\n" +
 	"\x13EmailVerifyResponse\x12\x1b\n" +
-	"\x05token\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\x124\n" +
-	"\aexpires\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\"2\n" +
+	"\x05token\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\x12=\n" +
+	"\fdate_expires\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"2\n" +
 	"\x13EmailConfirmRequest\x12\x1b\n" +
 	"\x05token\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\";\n" +
 	"\x14EmailConfirmResponse\x12#\n" +
@@ -2830,8 +2830,8 @@ var file_app_email_svc_g_proto_depIdxs = []int32{
 	26, // 23: roster.EmailWatchItem.value:type_name -> roster.Email
 	2,  // 24: roster.EmailVerifyRequest.ref:type_name -> roster.EmailRef
 	20, // 25: roster.EmailVerifyRequest.holder:type_name -> roster.HolderRef
-	21, // 26: roster.EmailVerifyRequest.expires:type_name -> google.protobuf.Timestamp
-	21, // 27: roster.EmailVerifyResponse.expires:type_name -> google.protobuf.Timestamp
+	21, // 26: roster.EmailVerifyRequest.date_expires:type_name -> google.protobuf.Timestamp
+	21, // 27: roster.EmailVerifyResponse.date_expires:type_name -> google.protobuf.Timestamp
 	26, // 28: roster.EmailConfirmResponse.email:type_name -> roster.Email
 	20, // 29: roster.EmailAttestRequest.holder:type_name -> roster.HolderRef
 	22, // 30: roster.EmailAttestRequest.vouched_by:type_name -> roster.IdentityRef

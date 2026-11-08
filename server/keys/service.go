@@ -150,7 +150,7 @@ func (v service) Introspect(ctx context.Context, req *pdpb.TokenIntrospectReques
 		Grant: grantOf(k.Methods),
 	}
 	if !k.Expires.IsZero() {
-		res.Expires = timestamppb.New(k.Expires)
+		res.DateExpires = timestamppb.New(k.Expires)
 	}
 
 	return res.Build(), nil

@@ -242,7 +242,7 @@ func TestADelegationIsBoundToWhoeverWasGivenIt(t *testing.T) {
 		x.NoError(err)
 		x.True(id.Grant.Allows(get))
 		x.False(id.Grant.IsWhole())
-		x.False(id.Expires.IsZero(), "a delegation that never expires is not one")
+		x.False(id.DateExpires.IsZero(), "a delegation that never expires is not one")
 	})
 
 	// A second app, holding its own key, presenting the first one's delegation.
@@ -541,7 +541,7 @@ func TestDelegateIsVerifyAndOneMoreThing(t *testing.T) {
 		x.True(res.GetVerified().GetOk())
 		x.Equal(b.Who.Bytes(), res.GetVerified().GetHolder())
 		x.NotEmpty(res.GetToken())
-		x.NotNil(res.GetExpires(), "a delegation that never expires is not one")
+		x.NotNil(res.GetDateExpires(), "a delegation that never expires is not one")
 
 		_, err := app.NewHolderServiceClient(b.Conn).List(
 			acting(ctx, b.Token, res.GetToken()), app.HolderListRequest_builder{}.Build())

@@ -1926,7 +1926,7 @@ type ApiKeyIssueRequest struct {
 	xxx_hidden_HolderAlias string                 `protobuf:"bytes,1,opt,name=holder_alias,json=holderAlias"`
 	xxx_hidden_Alias       string                 `protobuf:"bytes,2,opt,name=alias"`
 	xxx_hidden_Methods     []string               `protobuf:"bytes,3,rep,name=methods"`
-	xxx_hidden_Expires     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=expires"`
+	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_expires,json=dateExpires"`
 	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,5,opt,name=holder"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -1978,9 +1978,9 @@ func (x *ApiKeyIssueRequest) GetMethods() []string {
 	return nil
 }
 
-func (x *ApiKeyIssueRequest) GetExpires() *timestamppb.Timestamp {
+func (x *ApiKeyIssueRequest) GetDateExpires() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_Expires
+		return x.xxx_hidden_DateExpires
 	}
 	return nil
 }
@@ -2004,19 +2004,19 @@ func (x *ApiKeyIssueRequest) SetMethods(v []string) {
 	x.xxx_hidden_Methods = v
 }
 
-func (x *ApiKeyIssueRequest) SetExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_Expires = v
+func (x *ApiKeyIssueRequest) SetDateExpires(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpires = v
 }
 
 func (x *ApiKeyIssueRequest) SetHolder(v *HolderRef) {
 	x.xxx_hidden_Holder = v
 }
 
-func (x *ApiKeyIssueRequest) HasExpires() bool {
+func (x *ApiKeyIssueRequest) HasDateExpires() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Expires != nil
+	return x.xxx_hidden_DateExpires != nil
 }
 
 func (x *ApiKeyIssueRequest) HasHolder() bool {
@@ -2026,8 +2026,8 @@ func (x *ApiKeyIssueRequest) HasHolder() bool {
 	return x.xxx_hidden_Holder != nil
 }
 
-func (x *ApiKeyIssueRequest) ClearExpires() {
-	x.xxx_hidden_Expires = nil
+func (x *ApiKeyIssueRequest) ClearDateExpires() {
+	x.xxx_hidden_DateExpires = nil
 }
 
 func (x *ApiKeyIssueRequest) ClearHolder() {
@@ -2048,7 +2048,7 @@ type ApiKeyIssueRequest_builder struct {
 	// silently does not work.
 	Methods []string
 	// When it stops working, unset for one that does not.
-	Expires *timestamppb.Timestamp
+	DateExpires *timestamppb.Timestamp
 	// Whose it is, in full. **Data plane only**, and a reference rather than an
 	// alias because the wall has many tenants and a name alone is a question with
 	// more than one answer. Naming one that is not there is a refusal, not a
@@ -2063,7 +2063,7 @@ func (b0 ApiKeyIssueRequest_builder) Build() *ApiKeyIssueRequest {
 	x.xxx_hidden_HolderAlias = b.HolderAlias
 	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Methods = b.Methods
-	x.xxx_hidden_Expires = b.Expires
+	x.xxx_hidden_DateExpires = b.DateExpires
 	x.xxx_hidden_Holder = b.Holder
 	return m0
 }
@@ -2223,12 +2223,12 @@ const file_app_apikey_svc_g_proto_rawDesc = "" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"^\n" +
 	"\fApiKeyFilter\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.ApiKeyRefR\x03ref\x12)\n" +
-	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\"\xd6\x01\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\"\xdf\x01\n" +
 	"\x12ApiKeyIssueRequest\x12(\n" +
 	"\fholder_alias\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\vholderAlias\x12\x1b\n" +
 	"\x05alias\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x18\n" +
-	"\amethods\x18\x03 \x03(\tR\amethods\x124\n" +
-	"\aexpires\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\aexpires\x12)\n" +
+	"\amethods\x18\x03 \x03(\tR\amethods\x12=\n" +
+	"\fdate_expires\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12)\n" +
 	"\x06holder\x18\x05 \x01(\v2\x11.roster.HolderRefR\x06holder\"T\n" +
 	"\x13ApiKeyIssueResponse\x12\x1b\n" +
 	"\x05token\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\x12 \n" +
@@ -2284,7 +2284,7 @@ var file_app_apikey_svc_g_proto_depIdxs = []int32{
 	17, // 17: roster.ApiKeyListResponse.items:type_name -> roster.ApiKey
 	2,  // 18: roster.ApiKeyFilter.ref:type_name -> roster.ApiKeyRef
 	13, // 19: roster.ApiKeyFilter.holder:type_name -> roster.HolderRef
-	14, // 20: roster.ApiKeyIssueRequest.expires:type_name -> google.protobuf.Timestamp
+	14, // 20: roster.ApiKeyIssueRequest.date_expires:type_name -> google.protobuf.Timestamp
 	13, // 21: roster.ApiKeyIssueRequest.holder:type_name -> roster.HolderRef
 	17, // 22: roster.ApiKeyIssueResponse.key:type_name -> roster.ApiKey
 	0,  // 23: roster.ApiKeyService.Add:input_type -> roster.ApiKeyAddRequest

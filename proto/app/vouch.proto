@@ -369,7 +369,7 @@ message VouchClaim {
   // what comes back; a provider that remembered them
   // instead answers with the older time, and that is what is believed. A time
   // after now is read as now.
-  google.protobuf.Timestamp authenticated = 4;
+  google.protobuf.Timestamp date_authenticated = 4;
 }
 
 message VouchVerifyRequest {
@@ -421,7 +421,7 @@ message VouchFactor {
   string name = 5;
 
   // When they may try this one again, and unset for one that is open.
-  google.protobuf.Timestamp locked_until = 4;
+  google.protobuf.Timestamp date_locked = 4;
 
   // For `webauthn`: the credential identifier the authenticator chose, as a
   // browser is told to look for it (`allowCredentials`), base64url. What a
@@ -455,7 +455,7 @@ message VouchVerifyResponse {
   // which every other refusal here is careful not to. The alternative is a
   // product where somebody locked out is told nothing and tries forever, and
   // being locked out is already something they can discover by succeeding.
-  google.protobuf.Timestamp locked_until = 4;
+  google.protobuf.Timestamp date_locked = 4;
 
   // What has been proved so far, and what else this person has.
   //
@@ -556,7 +556,7 @@ message VouchDelegateRequest {
   // it was minted for.
   //
   // A time in the past is refused rather than clamped.
-  google.protobuf.Timestamp expires = 11;
+  google.protobuf.Timestamp date_expires = 11;
 }
 
 message VouchAcceptRequest {
@@ -569,7 +569,7 @@ message VouchAcceptRequest {
   repeated string methods = 2;
 
   // When it stops working. Unset is `keys.DelegateFor`, which is minutes.
-  google.protobuf.Timestamp expires = 3;
+  google.protobuf.Timestamp date_expires = 3;
 
   // A name the person's own tenant answers at, to also mint a **link** for:
   // one the front door hands the browser, and the user console at that name
@@ -629,7 +629,7 @@ message VouchDelegateResponse {
   string token = 10;
 
   // When it stops working, which is always set when a token is.
-  google.protobuf.Timestamp expires = 11;
+  google.protobuf.Timestamp date_expires = 11;
 
   // The link, when [VouchAcceptRequest.at] asked for one, and the only time it
   // is readable -- `link.proto` says what is stored. A browser carries it to
@@ -642,7 +642,7 @@ message VouchDelegateResponse {
   string link = 12;
 
   // When the link stops working, set exactly when the link is.
-  google.protobuf.Timestamp link_expires = 13;
+  google.protobuf.Timestamp date_link_expires = 13;
 }
 
 message VouchLinkRequest {
@@ -654,7 +654,7 @@ message VouchLinkRequest {
   // channel roster knows nothing about, and how long that channel takes is the
   // caller's to know -- but how long a way into somebody's account may lie
   // around is not.
-  google.protobuf.Timestamp expires = 11;
+  google.protobuf.Timestamp date_expires = 11;
 }
 
 message VouchLinkResponse {
@@ -665,7 +665,7 @@ message VouchLinkResponse {
   // here* to anybody who types into it.
   string token = 1;
 
-  google.protobuf.Timestamp expires = 11;
+  google.protobuf.Timestamp date_expires = 11;
 }
 
 message VouchLeaveLinkRequest {
@@ -685,7 +685,7 @@ message VouchLeaveLinkResponse {
   // not what it was asked.
   string address = 2;
 
-  google.protobuf.Timestamp expires = 11;
+  google.protobuf.Timestamp date_expires = 11;
 }
 
 message VouchLeaveRequest {
@@ -707,5 +707,5 @@ message VouchRedeemRequest {
   repeated string methods = 10;
 
   // When the delegation stops working. Unset takes the default.
-  google.protobuf.Timestamp expires = 11;
+  google.protobuf.Timestamp date_expires = 11;
 }

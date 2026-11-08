@@ -229,7 +229,7 @@ func TestTheCountIsOneCountAcrossTheSteps(t *testing.T) {
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
-	x.NotNil(shut.GetLockedUntil(),
+	x.NotNil(shut.GetDateLocked(),
 		"guessing the second factor did not cost the first anything")
 }
 

@@ -972,7 +972,7 @@ function Keys(props: {
 		setNote(null)
 		setToken(null)
 		void issue
-			.call({ holder: ref(props.own), alias, methods, expires: expiresAt(expires) })
+			.call({ holder: ref(props.own), alias, methods, dateExpires: expiresAt(expires) })
 			.then((r) => {
 				form.reset()
 				setToken(r.token)
@@ -1222,7 +1222,7 @@ function Leave(props: {
  */
 function ByMail(props: { alias: string; proved: string[] }): React.ReactNode {
 	const [to, setTo] = useState(props.proved[0] ?? '')
-	const [sent, setSent] = useState<{ address: string; expires: string } | null>(null)
+	const [sent, setSent] = useState<{ address: string; date_expires: string } | null>(null)
 	const [bad, setBad] = useState<string | null>(null)
 	const [busy, setBusy] = useState(false)
 
@@ -1240,7 +1240,7 @@ function ByMail(props: { alias: string; proved: string[] }): React.ReactNode {
 					void fetch('/leave/link', json({ address: to }))
 						.then(async (res) => {
 							if (res.status === 202) {
-								setSent((await res.json()) as { address: string; expires: string })
+								setSent((await res.json()) as { address: string; date_expires: string })
 								return
 							}
 							setBad(await why(res))
@@ -1265,7 +1265,7 @@ function ByMail(props: { alias: string; proved: string[] }): React.ReactNode {
 			{sent !== null && (
 				<p className="note">
 					A link is on its way to {sent.address}. Open it before{' '}
-					{new Date(sent.expires).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}; after that it is
+					{new Date(sent.date_expires).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}; after that it is
 					nothing, and you can ask for another.
 				</p>
 			)}

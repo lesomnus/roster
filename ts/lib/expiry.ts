@@ -6,7 +6,7 @@ import { type Timestamp, TimestampSchema } from '@bufbuild/protobuf/wkt'
  *
  * A handful of choices rather than a date field, because what somebody
  * decides here is a policy ("a quarter", "a year") and not a day, and the
- * wire wants an instant (`ApiKeyIssueRequest.expires`). `never` is the
+ * wire wants an instant (`ApiKeyIssueRequest.date_expires`). `never` is the
  * default for the CLI's reason -- `--expires` empty is forever -- and because
  * a key that silently stops working is an outage nobody can name.
  */

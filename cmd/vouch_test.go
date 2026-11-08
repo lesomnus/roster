@@ -156,7 +156,7 @@ func TestSomebodyWhoIsNotHereIsRefusedTheSameWay(t *testing.T) {
 	for _, v := range []*app.VouchVerifyResponse{nobody, unset, wrong} {
 		x.False(v.GetOk())
 		x.Empty(v.GetHolder())
-		x.Nil(v.GetLockedUntil())
+		x.Nil(v.GetDateLocked())
 	}
 }
 
@@ -174,14 +174,14 @@ func TestEnoughWrongAnswersCloseTheAccount(t *testing.T) {
 	}
 
 	x.False(last.GetOk())
-	x.NotNil(last.GetLockedUntil(), "%d wrong answers did not close it", vouch.MaxFailures)
-	x.WithinDuration(time.Now().Add(vouch.LockFor), last.GetLockedUntil().AsTime(), time.Minute)
+	x.NotNil(last.GetDateLocked(), "%d wrong answers did not close it", vouch.MaxFailures)
+	x.WithinDuration(time.Now().Add(vouch.LockFor), last.GetDateLocked().AsTime(), time.Minute)
 
 	// And the right one is refused for as long as it is closed. Otherwise the
 	// lockout is only a delay for whoever guesses correctly on the next try.
 	v := b.verifies(t, ctx, b.ContosoUser, "correct horse battery staple")
 	x.False(v.GetOk())
-	x.NotNil(v.GetLockedUntil())
+	x.NotNil(v.GetDateLocked())
 }
 
 // TestTypingAtALockedAccountDoesNotPushTheLockOut is why an attempt made during
@@ -291,7 +291,7 @@ func TestSettingASecretUnlocksTheAccount(t *testing.T) {
 
 	v := b.verifies(t, ctx, b.ContosoUser, "a different one entirely")
 	x.True(v.GetOk())
-	x.Nil(v.GetLockedUntil())
+	x.Nil(v.GetDateLocked())
 }
 
 // TestSomebodyNamedByTenantAndAlias, which is what a username field and a
@@ -577,7 +577,7 @@ func TestAnErasedHolderCannotAuthenticate(t *testing.T) {
 		for range vouch.MaxFailures + 1 {
 			v := b.verifies(t, ctx, b.ContosoUser, "wrong")
 			x.False(v.GetOk())
-			x.Nil(v.GetLockedUntil(), "a lockout tells a caller the account is there")
+			x.Nil(v.GetDateLocked(), "a lockout tells a caller the account is there")
 		}
 	})
 

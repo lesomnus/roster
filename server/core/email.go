@@ -213,7 +213,7 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 	}
 
 	expires := time.Now().Add(vouch.LinkFor)
-	if u := req.GetExpires(); u != nil {
+	if u := req.GetDateExpires(); u != nil {
 		if at := u.AsTime(); at.After(time.Now()) && at.Before(expires) {
 			expires = at
 		}
@@ -238,7 +238,7 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 		return nil, err
 	}
 
-	return app.EmailVerifyResponse_builder{Token: token, Expires: timestamppb.New(expires)}.Build(), nil
+	return app.EmailVerifyResponse_builder{Token: token, DateExpires: timestamppb.New(expires)}.Build(), nil
 }
 
 // Attest writes an address a provider vouched for, and stamps it when that

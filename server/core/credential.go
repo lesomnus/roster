@@ -89,7 +89,7 @@ func (s coreCredential) Unlock(ctx context.Context, req *app.CredentialUnlockReq
 
 	res := app.CredentialUnlockResponse_builder{}
 	if was != nil {
-		res.WasLockedUntil = was
+		res.DateLocked = was
 	}
 
 	return res.Build(), nil

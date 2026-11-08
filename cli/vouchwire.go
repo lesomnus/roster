@@ -243,7 +243,7 @@ func expiresOf(cl *xli.Command) (*timestamppb.Timestamp, error) {
 // the factors still open on stderr, which also says it is not a credential.
 // No: an error, and deliberately one sentence for every reason.
 func answered(v *app.VouchVerifyResponse, token string, expires *timestamppb.Timestamp) error {
-	if w := v.GetLockedUntil(); w != nil {
+	if w := v.GetDateLocked(); w != nil {
 		return fmt.Errorf("locked until %s. Attempts do not extend it, and `roster vouch unlock` is the operator's answer",
 			w.AsTime().Format(time.RFC3339))
 	}
@@ -260,7 +260,7 @@ func answered(v *app.VouchVerifyResponse, token string, expires *timestamppb.Tim
 			if n := f.GetName(); n != "" {
 				w += " " + fmt.Sprintf("%q", n)
 			}
-			if u := f.GetLockedUntil(); u != nil {
+			if u := f.GetDateLocked(); u != nil {
 				w += " (locked until " + u.AsTime().Format(time.RFC3339) + ")"
 			}
 
@@ -427,7 +427,7 @@ func newCmdVouchDelegate(c *cmd.Config) *xli.Command {
 			if err != nil {
 				return err
 			}
-			req.Expires = expires
+			req.DateExpires = expires
 
 			kind, _ := flg.Find[string](cl, "kind")
 			name, _ := flg.Find[string](cl, "name")
@@ -438,7 +438,7 @@ func newCmdVouchDelegate(c *cmd.Config) *xli.Command {
 			if err != nil {
 				return err
 			}
-			if err := answered(v.GetVerified(), v.GetToken(), v.GetExpires()); err != nil {
+			if err := answered(v.GetVerified(), v.GetToken(), v.GetDateExpires()); err != nil {
 				return err
 			}
 			if w := cmd.Widest(methods); w != "" && v.GetToken() != "" {
@@ -545,8 +545,8 @@ func newCmdVouchLink(c *cmd.Config) *xli.Command {
 			}
 
 			v, err := client.Link(ctx, app.VouchLinkRequest_builder{
-				Who:     who,
-				Expires: expires,
+				Who:         who,
+				DateExpires: expires,
 			}.Build())
 			if err != nil {
 				return err
@@ -557,7 +557,7 @@ func newCmdVouchLink(c *cmd.Config) *xli.Command {
 				"until %s, single use. This is the only time it is shown, and roster does not "+
 					"deliver it -- that is the point. It answers the same for a name that is "+
 					"nobody's; a dud fails at redeem like any bad token.\n",
-				v.GetExpires().AsTime().Format(time.RFC3339))
+				v.GetDateExpires().AsTime().Format(time.RFC3339))
 
 			return next(ctx)
 		}),
@@ -599,14 +599,14 @@ func newCmdVouchRedeem(c *cmd.Config) *xli.Command {
 			}
 
 			v, err := client.Redeem(ctx, app.VouchRedeemRequest_builder{
-				Token:   string(token),
-				Methods: methods,
-				Expires: expires,
+				Token:       string(token),
+				Methods:     methods,
+				DateExpires: expires,
 			}.Build())
 			if err != nil {
 				return err
 			}
-			if err := answered(v.GetVerified(), v.GetToken(), v.GetExpires()); err != nil {
+			if err := answered(v.GetVerified(), v.GetToken(), v.GetDateExpires()); err != nil {
 				return err
 			}
 
@@ -659,7 +659,7 @@ func newCmdVouchLeaveLink(c *cmd.Config) *xli.Command {
 				"for %s, until %s, single use. It deletes their account once spent with their "+
 					"alias typed, and signs nobody in. This is the only time it is shown, and roster "+
 					"does not deliver it: send it to that address and nowhere else.\n",
-				v.GetAddress(), v.GetExpires().AsTime().Format(time.RFC3339))
+				v.GetAddress(), v.GetDateExpires().AsTime().Format(time.RFC3339))
 
 			return next(ctx)
 		}),
@@ -886,13 +886,13 @@ func newCmdVouchAccept(c *cmd.Config) *xli.Command {
 					Provider: provider,
 					Subject:  subject,
 				}.Build(),
-				Methods: methods,
-				Expires: expires,
+				Methods:     methods,
+				DateExpires: expires,
 			}.Build())
 			if err != nil {
 				return err
 			}
-			if err := answered(v.GetVerified(), v.GetToken(), v.GetExpires()); err != nil {
+			if err := answered(v.GetVerified(), v.GetToken(), v.GetDateExpires()); err != nil {
 				return err
 			}
 

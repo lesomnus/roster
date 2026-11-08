@@ -112,7 +112,7 @@ func TestAnAttemptIsNotFinishedForSomebodySuspendedHalfWayThrough(t *testing.T) 
 	// somebody who has just been suspended -- told apart, the second form
 	// becomes a way of asking after the standing of an account by quoting a
 	// handle at it.
-	x.Nil(res.GetVerified().GetLockedUntil())
+	x.Nil(res.GetVerified().GetDateLocked())
 	x.Empty(res.GetVerified().GetContinuation(),
 		"a refused attempt handed back a handle to try again with")
 }

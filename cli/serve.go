@@ -266,10 +266,16 @@ func Migrate(ctx context.Context, s *cmd.Server) error {
 	return nil
 }
 
-// migrate brings one plane's database into this build's shape: the indexes an
-// earlier build made under another name moved to this build's first, then an
-// index the schema declares that PostgreSQL left invalid refused, then what the
-// schema declares made.
+// migrate brings one plane's database into this build's shape: the columns and
+// indexes an earlier build made under another name moved to this build's
+// first, then an index the schema declares that PostgreSQL left invalid
+// refused, then what the schema declares made.
+//
+// The columns are payday's own (`pd.ColumnRenames`): none of the entities
+// roster declares has one today -- it declares no past, no notifications and no
+// entitlements -- and the call is here so that the day it does, the store is
+// moved rather than a column added empty beside the old one, or on SQLite a
+// table made again without it.
 //
 // First, because a migration finds an index by its name, and one it does not
 // find it makes again, from every row, beside the old one, which it leaves --
@@ -285,6 +291,9 @@ func Migrate(ctx context.Context, s *cmd.Server) error {
 // its database was in this build's shape while the index served no read
 // (payday#176). The refusal says what to run to make it again.
 func migrate(ctx context.Context, s *cmd.Server) error {
+	if err := rename.Columns(ctx, s.Db, s.Dialect, pd.ColumnRenames); err != nil {
+		return err
+	}
 	if err := rename.Indexes(ctx, s.Db, s.Dialect, pd.IndexRenames); err != nil {
 		return err
 	}

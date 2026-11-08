@@ -156,7 +156,7 @@ func (s *Server) LeaveLink(ctx context.Context, req *app.VouchLeaveLinkRequest) 
 		Token:   token,
 		Address: e.GetAddress(),
 		// The row's expiry, for `mint`'s reason.
-		Expires: row.GetDateExpires(),
+		DateExpires: row.GetDateExpires(),
 	}.Build(), nil
 }
 

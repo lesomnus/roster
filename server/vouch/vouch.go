@@ -356,7 +356,7 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 		// nothing here can: ten wrong guesses every [LockFor] will close it
 		// again, which is what locking by name costs; the package comment says
 		// why that is accepted.
-		return app.VouchVerifyResponse_builder{LockedUntil: until}.Build(), nil, nil
+		return app.VouchVerifyResponse_builder{DateLocked: until}.Build(), nil, nil
 	}
 
 	ok, step, err := by.Compare(v.GetSecret(), secret, v.GetLastStep())
@@ -467,7 +467,7 @@ func (s *Server) failed(ctx context.Context, v *app.Credential) (*app.VouchVerif
 		// immediately and the account is effectively gone.
 		patch.Failures = z.Ptr(int32(0))
 
-		res = app.VouchVerifyResponse_builder{LockedUntil: until}.Build()
+		res = app.VouchVerifyResponse_builder{DateLocked: until}.Build()
 	}
 
 	if _, err := s.open.Credential().Patch(ctx, patch.Build()); err != nil {

@@ -226,7 +226,7 @@ func TestSigningInByAddressIsF7Closed(t *testing.T) {
 			res := verify(tc.tenant, tc.address, tc.secret)
 			x.False(res.GetOk(), tc.desc)
 			x.Nil(res.GetHolder(), tc.desc)
-			x.Nil(res.GetLockedUntil(), tc.desc)
+			x.Nil(res.GetDateLocked(), tc.desc)
 		}
 	})
 

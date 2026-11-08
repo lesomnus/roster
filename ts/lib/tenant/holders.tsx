@@ -694,7 +694,7 @@ function Keys(props: {
 									.split(',')
 									.map((v) => v.trim())
 									.filter((v) => v !== ''),
-								expires: expiresAt(expires),
+								dateExpires: expiresAt(expires),
 							})
 							.then((r) => {
 								props.say({ kind: 'secret', text: r.token })

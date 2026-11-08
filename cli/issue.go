@@ -130,7 +130,7 @@ func newCmdIssueKey(c *cmd.Config) *xli.Command {
 			if err != nil {
 				return err
 			}
-			req.Expires = expires
+			req.DateExpires = expires
 
 			name, _ := flg.Find[string](cl, "name")
 			req.Alias = name
