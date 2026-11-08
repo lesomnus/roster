@@ -391,10 +391,10 @@ func (d *Door) signIn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := d.c.Vouch.Delegate(ctx, rstr.VouchDelegateRequest_builder{
-		Who:     who.Build(),
-		Secret:  []byte(body.Password),
-		Methods: d.c.Methods,
-		Expires: d.expires(),
+		Who:         who.Build(),
+		Secret:      []byte(body.Password),
+		Methods:     d.c.Methods,
+		DateExpires: d.expires(),
 	}.Build())
 	if err != nil {
 		// A refusal roster made about the **request** rather than about the
@@ -451,7 +451,7 @@ func (d *Door) finish(w http.ResponseWriter, r *http.Request) {
 		Name:         body.Name,
 		Secret:       []byte(body.Secret),
 		Methods:      d.c.Methods,
-		Expires:      d.expires(),
+		DateExpires:  d.expires(),
 	}.Build())
 	if err != nil {
 		http.Error(w, "cannot sign in", http.StatusInternalServerError)
@@ -590,7 +590,7 @@ func (d *Door) answer(w http.ResponseWriter, r *http.Request, res *rstr.VouchDel
 		// Never outliving what this app was given to act with: a session that
 		// outlived its delegation would be somebody signed in to a page that
 		// cannot be drawn.
-		Expires: res.GetExpires().AsTime(),
+		Expires: res.GetDateExpires().AsTime(),
 		Held:    map[string]string{heldToken: res.GetToken()},
 	})
 	if err != nil {
@@ -700,14 +700,14 @@ func (d *Door) accept(ctx context.Context, w http.ResponseWriter, c Claim, at st
 		Subject:  c.Subject,
 	}
 	if !c.Authenticated.IsZero() {
-		claim.Authenticated = timestamppb.New(c.Authenticated)
+		claim.DateAuthenticated = timestamppb.New(c.Authenticated)
 	}
 
 	res, err := d.c.Vouch.Accept(ctx, rstr.VouchAcceptRequest_builder{
-		Claim:   claim.Build(),
-		Methods: d.c.Methods,
-		Expires: d.expires(),
-		At:      at,
+		Claim:       claim.Build(),
+		Methods:     d.c.Methods,
+		DateExpires: d.expires(),
+		At:          at,
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -726,7 +726,7 @@ func (d *Door) accept(ctx context.Context, w http.ResponseWriter, c Claim, at st
 		// this person may do against **this app**, and never outliving the
 		// delegation this app was given to act with.
 		Grant:   frame.Whole(),
-		Expires: res.GetExpires().AsTime(),
+		Expires: res.GetDateExpires().AsTime(),
 		Held:    map[string]string{heldToken: res.GetToken()},
 	})
 	if err != nil {
@@ -816,9 +816,9 @@ func (d *Door) Redeem(ctx context.Context, w http.ResponseWriter, token string) 
 		return ErrNotSignedIn
 	}
 	res, err := d.c.Vouch.Redeem(ctx, rstr.VouchRedeemRequest_builder{
-		Token:   token,
-		Methods: d.c.Methods,
-		Expires: d.expires(),
+		Token:       token,
+		Methods:     d.c.Methods,
+		DateExpires: d.expires(),
 	}.Build())
 	if err != nil {
 		return err
@@ -836,7 +836,7 @@ func (d *Door) Redeem(ctx context.Context, w http.ResponseWriter, token string) 
 		Id:       who.String(),
 		TenantId: tenant.String(),
 		Grant:    frame.Whole(),
-		Expires:  res.GetExpires().AsTime(),
+		Expires:  res.GetDateExpires().AsTime(),
 		Held:     map[string]string{heldToken: res.GetToken()},
 	})
 	if err != nil {

@@ -277,13 +277,13 @@ func TestALocalOperatorOpensAnAccountSomebodyElseClosed(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 	x.False(shut.GetOk(), "the right password worked while the account was closed")
-	x.NotNil(shut.GetLockedUntil())
+	x.NotNil(shut.GetDateLocked())
 
 	out, err := b.Walled.Credential().Unlock(asOps, app.CredentialUnlockRequest_builder{
 		Ref: app.HolderRef_builder{Id: joe.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
-	x.NotNil(out.GetWasLockedUntil(), "an operator cannot tell 'I opened it' from 'it was not closed'")
+	x.NotNil(out.GetDateLocked(), "an operator cannot tell 'I opened it' from 'it was not closed'")
 
 	open, err := b.vouched().Verify(ctx, app.VouchVerifyRequest_builder{
 		Who:    app.VouchWho_builder{Id: joe.Bytes()}.Build(),
@@ -302,7 +302,7 @@ func TestALocalOperatorOpensAnAccountSomebodyElseClosed(t *testing.T) {
 			Ref: app.HolderRef_builder{Id: joe.Bytes()}.Build(),
 		}.Build())
 		x.NoError(err)
-		x.Nil(again.GetWasLockedUntil())
+		x.Nil(again.GetDateLocked())
 	})
 }
 

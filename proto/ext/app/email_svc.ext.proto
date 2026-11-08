@@ -140,14 +140,14 @@ message EmailVerifyRequest {
 
   // When the link stops working; unset, or later than the default, is the
   // default (`vouch.LinkFor`).
-  google.protobuf.Timestamp expires = 2;
+  google.protobuf.Timestamp date_expires = 2;
 }
 
 message EmailVerifyResponse {
   // The link, and the only time it is readable. What is stored is a hash.
   string token = 1 [features.field_presence = IMPLICIT];
 
-  google.protobuf.Timestamp expires = 2;
+  google.protobuf.Timestamp date_expires = 2;
 }
 
 message EmailAttestRequest {

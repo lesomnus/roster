@@ -139,7 +139,7 @@ func (s coreApiKey) Issue(ctx context.Context, req *app.ApiKeyIssueRequest) (*ap
 		Secret:  sum,
 		Methods: req.GetMethods(),
 	}
-	if v := req.GetExpires(); v != nil {
+	if v := req.GetDateExpires(); v != nil {
 		add.DateExpires = v
 	}
 

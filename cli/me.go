@@ -191,7 +191,7 @@ func newCmdMeIssueKey(c *cmd.Config) *xli.Command {
 					return fmt.Errorf("--expires: %w", err)
 				}
 
-				req.Expires = timestamppb.New(time.Now().Add(d))
+				req.DateExpires = timestamppb.New(time.Now().Add(d))
 			}
 
 			v, err := app.NewApiKeyServiceClient(conn).Issue(ctx, req.Build())

@@ -167,7 +167,7 @@ func TestAnErasedHolderIsStoppedAtTheWire(t *testing.T) {
 // the port a login app actually calls.
 //
 // The shape of the answer is the assertion: `ok:false` with **nothing else on
-// it**. A `locked_until` would say "this account exists and is locked", which
+// it**. A `date_locked` would say "this account exists and is locked", which
 // is more than a suspended person's login form should learn -- the in-process
 // test pins that reasoning, and this pins that the served stack, with its
 // interceptors between, answers the same bytes.
@@ -193,7 +193,7 @@ func TestADisabledHolderIsRefusedBareOverTheWire(t *testing.T) {
 	x.NoError(err)
 	x.False(v.GetOk(), "a suspended person's correct password is still a no")
 	x.Empty(v.GetHolder())
-	x.Nil(v.GetLockedUntil(), "a suspension is not a lockout, and must not read as one")
+	x.Nil(v.GetDateLocked(), "a suspension is not a lockout, and must not read as one")
 }
 
 // TestEveryNoOverTheWireIsTheSameNo is the indistinguishability rule, read

@@ -438,7 +438,7 @@ func TestAFrontDoorHandsSomebodyIntoTheirOwnConsole(t *testing.T) {
 	x.True(res.GetVerified().GetOk())
 	x.True(strings.HasPrefix(res.GetToken(), keys.PrefixDelegation), "the front door's own credential, unchanged")
 	x.True(strings.HasPrefix(res.GetLink(), vouch.PrefixLink), "no link for the user console: %q", res.GetLink())
-	x.WithinDuration(time.Now().Add(vouch.LinkAtFor), res.GetLinkExpires().AsTime(), time.Minute)
+	x.WithinDuration(time.Now().Add(vouch.LinkAtFor), res.GetDateLinkExpires().AsTime(), time.Minute)
 
 	// The browser carries it to the name, and the user console spends it for the
 	// same session a password ends in: a cookie, and `Me.Get` answering who.

@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/sync.proto.
  */
 export const file_app_sync: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvc3luYy5wcm90bxIGcm9zdGVyIhIKEFN5bmNXYXRjaFJlcXVlc3QiwgIKCVN5bmNFdmVudBIOCgZob2xkZXIYASABKAwSDgoGdGVuYW50GAIgASgMEiIKBnJlYXNvbhgIIAEoDjISLnJvc3Rlci5TeW5jUmVhc29uEiYKAmF0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBI0ChBkYXRlX2ludmFsaWRhdGVkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIxCg1kYXRlX2Rpc2FibGVkGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLZGF0ZV9jbG9zZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wKscBCgpTeW5jUmVhc29uEhsKF1NZTkNfUkVBU09OX1VOU1BFQ0lGSUVEEAASGwoXU1lOQ19SRUFTT05fSU5WQUxJREFURUQQARIZChVTWU5DX1JFQVNPTl9TVVNQRU5ERUQQAhIaChZTWU5DX1JFQVNPTl9SRUlOU1RBVEVEEAMSFgoSU1lOQ19SRUFTT05fRVJBU0VEEAQSFgoSU1lOQ19SRUFTT05fQ0xPU0VEEAUSGAoUU1lOQ19SRUFTT05fUkVPUEVORUQQBjJFCgtTeW5jU2VydmljZRI2CgVXYXRjaBIYLnJvc3Rlci5TeW5jV2F0Y2hSZXF1ZXN0GhEucm9zdGVyLlN5bmNFdmVudDABQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
+  fileDesc("Cg5hcHAvc3luYy5wcm90bxIGcm9zdGVyIhIKEFN5bmNXYXRjaFJlcXVlc3QiyQIKCVN5bmNFdmVudBIOCgZob2xkZXIYASABKAwSDgoGdGVuYW50GAIgASgMEiIKBnJlYXNvbhgIIAEoDjISLnJvc3Rlci5TeW5jUmVhc29uEi0KCWRhdGVfc2VudBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASNAoQZGF0ZV9pbnZhbGlkYXRlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNZGF0ZV9kaXNhYmxlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2RhdGVfY2xvc2VkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCrHAQoKU3luY1JlYXNvbhIbChdTWU5DX1JFQVNPTl9VTlNQRUNJRklFRBAAEhsKF1NZTkNfUkVBU09OX0lOVkFMSURBVEVEEAESGQoVU1lOQ19SRUFTT05fU1VTUEVOREVEEAISGgoWU1lOQ19SRUFTT05fUkVJTlNUQVRFRBADEhYKElNZTkNfUkVBU09OX0VSQVNFRBAEEhYKElNZTkNfUkVBU09OX0NMT1NFRBAFEhgKFFNZTkNfUkVBU09OX1JFT1BFTkVEEAYyRQoLU3luY1NlcnZpY2USNgoFV2F0Y2gSGC5yb3N0ZXIuU3luY1dhdGNoUmVxdWVzdBoRLnJvc3Rlci5TeW5jRXZlbnQwAUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
 
 /**
  * Nothing, and that is the shape rather than a first version.
@@ -94,9 +94,9 @@ export type SyncEvent = Message<"roster.SyncEvent"> & {
    * When this was sent, which is worth having for a log and for nothing else.
    * What decides anything is the three fields below.
    *
-   * @generated from field: google.protobuf.Timestamp at = 9;
+   * @generated from field: google.protobuf.Timestamp date_sent = 9;
    */
-  at?: Timestamp | undefined;
+  dateSent?: Timestamp | undefined;
 
   /**
    * Everything issued to them before this is void, and unset means nothing is.

@@ -28,7 +28,7 @@ func TestASignInLastsAsLongAsTheAppSaid(t *testing.T) {
 	minted := func(asked *timestamppb.Timestamp) *rstr.VouchDelegateResponse {
 		v := whole()
 		if asked != nil {
-			v.SetExpires(asked)
+			v.SetDateExpires(asked)
 		}
 
 		return v
@@ -43,7 +43,7 @@ func TestASignInLastsAsLongAsTheAppSaid(t *testing.T) {
 		{"the first form", func(t *testing.T, f *vouch, d *Door) (*timestamppb.Timestamp, *http.Cookie) {
 			var asked *timestamppb.Timestamp
 			f.delegate = func(in *rstr.VouchDelegateRequest) (*rstr.VouchDelegateResponse, error) {
-				asked = in.GetExpires()
+				asked = in.GetDateExpires()
 				return minted(asked), nil
 			}
 
@@ -57,7 +57,7 @@ func TestASignInLastsAsLongAsTheAppSaid(t *testing.T) {
 				if in.GetContinuation() == "" {
 					return halfway(), nil
 				}
-				asked = in.GetExpires()
+				asked = in.GetDateExpires()
 				return minted(asked), nil
 			}
 
@@ -72,7 +72,7 @@ func TestASignInLastsAsLongAsTheAppSaid(t *testing.T) {
 		{"a provider's claim", func(t *testing.T, f *vouch, d *Door) (*timestamppb.Timestamp, *http.Cookie) {
 			var asked *timestamppb.Timestamp
 			f.accept = func(in *rstr.VouchAcceptRequest) (*rstr.VouchDelegateResponse, error) {
-				asked = in.GetExpires()
+				asked = in.GetDateExpires()
 				return minted(asked), nil
 			}
 
@@ -86,7 +86,7 @@ func TestASignInLastsAsLongAsTheAppSaid(t *testing.T) {
 		{"a link", func(t *testing.T, f *vouch, d *Door) (*timestamppb.Timestamp, *http.Cookie) {
 			var asked *timestamppb.Timestamp
 			f.redeem = func(in *rstr.VouchRedeemRequest) (*rstr.VouchDelegateResponse, error) {
-				asked = in.GetExpires()
+				asked = in.GetDateExpires()
 				return minted(asked), nil
 			}
 

@@ -115,7 +115,7 @@ message SyncEvent {
 
   // When this was sent, which is worth having for a log and for nothing else.
   // What decides anything is the three fields below.
-  google.protobuf.Timestamp at = 9;
+  google.protobuf.Timestamp date_sent = 9;
 
   // Everything issued to them before this is void, and unset means nothing is.
   //

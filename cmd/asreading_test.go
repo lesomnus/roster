@@ -696,7 +696,7 @@ func TestNoVerifierIsAnsweredByThePortThatServesItsRow(t *testing.T) {
 //
 // D14's rule, asserted as an **equality of answers** rather than as a list of
 // empty fields. The difference is not pedantry: every existing test of this
-// checks `ok`, `holder` and `locked_until` by name, so a field added to
+// checks `ok`, `holder` and `date_locked` by name, so a field added to
 // `VouchVerifyResponse` tomorrow -- a reason, a hint, a retry-after -- would be
 // filled in for somebody real and left empty for a stranger, and every one of
 // those tests would still pass. `proto.Equal` cannot miss it.
@@ -796,7 +796,7 @@ func TestNoRefusalSaysWhoIsHere(t *testing.T) {
 
 	// The one difference this app admits to, and the boundary it has to keep.
 	//
-	// `VouchVerifyResponse.locked_until` is documented as a deliberate trade --
+	// `VouchVerifyResponse.date_locked` is documented as a deliberate trade --
 	// *it tells a caller that this person exists, which every other refusal here
 	// is careful not to* -- taken because somebody locked out and told nothing
 	// tries forever. The trade is only payable if it is confined to people who
@@ -818,7 +818,7 @@ func TestNoRefusalSaysWhoIsHere(t *testing.T) {
 		} {
 			for range vouch.MaxFailures + 1 {
 				got := answer(t, tc.who, wrong)
-				x.Nil(got.GetLockedUntil(), "a lockout said %s is a real account", tc.desc)
+				x.Nil(got.GetDateLocked(), "a lockout said %s is a real account", tc.desc)
 				x.True(proto.Equal(baseline, got), tc.desc)
 			}
 		}
@@ -829,7 +829,7 @@ func TestNoRefusalSaysWhoIsHere(t *testing.T) {
 		for range vouch.MaxFailures {
 			last = answer(t, app.VouchWho_builder{Tenant: "contoso", Alias: "someone"}.Build(), wrong)
 		}
-		x.NotNil(last.GetLockedUntil(), "nothing locks, so the checks above looked at nothing")
+		x.NotNil(last.GetDateLocked(), "nothing locks, so the checks above looked at nothing")
 	})
 }
 

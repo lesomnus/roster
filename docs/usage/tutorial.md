@@ -151,13 +151,13 @@ curl -sS -X POST http://127.0.0.1:8080/roster.VouchService/Verify \
 ```
 ```json
 {"ok":true, "holder":"AaAzL9WPhJmTAjnR775IOg==", "tenant":"AaAzL9UtgPCAAVfY/uAN+Q==",
- "lockedUntil":null, "satisfied":[], "available":[], "continuation":""}
+ "dateLocked":null, "satisfied":[], "available":[], "continuation":""}
 ```
 
 And a wrong one:
 
 ```json
-{"ok":false, "holder":"", "tenant":"", "lockedUntil":null, …}
+{"ok":false, "holder":"", "tenant":"", "dateLocked":null, …}
 ```
 
 `ok:false` and not an error — the request was fine, the answer is no. There is

@@ -155,7 +155,7 @@ type SyncEvent struct {
 	xxx_hidden_Holder          []byte                 `protobuf:"bytes,1,opt,name=holder"`
 	xxx_hidden_Tenant          []byte                 `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Reason          SyncReason             `protobuf:"varint,8,opt,name=reason,enum=roster.SyncReason"`
-	xxx_hidden_At              *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=at"`
+	xxx_hidden_DateSent        *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=date_sent,json=dateSent"`
 	xxx_hidden_DateInvalidated *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_invalidated,json=dateInvalidated"`
 	xxx_hidden_DateDisabled    *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_disabled,json=dateDisabled"`
 	xxx_hidden_DateErased      *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
@@ -210,9 +210,9 @@ func (x *SyncEvent) GetReason() SyncReason {
 	return SyncReason_SYNC_REASON_UNSPECIFIED
 }
 
-func (x *SyncEvent) GetAt() *timestamppb.Timestamp {
+func (x *SyncEvent) GetDateSent() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_At
+		return x.xxx_hidden_DateSent
 	}
 	return nil
 }
@@ -263,8 +263,8 @@ func (x *SyncEvent) SetReason(v SyncReason) {
 	x.xxx_hidden_Reason = v
 }
 
-func (x *SyncEvent) SetAt(v *timestamppb.Timestamp) {
-	x.xxx_hidden_At = v
+func (x *SyncEvent) SetDateSent(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateSent = v
 }
 
 func (x *SyncEvent) SetDateInvalidated(v *timestamppb.Timestamp) {
@@ -283,11 +283,11 @@ func (x *SyncEvent) SetDateClosed(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateClosed = v
 }
 
-func (x *SyncEvent) HasAt() bool {
+func (x *SyncEvent) HasDateSent() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_At != nil
+	return x.xxx_hidden_DateSent != nil
 }
 
 func (x *SyncEvent) HasDateInvalidated() bool {
@@ -318,8 +318,8 @@ func (x *SyncEvent) HasDateClosed() bool {
 	return x.xxx_hidden_DateClosed != nil
 }
 
-func (x *SyncEvent) ClearAt() {
-	x.xxx_hidden_At = nil
+func (x *SyncEvent) ClearDateSent() {
+	x.xxx_hidden_DateSent = nil
 }
 
 func (x *SyncEvent) ClearDateInvalidated() {
@@ -362,7 +362,7 @@ type SyncEvent_builder struct {
 	Reason SyncReason
 	// When this was sent, which is worth having for a log and for nothing else.
 	// What decides anything is the three fields below.
-	At *timestamppb.Timestamp
+	DateSent *timestamppb.Timestamp
 	// Everything issued to them before this is void, and unset means nothing is.
 	//
 	// The one field an app cannot work out for itself, and the one it is most
@@ -402,7 +402,7 @@ func (b0 SyncEvent_builder) Build() *SyncEvent {
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Reason = b.Reason
-	x.xxx_hidden_At = b.At
+	x.xxx_hidden_DateSent = b.DateSent
 	x.xxx_hidden_DateInvalidated = b.DateInvalidated
 	x.xxx_hidden_DateDisabled = b.DateDisabled
 	x.xxx_hidden_DateErased = b.DateErased
@@ -415,12 +415,12 @@ var File_app_sync_proto protoreflect.FileDescriptor
 const file_app_sync_proto_rawDesc = "" +
 	"\n" +
 	"\x0eapp/sync.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\"\x12\n" +
-	"\x10SyncWatchRequest\"\x95\x03\n" +
+	"\x10SyncWatchRequest\"\xa2\x03\n" +
 	"\tSyncEvent\x12\x16\n" +
 	"\x06holder\x18\x01 \x01(\fR\x06holder\x12\x16\n" +
 	"\x06tenant\x18\x02 \x01(\fR\x06tenant\x12*\n" +
-	"\x06reason\x18\b \x01(\x0e2\x12.roster.SyncReasonR\x06reason\x12*\n" +
-	"\x02at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x02at\x12E\n" +
+	"\x06reason\x18\b \x01(\x0e2\x12.roster.SyncReasonR\x06reason\x127\n" +
+	"\tdate_sent\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\bdateSent\x12E\n" +
 	"\x10date_invalidated\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\x0fdateInvalidated\x12?\n" +
 	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\fdateDisabled\x12;\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\n" +
@@ -449,7 +449,7 @@ var file_app_sync_proto_goTypes = []any{
 }
 var file_app_sync_proto_depIdxs = []int32{
 	0, // 0: roster.SyncEvent.reason:type_name -> roster.SyncReason
-	3, // 1: roster.SyncEvent.at:type_name -> google.protobuf.Timestamp
+	3, // 1: roster.SyncEvent.date_sent:type_name -> google.protobuf.Timestamp
 	3, // 2: roster.SyncEvent.date_invalidated:type_name -> google.protobuf.Timestamp
 	3, // 3: roster.SyncEvent.date_disabled:type_name -> google.protobuf.Timestamp
 	3, // 4: roster.SyncEvent.date_erased:type_name -> google.protobuf.Timestamp

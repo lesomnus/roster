@@ -60,7 +60,7 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 	}
 
 	expires := time.Now().Add(LinkFor)
-	if u := req.GetExpires(); u != nil {
+	if u := req.GetDateExpires(); u != nil {
 		if at := u.AsTime(); at.After(time.Now()) && at.Before(expires) {
 			// Less, and not more. How long the channel takes is the caller's to
 			// know; how long a way into somebody's account may lie around is
@@ -101,8 +101,8 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 			// was going to send to a mailbox that does not belong to anybody
 			// here anyway.
 			return app.VouchLinkResponse_builder{
-				Token:   token,
-				Expires: timestamppb.New(expires),
+				Token:       token,
+				DateExpires: timestamppb.New(expires),
 			}.Build(), nil
 		}
 	}
@@ -139,8 +139,8 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 		}
 
 		return app.VouchLinkResponse_builder{
-			Token:   token,
-			Expires: timestamppb.New(expires),
+			Token:       token,
+			DateExpires: timestamppb.New(expires),
 		}.Build(), nil
 	}
 	if !Offers(who.GetTenant(), KindLink) {
@@ -156,8 +156,8 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 		// by people who are not signed in -- a way to read another operator's
 		// configuration.
 		return app.VouchLinkResponse_builder{
-			Token:   token,
-			Expires: timestamppb.New(expires),
+			Token:       token,
+			DateExpires: timestamppb.New(expires),
 		}.Build(), nil
 	}
 	if who.GetDateDisabled() != nil || who.GetTenant().GetDateClosed() != nil {
@@ -165,8 +165,8 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 		// so is everybody of a tenant that closed -- and the answer is the same
 		// one a stranger gets.
 		return app.VouchLinkResponse_builder{
-			Token:   token,
-			Expires: timestamppb.New(expires),
+			Token:       token,
+			DateExpires: timestamppb.New(expires),
 		}.Build(), nil
 	}
 
@@ -180,8 +180,8 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 	}
 
 	return app.VouchLinkResponse_builder{
-		Token:   token,
-		Expires: timestamppb.New(expires),
+		Token:       token,
+		DateExpires: timestamppb.New(expires),
 	}.Build(), nil
 }
 
@@ -255,7 +255,7 @@ func (s *Server) Redeem(ctx context.Context, req *app.VouchRedeemRequest) (*app.
 	}
 
 	// Proved now: the link was in the mailbox, and it has just been spent.
-	return s.mint(ctx, res, holder, issuer, methods, req.GetExpires(), time.Now())
+	return s.mint(ctx, res, holder, issuer, methods, req.GetDateExpires(), time.Now())
 }
 
 // link finds the row a token names, if it is the caller's and still open.

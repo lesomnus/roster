@@ -68,7 +68,7 @@ message ApiKeyIssueRequest {
   repeated string methods = 3;
 
   // When it stops working, unset for one that does not.
-  google.protobuf.Timestamp expires = 4;
+  google.protobuf.Timestamp date_expires = 4;
 
   // Whose it is, in full. **Data plane only**, and a reference rather than an
   // alias because the wall has many tenants and a name alone is a question with

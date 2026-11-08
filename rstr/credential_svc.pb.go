@@ -2369,10 +2369,10 @@ func (b0 CredentialUnlockRequest_builder) Build() *CredentialUnlockRequest {
 }
 
 type CredentialUnlockResponse struct {
-	state                     protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_WasLockedUntil *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=was_locked_until,json=wasLockedUntil"`
-	unknownFields             protoimpl.UnknownFields
-	sizeCache                 protoimpl.SizeCache
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_DateLocked *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=date_locked,json=dateLocked"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *CredentialUnlockResponse) Reset() {
@@ -2400,26 +2400,26 @@ func (x *CredentialUnlockResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *CredentialUnlockResponse) GetWasLockedUntil() *timestamppb.Timestamp {
+func (x *CredentialUnlockResponse) GetDateLocked() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_WasLockedUntil
+		return x.xxx_hidden_DateLocked
 	}
 	return nil
 }
 
-func (x *CredentialUnlockResponse) SetWasLockedUntil(v *timestamppb.Timestamp) {
-	x.xxx_hidden_WasLockedUntil = v
+func (x *CredentialUnlockResponse) SetDateLocked(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateLocked = v
 }
 
-func (x *CredentialUnlockResponse) HasWasLockedUntil() bool {
+func (x *CredentialUnlockResponse) HasDateLocked() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_WasLockedUntil != nil
+	return x.xxx_hidden_DateLocked != nil
 }
 
-func (x *CredentialUnlockResponse) ClearWasLockedUntil() {
-	x.xxx_hidden_WasLockedUntil = nil
+func (x *CredentialUnlockResponse) ClearDateLocked() {
+	x.xxx_hidden_DateLocked = nil
 }
 
 type CredentialUnlockResponse_builder struct {
@@ -2427,14 +2427,14 @@ type CredentialUnlockResponse_builder struct {
 
 	// What it was locked until, or unset if it was not locked -- so an operator
 	// can tell "I opened it" from "it was not closed".
-	WasLockedUntil *timestamppb.Timestamp
+	DateLocked *timestamppb.Timestamp
 }
 
 func (b0 CredentialUnlockResponse_builder) Build() *CredentialUnlockResponse {
 	m0 := &CredentialUnlockResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_WasLockedUntil = b.WasLockedUntil
+	x.xxx_hidden_DateLocked = b.DateLocked
 	return m0
 }
 
@@ -3153,9 +3153,10 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"Y\n" +
 	"\x17CredentialUnlockRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12\x19\n" +
-	"\x04kind\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\"`\n" +
-	"\x18CredentialUnlockResponse\x12D\n" +
-	"\x10was_locked_until\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x0ewasLockedUntil\"\x88\x01\n" +
+	"\x04kind\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\"W\n" +
+	"\x18CredentialUnlockResponse\x12;\n" +
+	"\vdate_locked\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"dateLocked\"\x88\x01\n" +
 	"\x14CredentialSetRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12\x19\n" +
 	"\x04kind\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\x12\x16\n" +
@@ -3246,7 +3247,7 @@ var file_app_credential_svc_g_proto_depIdxs = []int32{
 	13, // 20: roster.CredentialWatchResponse.items:type_name -> roster.CredentialWatchItem
 	26, // 21: roster.CredentialWatchItem.value:type_name -> roster.Credential
 	22, // 22: roster.CredentialUnlockRequest.ref:type_name -> roster.HolderRef
-	23, // 23: roster.CredentialUnlockResponse.was_locked_until:type_name -> google.protobuf.Timestamp
+	23, // 23: roster.CredentialUnlockResponse.date_locked:type_name -> google.protobuf.Timestamp
 	22, // 24: roster.CredentialSetRequest.ref:type_name -> roster.HolderRef
 	22, // 25: roster.CredentialEnrolRequest.ref:type_name -> roster.HolderRef
 	22, // 26: roster.CredentialIssueRequest.ref:type_name -> roster.HolderRef

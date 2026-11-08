@@ -110,7 +110,7 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 	if until := v.GetDateLocked(); until != nil && until.AsTime().After(time.Now()) {
 		_, _ = s.spend(ctx, c)
 
-		return app.VouchVerifyResponse_builder{LockedUntil: until}.Build(), nil, nil
+		return app.VouchVerifyResponse_builder{DateLocked: until}.Build(), nil, nil
 	}
 
 	ok, at, err := by.Compare(v.GetSecret(), secret, v.GetLastStep())
@@ -271,7 +271,7 @@ func (s *Server) factors(ctx context.Context, who pdid.Id, satisfied []string) (
 
 		f := app.VouchFactor_builder{Kind: v.GetKind(), Name: v.GetName()}
 		if u := v.GetDateLocked(); u != nil && u.AsTime().After(time.Now()) {
-			f.LockedUntil = u
+			f.DateLocked = u
 		}
 		if v.GetKind() == KindWebAuthn {
 			// What a browser is told to look for: the identifier the

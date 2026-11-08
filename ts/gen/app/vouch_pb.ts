@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/vouch.proto.
  */
 export const file_app_vouch: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJyCgpWb3VjaENsYWltEg4KBnRlbmFudBgBIAEoDBIQCghwcm92aWRlchgCIAEoCRIPCgdzdWJqZWN0GAMgASgJEjEKDWF1dGhlbnRpY2F0ZWQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIl8KElZvdWNoVmVyaWZ5UmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJyCgtWb3VjaEZhY3RvchIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIVCg1jcmVkZW50aWFsX2lkGAkgASgJIsQBChNWb3VjaFZlcmlmeVJlc3BvbnNlEgoKAm9rGAEgASgIEg4KBmhvbGRlchgCIAEoDBIOCgZ0ZW5hbnQYAyABKAwSMAoMbG9ja2VkX3VudGlsGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCglzYXRpc2ZpZWQYCiADKAkSJgoJYXZhaWxhYmxlGAsgAygLMhMucm9zdGVyLlZvdWNoRmFjdG9yEhQKDGNvbnRpbnVhdGlvbhgMIAEoCSJYChRWb3VjaENvbnRpbnVlUmVxdWVzdBIUCgxjb250aW51YXRpb24YASABKAkSDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJGChVWb3VjaENvbnRpbnVlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZSK1AQoUVm91Y2hEZWxlZ2F0ZVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEhQKDGNvbnRpbnVhdGlvbhgMIAEoCRIMCgRuYW1lGAUgASgJEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAigQEKElZvdWNoQWNjZXB0UmVxdWVzdBIhCgVjbGFpbRgBIAEoCzISLnJvc3Rlci5Wb3VjaENsYWltEg8KB21ldGhvZHMYAiADKAkSKwoHZXhwaXJlcxgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASCgoCYXQYBCABKAkiwgEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEgwKBGxpbmsYDCABKAkSMAoMbGlua19leHBpcmVzGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJeChBWb3VjaExpbmtSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJPChFWb3VjaExpbmtSZXNwb25zZRINCgV0b2tlbhgBIAEoCRIrCgdleHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJHChVWb3VjaExlYXZlTGlua1JlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEg8KB2FkZHJlc3MYAiABKAkiZQoWVm91Y2hMZWF2ZUxpbmtSZXNwb25zZRINCgV0b2tlbhgBIAEoCRIPCgdhZGRyZXNzGAIgASgJEisKB2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjMKEVZvdWNoTGVhdmVSZXF1ZXN0Eg0KBXRva2VuGAEgASgJEg8KB2NvbmZpcm0YAiABKAkiYQoSVm91Y2hSZWRlZW1SZXF1ZXN0Eg0KBXRva2VuGAEgASgJEg8KB21ldGhvZHMYCiADKAkSKwoHZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAyswQKDFZvdWNoU2VydmljZRJBCgZWZXJpZnkSGi5yb3N0ZXIuVm91Y2hWZXJpZnlSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2USRwoIRGVsZWdhdGUSHC5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEjsKBExpbmsSGC5yb3N0ZXIuVm91Y2hMaW5rUmVxdWVzdBoZLnJvc3Rlci5Wb3VjaExpbmtSZXNwb25zZRJDCgZSZWRlZW0SGi5yb3N0ZXIuVm91Y2hSZWRlZW1SZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZRJKCglMZWF2ZUxpbmsSHS5yb3N0ZXIuVm91Y2hMZWF2ZUxpbmtSZXF1ZXN0Gh4ucm9zdGVyLlZvdWNoTGVhdmVMaW5rUmVzcG9uc2USOwoFTGVhdmUSGS5yb3N0ZXIuVm91Y2hMZWF2ZVJlcXVlc3QaFy5yb3N0ZXIuTWVMZWF2ZVJlc3BvbnNlEkcKCENvbnRpbnVlEhwucm9zdGVyLlZvdWNoQ29udGludWVSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoQ29udGludWVSZXNwb25zZRJDCgZBY2NlcHQSGi5yb3N0ZXIuVm91Y2hBY2NlcHRSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_app_me, file_google_protobuf_timestamp]);
+  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJ3CgpWb3VjaENsYWltEg4KBnRlbmFudBgBIAEoDBIQCghwcm92aWRlchgCIAEoCRIPCgdzdWJqZWN0GAMgASgJEjYKEmRhdGVfYXV0aGVudGljYXRlZBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiXwoSVm91Y2hWZXJpZnlSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIMCgRuYW1lGAUgASgJInEKC1ZvdWNoRmFjdG9yEgwKBGtpbmQYCCABKAkSDAoEbmFtZRgFIAEoCRIvCgtkYXRlX2xvY2tlZBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASFQoNY3JlZGVudGlhbF9pZBgJIAEoCSLDAQoTVm91Y2hWZXJpZnlSZXNwb25zZRIKCgJvaxgBIAEoCBIOCgZob2xkZXIYAiABKAwSDgoGdGVuYW50GAMgASgMEi8KC2RhdGVfbG9ja2VkGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCglzYXRpc2ZpZWQYCiADKAkSJgoJYXZhaWxhYmxlGAsgAygLMhMucm9zdGVyLlZvdWNoRmFjdG9yEhQKDGNvbnRpbnVhdGlvbhgMIAEoCSJYChRWb3VjaENvbnRpbnVlUmVxdWVzdBIUCgxjb250aW51YXRpb24YASABKAkSDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJGChVWb3VjaENvbnRpbnVlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZSK6AQoUVm91Y2hEZWxlZ2F0ZVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEhQKDGNvbnRpbnVhdGlvbhgMIAEoCRIMCgRuYW1lGAUgASgJEg8KB21ldGhvZHMYCiADKAkSMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKGAQoSVm91Y2hBY2NlcHRSZXF1ZXN0EiEKBWNsYWltGAEgASgLMhIucm9zdGVyLlZvdWNoQ2xhaW0SDwoHbWV0aG9kcxgCIAMoCRIwCgxkYXRlX2V4cGlyZXMYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEgoKAmF0GAQgASgJIswBChVWb3VjaERlbGVnYXRlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRINCgV0b2tlbhgKIAEoCRIwCgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEgwKBGxpbmsYDCABKAkSNQoRZGF0ZV9saW5rX2V4cGlyZXMYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImMKEFZvdWNoTGlua1JlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEjAKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiVAoRVm91Y2hMaW5rUmVzcG9uc2USDQoFdG9rZW4YASABKAkSMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJHChVWb3VjaExlYXZlTGlua1JlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEg8KB2FkZHJlc3MYAiABKAkiagoWVm91Y2hMZWF2ZUxpbmtSZXNwb25zZRINCgV0b2tlbhgBIAEoCRIPCgdhZGRyZXNzGAIgASgJEjAKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiMwoRVm91Y2hMZWF2ZVJlcXVlc3QSDQoFdG9rZW4YASABKAkSDwoHY29uZmlybRgCIAEoCSJmChJWb3VjaFJlZGVlbVJlcXVlc3QSDQoFdG9rZW4YASABKAkSDwoHbWV0aG9kcxgKIAMoCRIwCgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wMrMECgxWb3VjaFNlcnZpY2USQQoGVmVyaWZ5Ehoucm9zdGVyLlZvdWNoVmVyaWZ5UmVxdWVzdBobLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEkcKCERlbGVnYXRlEhwucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZRI7CgRMaW5rEhgucm9zdGVyLlZvdWNoTGlua1JlcXVlc3QaGS5yb3N0ZXIuVm91Y2hMaW5rUmVzcG9uc2USQwoGUmVkZWVtEhoucm9zdGVyLlZvdWNoUmVkZWVtUmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2USSgoJTGVhdmVMaW5rEh0ucm9zdGVyLlZvdWNoTGVhdmVMaW5rUmVxdWVzdBoeLnJvc3Rlci5Wb3VjaExlYXZlTGlua1Jlc3BvbnNlEjsKBUxlYXZlEhkucm9zdGVyLlZvdWNoTGVhdmVSZXF1ZXN0Ghcucm9zdGVyLk1lTGVhdmVSZXNwb25zZRJHCghDb250aW51ZRIcLnJvc3Rlci5Wb3VjaENvbnRpbnVlUmVxdWVzdBodLnJvc3Rlci5Wb3VjaENvbnRpbnVlUmVzcG9uc2USQwoGQWNjZXB0Ehoucm9zdGVyLlZvdWNoQWNjZXB0UmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2VCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_app_me, file_google_protobuf_timestamp]);
 
 /**
  * VouchWho names somebody in the words a sign-in form collects.
@@ -168,9 +168,9 @@ export type VouchClaim = Message<"roster.VouchClaim"> & {
    * instead answers with the older time, and that is what is believed. A time
    * after now is read as now.
    *
-   * @generated from field: google.protobuf.Timestamp authenticated = 4;
+   * @generated from field: google.protobuf.Timestamp date_authenticated = 4;
    */
-  authenticated?: Timestamp | undefined;
+  dateAuthenticated?: Timestamp | undefined;
 };
 
 /**
@@ -268,9 +268,9 @@ export type VouchFactor = Message<"roster.VouchFactor"> & {
   /**
    * When they may try this one again, and unset for one that is open.
    *
-   * @generated from field: google.protobuf.Timestamp locked_until = 4;
+   * @generated from field: google.protobuf.Timestamp date_locked = 4;
    */
-  lockedUntil?: Timestamp | undefined;
+  dateLocked?: Timestamp | undefined;
 
   /**
    * For `webauthn`: the credential identifier the authenticator chose, as a
@@ -332,9 +332,9 @@ export type VouchVerifyResponse = Message<"roster.VouchVerifyResponse"> & {
    * product where somebody locked out is told nothing and tries forever, and
    * being locked out is already something they can discover by succeeding.
    *
-   * @generated from field: google.protobuf.Timestamp locked_until = 4;
+   * @generated from field: google.protobuf.Timestamp date_locked = 4;
    */
-  lockedUntil?: Timestamp | undefined;
+  dateLocked?: Timestamp | undefined;
 
   /**
    * What has been proved so far, and what else this person has.
@@ -520,9 +520,9 @@ export type VouchDelegateRequest = Message<"roster.VouchDelegateRequest"> & {
    *
    * A time in the past is refused rather than clamped.
    *
-   * @generated from field: google.protobuf.Timestamp expires = 11;
+   * @generated from field: google.protobuf.Timestamp date_expires = 11;
    */
-  expires?: Timestamp | undefined;
+  dateExpires?: Timestamp | undefined;
 };
 
 /**
@@ -555,9 +555,9 @@ export type VouchAcceptRequest = Message<"roster.VouchAcceptRequest"> & {
   /**
    * When it stops working. Unset is `keys.DelegateFor`, which is minutes.
    *
-   * @generated from field: google.protobuf.Timestamp expires = 3;
+   * @generated from field: google.protobuf.Timestamp date_expires = 3;
    */
-  expires?: Timestamp | undefined;
+  dateExpires?: Timestamp | undefined;
 
   /**
    * A name the person's own tenant answers at, to also mint a **link** for:
@@ -641,9 +641,9 @@ export type VouchDelegateResponse = Message<"roster.VouchDelegateResponse"> & {
   /**
    * When it stops working, which is always set when a token is.
    *
-   * @generated from field: google.protobuf.Timestamp expires = 11;
+   * @generated from field: google.protobuf.Timestamp date_expires = 11;
    */
-  expires?: Timestamp | undefined;
+  dateExpires?: Timestamp | undefined;
 
   /**
    * The link, when [VouchAcceptRequest.at] asked for one, and the only time it
@@ -662,9 +662,9 @@ export type VouchDelegateResponse = Message<"roster.VouchDelegateResponse"> & {
   /**
    * When the link stops working, set exactly when the link is.
    *
-   * @generated from field: google.protobuf.Timestamp link_expires = 13;
+   * @generated from field: google.protobuf.Timestamp date_link_expires = 13;
    */
-  linkExpires?: Timestamp | undefined;
+  dateLinkExpires?: Timestamp | undefined;
 };
 
 /**
@@ -691,9 +691,9 @@ export type VouchLinkRequest = Message<"roster.VouchLinkRequest"> & {
    * caller's to know -- but how long a way into somebody's account may lie
    * around is not.
    *
-   * @generated from field: google.protobuf.Timestamp expires = 11;
+   * @generated from field: google.protobuf.Timestamp date_expires = 11;
    */
-  expires?: Timestamp | undefined;
+  dateExpires?: Timestamp | undefined;
 };
 
 /**
@@ -719,9 +719,9 @@ export type VouchLinkResponse = Message<"roster.VouchLinkResponse"> & {
   token: string;
 
   /**
-   * @generated from field: google.protobuf.Timestamp expires = 11;
+   * @generated from field: google.protobuf.Timestamp date_expires = 11;
    */
-  expires?: Timestamp | undefined;
+  dateExpires?: Timestamp | undefined;
 };
 
 /**
@@ -778,9 +778,9 @@ export type VouchLeaveLinkResponse = Message<"roster.VouchLeaveLinkResponse"> & 
   address: string;
 
   /**
-   * @generated from field: google.protobuf.Timestamp expires = 11;
+   * @generated from field: google.protobuf.Timestamp date_expires = 11;
    */
-  expires?: Timestamp | undefined;
+  dateExpires?: Timestamp | undefined;
 };
 
 /**
@@ -840,9 +840,9 @@ export type VouchRedeemRequest = Message<"roster.VouchRedeemRequest"> & {
   /**
    * When the delegation stops working. Unset takes the default.
    *
-   * @generated from field: google.protobuf.Timestamp expires = 11;
+   * @generated from field: google.protobuf.Timestamp date_expires = 11;
    */
-  expires?: Timestamp | undefined;
+  dateExpires?: Timestamp | undefined;
 };
 
 /**
