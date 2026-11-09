@@ -102,8 +102,57 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      # The buf `pd` pins, kept between runs. `pd` fetches it from GitHub's
+      # releases into ~/.cache/payday/buf/<version> the first time it needs
+      # one and finds it there after, and a runner starts with that empty --
+      # so every run fetched it, from releases that answer 504 for minutes at
+      # a time: this job failed on it twice on 2026-11-08 (#227). Kept under
+      # the payday go.mod requires, which is what decides the version, it is
+      # fetched once for each payday rather than on every run.
+      - name: the payday roster requires
+        id: payday
+        run: echo "version=$(go list -m -f '{{.Version}}' github.com/lesomnus/payday)" >> "${GITHUB_OUTPUT}"
+      - id: buf
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/payday/buf
+          key: payday-buf-${{ steps.payday.outputs.version }}-${{ runner.os }}-${{ runner.arch }}
+      # Not there, it is fetched as every generation fetches it: by `pd`,
+      # checked against its digest, and asked again for a minute when GitHub
+      # does not answer. `pd doctor` reads the schema with it and is the least
+      # that does. Then on the PATH, where buf-action finds it below.
+      - name: pd's buf, on the PATH
+        id: pdbuf
+        env:
+          HIT: ${{ steps.buf.outputs.cache-hit }}
+        run: |
+          if [ "${HIT}" != true ]; then
+            go tool pd doctor .
+          fi
+          set -- "${HOME}"/.cache/payday/buf/*/buf
+          if [ "$#" -ne 1 ] || [ ! -x "$1" ]; then
+            echo "no one buf in ${HOME}/.cache/payday/buf: $*" >&2
+            exit 1
+          fi
+          echo "version=$("$1" --version)" >> "${GITHUB_OUTPUT}"
+          dirname "$1" >> "${GITHUB_PATH}"
+      # Saved now rather than at the end of the job, which `actions/cache`
+      # does only for a job that passed.
+      - if: steps.buf.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/payday/buf
+          key: ${{ steps.buf.outputs.cache-primary-key }}
+      # buf-action given no version takes buf's latest release -- 1.75.0 on
+      # 2026-11-08, where `pd` pins 1.72.0 -- and downloads it on every run.
+      # Given one, it takes a buf on the PATH that says that version and
+      # fetches nothing. So it is given the version of `pd`'s buf: payday's
+      # `pdcli.BufVersion`, which moves with payday and nothing else, and
+      # `buf breaking` runs the buf every generation does.
       - uses: bufbuild/buf-action@37ac33d8960807670a6e9719080e885197b09cc6 # v1.7.0
         with:
+          version: ${{ steps.pdbuf.outputs.version }}
           setup_only: true
 
       # One baseline, and only one: roster's buf module has no name, so it is
@@ -364,9 +413,19 @@ jobs:
       - run: docker buildx bake -f docker-bake.hcl --set '*.platform=linux/amd64' --set app.tags=roster-app --load app dev
         env:
           DIST: ./dist
-      # Pinned, because the installer follows `main` otherwise and a cluster that
-      # comes up differently next month is a red run about the wrong thing.
-      - run: curl -sSL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.9.0 bash
+      # Pinned, because a cluster that comes up differently next month is a red
+      # run about the wrong thing: the release's own binary, held to the digest
+      # its checksums say, rather than the installer, which is read from `main`
+      # and fetched the binary with no second attempt. GitHub's releases answer
+      # 504 for minutes at a time, so it is asked again (loft#311's `cluster`
+      # died on one).
+      - name: k3d
+        run: |
+          mkdir -p "${RUNNER_TEMP}/bin"
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 -o "${RUNNER_TEMP}/bin/k3d" https://github.com/k3d-io/k3d/releases/download/v5.9.0/k3d-linux-amd64
+          echo "06d8f25bc3a971c4eb29e0ff08429b180402db0f4dec838c9eac427e296800a0  ${RUNNER_TEMP}/bin/k3d" | sha256sum -c -
+          chmod +x "${RUNNER_TEMP}/bin/k3d"
+          echo "${RUNNER_TEMP}/bin" >> "${GITHUB_PATH}"
       - run: ./scripts/cluster.sh
         env:
           ROSTER_APP_IMAGE: roster-app
