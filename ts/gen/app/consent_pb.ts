@@ -31,7 +31,7 @@ export const file_app_consent: GenFile = /*@__PURE__*/
  * there. What roster keeps is what each account did about them, and when, so
  * that an app asks one question at a sign-in (`ConsentService.Settled`) and the
  * record outlives the app's own storage. It is the same rows whichever app
- * asks: Rove's terms and privacy policy are two documents of one app, and a
+ * asks: Loft's terms and privacy policy are two documents of one app, and a
  * workspace's own policy later is the same row with a scope.
  *
  * # Every act is a row, and none is changed
@@ -88,7 +88,7 @@ export type Consent = Message<"roster.Consent"> & {
 
   /**
    * Where it holds: empty for the whole deployment, or a string of the app's
-   * own -- a Rove workspace, say -- so that a policy narrower than the
+   * own -- a Loft workspace, say -- so that a policy narrower than the
    * deployment is a scope and not a schema change.
    *
    * @generated from field: string scope = 9;

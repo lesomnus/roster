@@ -581,7 +581,7 @@ type TenantConfig_builder struct {
 	// out it did -- and where one with a directory does, the people the directory
 	// provisions are refused all the same (`MeService.Leave`). A consumer
 	// product's directory, where an account is the person's own, is the case it
-	// was asked for: Rove's SaaS turns it on for the one tenant every account is
+	// was asked for: Loft's SaaS turns it on for the one tenant every account is
 	// in.
 	//
 	// A fact roster acts on and not an instruction to a screen: `MeService.Leave`

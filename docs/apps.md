@@ -419,18 +419,18 @@ force is the latest.
 its key's, or the one a deployment key is answered as in the tenant -- written
 onto every act and compared on every read: `List` and `Get` answer nothing of
 another app's, and `Settled` counts nothing of theirs. A **scope** is the app's
-word for where a consent holds, empty for the whole deployment: Rove keeps its
+word for where a consent holds, empty for the whole deployment: Loft keeps its
 deployment's terms at the empty scope, and a workspace's own policy later is the
 same rows with the workspace as their scope.
 
-The role an app is installed with names the methods it uses. Rove records,
+The role an app is installed with names the methods it uses. Loft records,
 asks and lists; an app that lets somebody decline an optional document adds
 `Withdraw`, and one that reads a single act adds `Get`:
 
 ```sh
 roster app install --tenant acme \
   --role '/roster.ConsentService/Agree,/roster.ConsentService/Settled,/roster.ConsentService/List' \
-  rove
+  loft
 ```
 
 Nothing writes a consent as a row: the generated writes are closed on the wire,

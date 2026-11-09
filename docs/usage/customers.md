@@ -165,7 +165,7 @@ somebody the directory can neither find nor make again until they are forgotten,
 and then makes again with nothing of theirs -- and where a tenant with a directory
 does turn it on, the people that directory provisions are refused all the same
 ([scim.md](../scim.md)). A consumer product's
-directory, where an account is the person's own, is the case it is for: Rove's
+directory, where an account is the person's own, is the case it is for: Loft's
 SaaS turns it on for the one tenant every account is in, and links to the account
 page's `/#leave` from its own.
 [ways-in.md](ways-in.md) § *Deleting your own account* is what it asks first.
