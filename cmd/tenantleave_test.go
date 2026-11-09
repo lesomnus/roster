@@ -226,7 +226,7 @@ func TestClosingIsRefusedWhereNobodyCouldUndoIt(t *testing.T) {
 		for _, req := range []*app.TenantAddRequest{
 			app.TenantAddRequest_builder{Alias: "born-closed", DateClosed: timestamppb.Now()}.Build(),
 			app.TenantAddRequest_builder{Alias: "born-destroyed", DateDestroyed: timestamppb.Now()}.Build(),
-			app.TenantAddRequest_builder{Alias: "born-held", Hold: z.Ptr("a case nobody opened")}.Build(),
+			app.TenantAddRequest_builder{Alias: "born-held", Hold: "a case nobody opened"}.Build(),
 		} {
 			_, err := b.Ungated.Tenant().Add(ctx, req)
 			x.Equal(codes.InvalidArgument, status.Code(err), req.GetAlias())

@@ -62,19 +62,21 @@ logs one and starts, since an index that only costs time is not worth an outage
 on the next restart; and an invalid index the schema does not declare -- your
 own, or the `_ccnew` a `REINDEX CONCURRENTLY` left -- is only logged.
 
-**A column that comes to a table which already has rows takes the default its
-field declares** -- `(orm.field).default`, which the generator gives the column as
-well as the server -- so every row already there holds it rather than NULL. A field
-with no default is a NOT NULL column with none, and adding one to a table with
-rows is refused by SQLite and by Postgres alike: that is a release that does not
-start, so a field added to an existing entity says what the rows already there
-should hold -- from the first app's launch on, and until then it may move the
-compatibility epoch instead (below). CI migrates empty databases and cannot see
-this, which is what `scripts/upgrade.sh` is for: it builds the release before
-the commit -- the nearest `v*` tag -- lets it make a deployment's databases, puts
-a row in every table, and starts the commit on them twice. **Tag what you
-deploy** and the `upgrade` job follows; with no tag there is nothing to upgrade
-from, and it says so.
+**A column that comes to a table which already has rows** needs something for
+the rows already there. A field with no default is a NOT NULL column with none,
+and adding one to a table with rows is refused by SQLite and by Postgres alike:
+that is a release that does not start. Until the first app launches, such a
+field moves the compatibility epoch (below) rather than declaring a default for
+the rows written before it; an entity added is a table of its own, and moves
+nothing. From the launch on, a field added to an existing entity says what the
+rows already there should hold -- `(orm.field).default`, which the generator
+gives the column as well as the server, so every row already there holds it
+rather than NULL. CI migrates empty databases and cannot see this, which is what
+`scripts/upgrade.sh` is for: it builds the release before the commit -- the
+nearest `v*` tag -- lets it make a deployment's databases, puts a row in every
+table, and starts the commit on them twice. **Tag what you deploy** and the
+`upgrade` job follows; with no tag there is nothing to upgrade from, and it says
+so.
 
 **Nor from another compatibility epoch.** `.github/compat-epoch` is a number,
 and a release whose number is not the commit's is one the commit keeps nothing

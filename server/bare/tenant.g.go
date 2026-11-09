@@ -139,11 +139,7 @@ func (st TenantServiceServer) create(ctx context.Context, req *rstr.TenantAddReq
 	if req.HasDateHeld() {
 		q.SetDateHeld(req.GetDateHeld().AsTime())
 	}
-	if req.HasHold() {
-		q.SetHold(req.GetHold())
-	} else {
-		q.SetHold("")
-	}
+	q.SetHold(req.GetHold())
 	return q, ds, nil
 }
 

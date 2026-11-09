@@ -610,16 +610,6 @@ func HoldHasSuffix(v string) predicate.Tenant {
 	return predicate.Tenant(sql.FieldHasSuffix(FieldHold, v))
 }
 
-// HoldIsNil applies the IsNil predicate on the "hold" field.
-func HoldIsNil() predicate.Tenant {
-	return predicate.Tenant(sql.FieldIsNull(FieldHold))
-}
-
-// HoldNotNil applies the NotNil predicate on the "hold" field.
-func HoldNotNil() predicate.Tenant {
-	return predicate.Tenant(sql.FieldNotNull(FieldHold))
-}
-
 // HoldEqualFold applies the EqualFold predicate on the "hold" field.
 func HoldEqualFold(v string) predicate.Tenant {
 	return predicate.Tenant(sql.FieldEqualFold(FieldHold, v))

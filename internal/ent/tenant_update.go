@@ -184,12 +184,6 @@ func (_u *TenantUpdate) SetNillableHold(v *string) *TenantUpdate {
 	return _u
 }
 
-// ClearHold clears the value of the "hold" field.
-func (_u *TenantUpdate) ClearHold() *TenantUpdate {
-	_u.mutation.ClearHold()
-	return _u
-}
-
 // Mutation returns the TenantMutation object of the builder.
 func (_u *TenantUpdate) Mutation() *TenantMutation {
 	return _u.mutation
@@ -321,9 +315,6 @@ func (_u *TenantUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if e, ok := _u.mutation.FieldExpr(tenant.FieldHold); ok {
 		_spec.SetField(tenant.FieldHold, field.TypeString, e)
-	}
-	if _u.mutation.HoldCleared() {
-		_spec.ClearField(tenant.FieldHold, field.TypeString)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -501,12 +492,6 @@ func (_u *TenantUpdateOne) SetNillableHold(v *string) *TenantUpdateOne {
 	return _u
 }
 
-// ClearHold clears the value of the "hold" field.
-func (_u *TenantUpdateOne) ClearHold() *TenantUpdateOne {
-	_u.mutation.ClearHold()
-	return _u
-}
-
 // Mutation returns the TenantMutation object of the builder.
 func (_u *TenantUpdateOne) Mutation() *TenantMutation {
 	return _u.mutation
@@ -668,9 +653,6 @@ func (_u *TenantUpdateOne) sqlSave(ctx context.Context) (_node *Tenant, err erro
 	}
 	if e, ok := _u.mutation.FieldExpr(tenant.FieldHold); ok {
 		_spec.SetField(tenant.FieldHold, field.TypeString, e)
-	}
-	if _u.mutation.HoldCleared() {
-		_spec.ClearField(tenant.FieldHold, field.TypeString)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Tenant{config: _u.config}

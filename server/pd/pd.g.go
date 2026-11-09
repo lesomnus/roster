@@ -9846,7 +9846,7 @@ func (s gateHolder) admit(ctx context.Context, req *rstr.HolderAddRequest) (*rst
 		return nil, err
 	}
 
-	if req.HasDirectory() {
+	if req.GetDirectory() != "" {
 		return nil, pderr.Invalidf("directory", "is established by this deployment and not asserted by a request")
 	}
 

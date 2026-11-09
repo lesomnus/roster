@@ -43,9 +43,7 @@ func (Tenant) Fields() []ent.Field {
 		field.Time("date_held").
 			Nillable().
 			Optional(),
-		field.String("hold").
-			Optional().
-			Default(""),
+		field.String("hold"),
 	}
 }
 

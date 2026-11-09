@@ -215,7 +215,7 @@ func TestALinkThatConfirmsLeavingAsksWhatLeavingAsks(t *testing.T) {
 		x := require.New(t)
 		_, err := l.Ungated.Connection().Add(ctx, app.ConnectionAddRequest_builder{
 			Tenant: at, Name: "entra", Issuer: "https://login.microsoftonline.com/contoso/v2.0", ClientId: "the-app",
-			SubjectClaim: z.Ptr("oid"), Provisions: z.Ptr(true),
+			SubjectClaim: "oid", Provisions: true,
 		}.Build())
 		x.NoError(err)
 

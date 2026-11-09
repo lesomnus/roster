@@ -247,7 +247,6 @@ func (m *Mutation) ResetSecretRef() {
 // SetSubjectClaim sets the "subject_claim" field.
 func (m *Mutation) SetSubjectClaim(s string) {
 	m.subject_claim = &s
-	delete(m.clearedFields, FieldSubjectClaim)
 	delete(m.exprs, FieldSubjectClaim)
 }
 
@@ -260,30 +259,15 @@ func (m *Mutation) SubjectClaim() (r string, exists bool) {
 	return *v, true
 }
 
-// ClearSubjectClaim clears the value of the "subject_claim" field.
-func (m *Mutation) ClearSubjectClaim() {
-	m.subject_claim = nil
-	delete(m.exprs, FieldSubjectClaim)
-	m.clearedFields[FieldSubjectClaim] = struct{}{}
-}
-
-// SubjectClaimCleared returns if the "subject_claim" field was cleared in this mutation.
-func (m *Mutation) SubjectClaimCleared() bool {
-	_, ok := m.clearedFields[FieldSubjectClaim]
-	return ok
-}
-
 // ResetSubjectClaim resets all changes to the "subject_claim" field.
 func (m *Mutation) ResetSubjectClaim() {
 	m.subject_claim = nil
-	delete(m.clearedFields, FieldSubjectClaim)
 	delete(m.exprs, FieldSubjectClaim)
 }
 
 // SetProvisions sets the "provisions" field.
 func (m *Mutation) SetProvisions(b bool) {
 	m.provisions = &b
-	delete(m.clearedFields, FieldProvisions)
 	delete(m.exprs, FieldProvisions)
 }
 
@@ -296,23 +280,9 @@ func (m *Mutation) Provisions() (r bool, exists bool) {
 	return *v, true
 }
 
-// ClearProvisions clears the value of the "provisions" field.
-func (m *Mutation) ClearProvisions() {
-	m.provisions = nil
-	delete(m.exprs, FieldProvisions)
-	m.clearedFields[FieldProvisions] = struct{}{}
-}
-
-// ProvisionsCleared returns if the "provisions" field was cleared in this mutation.
-func (m *Mutation) ProvisionsCleared() bool {
-	_, ok := m.clearedFields[FieldProvisions]
-	return ok
-}
-
 // ResetProvisions resets all changes to the "provisions" field.
 func (m *Mutation) ResetProvisions() {
 	m.provisions = nil
-	delete(m.clearedFields, FieldProvisions)
 	delete(m.exprs, FieldProvisions)
 }
 
@@ -852,12 +822,6 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldScopes) {
 		fields = append(fields, FieldScopes)
 	}
-	if m.FieldCleared(FieldSubjectClaim) {
-		fields = append(fields, FieldSubjectClaim)
-	}
-	if m.FieldCleared(FieldProvisions) {
-		fields = append(fields, FieldProvisions)
-	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
@@ -883,12 +847,6 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldScopes:
 		m.ClearScopes()
-		return nil
-	case FieldSubjectClaim:
-		m.ClearSubjectClaim()
-		return nil
-	case FieldProvisions:
-		m.ClearProvisions()
 		return nil
 	case FieldDateErased:
 		m.ClearDateErased()

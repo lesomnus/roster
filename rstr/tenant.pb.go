@@ -368,9 +368,6 @@ type Tenant_builder struct {
 	// it, like everything about itself, so [Tenant.hold] is written to be read.
 	DateHeld *timestamppb.Timestamp
 	// What the hold is for: a case, a demand. Empty while nothing holds it.
-	//
-	// With a default, so that the column arrives on a deployment's existing
-	// tenants as empty rather than as a migration that cannot fill it.
 	Hold string
 }
 
@@ -703,7 +700,7 @@ var File_roster_payday_tenant_proto protoreflect.FileDescriptor
 
 const file_roster_payday_tenant_proto_rawDesc = "" +
 	"\n" +
-	"\x1aroster/payday/tenant.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x87\x06\n" +
+	"\x1aroster/payday/tenant.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xfe\x05\n" +
 	"\x06Tenant\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\"\n" +
 	"\x05alias\x18\x04 \x01(\tB\f\xea\x82\x16\x020\x01\xaa\xc1\x16\x02\x18\x00R\x05alias\x12\x1a\n" +
@@ -717,8 +714,8 @@ const file_roster_payday_tenant_proto_rawDesc = "" +
 	"dateClosed\x12I\n" +
 	"\x0edate_destroyed\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\rdateDestroyed\x12?\n" +
-	"\tdate_held\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\bdateHeld\x12\x1b\n" +
-	"\x04hold\x18\f \x01(\tB\a\xea\x82\x16\x03\x82\x01\x00R\x04hold\x1a9\n" +
+	"\tdate_held\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\bdateHeld\x12\x12\n" +
+	"\x04hold\x18\f \x01(\tR\x04hold\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:_\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
