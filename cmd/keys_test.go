@@ -98,7 +98,7 @@ func keyedFor(t *testing.T, with func(*cmd.Config), methods ...string) *keyedBui
 
 	// The control plane: the owner, one service, one key.
 	k := add(t, ctx, s.Control, "k")
-	svc := addHolder(t, ctx, s.Control, k, "custody")
+	svc := addHolder(t, ctx, s.Control, k, "loft")
 
 	token, sum, err := keys.Mint(keys.PrefixDeployment)
 	x.NoError(err)
@@ -393,7 +393,7 @@ func TestABatchIsTheSameKey(t *testing.T) {
 }
 
 // TestTheFirstKeyMakesWhatItNeeds, which is what `roster control key add
-// custody` does against an empty control plane.
+// loft` does against an empty control plane.
 //
 // A service is not something an operator creates on purpose before they need
 // it: naming it in `key add` **is** the moment it becomes a caller. Asking for
@@ -422,17 +422,17 @@ func TestTheFirstKeyMakesWhatItNeeds(t *testing.T) {
 	x.NoError(err)
 	x.Zero(n)
 
-	who, err := cmd.HolderNamed(ctx, s.Control, "custody")
+	who, err := cmd.HolderNamed(ctx, s.Control, "loft")
 	x.NoError(err)
 
 	// The owner's tenant and the service, made on the way.
 	v, err := s.Control.Ent.Holder.Query().Only(ctx)
 	x.NoError(err)
-	x.Equal("custody", v.Alias)
+	x.Equal("loft", v.Alias)
 	x.Equal(who.String(), pdid.Id(v.Id).String())
 
 	// And asking again is the same service rather than a second one.
-	again, err := cmd.HolderNamed(ctx, s.Control, "custody")
+	again, err := cmd.HolderNamed(ctx, s.Control, "loft")
 	x.NoError(err)
 	x.Equal(who, again)
 
@@ -456,7 +456,7 @@ func freshKey(t *testing.T) []byte {
 // told about somebody who was suspended after it was minted.
 //
 // Every credential of theirs is refused before the gate is asked, so the gate's
-// answer is nothing -- and `Reaches` said their bindings, so kamino and khala
+// answer is nothing -- and `Reaches` said their bindings, so the apps in front
 // kept serving them for the token's hour.
 func TestASuspendedHolderReachesNothing(t *testing.T) {
 	x := require.New(t)
@@ -464,7 +464,7 @@ func TestASuspendedHolderReachesNothing(t *testing.T) {
 	ctx := t.Context()
 
 	who := addHolder(t, ctx, b.Server, b.Contoso, "suspended")
-	permits(t, ctx, b, b.Contoso, who, "staff", "/hday.oasys.*/*")
+	permits(t, ctx, b, b.Contoso, who, "staff", "/loft.*/*")
 
 	reach := func() []string {
 		v, err := b.Server.Ungated.Holder().Reaches(ctx, app.HolderReachesRequest_builder{
@@ -474,7 +474,7 @@ func TestASuspendedHolderReachesNothing(t *testing.T) {
 
 		return v.GetMethods()
 	}
-	x.Equal([]string{"/hday.oasys.*/*"}, reach())
+	x.Equal([]string{"/loft.*/*"}, reach())
 
 	h, err := b.Server.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
 		Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
@@ -514,10 +514,9 @@ func TestAKeyListCarriesNoVerifier(t *testing.T) {
 // with no sites of its own.
 //
 // `methods` is the gate's union -- may they ever call this -- and roster's wall
-// narrows what a grant bound at one site reaches. kamino and khala have no
-// such wall, so reading `methods` they handed somebody bound at one site of
-// the company's everything, everywhere. `everywhere` is what needs no
-// narrowing.
+// narrows what a grant bound at one site reaches. An app with no such wall
+// that read `methods` handed somebody bound at one site of the company's
+// everything, everywhere. `everywhere` is what needs no narrowing.
 func TestWhatSomebodyHoldsEverywhereIsSaidApart(t *testing.T) {
 	x := require.New(t)
 	b := keyFor(t, app.TenantService_Get_FullMethodName)
@@ -525,12 +524,12 @@ func TestWhatSomebodyHoldsEverywhereIsSaidApart(t *testing.T) {
 	at := app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build()
 
 	who := addHolder(t, ctx, b.Server, b.Contoso, "erin")
-	permits(t, ctx, b, b.Contoso, who, "reader", "/hday.oasys.RobotService/Get")
+	permits(t, ctx, b, b.Contoso, who, "reader", "/loft.AssetService/Get")
 
 	seoul, err := b.Server.Ungated.Site().Add(ctx, app.SiteAddRequest_builder{Tenant: at, Alias: "seoul"}.Build())
 	x.NoError(err)
 	writer, err := b.Server.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant: at, Alias: "writer", Methods: []string{"/hday.oasys.RobotService/Erase"},
+		Tenant: at, Alias: "writer", Methods: []string{"/loft.AssetService/Erase"},
 	}.Build())
 	x.NoError(err)
 	_, err = b.Server.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
@@ -544,6 +543,6 @@ func TestWhatSomebodyHoldsEverywhereIsSaidApart(t *testing.T) {
 		Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
-	x.ElementsMatch([]string{"/hday.oasys.RobotService/Get", "/hday.oasys.RobotService/Erase"}, v.GetMethods())
-	x.Equal([]string{"/hday.oasys.RobotService/Get"}, v.GetEverywhere(), "a grant bound at one site was said to hold everywhere")
+	x.ElementsMatch([]string{"/loft.AssetService/Get", "/loft.AssetService/Erase"}, v.GetMethods())
+	x.Equal([]string{"/loft.AssetService/Get"}, v.GetEverywhere(), "a grant bound at one site was said to hold everywhere")
 }

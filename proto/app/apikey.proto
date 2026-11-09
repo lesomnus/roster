@@ -60,7 +60,7 @@ message ApiKey {
   Holder holder = 2 [(orm.edge) = {immutable: true}];
 
   // What somebody calls this key when deciding whether to revoke it --
-  // "custody, production". Unique per holder so that a list of them reads.
+  // "loft, production". Unique per holder so that a list of them reads.
   string alias = 4;
 
   string desc = 6;

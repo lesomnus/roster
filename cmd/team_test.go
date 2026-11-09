@@ -70,8 +70,7 @@ func (b *built) team(t *testing.T, ctx context.Context, in pdid.Id, alias string
 	return mustId(t, v.GetId())
 }
 
-// TestTheSecondAxisNarrowsWithinATenant is what field 3 is for, and the thing
-// custody never exercises.
+// TestTheSecondAxisNarrowsWithinATenant is what field 3 is for.
 //
 // Both teams are in one tenant, so the wall lets both through. A caller who may
 // see only Seoul sees only Seoul's.

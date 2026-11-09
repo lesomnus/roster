@@ -77,7 +77,7 @@ export type ApiKey = Message<"roster.ApiKey"> & {
 
   /**
    * What somebody calls this key when deciding whether to revoke it --
-   * "custody, production". Unique per holder so that a list of them reads.
+   * "loft, production". Unique per holder so that a list of them reads.
    *
    * @generated from field: string alias = 4;
    */

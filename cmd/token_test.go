@@ -53,8 +53,8 @@ func mintFor(t *testing.T, ctx context.Context, b *keyedBuilt, who pdid.Id, alia
 //
 // The answer names the **holder** and not the key, which is the one thing this
 // had to get right: an app in front resolves what it is told against its own
-// rows, and handed a key identifier it finds nobody -- or, with custody's
-// on-demand resolver, creates a person-shaped row for a row that is not a
+// rows, and handed a key identifier it finds nobody -- or, with a resolver that
+// makes a row on demand, creates a person-shaped row for a row that is not a
 // person.
 func TestATokenSaysWhoItIs(t *testing.T) {
 	x := require.New(t)

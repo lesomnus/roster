@@ -117,8 +117,8 @@ func (s coreDelegation) Erase(ctx context.Context, req *app.DelegationRef) (*app
 //
 // Whoever it is about. `TokenService/Introspect` reads a delegation with the
 // caller's frame on the context, and an app is routinely narrower than the
-// person or app a delegation it was handed is about: khala is told who kamino
-// is by a token kamino exchanged for it (`Exchange`), and a product introspects
+// person or app a delegation it was handed is about: levyan is told who Loft
+// is by a token Loft exchanged for it (`Exchange`), and a product introspects
 // the delegation of somebody who holds more than the product does. The reach
 // rule would refuse both, and it is the wrong rule here -- it guards *seeing
 // where somebody is signed in*, and a holder of the token already has the one

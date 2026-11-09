@@ -79,9 +79,9 @@ const (
 // # Neither half is public, and the difference between them is the wall
 //
 // The person signing in has no credential -- that is what they are asking for
-// -- but they are not who is calling. The caller is custody, or a Login App, or
-// an admin console, and roster is reached only by those. So both RPCs need the
-// caller's certificate like everything else here.
+// -- but they are not who is calling. The caller is a product app, or a Login
+// App, or an admin console, and roster is reached only by those. So both RPCs
+// need the caller's certificate like everything else here.
 //
 // What they differ in is the **frame**. `Verify` is asked before anybody has
 // been resolved to a person, so it reads the server the wall was never
@@ -419,9 +419,9 @@ func (c *vouchServiceClient) Accept(ctx context.Context, in *VouchAcceptRequest,
 // # Neither half is public, and the difference between them is the wall
 //
 // The person signing in has no credential -- that is what they are asking for
-// -- but they are not who is calling. The caller is custody, or a Login App, or
-// an admin console, and roster is reached only by those. So both RPCs need the
-// caller's certificate like everything else here.
+// -- but they are not who is calling. The caller is a product app, or a Login
+// App, or an admin console, and roster is reached only by those. So both RPCs
+// need the caller's certificate like everything else here.
 //
 // What they differ in is the **frame**. `Verify` is asked before anybody has
 // been resolved to a person, so it reads the server the wall was never

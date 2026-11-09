@@ -126,12 +126,12 @@ Something a **tenant** runs -- their CI, their sync job, their own copy of an ap
 -- is a holder in their tenant with an `rt_` ([below](#a-tenant-key--rt_)).
 
 ```sh
-roster control key add --allow '/roster.VouchService/Verify,/roster.MeService/Get' custody
+roster control key add --allow '/roster.VouchService/Verify,/roster.MeService/Get' loft
 ```
 
 ```
 rk_rCHP-AyXhX7cbNIjgLLL8udW6hOchSQKHzRkcpMWWwc
-key 01a03322-… for @custody, allowing 2 method(s). This is the only time it is shown.
+key 01a03322-… for @loft, allowing 2 method(s). This is the only time it is shown.
 ```
 
 Printed to **stdout** and the sentence to stderr, so `$(roster control key add …)`
@@ -146,7 +146,7 @@ asked for, and nothing mints a key that silently does not work. The one key with
 nothing on it that works is said so:
 
 ```sh
-roster control key add --narrowed kamino
+roster control key add --narrowed levyan
 ```
 
 It is refused as itself and answered as whoever each tenant nominated -- the key
@@ -160,7 +160,7 @@ be a comma-separated list:
 roster control key add \
   --allow /roster.VouchService/Verify \
   --allow /roster.MeService/Get \
-  custody
+  loft
 ```
 
 Flags come before the name, as everywhere in this CLI.

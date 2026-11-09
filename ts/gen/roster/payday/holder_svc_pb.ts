@@ -903,10 +903,9 @@ export type HolderReachesResponse = Message<"roster.HolderReachesResponse"> & {
    *
    * `methods` is the union the gate asks -- *may they ever call this* -- and the
    * wall then narrows the rows a site-bound or team-bound grant reaches. An app
-   * that has no such wall (kamino, khala: their tenants are customers, not a
-   * site of this one) cannot narrow, and reading `methods` it handed somebody
-   * bound at one site everything, everywhere. This is the part that needs no
-   * narrowing.
+   * that has no such wall (its tenants are its customers, not a site of this
+   * one) cannot narrow, and reading `methods` it handed somebody bound at one
+   * site everything, everywhere. This is the part that needs no narrowing.
    *
    * @generated from field: repeated string everywhere = 13;
    */

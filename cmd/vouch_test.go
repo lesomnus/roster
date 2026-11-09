@@ -405,7 +405,8 @@ func TestTheCredentialServiceIsNotOnTheWire(t *testing.T) {
 //
 // `Verify` was public for an afternoon, on the argument that the person signing
 // in has no credential. They do not -- and they are not who is calling. The
-// caller is custody or a Login App, and roster is reached by nothing else.
+// caller is a product app or a Login App, and roster is reached by nothing
+// else.
 //
 // What public cost: anybody who could reach the port could guess passwords at
 // the whole organisation, and not slowly, since `grpcx.Limit` counts per tenant

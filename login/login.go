@@ -1013,7 +1013,7 @@ func (a *App) decide(w http.ResponseWriter, r *http.Request) {
 // requested audience against it, and checks it as a URL: scheme, host, and a
 // path prefix. An audience that is a URN has a scheme and nothing else, so a
 // client registered for one `urn:` audience was issued tokens for **any** --
-// tyrell, registered for kamino's, got khala's and one that names nothing.
+// registered for Loft's, it got levyan's and one that names nothing.
 // Compared here as strings, exactly, and anything else refused: the client is
 // sent back with `invalid_target` (RFC 8707) and nobody's token.
 func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o *tenant) {

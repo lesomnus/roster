@@ -92,10 +92,9 @@ type Config struct {
 	// docs/position.md, 'Two planes, one schema'.
 	//
 	// Nothing written down is a deployment that believes its callers, which
-	// `auth.Plain` announces once in the log. It is the default custody takes
-	// with no issuer named, and for the same reason: an app that cannot be run
-	// until a control plane exists is an app nobody runs. So it is easy, and it
-	// is loud.
+	// `auth.Plain` announces once in the log. It is the default because an app
+	// that cannot be run until a control plane exists is an app nobody runs. So
+	// it is easy, and it is loud.
 	Control ControlConfig `yaml:"control"`
 
 	// Account, Ldap and Login are the three consumers, when this deployment runs

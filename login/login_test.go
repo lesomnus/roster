@@ -1851,18 +1851,18 @@ func TestEveryWrongDeviceCodeIsOneAnswer(t *testing.T) {
 //
 // Hydra checks a requested audience against the client's registration as a
 // URL -- scheme, host, a path prefix -- and a URN is a scheme and nothing else:
-// a client registered for `urn:hday:api:kamino` was issued tokens for
-// `urn:hday:api:khala` too, and for one that names nothing. So the app compares
-// them as strings, and refuses the rest.
+// a client registered for `urn:example:api:loft` was issued tokens for
+// `urn:example:api:levyan` too, and for one that names nothing. So the app
+// compares them as strings, and refuses the rest.
 func TestATokenIsOnlyForTheAudiencesItsClientIsRegisteredFor(t *testing.T) {
 	x := require.New(t)
 	d := serve(t)
 	b := d.browser(t)
 
 	d.hydra.mu.Lock()
-	d.hydra.registered["contoso-web"] = []string{"urn:hday:api:kamino"}
-	d.hydra.audience["c1"] = []string{"urn:hday:api:kamino"}
-	d.hydra.audience["c2"] = []string{"urn:hday:api:khala"}
+	d.hydra.registered["contoso-web"] = []string{"urn:example:api:loft"}
+	d.hydra.audience["c1"] = []string{"urn:example:api:loft"}
+	d.hydra.audience["c2"] = []string{"urn:example:api:levyan"}
 	d.hydra.mu.Unlock()
 
 	d.hydra.raise("c1", "contoso-web")
@@ -1877,7 +1877,7 @@ func TestATokenIsOnlyForTheAudiencesItsClientIsRegisteredFor(t *testing.T) {
 	granted, refused := d.hydra.granted, d.hydra.rejected
 	d.hydra.mu.Unlock()
 	x.False(refused)
-	x.Equal([]string{"urn:hday:api:kamino"}, granted)
+	x.Equal([]string{"urn:example:api:loft"}, granted)
 
 	// Another API's, which Hydra let through because a URN matches any URN.
 	d.hydra.raise("c2", "contoso-web")

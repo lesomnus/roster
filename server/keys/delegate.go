@@ -154,9 +154,9 @@ type bearer struct {
 // **A suspended holder's token stands for nobody.** D26's table puts
 // `date_disabled` at `cmd.Resolver`, on the grounds that it is where every
 // credential resolving to a holder arrives -- which is true of every credential
-// arriving *here* and not of a product app's. custody is handed an `rt_` and
-// asks `TokenService/Introspect`; nothing about that call passes through the
-// resolver, so suspending somebody stopped them signing in and left them
+// arriving *here* and not of a product app's. A product app is handed an `rt_`
+// and asks `TokenService/Introspect`; nothing about that call passes through
+// the resolver, so suspending somebody stopped them signing in and left them
 // working in every app in front until the token expired, which for a key is
 // possibly never.
 //

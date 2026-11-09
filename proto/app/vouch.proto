@@ -54,9 +54,9 @@ option go_package = "github.com/lesomnus/roster/rstr";
 // # Neither half is public, and the difference between them is the wall
 //
 // The person signing in has no credential -- that is what they are asking for
-// -- but they are not who is calling. The caller is custody, or a Login App, or
-// an admin console, and roster is reached only by those. So both RPCs need the
-// caller's certificate like everything else here.
+// -- but they are not who is calling. The caller is a product app, or a Login
+// App, or an admin console, and roster is reached only by those. So both RPCs
+// need the caller's certificate like everything else here.
 //
 // What they differ in is the **frame**. `Verify` is asked before anybody has
 // been resolved to a person, so it reads the server the wall was never
@@ -265,12 +265,11 @@ service VouchService {
 
 // VouchWho names somebody in the words a sign-in form collects.
 //
-// It is this file's own shape rather than the generated `HolderRef`, for the
-// same reason custody's catalogue defines its own item: what a hand-written
-// service takes is its own vocabulary, and `HolderRef` is roster's internal
-// one. It is also the only thing that compiles -- the refs are generated from
-// the entities in a later step than this file, so a service written by hand
-// cannot name one.
+// It is this file's own shape rather than the generated `HolderRef`: what a
+// hand-written service takes is its own vocabulary, and `HolderRef` is
+// roster's internal one. It is also the only thing that compiles -- the refs
+// are generated from the entities in a later step than this file, so a service
+// written by hand cannot name one.
 //
 // Exactly one of these ways is expected. More than one is a caller that has not
 // decided, and it is refused rather than resolved in some order this comment

@@ -592,7 +592,7 @@ func TestSigningOutReachesThePortWithNoWall(t *testing.T) {
 	t.Run("and a deployment key is not an operator", func(t *testing.T) {
 		x := require.New(t)
 
-		svc := addHolder(t, ctx, s.Control, controlTenant(t, ctx, s), "custody")
+		svc := addHolder(t, ctx, s.Control, controlTenant(t, ctx, s), "loft")
 
 		token, sum, err := keys.Mint(keys.PrefixDeployment)
 		x.NoError(err)

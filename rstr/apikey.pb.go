@@ -327,7 +327,7 @@ type ApiKey_builder struct {
 	// Whose it is: the service, as a Holder of the control plane's one tenant.
 	Holder *Holder
 	// What somebody calls this key when deciding whether to revoke it --
-	// "custody, production". Unique per holder so that a list of them reads.
+	// "loft, production". Unique per holder so that a list of them reads.
 	Alias string
 	Desc  string
 	// What this key may be used for: the gRPC methods, in full, as

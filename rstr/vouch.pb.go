@@ -23,12 +23,11 @@ const (
 
 // VouchWho names somebody in the words a sign-in form collects.
 //
-// It is this file's own shape rather than the generated `HolderRef`, for the
-// same reason custody's catalogue defines its own item: what a hand-written
-// service takes is its own vocabulary, and `HolderRef` is roster's internal
-// one. It is also the only thing that compiles -- the refs are generated from
-// the entities in a later step than this file, so a service written by hand
-// cannot name one.
+// It is this file's own shape rather than the generated `HolderRef`: what a
+// hand-written service takes is its own vocabulary, and `HolderRef` is
+// roster's internal one. It is also the only thing that compiles -- the refs
+// are generated from the entities in a later step than this file, so a service
+// written by hand cannot name one.
 //
 // Exactly one of these ways is expected. More than one is a caller that has not
 // decided, and it is refused rather than resolved in some order this comment

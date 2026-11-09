@@ -30,8 +30,8 @@ import (
 // HolderNamed is a holder of this plane by alias, made if there is none.
 //
 // Made rather than refused, because a caller of this deployment's own is not a
-// row somebody creates on purpose beforehand: `control key add custody` is the
-// moment custody becomes one, and asking for two commands to express one
+// row somebody creates on purpose beforehand: `control key add loft` is the
+// moment Loft becomes one, and asking for two commands to express one
 // intent is how a runbook grows a step nobody remembers.
 //
 // The tenant it goes in is the control plane's only one, made here if the
@@ -202,7 +202,7 @@ func MustFrom(b []byte) pdid.Id {
 // The flag is `flg.Strings` and not `flg.String`, which is the whole of the
 // fix and was the whole of the bug. A scalar flag takes the **last**
 // occurrence -- which is right for `--config` and every other *choose one*
-// flag, and silently wrong for a list. `roster key add --service kamino
+// flag, and silently wrong for a list. `roster key add --service loft
 // --allow /roster.VouchService/Verify --allow /roster.HolderService/Get` -- as
 // `roster control key add` was spelled then -- minted
 // a key allowing the second and nothing else, and the only sign was the line

@@ -22,8 +22,8 @@ export const file_app_delegation: GenFile = /*@__PURE__*/
 /**
  * Delegation is a product app calling roster **as** somebody it just signed in.
  *
- * D23 is the decision and the gap it closes: nothing in the tree lets
- * custody ask roster a question on behalf of one of its users. Every screen
+ * D23 is the decision and the gap it closes: nothing in the tree lets a
+ * product app ask roster a question on behalf of one of its users. Every screen
  * that shows a person their own record needs it -- my identities, my addresses,
  * sign me out everywhere -- and the two obvious ways are both wrong. The app's
  * own `rk_` key sees every tenant there is, and the app filtering in its own

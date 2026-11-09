@@ -182,7 +182,7 @@ func TestAReadAtTheBoxIsOnTheAccessRecord(t *testing.T) {
 
 		k := cli.NewCmdControl(at(b.c, ""))
 		k.Writer = io.Discard
-		x.NoError(k.Run(ctx, []string{"key", "add", "--allow", "/roster.HolderService/Get", "custody"}))
+		x.NoError(k.Run(ctx, []string{"key", "add", "--allow", "/roster.HolderService/Get", "loft"}))
 		_, err := entities(t, at(b.c, "admin"), "key", "add", "--tenant", "newco", "--holder", "erin", "--allow", "/roster.HolderService/Get")
 		x.NoError(err)
 
@@ -190,13 +190,13 @@ func TestAReadAtTheBoxIsOnTheAccessRecord(t *testing.T) {
 			_, err := entities(t, at(b.c, "admin"), "key", "list")
 			return err
 		})
-		x.Contains(out, "/custody/")
+		x.Contains(out, "/loft/")
 		x.Contains(out, "@newco/erin/")
 
 		s, err := cmd.Build(ctx, b.c)
 		x.NoError(err)
 		defer s.Close()
-		custody, err := cmd.ControlHolder(ctx, s.Control, "custody")
+		loft, err := cmd.ControlHolder(ctx, s.Control, "loft")
 		x.NoError(err)
 		erin, err := cmd.CustomerOf(ctx, s, "newco", "erin")
 		x.NoError(err)
@@ -205,7 +205,7 @@ func TestAReadAtTheBoxIsOnTheAccessRecord(t *testing.T) {
 		x.Len(rs, 1)
 		x.Equal("read", rs[0].Kind)
 		x.Equal(b.operator.Uuid(), rs[0].ActorId)
-		x.Contains(rs[0].Subjects, custody.Bytes())
+		x.Contains(rs[0].Subjects, loft.Bytes())
 
 		rs = accessed(t, b.c, false, app.ApiKeyService_List_FullMethodName)
 		x.Len(rs, 1)

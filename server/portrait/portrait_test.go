@@ -232,7 +232,7 @@ func TestAPageCarriesOne(t *testing.T) {
 
 // A picture URL is https, or nothing.
 func TestAPictureURLIsOneAPageFetches(t *testing.T) {
-	for _, v := range []string{"", "https://lh3.googleusercontent.com/a/x=s96-c", "https://s3.hday.io/pictures/ab.jpg"} {
+	for _, v := range []string{"", "https://lh3.googleusercontent.com/a/x=s96-c", "https://s3.example.com/pictures/ab.jpg"} {
 		require.NoError(t, portrait.CheckURL(v), v)
 	}
 	for _, v := range []string{

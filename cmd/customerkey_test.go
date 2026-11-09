@@ -198,7 +198,7 @@ func TestAKeyIsForOnePlaneOrTheOther(t *testing.T) {
 		args []string
 		says string
 	}{
-		{"the flag that crossed planes", []string{"--service", "custody"}, "service"},
+		{"the flag that crossed planes", []string{"--service", "loft"}, "service"},
 		{"neither", nil, "roster control key add"},
 		{"a person and no tenant", []string{"--holder", "admin"}, "--tenant"},
 		{"a tenant and nobody in it", []string{"--tenant", "newco"}, "--holder"},
@@ -273,14 +273,14 @@ func TestRevokingReachesTheKeyItNames(t *testing.T) {
 	theirs := stdoutOf(t, cli.NewCmdKey(&c), "add",
 		"--tenant", "newco", "--holder", "alice", "--allow", "/roster.MeService/Get")
 	ours := stdoutOf(t, cli.NewCmdControl(&c), "key", "add",
-		"--allow", "/roster.HolderService/Get", "custody")
+		"--allow", "/roster.HolderService/Get", "loft")
 
 	// Both, which is the other half: this listed the control plane's alone, so
 	// the key the command beside it had just minted appeared nowhere.
 	vs := stdoutOf(t, cli.NewCmdKey(&c), "list")
 	t.Logf("LIST:\n%s", vs)
 	x.Contains(vs, "@newco/alice/default", "a customer's key is not listed")
-	x.Contains(vs, "@owner/custody/default")
+	x.Contains(vs, "@owner/loft/default")
 
 	id := func(at string) string {
 		t.Helper()
@@ -410,7 +410,7 @@ func TestAllowIsAListHoweverItIsWritten(t *testing.T) {
 			out, err := initRun(t, c)
 			x.NoError(err, "init: %s", out)
 
-			args := append(append([]string{"key", "add"}, tc.args...), "custody")
+			args := append(append([]string{"key", "add"}, tc.args...), "loft")
 			x.NotEmpty(stdoutOf(t, cli.NewCmdControl(&c), args...))
 
 			s, err := cmd.Build(ctx, c)
@@ -432,7 +432,7 @@ func TestAllowIsAListHoweverItIsWritten(t *testing.T) {
 		out, err := initRun(t, c)
 		x.NoError(err, "init: %s", out)
 
-		err = cli.NewCmdControl(&c).Run(t.Context(), []string{"key", "add", "custody"})
+		err = cli.NewCmdControl(&c).Run(t.Context(), []string{"key", "add", "loft"})
 		x.Error(err, "a key that allows nothing is not a key")
 		x.ErrorContains(err, "--allow")
 	})
