@@ -78,3 +78,16 @@ breaking:
     # their pin (CLAUDE.md). From the launch on, put it back: then it is a
     # compile error somebody else has to fix.
     - FIELD_SAME_CARDINALITY
+  # One change, on purpose and before the first app's launch (CLAUDE.md): `Host`
+  # 8 and `Role` 9 are no longer reserved. They were kept so that an older
+  # caller sending `acts_as` or `every_method` was not read as something else,
+  # and no caller of this compatibility epoch was built with either. The wire
+  # of every message is what it was.
+  #
+  # Out with the first change after this reaches `main`, which is the only
+  # baseline here, as #197 took #196's out: left in, it is a hole in the check
+  # for the next change to those two files.
+  ignore_only:
+    RESERVED_MESSAGE_NO_DELETE:
+      - proto/app/host.proto
+      - proto/app/role.proto

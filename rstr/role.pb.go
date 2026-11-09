@@ -313,11 +313,6 @@ type Role_builder struct {
 	// new method. So a stale enumeration is fixed by a shell on the box, once per
 	// upgrade, forever.
 	//
-	// This field held a `bool every_method` beside it for exactly one release,
-	// for the same reason and covering only the widest case. A pattern says that
-	// one as `/roster.*/*` and says the four useful things between it and a
-	// single method as well.
-	//
 	// # What it costs
 	//
 	// A wildcard in a permission system is a thing people stop seeing. Nothing
@@ -632,7 +627,7 @@ var File_app_role_proto protoreflect.FileDescriptor
 
 const file_app_role_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/role.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1aroster/payday/holder.proto\x1a\x0eapp/site.proto\x1a\x0fapp/group.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xbf\x05\n" +
+	"\x0eapp/role.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1aroster/payday/holder.proto\x1a\x0eapp/site.proto\x1a\x0fapp/group.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xb9\x05\n" +
 	"\x04Role\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12*\n" +
@@ -664,8 +659,7 @@ const file_app_role_proto_rawDesc = "" +
 	"\x02id\x10\x01\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
 	"\x06tenant\x1a\x06\n" +
-	"\x04site \x14(dJ\x04\b\t\x10\n" +
-	"\"\xb5\x05\n" +
+	"\x04site \x14(d\"\xb5\x05\n" +
 	"\aBinding\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12(\n" +
 	"\x04role\x18\x02 \x01(\v2\f.roster.RoleB\x06\xf2\x82\x16\x02@\x01R\x04role\x12*\n" +

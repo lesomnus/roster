@@ -132,16 +132,6 @@ message Host {
   // stay tellable apart.
   map<string, string> labels = 7;
 
-  // 8 was `Holder acts_as`: the holder a deployment key borrowed when a request
-  // said it arrived here. It is a [Nomination] now, found by the tenant this
-  // name chooses and the key that asked, because a name chooses a tenant and
-  // more than one app arrives at the same name -- one field could nominate one
-  // of them. `nomination.proto` has the rest.
-  //
-  // Reserved rather than reused: a number that once meant "who a key is
-  // answered as" is not one to hand to something else.
-  reserved 8;
-
   // When roster looked up DNS and read back what it had asked for, and **unset
   // is a row nobody proved**.
   //

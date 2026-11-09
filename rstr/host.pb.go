@@ -932,7 +932,7 @@ var File_app_host_proto protoreflect.FileDescriptor
 
 const file_app_host_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/host.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x88\x05\n" +
+	"\x0eapp/host.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x82\x05\n" +
 	"\x04Host\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x1a\n" +
@@ -959,7 +959,7 @@ const file_app_host_proto_rawDesc = "" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
-	"\x06tenant \x14(dJ\x04\b\b\x10\t\"\xf6\x04\n" +
+	"\x06tenant \x14(d\"\xf6\x04\n" +
 	"\n" +
 	"MailDomain\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +

@@ -89,11 +89,6 @@ message Role {
   // new method. So a stale enumeration is fixed by a shell on the box, once per
   // upgrade, forever.
   //
-  // This field held a `bool every_method` beside it for exactly one release,
-  // for the same reason and covering only the widest case. A pattern says that
-  // one as `/roster.*/*` and says the four useful things between it and a
-  // single method as well.
-  //
   // # What it costs
   //
   // A wildcard in a permission system is a thing people stop seeing. Nothing
@@ -102,12 +97,6 @@ message Role {
   // `frame.Covers` for what a pattern may and may not say -- a whole part or
   // nothing, never `*Get*`.
   repeated string methods = 8;
-
-  // 9 held a `bool every_method`, for the one release between the widest grant
-  // becoming expressible and it becoming a pattern. Reserved rather than
-  // reused: nothing was ever stored in it here, and a number that once meant
-  // "allows everything" is not one to hand to something else.
-  reserved 9;
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
