@@ -347,7 +347,6 @@ func (m *Mutation) ResetDateHeld() {
 // SetHold sets the "hold" field.
 func (m *Mutation) SetHold(s string) {
 	m.hold = &s
-	delete(m.clearedFields, FieldHold)
 	delete(m.exprs, FieldHold)
 }
 
@@ -360,23 +359,9 @@ func (m *Mutation) Hold() (r string, exists bool) {
 	return *v, true
 }
 
-// ClearHold clears the value of the "hold" field.
-func (m *Mutation) ClearHold() {
-	m.hold = nil
-	delete(m.exprs, FieldHold)
-	m.clearedFields[FieldHold] = struct{}{}
-}
-
-// HoldCleared returns if the "hold" field was cleared in this mutation.
-func (m *Mutation) HoldCleared() bool {
-	_, ok := m.clearedFields[FieldHold]
-	return ok
-}
-
 // ResetHold resets all changes to the "hold" field.
 func (m *Mutation) ResetHold() {
 	m.hold = nil
-	delete(m.clearedFields, FieldHold)
 	delete(m.exprs, FieldHold)
 }
 
@@ -755,9 +740,6 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateHeld) {
 		fields = append(fields, FieldDateHeld)
 	}
-	if m.FieldCleared(FieldHold) {
-		fields = append(fields, FieldHold)
-	}
 	return fields
 }
 
@@ -789,9 +771,6 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDateHeld:
 		m.ClearDateHeld()
-		return nil
-	case FieldHold:
-		m.ClearHold()
 		return nil
 	}
 	return fmt.Errorf("unknown Tenant nullable field %s", name)

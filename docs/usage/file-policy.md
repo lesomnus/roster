@@ -61,6 +61,4 @@ with `Unauthenticated` so reconnecting clients are checked again.
 
 This source applies to the data plane. It does not change control-plane
 operator permissions. Use an absolute path, or one relative to the server's
-working directory. The policy itself provisions no rows. This payday upgrade
-also regenerates its existing outbox support with a nullable event column; run
-the normal schema migration before serving the upgraded binary.
+working directory. The policy itself provisions no rows.

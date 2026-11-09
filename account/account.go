@@ -38,9 +38,9 @@
 // request. [Config.Key] is that key, and the tenants are its own nominations
 // (#76, `docs/apps.md`).
 //
-// [Config.Keys], one `rt_` per tenant, is the shape this had before: a tenant
-// key resolves to a holder inside its tenant already. It stays for a tenant
-// running its own copy, and `cmd/accountkey_test.go` is the fact it rests on.
+// [Config.Keys], one `rt_` per tenant, is for a tenant running its own copy: a
+// tenant key resolves to a holder inside its tenant already, and
+// `cmd/accountkey_test.go` is the fact it rests on.
 //
 // # The providers are roster's rows, not this app's configuration
 //
@@ -122,8 +122,7 @@ type Config struct {
 	// fronted without a restart. The key itself needs [Resolving] and nothing
 	// else; everything in [Calls] is the nominated holder's role.
 	//
-	// One of Key and Keys. Keys is a tenant running its own copy with an `rt_`,
-	// or a deployment that has not moved yet (#76).
+	// One of Key and Keys. Keys is a tenant running its own copy with an `rt_`.
 	Key string
 
 	// Base is this app's public origin, the one every provider's redirect is

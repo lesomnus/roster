@@ -825,8 +825,8 @@ Three things it deliberately does not reach:
 | another tenant | it is one row's setting, read through the wall on a call that was reading that row anyway |
 
 **Unset is yes.** The field carries presence where everything around it does not,
-for exactly that: a tenant written before it existed reads *false* for an implicit
-bool, and every one of them would have lost the one credential roster holds itself.
+for exactly that: a tenant that has never said would read *false* for an implicit
+bool, and lose the one credential roster holds itself.
 
 ### The user console, through the front door
 

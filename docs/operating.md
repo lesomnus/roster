@@ -62,17 +62,30 @@ logs one and starts, since an index that only costs time is not worth an outage
 on the next restart; and an invalid index the schema does not declare -- your
 own, or the `_ccnew` a `REINDEX CONCURRENTLY` left -- is only logged.
 
-**A column that comes to a table which already has rows takes the default its
-field declares** -- `(orm.field).default`, which the generator gives the column as
-well as the server -- so every row already there holds it rather than NULL. A field
-with no default is a NOT NULL column with none, and adding one to a table with
-rows is refused by SQLite and by Postgres alike: that is a release that does not
-start, so a field added to an existing entity says what the rows already there
-should hold. CI migrates empty databases and cannot see this, which is what
-`scripts/upgrade.sh` is for: it builds the release before the commit -- the nearest
-`v*` tag -- lets it make a deployment's databases, puts a row in every table, and
-starts the commit on them twice. **Tag what you deploy** and the `upgrade` job
-follows; with no tag there is nothing to upgrade from, and it says so.
+**A column that comes to a table which already has rows** needs something for
+the rows already there. A field with no default is a NOT NULL column with none,
+and adding one to a table with rows is refused by SQLite and by Postgres alike:
+that is a release that does not start. Until the first app launches, such a
+field moves the compatibility epoch (below) rather than declaring a default for
+the rows written before it; an entity added is a table of its own, and moves
+nothing. From the launch on, a field added to an existing entity says what the
+rows already there should hold -- `(orm.field).default`, which the generator
+gives the column as well as the server, so every row already there holds it
+rather than NULL. CI migrates empty databases and cannot see this, which is what
+`scripts/upgrade.sh` is for: it builds the release before the commit -- the
+nearest `v*` tag -- lets it make a deployment's databases, puts a row in every
+table, and starts the commit on them twice. **Tag what you deploy** and the
+`upgrade` job follows; with no tag there is nothing to upgrade from, and it says
+so.
+
+**Nor from another compatibility epoch.** `.github/compat-epoch` is a number,
+and a release whose number is not the commit's is one the commit keeps nothing
+of: `upgrade.sh` does not build it, migrates nothing it made, and says so. Until
+the first app launches, a change that breaks what an earlier build stored,
+exported, issued or was configured with moves the number rather than carrying a
+way forward ([CLAUDE.md](../CLAUDE.md)), and the pull request that moves it names
+the build a deployment with data migrates on first. From the launch on it moves
+only on the owner's word.
 
 ## The two planes
 
@@ -670,12 +683,14 @@ not a setting is read as it was: `--key alias=rt_…` and the `--base` of
 `roster ldap serve` add to the block's map rather than replace it.
 
 **The keys are references, not tokens.** `env:NAME` and `file:PATH` are both
-understood, `ROSTER_<APP>_KEY_<ALIAS>` still works and is merged with them, and
-`--key alias=rt_…` takes a literal that is in the process list and says so. Do
-**not** name a `ROSTER_` variable in a reference: the configuration loader claims
-those for the fields of the same name, so `env:ROSTER_LOGIN_SEAL` is read as
-`login.seal` itself -- a key where a list was expected, and a process that refuses
-to start.
+understood. A tenant's own copy of the account app or the directory is given its
+`rt_` in one of two forms, merged: by reference in the block's `keys`, by alias,
+or in the environment, one variable per tenant -- `ROSTER_ACCOUNT_KEY_<ALIAS>`,
+`ROSTER_LDAP_KEY_<ALIAS>`. `--key alias=rt_…` takes a literal that is in the
+process list and says so. Do **not** name a `ROSTER_` variable in a reference:
+the configuration loader claims those for the fields of the same name, so
+`env:ROSTER_LOGIN_SEAL` is read as `login.seal` itself -- a key where a list was
+expected, and a process that refuses to start.
 
 ### The key cannot exist before this has run once
 
@@ -717,17 +732,6 @@ that nominated nobody for it. One restart fixes it. A further name for a tenant
 already nominated in works on the start that applies it, and a deployment that
 adds names by hand rather than by file does not have it at all: write the row,
 and the next start nominates.
-
-**Upgrading from `Host.acts_as`.** The field is gone (`host.proto` reserves 8).
-On Postgres its column is left where it was; on SQLite the migration rebuilds
-the table without it. Nothing reads it either way, and going back a version
-puts the column back empty and its `login provision` fills it again. The first
-start of this version's `login provision` writes the nominations from the
-names, so a deployment that runs it as an init container -- `deploy/` does --
-needs nothing done. A roster-hosted app other than the Login App that relied on
-a name's `acts_as` is refused from the upgrade on, until `roster app install`
-nominates it in each tenant: the table nominations live in arrives with the
-upgrade, so there is nothing to write ahead of it.
 
 Beside the process is where it belongs: an `initContainer` in Kubernetes, a line
 before `ExecStart` on a box. `deploy/` is that, as manifests.
@@ -841,11 +845,6 @@ exchanged at the first server's token endpoint -- a mix-up (RFC 9700 § 4.4).
 Beside it, every round trip carries a **PKCE** challenge (S256), so a code is
 worth nothing without the verifier only the front door that asked holds, and an
 OpenID one a **nonce** the ID token has to carry back.
-
-Upgrading from a release that used `/callback`, every connection's provider
-registration changes: register each connection's own URL, then roll the front
-doors. A provider that still has only the old one answers *redirect URI
-mismatch* at the sign-in, before anybody is signed in as anybody.
 
 ### GitHub
 
@@ -1493,29 +1492,25 @@ else: a row somebody changed after the check that was looked at is not accepted
 with the ones that were (payday#115). Each row is on the trail as the act it is
 (`roster.trail.rows.accept`), and the digest and the why are logged with it. A
 forged row and a key not given are not accepted: look at the row of the trail,
-or give the key. A deployment upgrading to this runs it once, for erasures
-recorded before erasures kept a digest.
+or give the key.
 
-**Once, after upgrading to a roster with seals.** Every row of a kind with a
-personal field -- a holder, an address, an identity -- was written by a build
-that sealed nothing, and a check counts it **from before seals**: no finding,
+**A row whose newest write sealed nothing** -- written before its kind
+declared the field personal -- is counted **from before seals**: no finding,
 since nothing can be said of what it was, and nothing vouches for its personal
 fields either. `trail rows` says how many, every run, and an acceptance of that
 check is what seals them -- run when it found nothing else, since rows from
 before seals are no finding:
 
 ```sh
-roster trail rows                                                   # `1520 row(s) from before seals: ...`, and its digest
-roster trail rows --accept --of sha256:… --why "sealing what was written before seals"
+roster trail rows                                                   # `12 row(s) from before seals: ...`, and its digest
+roster trail rows --accept --of sha256:… --why "sealing what was written before the field was personal"
 roster trail rows                                                   # no rows from before seals
 ```
 
 Each is on the trail as the act it is, and the acceptance is of what was looked
 at, as every one is: the digest names the rows it seals, and a row changed
 after the check is refused with it. Until it runs, a personal field changed
-past the servers in one of those rows is not found. Nothing else changes on the
-upgrade: a line written before it says which fields its digest covered, and is
-checked over those.
+past the servers in one of those rows is not found.
 
 **A database restored from a backup** older than the latest checkpoint has
 numbered fewer checkpoints than the store keeps: `verify` finds it `behind`
@@ -1544,40 +1539,25 @@ roster trail accept --of sha256:… --full --restored 38 --why "the database res
 roster trail verify --full   # clean
 ```
 
-A row with no signature is the same whether it was written before rows were
-signed or had its signature taken off, so with a key every such row is a finding.
-A deployment that already had a key when it moved to a roster with signed rows
-runs `accept` **once** after the upgrade, as somebody who has looked:
+Every row is signed as it is written, so a row with no signature is one somebody
+took the signature off: `unsigned`, a finding.
+
+**A history no trusted key signed.** A deployment whose key was changed while
+the one before it was left out of `audit.checkpoints.trust` has rows and
+checkpoints signed by a key nobody trusts. Each is `forged`, nothing is
+destroyed on their word, and no act takes a checkpoint after them: each does
+what it does and then says so in its error
+(`no trusted key signed the checkpoints the store keeps`). Put the old key's
+public half back in `audit.checkpoints.trust`, which is what a rotation means --
+or, once somebody has looked, run `accept` once. It signs the rows as they stand
+and names the checkpoint the database numbered last as the one before its own,
+which takes in the history from before the key.
 
 ```sh
-roster trail verify                                                         # `unsigned`, for every row from before
-roster trail accept --of sha256:… --why "written before rows were signed"   # once
+roster trail verify                                                         # `forged`, what the key before signed
+roster trail accept --of sha256:… --why "signed by the key before 10-22, which was not kept"
 roster trail verify                                                         # clean
 ```
-
-**An archive kept without a key until now** (an earlier roster kept one that
-nothing signed) is the same once the key is set, and more of it. Every row and
-every checkpoint it has is `unsigned`. Nothing is destroyed on their word, and no
-act takes a checkpoint after them: each does what it does and then says so in its
-error (`no trusted key signed the checkpoints the store keeps`). Set
-`audit.checkpoints.key`, look, and run `accept`. It signs the rows as they
-stand and names the checkpoint the database numbered last as the one before its
-own, which takes in the history from before the key. Signing the rows brings
-their chunks into the comparison, and what that finds -- a chunk a row nobody
-signed said the archive held, and it does not -- is not what was looked at:
-the next `verify` finds it, and it takes an acceptance of its own. So such an
-archive may take two:
-
-```sh
-roster trail verify                                                         # `unsigned`, every row and checkpoint
-roster trail accept --of sha256:… --why "kept without a key until 10-22"
-roster trail verify                                                         # clean, or what the signed rows brought to light
-roster trail accept --of sha256:… --why "the chunks the 10-22 acceptance brought to light, looked at"   # only if it was not
-```
-
-A deployment that changed its key without trusting the old one is told the same.
-It puts the old key's public half in `audit.checkpoints.trust` instead of
-accepting.
 
 `prune --to`, and `--in` of `purge` and `accept`, name the archive
 `audit.archive` already is, or one for a deployment that names none. The account

@@ -54,6 +54,41 @@ existed, said "no providers, no MFA", and was already false: `VouchService`
 checks a password. `docs/position.md`, § "The line, in one sentence" and
 § "Second factors".
 
+## Until the first launch, nothing is kept for an earlier roster
+
+> **Until the first app launches (Loft), roster keeps nothing for an earlier
+> roster.** The owner's decision, 2026-11-09.
+
+A change that breaks what an earlier build stored, exported, issued or was
+configured with carries no compatibility path: no column kept for the rows
+before it, no rename list of roster's own, no second spelling of a key, a
+token or a command, no paragraph telling an operator how to bring a deployment
+forward. It bumps `.github/compat-epoch` instead. So does a required field an
+entity gains, which the rows written before it lack: the epoch moves rather than
+a default being declared for them. An entity added is a table of its own and
+moves nothing. The `upgrade` job does not cross an epoch (`scripts/upgrade.sh`);
+staging is made again from nothing, and the release that job starts from moves
+to the first build of the new epoch once that is tagged. The pull request says,
+once, which roster a deployment with data must migrate on first -- in its
+description, not in `docs/`.
+
+An older caller is no different. Until the launch, a field or an RPC that
+nothing here needs goes, and `buf breaking` is told so for that one change: an
+`ignore_only` in `buf.yaml`, naming the rule and the file, out again with the
+first change after it reaches `main` (#196 and #197 are the shape). Loft and
+levyan take the change when they move their pin.
+
+**From that launch on**, the rules that keep earlier builds and older callers
+working apply again -- the rehearsed upgrade, a break of the wire as a
+migration argued for in a review, a default for a column that comes to a table
+with rows, the `buf.yaml` rules that wait for it -- and the epoch does not move
+without the owner's word. Each of those rules says so where it is written.
+
+Features keep their rules. payday's `formerly`, and the `rename` calls
+`migrate` hands payday's lists to, are how roster renames what it has: plumbing,
+whatever the lists hold today. `standing`, `roster role patch` and everything
+else roster does now are what it does, not what it kept.
+
 ## Regenerate after touching the schema
 
 ```sh
@@ -89,7 +124,7 @@ checkout.
 ./scripts/e2e.sh          # the three pages, in a browser
 ./scripts/hydra.sh        # one OAuth flow, through a real Hydra, to an id_token
 ./scripts/cluster.sh      # deploy/ in k3d, and the class a fresh process hides
-./scripts/upgrade.sh      # the last release's databases, a row in every table, brought up by this checkout
+./scripts/upgrade.sh      # the last release's databases, a row in every table, brought up by this checkout -- within an epoch
 ```
 
 **Touching `ts/` means running this too.** It stands roster up the way

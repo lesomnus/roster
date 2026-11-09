@@ -122,14 +122,6 @@ func (_c *TenantCreate) SetHold(v string) *TenantCreate {
 	return _c
 }
 
-// SetNillableHold sets the "hold" field if the given value is not nil.
-func (_c *TenantCreate) SetNillableHold(v *string) *TenantCreate {
-	if v != nil {
-		_c.SetHold(*v)
-	}
-	return _c
-}
-
 // SetId sets the "id" field.
 func (_c *TenantCreate) SetId(v uuid.UUID) *TenantCreate {
 	_c.mutation.SetId(v)
@@ -143,7 +135,6 @@ func (_c *TenantCreate) Mutation() *TenantMutation {
 
 // Save creates the Tenant in the database.
 func (_c *TenantCreate) Save(ctx context.Context) (*Tenant, error) {
-	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -169,16 +160,6 @@ func (_c *TenantCreate) ExecX(ctx context.Context) {
 	}
 }
 
-// defaults sets the default values of the builder before save.
-func (_c *TenantCreate) defaults() {
-	if _, ok := _c.mutation.Hold(); !ok {
-		if _, ok := _c.mutation.FieldExpr(tenant.FieldHold); !ok {
-			v := tenant.DefaultHold
-			_c.mutation.SetHold(v)
-		}
-	}
-}
-
 // check runs all checks and user-defined validators on the builder.
 func (_c *TenantCreate) check() error {
 	if fs := _c.mutation.ExprFields(); len(fs) > 0 {
@@ -195,6 +176,9 @@ func (_c *TenantCreate) check() error {
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Tenant.date_updated"`)}
+	}
+	if _, ok := _c.mutation.Hold(); !ok {
+		return &ValidationError{Name: "hold", err: errors.New(`ent: missing required field "Tenant.hold"`)}
 	}
 	return nil
 }
@@ -348,7 +332,6 @@ func (_c *TenantCreateBulk) Save(ctx context.Context) ([]*Tenant, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
-			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*TenantMutation)
 				if !ok {

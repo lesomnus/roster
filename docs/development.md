@@ -81,8 +81,10 @@ Neither says anything when it cannot -- a `replace`, a workspace, a build with n
 version are all somebody developing. While developing, `db.migrate: true` swaps
 the second refusal for `ent.Schema.Create`; that is a decision about who may
 alter tables, so it should be made on purpose rather than left on. There is no
-migrations directory, and what a change means for a running deployment is written
-beside the change.
+migrations directory. From the first app's launch on, what a change means for a
+running deployment is written beside the change; until then, a change that breaks
+what one stored moves the compatibility epoch instead and says which roster to
+migrate on first ([CLAUDE.md](../CLAUDE.md)).
 
 ## Adding an entity
 

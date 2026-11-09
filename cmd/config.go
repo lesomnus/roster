@@ -308,7 +308,7 @@ type HolderConfig struct {
 //
 // Empty is **for good**, which is the default the trail's retention and
 // `holder.forget_after` have, for their reason -- a version upgrade is not the
-// right thing to start destroying a deployment's proof -- and what Rove's own
+// right thing to start destroying a deployment's proof -- and what Loft's own
 // `app.consent.keep` said before its consents moved here.
 type ConsentConfig struct {
 	// Keep is how long after its account was erased a consent is kept. Empty

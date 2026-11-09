@@ -34,7 +34,7 @@ type TenantAddRequest struct {
 	xxx_hidden_DateClosed    *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=date_closed,json=dateClosed"`
 	xxx_hidden_DateDestroyed *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=date_destroyed,json=dateDestroyed"`
 	xxx_hidden_DateHeld      *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_held,json=dateHeld"`
-	xxx_hidden_Hold          *string                `protobuf:"bytes,12,opt,name=hold"`
+	xxx_hidden_Hold          string                 `protobuf:"bytes,12,opt,name=hold"`
 	XXX_raceDetectHookData   protoimpl.RaceDetectHookData
 	XXX_presence             [1]uint32
 	unknownFields            protoimpl.UnknownFields
@@ -138,10 +138,7 @@ func (x *TenantAddRequest) GetDateHeld() *timestamppb.Timestamp {
 
 func (x *TenantAddRequest) GetHold() string {
 	if x != nil {
-		if x.xxx_hidden_Hold != nil {
-			return *x.xxx_hidden_Hold
-		}
-		return ""
+		return x.xxx_hidden_Hold
 	}
 	return ""
 }
@@ -191,8 +188,7 @@ func (x *TenantAddRequest) SetDateHeld(v *timestamppb.Timestamp) {
 }
 
 func (x *TenantAddRequest) SetHold(v string) {
-	x.xxx_hidden_Hold = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 10, 11)
+	x.xxx_hidden_Hold = v
 }
 
 func (x *TenantAddRequest) HasId() bool {
@@ -237,13 +233,6 @@ func (x *TenantAddRequest) HasDateHeld() bool {
 	return x.xxx_hidden_DateHeld != nil
 }
 
-func (x *TenantAddRequest) HasHold() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 10)
-}
-
 func (x *TenantAddRequest) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
@@ -269,11 +258,6 @@ func (x *TenantAddRequest) ClearDateHeld() {
 	x.xxx_hidden_DateHeld = nil
 }
 
-func (x *TenantAddRequest) ClearHold() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 10)
-	x.xxx_hidden_Hold = nil
-}
-
 type TenantAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -287,7 +271,7 @@ type TenantAddRequest_builder struct {
 	DateClosed    *timestamppb.Timestamp
 	DateDestroyed *timestamppb.Timestamp
 	DateHeld      *timestamppb.Timestamp
-	Hold          *string
+	Hold          string
 }
 
 func (b0 TenantAddRequest_builder) Build() *TenantAddRequest {
@@ -307,10 +291,7 @@ func (b0 TenantAddRequest_builder) Build() *TenantAddRequest {
 	x.xxx_hidden_DateClosed = b.DateClosed
 	x.xxx_hidden_DateDestroyed = b.DateDestroyed
 	x.xxx_hidden_DateHeld = b.DateHeld
-	if b.Hold != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 10, 11)
-		x.xxx_hidden_Hold = b.Hold
-	}
+	x.xxx_hidden_Hold = b.Hold
 	return m0
 }
 
@@ -2329,7 +2310,7 @@ var File_roster_payday_tenant_svc_g_proto protoreflect.FileDescriptor
 
 const file_roster_payday_tenant_svc_g_proto_rawDesc = "" +
 	"\n" +
-	" roster/payday/tenant_svc.g.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x1aroster/payday/tenant.proto\"\xa8\x04\n" +
+	" roster/payday/tenant_svc.g.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x1aroster/payday/tenant.proto\"\xaf\x04\n" +
 	"\x10TenantAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
@@ -2342,8 +2323,8 @@ const file_roster_payday_tenant_svc_g_proto_rawDesc = "" +
 	"dateClosed\x12A\n" +
 	"\x0edate_destroyed\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\rdateDestroyed\x127\n" +
-	"\tdate_held\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\bdateHeld\x12\x12\n" +
-	"\x04hold\x18\f \x01(\tR\x04hold\x1a9\n" +
+	"\tdate_held\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\bdateHeld\x12\x19\n" +
+	"\x04hold\x18\f \x01(\tB\x05\xaa\x01\x02\b\x02R\x04hold\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"e\n" +

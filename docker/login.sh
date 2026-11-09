@@ -47,9 +47,7 @@ until wget -T 2 -qO- "${HYDRA_ADMIN}/health/ready" >/dev/null 2>&1; do
 done
 
 # One variable, with no tenant in its name: the app holds one credential, so the
-# loader reads `ROSTER_LOGIN_KEY` like any other setting. It was
-# `ROSTER_LOGIN_KEY_<ALIAS>`, one per tenant, which the loader had to be told was
-# not a typo.
+# loader reads `ROSTER_LOGIN_KEY` like any other setting.
 export "ROSTER_LOGIN_KEY=$(cat "${key}")"
 
 # How long Hydra skips the form for a browser that has already signed in. On by

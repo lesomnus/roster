@@ -561,7 +561,8 @@ func (b0 Holder_builder) Build() *Holder {
 //
 // Stored as the canonical protobuf JSON, so these **names** are the storage.
 // Renaming one does not break the build and does not break the wire; it stops
-// finding the old value. Renaming a field here is a migration.
+// finding the old value. From the first app's launch on, renaming a field here
+// is a migration; until then it moves the compatibility epoch (CLAUDE.md).
 type Profile struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_DisplayName string                 `protobuf:"bytes,1,opt,name=display_name,json=displayName"`
@@ -839,7 +840,7 @@ var File_roster_payday_holder_proto protoreflect.FileDescriptor
 
 const file_roster_payday_holder_proto_rawDesc = "" +
 	"\n" +
-	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xfb\a\n" +
+	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xf4\a\n" +
 	"\x06Holder\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x1c\n" +
@@ -855,8 +856,8 @@ const file_roster_payday_holder_proto_rawDesc = "" +
 	"\x04data\x18\n" +
 	" \x01(\v2\x14.google.protobuf.AnyB\x06\xaa\xc1\x16\x02\x18\x01R\x04data\x12M\n" +
 	"\x10date_invalidated\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\x0fdateInvalidated\x12G\n" +
-	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateDisabled\x12-\n" +
-	"\tdirectory\x18\b \x01(\tB\x0f\xea\x82\x16\x03\x82\x01\x00\xaa\xc1\x16\x04\x10\x01\x18\x00R\tdirectory\x124\n" +
+	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateDisabled\x12&\n" +
+	"\tdirectory\x18\b \x01(\tB\b\xaa\xc1\x16\x04\x10\x01\x18\x00R\tdirectory\x124\n" +
 	"\bportrait\x18\x10 \x01(\v2\x10.roster.PortraitB\x06\xaa\xc1\x16\x02\x18\x01R\bportrait\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +

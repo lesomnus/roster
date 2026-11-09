@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/tenant.proto.
  */
 export const file_roster_payday_tenant: GenFile = /*@__PURE__*/
-  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L3RlbmFudC5wcm90bxIGcm9zdGVyIo8FCgZUZW5hbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhsKBWFsaWFzGAQgASgJQgzqghYCMAGqwRYCGAASFAoEbmFtZRgFIAEoCUIGqsEWAhgAEhQKBGRlc2MYBiABKAlCBqrBFgIYABIyCgZsYWJlbHMYByADKAsyGi5yb3N0ZXIuVGVuYW50LkxhYmVsc0VudHJ5QgaqwRYCGAASOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASJAoGY29uZmlnGAggASgLMhQucm9zdGVyLlRlbmFudENvbmZpZxI3CgtkYXRlX2Nsb3NlZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI6Cg5kYXRlX2Rlc3Ryb3llZBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI1CglkYXRlX2hlbGQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESFQoEaG9sZBgMIAEoCUIH6oIWA4IBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOl/K/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxYxCAEyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGRCAgoASAEaACJyCgxUZW5hbnRDb25maWcSFwoIcGFzc3dvcmQYASABKAhCBaoBAggBEhIKCmZyb250X2Rvb3IYAiABKAkSJgoHcHJvZmlsZRgDIAEoCzIVLnJvc3Rlci5UZW5hbnRQcm9maWxlEg0KBWxlYXZlGAQgASgIIjcKDVRlbmFudFByb2ZpbGUSDAoEZmlsbBgBIAEoCBIYChBzbGFja19zZWNyZXRfcmVmGAIgASgJQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L3RlbmFudC5wcm90bxIGcm9zdGVyIoYFCgZUZW5hbnQSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhsKBWFsaWFzGAQgASgJQgzqghYCMAGqwRYCGAASFAoEbmFtZRgFIAEoCUIGqsEWAhgAEhQKBGRlc2MYBiABKAlCBqrBFgIYABIyCgZsYWJlbHMYByADKAsyGi5yb3N0ZXIuVGVuYW50LkxhYmVsc0VudHJ5QgaqwRYCGAASOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQASJAoGY29uZmlnGAggASgLMhQucm9zdGVyLlRlbmFudENvbmZpZxI3CgtkYXRlX2Nsb3NlZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI6Cg5kYXRlX2Rlc3Ryb3llZBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI1CglkYXRlX2hlbGQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESDAoEaG9sZBgMIAEoCRotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOl/K/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxYxCAEyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGRCAgoASAEaACJyCgxUZW5hbnRDb25maWcSFwoIcGFzc3dvcmQYASABKAhCBaoBAggBEhIKCmZyb250X2Rvb3IYAiABKAkSJgoHcHJvZmlsZRgDIAEoCzIVLnJvc3Rlci5UZW5hbnRQcm9maWxlEg0KBWxlYXZlGAQgASgIIjcKDVRlbmFudFByb2ZpbGUSDAoEZmlsbBgBIAEoCBIYChBzbGFja19zZWNyZXRfcmVmGAIgASgJQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Tenant is the wall an app is divided by.
@@ -172,9 +172,6 @@ export type Tenant = Message<"roster.Tenant"> & {
   /**
    * What the hold is for: a case, a demand. Empty while nothing holds it.
    *
-   * With a default, so that the column arrives on a deployment's existing
-   * tenants as empty rather than as a migration that cannot fill it.
-   *
    * @generated from field: string hold = 12;
    */
   hold: string;
@@ -209,9 +206,9 @@ export type TenantConfig = Message<"roster.TenantConfig"> & {
    *
    * **Unset is yes**, which is the whole reason this field has presence where
    * everything around it does not (`option features.field_presence = IMPLICIT`
-   * on the merged file). A tenant written before this existed reads `false` for
-   * an implicit bool, and every one of them would have been locked out of the
-   * one credential roster holds itself.
+   * on the merged file). A tenant that has never said offers the one credential
+   * roster holds itself; an implicit bool would read `false` for it, and lock
+   * its people out of it.
    *
    * What it turns off is **signing in**, on every path that ends in
    * `Vouch.Verify` -- the Login App's form, the account page's, an LDAP bind,
@@ -280,16 +277,15 @@ export type TenantConfig = Message<"roster.TenantConfig"> & {
    * (`MeService.Leave`): their holder erased as `HolderService.Erase` erases
    * one, by themselves, from a sign-in a few minutes old.
    *
-   * **Unset is no**, which is what every tenant written before this was. A
-   * directory a company provisions by SCIM is the company's to empty: a person
-   * who deleted themselves out of it is one the directory can neither find nor
-   * make again until they are forgotten, and then makes again with nothing of
-   * theirs. So it is a tenant that decides to offer this, never one that finds
-   * out it did -- and where one with a directory does, the people the directory
-   * provisions are refused all the same (`MeService.Leave`). A consumer
-   * product's directory, where an account is the person's own, is the case it
-   * was asked for: Rove's SaaS turns it on for the one tenant every account is
-   * in.
+   * **Unset is no.** A directory a company provisions by SCIM is the company's
+   * to empty: a person who deleted themselves out of it is one the directory
+   * can neither find nor make again until they are forgotten, and then makes
+   * again with nothing of theirs. So it is a tenant that decides to offer
+   * this, never one that finds out it did -- and where one with a directory
+   * does, the people the directory provisions are refused all the same
+   * (`MeService.Leave`). A consumer product's directory, where an account is
+   * the person's own, is the case it was asked for: Loft's SaaS turns it on for
+   * the one tenant every account is in.
    *
    * A fact roster acts on and not an instruction to a screen: `MeService.Leave`
    * refuses while this is false, and the account page draws the section only
@@ -321,7 +317,7 @@ export type TenantProfile = Message<"roster.TenantProfile"> & {
   /**
    * Whether a sign-in through a provider fills the blanks at all. Unset is no:
    * copying what a directory holds about people into another store is a
-   * decision, and one a tenant written before this existed never took.
+   * decision, and a tenant that has never said has not taken it.
    *
    * @generated from field: bool fill = 1;
    */

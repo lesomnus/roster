@@ -308,8 +308,8 @@ func TestAProfileNamingAnotherPictureTakesThePortraitAway(t *testing.T) {
 	x.Equal("https://example.com/ines.jpg", p.GetPicture())
 	x.Empty(sizes)
 
-	// A value from before the URL was checked is left to whoever next changes
-	// it, so a form that sends it back unchanged still saves.
+	// A save that does not touch the picture is not refused for it, so a form
+	// that sends back the one there, whatever wrote it, still saves.
 	_, err = b.Ungated.Holder().Patch(ctx, app.HolderPatchRequest_builder{
 		Ref:              ref,
 		Profile:          app.Profile_builder{Picture: "a picture"}.Build(),

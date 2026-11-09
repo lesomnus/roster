@@ -26,8 +26,9 @@
 # `buf breaking`, which CI runs against `origin/main`. That is a question about
 # this branch's relationship to the branch rather than about this checkout, it
 # needs a ref a shallow clone does not have, and breaking the wire on purpose is
-# a migration somebody argues for in a review. It is the one thing that can be
-# red here after this is green.
+# a migration somebody argues for in a review -- from the first app's launch on;
+# until then it is a one-time exception in `buf.yaml` (CLAUDE.md). It is the one
+# thing that can be red here after this is green.
 set -o errexit
 set -o pipefail
 

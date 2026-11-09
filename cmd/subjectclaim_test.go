@@ -49,7 +49,7 @@ func TestAConnectionNamesItsPeopleByOneClaim(t *testing.T) {
 		t.Helper()
 		_, err := s.Connection().Add(as, app.ConnectionAddRequest_builder{
 			Tenant: at, Name: name, Issuer: "https://login.microsoftonline.com/contoso/v2.0", ClientId: "the-app",
-			SubjectClaim: z.Ptr(claim),
+			SubjectClaim: claim,
 		}.Build())
 
 		return err
@@ -220,7 +220,7 @@ func TestAMoveIsAWayInAndIsHeldToIt(t *testing.T) {
 
 	_, err := b.Ungated.Connection().Add(ctx, app.ConnectionAddRequest_builder{
 		Tenant: at, Name: "entra", Issuer: "https://login.microsoftonline.com/contoso/v2.0", ClientId: "the-app",
-		SubjectClaim: z.Ptr("oid"),
+		SubjectClaim: "oid",
 	}.Build())
 	require.NoError(t, err)
 

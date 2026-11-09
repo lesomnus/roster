@@ -179,7 +179,7 @@ func unlived(req *app.TenantAddRequest) error {
 		return pderr.Invalidf("date_closed", "a tenant is made open; `TenantService.Close` closes one")
 	case req.HasDateDestroyed():
 		return pderr.Invalidf("date_destroyed", "a tenant is made whole; destroying one is `roster forget`")
-	case req.HasDateHeld(), req.HasHold():
+	case req.HasDateHeld(), req.GetHold() != "":
 		return pderr.Invalidf("date_held", "a hold is placed by an operator, with `roster hold`")
 	}
 

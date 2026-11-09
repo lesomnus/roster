@@ -231,7 +231,7 @@ func newCmdTrailRead(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 		Brief: "read an archive back, without a database",
 
 		Args: arg.Args{
-			&arg.RestStrings{Name: "FILE", Brief: "files to read -- a chunk taken out, or a directory from before; the archive at --in or audit.archive by default"},
+			&arg.RestStrings{Name: "FILE", Brief: "files to read -- a chunk taken out of the archive; the archive at --in or audit.archive by default"},
 		},
 
 		Flags: flg.Flags{
@@ -286,7 +286,7 @@ func newCmdTrailRead(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			}
 
 			// Files named on the command line are files: a chunk somebody took
-			// out, or a directory from before the archive was a store.
+			// out of the archive.
 			if len(paths) > 0 {
 				return trail.ReadFiles(paths, pd.TrailOf(show))
 			}
@@ -294,20 +294,7 @@ func newCmdTrailRead(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			// One call over the whole archive rather than one per chunk,
 			// because the duplicate two writers leave behind is only visible
 			// to a reader that has seen both. See [trail.Read].
-			dir := c.Audit.Archive
-			if err := trail.Read(ctx, flob.NewOsStores(dir), pd.TrailOf(show)); err != nil {
-				return err
-			}
-
-			// And the files a version before wrote, if no pass has taken them
-			// in yet. Read where they are rather than adopted: this command
-			// reads, and moving an archive about is a pass's to do.
-			loose, err := filepath.Glob(filepath.Join(dir, "audit-*"+trail.Ext))
-			if err != nil || len(loose) == 0 {
-				return err
-			}
-
-			return trail.ReadFiles(loose, pd.TrailOf(show))
+			return trail.Read(ctx, flob.NewOsStores(c.Audit.Archive), pd.TrailOf(show))
 		}),
 	}
 }
@@ -579,11 +566,10 @@ func heard(hs map[string]trail.Heard) []string {
 // line of the trail -- copied to the archive and kept for years -- must not
 // keep a MAC of. Those are covered by the row's seal, kept beside the row in
 // the database alone (payday#115), and a row whose newest write sealed
-// nothing -- every row of a kind with a personal field, after the upgrade that
-// brought seals -- is counted as from before seals: no finding, and nothing
-// vouches for its personal fields. `--accept` puts those on the trail too,
-// which seals them, and does so when they are all the check found: it is the
-// one acceptance an operator runs after that upgrade (docs/operating.md).
+// nothing -- written before its kind declared the field personal -- is
+// counted as from before seals: no finding, and nothing vouches for its
+// personal fields. `--accept` puts those on the trail too, which seals them,
+// and does so when they are all the check found (docs/operating.md).
 func newCmdTrailRows(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "rows",
@@ -642,10 +628,8 @@ func newCmdTrailRows(c *cmd.Config) *xli.Command {
 			// The rows whose newest write sealed nothing, which a check
 			// cannot vouch for the personal fields of (payday#115): no
 			// finding, since nothing can be said of what they were, and
-			// counted every run rather than listed -- after the upgrade that
-			// brought seals it is every row of a kind with a personal field.
-			// The acceptance that seals them is the one below, of this
-			// digest, which names them.
+			// counted every run rather than listed. The acceptance that seals
+			// them is the one below, of this digest, which names them.
 			if n := len(v.Unsealed); n > 0 {
 				fmt.Fprintf(os.Stderr, "%d row(s) from before seals: what is personal in them is vouched for by nothing until "+
 					"`roster trail rows --accept --of %s --why ...` seals them\n", n, digest)

@@ -274,8 +274,8 @@ func AppRole(app string) string { return app + "-app" }
 
 // roleOnce is the role called `alias` in this tenant, made with `methods` if
 // there is none and **left alone** if there is -- the difference from
-// [ensureRoleNamed], which the Login App's provisioning keeps level with each
-// release. It says whether it made one.
+// [ensureRoleNamed], which the Login App's provisioning keeps level with what
+// this binary calls. It says whether it made one.
 func roleOnce(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string, methods []string) ([]byte, bool, error) {
 	v, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
 		Tenant: at, Alias: alias, Methods: methods,

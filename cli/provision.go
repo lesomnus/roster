@@ -74,7 +74,7 @@ func provisionAccount(ctx context.Context, s *cmd.Server, enrol string, out stri
 	if err != nil {
 		return "", 0, err
 	}
-	n, err := nominateAs(ctx, s, accountProvisioned, methods, borrower, accountProvisioned, "config: account")
+	n, err := nominateAs(ctx, s, accountProvisioned, methods, borrower, "config: account")
 	if err != nil {
 		return "", 0, err
 	}
@@ -301,9 +301,10 @@ func boundToOthers(ctx context.Context, s *cmd.Server, role, who []byte) (bool, 
 
 // ensureRoleNamed is a role called `alias` holding exactly `methods`.
 //
-// Patched when it is already there rather than left alone: the list grows with
-// the app, and a role written by an older version is an app that starts and
-// then refuses one thing.
+// An ensure, run at every provision: made when there is none, and patched to
+// `methods` when it is there rather than left alone. The role is what this
+// binary calls as the app, so it is written from what the binary says and not
+// from whatever the row says.
 func ensureRoleNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string, methods []string, labels map[string]string) ([]byte, error) {
 	v, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
 		Tenant: at, Alias: alias, Methods: methods, Labels: labels,

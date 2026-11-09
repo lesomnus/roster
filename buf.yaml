@@ -60,8 +60,10 @@ breaking:
     # (#28): the field named a kind of holder that does not exist, and the only
     # caller that sends it as JSON is this repository's own console.
     #
-    # The day something outside this repository reads these, put them back:
-    # then a rename is a migration somebody else has to make.
+    # Loft and levyan read these now, and a rename is a change each of them
+    # makes when it moves its pin -- which, until the first app launches, is
+    # what roster asks of an older caller (CLAUDE.md). From the launch on, put
+    # them back: then a rename is a migration somebody else has to make.
     - FIELD_SAME_NAME
     - FIELD_SAME_JSON_NAME
     # And a field's **presence** is not its wire either. A field that declares
@@ -71,7 +73,21 @@ breaking:
     # `connection.subject_claim`, `connection.provisions` and `holder.directory`
     # declared theirs, so that a row that predates the column holds it (#124).
     #
-    # The day something outside this repository builds these requests, put it
-    # back: then a field that became a pointer is a compile error somebody else
-    # has to fix.
+    # Loft and levyan build these requests now, and until the first app
+    # launches a field that became a pointer is theirs to follow when they move
+    # their pin (CLAUDE.md). From the launch on, put it back: then it is a
+    # compile error somebody else has to fix.
     - FIELD_SAME_CARDINALITY
+  # One change, on purpose and before the first app's launch (CLAUDE.md): `Host`
+  # 8 and `Role` 9 are no longer reserved. They were kept so that an older
+  # caller sending `acts_as` or `every_method` was not read as something else,
+  # and no caller of this compatibility epoch was built with either. The wire
+  # of every message is what it was.
+  #
+  # Out with the first change after this reaches `main`, which is the only
+  # baseline here, as #197 took #196's out: left in, it is a hole in the check
+  # for the next change to those two files.
+  ignore_only:
+    RESERVED_MESSAGE_NO_DELETE:
+      - proto/app/host.proto
+      - proto/app/role.proto

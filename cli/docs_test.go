@@ -316,7 +316,7 @@ func TestTheDocumentationNamesTestsThatExist(t *testing.T) {
 // TestTheDocumentationNamesVariablesThatAreRead holds every `ROSTER_…` in the
 // documentation against what the loader reads.
 //
-// The four prefixes are the ones the consumers read for themselves rather than
+// The two prefixes are the ones the consumers read for themselves rather than
 // through the loader (`cli.Cmd`'s `cfg.Reads`), so they are names with an alias
 // after them and are documented as such.
 func TestTheDocumentationNamesVariablesThatAreRead(t *testing.T) {
@@ -329,7 +329,7 @@ func TestTheDocumentationNamesVariablesThatAreRead(t *testing.T) {
 	}
 	x.Greater(len(have), 50, "the loader named nothing")
 
-	perAlias := []string{"ROSTER_ACCOUNT_KEY_", "ROSTER_LDAP_KEY_", "ROSTER_LOGIN_KEY_", "ROSTER_LOGIN_CLIENT_"}
+	perAlias := []string{"ROSTER_ACCOUNT_KEY_", "ROSTER_LDAP_KEY_"}
 
 	// And what something in this tree reads for itself. `ROSTER_ROOT_PASSWORD` is
 	// the image's entrypoint, not a field, and a deployment copies it out of the

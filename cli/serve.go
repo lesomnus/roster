@@ -285,12 +285,12 @@ func Migrate(ctx context.Context, s *cmd.Server) error {
 // moved rather than a column added empty beside the old one, or on SQLite a
 // table made again without it.
 //
-// First, because a migration finds an index by its name, and one it does not
-// find it makes again, from every row, beside the old one, which it leaves --
-// it drops no index. An index stored under the name it declares is found under
-// it whatever its columns, so a reordered one is made again where it stands and
-// the list of replaced names this used to drop by hand (lesomnus/rove#122) has
-// nothing left to say (payday#132).
+// The indexes are the same (`pd.IndexRenames`), and empty today too. The renames
+// come first because a migration finds an index by its name, and one it does
+// not find it makes again, from every row, beside the old one, which it leaves
+// -- it drops no index. An index stored under the name it declares is found
+// under it whatever its columns, so a reordered one is made again where it
+// stands (payday#132).
 //
 // And the refusal before anything is made, because found by its name is also
 // how an index a build `CONCURRENTLY` did not finish is taken for made. A

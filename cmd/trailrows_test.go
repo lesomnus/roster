@@ -175,10 +175,9 @@ func TestWhatTheDeploymentWritesPastItsServersIsOnTheTrailAsItsAct(t *testing.T)
 	x.NoError(run("trail", "rows"))
 }
 
-// TestRowsFromBeforeSealsAreSealedByAnAcceptance is the one acceptance an
-// operator runs after the upgrade that brought seals (payday#115). A holder
-// whose newest write sealed nothing -- made here by writing its newest line's
-// digest as a build before seals would have, and taking its seal off -- is
+// TestRowsFromBeforeSealsAreSealedByAnAcceptance: a holder whose newest write
+// sealed nothing (payday#115) -- made here by writing its newest line's digest
+// as a write that seals nothing would have, and taking its seal off -- is
 // counted as from before seals, and is no finding. `--accept` of that check
 // seals it, though the check found nothing, and the next one counts none.
 func TestRowsFromBeforeSealsAreSealedByAnAcceptance(t *testing.T) {

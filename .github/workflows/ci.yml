@@ -158,9 +158,13 @@ jobs:
       # One baseline, and only one: roster's buf module has no name, so it is
       # published nowhere and there is no BSR ref to compare against. That does
       # not make the check pointless -- roster's protos are an API and there is
-      # already an app on the other side of it. Breaking the wire on purpose is
-      # a migration and should be argued for in a review rather than discovered
-      # downstream.
+      # already an app on the other side of it. From the first app's launch on,
+      # breaking the wire on purpose is a migration and should be argued for in
+      # a review rather than discovered downstream. Until then it needs no
+      # migration -- roster keeps nothing for an older caller before the launch
+      # (the owner's decision of 2026-11-09, CLAUDE.md) -- only an `ignore_only`
+      # in `buf.yaml` for that one change, out again with the first change after
+      # it reaches `main`.
       #
       # `ref=origin/main` rather than `branch=main`: a pull request is checked
       # out detached and has no local `main`.
@@ -287,6 +291,14 @@ jobs:
   # already has rows. Three such columns came between two releases of the one
   # deployment with every job here green, and its init container would not
   # have finished.
+  #
+  # Within a compatibility epoch, `.github/compat-epoch`. Until the first app
+  # launches, roster keeps nothing for an earlier roster (the owner's decision
+  # of 2026-11-09, CLAUDE.md): a change that breaks what an earlier build made
+  # moves the number instead, so a release of another epoch is not built and
+  # nothing it makes is migrated. The script says so as a notice and in the
+  # step summary, and the job passes -- it is required, and what it would find
+  # there is what was meant.
   upgrade:
     runs-on: ubuntu-26.04
     steps:

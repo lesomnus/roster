@@ -146,8 +146,7 @@ func (e *external) asOperator(t *testing.T) (rstr.HolderServiceClient, context.C
 }
 
 // role patches the role acme installed the app with to `methods`, the way an
-// operator widens an older installation: the whole list, with `roster role
-// patch`.
+// operator changes a role: the whole list, with `roster role patch`.
 func (e *external) role(t *testing.T, methods []string) {
 	t.Helper()
 	x := require.New(t)

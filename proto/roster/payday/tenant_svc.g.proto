@@ -53,7 +53,7 @@ message TenantAddRequest {
   google.protobuf.Timestamp date_closed = 9;
   google.protobuf.Timestamp date_destroyed = 10;
   google.protobuf.Timestamp date_held = 11;
-  string hold = 12;
+  string hold = 12 [features.field_presence = IMPLICIT];
 }
 
 message TenantGetRequest {

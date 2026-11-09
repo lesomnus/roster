@@ -82,15 +82,15 @@ roster app install --tenant acme \
   levyan
 ```
 
-Installing again leaves a role the tenant has as the tenant has it, so an app
-installed before it held the stream is widened by patching the role with the
-whole list:
+Installing again leaves a role the tenant has as the tenant has it. A role is
+changed by patching it, with the whole list:
 
 ```sh
 roster --as admin role patch @acme/levyan-app '{"methods": ["…"], "date_updated_force": true}'
 ```
 
-Until then the stream is refused, and says so (below).
+A role without `SyncService/Watch` has the stream refused, and is told so
+(below).
 
 ## Asked: what a session is held to
 

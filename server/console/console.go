@@ -264,7 +264,7 @@ func (a authed) Offers(ctx context.Context, _ *app.AuthOffersRequest) (*app.Auth
 
 	// `vouch.Offers` and not the field, so the two places that answer this
 	// question answer it the same way -- including *unset is yes*, which is what
-	// a tenant written before the field existed relies on.
+	// a tenant that has never said relies on.
 	return app.AuthOffersResponse_builder{
 		Password:  vouch.Offers(t, vouch.KindPassword),
 		Providers: providers,

@@ -241,9 +241,9 @@ func TestAClosedDirectoryIsTheFourthFactToAKeyOutsideIt(t *testing.T) {
 	x.ErrorIs(outside.Held(ctx, e.kim, time.Now()), standing.ErrRefused)
 }
 
-// TestAStreamRosterRefusesIsSaidAndThenHeld: a role installed before the app
-// held roster's stream is refused it. That is said once, as an error, with what
-// to do -- and doing it is noticed without a restart.
+// TestAStreamRosterRefusesIsSaidAndThenHeld: an app whose role does not hold
+// `SyncService/Watch` is refused roster's stream. That is said once, as an
+// error, with what to do -- and doing it is noticed without a restart.
 func TestAStreamRosterRefusesIsSaidAndThenHeld(t *testing.T) {
 	x := require.New(t)
 	e := newExternal(t)
