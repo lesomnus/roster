@@ -247,7 +247,7 @@ services:
   # A mailbox that catches what the account app sends and sends nothing on:
   # http://localhost:8025 reads it. It is handed nothing of roster's.
   mailpit:
-    image: axllent/mailpit:v1.33.0@sha256:9b3a463be15354c0f0eba91697d80e3e0d8a5623ef0e627cacc836bc17fd5231
+    image: axllent/mailpit:v1.33.1@sha256:aef2aacc11f075ec0fb6874275ee4a421e688e11a96ebb296134d1735c7761ce
     ports:
       - "8025:8025"
 
@@ -535,7 +535,7 @@ services:
   # fetches are the ones that resolve here. A deployment discovers, and
   # `docs/operating.md` has that config.
   behind:
-    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.5
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.6
     depends_on:
       hydra-client:
         condition: service_completed_successfully
