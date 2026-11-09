@@ -21,12 +21,12 @@ import (
 
 // TestAnAppProvesWhoItIsToAnotherInTheSameTenant is #74.
 //
-// kamino and khala are both roster-hosted, both nominated in acme. kamino,
-// calling khala about acme, has nothing khala can check as `@acme/kamino`: its
+// Loft and levyan are both roster-hosted, both nominated in acme. Loft,
+// calling levyan about acme, has nothing levyan can check as `@acme/loft`: its
 // `rk_` does not introspect on the data plane and `roster-at` is a header only
 // roster reads. `Delegation.Exchange` mints a delegation **about the caller,
-// issued to the audience**, so khala -- narrowed to acme itself -- introspects
-// it and is told kamino, and nobody else is told anything.
+// issued to the audience**, so levyan -- narrowed to acme itself -- introspects
+// it and is told Loft, and nobody else is told anything.
 func TestAnAppProvesWhoItIsToAnotherInTheSameTenant(t *testing.T) {
 	x := require.New(t)
 
@@ -34,17 +34,17 @@ func TestAnAppProvesWhoItIsToAnotherInTheSameTenant(t *testing.T) {
 	ctx := t.Context()
 	acme := b.Contoso
 
-	// kamino is the harness's key, answered in acme as `b.Who`.
+	// Loft is the harness's key, answered in acme as `b.Who`.
 	exchange := "/roster.DelegationService/Exchange"
 	introspect := "/payday.TokenService/Introspect"
 	nominates(t, b.Server, acme, b.Service, b.Who)
-	permits(t, ctx, b, acme, b.Who, "kamino", exchange, introspect)
+	permits(t, ctx, b, acme, b.Who, "loft", exchange, introspect)
 
-	// khala, another app, nominated in acme as its own holder.
-	khalaKey, khalaToken := serviceKey(t, b.Server, "khala", introspect)
-	khala := addHolder(t, ctx, b.Server, acme, "khala")
-	nominates(t, b.Server, acme, khalaKey, khala)
-	permits(t, ctx, b, acme, khala, "khala", introspect)
+	// levyan, another app, nominated in acme as its own holder.
+	levyanKey, levyanToken := serviceKey(t, b.Server, "levyan", introspect)
+	levyan := addHolder(t, ctx, b.Server, acme, "levyan")
+	nominates(t, b.Server, acme, levyanKey, levyan)
+	permits(t, ctx, b, acme, levyan, "levyan", introspect)
 
 	// The harness calls its tenant contoso; acme is the name the issue uses.
 	at := front.AtTenant("contoso")
@@ -53,8 +53,8 @@ func TestAnAppProvesWhoItIsToAnotherInTheSameTenant(t *testing.T) {
 	tokens := pdpb.NewTokenServiceClient(b.Conn)
 
 	got, err := delegations.Exchange(arrivedAt(ctx, b.Token, at), app.DelegationExchangeRequest_builder{
-		Audience: app.HolderRef_builder{Id: khala.Bytes()}.Build(),
-		Methods:  []string{"/hday.khala.RobotService/Get"},
+		Audience: app.HolderRef_builder{Id: levyan.Bytes()}.Build(),
+		Methods:  []string{"/levyan.InvoiceService/Get"},
 	}.Build())
 	x.NoError(err)
 	x.NotEmpty(got.GetToken())
@@ -67,9 +67,9 @@ func TestAnAppProvesWhoItIsToAnotherInTheSameTenant(t *testing.T) {
 	t.Run("the audience is told who sent it", func(t *testing.T) {
 		x := require.New(t)
 
-		v, err := ask(arrivedAt(ctx, khalaToken, at))
+		v, err := ask(arrivedAt(ctx, levyanToken, at))
 		x.NoError(err)
-		x.Equal(b.Who.Bytes(), v.GetId(), "khala was told somebody other than kamino")
+		x.Equal(b.Who.Bytes(), v.GetId(), "levyan was told somebody other than Loft")
 		x.Equal(acme.Bytes(), v.GetTenantId())
 	})
 
@@ -82,24 +82,24 @@ func TestAnAppProvesWhoItIsToAnotherInTheSameTenant(t *testing.T) {
 		x.Equal(codes.NotFound, status.Code(err))
 
 		// The audience's key as itself, allowed to introspect and nobody in acme.
-		_, err = ask(metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+khalaToken)))
+		_, err = ask(metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+levyanToken)))
 		x.Equal(codes.NotFound, status.Code(err))
 	})
 
 	t.Run("and a key as itself is nobody to name", func(t *testing.T) {
 		_, err := delegations.Exchange(metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+b.Token)),
 			app.DelegationExchangeRequest_builder{
-				Audience: app.HolderRef_builder{Id: khala.Bytes()}.Build(),
-				Methods:  []string{"/hday.khala.RobotService/Get"},
+				Audience: app.HolderRef_builder{Id: levyan.Bytes()}.Build(),
+				Methods:  []string{"/levyan.InvoiceService/Get"},
 			}.Build())
 		require.Error(t, err)
 	})
 
 	t.Run("and an audience in another tenant is refused", func(t *testing.T) {
-		elsewhere := addHolder(t, ctx, b.Server, add(t, ctx, b.Server, "fabrikam"), "khala")
+		elsewhere := addHolder(t, ctx, b.Server, add(t, ctx, b.Server, "fabrikam"), "levyan")
 		_, err := delegations.Exchange(arrivedAt(ctx, b.Token, at), app.DelegationExchangeRequest_builder{
 			Audience: app.HolderRef_builder{Id: elsewhere.Bytes()}.Build(),
-			Methods:  []string{"/hday.khala.RobotService/Get"},
+			Methods:  []string{"/levyan.InvoiceService/Get"},
 		}.Build())
 		require.Error(t, err)
 		require.NotEqual(t, codes.OK, status.Code(err))
@@ -107,7 +107,7 @@ func TestAnAppProvesWhoItIsToAnotherInTheSameTenant(t *testing.T) {
 
 	t.Run("and a token for nothing is not minted", func(t *testing.T) {
 		_, err := delegations.Exchange(arrivedAt(ctx, b.Token, at), app.DelegationExchangeRequest_builder{
-			Audience: app.HolderRef_builder{Id: khala.Bytes()}.Build(),
+			Audience: app.HolderRef_builder{Id: levyan.Bytes()}.Build(),
 		}.Build())
 		require.Equal(t, codes.InvalidArgument, status.Code(err))
 	})
@@ -209,22 +209,22 @@ func TestEndingANominationVoidsTheTokensTheAppMinted(t *testing.T) {
 	exchange := "/roster.DelegationService/Exchange"
 	introspect := "/payday.TokenService/Introspect"
 	nominates(t, b.Server, acme, b.Service, b.Who)
-	permits(t, ctx, b, acme, b.Who, "kamino", exchange, introspect)
+	permits(t, ctx, b, acme, b.Who, "loft", exchange, introspect)
 
-	khalaKey, khalaToken := serviceKey(t, b.Server, "khala", introspect)
-	khala := addHolder(t, ctx, b.Server, acme, "khala")
-	nominates(t, b.Server, acme, khalaKey, khala)
-	permits(t, ctx, b, acme, khala, "khala", introspect)
+	levyanKey, levyanToken := serviceKey(t, b.Server, "levyan", introspect)
+	levyan := addHolder(t, ctx, b.Server, acme, "levyan")
+	nominates(t, b.Server, acme, levyanKey, levyan)
+	permits(t, ctx, b, acme, levyan, "levyan", introspect)
 
 	at := front.AtTenant("contoso")
 	got, err := app.NewDelegationServiceClient(b.Conn).Exchange(arrivedAt(ctx, b.Token, at), app.DelegationExchangeRequest_builder{
-		Audience: app.HolderRef_builder{Id: khala.Bytes()}.Build(),
-		Methods:  []string{"/hday.khala.RobotService/Get"},
+		Audience: app.HolderRef_builder{Id: levyan.Bytes()}.Build(),
+		Methods:  []string{"/levyan.InvoiceService/Get"},
 	}.Build())
 	x.NoError(err)
 
 	ask := func() error {
-		_, err := pdpb.NewTokenServiceClient(b.Conn).Introspect(arrivedAt(ctx, khalaToken, at), pdpb.TokenIntrospectRequest_builder{Token: got.GetToken()}.Build())
+		_, err := pdpb.NewTokenServiceClient(b.Conn).Introspect(arrivedAt(ctx, levyanToken, at), pdpb.TokenIntrospectRequest_builder{Token: got.GetToken()}.Build())
 		return err
 	}
 	x.NoError(ask())
@@ -237,5 +237,5 @@ func TestEndingANominationVoidsTheTokensTheAppMinted(t *testing.T) {
 	_, err = b.Server.Ungated.Nomination().Erase(ctx, app.NominationRef_builder{Id: ns.GetItems()[0].GetId()}.Build())
 	x.NoError(err)
 
-	x.Equal(codes.NotFound, status.Code(ask()), "a token kamino minted outlived its nomination")
+	x.Equal(codes.NotFound, status.Code(ask()), "a token Loft minted outlived its nomination")
 }

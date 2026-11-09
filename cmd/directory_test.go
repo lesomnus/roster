@@ -256,7 +256,7 @@ func TestADirectoryLiftsOnlyItsOwnSuspension(t *testing.T) {
 
 	t.Run("and only people who sign in through it", func(t *testing.T) {
 		x := require.New(t)
-		app_ := b.holder(t, ctx, b.Contoso, "kamino")
+		app_ := b.holder(t, ctx, b.Contoso, "loft")
 		_, err := b.Walled.Holder().Deactivate(as, app.HolderDeactivateRequest_builder{
 			Ref: app.HolderRef_builder{Id: app_.Bytes()}.Build(),
 		}.Build())

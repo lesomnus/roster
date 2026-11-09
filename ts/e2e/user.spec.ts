@@ -66,16 +66,16 @@ test('a tenant administrator signs in and sees their own tenant', async ({ page 
 
 	// Which apps act in their tenant, and as whom -- and ending one, which is
 	// theirs to do without a roster operator: the app's key is refused here from
-	// its next request (#73, #75). The rig installed `kamino`.
+	// its next request (#73, #75). The rig installed `loft`.
 	await page.locator('nav button', { hasText: 'apps' }).click()
-	const app = page.locator('tr', { hasText: 'kamino' })
+	const app = page.locator('tr', { hasText: 'loft' })
 	await expect(app).toBeVisible()
-	await app.getByRole('button', { name: /more for kamino/ }).click()
+	await app.getByRole('button', { name: /more for loft/ }).click()
 	await page.getByRole('button', { name: 'stop it acting here' }).click()
 	// The account app is nominated here too -- it provisions itself into every
-	// tenant with a name -- so the list is not empty afterwards; kamino's row is
+	// tenant with a name -- so the list is not empty afterwards; loft's row is
 	// what goes.
-	await expect(page.locator('tr', { hasText: 'kamino' })).toHaveCount(0)
+	await expect(page.locator('tr', { hasText: 'loft' })).toHaveCount(0)
 
 	// How they arrive is theirs to say too, which is the `Host` row a tenant
 	// registers for its own front door.

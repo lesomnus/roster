@@ -260,13 +260,13 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 //
 // # Not the app's name
 //
-// It was, and the name is taken. An app names the role **its people** are
-// given after itself -- kamino's staff role is `kamino`, `/hday.oasys.*/*`,
-// and khala's is `khala` -- and [roleOnce] adopts a role that is already there,
-// as it must for a second run. So installing kamino into a tenant that already
-// used it bound the staff role to the app's own holder: the app's key answered
-// with every method of the app it is, and none of the roster reads `--role`
-// named. Found on the first deployment it was pointed at, before it ran.
+// It was, and the name is taken. An app may name the role **its people** are
+// given after itself -- a staff role called `loft`, holding `/loft.*/*` -- and
+// [roleOnce] adopts a role that is already there, as it must for a second run.
+// So installing an app into a tenant whose staff role already had its name
+// bound that role to the app's own holder: the app's key answered with every
+// method of the app it is, and none of the roster reads `--role` named. Found
+// on the first deployment it was pointed at, before it ran.
 //
 // A suffix rather than a flag, because `docs/apps.md` already drew it so and a
 // name an operator has to choose is a name two operators choose differently.
@@ -318,8 +318,8 @@ func nominationOf(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, borrow
 // administrator needs before the app's holder's role, or anybody else's, is
 // theirs to change. Added to and never rewritten: what is already there stays,
 // and a method already there, spelled the same, is not added twice. Spelled
-// the same and not covered: `/hday.oasys.*/*` beside `/hday.oasys.Robot/*` is
-// two rows, which is untidy and grants nothing more.
+// the same and not covered: `/loft.*/*` beside `/loft.AssetService/*` is two
+// rows, which is untidy and grants nothing more.
 func administered(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, methods []string) (int, error) {
 	got, err := s.Ungated.Role().Get(ctx, rstr.RoleGetRequest_builder{
 		Ref: rstr.RoleRef_builder{

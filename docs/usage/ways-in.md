@@ -146,7 +146,7 @@ asked for, and nothing mints a key that silently does not work. The one key with
 nothing on it that works is said so:
 
 ```sh
-roster control key add --narrowed kamino
+roster control key add --narrowed levyan
 ```
 
 It is refused as itself and answered as whoever each tenant nominated -- the key

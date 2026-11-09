@@ -244,7 +244,7 @@ Joining that group is then refused to anybody who does not hold
 whose role from `tenant add` is `/roster.*/*` and covers no other app's methods:
 somebody has to be bound the external permission -- or a pattern over it -- before
 they can hand it out, and a roster operator on the admin listener is who starts
-that. The same is true of every app's own methods, `/hday.kamino.*/*` included.
+that. The same is true of every app's own methods, `/loft.*/*` included.
 
 The two differ in who may hand the permission out: a group's managers, appointed
 by somebody holding the membership writes across the tenant -- or only somebody

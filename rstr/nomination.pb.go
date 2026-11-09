@@ -275,7 +275,7 @@ type Nomination_builder struct {
 	// configuration and carry `roster.declared`: a tenant does not end them, and
 	// neither does anybody else but the deployment (`server/core/declared.go`).
 	Labels map[string]string
-	// What a person reading the tenant's nominations calls the app -- `kamino`.
+	// What a person reading the tenant's nominations calls the app -- `loft`.
 	//
 	// For a screen and nothing else. `borrower_id` is what decides, and it names
 	// a holder on the control plane, which no tenant can read: without this a

@@ -328,7 +328,7 @@ atc=$(printf '%s' "${at}" | payload)
 printf '%s' "${atc}" | grep -q "\"${AUDIENCE}\"" || die "the access token is not for ${AUDIENCE}: ${atc}"
 printf '%s' "${atc}" | grep -q '"sub":"'"${sub}"'"' || die "the access token names somebody else: ${atc}"
 # And says which client it was issued to (RFC 9068), which an ID token does not:
-# an API that takes access tokens tells the two apart by it (kamino does).
+# an API that takes access tokens tells the two apart by it.
 printf '%s' "${atc}" | grep -q '"client_id":"'"${OAUTH_CLIENT}"'"' || die "the access token names no client_id: ${atc}"
 printf '%s' "${claims}" | grep -q "\"${AUDIENCE}\"" && die "the id_token is for the API too: ${claims}"
 kid=$(printf '%s' "${at}" | cut -d. -f1 | tr '_-' '/+' | awk '{ n = length($0) % 4; if (n) $0 = $0 substr("===", 1, 4 - n); print }' | base64 -d | sed 's/.*"kid":"//; s/".*//')

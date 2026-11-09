@@ -50,10 +50,10 @@ service DelegationService {
   // A delegation already says *who* (`holder`) and *who may present it*
   // (`issuer`), and `TokenService/Introspect` already answers only the caller
   // it was issued to. So this mints one about the **caller** and issues it to
-  // the **audience**: kamino, narrowed to acme, asks for a token for
-  // `@acme/khala`; khala, narrowed to acme too, introspects it and is told
-  // `@acme/kamino`. Nobody else is told anything -- kamino included -- and the
-  // token is as good as a stranger's string to every caller but khala.
+  // the **audience**: Loft, narrowed to acme, asks for a token for
+  // `@acme/levyan`; levyan, narrowed to acme too, introspects it and is told
+  // `@acme/loft`. Nobody else is told anything -- Loft included -- and the
+  // token is as good as a stranger's string to every caller but levyan.
   //
   // # Checked by roster, which is why roster may make it
   //

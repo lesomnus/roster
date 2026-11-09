@@ -202,7 +202,7 @@ func MustFrom(b []byte) pdid.Id {
 // The flag is `flg.Strings` and not `flg.String`, which is the whole of the
 // fix and was the whole of the bug. A scalar flag takes the **last**
 // occurrence -- which is right for `--config` and every other *choose one*
-// flag, and silently wrong for a list. `roster key add --service kamino
+// flag, and silently wrong for a list. `roster key add --service loft
 // --allow /roster.VouchService/Verify --allow /roster.HolderService/Get` -- as
 // `roster control key add` was spelled then -- minted
 // a key allowing the second and nothing else, and the only sign was the line

@@ -1,6 +1,6 @@
 # An app beside roster, in three shapes
 
-A product -- kamino, khala, anything that keeps its own rows and asks roster who
+A product -- Loft, levyan, anything that keeps its own rows and asks roster who
 somebody is -- runs in one of three shapes, and the shape decides which key it
 holds, how it sends a request, whose name ends up in a tenant's trail, and
 which tenants it may reach. This page is that decision, and what an app's own
@@ -34,16 +34,16 @@ tenant runs their own; glossary, *the Login App*.
 ## A -- one instance, many tenants
 
 ```
-control plane   @owner/kamino ── rk_ (one key; every live key here borrows)
+control plane   @owner/loft ── rk_ (one key; every live key here borrows)
 
-tenant acme     Host  kamino.acme.example         names say which tenant
-                @acme/kamino                      who the app is here
-                Nomination  borrower=@owner/kamino → @acme/kamino
-                Binding     role kamino-app → @acme/kamino
+tenant acme     Host  loft.acme.example           names say which tenant
+                @acme/loft                        who the app is here
+                Nomination  borrower=@owner/loft → @acme/loft
+                Binding     role loft-app → @acme/loft
 
-tenant beta     Host  kamino.beta.example
-                @beta/kamino
-                Nomination  borrower=@owner/kamino → @beta/kamino
+tenant beta     Host  loft.beta.example
+                @beta/loft
+                Nomination  borrower=@owner/loft → @beta/loft
                 Binding     …
 ```
 
@@ -53,7 +53,7 @@ job its own configuration):
 
 ```
 authorization: Bearer rk_…
-roster-at: kamino.acme.example        or        roster-at: @acme
+roster-at: loft.acme.example        or        roster-at: @acme
 ```
 
 roster resolves the name to its tenant through the `Host` (or takes the tenant
@@ -70,7 +70,7 @@ flow a challenge is before it can narrow. A product that always knows which
 tenant a request is about has none, and is minted with nothing on it:
 
 ```sh
-roster control key add --narrowed kamino
+roster control key add --narrowed loft
 ```
 
 which is refused as itself and answered as whoever each tenant nominated (#74).
@@ -94,9 +94,9 @@ operator does it, once per tenant (#75):
 
 ```sh
 roster app install --tenant acme \
-  --role '/hday.kamino.RobotService/*' \
-  --administer '/hday.kamino.*/*' \
-  kamino
+  --role '/loft.AssetService/*' \
+  --administer '/loft.*/*' \
+  loft
 ```
 
 It is the roster operator's because of the last flag. A tenant's first
@@ -108,7 +108,7 @@ bindings, and the nomination, are the tenant's. Installing again leaves a role
 the tenant reshaped as they have it, and puts back a nomination or binding that
 is gone -- it is how an operator puts an app back after a tenant ended it, which
 the tenant usually cannot do itself: nominating the app's holder needs the
-app's methods. `roster app uninstall --tenant acme kamino` ends the nomination,
+app's methods. `roster app uninstall --tenant acme loft` ends the nomination,
 and the tenant administrator can do the same from the user console's *apps*
 tab. The Login App and the account app do this for themselves at start, in
 every tenant with a name -- so for them ending it lasts until the next start.
@@ -140,8 +140,8 @@ minting the new key with `--name`, then revoking the old one.
 The same as A, with `roster-at` written into the instance's configuration
 rather than taken from the request, because there is only one answer.
 
-**Give each instance its own control-plane holder** (`@owner/kamino-acme`,
-`@owner/kamino-beta`). The nomination is found by the key's holder, so instances
+**Give each instance its own control-plane holder** (`@owner/loft-acme`,
+`@owner/loft-beta`). The nomination is found by the key's holder, so instances
 sharing one holder share every nomination: acme's instance could name beta's
 host and be answered as beta's holder. A holder per instance is what makes
 *only acme nominated this one* true in roster, and it is the line that confines
@@ -195,7 +195,7 @@ their credentials are refused before any of this, and an SSO token minted
 before the suspension is answered with nothing to cover. The app's own
 permissions are its own RPCs, and anything finer than one RPC is a **method of a
 permission service** the app declares in its own proto package -- for example
-`hday.kamino.AdminService/SeeEveryTenant` -- named in a role like any other
+`loft.AdminService/SeeEveryTenant` -- named in a role like any other
 method. A role is a bundle of those; an app asks about the permission and never
 about the role's name, so a role can be split or renamed without the app
 noticing. Nor about which group or team somebody is in: a membership nothing is
@@ -219,7 +219,7 @@ signed in, and its `aud` is the page's own client. It is not for calling an API.
 Sent to two APIs that both accept `aud=<page>`, either one can replay it at the
 other as that person -- a log line or a compromised container is enough.
 
-So each API is an **audience**, a name of its own (`urn:hday:api:kamino`), and a
+So each API is an **audience**, a name of its own (`urn:example:api:loft`), and a
 page asks the issuer for one access token per API it calls, sent only to that
 API:
 
@@ -248,17 +248,17 @@ and never grants on `groups` or `teams` itself.
 
 ## An app calling another app
 
-kamino calling khala about acme has to show khala it is `@acme/kamino`, and its
+Loft calling levyan about acme has to show levyan it is `@acme/loft`, and its
 own credential cannot: an `rk_` does not introspect on the data plane, and
 `roster-at` is a header only roster reads. So it exchanges one (#74):
 
 ```
-kamino ─ rk_ + roster-at: @acme ─▶ DelegationService/Exchange{audience: @acme/khala, methods}
-       ◀─ rd_…   (about @acme/kamino, issued to @acme/khala, fifteen minutes)
-kamino ─ Bearer rd_… ─▶ khala
-khala  ─ rk_ + roster-at: @acme ─▶ TokenService/Introspect(rd_…)
-       ◀─ @acme/kamino, acme, the methods
-khala  ─ HolderService/Reaches(@acme/kamino) → covers → serves it, or not
+loft   ─ rk_ + roster-at: @acme ─▶ DelegationService/Exchange{audience: @acme/levyan, methods}
+       ◀─ rd_…   (about @acme/loft, issued to @acme/levyan, fifteen minutes)
+loft   ─ Bearer rd_… ─▶ levyan
+levyan ─ rk_ + roster-at: @acme ─▶ TokenService/Introspect(rd_…)
+       ◀─ @acme/loft, acme, the methods
+levyan ─ HolderService/Reaches(@acme/loft) → covers → serves it, or not
 ```
 
 - **It is a delegation turned round.** An ordinary one is about somebody else and
@@ -271,8 +271,8 @@ khala  ─ HolderService/Reaches(@acme/kamino) → covers → serves it, or not
 - **One tenant.** The audience is the caller's own tenant's holder; the receiver
   introspects narrowed to that tenant too, which is how the issuer binding
   matches.
-- **`methods` are the receiver's.** What the token is for at khala --
-  `/hday.khala.RobotService/Get` -- which roster neither knows nor checks. khala
+- **`methods` are the receiver's.** What the token is for at levyan --
+  `/levyan.InvoiceService/Get` -- which roster neither knows nor checks. levyan
   narrows by them as it would by a key's, and still decides with `Reaches`.
 - **What each side's role needs.** The sender `/roster.DelegationService/Exchange`;
   the receiver `/payday.TokenService/Introspect`. Both go in the `--role` an app is
@@ -280,8 +280,8 @@ khala  ─ HolderService/Reaches(@acme/kamino) → covers → serves it, or not
 
 ### As a person
 
-Acting **as a person** at another app -- kamino calling khala on erin's behalf
--- is not the exchange above with a person put into it (#83). kamino signs
+Acting **as a person** at another app -- Loft calling levyan on erin's behalf
+-- is not the exchange above with a person put into it (#83). Loft signs
 people in through the issuer, so what it holds of erin is the issuer's tokens
 and no `rd_`: a delegation is what a login app holds, and a product never does
 ([relying-party.md](relying-party.md)). The proof of the person is the one the
@@ -290,13 +290,13 @@ issuer already makes for this -- an access token for the API it is spent at,
 app:
 
 ```
-kamino ─ authorize, audience=urn:hday:api:khala ─▶ issuer      (erin's browser, signed in)
-       ◀─ JWT {sub: erin, aud: khala, client_id: kamino}
-kamino ─ rk_ + roster-at: @acme ─▶ DelegationService/Exchange{audience: @acme/khala, methods}
-       ◀─ rd_…   (about @acme/kamino, issued to @acme/khala)
-kamino ─ the JWT and the rd_ ─▶ khala, at a method meant for an app acting for somebody
-khala  ─ the issuer's keys → aud, client_id;  Introspect(rd_) → @acme/kamino
-khala  ─ Reaches(erin), Reaches(@acme/kamino) → both cover → serves it, or not
+loft   ─ authorize, audience=urn:example:api:levyan ─▶ issuer      (erin's browser, signed in)
+       ◀─ JWT {sub: erin, aud: levyan, client_id: loft}
+loft   ─ rk_ + roster-at: @acme ─▶ DelegationService/Exchange{audience: @acme/levyan, methods}
+       ◀─ rd_…   (about @acme/loft, issued to @acme/levyan)
+loft   ─ the JWT and the rd_ ─▶ levyan, at a method meant for an app acting for somebody
+levyan ─ the issuer's keys → aud, client_id;  Introspect(rd_) → @acme/loft
+levyan ─ Reaches(erin), Reaches(@acme/loft) → both cover → serves it, or not
 ```
 
 - **Two proofs, and the receiver binds them.** The token's `client_id` has to
@@ -305,21 +305,21 @@ khala  ─ Reaches(erin), Reaches(@acme/kamino) → both cover → serves it, or
   a client to an app once, in its own configuration -- roster holds no OAuth
   clients. Either proof alone is nothing: a token that leaked, without the
   app's key; the app's key, without somebody who signed in.
-- **The app's ceiling is its holder's bindings.** What kamino may do for people
-  at khala is a permission method khala declares --
-  `hday.khala.AdminService/ActForPeople`, say -- which a tenant administrator
-  binds to `@acme/kamino`, and khala reads with `Reaches` on that holder. What
+- **The app's ceiling is its holder's bindings.** What Loft may do for people
+  at levyan is a permission method levyan declares --
+  `levyan.AdminService/ActForPeople`, say -- which a tenant administrator
+  binds to `@acme/loft`, and levyan reads with `Reaches` on that holder. What
   is served is what both cover: never wider than erin, never wider than the
   app, and never a claim in either token.
 - **The token is erin's whole credential at that API** -- the one erin's own
   page would present. So the receiver takes one minted for another app's client
-  only at the methods meant for it, or kamino holds everything erin may do at
-  khala.
+  only at the methods meant for it, or Loft holds everything erin may do at
+  levyan.
 - **Minutes, not an hour.** Hydra v26.2.0 makes an access token live an hour
   unless the client says otherwise, and a refresh token makes another without
   erin. The delegating client gets a short lifespan of its own
   (`authorization_code_grant_access_token_lifespan`) and no refresh token, or
-  *erin is at kamino* means *erin was, today*.
+  *erin is at Loft* means *erin was, today*.
 - **What ends it.** `Reaches` is live, so a suspension or a removed binding
   stops the next call, within whatever the receiver caches. Signing out
   everywhere voids roster's credentials and, through the Login App, the
@@ -339,11 +339,11 @@ khala  ─ Reaches(erin), Reaches(@acme/kamino) → both cover → serves it, or
   and asks `Reaches` about both again. Signing out everywhere changes neither
   answer, so the receiver follows `SyncService/Watch` from the start and ends
   the session there; the app ending its own session ends this one too. A
-  refresh token instead would mint erin's whole credential at khala, with
+  refresh token instead would mint erin's whole credential at levyan, with
   nobody present, for as long as it lived.
 
-**What it is not.** A delegation about erin, minted from kamino's own
-(`roster-as`) and issued to khala: that is the shape for a **login app**, which
+**What it is not.** A delegation about erin, minted from Loft's own
+(`roster-as`) and issued to levyan: that is the shape for a **login app**, which
 does hold an `rd_`, and it is not built. `Exchange` refuses a caller acting
 through a delegation, because a token minted from one outlives whatever revokes
 the first; lifting that takes an expiry capped by the first, a revocation that
@@ -356,7 +356,7 @@ client the access token's `client_id` already does.
 ## One client for all three
 
 An app's business logic wants to say *as this tenant, call roster* or *as this
-tenant, call khala*. Which credential and which header that takes is the shape's,
+tenant, call levyan*. Which credential and which header that takes is the shape's,
 and can be decided from the key and from roster rather than from configuration:
 
 ```go

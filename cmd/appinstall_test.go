@@ -37,14 +37,14 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 	x.NoError(err)
 	x.NoError(s.Close())
 
-	token := stdoutOf(t, cli.NewCmdControl(&c), "key", "add", "--narrowed", "kamino")
+	token := stdoutOf(t, cli.NewCmdControl(&c), "key", "add", "--narrowed", "loft")
 
 	install := func() error {
 		return cli.NewCmdApp(&c).Run(ctx, []string{"install",
 			"--tenant", "acme",
-			"--role", "/hday.oasys.RobotService/*",
-			"--administer", "/hday.oasys.*/*",
-			"kamino"})
+			"--role", "/loft.AssetService/*",
+			"--administer", "/loft.*/*",
+			"loft"})
 	}
 	x.NoError(install())
 
@@ -54,7 +54,7 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 	at := app.TenantRef_builder{Id: acme.GetId()}.Build()
 
 	who, err := s.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
-		Ref:    app.HolderRef_builder{Slug: app.HolderRefBySlug_builder{Alias: proto.String("kamino"), Tenant: at}.Build()}.Build(),
+		Ref:    app.HolderRef_builder{Slug: app.HolderRefBySlug_builder{Alias: proto.String("loft"), Tenant: at}.Build()}.Build(),
 		Select: app.HolderSelect_builder{}.Build(),
 	}.Build())
 	x.NoError(err, "no holder for the app in the tenant")
@@ -65,7 +65,7 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 		v, err := app.NewMeServiceClient(served(t, s)).Get(arrivedAt(ctx, token, front.AtTenant("acme")), app.MeGetRequest_builder{}.Build())
 		x.NoError(err)
 		x.Equal(who.GetId(), v.GetId())
-		x.Equal([]string{"/hday.oasys.RobotService/*"}, v.GetMethods())
+		x.Equal([]string{"/loft.AssetService/*"}, v.GetMethods())
 	})
 
 	t.Run("and the nomination says which app it is", func(t *testing.T) {
@@ -74,7 +74,7 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 		vs, err := s.Ungated.Nomination().List(ctx, app.NominationListRequest_builder{}.Build())
 		x.NoError(err)
 		x.Len(vs.GetItems(), 1)
-		x.Equal("kamino", vs.GetItems()[0].GetName())
+		x.Equal("loft", vs.GetItems()[0].GetName())
 	})
 
 	t.Run("and the tenant's administrators may hand on the app's methods", func(t *testing.T) {
@@ -85,7 +85,7 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 			Select: app.RoleSelect_builder{Methods: proto.Bool(true)}.Build(),
 		}.Build())
 		x.NoError(err)
-		x.ElementsMatch([]string{core.EveryMethod, "/hday.oasys.*/*"}, r.GetMethods())
+		x.ElementsMatch([]string{core.EveryMethod, "/loft.*/*"}, r.GetMethods())
 	})
 
 	// What the tenant decided afterwards stays decided.
@@ -93,13 +93,13 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 		x := require.New(t)
 
 		r, err := s.Ungated.Role().Get(ctx, app.RoleGetRequest_builder{
-			Ref:    app.RoleRef_builder{Slug: app.RoleRefBySlug_builder{Alias: proto.String("kamino-app"), Tenant: at}.Build()}.Build(),
+			Ref:    app.RoleRef_builder{Slug: app.RoleRefBySlug_builder{Alias: proto.String("loft-app"), Tenant: at}.Build()}.Build(),
 			Select: app.RoleSelect_builder{DateUpdated: proto.Bool(true)}.Build(),
 		}.Build())
 		x.NoError(err)
 		_, err = s.Ungated.Role().Patch(ctx, app.RolePatchRequest_builder{
 			Ref:         app.RoleRef_builder{Id: r.GetId()}.Build(),
-			Methods:     []string{"/hday.oasys.RobotService/Get"},
+			Methods:     []string{"/loft.AssetService/Get"},
 			DateUpdated: r.GetDateUpdated(),
 		}.Build())
 		x.NoError(err)
@@ -116,7 +116,7 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 			Select: app.RoleSelect_builder{Methods: proto.Bool(true)}.Build(),
 		}.Build())
 		x.NoError(err)
-		x.Equal([]string{"/hday.oasys.RobotService/Get"}, got.GetMethods(), "installing again rewrote the tenant's choice")
+		x.Equal([]string{"/loft.AssetService/Get"}, got.GetMethods(), "installing again rewrote the tenant's choice")
 
 		bs, err := s.Ungated.Binding().List(ctx, app.BindingListRequest_builder{
 			Filters: []*app.BindingFilter{app.BindingFilter_builder{Holder: app.HolderRef_builder{Id: who.GetId()}.Build()}.Build()},
@@ -128,7 +128,7 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 	t.Run("and uninstalling refuses its key there", func(t *testing.T) {
 		x := require.New(t)
 
-		x.NoError(cli.NewCmdApp(&c).Run(ctx, []string{"uninstall", "--tenant", "acme", "kamino"}))
+		x.NoError(cli.NewCmdApp(&c).Run(ctx, []string{"uninstall", "--tenant", "acme", "loft"}))
 
 		s, err := cmd.Build(ctx, c)
 		x.NoError(err)
@@ -139,15 +139,15 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 	})
 
 	t.Run("and an app that may do nothing is not installed", func(t *testing.T) {
-		err := cli.NewCmdApp(&c).Run(ctx, []string{"install", "--tenant", "acme", "kamino"})
+		err := cli.NewCmdApp(&c).Run(ctx, []string{"install", "--tenant", "acme", "loft"})
 		require.ErrorContains(t, err, "--role")
 	})
 }
 
-// An app names the role its people are given after itself -- kamino's staff
-// role is `kamino` -- and installing the app into a tenant that already uses it
-// must not bind that role to the app's holder. It did: the role install made
-// was called the app's name, and a role already there is adopted.
+// An app may name the role its people are given after itself -- Loft's staff
+// in a role called `loft` -- and installing the app into a tenant that already
+// uses it must not bind that role to the app's holder. It did: the role install
+// made was called the app's name, and a role already there is adopted.
 func TestInstallingAnAppLeavesARoleCalledAfterItAlone(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
@@ -162,16 +162,16 @@ func TestInstallingAnAppLeavesARoleCalledAfterItAlone(t *testing.T) {
 	x.NoError(err)
 	at := app.TenantRef_builder{Id: acme.GetId()}.Build()
 	staff, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant: at, Alias: "kamino", Methods: []string{"/hday.oasys.*/*"},
+		Tenant: at, Alias: "loft", Methods: []string{"/loft.*/*"},
 	}.Build())
 	x.NoError(err)
 	x.NoError(s.Close())
 
-	token := stdoutOf(t, cli.NewCmdControl(&c), "key", "add", "--narrowed", "kamino")
+	token := stdoutOf(t, cli.NewCmdControl(&c), "key", "add", "--narrowed", "loft")
 	x.NoError(cli.NewCmdApp(&c).Run(ctx, []string{"install",
 		"--tenant", "acme",
 		"--role", "/roster.HolderService/Reaches",
-		"kamino"}))
+		"loft"}))
 
 	s, err = cmd.Build(ctx, c)
 	x.NoError(err)
@@ -188,7 +188,7 @@ func TestInstallingAnAppLeavesARoleCalledAfterItAlone(t *testing.T) {
 	x.Empty(bs.GetItems(), "the staff role was bound to the app's holder")
 
 	r, err := s.Ungated.Role().Get(ctx, app.RoleGetRequest_builder{
-		Ref:    app.RoleRef_builder{Slug: app.RoleRefBySlug_builder{Alias: proto.String(cli.AppRole("kamino")), Tenant: at}.Build()}.Build(),
+		Ref:    app.RoleRef_builder{Slug: app.RoleRefBySlug_builder{Alias: proto.String(cli.AppRole("loft")), Tenant: at}.Build()}.Build(),
 		Select: app.RoleSelect_builder{Methods: proto.Bool(true)}.Build(),
 	}.Build())
 	x.NoError(err)
@@ -216,13 +216,13 @@ func TestInstallingAnAppTakesNoHolderThatIsSomebodys(t *testing.T) {
 	x.NoError(err)
 	at := app.TenantRef_builder{Id: acme.GetId()}.Build()
 
-	// Somebody called kamino, who holds the staff role.
-	kamino, err := s.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{Tenant: at, Alias: "kamino"}.Build())
+	// Somebody called loft, who holds the staff role.
+	loft, err := s.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{Tenant: at, Alias: "loft"}.Build())
 	x.NoError(err)
-	staff, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{Tenant: at, Alias: "staff", Methods: []string{"/hday.oasys.*/*"}}.Build())
+	staff, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{Tenant: at, Alias: "staff", Methods: []string{"/loft.*/*"}}.Build())
 	x.NoError(err)
 	_, err = s.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
-		Role: app.RoleRef_builder{Id: staff.GetId()}.Build(), Holder: app.HolderRef_builder{Id: kamino.GetId()}.Build(),
+		Role: app.RoleRef_builder{Id: staff.GetId()}.Build(), Holder: app.HolderRef_builder{Id: loft.GetId()}.Build(),
 	}.Build())
 	x.NoError(err)
 	x.NoError(s.Close())
@@ -231,7 +231,7 @@ func TestInstallingAnAppTakesNoHolderThatIsSomebodys(t *testing.T) {
 		return cli.NewCmdApp(&c).Run(ctx, append([]string{"install", "--tenant", "acme", "--role", "/roster.HolderService/Reaches"}, args...))
 	}
 
-	err = install("kamino")
+	err = install("loft")
 	x.ErrorContains(err, "--adopt")
 
 	s, err = cmd.Build(ctx, c)
@@ -239,23 +239,23 @@ func TestInstallingAnAppTakesNoHolderThatIsSomebodys(t *testing.T) {
 	vs, err := s.Ungated.Nomination().List(ctx, app.NominationListRequest_builder{}.Build())
 	x.NoError(err)
 	x.Empty(vs.GetItems(), "a refused install nominated somebody")
-	_, err = cmd.ControlHolder(ctx, s.Control, "kamino")
+	_, err = cmd.ControlHolder(ctx, s.Control, "loft")
 	x.Equal(codes.NotFound, status.Code(err), "a refused install made the app's control-plane holder")
 	x.NoError(s.Close())
 
-	x.NoError(install("--adopt", "kamino"))
+	x.NoError(install("--adopt", "loft"))
 
 	t.Run("and a tenant or an app nobody has is refused, making nothing", func(t *testing.T) {
 		x := require.New(t)
 
-		x.Error(cli.NewCmdApp(&c).Run(ctx, []string{"install", "--tenant", "nosuch", "--role", "/roster.HolderService/Reaches", "khala"}))
-		x.Error(cli.NewCmdApp(&c).Run(ctx, []string{"uninstall", "--tenant", "nosuch", "kamino"}))
-		x.Error(cli.NewCmdApp(&c).Run(ctx, []string{"uninstall", "--tenant", "acme", "kamnio"}))
+		x.Error(cli.NewCmdApp(&c).Run(ctx, []string{"install", "--tenant", "nosuch", "--role", "/roster.HolderService/Reaches", "levyan"}))
+		x.Error(cli.NewCmdApp(&c).Run(ctx, []string{"uninstall", "--tenant", "nosuch", "loft"}))
+		x.Error(cli.NewCmdApp(&c).Run(ctx, []string{"uninstall", "--tenant", "acme", "lfot"}))
 
 		s, err := cmd.Build(ctx, c)
 		x.NoError(err)
 		defer s.Close()
-		for _, name := range []string{"khala", "kamnio"} {
+		for _, name := range []string{"levyan", "lfot"} {
 			_, err = cmd.ControlHolder(ctx, s.Control, name)
 			x.Equal(codes.NotFound, status.Code(err), "%s was made by a command that failed", name)
 		}
