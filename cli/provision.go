@@ -74,7 +74,7 @@ func provisionAccount(ctx context.Context, s *cmd.Server, enrol string, out stri
 	if err != nil {
 		return "", 0, err
 	}
-	n, err := nominateAs(ctx, s, accountProvisioned, methods, borrower, accountProvisioned, "config: account")
+	n, err := nominateAs(ctx, s, accountProvisioned, methods, borrower, "config: account")
 	if err != nil {
 		return "", 0, err
 	}

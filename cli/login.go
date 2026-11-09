@@ -580,13 +580,13 @@ func policyMethods(own []string, enrol string) []string {
 // goes through the unwalled server with no frame, which is the deployment's own
 // work and passes, and the holder it nominates is the one it just made.
 func nominate(ctx context.Context, s *cmd.Server, methods []string, borrower pdid.Id) (int, error) {
-	return nominateAs(ctx, s, provisioned, methods, borrower, "", "config: login")
+	return nominateAs(ctx, s, provisioned, methods, borrower, "config: login")
 }
 
 // nominateAs is [nominate] for the roster-hosted app called `alias`: a holder of
 // that name in each tenant with a name, its role, one binding, and the
 // nomination for `borrower`.
-func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []string, borrower pdid.Id, legacy, declaredBy string) (int, error) {
+func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []string, borrower pdid.Id, declaredBy string) (int, error) {
 	// Every row below is the configuration's: it is written because the
 	// deployment turned this front door on, and rewritten at every start. So
 	// each carries the label that makes it read-only to anybody reaching it
@@ -654,16 +654,6 @@ func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []stri
 		}
 		if err := ensureBinding(ctx, s, role, who, labels); err != nil {
 			return n, fmt.Errorf("%s: %w", name, err)
-		}
-		if legacy != "" {
-			// The key this app held in the tenant before it held one deployment
-			// key (#76). Its token was made at start and thrown away, but the
-			// row still opens the holder's role to anybody who kept one -- an
-			// `account provision --out` file, a compose volume -- and nothing
-			// rotates it any more.
-			if err := eraseKeyNamed(ctx, s.Ungated, who, legacy); err != nil {
-				return n, fmt.Errorf("%s: the key it held before: %w", name, err)
-			}
 		}
 
 		changed, err := ensureNominated(ctx, s, at, borrower, who, alias, labels)

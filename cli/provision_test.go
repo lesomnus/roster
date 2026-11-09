@@ -4,13 +4,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/z"
 
 	rstr "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/keys"
 )
 
 // TestProvisioningTakesNothingThatIsSomebodys is the account app's start in
@@ -23,8 +20,7 @@ import (
 // it. And any one tenant's refusal failed the whole run -- an init container --
 // which is every tenant's sign-in down.
 //
-// northwind is the deployment that ran the app before #76: a holder holding a
-// key of the app's own from then, still valid, which nothing rotates any more.
+// northwind has nothing of the name, which is the tenant provisioning is for.
 func TestProvisioningTakesNothingThatIsSomebodys(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
@@ -62,12 +58,6 @@ func TestProvisioningTakesNothingThatIsSomebodys(t *testing.T) {
 	x.NoError(err)
 	bind(theirs.GetId(), erin.GetId())
 
-	// northwind: the app's holder from before, with the key it held then.
-	before, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: in(northwind), Alias: "account"}.Build())
-	x.NoError(err)
-	_, err = mintNamed(ctx, s.Ungated, before.GetId(), accountProvisioned, []string{"/roster.MeService/Get"}, keys.PrefixTenant)
-	x.NoError(err)
-
 	_, n, err := provisionAccount(ctx, s, "", "")
 	x.NoError(err, "one tenant's row failed the run for every tenant")
 	x.Equal(1, n, "fronted a tenant whose rows are somebody's")
@@ -90,12 +80,4 @@ func TestProvisioningTakesNothingThatIsSomebodys(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 	x.Equal([]string{"/roster.MeService/Get"}, got.GetMethods(), "contoso's role was rewritten to the app's")
-
-	_, err = s.Ungated.ApiKey().Get(ctx, rstr.ApiKeyGetRequest_builder{
-		Ref: rstr.ApiKeyRef_builder{Slug: rstr.ApiKeyRefBySlug_builder{
-			Holder: rstr.HolderRef_builder{Id: before.GetId()}.Build(), Alias: z.Ptr(accountProvisioned),
-		}.Build()}.Build(),
-		Select: rstr.ApiKeySelect_builder{}.Build(),
-	}.Build())
-	x.Equal(codes.NotFound, status.Code(err), "the key the app held before #76 still opens its holder")
 }
