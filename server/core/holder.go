@@ -82,8 +82,8 @@ func (s coreHolder) Update(ctx context.Context, req *app.HolderUpdateRequest) (*
 
 		// One picture in two forms (`holder_svc.ext.proto`): a profile naming
 		// a different one leaves the portrait a copy of the old, so it goes.
-		// The URL is checked only when it changes, which leaves a value
-		// written before the check to whoever next edits it.
+		// The URL is checked only when it changes: a save that does not touch
+		// the picture is not refused for it.
 		if now := req.GetProfile().GetPicture(); now != got.GetProfile().GetPicture() {
 			if err := portrait.CheckURL(now); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "profile.picture: %s", err)
