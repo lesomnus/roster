@@ -300,7 +300,8 @@ export const HolderSchema: GenMessage<Holder> = /*@__PURE__*/
  *
  * Stored as the canonical protobuf JSON, so these **names** are the storage.
  * Renaming one does not break the build and does not break the wire; it stops
- * finding the old value. Renaming a field here is a migration.
+ * finding the old value. From the first app's launch on, renaming a field here
+ * is a migration; until then it moves the compatibility epoch (CLAUDE.md).
  *
  * @generated from message roster.Profile
  */

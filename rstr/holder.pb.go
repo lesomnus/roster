@@ -561,7 +561,8 @@ func (b0 Holder_builder) Build() *Holder {
 //
 // Stored as the canonical protobuf JSON, so these **names** are the storage.
 // Renaming one does not break the build and does not break the wire; it stops
-// finding the old value. Renaming a field here is a migration.
+// finding the old value. From the first app's launch on, renaming a field here
+// is a migration; until then it moves the compatibility epoch (CLAUDE.md).
 type Profile struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_DisplayName string                 `protobuf:"bytes,1,opt,name=display_name,json=displayName"`
