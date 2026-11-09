@@ -53,15 +53,6 @@ func NewCmdLogin(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	}
 }
 
-// LoginKeyPrefix was the environment form of `--key`, one variable per tenant:
-// `ROSTER_LOGIN_KEY_<ALIAS>`.
-//
-// It is gone with the map. This app holds one credential, so the key is one
-// setting and the loader reads it like any other -- `ROSTER_LOGIN_KEY`, with no
-// prefix for anything to be told is not a typo (`cli.go`). Said here rather than
-// deleted silently, because a deployment reading `ROSTER_LOGIN_KEY_CONTOSO` out
-// of its own manifests needs to find out what replaced it.
-
 func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "serve",

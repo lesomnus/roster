@@ -84,7 +84,7 @@ type AccountConfig struct {
 	// list and says so.
 	//
 	// One of this and [AccountConfig.Key]: a tenant running its own copy names
-	// its `rt_` here, and so does a deployment that has not moved to `key` yet.
+	// its `rt_` here.
 	//
 	// **Both empty, inside `roster serve`, is a key made at start**: the rows
 	// `roster account provision` writes -- one deployment key, and in every

@@ -70,16 +70,8 @@ func Cmd(c *cmd.Config) *xli.Command {
 		// `ROSTER_ACCOUNT_KEY_<ALIAS>` and the one beside it are read by the
 		// consumers themselves (`keysOf`), not by the loader, and are not
 		// typos. Anything else beginning `ROSTER_` that no field answers to is
-		// reported, which is what a typo looks like -- and which is how the
-		// Login App's two were found, by being reported.
-		//
-		// `LOGIN_KEY_` and `LOGIN_CLIENT_` are **gone** from this list, and that
-		// is deliberate rather than tidying: the Login App holds one key and is
-		// told about no clients (#36), so `ROSTER_LOGIN_KEY` is an ordinary
-		// field the loader reads. A deployment still setting
-		// `ROSTER_LOGIN_KEY_CONTOSO` is now **reported** -- which is exactly
-		// what it should be, because nothing reads it any more and a key that is
-		// silently ignored is a deployment that fronts nobody and looks fine.
+		// reported, which is what a typo looks like. The Login App holds one
+		// key, an ordinary field the loader reads (`ROSTER_LOGIN_KEY`).
 		cfg.Reads("ACCOUNT_KEY_", "LDAP_KEY_"),
 	)
 
