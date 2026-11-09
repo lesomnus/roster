@@ -66,10 +66,9 @@ code says otherwise: roster **does** hold a session for its own console, through
 `payday/auth/authsession`. That is not an exception to anything. A cookie is set
 by the server the browser is talking to, and for the admin console that server is
 roster. What roster does not do is mint a session for **somebody else's**
-browser — custody's cookie is custody's, and login.md draws where the split
-falls.
+browser — Loft's cookie is Loft's, and login.md draws where the split falls.
 
-**Not a product's own database.** custody keeps its own rows and anchors them to
+**Not a product's own database.** Loft keeps its own rows and anchors them to
 roster's identifiers. What roster holds is what every product would otherwise
 hold a stale copy of.
 

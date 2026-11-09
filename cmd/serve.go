@@ -1297,8 +1297,8 @@ func (s *Server) closed(c Config) func(method string) bool {
 //
 // The person signing in has no credential yet -- that is the thing they are
 // asking for. But on the data plane they are not who is **calling**: the caller
-// is custody, or a Login App, and each is a machine holding a credential long
-// before any of this.
+// is a product app, or a Login App, and each is a machine holding a credential
+// long before any of this.
 //
 // This used to end *roster is called by machines and never by a browser*, which
 // is not true of the deployment and was never true of the line below it. The

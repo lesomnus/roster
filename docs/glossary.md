@@ -30,7 +30,6 @@ Three notes about the list itself:
 | **admin console** | the page a **roster operator** opens. Today it is served by the control listener and reaches `admin.addr` for tenants; #32 moves it whole onto the admin listener |
 | **user console** | the page a **roster user** opens, showing their own tenant and nothing else, over the walled data plane. `ts/user/`, served by `server.http` at `/` where `user_console.dir` names a build (#34) |
 | **a holder's credential** | what tells two holders apart, since the row does not: a `Credential` (a password, a second factor) or an `ApiKey`. One holder may have both, and roster refuses neither -- `roster control key add --allow … admin` mints a key on the operator's own row. Which plane it is in is the other difference, and the one the `rk_`/`rt_` prefix comes from |
-| **custody** (69) | a caller that acts across **every** tenant -- the deployment's own machinery rather than a customer's. `docs/position.md` is where the line is |
 
 ## What protects what
 
@@ -48,6 +47,7 @@ Three notes about the list itself:
 | | |
 | --- | --- |
 | **a key** | 32 bytes of `crypto/rand` behind a prefix, presented as `authorization: Bearer` on every call and stored as a SHA-256 hash. `rk_` is the control plane's (a service of the operator), `rt_` is a customer's (a person or their service). `server/keys` |
+| **a deployment key** (190) | an `rk_`, held by a service the roster operator runs (`roster control key add`): a caller that acts across **every** tenant -- the deployment's own machinery rather than a customer's -- unless a request narrows it to one, where it is answered as the holder that tenant nominated for it. `docs/position.md` is where the line is, and `docs/apps.md` the shapes an app takes with one |
 | **a delegation** (652) | `rd_`: minted per sign-in, expiring in minutes, and **bound to the caller it was issued to**. It does not travel in `authorization` -- it rides in `roster-as` beside the caller's own key, which is what makes the binding checkable. An app calling *as* the person it just signed in |
 | **a host proof** | `HostProof`: a hostname a tenant is claiming, and the value roster asked them to publish at `_roster-challenge.<name>` as a `TXT` record. The one token in this schema that is **not** a secret and is stored as it is compared -- it goes in public DNS, and anybody who can put a record under a name owns the name. Nothing to do with Hydra's `login_challenge`, which the label unfortunately rhymes with. `server/prove`, and #42 |
 | **a continuation** (378) | what a half-finished sign-in is: roster's, short-lived, single-use. The app holds no half-signed-in state; `POST /session/continue` hands the continuation back |

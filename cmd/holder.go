@@ -30,8 +30,8 @@ import (
 // HolderNamed is a holder of this plane by alias, made if there is none.
 //
 // Made rather than refused, because a caller of this deployment's own is not a
-// row somebody creates on purpose beforehand: `control key add custody` is the
-// moment custody becomes one, and asking for two commands to express one
+// row somebody creates on purpose beforehand: `control key add loft` is the
+// moment Loft becomes one, and asking for two commands to express one
 // intent is how a runbook grows a step nobody remembers.
 //
 // The tenant it goes in is the control plane's only one, made here if the

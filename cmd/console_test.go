@@ -262,7 +262,7 @@ func TestAConsoleManagesKeys(t *testing.T) {
 		x := require.New(t)
 
 		// A key to find, minted the way the CLI does.
-		who, err := cmd.HolderNamed(ctx, s.Control, "custody")
+		who, err := cmd.HolderNamed(ctx, s.Control, "loft")
 		x.NoError(err)
 
 		_, sum, err := keys.Mint(keys.PrefixDeployment)
@@ -443,7 +443,7 @@ func TestNoVerifierReachesTheTrail(t *testing.T) {
 	x.NotEmpty(cred.Secret, "nothing was stored, so this proves nothing")
 
 	// And a key, which is the other verifier.
-	who, err := cmd.HolderNamed(ctx, s.Control, "custody")
+	who, err := cmd.HolderNamed(ctx, s.Control, "loft")
 	x.NoError(err)
 
 	_, sum, err := keys.Mint(keys.PrefixDeployment)
@@ -757,7 +757,7 @@ func TestTheAdminPortIsTheWholeOfTheConsolesPath(t *testing.T) {
 
 		code, body := post("/roster.HolderService/List", `{}`)
 		x.Equal(http.StatusOK, code, body)
-		x.NotContains(body, `"custody"`, "the control plane's rows were served by the admin port")
+		x.NotContains(body, `"loft"`, "the control plane's rows were served by the admin port")
 	})
 
 	// The sign-out a browser actually sends. It was `DELETE /session`, a route

@@ -46,10 +46,10 @@ import (
 // # Where it reads from
 //
 // ent, directly, rather than through a generated server -- the one other place
-// this app does that is nothing, and custody's catalogue is the precedent. The
-// reason is the same one the resolver has: **working out what a caller may do
-// cannot itself require permission.** A read through the walled stack would ask
-// this function to answer before it can answer.
+// this app does that is nothing. The reason is the same one the resolver has:
+// **working out what a caller may do cannot itself require permission.** A
+// read through the walled stack would ask this function to answer before it
+// can answer.
 //
 // It is also why this is short. Every predicate here is this file's, so there
 // is nothing to keep in step with a rule written elsewhere.
@@ -108,10 +108,10 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 // argument, so it cannot be pointed at anybody else, and the absence of that
 // argument is what makes this safe rather than a judgement about the handler.
 //
-// A list of methods and not a prefix, which is the opposite of custody's
-// catalogue. There every RPC is public and a second one added tomorrow should
-// be too. Here they are named one at a time, and a method added to `MeService`
-// tomorrow needs a decision rather than inheriting one.
+// A list of methods and not a prefix. A prefix is for a service whose every RPC
+// is public, where a second one added tomorrow should be too. Here they are
+// named one at a time, and a method added to `MeService` tomorrow needs a
+// decision rather than inheriting one.
 //
 // # The writes, and why they are on the list
 //

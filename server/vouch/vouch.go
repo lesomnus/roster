@@ -24,9 +24,9 @@
 // # Neither half is public, and what they differ in is the frame
 //
 // The person signing in has no credential -- that is what they are asking for
-// -- but they are not who is **calling**. The caller is custody, or a Login
-// App, or an admin console, and roster is reached by nothing else. Both Rpcs
-// therefore need the caller's certificate, like everything else here. See
+// -- but they are not who is **calling**. The caller is a product app, or a
+// Login App, or an admin console, and roster is reached by nothing else. Both
+// Rpcs therefore need the caller's certificate, like everything else here. See
 // `cmd.public`, which says what it cost to get this wrong for an afternoon.
 //
 // The line runs between somebody **proving themselves** and somebody **being

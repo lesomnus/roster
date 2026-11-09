@@ -98,7 +98,7 @@ func keyedFor(t *testing.T, with func(*cmd.Config), methods ...string) *keyedBui
 
 	// The control plane: the owner, one service, one key.
 	k := add(t, ctx, s.Control, "k")
-	svc := addHolder(t, ctx, s.Control, k, "custody")
+	svc := addHolder(t, ctx, s.Control, k, "loft")
 
 	token, sum, err := keys.Mint(keys.PrefixDeployment)
 	x.NoError(err)
@@ -393,7 +393,7 @@ func TestABatchIsTheSameKey(t *testing.T) {
 }
 
 // TestTheFirstKeyMakesWhatItNeeds, which is what `roster control key add
-// custody` does against an empty control plane.
+// loft` does against an empty control plane.
 //
 // A service is not something an operator creates on purpose before they need
 // it: naming it in `key add` **is** the moment it becomes a caller. Asking for
@@ -422,17 +422,17 @@ func TestTheFirstKeyMakesWhatItNeeds(t *testing.T) {
 	x.NoError(err)
 	x.Zero(n)
 
-	who, err := cmd.HolderNamed(ctx, s.Control, "custody")
+	who, err := cmd.HolderNamed(ctx, s.Control, "loft")
 	x.NoError(err)
 
 	// The owner's tenant and the service, made on the way.
 	v, err := s.Control.Ent.Holder.Query().Only(ctx)
 	x.NoError(err)
-	x.Equal("custody", v.Alias)
+	x.Equal("loft", v.Alias)
 	x.Equal(who.String(), pdid.Id(v.Id).String())
 
 	// And asking again is the same service rather than a second one.
-	again, err := cmd.HolderNamed(ctx, s.Control, "custody")
+	again, err := cmd.HolderNamed(ctx, s.Control, "loft")
 	x.NoError(err)
 	x.Equal(who, again)
 
