@@ -231,7 +231,7 @@ func newCmdTrailRead(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 		Brief: "read an archive back, without a database",
 
 		Args: arg.Args{
-			&arg.RestStrings{Name: "FILE", Brief: "files to read -- a chunk taken out, or a directory from before; the archive at --in or audit.archive by default"},
+			&arg.RestStrings{Name: "FILE", Brief: "files to read -- a chunk taken out of the archive; the archive at --in or audit.archive by default"},
 		},
 
 		Flags: flg.Flags{
@@ -286,7 +286,7 @@ func newCmdTrailRead(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			}
 
 			// Files named on the command line are files: a chunk somebody took
-			// out, or a directory from before the archive was a store.
+			// out of the archive.
 			if len(paths) > 0 {
 				return trail.ReadFiles(paths, pd.TrailOf(show))
 			}
@@ -294,20 +294,7 @@ func newCmdTrailRead(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			// One call over the whole archive rather than one per chunk,
 			// because the duplicate two writers leave behind is only visible
 			// to a reader that has seen both. See [trail.Read].
-			dir := c.Audit.Archive
-			if err := trail.Read(ctx, flob.NewOsStores(dir), pd.TrailOf(show)); err != nil {
-				return err
-			}
-
-			// And the files a version before wrote, if no pass has taken them
-			// in yet. Read where they are rather than adopted: this command
-			// reads, and moving an archive about is a pass's to do.
-			loose, err := filepath.Glob(filepath.Join(dir, "audit-*"+trail.Ext))
-			if err != nil || len(loose) == 0 {
-				return err
-			}
-
-			return trail.ReadFiles(loose, pd.TrailOf(show))
+			return trail.Read(ctx, flob.NewOsStores(c.Audit.Archive), pd.TrailOf(show))
 		}),
 	}
 }

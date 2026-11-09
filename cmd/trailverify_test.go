@@ -193,14 +193,11 @@ func TestAFullCheckIsAcceptedAsAFullOne(t *testing.T) {
 }
 
 // TestRowsNobodySignedAreAcceptedOnce is what a deployment does whose
-// archive's account has rows nobody signed: written by a build from before rows
-// were signed (lesomnus/payday#58, roster#110), or by one that kept the archive
-// without a key at all (payday#115) -- which is not a state this build can
-// make, since it keeps no archive without one. A row nobody signed looks the
-// same whether it was written so or had its signature taken off, which is how
-// this makes one, and each is a finding until an operator who has looked runs
-// `trail accept`, once. After that, verify is clean, and what the next prune
-// writes is signed as it goes.
+// archive's account has rows with no signature. Every row is signed as it is
+// written, so one with none is one somebody took the signature off, which is
+// how this makes them, and each is a finding until an operator who has looked
+// runs `trail accept`, once. After that, verify is clean, and what the next
+// prune writes is signed as it goes.
 func TestRowsNobodySignedAreAcceptedOnce(t *testing.T) {
 	x := require.New(t)
 
@@ -219,14 +216,14 @@ func TestRowsNobodySignedAreAcceptedOnce(t *testing.T) {
 	x.NoError(run("trail", "prune"))
 	x.NoError(run("trail", "verify"))
 
-	// The rows as a build that did not sign them left them.
+	// The signatures taken off.
 	n, err := b.Ent.Archived.Update().SetSignature([]byte{}).SetSignedBy([]byte{}).Save(ctx)
 	x.NoError(err)
 	x.NotZero(n, "the account has no rows, so this proves nothing")
 
 	out, err := stderrOf(t, cli.Cmd(&c), "trail", "verify")
 	x.ErrorContains(err, "finding(s)", "rows nobody signed were taken for signed ones")
-	x.NoError(run("trail", "accept", "--of", digestOf(t, out), "--why", "written before this deployment signed its rows"))
+	x.NoError(run("trail", "accept", "--of", digestOf(t, out), "--why", "the signatures taken off, looked at"))
 	x.NoError(run("trail", "verify"))
 
 	// And what is written now is signed as it is written.

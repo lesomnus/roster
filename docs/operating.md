@@ -1535,32 +1535,25 @@ roster trail accept --of sha256:… --full --restored 38 --why "the database res
 roster trail verify --full   # clean
 ```
 
-A row with no signature is the same whether it was written while there was no
-key or had its signature taken off, so with a key every such row is a finding.
+Every row is signed as it is written, so a row with no signature is one somebody
+took the signature off: `unsigned`, a finding.
 
-**An archive kept without a key until now** is the same once the key is set,
-and more of it. Every row and every checkpoint it has is `unsigned`. Nothing is
-destroyed on their word, and no act takes a checkpoint after them: each does what
-it does and then says so in its error
-(`no trusted key signed the checkpoints the store keeps`). Set
-`audit.checkpoints.key`, look, and run `accept`. It signs the rows as they
-stand and names the checkpoint the database numbered last as the one before its
-own, which takes in the history from before the key. Signing the rows brings
-their chunks into the comparison, and what that finds -- a chunk a row nobody
-signed said the archive held, and it does not -- is not what was looked at:
-the next `verify` finds it, and it takes an acceptance of its own. So such an
-archive may take two:
+**A history no trusted key signed.** A deployment whose key was changed while
+the one before it was left out of `audit.checkpoints.trust` has rows and
+checkpoints signed by a key nobody trusts. Each is `forged`, nothing is
+destroyed on their word, and no act takes a checkpoint after them: each does
+what it does and then says so in its error
+(`no trusted key signed the checkpoints the store keeps`). Put the old key's
+public half back in `audit.checkpoints.trust`, which is what a rotation means --
+or, once somebody has looked, run `accept` once. It signs the rows as they stand
+and names the checkpoint the database numbered last as the one before its own,
+which takes in the history from before the key.
 
 ```sh
-roster trail verify                                                         # `unsigned`, every row and checkpoint
-roster trail accept --of sha256:… --why "kept without a key until 10-22"
-roster trail verify                                                         # clean, or what the signed rows brought to light
-roster trail accept --of sha256:… --why "the chunks the 10-22 acceptance brought to light, looked at"   # only if it was not
+roster trail verify                                                         # `forged`, what the key before signed
+roster trail accept --of sha256:… --why "signed by the key before 10-22, which was not kept"
+roster trail verify                                                         # clean
 ```
-
-A deployment that changed its key without trusting the old one is told the same.
-It puts the old key's public half in `audit.checkpoints.trust` instead of
-accepting.
 
 `prune --to`, and `--in` of `purge` and `accept`, name the archive
 `audit.archive` already is, or one for a deployment that names none. The account
