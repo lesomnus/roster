@@ -729,17 +729,6 @@ already nominated in works on the start that applies it, and a deployment that
 adds names by hand rather than by file does not have it at all: write the row,
 and the next start nominates.
 
-**Upgrading from `Host.acts_as`.** The field is gone (`host.proto` reserves 8).
-On Postgres its column is left where it was; on SQLite the migration rebuilds
-the table without it. Nothing reads it either way, and going back a version
-puts the column back empty and its `login provision` fills it again. The first
-start of this version's `login provision` writes the nominations from the
-names, so a deployment that runs it as an init container -- `deploy/` does --
-needs nothing done. A roster-hosted app other than the Login App that relied on
-a name's `acts_as` is refused from the upgrade on, until `roster app install`
-nominates it in each tenant: the table nominations live in arrives with the
-upgrade, so there is nothing to write ahead of it.
-
 Beside the process is where it belongs: an `initContainer` in Kubernetes, a line
 before `ExecStart` on a box. `deploy/` is that, as manifests.
 
@@ -1499,29 +1488,25 @@ else: a row somebody changed after the check that was looked at is not accepted
 with the ones that were (payday#115). Each row is on the trail as the act it is
 (`roster.trail.rows.accept`), and the digest and the why are logged with it. A
 forged row and a key not given are not accepted: look at the row of the trail,
-or give the key. A deployment upgrading to this runs it once, for erasures
-recorded before erasures kept a digest.
+or give the key.
 
-**Once, after upgrading to a roster with seals.** Every row of a kind with a
-personal field -- a holder, an address, an identity -- was written by a build
-that sealed nothing, and a check counts it **from before seals**: no finding,
+**A row whose newest write sealed nothing** -- written before its kind
+declared the field personal -- is counted **from before seals**: no finding,
 since nothing can be said of what it was, and nothing vouches for its personal
 fields either. `trail rows` says how many, every run, and an acceptance of that
 check is what seals them -- run when it found nothing else, since rows from
 before seals are no finding:
 
 ```sh
-roster trail rows                                                   # `1520 row(s) from before seals: ...`, and its digest
-roster trail rows --accept --of sha256:… --why "sealing what was written before seals"
+roster trail rows                                                   # `12 row(s) from before seals: ...`, and its digest
+roster trail rows --accept --of sha256:… --why "sealing what was written before the field was personal"
 roster trail rows                                                   # no rows from before seals
 ```
 
 Each is on the trail as the act it is, and the acceptance is of what was looked
 at, as every one is: the digest names the rows it seals, and a row changed
 after the check is refused with it. Until it runs, a personal field changed
-past the servers in one of those rows is not found. Nothing else changes on the
-upgrade: a line written before it says which fields its digest covered, and is
-checked over those.
+past the servers in one of those rows is not found.
 
 **A database restored from a backup** older than the latest checkpoint has
 numbered fewer checkpoints than the store keeps: `verify` finds it `behind`
@@ -1550,22 +1535,14 @@ roster trail accept --of sha256:… --full --restored 38 --why "the database res
 roster trail verify --full   # clean
 ```
 
-A row with no signature is the same whether it was written before rows were
-signed or had its signature taken off, so with a key every such row is a finding.
-A deployment that already had a key when it moved to a roster with signed rows
-runs `accept` **once** after the upgrade, as somebody who has looked:
+A row with no signature is the same whether it was written while there was no
+key or had its signature taken off, so with a key every such row is a finding.
 
-```sh
-roster trail verify                                                         # `unsigned`, for every row from before
-roster trail accept --of sha256:… --why "written before rows were signed"   # once
-roster trail verify                                                         # clean
-```
-
-**An archive kept without a key until now** (an earlier roster kept one that
-nothing signed) is the same once the key is set, and more of it. Every row and
-every checkpoint it has is `unsigned`. Nothing is destroyed on their word, and no
-act takes a checkpoint after them: each does what it does and then says so in its
-error (`no trusted key signed the checkpoints the store keeps`). Set
+**An archive kept without a key until now** is the same once the key is set,
+and more of it. Every row and every checkpoint it has is `unsigned`. Nothing is
+destroyed on their word, and no act takes a checkpoint after them: each does what
+it does and then says so in its error
+(`no trusted key signed the checkpoints the store keeps`). Set
 `audit.checkpoints.key`, look, and run `accept`. It signs the rows as they
 stand and names the checkpoint the database numbered last as the one before its
 own, which takes in the history from before the key. Signing the rows brings

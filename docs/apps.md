@@ -454,4 +454,4 @@ no app sweeps a ledger it shares.
 | `ts/lib/tenant/apps.tsx` | the *apps* tab, in both consoles |
 | `docker/flow.sh` | an access token for one API, naming the client that asked for it |
 | [login.md](login.md) § *What a front door needs* | the same arrangement from the Login App's side |
-| [operating.md](operating.md) | `roster login provision`, and upgrading from `Host.acts_as` |
+| [operating.md](operating.md) | `roster login provision`, and the start a tenant's first name is nominated in on |

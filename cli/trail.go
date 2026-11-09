@@ -579,11 +579,10 @@ func heard(hs map[string]trail.Heard) []string {
 // line of the trail -- copied to the archive and kept for years -- must not
 // keep a MAC of. Those are covered by the row's seal, kept beside the row in
 // the database alone (payday#115), and a row whose newest write sealed
-// nothing -- every row of a kind with a personal field, after the upgrade that
-// brought seals -- is counted as from before seals: no finding, and nothing
-// vouches for its personal fields. `--accept` puts those on the trail too,
-// which seals them, and does so when they are all the check found: it is the
-// one acceptance an operator runs after that upgrade (docs/operating.md).
+// nothing -- written before its kind declared the field personal -- is
+// counted as from before seals: no finding, and nothing vouches for its
+// personal fields. `--accept` puts those on the trail too, which seals them,
+// and does so when they are all the check found (docs/operating.md).
 func newCmdTrailRows(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "rows",
@@ -642,10 +641,8 @@ func newCmdTrailRows(c *cmd.Config) *xli.Command {
 			// The rows whose newest write sealed nothing, which a check
 			// cannot vouch for the personal fields of (payday#115): no
 			// finding, since nothing can be said of what they were, and
-			// counted every run rather than listed -- after the upgrade that
-			// brought seals it is every row of a kind with a personal field.
-			// The acceptance that seals them is the one below, of this
-			// digest, which names them.
+			// counted every run rather than listed. The acceptance that seals
+			// them is the one below, of this digest, which names them.
 			if n := len(v.Unsealed); n > 0 {
 				fmt.Fprintf(os.Stderr, "%d row(s) from before seals: what is personal in them is vouched for by nothing until "+
 					"`roster trail rows --accept --of %s --why ...` seals them\n", n, digest)
