@@ -223,8 +223,8 @@ func TestThePageIsToldWhetherThereIsAFormToDraw(t *testing.T) {
 	auth := app.NewAuthServiceClient(conn)
 	at := metadata.NewOutgoingContext(ctx, arrivingAt(t, "contoso.example"))
 
-	// Unset is yes, which is what a tenant written before the field existed
-	// relies on -- `vouch.Offers` is the one sentence both sides ask.
+	// Unset is yes, which is what a tenant that has never said relies on --
+	// `vouch.Offers` is the one sentence both sides ask.
 	got, err := auth.Offers(at, app.AuthOffersRequest_builder{}.Build())
 	x.NoError(err)
 	x.True(got.GetPassword(), "a tenant that has never been configured was said to have no password")

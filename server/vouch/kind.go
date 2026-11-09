@@ -291,10 +291,9 @@ func (v Totp) dummy() []byte {
 // # Unset is yes
 //
 // The field has presence for that reason (`proto/ext/payday/tenant.ext.proto`),
-// and this is the function that depends on it: a tenant written before the
-// field existed, or one that has never been configured, offers what it always
-// offered. A nil tenant is the same answer -- a caller that did not select the
-// row has not been told no.
+// and this is the function that depends on it: a tenant that has never been
+// configured offers a password and a link. A nil tenant is the same answer -- a
+// caller that did not select the row has not been told no.
 func Offers(t *app.Tenant, kind string) bool {
 	switch kindOf(kind) {
 	case KindPassword, KindLink:

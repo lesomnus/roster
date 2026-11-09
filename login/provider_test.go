@@ -357,8 +357,8 @@ func TestATenantWithNoPasswordDrawsNoForm(t *testing.T) {
 		return v.Password, v.Providers
 	}
 
-	// The control: unset is yes, which is what every tenant written before the
-	// field existed reads.
+	// The control: unset is yes, which is what every tenant that has never
+	// said reads.
 	form, providers := asks()
 	x.True(form)
 	x.Len(providers, 1)

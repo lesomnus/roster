@@ -272,8 +272,8 @@ func TestTheControlPlaneTakesTheBrokerItWasGiven(t *testing.T) {
 	drv, dsn := pdtest.DB(t)
 	cdrv, cdsn := pdtest.DB(t)
 
-	// Said nowhere for the control plane, which is what every deployment
-	// written before this looks like.
+	// Said nowhere for the control plane, which is what a deployment that
+	// names one broker looks like.
 	s, err := cmd.Build(t.Context(), cmd.Config{
 		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
 		Watch:   config.WatchConfig{Broker: config.BrokerNone},

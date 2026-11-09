@@ -63,8 +63,8 @@ func TestATenantSaysWhetherAPasswordIsAWayIn(t *testing.T) {
 		}.Build())
 		x.NoError(err)
 
-		// Every tenant written before the field existed reads this way, which
-		// is the whole reason `password` has presence.
+		// Every tenant that has never said reads this way, which is the whole
+		// reason `password` has presence.
 		res, err := b.vouched().Verify(ctx, app.VouchVerifyRequest_builder{
 			Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
 			Secret: []byte(secret),
