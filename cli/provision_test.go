@@ -11,7 +11,7 @@ import (
 )
 
 // TestProvisioningTakesNothingThatIsSomebodys is the account app's start in
-// three tenants, each with something already there.
+// three tenants, two of them with something of its name already there.
 //
 // fabrikam has a person called `account`, holding the staff role; contoso has
 // a role called `account`, bound to its people. Provisioning took both: the
