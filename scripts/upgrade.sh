@@ -24,6 +24,18 @@
 # than written down: tag what is deployed and this follows it. With no tag it
 # says so and passes, since there is nothing to upgrade from.
 #
+# # Not across a compatibility epoch
+#
+# `.github/compat-epoch` is a number, and a build whose number is not this
+# checkout's is one this checkout was written to keep nothing of: until the
+# first app launches, a change that breaks what an earlier build stored,
+# exported, issued or was configured with moves the number rather than carrying
+# a way forward (CLAUDE.md). So a release of another epoch is not built and
+# nothing it makes is migrated, and this says why and passes -- what it would
+# find is what was meant. A tree without the file is epoch 0. Staging is made
+# again from nothing when the number moves, and the release this starts from is
+# the first build of the new epoch once that is tagged.
+#
 # SQLite, because that is what the deployment it was written for runs, and what
 # fills the empty tables is SQLite's own catalogue.
 set -o errexit
@@ -38,6 +50,18 @@ if [ -z "${from}" ]; then
 fi
 if [ -z "${from}" ]; then
 	echo "upgrade: no release tag (v*) before HEAD, so there is nothing to upgrade from"
+	exit 0
+fi
+
+now="$(cat .github/compat-epoch 2>/dev/null | tr -d '[:space:]' || true)"
+was="$(git show "${from}:.github/compat-epoch" 2>/dev/null | tr -d '[:space:]' || true)"
+if [ "${was:-0}" != "${now:-0}" ]; then
+	why="${from} is of compatibility epoch ${was:-0}, and this checkout of ${now:-0}. The epoch moved on purpose: until the first app launches, roster keeps nothing for an earlier roster (the owner's decision of 2026-11-09, CLAUDE.md). So ${from} is not built and nothing it makes is migrated. Staging is made again from nothing, and the release this starts from is the first build of epoch ${now:-0} once that is tagged."
+	echo "upgrade: ${why}"
+	if [ -n "${GITHUB_ACTIONS:-}" ]; then
+		echo "::notice title=upgrade::${why}"
+		echo "${why}" >>"${GITHUB_STEP_SUMMARY}"
+	fi
 	exit 0
 fi
 
@@ -92,6 +116,8 @@ db:
   migrate: true
 watch:
   broker: memory
+spin:
+  lease: local
 control:
   db:
     driver: sqlite3
@@ -110,11 +136,8 @@ login:
   remember: 8h
 EOF
 
-# What a deployment hands the process rather than writes in the file. A lease
-# by variable rather than by key: a release that predates `spin` refuses a key
-# it does not read and only mentions a variable, so one file serves both.
+# What a deployment hands the process rather than writes in the file.
 export ROSTER_VOUCH_KEYS="one:$(head -c 32 /dev/urandom | base64)"
-export ROSTER_SPIN_LEASE=local
 
 # start runs `serve` from one binary until it is answering, and stops it. A
 # process that exits first is a start that failed, and its log says why.
