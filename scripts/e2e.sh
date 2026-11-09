@@ -103,7 +103,7 @@ export E2E_FRANK_PASSWORD="tailspin-$(head -c 12 /dev/urandom | base64 | tr -d '
 if [ "${E2E_MAIL:-1}" != "0" ]; then
 	mailpit="roster-e2e-mailpit-$$"
 	docker run -d --rm --name "${mailpit}" -p 127.0.0.1:18025:1025 -p 127.0.0.1:18026:8025 \
-		axllent/mailpit:v1.33.0@sha256:9b3a463be15354c0f0eba91697d80e3e0d8a5623ef0e627cacc836bc17fd5231 >/dev/null
+		axllent/mailpit:v1.33.1@sha256:aef2aacc11f075ec0fb6874275ee4a421e688e11a96ebb296134d1735c7761ce >/dev/null
 	export E2E_MAILPIT="http://127.0.0.1:18026"
 fi
 
