@@ -853,11 +853,6 @@ Beside it, every round trip carries a **PKCE** challenge (S256), so a code is
 worth nothing without the verifier only the front door that asked holds, and an
 OpenID one a **nonce** the ID token has to carry back.
 
-Upgrading from a release that used `/callback`, every connection's provider
-registration changes: register each connection's own URL, then roll the front
-doors. A provider that still has only the old one answers *redirect URI
-mismatch* at the sign-in, before anybody is signed in as anybody.
-
 ### GitHub
 
 GitHub signs people in with OAuth 2.0 and no OpenID Connect -- there is no
