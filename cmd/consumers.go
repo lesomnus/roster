@@ -77,11 +77,11 @@ type AccountConfig struct {
 
 	// Keys is one tenant key per tenant fronted, by alias.
 	//
-	// The values are **references** and not tokens: `env:NAME`, the one scheme
-	// this binary knows. A key is a secret and this file is not a place for
-	// one. `ROSTER_ACCOUNT_KEY_<ALIAS>` still works and is merged with these,
-	// and `--key alias=rt_…` still takes a literal, which is in the process
-	// list and says so.
+	// The values are **references** and not tokens: `env:NAME` or
+	// `file:PATH`. A key is a secret and this file is not a place for one.
+	// The environment is the other form, merged with these: one variable per
+	// tenant, `ROSTER_ACCOUNT_KEY_<ALIAS>`. And `--key alias=rt_…` takes a
+	// literal, which is in the process list and says so.
 	//
 	// One of this and [AccountConfig.Key]: a tenant running its own copy names
 	// its `rt_` here.

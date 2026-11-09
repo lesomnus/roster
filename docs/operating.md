@@ -683,12 +683,14 @@ not a setting is read as it was: `--key alias=rt_…` and the `--base` of
 `roster ldap serve` add to the block's map rather than replace it.
 
 **The keys are references, not tokens.** `env:NAME` and `file:PATH` are both
-understood, `ROSTER_<APP>_KEY_<ALIAS>` still works and is merged with them, and
-`--key alias=rt_…` takes a literal that is in the process list and says so. Do
-**not** name a `ROSTER_` variable in a reference: the configuration loader claims
-those for the fields of the same name, so `env:ROSTER_LOGIN_SEAL` is read as
-`login.seal` itself -- a key where a list was expected, and a process that refuses
-to start.
+understood. A tenant's own copy of the account app or the directory is given its
+`rt_` in one of two forms, merged: by reference in the block's `keys`, by alias,
+or in the environment, one variable per tenant -- `ROSTER_ACCOUNT_KEY_<ALIAS>`,
+`ROSTER_LDAP_KEY_<ALIAS>`. `--key alias=rt_…` takes a literal that is in the
+process list and says so. Do **not** name a `ROSTER_` variable in a reference:
+the configuration loader claims those for the fields of the same name, so
+`env:ROSTER_LOGIN_SEAL` is read as `login.seal` itself -- a key where a list was
+expected, and a process that refuses to start.
 
 ### The key cannot exist before this has run once
 
