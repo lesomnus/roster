@@ -62,6 +62,22 @@ logs one and starts, since an index that only costs time is not worth an outage
 on the next restart; and an invalid index the schema does not declare -- your
 own, or the `_ccnew` a `REINDEX CONCURRENTLY` left -- is only logged.
 
+**It also refuses a column the schema does not declare that takes no row without
+a value** (payday#228): NOT NULL, with no default and nothing that makes one.
+Such a column is one an earlier build declared and this one does not -- a field
+taken out of the schema, or out of an overlay. A migration drops no column, and
+`serve`'s check asks only after what is missing, so the database reads as this
+build's shape; but nothing this build writes gives the column a value, so every
+row written to its table is refused from then on, in whichever handler writes
+there first. The refusal names the plane, the table and the column, and gives
+the statement that drops it -- and on PostgreSQL the one that gives it a default
+instead, which keeps what it holds and lets a row be written without it. Drop it
+if nothing reads it any more, or give it a default, then migrate again. With
+`db.migrate` off, `serve` refuses it too and does not start: unlike an invalid
+index, it is not a cost to every write but the end of every write to its table.
+A column the schema does not declare that is nullable or has a default is left
+alone, and so is a table the schema does not declare.
+
 **A column that comes to a table which already has rows** needs something for
 the rows already there. A field with no default is a NOT NULL column with none,
 and adding one to a table with rows is refused by SQLite and by Postgres alike:
