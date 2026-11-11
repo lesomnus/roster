@@ -17,10 +17,10 @@ import (
 //
 // Its own transaction where this stack has a driver to begin one on
 // ([Core.drv]), with `fn` handed the server rebound onto it. And where the
-// stack is itself running on somebody else's -- a batch ([Core.tx]) -- `fn`
-// runs in that one, on the server this layer is over: a transaction begun
-// inside it would be a second one, and refusing, which this did, made the rule
-// one that no batch could carry.
+// stack is itself running on somebody else's -- an RPC that writes several
+// rows as one ([Core.tx]) -- `fn` runs in that one, on the server this layer
+// is over: a transaction begun inside it would be a second one, and refusing,
+// which this did, made the rule one that no such RPC could carry.
 //
 // A stack with neither, built without a driver and called outside any
 // transaction, cannot make the writes one, and is refused: `what` says what it

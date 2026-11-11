@@ -308,8 +308,8 @@ const (
 // taken, a role wider than the caller holds. Written one at a time a refusal
 // would leave a tenant nobody can get into whose alias cannot be used again --
 // `roster init`'s failure before #20, at a larger size. A caller who has
-// already arranged a transaction -- a batch -- arrives with no driver and runs
-// inside theirs.
+// already arranged a transaction -- an RPC that writes several rows as one --
+// arrives with no driver and runs inside theirs.
 func (s coreTenant) Add(ctx context.Context, req *app.TenantAddRequest) (*app.Tenant, error) {
 	if err := unlived(req); err != nil {
 		return nil, err

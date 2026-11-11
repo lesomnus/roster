@@ -325,7 +325,7 @@ A layer that holds anything hands it over as well -- `server/core` carries its
 `Rules`, and a rebuild that dropped them would answer inside a transaction with
 a stack that refuses everything a frame carries.
 
-Leave it out and **nothing fails until a transaction is opened** — a batch, or a
+Leave it out and **nothing fails until a transaction is opened** — a
 multi-write RPC — because `enttx.Rebind` asks at run time. `pd doctor` finds it.
 
 Note it is `enttx.Rebind(s.Next(), ...)` and not `s.Next().WithDriver(...)`:

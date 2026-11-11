@@ -151,12 +151,12 @@ func (s coreHost) proved(ctx context.Context, req *app.HostAddRequest) (*app.Hos
 			"this server cannot let go of a name another tenant holds, so it will not take one")
 	}
 	if s.tx != nil {
-		// Not inside somebody else's transaction, a batch. Taking a name lets go
-		// of it wherever another tenant holds it, which is a write past the wall
-		// -- this layer makes it on purpose, for one call that asked for nothing
-		// else, and not beside writes a caller composed.
+		// Not inside somebody else's transaction. Taking a name lets go of it
+		// wherever another tenant holds it, which is a write past the wall --
+		// this layer makes it on purpose, for one call that asked for nothing
+		// else, and not beside writes another call composed.
 		return nil, status.Error(codes.FailedPrecondition,
-			"a name is not taken inside a batch: taking it lets go of it wherever another tenant holds it, "+
+			"a name is not taken inside a transaction another call opened: taking it lets go of it wherever another tenant holds it, "+
 				"which this server does only for a call that asks for that alone -- send the Add by itself")
 	}
 	if s.drv == nil {

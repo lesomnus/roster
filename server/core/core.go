@@ -53,12 +53,12 @@ type Core struct {
 	// Nil is a stack assembled without one, which is every test that builds a
 	// layer by hand. The rule reads that as *the caller has arranged the
 	// transaction* and does its work in whatever it was handed, which is also
-	// what it does inside a batch.
+	// what it does inside a transaction somebody else opened.
 	drv dialect.Driver
 
-	// tx is the transaction this stack runs on when somebody else opened it: a
-	// batch, or anything payday puts several writes of into one
-	// ([Core.WithDriver]), or a rule of this layer's own that began one ([over]).
+	// tx is the transaction this stack runs on when somebody else opened it: an
+	// RPC that puts several writes into one ([Core.WithDriver]), or a rule of
+	// this layer's own that began one ([over]).
 	// It has no driver then, and a rule that writes more than once makes its
 	// writes in this one rather than refusing for want of one -- which is how
 	// such a rule tells it apart from a stack built without a driver at all
@@ -367,7 +367,7 @@ func (s Core) WithDriver(drv dialect.Driver) (app.Server, error) {
 	// instead is that transaction ([Core.tx]).
 	//
 	// Everything else is, because the rebuilt stack is the same stack: a
-	// `Credential.Set` inside a batch still refuses a leaked secret and wraps a
+	// `Credential.Set` inside a transaction still refuses a leaked secret and wraps a
 	// seed with the deployment's key, a `Tenant.Restore` still keeps its grace,
 	// and `only` still takes its lock. See [over].
 	return s.over(next, drv), nil
@@ -380,9 +380,9 @@ func (s Core) WithDriver(drv dialect.Driver) (app.Server, error) {
 // option added in one place away from a stack that quietly stops refusing
 // leaked passwords inside a transaction -- and then it was written once and
 // still fell behind the options: the restore grace, the lock `only` takes and
-// whether everybody at the port is an operator stayed behind, so a batch could
-// restore a tenant whose grace had run out, two batches each removed one of
-// somebody's last two ways in, and the admin port's operators were nobody in
+// whether everybody at the port is an operator stayed behind, so a transaction
+// could restore a tenant whose grace had run out, two transactions each removed
+// one of somebody's last two ways in, and the admin port's operators were nobody in
 // particular inside a transaction. A copy carries what is added next.
 func (s Core) over(next app.Server, tx dialect.Driver) Core {
 	in := s

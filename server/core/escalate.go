@@ -87,8 +87,8 @@ import (
 // `grpcx.GeneralWrite` closes `/Patch` and `/Apply` alike, and roster sets no
 // `AllowGeneralWrites`, so neither is on the wire. That is not the same as
 // being guarded: the transport is one road and the layer is what every other
-// one goes through -- a batch, the servers' own writes, and any deployment
-// that opens general writes because it has a reason to. A role that can grow
+// one goes through -- the servers' own writes, an RPC that composes writes,
+// and any deployment that opens general writes because it has a reason to. A role that can grow
 // methods after it was written is a role whose first version says nothing, and
 // leaving that to a setting is leaving it to somebody who did not know they
 // were deciding it.

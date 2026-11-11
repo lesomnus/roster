@@ -276,7 +276,7 @@ func TestNobodyMintsAKeyForWhatTheyDoNotHold(t *testing.T) {
 	// Written through the walled stack as Alice, which is what a console would
 	// do. `Ungated` is the deployment's own door and is deliberately exempt.
 	// The scope too, which `gate.Decide` fills in on the wire and nothing fills
-	// in here. `ApiKey.Add` is shut by method and closed to the batch, so there is
+	// in here. `ApiKey.Add` is shut by method, so there is
 	// no wire to go over -- see `closed` in `cmd/serve.go`. What is being tested
 	// is the layer, and the
 	// layer runs behind the wall either way.

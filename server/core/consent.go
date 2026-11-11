@@ -124,8 +124,9 @@ func inForce(vs []*app.Consent) *app.Consent {
 
 // recording runs `fn` as one transaction, and again when it lost a race for a
 // document's next act: what it read is no longer the latest, so it reads again.
-// Only in a transaction of its own -- inside a batch, the refused write has
-// already ended the batch's, and the batch is what is asked again.
+// Only in a transaction of its own -- inside one somebody else opened, the
+// refused write has already ended theirs, and their call is what is asked
+// again.
 func (s coreConsent) recording(ctx context.Context, fn func(next app.Server) error) error {
 	for tries := 1; ; tries++ {
 		err := s.atomically(ctx, "record consent in more than one write", fn)

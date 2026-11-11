@@ -8,14 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/z"
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/pdid"
-	"github.com/lesomnus/payday/pdpb"
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
@@ -491,44 +489,6 @@ func TestTheApiKeyServicesVerifierIsNotOnTheWire(t *testing.T) {
 		Secret: sum,
 	}.Build())
 	x.Equal(codes.Unimplemented, status.Code(err), "a key was written with a caller's own verifier")
-}
-
-// TestABatchCannotCarryACredentialRead is the other door.
-//
-// A batch arrives as one method carrying many, so "not registered" does not
-// reach it -- the dispatcher looks the method up in the app's own table, and
-// `Credential` is in it because this app's code uses it. What stops it is
-// `closed`, which is why that is one function used in two places rather than
-// two lists that agree today.
-func TestABatchCannotCarryACredentialRead(t *testing.T) {
-	x := require.New(t)
-	b, ctx := build(t)
-
-	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
-
-	conn := served(t, b.Server)
-	ctx = auth.PlainProvider(b.ContosoUser.String()).Provide(ctx)
-
-	req, err := anypb.New(app.CredentialGetRequest_builder{
-		Ref: app.CredentialRef_builder{
-			Kind: app.CredentialRefByKind_builder{
-				Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
-				Kind:   z.Ptr(vouch.KindPassword),
-			}.Build(),
-		}.Build(),
-		Select: app.CredentialSelect_builder{All: z.Ptr(true)}.Build(),
-	}.Build())
-	x.NoError(err)
-
-	_, err = pdpb.NewBatchServiceClient(conn).Do(ctx, pdpb.BatchRequest_builder{
-		Ops: []*pdpb.Op{pdpb.Op_builder{
-			Method:  "/" + app.CredentialService_ServiceDesc.ServiceName + "/Get",
-			Request: req,
-		}.Build()},
-	}.Build())
-
-	x.Error(err, "a batch read the credential the wire will not serve")
-	x.NotEqual(codes.OK, status.Code(err))
 }
 
 // TestAnErasedHolderCannotAuthenticate, which is a guarantee `holder.proto`

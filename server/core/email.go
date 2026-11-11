@@ -101,8 +101,8 @@ func entered(ctx context.Context, req *app.EmailAddRequest) *app.EmailAddRequest
 // Which is a gap on purpose rather than the other rule being forgotten, and it
 // is only safe because of something one file away: `/Patch` is closed at the
 // transport by `grpcx.GeneralWrite` and roster sets no `AllowGeneralWrites`, so
-// nothing a caller reaches gets here. What does is a batch and the servers' own
-// writes, neither of which is somebody naming a row.
+// nothing a caller reaches gets here. What does is the servers' own writes,
+// which are not somebody naming a row.
 //
 // If that changes -- a deployment with a reason to open general writes -- this
 // wants [Core.mayWriteAWayIn] beside the normalisation, because the holder
@@ -267,8 +267,8 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 // cost an error in the database's log per sign-in. Inside one it cost the call:
 // a write the database refused ends the transaction it was in -- on PostgreSQL
 // at once, so the read after it failed too, and on SQLite at the commit, which
-// payday refuses after a write that failed (payday#128) -- so a batch could not
-// attest an address somebody already had. So who holds the address is read
+// payday refuses after a write that failed (payday#128) -- so a transaction
+// could not attest an address somebody already had. So who holds the address is read
 // first, by address within the holder's tenant, and the one write that follows
 // is the one that answer calls for.
 func (s coreEmail) Attest(ctx context.Context, req *app.EmailAttestRequest) (*app.Email, error) {

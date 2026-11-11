@@ -201,10 +201,9 @@ func allow(ctx context.Context, at app.Server, in pdid.Id, to pdid.Id) error {
 		// have to notice that.
 		//
 		// `/roster.*/*` and not `/*.*/*`, which would take in payday's own --
-		// `BatchService` is a way of calling the methods this already covers,
-		// and `TokenService` is asked by a product app holding a key rather
-		// than by anybody a role is written for. A deployment that wants those
-		// grants them, and does it on purpose.
+		// `TokenService` is asked by a product app holding a key rather than
+		// by anybody a role is written for. A deployment that wants it grants
+		// it, and does it on purpose.
 		Methods: []string{EveryRosterMethod},
 	}.Build())
 	if err != nil {
@@ -252,8 +251,8 @@ func allow(ctx context.Context, at app.Server, in pdid.Id, to pdid.Id) error {
 // leaked corpus. Written one at a time, a refusal left the first two behind
 // and every later `init` stopped at the role with `AlreadyExists`: a control
 // plane with an operator nobody could sign in as and no command to finish it
-// (#20). So all three are one transaction on the control plane, rebound the
-// way `BatchService.Do` rebinds a batch, and a refused password leaves nothing.
+// (#20). So all three are one transaction on the control plane, the stack
+// rebound onto it (`enttx.Rebind`), and a refused password leaves nothing.
 //
 // What that does not change is the refusal to run twice. On a seeded database
 // the role is still what fails, before the password is reached, and now it
