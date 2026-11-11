@@ -72,20 +72,20 @@ nothing. From the launch on, a field added to an existing entity says what the
 rows already there should hold -- `(orm.field).default`, which the generator
 gives the column as well as the server, so every row already there holds it
 rather than NULL. CI migrates empty databases and cannot see this, which is what
-`scripts/upgrade.sh` is for: it builds the release before the commit -- the
-nearest `v*` tag -- lets it make a deployment's databases, puts a row in every
-table, and starts the commit on them twice. **Tag what you deploy** and the
-`upgrade` job follows; with no tag there is nothing to upgrade from, and it says
-so.
+`scripts/upgrade.sh` is for: one build makes a deployment's databases, a row
+goes into every table, and another starts on them twice. The `upgrade` job runs
+it from two builds: the one a change comes after -- a pull request's base, or
+what `main` was before a push -- and the oldest a deployment runs, OLDEST,
+which `.github/workflows/ci.yml` names and moves forward when staging moves.
 
 **Nor from another compatibility epoch.** `.github/compat-epoch` is a number,
-and a release whose number is not the commit's is one the commit keeps nothing
-of: `upgrade.sh` does not build it, migrates nothing it made, and says so. Until
-the first app launches, a change that breaks what an earlier build stored,
-exported, issued or was configured with moves the number rather than carrying a
-way forward ([CLAUDE.md](../CLAUDE.md)), and the pull request that moves it names
-the build a deployment with data migrates on first. From the launch on it moves
-only on the owner's word.
+and a build whose number is not the commit's is one the commit keeps nothing
+of: the `upgrade` job does not build it, migrates nothing it made, and says so.
+Until the first app launches, a change that breaks what an earlier build
+stored, exported, issued or was configured with moves the number rather than
+carrying a way forward ([CLAUDE.md](../CLAUDE.md)), and the pull request that
+moves it names the build a deployment with data migrates on first. From the
+launch on it moves only on the owner's word.
 
 ## The two planes
 

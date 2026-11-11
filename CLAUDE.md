@@ -66,11 +66,11 @@ token or a command, no paragraph telling an operator how to bring a deployment
 forward. It bumps `.github/compat-epoch` instead. So does a required field an
 entity gains, which the rows written before it lack: the epoch moves rather than
 a default being declared for them. An entity added is a table of its own and
-moves nothing. The `upgrade` job does not cross an epoch (`scripts/upgrade.sh`);
-staging is made again from nothing, and the release that job starts from moves
-to the first build of the new epoch once that is tagged. The pull request says,
-once, which roster a deployment with data must migrate on first -- in its
-description, not in `docs/`.
+moves nothing. The `upgrade` job builds no BEFORE or OLDEST of another epoch
+(`.github/workflows/ci.yml`); staging is made again from nothing, and OLDEST
+moves to the first build of the new epoch once staging runs it. The pull
+request says, once, which roster a deployment with data must migrate on first
+-- in its description, not in `docs/`.
 
 An older caller is no different. Until the launch, a field or an RPC that
 nothing here needs goes, and `buf breaking` is told so for that one change: an
@@ -124,7 +124,7 @@ checkout.
 ./scripts/e2e.sh          # the three pages, in a browser
 ./scripts/hydra.sh        # one OAuth flow, through a real Hydra, to an id_token
 ./scripts/cluster.sh      # deploy/ in k3d, and the class a fresh process hides
-./scripts/upgrade.sh      # the last release's databases, a row in every table, brought up by this checkout -- within an epoch
+./scripts/upgrade.sh BEFORE NOW  # one build's databases, a row in every table, brought up by another -- within an epoch
 ```
 
 **Touching `ts/` means running this too.** It stands roster up the way

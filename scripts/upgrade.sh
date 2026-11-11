@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# An upgrade, rehearsed: the databases the last release made, brought up by this
-# checkout.
+# An upgrade, rehearsed: the databases one build made, brought up by another.
 #
 # Every other gate migrates a database that is empty, and the failure an upgrade
 # has is one an empty database cannot have: a column that comes to a table that
@@ -10,67 +9,52 @@
 # rows already there, as Postgres does for any table that is not empty. Every
 # gate was green the whole time, because none of them had seen a row.
 #
-# So this builds the release before this checkout and lets it make what a
-# deployment has: the declared rows, the Login App's provision, a start. Then it
-# puts a row into every table still empty -- the shape of the data does not
-# matter to a migration, only that there is some -- and has this checkout start
-# on the result twice, the way the init container and `serve` do on every
-# start.
+# So BEFORE makes what a deployment has: the declared rows, the Login App's
+# provision, a start. Then this puts a row into every table still empty -- the
+# shape of the data does not matter to a migration, only that there is some --
+# and NOW starts on the result twice, the way the init container and `serve` do
+# on every start.
 #
-#     ./scripts/upgrade.sh             # from the nearest release tag before HEAD
-#     ./scripts/upgrade.sh e9f808e     # from a commit
+#     ./scripts/upgrade.sh BEFORE NOW
 #
-# The release is a tag, `v*`, and the nearest one before HEAD is found rather
-# than written down: tag what is deployed and this follows it. With no tag it
-# says so and passes, since there is nothing to upgrade from.
+# Each is a directory with a build's `roster` in it. CI's `upgrade` job runs
+# this twice (`.github/workflows/ci.yml`): from the build a change comes after
+# -- a pull request's base, or what `main` was before a push -- and from the
+# oldest build a deployment runs, OLDEST, which the job names. At a desk a
+# build is a worktree and a `go build`:
 #
-# # Not across a compatibility epoch
+#     git worktree add --detach /tmp/before <commit>
+#     (cd /tmp/before && go build -o /tmp/bin-before/ ./cmd/roster)
+#     go build -o /tmp/bin-now/ ./cmd/roster
+#     ./scripts/upgrade.sh /tmp/bin-before /tmp/bin-now
 #
-# `.github/compat-epoch` is a number, and a build whose number is not this
-# checkout's is one this checkout was written to keep nothing of: until the
-# first app launches, a change that breaks what an earlier build stored,
-# exported, issued or was configured with moves the number rather than carrying
-# a way forward (CLAUDE.md). So a release of another epoch is not built and
-# nothing it makes is migrated, and this says why and passes -- what it would
-# find is what was meant. A tree without the file is epoch 0. Staging is made
-# again from nothing when the number moves, and the release this starts from is
-# the first build of the new epoch once that is tagged.
+# BEFORE and NOW are of one compatibility epoch (`.github/compat-epoch`). Until
+# the first app launches, a change that breaks what an earlier build stored,
+# exported, issued or was configured with moves the epoch rather than carrying a
+# way forward (CLAUDE.md), and the job builds no BEFORE of another epoch: it
+# says why and passes, since what this would find there is what was meant.
 #
 # SQLite, because that is what the deployment it was written for runs, and what
 # fills the empty tables is SQLite's own catalogue.
 set -o errexit
 set -o pipefail
 
-__root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "${__root}"
-
-from="${1:-}"
-if [ -z "${from}" ]; then
-	from="$(git describe --tags --abbrev=0 --match 'v*' HEAD^ 2>/dev/null || true)"
-fi
-if [ -z "${from}" ]; then
-	echo "upgrade: no release tag (v*) before HEAD, so there is nothing to upgrade from"
-	exit 0
-fi
-
-now="$(cat .github/compat-epoch 2>/dev/null | tr -d '[:space:]' || true)"
-was="$(git show "${from}:.github/compat-epoch" 2>/dev/null | tr -d '[:space:]' || true)"
-if [ "${was:-0}" != "${now:-0}" ]; then
-	why="${from} is of compatibility epoch ${was:-0}, and this checkout of ${now:-0}. The epoch moved on purpose: until the first app launches, roster keeps nothing for an earlier roster (the owner's decision of 2026-11-09, CLAUDE.md). So ${from} is not built and nothing it makes is migrated. Staging is made again from nothing, and the release this starts from is the first build of epoch ${now:-0} once that is tagged."
-	echo "upgrade: ${why}"
-	if [ -n "${GITHUB_ACTIONS:-}" ]; then
-		echo "::notice title=upgrade::${why}"
-		echo "${why}" >>"${GITHUB_STEP_SUMMARY}"
+before="${1:?usage: scripts/upgrade.sh BEFORE NOW}"
+now="${2:?usage: scripts/upgrade.sh BEFORE NOW}"
+for b in "${before}" "${now}"; do
+	if [ ! -x "${b}/roster" ]; then
+		echo "upgrade: ${b} has no roster: BEFORE and NOW are each a directory with a build's roster in it" >&2
+		exit 2
 	fi
-	exit 0
-fi
+done
+before="$(cd "${before}" && pwd)"
+now="$(cd "${now}" && pwd)"
 
 work="$(mktemp -d)"
 pids=()
 cleanup() {
 	kill "${pids[@]}" 2>/dev/null || true
 	wait 2>/dev/null || true
-	git worktree remove --force "${work}/old" >/dev/null 2>&1 || true
 	rm -rf "${work}"
 }
 trap cleanup EXIT
@@ -79,11 +63,6 @@ die() {
 	echo "upgrade: $1" >&2
 	exit 1
 }
-
-echo "== build ${from}, and this checkout"
-git worktree add --detach --quiet "${work}/old" "${from}"
-(cd "${work}/old" && go build -o "${work}/roster-old" ./cmd/roster)
-go build -o "${work}/roster-new" ./cmd/roster
 
 # A deployment, as little of one as starts: both planes on SQLite, the Login App
 # with its key from `login provision`, and a tenant with a name and a
@@ -149,15 +128,15 @@ start() {
 
 	local i=0
 	until grep -q 'grpc - addr' "${log}"; do
-		kill -0 "${pid}" 2>/dev/null || { cat "${log}" >&2; die "${bin##*/} did not start"; }
+		kill -0 "${pid}" 2>/dev/null || { cat "${log}" >&2; die "${bin} did not start"; }
 		i=$((i + 1))
-		[ "${i}" -lt 60 ] || { cat "${log}" >&2; die "${bin##*/} did not answer within a minute"; }
+		[ "${i}" -lt 60 ] || { cat "${log}" >&2; die "${bin} did not answer within a minute"; }
 		sleep 1
 	done
 
 	# And it is still up a moment later, past whatever runs once it is.
 	sleep 2
-	kill -0 "${pid}" 2>/dev/null || { cat "${log}" >&2; die "${bin##*/} stopped after it started"; }
+	kill -0 "${pid}" 2>/dev/null || { cat "${log}" >&2; die "${bin} stopped after it started"; }
 	kill "${pid}" 2>/dev/null || true
 	wait "${pid}" 2>/dev/null || true
 }
@@ -165,15 +144,15 @@ start() {
 provision() {
 	local bin="$1" log="$2"
 	"${bin}" --config "${work}/config.yaml" login provision --out "${work}/run" >"${log}" 2>&1 \
-		|| { cat "${log}" >&2; die "${bin##*/} login provision failed"; }
+		|| { cat "${log}" >&2; die "${bin} login provision failed"; }
 }
 
-echo "== ${from} makes a deployment"
+echo "== ${before} makes a deployment"
 # A first start applies the declared rows, which is what gives `provision` a
 # tenant to provision in; then a start the way every one after it goes.
-start "${work}/roster-old" "${work}/old-0.log"
-provision "${work}/roster-old" "${work}/old-1.log"
-start "${work}/roster-old" "${work}/old-2.log"
+start "${before}/roster" "${work}/old-0.log"
+provision "${before}/roster" "${work}/old-1.log"
+start "${before}/roster" "${work}/old-2.log"
 
 echo "== and a row in every table it left empty"
 python3 - "${work}/data/roster.db" "${work}/control/roster-control.db" <<'PY'
@@ -250,11 +229,11 @@ for path in sys.argv[1:]:
     print(f"   {path.rsplit('/', 1)[-1]}: {seeded} of {len(tables)} tables were empty")
 PY
 
-echo "== this checkout starts on them, twice"
+echo "== ${now} starts on them, twice"
 for n in 1 2; do
-	provision "${work}/roster-new" "${work}/new-${n}-provision.log"
-	start "${work}/roster-new" "${work}/new-${n}-serve.log"
+	provision "${now}/roster" "${work}/new-${n}-provision.log"
+	start "${now}/roster" "${work}/new-${n}-serve.log"
 	echo "   start ${n}: ok"
 done
 
-echo "upgrade: ok, from ${from}"
+echo "upgrade: ok, from ${before} to ${now}"

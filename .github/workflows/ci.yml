@@ -283,8 +283,8 @@ jobs:
         env:
           PDTEST_POSTGRES: postgres://app:app@127.0.0.1:5432/app?sslmode=disable
 
-  # An upgrade, rehearsed: the databases the last release made, with a row in
-  # every table, brought up by this commit -- `scripts/upgrade.sh`.
+  # An upgrade, rehearsed (`scripts/upgrade.sh`): a build makes a deployment's
+  # databases, a row goes into every table, and this one starts on them twice.
   #
   # Every other job migrates a database that is empty, and an upgrade fails in
   # the one way an empty database cannot: a column that comes to a table that
@@ -292,18 +292,27 @@ jobs:
   # deployment with every job here green, and its init container would not
   # have finished.
   #
-  # Within a compatibility epoch, `.github/compat-epoch`. Until the first app
-  # launches, roster keeps nothing for an earlier roster (the owner's decision
-  # of 2026-11-09, CLAUDE.md): a change that breaks what an earlier build made
-  # moves the number instead, so a release of another epoch is not built and
-  # nothing it makes is migrated. The script says so as a notice and in the
-  # step summary, and the job passes -- it is required, and what it would find
-  # there is what was meant.
+  # From two builds. The one this comes after -- the pull request's base, or
+  # what `main` was before this push -- is one step. The oldest a deployment
+  # still runs, OLDEST, is however many steps a deployment that skipped some
+  # takes at once: staging's, written below, and moved forward when staging
+  # moves. It was the nearest `v*` tag until the owner agreed that roster does
+  # without tags for this (2026-11-11): nothing tagged what staging ran, so the
+  # job upgraded from v0.1.1 and nothing else.
+  #
+  # Except across a compatibility epoch, `.github/compat-epoch`. Until the
+  # first app launches, roster keeps nothing for an earlier roster (the
+  # owner's decision of 2026-11-09, CLAUDE.md): a change that breaks what an
+  # earlier build made moves the number instead, so a build of another epoch
+  # is not built and nothing it makes is migrated. The job says why as a notice
+  # and in the step summary, and passes -- it is required, and what it would
+  # find there is what was meant. A tree with no such file is epoch 0. OLDEST
+  # moves to the first build of the new epoch once staging runs it; from the
+  # launch on the epoch does not move without the owner's word.
   upgrade:
     runs-on: ubuntu-26.04
     steps:
-      # The whole history and its tags: the release this upgrades from is the
-      # nearest `v*` tag before the commit, found rather than written down.
+      # The whole history, since BEFORE and OLDEST are built from their trees.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -311,7 +320,63 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - run: ./scripts/upgrade.sh
+      - name: this build, the one it comes after, and the oldest a deployment runs
+        env:
+          BEFORE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          # Staging's, 72ea04a: the first build of compatibility epoch 1 that
+          # staging runs (2026-11-11).
+          OLDEST: 72ea04aa5bedb4f222a0b0dcca1edfe6b76f2cdd
+        run: |
+          go build -o "${RUNNER_TEMP}/bin-now/" ./cmd/roster
+          # epoch TREE: the compatibility epoch TREE is of, and 0 for a tree
+          # with no .github/compat-epoch.
+          epoch() {
+            if [ -f "$1/.github/compat-epoch" ]; then
+              tr -d '[:space:]' <"$1/.github/compat-epoch"
+            else
+              echo 0
+            fi
+          }
+          now=$(epoch .)
+          # old NAME COMMIT: the build at COMMIT, in bin-NAME -- or, for one
+          # of another epoch, nothing built, a notice of why, and the why in
+          # why-NAME for the step that would have migrated what it made. A run
+          # started by hand has no build before it, and says so the same way.
+          old() {
+            case "$2" in
+            "" | 0000000000000000000000000000000000000000)
+              why="$1: this run names no build before it -- it was started by hand -- so nothing is migrated from one."
+              echo "::notice title=upgrade::${why}"
+              echo "${why}" >"${RUNNER_TEMP}/why-$1"
+              return
+              ;;
+            esac
+            git worktree add --detach "${RUNNER_TEMP}/$1" "$2"
+            was=$(epoch "${RUNNER_TEMP}/$1")
+            if [ "${was}" = "${now}" ]; then
+              (cd "${RUNNER_TEMP}/$1" && go build -o "${RUNNER_TEMP}/bin-$1/" ./cmd/roster)
+            else
+              why="$1 is $2, of compatibility epoch ${was}, and this build is of epoch ${now}: it is not built, and nothing it makes is migrated. The epoch moved on purpose: until the first app launches roster keeps nothing for an earlier roster (the owner's decision of 2026-11-09, CLAUDE.md), so staging is made again from nothing, and OLDEST moves to the first build of epoch ${now} once staging runs it."
+              echo "::notice title=upgrade::${why}"
+              echo "${why}" >"${RUNNER_TEMP}/why-$1"
+            fi
+          }
+          old before "${BEFORE}"
+          old oldest "${OLDEST}"
+      - name: what the build before made, migrated by this one
+        run: |
+          if [ ! -x "${RUNNER_TEMP}/bin-before/roster" ]; then
+            tee -a "${GITHUB_STEP_SUMMARY}" <"${RUNNER_TEMP}/why-before"
+            exit 0
+          fi
+          scripts/upgrade.sh "${RUNNER_TEMP}/bin-before" "${RUNNER_TEMP}/bin-now"
+      - name: what the oldest build a deployment runs made, migrated by this one
+        run: |
+          if [ ! -x "${RUNNER_TEMP}/bin-oldest/roster" ]; then
+            tee -a "${GITHUB_STEP_SUMMARY}" <"${RUNNER_TEMP}/why-oldest"
+            exit 0
+          fi
+          scripts/upgrade.sh "${RUNNER_TEMP}/bin-oldest" "${RUNNER_TEMP}/bin-now"
 
   # The TypeScript half: it type-checks, and it builds.
   #
@@ -537,14 +602,33 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Pushed by buildx itself rather than by bake-action, so that a push
+      # GHCR refuses is tried again. It has answered `permission_denied:
+      # write_package` right after a login that succeeded -- twice on loft's
+      # `main` in one week, and a rerun passed each time. Three tries, 10 s and
+      # then 30 s apart, each failure said, and the step fails only when all
+      # three do. A try again is the same build and push: copies onto a base out
+      # of `./dist`, so seconds, and the manifests and blobs a refused try left
+      # are what the next one writes. The metadata is what bake-action would
+      # have handed the steps below.
       - name: Build
         id: build
-        uses: docker/bake-action@59cb1203cd42bcefd40a1b6d73b589e48c86040e # v7.5.0
-        with:
-          source: .
-          files: docker-bake.hcl
-          targets: app
-          push: true
+        run: |
+          meta="${RUNNER_TEMP}/bake-metadata.json"
+          try=1
+          for wait in 10 30 ''; do
+            if docker buildx bake --file docker-bake.hcl --metadata-file "${meta}" --push app; then
+              echo "metadata=$(jq -c . "${meta}")" >>"${GITHUB_OUTPUT}"
+              exit 0
+            fi
+            if [ -z "${wait}" ]; then
+              echo "::error title=push::try ${try} of 3 failed, and it was the last"
+              exit 1
+            fi
+            echo "::warning title=push::try ${try} of 3 failed; trying again in ${wait}s"
+            sleep "${wait}"
+            try=$((try + 1))
+          done
 
       # What was pushed, said once, rather than left for somebody to ask the
       # registry what a moving tag points at now. `:edge` moves; the digest is
