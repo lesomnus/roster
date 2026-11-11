@@ -87,6 +87,16 @@ func ready(ctx context.Context, s *cmd.Server, c config.DbConfig) error {
 		return err
 	}
 
+	// A column the schema does not declare that takes no row without a value
+	// is refused, where an invalid index below is served over: it is not a
+	// cost to every write but the end of every write to its table, and a
+	// server that started on it would fail in whichever handler wrote there
+	// first. The check above asks only after what is missing, so it passes
+	// one (payday#228).
+	if err := valid.Columns(ctx, s.Db, s.Dialect, entmigrate.Tables); err != nil {
+		return err
+	}
+
 	// An index PostgreSQL left invalid is said, and served over: it is found by
 	// its name, so the check above passes it. It costs every write and the
 	// reads that wanted it, which is a thing to fix and not a reason to stop
@@ -269,7 +279,8 @@ func Migrate(ctx context.Context, s *cmd.Server) error {
 // migrate brings one plane's database into this build's shape: the tables,
 // columns and indexes an earlier build made under another name moved to this
 // build's first, then an index the schema declares that PostgreSQL left
-// invalid refused, then what the schema declares made.
+// invalid refused, and a column it does not declare that takes no row without
+// a value, then what the schema declares made.
 //
 // The tables are those of the entities the schema renamed and says it did
 // (`formerly`, `pd.TableRenames`). roster has renamed none, so the list is
@@ -298,6 +309,11 @@ func Migrate(ctx context.Context, s *cmd.Server) error {
 // so the trail took writes meanwhile, and had the build cancelled, was told
 // its database was in this build's shape while the index served no read
 // (payday#176). The refusal says what to run to make it again.
+//
+// And a column the schema does not declare that is NOT NULL with no default:
+// the migration drops no column, so one an earlier build declared stays, and
+// every row written to its table after it would be refused (payday#228). The
+// refusal names it and the statement that drops it.
 func migrate(ctx context.Context, s *cmd.Server) error {
 	if err := rename.Tables(ctx, s.Db, s.Dialect, pd.TableRenames); err != nil {
 		return err
@@ -309,6 +325,9 @@ func migrate(ctx context.Context, s *cmd.Server) error {
 		return err
 	}
 	if err := valid.Indexes(ctx, s.Db, s.Dialect, entmigrate.Tables); err != nil {
+		return err
+	}
+	if err := valid.Columns(ctx, s.Db, s.Dialect, entmigrate.Tables); err != nil {
 		return err
 	}
 

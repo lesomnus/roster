@@ -8,7 +8,7 @@
 // so beside the column now -- it did not exist when this package was written --
 // and the stronger statement is still made where reachability is actually
 // decided: `CredentialService`'s generated reads and its raw `Add` are shut a
-// method at a time, and closed to the batch. See `closed` in `cmd/serve.go`.
+// method at a time. See `closed` in `cmd/serve.go`.
 // The service name itself is on the wire, for the overlays written onto it
 // since; nothing there answers with a hash and nothing here does either.
 //

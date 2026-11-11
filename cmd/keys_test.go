@@ -13,14 +13,12 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/z"
 
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/pdid"
-	"github.com/lesomnus/payday/pdpb"
 	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/roster/cmd"
@@ -346,50 +344,6 @@ func TestTheTwoPlanesShareNothing(t *testing.T) {
 	x.NoError(err)
 	x.Len(vs, 1)
 	x.Equal("k", vs[0].Alias)
-}
-
-// TestABatchIsTheSameKey, which is what `batch.Guard` exists for.
-//
-// A batch arrives as one method carrying many, so everything payday enforces by
-// method name is enforced against `BatchService/Do` unless the guard applies it
-// per operation. A key's scope comes from the policy, so a guard built without
-// one would serve a key in a batch as a caller who may see nothing -- and its
-// grant would go unchecked, which is the wider hole.
-func TestABatchIsTheSameKey(t *testing.T) {
-	x := require.New(t)
-	b := keyFor(t, "/roster.HolderService/Add", pdpb.BatchService_Do_FullMethodName)
-	ctx := bearing(t.Context(), b.Token)
-
-	op := func(method string, m proto.Message) *pdpb.Op {
-		v, err := anypb.New(m)
-		x.NoError(err)
-
-		return pdpb.Op_builder{Method: method, Request: v}.Build()
-	}
-
-	// What the key is for, in a batch: it lands.
-	_, err := pdpb.NewBatchServiceClient(b.Conn).Do(ctx, pdpb.BatchRequest_builder{
-		Ops: []*pdpb.Op{op("/roster.HolderService/Add",
-			app.HolderAddRequest_builder{
-				Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
-				Alias:  "another",
-			}.Build())},
-	}.Build())
-	x.NoError(err)
-
-	// Three: the two the harness put there, and the `admin` the tenant was made
-	// with (`server/core/tenant.go`).
-	n, err := b.Ent.Holder.Query().Count(t.Context())
-	x.NoError(err)
-	x.Equal(3, n, "the batch did not write")
-
-	// And what it is not for does not become allowed by being wrapped.
-	_, err = pdpb.NewBatchServiceClient(b.Conn).Do(ctx, pdpb.BatchRequest_builder{
-		Ops: []*pdpb.Op{op("/roster.HolderService/Erase",
-			app.HolderRef_builder{Id: b.Who.Bytes()}.Build())},
-	}.Build())
-	x.Error(err, "a batch carried what the key may not call")
-	x.Equal(codes.PermissionDenied, status.Code(err))
 }
 
 // TestTheFirstKeyMakesWhatItNeeds, which is what `roster control key add

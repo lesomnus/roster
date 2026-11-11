@@ -5,16 +5,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/protobuf-orm/ent/dialect"
+	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
-	"github.com/lesomnus/payday/pdpb"
 	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/roster/cmd"
@@ -420,73 +419,74 @@ func TestARoleHeldThroughATeamIsStillHeld(t *testing.T) {
 	})
 }
 
-// TestABatchIsNoWayRoundTheEscalationRule.
+// TestATransactionIsNoWayRoundTheEscalationRule.
 //
-// A batch arrives as one method carrying many, and `batch.Guard` applies the
-// gate per operation -- `TestABatchIsTheSameKey` pins that half. This is the
-// other half, and it fails differently: a batch opens a **transaction**, and
+// An RPC that writes several rows as one opens a **transaction**, and
 // `enttx.Rebind` builds the whole stack again on it. A layer that cannot make
-// itself again is simply missing from the rebuilt stack, and the operations run
+// itself again is simply missing from the rebuilt stack, and the writes run
 // straight into the sink.
 //
 // Nothing about that is visible from a unit test of the layer, from the wiring,
 // or from any single-RPC call: `core` is asked on every ordinary write and the
-// suite is green. It comes apart only inside a transaction, which is a batch or
-// a multi-write RPC -- and what comes apart is not a crash but the escalation
-// rule not being asked. Alice writes the role she may not write, binds it to
-// herself, and both operations commit together.
+// suite is green. It comes apart only inside a transaction -- and what comes
+// apart is not a crash but the escalation rule not being asked. Alice writes
+// the role she may not write, binds it to herself, and both writes commit
+// together.
 //
-// So this is the escalation of `TestNobodyGrantsWhatTheyDoNotHold`, posted
-// through the one door where the rule is reassembled rather than merely called.
-func TestABatchIsNoWayRoundTheEscalationRule(t *testing.T) {
+// So this is the escalation of `TestNobodyGrantsWhatTheyDoNotHold`, posted on
+// the stack rebuilt where the rule is reassembled rather than merely called.
+func TestATransactionIsNoWayRoundTheEscalationRule(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
 	// Alice manages who is in what, and holds nothing else.
-	b.binds(t, b.ContosoUser, b.role(t, ctx, "manager",
-		addRole, addBinding, pdpb.BatchService_Do_FullMethodName), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "manager", addRole, addBinding), nil)
+	alice := b.asNobody(ctx, b.ContosoUser, b.Contoso)
 
-	conn := served(t, b.Server)
-	wire := asOverTheWire(ctx, b.ContosoUser)
-
-	op := func(method string, m proto.Message) *pdpb.Op {
-		v, err := anypb.New(m)
+	// The walled stack, rebuilt on a transaction the test opens, as an RPC of
+	// roster's own that composes writes would rebuild it.
+	in := func(write func(s app.Server) error) error {
+		drv, tx, err := dialect.BeginTx(ctx, b.Drv)
 		x.NoError(err)
+		s, err := enttx.Rebind(b.Walled, drv)
+		x.NoError(err)
+		if err := write(s); err != nil {
+			x.NoError(tx.Rollback())
+			return err
+		}
 
-		return pdpb.Op_builder{Method: method, Request: v}.Build()
+		return tx.Commit()
+	}
+	addRoleWith := func(alias string, methods ...string) func(s app.Server) error {
+		return func(s app.Server) error {
+			_, err := s.Role().Add(alice, app.RoleAddRequest_builder{
+				Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+				Alias:   alias,
+				Methods: methods,
+			}.Build())
+
+			return err
+		}
 	}
 
 	was, err := b.Ent.Role.Query().Count(ctx)
 	x.NoError(err)
 
-	// The two Rpcs `escalate.go` opens with, in one transaction.
-	_, err = pdpb.NewBatchServiceClient(conn).Do(wire, pdpb.BatchRequest_builder{
-		Ops: []*pdpb.Op{op(addRole, app.RoleAddRequest_builder{
-			Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
-			Alias:   "sneaky",
-			Methods: []string{eraseHold},
-		}.Build())},
-	}.Build())
+	// The first write `escalate.go` opens with, in a transaction.
+	err = in(addRoleWith("sneaky", eraseHold))
 	x.Equal(codes.PermissionDenied, status.Code(err),
-		"a batch wrote a role holding what its caller does not -- the layer is missing from the stack the transaction runs on")
+		"a transaction wrote a role holding what its caller does not -- the layer is missing from the stack it runs on")
 
 	// Nothing was written, which is the transaction doing its half.
 	// The roles that were there before it: the one every tenant is made with,
 	// per tenant, and whatever the harness granted.
 	n, err := b.Ent.Role.Query().Count(ctx)
 	x.NoError(err)
-	x.Equal(was, n, "the refused batch left a role behind")
+	x.Equal(was, n, "the refused transaction left a role behind")
 
-	// And what she may write, she may write in a batch -- so the refusal above
-	// is the escalation and not the batch.
-	_, err = pdpb.NewBatchServiceClient(conn).Do(wire, pdpb.BatchRequest_builder{
-		Ops: []*pdpb.Op{op(addRole, app.RoleAddRequest_builder{
-			Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
-			Alias:   "fine",
-			Methods: []string{addRole},
-		}.Build())},
-	}.Build())
-	x.NoError(err)
+	// And what she may write, she may write in a transaction -- so the refusal
+	// above is the escalation and not the transaction.
+	x.NoError(in(addRoleWith("fine", addRole)))
 }
 
 // TestNobodyGrantsAPatternWiderThanAnythingTheyHold.

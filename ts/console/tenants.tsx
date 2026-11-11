@@ -364,8 +364,8 @@ function Table(props: {
 // not already hold.
 //
 // `/roster.*/*` and not `/*.*/*`, which would take in payday's own --
-// `BatchService` is a way of calling the methods this already covers. See
-// `cmd/init.go`, which writes the same string.
+// `TokenService`, asked by a product app holding a key rather than by anybody
+// a role is written for. See `cmd/init.go`, which writes the same string.
 //
 // A line comment and not a doc block, which is not a style choice: `*/` inside
 // one ends it, and this string contains one.

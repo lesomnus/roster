@@ -26,7 +26,6 @@ import { MeService } from '#gen/app/me_pb.js'
 import { TenantService } from '#gen/roster/payday/tenant_svc_pb.js'
 import { HolderService } from '#gen/roster/payday/holder_svc_pb.js'
 import { CredentialService } from '#gen/app/credential_svc_pb.js'
-import { BatchService } from '@lesomnus/payday/pdpb'
 
 export interface App {
 	readonly tenant: Client<typeof TenantService>
@@ -40,9 +39,6 @@ export interface App {
 
 	/** What the caller is, in one round trip; see `server/me`. */
 	readonly me: Client<typeof MeService>
-
-	/** Several writes as one transaction; see `payday/batch`. */
-	readonly batch: Client<typeof BatchService>
 }
 
 export function app(transport: Transport): App {
@@ -54,7 +50,6 @@ export function app(transport: Transport): App {
 		binding: createClient(BindingService, transport),
 		apiKey: createClient(ApiKeyService, transport),
 		me: createClient(MeService, transport),
-		batch: createClient(BatchService, transport),
 	}
 }
 

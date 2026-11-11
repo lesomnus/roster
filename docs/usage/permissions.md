@@ -29,8 +29,8 @@ A pattern is evaluated rather than expanded, so two replicas on different
 versions agree about what somebody holds.
 
 `/roster.*/*` deliberately does **not** cover payday's own package —
-`BatchService` and `TokenService` are outside it. A deployment that wants those
-grants them on purpose.
+`TokenService` is outside it. A deployment that wants it grants it on
+purpose.
 
 ## What a caller may see
 

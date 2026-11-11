@@ -147,9 +147,9 @@ decision rather than a gap:
 | `AuthService` | it mints the admin console's session, and a session cookie is a browser's credential where a terminal's is a key |
 | a *service's* key over the wire | minting is granting, the grant rule reads bindings, and a key holds none. The mints for a service are `roster control key add` and a console |
 
-payday's own framework services get no `roster` command either: `TokenService/Introspect`
-is what an app calls to check a credential, and `BatchService` is the generic
-multi-write an app composes. Neither is roster's to wrap.
+payday's own framework service gets no `roster` command either:
+`TokenService/Introspect` is what an app calls to check a credential, and it
+is not roster's to wrap.
 
 ## Next
 

@@ -5,14 +5,11 @@ import (
 	"testing"
 
 	"github.com/lesomnus/z"
+	"github.com/protobuf-orm/ent/dialect"
+	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
-
-	"github.com/lesomnus/payday/auth"
-	"github.com/lesomnus/payday/pdpb"
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
@@ -20,27 +17,30 @@ import (
 	"github.com/lesomnus/roster/server/keys"
 )
 
-// An address moves inside a batch as it does outside one.
+// An address moves inside a transaction somebody else opened as it does
+// outside one.
 //
-// A batch is one transaction, and two things about the address writes did not
-// survive being put in one. `Email.Attest` wrote first and read on
+// An RPC that writes several rows as one rebinds the whole stack onto its own
+// transaction (`enttx.Rebind`), and two things about the address writes did
+// not survive being put in one. `Email.Attest` wrote first and read on
 // `AlreadyExists`, and a write the database refused ends the transaction it was
 // in -- PostgreSQL ends it at once, and payday refuses its commit on SQLite
-// (payday#128) -- so a batch could not attest an address its holder already
-// had, which is every sign-in after the first. And the two writes that move an
+// (payday#128) -- so it could not attest an address its holder already had,
+// which is every sign-in after the first. And the two writes that move an
 // address from one row to another refused outright where the stack had no
-// driver to begin a transaction on, which inside a batch it never has: it is
+// driver to begin a transaction on, which inside one it never has: it is
 // already in one. These are run on SQLite and, with `PDTEST_POSTGRES`, on
 // PostgreSQL.
 
-// batching is a front door in contoso, on the wire, sending batches.
-type batching struct {
+// transacting is a front door in contoso whose calls each run on a
+// transaction of their own, as an RPC that composes writes runs them.
+type transacting struct {
 	*built
-	ctx context.Context
-	do  func(t *testing.T, ops ...*pdpb.Op) error
+	ctx  context.Context
+	door context.Context
 }
 
-func batchingAt(t *testing.T) *batching {
+func transactingAt(t *testing.T) *transacting {
 	t.Helper()
 	b, ctx := build(t)
 
@@ -48,7 +48,7 @@ func batchingAt(t *testing.T) *batching {
 	role, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
 		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:   "front-door",
-		Methods: []string{"/roster.*/*", pdpb.BatchService_Do_FullMethodName},
+		Methods: []string{"/roster.*/*"},
 	}.Build())
 	require.NoError(t, err)
 	_, err = b.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
@@ -57,31 +57,27 @@ func batchingAt(t *testing.T) *batching {
 	}.Build())
 	require.NoError(t, err)
 
-	conn := served(t, b.Server)
-	wire := auth.PlainProvider(door.String()).Provide(ctx)
-
-	return &batching{
-		built: b,
-		ctx:   ctx,
-		do: func(t *testing.T, ops ...*pdpb.Op) error {
-			t.Helper()
-			_, err := pdpb.NewBatchServiceClient(conn).Do(wire, pdpb.BatchRequest_builder{Ops: ops}.Build())
-
-			return err
-		},
-	}
+	return &transacting{built: b, ctx: ctx, door: b.as(ctx, door, b.Contoso)}
 }
 
-func opOf(t *testing.T, method string, m proto.Message) *pdpb.Op {
+// do runs `call` on the walled stack rebound onto a transaction begun for it,
+// and commits what it wrote, or rolls back what a refusal left.
+func (b *transacting) do(t *testing.T, call func(s app.Server) error) error {
 	t.Helper()
-	v, err := anypb.New(m)
+	drv, tx, err := dialect.BeginTx(b.ctx, b.Drv)
 	require.NoError(t, err)
+	s, err := enttx.Rebind(b.Walled, drv)
+	require.NoError(t, err)
+	if err := call(s); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
 
-	return pdpb.Op_builder{Method: method, Request: v}.Build()
+	return tx.Commit()
 }
 
 // at is the row holding an address in contoso, read past the wall.
-func (b *batching) at(t *testing.T, address string) *app.Email {
+func (b *transacting) at(t *testing.T, address string) *app.Email {
 	t.Helper()
 	v, err := b.Ungated.Email().Get(b.ctx, app.EmailGetRequest_builder{
 		Ref: app.EmailRef_builder{At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: z.Ptr(address)}.Build()}.Build(),
@@ -96,22 +92,26 @@ func (b *batching) at(t *testing.T, address string) *app.Email {
 	return v
 }
 
-func TestAnAttestationIsOneOfABatch(t *testing.T) {
+func TestAnAttestationIsOneOfATransaction(t *testing.T) {
 	const (
 		theirs = "ceo@contoso.example"
 		shared = "office@contoso.example"
 	)
-	b := batchingAt(t)
+	b := transactingAt(t)
 
 	ceo := b.holder(t, b.ctx, b.Contoso, "ceo")
 	who := b.identity(t, b.ctx, ceo, "entra", "e1b2c3")
-	attest := func(address string, verified bool) *pdpb.Op {
-		return opOf(t, app.EmailService_Attest_FullMethodName, app.EmailAttestRequest_builder{
-			Holder:    app.HolderRef_builder{Id: ceo.Bytes()}.Build(),
-			Address:   z.Ptr(address),
-			VouchedBy: app.IdentityRef_builder{Id: who.GetId()}.Build(),
-			Verified:  z.Ptr(verified),
-		}.Build())
+	attest := func(address string, verified bool) func(s app.Server) error {
+		return func(s app.Server) error {
+			_, err := s.Email().Attest(b.door, app.EmailAttestRequest_builder{
+				Holder:    app.HolderRef_builder{Id: ceo.Bytes()}.Build(),
+				Address:   z.Ptr(address),
+				VouchedBy: app.IdentityRef_builder{Id: who.GetId()}.Build(),
+				Verified:  z.Ptr(verified),
+			}.Build())
+
+			return err
+		}
 	}
 
 	t.Run("an address nobody holds is written", func(t *testing.T) {
@@ -129,7 +129,7 @@ func TestAnAttestationIsOneOfABatch(t *testing.T) {
 
 		// The second sign-in, after the directory started saying it checked:
 		// the address is the holder's already, which is where the write that
-		// came first was refused and took the batch with it.
+		// came first was refused and took the transaction with it.
 		x.NoError(b.do(t, attest(theirs, true)))
 		x.NotNil(b.at(t, theirs).GetDateVerified(), "the directory's word was not written down")
 
@@ -149,19 +149,19 @@ func TestAnAttestationIsOneOfABatch(t *testing.T) {
 
 		x.NoError(b.do(t, attest(shared, true)))
 		v := b.at(t, shared)
-		x.Equal(ceo.Bytes(), v.GetHolder().GetId(), "the address did not move inside a batch")
+		x.Equal(ceo.Bytes(), v.GetHolder().GetId(), "the address did not move inside a transaction")
 		x.NotNil(v.GetDateVerified())
 		x.Equal(who.GetId(), v.GetVouchedBy().GetId())
 	})
 }
 
-// TestAClaimIsSpentInsideABatch is the other move, `Email.Confirm` spending a
-// claim: the address leaves the row that held it unproved for the claimant's,
-// in three writes that are one.
-func TestAClaimIsSpentInsideABatch(t *testing.T) {
+// TestAClaimIsSpentInsideATransaction is the other move, `Email.Confirm`
+// spending a claim: the address leaves the row that held it unproved for the
+// claimant's, in three writes that are one.
+func TestAClaimIsSpentInsideATransaction(t *testing.T) {
 	const theirs = "ceo@contoso.example"
 	x := require.New(t)
-	b := batchingAt(t)
+	b := transactingAt(t)
 
 	alice := b.holder(t, b.ctx, b.Contoso, "alice")
 	_, err := b.Ungated.Email().Add(b.ctx, app.EmailAddRequest_builder{
@@ -178,11 +178,14 @@ func TestAClaimIsSpentInsideABatch(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	x.NoError(b.do(t, opOf(t, app.EmailService_Confirm_FullMethodName,
-		app.EmailConfirmRequest_builder{Token: v.GetToken()}.Build())))
+	x.NoError(b.do(t, func(s app.Server) error {
+		_, err := s.Email().Confirm(b.door, app.EmailConfirmRequest_builder{Token: v.GetToken()}.Build())
+
+		return err
+	}))
 
 	row := b.at(t, theirs)
-	x.Equal(ceo.Bytes(), row.GetHolder().GetId(), "the claim was not spent inside a batch")
+	x.Equal(ceo.Bytes(), row.GetHolder().GetId(), "the claim was not spent inside a transaction")
 	x.NotNil(row.GetDateVerified())
 }
 

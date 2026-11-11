@@ -61,8 +61,8 @@ type Server struct {
 	Ent *ent.Client
 
 	// Drv is what the client was built on, kept because a transaction is begun
-	// on a driver and a `*ent.Client` does not hand out the one it holds. It is
-	// what `pd.Batch` puts a whole stack onto.
+	// on a driver and a `*ent.Client` does not hand out the one it holds: `init`
+	// begins its own on it, and `migrate` makes the schema on it.
 	Drv dialect.Driver
 
 	// Dialect is what that driver speaks, which `Open` worked out and nothing
@@ -1087,34 +1087,8 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// `Ungated` for the reason `vouch.Verify` uses one: this is asked before
 	// anybody has been resolved, so there is no frame to narrow by, and the row
 	// is unreadable through the wall anyway -- `ApiKeyService`'s generated reads
-	// are shut a method at a time, and closed to the batch, because its `Get`
-	// answers with the verifier.
+	// are shut a method at a time, because its `Get` answers with the verifier.
 	pdpb.RegisterTokenServiceServer(g, keys.Service(s.Ungated))
-
-	// The batch, with the same rules the chain above enforces -- read off the
-	// same configuration rather than written out again, which is the only way
-	// the two stay in step. What they enforce by looking at the method gRPC
-	// dispatched, this enforces per operation.
-	//
-	// `Closed` is replaced with the same function the chain got, and that is not
-	// tidiness: `ServerConfig.Guard` fills it from the configuration alone, so a
-	// guard left as it came would let a batch carry the credential reads that
-	// are closed everywhere else.
-	// The same policy the chain got. `batch.Guard` names it as one of the four
-	// rules a batch would otherwise reach past -- and it is not hypothetical
-	// here: a key's scope comes from the policy, so a guard without one would
-	// serve a key in a batch as a caller who may see nothing.
-	guard := c.Server.Guard(Policy(s.Ent, s.policySources...))
-	guard.Closed = s.closed(c)
-
-	if b, err := pd.Batch(s.Walled, s.Drv, guard); err == nil {
-		pdpb.RegisterBatchServiceServer(g, b)
-	} else {
-		// A deployment that closed nothing, limits nothing and has no policy.
-		// It is a real thing to be and it is also what a guard nobody filled in
-		// looks like, so the batch is not served rather than served open.
-		log.From(ctx).WarnContext(ctx, "no batch", slog.Any("err", err))
-	}
 
 	return g, nil
 }
@@ -1201,14 +1175,10 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 
 // closed is what this server does not answer at all.
 //
-// Whatever the configuration closed, and `CredentialService` on top of it. Not
-// registering it is already enough for gRPC, which dispatches by name and has
-// nothing to dispatch to -- this is for the batch, which arrives as one method
-// carrying many and would otherwise be a way to ask for exactly the reads that
-// were taken off the wire.
-//
-// So the two are one function used twice rather than two lists that agree
-// today.
+// Whatever the configuration closed, and the methods below that are shut one
+// at a time on a service that is registered for its others: a service that is
+// not registered at all needs nothing here, since gRPC dispatches by name and
+// has nothing to dispatch to.
 //
 // It is installed as **both** interceptors, in the pair `auth` is installed as
 // two lines above. Only the unary one was here, which was F10: a deployment that

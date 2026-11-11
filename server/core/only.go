@@ -66,18 +66,20 @@ import (
 //
 // # And when the caller has already arranged one
 //
-// A batch, or anything reached through a stack payday rebound onto its own
-// transaction, arrives here with no driver -- see [Core.drv] -- and then this
+// Anything reached through a stack rebound onto a transaction somebody else
+// opened -- an RPC that writes several rows as one -- arrives here with no
+// driver -- see [Core.drv] -- and then this
 // runs `fn` in what it was handed, with the swap made on that transaction
 // ([Core.tx]). That is not a weaker rule: the outer transaction is the
 // serialisation point, and the swap runs inside it against the same row.
 //
-// It said so for a while and did not: the stack a batch rebuilt had no lock,
-// so it counted and erased with nothing to contend on, and on PostgreSQL two
-// batches each removing one of somebody's two ways in left every one of forty
-// people with none. The lock is carried now ([over]), and made on the batch's
-// transaction rather than beside it, where it would have contended with
-// nothing on PostgreSQL and waited on the batch itself on SQLite.
+// It said so for a while and did not: the stack rebuilt on a transaction had
+// no lock, so it counted and erased with nothing to contend on, and on
+// PostgreSQL two transactions each removing one of somebody's two ways in left
+// every one of forty people with none. The lock is carried now ([over]), and
+// made on the outer transaction rather than beside it, where it would have
+// contended with nothing on PostgreSQL and waited on that transaction itself
+// on SQLite.
 //
 // `fn` is handed the transaction it runs in beside the server, for a caller
 // that rebuilds this layer over it ([over]); nil is none, on a stack built

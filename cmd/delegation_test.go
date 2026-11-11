@@ -6,15 +6,17 @@ import (
 	"time"
 
 	"github.com/lesomnus/z"
+	"github.com/protobuf-orm/ent/dialect"
+	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/auth"
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdpb"
 
@@ -327,13 +329,13 @@ func TestNothingMintsADelegationThatOpensNoDoor(t *testing.T) {
 // where they are signed in is a read of these rows and a curated copy on
 // `MeService.Get` would have been a second name for them. What makes that safe
 // is the layer roster already has for every `(payday.field).secret`: the sink
-// strips it on the way out, on the direct road and through a batch alike, so
-// a caller asking for **everything** gets a row with no token in it. The
+// strips it on the way out, on the direct road and on a stack rebuilt on a
+// transaction alike, so a caller asking for **everything** gets a row with no
+// token in it. The
 // stronger statement is the one this keeps: the hash is in the store and never
 // in an answer.
 func TestADelegationsTokenIsNotOnTheWire(t *testing.T) {
-	b := keyFor(t, "/roster.DelegationService/Get", "/roster.DelegationService/Add",
-		pdpb.BatchService_Do_FullMethodName)
+	b := keyFor(t, "/roster.DelegationService/Get", "/roster.DelegationService/Add")
 	ctx := t.Context()
 
 	_, v, err := keys.Delegate(ctx, b.Ungated, keys.Delegated{
@@ -364,24 +366,23 @@ func TestADelegationsTokenIsNotOnTheWire(t *testing.T) {
 		x.Equal([]string{verify}, got.GetMethods(), "the rest of the row did not come")
 	})
 
-	t.Run("and a batch strips it the same way", func(t *testing.T) {
+	t.Run("and a stack rebuilt on a transaction strips it the same way", func(t *testing.T) {
 		x := require.New(t)
 
-		req, err := anypb.New(app.DelegationGetRequest_builder{
+		drv, tx, err := dialect.BeginTx(ctx, b.Drv)
+		x.NoError(err)
+		defer tx.Rollback()
+		rebound, err := enttx.Rebind(b.Walled, drv)
+		x.NoError(err)
+
+		as := frame.Into(ctx, frame.New(b.Who, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
+		got, err := rebound.Delegation().Get(as, app.DelegationGetRequest_builder{
 			Ref:    app.DelegationRef_builder{Id: v.GetId()}.Build(),
 			Select: app.DelegationSelect_builder{All: z.Ptr(true)}.Build(),
 		}.Build())
-		x.NoError(err)
-
-		res, err := pdpb.NewBatchServiceClient(b.Conn).Do(bearing(ctx, b.Token),
-			pdpb.BatchRequest_builder{
-				Ops: []*pdpb.Op{pdpb.Op_builder{
-					Method:  app.DelegationService_Get_FullMethodName,
-					Request: req,
-				}.Build()},
-			}.Build())
-		x.NoError(err, "a batch could not read what the wire serves")
-		x.NotContains(res.String(), string(row.GetSecret()), "the verifier left the store through a batch")
+		x.NoError(err, "a stack rebuilt on a transaction could not read what the wire serves")
+		x.Empty(got.GetSecret(), "the verifier left the store through a stack rebuilt on a transaction")
+		x.Equal([]string{verify}, got.GetMethods(), "the rest of the row did not come")
 	})
 
 	t.Run("and a caller-chosen token is still refused", func(t *testing.T) {

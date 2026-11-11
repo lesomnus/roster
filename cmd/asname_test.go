@@ -647,7 +647,7 @@ func TestAnIdentifierNamesOnlyItsOwnKind(t *testing.T) {
 //
 // It was closed at the transport the whole time -- `/Patch` is a general write
 // and roster opens none -- which is why nothing had noticed, and is not a
-// reason to leave a column a batch or the servers' own writes reach by another
+// reason to leave a column the servers' own writes reach by another
 // road. The schema is where it is said, and the assertion is that it is not a
 // field at all rather than that some layer refuses it.
 func TestAStampIsNotAFieldACallerWrites(t *testing.T) {
