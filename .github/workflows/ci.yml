@@ -602,14 +602,33 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Pushed by buildx itself rather than by bake-action, so that a push
+      # GHCR refuses is tried again. It has answered `permission_denied:
+      # write_package` right after a login that succeeded -- twice on loft's
+      # `main` in one week, and a rerun passed each time. Three tries, 10 s and
+      # then 30 s apart, each failure said, and the step fails only when all
+      # three do. A try again is the same build and push: copies onto a base out
+      # of `./dist`, so seconds, and the manifests and blobs a refused try left
+      # are what the next one writes. The metadata is what bake-action would
+      # have handed the steps below.
       - name: Build
         id: build
-        uses: docker/bake-action@59cb1203cd42bcefd40a1b6d73b589e48c86040e # v7.5.0
-        with:
-          source: .
-          files: docker-bake.hcl
-          targets: app
-          push: true
+        run: |
+          meta="${RUNNER_TEMP}/bake-metadata.json"
+          try=1
+          for wait in 10 30 ''; do
+            if docker buildx bake --file docker-bake.hcl --metadata-file "${meta}" --push app; then
+              echo "metadata=$(jq -c . "${meta}")" >>"${GITHUB_OUTPUT}"
+              exit 0
+            fi
+            if [ -z "${wait}" ]; then
+              echo "::error title=push::try ${try} of 3 failed, and it was the last"
+              exit 1
+            fi
+            echo "::warning title=push::try ${try} of 3 failed; trying again in ${wait}s"
+            sleep "${wait}"
+            try=$((try + 1))
+          done
 
       # What was pushed, said once, rather than left for somebody to ask the
       # registry what a moving tag points at now. `:edge` moves; the digest is
