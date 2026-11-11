@@ -323,9 +323,9 @@ jobs:
       - name: this build, the one it comes after, and the oldest a deployment runs
         env:
           BEFORE: ${{ github.event.pull_request.base.sha || github.event.before }}
-          # Staging's, 72ea04a: the first build of compatibility epoch 1 that
-          # staging runs (2026-11-11).
-          OLDEST: 72ea04aa5bedb4f222a0b0dcca1edfe6b76f2cdd
+          # The build staging runs, 1bcd27a (2026-11-11). It moves when staging
+          # moves: to what staging runs once it runs it.
+          OLDEST: 1bcd27a89c854ef1382ba7f0831ee385a9ecf93d
         run: |
           go build -o "${RUNNER_TEMP}/bin-now/" ./cmd/roster
           # epoch TREE: the compatibility epoch TREE is of, and 0 for a tree
