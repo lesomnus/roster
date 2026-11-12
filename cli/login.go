@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -889,7 +888,7 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 	}
 	defer a.Close()
 
-	l, err := net.Listen("tcp", lc.Addr)
+	l, err := cmd.Listen(ctx, lc.Addr)
 	if err != nil {
 		return err
 	}

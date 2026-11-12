@@ -1571,7 +1571,7 @@ func (s *Server) serveControl(ctx context.Context, c Config, g *grpc.Server) (fu
 		return func() {}, nil
 	}
 
-	l, err := net.Listen("tcp", c.Control.Addr)
+	l, err := Listen(ctx, c.Control.Addr)
 	if err != nil {
 		return nil, err
 	}
@@ -1593,7 +1593,7 @@ func (s *Server) serveAdmin(ctx context.Context, c Config, g *grpc.Server) (func
 		return func() {}, nil
 	}
 
-	l, err := net.Listen("tcp", c.Admin.Addr)
+	l, err := Listen(ctx, c.Admin.Addr)
 	if err != nil {
 		return nil, err
 	}
@@ -1733,7 +1733,7 @@ func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *
 		mount(h)
 	}
 
-	l, err := net.Listen("tcp", c.Addr)
+	l, err := Listen(ctx, c.Addr)
 	if err != nil {
 		return nil, err
 	}

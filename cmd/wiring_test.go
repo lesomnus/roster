@@ -5,10 +5,13 @@ import (
 	"context"
 	"errors"
 	"github.com/lesomnus/roster/cli"
+	"io"
 	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -285,23 +288,22 @@ func TestServeStopsOnSigterm(t *testing.T) {
 		t.Fatalf("go build: %v\n%s", err, out)
 	}
 
-	// A port of its own, taken and released, so two tests running at once do
-	// not collide. `:0` on the server itself would be tidier and the address it
-	// picked is only in a log line this deployment does not print.
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	x.NoError(err)
-	addr := l.Addr().String()
-	x.NoError(l.Close())
-
 	// A run directory of its own: the loader reads `roster.yaml` from the
 	// working directory, and the repository has one.
 	run := filepath.Join(dir, "run")
 	x.NoError(os.Mkdir(run, 0o755))
 
+	// Port 0, so the process binds whatever is free and nothing else can be
+	// given its port first, and the address it got is read off the line it
+	// says it on (`grpc`, in `cli/serve.go`). A port picked here and let go of
+	// was free until the process bound it: a test beside this one was given it
+	// first, and this one dialed that test's listener, called it ready, and
+	// signalled a process that had already died of `address already in use`.
+	out := &said{}
 	proc := exec.Command(bin, "serve")
 	proc.Dir = run
-	proc.Stdout = os.Stderr
-	proc.Stderr = os.Stderr
+	proc.Stdout = io.MultiWriter(os.Stderr, out)
+	proc.Stderr = io.MultiWriter(os.Stderr, out)
 	proc.Env = []string{
 		"PATH=" + os.Getenv("PATH"),
 		"ROSTER_DB_DRIVER=sqlite3",
@@ -309,7 +311,7 @@ func TestServeStopsOnSigterm(t *testing.T) {
 		"ROSTER_DB_MIGRATE=true",
 		"ROSTER_WATCH_BROKER=memory",
 		"ROSTER_SPIN_LEASE=local",
-		"ROSTER_SERVER_ADDR=" + addr,
+		"ROSTER_SERVER_ADDR=127.0.0.1:0",
 	}
 	x.NoError(proc.Start())
 
@@ -324,6 +326,10 @@ func TestServeStopsOnSigterm(t *testing.T) {
 	// waited for: a SIGTERM that arrives before the handler is installed would
 	// pass this test for the wrong reason.
 	x.Eventually(func() bool {
+		addr := out.grpc()
+		if addr == "" {
+			return false
+		}
 		c, err := net.DialTimeout("tcp", addr, time.Second)
 		if err != nil {
 			return false
@@ -346,6 +352,34 @@ func TestServeStopsOnSigterm(t *testing.T) {
 	case <-time.After(30 * time.Second):
 		t.Fatal("SIGTERM was ignored: the process is still running")
 	}
+}
+
+// said is what a process printed, read while it is still printing.
+type said struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (s *said) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.b.Write(p)
+}
+
+// grpcAt finds the line `serve` says where its gRPC listener is on.
+var grpcAt = regexp.MustCompile(`\bgrpc\b.*\baddr=(\S+)`)
+
+// grpc is the address the process said its gRPC listener got, or nothing yet.
+func (s *said) grpc() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if m := grpcAt.FindSubmatch(s.b.Bytes()); m != nil {
+		return string(m[1])
+	}
+
+	return ""
 }
 
 // TestServeRefusesAControlPlaneItWasNotAllowedToMigrate is the wiring, rather
@@ -380,11 +414,6 @@ func TestServeRefusesAControlPlaneItWasNotAllowedToMigrate(t *testing.T) {
 	run := filepath.Join(dir, "run")
 	x.NoError(os.Mkdir(run, 0o755))
 
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	x.NoError(err)
-	addr := l.Addr().String()
-	x.NoError(l.Close())
-
 	proc := exec.Command(bin, "serve")
 	proc.Dir = run
 
@@ -398,7 +427,9 @@ func TestServeRefusesAControlPlaneItWasNotAllowedToMigrate(t *testing.T) {
 		"ROSTER_DB_MIGRATE=true",
 		"ROSTER_WATCH_BROKER=memory",
 		"ROSTER_SPIN_LEASE=local",
-		"ROSTER_SERVER_ADDR=" + addr,
+		// Port 0: nothing dials it, and a port picked here would be one a test
+		// beside this one could take before the process binds it.
+		"ROSTER_SERVER_ADDR=127.0.0.1:0",
 
 		// A control plane on its own empty database, told not to migrate.
 		"ROSTER_CONTROL_DB_DRIVER=sqlite3",
