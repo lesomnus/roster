@@ -102,6 +102,11 @@ for bin in k3d docker; do
 done
 
 work="$(mktemp -d)"
+# The kubeconfig k3d calls its default, which is this run's own: `cluster
+# delete` rewrites whichever file that is, and on a desk the one it would find
+# is somebody's real clusters. `kube` has its own (below), and `--hold` says how
+# to get one.
+export KUBECONFIG="${work}/k3d.yaml"
 # What the containers read, and **not a bind mount**: the engine may be
 # somewhere else, so a path from this checkout means nothing to it -- only
 # `/workspaces` does, and hardcoding that would break everywhere else. A volume
@@ -265,10 +270,12 @@ product() {
 echo "== from nothing"
 k3d cluster delete "${CLUSTER}" >/dev/null 2>&1 || true
 # No load balancer and no Traefik: nothing here is reached from outside the
-# cluster's network, and the ingress is the next commit's problem.
+# cluster's network, and the ingress is the next commit's problem. And nothing
+# written to a desk's own kubeconfig: see `KUBECONFIG` above.
 k3d cluster create "${CLUSTER}" --servers 1 --agents 0 --no-lb \
 	--k3s-arg "--disable=traefik@server:0" \
 	--k3s-arg "--disable=metrics-server@server:0" \
+	--kubeconfig-update-default=false \
 	--wait >/dev/null
 
 # The in-network address, because the published one is on the engine's host.
