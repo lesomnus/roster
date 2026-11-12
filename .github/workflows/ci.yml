@@ -487,7 +487,11 @@ jobs:
         with:
           name: dist
       - run: mkdir dist && tar -xf dist.tar -C dist
+      # Every step from here that waits on somebody else has a limit of its own,
+      # well under the job's -- because the job's is the limit that loses the log
+      # (`scripts/cluster.sh`, "And nothing waits without a bound").
       - run: docker buildx bake -f docker-bake.hcl --set '*.platform=linux/amd64' --set app.tags=roster-app --load app dev
+        timeout-minutes: 10
         env:
           DIST: ./dist
       # Pinned, because a cluster that comes up differently next month is a red
@@ -495,18 +499,39 @@ jobs:
       # its checksums say, rather than the installer, which is read from `main`
       # and fetched the binary with no second attempt. GitHub's releases answer
       # 504 for minutes at a time, so it is asked again (loft#311's `cluster`
-      # died on one).
+      # died on one) -- and each attempt is bounded too, since a retry is never
+      # reached by a download that stalls rather than fails.
       - name: k3d
+        timeout-minutes: 5
         run: |
           mkdir -p "${RUNNER_TEMP}/bin"
-          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 -o "${RUNNER_TEMP}/bin/k3d" https://github.com/k3d-io/k3d/releases/download/v5.9.0/k3d-linux-amd64
+          curl -fsSL --connect-timeout 10 --max-time 120 --retry 5 --retry-all-errors --retry-delay 2 -o "${RUNNER_TEMP}/bin/k3d" https://github.com/k3d-io/k3d/releases/download/v5.9.0/k3d-linux-amd64
           echo "06d8f25bc3a971c4eb29e0ff08429b180402db0f4dec838c9eac427e296800a0  ${RUNNER_TEMP}/bin/k3d" | sha256sum -c -
           chmod +x "${RUNNER_TEMP}/bin/k3d"
           echo "${RUNNER_TEMP}/bin" >> "${GITHUB_PATH}"
+      # Twenty minutes: the script's own fifteen (`CLUSTER_BUDGET`), after which it
+      # stops itself and says why, and five for saying it and tearing down. This
+      # limit is for whatever the script could not stop.
       - run: ./scripts/cluster.sh
+        timeout-minutes: 20
         env:
           ROSTER_APP_IMAGE: roster-app
           ROSTER_DEV_IMAGE: roster-dev
+      # What the machine, the engine and the cluster were doing when a step above
+      # went out red -- above all when it was the script, stopped at its limit,
+      # which ends it before its own `cleanup` can say anything. Then the
+      # kernel's ring, where an OOM kill or a hung task would be and which the
+      # script cannot read without root. And then the cluster goes, so that
+      # whatever it was holding is the runner's again before the job's own
+      # cleanup: the runs that hung could not even finish that, and kept no log.
+      - name: what the cluster was doing
+        if: failure()
+        timeout-minutes: 5
+        run: |
+          ./scripts/cluster.sh --state || true
+          echo "-- the kernel"
+          sudo dmesg -T 2>&1 | tail -n 60 || true
+          timeout 120 k3d cluster delete roster-e2e >/dev/null 2>&1 || true
 
   # The image, last, and only after everything above is green.
   #
