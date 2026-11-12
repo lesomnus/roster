@@ -307,9 +307,12 @@ section.
 
 ## Taking away is held the other way round
 
-A narrowing hands nobody anything, so it is not asked what you could grant of
-what it leaves -- that was granted when it was written. It is asked about what
-it takes:
+A narrowing hands nobody anything, and neither does erasing a binding, a role, a
+group, or somebody's place in a group or a team -- so none of them is asked what
+you could grant of what is left. Each is asked about what it takes, at the scope
+it was given at: the binding's role where the binding was made, a role's methods
+where it may be bound, a group's bindings each where it was made (and a
+manager's role, across the tenant), a team's role at the team's site:
 
 ```
 methods: you do not hold /roster.HolderService/Erase here, so you may not take it away
@@ -318,25 +321,36 @@ methods: you do not hold /roster.HolderService/Erase here, so you may not take i
 Nobody takes away what they could not have given. What somebody holds is also
 what keeps others out of their account -- you may write somebody's credential
 only if they hold nothing you do not (below) -- so somebody who could strip an
-administrator's role below their own could then reset the administrator's
-password. Taking only what you hold leaves everybody holding at least what you
-do not.
+administrator below their own could then reset the administrator's password.
+Taking only what you hold leaves everybody holding at least what you do not. A
+tenant's administrator holds what the tenant was given, and a group's manager
+holds what their group is bound to by being in it, so it asks nothing of either.
 
-And one rule about the tenant rather than the caller: a narrowing that takes
-`/roster.*/*` from the last person holding it across the tenant -- somebody
-there and not suspended, through a binding with no site, to them or to a group
-they are in -- is refused, since nobody in the tenant could put it back:
+Suspending somebody is not a taking away: their bindings stay, so everything
+above still sees what they hold, and somebody on call has to be able to suspend
+a compromised account wider than they are.
+
+And one rule about the tenant rather than the caller: no write leaves it with
+nobody administering it. Somebody administers a tenant when they are there and
+not suspended, and hold `/roster.*/*` through a binding with no site, to them
+or to a group they are in; a write that takes that from the last of them is
+refused, since nobody in the tenant could put it back --
 
 ```
 methods: taking /roster.*/* out of everything leaves nobody administering the tenant -- …
+ref: erasing role everything leaves nobody administering the tenant -- …
 ```
 
-Give it to somebody else first. It is about the write and nothing else: an
-administrator may narrow away their own administration while somebody else
-keeps theirs, and a tenant nobody administers across the whole of it is not
-refused for it. Two narrowings at once each wait for the other, so they cannot
-both take the last. A command at the box is the deployment's, and is not held
-to it.
+-- whichever way it would: narrowing the role, erasing it, unbinding it,
+erasing the group it is bound to or somebody's place in it, or suspending or
+erasing the person. Give it to somebody else first. It is about the write and
+nothing else: an administrator may give up their own administration while
+somebody else keeps theirs, and a tenant nobody administers across the whole of
+it is not refused anything for it. Two such writes at once each wait for the
+other, so they cannot both take the last. A command at the box is the
+deployment's, and is not held to it; nor is a directory suspending somebody it
+removed (`HolderService/Deactivate`), whose word about who works there is not
+refused.
 
 ## And you cannot write a way into an account wider than yours
 

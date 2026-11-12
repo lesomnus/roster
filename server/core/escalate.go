@@ -83,13 +83,13 @@ import (
 // wire and is not in that list because it is not a write of its own: it is a
 // `Role.Patch` this layer makes, and meets the rule there (`widen.go`).
 //
-// Taking away is not a grant, and `Role.Narrow` is not held to this. It is held
-// to its mirror -- nobody takes away what they could not have given,
-// [Core.mayTakeAway] -- because what somebody holds is also what keeps them out
-// of [Core.mayReach]: stripped below the caller, an administrator is somebody
-// the caller may become (`narrow.go`). The other writes that take away --
-// `Binding.Erase`, a membership erased, `Holder.Disable` -- are held to neither
-// yet, which `docs/roadmap.md` keeps open.
+// Taking away is not a grant, and the writes that do it are not held to this.
+// They are held to its mirror -- nobody takes away what they could not have
+// given, [Core.mayTakeAway] -- because what somebody holds is also what keeps
+// them out of [Core.mayReach]: stripped below the caller, an administrator is
+// somebody the caller may become. `Role.Narrow` (`narrow.go`), and an erased
+// binding, role, group, or place in a group or a team (`takeaway.go`).
+// Suspending somebody takes no row away and is not (D26).
 //
 // The `Patch`es are checked **here as well**, and that is worth being exact
 // about because this paragraph was wrong twice.

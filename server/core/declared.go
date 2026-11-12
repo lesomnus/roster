@@ -221,34 +221,10 @@ func (s coreMailDomain) Erase(ctx context.Context, req *app.MailDomainRef) (*app
 	return s.MailDomainServiceServer.Erase(ctx, req)
 }
 
-func (s coreHolder) Erase(ctx context.Context, req *app.HolderRef) (*app.HolderEraseResponse, error) {
-	if err := s.declaredHolder(ctx, req); err != nil {
-		return nil, err
-	}
-
-	return s.HolderServiceServer.Erase(ctx, req)
-}
-
-func (s coreRole) Erase(ctx context.Context, req *app.RoleRef) (*app.RoleEraseResponse, error) {
-	if err := s.declaredRole(ctx, req); err != nil {
-		return nil, err
-	}
-
-	return s.RoleServiceServer.Erase(ctx, req)
-}
-
 func (s coreBinding) Patch(ctx context.Context, req *app.BindingPatchRequest) (*app.Binding, error) {
 	if err := s.declaredBinding(ctx, req.GetRef()); err != nil {
 		return nil, err
 	}
 
 	return s.BindingServiceServer.Patch(ctx, req)
-}
-
-func (s coreBinding) Erase(ctx context.Context, req *app.BindingRef) (*app.BindingEraseResponse, error) {
-	if err := s.declaredBinding(ctx, req); err != nil {
-		return nil, err
-	}
-
-	return s.BindingServiceServer.Erase(ctx, req)
 }

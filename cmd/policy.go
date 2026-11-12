@@ -294,6 +294,17 @@ func (h held) allows(method string) bool {
 	return false
 }
 
+// live loads a role only while it is there: an erased role grants nothing.
+//
+// It did, until the writes that take a role away were looked at (loft#341):
+// a role's row carries its erasure, and a binding, a membership or a team's
+// role reached through an edge loaded the role whatever its `date_erased`
+// said -- so erasing a role in a console took nothing from anybody it was
+// bound to. Every load of a role here is one of
+// these, so that the gate and every rule that reads what somebody holds agree
+// that an erased role is gone.
+func live(q *ent.RoleQuery) { q.Where(entrole.DateErasedIsNil()) }
+
 // groupRoles is the roles somebody holds in the groups they are in: what makes
 // them a manager of each, and one row per group, held or not.
 func groupRoles(ctx context.Context, db *ent.Client, who uuid.UUID) ([]*ent.Role, error) {
@@ -302,9 +313,9 @@ func groupRoles(ctx context.Context, db *ent.Client, who uuid.UUID) ([]*ent.Role
 			groupmembership.DateErasedIsNil(),
 			groupmembership.HasHolderWith(holder.IdEQ(who)),
 			groupmembership.HasGroupWith(group.DateErasedIsNil()),
-			groupmembership.HasRole(),
+			groupmembership.HasRoleWith(entrole.DateErasedIsNil()),
 		).
-		WithRole().
+		WithRole(live).
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -357,7 +368,7 @@ func bindingsReaching(ctx context.Context, db *ent.Client, who uuid.UUID) ([]*en
 		)
 	}
 
-	return q.WithRole().WithSite().All(ctx)
+	return q.WithRole(live).WithSite().All(ctx)
 }
 
 // of reads the bindings a holder has, by being them or by being in a group.
@@ -383,7 +394,7 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 			teammembership.DateErasedIsNil(),
 			teammembership.HasHolderWith(holder.IdEQ(who)),
 		).
-		WithRole().
+		WithRole(live).
 		WithTeam(func(q *ent.TeamQuery) { q.WithSite() }).
 		All(ctx)
 	if err != nil {
@@ -427,10 +438,13 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 	}
 
 	for _, v := range vs {
-		if v.Edges.Role != nil {
-			for _, m := range v.Edges.Role.Methods {
-				h.methods[m] = struct{}{}
-			}
+		if v.Edges.Role == nil {
+			// A binding of a role that was erased, which grants nothing --
+			// not even the sight of the site it was made in.
+			continue
+		}
+		for _, m := range v.Edges.Role.Methods {
+			h.methods[m] = struct{}{}
 		}
 
 		if v.Edges.Site == nil {
@@ -728,7 +742,7 @@ func Joining(db *ent.Client) core.Joining {
 				binding.DateErasedIsNil(),
 				binding.HasGroupWith(group.IdEQ(id.Uuid()), group.DateErasedIsNil()),
 			).
-			WithRole().
+			WithRole(live).
 			WithSite().
 			All(ctx)
 		if err != nil {
@@ -771,7 +785,7 @@ func Holding(db *ent.Client, sources ...rbac.Source) core.Holding {
 				teammembership.DateErasedIsNil(),
 				teammembership.HasHolderWith(holder.IdEQ(who.Uuid())),
 			).
-			WithRole().
+			WithRole(live).
 			All(ctx)
 		if err != nil {
 			return nil, err
@@ -877,7 +891,7 @@ func Holds(db *ent.Client, sources ...rbac.Source) core.Holds {
 					groupmembership.HasHolderWith(holder.IdEQ(who.Uuid())),
 					groupmembership.HasGroupWith(group.IdEQ(scope.Uuid()), group.DateErasedIsNil()),
 				).
-				WithRole().
+				WithRole(live).
 				All(ctx)
 			if err != nil {
 				return false, err
@@ -897,7 +911,7 @@ func Holds(db *ent.Client, sources ...rbac.Source) core.Holds {
 				teammembership.HasHolderWith(holder.IdEQ(who.Uuid())),
 				teammembership.HasTeamWith(entteam.IdEQ(scope.Uuid())),
 			).
-			WithRole().
+			WithRole(live).
 			All(ctx)
 		if err != nil {
 			return false, err

@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	"github.com/lesomnus/protobuf-patch/patch"
-	"github.com/protobuf-orm/ent/dialect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -36,7 +35,7 @@ import (
 //     taking only what they hold, the caller leaves everybody holding at least
 //     what the caller does not -- and so leaves them out of reach.
 //   - **A declared role is nobody's to narrow**, as it is nobody's to widen.
-//   - **A tenant keeps somebody administering it** ([coreRole.keepsItsOwn]).
+//   - **A tenant keeps somebody administering it** (`administered.go`).
 //
 // What it does not have is a version from the caller. Taking out is the same
 // whichever order two writes land in, so it reads the role, works out what is
@@ -107,73 +106,13 @@ func (s coreRole) Narrow(ctx context.Context, req *app.RoleNarrowRequest) (*app.
 		"the role changed each of the %d times it was read, so nothing was taken out; ask again", widenTries)
 }
 
-// keepsItsOwn writes `left` into the role it was read as, and refuses it when
-// that would leave the tenant with nobody administering it: nobody there and
-// not suspended who holds [EveryMethod] across the whole tenant -- what the
-// tenant was made with ([coreTenant.Add]), and what puts anything back. Without
-// it, putting a tenant right is the deployment operator's, at the box.
-//
-// # The rule, exactly
-//
-// A narrowing is refused when the role covered [EveryMethod] and what is left
-// does not, somebody administered the tenant before it, and nobody does after
-// it ([Rules.Administered]: through a binding with no site, to them or to a
-// group they are in). So it is about this write and nothing else: a tenant that
-// had nobody administering it is not refused a narrowing for it, a role that
-// never covered it narrows as freely as any, and an administrator may narrow
-// away their own administration while somebody else keeps theirs.
-//
-// The deployment's own work is not held to it -- a command at the box, the
-// operators' port -- because that is who puts a tenant right, and a tenant
-// locked out by an operator is one an operator meant.
-//
-// # Counted where two narrowings cannot both count
-//
-// It is a count of other rows, [Core.only]'s case: two administrators each
-// narrowing one of the last two roles that administer a tenant would each see
-// the other's still there, and both go through. So it is counted in one
-// transaction with the write, after a write on the **tenant's** row that every
-// such narrowing takes first ([Lock]), and asked about that transaction's own
-// rows -- before the write, and after it.
+// keepsItsOwn writes `left` into the role it was read as, held to a tenant
+// keeping somebody administering it (`administered.go`) when the role covered
+// [EveryMethod] and what is left does not.
 //
 // It answers whether the write was refused for a version that moved, which is
 // read again rather than answered.
 func (s coreRole) keepsItsOwn(ctx context.Context, got *app.Role, left []string) (*app.Role, bool, error) {
-	write := func(ctx context.Context, sv app.RoleServiceServer) (*app.Role, bool, error) {
-		values := make([]patch.Value, len(left))
-		for i, m := range left {
-			values[i] = patch.Str(m)
-		}
-		doc, err := patch.New(string((&app.Role{}).ProtoReflect().Descriptor().FullName()),
-			patch.Target(patch.Name("date_updated")).Test(stamp(got.GetDateUpdated())),
-			patch.Target(patch.Name("methods")).Assign(patch.List(values...)),
-		)
-		if err != nil {
-			return nil, false, err
-		}
-
-		v, err := sv.Apply(ctx, app.RoleApplyRequest_builder{
-			Ref:   app.RoleRef_builder{Id: got.GetId()}.Build(),
-			Patch: doc,
-		}.Build())
-		if status.Code(err) == codes.FailedPrecondition {
-			return nil, true, err
-		}
-
-		return v, false, err
-	}
-
-	covered := func(ms []string) bool {
-		return slices.ContainsFunc(ms, func(m string) bool { return frame.Covers(m, EveryMethod) })
-	}
-	if s.deployment(ctx) || !covered(got.GetMethods()) || covered(left) {
-		return write(ctx, s.RoleServiceServer)
-	}
-	if s.rules.Administered == nil {
-		return nil, false, status.Errorf(codes.PermissionDenied,
-			"methods: this server cannot say who else administers the tenant, so it will not take %s out of a role", EveryMethod)
-	}
-
 	tenant, err := pdid.From(got.GetTenant().GetId())
 	if err != nil {
 		return nil, false, err
@@ -183,26 +122,27 @@ func (s coreRole) keepsItsOwn(ctx context.Context, got *app.Role, left []string)
 		v     *app.Role
 		moved bool
 	)
-	err = s.only(ctx, tenant.Bytes(), func(next app.Server, tx dialect.Driver) error {
-		before, err := s.rules.Administered(ctx, tx, tenant, EveryMethod)
+	could := administers(got.GetMethods()) && !administers(left)
+	err = s.keepsAdministered(ctx, tenant, could, "taking "+EveryMethod+" out of "+got.GetAlias(), func(next app.Server) error {
+		values := make([]patch.Value, len(left))
+		for i, m := range left {
+			values[i] = patch.Str(m)
+		}
+		doc, err := patch.New(string((&app.Role{}).ProtoReflect().Descriptor().FullName()),
+			patch.Target(patch.Name("date_updated")).Test(stamp(got.GetDateUpdated())),
+			patch.Target(patch.Name("methods")).Assign(patch.List(values...)),
+		)
 		if err != nil {
 			return err
-		}
-		if v, moved, err = write(ctx, next.Role()); err != nil {
-			return err
-		}
-		after, err := s.rules.Administered(ctx, tx, tenant, EveryMethod)
-		if err != nil {
-			return err
-		}
-		if before && !after {
-			return status.Errorf(codes.FailedPrecondition,
-				"methods: taking %s out of %s leaves nobody administering the tenant -- nobody there and not suspended "+
-					"holds it across the whole tenant any more, so nobody in it could put it back. "+
-					"Bind it to somebody else first", EveryMethod, got.GetAlias())
 		}
 
-		return nil
+		v, err = next.Role().Apply(ctx, app.RoleApplyRequest_builder{
+			Ref:   app.RoleRef_builder{Id: got.GetId()}.Build(),
+			Patch: doc,
+		}.Build())
+		moved = status.Code(err) == codes.FailedPrecondition
+
+		return err
 	})
 	if moved {
 		return nil, true, err

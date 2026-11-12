@@ -2,12 +2,14 @@ package core
 
 import (
 	"context"
+	"slices"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/z"
 
 	app "github.com/lesomnus/roster/rstr"
 )
@@ -186,8 +188,11 @@ func (s coreTeamMembership) Patch(ctx context.Context, req *app.TeamMembershipPa
 // comment there is the long version.
 func (s coreTeamMembership) Erase(ctx context.Context, req *app.TeamMembershipRef) (*app.TeamMembershipEraseResponse, error) {
 	v, err := s.Next().TeamMembership().Get(ctx, app.TeamMembershipGetRequest_builder{
-		Ref:    req,
-		Select: app.TeamMembershipSelect_builder{Team: app.TeamSelect_builder{}.Build()}.Build(),
+		Ref: req,
+		Select: app.TeamMembershipSelect_builder{
+			Team: app.TeamSelect_builder{Site: app.SiteSelect_builder{}.Build()}.Build(),
+			Role: app.RoleSelect_builder{Methods: z.Ptr(true)}.Build(),
+		}.Build(),
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -200,6 +205,17 @@ func (s coreTeamMembership) Erase(ctx context.Context, req *app.TeamMembershipRe
 	err = s.mayChangeTeam(ctx, app.TeamMembershipService_Erase_FullMethodName,
 		app.TeamRef_builder{Id: v.GetTeam().GetId()}.Build())
 	if err != nil {
+		return nil, err
+	}
+
+	// And what the role held there gave them, which `Add` asked `mayGrant`
+	// about at the team's site (`takeaway.go`). A team's role is never held
+	// across the tenant, so nothing about who administers it changes here.
+	at, err := idOr(v.GetTeam().GetSite().GetId())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayTakeAway(ctx, "ref", v.GetRole().GetMethods(), at); err != nil {
 		return nil, err
 	}
 
@@ -337,8 +353,11 @@ func (s coreGroupMembership) Patch(ctx context.Context, req *app.GroupMembership
 // `{erased: false}`, for [coreTeamMembership.Erase]'s reason.
 func (s coreGroupMembership) Erase(ctx context.Context, req *app.GroupMembershipRef) (*app.GroupMembershipEraseResponse, error) {
 	v, err := s.Next().GroupMembership().Get(ctx, app.GroupMembershipGetRequest_builder{
-		Ref:    req,
-		Select: app.GroupMembershipSelect_builder{Group: app.GroupSelect_builder{}.Build()}.Build(),
+		Ref: req,
+		Select: app.GroupMembershipSelect_builder{
+			Group: app.GroupSelect_builder{Alias: z.Ptr(true), Tenant: app.TenantSelect_builder{}.Build()}.Build(),
+			Role:  app.RoleSelect_builder{Methods: z.Ptr(true)}.Build(),
+		}.Build(),
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -354,7 +373,38 @@ func (s coreGroupMembership) Erase(ctx context.Context, req *app.GroupMembership
 		return nil, err
 	}
 
-	return s.GroupMembershipServiceServer.Erase(ctx, req)
+	// And what being in it gave them -- the group's bindings, each at its
+	// scope, and a manager's role -- which nobody takes away who could not
+	// have given it (`takeaway.go`); and the tenant's administration, when
+	// the group carries it.
+	group, err := pdid.From(v.GetGroup().GetId())
+	if err != nil {
+		return nil, err
+	}
+	gs, err := s.grantsOfGroup(ctx, group)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayTakeAll(ctx, "ref", gs); err != nil {
+		return nil, err
+	}
+	if err := s.mayTakeAway(ctx, "ref", v.GetRole().GetMethods(), pdid.Nil); err != nil {
+		return nil, err
+	}
+	tenant, err := pdid.From(v.GetGroup().GetTenant().GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	var out *app.GroupMembershipEraseResponse
+	err = s.keepsAdministered(ctx, tenant, grantsAdministration(gs), "taking them out of group "+v.GetGroup().GetAlias(), func(next app.Server) error {
+		var err error
+		out, err = next.GroupMembership().Erase(ctx, req)
+
+		return err
+	})
+
+	return out, err
 }
 
 type coreRole struct {
@@ -428,8 +478,45 @@ func (s coreRole) Patch(ctx context.Context, req *app.RolePatchRequest) (*app.Ro
 	if err := s.mayGrant(ctx, "methods", req.GetMethods(), where); err != nil {
 		return nil, err
 	}
+	if len(req.GetMethods()) == 0 {
+		// The methods are left as they are: a list has no presence in a
+		// patch request, so an empty one says nothing.
+		return s.RoleServiceServer.Patch(ctx, req)
+	}
 
-	return s.RoleServiceServer.Patch(ctx, req)
+	// And what a new list leaves out is taken away, and held to what taking
+	// away is held to (`takeaway.go`): `Role.Narrow` is this, on the wire.
+	got, err := s.RoleServiceServer.Get(ctx, app.RoleGetRequest_builder{
+		Ref:    req.GetRef(),
+		Select: app.RoleSelect_builder{Alias: z.Ptr(true), Methods: z.Ptr(true), Tenant: app.TenantSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, m := range got.GetMethods() {
+		if !slices.Contains(req.GetMethods(), m) {
+			out = append(out, m)
+		}
+	}
+	if err := s.mayTakeAway(ctx, "methods", out, where); err != nil {
+		return nil, err
+	}
+	tenant, err := pdid.From(got.GetTenant().GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	var v *app.Role
+	could := where == pdid.Nil && administers(got.GetMethods()) && !administers(req.GetMethods())
+	err = s.keepsAdministered(ctx, tenant, could, "taking "+EveryMethod+" out of "+got.GetAlias(), func(next app.Server) error {
+		var err error
+		v, err = next.Role().Patch(ctx, req)
+
+		return err
+	})
+
+	return v, err
 }
 
 type coreGroup struct {
