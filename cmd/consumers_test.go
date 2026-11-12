@@ -81,9 +81,11 @@ func TestServeOpensTheConsumersItIsToldTo(t *testing.T) {
 	// deployment.
 	t.Setenv("ROSTER_TEST_FRONT_KEY", token)
 
-	grpcAddr := free(t)
-	httpAddr := free(t)
-	accountAddr := free(t)
+	// Each address held: a listener at a port of its own, which `serve` takes
+	// over still listening (`cmd.Held`) rather than binding the port again.
+	grpcL, grpcAddr := listening(t)
+	httpL, httpAddr := listening(t)
+	accountL, accountAddr := listening(t)
 
 	c.Server = config.ServerConfig{Addr: grpcAddr}
 	c.Server.Http.Addr = httpAddr
@@ -98,7 +100,7 @@ func TestServeOpensTheConsumersItIsToldTo(t *testing.T) {
 	}
 
 	done := make(chan error, 1)
-	go func() { done <- cli.NewCmdServe(&c).Run(ctx, nil) }()
+	go func() { done <- cli.NewCmdServe(&c).Run(cmd.Held(ctx, grpcL, httpL, accountL), nil) }()
 
 	res := until(t, "http://"+accountAddr+"/providers", done)
 	defer res.Body.Close()
@@ -132,19 +134,26 @@ func TestServeOpensNoConsumerItWasNotToldAbout(t *testing.T) {
 	x.True(cmd.LdapConfig{AddrTls: ":636"}.Serves())
 }
 
-// free is an address nothing is listening on, by listening on it and stopping.
+// listening is a listener at a port of its own and the address it is at, for a
+// server this test starts to take over (`cmd.Held`): the address goes into the
+// configuration, and is what the test dials.
 //
-// A port and not `:0`, because what this asks is whether a **named** address is
-// answered, and `:0` is a name only the listener learns.
-func free(t *testing.T) string {
+// A port and not `:0` in the configuration, because what is asked is whether a
+// **named** address is answered. And not a port picked by listening and letting
+// go, which this was: the port is free until the server binds it, and a test
+// running beside this one is given it first -- the server refused with
+// `address already in use`, or the other test's listener answering `404 page
+// not found` in its place, both of them on CI.
+func listening(t *testing.T) (net.Listener, string) {
 	t.Helper()
 
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	addr := l.Addr().String()
-	require.NoError(t, l.Close())
+	// A listener the server never took is closed here; one it took, it closed
+	// itself, and closing it again does nothing.
+	t.Cleanup(func() { _ = l.Close() })
 
-	return addr
+	return l, l.Addr().String()
 }
 
 // until is a GET that waits for the server to come up, and fails saying so.
