@@ -28,6 +28,17 @@ in either half:
 A pattern is evaluated rather than expanded, so two replicas on different
 versions agree about what somebody holds.
 
+A role is given more with `role widen`, which adds methods and takes none away
+-- one it already holds, or a pattern of it covers, is not added twice:
+
+```sh
+roster --as admin role widen @newco/support '{"methods":["/roster.HolderService/Search"]}'
+```
+
+It is what an app gives the roles it shipped at an upgrade, over the wire
+([apps.md](../apps.md) § *The roles an app ships*), and it is a grant like any
+other write here: every method the role would hold has to be yours to hand out.
+
 `/roster.*/*` deliberately does **not** cover payday's own package —
 `TokenService` is outside it. A deployment that wants it grants it on
 purpose.

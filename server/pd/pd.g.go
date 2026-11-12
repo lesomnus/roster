@@ -17015,6 +17015,11 @@ func (s interceptRole) List(ctx context.Context, req *rstr.RoleListRequest) (*rs
 		rstr.RoleService_List_FullMethodName, req, s.RoleServiceServer.List)
 }
 
+func (s interceptRole) Widen(ctx context.Context, req *rstr.RoleWidenRequest) (*rstr.Role, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.RoleServiceServer,
+		rstr.RoleService_Widen_FullMethodName, req, s.RoleServiceServer.Widen)
+}
+
 func (s Intercept) Binding() rstr.BindingServiceServer {
 	return interceptBinding{s, s.Next().Binding()}
 }

@@ -79,7 +79,9 @@ import (
 // `Role.Add` and `Role.Patch`, `Binding.Add`, `TeamMembership.Add` and
 // `TeamMembership.Patch`, `GroupMembership.Add`, and `ApiKey.Add` and
 // `ApiKey.Patch`. The last two of those name no role and hand over as much as
-// one, which is what took three goes to see; see D40.
+// one, which is what took three goes to see; see D40. `Role.Widen` is on the
+// wire and is not in that list because it is not a write of its own: it is a
+// `Role.Patch` this layer makes, and meets the rule there (`widen.go`).
 //
 // The `Patch`es are checked **here as well**, and that is worth being exact
 // about because this paragraph was wrong twice.

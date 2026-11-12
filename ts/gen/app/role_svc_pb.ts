@@ -24,7 +24,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/role_svc.g.proto.
  */
 export const file_app_role_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvcm9sZV9zdmMuZy5wcm90bxIGcm9zdGVyIsQCCg5Sb2xlQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEh0KBHNpdGUYAyABKAsyDy5yb3N0ZXIuU2l0ZVJlZhIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISMgoGbGFiZWxzGAcgAygLMiIucm9zdGVyLlJvbGVBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5Eg8KB21ldGhvZHMYCCADKAkSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlIKDlJvbGVHZXRSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLnJvc3Rlci5Sb2xlUmVmEiIKBnNlbGVjdBgCIAEoCzISLnJvc3Rlci5Sb2xlU2VsZWN0IkUKB1JvbGVSZWYSDAoCaWQYASABKAxIABIlCgRzbHVnGAQgASgLMhUucm9zdGVyLlJvbGVSZWZCeVNsdWdIAEIFCgNrZXkiQQoNUm9sZVJlZkJ5U2x1ZxINCgVhbGlhcxgEIAEoCRIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmIu4BCgpSb2xlU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZ0ZW5hbnQYAiABKAsyFC5yb3N0ZXIuVGVuYW50U2VsZWN0EiAKBHNpdGUYAyABKAsyEi5yb3N0ZXIuU2l0ZVNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEg8KB21ldGhvZHMYCCABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKfAgoQUm9sZVBhdGNoUmVxdWVzdBIcCgNyZWYYASABKAsyDy5yb3N0ZXIuUm9sZVJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSNAoGbGFiZWxzGA4gAygLMiQucm9zdGVyLlJvbGVQYXRjaFJlcXVlc3QuTGFiZWxzRW50cnkSDwoHbWV0aG9kcxgQIAMoCRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIk0KEFJvbGVBcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLlJvbGVSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIjChFSb2xlRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgieQoPUm9sZUxpc3RSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5yb3N0ZXIuUm9sZUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiRAoQUm9sZUxpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLnJvc3Rlci5Sb2xlEhMKBG5leHQYAiABKAlCBaoBAggCImwKClJvbGVGaWx0ZXISHAoDcmVmGAEgASgLMg8ucm9zdGVyLlJvbGVSZWYSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhIdCgRzaXRlGAMgASgLMg8ucm9zdGVyLlNpdGVSZWYiuQIKEUJpbmRpbmdBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEh0KBHJvbGUYAiABKAsyDy5yb3N0ZXIuUm9sZVJlZhIdCgRzaXRlGAMgASgLMg8ucm9zdGVyLlNpdGVSZWYSIQoGaG9sZGVyGAggASgLMhEucm9zdGVyLkhvbGRlclJlZhIfCgVncm91cBgJIAEoCzIQLnJvc3Rlci5Hcm91cFJlZhI1CgZsYWJlbHMYByADKAsyJS5yb3N0ZXIuQmluZGluZ0FkZFJlcXVlc3QuTGFiZWxzRW50cnkSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlsKEUJpbmRpbmdHZXRSZXF1ZXN0Eh8KA3JlZhgBIAEoCzISLnJvc3Rlci5CaW5kaW5nUmVmEiUKBnNlbGVjdBgCIAEoCzIVLnJvc3Rlci5CaW5kaW5nU2VsZWN0IiEKCkJpbmRpbmdSZWYSDAoCaWQYASABKAxIAEIFCgNrZXki+wEKDUJpbmRpbmdTZWxlY3QSCwoDYWxsGAEgASgIEiAKBHJvbGUYAiABKAsyEi5yb3N0ZXIuUm9sZVNlbGVjdBIgCgRzaXRlGAMgASgLMhIucm9zdGVyLlNpdGVTZWxlY3QSJAoGaG9sZGVyGAggASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBIiCgVncm91cBgJIAEoCzITLnJvc3Rlci5Hcm91cFNlbGVjdBIOCgZsYWJlbHMYByABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCLsAQoTQmluZGluZ1BhdGNoUmVxdWVzdBIfCgNyZWYYASABKAsyEi5yb3N0ZXIuQmluZGluZ1JlZhI3CgZsYWJlbHMYDiADKAsyJy5yb3N0ZXIuQmluZGluZ1BhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlMKE0JpbmRpbmdBcHBseVJlcXVlc3QSHwoDcmVmGAEgASgLMhIucm9zdGVyLkJpbmRpbmdSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCImChRCaW5kaW5nRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgifwoSQmluZGluZ0xpc3RSZXF1ZXN0EiYKB2ZpbHRlcnMYASADKAsyFS5yb3N0ZXIuQmluZGluZ0ZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiSgoTQmluZGluZ0xpc3RSZXNwb25zZRIeCgVpdGVtcxgBIAMoCzIPLnJvc3Rlci5CaW5kaW5nEhMKBG5leHQYAiABKAlCBaoBAggCIrIBCg1CaW5kaW5nRmlsdGVyEh8KA3JlZhgBIAEoCzISLnJvc3Rlci5CaW5kaW5nUmVmEh0KBHJvbGUYAiABKAsyDy5yb3N0ZXIuUm9sZVJlZhIhCgZob2xkZXIYAyABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEh8KBWdyb3VwGAQgASgLMhAucm9zdGVyLkdyb3VwUmVmEh0KBHNpdGUYBSABKAsyDy5yb3N0ZXIuU2l0ZVJlZjK5AgoLUm9sZVNlcnZpY2USKwoDQWRkEhYucm9zdGVyLlJvbGVBZGRSZXF1ZXN0Ggwucm9zdGVyLlJvbGUSKwoDR2V0EhYucm9zdGVyLlJvbGVHZXRSZXF1ZXN0Ggwucm9zdGVyLlJvbGUSLwoFUGF0Y2gSGC5yb3N0ZXIuUm9sZVBhdGNoUmVxdWVzdBoMLnJvc3Rlci5Sb2xlEi8KBUFwcGx5Ehgucm9zdGVyLlJvbGVBcHBseVJlcXVlc3QaDC5yb3N0ZXIuUm9sZRIzCgVFcmFzZRIPLnJvc3Rlci5Sb2xlUmVmGhkucm9zdGVyLlJvbGVFcmFzZVJlc3BvbnNlEjkKBExpc3QSFy5yb3N0ZXIuUm9sZUxpc3RSZXF1ZXN0Ghgucm9zdGVyLlJvbGVMaXN0UmVzcG9uc2Uy4AIKDkJpbmRpbmdTZXJ2aWNlEjEKA0FkZBIZLnJvc3Rlci5CaW5kaW5nQWRkUmVxdWVzdBoPLnJvc3Rlci5CaW5kaW5nEjEKA0dldBIZLnJvc3Rlci5CaW5kaW5nR2V0UmVxdWVzdBoPLnJvc3Rlci5CaW5kaW5nEjUKBVBhdGNoEhsucm9zdGVyLkJpbmRpbmdQYXRjaFJlcXVlc3QaDy5yb3N0ZXIuQmluZGluZxI1CgVBcHBseRIbLnJvc3Rlci5CaW5kaW5nQXBwbHlSZXF1ZXN0Gg8ucm9zdGVyLkJpbmRpbmcSOQoFRXJhc2USEi5yb3N0ZXIuQmluZGluZ1JlZhocLnJvc3Rlci5CaW5kaW5nRXJhc2VSZXNwb25zZRI/CgRMaXN0Ehoucm9zdGVyLkJpbmRpbmdMaXN0UmVxdWVzdBobLnJvc3Rlci5CaW5kaW5nTGlzdFJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_group_svc_g, file_app_role, file_app_site_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g, file_roster_payday_tenant_svc_g]);
+  fileDesc("ChRhcHAvcm9sZV9zdmMuZy5wcm90bxIGcm9zdGVyIsQCCg5Sb2xlQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEh0KBHNpdGUYAyABKAsyDy5yb3N0ZXIuU2l0ZVJlZhIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISMgoGbGFiZWxzGAcgAygLMiIucm9zdGVyLlJvbGVBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5Eg8KB21ldGhvZHMYCCADKAkSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlIKDlJvbGVHZXRSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLnJvc3Rlci5Sb2xlUmVmEiIKBnNlbGVjdBgCIAEoCzISLnJvc3Rlci5Sb2xlU2VsZWN0IkUKB1JvbGVSZWYSDAoCaWQYASABKAxIABIlCgRzbHVnGAQgASgLMhUucm9zdGVyLlJvbGVSZWZCeVNsdWdIAEIFCgNrZXkiQQoNUm9sZVJlZkJ5U2x1ZxINCgVhbGlhcxgEIAEoCRIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmIu4BCgpSb2xlU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZ0ZW5hbnQYAiABKAsyFC5yb3N0ZXIuVGVuYW50U2VsZWN0EiAKBHNpdGUYAyABKAsyEi5yb3N0ZXIuU2l0ZVNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEg8KB21ldGhvZHMYCCABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKfAgoQUm9sZVBhdGNoUmVxdWVzdBIcCgNyZWYYASABKAsyDy5yb3N0ZXIuUm9sZVJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSNAoGbGFiZWxzGA4gAygLMiQucm9zdGVyLlJvbGVQYXRjaFJlcXVlc3QuTGFiZWxzRW50cnkSDwoHbWV0aG9kcxgQIAMoCRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIk0KEFJvbGVBcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLlJvbGVSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIjChFSb2xlRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgieQoPUm9sZUxpc3RSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5yb3N0ZXIuUm9sZUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiRAoQUm9sZUxpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLnJvc3Rlci5Sb2xlEhMKBG5leHQYAiABKAlCBaoBAggCImwKClJvbGVGaWx0ZXISHAoDcmVmGAEgASgLMg8ucm9zdGVyLlJvbGVSZWYSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhIdCgRzaXRlGAMgASgLMg8ucm9zdGVyLlNpdGVSZWYiQQoQUm9sZVdpZGVuUmVxdWVzdBIcCgNyZWYYASABKAsyDy5yb3N0ZXIuUm9sZVJlZhIPCgdtZXRob2RzGAggAygJIrkCChFCaW5kaW5nQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIdCgRyb2xlGAIgASgLMg8ucm9zdGVyLlJvbGVSZWYSHQoEc2l0ZRgDIAEoCzIPLnJvc3Rlci5TaXRlUmVmEiEKBmhvbGRlchgIIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSHwoFZ3JvdXAYCSABKAsyEC5yb3N0ZXIuR3JvdXBSZWYSNQoGbGFiZWxzGAcgAygLMiUucm9zdGVyLkJpbmRpbmdBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJbChFCaW5kaW5nR2V0UmVxdWVzdBIfCgNyZWYYASABKAsyEi5yb3N0ZXIuQmluZGluZ1JlZhIlCgZzZWxlY3QYAiABKAsyFS5yb3N0ZXIuQmluZGluZ1NlbGVjdCIhCgpCaW5kaW5nUmVmEgwKAmlkGAEgASgMSABCBQoDa2V5IvsBCg1CaW5kaW5nU2VsZWN0EgsKA2FsbBgBIAEoCBIgCgRyb2xlGAIgASgLMhIucm9zdGVyLlJvbGVTZWxlY3QSIAoEc2l0ZRgDIAEoCzISLnJvc3Rlci5TaXRlU2VsZWN0EiQKBmhvbGRlchgIIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSIgoFZ3JvdXAYCSABKAsyEy5yb3N0ZXIuR3JvdXBTZWxlY3QSDgoGbGFiZWxzGAcgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgi7AEKE0JpbmRpbmdQYXRjaFJlcXVlc3QSHwoDcmVmGAEgASgLMhIucm9zdGVyLkJpbmRpbmdSZWYSNwoGbGFiZWxzGA4gAygLMicucm9zdGVyLkJpbmRpbmdQYXRjaFJlcXVlc3QuTGFiZWxzRW50cnkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJTChNCaW5kaW5nQXBwbHlSZXF1ZXN0Eh8KA3JlZhgBIAEoCzISLnJvc3Rlci5CaW5kaW5nUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJgoUQmluZGluZ0VyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIn8KEkJpbmRpbmdMaXN0UmVxdWVzdBImCgdmaWx0ZXJzGAEgAygLMhUucm9zdGVyLkJpbmRpbmdGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCIkoKE0JpbmRpbmdMaXN0UmVzcG9uc2USHgoFaXRlbXMYASADKAsyDy5yb3N0ZXIuQmluZGluZxITCgRuZXh0GAIgASgJQgWqAQIIAiKyAQoNQmluZGluZ0ZpbHRlchIfCgNyZWYYASABKAsyEi5yb3N0ZXIuQmluZGluZ1JlZhIdCgRyb2xlGAIgASgLMg8ucm9zdGVyLlJvbGVSZWYSIQoGaG9sZGVyGAMgASgLMhEucm9zdGVyLkhvbGRlclJlZhIfCgVncm91cBgEIAEoCzIQLnJvc3Rlci5Hcm91cFJlZhIdCgRzaXRlGAUgASgLMg8ucm9zdGVyLlNpdGVSZWYy6gIKC1JvbGVTZXJ2aWNlEisKA0FkZBIWLnJvc3Rlci5Sb2xlQWRkUmVxdWVzdBoMLnJvc3Rlci5Sb2xlEisKA0dldBIWLnJvc3Rlci5Sb2xlR2V0UmVxdWVzdBoMLnJvc3Rlci5Sb2xlEi8KBVBhdGNoEhgucm9zdGVyLlJvbGVQYXRjaFJlcXVlc3QaDC5yb3N0ZXIuUm9sZRIvCgVBcHBseRIYLnJvc3Rlci5Sb2xlQXBwbHlSZXF1ZXN0Ggwucm9zdGVyLlJvbGUSMwoFRXJhc2USDy5yb3N0ZXIuUm9sZVJlZhoZLnJvc3Rlci5Sb2xlRXJhc2VSZXNwb25zZRI5CgRMaXN0Ehcucm9zdGVyLlJvbGVMaXN0UmVxdWVzdBoYLnJvc3Rlci5Sb2xlTGlzdFJlc3BvbnNlEi8KBVdpZGVuEhgucm9zdGVyLlJvbGVXaWRlblJlcXVlc3QaDC5yb3N0ZXIuUm9sZTLgAgoOQmluZGluZ1NlcnZpY2USMQoDQWRkEhkucm9zdGVyLkJpbmRpbmdBZGRSZXF1ZXN0Gg8ucm9zdGVyLkJpbmRpbmcSMQoDR2V0Ehkucm9zdGVyLkJpbmRpbmdHZXRSZXF1ZXN0Gg8ucm9zdGVyLkJpbmRpbmcSNQoFUGF0Y2gSGy5yb3N0ZXIuQmluZGluZ1BhdGNoUmVxdWVzdBoPLnJvc3Rlci5CaW5kaW5nEjUKBUFwcGx5Ehsucm9zdGVyLkJpbmRpbmdBcHBseVJlcXVlc3QaDy5yb3N0ZXIuQmluZGluZxI5CgVFcmFzZRISLnJvc3Rlci5CaW5kaW5nUmVmGhwucm9zdGVyLkJpbmRpbmdFcmFzZVJlc3BvbnNlEj8KBExpc3QSGi5yb3N0ZXIuQmluZGluZ0xpc3RSZXF1ZXN0Ghsucm9zdGVyLkJpbmRpbmdMaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_group_svc_g, file_app_role, file_app_site_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g, file_roster_payday_tenant_svc_g]);
 
 /**
  * @generated from message roster.RoleAddRequest
@@ -441,6 +441,31 @@ export const RoleFilterSchema: GenMessage<RoleFilter> = /*@__PURE__*/
   messageDesc(file_app_role_svc_g, 10);
 
 /**
+ * @generated from message roster.RoleWidenRequest
+ */
+export type RoleWidenRequest = Message<"roster.RoleWidenRequest"> & {
+  /**
+   * @generated from field: roster.RoleRef ref = 1;
+   */
+  ref?: RoleRef | undefined;
+
+  /**
+   * What to add: whole method names or patterns, as `Role.methods` takes
+   * them. At least one.
+   *
+   * @generated from field: repeated string methods = 8;
+   */
+  methods: string[];
+};
+
+/**
+ * Describes the message roster.RoleWidenRequest.
+ * Use `create(RoleWidenRequestSchema)` to create a new message.
+ */
+export const RoleWidenRequestSchema: GenMessage<RoleWidenRequest> = /*@__PURE__*/
+  messageDesc(file_app_role_svc_g, 11);
+
+/**
  * @generated from message roster.BindingAddRequest
  */
 export type BindingAddRequest = Message<"roster.BindingAddRequest"> & {
@@ -485,7 +510,7 @@ export type BindingAddRequest = Message<"roster.BindingAddRequest"> & {
  * Use `create(BindingAddRequestSchema)` to create a new message.
  */
 export const BindingAddRequestSchema: GenMessage<BindingAddRequest> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 11);
+  messageDesc(file_app_role_svc_g, 12);
 
 /**
  * @generated from message roster.BindingGetRequest
@@ -507,7 +532,7 @@ export type BindingGetRequest = Message<"roster.BindingGetRequest"> & {
  * Use `create(BindingGetRequestSchema)` to create a new message.
  */
 export const BindingGetRequestSchema: GenMessage<BindingGetRequest> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 12);
+  messageDesc(file_app_role_svc_g, 13);
 
 /**
  * @generated from message roster.BindingRef
@@ -530,7 +555,7 @@ export type BindingRef = Message<"roster.BindingRef"> & {
  * Use `create(BindingRefSchema)` to create a new message.
  */
 export const BindingRefSchema: GenMessage<BindingRef> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 13);
+  messageDesc(file_app_role_svc_g, 14);
 
 /**
  * @generated from message roster.BindingSelect
@@ -587,7 +612,7 @@ export type BindingSelect = Message<"roster.BindingSelect"> & {
  * Use `create(BindingSelectSchema)` to create a new message.
  */
 export const BindingSelectSchema: GenMessage<BindingSelect> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 14);
+  messageDesc(file_app_role_svc_g, 15);
 
 /**
  * @generated from message roster.BindingPatchRequest
@@ -633,7 +658,7 @@ export type BindingPatchRequest = Message<"roster.BindingPatchRequest"> & {
  * Use `create(BindingPatchRequestSchema)` to create a new message.
  */
 export const BindingPatchRequestSchema: GenMessage<BindingPatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 15);
+  messageDesc(file_app_role_svc_g, 16);
 
 /**
  * @generated from message roster.BindingApplyRequest
@@ -655,7 +680,7 @@ export type BindingApplyRequest = Message<"roster.BindingApplyRequest"> & {
  * Use `create(BindingApplyRequestSchema)` to create a new message.
  */
 export const BindingApplyRequestSchema: GenMessage<BindingApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 16);
+  messageDesc(file_app_role_svc_g, 17);
 
 /**
  * @generated from message roster.BindingEraseResponse
@@ -678,7 +703,7 @@ export type BindingEraseResponse = Message<"roster.BindingEraseResponse"> & {
  * Use `create(BindingEraseResponseSchema)` to create a new message.
  */
 export const BindingEraseResponseSchema: GenMessage<BindingEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 17);
+  messageDesc(file_app_role_svc_g, 18);
 
 /**
  * @generated from message roster.BindingListRequest
@@ -727,7 +752,7 @@ export type BindingListRequest = Message<"roster.BindingListRequest"> & {
  * Use `create(BindingListRequestSchema)` to create a new message.
  */
 export const BindingListRequestSchema: GenMessage<BindingListRequest> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 18);
+  messageDesc(file_app_role_svc_g, 19);
 
 /**
  * @generated from message roster.BindingListResponse
@@ -757,7 +782,7 @@ export type BindingListResponse = Message<"roster.BindingListResponse"> & {
  * Use `create(BindingListResponseSchema)` to create a new message.
  */
 export const BindingListResponseSchema: GenMessage<BindingListResponse> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 19);
+  messageDesc(file_app_role_svc_g, 20);
 
 /**
  * @generated from message roster.BindingFilter
@@ -794,7 +819,7 @@ export type BindingFilter = Message<"roster.BindingFilter"> & {
  * Use `create(BindingFilterSchema)` to create a new message.
  */
 export const BindingFilterSchema: GenMessage<BindingFilter> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 20);
+  messageDesc(file_app_role_svc_g, 21);
 
 /**
  * @generated from service roster.RoleService
@@ -859,6 +884,30 @@ export const RoleService: GenService<{
     methodKind: "unary";
     input: typeof RoleListRequestSchema;
     output: typeof RoleListResponseSchema;
+  },
+  /**
+   * Widen adds methods to a role and takes none away.
+   *
+   * A method already in the role, or covered by a pattern already in it
+   * (`frame.Covers`), is not added: it would grant nothing more, and taking
+   * the wider pattern out later should take it too. Nothing new is no write,
+   * and answers the role as it is -- so an app may send what it wants a role
+   * to hold at every upgrade, and the role changes only when there was
+   * something to add.
+   *
+   * Held to the rules `Patch` is held to, because it is one (`server/core`):
+   * the role's whole list, as it would be, must be the caller's to grant where
+   * the role may be bound (`escalate.go`), and a role a deployment declared is
+   * nobody's to widen (`declared.go`). So an app that widens the roles it
+   * ships holds every method it puts in them -- its own package's pattern, in
+   * the role it was installed with (`docs/apps.md`).
+   *
+   * @generated from rpc roster.RoleService.Widen
+   */
+  widen: {
+    methodKind: "unary";
+    input: typeof RoleWidenRequestSchema;
+    output: typeof RoleSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_role_svc_g, 0);

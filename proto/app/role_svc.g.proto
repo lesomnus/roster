@@ -24,6 +24,22 @@ service RoleService {
   rpc Erase(RoleRef) returns (RoleEraseResponse);
   // List reads Roles a page at a time.
   rpc List(RoleListRequest) returns (RoleListResponse);
+  // Widen adds methods to a role and takes none away.
+  //
+  // A method already in the role, or covered by a pattern already in it
+  // (`frame.Covers`), is not added: it would grant nothing more, and taking
+  // the wider pattern out later should take it too. Nothing new is no write,
+  // and answers the role as it is -- so an app may send what it wants a role
+  // to hold at every upgrade, and the role changes only when there was
+  // something to add.
+  //
+  // Held to the rules `Patch` is held to, because it is one (`server/core`):
+  // the role's whole list, as it would be, must be the caller's to grant where
+  // the role may be bound (`escalate.go`), and a role a deployment declared is
+  // nobody's to widen (`declared.go`). So an app that widens the roles it
+  // ships holds every method it puts in them -- its own package's pattern, in
+  // the role it was installed with (`docs/apps.md`).
+  rpc Widen(RoleWidenRequest) returns (Role);
 }
 
 service BindingService {
@@ -161,6 +177,14 @@ message RoleFilter {
   RoleRef ref = 1;
   TenantRef tenant = 2;
   SiteRef site = 3;
+}
+
+message RoleWidenRequest {
+  RoleRef ref = 1;
+
+  // What to add: whole method names or patterns, as `Role.methods` takes
+  // them. At least one.
+  repeated string methods = 8;
 }
 
 message BindingAddRequest {

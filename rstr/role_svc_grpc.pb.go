@@ -25,6 +25,7 @@ const (
 	RoleService_Apply_FullMethodName = "/roster.RoleService/Apply"
 	RoleService_Erase_FullMethodName = "/roster.RoleService/Erase"
 	RoleService_List_FullMethodName  = "/roster.RoleService/List"
+	RoleService_Widen_FullMethodName = "/roster.RoleService/Widen"
 )
 
 // RoleServiceClient is the client API for RoleService service.
@@ -43,6 +44,22 @@ type RoleServiceClient interface {
 	Erase(ctx context.Context, in *RoleRef, opts ...grpc.CallOption) (*RoleEraseResponse, error)
 	// List reads Roles a page at a time.
 	List(ctx context.Context, in *RoleListRequest, opts ...grpc.CallOption) (*RoleListResponse, error)
+	// Widen adds methods to a role and takes none away.
+	//
+	// A method already in the role, or covered by a pattern already in it
+	// (`frame.Covers`), is not added: it would grant nothing more, and taking
+	// the wider pattern out later should take it too. Nothing new is no write,
+	// and answers the role as it is -- so an app may send what it wants a role
+	// to hold at every upgrade, and the role changes only when there was
+	// something to add.
+	//
+	// Held to the rules `Patch` is held to, because it is one (`server/core`):
+	// the role's whole list, as it would be, must be the caller's to grant where
+	// the role may be bound (`escalate.go`), and a role a deployment declared is
+	// nobody's to widen (`declared.go`). So an app that widens the roles it
+	// ships holds every method it puts in them -- its own package's pattern, in
+	// the role it was installed with (`docs/apps.md`).
+	Widen(ctx context.Context, in *RoleWidenRequest, opts ...grpc.CallOption) (*Role, error)
 }
 
 type roleServiceClient struct {
@@ -113,6 +130,16 @@ func (c *roleServiceClient) List(ctx context.Context, in *RoleListRequest, opts 
 	return out, nil
 }
 
+func (c *roleServiceClient) Widen(ctx context.Context, in *RoleWidenRequest, opts ...grpc.CallOption) (*Role, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Role)
+	err := c.cc.Invoke(ctx, RoleService_Widen_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RoleServiceServer is the server API for RoleService service.
 // All implementations must embed UnimplementedRoleServiceServer
 // for forward compatibility.
@@ -129,6 +156,22 @@ type RoleServiceServer interface {
 	Erase(context.Context, *RoleRef) (*RoleEraseResponse, error)
 	// List reads Roles a page at a time.
 	List(context.Context, *RoleListRequest) (*RoleListResponse, error)
+	// Widen adds methods to a role and takes none away.
+	//
+	// A method already in the role, or covered by a pattern already in it
+	// (`frame.Covers`), is not added: it would grant nothing more, and taking
+	// the wider pattern out later should take it too. Nothing new is no write,
+	// and answers the role as it is -- so an app may send what it wants a role
+	// to hold at every upgrade, and the role changes only when there was
+	// something to add.
+	//
+	// Held to the rules `Patch` is held to, because it is one (`server/core`):
+	// the role's whole list, as it would be, must be the caller's to grant where
+	// the role may be bound (`escalate.go`), and a role a deployment declared is
+	// nobody's to widen (`declared.go`). So an app that widens the roles it
+	// ships holds every method it puts in them -- its own package's pattern, in
+	// the role it was installed with (`docs/apps.md`).
+	Widen(context.Context, *RoleWidenRequest) (*Role, error)
 	mustEmbedUnimplementedRoleServiceServer()
 }
 
@@ -156,6 +199,9 @@ func (UnimplementedRoleServiceServer) Erase(context.Context, *RoleRef) (*RoleEra
 }
 func (UnimplementedRoleServiceServer) List(context.Context, *RoleListRequest) (*RoleListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedRoleServiceServer) Widen(context.Context, *RoleWidenRequest) (*Role, error) {
+	return nil, status.Error(codes.Unimplemented, "method Widen not implemented")
 }
 func (UnimplementedRoleServiceServer) mustEmbedUnimplementedRoleServiceServer() {}
 func (UnimplementedRoleServiceServer) testEmbeddedByValue()                     {}
@@ -286,6 +332,24 @@ func _RoleService_List_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RoleService_Widen_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RoleWidenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoleServiceServer).Widen(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RoleService_Widen_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoleServiceServer).Widen(ctx, req.(*RoleWidenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RoleService_ServiceDesc is the grpc.ServiceDesc for RoleService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -316,6 +380,10 @@ var RoleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _RoleService_List_Handler,
+		},
+		{
+			MethodName: "Widen",
+			Handler:    _RoleService_Widen_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
