@@ -14,6 +14,7 @@
 #
 #     ./scripts/cluster.sh            # up, check, down
 #     ./scripts/cluster.sh --hold     # leave it up to look at
+#     ./scripts/cluster.sh --state    # what one that is up, or stuck, is doing
 #
 # It builds the two images it needs, unless it is handed them:
 #
@@ -78,6 +79,25 @@
 # actually needs. And `resolver` leaves CoreDNS's restart count in the log of
 # any run that goes out red, because the one thing #39 could not do was check
 # its own guess.
+#
+# # And nothing waits without a bound
+#
+# Four runs in four days never came back (`02c3f89`, `728b498`, #243's first
+# and `a266ad3`). Each sat in this script until the job's thirty minutes were
+# up, and GitHub kept **no log** of any of them -- not this step's, and not the
+# checkout's before it. Every run that passed in the same weeks took between four
+# and five minutes, so it is all or nothing: the shape of a wait with no end, at
+# a point nobody can name, because the one thing that could have named it was
+# the log.
+#
+# So nothing here waits on the engine, k3d or the cluster without a bound.
+# `bounded` gives a call its own limit and never more than the run has left of
+# `CLUSTER_BUDGET` -- fifteen minutes, about three passing runs -- and a call it
+# stops says which call it was, in CI as an annotation too, which is kept apart
+# from the log. Then `state` says what the machine, the engine, the node and the
+# cluster were doing, before anything is torn down. And because the way this
+# failed was by never finishing, CI gives the step twenty minutes and runs
+# `--state` itself after it, for a run that never got to say anything.
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -91,15 +111,189 @@ cd "${__root}"
 : "${KUBECTL_IMAGE:=alpine/k8s:1.31.0}"
 : "${ROSTER_APP_IMAGE:=}"
 : "${ROSTER_DEV_IMAGE:=}"
+# How long a run may take, in seconds, building the images aside.
+: "${CLUSTER_BUDGET:=900}"
 
 hold=""
+look=""
 for v in "$@"; do
-	case "${v}" in --hold) hold=1 ;; esac
+	case "${v}" in
+	--hold) hold=1 ;;
+	--state) look=1 ;;
+	esac
 done
 
-for bin in k3d docker; do
+for bin in k3d docker timeout; do
 	command -v "${bin}" >/dev/null || { echo "cluster: ${bin} is not here" >&2; exit 1; }
 done
+
+node="k3d-${CLUSTER}-server-0"
+started="$(date +%s)"
+deadline=$((started + CLUSTER_BUDGET))
+
+# bounded is a call given at most `$1` seconds, and never more than the run has
+# left: so no wait here lasts for ever, and no number of them adds up to more
+# than `CLUSTER_BUDGET` either.
+#
+# `--foreground` keeps the call in this script's process group, so a ^C at a
+# desk still reaches it. The signal goes to the call and not to what it started,
+# which for a container is the engine's business -- `kube` says what that takes.
+bounded() {
+	local secs="$1" left out=0
+	shift
+
+	left=$((deadline - $(date +%s)))
+	if [ "${left}" -le 0 ]; then
+		stopped "the run's ${CLUSTER_BUDGET}s are up, so this was never started" "$@"
+		return 124
+	fi
+	[ "${secs}" -le "${left}" ] || secs="${left}"
+
+	timeout --foreground -k 10 "${secs}" "$@" || out=$?
+	case "${out}" in
+	124 | 137) stopped "still waiting after ${secs}s, so it was stopped" "$@" ;;
+	esac
+
+	return "${out}"
+}
+
+# stopped is a bound reached, said: on stderr, and in CI as an annotation as
+# well, which GitHub keeps with the check rather than in the log -- and a log is
+# what the runs above did not leave.
+stopped() {
+	local why="$1" what
+	shift
+	what="$*"
+
+	echo "cluster: ${why}: ${what}" >&2
+	if [ -n "${GITHUB_ACTIONS:-}" ]; then
+		what="${what//%/%25}"
+		echo "::error title=cluster::${why}: ${what//$'\n'/%0A}" >&2
+	fi
+}
+
+# by is when a wait of `$1` seconds from now gives up: then, or when the run
+# does, whichever is first. For the loops that poll -- a deadline rather than a
+# count, for the reason `standing` gives.
+by() {
+	local t=$(($(date +%s) + $1))
+	[ "${t}" -le "${deadline}" ] || t="${deadline}"
+	echo "${t}"
+}
+
+# briefly is a call made on the way out: twenty seconds, whatever the run has
+# left -- which, when the budget is what ended it, is nothing.
+briefly() { timeout --foreground -k 5 20 "$@"; }
+
+# nodectl is kubectl as the node has it: k3s ships one pointed at itself, so
+# asking it needs no volume, no image and no network of this script's -- any of
+# which a run that is stuck may be stuck on.
+nodectl() { briefly docker exec "${node}" kubectl --request-timeout=10s "$@"; }
+
+# resolver is what CoreDNS was doing, and it is printed only on the way out red.
+#
+# #39's open question, made answerable rather than answered. Two of that issue's
+# four red runs were a Service name inside the cluster that had been resolving
+# moments earlier, and the guess was CoreDNS restarting under the load of two
+# `docker build`s -- a guess nobody could check, because by the time anybody
+# read the run the cluster was gone. `docker/dial.sh`'s retry is what makes a
+# blip stop failing the run; this is what makes the next one leave evidence.
+#
+# Two lines and no `-o` at all: `get pods` already prints READY, STATUS and
+# **RESTARTS**, which is the whole hypothesis in one number. Then the previous
+# container's log, which says nothing where there was no previous container --
+# `--previous` errors there, and an error is exactly what this must not add to a
+# run that is already failing.
+#
+# Everything is `|| true` and every stream is redirected for that reason: a
+# diagnostic that can fail the cleanup would replace the real message with its
+# own.
+resolver() {
+	{
+		echo
+		echo "-- ${NS}, in case what did not come up says why"
+		nodectl -n "${NS}" get pods 2>/dev/null || true
+
+		# **The init containers too**, which is the half that was missing and
+		# cost a CI run: `roster login provision` runs as one, and a pod whose
+		# init container fails is reported as `timed out waiting for the
+		# condition` about a Deployment -- a sentence about the symptom with
+		# nothing in it about the cause. `--all-containers` is what says it.
+		nodectl -n "${NS}" logs -l app.kubernetes.io/component=server --all-containers --tail=30 --prefix 2>/dev/null || true
+
+		echo
+		echo "-- kube-system/coredns, in case the name that did not resolve was its"
+		nodectl -n kube-system get pods -l k8s-app=kube-dns 2>/dev/null || true
+		nodectl -n kube-system logs -l k8s-app=kube-dns --tail=20 --previous 2>/dev/null || true
+	} >&2
+}
+
+# state is what the machine, the engine, the node and the cluster are doing:
+# printed on the way out red, and by `--state` for a run that never got that far
+# -- which is CI's step after this one, when it had to stop the script itself
+# (`.github/workflows/ci.yml`).
+#
+# **The machine first.** A job that only waits too long keeps its log -- one of
+# loft's that hit its limit on 10-26 kept all of it -- and the runs that hung
+# here did not: the checkout's own cleanup, after this step was stopped, started
+# and never finished. So whatever they were waiting on, by the end the runner
+# could not finish a job, and what it had left is the first thing to know.
+#
+# Every call is `briefly` and `|| true`, for `resolver`'s reason and one more: a
+# diagnostic that waits for ever is the failure it was meant to explain.
+state() {
+	{
+		echo
+		echo "-- the machine, and what is using its memory"
+		uptime 2>/dev/null || true
+		free -m 2>/dev/null || true
+		df -h / 2>/dev/null || true
+		ps -eo pid,rss,etime,comm --sort=-rss 2>/dev/null | head -n 11 || true
+
+		echo
+		echo "-- the engine: this cluster's containers, and any of this script's still running"
+		briefly docker ps -a --filter "name=k3d-${CLUSTER}" --format '{{.Names}}  {{.Status}}' 2>/dev/null || true
+		briefly docker ps --no-trunc --filter "label=roster.cluster=${CLUSTER}" --format '{{.RunningFor}}  {{.Command}}' 2>/dev/null || true
+	} >&2
+
+	docker inspect "${node}" >/dev/null 2>&1 || return 0
+
+	{
+		echo
+		echo "-- the node"
+		briefly docker inspect -f '{{.State.Status}}, restarted {{.RestartCount}} time(s), OOM-killed {{.State.OOMKilled}}' "${node}" 2>/dev/null || true
+		briefly docker stats --no-stream --format '{{.CPUPerc}} CPU, {{.MemUsage}}' "${node}" 2>/dev/null || true
+		# The API itself can be down; kubectl-only diagnostics then say nothing.
+		briefly docker logs --tail 60 "${node}" 2>&1 || true
+
+		echo
+		echo "-- the cluster"
+		nodectl get nodes -o 'jsonpath={range .items[*].status.conditions[*]}{.type}={.status}  {.message}{"\n"}{end}' 2>&1 || true
+		nodectl get pods -A -o wide 2>&1 || true
+
+		# And every pod that is not where it should be, described -- the events
+		# at the bottom are what a rollout that timed out never says: an image
+		# still coming down, a claim not bound, a probe refused. Five at most.
+		nodectl get pods -A --no-headers 2>/dev/null \
+			| awk '{ split($3, r, "/") } $4 != "Completed" && ($4 != "Running" || r[1] != r[2]) && n++ < 5 { print $1, $2 }' \
+			| while read -r ns pod; do
+				echo
+				echo "-- ${ns}/${pod}, which is not ready"
+				nodectl -n "${ns}" describe pod "${pod}" </dev/null 2>&1 || true
+			done || true
+
+		echo
+		echo "-- the last thirty events"
+		nodectl get events -A --sort-by=.metadata.creationTimestamp 2>&1 | tail -n 30 || true
+	} >&2
+
+	resolver
+}
+
+if [ -n "${look}" ]; then
+	state
+	exit 0
+fi
 
 work="$(mktemp -d)"
 # The kubeconfig k3d calls its default, which is this run's own: `cluster
@@ -112,46 +306,11 @@ export KUBECONFIG="${work}/k3d.yaml"
 # `/workspaces` does, and hardcoding that would break everywhere else. A volume
 # is the same on both sides wherever the engine is.
 vol="roster-cluster-$$"
-docker volume create "${vol}" >/dev/null
-carry() { tar -C "${work}" -cf - . | docker run --rm -i -v "${vol}:/w" alpine sh -c 'tar -C /w -xf -'; }
-
-# resolver is what CoreDNS was doing, and it is printed only on the way out red.
-#
-# #39's open question, made answerable rather than answered. Two of that issue's
-# four red runs were a Service name inside the cluster that had been resolving
-# moments earlier, and the guess was CoreDNS restarting under the load of two
-# `docker build`s -- a guess nobody could check, because by the time anybody
-# read the run the cluster was gone. `docker/dial.sh`'s retry is what makes a
-# blip stop failing the run; this is what makes the next one leave evidence.
-#
-# Two lines and no `-o` at all: `get pods` already prints READY, STATUS and
-# **RESTARTS**, which is the whole hypothesis in one number, and a
-# `custom-columns` spelling of it would be a jsonpath with brackets in it going
-# through two shells. Then the previous container's log, which says nothing
-# where there was no previous container -- `--previous` errors there, and an
-# error is exactly what this must not add to a run that is already failing.
-#
-# Everything is `|| true` and every stream is redirected for that reason: a
-# diagnostic that can fail the cleanup would replace the real message with its
-# own.
-resolver() {
-	{
-		echo
-		echo "-- ${NS}, in case what did not come up says why"
-		kube "kubectl -n ${NS} get pods" 2>/dev/null || true
-
-		# **The init containers too**, which is the half that was missing and
-		# cost a CI run: `roster login provision` runs as one, and a pod whose
-		# init container fails is reported as `timed out waiting for the
-		# condition` about a Deployment -- a sentence about the symptom with
-		# nothing in it about the cause. `--all-containers` is what says it.
-		kube "kubectl -n ${NS} logs -l app.kubernetes.io/component=server --all-containers --tail=30 --prefix" 2>/dev/null || true
-
-		echo
-		echo "-- kube-system/coredns, in case the name that did not resolve was its"
-		kube "kubectl -n kube-system get pods -l k8s-app=kube-dns" 2>/dev/null || true
-		kube "kubectl -n kube-system logs -l k8s-app=kube-dns --tail=20 --previous" 2>/dev/null || true
-	} >&2
+bounded 30 docker volume create "${vol}" >/dev/null
+# `--init` and the label for the reasons `kube` gives.
+carry() {
+	tar -C "${work}" -cf - . \
+		| bounded 60 docker run --rm -i --init --label "roster.cluster=${CLUSTER}" -v "${vol}:/w" alpine sh -c 'tar -C /w -xf -'
 }
 
 cleanup() {
@@ -159,16 +318,20 @@ cleanup() {
 	# and only when there is a cluster to ask, so that a run which fell over
 	# before one existed says what it fell over on and nothing else.
 	local out=$?
-	if [ "${out}" -ne 0 ] && docker inspect "k3d-${CLUSTER}-server-0" >/dev/null 2>&1; then
-		# The API itself can be down; kubectl-only diagnostics then say nothing.
-		docker logs --tail 60 "k3d-${CLUSTER}-server-0" >&2 2>&1 || true
-		resolver
+	if [ "${out}" -ne 0 ] && docker inspect "${node}" >/dev/null 2>&1; then
+		echo "cluster: out red, $(($(date +%s) - started))s in" >&2
+		state
 	fi
 
+	# A call `bounded` stopped can leave its container behind, still waiting --
+	# and while it is there, neither the volume nor the cluster's network can go.
+	briefly docker ps -aq --filter "label=roster.cluster=${CLUSTER}" 2>/dev/null \
+		| xargs -r docker rm -f >/dev/null 2>&1 || true
+
 	rm -rf "${work}"
-	docker volume rm -f "${vol}" >/dev/null 2>&1 || true
+	briefly docker volume rm -f "${vol}" >/dev/null 2>&1 || true
 	if [ -z "${hold}" ]; then
-		k3d cluster delete "${CLUSTER}" >/dev/null 2>&1 || true
+		timeout --foreground -k 10 120 k3d cluster delete "${CLUSTER}" >/dev/null 2>&1 || true
 	else
 		echo
 		echo "cluster: left up. kubeconfig:"
@@ -183,16 +346,20 @@ trap cleanup EXIT
 # the last phase here, where a **failure is the expected answer**: it would
 # spend its whole timeout on it. So both conditions are watched, which costs a
 # poll and buys an answer as soon as there is one.
+#
+# By the clock, and no longer by adding up its sleeps: a poll is a container,
+# and a count of five-second sleeps is five minutes only while every poll takes
+# no time at all.
 settled() {
-	local job="$1" secs="${2:-300}" i=0 t
-	while [ "${i}" -lt "${secs}" ]; do
+	local job="$1" secs="${2:-300}" until_ t
+	until_="$(by "${secs}")"
+	while [ "$(date +%s)" -lt "${until_}" ]; do
 		t="$(kube "kubectl -n ${NS} get job/${job} -o jsonpath='{.status.conditions[*].type}' 2>/dev/null" || true)"
 		case " ${t} " in
 		*" Complete "*) return 0 ;;
 		*" Failed "*) return 1 ;;
 		esac
 
-		i=$((i + 5))
 		sleep 5
 	done
 
@@ -257,7 +424,7 @@ resync() {
 # this for the same reason, which is the restart a hundred lines below. Every
 # phase that adds a name needs it too, and this is that, once.
 renominated() {
-	kube "kubectl -n ${NS} delete pod -l app.kubernetes.io/component=server >/dev/null 2>&1; \
+	kube -t 360 "kubectl -n ${NS} delete pod -l app.kubernetes.io/component=server >/dev/null 2>&1; \
 		kubectl -n ${NS} rollout status deploy/roster --timeout=300s >/dev/null"
 }
 
@@ -268,23 +435,47 @@ product() {
 }
 
 echo "== from nothing"
-k3d cluster delete "${CLUSTER}" >/dev/null 2>&1 || true
+bounded 120 k3d cluster delete "${CLUSTER}" >/dev/null 2>&1 || true
 # No load balancer and no Traefik: nothing here is reached from outside the
 # cluster's network, and the ingress is the next commit's problem. And nothing
 # written to a desk's own kubeconfig: see `KUBECONFIG` above.
-k3d cluster create "${CLUSTER}" --servers 1 --agents 0 --no-lb \
+#
+# `--wait` alone waits for ever: it follows the node's log for a line, and a
+# node that never prints it is a create that never returns. `--timeout` is
+# k3d's own bound, and `--no-rollback` keeps the node it gave up on, so that
+# `cleanup` can show its log before deleting it.
+bounded 300 k3d cluster create "${CLUSTER}" --servers 1 --agents 0 --no-lb \
 	--k3s-arg "--disable=traefik@server:0" \
 	--k3s-arg "--disable=metrics-server@server:0" \
 	--kubeconfig-update-default=false \
-	--wait >/dev/null
+	--wait --timeout 240s --no-rollback >/dev/null
 
 # The in-network address, because the published one is on the engine's host.
-k3d kubeconfig get "${CLUSTER}" \
+bounded 30 k3d kubeconfig get "${CLUSTER}" \
 	| sed "s|server: https://.*|server: https://k3d-${CLUSTER}-server-0:6443|" \
 	> "${work}/kubeconfig"
 
+# kube is kubectl from inside the cluster's network, `bounded`: a minute and a
+# half by default -- every request here takes under a second, and the longest
+# kubectl waits by itself is the minute `exec` gives a pod to be running -- or
+# `-t` seconds for a call that waits on purpose: a rollout's own five minutes,
+# and some over.
+#
+# `--init`, because without it the shell is the container's first process, and
+# a first process ignores the signal a bound sends: the CLI is killed ten
+# seconds later and the container goes on waiting, holding the volume and the
+# network. With it the container ends when the call is stopped. Labelled, so
+# that whatever outlives its call anyway is found -- by `cleanup` to remove it,
+# and by `--state` to say what it was.
 kube() {
-	docker run --rm --network "k3d-${CLUSTER}" \
+	local secs=90
+	if [ "$1" = "-t" ]; then
+		secs="$2"
+		shift 2
+	fi
+
+	bounded "${secs}" docker run --rm --init --label "roster.cluster=${CLUSTER}" \
+		--network "k3d-${CLUSTER}" \
 		-v "${vol}:/w" -e KUBECONFIG=/w/kubeconfig \
 		"${KUBECTL_IMAGE}" sh -c "$*"
 }
@@ -388,13 +579,17 @@ tried() {
 # and twelve is longer than the job this is inside. So the wait is three
 # minutes, whatever each attempt happens to cost -- which is the number
 # somebody reading this actually wants to know.
+#
+# And each attempt has a bound of its own, because a deadline that is only read
+# between attempts is no bound on the attempt: an exec that never returns is a
+# loop that never reads it again.
 standing() {
 	local until_ state
-	until_=$(( $(date +%s) + 180 ))
+	until_="$(by 180)"
 	while [ "$(date +%s)" -lt "${until_}" ]; do
-		state="$(docker inspect -f '{{.State.Status}}' "k3d-${CLUSTER}-server-0" 2>/dev/null || true)"
+		state="$(docker inspect -f '{{.State.Status}}' "${node}" 2>/dev/null || true)"
 		if [ "${state}" = "running" ] \
-			&& docker exec "k3d-${CLUSTER}-server-0" ctr version >/dev/null 2>&1; then
+			&& timeout --foreground -k 5 15 docker exec "${node}" ctr version >/dev/null 2>&1; then
 			return 0
 		fi
 
@@ -402,9 +597,21 @@ standing() {
 	done
 
 	echo "the node never got ready to be copied into; it is ${state:-gone}" >&2
-	docker logs --tail 40 "k3d-${CLUSTER}-server-0" >&2 2>&1 || true
+	briefly docker logs --tail 40 "${node}" >&2 2>&1 || true
 
 	return 1
+}
+
+# pulled is an image on the engine before anything waits on it: bounded, and
+# asked again the way `tried` asks.
+#
+# `kube`'s image used to come down inside the first `kube`, which is the loop
+# below that waits for the API with every line of its output thrown away. A
+# registry that stalled there was a run that printed `== up` and then nothing,
+# for as long as the job let it.
+pulled() {
+	docker image inspect "$1" >/dev/null 2>&1 \
+		|| tried bounded 120 docker pull -q "$1" >/dev/null
 }
 
 echo "== the images this checkout builds"
@@ -424,8 +631,17 @@ image() {
 		tried docker build -q --target "${stage}" -t "${name}" . >/dev/null
 	fi
 }
+built="$(date +%s)"
 image app "${ROSTER_APP_IMAGE}" "roster-cluster:${CLUSTER}"
 image dev "${ROSTER_DEV_IMAGE}" "roster-walk:${CLUSTER}"
+# A build is a desk's, and minutes the first time; the budget is the cluster's.
+deadline=$((deadline + $(date +%s) - built))
+
+# And the three it borrows, which the steps below would otherwise pull in the
+# middle of whatever they are waiting for.
+for borrowed in "${KUBECTL_IMAGE}" alpine alpine/openssl:3.3.2; do
+	pulled "${borrowed}"
+done
 standing
 
 # Its output rather than its status, because a node that refuses the copy is an
@@ -436,7 +652,18 @@ standing
 # is the *condition*, so a match that raced would have made this `if` false and
 # walked on with the images not on the node -- the check would have been the thing
 # that went quiet.
-imported="$(k3d image import "roster-cluster:${CLUSTER}" "roster-walk:${CLUSTER}" -c "${CLUSTER}" 2>&1)" || true
+#
+# The status is read for one thing: a copy `bounded` had to stop, which is no
+# `ERRO` line at all.
+copied=0
+imported="$(bounded 180 k3d image import "roster-cluster:${CLUSTER}" "roster-walk:${CLUSTER}" -c "${CLUSTER}" 2>&1)" || copied=$?
+case "${copied}" in
+124 | 137)
+	printf '%s\n' "${imported}" >&2
+	echo "the images were still being copied into the node" >&2
+	exit 1
+	;;
+esac
 case "${imported}" in
 *ERRO*)
 	printf '%s\n' "${imported}" >&2
@@ -472,7 +699,7 @@ PY
 # `deploy/hydra.yaml` says what that gives up -- and everything that talks to it
 # is handed the CA, which is what `ca.crt` in the same Secret is for.
 echo "== a certificate for the issuer"
-docker run --rm --entrypoint sh -v "${vol}:/w" alpine/openssl:3.3.2 -c '
+bounded 120 docker run --rm --init --label "roster.cluster=${CLUSTER}" --entrypoint sh -v "${vol}:/w" alpine/openssl:3.3.2 -c '
 	set -e
 	cd /tmp
 	openssl req -x509 -newkey rsa:2048 -nodes -days 1 -keyout ca.key -out ca.crt \
@@ -524,8 +751,8 @@ echo "== up"
 # Imports need containerd; the first API operation needs the API itself too.
 # It can restart while cold image imports run after k3d --wait. Probe readiness
 # only; every deployment and protocol assertion below still runs once.
-api_deadline=$(( $(date +%s) + 180 ))
-until kube "kubectl --request-timeout=5s get --raw=/readyz" >/dev/null 2>&1; do
+api_deadline="$(by 180)"
+until kube -t 20 "kubectl --request-timeout=5s get --raw=/readyz" >/dev/null 2>&1; do
 	[ "$(date +%s)" -lt "${api_deadline}" ] || { echo "cluster: API did not become ready" >&2; exit 1; }
 	sleep 2
 done
@@ -565,7 +792,7 @@ kube "kubectl -n ${NS} create secret generic roster-edge-tls \
 kube "kubectl -n ${NS} create secret generic roster-checkpoints \
 	--from-file=key.pem=/w/tls/checkpoints.pem >/dev/null"
 kube "kubectl -n ${NS} apply -k /w/deploy >/dev/null"
-kube "kubectl -n ${NS} rollout status deploy/roster-hydra --timeout=300s"
+kube -t 330 "kubectl -n ${NS} rollout status deploy/roster-hydra --timeout=300s"
 
 # **Twice, and the second one is the check.**
 #
@@ -579,9 +806,9 @@ kube "kubectl -n ${NS} rollout status deploy/roster-hydra --timeout=300s"
 # Written with `emptyDir` volumes this could never happen: the database went with
 # the pod and every start was a first one. Restarting here is what proves the
 # volumes outlive it.
-kube "kubectl -n ${NS} rollout status deploy/roster --timeout=300s"
+kube -t 330 "kubectl -n ${NS} rollout status deploy/roster --timeout=300s"
 echo "== again, for the nomination the first start had nothing to write"
-kube "kubectl -n ${NS} delete pod -l app.kubernetes.io/component=server >/dev/null 2>&1; kubectl -n ${NS} rollout status deploy/roster --timeout=300s"
+kube -t 360 "kubectl -n ${NS} delete pod -l app.kubernetes.io/component=server >/dev/null 2>&1; kubectl -n ${NS} rollout status deploy/roster --timeout=300s"
 
 echo
 echo "== is the login app fronting anybody"
@@ -776,7 +1003,7 @@ echo "   and a sign-in fails at the exchange, in one line in the app's log"
 # method is in the code now, so a fresh process fails exactly as the old one
 # did.
 kube "kubectl -n ${NS} rollout restart deploy/roster-product >/dev/null"
-kube "kubectl -n ${NS} rollout status deploy/roster-product --timeout=300s >/dev/null"
+kube -t 330 "kubectl -n ${NS} rollout status deploy/roster-product --timeout=300s >/dev/null"
 if walk >/dev/null 2>&1; then
 	echo "cluster: a restart cured it, so the method is being discovered rather than said -- the defect in #12 is back" >&2
 	exit 1
@@ -1163,16 +1390,16 @@ kube "kubectl -n ${NS} create secret generic roster-behind \
 	--from-literal=client-secret=this-is-a-rig-and-not-a-secret-either >/dev/null 2>&1 || true"
 
 kube "kubectl -n ${NS} delete job --all >/dev/null 2>&1; kubectl -n ${NS} apply -k /w/behind >/dev/null"
-kube "kubectl -n ${NS} rollout status deploy/roster-edge --timeout=300s >/dev/null"
-kube "kubectl -n ${NS} rollout status deploy/roster-behind --timeout=300s >/dev/null"
-kube "kubectl -n ${NS} rollout status deploy/roster-hydra --timeout=300s >/dev/null"
+kube -t 330 "kubectl -n ${NS} rollout status deploy/roster-edge --timeout=300s >/dev/null"
+kube -t 330 "kubectl -n ${NS} rollout status deploy/roster-behind --timeout=300s >/dev/null"
+kube -t 330 "kubectl -n ${NS} rollout status deploy/roster-hydra --timeout=300s >/dev/null"
 
 # **The product coming up at all is the first assertion.** It does discovery
 # against `--issuer` at startup and refuses a document whose `iss` is not that
 # string, so an issuer that published `http://` here -- which is what it would
 # do if `allow_termination_from` were missing or the terminator sent no
 # `X-Forwarded-Proto` -- is a pod that never becomes ready.
-kube "kubectl -n ${NS} rollout status deploy/roster-product --timeout=300s >/dev/null" \
+kube -t 330 "kubectl -n ${NS} rollout status deploy/roster-product --timeout=300s >/dev/null" \
 	|| { kube "kubectl -n ${NS} logs deploy/roster-product --tail=20"; echo "cluster: the relying party would not come up behind the terminator" >&2; exit 1; }
 
 # **And roster's own**, because this overlay changed `resources.yaml`.
@@ -1190,7 +1417,7 @@ kube "kubectl -n ${NS} rollout status deploy/roster-product --timeout=300s >/dev
 # that has not applied the row and reads `the password was not accepted` -- a
 # sentence about the wrong thing, which is what this phase said on its first run
 # after #36.
-kube "kubectl -n ${NS} rollout status deploy/roster --timeout=300s >/dev/null"
+kube -t 330 "kubectl -n ${NS} rollout status deploy/roster --timeout=300s >/dev/null"
 # And once more, so the init container nominates on the name that rollout applied;
 # `renominated` says why a declared name takes two starts.
 renominated
@@ -1428,7 +1655,7 @@ resync /w/behind || two=$?
 # What that looks like from the walk is `the password was not accepted`, which is
 # a sentence about the wrong thing; it cost a CI run, where everything is slower
 # than on a desk and the race actually lands.
-kube "kubectl -n ${NS} rollout status deploy/roster --timeout=300s >/dev/null"
+kube -t 330 "kubectl -n ${NS} rollout status deploy/roster --timeout=300s >/dev/null"
 renominated
 echo "   a second relying party is declared, registered and claimed"
 
