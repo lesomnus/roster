@@ -140,6 +140,14 @@ func (a *App) stream(ctx context.Context) error {
 		if err != nil {
 			continue
 		}
+		if v.GetReason() == rstr.SyncReason_SYNC_REASON_REACH {
+			// What they may call, which is no session of Hydra's. None of the
+			// facts on it is news (`sync.proto`), and read as if they were,
+			// the first one about somebody this connection had not heard of
+			// would forget them for a sign-out it had acted on before -- once
+			// for every person a role edit reaches.
+			continue
+		}
 
 		// Their tenant closing is the fourth way, and is heard on each of its
 		// people for exactly this: a subject is what Hydra forgets.

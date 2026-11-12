@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/spin"
 
@@ -385,4 +386,91 @@ func TestTheFollowerIsALoopEveryProcessRuns(t *testing.T) {
 		_, err := op.Invalidate(as, rstr.HolderInvalidateRequest_builder{Ref: rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build()}.Build())
 		return err
 	}, func(v standing.Standing) bool { return !v.Invalidated.IsZero() })
+}
+
+// TestWhatSomebodyMayCallIsNoNewsOfTheirStanding: roster's stream says when
+// what somebody may call may have changed (`SYNC_REASON_REACH`), which is
+// `reach`'s to act on. None of the four facts on such an event is news, so the
+// follower drops nothing it knew for it and hands `on` nothing -- or a role
+// edit would be a standing asked again, and `on` run, for everybody the role
+// reaches.
+func TestWhatSomebodyMayCallIsNoNewsOfTheirStanding(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+	e := newExternal(t)
+	as := at(e.key, "acme")
+	c := &cutting{}
+	a := accounts(t, standing.Config{Conn: e.dial(t, c.option()), As: as, Now: (&clock{now: time.Now()}).Now})
+	got := follow(t, a)
+	op, opAs := e.asOperator(t)
+	canary := addPerson(t, e.s, e.acme, "canary")
+	poke := func(who pdid.Id) func() error {
+		return func() error {
+			_, err := op.Invalidate(opAs, rstr.HolderInvalidateRequest_builder{Ref: rstr.HolderRef_builder{Id: who.Bytes()}.Build()}.Build())
+			return err
+		}
+	}
+
+	// The stream is open, and kim's standing is known.
+	heard(t, got, e.kim, poke(e.kim), func(v standing.Standing) bool { return !v.Invalidated.IsZero() })
+	x.NoError(a.Held(ctx, e.kim, time.Now().Add(time.Second)))
+	asked := c.asked.Load()
+
+	// And another stream, to see what roster says: a role bound to kim, by
+	// acme's administrator over the wire.
+	raw, err := rstr.NewSyncServiceClient(e.dial(t)).Watch(func() context.Context { v, _ := as(ctx); return v }(), rstr.SyncWatchRequest_builder{}.Build())
+	x.NoError(err)
+	events := make(chan *rstr.SyncEvent, 64)
+	go func() {
+		for {
+			v, err := raw.Recv()
+			if err != nil {
+				return
+			}
+			events <- v
+		}
+	}()
+	admin := auth.BearerProvider(e.admin).Provide(ctx)
+	x.Eventually(func() bool {
+		x.NoError(poke(canary)())
+		select {
+		case <-events:
+			return true
+		case <-time.After(50 * time.Millisecond):
+			return false
+		}
+	}, 10*time.Second, 10*time.Millisecond, "the second stream never opened")
+	role, err := rstr.NewRoleServiceClient(e.dial(t)).Add(admin, rstr.RoleAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: e.acme.Bytes()}.Build(), Alias: "reader", Methods: []string{rstr.HolderService_Get_FullMethodName},
+	}.Build())
+	x.NoError(err)
+	_, err = rstr.NewBindingServiceClient(e.dial(t)).Add(admin, rstr.BindingAddRequest_builder{
+		Role: rstr.RoleRef_builder{Id: role.GetId()}.Build(), Holder: rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+	for v := range events {
+		if string(v.GetHolder()) == string(e.kim.Bytes()) {
+			x.Equal(rstr.SyncReason_SYNC_REASON_REACH, v.GetReason(), "what roster said of kim")
+			break
+		}
+	}
+
+	// The follower is past it once three pokes made after it have arrived,
+	// each known by the moment it wrote: the first may have been taken with
+	// it, and the stream reads what it took in no order.
+	for range 3 {
+		res, err := op.Invalidate(opAs, rstr.HolderInvalidateRequest_builder{Ref: rstr.HolderRef_builder{Id: canary.Bytes()}.Build()}.Build())
+		x.NoError(err)
+		for done := false; !done; {
+			select {
+			case v := <-got:
+				x.NotEqual(e.kim, v.Holder, "a role bound to kim was handed on as news of their standing")
+				done = v.Holder == canary && !v.Invalidated.Before(res.GetDateInvalidated().AsTime())
+			case <-time.After(10 * time.Second):
+				t.Fatal("the follower stopped hearing anything")
+			}
+		}
+	}
+	x.NoError(a.Held(ctx, e.kim, time.Now().Add(time.Second)))
+	x.Equal(asked, c.asked.Load(), "kim's standing was dropped, and asked again, for a role")
 }

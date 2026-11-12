@@ -56,6 +56,10 @@ type external struct {
 	key, tenantKey, operator string
 	acme, beta               pdid.Id
 	kim                      pdid.Id
+
+	// admin is acme's own administrator's key, which writes acme's roles
+	// and bindings over the wire -- the only way the stream hears of them.
+	admin string
 }
 
 func newExternal(t *testing.T) *external {
@@ -94,6 +98,7 @@ func newExternal(t *testing.T) *external {
 	e.key = stdoutOf(t, cli.NewCmdControl(&c), "key", "add", "--narrowed", app)
 	x.NoError(cli.NewCmdApp(&c).Run(ctx, []string{"install", "--tenant", "acme", "--role", strings.Join(methods, ","), app}))
 	e.tenantKey = stdoutOf(t, cli.NewCmdKey(&c), "add", "--tenant", "acme", "--holder", app, "--name", app, "--allow", strings.Join(methods, ","))
+	e.admin = stdoutOf(t, cli.NewCmdKey(&c), "add", "--tenant", "acme", "--holder", "admin", "--name", "admin", "--allow", "/roster.*/*")
 	e.operator = stdoutOf(t, cli.NewCmdControl(&c), "key", "add", "--allow",
 		"/roster.HolderService/Invalidate,/roster.HolderService/Disable,/roster.HolderService/Enable,/roster.HolderService/Erase,"+
 			"/roster.TenantService/Get,/roster.TenantService/Update,/roster.TenantService/Close,/roster.TenantService/Restore", "operator")

@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/sync.proto.
  */
 export const file_app_sync: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvc3luYy5wcm90bxIGcm9zdGVyIhIKEFN5bmNXYXRjaFJlcXVlc3QiyQIKCVN5bmNFdmVudBIOCgZob2xkZXIYASABKAwSDgoGdGVuYW50GAIgASgMEiIKBnJlYXNvbhgIIAEoDjISLnJvc3Rlci5TeW5jUmVhc29uEi0KCWRhdGVfc2VudBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASNAoQZGF0ZV9pbnZhbGlkYXRlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNZGF0ZV9kaXNhYmxlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2RhdGVfY2xvc2VkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCrHAQoKU3luY1JlYXNvbhIbChdTWU5DX1JFQVNPTl9VTlNQRUNJRklFRBAAEhsKF1NZTkNfUkVBU09OX0lOVkFMSURBVEVEEAESGQoVU1lOQ19SRUFTT05fU1VTUEVOREVEEAISGgoWU1lOQ19SRUFTT05fUkVJTlNUQVRFRBADEhYKElNZTkNfUkVBU09OX0VSQVNFRBAEEhYKElNZTkNfUkVBU09OX0NMT1NFRBAFEhgKFFNZTkNfUkVBU09OX1JFT1BFTkVEEAYyRQoLU3luY1NlcnZpY2USNgoFV2F0Y2gSGC5yb3N0ZXIuU3luY1dhdGNoUmVxdWVzdBoRLnJvc3Rlci5TeW5jRXZlbnQwAUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp]);
+  fileDesc("Cg5hcHAvc3luYy5wcm90bxIGcm9zdGVyIhIKEFN5bmNXYXRjaFJlcXVlc3QiyQIKCVN5bmNFdmVudBIOCgZob2xkZXIYASABKAwSDgoGdGVuYW50GAIgASgMEiIKBnJlYXNvbhgIIAEoDjISLnJvc3Rlci5TeW5jUmVhc29uEi0KCWRhdGVfc2VudBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASNAoQZGF0ZV9pbnZhbGlkYXRlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNZGF0ZV9kaXNhYmxlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2RhdGVfY2xvc2VkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCreAQoKU3luY1JlYXNvbhIbChdTWU5DX1JFQVNPTl9VTlNQRUNJRklFRBAAEhsKF1NZTkNfUkVBU09OX0lOVkFMSURBVEVEEAESGQoVU1lOQ19SRUFTT05fU1VTUEVOREVEEAISGgoWU1lOQ19SRUFTT05fUkVJTlNUQVRFRBADEhYKElNZTkNfUkVBU09OX0VSQVNFRBAEEhYKElNZTkNfUkVBU09OX0NMT1NFRBAFEhgKFFNZTkNfUkVBU09OX1JFT1BFTkVEEAYSFQoRU1lOQ19SRUFTT05fUkVBQ0gQBzJFCgtTeW5jU2VydmljZRI2CgVXYXRjaBIYLnJvc3Rlci5TeW5jV2F0Y2hSZXF1ZXN0GhEucm9zdGVyLlN5bmNFdmVudDABQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
 
 /**
  * Nothing, and that is the shape rather than a first version.
@@ -85,6 +85,13 @@ export type SyncEvent = Message<"roster.SyncEvent"> & {
    * here beside it. An app that switches on this field alone will be told
    * nothing on that first event; an app that compares the three timestamps
    * against its own session is right every time.
+   *
+   * `SYNC_REASON_REACH` is the one answer that is not about the timestamps,
+   * and is never a guess: an event sent for what somebody may call says so,
+   * and one sent because a timestamp moved never says it. The facts on it are
+   * as they are, and none of them is news there -- a move of any of them is
+   * an event of its own on the same stream -- so an app that holds sessions
+   * and nothing else may pass it by.
    *
    * @generated from field: roster.SyncReason reason = 8;
    */
@@ -160,8 +167,9 @@ export const SyncEventSchema: GenMessage<SyncEvent> = /*@__PURE__*/
  * SyncReason is why a copy has stopped being good.
  *
  * See [SyncEvent.reason]: this is commentary on the timestamps and not the
- * message. Every value here can be derived from a pair of events, and is here
- * so that a log and a screen have a word for what happened.
+ * message. Every value here but `SYNC_REASON_REACH` can be derived from a pair
+ * of events, and is here so that a log and a screen have a word for what
+ * happened; that one is what nothing on the event could say otherwise.
  *
  * @generated from enum roster.SyncReason
  */
@@ -218,6 +226,17 @@ export enum SyncReason {
    * @generated from enum value: SYNC_REASON_REOPENED = 6;
    */
   REOPENED = 6,
+
+  /**
+   * What they may call may have changed: a role, a binding or a membership
+   * that reaches them -- through a group, or a team -- was written, added or
+   * erased. None of the timestamps moved. An app keeping what
+   * `HolderService/Reaches` answered about them asks again; the event says
+   * nothing of what they reach, which is that method's to answer.
+   *
+   * @generated from enum value: SYNC_REASON_REACH = 7;
+   */
+  REACH = 7,
 }
 
 /**
@@ -281,6 +300,24 @@ export const SyncReasonSchema: GenEnum<SyncReason> = /*@__PURE__*/
  * A deployment with no broker cannot serve this at all and says so --
  * `watch.ErrNoBroker` -- rather than opening a stream that will never carry
  * anything, which is the one failure a client cannot tell from a quiet system.
+ *
+ * # And what they may do
+ *
+ * The decision an app holds has two halves, and the four facts are the first:
+ * *this is that person*. The second -- *they may do these things* -- is what
+ * `HolderService/Reaches` answered when the app asked, and it stops being true
+ * when somebody writes a role, a binding or a membership that reaches them. So
+ * an event is sent about each person such a write may have changed that for,
+ * saying so (`SYNC_REASON_REACH`), and an app that keeps what `Reaches` said
+ * asks again (`reach`, `docs/apps.md`).
+ *
+ * It says *may have*, and names nobody's methods. Working out whether what a
+ * person reaches really moved is asking the policy about everybody a role is
+ * bound to, at every write to it, and an event that carried the answer would
+ * hand `Reaches` to whoever holds this stream and not that method. A person
+ * told about who reaches what they did is asked about once more, which costs
+ * one call; a person not told keeps a stale answer until the app's own copy
+ * runs out.
  *
  * @generated from service roster.SyncService
  */

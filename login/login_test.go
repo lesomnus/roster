@@ -1382,6 +1382,70 @@ func TestSomebodyBackInGoodStandingIsNotSignedOutAgain(t *testing.T) {
 	x.Equal(after, d.hydra.times(erin.String()), "she was signed out again for coming back")
 }
 
+// TestWhatSomebodyMayCallIsNoSignOut: roster's stream also says when what
+// somebody may call may have changed (`SYNC_REASON_REACH`), with their facts as
+// they are -- none of them news. Read as if they were, the first such event
+// about somebody this connection had not heard of would have Hydra forget them
+// for a sign-out acted on long before, once for every person a role edit
+// reaches. So a role bound to somebody signed out everywhere before the stream
+// opened reaches Hydra as nothing.
+func TestWhatSomebodyMayCallIsNoSignOut(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+	ctx := t.Context()
+
+	go func() { _ = d.a.Watch(ctx) }()
+
+	// Signed out everywhere before anything was listening, through the
+	// server in this process -- which publishes nothing.
+	quiet := addPerson(t, ctx, d, "quiet")
+	_, err := d.s.Ungated.Holder().Invalidate(ctx, rstr.HolderInvalidateRequest_builder{
+		Ref: rstr.HolderRef_builder{Id: quiet.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	h := rstr.NewHolderServiceClient(d.conn)
+	other := addPerson(t, ctx, d, "marker")
+	marks := 0
+	mark := func() {
+		t.Helper()
+		_, err := h.Invalidate(d.ops, rstr.HolderInvalidateRequest_builder{
+			Ref: rstr.HolderRef_builder{Id: other.Bytes()}.Build(),
+		}.Build())
+		x.NoError(err)
+		marks++
+		x.Eventually(func() bool { return d.hydra.times(other.String()) >= marks },
+			10*time.Second, 20*time.Millisecond, "the stream stopped carrying anything")
+	}
+	x.Eventually(func() bool {
+		_, err := h.Invalidate(d.ops, rstr.HolderInvalidateRequest_builder{
+			Ref: rstr.HolderRef_builder{Id: d.who["contoso"].Bytes()}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		return d.hydra.times(d.who["contoso"].String()) > 0
+	}, 10*time.Second, 100*time.Millisecond, "the stream never opened")
+
+	role, err := rstr.NewRoleServiceClient(d.conn).Add(d.ops, rstr.RoleAddRequest_builder{
+		Tenant:  rstr.TenantRef_builder{Alias: proto.String("contoso")}.Build(),
+		Alias:   "reader",
+		Methods: []string{rstr.HolderService_Get_FullMethodName},
+	}.Build())
+	x.NoError(err)
+	_, err = rstr.NewBindingServiceClient(d.conn).Add(d.ops, rstr.BindingAddRequest_builder{
+		Role:   rstr.RoleRef_builder{Id: role.GetId()}.Build(),
+		Holder: rstr.HolderRef_builder{Id: quiet.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	// Three, because an event after a write is not the stream having read
+	// past it: what it took at once it reads in no order.
+	for range 3 {
+		mark()
+	}
+	x.Zero(d.hydra.times(quiet.String()), "hydra was told to forget somebody for a role")
+}
+
 // addPerson puts somebody in contoso, for a test that needs a second one.
 func addPerson(t *testing.T, ctx context.Context, d *deployment, alias string) pdid.Id {
 	t.Helper()

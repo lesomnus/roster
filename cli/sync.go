@@ -25,7 +25,7 @@ import (
 func newCmdSync(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "sync",
-		Brief: "the stream that says somebody's standing stopped being good",
+		Brief: "the stream that says somebody's standing, or what they may call, stopped being what an app was told",
 
 		Commands: xli.Commands{
 			newCmdSyncWatch(c),
