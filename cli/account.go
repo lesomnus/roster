@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -291,7 +290,7 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 	}
 	defer a.Close()
 
-	l, err := net.Listen("tcp", ac.Addr)
+	l, err := cmd.Listen(ctx, ac.Addr)
 	if err != nil {
 		return err
 	}

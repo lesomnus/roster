@@ -83,7 +83,7 @@ func serveScim(ctx context.Context, sc cmd.ScimConfig) error {
 	}
 	defer s.Close()
 
-	l, err := net.Listen("tcp", sc.Addr)
+	l, err := cmd.Listen(ctx, sc.Addr)
 	if err != nil {
 		return err
 	}

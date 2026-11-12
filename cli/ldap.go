@@ -199,7 +199,7 @@ func serveLdap(ctx context.Context, lc cmd.LdapConfig) error {
 	}
 	n := 0
 	if lc.Addr != "" {
-		l, err := net.Listen("tcp", lc.Addr)
+		l, err := cmd.Listen(ctx, lc.Addr)
 		if err != nil {
 			return err
 		}
@@ -207,12 +207,12 @@ func serveLdap(ctx context.Context, lc cmd.LdapConfig) error {
 		go serve(l, "ldap")
 	}
 	if lc.AddrTls != "" {
-		l, err := tls.Listen("tcp", lc.AddrTls, tlsConfig)
+		l, err := cmd.Listen(ctx, lc.AddrTls)
 		if err != nil {
 			return err
 		}
 		n++
-		go serve(l, "ldaps")
+		go serve(tls.NewListener(l, tlsConfig), "ldaps")
 	}
 	for range n {
 		if err := <-errs; err != nil {

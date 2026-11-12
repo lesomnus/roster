@@ -162,7 +162,7 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 					slog.Int("added", len(v.Added)), slog.Int("changed", len(v.Changed)), slog.Int("same", len(v.Same)))
 			}
 
-			l, err := net.Listen("tcp", c.Server.ListenAddr())
+			l, err := cmd.Listen(ctx, c.Server.ListenAddr())
 			if err != nil {
 				return err
 			}

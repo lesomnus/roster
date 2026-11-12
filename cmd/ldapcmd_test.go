@@ -2,9 +2,7 @@ package cmd_test
 
 import (
 	"context"
-	"fmt"
 	"github.com/lesomnus/roster/cli"
-	"net"
 	"strings"
 	"testing"
 	"time"
@@ -69,8 +67,8 @@ func TestLdapServeIsToldEverything(t *testing.T) {
 	// Told everything, from the environment for the key the way a service
 	// file would, on a port this test picked.
 	t.Setenv(cli.LdapKeyPrefix+"NEWCO", b.Hers.Client.Auth.Credential)
-	addr := freePort(t)
-	run, cancel := context.WithCancel(ctx)
+	l, addr := listening(t)
+	run, cancel := context.WithCancel(cmd.Held(ctx, l))
 	done := make(chan error, 1)
 	go func() {
 		done <- cli.Cmd(&cmd.Config{}).Run(run, []string{"--config=", "ldap", "serve", "--roster", roster, "--insecure", "--listen", addr, "--base", "newco=dc=newco,dc=example"})
@@ -102,14 +100,4 @@ func TestLdapServeIsToldEverything(t *testing.T) {
 
 	cancel()
 	x.NoError(<-done, "serve did not stop cleanly when told to")
-}
-
-func freePort(t *testing.T) string {
-	t.Helper()
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-	addr := fmt.Sprintf("127.0.0.1:%d", l.Addr().(*net.TCPAddr).Port)
-	require.NoError(t, l.Close())
-
-	return addr
 }
