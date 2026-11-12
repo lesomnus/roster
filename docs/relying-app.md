@@ -15,6 +15,12 @@ by the repository that knows what the answers mean. It came out of Loft's
 levyan, keeping billing accounts that roster accounts own, uses rather than
 writing it a second time.
 
+The second half of the copy -- *they may do these things* -- is `reach`, its
+sibling: what somebody may call, asked with `HolderService/Reaches`, kept as
+long as a standing is, and dropped when the stream says a role, a binding or a
+membership reaching them was written ([apps.md](apps.md) § *Asking it:
+`reach`*). This page is the first half.
+
 ## The three ways an app learns
 
 | | | |
@@ -137,6 +143,13 @@ now, which is what the stream carries (`proto/app/sync.proto`). Each one is also
 dropped from what this process knows, so the next `Held` asks: that is how a
 suspension reaches a session already open at once rather than within
 `HeldTtl` (`TestWhatRosterSaysArrivesAsItIsSaid`).
+
+The stream also says when what somebody may call may have changed
+(`SYNC_REASON_REACH`), which is `reach`'s to act on. None of the four facts on
+such an event is news -- a fact that moved is an event of its own -- so
+`Follow` passes it by: nothing is dropped for it and `on` is not handed it,
+which would otherwise be a standing asked again, and `on` run, for everybody a
+role edit reaches (`TestWhatSomebodyMayCallIsNoNewsOfTheirStanding`).
 
 `Accounts.Follower(name, on)` is the same as a loop for payday's `spin.Run`,
 named, and an app marks it to run in **every process**:

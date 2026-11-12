@@ -96,9 +96,10 @@ go tool pd gen --check --ts .
 #
 # And `standing/`, which no process here is either: it is what an app in
 # another repository imports to keep asking roster after a sign-in, and an app
-# beside roster has the wire and nothing else.
+# beside roster has the wire and nothing else. `reach/` is its sibling, for
+# what somebody may call, and is held to the same.
 echo "== the consumers reach roster only over the wire"
-for pkg in ./account/ ./arrives/ ./ldap/ ./login/ ./scim/ ./standing/; do
+for pkg in ./account/ ./arrives/ ./ldap/ ./login/ ./reach/ ./scim/ ./standing/; do
 	if go list -f '{{join .Imports "\n"}}' "${pkg}" | grep -E '^github.com/lesomnus/roster/(internal|cmd|server/)' | grep -v '^github.com/lesomnus/roster/server/front$'; then
 		echo "${pkg} imports a server package; it is a consumer and reaches roster over the wire" >&2
 		exit 1

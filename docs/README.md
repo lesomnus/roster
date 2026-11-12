@@ -60,6 +60,8 @@ a runnable example of each, and which gate can see what.
 (roster-hosted for many tenants, roster-hosted for one, self-hosted): which key
 it holds, how a request says which tenant it is about, whose name lands in the
 trail, and what one client library can and cannot hide about the difference.
+And what a person calling it may do: `reach`, the package that asks, and the
+roles an app ships into a tenant and widens at an upgrade.
 
 [relying-app.md](relying-app.md) -- what an app keeps asking roster about the
 people it signed in, and `standing`, the package that does it: an account's
