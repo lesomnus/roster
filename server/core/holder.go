@@ -151,9 +151,11 @@ func (s coreHolder) Realias(ctx context.Context, req *app.HolderRealiasRequest) 
 // the second of the two now -- `Core.mayReach`, chosen in D28 rather than
 // assumed here, guards every credential write and every way in beside it.
 //
-// The first is still nobody's. Somebody who may `Disable` an administrator
+// The first is still nobody's: somebody who may `Disable` an administrator
 // cannot become them; they can only stop them, and D26 says that is a real gap
-// and a different one.
+// and a different one. Except for the last of them -- a suspension that leaves
+// the tenant with nobody administering it is refused (`administered.go`),
+// since nobody in the tenant could undo it.
 //
 // **A password change does not invalidate.** *A password reset that leaves old
 // sessions alive is not a reset* is true, and it belongs with the recovery
@@ -174,7 +176,15 @@ func (s coreHolder) Disable(ctx context.Context, req *app.HolderDisableRequest) 
 	}
 	lock(&patch, req.GetDateUpdated())
 
-	return s.HolderServiceServer.Patch(ctx, patch.Build())
+	var out *app.Holder
+	err := s.keepsTheirs(ctx, req.GetRef(), "suspending them", func(next app.Server) error {
+		var err error
+		out, err = next.Holder().Patch(ctx, patch.Build())
+
+		return err
+	})
+
+	return out, err
 }
 
 func (s coreHolder) Enable(ctx context.Context, req *app.HolderEnableRequest) (*app.Holder, error) {

@@ -50,6 +50,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/identity"
+	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	app "github.com/lesomnus/roster/rstr"
@@ -229,7 +230,8 @@ func (s *Server) teams(ctx context.Context, who pdid.Id) ([]*app.MeTeam, error) 
 			teammembership.DateErasedIsNil(),
 			teammembership.HasHolderWith(holder.IdEQ(who.Uuid())),
 		).
-		WithRole().
+		// A role that was erased is no role they hold, as the gate reads it.
+		WithRole(func(q *ent.RoleQuery) { q.Where(role.DateErasedIsNil()) }).
 		WithTeam(func(q *ent.TeamQuery) { q.WithSite() }).
 		All(ctx)
 	if err != nil {
@@ -271,7 +273,8 @@ func (s *Server) groups(ctx context.Context, who pdid.Id) ([]*app.MeGroup, error
 			groupmembership.HasHolderWith(holder.IdEQ(who.Uuid())),
 			groupmembership.HasGroupWith(group.DateErasedIsNil()),
 		).
-		WithRole().
+		// A role that was erased is no role they hold, as the gate reads it.
+		WithRole(func(q *ent.RoleQuery) { q.Where(role.DateErasedIsNil()) }).
 		WithGroup().
 		All(ctx)
 	if err != nil {

@@ -391,13 +391,15 @@ If you are adding a write, ask both questions of it before asking anything else.
 `server/core/escalate.go` is where the answers live; its file comment is how
 they were arrived at.
 
-A write that only takes away -- `Role.Narrow` -- answers the gate with less and
-hands nobody anything, and asking the first question of it is asking it the
-wrong way round. It is held to the mirror: **nobody takes away what they could
-not have given** (`mayTakeAway`), because what somebody holds is also what keeps
-others out of their credential, and stripped below the caller they are
-somebody the caller may reset. And to one rule about the tenant: a narrowing does
-not leave it with nobody administering it (`server/core/narrow.go`).
+A write that only takes away -- `Role.Narrow`, or an erased binding, role,
+group, or place in one -- answers the gate with less and hands nobody anything,
+and asking the first question of it is asking it the wrong way round. It is held
+to the mirror: **nobody takes away what they could not have given**
+(`mayTakeAway`), because what somebody holds is also what keeps others out of
+their credential, and stripped below the caller they are somebody the caller
+may reset (`server/core/takeaway.go`). And to one rule about the tenant, as are
+suspending and erasing a person: no write leaves it with nobody administering
+it (`server/core/administered.go`).
 
 ## Running
 
