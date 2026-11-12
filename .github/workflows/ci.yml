@@ -325,7 +325,7 @@ jobs:
           BEFORE: ${{ github.event.pull_request.base.sha || github.event.before }}
           # The build staging runs, 1bcd27a (2026-11-11). It moves when staging
           # moves: to what staging runs once it runs it.
-          OLDEST: 1bcd27a89c854ef1382ba7f0831ee385a9ecf93d
+          OLDEST: 36fafdadc11b7ab843eb0908b48b35da5efdd778
         run: |
           go build -o "${RUNNER_TEMP}/bin-now/" ./cmd/roster
           # epoch TREE: the compatibility epoch TREE is of, and 0 for a tree
