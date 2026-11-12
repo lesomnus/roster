@@ -64,6 +64,28 @@ func reaching(t *testing.T, b *built, ctx context.Context) *reachIn {
 	}
 }
 
+// settled returns once the stream has read every write so far, and holds what
+// it still had to say of `who` to the one thing it may be: what they may call,
+// again.
+//
+// The stream reads a row when it gets to it, as the row is then ([caughtUp]
+// says so at length). So a role written just before its binding and read just
+// after it is a role that reaches them, and the binding is read for them too:
+// two events about what they may call, for one change to it. Both are true,
+// and an app drops what it knew of them on each. But a step that took the next
+// event about them as its own took the one before it, every step after was
+// one behind, and the first that waits for something other than REACH --
+// their facts -- was handed REACH: "expected: 0, actual: 7", on a busy
+// machine. So every step begins with nothing left from the one before.
+func (r *reachIn) settled(t *testing.T, who pdid.Id) {
+	t.Helper()
+
+	for _, v := range caughtUp(t, r.as, r.conn, r.c, r.canary) {
+		require.Equal(t, who.Bytes(), v.GetHolder(), "somebody else was told about")
+		require.Equal(t, app.SyncReason_SYNC_REASON_REACH, v.GetReason(), "what was left was something other than what they may call")
+	}
+}
+
 // TestAnAppHearsThatWhatSomebodyMayCallChanged: the second half of what an app
 // holds (`sync.proto`, *And what they may do*) -- a role bound to somebody, the
 // role widened, the binding erased -- is heard as an event about them that
@@ -95,6 +117,7 @@ func TestAnAppHearsThatWhatSomebodyMayCallChanged(t *testing.T) {
 	x.Nil(v.GetDateDisabled())
 
 	t.Run("a role they hold, widened", func(t *testing.T) {
+		r.settled(t, who)
 		_, err := r.roles.Widen(r.as, app.RoleWidenRequest_builder{
 			Ref:     app.RoleRef_builder{Id: role.GetId()}.Build(),
 			Methods: []string{"/roster.HolderService/List"},
@@ -104,6 +127,7 @@ func TestAnAppHearsThatWhatSomebodyMayCallChanged(t *testing.T) {
 	})
 
 	t.Run("a role they hold, narrowed", func(t *testing.T) {
+		r.settled(t, who)
 		_, err := r.roles.Narrow(r.as, app.RoleNarrowRequest_builder{
 			Ref:     app.RoleRef_builder{Id: role.GetId()}.Build(),
 			Methods: []string{"/roster.HolderService/List"},
@@ -114,6 +138,7 @@ func TestAnAppHearsThatWhatSomebodyMayCallChanged(t *testing.T) {
 	})
 
 	t.Run("and the binding erased", func(t *testing.T) {
+		r.settled(t, who)
 		_, err := r.bindings.Erase(r.as, app.BindingRef_builder{Id: bound.GetId()}.Build())
 		require.NoError(t, err)
 		require.Equal(t, app.SyncReason_SYNC_REASON_REACH, about(t, r.c, who).GetReason(),
@@ -122,6 +147,7 @@ func TestAnAppHearsThatWhatSomebodyMayCallChanged(t *testing.T) {
 
 	t.Run("and their facts, which it moves none of", func(t *testing.T) {
 		x := require.New(t)
+		r.settled(t, who)
 		h := app.NewHolderServiceClient(r.conn)
 		ref := app.HolderRef_builder{Id: who.Bytes()}.Build()
 		_, err := h.Disable(r.as, app.HolderDisableRequest_builder{Ref: ref}.Build())
