@@ -105,9 +105,9 @@ func (m *marker) settled(t *testing.T) {
 }
 
 // TestAChangeAtRosterArrivesAsItIsMade: what roster says of what somebody may
-// call reaches a call here as it is said -- a role of theirs widened, their
-// binding taken away, a group they joined, their suspension -- and not once
-// HeldTtl is over: the clock here does not move.
+// call reaches a call here as it is said -- a role of theirs widened and
+// narrowed, their binding taken away, a group they joined, their suspension --
+// and not once HeldTtl is over: the clock here does not move.
 func TestAChangeAtRosterArrivesAsItIsMade(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
@@ -126,6 +126,11 @@ func TestAChangeAtRosterArrivesAsItIsMade(t *testing.T) {
 	_, err := d.widen(d.ctx, rstr.RoleWidenRequest_builder{Ref: staff, Methods: []string{list}}.Build())
 	x.NoError(err)
 	until(t, func() error { return h.May(ctx, e.kim, list) }, nil, "their role widened")
+
+	_, err = d.narrow(d.ctx, rstr.RoleNarrowRequest_builder{Ref: staff, Methods: []string{list}}.Build())
+	x.NoError(err)
+	until(t, func() error { return h.May(ctx, e.kim, list) }, reach.ErrDenied, "their role narrowed")
+	x.NoError(h.May(ctx, e.kim, get), "and what was left in it")
 
 	_, err = d.eraseBinding(d.ctx, bound)
 	x.NoError(err)

@@ -243,6 +243,12 @@ type Rules struct {
 	// answers as `everywhere`.
 	Everywhere Everywhere
 
+	// Administered is whether a tenant still has somebody administering it,
+	// which a narrowing that could leave it without anybody asks before and
+	// after it writes. Nil is a stack that cannot say, and such a narrowing is
+	// refused rather than made. See [Administered].
+	Administered Administered
+
 	// Borrower is the control-plane holder a deployment key hangs off -- what a
 	// `Nomination` names as `borrower_id`. The key is in another database and
 	// this package holds no client of either, so `cmd`, which has both, says.
@@ -283,6 +289,17 @@ type Held func(ctx context.Context, who pdid.Id) (methods []string, sites []pdid
 // through a binding across the whole tenant. `HolderReachesResponse.everywhere`
 // says who reads it.
 type Everywhere func(ctx context.Context, who pdid.Id) ([]string, error)
+
+// Administered is whether a tenant has somebody who could use `method` across
+// the whole of it: a person there and not suspended, holding a pattern that
+// covers it on its own through a binding with no site -- to them, or to a group
+// of the tenant's they are in.
+//
+// On the driver it is handed, as [Releasing] writes on it: what is asked inside
+// a transaction is asked about what that transaction has written, which is how
+// a narrowing learns what it leaves before it is committed. Nil reads the rows
+// as they are.
+type Administered func(ctx context.Context, drv dialect.Driver, tenant pdid.Id, method string) (bool, error)
 
 // holding is [Rules.Holding], or [Rules.Granted] where a stack was assembled
 // before there were two answers.

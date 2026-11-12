@@ -6,20 +6,28 @@ import "app/role.proto";
 
 // What this app adds to the generated contract for `Role`.
 //
-// # Why a Widen and not the Patch
+// # Why a Widen and a Narrow, and not the Patch
 //
 // `Patch` writes anything the schema holds and is closed at the transport for
 // it (`grpcx.GeneralWrite`), so a role written over the wire could be made and
 // never changed: an app that wrote its default roles into a tenant had no way
-// to give them a method it added in its next release, short of a shell on
-// roster's box (`roster role patch`) once per tenant per upgrade. What an app
-// does to a role it shipped is narrower than a patch, and it is the one thing
-// it should be able to do unattended: **add**. Never take away -- a tenant that
-// narrowed a role it was given has decided something, and an upgrade that
-// undid it would be the app overruling the tenant.
+// to give them a method it added in its next release, and a tenant's
+// administrator no way to take one out of a role, short of a shell on roster's
+// box (`roster role patch`).
 //
-// It is the entity's own verb and not a service beside it (CLAUDE.md,
-// *Overlay before service*): it reads and writes one `Role` row.
+// Opening `Patch` would have opened every column of the row with it -- the
+// alias other rows are found by, the labels a declared row is told apart by --
+// and one rule for two acts that are not alike. Adding a method hands it to
+// everybody the role reaches, and is a grant; taking one out hands out nothing
+// and stops people doing what they did, which is a denial of service and not
+// an escalation (`escalate.go`). So each is a verb of its own with the rules
+// it needs: what an app does to a role it shipped, unattended, is **add**, and
+// never take away -- a tenant that narrowed a role it was given has decided
+// something -- and what a tenant does in its console is either, one method at
+// a time.
+//
+// They are the entity's own verbs and not a service beside it (CLAUDE.md,
+// *Overlay before service*): each reads and writes one `Role` row.
 service RoleService {
   // Widen adds methods to a role and takes none away.
   //
@@ -37,6 +45,28 @@ service RoleService {
   // ships holds every method it puts in them -- its own package's pattern, in
   // the role it was installed with (`docs/apps.md`).
   rpc Widen(RoleWidenRequest) returns (Role);
+
+  // Narrow takes methods out of a role and adds none.
+  //
+  // An entry of the role is taken out when one of `methods` covers it -- the
+  // same spelling, or a pattern over it -- so narrowing by
+  // `/loft.AssetService/*` takes every method of that service the role names.
+  // A method named that an entry left in the role still covers is refused, and
+  // nothing is written: narrowing a role holding `/loft.*/*` by
+  // `/loft.AssetService/Get` would leave it reaching what was named, which is
+  // the one answer a caller asking to take something away must not be given
+  // as a success. Nothing to take out is no write, and answers the role as it
+  // is.
+  //
+  // Three rules (`server/core/narrow.go`). Nobody takes away what they could
+  // not have given: every entry taken out must be the caller's to grant where
+  // the role may be bound, so somebody who holds less than a role cannot strip
+  // it below them -- and then reset the password of whoever it was bound to,
+  // since they would no longer hold more. A role a deployment declared is
+  // nobody's to narrow. And a tenant is not left without somebody
+  // administering it: a narrowing that takes `/roster.*/*` from the last
+  // person holding it across the tenant is refused.
+  rpc Narrow(RoleNarrowRequest) returns (Role);
 }
 
 message RoleWidenRequest {
@@ -44,5 +74,13 @@ message RoleWidenRequest {
 
   // What to add: whole method names or patterns, as `Role.methods` takes
   // them. At least one.
+  repeated string methods = 8;
+}
+
+message RoleNarrowRequest {
+  RoleRef ref = 1;
+
+  // What to take out: whole method names or patterns, each taking out every
+  // entry it covers. At least one.
   repeated string methods = 8;
 }

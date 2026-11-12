@@ -103,6 +103,16 @@ func TestAnAppHearsThatWhatSomebodyMayCallChanged(t *testing.T) {
 		require.Equal(t, app.SyncReason_SYNC_REASON_REACH, about(t, r.c, who).GetReason())
 	})
 
+	t.Run("a role they hold, narrowed", func(t *testing.T) {
+		_, err := r.roles.Narrow(r.as, app.RoleNarrowRequest_builder{
+			Ref:     app.RoleRef_builder{Id: role.GetId()}.Build(),
+			Methods: []string{"/roster.HolderService/List"},
+		}.Build())
+		require.NoError(t, err)
+		require.Equal(t, app.SyncReason_SYNC_REASON_REACH, about(t, r.c, who).GetReason(),
+			"what is taken out of a role is taken from everybody it reaches, and an app holding what they could call has to hear it")
+	})
+
 	t.Run("and the binding erased", func(t *testing.T) {
 		_, err := r.bindings.Erase(r.as, app.BindingRef_builder{Id: bound.GetId()}.Build())
 		require.NoError(t, err)

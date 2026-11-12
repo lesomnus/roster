@@ -83,6 +83,14 @@ import (
 // wire and is not in that list because it is not a write of its own: it is a
 // `Role.Patch` this layer makes, and meets the rule there (`widen.go`).
 //
+// Taking away is not a grant, and `Role.Narrow` is not held to this. It is held
+// to its mirror -- nobody takes away what they could not have given,
+// [Core.mayTakeAway] -- because what somebody holds is also what keeps them out
+// of [Core.mayReach]: stripped below the caller, an administrator is somebody
+// the caller may become (`narrow.go`). The other writes that take away --
+// `Binding.Erase`, a membership erased, `Holder.Disable` -- are held to neither
+// yet, which `docs/roadmap.md` keeps open.
+//
 // The `Patch`es are checked **here as well**, and that is worth being exact
 // about because this paragraph was wrong twice.
 //
@@ -191,15 +199,7 @@ func (s Core) mayGrant(ctx context.Context, field string, methods []string, at p
 		return err
 	}
 
-	// What of theirs reaches the scope being written to. A tenant-wide grant
-	// reaches everywhere; a grant made in a site reaches that site alone.
-	var reaches []string
-	for _, g := range held {
-		if g.Site == pdid.Nil || g.Site == at {
-			reaches = append(reaches, g.Methods...)
-		}
-	}
-
+	reaches := reachingAt(held, at)
 	for _, m := range methods {
 		// One of theirs has to cover it **on its own**. Asking whether the
 		// union covers it would let somebody holding every service of a package
@@ -213,6 +213,20 @@ func (s Core) mayGrant(ctx context.Context, field string, methods []string, at p
 	}
 
 	return nil
+}
+
+// reachingAt is what of somebody's grants reaches the scope `at`: every one
+// made across the tenant, which reaches everywhere, and every one made in that
+// site, which reaches that site alone.
+func reachingAt(held []Grant, at pdid.Id) []string {
+	var reaches []string
+	for _, g := range held {
+		if g.Site == pdid.Nil || g.Site == at {
+			reaches = append(reaches, g.Methods...)
+		}
+	}
+
+	return reaches
 }
 
 // mayJoin refuses putting somebody into a group that holds more than the

@@ -264,10 +264,9 @@ rosters, as `standing`'s do.
 An app that comes with roles -- Loft's owner, administrator, manager, member
 and auditor -- writes them into the tenant itself, as the holder it is there,
 and from then on they are the tenant's: bound to people in the user console,
-replaced or erased there, and narrowed in place as any role is, with
-`roster role patch` at the box -- nothing on the wire narrows a role yet.
-Nothing here is a privilege only an app has; it is three ordinary facts lined
-up.
+given more methods or fewer there (`Role.Widen`, `Role.Narrow`), replaced or
+erased. Nothing here is a privilege only an app has; it is three ordinary facts
+lined up.
 
 1. **The app holds what it writes.** A role is a grant when it is written, and
    nobody hands out what they do not hold (`server/core/escalate.go`). So the
@@ -301,9 +300,10 @@ up.
 
 What the app widens by is its own to keep: the methods each role gains with a
 release, and not each role's whole list, or an upgrade puts back what a tenant
-took out. A role the tenant made wider than the app -- a method of another
-app's in it -- is refused a widen, as a patch of it would be, and is the
-operator's to change with `roster role patch` at the box.
+took out -- with `Role.Narrow`, in the user console, one method at a time. A
+role the tenant made wider than the app -- a method of another app's in it -- is
+refused a widen, as a patch of it would be, and is the tenant administrator's
+to change, who holds what is in it.
 
 Somebody has to be bound to the first of them. The tenant's administrator does
 it in the user console; an app's setup that names its first owner does it
@@ -551,6 +551,7 @@ no app sweeps a ledger it shares.
 | `reach/reach.go`, `reach/follow.go` | what somebody may call, asked, kept and dropped: `Holders.May` |
 | `server/sync/reach.go` | who a write to a role, a binding or a membership reaches, for the stream |
 | `proto/ext/app/role_svc.ext.proto`, `server/core/widen.go` | `Role.Widen`: what an app adds to the roles it ships, and the rule it is held to |
+| `server/core/narrow.go` | `Role.Narrow`: what a tenant takes out of a role, what it may take, and the administrator it may not |
 | `proto/app/consent.proto`, `server/core/consent.go` | an app's ledger of consent, and why every act is a row |
 | `account/account.go`, `ldap/ldap.go` | two consumers in the A shape |
 | `ts/lib/tenant/apps.tsx` | the *apps* tab, in both consoles |

@@ -39,6 +39,19 @@ It is what an app gives the roles it shipped at an upgrade, over the wire
 ([apps.md](../apps.md) § *The roles an app ships*), and it is a grant like any
 other write here: every method the role would hold has to be yours to hand out.
 
+And fewer with `role narrow`, which takes out every entry a method you name
+covers -- so a pattern takes everything under it -- and adds none:
+
+```sh
+roster --as admin role narrow @newco/support '{"methods":["/roster.HolderService/Search"]}'
+```
+
+A method you name that the role still reaches through something left in it is
+refused, rather than answered as taken out: narrowing a role holding
+`/roster.HolderService/*` by `/roster.HolderService/Search` would leave it
+calling exactly that. Take the pattern out, and widen by what it should keep.
+The user console's *roles* tab does both, a method at a time.
+
 `/roster.*/*` deliberately does **not** cover payday's own package —
 `TokenService` is outside it. A deployment that wants it grants it on
 purpose.
@@ -291,6 +304,39 @@ So a command succeeding at a shell says nothing about whether a caller could
 make the same write. If you are working out what a role needs, test it as a
 caller -- `client.addr` with a key ([cli.md](cli.md)), or the tutorial's last
 section.
+
+## Taking away is held the other way round
+
+A narrowing hands nobody anything, so it is not asked what you could grant of
+what it leaves -- that was granted when it was written. It is asked about what
+it takes:
+
+```
+methods: you do not hold /roster.HolderService/Erase here, so you may not take it away
+```
+
+Nobody takes away what they could not have given. What somebody holds is also
+what keeps others out of their account -- you may write somebody's credential
+only if they hold nothing you do not (below) -- so somebody who could strip an
+administrator's role below their own could then reset the administrator's
+password. Taking only what you hold leaves everybody holding at least what you
+do not.
+
+And one rule about the tenant rather than the caller: a narrowing that takes
+`/roster.*/*` from the last person holding it across the tenant -- somebody
+there and not suspended, through a binding with no site, to them or to a group
+they are in -- is refused, since nobody in the tenant could put it back:
+
+```
+methods: taking /roster.*/* out of everything leaves nobody administering the tenant -- …
+```
+
+Give it to somebody else first. It is about the write and nothing else: an
+administrator may narrow away their own administration while somebody else
+keeps theirs, and a tenant nobody administers across the whole of it is not
+refused for it. Two narrowings at once each wait for the other, so they cannot
+both take the last. A command at the box is the deployment's, and is not held
+to it.
 
 ## And you cannot write a way into an account wider than yours
 
