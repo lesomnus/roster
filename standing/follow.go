@@ -36,6 +36,9 @@ const (
 // stop the stream: the next time the account is held to roster it is asked
 // anyway, and the next event about it is the whole truth.
 //
+// An event about what somebody may call (`SYNC_REASON_REACH`) is passed by:
+// it is `reach`'s, and none of the four facts on it is news.
+//
 // It returns once ctx is done, and not before.
 //
 // # What a stream promises, and what it does not
@@ -132,6 +135,13 @@ func (a *Accounts) follow(ctx context.Context, on func(ctx context.Context, v St
 		ev, err := stream.Recv()
 		if err != nil {
 			return fmt.Errorf("roster: %w", err)
+		}
+		if ev.GetReason() == rstr.SyncReason_SYNC_REASON_REACH {
+			// About what they may call, which `reach` keeps and this does
+			// not. None of the facts on it is news (`sync.proto`), so nothing
+			// known is dropped for it and `on` is not handed it -- once for
+			// every person a role edit reaches.
+			continue
 		}
 		st, err := standingOf(ev)
 		if err != nil {

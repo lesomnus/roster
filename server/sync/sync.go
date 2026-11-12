@@ -110,6 +110,30 @@
 // costs a list of the tenant's people when a tenant moves, and nothing when a
 // tenant is renamed: what is compared for a tenant is the one stamp.
 //
+// # And what somebody may call
+//
+// The other half of what an app holds, which `HolderService/Reaches` answers
+// and a role, a binding or a membership changes -- none of them a column on the
+// person. So a write to one of those is read for who it reaches ([Reached]):
+// the person a binding or a membership names, everybody in the group a binding
+// names, everybody a role reaches by any of those, everybody in a group that
+// was erased. Each of them the caller may see is told, with their four facts as
+// they are and `SYNC_REASON_REACH`, once per batch and not at all when a fact
+// of theirs moved in it -- an event about them is already on its way, and an
+// app drops what it knew of somebody on any event.
+//
+// It compares nothing, unlike the four facts. Whether what a person reaches
+// really moved is the policy asked about everybody a role is bound to, at every
+// write to the role; and remembering what was sent would be remembering what
+// they reach, which this stream never sends. So a rename of a role wakes its
+// people, who are asked about once more -- a call each, for a write nobody
+// makes often -- and the four facts are never touched by it: the memory those
+// are compared against is left as it was, so a fact that moved is still told
+// by an event of its own, which an app holding sessions waits for. Recorded
+// there, a stamp this read early -- written after the batch was taken, its own
+// event still to come -- would have been compared against itself and said
+// nothing.
+//
 // # And what it costs
 //
 // One entry per person this stream has heard about, for as long as it is held.
@@ -147,16 +171,19 @@ import (
 //
 // `gone` is how somebody the wall hides is told apart from somebody erased
 // ([Erased]); nil hears no erasure of anybody this stream had not read before.
-func Service(s app.Server, w *watch.Watch, gone Gone) app.SyncServiceServer {
-	return &server{s: s, w: w, gone: gone}
+// `reached` is who a write to the access model may have changed what they may
+// call for ([Reaching]); nil hears none of those writes.
+func Service(s app.Server, w *watch.Watch, gone Gone, reached Reached) app.SyncServiceServer {
+	return &server{s: s, w: w, gone: gone, reached: reached}
 }
 
 type server struct {
 	app.UnimplementedSyncServiceServer
 
-	s    app.Server
-	w    *watch.Watch
-	gone Gone
+	s       app.Server
+	w       *watch.Watch
+	gone    Gone
+	reached Reached
 }
 
 // Gone is a person the wall now hides from this caller, if they are hidden for
@@ -283,21 +310,63 @@ func (s *server) Watch(_ *app.SyncWatchRequest, out grpc.ServerStreamingServer[a
 	// without filters, and this has none to give it.
 	return watch.Stream(ctx, s.w, written, nil,
 		func(ks map[pdid.Id]string, _ watch.Seen) error {
+			// Whom this batch told anything, so that a person whose facts
+			// moved is not told a second time that what they may call might
+			// have: the first event already drops what an app knew of them.
+			told := sending{ServerStreamingServer: out, about: map[pdid.Id]bool{}}
+
+			// Who the writes to the access model reach, gathered across the
+			// batch so that a role and its binding written together are one
+			// event each for the people they reach.
+			reach := map[pdid.Id]bool{}
 			for k := range ks {
 				var err error
 				switch k.Domain() {
 				case pd.HolderDomain:
-					err = s.one(ctx, out, was, k)
+					err = s.one(ctx, told, was, k)
 				case pd.TenantDomain:
-					err = s.people(ctx, out, was, tenants, k)
+					err = s.people(ctx, told, was, tenants, k)
+				case pd.BindingDomain, pd.RoleDomain, pd.GroupDomain, pd.GroupMembershipDomain, pd.TeamMembershipDomain:
+					if s.reached == nil {
+						continue
+					}
+					var who []pdid.Id
+					who, err = s.reached(ctx, k)
+					for _, v := range who {
+						reach[v] = true
+					}
 				}
 				if err != nil {
 					return err
 				}
 			}
 
+			for k := range reach {
+				if told.about[k] {
+					continue
+				}
+				if err := s.reach(ctx, out, k); err != nil {
+					return err
+				}
+			}
+
 			return nil
 		})
+}
+
+// sending is the stream, remembering whom each event it sent was about.
+type sending struct {
+	grpc.ServerStreamingServer[app.SyncEvent]
+
+	about map[pdid.Id]bool
+}
+
+func (s sending) Send(v *app.SyncEvent) error {
+	if k, err := pdid.From(v.GetHolder()); err == nil {
+		s.about[k] = true
+	}
+
+	return s.ServerStreamingServer.Send(v)
 }
 
 // one reads a person and sends the three facts, if any of them moved.
@@ -321,15 +390,7 @@ func (s *server) one(
 	was map[pdid.Id]held,
 	k pdid.Id,
 ) error {
-	v, err := s.s.Holder().Get(ctx, app.HolderGetRequest_builder{
-		Ref: app.HolderRef_builder{Id: k.Bytes()}.Build(),
-		Select: app.HolderSelect_builder{
-			Tenant:          app.TenantSelect_builder{DateClosed: ptr(true)}.Build(),
-			DateInvalidated: ptr(true),
-			DateDisabled:    ptr(true),
-			DateErased:      ptr(true),
-		}.Build(),
-	}.Build())
+	v, err := s.facts(ctx, k)
 	if status.Code(err) == codes.NotFound {
 		if prior, told := was[k]; told && !prior.erased.IsZero() {
 			// Already known to be gone.
@@ -345,6 +406,50 @@ func (s *server) one(
 	}
 
 	return s.tell(out, was, k, v, v.GetTenant().GetId(), at(v.GetTenant().GetDateClosed()), app.SyncReason_SYNC_REASON_UNSPECIFIED)
+}
+
+// facts reads a person's three stamps and their tenant's closing through the
+// wall, and nothing else of them.
+func (s *server) facts(ctx context.Context, k pdid.Id) (*app.Holder, error) {
+	return s.s.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{Id: k.Bytes()}.Build(),
+		Select: app.HolderSelect_builder{
+			Tenant:          app.TenantSelect_builder{DateClosed: ptr(true)}.Build(),
+			DateInvalidated: ptr(true),
+			DateDisabled:    ptr(true),
+			DateErased:      ptr(true),
+		}.Build(),
+	}.Build())
+}
+
+// reach tells an app that what a person may call may have changed, with their
+// four facts as they are.
+//
+// Read through the wall like any other person, so somebody a binding in
+// another tenant reaches -- or anybody this caller may not see -- is nobody's
+// news here, and is not told; and somebody gone is not either, which their
+// erasure says on its own. What this stream remembers of each person's facts
+// is left as it was: this compared nothing, and a fact that moved is told by
+// the event about their row.
+func (s *server) reach(ctx context.Context, out grpc.ServerStreamingServer[app.SyncEvent], k pdid.Id) error {
+	v, err := s.facts(ctx, k)
+	if status.Code(err) == codes.NotFound {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	return out.Send(app.SyncEvent_builder{
+		Holder:          k.Bytes(),
+		Tenant:          v.GetTenant().GetId(),
+		Reason:          app.SyncReason_SYNC_REASON_REACH,
+		DateSent:        timestamppb.New(time.Now()),
+		DateInvalidated: v.GetDateInvalidated(),
+		DateDisabled:    v.GetDateDisabled(),
+		DateErased:      v.GetDateErased(),
+		DateClosed:      v.GetTenant().GetDateClosed(),
+	}.Build())
 }
 
 // people is a tenant's row having changed, as the news it may be for an app:

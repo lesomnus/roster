@@ -457,6 +457,8 @@ a browser holds and `auth` reads credentials rather than making them.
 - `docs/relying-app.md` — what an app keeps asking roster after a sign-in, and
   `standing/`, the package that asks: an account's standing, the sync stream,
   and what the stream cannot carry
+- `docs/apps.md` — the shapes an app takes beside roster, `reach/`, the package
+  that asks what somebody may call, and the roles an app ships and widens
 - `docs/README.md` — the map of all of it, by the question each page answers
 - `docs/development.md` — the mechanics above at length: generation, upgrading
   payday, the three pages, the sandbox, and what the generator refuses

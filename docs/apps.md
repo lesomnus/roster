@@ -210,7 +210,106 @@ pattern over every app sold to that tenant -- and from there it is the tenant's 
 hand on.
 
 Every shape asks the same questions in the same order, so this half of an app is
-written once.
+written once, here: `reach`, below.
+
+### Asking it: `reach`
+
+The paragraphs above, as a package an app imports beside `standing`
+([relying-app.md](relying-app.md)) and wires the same way -- the same
+connection, and the same `As` saying who the app is in the tenant:
+
+```go
+reaches, err := reach.New(reach.Config{Conn: conn, As: as})
+
+// In the app's gate -- payday's gate.Policy.May -- for every call:
+err = reaches.May(ctx, call.Actor, call.Action)
+
+// And inside a method, for a permission finer than it:
+err = reaches.May(ctx, call.Actor, "/loft.Permission/BookForOthers")
+
+// In every process, as standing's follower is:
+s.Spin = append(s.Spin, spin.InEveryProcess(reaches.Follower("loft.roster-reach")))
+```
+
+- **`Holders.May` is `Reaches` and `frame.Covers`**, read from `everywhere`:
+  what an app with no sites of its own grants on. `Holders.Reach` hands over
+  the whole answer -- for an app that narrows by sites itself, and for a page
+  that draws what somebody may do.
+- **Kept for `standing.HeldTtl`**, half a minute, which is how long a session
+  is held to roster too: a change there lands in an app no later than one
+  number says. A roster that could not be asked is not asked again for
+  `standing.HeldRetry`, and a call that ends while roster is asked keeps
+  nothing, as `standing` learned from Loft. `Holders.Recheck` drops one holder
+  at once, for a change the app made itself on the roster in its own process,
+  which has no stream.
+- **Dropped when roster says so.** roster's stream says when what somebody may
+  call may have changed -- a role, a binding or a membership that reaches them
+  was written, `SYNC_REASON_REACH` (`proto/app/sync.proto`) -- and the follower
+  drops what is kept of anybody it hears of, a suspension or an erasure as
+  much as a role. `standing`'s follower passes those events by, so an app
+  running both holds two streams, one each.
+- **A roster that cannot be asked is a refusal**: `reach.ErrUnreachable`,
+  which is `standing`'s own, so an app tells its caller *this is not your
+  doing* the same way whichever asked. A method roster does not say they may
+  call is `reach.ErrDenied`; so is anybody roster has nobody by, and anybody
+  suspended, who reaches nothing.
+- **What its role holds**: `reach.Methods`, which is `HolderService/Reaches`
+  and `SyncService/Watch`, beside `standing.Methods`.
+
+`reach/reach.go` and `reach/follow.go` are the package, and its tests run both
+rosters, as `standing`'s do.
+
+### The roles an app ships
+
+An app that comes with roles -- Loft's owner, administrator, manager, member
+and auditor -- writes them into the tenant itself, as the holder it is there,
+and from then on they are the tenant's: bound to people in the user console,
+replaced or erased there, and narrowed in place as any role is, with
+`roster role patch` at the box -- nothing on the wire narrows a role yet.
+Nothing here is a privilege only an app has; it is three ordinary facts lined
+up.
+
+1. **The app holds what it writes.** A role is a grant when it is written, and
+   nobody hands out what they do not hold (`server/core/escalate.go`). So the
+   role an app is installed with names its own package beside what it asks of
+   roster, and the role writes:
+
+   ```sh
+   roster app install --tenant acme \
+     --role '/roster.HolderService/Reaches,/roster.SyncService/Watch,…,/roster.RoleService/Add,/roster.RoleService/Get,/roster.RoleService/Widen,/loft.*/*' \
+     --administer '/loft.*/*' \
+     loft
+   ```
+
+   A pattern, and not today's list of its methods: the app widens its roles by
+   methods it has not written yet, and holding the pattern is what lets it.
+   It gives nobody anything at the app, which asks roster about whoever calls
+   it and is never called as itself.
+2. **The tenant's administrators hold them too** (`--administer`), or nobody in
+   the tenant could bind the roles the app writes: binding one is a grant, and
+   the first administrator holds `/roster.*/*` alone.
+3. **The app writes with `Role.Add`, and widens with `Role.Widen`.** At its
+   own setup -- `loft init` -- each role it ships is added under its alias, and
+   one already there is the tenant's and left as it is. At an upgrade that
+   brings a method -- an RPC a member may call, a permission method -- each
+   role is widened by it with `RoleService/Widen`, which adds and never takes
+   away: a method the role already holds or covers is not added, nothing new
+   is no write, and a role the tenant narrowed stays narrowed in everything the
+   upgrade did not bring. `Patch` stays closed on the wire; a widen is a patch
+   the layer makes, held to the same rule over the role's whole list
+   (`proto/ext/app/role_svc.ext.proto`, `server/core/widen.go`).
+
+What the app widens by is its own to keep: the methods each role gains with a
+release, and not each role's whole list, or an upgrade puts back what a tenant
+took out. A role the tenant made wider than the app -- a method of another
+app's in it -- is refused a widen, as a patch of it would be, and is the
+operator's to change with `roster role patch` at the box.
+
+Somebody has to be bound to the first of them. The tenant's administrator does
+it in the user console; an app's setup that names its first owner does it
+itself, with `BindingService/Add` in its role -- a grant like any other, and
+one the app holds. An app running roster in its own process writes the same
+rows through that roster's own door, and calls `Holders.Recheck` after.
 
 ### People's tokens
 
@@ -449,6 +548,9 @@ no app sweeps a ledger it shares.
 | `cli/control.go`, `narrowedFlag` | a deployment key with nothing on it |
 | `cli/login.go`, `nominate` | the Login App setting itself up in every tenant |
 | `cli/app.go` | `roster app install` / `uninstall` |
+| `reach/reach.go`, `reach/follow.go` | what somebody may call, asked, kept and dropped: `Holders.May` |
+| `server/sync/reach.go` | who a write to a role, a binding or a membership reaches, for the stream |
+| `proto/ext/app/role_svc.ext.proto`, `server/core/widen.go` | `Role.Widen`: what an app adds to the roles it ships, and the rule it is held to |
 | `proto/app/consent.proto`, `server/core/consent.go` | an app's ledger of consent, and why every act is a row |
 | `account/account.go`, `ldap/ldap.go` | two consumers in the A shape |
 | `ts/lib/tenant/apps.tsx` | the *apps* tab, in both consoles |

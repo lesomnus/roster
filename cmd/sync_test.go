@@ -448,7 +448,7 @@ func TestADeploymentWithNoBrokerSaysSoRatherThanGoingQuiet(t *testing.T) {
 
 	// Handed no broker at all, which every other harness here does give -- so
 	// this is the one place the absence is arranged on purpose.
-	s := rostersync.Service(b.Walled, nil, nil)
+	s := rostersync.Service(b.Walled, nil, nil, nil)
 
 	err := s.Watch(app.SyncWatchRequest_builder{}.Build(), &collector{ctx: ctx})
 	x.ErrorIs(err, watch.ErrNoBroker, "a stream opened on a deployment that can never feed it")
@@ -596,7 +596,7 @@ func TestSomebodyOutOfSightIsNotSaidToBeGone(t *testing.T) {
 
 	hidden := &atomic.Bool{}
 	s := rostersync.Service(hiding{Overlay: app.NewOverlay(b.Walled), who: dana, hidden: hidden},
-		b.Watch, rostersync.Erased(b.Ent, pd.Wall()))
+		b.Watch, rostersync.Erased(b.Ent, pd.Wall()), nil)
 	c := make(chan *app.SyncEvent, 32)
 	go func() {
 		_ = s.Watch(app.SyncWatchRequest_builder{}.Build(), &streaming{ctx: b.asNobody(ctx, b.ContosoUser, b.Contoso), c: c})

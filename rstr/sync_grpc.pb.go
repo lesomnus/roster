@@ -80,6 +80,24 @@ const (
 // A deployment with no broker cannot serve this at all and says so --
 // `watch.ErrNoBroker` -- rather than opening a stream that will never carry
 // anything, which is the one failure a client cannot tell from a quiet system.
+//
+// # And what they may do
+//
+// The decision an app holds has two halves, and the four facts are the first:
+// *this is that person*. The second -- *they may do these things* -- is what
+// `HolderService/Reaches` answered when the app asked, and it stops being true
+// when somebody writes a role, a binding or a membership that reaches them. So
+// an event is sent about each person such a write may have changed that for,
+// saying so (`SYNC_REASON_REACH`), and an app that keeps what `Reaches` said
+// asks again (`reach`, `docs/apps.md`).
+//
+// It says *may have*, and names nobody's methods. Working out whether what a
+// person reaches really moved is asking the policy about everybody a role is
+// bound to, at every write to it, and an event that carried the answer would
+// hand `Reaches` to whoever holds this stream and not that method. A person
+// told about who reaches what they did is asked about once more, which costs
+// one call; a person not told keeps a stale answer until the app's own copy
+// runs out.
 type SyncServiceClient interface {
 	Watch(ctx context.Context, in *SyncWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SyncEvent], error)
 }
@@ -169,6 +187,24 @@ type SyncService_WatchClient = grpc.ServerStreamingClient[SyncEvent]
 // A deployment with no broker cannot serve this at all and says so --
 // `watch.ErrNoBroker` -- rather than opening a stream that will never carry
 // anything, which is the one failure a client cannot tell from a quiet system.
+//
+// # And what they may do
+//
+// The decision an app holds has two halves, and the four facts are the first:
+// *this is that person*. The second -- *they may do these things* -- is what
+// `HolderService/Reaches` answered when the app asked, and it stops being true
+// when somebody writes a role, a binding or a membership that reaches them. So
+// an event is sent about each person such a write may have changed that for,
+// saying so (`SYNC_REASON_REACH`), and an app that keeps what `Reaches` said
+// asks again (`reach`, `docs/apps.md`).
+//
+// It says *may have*, and names nobody's methods. Working out whether what a
+// person reaches really moved is asking the policy about everybody a role is
+// bound to, at every write to it, and an event that carried the answer would
+// hand `Reaches` to whoever holds this stream and not that method. A person
+// told about who reaches what they did is asked about once more, which costs
+// one call; a person not told keeps a stale answer until the app's own copy
+// runs out.
 type SyncServiceServer interface {
 	Watch(*SyncWatchRequest, grpc.ServerStreamingServer[SyncEvent]) error
 	mustEmbedUnimplementedSyncServiceServer()

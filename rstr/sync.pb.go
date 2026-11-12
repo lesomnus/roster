@@ -24,8 +24,9 @@ const (
 // SyncReason is why a copy has stopped being good.
 //
 // See [SyncEvent.reason]: this is commentary on the timestamps and not the
-// message. Every value here can be derived from a pair of events, and is here
-// so that a log and a screen have a word for what happened.
+// message. Every value here but `SYNC_REASON_REACH` can be derived from a pair
+// of events, and is here so that a log and a screen have a word for what
+// happened; that one is what nothing on the event could say otherwise.
 type SyncReason int32
 
 const (
@@ -47,6 +48,12 @@ const (
 	// And cleared: their tenant was restored. Here for the reason
 	// `SYNC_REASON_REINSTATED` is.
 	SyncReason_SYNC_REASON_REOPENED SyncReason = 6
+	// What they may call may have changed: a role, a binding or a membership
+	// that reaches them -- through a group, or a team -- was written, added or
+	// erased. None of the timestamps moved. An app keeping what
+	// `HolderService/Reaches` answered about them asks again; the event says
+	// nothing of what they reach, which is that method's to answer.
+	SyncReason_SYNC_REASON_REACH SyncReason = 7
 )
 
 // Enum value maps for SyncReason.
@@ -59,6 +66,7 @@ var (
 		4: "SYNC_REASON_ERASED",
 		5: "SYNC_REASON_CLOSED",
 		6: "SYNC_REASON_REOPENED",
+		7: "SYNC_REASON_REACH",
 	}
 	SyncReason_value = map[string]int32{
 		"SYNC_REASON_UNSPECIFIED": 0,
@@ -68,6 +76,7 @@ var (
 		"SYNC_REASON_ERASED":      4,
 		"SYNC_REASON_CLOSED":      5,
 		"SYNC_REASON_REOPENED":    6,
+		"SYNC_REASON_REACH":       7,
 	}
 )
 
@@ -359,6 +368,13 @@ type SyncEvent_builder struct {
 	// here beside it. An app that switches on this field alone will be told
 	// nothing on that first event; an app that compares the three timestamps
 	// against its own session is right every time.
+	//
+	// `SYNC_REASON_REACH` is the one answer that is not about the timestamps,
+	// and is never a guess: an event sent for what somebody may call says so,
+	// and one sent because a timestamp moved never says it. The facts on it are
+	// as they are, and none of them is news there -- a move of any of them is
+	// an event of its own on the same stream -- so an app that holds sessions
+	// and nothing else may pass it by.
 	Reason SyncReason
 	// When this was sent, which is worth having for a log and for nothing else.
 	// What decides anything is the three fields below.
@@ -426,7 +442,7 @@ const file_app_sync_proto_rawDesc = "" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"dateErased\x12;\n" +
 	"\vdate_closed\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"dateClosed*\xc7\x01\n" +
+	"dateClosed*\xde\x01\n" +
 	"\n" +
 	"SyncReason\x12\x1b\n" +
 	"\x17SYNC_REASON_UNSPECIFIED\x10\x00\x12\x1b\n" +
@@ -435,7 +451,8 @@ const file_app_sync_proto_rawDesc = "" +
 	"\x16SYNC_REASON_REINSTATED\x10\x03\x12\x16\n" +
 	"\x12SYNC_REASON_ERASED\x10\x04\x12\x16\n" +
 	"\x12SYNC_REASON_CLOSED\x10\x05\x12\x18\n" +
-	"\x14SYNC_REASON_REOPENED\x10\x062E\n" +
+	"\x14SYNC_REASON_REOPENED\x10\x06\x12\x15\n" +
+	"\x11SYNC_REASON_REACH\x10\a2E\n" +
 	"\vSyncService\x126\n" +
 	"\x05Watch\x12\x18.roster.SyncWatchRequest\x1a\x11.roster.SyncEvent0\x01B&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 

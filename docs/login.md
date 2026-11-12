@@ -392,7 +392,9 @@ holding one refreshed on after a sign-out that only forgot the browser. An
 access token already issued is not reached -- a JWT verifies until it expires.
 roster does not know Hydra exists and this does not change that: the
 stream says what has stopped being good in roster's own vocabulary, to any app
-holding a credential, and turning that into a `DELETE` is the Login App's.
+holding a credential, and turning that into a `DELETE` is the Login App's. What
+it also says -- that what somebody may call may have changed, `SYNC_REASON_REACH`
+-- is no sign-out, and tells Hydra nothing (`TestWhatSomebodyMayCallIsNoSignOut`).
 
 ### A page of your own, and the contract it writes against
 

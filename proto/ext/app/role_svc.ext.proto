@@ -1,0 +1,48 @@
+edition = "2023";
+
+package roster;
+
+import "app/role.proto";
+
+// What this app adds to the generated contract for `Role`.
+//
+// # Why a Widen and not the Patch
+//
+// `Patch` writes anything the schema holds and is closed at the transport for
+// it (`grpcx.GeneralWrite`), so a role written over the wire could be made and
+// never changed: an app that wrote its default roles into a tenant had no way
+// to give them a method it added in its next release, short of a shell on
+// roster's box (`roster role patch`) once per tenant per upgrade. What an app
+// does to a role it shipped is narrower than a patch, and it is the one thing
+// it should be able to do unattended: **add**. Never take away -- a tenant that
+// narrowed a role it was given has decided something, and an upgrade that
+// undid it would be the app overruling the tenant.
+//
+// It is the entity's own verb and not a service beside it (CLAUDE.md,
+// *Overlay before service*): it reads and writes one `Role` row.
+service RoleService {
+  // Widen adds methods to a role and takes none away.
+  //
+  // A method already in the role, or covered by a pattern already in it
+  // (`frame.Covers`), is not added: it would grant nothing more, and taking
+  // the wider pattern out later should take it too. Nothing new is no write,
+  // and answers the role as it is -- so an app may send what it wants a role
+  // to hold at every upgrade, and the role changes only when there was
+  // something to add.
+  //
+  // Held to the rules `Patch` is held to, because it is one (`server/core`):
+  // the role's whole list, as it would be, must be the caller's to grant where
+  // the role may be bound (`escalate.go`), and a role a deployment declared is
+  // nobody's to widen (`declared.go`). So an app that widens the roles it
+  // ships holds every method it puts in them -- its own package's pattern, in
+  // the role it was installed with (`docs/apps.md`).
+  rpc Widen(RoleWidenRequest) returns (Role);
+}
+
+message RoleWidenRequest {
+  RoleRef ref = 1;
+
+  // What to add: whole method names or patterns, as `Role.methods` takes
+  // them. At least one.
+  repeated string methods = 8;
+}
