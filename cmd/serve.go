@@ -536,7 +536,15 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		// something to fall through to -- a request with no cookie must reach
 		// it, or a deployment that turned this on would have turned every
 		// other way of calling off.
-		s.Auth = auth.Seq(s.People.Handler(), auth.Plain())
+		//
+		// Only then: with a control plane the cookie joins the chain below,
+		// and nobody is believed on their word. Built anyway, `Plain` would
+		// say once in the log that every caller is believed -- of a
+		// deployment that believes nobody, which is the one line an operator
+		// reads to know which it is.
+		if !c.Control.Serves() {
+			s.Auth = auth.Seq(s.People.Handler(), auth.Plain())
+		}
 	}
 
 	// The control plane: roster again, on its own database, holding keys rather
@@ -660,6 +668,14 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		}
 
 		s.Auth = auth.Seq(chain...)
+
+		// What it serves with, said once as `Plain` says itself where it is
+		// what serves: so that the log says which of the two this is.
+		if s.People != nil {
+			log.From(ctx).InfoContext(ctx, "auth: callers are who a key from the control plane says, or the person a session cookie was minted for; nobody is believed on their word")
+		} else {
+			log.From(ctx).InfoContext(ctx, "auth: callers are who a key from the control plane says; nobody is believed on their word")
+		}
 
 		// And the control plane authenticates with **its own** keys, which is
 		// what makes it servable on a port at all.
