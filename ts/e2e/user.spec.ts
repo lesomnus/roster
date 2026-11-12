@@ -156,6 +156,13 @@ test('a tenant administrator changes what a role holds', async ({ page }) => {
 	await everything.getByRole('button', { name: 'take /roster.*/* out of everything' }).click()
 	await expect(page.locator('p.bad')).toContainText('nobody administering the tenant')
 	await expect(everything).toContainText('/roster.*/*')
+
+	// Nor is the role erased from under them, which is the same refusal from
+	// another door (loft#341).
+	await everything.getByRole('button', { name: 'more for everything' }).click()
+	await page.getByRole('button', { name: 'remove role' }).click()
+	await expect(page.locator('p.bad')).toContainText('erasing role everything leaves nobody administering the tenant')
+	await expect(everything).toBeVisible()
 })
 
 // Where the account app answers, which is what a tenant writes down as its front
