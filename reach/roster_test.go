@@ -138,6 +138,7 @@ func (e *external) door(t *testing.T) door {
 		tenant:       e.acme,
 		addRole:      wire(roles.Add),
 		widen:        wire(roles.Widen),
+		narrow:       wire(roles.Narrow),
 		addBinding:   wire(bindings.Add),
 		eraseBinding: wire(bindings.Erase),
 		addGroup:     wire(groups.Add),
@@ -232,6 +233,7 @@ func (e *embedded) door(t *testing.T) door {
 		ctx: t.Context(), tenant: e.dir,
 		addRole:      u.Role().Add,
 		widen:        u.Role().Widen,
+		narrow:       u.Role().Narrow,
 		addBinding:   u.Binding().Add,
 		eraseBinding: u.Binding().Erase,
 		addGroup:     u.Group().Add,
@@ -247,6 +249,7 @@ type door struct {
 
 	addRole      func(context.Context, *rstr.RoleAddRequest) (*rstr.Role, error)
 	widen        func(context.Context, *rstr.RoleWidenRequest) (*rstr.Role, error)
+	narrow       func(context.Context, *rstr.RoleNarrowRequest) (*rstr.Role, error)
 	addBinding   func(context.Context, *rstr.BindingAddRequest) (*rstr.Binding, error)
 	eraseBinding func(context.Context, *rstr.BindingRef) (*rstr.BindingEraseResponse, error)
 	addGroup     func(context.Context, *rstr.GroupAddRequest) (*rstr.Group, error)

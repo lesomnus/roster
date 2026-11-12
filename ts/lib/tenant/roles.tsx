@@ -10,11 +10,23 @@
  * which `Holder.Reaches` answers beside the holder (`holders.tsx`) rather than
  * this page adding it up.
  *
- * # Every write here is a grant
+ * # Every write here but one is a grant
  *
- * `Role.Add`, `Binding.Add` -- `server/core/escalate.go` refuses each when it
- * hands out a method the operator does not hold, or binds a role somewhere it
- * may not go. This page does not pre-check that; it says what the server said.
+ * `Role.Add`, `Role.Widen`, `Binding.Add` -- `server/core/escalate.go` refuses
+ * each when it hands out a method the operator does not hold, or binds a role
+ * somewhere it may not go. `Role.Narrow` takes a method out of a role, which
+ * hands nobody anything, and has rules of its own (`server/core/narrow.go`):
+ * nobody takes away what they could not have given, and a tenant keeps
+ * somebody administering it. This page does not pre-check any of that; it
+ * says what the server said.
+ *
+ * # A role's methods are changed one way at a time
+ *
+ * Each method of a role is taken out on its own, beside it (`Narrow`), and
+ * more are added from the role's menu (`Widen`) -- the two writes the wire
+ * has for a role's methods, because the one that could do both (`Patch`) is
+ * closed there. Whatever either answers with goes into the store, so the row
+ * redraws as the server has it.
  *
  * # Bindings are listed under their role
  *
@@ -71,10 +83,13 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 	const sites = useQuery(SiteService.method.list, { filters: [{ tenant: ref(props.tenant) }] })
 	const add = useCall(RoleService.method.add)
 	const erase = useCall(RoleService.method.erase)
+	const widen = useCall(RoleService.method.widen)
+	const narrow = useCall(RoleService.method.narrow)
 	const [gone, setGone] = useState<string[]>([])
 	const [at, go] = useState<string | null>(null)
 	const [bad, setBad] = useState<string | null>(null)
 	const [adding, openAdd] = useState(false)
+	const [widening, openWiden] = useState<string | null>(null)
 
 	// Over what was read; `RoleService` has no `Search`.
 	const [find, setFind] = useState('')
@@ -146,12 +161,43 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 									<td>
 										<SiteName id={v.site?.id} />
 									</td>
-									<td className="mono">{v.methods.join(' ')}</td>
+									<td className="mono methods">
+										{v.methods.length === 0 && <span className="dim">nothing</span>}
+										{v.methods.map((m) => (
+											<span key={m} className="method">
+												{m}
+												<button
+													type="button"
+													className="link"
+													aria-label={`take ${m} out of ${v.alias}`}
+													title={`take ${m} out of ${v.alias}`}
+													disabled={narrow.state === 'pending' || !props.may('/roster.RoleService/Narrow')}
+													onClick={() => {
+														setBad(null)
+														void narrow
+															.call({ ref: ref(v.id), methods: [m] })
+															.catch((e: unknown) => setBad(said(e)))
+													}}
+												>
+													×
+												</button>
+											</span>
+										))}
+									</td>
 									<td className="acts">
 										<button onClick={() => go(k === at ? null : k)}>
 											{k === at ? 'hide' : 'who has it'}
 										</button>
 										<Menu label={`more for ${v.alias}`}>
+											<button
+												disabled={!props.may('/roster.RoleService/Widen')}
+												onClick={() => {
+													setBad(null)
+													openWiden(k)
+												}}
+											>
+												add methods
+											</button>
 											<button
 												className="danger"
 												disabled={!props.may('/roster.RoleService/Erase')}
@@ -227,6 +273,47 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					add role
 				</button>
 			</form>
+			</Sheet>
+
+			<Sheet
+				at={widening !== null}
+				onClose={() => openWiden(null)}
+				title={`add methods to ${all.find((v) => uuid(v.id) === widening)?.alias ?? 'the role'}`}
+				bad={bad}
+			>
+				<form
+					className="widen"
+					onSubmit={(e) => {
+						e.preventDefault()
+						const form = e.currentTarget
+						const role = all.find((v) => uuid(v.id) === widening)
+						const methods = String(new FormData(form).get('methods') ?? '')
+							.split(/[\s,]+/)
+							.map((s) => s.trim())
+							.filter((s) => s !== '')
+						if (role === undefined || methods.length === 0) return
+
+						setBad(null)
+						void widen
+							.call({ ref: ref(role.id), methods })
+							.then(() => {
+								form.reset()
+								openWiden(null)
+							})
+							.catch((e: unknown) => setBad(said(e)))
+					}}
+				>
+					<input
+						name="methods"
+						aria-label="methods to add"
+						placeholder="/roster.HolderService/Get /loft.Permission/*"
+						className="wide"
+						required
+					/>
+					<button type="submit" disabled={widen.state === 'pending' || !props.may('/roster.RoleService/Widen')}>
+						add methods
+					</button>
+				</form>
 			</Sheet>
 
 			{at !== null && (

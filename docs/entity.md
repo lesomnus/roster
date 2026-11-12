@@ -239,9 +239,11 @@ resource and a verb, and a table of resource kinds is a second schema that has
 to agree with the first. Empty allows nothing, which is `frame.Grant`'s zero
 value and the right way round. A pattern rather than a list because a list is a
 snapshot of something that grows. There are no deny rules: permissions are a
-union, so read order cannot matter. On the wire a role is added, erased, or
-widened -- `Role.Widen` adds methods and takes none away, which is what an app
-does to the roles it shipped ([apps.md](apps.md)) -- and `Patch` is the box's.
+union, so read order cannot matter. On the wire a role is added, erased,
+widened or narrowed -- `Role.Widen` adds methods and takes none away, which is
+what an app does to the roles it shipped ([apps.md](apps.md)), and
+`Role.Narrow` takes them out and adds none, which is what a tenant does in its
+console -- and `Patch` is the box's.
 
 > contoso writes a role **operator** naming `/roster.HolderService/*`. It says
 > nothing about seoul or frankfurt -- a role is what may be done and never

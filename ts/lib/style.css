@@ -405,6 +405,19 @@ td.acts button + button {
 	margin-left: var(--s-1);
 }
 
+/* A role's methods, each with what takes it out beside it. */
+td.methods .method {
+	display: inline-flex;
+	align-items: baseline;
+	margin-right: var(--s-2);
+	white-space: nowrap;
+}
+
+td.methods .method button.link {
+	padding: 0 var(--s-1);
+	text-decoration: none;
+}
+
 /* An edit row: the form takes the row and wraps. */
 td form {
 	margin: 0;

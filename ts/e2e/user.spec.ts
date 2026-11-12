@@ -114,6 +114,50 @@ test('a tenant administrator signs in and sees their own tenant', async ({ page 
 	await expect(page.getByRole('cell', { name: /^proved\.example\.com/ })).toHaveCount(0)
 })
 
+// What a role holds is the tenant's to change in place (loft#338): more added
+// from the role's menu (`Role.Widen`), one taken out beside it (`Role.Narrow`)
+// -- and the tenant's own administration is not taken from the people who
+// hold it last, which the page says rather than does.
+test('a tenant administrator changes what a role holds', async ({ page }) => {
+	await page.goto(base)
+	await page.locator('input[name=alias]').fill(who)
+	await page.locator('input[name=password]').fill(password)
+	await page.locator('button[type=submit]', { hasText: 'sign in' }).click()
+	await expect(page.locator('nav .who')).toHaveText(who)
+	await page.locator('nav button', { hasText: 'roles' }).click()
+
+	// A role to change, added the way the page adds one.
+	await page.locator('button.add', { hasText: 'add role' }).click()
+	const form = page.locator('.sheet form.role')
+	await form.locator('input[name=alias]').fill('auditor')
+	await form.locator('input[name=methods]').fill('/roster.HolderService/Get')
+	await form.locator('button[type=submit]').click()
+	await expect(page.locator('.sheet')).toHaveCount(0)
+	const auditor = page.locator('tr', { hasText: 'auditor' })
+	await expect(auditor).toContainText('/roster.HolderService/Get')
+
+	// More, from its menu.
+	await auditor.getByRole('button', { name: 'more for auditor' }).click()
+	await page.getByRole('button', { name: 'add methods' }).click()
+	const sheet = page.locator('.sheet')
+	await sheet.getByRole('textbox', { name: 'methods to add' }).fill('/roster.HolderService/List')
+	await sheet.locator('button[type=submit]').click()
+	await expect(sheet).toHaveCount(0)
+	await expect(auditor).toContainText('/roster.HolderService/List')
+
+	// And one taken out, beside it, leaving the other.
+	await auditor.getByRole('button', { name: 'take /roster.HolderService/Get out of auditor' }).click()
+	await expect(auditor).not.toContainText('/roster.HolderService/Get')
+	await expect(auditor).toContainText('/roster.HolderService/List')
+
+	// The role the tenant administers itself with, from everybody who holds
+	// it -- the administrator and erin, both through it: refused, and said.
+	const everything = page.locator('tr', { hasText: 'everything' })
+	await everything.getByRole('button', { name: 'take /roster.*/* out of everything' }).click()
+	await expect(page.locator('p.bad')).toContainText('nobody administering the tenant')
+	await expect(everything).toContainText('/roster.*/*')
+})
+
 // Where the account app answers, which is what a tenant writes down as its front
 // door: the sign-in page sends people there for a provider, and the front door
 // sends them back with a link (#62). The rig has no directory to walk the round

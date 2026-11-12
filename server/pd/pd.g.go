@@ -17020,6 +17020,11 @@ func (s interceptRole) Widen(ctx context.Context, req *rstr.RoleWidenRequest) (*
 		rstr.RoleService_Widen_FullMethodName, req, s.RoleServiceServer.Widen)
 }
 
+func (s interceptRole) Narrow(ctx context.Context, req *rstr.RoleNarrowRequest) (*rstr.Role, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.RoleServiceServer,
+		rstr.RoleService_Narrow_FullMethodName, req, s.RoleServiceServer.Narrow)
+}
+
 func (s Intercept) Binding() rstr.BindingServiceServer {
 	return interceptBinding{s, s.Next().Binding()}
 }

@@ -24,8 +24,11 @@ import (
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/host"
+	"github.com/lesomnus/roster/internal/ent/predicate"
+	entrole "github.com/lesomnus/roster/internal/ent/role"
 	entteam "github.com/lesomnus/roster/internal/ent/team"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
+	enttenant "github.com/lesomnus/roster/internal/ent/tenant"
 	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/me"
 	"github.com/lesomnus/roster/server/pd"
@@ -510,6 +513,24 @@ func Locking(db *ent.Client) core.Lock {
 			c = ent.NewClient(ent.Driver(drv))
 		}
 
+		// A rule about a whole tenant -- whether anybody is left administering
+		// it -- contends on the tenant's row, which every narrowing that could
+		// leave it without anybody has to write.
+		if who.Domain() == pd.TenantDomain {
+			n, err := c.Tenant.Update().
+				Where(enttenant.IdEQ(who.Uuid())).
+				SetDateUpdated(time.Now()).
+				Save(ctx)
+			if err != nil {
+				return err
+			}
+			if n == 0 {
+				return status.Error(codes.NotFound, "Tenant not found")
+			}
+
+			return nil
+		}
+
 		n, err := c.Holder.Update().
 			Where(holder.IdEQ(who.Uuid())).
 			SetDateUpdated(time.Now()).
@@ -525,6 +546,64 @@ func Locking(db *ent.Client) core.Lock {
 	}
 }
 
+// Administered is [core.Administered] on this deployment's rows: the tenant's
+// roles whose patterns cover `method`, bound with no site to somebody there and
+// not suspended, or to a group of the tenant's with such somebody in it.
+//
+// Bindings and groups, and not a team: a role held in a team is held at the
+// team's site, which is not the whole tenant. And not what a deployment's
+// policy file grants (`configuredGrants`): a tenant's administration is its own
+// rows, and a file changes under it without asking -- counted here, it would
+// let a narrowing take the last row away and a later change to the file take
+// the rest.
+func Administered(db *ent.Client) core.Administered {
+	return func(ctx context.Context, drv dialect.Driver, tenant pdid.Id, method string) (bool, error) {
+		// On the driver it is handed, which is the transaction `server/core`
+		// opened, so that what it counts includes what that transaction wrote.
+		c := db
+		if drv != nil {
+			c = ent.NewClient(ent.Driver(drv))
+		}
+
+		rs, err := c.Role.Query().
+			Where(entrole.TenantIdEQ(tenant.Uuid()), entrole.DateErasedIsNil()).
+			Select(entrole.FieldId, entrole.FieldMethods).
+			All(ctx)
+		if err != nil {
+			return false, err
+		}
+		var ids []uuid.UUID
+		for _, r := range rs {
+			if allows(r, method) {
+				ids = append(ids, r.Id)
+			}
+		}
+		if len(ids) == 0 {
+			return false, nil
+		}
+
+		live := []predicate.Holder{holder.DateErasedIsNil(), holder.DateDisabledIsNil()}
+		across := []predicate.Binding{binding.RoleIdIn(ids...), binding.DateErasedIsNil(), binding.Not(binding.HasSite())}
+		ok, err := c.Binding.Query().Where(append(across, binding.HasHolderWith(live...))...).Exist(ctx)
+		if err != nil || ok {
+			return ok, err
+		}
+
+		gs, err := c.Binding.Query().Where(across...).QueryGroup().Where(group.DateErasedIsNil()).Ids(ctx)
+		if err != nil || len(gs) == 0 {
+			return false, err
+		}
+
+		return c.GroupMembership.Query().
+			Where(
+				groupmembership.GroupIdIn(gs...),
+				groupmembership.DateErasedIsNil(),
+				groupmembership.HasHolderWith(live...),
+			).
+			Exist(ctx)
+	}
+}
+
 // Rules is everything `server/core` has to know about a caller and cannot work
 // out, from the rows this policy already reads.
 //
@@ -536,13 +615,14 @@ func Locking(db *ent.Client) core.Lock {
 // `mayReach` needs, because there a path not walked allows rather than refuses.
 func Rules(db *ent.Client, sources ...rbac.Source) core.Rules {
 	return core.Rules{
-		Holds:      Holds(db, sources...),
-		Granted:    Granted(db, sources...),
-		Joining:    Joining(db),
-		Holding:    Holding(db, sources...),
-		Held:       core.Held(Everything(db, sources...)),
-		Everywhere: Everywhere(db, sources...),
-		Releasing:  Releasing(db),
+		Holds:        Holds(db, sources...),
+		Granted:      Granted(db, sources...),
+		Joining:      Joining(db),
+		Holding:      Holding(db, sources...),
+		Held:         core.Held(Everything(db, sources...)),
+		Everywhere:   Everywhere(db, sources...),
+		Administered: Administered(db),
+		Releasing:    Releasing(db),
 	}
 }
 

@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RoleService_Add_FullMethodName   = "/roster.RoleService/Add"
-	RoleService_Get_FullMethodName   = "/roster.RoleService/Get"
-	RoleService_Patch_FullMethodName = "/roster.RoleService/Patch"
-	RoleService_Apply_FullMethodName = "/roster.RoleService/Apply"
-	RoleService_Erase_FullMethodName = "/roster.RoleService/Erase"
-	RoleService_List_FullMethodName  = "/roster.RoleService/List"
-	RoleService_Widen_FullMethodName = "/roster.RoleService/Widen"
+	RoleService_Add_FullMethodName    = "/roster.RoleService/Add"
+	RoleService_Get_FullMethodName    = "/roster.RoleService/Get"
+	RoleService_Patch_FullMethodName  = "/roster.RoleService/Patch"
+	RoleService_Apply_FullMethodName  = "/roster.RoleService/Apply"
+	RoleService_Erase_FullMethodName  = "/roster.RoleService/Erase"
+	RoleService_List_FullMethodName   = "/roster.RoleService/List"
+	RoleService_Widen_FullMethodName  = "/roster.RoleService/Widen"
+	RoleService_Narrow_FullMethodName = "/roster.RoleService/Narrow"
 )
 
 // RoleServiceClient is the client API for RoleService service.
@@ -60,6 +61,27 @@ type RoleServiceClient interface {
 	// ships holds every method it puts in them -- its own package's pattern, in
 	// the role it was installed with (`docs/apps.md`).
 	Widen(ctx context.Context, in *RoleWidenRequest, opts ...grpc.CallOption) (*Role, error)
+	// Narrow takes methods out of a role and adds none.
+	//
+	// An entry of the role is taken out when one of `methods` covers it -- the
+	// same spelling, or a pattern over it -- so narrowing by
+	// `/loft.AssetService/*` takes every method of that service the role names.
+	// A method named that an entry left in the role still covers is refused, and
+	// nothing is written: narrowing a role holding `/loft.*/*` by
+	// `/loft.AssetService/Get` would leave it reaching what was named, which is
+	// the one answer a caller asking to take something away must not be given
+	// as a success. Nothing to take out is no write, and answers the role as it
+	// is.
+	//
+	// Three rules (`server/core/narrow.go`). Nobody takes away what they could
+	// not have given: every entry taken out must be the caller's to grant where
+	// the role may be bound, so somebody who holds less than a role cannot strip
+	// it below them -- and then reset the password of whoever it was bound to,
+	// since they would no longer hold more. A role a deployment declared is
+	// nobody's to narrow. And a tenant is not left without somebody
+	// administering it: a narrowing that takes `/roster.*/*` from the last
+	// person holding it across the tenant is refused.
+	Narrow(ctx context.Context, in *RoleNarrowRequest, opts ...grpc.CallOption) (*Role, error)
 }
 
 type roleServiceClient struct {
@@ -140,6 +162,16 @@ func (c *roleServiceClient) Widen(ctx context.Context, in *RoleWidenRequest, opt
 	return out, nil
 }
 
+func (c *roleServiceClient) Narrow(ctx context.Context, in *RoleNarrowRequest, opts ...grpc.CallOption) (*Role, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Role)
+	err := c.cc.Invoke(ctx, RoleService_Narrow_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RoleServiceServer is the server API for RoleService service.
 // All implementations must embed UnimplementedRoleServiceServer
 // for forward compatibility.
@@ -172,6 +204,27 @@ type RoleServiceServer interface {
 	// ships holds every method it puts in them -- its own package's pattern, in
 	// the role it was installed with (`docs/apps.md`).
 	Widen(context.Context, *RoleWidenRequest) (*Role, error)
+	// Narrow takes methods out of a role and adds none.
+	//
+	// An entry of the role is taken out when one of `methods` covers it -- the
+	// same spelling, or a pattern over it -- so narrowing by
+	// `/loft.AssetService/*` takes every method of that service the role names.
+	// A method named that an entry left in the role still covers is refused, and
+	// nothing is written: narrowing a role holding `/loft.*/*` by
+	// `/loft.AssetService/Get` would leave it reaching what was named, which is
+	// the one answer a caller asking to take something away must not be given
+	// as a success. Nothing to take out is no write, and answers the role as it
+	// is.
+	//
+	// Three rules (`server/core/narrow.go`). Nobody takes away what they could
+	// not have given: every entry taken out must be the caller's to grant where
+	// the role may be bound, so somebody who holds less than a role cannot strip
+	// it below them -- and then reset the password of whoever it was bound to,
+	// since they would no longer hold more. A role a deployment declared is
+	// nobody's to narrow. And a tenant is not left without somebody
+	// administering it: a narrowing that takes `/roster.*/*` from the last
+	// person holding it across the tenant is refused.
+	Narrow(context.Context, *RoleNarrowRequest) (*Role, error)
 	mustEmbedUnimplementedRoleServiceServer()
 }
 
@@ -202,6 +255,9 @@ func (UnimplementedRoleServiceServer) List(context.Context, *RoleListRequest) (*
 }
 func (UnimplementedRoleServiceServer) Widen(context.Context, *RoleWidenRequest) (*Role, error) {
 	return nil, status.Error(codes.Unimplemented, "method Widen not implemented")
+}
+func (UnimplementedRoleServiceServer) Narrow(context.Context, *RoleNarrowRequest) (*Role, error) {
+	return nil, status.Error(codes.Unimplemented, "method Narrow not implemented")
 }
 func (UnimplementedRoleServiceServer) mustEmbedUnimplementedRoleServiceServer() {}
 func (UnimplementedRoleServiceServer) testEmbeddedByValue()                     {}
@@ -350,6 +406,24 @@ func _RoleService_Widen_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RoleService_Narrow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RoleNarrowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoleServiceServer).Narrow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RoleService_Narrow_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoleServiceServer).Narrow(ctx, req.(*RoleNarrowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RoleService_ServiceDesc is the grpc.ServiceDesc for RoleService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -384,6 +458,10 @@ var RoleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Widen",
 			Handler:    _RoleService_Widen_Handler,
+		},
+		{
+			MethodName: "Narrow",
+			Handler:    _RoleService_Narrow_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
