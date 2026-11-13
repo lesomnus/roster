@@ -538,6 +538,7 @@ var (
 		{Name: "alias", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "desc", Type: field.TypeString},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -552,13 +553,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "group_tenant_tenant",
-				Columns:    []*schema.Column{GroupColumns[7]},
+				Columns:    []*schema.Column{GroupColumns[8]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "group_site_site",
-				Columns:    []*schema.Column{GroupColumns[8]},
+				Columns:    []*schema.Column{GroupColumns[9]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -567,12 +568,12 @@ var (
 			{
 				Name:    "group_page",
 				Unique:  false,
-				Columns: []*schema.Column{GroupColumns[7], GroupColumns[6], GroupColumns[0]},
+				Columns: []*schema.Column{GroupColumns[8], GroupColumns[7], GroupColumns[0]},
 			},
 			{
 				Name:    "group_slug",
 				Unique:  true,
-				Columns: []*schema.Column{GroupColumns[1], GroupColumns[7]},
+				Columns: []*schema.Column{GroupColumns[1], GroupColumns[8]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

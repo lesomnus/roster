@@ -239,6 +239,7 @@ func overlays(t *pdcmd.Tree) {
 		{"tenant/restore", "roster.TenantService.Restore", "undo a close while tenant.restore_within lasts"},
 		{"host/update", "roster.HostService.Update", "a host's note; never its name"},
 		{"mail-domain/update", "roster.MailDomainService.Update", "where a domain routes, and its note; never its name"},
+		{"group/update", "roster.GroupService.Update", "what a group is called, and its note; never its alias"},
 		{"role/widen", "roster.RoleService.Widen", "add methods to a role and take none away; never what you may not grant"},
 		{"role/narrow", "roster.RoleService.Narrow", "take methods out of a role and add none; only what you hold, and never the tenant's last administrator"},
 		{"connection/update", "roster.ConnectionService.Update", "a provider's issuer, client id, scopes, secret ref, subject claim, note; never its name"},

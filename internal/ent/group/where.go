@@ -291,6 +291,16 @@ func DescContainsFold(v string) predicate.Group {
 	return predicate.Group(sql.FieldContainsFold(FieldDesc, v))
 }
 
+// LabelsIsNil applies the IsNil predicate on the "labels" field.
+func LabelsIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldLabels))
+}
+
+// LabelsNotNil applies the NotNil predicate on the "labels" field.
+func LabelsNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldLabels))
+}
+
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
 func DateUpdatedEQ(v time.Time) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldDateUpdated, v))

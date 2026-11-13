@@ -172,6 +172,9 @@ func (st GroupServiceServer) create(ctx context.Context, req *rstr.GroupAddReque
 	q.SetAlias(req.GetAlias())
 	q.SetName(req.GetName())
 	q.SetDesc(req.GetDesc())
+	if u := req.GetLabels(); len(u) > 0 {
+		q.SetLabels(u)
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -314,6 +317,9 @@ func GroupSelectedFields(m *rstr.GroupSelect) []string {
 	if m.GetDesc() {
 		vs = append(vs, group.FieldDesc)
 	}
+	if m.GetLabels() {
+		vs = append(vs, group.FieldLabels)
+	}
 	if m.GetDateUpdated() {
 		vs = append(vs, group.FieldDateUpdated)
 	}
@@ -398,7 +404,7 @@ func GroupGetKey(ctx context.Context, db *ent.Client, ref *rstr.GroupRef) (uuid.
 var groupOrmEntity = ormpatch.MustEntityOf(rstr.File_app_group_proto, "Group")
 
 var groupPatchColumns = entpatch.Columns{
-	1: group.FieldId, 2: group.TenantColumn, 3: group.SiteColumn, 4: group.FieldAlias, 5: group.FieldName, 6: group.FieldDesc, 13: group.FieldDateUpdated, 14: group.FieldDateErased, 15: group.FieldDateCreated}
+	1: group.FieldId, 2: group.TenantColumn, 3: group.SiteColumn, 4: group.FieldAlias, 5: group.FieldName, 6: group.FieldDesc, 7: group.FieldLabels, 13: group.FieldDateUpdated, 14: group.FieldDateErased, 15: group.FieldDateCreated}
 
 func (s GroupServiceServer) Apply(ctx context.Context, req *rstr.GroupApplyRequest) (*rstr.Group, error) {
 	if !req.HasPatch() {

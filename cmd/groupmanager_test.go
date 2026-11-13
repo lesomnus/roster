@@ -8,8 +8,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/core"
 )
 
 // groups is a tenant's groups and the writes a test makes on them, as somebody.
@@ -46,6 +48,22 @@ func (g groups) leave(as context.Context, v *app.GroupMembership) error {
 
 func roleRef(k pdid.Id) *app.RoleRef { return app.RoleRef_builder{Id: k.Bytes()}.Build() }
 
+// manages is the tenant's manager's role: the one roster made when somebody of
+// the tenant first made a group (`core.Manages`), which is what an
+// administrator appoints another manager with.
+func (g groups) manages(t *testing.T, ctx context.Context) *app.RoleRef {
+	t.Helper()
+	v, err := g.b.Ungated.Role().Get(ctx, app.RoleGetRequest_builder{
+		Ref: app.RoleRef_builder{Slug: app.RoleRefBySlug_builder{
+			Alias:  proto.String(core.Manages),
+			Tenant: app.TenantRef_builder{Id: g.b.Contoso.Bytes()}.Build(),
+		}.Build()}.Build(),
+	}.Build())
+	require.NoError(t, err, "a group made by somebody of the tenant leaves the manager's role behind")
+
+	return app.RoleRef_builder{Id: v.GetId()}.Build()
+}
+
 // staff binds people a role that lets them see the tenant's groups and do
 // nothing to them: how a manager sees the group they manage, which a role held
 // in it does not give -- the wall narrows by where a binding reaches, and a
@@ -72,10 +90,7 @@ func TestAGroupsManagersDecideItsMembers(t *testing.T) {
 	g := groups{b: b, admin: b.as(ctx, b.ContosoUser, b.Contoso)}
 
 	A, B := g.add(t, "a-team"), g.add(t, "b-team")
-	manager := roleRef(b.role(t, ctx, "group-manager",
-		app.GroupMembershipService_Add_FullMethodName,
-		app.GroupMembershipService_Erase_FullMethodName,
-	))
+	manager := g.manages(t, ctx)
 	a, bee, c := b.holder(t, ctx, b.Contoso, "a"), b.holder(t, ctx, b.Contoso, "b"), b.holder(t, ctx, b.Contoso, "c")
 	g.staff(t, ctx, a, bee, c)
 
@@ -171,10 +186,7 @@ func TestAGroupBoundToARoleStillAsksWhoeverJoinsSomebody(t *testing.T) {
 		Group: ops,
 	}.Build())
 	require.NoError(t, err)
-	manager := roleRef(b.role(t, ctx, "group-manager",
-		app.GroupMembershipService_Add_FullMethodName,
-		app.GroupMembershipService_Erase_FullMethodName,
-	))
+	manager := g.manages(t, ctx)
 
 	a, c, help := b.holder(t, ctx, b.Contoso, "a"), b.holder(t, ctx, b.Contoso, "c"), b.holder(t, ctx, b.Contoso, "help")
 	desk := b.role(t, ctx, "helpdesk", app.GroupMembershipService_Add_FullMethodName)
@@ -214,10 +226,7 @@ func TestAGroupsManagerIsNoWayInForSomebodyHoldingLess(t *testing.T) {
 	g := groups{b: b, admin: b.as(ctx, b.ContosoUser, b.Contoso)}
 
 	A := g.add(t, "a-team")
-	manager := roleRef(b.role(t, ctx, "group-manager",
-		app.GroupMembershipService_Add_FullMethodName,
-		app.GroupMembershipService_Erase_FullMethodName,
-	))
+	manager := g.manages(t, ctx)
 	a, help := b.holder(t, ctx, b.Contoso, "a"), b.holder(t, ctx, b.Contoso, "help")
 	g.staff(t, ctx, a)
 	_, err := g.join(g.admin, a, A, manager)
@@ -248,10 +257,7 @@ func TestAManagerReachesTheirGroupsWritesAndNotEverywhere(t *testing.T) {
 	g := groups{b: b, admin: b.as(ctx, b.ContosoUser, b.Contoso)}
 
 	A := g.add(t, "a-team")
-	manager := roleRef(b.role(t, ctx, "group-manager",
-		app.GroupMembershipService_Add_FullMethodName,
-		app.GroupMembershipService_Erase_FullMethodName,
-	))
+	manager := g.manages(t, ctx)
 	a := b.holder(t, ctx, b.Contoso, "a")
 	_, err := g.join(g.admin, a, A, manager)
 	require.NoError(t, err)
@@ -263,4 +269,210 @@ func TestAManagerReachesTheirGroupsWritesAndNotEverywhere(t *testing.T) {
 	require.Contains(t, v.GetMethods(), app.GroupMembershipService_Add_FullMethodName)
 	require.Contains(t, v.GetMethods(), app.GroupMembershipService_Erase_FullMethodName)
 	require.NotContains(t, v.GetEverywhere(), app.GroupMembershipService_Add_FullMethodName)
+}
+
+// TestWhoeverMakesAGroupManagesIt: a group made by somebody of the tenant comes
+// with their place in it, carrying the manager's role, in the same write -- so
+// somebody who may make a group and holds no membership write across the
+// tenant can put people into the one they made, take them out, and say what it
+// is called, and can do none of that to a group somebody else made. A group
+// made with nobody asking -- the deployment's own work -- has no manager, as
+// every group had none before.
+func TestWhoeverMakesAGroupManagesIt(t *testing.T) {
+	b, ctx := build(t)
+	g := groups{b: b, admin: b.as(ctx, b.ContosoUser, b.Contoso)}
+	at := app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build()
+
+	m, c := b.holder(t, ctx, b.Contoso, "maker"), b.holder(t, ctx, b.Contoso, "c")
+	g.staff(t, ctx, m, c)
+	asM, asC := b.asNobody(ctx, m, b.Contoso), b.asNobody(ctx, c, b.Contoso)
+
+	made, err := b.Walled.Group().Add(asM, app.GroupAddRequest_builder{Tenant: at, Alias: "mine", Name: "Mine"}.Build())
+	require.NoError(t, err)
+	mine := app.GroupRef_builder{Id: made.GetId()}.Build()
+	theirs := g.add(t, "theirs")
+
+	membersOf := func(group *app.GroupRef) []*app.GroupMembership {
+		t.Helper()
+		vs, err := b.Ungated.GroupMembership().List(ctx, app.GroupMembershipListRequest_builder{
+			Filters: []*app.GroupMembershipFilter{app.GroupMembershipFilter_builder{Group: group}.Build()},
+		}.Build())
+		require.NoError(t, err)
+
+		out := make([]*app.GroupMembership, 0, len(vs.GetItems()))
+		for _, v := range vs.GetItems() {
+			v, err := b.Ungated.GroupMembership().Get(ctx, app.GroupMembershipGetRequest_builder{
+				Ref: app.GroupMembershipRef_builder{Id: v.GetId()}.Build(),
+				Select: app.GroupMembershipSelect_builder{
+					Holder: app.HolderSelect_builder{}.Build(),
+					Role:   app.RoleSelect_builder{Alias: proto.Bool(true), Methods: proto.Bool(true)}.Build(),
+				}.Build(),
+			}.Build())
+			require.NoError(t, err)
+			out = append(out, v)
+		}
+
+		return out
+	}
+	// Under the version read, as every write of a row that was read is.
+	rename := func(as context.Context, group *app.GroupRef, name string) error {
+		was, err := b.Ungated.Group().Get(ctx, app.GroupGetRequest_builder{
+			Ref: group, Select: app.GroupSelect_builder{DateUpdated: proto.Bool(true)}.Build(),
+		}.Build())
+		require.NoError(t, err)
+		_, err = b.Walled.Group().Update(as, app.GroupUpdateRequest_builder{
+			Ref: group, Name: proto.String(name), DateUpdated: was.GetDateUpdated(),
+		}.Build())
+
+		return err
+	}
+
+	t.Run("the maker is in it, as its manager", func(t *testing.T) {
+		x := require.New(t)
+		vs := membersOf(mine)
+		x.Len(vs, 1)
+		x.Equal(m.Bytes(), vs[0].GetHolder().GetId())
+		x.Equal(core.Manages, vs[0].GetRole().GetAlias())
+		x.ElementsMatch([]string{
+			app.GroupMembershipService_Add_FullMethodName,
+			app.GroupMembershipService_Erase_FullMethodName,
+			app.GroupService_Update_FullMethodName,
+		}, vs[0].GetRole().GetMethods())
+	})
+
+	var cIn *app.GroupMembership
+	t.Run("and decides who else is, there and nowhere else", func(t *testing.T) {
+		x := require.New(t)
+		cIn, err = g.join(asM, c, mine, nil)
+		x.NoError(err)
+
+		_, err = g.join(asM, c, theirs, nil)
+		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
+	})
+
+	t.Run("and says what it is called, and not what another is", func(t *testing.T) {
+		x := require.New(t)
+		x.NoError(rename(asM, mine, "Mine, renamed"))
+		v, err := b.Ungated.Group().Get(ctx, app.GroupGetRequest_builder{Ref: mine}.Build())
+		x.NoError(err)
+		x.Equal("Mine, renamed", v.GetName())
+		x.Equal("mine", v.GetAlias(), "what a slug names it by, and a token carries, is not what it is called")
+
+		x.Equal(codes.PermissionDenied, status.Code(rename(asM, theirs, "Theirs, renamed")))
+	})
+
+	t.Run("a member who is not its manager does neither", func(t *testing.T) {
+		x := require.New(t)
+		x.Equal(codes.PermissionDenied, status.Code(rename(asC, mine, "C's")))
+		_, err := g.join(asC, b.holder(t, ctx, b.Contoso, "d"), mine, nil)
+		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
+	})
+
+	t.Run("an administrator says what any group is called", func(t *testing.T) {
+		require.NoError(t, rename(g.admin, mine, "Mine, by the administrator"))
+	})
+
+	t.Run("and the maker takes out who they put in", func(t *testing.T) {
+		require.NoError(t, g.leave(asM, cIn))
+	})
+
+	t.Run("a group nobody was asking for has no manager", func(t *testing.T) {
+		x := require.New(t)
+		v, err := b.Ungated.Group().Add(ctx, app.GroupAddRequest_builder{Tenant: at, Alias: "declared"}.Build())
+		x.NoError(err)
+		x.Empty(membersOf(app.GroupRef_builder{Id: v.GetId()}.Build()))
+	})
+}
+
+// TestATenantsOwnManagersRoleIsTheOneAMakerHolds: the role a maker holds is
+// the tenant's `group-manager`, made when it is not there. One that is already
+// there is the tenant's word for what a manager does and is used as it stands
+// -- so a tenant whose managers do not rename groups keeps them so -- and one
+// that names anything a role held in a group may not is refused where the
+// group is made, with nothing left behind: the group and its maker's place
+// are one write.
+func TestATenantsOwnManagersRoleIsTheOneAMakerHolds(t *testing.T) {
+	at := func(b *built) *app.TenantRef { return app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build() }
+
+	t.Run("used as it stands", func(t *testing.T) {
+		b, ctx := build(t)
+		x := require.New(t)
+		own := b.role(t, ctx, core.Manages, app.GroupMembershipService_Add_FullMethodName)
+
+		m := b.holder(t, ctx, b.Contoso, "maker")
+		groups{b: b}.staff(t, ctx, m)
+		asM := b.asNobody(ctx, m, b.Contoso)
+
+		made, err := b.Walled.Group().Add(asM, app.GroupAddRequest_builder{Tenant: at(b), Alias: "mine"}.Build())
+		x.NoError(err)
+		mine := app.GroupRef_builder{Id: made.GetId()}.Build()
+
+		vs, err := b.Ungated.GroupMembership().List(ctx, app.GroupMembershipListRequest_builder{
+			Filters: []*app.GroupMembershipFilter{app.GroupMembershipFilter_builder{Group: mine}.Build()},
+		}.Build())
+		x.NoError(err)
+		x.Len(vs.GetItems(), 1)
+		v, err := b.Ungated.GroupMembership().Get(ctx, app.GroupMembershipGetRequest_builder{
+			Ref:    app.GroupMembershipRef_builder{Id: vs.GetItems()[0].GetId()}.Build(),
+			Select: app.GroupMembershipSelect_builder{Role: app.RoleSelect_builder{}.Build()}.Build(),
+		}.Build())
+		x.NoError(err)
+		x.Equal(own.Bytes(), v.GetRole().GetId())
+
+		_, err = b.Walled.Group().Update(asM, app.GroupUpdateRequest_builder{
+			Ref: mine, Name: proto.String("renamed"), DateUpdated: made.GetDateUpdated(),
+		}.Build())
+		x.Equal(codes.PermissionDenied, status.Code(err), "this tenant's managers do not rename: %v", err)
+	})
+
+	// Somebody who sees one site does not see a role of the whole tenant. The
+	// role they manage by is found all the same, so the second group they make
+	// is not refused for a role that is already there.
+	t.Run("found whoever is making the group", func(t *testing.T) {
+		b, ctx := build(t)
+		x := require.New(t)
+
+		seoul := b.site(t, ctx, b.Contoso, "seoul")
+		m := b.holder(t, ctx, b.Contoso, "maker")
+		b.binds(t, m, b.role(t, ctx, "site-admin", app.GroupService_Add_FullMethodName, app.GroupService_Get_FullMethodName), &seoul)
+		asM := b.asNobody(ctx, m, b.Contoso)
+
+		var roles [][]byte
+		for _, alias := range []string{"first", "second"} {
+			made, err := b.Walled.Group().Add(asM, app.GroupAddRequest_builder{
+				Tenant: at(b), Site: app.SiteRef_builder{Id: seoul.Bytes()}.Build(), Alias: alias,
+			}.Build())
+			x.NoError(err, alias)
+
+			vs, err := b.Ungated.GroupMembership().List(ctx, app.GroupMembershipListRequest_builder{
+				Filters: []*app.GroupMembershipFilter{app.GroupMembershipFilter_builder{
+					Group: app.GroupRef_builder{Id: made.GetId()}.Build(),
+				}.Build()},
+			}.Build())
+			x.NoError(err)
+			x.Len(vs.GetItems(), 1, alias)
+			v, err := b.Ungated.GroupMembership().Get(ctx, app.GroupMembershipGetRequest_builder{
+				Ref:    app.GroupMembershipRef_builder{Id: vs.GetItems()[0].GetId()}.Build(),
+				Select: app.GroupMembershipSelect_builder{Role: app.RoleSelect_builder{}.Build()}.Build(),
+			}.Build())
+			x.NoError(err)
+			roles = append(roles, v.GetRole().GetId())
+		}
+		x.Equal(roles[0], roles[1], "one role a tenant")
+	})
+
+	t.Run("refused when it is not what a manager may hold, and nothing is left", func(t *testing.T) {
+		b, ctx := build(t)
+		x := require.New(t)
+		b.role(t, ctx, core.Manages, app.HolderService_Get_FullMethodName)
+
+		m := b.holder(t, ctx, b.Contoso, "maker")
+		_, err := b.Walled.Group().Add(b.asNobody(ctx, m, b.Contoso), app.GroupAddRequest_builder{Tenant: at(b), Alias: "mine"}.Build())
+		x.Equal(codes.FailedPrecondition, status.Code(err), "%v", err)
+
+		_, err = b.Ungated.Group().Get(ctx, app.GroupGetRequest_builder{
+			Ref: app.GroupRef_builder{Slug: app.GroupRefBySlug_builder{Alias: proto.String("mine"), Tenant: at(b)}.Build()}.Build(),
+		}.Build())
+		x.Equal(codes.NotFound, status.Code(err), "the group and its maker's place are one write: %v", err)
+	})
 }

@@ -81,7 +81,7 @@ so it is worth reading once:
 | **Binding** → holder | a role written to one person | widens |
 | **Binding** → group | a role written to a **group**, so everybody in it | widens |
 | **TeamMembership** | a role held inside one team | widens, at the team's site |
-| **GroupMembership** with a role | a manager's, for one group's members | widens, to that group's membership writes |
+| **GroupMembership** with a role | a manager's, for one group: its maker's, or somebody appointed | widens, to that group's membership writes and its name |
 | **Binding.site** | the same role, but only within one site | narrows |
 
 > **A grant is any write that changes what the gate will answer for somebody.**
@@ -113,12 +113,19 @@ is the difference from a team.
 
 ### Its managers
 
-A membership that carries a role held **in the group** makes its holder the
-group's manager:
+**Whoever makes a group manages it**: `group add` by somebody of the tenant
+puts them in it, carrying the tenant's `group-manager` role, which roster makes
+the first time a group needs it. A group made at the box, by a file, or by a
+deployment's key has nobody of the tenant making it, and no manager.
+
+Anybody else is appointed. A membership that carries a role held **in the
+group** makes its holder the group's manager:
 
 ```sh
+# Only where nobody of the tenant has made a group yet: the first time one is,
+# this role is made with it, naming these three.
 roster --as admin role add @newco/group-manager \
-  '{"methods": ["/roster.GroupMembershipService/Add", "/roster.GroupMembershipService/Erase"]}'
+  '{"methods": ["/roster.GroupMembershipService/Add", "/roster.GroupMembershipService/Erase", "/roster.GroupService/Update"]}'
 
 echo '{"group": {"slug":{"alias":"oncall","tenant":{"alias":"newco"}}},
        "holder":{"slug": {"alias":"bob",   "tenant":{"alias":"newco"}}},
@@ -126,14 +133,17 @@ echo '{"group": {"slug":{"alias":"oncall","tenant":{"alias":"newco"}}},
   | roster --as admin group-membership add -
 ```
 
-bob may now put people into `oncall` and take them out, and do neither to any
-other group -- the gate lets him through for the method, and `server/core`
+bob may now put people into `oncall`, take them out and say what it is called
+(`group update`: its name and its note, never its alias), and do none of that to
+any other group -- the gate lets him through for the method, and `server/core`
 refuses every group but the one he holds it in. Being a plain member of a group
 is not managing it.
 
-- **Such a role names those two methods and nothing else**, and belongs to no
-  site. The gate holds a role held in a group everywhere; only the membership
-  writes are narrowed back to the group.
+- **Such a role names those three methods and nothing else**, and belongs to no
+  site. The gate holds a role held in a group everywhere; only these writes are
+  narrowed back to the group. A tenant's own `group-manager` naming fewer is
+  used as it stands -- one whose managers do not rename groups keeps them so --
+  and one naming anything else is refused where a group is made.
 - **Appointing a manager is held to what the appointer holds through a
   binding**, so a manager does not make another. A tenant's administrator does.
 - **A manager is a member.** Kept out of the group they would protect nothing,

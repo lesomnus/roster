@@ -43,6 +43,12 @@ func (_c *GroupCreate) SetDesc(v string) *GroupCreate {
 	return _c
 }
 
+// SetLabels sets the "labels" field.
+func (_c *GroupCreate) SetLabels(v map[string]string) *GroupCreate {
+	_c.mutation.SetLabels(v)
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *GroupCreate) SetDateUpdated(v time.Time) *GroupCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -230,6 +236,10 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Desc(); ok {
 		_spec.SetField(group.FieldDesc, field.TypeString, value)
 		_node.Desc = value
+	}
+	if value, ok := _c.mutation.Labels(); ok {
+		_spec.SetField(group.FieldLabels, field.TypeJson, value)
+		_node.Labels = value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(group.FieldDateUpdated, field.TypeTime, value)

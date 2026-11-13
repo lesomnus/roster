@@ -71,6 +71,18 @@ func (_u *GroupUpdate) SetNillableDesc(v *string) *GroupUpdate {
 	return _u
 }
 
+// SetLabels sets the "labels" field.
+func (_u *GroupUpdate) SetLabels(v map[string]string) *GroupUpdate {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *GroupUpdate) ClearLabels() *GroupUpdate {
+	_u.mutation.ClearLabels()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *GroupUpdate) SetDateUpdated(v time.Time) *GroupUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -181,6 +193,15 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if e, ok := _u.mutation.FieldExpr(group.FieldDesc); ok {
 		_spec.SetField(group.FieldDesc, field.TypeString, e)
 	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(group.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(group.FieldLabels); ok {
+		_spec.SetField(group.FieldLabels, field.TypeJson, e)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(group.FieldLabels, field.TypeJson)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(group.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -260,6 +281,18 @@ func (_u *GroupUpdateOne) SetNillableDesc(v *string) *GroupUpdateOne {
 	if v != nil {
 		_u.SetDesc(*v)
 	}
+	return _u
+}
+
+// SetLabels sets the "labels" field.
+func (_u *GroupUpdateOne) SetLabels(v map[string]string) *GroupUpdateOne {
+	_u.mutation.SetLabels(v)
+	return _u
+}
+
+// ClearLabels clears the value of the "labels" field.
+func (_u *GroupUpdateOne) ClearLabels() *GroupUpdateOne {
+	_u.mutation.ClearLabels()
 	return _u
 }
 
@@ -402,6 +435,15 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if e, ok := _u.mutation.FieldExpr(group.FieldDesc); ok {
 		_spec.SetField(group.FieldDesc, field.TypeString, e)
+	}
+	if value, ok := _u.mutation.Labels(); ok {
+		_spec.SetField(group.FieldLabels, field.TypeJson, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(group.FieldLabels); ok {
+		_spec.SetField(group.FieldLabels, field.TypeJson, e)
+	}
+	if _u.mutation.LabelsCleared() {
+		_spec.ClearField(group.FieldLabels, field.TypeJson)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(group.FieldDateUpdated, field.TypeTime, value)

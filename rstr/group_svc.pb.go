@@ -30,6 +30,7 @@ type GroupAddRequest struct {
 	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
@@ -104,6 +105,13 @@ func (x *GroupAddRequest) GetDesc() string {
 	return ""
 }
 
+func (x *GroupAddRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *GroupAddRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
@@ -116,7 +124,7 @@ func (x *GroupAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 8)
 }
 
 func (x *GroupAddRequest) SetTenant(v *TenantRef) {
@@ -137,6 +145,10 @@ func (x *GroupAddRequest) SetName(v string) {
 
 func (x *GroupAddRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = v
+}
+
+func (x *GroupAddRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *GroupAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -197,6 +209,7 @@ type GroupAddRequest_builder struct {
 	Alias       string
 	Name        string
 	Desc        string
+	Labels      map[string]string
 	DateCreated *timestamppb.Timestamp
 }
 
@@ -205,7 +218,7 @@ func (b0 GroupAddRequest_builder) Build() *GroupAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 8)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Tenant = b.Tenant
@@ -213,6 +226,7 @@ func (b0 GroupAddRequest_builder) Build() *GroupAddRequest {
 	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -591,6 +605,7 @@ type GroupSelect struct {
 	xxx_hidden_Alias       bool                   `protobuf:"varint,4,opt,name=alias"`
 	xxx_hidden_Name        bool                   `protobuf:"varint,5,opt,name=name"`
 	xxx_hidden_Desc        bool                   `protobuf:"varint,6,opt,name=desc"`
+	xxx_hidden_Labels      bool                   `protobuf:"varint,7,opt,name=labels"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
@@ -667,6 +682,13 @@ func (x *GroupSelect) GetDesc() bool {
 	return false
 }
 
+func (x *GroupSelect) GetLabels() bool {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return false
+}
+
 func (x *GroupSelect) GetDateUpdated() bool {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -690,7 +712,7 @@ func (x *GroupSelect) GetDateCreated() bool {
 
 func (x *GroupSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 10)
 }
 
 func (x *GroupSelect) SetTenant(v *TenantSelect) {
@@ -703,32 +725,37 @@ func (x *GroupSelect) SetSite(v *SiteSelect) {
 
 func (x *GroupSelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 10)
 }
 
 func (x *GroupSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 10)
 }
 
 func (x *GroupSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 10)
+}
+
+func (x *GroupSelect) SetLabels(v bool) {
+	x.xxx_hidden_Labels = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 10)
 }
 
 func (x *GroupSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 10)
 }
 
 func (x *GroupSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 10)
 }
 
 func (x *GroupSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 10)
 }
 
 func (x *GroupSelect) HasAll() bool {
@@ -773,25 +800,32 @@ func (x *GroupSelect) HasDesc() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *GroupSelect) HasDateUpdated() bool {
+func (x *GroupSelect) HasLabels() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
-func (x *GroupSelect) HasDateErased() bool {
+func (x *GroupSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
-func (x *GroupSelect) HasDateCreated() bool {
+func (x *GroupSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+}
+
+func (x *GroupSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
 func (x *GroupSelect) ClearAll() {
@@ -822,18 +856,23 @@ func (x *GroupSelect) ClearDesc() {
 	x.xxx_hidden_Desc = false
 }
 
-func (x *GroupSelect) ClearDateUpdated() {
+func (x *GroupSelect) ClearLabels() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_Labels = false
+}
+
+func (x *GroupSelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *GroupSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *GroupSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_DateCreated = false
 }
 
@@ -846,6 +885,7 @@ type GroupSelect_builder struct {
 	Alias       *bool
 	Name        *bool
 	Desc        *bool
+	Labels      *bool
 	DateUpdated *bool
 	DateErased  *bool
 	DateCreated *bool
@@ -856,33 +896,37 @@ func (b0 GroupSelect_builder) Build() *GroupSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 10)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 10)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 10)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 10)
 		x.xxx_hidden_Desc = *b.Desc
 	}
+	if b.Labels != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 10)
+		x.xxx_hidden_Labels = *b.Labels
+	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 10)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 10)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 10)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -894,6 +938,7 @@ type GroupPatchRequest struct {
 	xxx_hidden_Alias            *string                `protobuf:"bytes,8,opt,name=alias"`
 	xxx_hidden_Name             *string                `protobuf:"bytes,10,opt,name=name"`
 	xxx_hidden_Desc             *string                `protobuf:"bytes,12,opt,name=desc"`
+	xxx_hidden_Labels           map[string]string      `protobuf:"bytes,14,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
@@ -964,6 +1009,13 @@ func (x *GroupPatchRequest) GetDesc() string {
 	return ""
 }
 
+func (x *GroupPatchRequest) GetLabels() map[string]string {
+	if x != nil {
+		return x.xxx_hidden_Labels
+	}
+	return nil
+}
+
 func (x *GroupPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -984,17 +1036,21 @@ func (x *GroupPatchRequest) SetRef(v *GroupRef) {
 
 func (x *GroupPatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 7)
 }
 
 func (x *GroupPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
 }
 
 func (x *GroupPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
+}
+
+func (x *GroupPatchRequest) SetLabels(v map[string]string) {
+	x.xxx_hidden_Labels = v
 }
 
 func (x *GroupPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -1003,7 +1059,7 @@ func (x *GroupPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *GroupPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
 }
 
 func (x *GroupPatchRequest) HasRef() bool {
@@ -1045,7 +1101,7 @@ func (x *GroupPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
 func (x *GroupPatchRequest) ClearRef() {
@@ -1072,17 +1128,18 @@ func (x *GroupPatchRequest) ClearDateUpdated() {
 }
 
 func (x *GroupPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
 type GroupPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref   *GroupRef
-	Alias *string
-	Name  *string
-	Desc  *string
+	Ref    *GroupRef
+	Alias  *string
+	Name   *string
+	Desc   *string
+	Labels map[string]string
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -1105,20 +1162,21 @@ func (b0 GroupPatchRequest_builder) Build() *GroupPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 7)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
 		x.xxx_hidden_Desc = b.Desc
 	}
+	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -1609,6 +1667,169 @@ func (b0 GroupFilter_builder) Build() *GroupFilter {
 	return m0
 }
 
+type GroupUpdateRequest struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref         *GroupRef              `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_Name        *string                `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Desc        *string                `protobuf:"bytes,6,opt,name=desc"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *GroupUpdateRequest) Reset() {
+	*x = GroupUpdateRequest{}
+	mi := &file_app_group_svc_g_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupUpdateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupUpdateRequest) ProtoMessage() {}
+
+func (x *GroupUpdateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_group_svc_g_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *GroupUpdateRequest) GetRef() *GroupRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *GroupUpdateRequest) GetDateUpdated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateUpdated
+	}
+	return nil
+}
+
+func (x *GroupUpdateRequest) GetName() string {
+	if x != nil {
+		if x.xxx_hidden_Name != nil {
+			return *x.xxx_hidden_Name
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *GroupUpdateRequest) GetDesc() string {
+	if x != nil {
+		if x.xxx_hidden_Desc != nil {
+			return *x.xxx_hidden_Desc
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *GroupUpdateRequest) SetRef(v *GroupRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *GroupUpdateRequest) SetDateUpdated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateUpdated = v
+}
+
+func (x *GroupUpdateRequest) SetName(v string) {
+	x.xxx_hidden_Name = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+}
+
+func (x *GroupUpdateRequest) SetDesc(v string) {
+	x.xxx_hidden_Desc = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+}
+
+func (x *GroupUpdateRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *GroupUpdateRequest) HasDateUpdated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateUpdated != nil
+}
+
+func (x *GroupUpdateRequest) HasName() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *GroupUpdateRequest) HasDesc() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *GroupUpdateRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *GroupUpdateRequest) ClearDateUpdated() {
+	x.xxx_hidden_DateUpdated = nil
+}
+
+func (x *GroupUpdateRequest) ClearName() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Name = nil
+}
+
+func (x *GroupUpdateRequest) ClearDesc() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Desc = nil
+}
+
+type GroupUpdateRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref *GroupRef
+	// Optimistic locking, as `Patch` takes it: the version this caller read.
+	DateUpdated *timestamppb.Timestamp
+	// What it is called, and the note about it. Unset is left as it was.
+	Name *string
+	Desc *string
+}
+
+func (b0 GroupUpdateRequest_builder) Build() *GroupUpdateRequest {
+	m0 := &GroupUpdateRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_DateUpdated = b.DateUpdated
+	if b.Name != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		x.xxx_hidden_Name = b.Name
+	}
+	if b.Desc != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		x.xxx_hidden_Desc = b.Desc
+	}
+	return m0
+}
+
 type GroupExposureAddRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
@@ -1623,7 +1844,7 @@ type GroupExposureAddRequest struct {
 
 func (x *GroupExposureAddRequest) Reset() {
 	*x = GroupExposureAddRequest{}
-	mi := &file_app_group_svc_g_proto_msgTypes[11]
+	mi := &file_app_group_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1635,7 +1856,7 @@ func (x *GroupExposureAddRequest) String() string {
 func (*GroupExposureAddRequest) ProtoMessage() {}
 
 func (x *GroupExposureAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[11]
+	mi := &file_app_group_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1761,7 +1982,7 @@ type GroupExposureGetRequest struct {
 
 func (x *GroupExposureGetRequest) Reset() {
 	*x = GroupExposureGetRequest{}
-	mi := &file_app_group_svc_g_proto_msgTypes[12]
+	mi := &file_app_group_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1773,7 +1994,7 @@ func (x *GroupExposureGetRequest) String() string {
 func (*GroupExposureGetRequest) ProtoMessage() {}
 
 func (x *GroupExposureGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[12]
+	mi := &file_app_group_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1853,7 +2074,7 @@ type GroupExposureRef struct {
 
 func (x *GroupExposureRef) Reset() {
 	*x = GroupExposureRef{}
-	mi := &file_app_group_svc_g_proto_msgTypes[13]
+	mi := &file_app_group_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1865,7 +2086,7 @@ func (x *GroupExposureRef) String() string {
 func (*GroupExposureRef) ProtoMessage() {}
 
 func (x *GroupExposureRef) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[13]
+	mi := &file_app_group_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1991,7 +2212,7 @@ func (b0 GroupExposureRef_builder) Build() *GroupExposureRef {
 type case_GroupExposureRef_Key protoreflect.FieldNumber
 
 func (x case_GroupExposureRef_Key) String() string {
-	md := file_app_group_svc_g_proto_msgTypes[13].Descriptor()
+	md := file_app_group_svc_g_proto_msgTypes[14].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -2026,7 +2247,7 @@ type GroupExposureRefByCarried struct {
 
 func (x *GroupExposureRefByCarried) Reset() {
 	*x = GroupExposureRefByCarried{}
-	mi := &file_app_group_svc_g_proto_msgTypes[14]
+	mi := &file_app_group_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2038,7 +2259,7 @@ func (x *GroupExposureRefByCarried) String() string {
 func (*GroupExposureRefByCarried) ProtoMessage() {}
 
 func (x *GroupExposureRefByCarried) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[14]
+	mi := &file_app_group_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2133,7 +2354,7 @@ type GroupExposureSelect struct {
 
 func (x *GroupExposureSelect) Reset() {
 	*x = GroupExposureSelect{}
-	mi := &file_app_group_svc_g_proto_msgTypes[15]
+	mi := &file_app_group_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2145,7 +2366,7 @@ func (x *GroupExposureSelect) String() string {
 func (*GroupExposureSelect) ProtoMessage() {}
 
 func (x *GroupExposureSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[15]
+	mi := &file_app_group_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2350,7 +2571,7 @@ type GroupExposurePatchRequest struct {
 
 func (x *GroupExposurePatchRequest) Reset() {
 	*x = GroupExposurePatchRequest{}
-	mi := &file_app_group_svc_g_proto_msgTypes[16]
+	mi := &file_app_group_svc_g_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2362,7 +2583,7 @@ func (x *GroupExposurePatchRequest) String() string {
 func (*GroupExposurePatchRequest) ProtoMessage() {}
 
 func (x *GroupExposurePatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[16]
+	mi := &file_app_group_svc_g_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2484,7 +2705,7 @@ type GroupExposureApplyRequest struct {
 
 func (x *GroupExposureApplyRequest) Reset() {
 	*x = GroupExposureApplyRequest{}
-	mi := &file_app_group_svc_g_proto_msgTypes[17]
+	mi := &file_app_group_svc_g_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2496,7 +2717,7 @@ func (x *GroupExposureApplyRequest) String() string {
 func (*GroupExposureApplyRequest) ProtoMessage() {}
 
 func (x *GroupExposureApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[17]
+	mi := &file_app_group_svc_g_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2578,7 +2799,7 @@ type GroupExposureEraseResponse struct {
 
 func (x *GroupExposureEraseResponse) Reset() {
 	*x = GroupExposureEraseResponse{}
-	mi := &file_app_group_svc_g_proto_msgTypes[18]
+	mi := &file_app_group_svc_g_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2590,7 +2811,7 @@ func (x *GroupExposureEraseResponse) String() string {
 func (*GroupExposureEraseResponse) ProtoMessage() {}
 
 func (x *GroupExposureEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[18]
+	mi := &file_app_group_svc_g_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2659,7 +2880,7 @@ type GroupExposureListRequest struct {
 
 func (x *GroupExposureListRequest) Reset() {
 	*x = GroupExposureListRequest{}
-	mi := &file_app_group_svc_g_proto_msgTypes[19]
+	mi := &file_app_group_svc_g_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2671,7 +2892,7 @@ func (x *GroupExposureListRequest) String() string {
 func (*GroupExposureListRequest) ProtoMessage() {}
 
 func (x *GroupExposureListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[19]
+	mi := &file_app_group_svc_g_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2771,7 +2992,7 @@ type GroupExposureListResponse struct {
 
 func (x *GroupExposureListResponse) Reset() {
 	*x = GroupExposureListResponse{}
-	mi := &file_app_group_svc_g_proto_msgTypes[20]
+	mi := &file_app_group_svc_g_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2783,7 +3004,7 @@ func (x *GroupExposureListResponse) String() string {
 func (*GroupExposureListResponse) ProtoMessage() {}
 
 func (x *GroupExposureListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[20]
+	mi := &file_app_group_svc_g_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2851,7 +3072,7 @@ type GroupExposureFilter struct {
 
 func (x *GroupExposureFilter) Reset() {
 	*x = GroupExposureFilter{}
-	mi := &file_app_group_svc_g_proto_msgTypes[21]
+	mi := &file_app_group_svc_g_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2863,7 +3084,7 @@ func (x *GroupExposureFilter) String() string {
 func (*GroupExposureFilter) ProtoMessage() {}
 
 func (x *GroupExposureFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_group_svc_g_proto_msgTypes[21]
+	mi := &file_app_group_svc_g_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2938,15 +3159,19 @@ var File_app_group_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_group_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x15app/group_svc.g.proto\x12\x06roster\x1a\x0fapp/group.proto\x1a\x14app/site_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\x83\x02\n" +
+	"\x15app/group_svc.g.proto\x12\x06roster\x1a\x0fapp/group.proto\x1a\x14app/site_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\xfb\x02\n" +
 	"\x0fGroupAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12#\n" +
 	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
-	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"b\n" +
+	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12;\n" +
+	"\x06labels\x18\a \x03(\v2#.roster.GroupAddRequest.LabelsEntryR\x06labels\x12=\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"b\n" +
 	"\x0fGroupGetRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.GroupRefR\x03ref\x12+\n" +
 	"\x06select\x18\x02 \x01(\v2\x13.roster.GroupSelectR\x06select\"Q\n" +
@@ -2956,26 +3181,31 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\x03key\"Q\n" +
 	"\x0eGroupRefBySlug\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\"\x9a\x02\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\"\xb2\x02\n" +
 	"\vGroupSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x14.roster.TenantSelectR\x06tenant\x12&\n" +
 	"\x04site\x18\x03 \x01(\v2\x12.roster.SiteSelectR\x04site\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\bR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\bR\x04desc\x12!\n" +
+	"\x04desc\x18\x06 \x01(\bR\x04desc\x12\x16\n" +
+	"\x06labels\x18\a \x01(\bR\x06labels\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xe2\x01\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xdc\x02\n" +
 	"\x11GroupPatchRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.GroupRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\f \x01(\tR\x04desc\x12=\n" +
+	"\x06labels\x18\x0e \x03(\v2%.roster.GroupPatchRequest.LabelsEntryR\x06labels\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"[\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
+	"\vLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"[\n" +
 	"\x11GroupApplyRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.GroupRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\",\n" +
@@ -2992,7 +3222,12 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\vGroupFilter\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.GroupRefR\x03ref\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12#\n" +
-	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\"\xaf\x01\n" +
+	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\"\x9f\x01\n" +
+	"\x12GroupUpdateRequest\x12\"\n" +
+	"\x03ref\x18\x01 \x01(\v2\x10.roster.GroupRefR\x03ref\x12=\n" +
+	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12\x12\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
+	"\x04desc\x18\x06 \x01(\tR\x04desc\"\xaf\x01\n" +
 	"\x17GroupExposureAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12&\n" +
 	"\x05group\x18\x02 \x01(\v2\x10.roster.GroupRefR\x05group\x12\x1d\n" +
@@ -3035,14 +3270,15 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"i\n" +
 	"\x13GroupExposureFilter\x12*\n" +
 	"\x03ref\x18\x01 \x01(\v2\x18.roster.GroupExposureRefR\x03ref\x12&\n" +
-	"\x05group\x18\x02 \x01(\v2\x10.roster.GroupRefR\x05group2\xc6\x02\n" +
+	"\x05group\x18\x02 \x01(\v2\x10.roster.GroupRefR\x05group2\xfb\x02\n" +
 	"\fGroupService\x12-\n" +
 	"\x03Add\x12\x17.roster.GroupAddRequest\x1a\r.roster.Group\x12-\n" +
 	"\x03Get\x12\x17.roster.GroupGetRequest\x1a\r.roster.Group\x121\n" +
 	"\x05Patch\x12\x19.roster.GroupPatchRequest\x1a\r.roster.Group\x121\n" +
 	"\x05Apply\x12\x19.roster.GroupApplyRequest\x1a\r.roster.Group\x125\n" +
 	"\x05Erase\x12\x10.roster.GroupRef\x1a\x1a.roster.GroupEraseResponse\x12;\n" +
-	"\x04List\x12\x18.roster.GroupListRequest\x1a\x19.roster.GroupListResponse2\xae\x03\n" +
+	"\x04List\x12\x18.roster.GroupListRequest\x1a\x19.roster.GroupListResponse\x123\n" +
+	"\x06Update\x12\x1a.roster.GroupUpdateRequest\x1a\r.roster.Group2\xae\x03\n" +
 	"\x14GroupExposureService\x12=\n" +
 	"\x03Add\x12\x1f.roster.GroupExposureAddRequest\x1a\x15.roster.GroupExposure\x12=\n" +
 	"\x03Get\x12\x1f.roster.GroupExposureGetRequest\x1a\x15.roster.GroupExposure\x12A\n" +
@@ -3051,7 +3287,7 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\x05Erase\x12\x18.roster.GroupExposureRef\x1a\".roster.GroupExposureEraseResponse\x12K\n" +
 	"\x04List\x12 .roster.GroupExposureListRequest\x1a!.roster.GroupExposureListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_group_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_app_group_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_app_group_svc_g_proto_goTypes = []any{
 	(*GroupAddRequest)(nil),            // 0: roster.GroupAddRequest
 	(*GroupGetRequest)(nil),            // 1: roster.GroupGetRequest
@@ -3064,89 +3300,98 @@ var file_app_group_svc_g_proto_goTypes = []any{
 	(*GroupListRequest)(nil),           // 8: roster.GroupListRequest
 	(*GroupListResponse)(nil),          // 9: roster.GroupListResponse
 	(*GroupFilter)(nil),                // 10: roster.GroupFilter
-	(*GroupExposureAddRequest)(nil),    // 11: roster.GroupExposureAddRequest
-	(*GroupExposureGetRequest)(nil),    // 12: roster.GroupExposureGetRequest
-	(*GroupExposureRef)(nil),           // 13: roster.GroupExposureRef
-	(*GroupExposureRefByCarried)(nil),  // 14: roster.GroupExposureRefByCarried
-	(*GroupExposureSelect)(nil),        // 15: roster.GroupExposureSelect
-	(*GroupExposurePatchRequest)(nil),  // 16: roster.GroupExposurePatchRequest
-	(*GroupExposureApplyRequest)(nil),  // 17: roster.GroupExposureApplyRequest
-	(*GroupExposureEraseResponse)(nil), // 18: roster.GroupExposureEraseResponse
-	(*GroupExposureListRequest)(nil),   // 19: roster.GroupExposureListRequest
-	(*GroupExposureListResponse)(nil),  // 20: roster.GroupExposureListResponse
-	(*GroupExposureFilter)(nil),        // 21: roster.GroupExposureFilter
-	(*TenantRef)(nil),                  // 22: roster.TenantRef
-	(*SiteRef)(nil),                    // 23: roster.SiteRef
-	(*timestamppb.Timestamp)(nil),      // 24: google.protobuf.Timestamp
-	(*TenantSelect)(nil),               // 25: roster.TenantSelect
-	(*SiteSelect)(nil),                 // 26: roster.SiteSelect
-	(*patchpb.Patch)(nil),              // 27: patch.Patch
-	(*Group)(nil),                      // 28: roster.Group
-	(*GroupExposure)(nil),              // 29: roster.GroupExposure
+	(*GroupUpdateRequest)(nil),         // 11: roster.GroupUpdateRequest
+	(*GroupExposureAddRequest)(nil),    // 12: roster.GroupExposureAddRequest
+	(*GroupExposureGetRequest)(nil),    // 13: roster.GroupExposureGetRequest
+	(*GroupExposureRef)(nil),           // 14: roster.GroupExposureRef
+	(*GroupExposureRefByCarried)(nil),  // 15: roster.GroupExposureRefByCarried
+	(*GroupExposureSelect)(nil),        // 16: roster.GroupExposureSelect
+	(*GroupExposurePatchRequest)(nil),  // 17: roster.GroupExposurePatchRequest
+	(*GroupExposureApplyRequest)(nil),  // 18: roster.GroupExposureApplyRequest
+	(*GroupExposureEraseResponse)(nil), // 19: roster.GroupExposureEraseResponse
+	(*GroupExposureListRequest)(nil),   // 20: roster.GroupExposureListRequest
+	(*GroupExposureListResponse)(nil),  // 21: roster.GroupExposureListResponse
+	(*GroupExposureFilter)(nil),        // 22: roster.GroupExposureFilter
+	nil,                                // 23: roster.GroupAddRequest.LabelsEntry
+	nil,                                // 24: roster.GroupPatchRequest.LabelsEntry
+	(*TenantRef)(nil),                  // 25: roster.TenantRef
+	(*SiteRef)(nil),                    // 26: roster.SiteRef
+	(*timestamppb.Timestamp)(nil),      // 27: google.protobuf.Timestamp
+	(*TenantSelect)(nil),               // 28: roster.TenantSelect
+	(*SiteSelect)(nil),                 // 29: roster.SiteSelect
+	(*patchpb.Patch)(nil),              // 30: patch.Patch
+	(*Group)(nil),                      // 31: roster.Group
+	(*GroupExposure)(nil),              // 32: roster.GroupExposure
 }
 var file_app_group_svc_g_proto_depIdxs = []int32{
-	22, // 0: roster.GroupAddRequest.tenant:type_name -> roster.TenantRef
-	23, // 1: roster.GroupAddRequest.site:type_name -> roster.SiteRef
-	24, // 2: roster.GroupAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 3: roster.GroupGetRequest.ref:type_name -> roster.GroupRef
-	4,  // 4: roster.GroupGetRequest.select:type_name -> roster.GroupSelect
-	3,  // 5: roster.GroupRef.slug:type_name -> roster.GroupRefBySlug
-	22, // 6: roster.GroupRefBySlug.tenant:type_name -> roster.TenantRef
-	25, // 7: roster.GroupSelect.tenant:type_name -> roster.TenantSelect
-	26, // 8: roster.GroupSelect.site:type_name -> roster.SiteSelect
-	2,  // 9: roster.GroupPatchRequest.ref:type_name -> roster.GroupRef
-	24, // 10: roster.GroupPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 11: roster.GroupApplyRequest.ref:type_name -> roster.GroupRef
-	27, // 12: roster.GroupApplyRequest.patch:type_name -> patch.Patch
-	10, // 13: roster.GroupListRequest.filters:type_name -> roster.GroupFilter
-	28, // 14: roster.GroupListResponse.items:type_name -> roster.Group
-	2,  // 15: roster.GroupFilter.ref:type_name -> roster.GroupRef
-	22, // 16: roster.GroupFilter.tenant:type_name -> roster.TenantRef
-	23, // 17: roster.GroupFilter.site:type_name -> roster.SiteRef
-	2,  // 18: roster.GroupExposureAddRequest.group:type_name -> roster.GroupRef
-	24, // 19: roster.GroupExposureAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	13, // 20: roster.GroupExposureGetRequest.ref:type_name -> roster.GroupExposureRef
-	15, // 21: roster.GroupExposureGetRequest.select:type_name -> roster.GroupExposureSelect
-	14, // 22: roster.GroupExposureRef.carried:type_name -> roster.GroupExposureRefByCarried
-	2,  // 23: roster.GroupExposureRefByCarried.group:type_name -> roster.GroupRef
-	4,  // 24: roster.GroupExposureSelect.group:type_name -> roster.GroupSelect
-	13, // 25: roster.GroupExposurePatchRequest.ref:type_name -> roster.GroupExposureRef
-	24, // 26: roster.GroupExposurePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	13, // 27: roster.GroupExposureApplyRequest.ref:type_name -> roster.GroupExposureRef
-	27, // 28: roster.GroupExposureApplyRequest.patch:type_name -> patch.Patch
-	21, // 29: roster.GroupExposureListRequest.filters:type_name -> roster.GroupExposureFilter
-	29, // 30: roster.GroupExposureListResponse.items:type_name -> roster.GroupExposure
-	13, // 31: roster.GroupExposureFilter.ref:type_name -> roster.GroupExposureRef
-	2,  // 32: roster.GroupExposureFilter.group:type_name -> roster.GroupRef
-	0,  // 33: roster.GroupService.Add:input_type -> roster.GroupAddRequest
-	1,  // 34: roster.GroupService.Get:input_type -> roster.GroupGetRequest
-	5,  // 35: roster.GroupService.Patch:input_type -> roster.GroupPatchRequest
-	6,  // 36: roster.GroupService.Apply:input_type -> roster.GroupApplyRequest
-	2,  // 37: roster.GroupService.Erase:input_type -> roster.GroupRef
-	8,  // 38: roster.GroupService.List:input_type -> roster.GroupListRequest
-	11, // 39: roster.GroupExposureService.Add:input_type -> roster.GroupExposureAddRequest
-	12, // 40: roster.GroupExposureService.Get:input_type -> roster.GroupExposureGetRequest
-	16, // 41: roster.GroupExposureService.Patch:input_type -> roster.GroupExposurePatchRequest
-	17, // 42: roster.GroupExposureService.Apply:input_type -> roster.GroupExposureApplyRequest
-	13, // 43: roster.GroupExposureService.Erase:input_type -> roster.GroupExposureRef
-	19, // 44: roster.GroupExposureService.List:input_type -> roster.GroupExposureListRequest
-	28, // 45: roster.GroupService.Add:output_type -> roster.Group
-	28, // 46: roster.GroupService.Get:output_type -> roster.Group
-	28, // 47: roster.GroupService.Patch:output_type -> roster.Group
-	28, // 48: roster.GroupService.Apply:output_type -> roster.Group
-	7,  // 49: roster.GroupService.Erase:output_type -> roster.GroupEraseResponse
-	9,  // 50: roster.GroupService.List:output_type -> roster.GroupListResponse
-	29, // 51: roster.GroupExposureService.Add:output_type -> roster.GroupExposure
-	29, // 52: roster.GroupExposureService.Get:output_type -> roster.GroupExposure
-	29, // 53: roster.GroupExposureService.Patch:output_type -> roster.GroupExposure
-	29, // 54: roster.GroupExposureService.Apply:output_type -> roster.GroupExposure
-	18, // 55: roster.GroupExposureService.Erase:output_type -> roster.GroupExposureEraseResponse
-	20, // 56: roster.GroupExposureService.List:output_type -> roster.GroupExposureListResponse
-	45, // [45:57] is the sub-list for method output_type
-	33, // [33:45] is the sub-list for method input_type
-	33, // [33:33] is the sub-list for extension type_name
-	33, // [33:33] is the sub-list for extension extendee
-	0,  // [0:33] is the sub-list for field type_name
+	25, // 0: roster.GroupAddRequest.tenant:type_name -> roster.TenantRef
+	26, // 1: roster.GroupAddRequest.site:type_name -> roster.SiteRef
+	23, // 2: roster.GroupAddRequest.labels:type_name -> roster.GroupAddRequest.LabelsEntry
+	27, // 3: roster.GroupAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 4: roster.GroupGetRequest.ref:type_name -> roster.GroupRef
+	4,  // 5: roster.GroupGetRequest.select:type_name -> roster.GroupSelect
+	3,  // 6: roster.GroupRef.slug:type_name -> roster.GroupRefBySlug
+	25, // 7: roster.GroupRefBySlug.tenant:type_name -> roster.TenantRef
+	28, // 8: roster.GroupSelect.tenant:type_name -> roster.TenantSelect
+	29, // 9: roster.GroupSelect.site:type_name -> roster.SiteSelect
+	2,  // 10: roster.GroupPatchRequest.ref:type_name -> roster.GroupRef
+	24, // 11: roster.GroupPatchRequest.labels:type_name -> roster.GroupPatchRequest.LabelsEntry
+	27, // 12: roster.GroupPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 13: roster.GroupApplyRequest.ref:type_name -> roster.GroupRef
+	30, // 14: roster.GroupApplyRequest.patch:type_name -> patch.Patch
+	10, // 15: roster.GroupListRequest.filters:type_name -> roster.GroupFilter
+	31, // 16: roster.GroupListResponse.items:type_name -> roster.Group
+	2,  // 17: roster.GroupFilter.ref:type_name -> roster.GroupRef
+	25, // 18: roster.GroupFilter.tenant:type_name -> roster.TenantRef
+	26, // 19: roster.GroupFilter.site:type_name -> roster.SiteRef
+	2,  // 20: roster.GroupUpdateRequest.ref:type_name -> roster.GroupRef
+	27, // 21: roster.GroupUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 22: roster.GroupExposureAddRequest.group:type_name -> roster.GroupRef
+	27, // 23: roster.GroupExposureAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	14, // 24: roster.GroupExposureGetRequest.ref:type_name -> roster.GroupExposureRef
+	16, // 25: roster.GroupExposureGetRequest.select:type_name -> roster.GroupExposureSelect
+	15, // 26: roster.GroupExposureRef.carried:type_name -> roster.GroupExposureRefByCarried
+	2,  // 27: roster.GroupExposureRefByCarried.group:type_name -> roster.GroupRef
+	4,  // 28: roster.GroupExposureSelect.group:type_name -> roster.GroupSelect
+	14, // 29: roster.GroupExposurePatchRequest.ref:type_name -> roster.GroupExposureRef
+	27, // 30: roster.GroupExposurePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	14, // 31: roster.GroupExposureApplyRequest.ref:type_name -> roster.GroupExposureRef
+	30, // 32: roster.GroupExposureApplyRequest.patch:type_name -> patch.Patch
+	22, // 33: roster.GroupExposureListRequest.filters:type_name -> roster.GroupExposureFilter
+	32, // 34: roster.GroupExposureListResponse.items:type_name -> roster.GroupExposure
+	14, // 35: roster.GroupExposureFilter.ref:type_name -> roster.GroupExposureRef
+	2,  // 36: roster.GroupExposureFilter.group:type_name -> roster.GroupRef
+	0,  // 37: roster.GroupService.Add:input_type -> roster.GroupAddRequest
+	1,  // 38: roster.GroupService.Get:input_type -> roster.GroupGetRequest
+	5,  // 39: roster.GroupService.Patch:input_type -> roster.GroupPatchRequest
+	6,  // 40: roster.GroupService.Apply:input_type -> roster.GroupApplyRequest
+	2,  // 41: roster.GroupService.Erase:input_type -> roster.GroupRef
+	8,  // 42: roster.GroupService.List:input_type -> roster.GroupListRequest
+	11, // 43: roster.GroupService.Update:input_type -> roster.GroupUpdateRequest
+	12, // 44: roster.GroupExposureService.Add:input_type -> roster.GroupExposureAddRequest
+	13, // 45: roster.GroupExposureService.Get:input_type -> roster.GroupExposureGetRequest
+	17, // 46: roster.GroupExposureService.Patch:input_type -> roster.GroupExposurePatchRequest
+	18, // 47: roster.GroupExposureService.Apply:input_type -> roster.GroupExposureApplyRequest
+	14, // 48: roster.GroupExposureService.Erase:input_type -> roster.GroupExposureRef
+	20, // 49: roster.GroupExposureService.List:input_type -> roster.GroupExposureListRequest
+	31, // 50: roster.GroupService.Add:output_type -> roster.Group
+	31, // 51: roster.GroupService.Get:output_type -> roster.Group
+	31, // 52: roster.GroupService.Patch:output_type -> roster.Group
+	31, // 53: roster.GroupService.Apply:output_type -> roster.Group
+	7,  // 54: roster.GroupService.Erase:output_type -> roster.GroupEraseResponse
+	9,  // 55: roster.GroupService.List:output_type -> roster.GroupListResponse
+	31, // 56: roster.GroupService.Update:output_type -> roster.Group
+	32, // 57: roster.GroupExposureService.Add:output_type -> roster.GroupExposure
+	32, // 58: roster.GroupExposureService.Get:output_type -> roster.GroupExposure
+	32, // 59: roster.GroupExposureService.Patch:output_type -> roster.GroupExposure
+	32, // 60: roster.GroupExposureService.Apply:output_type -> roster.GroupExposure
+	19, // 61: roster.GroupExposureService.Erase:output_type -> roster.GroupExposureEraseResponse
+	21, // 62: roster.GroupExposureService.List:output_type -> roster.GroupExposureListResponse
+	50, // [50:63] is the sub-list for method output_type
+	37, // [37:50] is the sub-list for method input_type
+	37, // [37:37] is the sub-list for extension type_name
+	37, // [37:37] is the sub-list for extension extendee
+	0,  // [0:37] is the sub-list for field type_name
 }
 
 func init() { file_app_group_svc_g_proto_init() }
@@ -3161,7 +3406,7 @@ func file_app_group_svc_g_proto_init() {
 		(*groupRef_Id)(nil),
 		(*groupRef_Slug)(nil),
 	}
-	file_app_group_svc_g_proto_msgTypes[13].OneofWrappers = []any{
+	file_app_group_svc_g_proto_msgTypes[14].OneofWrappers = []any{
 		(*groupExposureRef_Id)(nil),
 		(*groupExposureRef_Carried)(nil),
 	}
@@ -3171,7 +3416,7 @@ func file_app_group_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_group_svc_g_proto_rawDesc), len(file_app_group_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   22,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   2,
 		},
