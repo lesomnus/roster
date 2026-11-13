@@ -34,6 +34,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/nomination"
 	"github.com/lesomnus/roster/internal/ent/outbox"
 	"github.com/lesomnus/roster/internal/ent/owed"
+	"github.com/lesomnus/roster/internal/ent/phone"
 	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/rowseal"
 	"github.com/lesomnus/roster/internal/ent/session"
@@ -97,6 +98,8 @@ type Client struct {
 	Outbox *OutboxClient
 	// Owed is the client for interacting with the Owed builders.
 	Owed *OwedClient
+	// Phone is the client for interacting with the Phone builders.
+	Phone *PhoneClient
 	// Role is the client for interacting with the Role builders.
 	Role *RoleClient
 	// RowSeal is the client for interacting with the RowSeal builders.
@@ -146,6 +149,7 @@ func (c *Client) init() {
 	c.Nomination = NewNominationClient(c.config)
 	c.Outbox = NewOutboxClient(c.config)
 	c.Owed = NewOwedClient(c.config)
+	c.Phone = NewPhoneClient(c.config)
 	c.Role = NewRoleClient(c.config)
 	c.RowSeal = NewRowSealClient(c.config)
 	c.Session = NewSessionClient(c.config)
@@ -269,6 +273,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Nomination:      NewNominationClient(cfg),
 		Outbox:          NewOutboxClient(cfg),
 		Owed:            NewOwedClient(cfg),
+		Phone:           NewPhoneClient(cfg),
 		Role:            NewRoleClient(cfg),
 		RowSeal:         NewRowSealClient(cfg),
 		Session:         NewSessionClient(cfg),
@@ -319,6 +324,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Nomination:      NewNominationClient(cfg),
 		Outbox:          NewOutboxClient(cfg),
 		Owed:            NewOwedClient(cfg),
+		Phone:           NewPhoneClient(cfg),
 		Role:            NewRoleClient(cfg),
 		RowSeal:         NewRowSealClient(cfg),
 		Session:         NewSessionClient(cfg),
@@ -405,8 +411,8 @@ func (c *Client) Use(hooks ...Hook) {
 		c.Access, c.ApiKey, c.Archived, c.Audit, c.Binding, c.Connection, c.Consent,
 		c.Continuation, c.Credential, c.Delegation, c.Email, c.Group, c.GroupExposure,
 		c.GroupMembership, c.Holder, c.Host, c.HostProof, c.Identity, c.Link,
-		c.MailDomain, c.Nomination, c.Outbox, c.Owed, c.Role, c.RowSeal, c.Session,
-		c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
+		c.MailDomain, c.Nomination, c.Outbox, c.Owed, c.Phone, c.Role, c.RowSeal,
+		c.Session, c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
 	} {
 		n.Use(hooks...)
 	}
@@ -419,8 +425,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.Access, c.ApiKey, c.Archived, c.Audit, c.Binding, c.Connection, c.Consent,
 		c.Continuation, c.Credential, c.Delegation, c.Email, c.Group, c.GroupExposure,
 		c.GroupMembership, c.Holder, c.Host, c.HostProof, c.Identity, c.Link,
-		c.MailDomain, c.Nomination, c.Outbox, c.Owed, c.Role, c.RowSeal, c.Session,
-		c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
+		c.MailDomain, c.Nomination, c.Outbox, c.Owed, c.Phone, c.Role, c.RowSeal,
+		c.Session, c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -475,6 +481,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Outbox.mutate(ctx, m)
 	case *OwedMutation:
 		return c.Owed.mutate(ctx, m)
+	case *PhoneMutation:
+		return c.Phone.mutate(ctx, m)
 	case *RoleMutation:
 		return c.Role.mutate(ctx, m)
 	case *RowSealMutation:
@@ -3987,6 +3995,155 @@ func (c *OwedClient) mutate(ctx context.Context, m *OwedMutation) (Value, error)
 	}
 }
 
+// PhoneClient is a client for the Phone schema.
+type PhoneClient struct {
+	config
+}
+
+// NewPhoneClient returns a client for the Phone from the given config.
+func NewPhoneClient(c config) *PhoneClient {
+	return &PhoneClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `phone.Hooks(f(g(h())))`.
+func (c *PhoneClient) Use(hooks ...Hook) {
+	c.hooks.Phone = append(c.hooks.Phone, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `phone.Intercept(f(g(h())))`.
+func (c *PhoneClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Phone = append(c.inters.Phone, interceptors...)
+}
+
+// Create returns a builder for creating a Phone entity.
+func (c *PhoneClient) Create() *PhoneCreate {
+	mutation := newPhoneMutation(c.config, OpCreate)
+	return &PhoneCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Phone entities.
+func (c *PhoneClient) CreateBulk(builders ...*PhoneCreate) *PhoneCreateBulk {
+	return &PhoneCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PhoneClient) MapCreateBulk(slice any, setFunc func(*PhoneCreate, int)) *PhoneCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PhoneCreateBulk{err: fmt.Errorf("calling to PhoneClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PhoneCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PhoneCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Phone.
+func (c *PhoneClient) Update() *PhoneUpdate {
+	mutation := newPhoneMutation(c.config, OpUpdate)
+	return &PhoneUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PhoneClient) UpdateOne(_m *Phone) *PhoneUpdateOne {
+	mutation := newPhoneMutation(c.config, OpUpdateOne, withPhone(_m))
+	return &PhoneUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *PhoneClient) UpdateOneId(id uuid.UUID) *PhoneUpdateOne {
+	mutation := newPhoneMutation(c.config, OpUpdateOne, withPhoneId(id))
+	return &PhoneUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Phone.
+func (c *PhoneClient) Delete() *PhoneDelete {
+	mutation := newPhoneMutation(c.config, OpDelete)
+	return &PhoneDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PhoneClient) DeleteOne(_m *Phone) *PhoneDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *PhoneClient) DeleteOneId(id uuid.UUID) *PhoneDeleteOne {
+	builder := c.Delete().Where(phone.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &PhoneDeleteOne{builder}
+}
+
+// Query returns a query builder for Phone.
+func (c *PhoneClient) Query() *PhoneQuery {
+	return &PhoneQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypePhone},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Phone entity by its id.
+func (c *PhoneClient) Get(ctx context.Context, id uuid.UUID) (*Phone, error) {
+	return c.Query().Where(phone.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PhoneClient) GetX(ctx context.Context, id uuid.UUID) *Phone {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryHolder queries the holder edge of a Phone.
+func (c *PhoneClient) QueryHolder(_m *Phone) *HolderQuery {
+	query := (&HolderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(phone.Table, phone.FieldId, id),
+			sqlgraph.To(holder.Table, holder.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, phone.HolderTable, phone.HolderColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PhoneClient) Hooks() []Hook {
+	return c.hooks.Phone
+}
+
+// Interceptors returns the client interceptors.
+func (c *PhoneClient) Interceptors() []Interceptor {
+	return c.inters.Phone
+}
+
+func (c *PhoneClient) mutate(ctx context.Context, m *PhoneMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PhoneCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PhoneUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PhoneUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PhoneDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Phone mutation op: %q", m.Op())
+	}
+}
+
 // RoleClient is a client for the Role schema.
 type RoleClient struct {
 	config
@@ -5232,14 +5389,15 @@ type (
 	hooks struct {
 		Access, ApiKey, Archived, Audit, Binding, Connection, Consent, Continuation,
 		Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder,
-		Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Owed, Role,
-		RowSeal, Session, Site, SiteMembership, Team, TeamMembership, Tenant []ent.Hook
+		Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Owed, Phone,
+		Role, RowSeal, Session, Site, SiteMembership, Team, TeamMembership,
+		Tenant []ent.Hook
 	}
 	inters struct {
 		Access, ApiKey, Archived, Audit, Binding, Connection, Consent, Continuation,
 		Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder,
-		Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Owed, Role,
-		RowSeal, Session, Site, SiteMembership, Team, TeamMembership,
+		Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Owed, Phone,
+		Role, RowSeal, Session, Site, SiteMembership, Team, TeamMembership,
 		Tenant []ent.Interceptor
 	}
 )

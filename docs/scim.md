@@ -104,13 +104,22 @@ publishes a SCIM validator that walks the same requests against a URL.
 | `displayName`, `name.formatted` | `Holder.name` when made, `profile.display_name` after |
 | enterprise `department`, `employeeNumber` | `profile.department`, `profile.employee_no` |
 | `preferredLanguage`, `locale` | `profile.locale` |
+| `phoneNumbers` | a `Phone` row each, one number a kind (`type`) |
 | `active` | a suspension of the directory's, and its lifting |
 
 **The directory owns what it sends.** A value it sends is written over what was
 there; a value it does not send is left, because a tenant that keeps names
 somewhere else takes them out of the mapping and must not have them wiped every
 cycle. Taking a value away is a `remove`. What it sends that is not kept here --
-a title, a phone number -- is answered as accepted and written to the log.
+a title, a postal address -- is answered as accepted and written to the log.
+
+**A number is written, and replaced when it changes.** Where somebody is reached
+is no way into their account -- nothing here sends to a number or finds anybody
+by one -- so it is the one thing about a person who exists that the directory's
+word moves ([entity.md](entity.md) § *Phone*). A number said for a kind is that
+kind's one number, a kind not mentioned is left, and a whole User that speaks of
+numbers says every one of them. What a directory sends in that field that is not
+a number is said in the log and refuses nothing.
 
 **A changed address or `externalId` is kept, and not followed.** An address and
 an identity are a person's ways in -- a link is mailed to one, a sign-in is the
@@ -226,6 +235,7 @@ again finds it, and what becomes of the row -- and of whatever was bound to it
 | `HolderService/Deactivate`, `Activate` | a suspension of the directory's, for people who sign in through the connection |
 | `HolderService/Update`, `Get` | what it owns of a profile, and reading it back |
 | `HolderService/Tell` | what it calls somebody, kept beside them: reaches anybody, and is believed by nothing |
+| `PhoneService/Add`, `Erase`, `List` | where somebody is reached: reaches anybody, and is no way in |
 | `EmailService/Get`, `List`, `IdentityService/Get`, `List` | finding somebody by an address or an `externalId` |
 | `MeService/Get`, `ConnectionService/List` | which tenant the key is, and its provisioning connection |
 | `GroupService/Add`, `Get`, `List`, `GroupMembershipService/List` | making a group, which makes its holder the group's manager, and reading the tenant's |
@@ -271,6 +281,8 @@ provisioned here lists none of this: `provision` again, which is a rotation.
 | and is not suspended by their directory until they are linked; what it calls them is kept and believed by nothing | `TestSomebodyMatchedIsNotSuspendedByTheirDirectoryUntilTheyAreLinked` · `TestWhatADirectorySaysIsKeptAndBelievedByNothing` |
 | an operator links who the directory matched, from a list | `TestAnOperatorLinksWhoTheDirectoryMatched` |
 | a changed `userName` is kept and answered, and the address stays | `TestAChangedUserNameIsKeptAndAnsweredAndTheAddressStays` |
+| a number is written and replaced, one a kind, and is no way in | `TestADirectoryKeepsSomebodysNumbers` · `TestANumberIsWhereSomebodyIsReachedAndNoWayIn` |
+| a key minted before a method was added goes on provisioning without it | `TestAKeyMintedBeforeNumbersWereKeptStillProvisions` |
 | the directory lifts only its own suspensions | `TestADirectoryLiftsOnlyItsOwnSuspension` · `TestTheDirectoryDoesNotLiftAnOperatorsSuspension` |
 | its key reaches only the people it makes | `TestADirectoryMakesPeopleAndOnlyNewOnes` · `TestTheEndpointTakesATenantKeyAndNothingElse` |
 | and makes them only at the organisation's own door | `TestADirectoryProvisionsThroughItsOrganisationsOwnDoor` |

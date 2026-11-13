@@ -1174,6 +1174,10 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 	app.RegisterHolderServiceServer(g, s.Holder())
 	app.RegisterIdentityServiceServer(g, s.Identity())
 	app.RegisterEmailServiceServer(g, s.Email())
+	// Served, reads and all: a number is where somebody is reached, the wall
+	// narrows it to their tenant, and it is no secret and no way in
+	// (`phone.proto`).
+	app.RegisterPhoneServiceServer(g, s.Phone())
 	app.RegisterSiteServiceServer(g, s.Site())
 	app.RegisterTeamServiceServer(g, s.Team())
 	app.RegisterRoleServiceServer(g, s.Role())

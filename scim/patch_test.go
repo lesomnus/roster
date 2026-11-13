@@ -45,10 +45,27 @@ func TestBothDialectsOfAPatchReadTheSame(t *testing.T) {
 		c, err := parsePatch([]byte(`{"Operations":[
 			{"op":"remove","path":"displayName"},
 			{"op":"replace","path":"title","value":"Engineer"},
-			{"op":"add","path":"phoneNumbers[type eq \"work\"].value","value":"+82 2 000"}]}`))
+			{"op":"add","path":"addresses[type eq \"work\"].locality","value":"Seoul"}]}`))
 		x.NoError(err)
 		x.Equal("", *c.display)
-		x.Equal([]string{"title", `phoneNumbers[type eq "work"].value`}, c.ignored)
+		x.Equal([]string{"title", `addresses[type eq "work"].locality`}, c.ignored)
+	})
+
+	t.Run("a number is said for its kind, each way a directory writes one", func(t *testing.T) {
+		x := require.New(t)
+		c, err := parsePatch([]byte(`{"Operations":[
+			{"op":"Add","path":"phoneNumbers[type eq \"work\"].value","value":"+82 2 000"},
+			{"op":"replace","value":{"phoneNumbers":[{"type":"Mobile","value":"010-0000-0000"},{"type":"car","value":"1"}]}},
+			{"op":"remove","path":"phoneNumbers[type eq \"fax\"].value"}]}`))
+		x.NoError(err)
+		x.Equal(map[string]string{"work": "+82 2 000", "mobile": "010-0000-0000", "other": "1", "fax": ""}, c.phones)
+		x.Nil(c.allPhones, "a PATCH says the kinds it names, and leaves the rest")
+		x.Empty(c.ignored)
+
+		c, err = parsePatch([]byte(`{"Operations":[{"op":"remove","path":"phoneNumbers"}]}`))
+		x.NoError(err)
+		x.NotNil(c.allPhones, "every number, by naming none")
+		x.Empty(*c.allPhones)
 	})
 
 	t.Run("and what is not an operation is refused", func(t *testing.T) {

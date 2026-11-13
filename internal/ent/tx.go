@@ -58,6 +58,8 @@ type Tx struct {
 	Outbox *OutboxClient
 	// Owed is the client for interacting with the Owed builders.
 	Owed *OwedClient
+	// Phone is the client for interacting with the Phone builders.
+	Phone *PhoneClient
 	// Role is the client for interacting with the Role builders.
 	Role *RoleClient
 	// RowSeal is the client for interacting with the RowSeal builders.
@@ -228,6 +230,7 @@ func (tx *Tx) init() {
 	tx.Nomination = NewNominationClient(tx.config)
 	tx.Outbox = NewOutboxClient(tx.config)
 	tx.Owed = NewOwedClient(tx.config)
+	tx.Phone = NewPhoneClient(tx.config)
 	tx.Role = NewRoleClient(tx.config)
 	tx.RowSeal = NewRowSealClient(tx.config)
 	tx.Session = NewSessionClient(tx.config)

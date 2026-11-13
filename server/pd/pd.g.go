@@ -58,6 +58,7 @@ import (
 	entNomination "github.com/lesomnus/roster/internal/ent/nomination"
 	entOutbox "github.com/lesomnus/roster/internal/ent/outbox"
 	entOwed "github.com/lesomnus/roster/internal/ent/owed"
+	entPhone "github.com/lesomnus/roster/internal/ent/phone"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	entRole "github.com/lesomnus/roster/internal/ent/role"
 	entRowSeal "github.com/lesomnus/roster/internal/ent/rowseal"
@@ -139,6 +140,7 @@ const (
 	NominationDomain      pdid.Domain = 27  // "nomination"
 	OutboxDomain          pdid.Domain = 4   // "outbox"
 	OwedDomain            pdid.Domain = 254 // "owed"
+	PhoneDomain           pdid.Domain = 30  // "phone"
 	RoleDomain            pdid.Domain = 15  // "role"
 	RowSealDomain         pdid.Domain = 255 // "row-seal"
 	SessionDomain         pdid.Domain = 24  // "session"
@@ -173,6 +175,7 @@ func init() {
 	pdid.Register("roster.Nomination", NominationDomain, "nomination")
 	pdid.Register("roster.Outbox", OutboxDomain, "outbox")
 	pdid.Register("roster.Owed", OwedDomain, "owed")
+	pdid.Register("roster.Phone", PhoneDomain, "phone")
 	pdid.Register("roster.Role", RoleDomain, "role")
 	pdid.Register("roster.RowSeal", RowSealDomain, "row-seal")
 	pdid.Register("roster.Session", SessionDomain, "session")
@@ -211,6 +214,7 @@ var Domains = map[string]pdid.Domain{
 	"roster.Nomination":      NominationDomain,
 	"roster.Outbox":          OutboxDomain,
 	"roster.Owed":            OwedDomain,
+	"roster.Phone":           PhoneDomain,
 	"roster.Role":            RoleDomain,
 	"roster.RowSeal":         RowSealDomain,
 	"roster.Session":         SessionDomain,
@@ -601,6 +605,21 @@ func (wall) OwedScope(ctx context.Context) (predicate.Owed, error) {
 	return nil, nil
 }
 
+// PhoneScope: a row belongs to the tenant its "holder.tenant" reaches, read off "tenant_id" -- which the
+// server stamped when the row was written and no step of that path can move.
+func (wall) PhoneScope(ctx context.Context) (predicate.Phone, error) {
+	if _, ok := frame.AccountOf(ctx); ok {
+		return nothing[predicate.Phone](), nil
+	}
+
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return entPhone.TenantIdIn(vs...), nil
+}
+
 // RoleScope: a row belongs to the tenant its "tenant" reaches.
 func (wall) RoleScope(ctx context.Context) (predicate.Role, error) {
 	if _, ok := frame.AccountOf(ctx); ok {
@@ -879,6 +898,11 @@ func (x grouped) OutboxScope(ctx context.Context) (predicate.Outbox, error) {
 
 // OwedScope: in no set -- it declared no field 3, so this narrows nothing.
 func (x grouped) OwedScope(ctx context.Context) (predicate.Owed, error) {
+	return nil, nil
+}
+
+// PhoneScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) PhoneScope(ctx context.Context) (predicate.Phone, error) {
 	return nil, nil
 }
 
@@ -7021,6 +7045,297 @@ func (s sinkNomination) watchNominationKeys(
 	return ks, nil
 }
 
+type sinkPhone struct {
+	rstr.PhoneServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Phone() rstr.PhoneServiceServer {
+	v := sinkPhone{s.Server.Phone(), s.Server.Store, s.w, s.namer, s.joined}
+	v.PhoneServiceServer = bare.PhoneWithAddRule(v.PhoneServiceServer, v.admit)
+	return v
+}
+
+// admit is what is said of the tenancy of a row an Add of Phone writes: it
+// stamps its tenant.
+//
+// It is asked of an Add and of every item of an AddMany; see [Sink.Phone].
+func (s sinkPhone) admit(ctx context.Context, req *rstr.PhoneAddRequest) (*rstr.PhoneAddRequest, error) {
+	// Copied rather than written to: the request belongs to whoever called,
+	// and for a call made in this process that is a message they may still
+	// be holding -- a server that changed a caller's own field would be
+	// changing a value they can read back.
+	r := proto.CloneOf(req)
+
+	if err := s.tenancy(ctx, r); err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+// Erase forgets what the transaction was told about the row, before it is
+// erased: whether a frame may see it, and where a walk from it arrives.
+// Neither is true of a row that is gone, nor of another put under its
+// key. See [seen.Forget].
+func (s sinkPhone) Erase(ctx context.Context, req *rstr.PhoneRef) (*rstr.PhoneEraseResponse, error) {
+	seen.Forget(s.store.Db.Driver(), "Phone", req)
+
+	return s.PhoneServiceServer.Erase(ctx, req)
+}
+
+// Apply forgets what the transaction was told about the row, before it is
+// written: a document may move it to a set the caller cannot see. See
+// [seen.Forget].
+func (s sinkPhone) Apply(ctx context.Context, req *rstr.PhoneApplyRequest) (*rstr.Phone, error) {
+	seen.Forget(s.store.Db.Driver(), "Phone", req.GetRef())
+
+	return s.PhoneServiceServer.Apply(ctx, req)
+}
+
+// Patch forgets what the transaction was told about the row, before it is
+// written; see [sinkPhone.Apply].
+func (s sinkPhone) Patch(ctx context.Context, req *rstr.PhonePatchRequest) (*rstr.Phone, error) {
+	seen.Forget(s.store.Db.Driver(), "Phone", req.GetRef())
+
+	return s.PhoneServiceServer.Patch(ctx, req)
+}
+
+// tenantAtHolderTenant is the tenant "holder.tenant" arrives at.
+func (s sinkPhone) tenantAtHolderTenant(ctx context.Context, ref *rstr.HolderRef) ([]byte, error) {
+	if ref == nil {
+		return nil, pderr.Invalidf("holder", "required: it is what says which tenant this belongs to")
+	}
+
+	// Asked once a transaction: no step past the first can be repointed, so
+	// where this walk arrives from a row is decided until the row is
+	// written. See [seen.Tenant].
+	return seen.Tenant(s.store.Db.Driver(), "Holder", "tenant", ref, func() ([]byte, error) {
+		// The row the edge names, picked the way every other reference is.
+		pick, err := bare.HolderPick(ref)
+		if err != nil {
+			return nil, pderr.At("holder", err)
+		}
+
+		k, err := s.store.Db.Holder.Query().Where(pick).QueryTenant().OnlyId(ctx)
+		if err != nil {
+			// Not there, or more than one -- both are the reference being wrong,
+			// and both are the caller's to fix.
+			return nil, pderr.Invalidf("holder", "it does not name one row")
+		}
+
+		return k[:], nil
+	})
+}
+
+// tenancy fills what the schema says this row's tenant is, and refuses a
+// row whose other paths do not agree with it.
+//
+// The request is already this server's copy by the time it arrives, so it
+// is written to rather than cloned again.
+func (s sinkPhone) tenancy(ctx context.Context, req *rstr.PhoneAddRequest) error {
+	want, err := s.tenantAtHolderTenant(ctx, req.GetHolder())
+	if err != nil {
+		return err
+	}
+
+	// Stamped, whatever the caller said. It is not a field of the request
+	// and a caller that reached this server another way does not get to
+	// keep what they put there.
+	req.SetTenantId(want)
+
+	return nil
+}
+
+// orderPhone is how Phones come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderPhone = []sqlpage.Order{
+	{Column: entPhone.FieldDateCreated, Desc: false},
+	{Column: entPhone.FieldId, Desc: false},
+}
+
+func afterPhone(v string, by []sqlpage.Order, tag string) (func(*sql.Selector), error) {
+	var (
+		at0 time.Time
+		at1 uuid.UUID
+	)
+	if err := pdAfter(v, tag, &at0, &at1); err != nil {
+		return nil, err
+	}
+
+	return sqlpage.After(by, []any{at0, at1})
+}
+
+func nextPhone(last *ent.Phone, tag string) (string, error) {
+	return pdNext(tag, last.DateCreated, last.Id)
+}
+
+// orderByPhone is an order as ent orders a query by it.
+func orderByPhone(by []sqlpage.Order) []entPhone.OrderOption {
+	out := make([]entPhone.OrderOption, len(by))
+	for i, o := range by {
+		if o.Desc {
+			out[i] = sql.OrderByField(o.Column, sql.OrderDesc()).ToFunc()
+			continue
+		}
+
+		out[i] = sql.OrderByField(o.Column).ToFunc()
+	}
+
+	return out
+}
+
+const (
+	// PhonePageSize is what a request that did not say gets, and
+	// PhonePageLimit is the most it gets however loudly it asks.
+	PhonePageSize  = 20
+	PhonePageLimit = 100
+
+	// PhoneFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	PhoneFilterLimit = 32
+)
+
+// List answers with the Phones that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkPhone) List(ctx context.Context, req *rstr.PhoneListRequest) (*rstr.PhoneListResponse, error) {
+	q := s.store.Db.Phone.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.PhoneNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > PhoneFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), PhoneFilterLimit)
+		}
+
+		ps := make([]predicate.Phone, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterPhone(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(entPhone.Or(ps...))
+	}
+
+	// Which order, and which way: one the schema declared, and never one a
+	// request makes up, since an order is a walk of an index.
+	by, after, next, tag := orderPhone, afterPhone, nextPhone, ""
+	if req.GetReverse() {
+		// The same index, walked from the other end.
+		by, tag = pdReverse(by), tag+"/reverse"
+	}
+
+	if v := req.GetAfter(); v != "" {
+		p, err := after(v, by, tag)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), PhonePageSize, PhonePageLimit)
+	us, err := q.Order(orderByPhone(by)...).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.Phone, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.PhoneListResponse_builder{Items: items}.Build()
+	if more {
+		v, err := next(us[len(us)-1], tag)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(v)
+	}
+
+	return res, nil
+}
+
+// filterPhone turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterPhone(f *rstr.PhoneFilter) (predicate.Phone, error) {
+	ps := make([]predicate.Phone, 0, 1)
+	if f.HasRef() {
+		p, err := bare.PhonePick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasHolder() {
+		w := f.GetHolder()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "holder: %s", err)
+			}
+
+			ps = append(ps, entPhone.HolderIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.HolderPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entPhone.HasHolderWith(q))
+		}
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return entPhone.And(ps...), nil
+}
+
 type sinkRole struct {
 	rstr.RoleServiceServer
 	store  bare.Store
@@ -11010,6 +11325,50 @@ func (s gateNomination) Apply(ctx context.Context, req *rstr.NominationApplyRequ
 // parsed from the file that declares it, as the server behind parses it.
 var gateNominationEntity = ormpatch.MustEntityOf((*rstr.Nomination)(nil).ProtoReflect().Descriptor().ParentFile(), "Nomination")
 
+type gatePhone struct {
+	Gate
+	rstr.PhoneServiceServer
+}
+
+func (s Gate) Phone() rstr.PhoneServiceServer {
+	v := gatePhone{s, s.Next().Phone()}
+	v.PhoneServiceServer = bare.PhoneWithAddRule(v.PhoneServiceServer, v.admit)
+	return v
+}
+
+// admit refuses a Phone put into a Holder this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `holder` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Holder, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.admit`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+//
+// It is what an Add is asked, and an AddMany of every item it carries;
+// see [Gate.Phone].
+func (s gatePhone) admit(ctx context.Context, req *rstr.PhoneAddRequest) (*rstr.PhoneAddRequest, error) {
+	if ref := req.GetHolder(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Holder", ref, func() error {
+			_, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
+	return req, nil
+}
+
 type gateRole struct {
 	Gate
 	rstr.RoleServiceServer
@@ -11731,6 +12090,8 @@ func described(key pdid.Id) (protoreflect.MessageDescriptor, []protoreflect.Fiel
 		return describedOutbox.md, describedOutbox.secret, describedOutbox.personal
 	case OwedDomain:
 		return describedOwed.md, describedOwed.secret, describedOwed.personal
+	case PhoneDomain:
+		return describedPhone.md, describedPhone.secret, describedPhone.personal
 	case RoleDomain:
 		return describedRole.md, describedRole.secret, describedRole.personal
 	case RowSealDomain:
@@ -11841,6 +12202,9 @@ var (
 	describedOwed = describe((*rstr.Owed)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
+	describedPhone = describe((*rstr.Phone)(nil),
+		[]protoreflect.FieldNumber{},
+		[]protoreflect.FieldNumber{8})
 	describedRole = describe((*rstr.Role)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
@@ -11904,6 +12268,7 @@ func added(by string) bool {
 		rstr.LinkService_Add_FullMethodName,
 		rstr.MailDomainService_Add_FullMethodName,
 		rstr.NominationService_Add_FullMethodName,
+		rstr.PhoneService_Add_FullMethodName,
 		rstr.RoleService_Add_FullMethodName,
 		rstr.SessionService_Add_FullMethodName,
 		rstr.SiteService_Add_FullMethodName,
@@ -12611,6 +12976,48 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id, image proto.Messag
 
 		return k, b, nil
 
+	case PhoneDomain:
+		row, ok := image.(*rstr.Phone)
+		if !ok {
+			return uuid.Nil(), []byte{}, nil
+		}
+
+		b := []byte{}
+		if keep {
+			kept := row
+			kept = proto.Clone(row).(*rstr.Phone)
+			_, secret, personal := described(key)
+			audit.Clear(kept, secret)
+			audit.Clear(kept, personal)
+
+			v, err := proto.Marshal(kept)
+			if err != nil {
+				return uuid.Nil(), nil, err
+			}
+			b = v
+		}
+
+		if !row.HasHolder() {
+			return uuid.Nil(), b, nil
+		}
+
+		up, err := pdid.From(row.GetHolder().GetId())
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		parent, err := left(ctx, s, up, nil)
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		k, _, err := subject(ctx, s, up, parent, false)
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		return k, b, nil
+
 	case RoleDomain:
 		row, ok := image.(*rstr.Role)
 		if !ok {
@@ -12887,6 +13294,8 @@ func left(ctx context.Context, s bare.Server, key pdid.Id, image proto.Message) 
 		vs, err = rowsMailDomain(ctx, s.Db, entMailDomain.IdEQ(uuid.UUID(key)))
 	case NominationDomain:
 		vs, err = rowsNomination(ctx, s.Db, entNomination.IdEQ(uuid.UUID(key)))
+	case PhoneDomain:
+		vs, err = rowsPhone(ctx, s.Db, entPhone.IdEQ(uuid.UUID(key)))
 	case RoleDomain:
 		vs, err = rowsRole(ctx, s.Db, entRole.IdEQ(uuid.UUID(key)))
 	case SessionDomain:
@@ -13045,7 +13454,7 @@ func (v *keptTrail) write(ctx context.Context) error {
 // row's seal covers (payday#115).
 func isSealed(key pdid.Id) bool {
 	switch key.Domain() {
-	case EmailDomain, HolderDomain, IdentityDomain:
+	case EmailDomain, HolderDomain, IdentityDomain, PhoneDomain:
 		return true
 	}
 
@@ -13316,6 +13725,9 @@ func Digests(ctx context.Context, db *ent.Client, d *audit.Digest, p trail.Polic
 	}
 	if err := audit.CheckKind(ctx, d, checkedNomination(db), archived, &out); err != nil {
 		return out, fmt.Errorf("nomination: %w", err)
+	}
+	if err := audit.CheckKind(ctx, d, checkedPhone(db), archived, &out); err != nil {
+		return out, fmt.Errorf("phone: %w", err)
 	}
 	if err := audit.CheckKind(ctx, d, checkedRole(db), archived, &out); err != nil {
 		return out, fmt.Errorf("role: %w", err)
@@ -14188,6 +14600,58 @@ func checkedNomination(db *ent.Client) audit.Kind {
 	}
 }
 
+// checkedPhone is what a check of the rows reads of the phone kind.
+func checkedPhone(db *ent.Client) audit.Kind {
+	read := func(ctx context.Context, ps ...predicate.Phone) (audit.Page, error) {
+		var out audit.Page
+		err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+			rows, err := rowsPhone(ctx, db, ps...)
+			if err != nil {
+				return err
+			}
+
+			recorded, err := newestDigests(ctx, db, objects(rows))
+			if err != nil {
+				return err
+			}
+
+			seals, err := sealsOf(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded, Seals: seals}
+			return err
+		})
+
+		return out, err
+	}
+
+	return audit.Kind{
+		Domain: PhoneDomain,
+		Sealed: true,
+		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
+			return read(ctx, entPhone.IdGT(uuid.UUID(after)))
+		},
+		Of: func(ctx context.Context, ids []pdid.Id) (audit.Page, error) {
+			return read(ctx, entPhone.IdIn(uuids(ids)...))
+		},
+		Trail: func(ctx context.Context, yield func([]pdid.Id) error) error {
+			return trailObjects(ctx, db, PhoneDomain, yield)
+		},
+		Gone: func(ctx context.Context, ids []pdid.Id) (map[pdid.Id]*audit.Recorded, error) {
+			var out map[pdid.Id]*audit.Recorded
+			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+				rows, err := rowsPhone(ctx, db, entPhone.IdIn(uuids(ids)...))
+				if err != nil {
+					return err
+				}
+
+				out, err = goneOf(ctx, db, ids, rows)
+				return err
+			})
+
+			return out, err
+		},
+	}
+}
+
 // checkedRole is what a check of the rows reads of the role kind.
 func checkedRole(db *ent.Client) audit.Kind {
 	read := func(ctx context.Context, ps ...predicate.Role) (audit.Page, error) {
@@ -14870,6 +15334,26 @@ func rowsNomination(ctx context.Context, db *ent.Client, ps ...predicate.Nominat
 	return out, nil
 }
 
+// rowsPhone is the rows `ps` says of the phone kind -- every row there is,
+// live or erased softly -- at most a page of them in identifier order, each as
+// a Get reads it.
+func rowsPhone(ctx context.Context, db *ent.Client, ps ...predicate.Phone) ([]audit.Live, error) {
+	q := db.Phone.Query().Where(ps...)
+	bare.PhoneSelectInit(q, nil)
+
+	vs, err := q.Order(entPhone.ById()).Limit(audit.RowsPage).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]audit.Live, len(vs))
+	for i, v := range vs {
+		out[i] = audit.Live{Object: pdid.Id(v.Id), Row: v.Proto()}
+	}
+
+	return out, nil
+}
+
 // rowsRole is the rows `ps` says of the role kind -- every row there is,
 // live or erased softly -- at most a page of them in identifier order, each as
 // a Get reads it.
@@ -15269,6 +15753,8 @@ func record(ctx context.Context, db *ent.Client, content audit.Contents, action 
 				rows, err = rowsMailDomain(ctx, db, entMailDomain.IdIn(uuids(page)...))
 			case NominationDomain:
 				rows, err = rowsNomination(ctx, db, entNomination.IdIn(uuids(page)...))
+			case PhoneDomain:
+				rows, err = rowsPhone(ctx, db, entPhone.IdIn(uuids(page)...))
 			case RoleDomain:
 				rows, err = rowsRole(ctx, db, entRole.IdIn(uuids(page)...))
 			case SessionDomain:
@@ -15433,6 +15919,8 @@ func (s trailStore) Carry(ctx context.Context, digest *audit.Digest, d pdid.Doma
 			rows, err = rowsMailDomain(ctx, s.db, entMailDomain.IdIn(uuids(ids)...))
 		case NominationDomain:
 			rows, err = rowsNomination(ctx, s.db, entNomination.IdIn(uuids(ids)...))
+		case PhoneDomain:
+			rows, err = rowsPhone(ctx, s.db, entPhone.IdIn(uuids(ids)...))
 		case RoleDomain:
 			rows, err = rowsRole(ctx, s.db, entRole.IdIn(uuids(ids)...))
 		case SessionDomain:
@@ -17297,6 +17785,45 @@ func (s interceptNomination) Watch(req *rstr.NominationWatchRequest, out grpc.Se
 		rstr.NominationService_Watch_FullMethodName, req, out, s.NominationServiceServer.Watch)
 }
 
+func (s Intercept) Phone() rstr.PhoneServiceServer {
+	return interceptPhone{s, s.Next().Phone()}
+}
+
+type interceptPhone struct {
+	Intercept
+	rstr.PhoneServiceServer
+}
+
+func (s interceptPhone) Add(ctx context.Context, req *rstr.PhoneAddRequest) (*rstr.Phone, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.PhoneServiceServer,
+		rstr.PhoneService_Add_FullMethodName, req, s.PhoneServiceServer.Add)
+}
+
+func (s interceptPhone) Get(ctx context.Context, req *rstr.PhoneGetRequest) (*rstr.Phone, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.PhoneServiceServer,
+		rstr.PhoneService_Get_FullMethodName, req, s.PhoneServiceServer.Get)
+}
+
+func (s interceptPhone) Patch(ctx context.Context, req *rstr.PhonePatchRequest) (*rstr.Phone, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.PhoneServiceServer,
+		rstr.PhoneService_Patch_FullMethodName, req, s.PhoneServiceServer.Patch)
+}
+
+func (s interceptPhone) Apply(ctx context.Context, req *rstr.PhoneApplyRequest) (*rstr.Phone, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.PhoneServiceServer,
+		rstr.PhoneService_Apply_FullMethodName, req, s.PhoneServiceServer.Apply)
+}
+
+func (s interceptPhone) Erase(ctx context.Context, req *rstr.PhoneRef) (*rstr.PhoneEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.PhoneServiceServer,
+		rstr.PhoneService_Erase_FullMethodName, req, s.PhoneServiceServer.Erase)
+}
+
+func (s interceptPhone) List(ctx context.Context, req *rstr.PhoneListRequest) (*rstr.PhoneListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.PhoneServiceServer,
+		rstr.PhoneService_List_FullMethodName, req, s.PhoneServiceServer.List)
+}
+
 func (s Intercept) Session() rstr.SessionServiceServer {
 	return interceptSession{s, s.Next().Session()}
 }
@@ -18578,6 +19105,21 @@ func init() {
 		r := (&rstr.IdentityRef{}).ProtoReflect().Descriptor()
 		refs[r.FullName()] = r.Fields().ByName("id")
 	}
+	{
+		md := (&rstr.Phone{}).ProtoReflect().Descriptor()
+		fs := md.Fields()
+		personals[md.FullName()] = personal{
+			key: fs.ByNumber(1),
+			fields: []protoreflect.FieldDescriptor{
+				fs.ByNumber(8),
+			},
+			tenant: func(m protoreflect.Message) pdid.Id {
+				return accessIdOf(m.Get(fs.ByName("tenant_id")).Bytes())
+			},
+		}
+		r := (&rstr.PhoneRef{}).ProtoReflect().Descriptor()
+		refs[r.FullName()] = r.Fields().ByName("id")
+	}
 }
 
 // Subjects is whose personal data `m` carries (payday#111): the key of every
@@ -18828,11 +19370,15 @@ func (accessRecorder) Snapshots(method string) bare.SnapshotOptions {
 		rstr.HolderService_Apply_FullMethodName,
 		rstr.IdentityService_Add_FullMethodName,
 		rstr.IdentityService_Patch_FullMethodName,
-		rstr.IdentityService_Apply_FullMethodName:
+		rstr.IdentityService_Apply_FullMethodName,
+		rstr.PhoneService_Add_FullMethodName,
+		rstr.PhoneService_Patch_FullMethodName,
+		rstr.PhoneService_Apply_FullMethodName:
 		return bare.SnapshotOptions{Value: true}
 	case rstr.EmailService_Erase_FullMethodName,
 		rstr.HolderService_Erase_FullMethodName,
-		rstr.IdentityService_Erase_FullMethodName:
+		rstr.IdentityService_Erase_FullMethodName,
+		rstr.PhoneService_Erase_FullMethodName:
 		return bare.SnapshotOptions{Previous: true}
 	}
 
@@ -18991,6 +19537,7 @@ func Resources(w *watch.Watch, project resource.Project) (*resource.Server, erro
 		&rstr.Nomination{},
 		&rstr.Outbox{},
 		&rstr.Owed{},
+		&rstr.Phone{},
 		&rstr.Role{},
 		&rstr.RowSeal{},
 		&rstr.Session{},
@@ -19762,6 +20309,41 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 				return nil, err
 			}
 			return publicResource(v), nil
+		case *rstr.Phone:
+			ctx, err := guard.Allow(ctx, rstr.PhoneService_Get_FullMethodName)
+			if err != nil {
+				switch status.Code(err) {
+				case codes.PermissionDenied, codes.Unauthenticated, codes.Unimplemented:
+					return nil, nil
+				}
+				return nil, err
+			}
+			pred, err := bare.PhoneNarrow(ctx, scope, nil)
+			if err != nil {
+				return nil, err
+			}
+			row, err := resourcesql.Row(db.Dialect(), entPhone.Table, []resourcesql.Column{
+				{Number: 1, Name: entPhone.FieldId, Type: 64, Nullable: false, Key: 0},
+				{Number: 2, Name: entPhone.HolderColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 8, Name: entPhone.FieldNumber, Type: 9, Nullable: false, Key: 0},
+				{Number: 9, Name: entPhone.FieldKind, Type: 9, Nullable: false, Key: 0},
+				{Number: 11, Name: entPhone.FieldTenantId, Type: 64, Nullable: false, Key: 0},
+				{Number: 13, Name: entPhone.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
+				{Number: 14, Name: entPhone.FieldDateErased, Type: 65, Nullable: true, Key: 0},
+				{Number: 15, Name: entPhone.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
+			}, v)
+			if err != nil {
+				return nil, err
+			}
+			query := db.Phone.Query()
+			if pred != nil {
+				query.Where(pred)
+			}
+			ok, err := query.Modify(func(q *sql.Selector) { q.From(row) }).Exist(ctx)
+			if err != nil || !ok {
+				return nil, err
+			}
+			return publicResource(v), nil
 		case *rstr.Role:
 			ctx, err := guard.Allow(ctx, rstr.RoleService_Get_FullMethodName)
 			if err != nil {
@@ -20195,6 +20777,14 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.NominationService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
+	case rstr.PhoneService_Add_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_CREATED
+	case rstr.PhoneService_Patch_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case rstr.PhoneService_Apply_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case rstr.PhoneService_Erase_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.RoleService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.RoleService_Patch_FullMethodName:
@@ -20269,7 +20859,7 @@ func (r resourceRecorder) Record(ctx context.Context, s bare.Server, c bare.Chan
 		return nil
 	}
 	switch image.ProtoReflect().Descriptor().FullName() {
-	case "roster.Access", "roster.ApiKey", "roster.Audit", "roster.Binding", "roster.Connection", "roster.Consent", "roster.Continuation", "roster.Credential", "roster.Delegation", "roster.Email", "roster.Group", "roster.GroupExposure", "roster.GroupMembership", "roster.Holder", "roster.Host", "roster.HostProof", "roster.Identity", "roster.Link", "roster.MailDomain", "roster.Nomination", "roster.Role", "roster.Session", "roster.Site", "roster.SiteMembership", "roster.Team", "roster.TeamMembership", "roster.Tenant":
+	case "roster.Access", "roster.ApiKey", "roster.Audit", "roster.Binding", "roster.Connection", "roster.Consent", "roster.Continuation", "roster.Credential", "roster.Delegation", "roster.Email", "roster.Group", "roster.GroupExposure", "roster.GroupMembership", "roster.Holder", "roster.Host", "roster.HostProof", "roster.Identity", "roster.Link", "roster.MailDomain", "roster.Nomination", "roster.Phone", "roster.Role", "roster.Session", "roster.Site", "roster.SiteMembership", "roster.Team", "roster.TeamMembership", "roster.Tenant":
 	default:
 		return nil
 	}

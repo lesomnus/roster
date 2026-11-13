@@ -1,6 +1,6 @@
 # The entities
 
-roster is twenty-seven tables and the arguments for why each is a table. This
+roster is twenty-eight tables and the arguments for why each is a table. This
 file is the map: the shape they make, and a paragraph on each.
 
 It is **not** where the reasoning lives. Every entity is declared in a `.proto`
@@ -11,7 +11,7 @@ is short enough to read in one sitting and points at them.
 `docs/position.md` is what roster is for and where it stops. `docs/roadmap.md`
 is the order it was built in.
 
-## One story, told twenty-seven times
+## One story, told twenty-eight times
 
 Every entity below ends with a line or two about the same deployment, so that
 what a row is **next to** is visible from its own section. Read them in order
@@ -196,6 +196,26 @@ purpose.
 > that is why a `Holder` has no site of its own. What the two rows do **not**
 > give her is either site's data -- that is a 🔗 `Binding`, one section down.
 > These say where she works, and something has to.
+
+### 📞 `Phone` — a number somebody is reached at, and no way in
+
+A row rather than a field of the profile, for 📧 `Email`'s reasons: a person has
+several, they change, and an organisation hands a leaver's number to whoever
+sits there next. Kept as it was said -- `02-123-4567`, an extension -- because
+nothing compares two numbers, and a form strict enough to would refuse most of
+what a directory holds. `kind` is which of somebody's numbers it is, in SCIM's
+words (`work`, `mobile`, ...), which are also what an LDAP client asks by.
+
+**It is not a way in, and that is what it is for.** Nothing here sends to a
+number or finds anybody by one, so writing one onto somebody is not held to the
+rule an address is (`mayWriteAWayIn`): a tenant's directory writes it, and
+replaces it when it changes, which it may not do to an address
+([scim.md](scim.md)). The day a number is somewhere a code is sent, it gains
+what 📧 `Email` has -- when it was checked, and that rule.
+
+> erin's desk is `+82 2-123-4567` and her mobile is another row. contoso's
+> Entra wrote both, and writes the new one the day she moves desks; nobody had
+> to reach erin, or be her, to do it.
 
 ## What somebody may do
 
@@ -809,6 +829,7 @@ hard (gone).
 | 📍 `Site` | 7 | `tenant` edge | yes | soft | `proto/app/site.proto` |
 | 🪪 `Identity` | 8 | via `holder.tenant`, stamped | yes | soft | `proto/app/identity.proto` |
 | 📧 `Email` | 9 | via `holder.tenant`, stamped | yes | soft | `proto/app/email.proto` |
+| 📞 `Phone` | 30 | via `holder.tenant`, stamped | -- | soft | `proto/app/phone.proto` |
 | 🎽 `Team` | 10 | `tenant` edge | yes | soft | `proto/app/team.proto` |
 | 🚩 `SiteMembership` | 11 | via `holder.tenant` | yes | soft | `proto/app/membership.proto` |
 | 🏅 `TeamMembership` | 12 | via `holder.tenant` | yes | soft | `proto/app/membership.proto` |

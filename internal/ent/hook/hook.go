@@ -285,6 +285,18 @@ func (f OwedFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.OwedMutation", m)
 }
 
+// The PhoneFunc type is an adapter to allow the use of ordinary
+// function as Phone mutator.
+type PhoneFunc func(context.Context, *ent.PhoneMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PhoneFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PhoneMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PhoneMutation", m)
+}
+
 // The RoleFunc type is an adapter to allow the use of ordinary
 // function as Role mutator.
 type RoleFunc func(context.Context, *ent.RoleMutation) (ent.Value, error)
