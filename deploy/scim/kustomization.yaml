@@ -1,0 +1,18 @@
+# Where a tenant's directory provisions its people: roster as a SCIM 2.0
+# endpoint, on a listener of its own (`docs/scim.md`). A component and not the
+# base, because the base opens nothing a deployment did not ask for, and this
+# is the one listener a directory's cloud reaches from the internet -- whether
+# a deployment has one is its own to say. `deploy/README.md` says how to turn
+# it on and what to route to it; `scripts/cluster.sh` does, and asks it a
+# question only a key answers.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  # The one Service a deployment routes a public name to, and nothing else of
+  # this pod with it.
+  - ./service.yaml
+
+patches:
+  # The listener, and the port it is named by.
+  - path: ./roster.yaml

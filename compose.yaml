@@ -274,6 +274,33 @@ services:
     volumes:
       - account:/var/lib/roster-account:ro
 
+  # Where a directory provisions people: roster as a SCIM 2.0 endpoint, its own
+  # process on a listener that answers `/scim/v2` and nothing else
+  # (`docs/scim.md`). It holds no key -- each request carries the directory's
+  # own tenant key, and that is all roster answers -- so there is nothing to
+  # wait for and nothing to mount. A tenant with a connection of its
+  # organisation's own mints that key, printed once:
+  #
+  #     docker compose exec roster roster scim provision \
+  #       --tenant contoso --connection entra
+  #     curl -H 'Authorization: Bearer rt_…' \
+  #       http://localhost:8092/scim/v2/Users
+  #
+  # In the clear, for `ldap`'s reason: a deployment terminates TLS in front and
+  # publishes this path alone to its directory's cloud.
+  scim:
+    image: ${ROSTER_DEV_IMAGE:-roster-dev}
+    build:
+      context: .
+      target: dev
+    depends_on:
+      roster:
+        condition: service_healthy
+    entrypoint: ["roster", "scim", "serve"]
+    command: ["--listen", ":8092", "--roster", "roster:50051", "--insecure"]
+    ports:
+      - "8092:8092"
+
   # Hydra, for the shape a deployment with several products has: one sign-in,
   # tokens each of them verifies. It has **no user database** -- that is the
   # whole reason the next two services exist -- and it never sees a password.

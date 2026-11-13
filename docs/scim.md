@@ -169,6 +169,8 @@ not a front door's.
 | `server/core/directory.go` | `Provision`, `Deactivate`, `Activate`, and who a directory speaks for |
 | `cli/scim.go` | `roster scim serve` and `roster scim provision` |
 | `cmd/consumers.go` | the `scim:` block |
+| `deploy/scim/` | the endpoint in the reference deployment: a component an overlay turns on, and the Service its ingress routes to ([deploy/README.md](../deploy/README.md) § *A directory provisioning people*) |
+| `compose.yaml` | the same endpoint on a desk, `scim`, at `:8092` |
 
 | the promise | pinned by |
 | --- | --- |
@@ -178,3 +180,4 @@ not a front door's.
 | its key reaches only the people it makes | `TestADirectoryMakesPeopleAndOnlyNewOnes` · `TestTheEndpointTakesATenantKeyAndNothingElse` |
 | and makes them only at the organisation's own door | `TestADirectoryProvisionsThroughItsOrganisationsOwnDoor` |
 | somebody erased is neither found nor made again until forgotten, and its people do not leave on their own | `TestSomebodyErasedHereIsNeitherFoundNorMadeUntilForgotten` · `TestSomebodyTheirDirectoryProvisionsDoesNotLeaveOnTheirOwn` |
+| where a deployment turns it on, the endpoint reaches roster | `scripts/cluster.sh` and `scripts/hydra.sh`, *the directory's endpoint, asked by a key nobody minted* |
