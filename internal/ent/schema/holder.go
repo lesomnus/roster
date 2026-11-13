@@ -49,6 +49,12 @@ func (Holder) Fields() []ent.Field {
 		field.String("directory"),
 		field.Json("portrait", &rstr.Portrait{}).ValueScanner(entpb.ValueScanner[*rstr.Portrait]{}).
 			Optional(),
+		field.String("directory_subject").
+			Nillable().
+			Optional(),
+		field.String("directory_address").
+			Nillable().
+			Optional(),
 		field.Uuid("tenant_id").
 			Immutable(),
 	}
@@ -72,6 +78,14 @@ func (Holder) Indexes() []ent.Index {
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 		index.Fields("tenant_id", "date_created", "id").
 			StorageKey("holder_page"),
+		index.Fields("directory_subject", "tenant_id").
+			StorageKey("holder_known").
+			Unique().
+			Annotations(entsql.IndexWhere("date_erased IS NULL")),
+		index.Fields("directory_address", "tenant_id").
+			StorageKey("holder_said").
+			Unique().
+			Annotations(entsql.IndexWhere("date_erased IS NULL")),
 	}
 }
 

@@ -270,6 +270,32 @@ service HolderService {
   // An operator's suspension is refused, and so is somebody the directory
   // deleted: it said they are gone, and bringing them back is an operator's.
   rpc Activate(HolderActivateRequest) returns (Holder);
+
+  // Tell is a directory saying what it calls somebody: its own id for them,
+  // or their address. roster keeps it and believes neither.
+  //
+  // # Why it is not `Identity.Add`, and not an address moved
+  //
+  // Both are ways in, and both are what a directory's key is not given, for
+  // `Provision`'s reason: it would reach people who already exist. But a
+  // directory says both about people who exist, all the time -- an
+  // `externalId` written onto somebody it matched by their address, a
+  // `userName` that changed -- and a word that is dropped is a drift nobody
+  // sees. So it is kept beside the person (`Holder.directory_subject`,
+  // `Holder.directory_address`), where no rule reads it and nothing signs in
+  // by it. What it is for: the directory is answered with what it said, an
+  // operator sees where the two differ, and one who believes the subject
+  // links them (`roster scim adopt`).
+  //
+  // # What it is held to
+  //
+  // A tenant with a connection it provisions through, and a person no file
+  // declares. Not to the people the directory speaks for (`Deactivate`): the
+  // ones it does not speak for yet are who this is about. A subject is held
+  // to that connection's claim, an address to its normal form, and each is
+  // one person's within a tenant -- a second person called the same is
+  // refused as taken.
+  rpc Tell(HolderTellRequest) returns (Holder);
 }
 
 message HolderProvisionRequest {
@@ -304,6 +330,22 @@ message HolderDeactivateRequest {
 message HolderActivateRequest {
   HolderRef ref = 1;
 
+  google.protobuf.Timestamp date_updated = 13;
+}
+
+message HolderTellRequest {
+  HolderRef ref = 1;
+
+  // What the directory calls them. Unset is not said, and leaves what was
+  // kept; empty takes it away, which is what a link made since is answered
+  // with.
+  string subject = 2;
+
+  // The address the directory says is theirs, lowercased and trimmed. Unset
+  // and empty as `subject`: empty is the address having been moved here.
+  string address = 3;
+
+  // Optimistic locking, as `Disable` takes it.
   google.protobuf.Timestamp date_updated = 13;
 }
 

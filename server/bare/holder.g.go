@@ -171,6 +171,12 @@ func (st HolderServiceServer) create(ctx context.Context, req *rstr.HolderAddReq
 	if req.HasPortrait() {
 		q.SetPortrait(req.GetPortrait())
 	}
+	if req.HasDirectorySubject() {
+		q.SetDirectorySubject(req.GetDirectorySubject())
+	}
+	if req.HasDirectoryAddress() {
+		q.SetDirectoryAddress(req.GetDirectoryAddress())
+	}
 	return q, ds, nil
 }
 
@@ -337,6 +343,12 @@ func HolderSelectedFields(m *rstr.HolderSelect) []string {
 	if m.GetPortrait() {
 		vs = append(vs, holder.FieldPortrait)
 	}
+	if m.GetDirectorySubject() {
+		vs = append(vs, holder.FieldDirectorySubject)
+	}
+	if m.GetDirectoryAddress() {
+		vs = append(vs, holder.FieldDirectoryAddress)
+	}
 
 	return vs
 }
@@ -406,7 +418,7 @@ func HolderGetKey(ctx context.Context, db *ent.Client, ref *rstr.HolderRef) (uui
 var holderOrmEntity = ormpatch.MustEntityOf(rstr.File_roster_payday_holder_proto, "Holder")
 
 var holderPatchColumns = entpatch.Columns{
-	1: holder.FieldId, 2: holder.TenantColumn, 4: holder.FieldAlias, 5: holder.FieldName, 6: holder.FieldDesc, 7: holder.FieldLabels, 13: holder.FieldDateUpdated, 14: holder.FieldDateErased, 15: holder.FieldDateCreated, 9: holder.FieldProfile, 10: holder.FieldData, 11: holder.FieldDateInvalidated, 12: holder.FieldDateDisabled, 8: holder.FieldDirectory, 16: holder.FieldPortrait}
+	1: holder.FieldId, 2: holder.TenantColumn, 4: holder.FieldAlias, 5: holder.FieldName, 6: holder.FieldDesc, 7: holder.FieldLabels, 13: holder.FieldDateUpdated, 14: holder.FieldDateErased, 15: holder.FieldDateCreated, 9: holder.FieldProfile, 10: holder.FieldData, 11: holder.FieldDateInvalidated, 12: holder.FieldDateDisabled, 8: holder.FieldDirectory, 16: holder.FieldPortrait, 17: holder.FieldDirectorySubject, 18: holder.FieldDirectoryAddress}
 
 func (s HolderServiceServer) Apply(ctx context.Context, req *rstr.HolderApplyRequest) (*rstr.Holder, error) {
 	if !req.HasPatch() {
@@ -644,6 +656,26 @@ func pickHolder(req *rstr.HolderRef) (predicate.Holder, error) {
 		ps = append(ps, holder.AliasEQ(k.GetAlias()))
 		if p, err := TenantPick(k.GetTenant()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "slug.tenant: %s", err)
+		} else {
+			ps = append(ps, holder.HasTenantWith(p))
+		}
+		return holder.And(ps...), nil
+	case rstr.HolderRef_Known_case:
+		k := req.GetKnown()
+		ps := make([]predicate.Holder, 0, 2)
+		ps = append(ps, holder.DirectorySubjectEQ(k.GetDirectorySubject()))
+		if p, err := TenantPick(k.GetTenant()); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "known.tenant: %s", err)
+		} else {
+			ps = append(ps, holder.HasTenantWith(p))
+		}
+		return holder.And(ps...), nil
+	case rstr.HolderRef_Said_case:
+		k := req.GetSaid()
+		ps := make([]predicate.Holder, 0, 2)
+		ps = append(ps, holder.DirectoryAddressEQ(k.GetDirectoryAddress()))
+		if p, err := TenantPick(k.GetTenant()); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "said.tenant: %s", err)
 		} else {
 			ps = append(ps, holder.HasTenantWith(p))
 		}

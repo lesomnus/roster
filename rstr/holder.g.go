@@ -21,6 +21,20 @@ func (x *Holder) Ref() *HolderRef {
 			return HolderBySlug(v1, v2.Ref())
 		}
 	}
+	{
+		v1 := x.GetDirectorySubject()
+		v2 := x.GetTenant()
+		if len(v1) > 0 && v2 != nil {
+			return HolderByKnown(v1, v2.Ref())
+		}
+	}
+	{
+		v1 := x.GetDirectoryAddress()
+		v2 := x.GetTenant()
+		if len(v1) > 0 && v2 != nil {
+			return HolderBySaid(v1, v2.Ref())
+		}
+	}
 
 	return nil
 }
@@ -36,6 +50,14 @@ func (x *HolderRef) Picks(v *Holder) bool {
 	case HolderRef_Slug_case:
 		x := x.GetSlug()
 		return (x.GetAlias() == v.GetAlias()) &&
+			(x.GetTenant().Picks(v.GetTenant()))
+	case HolderRef_Known_case:
+		x := x.GetKnown()
+		return (x.GetDirectorySubject() == v.GetDirectorySubject()) &&
+			(x.GetTenant().Picks(v.GetTenant()))
+	case HolderRef_Said_case:
+		x := x.GetSaid()
+		return (x.GetDirectoryAddress() == v.GetDirectoryAddress()) &&
 			(x.GetTenant().Picks(v.GetTenant()))
 	default:
 		return false
@@ -69,4 +91,26 @@ func HolderBySlug(alias string, tenant *TenantRef) *HolderRef {
 
 func HolderGetBySlug(alias string, tenant *TenantRef) *HolderGetRequest {
 	return HolderGetRequest_builder{Ref: HolderBySlug(alias, tenant)}.Build()
+}
+
+func HolderByKnown(directory_subject string, tenant *TenantRef) *HolderRef {
+	x := &HolderRefByKnown{}
+	x.SetDirectorySubject(directory_subject)
+	x.SetTenant(tenant)
+	return HolderRef_builder{Known: x}.Build()
+}
+
+func HolderGetByKnown(directory_subject string, tenant *TenantRef) *HolderGetRequest {
+	return HolderGetRequest_builder{Ref: HolderByKnown(directory_subject, tenant)}.Build()
+}
+
+func HolderBySaid(directory_address string, tenant *TenantRef) *HolderRef {
+	x := &HolderRefBySaid{}
+	x.SetDirectoryAddress(directory_address)
+	x.SetTenant(tenant)
+	return HolderRef_builder{Said: x}.Build()
+}
+
+func HolderGetBySaid(directory_address string, tenant *TenantRef) *HolderGetRequest {
+	return HolderGetRequest_builder{Ref: HolderBySaid(directory_address, tenant)}.Build()
 }

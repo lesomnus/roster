@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/holder.proto.
  */
 export const file_roster_payday_holder: GenFile = /*@__PURE__*/
-  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L2hvbGRlci5wcm90bxIGcm9zdGVyItgGCgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIVCgVhbGlhcxgEIAEoCUIGqsEWAhgBEhQKBG5hbWUYBSABKAlCBqrBFgIYARIUCgRkZXNjGAYgASgJQgaqwRYCGAESMgoGbGFiZWxzGAcgAygLMhoucm9zdGVyLkhvbGRlci5MYWJlbHNFbnRyeUIGqsEWAhgBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIoCgdwcm9maWxlGAkgASgLMg8ucm9zdGVyLlByb2ZpbGVCBqrBFgIYARIqCgRkYXRhGAogASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueUIGqsEWAhgBEjwKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOQoNZGF0ZV9kaXNhYmxlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIbCglkaXJlY3RvcnkYCCABKAlCCKrBFgQQARgAEioKCHBvcnRyYWl0GBAgASgLMhAucm9zdGVyLlBvcnRyYWl0QgaqwRYCGAEaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATqcAcr8FVMSAhABGh8SBHNsdWcaCQoFYWxpYXMQBBoKCgZ0ZW5hbnQQAjABGiwSBHBhZ2UaCgoGdGVuYW50EAIaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7FkEIAjI5ChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudBoICgZsYWJlbHMgFChkOgBIAiJpCgdQcm9maWxlEhQKDGRpc3BsYXlfbmFtZRgBIAEoCRIPCgdwaWN0dXJlGAIgASgJEhIKCmRlcGFydG1lbnQYAyABKAkSEwoLZW1wbG95ZWVfbm8YBCABKAkSDgoGbG9jYWxlGAUgASgJIjEKCFBvcnRyYWl0EiUKCnJlbmRpdGlvbnMYASADKAsyES5yb3N0ZXIuUmVuZGl0aW9uIiYKCVJlbmRpdGlvbhIMCgRzaXplGAEgASgNEgsKA3VyaRgCIAEoCUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_any, file_google_protobuf_timestamp, file_orm, file_payday, file_roster_payday_tenant]);
+  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L2hvbGRlci5wcm90bxIGcm9zdGVyIooICgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIVCgVhbGlhcxgEIAEoCUIGqsEWAhgBEhQKBG5hbWUYBSABKAlCBqrBFgIYARIUCgRkZXNjGAYgASgJQgaqwRYCGAESMgoGbGFiZWxzGAcgAygLMhoucm9zdGVyLkhvbGRlci5MYWJlbHNFbnRyeUIGqsEWAhgBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIoCgdwcm9maWxlGAkgASgLMg8ucm9zdGVyLlByb2ZpbGVCBqrBFgIYARIqCgRkYXRhGAogASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueUIGqsEWAhgBEjwKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOQoNZGF0ZV9kaXNhYmxlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIbCglkaXJlY3RvcnkYCCABKAlCCKrBFgQQARgAEioKCHBvcnRyYWl0GBAgASgLMhAucm9zdGVyLlBvcnRyYWl0QgaqwRYCGAESKQoRZGlyZWN0b3J5X3N1YmplY3QYESABKAlCDuqCFgI4AarBFgQQARgBEikKEWRpcmVjdG9yeV9hZGRyZXNzGBIgASgJQg7qghYCOAGqwRYEEAEYARotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOvgByvwVrgESAhABGh8SBHNsdWcaCQoFYWxpYXMQBBoKCgZ0ZW5hbnQQAjABGiwSBHBhZ2UaCgoGdGVuYW50EAIaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARosEgVrbm93bhoVChFkaXJlY3Rvcnlfc3ViamVjdBARGgoKBnRlbmFudBACMAEaKxIEc2FpZBoVChFkaXJlY3RvcnlfYWRkcmVzcxASGgoKBnRlbmFudBACMAGKuxZBCAIyOQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQaCAoGbGFiZWxzIBQoZDoASAIiaQoHUHJvZmlsZRIUCgxkaXNwbGF5X25hbWUYASABKAkSDwoHcGljdHVyZRgCIAEoCRISCgpkZXBhcnRtZW50GAMgASgJEhMKC2VtcGxveWVlX25vGAQgASgJEg4KBmxvY2FsZRgFIAEoCSIxCghQb3J0cmFpdBIlCgpyZW5kaXRpb25zGAEgAygLMhEucm9zdGVyLlJlbmRpdGlvbiImCglSZW5kaXRpb24SDAoEc2l6ZRgBIAEoDRILCgN1cmkYAiABKAlCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_any, file_google_protobuf_timestamp, file_orm, file_payday, file_roster_payday_tenant]);
 
 /**
  * Holder is who a request is from.
@@ -281,6 +281,54 @@ export type Holder = Message<"roster.Holder"> & {
    * @generated from field: roster.Portrait portrait = 16;
    */
   portrait?: Portrait | undefined;
+
+  /**
+   * What their directory calls them, where that is not how roster knows them:
+   * the `externalId` it wrote onto somebody it matched by address and roster
+   * has not linked (`docs/scim.md` § *What it does with a person*).
+   *
+   * # Kept, and read by no rule
+   *
+   * A directory that finds somebody who was here before it says who they are
+   * to it. Believing that would be writing a way in -- an `Identity` at the
+   * connection it provisions through -- onto a person who exists, on the word
+   * of a key its cloud presents from the internet, which is the write that key
+   * is not given (`HolderService.Provision`). Dropping it leaves nothing to
+   * show that the directory has somebody roster has not linked. So it is
+   * kept here: nothing signs in by it and no rule reads it, and an operator
+   * who believes it links them (`roster scim adopt`).
+   *
+   * Written by `HolderService.Tell` and nothing else: **stamped**, so the
+   * generated gate refuses an `Add` that asserts it, and `Patch` is closed at
+   * the transport. Personal, as `Identity.subject` is.
+   *
+   * Nullable, because it is unique within a tenant (the index below) and
+   * nobody having been called anything is most rows.
+   *
+   * @generated from field: string directory_subject = 17;
+   */
+  directorySubject: string;
+
+  /**
+   * The address their directory last said, where it is not the first of
+   * theirs here.
+   *
+   * An address is a way in -- a recovery link goes to it, and a sign-in is
+   * matched by it -- so a directory saying somebody's address changed does not
+   * move it: it moves by the person or an operator. What the directory said
+   * is kept instead, so that the two having drifted apart is something to see
+   * rather than something to find out, and so that the directory is answered
+   * with what it said: a lookup by this finds them, and the User it reads
+   * back carries it. Where it is none of their addresses, the two have
+   * drifted; where it is one of them and not the first, it is only which one
+   * the directory is answered with.
+   *
+   * Written and guarded as `directory_subject` is, and personal as
+   * `Email.address` is.
+   *
+   * @generated from field: string directory_address = 18;
+   */
+  directoryAddress: string;
 };
 
 /**

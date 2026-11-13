@@ -344,7 +344,9 @@ export function Person(props: {
 
 			<Ways ids={ids} creds={creds} may={props.may} />
 
-			<Emails holder={key} may={props.may} />
+			<Called subject={props.holder.directorySubject} ids={ids} />
+
+			<Emails holder={key} said={props.holder.directoryAddress} may={props.may} />
 
 			<Reaches holder={key} may={props.may} />
 
@@ -795,6 +797,29 @@ function Ways(props: {
 }
 
 /**
+ * Called is what somebody's directory calls them, where nothing here signs in
+ * as that: its id for somebody it matched by their address, kept as it said it
+ * and believed by nothing (`Holder.directory_subject`, `docs/scim.md`).
+ *
+ * Drawn because of what follows from it and is said nowhere else until the
+ * day they leave: their directory does not speak for them, so its suspension
+ * is refused. Nothing is drawn once an identity carries the subject -- they
+ * signed in through the connection, or an operator linked them -- since what
+ * was kept is then only what is already above.
+ */
+function Called(props: { subject: string; ids: SignInIdentity[] }): React.ReactNode {
+	if (props.subject === '' || props.ids.some((v) => v.subject === props.subject)) return null
+
+	return (
+		<p className="note said">
+			their directory calls them <span className="mono">{props.subject}</span>, and nothing here signs in
+			as that — so it cannot suspend them. They are linked when they next sign in through it, or by{' '}
+			<span className="mono">roster scim adopt</span> at the box
+		</p>
+	)
+}
+
+/**
  * Emails is the addresses roster holds for somebody, and whether anybody
  * checked each.
  *
@@ -805,7 +830,16 @@ function Ways(props: {
  * so `Email.Add` runs `mayWriteAWayIn` and refuses it for somebody wider than
  * the operator.
  */
-function Emails(props: { holder: Uint8Array; may: (method: string) => boolean }): React.ReactNode {
+function Emails(props: {
+	holder: Uint8Array
+
+	// The address their directory last said (`Holder.directory_address`), or
+	// empty. Drawn where it is none of the addresses below: a directory saying
+	// an address changed does not move it, and the two having drifted apart is
+	// what an operator comes here to see.
+	said: string
+	may: (method: string) => boolean
+}): React.ReactNode {
 	const who = { key: { case: 'id' as const, value: props.holder } }
 	const vs = useQuery(EmailService.method.list, { filters: [{ holder: who }] })
 	const add = useCall(EmailService.method.add)
@@ -874,6 +908,12 @@ function Emails(props: { holder: Uint8Array; may: (method: string) => boolean })
 					add address
 				</button>
 			</form>
+			{props.said !== '' && !items.some((v) => v.address === props.said) && (
+				<p className="note said">
+					their directory says their address is <span className="mono">{props.said}</span>, which is none
+					of these. A link is mailed to an address, so it moves here — by them, or by you
+				</p>
+			)}
 			{bad !== null && <p className="bad">{bad}</p>}
 		</section>
 	)

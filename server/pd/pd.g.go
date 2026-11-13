@@ -9849,6 +9849,14 @@ func (s gateHolder) admit(ctx context.Context, req *rstr.HolderAddRequest) (*rst
 		return nil, pderr.Invalidf("directory", "is established by this deployment and not asserted by a request")
 	}
 
+	if req.HasDirectorySubject() {
+		return nil, pderr.Invalidf("directory_subject", "is established by this deployment and not asserted by a request")
+	}
+
+	if req.HasDirectoryAddress() {
+		return nil, pderr.Invalidf("directory_address", "is established by this deployment and not asserted by a request")
+	}
+
 	if err := seen.Visible(ctx, s.Gate.drv, "Tenant", req.GetTenant(), func() error {
 		_, err := s.Gate.Next().Tenant().Get(ctx, rstr.TenantGetRequest_builder{
 			Ref: req.GetTenant(),
@@ -11808,7 +11816,7 @@ var (
 		[]protoreflect.FieldNumber{})
 	describedHolder = describe((*rstr.Holder)(nil),
 		[]protoreflect.FieldNumber{},
-		[]protoreflect.FieldNumber{4, 5, 6, 7, 9, 10, 16})
+		[]protoreflect.FieldNumber{4, 5, 6, 7, 9, 10, 16, 17, 18})
 	describedHost = describe((*rstr.Host)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
@@ -16286,6 +16294,11 @@ func (s interceptHolder) Activate(ctx context.Context, req *rstr.HolderActivateR
 		rstr.HolderService_Activate_FullMethodName, req, s.HolderServiceServer.Activate)
 }
 
+func (s interceptHolder) Tell(ctx context.Context, req *rstr.HolderTellRequest) (*rstr.Holder, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
+		rstr.HolderService_Tell_FullMethodName, req, s.HolderServiceServer.Tell)
+}
+
 func (s Intercept) ApiKey() rstr.ApiKeyServiceServer {
 	return interceptApiKey{s, s.Next().ApiKey()}
 }
@@ -18535,6 +18548,8 @@ func init() {
 				fs.ByNumber(9),
 				fs.ByNumber(10),
 				fs.ByNumber(16),
+				fs.ByNumber(17),
+				fs.ByNumber(18),
 			},
 			tenant: func(m protoreflect.Message) pdid.Id {
 				return accessKeyOf(m.Get(fs.ByName("tenant")).Message())

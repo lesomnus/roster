@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
 	"os"
 
 	"github.com/lesomnus/otx/log"
+	"github.com/lesomnus/payday/access"
+	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/cfg"
 	"github.com/lesomnus/xli/flg"
@@ -34,7 +37,7 @@ func NewCmdScim(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:     "scim",
 		Brief:    "roster as a SCIM 2.0 endpoint, where a directory provisions its people",
-		Commands: xli.Commands{newCmdScimServe(l, c), newCmdScimProvision(c)},
+		Commands: xli.Commands{newCmdScimServe(l, c), newCmdScimProvision(c), newCmdScimAdopt(c)},
 	}
 }
 
@@ -212,4 +215,225 @@ func provisionScim(ctx context.Context, s *cmd.Server, tenant, connection string
 	}
 
 	return mintNamed(ctx, s.Ungated, who, ScimHolder, scim.Methods, keys.PrefixTenant)
+}
+
+func newCmdScimAdopt(c *cmd.Config) *xli.Command {
+	return &xli.Command{
+		Name:  "adopt",
+		Brief: "the people a tenant's directory matched and roster has not linked: listed, and linked with --confirm",
+		Flags: flg.Flags{
+			&flg.String{Name: "tenant", Brief: "the tenant, by alias"},
+			&flg.String{Name: "confirm", Brief: "the tenant's alias, as it is, to say the list is believed; without it nothing is written"},
+		},
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			tenant, _ := flg.Find[string](cl, "tenant")
+			confirm, _ := flg.Find[string](cl, "confirm")
+			if tenant == "" {
+				return errors.New("--tenant: whose directory")
+			}
+			if confirm != "" && confirm != tenant {
+				return fmt.Errorf("--confirm %s: that is not %s; nothing was written", confirm, tenant)
+			}
+
+			s, err := controlled(ctx, c)
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+
+			by, err := atTheBox(ctx, c, s)
+			if err != nil {
+				return err
+			}
+
+			found, failed, err := adoptScim(ctx, s, by, tenant, confirm != "", os.Stdout)
+			if err != nil {
+				return err
+			}
+			switch {
+			case len(found) == 0:
+				fmt.Fprintf(os.Stderr, "roster: %s's directory has matched nobody roster has not linked.\n", tenant)
+			case confirm == "":
+				fmt.Fprintf(os.Stderr, "roster: %d of %s's people are matched and not linked, so their directory cannot suspend them. "+
+					"Nothing was written: each line is who roster has, their address, and what the directory calls them. "+
+					"`--confirm %s` links them where you believe it.\n", len(found), tenant, tenant)
+			default:
+				fmt.Fprintf(os.Stderr, "roster: linked %d of %d.\n", len(found)-failed, len(found))
+			}
+			if failed > 0 {
+				return fmt.Errorf("%d could not be linked; each is said above", failed)
+			}
+
+			return nil
+		}),
+	}
+}
+
+// adopted is somebody a directory matched and roster has not linked.
+type adopted struct {
+	id      []byte
+	alias   string
+	address string
+	subject string
+}
+
+// adoptScim is [newCmdScimAdopt] without the process: everybody of the tenant
+// whose directory said what it calls them (`Holder.directory_subject`) and who
+// has no identity at the connection it provisions through, written to `out` a
+// line each -- and, when `write`, linked there.
+//
+// # Why this is a command at the box, and not something a directory does
+//
+// The link is an `Identity`: who a sign-in through that connection is. The
+// directory's key is not given that write, because it would reach people who
+// already exist (`HolderService.Provision`), so what the directory said was
+// kept and believed by nothing (`HolderService.Tell`). Believing it is a
+// decision about a way into somebody's account, and that is the deployment's
+// to make, looking at the list: an address beside an id, where one that does
+// not belong together is seen before it is written.
+//
+// Each link is the write `roster identity add` makes, through the same rules
+// -- a subject somebody else signs in by is refused, and said -- and what was
+// kept is taken away once it is how roster knows them.
+//
+// # On the access record, before anything is printed
+//
+// The list is each person's alias, their address and what their directory
+// calls them, read past the servers and printed as text -- so it says whose it
+// showed (`access.Saw`) in a call of `HolderService/List` made at the shell by
+// `by`, which is the RPC it stands for, and prints once that row is written
+// (#221, [cmd.ListKeys]).
+func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant string, write bool, out io.Writer) ([]adopted, int, error) {
+	at := rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build()
+	t, err := s.Ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{Ref: at}.Build())
+	if err != nil {
+		return nil, 0, fmt.Errorf("--tenant %s: %w", tenant, err)
+	}
+	at = rstr.TenantRef_builder{Id: t.GetId()}.Build()
+
+	provider := ""
+	for after := ""; ; {
+		vs, err := s.Ungated.Connection().List(ctx, rstr.ConnectionListRequest_builder{
+			Filters: []*rstr.ConnectionFilter{rstr.ConnectionFilter_builder{Tenant: at}.Build()},
+			After:   after,
+		}.Build())
+		if err != nil {
+			return nil, 0, err
+		}
+		for _, v := range vs.GetItems() {
+			if v.GetProvisions() {
+				provider = v.GetName()
+			}
+		}
+		if after = vs.GetNext(); after == "" {
+			break
+		}
+	}
+	if provider == "" {
+		return nil, 0, fmt.Errorf("--tenant %s: no connection of it provisions its people, so no directory has matched anybody", tenant)
+	}
+
+	var found []adopted
+	if err := s.AtTheShell(ctx, by, rstr.HolderService_List_FullMethodName, func(ctx context.Context) error {
+		var err error
+		found, err = matched(ctx, s, at, provider)
+		if err != nil {
+			return err
+		}
+
+		whose, err := pdid.From(t.GetId())
+		if err != nil {
+			return err
+		}
+		for _, v := range found {
+			who, err := pdid.From(v.id)
+			if err != nil {
+				return err
+			}
+			access.Saw(ctx, access.Subject{Id: who, Tenant: whose})
+		}
+
+		return nil
+	}); err != nil {
+		return nil, 0, err
+	}
+
+	failed := 0
+	for _, v := range found {
+		fmt.Fprintf(out, "%s\t%s\t%s\n", v.alias, v.address, v.subject)
+		if !write {
+			continue
+		}
+
+		ref := rstr.HolderRef_builder{Id: v.id}.Build()
+		if _, err := s.Ungated.Identity().Add(ctx, rstr.IdentityAddRequest_builder{
+			Holder: ref, Provider: provider, Subject: v.subject,
+		}.Build()); err != nil {
+			failed++
+			fmt.Fprintf(os.Stderr, "roster: %s was not linked: %v\n", v.alias, err)
+
+			continue
+		}
+		if _, err := s.Ungated.Holder().Tell(ctx, rstr.HolderTellRequest_builder{
+			Ref: ref, Subject: z.Ptr(""),
+		}.Build()); err != nil {
+			return found, failed, fmt.Errorf("%s is linked, and what the directory said of them was not taken away: %w", v.alias, err)
+		}
+	}
+
+	return found, failed, nil
+}
+
+// matched is everybody of the tenant `at` whose directory said what it calls
+// them and who has no identity at `provider`, the connection it provisions
+// through.
+func matched(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, provider string) ([]adopted, error) {
+	var found []adopted
+	for after := ""; ; {
+		vs, err := s.Ungated.Holder().List(ctx, rstr.HolderListRequest_builder{
+			Filters: []*rstr.HolderFilter{rstr.HolderFilter_builder{Tenant: at}.Build()},
+			After:   after,
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+		for _, h := range vs.GetItems() {
+			if h.GetDirectorySubject() == "" {
+				continue
+			}
+			ref := rstr.HolderRef_builder{Id: h.GetId()}.Build()
+
+			ids, err := s.Ungated.Identity().List(ctx, rstr.IdentityListRequest_builder{
+				Filters: []*rstr.IdentityFilter{rstr.IdentityFilter_builder{Holder: ref}.Build()},
+			}.Build())
+			if err != nil {
+				return nil, err
+			}
+			linked := false
+			for _, v := range ids.GetItems() {
+				linked = linked || v.GetProvider() == provider
+			}
+			if linked {
+				// Linked since, and by another subject than the directory
+				// said: a drift an operator reads in the admin console, and
+				// not a link this would write over.
+				continue
+			}
+
+			v := adopted{id: h.GetId(), alias: h.GetAlias(), subject: h.GetDirectorySubject()}
+			es, err := s.Ungated.Email().List(ctx, rstr.EmailListRequest_builder{
+				Filters: []*rstr.EmailFilter{rstr.EmailFilter_builder{Holder: ref}.Build()},
+			}.Build())
+			if err != nil {
+				return nil, err
+			}
+			if len(es.GetItems()) > 0 {
+				v.address = es.GetItems()[0].GetAddress()
+			}
+			found = append(found, v)
+		}
+		if after = vs.GetNext(); after == "" {
+			return found, nil
+		}
+	}
 }

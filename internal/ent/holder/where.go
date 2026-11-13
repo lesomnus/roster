@@ -101,6 +101,16 @@ func Directory(v string) predicate.Holder {
 	return predicate.Holder(sql.FieldEQ(FieldDirectory, v))
 }
 
+// DirectorySubject applies equality check predicate on the "directory_subject" field. It's identical to DirectorySubjectEQ.
+func DirectorySubject(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldEQ(FieldDirectorySubject, v))
+}
+
+// DirectoryAddress applies equality check predicate on the "directory_address" field. It's identical to DirectoryAddressEQ.
+func DirectoryAddress(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldEQ(FieldDirectoryAddress, v))
+}
+
 // TenantId applies equality check predicate on the "tenant_id" field. It's identical to TenantIdEQ.
 func TenantId(v uuid.UUID) predicate.Holder {
 	return predicate.Holder(sql.FieldEQ(FieldTenantId, v))
@@ -644,6 +654,156 @@ func PortraitIsNil() predicate.Holder {
 // PortraitNotNil applies the NotNil predicate on the "portrait" field.
 func PortraitNotNil() predicate.Holder {
 	return predicate.Holder(sql.FieldNotNull(FieldPortrait))
+}
+
+// DirectorySubjectEQ applies the EQ predicate on the "directory_subject" field.
+func DirectorySubjectEQ(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldEQ(FieldDirectorySubject, v))
+}
+
+// DirectorySubjectNEQ applies the NEQ predicate on the "directory_subject" field.
+func DirectorySubjectNEQ(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldNEQ(FieldDirectorySubject, v))
+}
+
+// DirectorySubjectIn applies the In predicate on the "directory_subject" field.
+func DirectorySubjectIn(vs ...string) predicate.Holder {
+	return predicate.Holder(sql.FieldIn(FieldDirectorySubject, vs...))
+}
+
+// DirectorySubjectNotIn applies the NotIn predicate on the "directory_subject" field.
+func DirectorySubjectNotIn(vs ...string) predicate.Holder {
+	return predicate.Holder(sql.FieldNotIn(FieldDirectorySubject, vs...))
+}
+
+// DirectorySubjectGT applies the GT predicate on the "directory_subject" field.
+func DirectorySubjectGT(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldGT(FieldDirectorySubject, v))
+}
+
+// DirectorySubjectGTE applies the GTE predicate on the "directory_subject" field.
+func DirectorySubjectGTE(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldGTE(FieldDirectorySubject, v))
+}
+
+// DirectorySubjectLT applies the LT predicate on the "directory_subject" field.
+func DirectorySubjectLT(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldLT(FieldDirectorySubject, v))
+}
+
+// DirectorySubjectLTE applies the LTE predicate on the "directory_subject" field.
+func DirectorySubjectLTE(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldLTE(FieldDirectorySubject, v))
+}
+
+// DirectorySubjectContains applies the Contains predicate on the "directory_subject" field.
+func DirectorySubjectContains(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldContains(FieldDirectorySubject, v))
+}
+
+// DirectorySubjectHasPrefix applies the HasPrefix predicate on the "directory_subject" field.
+func DirectorySubjectHasPrefix(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldHasPrefix(FieldDirectorySubject, v))
+}
+
+// DirectorySubjectHasSuffix applies the HasSuffix predicate on the "directory_subject" field.
+func DirectorySubjectHasSuffix(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldHasSuffix(FieldDirectorySubject, v))
+}
+
+// DirectorySubjectIsNil applies the IsNil predicate on the "directory_subject" field.
+func DirectorySubjectIsNil() predicate.Holder {
+	return predicate.Holder(sql.FieldIsNull(FieldDirectorySubject))
+}
+
+// DirectorySubjectNotNil applies the NotNil predicate on the "directory_subject" field.
+func DirectorySubjectNotNil() predicate.Holder {
+	return predicate.Holder(sql.FieldNotNull(FieldDirectorySubject))
+}
+
+// DirectorySubjectEqualFold applies the EqualFold predicate on the "directory_subject" field.
+func DirectorySubjectEqualFold(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldEqualFold(FieldDirectorySubject, v))
+}
+
+// DirectorySubjectContainsFold applies the ContainsFold predicate on the "directory_subject" field.
+func DirectorySubjectContainsFold(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldContainsFold(FieldDirectorySubject, v))
+}
+
+// DirectoryAddressEQ applies the EQ predicate on the "directory_address" field.
+func DirectoryAddressEQ(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldEQ(FieldDirectoryAddress, v))
+}
+
+// DirectoryAddressNEQ applies the NEQ predicate on the "directory_address" field.
+func DirectoryAddressNEQ(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldNEQ(FieldDirectoryAddress, v))
+}
+
+// DirectoryAddressIn applies the In predicate on the "directory_address" field.
+func DirectoryAddressIn(vs ...string) predicate.Holder {
+	return predicate.Holder(sql.FieldIn(FieldDirectoryAddress, vs...))
+}
+
+// DirectoryAddressNotIn applies the NotIn predicate on the "directory_address" field.
+func DirectoryAddressNotIn(vs ...string) predicate.Holder {
+	return predicate.Holder(sql.FieldNotIn(FieldDirectoryAddress, vs...))
+}
+
+// DirectoryAddressGT applies the GT predicate on the "directory_address" field.
+func DirectoryAddressGT(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldGT(FieldDirectoryAddress, v))
+}
+
+// DirectoryAddressGTE applies the GTE predicate on the "directory_address" field.
+func DirectoryAddressGTE(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldGTE(FieldDirectoryAddress, v))
+}
+
+// DirectoryAddressLT applies the LT predicate on the "directory_address" field.
+func DirectoryAddressLT(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldLT(FieldDirectoryAddress, v))
+}
+
+// DirectoryAddressLTE applies the LTE predicate on the "directory_address" field.
+func DirectoryAddressLTE(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldLTE(FieldDirectoryAddress, v))
+}
+
+// DirectoryAddressContains applies the Contains predicate on the "directory_address" field.
+func DirectoryAddressContains(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldContains(FieldDirectoryAddress, v))
+}
+
+// DirectoryAddressHasPrefix applies the HasPrefix predicate on the "directory_address" field.
+func DirectoryAddressHasPrefix(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldHasPrefix(FieldDirectoryAddress, v))
+}
+
+// DirectoryAddressHasSuffix applies the HasSuffix predicate on the "directory_address" field.
+func DirectoryAddressHasSuffix(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldHasSuffix(FieldDirectoryAddress, v))
+}
+
+// DirectoryAddressIsNil applies the IsNil predicate on the "directory_address" field.
+func DirectoryAddressIsNil() predicate.Holder {
+	return predicate.Holder(sql.FieldIsNull(FieldDirectoryAddress))
+}
+
+// DirectoryAddressNotNil applies the NotNil predicate on the "directory_address" field.
+func DirectoryAddressNotNil() predicate.Holder {
+	return predicate.Holder(sql.FieldNotNull(FieldDirectoryAddress))
+}
+
+// DirectoryAddressEqualFold applies the EqualFold predicate on the "directory_address" field.
+func DirectoryAddressEqualFold(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldEqualFold(FieldDirectoryAddress, v))
+}
+
+// DirectoryAddressContainsFold applies the ContainsFold predicate on the "directory_address" field.
+func DirectoryAddressContainsFold(v string) predicate.Holder {
+	return predicate.Holder(sql.FieldContainsFold(FieldDirectoryAddress, v))
 }
 
 // TenantIdEQ applies the EQ predicate on the "tenant_id" field.

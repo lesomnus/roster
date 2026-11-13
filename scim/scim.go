@@ -53,7 +53,8 @@ const Base = "/scim/v2"
 // written or attested, no `Holder.Add`, no `Erase`: each of those reaches
 // people who already exist, and a key a directory's cloud presents from the
 // internet should reach only the people it makes (`Provision`) and the people
-// it signs in (`Deactivate`, `Activate`, a profile it owns).
+// it signs in (`Deactivate`, `Activate`, a profile it owns). `Tell` reaches
+// anybody and is no exception: what it writes is believed by nothing.
 var Methods = []string{
 	rstr.MeService_Get_FullMethodName,
 	rstr.ConnectionService_List_FullMethodName,
@@ -62,6 +63,7 @@ var Methods = []string{
 	rstr.HolderService_Provision_FullMethodName,
 	rstr.HolderService_Deactivate_FullMethodName,
 	rstr.HolderService_Activate_FullMethodName,
+	rstr.HolderService_Tell_FullMethodName,
 	rstr.EmailService_Get_FullMethodName,
 	rstr.EmailService_List_FullMethodName,
 	rstr.IdentityService_Get_FullMethodName,

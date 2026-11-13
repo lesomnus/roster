@@ -35,24 +35,26 @@ const (
 // `holder.ext.proto` beside this. Adding an email or the subject an external
 // identity provider knows them by is exactly what that is for.
 type Holder struct {
-	state                      protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id              []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Tenant          *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Alias           string                 `protobuf:"bytes,4,opt,name=alias"`
-	xxx_hidden_Name            string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Desc            string                 `protobuf:"bytes,6,opt,name=desc"`
-	xxx_hidden_Labels          map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_DateUpdated     *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased      *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated     *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	xxx_hidden_Profile         *Profile               `protobuf:"bytes,9,opt,name=profile"`
-	xxx_hidden_Data            *anypb.Any             `protobuf:"bytes,10,opt,name=data"`
-	xxx_hidden_DateInvalidated *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_invalidated,json=dateInvalidated"`
-	xxx_hidden_DateDisabled    *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_disabled,json=dateDisabled"`
-	xxx_hidden_Directory       string                 `protobuf:"bytes,8,opt,name=directory"`
-	xxx_hidden_Portrait        *Portrait              `protobuf:"bytes,16,opt,name=portrait"`
-	unknownFields              protoimpl.UnknownFields
-	sizeCache                  protoimpl.SizeCache
+	state                       protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id               []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant           *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Alias            string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Name             string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Desc             string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels           map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased       *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated      *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	xxx_hidden_Profile          *Profile               `protobuf:"bytes,9,opt,name=profile"`
+	xxx_hidden_Data             *anypb.Any             `protobuf:"bytes,10,opt,name=data"`
+	xxx_hidden_DateInvalidated  *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_invalidated,json=dateInvalidated"`
+	xxx_hidden_DateDisabled     *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_disabled,json=dateDisabled"`
+	xxx_hidden_Directory        string                 `protobuf:"bytes,8,opt,name=directory"`
+	xxx_hidden_Portrait         *Portrait              `protobuf:"bytes,16,opt,name=portrait"`
+	xxx_hidden_DirectorySubject string                 `protobuf:"bytes,17,opt,name=directory_subject,json=directorySubject"`
+	xxx_hidden_DirectoryAddress string                 `protobuf:"bytes,18,opt,name=directory_address,json=directoryAddress"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *Holder) Reset() {
@@ -185,6 +187,20 @@ func (x *Holder) GetPortrait() *Portrait {
 	return nil
 }
 
+func (x *Holder) GetDirectorySubject() string {
+	if x != nil {
+		return x.xxx_hidden_DirectorySubject
+	}
+	return ""
+}
+
+func (x *Holder) GetDirectoryAddress() string {
+	if x != nil {
+		return x.xxx_hidden_DirectoryAddress
+	}
+	return ""
+}
+
 func (x *Holder) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -246,6 +262,14 @@ func (x *Holder) SetDirectory(v string) {
 
 func (x *Holder) SetPortrait(v *Portrait) {
 	x.xxx_hidden_Portrait = v
+}
+
+func (x *Holder) SetDirectorySubject(v string) {
+	x.xxx_hidden_DirectorySubject = v
+}
+
+func (x *Holder) SetDirectoryAddress(v string) {
+	x.xxx_hidden_DirectoryAddress = v
 }
 
 func (x *Holder) HasTenant() bool {
@@ -528,6 +552,44 @@ type Holder_builder struct {
 	// by what a caller sends, which is why nothing writes it but roster. Not on
 	// the trail: it is a picture of a person, and personal (payday#92).
 	Portrait *Portrait
+	// What their directory calls them, where that is not how roster knows them:
+	// the `externalId` it wrote onto somebody it matched by address and roster
+	// has not linked (`docs/scim.md` § *What it does with a person*).
+	//
+	// # Kept, and read by no rule
+	//
+	// A directory that finds somebody who was here before it says who they are
+	// to it. Believing that would be writing a way in -- an `Identity` at the
+	// connection it provisions through -- onto a person who exists, on the word
+	// of a key its cloud presents from the internet, which is the write that key
+	// is not given (`HolderService.Provision`). Dropping it leaves nothing to
+	// show that the directory has somebody roster has not linked. So it is
+	// kept here: nothing signs in by it and no rule reads it, and an operator
+	// who believes it links them (`roster scim adopt`).
+	//
+	// Written by `HolderService.Tell` and nothing else: **stamped**, so the
+	// generated gate refuses an `Add` that asserts it, and `Patch` is closed at
+	// the transport. Personal, as `Identity.subject` is.
+	//
+	// Nullable, because it is unique within a tenant (the index below) and
+	// nobody having been called anything is most rows.
+	DirectorySubject string
+	// The address their directory last said, where it is not the first of
+	// theirs here.
+	//
+	// An address is a way in -- a recovery link goes to it, and a sign-in is
+	// matched by it -- so a directory saying somebody's address changed does not
+	// move it: it moves by the person or an operator. What the directory said
+	// is kept instead, so that the two having drifted apart is something to see
+	// rather than something to find out, and so that the directory is answered
+	// with what it said: a lookup by this finds them, and the User it reads
+	// back carries it. Where it is none of their addresses, the two have
+	// drifted; where it is one of them and not the first, it is only which one
+	// the directory is answered with.
+	//
+	// Written and guarded as `directory_subject` is, and personal as
+	// `Email.address` is.
+	DirectoryAddress string
 }
 
 func (b0 Holder_builder) Build() *Holder {
@@ -549,6 +611,8 @@ func (b0 Holder_builder) Build() *Holder {
 	x.xxx_hidden_DateDisabled = b.DateDisabled
 	x.xxx_hidden_Directory = b.Directory
 	x.xxx_hidden_Portrait = b.Portrait
+	x.xxx_hidden_DirectorySubject = b.DirectorySubject
+	x.xxx_hidden_DirectoryAddress = b.DirectoryAddress
 	return m0
 }
 
@@ -840,7 +904,7 @@ var File_roster_payday_holder_proto protoreflect.FileDescriptor
 
 const file_roster_payday_holder_proto_rawDesc = "" +
 	"\n" +
-	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xf4\a\n" +
+	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xca\t\n" +
 	"\x06Holder\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x1c\n" +
@@ -858,17 +922,25 @@ const file_roster_payday_holder_proto_rawDesc = "" +
 	"\x10date_invalidated\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\x0fdateInvalidated\x12G\n" +
 	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateDisabled\x12&\n" +
 	"\tdirectory\x18\b \x01(\tB\b\xaa\xc1\x16\x04\x10\x01\x18\x00R\tdirectory\x124\n" +
-	"\bportrait\x18\x10 \x01(\v2\x10.roster.PortraitB\x06\xaa\xc1\x16\x02\x18\x01R\bportrait\x1a9\n" +
+	"\bportrait\x18\x10 \x01(\v2\x10.roster.PortraitB\x06\xaa\xc1\x16\x02\x18\x01R\bportrait\x12;\n" +
+	"\x11directory_subject\x18\x11 \x01(\tB\x0e\xea\x82\x16\x028\x01\xaa\xc1\x16\x04\x10\x01\x18\x01R\x10directorySubject\x12;\n" +
+	"\x11directory_address\x18\x12 \x01(\tB\x0e\xea\x82\x16\x028\x01\xaa\xc1\x16\x04\x10\x01\x18\x01R\x10directoryAddress\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\x9c\x01\xca\xfc\x15S\x12\x02\x10\x01\x1a\x1f\x12\x04slug\x1a\t\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xf8\x01\xca\xfc\x15\xae\x01\x12\x02\x10\x01\x1a\x1f\x12\x04slug\x1a\t\n" +
 	"\x05alias\x10\x04\x1a\n" +
 	"\n" +
 	"\x06tenant\x10\x020\x01\x1a,\x12\x04page\x1a\n" +
 	"\n" +
 	"\x06tenant\x10\x02\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
-	"\x02id\x10\x01\x8a\xbb\x16A\b\x0229\n" +
+	"\x02id\x10\x01\x1a,\x12\x05known\x1a\x15\n" +
+	"\x11directory_subject\x10\x11\x1a\n" +
+	"\n" +
+	"\x06tenant\x10\x020\x01\x1a+\x12\x04said\x1a\x15\n" +
+	"\x11directory_address\x10\x12\x1a\n" +
+	"\n" +
+	"\x06tenant\x10\x020\x01\x8a\xbb\x16A\b\x0229\n" +
 	"\x10\n" +
 	"\x0e\n" +
 	"\fdate_created\n" +

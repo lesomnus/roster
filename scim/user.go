@@ -16,6 +16,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	rstr "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/front"
 )
 
 // declared is the label a row a file declared carries (`cmd.Declared`), named
@@ -44,8 +45,30 @@ type changes struct {
 	locale     *string
 	active     *bool
 
+	// What the directory calls them: its id for them, and the two places it
+	// says an address. None of it moves anything -- an identity and an address
+	// are ways in, and the key this endpoint forwards writes neither onto
+	// somebody who exists -- so it is kept beside the person and believed by
+	// nothing (`HolderService.Tell`, [Server.told]).
+	externalId *string
+	userName   *string
+	email      *string
+
 	// ignored is what was said and is not kept here, said in the log.
 	ignored []string
+}
+
+// address is the address the directory says is theirs, by the rule a person
+// is made under ([incoming.address]): the one it calls primary, or the user
+// name when that is one. Empty when this write said neither.
+func (c *changes) address() string {
+	for _, v := range []*string{c.email, c.userName} {
+		if v != nil && strings.Contains(*v, "@") {
+			return front.Address(*v)
+		}
+	}
+
+	return ""
 }
 
 func (c *changes) profiled() bool {
@@ -115,6 +138,36 @@ func (c *changes) set(path string, raw json.RawMessage) error {
 		}
 		c.employeeNo = &v
 
+	case p == "externalid":
+		v, err := text(raw)
+		if err != nil {
+			return badRequest("invalidValue", "externalId: "+err.Error())
+		}
+		c.externalId = &v
+
+	case p == "username":
+		v, err := text(raw)
+		if err != nil {
+			return badRequest("invalidValue", "userName: "+err.Error())
+		}
+		c.userName = &v
+
+	case p == "emails":
+		v, err := primary(raw)
+		if err != nil {
+			return err
+		}
+		if v != "" {
+			c.email = &v
+		}
+
+	case p == "emails.value", p == `emails[type eq "work"].value`, p == "emails[primary eq true].value":
+		v, err := text(raw)
+		if err != nil {
+			return badRequest("invalidValue", path+": "+err.Error())
+		}
+		c.email = &v
+
 	case p == "schemas", p == "id", p == "meta":
 		// The envelope, not an attribute of anybody.
 
@@ -178,6 +231,30 @@ func text(raw json.RawMessage) (string, error) {
 	}
 
 	return "", fmt.Errorf("not a string")
+}
+
+// primary is the address a list of `emails` puts first: the one marked
+// primary, or the one that leads it.
+func primary(raw json.RawMessage) (string, error) {
+	var es []struct {
+		Value   string `json:"value"`
+		Primary any    `json:"primary"`
+	}
+	if err := json.Unmarshal(raw, &es); err != nil {
+		return "", badRequest("invalidValue", "emails: a list of {value, primary}")
+	}
+
+	first := ""
+	for _, e := range es {
+		if is, _ := truth(mustJSON(e.Primary)); is {
+			return e.Value, nil
+		}
+		if first == "" {
+			first = e.Value
+		}
+	}
+
+	return first, nil
 }
 
 // truth is a boolean, as RFC 7644 sends one or as Entra did for years:
@@ -254,6 +331,18 @@ func parseUser(body []byte) (*incoming, error) {
 		}
 	}
 
+	// And as [changes] reads them, which is what a replace is handed: a whole
+	// User says what the directory calls somebody as much as a PATCH does.
+	if u.userName != "" {
+		u.changes.userName = &u.userName
+	}
+	if u.externalId != "" {
+		u.changes.externalId = &u.externalId
+	}
+	if len(u.emails) > 0 {
+		u.changes.email = &u.emails[0]
+	}
+
 	return u, nil
 }
 
@@ -280,9 +369,24 @@ func (u *incoming) address() string {
 
 // person is somebody, read for an answer.
 type person struct {
-	holder     *rstr.Holder
-	emails     []string
-	externalId string
+	holder *rstr.Holder
+	emails []string
+
+	// linked is the subject of their identity at the connection the directory
+	// provisions through: who a sign-in there is. Empty for somebody matched
+	// by their address whom nothing has linked, and then what the directory
+	// calls them is on the holder (`directory_subject`), believed by nothing.
+	linked string
+}
+
+// externalId is what the directory is answered they are called: how roster
+// knows them where it does, and what the directory said where it does not.
+func (p *person) externalId() string {
+	if p.linked != "" {
+		return p.linked
+	}
+
+	return p.holder.GetDirectorySubject()
 }
 
 // read is a person this endpoint speaks of: never a row a file declared,
@@ -292,14 +396,16 @@ func (s *Server) read(ctx context.Context, t *tenancy, id []byte) (*person, erro
 	h, err := s.roster.Holder().Get(ctx, rstr.HolderGetRequest_builder{
 		Ref: rstr.HolderRef_builder{Id: id}.Build(),
 		Select: rstr.HolderSelect_builder{
-			Alias:        proto.Bool(true),
-			Name:         proto.Bool(true),
-			Labels:       proto.Bool(true),
-			Profile:      proto.Bool(true),
-			DateDisabled: proto.Bool(true),
-			Directory:    proto.Bool(true),
-			DateCreated:  proto.Bool(true),
-			DateUpdated:  proto.Bool(true),
+			Alias:            proto.Bool(true),
+			Name:             proto.Bool(true),
+			Labels:           proto.Bool(true),
+			Profile:          proto.Bool(true),
+			DateDisabled:     proto.Bool(true),
+			Directory:        proto.Bool(true),
+			DirectorySubject: proto.Bool(true),
+			DirectoryAddress: proto.Bool(true),
+			DateCreated:      proto.Bool(true),
+			DateUpdated:      proto.Bool(true),
 		}.Build(),
 	}.Build())
 	switch status.Code(err) {
@@ -337,7 +443,7 @@ func (s *Server) read(ctx context.Context, t *tenancy, id []byte) (*person, erro
 	}
 	for _, v := range ids.GetItems() {
 		if v.GetProvider() == t.provider {
-			p.externalId = v.GetSubject()
+			p.linked = v.GetSubject()
 		}
 	}
 
@@ -373,9 +479,22 @@ func (p *person) user() map[string]any {
 	if name == "" {
 		name = h.GetName()
 	}
+	// Their addresses, led by the one the directory last said where that is
+	// none of theirs here: it is answered with what it said, so that a
+	// `userName` it changed reads back changed, while the address a link is
+	// mailed to stays where the person or an operator put it.
+	emails := p.emails
+	if v := h.GetDirectoryAddress(); v != "" {
+		emails = []string{v}
+		for _, e := range p.emails {
+			if e != v {
+				emails = append(emails, e)
+			}
+		}
+	}
 	userName := h.GetAlias()
-	if len(p.emails) > 0 {
-		userName = p.emails[0]
+	if len(emails) > 0 {
+		userName = emails[0]
 	}
 
 	u := map[string]any{
@@ -390,8 +509,8 @@ func (p *person) user() map[string]any {
 			"location":     Base + "/Users/" + id,
 		},
 	}
-	if p.externalId != "" {
-		u["externalId"] = p.externalId
+	if v := p.externalId(); v != "" {
+		u["externalId"] = v
 	}
 	if name != "" {
 		u["displayName"] = name
@@ -400,9 +519,9 @@ func (p *person) user() map[string]any {
 	if v := h.GetProfile().GetLocale(); v != "" {
 		u["preferredLanguage"] = v
 	}
-	if len(p.emails) > 0 {
-		es := make([]map[string]any, 0, len(p.emails))
-		for i, e := range p.emails {
+	if len(emails) > 0 {
+		es := make([]map[string]any, 0, len(emails))
+		for i, e := range emails {
 			es = append(es, map[string]any{"value": e, "type": "work", "primary": i == 0})
 		}
 		u["emails"] = es

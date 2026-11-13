@@ -1281,6 +1281,13 @@ is an operator's to bring back ([scim.md](scim.md)). An erase it does not hear a
 all: unassign somebody in the directory before erasing them here, or it can
 neither find nor make them until they are forgotten, and makes them again after.
 
+**And it suspends only the people it speaks for**: those who sign in through the
+connection it provisions through. Somebody who was here before it -- entered by
+an operator, or signing in another way -- is matched by their address and is not
+one of them until they are linked, so its suspension of them is refused.
+`roster scim adopt --tenant …` lists who that is, and links them once the list
+is believed ([scim.md](scim.md) § *What it does with a person*).
+
 ## The audit trail
 
 **Forever, until you say otherwise.** That is the default and it is deliberate: a

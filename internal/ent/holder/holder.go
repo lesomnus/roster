@@ -41,6 +41,10 @@ const (
 	FieldDirectory = "directory"
 	// FieldPortrait holds the string denoting the portrait field in the database.
 	FieldPortrait = "portrait"
+	// FieldDirectorySubject holds the string denoting the directory_subject field in the database.
+	FieldDirectorySubject = "directory_subject"
+	// FieldDirectoryAddress holds the string denoting the directory_address field in the database.
+	FieldDirectoryAddress = "directory_address"
 	// FieldTenantId holds the string denoting the tenant_id field in the database.
 	FieldTenantId = "tenant_id"
 	// EdgeTenant holds the string denoting the tenant edge name in mutations.
@@ -72,6 +76,8 @@ var Columns = []string{
 	FieldDateDisabled,
 	FieldDirectory,
 	FieldPortrait,
+	FieldDirectorySubject,
+	FieldDirectoryAddress,
 	FieldTenantId,
 }
 
@@ -145,6 +151,16 @@ func ByDateDisabled(opts ...sql.OrderTermOption) OrderOption {
 // ByDirectory orders the results by the directory field.
 func ByDirectory(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDirectory, opts...).ToFunc()
+}
+
+// ByDirectorySubject orders the results by the directory_subject field.
+func ByDirectorySubject(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDirectorySubject, opts...).ToFunc()
+}
+
+// ByDirectoryAddress orders the results by the directory_address field.
+func ByDirectoryAddress(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDirectoryAddress, opts...).ToFunc()
 }
 
 // ByTenantId orders the results by the tenant_id field.

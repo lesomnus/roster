@@ -39,6 +39,7 @@ const (
 	HolderService_Provision_FullMethodName  = "/roster.HolderService/Provision"
 	HolderService_Deactivate_FullMethodName = "/roster.HolderService/Deactivate"
 	HolderService_Activate_FullMethodName   = "/roster.HolderService/Activate"
+	HolderService_Tell_FullMethodName       = "/roster.HolderService/Tell"
 )
 
 // HolderServiceClient is the client API for HolderService service.
@@ -307,6 +308,31 @@ type HolderServiceClient interface {
 	// An operator's suspension is refused, and so is somebody the directory
 	// deleted: it said they are gone, and bringing them back is an operator's.
 	Activate(ctx context.Context, in *HolderActivateRequest, opts ...grpc.CallOption) (*Holder, error)
+	// Tell is a directory saying what it calls somebody: its own id for them,
+	// or their address. roster keeps it and believes neither.
+	//
+	// # Why it is not `Identity.Add`, and not an address moved
+	//
+	// Both are ways in, and both are what a directory's key is not given, for
+	// `Provision`'s reason: it would reach people who already exist. But a
+	// directory says both about people who exist, all the time -- an
+	// `externalId` written onto somebody it matched by their address, a
+	// `userName` that changed -- and a word that is dropped is a drift nobody
+	// sees. So it is kept beside the person (`Holder.directory_subject`,
+	// `Holder.directory_address`), where no rule reads it and nothing signs in
+	// by it. What it is for: the directory is answered with what it said, an
+	// operator sees where the two differ, and one who believes the subject
+	// links them (`roster scim adopt`).
+	//
+	// # What it is held to
+	//
+	// A tenant with a connection it provisions through, and a person no file
+	// declares. Not to the people the directory speaks for (`Deactivate`): the
+	// ones it does not speak for yet are who this is about. A subject is held
+	// to that connection's claim, an address to its normal form, and each is
+	// one person's within a tenant -- a second person called the same is
+	// refused as taken.
+	Tell(ctx context.Context, in *HolderTellRequest, opts ...grpc.CallOption) (*Holder, error)
 }
 
 type holderServiceClient struct {
@@ -520,6 +546,16 @@ func (c *holderServiceClient) Activate(ctx context.Context, in *HolderActivateRe
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Holder)
 	err := c.cc.Invoke(ctx, HolderService_Activate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *holderServiceClient) Tell(ctx context.Context, in *HolderTellRequest, opts ...grpc.CallOption) (*Holder, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Holder)
+	err := c.cc.Invoke(ctx, HolderService_Tell_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -792,6 +828,31 @@ type HolderServiceServer interface {
 	// An operator's suspension is refused, and so is somebody the directory
 	// deleted: it said they are gone, and bringing them back is an operator's.
 	Activate(context.Context, *HolderActivateRequest) (*Holder, error)
+	// Tell is a directory saying what it calls somebody: its own id for them,
+	// or their address. roster keeps it and believes neither.
+	//
+	// # Why it is not `Identity.Add`, and not an address moved
+	//
+	// Both are ways in, and both are what a directory's key is not given, for
+	// `Provision`'s reason: it would reach people who already exist. But a
+	// directory says both about people who exist, all the time -- an
+	// `externalId` written onto somebody it matched by their address, a
+	// `userName` that changed -- and a word that is dropped is a drift nobody
+	// sees. So it is kept beside the person (`Holder.directory_subject`,
+	// `Holder.directory_address`), where no rule reads it and nothing signs in
+	// by it. What it is for: the directory is answered with what it said, an
+	// operator sees where the two differ, and one who believes the subject
+	// links them (`roster scim adopt`).
+	//
+	// # What it is held to
+	//
+	// A tenant with a connection it provisions through, and a person no file
+	// declares. Not to the people the directory speaks for (`Deactivate`): the
+	// ones it does not speak for yet are who this is about. A subject is held
+	// to that connection's claim, an address to its normal form, and each is
+	// one person's within a tenant -- a second person called the same is
+	// refused as taken.
+	Tell(context.Context, *HolderTellRequest) (*Holder, error)
 	mustEmbedUnimplementedHolderServiceServer()
 }
 
@@ -861,6 +922,9 @@ func (UnimplementedHolderServiceServer) Deactivate(context.Context, *HolderDeact
 }
 func (UnimplementedHolderServiceServer) Activate(context.Context, *HolderActivateRequest) (*Holder, error) {
 	return nil, status.Error(codes.Unimplemented, "method Activate not implemented")
+}
+func (UnimplementedHolderServiceServer) Tell(context.Context, *HolderTellRequest) (*Holder, error) {
+	return nil, status.Error(codes.Unimplemented, "method Tell not implemented")
 }
 func (UnimplementedHolderServiceServer) mustEmbedUnimplementedHolderServiceServer() {}
 func (UnimplementedHolderServiceServer) testEmbeddedByValue()                       {}
@@ -1236,6 +1300,24 @@ func _HolderService_Activate_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HolderService_Tell_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HolderTellRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HolderServiceServer).Tell(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HolderService_Tell_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HolderServiceServer).Tell(ctx, req.(*HolderTellRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HolderService_ServiceDesc is the grpc.ServiceDesc for HolderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1318,6 +1400,10 @@ var HolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Activate",
 			Handler:    _HolderService_Activate_Handler,
+		},
+		{
+			MethodName: "Tell",
+			Handler:    _HolderService_Tell_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

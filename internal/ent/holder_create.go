@@ -136,6 +136,34 @@ func (_c *HolderCreate) SetPortrait(v *rstr.Portrait) *HolderCreate {
 	return _c
 }
 
+// SetDirectorySubject sets the "directory_subject" field.
+func (_c *HolderCreate) SetDirectorySubject(v string) *HolderCreate {
+	_c.mutation.SetDirectorySubject(v)
+	return _c
+}
+
+// SetNillableDirectorySubject sets the "directory_subject" field if the given value is not nil.
+func (_c *HolderCreate) SetNillableDirectorySubject(v *string) *HolderCreate {
+	if v != nil {
+		_c.SetDirectorySubject(*v)
+	}
+	return _c
+}
+
+// SetDirectoryAddress sets the "directory_address" field.
+func (_c *HolderCreate) SetDirectoryAddress(v string) *HolderCreate {
+	_c.mutation.SetDirectoryAddress(v)
+	return _c
+}
+
+// SetNillableDirectoryAddress sets the "directory_address" field if the given value is not nil.
+func (_c *HolderCreate) SetNillableDirectoryAddress(v *string) *HolderCreate {
+	if v != nil {
+		_c.SetDirectoryAddress(*v)
+	}
+	return _c
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (_c *HolderCreate) SetTenantId(v uuid.UUID) *HolderCreate {
 	_c.mutation.SetTenantId(v)
@@ -337,6 +365,14 @@ func (_c *HolderCreate) createSpec() (*Holder, *sqlgraph.CreateSpec, error) {
 		}
 		_spec.SetField(holder.FieldPortrait, field.TypeJson, vv)
 		_node.Portrait = value
+	}
+	if value, ok := _c.mutation.DirectorySubject(); ok {
+		_spec.SetField(holder.FieldDirectorySubject, field.TypeString, value)
+		_node.DirectorySubject = &value
+	}
+	if value, ok := _c.mutation.DirectoryAddress(); ok {
+		_spec.SetField(holder.FieldDirectoryAddress, field.TypeString, value)
+		_node.DirectoryAddress = &value
 	}
 	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

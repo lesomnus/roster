@@ -20,7 +20,8 @@ import (
 
 // A directory's say over the people it provisions: `Provision`, `Deactivate`
 // and `Activate`, which `holder_svc.ext.proto` argues for one at a time, and
-// `Holder.directory`, which says whose a suspension is.
+// `Holder.directory`, which says whose a suspension is. And `Tell`, which is
+// what it says about anybody and is believed about nobody.
 const (
 	directoryInactive = "inactive"
 	directoryDeleted  = "deleted"
@@ -300,6 +301,87 @@ func (s coreHolder) Activate(ctx context.Context, req *app.HolderActivateRequest
 		Ref:              app.HolderRef_builder{Id: v.GetId()}.Build(),
 		DateDisabledNull: z.Ptr(true),
 		Directory:        z.Ptr(""),
+	}
+	lock(&patch, req.GetDateUpdated())
+
+	return s.HolderServiceServer.Patch(ctx, patch.Build())
+}
+
+// Tell keeps what a directory calls somebody -- its id for them, their address
+// -- beside them, and changes nothing else: no identity, no address, nothing a
+// rule reads (`Holder.directory_subject`, `Holder.directory_address`).
+//
+// Not held to [Core.speaksFor]. The people a directory does not speak for yet
+// -- matched by their address, never linked -- are the ones whose `externalId`
+// it has nowhere else to put. Held to what makes the word a directory's at
+// all: the tenant provisions through a connection, and the person is not a
+// row a file declares.
+//
+// What is said is held to the form the real thing would be -- a subject to
+// the connection's claim, an address to its normal form -- so that an operator
+// who believes it can write it as it stands. Saying what is already kept
+// writes nothing.
+func (s coreHolder) Tell(ctx context.Context, req *app.HolderTellRequest) (*app.Holder, error) {
+	if err := s.declaredHolder(ctx, req.GetRef()); err != nil {
+		return nil, err
+	}
+
+	v, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
+		Ref: req.GetRef(),
+		Select: app.HolderSelect_builder{
+			Tenant:           app.TenantSelect_builder{}.Build(),
+			DirectorySubject: z.Ptr(true),
+			DirectoryAddress: z.Ptr(true),
+			DateUpdated:      z.Ptr(true),
+		}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	tenant, err := pdid.From(v.GetTenant().GetId())
+	if err != nil {
+		return nil, err
+	}
+	c, err := s.provisioning(ctx, tenant)
+	if err != nil {
+		return nil, err
+	}
+
+	patch := app.HolderPatchRequest_builder{
+		Ref: app.HolderRef_builder{Id: v.GetId()}.Build(),
+	}
+	said := false
+
+	if req.HasSubject() && req.GetSubject() != v.GetDirectorySubject() {
+		switch subject := req.GetSubject(); subject {
+		case "":
+			patch.DirectorySubjectNull = z.Ptr(true)
+		default:
+			if err := subjectIsStable(subject); err != nil {
+				return nil, err
+			}
+			if subjectClaimOf(c.GetSubjectClaim()) == claimOid && !isGUID(subject) {
+				return nil, pderr.Invalidf("subject",
+					"the %s connection names people by `oid`, which is a GUID, and %q is not one", c.GetName(), subject)
+			}
+			patch.DirectorySubject = z.Ptr(subject)
+		}
+		said = true
+	}
+	if req.HasAddress() && req.GetAddress() != v.GetDirectoryAddress() {
+		switch address := req.GetAddress(); address {
+		case "":
+			patch.DirectoryAddressNull = z.Ptr(true)
+		default:
+			if err := normalised("address", address, front.Address); err != nil {
+				return nil, err
+			}
+			patch.DirectoryAddress = z.Ptr(address)
+		}
+		said = true
+	}
+	if !said {
+		return v, nil
 	}
 	lock(&patch, req.GetDateUpdated())
 
