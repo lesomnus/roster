@@ -20,33 +20,11 @@ const (
 	byEmail      = "emails"
 )
 
-// parseFilter is `attribute eq "value"`.
-//
-// Split at the ` eq ` whose remainder is the quoted value whole, which is
-// what lets an attribute path carry a filter of its own --
-// `emails[type eq "work"].value eq "erin@contoso.example"`, Entra's -- and a
-// value say "eq" without being cut at it.
+// parseFilter is `attribute eq "value"`, for a person.
 func parseFilter(v string) (string, string, error) {
-	v = strings.TrimSpace(v)
-	lower := strings.ToLower(v)
-
-	attr, value, found := "", "", false
-	for i := 0; ; {
-		j := strings.Index(lower[i:], " eq ")
-		if j < 0 {
-			break
-		}
-		at := i + j
-		var s string
-		if err := json.Unmarshal([]byte(strings.TrimSpace(v[at+4:])), &s); err == nil {
-			attr, value, found = strings.TrimSpace(v[:at]), s, true
-
-			break
-		}
-		i = at + 4
-	}
-	if !found {
-		return "", "", badRequest("invalidFilter", `a filter here is attribute eq "value", the value quoted`)
+	attr, value, err := splitEq(v)
+	if err != nil {
+		return "", "", err
 	}
 
 	switch a := strings.ToLower(attr); a {
@@ -57,4 +35,47 @@ func parseFilter(v string) (string, string, error) {
 	default:
 		return "", "", badRequest("invalidFilter", "userName, externalId, id or emails.value")
 	}
+}
+
+// parseGroupFilter is `attribute eq "value"`, for a group: what it is called,
+// which is how a directory looks one up before it makes it, or what the
+// directory calls it.
+func parseGroupFilter(v string) (string, string, error) {
+	attr, value, err := splitEq(v)
+	if err != nil {
+		return "", "", err
+	}
+
+	switch a := strings.ToLower(attr); a {
+	case byDisplayName, byExternalId, byId:
+		return a, value, nil
+	default:
+		return "", "", badRequest("invalidFilter", "displayName, externalId or id")
+	}
+}
+
+// splitEq is the two sides of `attribute eq "value"`.
+//
+// Split at the ` eq ` whose remainder is the quoted value whole, which is
+// what lets an attribute path carry a filter of its own --
+// `emails[type eq "work"].value eq "erin@contoso.example"`, Entra's -- and a
+// value say "eq" without being cut at it.
+func splitEq(v string) (string, string, error) {
+	v = strings.TrimSpace(v)
+	lower := strings.ToLower(v)
+
+	for i := 0; ; {
+		j := strings.Index(lower[i:], " eq ")
+		if j < 0 {
+			break
+		}
+		at := i + j
+		var s string
+		if err := json.Unmarshal([]byte(strings.TrimSpace(v[at+4:])), &s); err == nil {
+			return strings.TrimSpace(v[:at]), s, nil
+		}
+		i = at + 4
+	}
+
+	return "", "", badRequest("invalidFilter", `a filter here is attribute eq "value", the value quoted`)
 }

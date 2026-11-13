@@ -87,10 +87,15 @@ func TestADirectorysKeyIsMintedForOneTenantAndOneConnection(t *testing.T) {
 		Select: app.RoleSelect_builder{All: proto.Bool(true)}.Build(),
 	}.Build())
 	x.NoError(err)
-	x.ElementsMatch(scim.Methods, role.GetMethods())
+	x.ElementsMatch(scim.Bound(), role.GetMethods())
 	for _, m := range []string{
 		app.IdentityService_Add_FullMethodName, app.EmailService_Add_FullMethodName,
 		app.EmailService_Attest_FullMethodName, app.HolderService_Add_FullMethodName, app.HolderService_Erase_FullMethodName,
+		app.GroupService_Erase_FullMethodName,
+		// What changes a group is held in each group the directory makes, and
+		// bound it would reach every group of the tenant.
+		app.GroupMembershipService_Add_FullMethodName, app.GroupMembershipService_Erase_FullMethodName,
+		app.GroupService_Update_FullMethodName,
 	} {
 		x.False(slices.Contains(role.GetMethods(), m), "the directory's role holds %s", m)
 	}

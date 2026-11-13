@@ -14,6 +14,11 @@ import (
 
 	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/lesomnus/payday/audit"
@@ -44,6 +49,10 @@ type deployment struct {
 	contoso pdid.Id
 	key     string // the directory's
 	scim    *httptest.Server
+
+	// rpc is where roster itself answers, which the endpoint is in front of
+	// and a key that leaked would be presented to directly.
+	rpc string
 }
 
 func stand(t *testing.T) *deployment {
@@ -88,7 +97,7 @@ func stand(t *testing.T) *deployment {
 	// The directory: what `roster scim provision` writes.
 	h, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: "scim"}.Build())
 	x.NoError(err)
-	role, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{Tenant: at, Alias: "scim", Methods: scim.Methods}.Build())
+	role, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{Tenant: at, Alias: "scim", Methods: scim.Bound()}.Build())
 	x.NoError(err)
 	_, err = s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
 		Role: rstr.RoleRef_builder{Id: role.GetId()}.Build(), Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
@@ -103,6 +112,7 @@ func stand(t *testing.T) *deployment {
 	go func() { _ = g.Serve(l) }()
 	t.Cleanup(func() { g.Stop() })
 
+	d.rpc = l.Addr().String()
 	e, err := scim.New(scim.Config{Roster: l.Addr().String(), Insecure: true})
 	x.NoError(err)
 	t.Cleanup(func() { e.Close() })
@@ -652,4 +662,331 @@ func TestAChangedUserNameIsKeptAndAnsweredAndTheAddressStays(t *testing.T) {
 	x.Equal("erin.park@contoso.example", got["userName"])
 	x.Equal([]string{"erin.park@contoso.example"}, addresses())
 	x.Empty(d.holder(t, id).GetDirectoryAddress())
+}
+
+// group is one request about a group, answered with its status and its body.
+func (d *deployment) group(t *testing.T, method, path string, body any) (int, map[string]any) {
+	t.Helper()
+	code, got, _ := d.call(t, d.key, method, scim.Base+"/Groups"+path, body)
+
+	return code, got
+}
+
+// membersOf is who roster has in a group, by alias, and the role each holds
+// there.
+func (d *deployment) membersOf(t *testing.T, group string) map[string]string {
+	t.Helper()
+	x := require.New(t)
+	k, err := pdid.Parse(group)
+	x.NoError(err)
+
+	vs, err := d.s.Ungated.GroupMembership().List(t.Context(), rstr.GroupMembershipListRequest_builder{
+		Filters: []*rstr.GroupMembershipFilter{rstr.GroupMembershipFilter_builder{
+			Group: rstr.GroupRef_builder{Id: k.Bytes()}.Build(),
+		}.Build()},
+	}.Build())
+	x.NoError(err)
+
+	out := map[string]string{}
+	for _, v := range vs.GetItems() {
+		v, err := d.s.Ungated.GroupMembership().Get(t.Context(), rstr.GroupMembershipGetRequest_builder{
+			Ref: rstr.GroupMembershipRef_builder{Id: v.GetId()}.Build(),
+			Select: rstr.GroupMembershipSelect_builder{
+				Holder: rstr.HolderSelect_builder{Alias: z.Ptr(true)}.Build(),
+				Role:   rstr.RoleSelect_builder{Alias: z.Ptr(true)}.Build(),
+			}.Build(),
+		}.Build())
+		x.NoError(err)
+		out[v.GetHolder().GetAlias()] = v.GetRole().GetAlias()
+	}
+
+	return out
+}
+
+// someone is a person the directory made, by their id at the endpoint.
+func (d *deployment) someone(t *testing.T, name, oid string) string {
+	t.Helper()
+	body := erin()
+	body["userName"], body["externalId"], body["displayName"] = name+"@contoso.example", oid, name
+	body["emails"] = []map[string]any{{"primary": true, "type": "work", "value": name + "@contoso.example"}}
+	code, got, _ := d.call(t, d.key, http.MethodPost, scim.Base+"/Users", body)
+	require.Equal(t, http.StatusCreated, code, "%v", got)
+
+	return got["id"].(string)
+}
+
+const opsOid = "9c8b7a69-5847-4635-a291-0f1e2d3c4b5a"
+
+// TestADirectoryProvisionsAGroupTheWayEntraDoes is a group's whole life at the
+// endpoint, in the order and the dialect Entra writes it: looked up by name
+// with its members left out, made empty, its members added and removed,
+// renamed, and deleted -- which takes everybody out and keeps the row.
+//
+// What makes the group the directory's to change is that its own holder made
+// it, as anybody of a tenant manages a group they make: that holder is in it,
+// as its manager, and is no member to the directory.
+func TestADirectoryProvisionsAGroupTheWayEntraDoes(t *testing.T) {
+	d := stand(t)
+	x := require.New(t)
+	erin, fred := d.someone(t, "erin", erinOid), d.someone(t, "fred", fredOid)
+
+	lookup := "?excludedAttributes=members&filter=" + url.QueryEscape(`displayName eq "Ops Team"`)
+	code, got := d.group(t, http.MethodGet, lookup, nil)
+	x.Equal(http.StatusOK, code, "%v", got)
+	x.EqualValues(0, got["totalResults"])
+
+	code, got = d.group(t, http.MethodPost, "", map[string]any{
+		"schemas":     []string{"urn:ietf:params:scim:schemas:core:2.0:Group", "http://schemas.microsoft.com/2006/11/ResourceManagement/ADSCIM/2.0/Group"},
+		"externalId":  opsOid,
+		"displayName": "Ops Team",
+		"meta":        map[string]any{"resourceType": "Group"},
+	})
+	x.Equal(http.StatusCreated, code, "%v", got)
+	id := got["id"].(string)
+	x.Equal("Ops Team", got["displayName"])
+	x.Equal(opsOid, got["externalId"])
+	x.Empty(got["members"])
+	x.Equal(map[string]string{"scim": "group-manager"}, d.membersOf(t, id), "made by the directory's holder, which so manages it")
+
+	k, err := pdid.Parse(id)
+	x.NoError(err)
+	row, err := d.s.Ungated.Group().Get(t.Context(), rstr.GroupGetRequest_builder{
+		Ref: rstr.GroupRef_builder{Id: k.Bytes()}.Build(), Select: rstr.GroupSelect_builder{All: z.Ptr(true)}.Build(),
+	}.Build())
+	x.NoError(err)
+	x.Equal("ops-team", row.GetAlias())
+	x.Equal(map[string]string{"roster.directory": opsOid}, row.GetLabels())
+
+	// Found by its name now, without regard to case, and by what the
+	// directory calls it; made again, refused.
+	code, got = d.group(t, http.MethodGet, "?excludedAttributes=members&filter="+url.QueryEscape(`displayName eq "ops team"`), nil)
+	x.Equal(http.StatusOK, code)
+	x.EqualValues(1, got["totalResults"])
+	found := got["Resources"].([]any)[0].(map[string]any)
+	x.Equal(id, found["id"])
+	x.NotContains(found, "members", "left out when the directory says to leave them out")
+	code, got = d.group(t, http.MethodGet, "?filter="+url.QueryEscape(`externalId eq "`+opsOid+`"`), nil)
+	x.Equal(http.StatusOK, code)
+	x.EqualValues(1, got["totalResults"])
+	code, got = d.group(t, http.MethodPost, "", map[string]any{"displayName": "Ops Team", "externalId": opsOid})
+	x.Equal(http.StatusConflict, code, "%v", got)
+	x.Equal("uniqueness", got["scimType"])
+
+	// Nor is one made twice under a name no alias can be made of -- where
+	// roster would give the second a name of its own -- or under another name
+	// for what the directory calls the same group.
+	code, got = d.group(t, http.MethodPost, "", map[string]any{"displayName": "운영팀"})
+	x.Equal(http.StatusCreated, code, "%v", got)
+	code, got = d.group(t, http.MethodPost, "", map[string]any{"displayName": "운영팀"})
+	x.Equal(http.StatusConflict, code, "%v", got)
+	x.Equal("uniqueness", got["scimType"])
+	code, got = d.group(t, http.MethodPost, "", map[string]any{"displayName": "Operations", "externalId": opsOid})
+	x.Equal(http.StatusConflict, code, "%v", got)
+	x.Equal("uniqueness", got["scimType"])
+
+	// Members, Entra's way: named in the value both to add and to remove, and
+	// answered with no body.
+	add := func(ids ...string) map[string]any {
+		vs := []map[string]any{}
+		for _, v := range ids {
+			vs = append(vs, map[string]any{"$ref": nil, "value": v})
+		}
+
+		return map[string]any{"Operations": []map[string]any{{"op": "Add", "path": "members", "value": vs}}}
+	}
+	code, got = d.group(t, http.MethodPatch, "/"+id, add(erin, fred))
+	x.Equal(http.StatusNoContent, code, "%v", got)
+	code, got = d.group(t, http.MethodPatch, "/"+id, add(erin))
+	x.Equal(http.StatusNoContent, code, "somebody already in it is left as they are: %v", got)
+	x.Equal(map[string]string{"scim": "group-manager", "erin": "", "fred": ""}, d.membersOf(t, id))
+
+	code, got = d.group(t, http.MethodGet, "/"+id, nil)
+	x.Equal(http.StatusOK, code, "%v", got)
+	var said []string
+	for _, m := range got["members"].([]any) {
+		said = append(said, m.(map[string]any)["value"].(string))
+	}
+	x.ElementsMatch([]string{erin, fred}, said, "its own holder is no member to the directory")
+
+	code, got = d.group(t, http.MethodPatch, "/"+id, map[string]any{"Operations": []map[string]any{
+		{"op": "Remove", "path": "members", "value": []map[string]any{{"$ref": nil, "value": erin}}},
+	}})
+	x.Equal(http.StatusNoContent, code, "%v", got)
+	x.Equal(map[string]string{"scim": "group-manager", "fred": ""}, d.membersOf(t, id))
+
+	// Renamed. What it is called follows; the alias a token carries stays.
+	code, got = d.group(t, http.MethodPatch, "/"+id, map[string]any{"Operations": []map[string]any{
+		{"op": "Replace", "path": "displayName", "value": "Operations"},
+	}})
+	x.Equal(http.StatusNoContent, code, "%v", got)
+	code, got = d.group(t, http.MethodGet, "?filter="+url.QueryEscape(`displayName eq "Operations"`), nil)
+	x.Equal(http.StatusOK, code)
+	x.EqualValues(1, got["totalResults"])
+	row, err = d.s.Ungated.Group().Get(t.Context(), rstr.GroupGetRequest_builder{
+		Ref: rstr.GroupRef_builder{Id: k.Bytes()}.Build(), Select: rstr.GroupSelect_builder{All: z.Ptr(true)}.Build(),
+	}.Build())
+	x.NoError(err)
+	x.Equal("Operations", row.GetName())
+	x.Equal("ops-team", row.GetAlias())
+
+	// Deleted: everybody the directory says is in it is out, and the row is an
+	// administrator's to decide about.
+	code, got = d.group(t, http.MethodDelete, "/"+id, nil)
+	x.Equal(http.StatusNoContent, code, "%v", got)
+	x.Equal(map[string]string{"scim": "group-manager"}, d.membersOf(t, id))
+	_, err = d.s.Ungated.Group().Get(t.Context(), rstr.GroupGetRequest_builder{Ref: rstr.GroupRef_builder{Id: k.Bytes()}.Build()}.Build())
+	x.NoError(err, "the row is kept")
+}
+
+// TestADirectoryChangesTheGroupsItMadeAndNoOther: the directory's key holds
+// the writes that change a group in each group its holder made, and through no
+// binding. So a group an operator made is not one it speaks of, is not taken
+// over by a directory naming a group alike, and is not one its key reaches --
+// asked of roster itself, past the endpoint, which is what a key that leaked
+// would do.
+func TestADirectoryChangesTheGroupsItMadeAndNoOther(t *testing.T) {
+	d := stand(t)
+	x := require.New(t)
+	ctx := t.Context()
+	at := rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build()
+	erin := d.someone(t, "erin", erinOid)
+	who, err := pdid.Parse(erin)
+	x.NoError(err)
+
+	// An operator's group, which nothing is bound to: the one a membership
+	// write held across the tenant would reach.
+	theirs, err := d.s.Ungated.Group().Add(ctx, rstr.GroupAddRequest_builder{Tenant: at, Alias: "on-call", Name: "On Call"}.Build())
+	x.NoError(err)
+	theirId, err := pdid.From(theirs.GetId())
+	x.NoError(err)
+
+	t.Run("not spoken of", func(t *testing.T) {
+		x := require.New(t)
+		code, got := d.group(t, http.MethodGet, "", nil)
+		x.Equal(http.StatusOK, code, "%v", got)
+		x.EqualValues(0, got["totalResults"])
+		code, _ = d.group(t, http.MethodGet, "/"+theirId.String(), nil)
+		x.Equal(http.StatusNotFound, code)
+		code, _ = d.group(t, http.MethodPatch, "/"+theirId.String(), map[string]any{"Operations": []map[string]any{
+			{"op": "Add", "path": "members", "value": []map[string]any{{"value": erin}}},
+		}})
+		x.Equal(http.StatusNotFound, code)
+	})
+
+	t.Run("not taken over by a group named alike", func(t *testing.T) {
+		x := require.New(t)
+		code, got := d.group(t, http.MethodPost, "", map[string]any{"displayName": "On Call", "externalId": opsOid})
+		x.Equal(http.StatusConflict, code, "%v", got)
+		x.Equal("uniqueness", got["scimType"])
+		x.Empty(d.membersOf(t, theirId.String()))
+	})
+
+	t.Run("not reached by its key", func(t *testing.T) {
+		x := require.New(t)
+		conn, err := grpc.NewClient(d.rpc, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		x.NoError(err)
+		defer conn.Close()
+		as := metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+d.key)
+		direct := rstr.NewClient(conn)
+
+		// With a group of its own already made, so that the gate lets its
+		// holder through for the method at all: the refusal is about whose
+		// group it is.
+		code, got := d.group(t, http.MethodPost, "", map[string]any{"displayName": "Ops Team", "externalId": opsOid})
+		x.Equal(http.StatusCreated, code, "%v", got)
+
+		_, err = direct.GroupMembership().Add(as, rstr.GroupMembershipAddRequest_builder{
+			Holder: rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Group:  rstr.GroupRef_builder{Id: theirs.GetId()}.Build(),
+		}.Build())
+		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
+		_, err = direct.Group().Update(as, rstr.GroupUpdateRequest_builder{
+			Ref: rstr.GroupRef_builder{Id: theirs.GetId()}.Build(), Name: proto.String("Theirs no more"),
+			DateUpdated: theirs.GetDateUpdated(),
+		}.Build())
+		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
+		_, err = direct.Group().Erase(as, rstr.GroupRef_builder{Id: theirs.GetId()}.Build())
+		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
+		x.Empty(d.membersOf(t, theirId.String()))
+	})
+}
+
+// TestAGroupsMembersAreSaidTheRFCsWayToo: a member removed by a path of its
+// own (`members[value eq "…"]`), everybody removed by naming nobody, and a
+// whole Group replacing who is in it. And who a directory may name: a person
+// this endpoint speaks of, and never somebody an administrator appointed to
+// manage the group, who is theirs to take out.
+func TestAGroupsMembersAreSaidTheRFCsWayToo(t *testing.T) {
+	d := stand(t)
+	x := require.New(t)
+	ctx := t.Context()
+	erin, fred := d.someone(t, "erin", erinOid), d.someone(t, "fred", fredOid)
+
+	code, got := d.group(t, http.MethodPost, "", map[string]any{
+		"displayName": "Ops Team", "externalId": opsOid,
+		"members": []map[string]any{{"value": erin}, {"value": fred}},
+	})
+	x.Equal(http.StatusCreated, code, "%v", got)
+	id := got["id"].(string)
+	x.Len(got["members"], 2, "a directory that says who is in it as it makes it is taken at its word")
+
+	code, got = d.group(t, http.MethodPatch, "/"+id, map[string]any{"Operations": []map[string]any{
+		{"op": "remove", "path": `members[value eq "` + erin + `"]`},
+	}})
+	x.Equal(http.StatusNoContent, code, "%v", got)
+	x.Equal(map[string]string{"scim": "group-manager", "fred": ""}, d.membersOf(t, id))
+
+	// An administrator appoints the tenant's own to manage it beside the
+	// directory, who is then in it holding a role.
+	k, err := pdid.Parse(id)
+	x.NoError(err)
+	admin, err := d.s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+		Ref: rstr.HolderRef_builder{Slug: rstr.HolderRefBySlug_builder{
+			Alias: proto.String("admin"), Tenant: rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build(),
+		}.Build()}.Build(),
+	}.Build())
+	x.NoError(err)
+	role, err := d.s.Ungated.Role().Get(ctx, rstr.RoleGetRequest_builder{
+		Ref: rstr.RoleRef_builder{Slug: rstr.RoleRefBySlug_builder{
+			Alias: proto.String("group-manager"), Tenant: rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build(),
+		}.Build()}.Build(),
+	}.Build())
+	x.NoError(err)
+	_, err = d.s.Ungated.GroupMembership().Add(ctx, rstr.GroupMembershipAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: admin.GetId()}.Build(),
+		Group:  rstr.GroupRef_builder{Id: k.Bytes()}.Build(),
+		Role:   rstr.RoleRef_builder{Id: role.GetId()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	// A whole Group: exactly who it says, of the people it speaks of.
+	code, got = d.group(t, http.MethodPut, "/"+id, map[string]any{
+		"displayName": "Ops Team", "members": []map[string]any{{"value": erin}},
+	})
+	x.Equal(http.StatusOK, code, "%v", got)
+	x.Equal(map[string]string{"scim": "group-manager", "admin": "group-manager", "erin": ""}, d.membersOf(t, id))
+	x.Len(got["members"], 1, "a manager is no member to the directory")
+
+	// Everybody, by naming nobody.
+	code, got = d.group(t, http.MethodPatch, "/"+id, map[string]any{"Operations": []map[string]any{
+		{"op": "remove", "path": "members"},
+	}})
+	x.Equal(http.StatusNoContent, code, "%v", got)
+	x.Equal(map[string]string{"scim": "group-manager", "admin": "group-manager"}, d.membersOf(t, id))
+
+	// And nobody the endpoint does not speak of: the directory's own holder,
+	// by an id that is real.
+	self, err := d.s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+		Ref: rstr.HolderRef_builder{Slug: rstr.HolderRefBySlug_builder{
+			Alias: proto.String("scim"), Tenant: rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build(),
+		}.Build()}.Build(),
+	}.Build())
+	x.NoError(err)
+	selfId, err := pdid.From(self.GetId())
+	x.NoError(err)
+	code, got = d.group(t, http.MethodPatch, "/"+id, map[string]any{"Operations": []map[string]any{
+		{"op": "add", "path": "members", "value": []map[string]any{{"value": selfId.String()}}},
+	}})
+	x.Equal(http.StatusBadRequest, code, "%v", got)
+	x.Equal("invalidValue", got["scimType"])
 }

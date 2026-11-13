@@ -206,7 +206,11 @@ func provisionScim(ctx context.Context, s *cmd.Server, tenant, connection string
 	if err != nil {
 		return "", err
 	}
-	role, err := ensureRoleNamed(ctx, s, at, ScimHolder, scim.Methods, nil)
+	// Not the writes that change a group: those the directory holds in each
+	// group it makes, as its manager, and bound they would reach every group
+	// of the tenant (`scim.InGroups`). The key below lists them all the same,
+	// since a key's own list narrows what its holder holds.
+	role, err := ensureRoleNamed(ctx, s, at, ScimHolder, scim.Bound(), nil)
 	if err != nil {
 		return "", err
 	}
