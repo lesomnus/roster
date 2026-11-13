@@ -35,6 +35,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/outbox"
 	"github.com/lesomnus/roster/internal/ent/owed"
 	"github.com/lesomnus/roster/internal/ent/phone"
+	"github.com/lesomnus/roster/internal/ent/relation"
 	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/rowseal"
 	"github.com/lesomnus/roster/internal/ent/session"
@@ -100,6 +101,8 @@ type Client struct {
 	Owed *OwedClient
 	// Phone is the client for interacting with the Phone builders.
 	Phone *PhoneClient
+	// Relation is the client for interacting with the Relation builders.
+	Relation *RelationClient
 	// Role is the client for interacting with the Role builders.
 	Role *RoleClient
 	// RowSeal is the client for interacting with the RowSeal builders.
@@ -150,6 +153,7 @@ func (c *Client) init() {
 	c.Outbox = NewOutboxClient(c.config)
 	c.Owed = NewOwedClient(c.config)
 	c.Phone = NewPhoneClient(c.config)
+	c.Relation = NewRelationClient(c.config)
 	c.Role = NewRoleClient(c.config)
 	c.RowSeal = NewRowSealClient(c.config)
 	c.Session = NewSessionClient(c.config)
@@ -274,6 +278,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Outbox:          NewOutboxClient(cfg),
 		Owed:            NewOwedClient(cfg),
 		Phone:           NewPhoneClient(cfg),
+		Relation:        NewRelationClient(cfg),
 		Role:            NewRoleClient(cfg),
 		RowSeal:         NewRowSealClient(cfg),
 		Session:         NewSessionClient(cfg),
@@ -325,6 +330,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Outbox:          NewOutboxClient(cfg),
 		Owed:            NewOwedClient(cfg),
 		Phone:           NewPhoneClient(cfg),
+		Relation:        NewRelationClient(cfg),
 		Role:            NewRoleClient(cfg),
 		RowSeal:         NewRowSealClient(cfg),
 		Session:         NewSessionClient(cfg),
@@ -411,8 +417,9 @@ func (c *Client) Use(hooks ...Hook) {
 		c.Access, c.ApiKey, c.Archived, c.Audit, c.Binding, c.Connection, c.Consent,
 		c.Continuation, c.Credential, c.Delegation, c.Email, c.Group, c.GroupExposure,
 		c.GroupMembership, c.Holder, c.Host, c.HostProof, c.Identity, c.Link,
-		c.MailDomain, c.Nomination, c.Outbox, c.Owed, c.Phone, c.Role, c.RowSeal,
-		c.Session, c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
+		c.MailDomain, c.Nomination, c.Outbox, c.Owed, c.Phone, c.Relation, c.Role,
+		c.RowSeal, c.Session, c.Site, c.SiteMembership, c.Team, c.TeamMembership,
+		c.Tenant,
 	} {
 		n.Use(hooks...)
 	}
@@ -425,8 +432,9 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.Access, c.ApiKey, c.Archived, c.Audit, c.Binding, c.Connection, c.Consent,
 		c.Continuation, c.Credential, c.Delegation, c.Email, c.Group, c.GroupExposure,
 		c.GroupMembership, c.Holder, c.Host, c.HostProof, c.Identity, c.Link,
-		c.MailDomain, c.Nomination, c.Outbox, c.Owed, c.Phone, c.Role, c.RowSeal,
-		c.Session, c.Site, c.SiteMembership, c.Team, c.TeamMembership, c.Tenant,
+		c.MailDomain, c.Nomination, c.Outbox, c.Owed, c.Phone, c.Relation, c.Role,
+		c.RowSeal, c.Session, c.Site, c.SiteMembership, c.Team, c.TeamMembership,
+		c.Tenant,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -483,6 +491,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Owed.mutate(ctx, m)
 	case *PhoneMutation:
 		return c.Phone.mutate(ctx, m)
+	case *RelationMutation:
+		return c.Relation.mutate(ctx, m)
 	case *RoleMutation:
 		return c.Role.mutate(ctx, m)
 	case *RowSealMutation:
@@ -4144,6 +4154,171 @@ func (c *PhoneClient) mutate(ctx context.Context, m *PhoneMutation) (Value, erro
 	}
 }
 
+// RelationClient is a client for the Relation schema.
+type RelationClient struct {
+	config
+}
+
+// NewRelationClient returns a client for the Relation from the given config.
+func NewRelationClient(c config) *RelationClient {
+	return &RelationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `relation.Hooks(f(g(h())))`.
+func (c *RelationClient) Use(hooks ...Hook) {
+	c.hooks.Relation = append(c.hooks.Relation, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `relation.Intercept(f(g(h())))`.
+func (c *RelationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Relation = append(c.inters.Relation, interceptors...)
+}
+
+// Create returns a builder for creating a Relation entity.
+func (c *RelationClient) Create() *RelationCreate {
+	mutation := newRelationMutation(c.config, OpCreate)
+	return &RelationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Relation entities.
+func (c *RelationClient) CreateBulk(builders ...*RelationCreate) *RelationCreateBulk {
+	return &RelationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RelationClient) MapCreateBulk(slice any, setFunc func(*RelationCreate, int)) *RelationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RelationCreateBulk{err: fmt.Errorf("calling to RelationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RelationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RelationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Relation.
+func (c *RelationClient) Update() *RelationUpdate {
+	mutation := newRelationMutation(c.config, OpUpdate)
+	return &RelationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RelationClient) UpdateOne(_m *Relation) *RelationUpdateOne {
+	mutation := newRelationMutation(c.config, OpUpdateOne, withRelation(_m))
+	return &RelationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneId returns an update builder for the given id.
+func (c *RelationClient) UpdateOneId(id uuid.UUID) *RelationUpdateOne {
+	mutation := newRelationMutation(c.config, OpUpdateOne, withRelationId(id))
+	return &RelationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Relation.
+func (c *RelationClient) Delete() *RelationDelete {
+	mutation := newRelationMutation(c.config, OpDelete)
+	return &RelationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RelationClient) DeleteOne(_m *Relation) *RelationDeleteOne {
+	return c.DeleteOneId(_m.Id)
+}
+
+// DeleteOneId returns a builder for deleting the given entity by its id.
+func (c *RelationClient) DeleteOneId(id uuid.UUID) *RelationDeleteOne {
+	builder := c.Delete().Where(relation.Id(id))
+	builder.mutation.id = &id
+	builder.mutation.SetOp(OpDeleteOne)
+	return &RelationDeleteOne{builder}
+}
+
+// Query returns a query builder for Relation.
+func (c *RelationClient) Query() *RelationQuery {
+	return &RelationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRelation},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Relation entity by its id.
+func (c *RelationClient) Get(ctx context.Context, id uuid.UUID) (*Relation, error) {
+	return c.Query().Where(relation.Id(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RelationClient) GetX(ctx context.Context, id uuid.UUID) *Relation {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryHolder queries the holder edge of a Relation.
+func (c *RelationClient) QueryHolder(_m *Relation) *HolderQuery {
+	query := (&HolderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relation.Table, relation.FieldId, id),
+			sqlgraph.To(holder.Table, holder.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, relation.HolderTable, relation.HolderColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOther queries the other edge of a Relation.
+func (c *RelationClient) QueryOther(_m *Relation) *HolderQuery {
+	query := (&HolderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relation.Table, relation.FieldId, id),
+			sqlgraph.To(holder.Table, holder.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, relation.OtherTable, relation.OtherColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RelationClient) Hooks() []Hook {
+	return c.hooks.Relation
+}
+
+// Interceptors returns the client interceptors.
+func (c *RelationClient) Interceptors() []Interceptor {
+	return c.inters.Relation
+}
+
+func (c *RelationClient) mutate(ctx context.Context, m *RelationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RelationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RelationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RelationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RelationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Relation mutation op: %q", m.Op())
+	}
+}
+
 // RoleClient is a client for the Role schema.
 type RoleClient struct {
 	config
@@ -5390,14 +5565,14 @@ type (
 		Access, ApiKey, Archived, Audit, Binding, Connection, Consent, Continuation,
 		Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder,
 		Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Owed, Phone,
-		Role, RowSeal, Session, Site, SiteMembership, Team, TeamMembership,
+		Relation, Role, RowSeal, Session, Site, SiteMembership, Team, TeamMembership,
 		Tenant []ent.Hook
 	}
 	inters struct {
 		Access, ApiKey, Archived, Audit, Binding, Connection, Consent, Continuation,
 		Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder,
 		Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Owed, Phone,
-		Role, RowSeal, Session, Site, SiteMembership, Team, TeamMembership,
+		Relation, Role, RowSeal, Session, Site, SiteMembership, Team, TeamMembership,
 		Tenant []ent.Interceptor
 	}
 )

@@ -1178,6 +1178,10 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 	// narrows it to their tenant, and it is no secret and no way in
 	// (`phone.proto`).
 	app.RegisterPhoneServiceServer(g, s.Phone())
+	// Served, reads and all: who somebody is to somebody else is a record of
+	// two people the wall already narrows, and no rule reads it
+	// (`relation.proto`).
+	app.RegisterRelationServiceServer(g, s.Relation())
 	app.RegisterSiteServiceServer(g, s.Site())
 	app.RegisterTeamServiceServer(g, s.Team())
 	app.RegisterRoleServiceServer(g, s.Role())

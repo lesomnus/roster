@@ -37,7 +37,7 @@ import (
 var reads = []string{
 	"/roster.TenantService/Get",
 	"/roster.HolderService/Get", "/roster.HolderService/List", "/roster.HolderService/Search",
-	"/roster.EmailService/Get", "/roster.EmailService/List", "/roster.PhoneService/List",
+	"/roster.EmailService/Get", "/roster.EmailService/List", "/roster.PhoneService/List", "/roster.RelationService/List",
 	"/roster.GroupService/Get", "/roster.GroupService/List", "/roster.GroupMembershipService/List",
 	"/roster.SiteService/Get", "/roster.SiteService/List",
 	"/roster.TeamService/Get", "/roster.TeamService/List", "/roster.TeamMembershipService/List",
@@ -167,6 +167,19 @@ func stand(t *testing.T) *deployment {
 	// authenticator app confirmed by one code.
 	d.email(t, d.kim, "kim@contoso.example", true)
 	d.email(t, d.kim, "kim.old@contoso.example", false)
+	// kim reports to lee, as contoso's directory would say it; and lee is
+	// something else to kim, which is not reporting to her.
+	for _, v := range []struct {
+		holder, other []byte
+		label         string
+	}{{d.kim, d.lee, "manager"}, {d.lee, d.kim, "mentor"}} {
+		_, err := d.s.Ungated.Relation().Add(ctx, rstr.RelationAddRequest_builder{
+			Holder: rstr.HolderRef_builder{Id: v.holder}.Build(),
+			Other:  rstr.HolderRef_builder{Id: v.other}.Build(),
+			Labels: map[string]string{v.label: ""},
+		}.Build())
+		x.NoError(err)
+	}
 	// And where she is reached: a desk and a mobile.
 	for kind, number := range map[string]string{"work": "+82 2-123-4567", "mobile": "010-0000-0000"} {
 		_, err := d.s.Ungated.Phone().Add(ctx, rstr.PhoneAddRequest_builder{
@@ -555,6 +568,7 @@ func TestAFilterIsARosterRead(t *testing.T) {
 		"(departmentNumber=Payroll)":                   {leeDN},
 		"(employeeNumber=1001)":                        {kimDN},
 		"(mobile=010*)":                                {kimDN},
+		"(manager=" + leeDN + ")":                      {kimDN},
 		"(telephoneNumber=+82 2-123-4567)":             {kimDN},
 		"(mail=kim@contoso.example)":                   {kimDN},
 		"(mail=KIM@contoso.example)":                   {kimDN},
@@ -598,6 +612,11 @@ func TestAFilterIsARosterRead(t *testing.T) {
 		x.Equal("Platform", e.GetAttributeValue("departmentNumber"))
 		x.Equal([]string{"+82 2-123-4567"}, e.GetAttributeValues("telephoneNumber"))
 		x.Equal([]string{"010-0000-0000"}, e.GetAttributeValues("mobile"))
+		x.Equal([]string{leeDN}, e.GetAttributeValues("manager"))
+
+		boss := search(t, c, leeDN, goldap.ScopeBaseObject, "(objectClass=*)", "manager")
+		x.Len(boss, 1)
+		x.Empty(boss[0].GetAttributeValues("manager"), "a relation that does not say so is not who somebody reports to")
 		x.Empty(e.GetAttributeValues("entryUUID"), "an operational attribute answered unasked")
 
 		ops := search(t, c, kimDN, goldap.ScopeBaseObject, "(objectClass=*)", "entryUUID", "uid")

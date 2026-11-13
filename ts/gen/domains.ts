@@ -84,6 +84,9 @@ export const OwedDomain = 254
 /** The domain identifiers of roster.Phone carry. */
 export const PhoneDomain = 30
 
+/** The domain identifiers of roster.Relation carry. */
+export const RelationDomain = 31
+
 /** The domain identifiers of roster.Role carry. */
 export const RoleDomain = 15
 
@@ -134,6 +137,7 @@ pdid.register("roster.Nomination", NominationDomain, "nomination")
 pdid.register("roster.Outbox", OutboxDomain, "outbox")
 pdid.register("roster.Owed", OwedDomain, "owed")
 pdid.register("roster.Phone", PhoneDomain, "phone")
+pdid.register("roster.Relation", RelationDomain, "relation")
 pdid.register("roster.Role", RoleDomain, "role")
 pdid.register("roster.RowSeal", RowSealDomain, "row-seal")
 pdid.register("roster.Session", SessionDomain, "session")

@@ -1,6 +1,6 @@
 # The entities
 
-roster is twenty-eight tables and the arguments for why each is a table. This
+roster is twenty-nine tables and the arguments for why each is a table. This
 file is the map: the shape they make, and a paragraph on each.
 
 It is **not** where the reasoning lives. Every entity is declared in a `.proto`
@@ -11,7 +11,7 @@ is short enough to read in one sitting and points at them.
 `docs/position.md` is what roster is for and where it stops. `docs/roadmap.md`
 is the order it was built in.
 
-## One story, told twenty-eight times
+## One story, told twenty-nine times
 
 Every entity below ends with a line or two about the same deployment, so that
 what a row is **next to** is visible from its own section. Read them in order
@@ -216,6 +216,29 @@ what 📧 `Email` has -- when it was checked, and that rule.
 > erin's desk is `+82 2-123-4567` and her mobile is another row. contoso's
 > Entra wrote both, and writes the new one the day she moves desks; nobody had
 > to reach erin, or be her, to do it.
+
+### 🤝 `Relation` — one person being something to another, and roster not saying what
+
+Every membership relates a person to a **set**, and nothing related one person
+to another -- so who somebody reports to, the first thing an organisation's
+directory knows after a name, had nowhere to be kept. This is `holder`, `other`
+and labels, one row a pair in one direction, and nothing else.
+
+**roster reads none of it.** What the two are to each other is in the labels: a
+`manager` is `other` being who `holder` reports to, which is a word the SCIM
+endpoint writes and the LDAP front reads ([scim.md](scim.md),
+[ldap.md](ldap.md)) and not a thing the server knows. A kind of relation roster
+itself comes to decide something by is given a field of its own, with the
+argument for it, the day there is one; reporting to somebody is not that.
+
+**A record and not an input**, as 🚩 `SiteMembership` is: no rule reads one and
+the gate answers nothing by one, so writing one hands out nothing. A client that
+maps *manager* to *may approve* has made a permission roster does not know of.
+
+> erin reports to fred, which contoso's Entra said and nothing here decides
+> anything by. An operator who writes that fred is also her mentor adds a word
+> to the same row, and the directory moving her to another manager takes its
+> own word out and leaves theirs.
 
 ## What somebody may do
 
@@ -830,6 +853,7 @@ hard (gone).
 | 🪪 `Identity` | 8 | via `holder.tenant`, stamped | yes | soft | `proto/app/identity.proto` |
 | 📧 `Email` | 9 | via `holder.tenant`, stamped | yes | soft | `proto/app/email.proto` |
 | 📞 `Phone` | 30 | via `holder.tenant`, stamped | -- | soft | `proto/app/phone.proto` |
+| 🤝 `Relation` | 31 | via `holder.tenant`, stamped | -- | soft | `proto/app/relation.proto` |
 | 🎽 `Team` | 10 | `tenant` edge | yes | soft | `proto/app/team.proto` |
 | 🚩 `SiteMembership` | 11 | via `holder.tenant` | yes | soft | `proto/app/membership.proto` |
 | 🏅 `TeamMembership` | 12 | via `holder.tenant` | yes | soft | `proto/app/membership.proto` |

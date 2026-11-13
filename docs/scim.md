@@ -103,6 +103,7 @@ publishes a SCIM validator that walks the same requests against a URL.
 | `externalId` | their `Identity` at the provisioning connection when they are made; written onto somebody already here, kept as said and believed by nothing (`Holder.directory_subject`) |
 | `displayName`, `name.formatted` | `Holder.name` when made, `profile.display_name` after |
 | enterprise `department`, `employeeNumber` | `profile.department`, `profile.employee_no` |
+| enterprise `manager` | a `Relation` from them to their manager, labelled `manager` |
 | `preferredLanguage`, `locale` | `profile.locale` |
 | `phoneNumbers` | a `Phone` row each, one number a kind (`type`) |
 | `active` | a suspension of the directory's, and its lifting |
@@ -120,6 +121,15 @@ word moves ([entity.md](entity.md) § *Phone*). A number said for a kind is that
 kind's one number, a kind not mentioned is left, and a whole User that speaks of
 numbers says every one of them. What a directory sends in that field that is not
 a number is said in the log and refuses nothing.
+
+**Who somebody reports to is a relation, and one word.** roster keeps who one
+person is to another and reads none of it ([entity.md](entity.md) §
+*Relation*), so `manager` is a `Relation` from the person to their manager that
+says `manager` among its labels: the word this endpoint writes and the LDAP
+front reads. One at a time, as a directory says it -- a new manager replaces the
+old -- and the word is taken out of a row somebody else also wrote into, rather
+than the row erased for it. A manager who is nobody here is said in the log and
+refuses nothing.
 
 **A changed address or `externalId` is kept, and not followed.** An address and
 an identity are a person's ways in -- a link is mailed to one, a sign-in is the
@@ -236,6 +246,7 @@ again finds it, and what becomes of the row -- and of whatever was bound to it
 | `HolderService/Update`, `Get` | what it owns of a profile, and reading it back |
 | `HolderService/Tell` | what it calls somebody, kept beside them: reaches anybody, and is believed by nothing |
 | `PhoneService/Add`, `Erase`, `List` | where somebody is reached: reaches anybody, and is no way in |
+| `RelationService/Add`, `Erase`, `List` | who somebody reports to: a record no rule reads |
 | `EmailService/Get`, `List`, `IdentityService/Get`, `List` | finding somebody by an address or an `externalId` |
 | `MeService/Get`, `ConnectionService/List` | which tenant the key is, and its provisioning connection |
 | `GroupService/Add`, `Get`, `List`, `GroupMembershipService/List` | making a group, which makes its holder the group's manager, and reading the tenant's |
@@ -282,6 +293,7 @@ provisioned here lists none of this: `provision` again, which is a rotation.
 | an operator links who the directory matched, from a list | `TestAnOperatorLinksWhoTheDirectoryMatched` |
 | a changed `userName` is kept and answered, and the address stays | `TestAChangedUserNameIsKeptAndAnsweredAndTheAddressStays` |
 | a number is written and replaced, one a kind, and is no way in | `TestADirectoryKeepsSomebodysNumbers` · `TestANumberIsWhereSomebodyIsReachedAndNoWayIn` |
+| who somebody reports to is one relation, and one word in it | `TestADirectorySaysWhoSomebodyReportsTo` · `TestWhatSomebodyIsToSomebodyIsARecordNothingReads` |
 | a key minted before a method was added goes on provisioning without it | `TestAKeyMintedBeforeNumbersWereKeptStillProvisions` |
 | the directory lifts only its own suspensions | `TestADirectoryLiftsOnlyItsOwnSuspension` · `TestTheDirectoryDoesNotLiftAnOperatorsSuspension` |
 | its key reaches only the people it makes | `TestADirectoryMakesPeopleAndOnlyNewOnes` · `TestTheEndpointTakesATenantKeyAndNothingElse` |

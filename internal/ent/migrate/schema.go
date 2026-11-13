@@ -1078,6 +1078,52 @@ var (
 			},
 		},
 	}
+	// RelationColumns holds the columns for the "relation" table.
+	RelationColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "labels", Type: field.TypeJson, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "holder_id", Type: field.TypeUuid},
+		{Name: "other_id", Type: field.TypeUuid},
+	}
+	// RelationTable holds the schema information for the "relation" table.
+	RelationTable = &schema.Table{
+		Name:       "relation",
+		Columns:    RelationColumns,
+		PrimaryKey: []*schema.Column{RelationColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "relation_holder_holder",
+				Columns:    []*schema.Column{RelationColumns[6]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "relation_holder_other",
+				Columns:    []*schema.Column{RelationColumns[7]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "relation_page",
+				Unique:  false,
+				Columns: []*schema.Column{RelationColumns[2], RelationColumns[5], RelationColumns[0]},
+			},
+			{
+				Name:    "relation_pair",
+				Unique:  true,
+				Columns: []*schema.Column{RelationColumns[6], RelationColumns[7]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// RoleColumns holds the columns for the "role" table.
 	RoleColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -1418,6 +1464,7 @@ var (
 		OutboxTable,
 		OwedTable,
 		PhoneTable,
+		RelationTable,
 		RoleTable,
 		RowsealTable,
 		SessionTable,
@@ -1529,6 +1576,11 @@ func init() {
 	PhoneTable.ForeignKeys[0].RefTable = HolderTable
 	PhoneTable.Annotation = &entsql.Annotation{
 		Table: "phone",
+	}
+	RelationTable.ForeignKeys[0].RefTable = HolderTable
+	RelationTable.ForeignKeys[1].RefTable = HolderTable
+	RelationTable.Annotation = &entsql.Annotation{
+		Table: "relation",
 	}
 	RoleTable.ForeignKeys[0].RefTable = TenantTable
 	RoleTable.ForeignKeys[1].RefTable = SiteTable

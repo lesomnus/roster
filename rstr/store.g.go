@@ -51,6 +51,7 @@ type Server interface {
 	GroupMembership() GroupMembershipServiceServer
 	Nomination() NominationServiceServer
 	Phone() PhoneServiceServer
+	Relation() RelationServiceServer
 	Session() SessionServiceServer
 	Access() AccessServiceServer
 	Archived() ArchivedServiceServer
@@ -90,6 +91,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterGroupMembershipServiceServer(g, s.GroupMembership())
 	RegisterNominationServiceServer(g, s.Nomination())
 	RegisterPhoneServiceServer(g, s.Phone())
+	RegisterRelationServiceServer(g, s.Relation())
 	RegisterSessionServiceServer(g, s.Session())
 	RegisterAccessServiceServer(g, s.Access())
 	RegisterArchivedServiceServer(g, s.Archived())
@@ -125,6 +127,7 @@ type UnimplementedServer struct {
 	GroupMembershipServer GroupMembershipServiceServer
 	NominationServer      NominationServiceServer
 	PhoneServer           PhoneServiceServer
+	RelationServer        RelationServiceServer
 	SessionServer         SessionServiceServer
 	AccessServer          AccessServiceServer
 	ArchivedServer        ArchivedServiceServer
@@ -182,7 +185,10 @@ func (UnimplementedServer) GroupMembership() GroupMembershipServiceServer {
 func (UnimplementedServer) Nomination() NominationServiceServer {
 	return UnimplementedNominationServiceServer{}
 }
-func (UnimplementedServer) Phone() PhoneServiceServer     { return UnimplementedPhoneServiceServer{} }
+func (UnimplementedServer) Phone() PhoneServiceServer { return UnimplementedPhoneServiceServer{} }
+func (UnimplementedServer) Relation() RelationServiceServer {
+	return UnimplementedRelationServiceServer{}
+}
 func (UnimplementedServer) Session() SessionServiceServer { return UnimplementedSessionServiceServer{} }
 func (UnimplementedServer) Access() AccessServiceServer   { return UnimplementedAccessServiceServer{} }
 func (UnimplementedServer) Archived() ArchivedServiceServer {
@@ -219,6 +225,7 @@ type StaticServer struct {
 	GroupMembershipServer GroupMembershipServiceServer
 	NominationServer      NominationServiceServer
 	PhoneServer           PhoneServiceServer
+	RelationServer        RelationServiceServer
 	SessionServer         SessionServiceServer
 	AccessServer          AccessServiceServer
 	ArchivedServer        ArchivedServiceServer
@@ -253,6 +260,7 @@ func (s StaticServer) TeamMembership() TeamMembershipServiceServer   { return s.
 func (s StaticServer) GroupMembership() GroupMembershipServiceServer { return s.GroupMembershipServer }
 func (s StaticServer) Nomination() NominationServiceServer           { return s.NominationServer }
 func (s StaticServer) Phone() PhoneServiceServer                     { return s.PhoneServer }
+func (s StaticServer) Relation() RelationServiceServer               { return s.RelationServer }
 func (s StaticServer) Session() SessionServiceServer                 { return s.SessionServer }
 func (s StaticServer) Access() AccessServiceServer                   { return s.AccessServer }
 func (s StaticServer) Archived() ArchivedServiceServer               { return s.ArchivedServer }
@@ -287,6 +295,7 @@ type Client interface {
 	GroupMembership() GroupMembershipServiceClient
 	Nomination() NominationServiceClient
 	Phone() PhoneServiceClient
+	Relation() RelationServiceClient
 	Session() SessionServiceClient
 	Access() AccessServiceClient
 	Archived() ArchivedServiceClient
@@ -323,6 +332,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_GroupMembership: NewGroupMembershipServiceClient(c),
 		_Nomination:      NewNominationServiceClient(c),
 		_Phone:           NewPhoneServiceClient(c),
+		_Relation:        NewRelationServiceClient(c),
 		_Session:         NewSessionServiceClient(c),
 		_Access:          NewAccessServiceClient(c),
 		_Archived:        NewArchivedServiceClient(c),
@@ -359,6 +369,7 @@ type client struct {
 	_GroupMembership GroupMembershipServiceClient
 	_Nomination      NominationServiceClient
 	_Phone           PhoneServiceClient
+	_Relation        RelationServiceClient
 	_Session         SessionServiceClient
 	_Access          AccessServiceClient
 	_Archived        ArchivedServiceClient
@@ -393,6 +404,7 @@ func (c *client) TeamMembership() TeamMembershipServiceClient   { return c._Team
 func (c *client) GroupMembership() GroupMembershipServiceClient { return c._GroupMembership }
 func (c *client) Nomination() NominationServiceClient           { return c._Nomination }
 func (c *client) Phone() PhoneServiceClient                     { return c._Phone }
+func (c *client) Relation() RelationServiceClient               { return c._Relation }
 func (c *client) Session() SessionServiceClient                 { return c._Session }
 func (c *client) Access() AccessServiceClient                   { return c._Access }
 func (c *client) Archived() ArchivedServiceClient               { return c._Archived }

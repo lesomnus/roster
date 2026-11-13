@@ -156,6 +156,15 @@ func enterpriseSchemaDoc() map[string]any {
 		"attributes": []map[string]any{
 			{"name": "department", "type": "string", "multiValued": false, "required": false, "caseExact": false, "mutability": "readWrite", "returned": "default", "uniqueness": "none"},
 			{"name": "employeeNumber", "type": "string", "multiValued": false, "required": false, "caseExact": false, "mutability": "readWrite", "returned": "default", "uniqueness": "none"},
+			{
+				"name": "manager", "type": "complex", "multiValued": false, "required": false,
+				"mutability": "readWrite", "returned": "default",
+				"description": "Who they report to: a User here.",
+				"subAttributes": []map[string]any{
+					{"name": "value", "type": "string", "multiValued": false, "required": false, "caseExact": true, "mutability": "readWrite", "returned": "default", "uniqueness": "none", "description": "The manager's id."},
+					{"name": "$ref", "type": "reference", "referenceTypes": []string{"User"}, "multiValued": false, "required": false, "mutability": "readOnly", "returned": "default"},
+				},
+			},
 		},
 		"meta": map[string]any{"resourceType": "Schema", "location": Base + "/Schemas/" + enterpriseSchema},
 	}

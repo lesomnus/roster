@@ -417,6 +417,9 @@ func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.
 	if err := s.dial(ctx, r, h.GetId(), &u.changes); err != nil {
 		return err
 	}
+	if err := s.reports(ctx, r, t, h.GetId(), &u.changes); err != nil {
+		return err
+	}
 	s.said(r, u.ignored)
 
 	p, err := s.read(ctx, t, h.GetId())
@@ -509,6 +512,9 @@ func (s *Server) change(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		}
 	}
 	if err := s.dial(ctx, r, id, c); err != nil {
+		return err
+	}
+	if err := s.reports(ctx, r, t, id, c); err != nil {
 		return err
 	}
 	s.said(r, c.ignored)

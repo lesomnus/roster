@@ -194,6 +194,7 @@ deployments of roster should agree on it.
 | `preferredLanguage` | `Profile.locale` | |
 | `labeledURI` | `Profile.picture` | |
 | `telephoneNumber`, `mobile`, `facsimileTelephoneNumber`, `homePhone`, `pager` | `Phone.number`, by its `kind` | one of no kind, or of a kind with no attribute of its own, is a `telephoneNumber`; read only when asked for or filtered on, since it costs a list |
+| `manager` | the DN of who they report to | a `Relation` of theirs labelled `manager`, which is what a directory provisioning them writes ([scim.md](scim.md)); read only when asked for or filtered on |
 | `memberOf` | the DNs of their groups and teams | AD's convenience, and the one most clients ask for; read only when asked for or filtered on, since it costs two lists |
 | `entryUUID` | `Holder.id` | |
 
@@ -306,6 +307,7 @@ writes the holder, the role, the binding and the nomination:
 /roster.EmailService/Get
 /roster.EmailService/List
 /roster.PhoneService/List             # a role that does not name it publishes no numbers, and nothing else changes
+/roster.RelationService/List          # nor a `manager`, the same way
 /roster.GroupService/Get
 /roster.GroupService/List
 /roster.GroupMembershipService/List
@@ -439,9 +441,10 @@ comment beside what it decides.
   it, and the groups it keeps them in.
 - **Kerberos, certificates, nested groups**: `position.md` says why, and
   this process does not change the answer.
-- **A manager edge, more profile fields**: the conversation that produced
-  `Holder.Search` said these arrive as proto additions when a use names them.
-  `manager` is the attribute a client will ask for first.
+- **More profile fields**: the conversation that produced `Holder.Search` said
+  these arrive as proto additions when a use names them. The two a directory
+  named first are here -- where somebody is reached, and `manager` (§ *A
+  person*) -- and neither turned out to be a field of the profile.
 
 ## Progress
 

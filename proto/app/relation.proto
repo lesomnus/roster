@@ -1,0 +1,120 @@
+edition = "2023";
+
+package roster;
+
+import "roster/payday/holder.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// Relation is one person being something to another, and roster not saying
+// what.
+//
+// # Why there is one at all
+//
+// Every membership here relates a person to a **set** -- a site, a team, a
+// group -- and nothing related one person to another. So what a directory
+// says about two people had nowhere to be kept: who somebody reports to is
+// the first thing an organisation's directory knows after a name, and the
+// first attribute an LDAP client asks for (`docs/ldap.md`).
+//
+// # Why it says so little
+//
+// It is `holder`, `other`, and labels. What the two are to each other is in
+// the labels, and roster reads none of them: a `manager` is `other` being who
+// `holder` reports to, and that is a sentence the SCIM endpoint writes and the
+// LDAP front reads, by a key they share (`docs/scim.md`), and not a thing the
+// server knows.
+//
+// That is deliberate, and it is where the line is. A kind of relation roster
+// itself comes to interpret -- to decide something by -- is given a field of
+// its own, with the argument for it, the day there is one. Reporting to
+// somebody is not that: an organisation chart is a thing to show.
+//
+// # A record, and not an input
+//
+// `SiteMembership`'s sentence. No rule reads a relation and the gate answers
+// nothing by one, so writing one hands out nothing and is held to nothing but
+// the wall and the role that names the write. A client that maps *manager* to
+// *may approve* has made a permission of it that roster does not know of,
+// which is the same caution a group shown to a client carries
+// (`docs/ldap.md` § *What a client grants on, and what roster guards*).
+message Relation {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  // Whose relation this is: the person it is said about.
+  Holder holder = 2 [(orm.edge) = {immutable: true}];
+
+  // 4 to 6 are empty: a relation is not named, and has nothing to say about
+  // itself that its labels do not.
+
+  // How to read it, for whoever does: what `other` is to `holder`.
+  //
+  // Number seven, the one an entity spends on labels (`host.proto`). A set of
+  // words as much as a map -- `manager`, with nothing after it -- so that two
+  // people who are two things to each other are still one row, which is what
+  // the index below makes them.
+  map<string, string> labels = 7;
+
+  // Who they are that to. Of the same tenant, and never themselves:
+  // `server/core` refuses both.
+  Holder other = 8 [(orm.edge) = {immutable: true}];
+
+  // The tenant `holder.tenant` reaches, kept here. payday stamps it, and
+  // `Identity` says at length why a column is worth it.
+  bytes tenant_id = 11 [(orm.field) = {
+    type: TYPE_UUID
+    immutable: true
+  }];
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "tenant_id", number: 11},
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        // One row a pair, in one direction: what erin is to fred is another
+        // row from what fred is to erin.
+        name: "pair"
+        refs: [
+          {name: "holder", number: 2},
+          {name: "other", number: 8}
+        ]
+        unique: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 31
+    tenanted: {via: "holder.tenant", stamp: "tenant_id"}
+    list: {
+      order: [
+        {field: {name: "date_created", number: 15}},
+        {field: {name: "id", number: 1}}
+      ]
+      by: [{name: "ref"}, {name: "holder"}, {name: "other"}]
+      size: 20
+      max: 100
+    }
+  };
+}
