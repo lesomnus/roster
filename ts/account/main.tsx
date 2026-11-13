@@ -140,7 +140,7 @@ function Account(props: { of: Providers; onSignOut: () => void; onLeft: (forgott
 				<button onClick={props.onSignOut}>sign out</button>
 			</nav>
 			<main>
-				<Profile own={own} alias={v.alias} may={may} />
+				<Profile own={own} alias={v.alias} provisioned={v.provisionedThrough} may={may} />
 				<Ways of={props.of} own={own} identities={v.identities} credentials={v.credentials} may={may} />
 				<Addresses own={own} may={may} />
 				<Password own={own} has={v.credentials.some((c) => c.kind === 'password')} offered={props.of.password} may={may} />
@@ -220,7 +220,18 @@ function Needs(props: { method: string }): React.ReactNode {
 	return <p className="none">this needs a role naming {props.method}</p>
 }
 
-function Profile(props: { own: Uint8Array; alias: string; may: (m: string) => boolean }): React.ReactNode {
+function Profile(props: {
+	own: Uint8Array
+	alias: string
+
+	// The connection this person's directory provisions them through, or empty
+	// (`MeGetResponse.provisioned_through`). Where it is one, the directory
+	// owns what it sends of a profile and writes it over what is here
+	// (`docs/scim.md`), which is two rules for one form -- so it is said on the
+	// form, where the person whose edit would be written over can see it.
+	provisioned: string
+	may: (m: string) => boolean
+}): React.ReactNode {
 	const allowed = props.may('/roster.HolderService/Get') && props.may('/roster.HolderService/Update')
 	const row = useQuery(HolderService.method.get, allowed ? { ref: ref(props.own) } : {})
 	const update = useCall(HolderService.method.update)
@@ -267,6 +278,12 @@ function Profile(props: { own: Uint8Array; alias: string; may: (m: string) => bo
 						save
 					</button>
 				</form>
+			)}
+			{allowed && props.provisioned !== '' && (
+				<p className="note directory">
+					your organisation's directory says some of this too. What it says of you — a name, a department,
+					an employee number, a language — is written over what is here the next time it says it
+				</p>
 			)}
 			{note !== null && <p className={note.ok ? 'note' : 'bad'}>{note.text}</p>}
 		</section>
