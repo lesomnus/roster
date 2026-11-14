@@ -142,12 +142,14 @@ duplicate is a no-op and a stale one cannot un-revoke.
 put there and nothing else; an operator's suspension stays the operator's
 ([scim.md](scim.md)).
 
-`directory_subject` and `directory_address` are what that directory **says** and
-roster does not take as its own: its id for somebody it matched by their address,
-and an address it says changed. Each would be a way in if it were believed -- an
-🪪 `Identity`, an 📧 `Email` -- so neither is written; what was said is kept here
-instead, where no rule reads it and nothing signs in by it, so that the two
-having drifted apart is something to see. Written by `HolderService.Tell` alone,
+`directory_subject`, `directory_address` and `directory_name` are what that
+directory **says** and roster does not take as its own: its id for somebody it
+matched by their address, an address it says changed, and the name it looks them
+up by where that is not their address. The first two would each be a way in if
+they were believed -- an 🪪 `Identity`, an 📧 `Email` -- so neither is written,
+and the third has nowhere else to be; what was said is kept here instead, where
+no rule reads it and nothing signs in by it, so that the two having drifted
+apart is something to see. Written by `HolderService.Tell` alone,
 and each one person's within a tenant, which is what lets the directory be
 answered with what it said.
 

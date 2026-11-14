@@ -332,6 +332,7 @@ func (s coreHolder) Tell(ctx context.Context, req *app.HolderTellRequest) (*app.
 			Tenant:           app.TenantSelect_builder{}.Build(),
 			DirectorySubject: z.Ptr(true),
 			DirectoryAddress: z.Ptr(true),
+			DirectoryName:    z.Ptr(true),
 			DateUpdated:      z.Ptr(true),
 		}.Build(),
 	}.Build())
@@ -377,6 +378,20 @@ func (s coreHolder) Tell(ctx context.Context, req *app.HolderTellRequest) (*app.
 				return nil, err
 			}
 			patch.DirectoryAddress = z.Ptr(address)
+		}
+		said = true
+	}
+	if req.HasName() && req.GetName() != v.GetDirectoryName() {
+		switch name := req.GetName(); name {
+		case "":
+			patch.DirectoryNameNull = z.Ptr(true)
+		default:
+			// Compared without regard to case, so kept in the one form a
+			// lookup is made in: an address's, which most of them are.
+			if err := normalised("name", name, front.Address); err != nil {
+				return nil, err
+			}
+			patch.DirectoryName = z.Ptr(name)
 		}
 		said = true
 	}

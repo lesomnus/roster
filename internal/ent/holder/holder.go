@@ -45,6 +45,8 @@ const (
 	FieldDirectorySubject = "directory_subject"
 	// FieldDirectoryAddress holds the string denoting the directory_address field in the database.
 	FieldDirectoryAddress = "directory_address"
+	// FieldDirectoryName holds the string denoting the directory_name field in the database.
+	FieldDirectoryName = "directory_name"
 	// FieldTenantId holds the string denoting the tenant_id field in the database.
 	FieldTenantId = "tenant_id"
 	// EdgeTenant holds the string denoting the tenant edge name in mutations.
@@ -78,6 +80,7 @@ var Columns = []string{
 	FieldPortrait,
 	FieldDirectorySubject,
 	FieldDirectoryAddress,
+	FieldDirectoryName,
 	FieldTenantId,
 }
 
@@ -161,6 +164,11 @@ func ByDirectorySubject(opts ...sql.OrderTermOption) OrderOption {
 // ByDirectoryAddress orders the results by the directory_address field.
 func ByDirectoryAddress(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDirectoryAddress, opts...).ToFunc()
+}
+
+// ByDirectoryName orders the results by the directory_name field.
+func ByDirectoryName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDirectoryName, opts...).ToFunc()
 }
 
 // ByTenantId orders the results by the tenant_id field.

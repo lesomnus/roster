@@ -10512,6 +10512,10 @@ func (s gateHolder) admit(ctx context.Context, req *rstr.HolderAddRequest) (*rst
 		return nil, pderr.Invalidf("directory_address", "is established by this deployment and not asserted by a request")
 	}
 
+	if req.HasDirectoryName() {
+		return nil, pderr.Invalidf("directory_name", "is established by this deployment and not asserted by a request")
+	}
+
 	if err := seen.Visible(ctx, s.Gate.drv, "Tenant", req.GetTenant(), func() error {
 		_, err := s.Gate.Next().Tenant().Get(ctx, rstr.TenantGetRequest_builder{
 			Ref: req.GetTenant(),
@@ -12578,7 +12582,7 @@ var (
 		[]protoreflect.FieldNumber{})
 	describedHolder = describe((*rstr.Holder)(nil),
 		[]protoreflect.FieldNumber{},
-		[]protoreflect.FieldNumber{4, 5, 6, 7, 9, 10, 16, 17, 18})
+		[]protoreflect.FieldNumber{4, 5, 6, 7, 9, 10, 16, 17, 18, 19})
 	describedHost = describe((*rstr.Host)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
@@ -19638,6 +19642,7 @@ func init() {
 				fs.ByNumber(16),
 				fs.ByNumber(17),
 				fs.ByNumber(18),
+				fs.ByNumber(19),
 			},
 			tenant: func(m protoreflect.Message) pdid.Id {
 				return accessKeyOf(m.Get(fs.ByName("tenant")).Message())

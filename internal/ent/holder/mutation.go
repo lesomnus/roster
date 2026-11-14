@@ -34,6 +34,7 @@ type Mutation struct {
 	portrait          **rstr.Portrait
 	directory_subject *string
 	directory_address *string
+	directory_name    *string
 	clearedFields     map[string]struct{}
 	exprs             map[string]sql.Querier
 	tenant            *uuid.UUID
@@ -517,6 +518,42 @@ func (m *Mutation) ResetDirectoryAddress() {
 	delete(m.exprs, FieldDirectoryAddress)
 }
 
+// SetDirectoryName sets the "directory_name" field.
+func (m *Mutation) SetDirectoryName(s string) {
+	m.directory_name = &s
+	delete(m.clearedFields, FieldDirectoryName)
+	delete(m.exprs, FieldDirectoryName)
+}
+
+// DirectoryName returns the value of the "directory_name" field in the mutation.
+func (m *Mutation) DirectoryName() (r string, exists bool) {
+	v := m.directory_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDirectoryName clears the value of the "directory_name" field.
+func (m *Mutation) ClearDirectoryName() {
+	m.directory_name = nil
+	delete(m.exprs, FieldDirectoryName)
+	m.clearedFields[FieldDirectoryName] = struct{}{}
+}
+
+// DirectoryNameCleared returns if the "directory_name" field was cleared in this mutation.
+func (m *Mutation) DirectoryNameCleared() bool {
+	_, ok := m.clearedFields[FieldDirectoryName]
+	return ok
+}
+
+// ResetDirectoryName resets all changes to the "directory_name" field.
+func (m *Mutation) ResetDirectoryName() {
+	m.directory_name = nil
+	delete(m.clearedFields, FieldDirectoryName)
+	delete(m.exprs, FieldDirectoryName)
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (m *Mutation) SetTenantId(u uuid.UUID) {
 	m.tenant = &u
@@ -597,7 +634,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 16)
+	fields := make([]string, 0, 17)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -642,6 +679,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.directory_address != nil || m.exprs[FieldDirectoryAddress] != nil {
 		fields = append(fields, FieldDirectoryAddress)
+	}
+	if m.directory_name != nil || m.exprs[FieldDirectoryName] != nil {
+		fields = append(fields, FieldDirectoryName)
 	}
 	if m.tenant != nil {
 		fields = append(fields, FieldTenantId)
@@ -690,6 +730,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DirectorySubject()
 	case FieldDirectoryAddress:
 		return m.DirectoryAddress()
+	case FieldDirectoryName:
+		return m.DirectoryName()
 	case FieldTenantId:
 		return m.TenantId()
 	}
@@ -861,6 +903,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDirectoryAddress(v)
 		return nil
+	case FieldDirectoryName:
+		v, ok := value.(string)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDirectoryName(v)
+		return nil
 	case FieldTenantId:
 		v, ok := value.(uuid.UUID)
 		if !ok {
@@ -923,6 +975,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetDirectorySubject()
 	case FieldDirectoryAddress:
 		m.ResetDirectoryAddress()
+	case FieldDirectoryName:
+		m.ResetDirectoryName()
 	case FieldTenantId:
 		return fmt.Errorf("field %s cannot be assigned an expression: it holds an edge, which is set through the edge", name)
 	default:
@@ -988,6 +1042,9 @@ func (m *Mutation) ExprFields() []string {
 	if _, ok := m.exprs[FieldDirectoryAddress]; ok {
 		fields = append(fields, FieldDirectoryAddress)
 	}
+	if _, ok := m.exprs[FieldDirectoryName]; ok {
+		fields = append(fields, FieldDirectoryName)
+	}
 	return fields
 }
 
@@ -1047,6 +1104,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDirectoryAddress) {
 		fields = append(fields, FieldDirectoryAddress)
 	}
+	if m.FieldCleared(FieldDirectoryName) {
+		fields = append(fields, FieldDirectoryName)
+	}
 	return fields
 }
 
@@ -1090,6 +1150,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDirectoryAddress:
 		m.ClearDirectoryAddress()
+		return nil
+	case FieldDirectoryName:
+		m.ClearDirectoryName()
 		return nil
 	}
 	return fmt.Errorf("unknown Holder nullable field %s", name)
@@ -1143,6 +1206,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldDirectoryAddress:
 		m.ResetDirectoryAddress()
+		return nil
+	case FieldDirectoryName:
+		m.ResetDirectoryName()
 		return nil
 	case FieldTenantId:
 		m.ResetTenantId()

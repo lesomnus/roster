@@ -687,6 +687,7 @@ var (
 		{Name: "portrait", Type: field.TypeJson, Nullable: true},
 		{Name: "directory_subject", Type: field.TypeString, Nullable: true},
 		{Name: "directory_address", Type: field.TypeString, Nullable: true},
+		{Name: "directory_name", Type: field.TypeString, Nullable: true},
 		{Name: "tenant_id", Type: field.TypeUuid},
 	}
 	// HolderTable holds the schema information for the "holder" table.
@@ -697,7 +698,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "holder_tenant_tenant",
-				Columns:    []*schema.Column{HolderColumns[16]},
+				Columns:    []*schema.Column{HolderColumns[17]},
 				RefColumns: []*schema.Column{TenantColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -706,7 +707,7 @@ var (
 			{
 				Name:    "holder_slug",
 				Unique:  true,
-				Columns: []*schema.Column{HolderColumns[1], HolderColumns[16]},
+				Columns: []*schema.Column{HolderColumns[1], HolderColumns[17]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -714,12 +715,20 @@ var (
 			{
 				Name:    "holder_page",
 				Unique:  false,
-				Columns: []*schema.Column{HolderColumns[16], HolderColumns[7], HolderColumns[0]},
+				Columns: []*schema.Column{HolderColumns[17], HolderColumns[7], HolderColumns[0]},
+			},
+			{
+				Name:    "holder_named",
+				Unique:  true,
+				Columns: []*schema.Column{HolderColumns[16], HolderColumns[17]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
 			},
 			{
 				Name:    "holder_known",
 				Unique:  true,
-				Columns: []*schema.Column{HolderColumns[14], HolderColumns[16]},
+				Columns: []*schema.Column{HolderColumns[14], HolderColumns[17]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -727,7 +736,7 @@ var (
 			{
 				Name:    "holder_said",
 				Unique:  true,
-				Columns: []*schema.Column{HolderColumns[15], HolderColumns[16]},
+				Columns: []*schema.Column{HolderColumns[15], HolderColumns[17]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

@@ -345,6 +345,10 @@ message HolderTellRequest {
   // and empty as `subject`: empty is the address having been moved here.
   string address = 3;
 
+  // The name the directory looks them up by, lowercased and trimmed. Unset
+  // and empty as `subject`: empty is their first address being that name.
+  string name = 4;
+
   // Optimistic locking, as `Disable` takes it.
   google.protobuf.Timestamp date_updated = 13;
 }

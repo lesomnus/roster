@@ -108,12 +108,11 @@ func userSchemaDoc() map[string]any {
 		"description": "A person, as roster keeps one.",
 		"attributes": []map[string]any{
 			str("userName", "Their address, which is how a directory finds somebody here.", "immutable"),
+			// `name` is not listed, and is read: a `name.formatted` is what
+			// somebody is called where a directory says no `displayName`, and
+			// not a second name kept beside it -- so a schema that listed it
+			// would be a directory told two values were stored when one was.
 			str("displayName", "What they are called.", "readWrite"),
-			{
-				"name": "name", "type": "complex", "multiValued": false, "required": false,
-				"mutability": "readWrite", "returned": "default",
-				"subAttributes": []map[string]any{str("formatted", "What they are called, whole.", "readWrite")},
-			},
 			str("preferredLanguage", "Their locale.", "readWrite"),
 			{
 				"name": "phoneNumbers", "type": "complex", "multiValued": true, "required": false,

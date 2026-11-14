@@ -249,6 +249,26 @@ func (_u *HolderUpdate) ClearDirectoryAddress() *HolderUpdate {
 	return _u
 }
 
+// SetDirectoryName sets the "directory_name" field.
+func (_u *HolderUpdate) SetDirectoryName(v string) *HolderUpdate {
+	_u.mutation.SetDirectoryName(v)
+	return _u
+}
+
+// SetNillableDirectoryName sets the "directory_name" field if the given value is not nil.
+func (_u *HolderUpdate) SetNillableDirectoryName(v *string) *HolderUpdate {
+	if v != nil {
+		_u.SetDirectoryName(*v)
+	}
+	return _u
+}
+
+// ClearDirectoryName clears the value of the "directory_name" field.
+func (_u *HolderUpdate) ClearDirectoryName() *HolderUpdate {
+	_u.mutation.ClearDirectoryName()
+	return _u
+}
+
 // Mutation returns the HolderMutation object of the builder.
 func (_u *HolderUpdate) Mutation() *HolderMutation {
 	return _u.mutation
@@ -441,6 +461,15 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.DirectoryAddressCleared() {
 		_spec.ClearField(holder.FieldDirectoryAddress, field.TypeString)
+	}
+	if value, ok := _u.mutation.DirectoryName(); ok {
+		_spec.SetField(holder.FieldDirectoryName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDirectoryName); ok {
+		_spec.SetField(holder.FieldDirectoryName, field.TypeString, e)
+	}
+	if _u.mutation.DirectoryNameCleared() {
+		_spec.ClearField(holder.FieldDirectoryName, field.TypeString)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -682,6 +711,26 @@ func (_u *HolderUpdateOne) ClearDirectoryAddress() *HolderUpdateOne {
 	return _u
 }
 
+// SetDirectoryName sets the "directory_name" field.
+func (_u *HolderUpdateOne) SetDirectoryName(v string) *HolderUpdateOne {
+	_u.mutation.SetDirectoryName(v)
+	return _u
+}
+
+// SetNillableDirectoryName sets the "directory_name" field if the given value is not nil.
+func (_u *HolderUpdateOne) SetNillableDirectoryName(v *string) *HolderUpdateOne {
+	if v != nil {
+		_u.SetDirectoryName(*v)
+	}
+	return _u
+}
+
+// ClearDirectoryName clears the value of the "directory_name" field.
+func (_u *HolderUpdateOne) ClearDirectoryName() *HolderUpdateOne {
+	_u.mutation.ClearDirectoryName()
+	return _u
+}
+
 // Mutation returns the HolderMutation object of the builder.
 func (_u *HolderUpdateOne) Mutation() *HolderMutation {
 	return _u.mutation
@@ -904,6 +953,15 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 	}
 	if _u.mutation.DirectoryAddressCleared() {
 		_spec.ClearField(holder.FieldDirectoryAddress, field.TypeString)
+	}
+	if value, ok := _u.mutation.DirectoryName(); ok {
+		_spec.SetField(holder.FieldDirectoryName, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDirectoryName); ok {
+		_spec.SetField(holder.FieldDirectoryName, field.TypeString, e)
+	}
+	if _u.mutation.DirectoryNameCleared() {
+		_spec.ClearField(holder.FieldDirectoryName, field.TypeString)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Holder{config: _u.config}

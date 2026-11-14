@@ -91,8 +91,25 @@ On the enterprise application, *Provisioning*, *Automatic*:
   its direct members and not the members of groups inside it: Entra does not
   follow nesting.
 
-*Provision on demand* with one person is the check before turning it on. Microsoft
-publishes a SCIM validator that walks the same requests against a URL.
+*Provision on demand* with one person is the check before turning it on.
+
+### Microsoft's validator
+
+Microsoft publishes a SCIM validator, and it is a page it hosts
+(`scimvalidator.microsoft.com`): the endpoint's address and a key go into a
+form, and a person reads the result. Nothing of it runs in CI. What it asks is
+published request by request, so the same questions are asked here on every
+change (`TestWhatMicrosoftsValidatorAsks`), and the page is for what its
+tutorial does not say -- once, against a deployment. Two things to give it:
+
+- **By *Discover schema*.** `/Schemas` lists the attributes this keeps a value
+  of its own for and no other, which is what the validator takes it to mean.
+- **A GUID for `externalId`**, where the connection names people by `oid`: the
+  value it makes up is not one, and a person made under an `externalId` no
+  sign-in could carry is refused.
+
+A `userName` is answered lowered, as an address is kept. Whether the validator
+compares one without regard to case is one of the things its page is for.
 
 ## What it does with a person
 
@@ -101,7 +118,8 @@ publishes a SCIM validator that walks the same requests against a URL.
 | `id` | `Holder.id` |
 | `userName`, `emails` | an `Email` row, written **unverified** when they are made, and what the directory last said after that (`Holder.directory_address`); a lookup by `userName` finds a person by any address of theirs, or by the one it last said |
 | `externalId` | their `Identity` at the provisioning connection when they are made; written onto somebody already here, kept as said and believed by nothing (`Holder.directory_subject`) |
-| `displayName`, `name.formatted` | `Holder.name` when made, `profile.display_name` after |
+| `userName` | what the directory looks them up by, kept where it is not their address (`Holder.directory_name`) |
+| `displayName` | `Holder.name` when made, `profile.display_name` after; `name.formatted` is read as it where a directory says no `displayName` |
 | enterprise `department`, `employeeNumber` | `profile.department`, `profile.employee_no` |
 | enterprise `manager` | a `Relation` from them to their manager, labelled `manager` |
 | `preferredLanguage`, `locale` | `profile.locale` |
@@ -133,6 +151,20 @@ front reads. One at a time, as a directory says it -- a new manager replaces the
 old -- and the word is taken out of a row somebody else also wrote into, rather
 than the row erased for it. A manager who is nobody here is said in the log and
 refuses nothing.
+
+**A `userName` that is not their address is kept, and they are found by it.** A
+directory says two things that are each an address in shape: what it looks
+somebody up by, and where they are written to -- Entra's `userPrincipalName`
+and its `mail`, which differ wherever an organisation's sign-in name is not its
+mail alias. The second is their `Email`. The first is kept beside them
+(`Holder.directory_name`) from the request that makes them, since the lookup
+that comes next is by it; a `userName` that is no address at all, which is what
+some directories send, is kept the same way.
+
+**One thing a person is called.** A `displayName` is that. A `name.formatted` is
+read as it where a directory says no `displayName`, and is not a second name
+kept beside it -- so `/Schemas` does not list `name`, and a directory that says
+both, differently, is taken at its `displayName`.
 
 **A changed address or `externalId` is kept, and not followed.** An address and
 an identity are a person's ways in -- a link is mailed to one, a sign-in is the
@@ -295,6 +327,8 @@ provisioned here lists none of this: `provision` again, which is a rotation.
 | and is not suspended by their directory until they are linked; what it calls them is kept and believed by nothing | `TestSomebodyMatchedIsNotSuspendedByTheirDirectoryUntilTheyAreLinked` · `TestWhatADirectorySaysIsKeptAndBelievedByNothing` |
 | an operator links who the directory matched, from a list | `TestAnOperatorLinksWhoTheDirectoryMatched` |
 | a changed `userName` is kept and answered, and the address stays | `TestAChangedUserNameIsKeptAndAnsweredAndTheAddressStays` |
+| what Microsoft's validator asks, request by request; and `/Schemas` lists what is kept | `TestWhatMicrosoftsValidatorAsks` · `TestTheSchemaListsWhatIsKept` |
+| one thing a person is called, and which | `TestWhatSomebodyIsCalledIsTheirDisplayName` |
 | a number is written and replaced, one a kind, and is no way in | `TestADirectoryKeepsSomebodysNumbers` · `TestANumberIsWhereSomebodyIsReachedAndNoWayIn` |
 | who somebody reports to is one relation, and one word in it | `TestADirectorySaysWhoSomebodyReportsTo` · `TestWhatSomebodyIsToSomebodyIsARecordNothingReads` |
 | a key minted before a method was added goes on provisioning without it | `TestAKeyMintedBeforeNumbersWereKeptStillProvisions` |

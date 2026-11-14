@@ -52,6 +52,8 @@ type Holder struct {
 	DirectorySubject *string `json:"directory_subject,omitempty"`
 	// DirectoryAddress holds the value of the "directory_address" field.
 	DirectoryAddress *string `json:"directory_address,omitempty"`
+	// DirectoryName holds the value of the "directory_name" field.
+	DirectoryName *string `json:"directory_name,omitempty"`
 	// TenantId holds the value of the "tenant_id" field.
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -87,7 +89,7 @@ func (*Holder) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case holder.FieldLabels:
 			values[i] = new([]byte)
-		case holder.FieldAlias, holder.FieldName, holder.FieldDesc, holder.FieldDirectory, holder.FieldDirectorySubject, holder.FieldDirectoryAddress:
+		case holder.FieldAlias, holder.FieldName, holder.FieldDesc, holder.FieldDirectory, holder.FieldDirectorySubject, holder.FieldDirectoryAddress, holder.FieldDirectoryName:
 			values[i] = new(sql.NullString)
 		case holder.FieldDateUpdated, holder.FieldDateErased, holder.FieldDateCreated, holder.FieldDateInvalidated, holder.FieldDateDisabled:
 			values[i] = new(sql.NullTime)
@@ -217,6 +219,13 @@ func (_m *Holder) assignValues(columns []string, values []any) error {
 				_m.DirectoryAddress = new(string)
 				*_m.DirectoryAddress = value.String
 			}
+		case holder.FieldDirectoryName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field directory_name", values[i])
+			} else if value.Valid {
+				_m.DirectoryName = new(string)
+				*_m.DirectoryName = value.String
+			}
 		case holder.FieldTenantId:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field tenant_id", values[i])
@@ -316,6 +325,11 @@ func (_m *Holder) String() string {
 	builder.WriteString(", ")
 	if v := _m.DirectoryAddress; v != nil {
 		builder.WriteString("directory_address=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.DirectoryName; v != nil {
+		builder.WriteString("directory_name=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
