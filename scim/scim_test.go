@@ -831,13 +831,128 @@ func TestADirectoryProvisionsAGroupTheWayEntraDoes(t *testing.T) {
 	x.Equal("Operations", row.GetName())
 	x.Equal("ops-team", row.GetAlias())
 
-	// Deleted: everybody the directory says is in it is out, and the row is an
-	// administrator's to decide about.
+	// Deleted: erased, as its manager may. It is gone to the directory by
+	// every way of asking, and to roster.
 	code, got = d.group(t, http.MethodDelete, "/"+id, nil)
 	x.Equal(http.StatusNoContent, code, "%v", got)
-	x.Equal(map[string]string{"scim": "group-manager"}, d.membersOf(t, id))
 	_, err = d.s.Ungated.Group().Get(t.Context(), rstr.GroupGetRequest_builder{Ref: rstr.GroupRef_builder{Id: k.Bytes()}.Build()}.Build())
-	x.NoError(err, "the row is kept")
+	x.Equal(codes.NotFound, status.Code(err), "%v", err)
+
+	code, _ = d.group(t, http.MethodGet, "/"+id, nil)
+	x.Equal(http.StatusNotFound, code)
+	code, _ = d.group(t, http.MethodDelete, "/"+id, nil)
+	x.Equal(http.StatusNotFound, code, "what is gone is not deleted twice")
+	code, _ = d.group(t, http.MethodPatch, "/"+id, add(erin))
+	x.Equal(http.StatusNotFound, code)
+	code, got = d.group(t, http.MethodGet, "?filter="+url.QueryEscape(`displayName eq "Operations"`), nil)
+	x.Equal(http.StatusOK, code)
+	x.EqualValues(0, got["totalResults"])
+	code, got = d.group(t, http.MethodGet, "?filter="+url.QueryEscape(`externalId eq "`+opsOid+`"`), nil)
+	x.Equal(http.StatusOK, code)
+	x.EqualValues(0, got["totalResults"])
+
+	// And made again under the name it was first made by, it is another
+	// group, with nobody in it: the alias the first had is free.
+	code, got = d.group(t, http.MethodPost, "", map[string]any{
+		"schemas": []string{"urn:ietf:params:scim:schemas:core:2.0:Group"}, "displayName": "Ops Team", "externalId": opsOid,
+	})
+	x.Equal(http.StatusCreated, code, "%v", got)
+	x.NotEqual(id, got["id"])
+	x.Empty(got["members"])
+	again, err := pdid.Parse(got["id"].(string))
+	x.NoError(err)
+	row, err = d.s.Ungated.Group().Get(t.Context(), rstr.GroupGetRequest_builder{
+		Ref: rstr.GroupRef_builder{Id: again.Bytes()}.Build(), Select: rstr.GroupSelect_builder{All: z.Ptr(true)}.Build(),
+	}.Build())
+	x.NoError(err)
+	x.Equal("ops-team", row.GetAlias())
+}
+
+// TestADirectoryDeletesAGroupAsFarAsItsRoleGoes: a `DELETE` erases the group
+// where the directory may -- which is where its tenant's managers may, and its
+// key names the method. A key minted before a manager could erase a group
+// names none, and a tenant whose `group-manager` does not erase keeps its
+// managers so: there, everybody the directory says is in the group is taken
+// out, the row is kept and still answered, and nothing is refused.
+func TestADirectoryDeletesAGroupAsFarAsItsRoleGoes(t *testing.T) {
+	d := stand(t)
+	x := require.New(t)
+	ctx := t.Context()
+	erin := d.someone(t, "erin", erinOid)
+
+	var before []string
+	for _, m := range scim.Methods {
+		if m != rstr.GroupService_Erase_FullMethodName {
+			before = append(before, m)
+		}
+	}
+	self, err := d.s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+		Ref: rstr.HolderRef_builder{Slug: rstr.HolderRefBySlug_builder{
+			Alias: proto.String("scim"), Tenant: rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build(),
+		}.Build()}.Build(),
+	}.Build())
+	x.NoError(err)
+	old := d.mint(t, self.GetId(), "scim-before", before)
+
+	code, got, _ := d.call(t, old, http.MethodPost, scim.Base+"/Groups", map[string]any{
+		"displayName": "Ops Team", "externalId": opsOid, "members": []map[string]any{{"value": erin}},
+	})
+	x.Equal(http.StatusCreated, code, "%v", got)
+	id := got["id"].(string)
+	x.Equal(map[string]string{"scim": "group-manager", "erin": ""}, d.membersOf(t, id))
+
+	code, got, _ = d.call(t, old, http.MethodDelete, scim.Base+"/Groups/"+id, nil)
+	x.Equal(http.StatusNoContent, code, "%v", got)
+	x.Equal(map[string]string{"scim": "group-manager"}, d.membersOf(t, id), "everybody it says is in it is out")
+
+	code, got, _ = d.call(t, old, http.MethodGet, scim.Base+"/Groups/"+id, nil)
+	x.Equal(http.StatusOK, code, "the row is kept, and answered: %v", got)
+	x.Empty(got["members"])
+
+	// And the key `roster scim provision` mints now erases it.
+	code, got = d.group(t, http.MethodDelete, "/"+id, nil)
+	x.Equal(http.StatusNoContent, code, "%v", got)
+	code, _ = d.group(t, http.MethodGet, "/"+id, nil)
+	x.Equal(http.StatusNotFound, code)
+
+	// A group an administrator bound a role to goes the same way, and what
+	// it handed out with it: the directory's holder is in the group and so
+	// holds what it is bound to, which is all an erase of it asks.
+	code, got = d.group(t, http.MethodPost, "", map[string]any{
+		"displayName": "Auditors", "externalId": guid(t), "members": []map[string]any{{"value": erin}},
+	})
+	x.Equal(http.StatusCreated, code, "%v", got)
+	id = got["id"].(string)
+	k, err := pdid.Parse(id)
+	x.NoError(err)
+	at := rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build()
+	reads, err := d.s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
+		Tenant: at, Alias: "auditor", Methods: []string{rstr.AccessService_List_FullMethodName},
+	}.Build())
+	x.NoError(err)
+	_, err = d.s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+		Role: rstr.RoleRef_builder{Id: reads.GetId()}.Build(), Group: rstr.GroupRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	who, err := pdid.Parse(erin)
+	x.NoError(err)
+	holds := func() []string {
+		t.Helper()
+		v, err := d.s.Ungated.Holder().Reaches(ctx, rstr.HolderReachesRequest_builder{
+			Ref: rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		return v.GetMethods()
+	}
+	x.Contains(holds(), rstr.AccessService_List_FullMethodName)
+
+	code, got = d.group(t, http.MethodDelete, "/"+id, nil)
+	x.Equal(http.StatusNoContent, code, "%v", got)
+	code, _ = d.group(t, http.MethodGet, "/"+id, nil)
+	x.Equal(http.StatusNotFound, code)
+	x.NotContains(holds(), rstr.AccessService_List_FullMethodName, "what the group handed out went with it")
 }
 
 // TestADirectoryChangesTheGroupsItMadeAndNoOther: the directory's key holds

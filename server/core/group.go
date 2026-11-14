@@ -70,17 +70,30 @@ func groupDenied(method string) error {
 }
 
 // managing is what a role held in a group may name: the writes that change
-// that group -- who is in it, and what it is called -- and nothing else.
+// that group -- who is in it, what it is called, and whether there is one --
+// and nothing else.
 //
 // Because the gate unions a role held in a group into what somebody may ever
 // call, and only these are narrowed back to the one group by
 // [Core.mayChangeGroup]. A read named here would read every group's members,
 // and anything else would be held across the tenant -- a binding by another
 // name, written by whoever may appoint a manager.
+//
+// # Whoever manages a group may erase it
+//
+// The other end of whoever makes one managing it ([coreGroup.made]). A manager
+// already decides everything a group is to the people in it: they may take
+// every one of them out, which leaves a group that gives nobody anything. What
+// erasing adds is the row going, and what an administrator bound to it or
+// showed a client with it -- and that is held to what every erase of a group
+// is ([coreGroup.Erase]): nobody erases a group that hands out what they do
+// not hold, which a manager holds by being in it, and nobody erases the
+// group a tenant is administered through.
 var managing = []string{
 	app.GroupMembershipService_Add_FullMethodName,
 	app.GroupMembershipService_Erase_FullMethodName,
 	app.GroupService_Update_FullMethodName,
+	app.GroupService_Erase_FullMethodName,
 }
 
 // Manages is the alias of the role a group's maker holds in it: a tenant's
@@ -89,8 +102,9 @@ var managing = []string{
 // The name a tenant would give its own, on purpose. One that is already there
 // and is what a role held in a group may be -- of no site, naming nothing
 // [managing] does not -- is the tenant's word for what a manager does, and is
-// used as it stands: a tenant whose managers do not rename groups keeps them
-// so. One that is anything else is refused where a group is made, saying so.
+// used as it stands: a tenant whose managers do not rename groups, or do not
+// erase them, keeps them so. One that is anything else is refused where a
+// group is made, saying so.
 const Manages = "group-manager"
 
 // maker is who is making a group, when that is somebody of its tenant -- and
@@ -255,7 +269,7 @@ func (s Core) managersRole(ctx context.Context, below app.Server, drv dialect.Dr
 		made, err := below.Role().Add(ctx, app.RoleAddRequest_builder{
 			Tenant:  app.TenantRef_builder{Id: tenant.Bytes()}.Build(),
 			Alias:   Manages,
-			Desc:    "What a group's manager may do to their own group: put people in, take them out, and say what it is called.",
+			Desc:    "What a group's manager may do to their own group: put people in, take them out, say what it is called, and erase it.",
 			Methods: managing,
 		}.Build())
 		if status.Code(err) == codes.AlreadyExists {

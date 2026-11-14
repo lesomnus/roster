@@ -361,11 +361,11 @@ a group bound inside their own site and not to one bound across the tenant.
 > already holds all of it herself.
 
 A membership may also carry a role held **in that group**, which makes its
-holder the group's manager: they may put people into it, take them out and say
-what it is called (`Group.Update`: its name and its note, never its alias), and
-do nothing to another group. It is a team administrator's rule, asked the same
-way (`server/core/group.go`), and such a role names only those three writes,
-since the gate holds it everywhere. Appointing one is held to what the
+holder the group's manager: they may put people into it, take them out, say
+what it is called (`Group.Update`: its name and its note, never its alias) and
+erase it, and do nothing to another group. It is a team administrator's rule,
+asked the same way (`server/core/group.go`), and such a role names only those
+four writes, since the gate holds it everywhere. Appointing one is held to what the
 appointer holds through a binding, so a manager does not make another. A
 manager is a member -- outside the group they would protect nothing, having an
 accomplice to put in.
@@ -383,10 +383,21 @@ takes themselves out when that is not wanted. A group made with nobody of the
 tenant asking -- a command at the box, a file's row, a deployment's key -- has
 no manager until an administrator appoints one.
 
+**And whoever manages a group may erase it.** A manager already decides
+everything a group is to the people in it -- they may take every one of them
+out, which leaves a group that gives nobody anything -- and what erasing adds
+is the row going, with what an administrator bound to it or showed a client by
+it. That is held to what every erase of a group is: nobody erases one that
+hands out what they do not hold, which a manager holds by being in it, and
+nobody erases the group their tenant is administered through. Their own and no
+other, as with its members; a tenant whose `group-manager` does not name
+`Group.Erase` keeps its managers from it, as it does from anything else that
+role leaves out.
+
 > contoso's administrator makes erin the manager of **dtrack-triage**. erin
 > adds a colleague to it, and is refused when she tries the same with
 > **on-call**, which somebody else manages. A group erin makes herself is hers
-> to manage from the start.
+> to manage from the start, and hers to erase when its work is done.
 
 ### 📣 `GroupExposure` — a client whose tokens carry a group
 

@@ -22,10 +22,10 @@ import (
 // # Nothing here is a rule about a directory's group
 //
 // The key this endpoint forwards holds the writes that change a group -- who
-// is in it, what it is called -- through the role its holder has **in** each
-// group it made, and through no binding. So what it reaches is the groups it
-// manages and no other, and that is roster's rule about every manager rather
-// than one written for it. An administrator binds a role to such a group, or
+// is in it, what it is called, whether there is one -- through the role its
+// holder has **in** each group it made, and through no binding. So what it
+// reaches is the groups it manages and no other, and that is roster's rule
+// about every manager rather than one written for it. An administrator binds a role to such a group, or
 // shows it to a client (`GroupExposure`), as to any other; who then holds
 // that role is the directory's to say, and that is the administrator's
 // decision when they do.
@@ -619,15 +619,26 @@ func (s *Server) replaceGroup(ctx context.Context, w http.ResponseWriter, r *htt
 	return nil
 }
 
-// deleteGroup is the directory saying a group is gone. Everybody it says is in
-// it is taken out, and the row is kept -- what becomes of it, and of whatever
-// was bound to it, is an administrator's.
+// deleteGroup is the directory saying a group is gone, and it is: erased, as
+// its manager may (`server/core/group.go`, `managing`), which the directory's
+// holder is of each group it made. What was bound to it and who it was shown
+// to go with it, as with any group erased -- held to what every erase of one
+// is, so not a group that hands out what its eraser does not hold, and not
+// the one a tenant is administered through.
 //
-// Not an erase, for what the directory's key would have to hold to make one: a
-// manager changes who is in their group and what it is called, and
-// `Group.Erase` held through a binding reaches every group of the tenant
-// nothing is bound to. So the group is still answered afterwards, with nobody
-// in it, and a directory that makes one of the same name again finds it.
+// So it is `404` afterwards -- read, changed or deleted again -- and in no
+// list, which is what RFC 7644 §3.6 asks and Microsoft's validator checks;
+// and a group made under that name again is another group, with the alias
+// the first had.
+//
+// # Where its role does not erase
+//
+// A tenant says what its managers do by the role they hold (`core.Manages`),
+// and one whose managers do not erase groups keeps them so; a key minted
+// before a manager could names no such method either. There the directory
+// does the most a manager of that tenant may: everybody it says is in the
+// group is taken out, the row is kept and still answered, and the log says
+// which of the two it was.
 func (s *Server) deleteGroup(ctx context.Context, w http.ResponseWriter, r *http.Request, t *tenancy) error {
 	id, ok := parseId(r.PathValue("id"))
 	if !ok {
@@ -636,7 +647,18 @@ func (s *Server) deleteGroup(ctx context.Context, w http.ResponseWriter, r *http
 	if _, err := s.readGroup(ctx, id); err != nil {
 		return err
 	}
-	if err := s.put(ctx, t, id, nil); err != nil {
+
+	_, err := s.roster.Group().Erase(ctx, rstr.GroupRef_builder{Id: id}.Build())
+	switch status.Code(err) {
+	case codes.OK:
+	case codes.PermissionDenied:
+		s.c.Log.WarnContext(r.Context(), "scim: this key does not erase the group, so everybody was taken out of it and it was kept; "+
+			"`roster scim provision` mints a key that does, where the tenant's managers may",
+			"path", r.URL.Path, "err", status.Convert(err).Message())
+		if err := s.put(ctx, t, id, nil); err != nil {
+			return err
+		}
+	default:
 		return err
 	}
 	w.WriteHeader(http.StatusNoContent)

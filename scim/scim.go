@@ -51,11 +51,11 @@ const Base = "/scim/v2"
 // into the role it binds the directory's holder.
 //
 // What is **not** here is the point of it. No `Identity.Add`, no address
-// written or attested, no `Holder.Add`, no `Erase`: each of those reaches
-// people who already exist, and a key a directory's cloud presents from the
-// internet should reach only the people it makes (`Provision`) and the people
-// it signs in (`Deactivate`, `Activate`, a profile it owns). `Tell` reaches
-// anybody and is no exception: what it writes is believed by nothing.
+// written or attested, no `Holder.Add`, no `Holder.Erase`: each of those
+// reaches people who already exist, and a key a directory's cloud presents
+// from the internet should reach only the people it makes (`Provision`) and
+// the people it signs in (`Deactivate`, `Activate`, a profile it owns). `Tell`
+// reaches anybody and is no exception: what it writes is believed by nothing.
 var Methods = []string{
 	rstr.MeService_Get_FullMethodName,
 	rstr.ConnectionService_List_FullMethodName,
@@ -81,13 +81,14 @@ var Methods = []string{
 	rstr.RelationService_Erase_FullMethodName,
 	rstr.RelationService_List_FullMethodName,
 
-	// Its groups (`groups.go`): made, read, and -- the three [InGroups] names
-	// -- changed.
+	// Its groups (`groups.go`): made, read, and -- what [InGroups] names --
+	// changed, and erased.
 	rstr.GroupService_Add_FullMethodName,
 	rstr.GroupService_Get_FullMethodName,
 	rstr.GroupService_List_FullMethodName,
 	rstr.GroupMembershipService_List_FullMethodName,
 	rstr.GroupService_Update_FullMethodName,
+	rstr.GroupService_Erase_FullMethodName,
 	rstr.GroupMembershipService_Add_FullMethodName,
 	rstr.GroupMembershipService_Erase_FullMethodName,
 }
@@ -98,11 +99,12 @@ var Methods = []string{
 // group alone.
 //
 // Bound, they would reach every group of the tenant: `GroupMembership.Add`
-// into a group nothing is bound to is asked nothing else. The key lists them
-// all the same, because a key's own list narrows what its holder holds and
-// would otherwise narrow these away.
+// into a group nothing is bound to is asked nothing else, and `Group.Erase`
+// of one is the same. The key lists them all the same, because a key's own
+// list narrows what its holder holds and would otherwise narrow these away.
 var InGroups = []string{
 	rstr.GroupService_Update_FullMethodName,
+	rstr.GroupService_Erase_FullMethodName,
 	rstr.GroupMembershipService_Add_FullMethodName,
 	rstr.GroupMembershipService_Erase_FullMethodName,
 }

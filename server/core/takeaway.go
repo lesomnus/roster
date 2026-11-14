@@ -128,6 +128,15 @@ func (s coreRole) Erase(ctx context.Context, req *app.RoleRef) (*app.RoleEraseRe
 	return out, err
 }
 
+// Erase asks [Core.mayChangeGroup] about the group first, which its manager
+// passes for their own group and nobody else's: the method is one a role held
+// in a group may name (`managing`), so the gate lets every group's manager
+// through for it, and this is where each is held to theirs. Somebody who
+// holds it through a binding passes for every group of the scope, as before.
+//
+// Then what an erase of a group was always asked, by whoever asks: what the
+// group handed out, which nobody takes away who could not have given it, and
+// that the tenant is still administered.
 func (s coreGroup) Erase(ctx context.Context, req *app.GroupRef) (*app.GroupEraseResponse, error) {
 	got, err := s.GroupServiceServer.Get(ctx, app.GroupGetRequest_builder{
 		Ref:    req,
@@ -138,6 +147,12 @@ func (s coreGroup) Erase(ctx context.Context, req *app.GroupRef) (*app.GroupEras
 		// always did: nothing erased.
 		return s.GroupServiceServer.Erase(ctx, req)
 	}
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.mayChangeGroup(ctx, app.GroupService_Erase_FullMethodName,
+		app.GroupRef_builder{Id: got.GetId()}.Build())
 	if err != nil {
 		return nil, err
 	}

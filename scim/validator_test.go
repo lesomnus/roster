@@ -277,6 +277,27 @@ func TestWhatMicrosoftsValidatorAsks(t *testing.T) {
 		x.Equal(renamed, now["displayName"])
 	})
 
+	// Not in its tutorial, and in its report: a group it deleted is gone by
+	// every way it then asks, and one that was never here is no different.
+	t.Run("Delete a Group", func(t *testing.T) {
+		x := require.New(t)
+		g := group(t)
+		code, got := post(t, "/Groups", g)
+		x.Equal(http.StatusCreated, code, "%v", got)
+		at := scim.Base + "/Groups/" + got["id"].(string)
+
+		code, _, _ = d.call(t, d.key, http.MethodDelete, at, nil)
+		x.Equal(http.StatusNoContent, code)
+		code, _, _ = d.call(t, d.key, http.MethodGet, at, nil)
+		x.Equal(http.StatusNotFound, code, "GET of what was deleted")
+		code, _, _ = d.call(t, d.key, http.MethodDelete, at, nil)
+		x.Equal(http.StatusNotFound, code, "DELETE request on the same Group should return 404 NotFound")
+		x.Empty(find(t, "Groups", "displayName", g["displayName"].(string)))
+
+		code, _, _ = d.call(t, d.key, http.MethodDelete, scim.Base+"/Groups/"+guid(t), nil)
+		x.Equal(http.StatusNotFound, code, "Delete a non-existent Group")
+	})
+
 	t.Run("Patch Group - Replace Attributes, of which it found none", func(t *testing.T) {
 		x := require.New(t)
 		g := group(t)
