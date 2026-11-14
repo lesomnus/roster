@@ -47,7 +47,10 @@ import (
 //   - `finds`, how many it wanted found.
 //
 // A row with neither is held to what roster answered that day, which the page
-// took. So a file says what the page sent, and what passing it is.
+// took. So a file says what the page sent, and what passing it is -- as far as
+// a status and a count say it. What the page read out of an answer and did
+// not find is held where it can be said of every answer ([readable]), and
+// otherwise by the test that asks it by name (`TestWhatMicrosoftsValidatorAsks`).
 //
 // # What is not the same as that day
 //
@@ -70,6 +73,64 @@ type sent struct {
 
 	Wants int  `json:"wants"`
 	Finds *int `json:"finds"`
+}
+
+// readable is whether an answer is one the page reads: no object of it begins
+// with `$ref` and goes on to say anything else.
+//
+// What the second run found, and no status says: the page answered *the
+// schema of the fetched group is invalid* to the one group it read with
+// anybody in it, whose members were written `$ref` first ([reference]). So
+// every answer of every run is held to it here, whichever asks for one next.
+func readable(answer []byte) error {
+	if len(bytes.TrimSpace(answer)) == 0 {
+		return nil
+	}
+	dec := json.NewDecoder(bytes.NewReader(answer))
+
+	var value func() error
+	value = func() error {
+		tok, err := dec.Token()
+		if err != nil {
+			return err
+		}
+		switch tok {
+		case json.Delim('['):
+			for dec.More() {
+				if err := value(); err != nil {
+					return err
+				}
+			}
+			_, err := dec.Token()
+
+			return err
+
+		case json.Delim('{'):
+			first := ""
+			for n := 0; dec.More(); n++ {
+				key, err := dec.Token()
+				if err != nil {
+					return err
+				}
+				if n == 0 {
+					first, _ = key.(string)
+				}
+				if n == 1 && first == "$ref" {
+					return fmt.Errorf("an object begins with `$ref` and goes on to say %q: a reader of references takes it for one, and for nothing else", key)
+				}
+				if err := value(); err != nil {
+					return err
+				}
+			}
+			_, err := dec.Token()
+
+			return err
+		}
+
+		return nil
+	}
+
+	return value()
 }
 
 // validatorRuns is every run kept, by its file.
@@ -162,8 +223,13 @@ func TestWhatMicrosoftsValidatorSent(t *testing.T) {
 				if row.Wants != 0 {
 					want = row.Wants
 				}
-				code, got, _ := d.call(t, d.key, row.Method, path, body)
+				code, said, _ := d.raw(t, d.key, row.Method, path, body)
+				var got map[string]any
+				if len(bytes.TrimSpace(said)) > 0 {
+					x.NoError(json.Unmarshal(said, &got), "row %d: %s", i+1, said)
+				}
 				x.Equal(want, code, "row %d: %s %s\n> %s\n< %v", i+1, row.Method, path, body, got)
+				x.NoError(readable(said), "row %d: %s %s\n< %s", i+1, row.Method, path, said)
 
 				if row.Made != "" {
 					id, _ := got["id"].(string)

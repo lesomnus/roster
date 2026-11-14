@@ -139,6 +139,20 @@ func (d *deployment) mint(t *testing.T, holder []byte, alias string, methods []s
 // call is one request, as the directory makes it.
 func (d *deployment) call(t *testing.T, key, method, path string, body any) (int, map[string]any, http.Header) {
 	t.Helper()
+	code, b, h := d.raw(t, key, method, path, body)
+
+	var out map[string]any
+	if len(bytes.TrimSpace(b)) > 0 {
+		require.NoError(t, json.Unmarshal(b, &out), "%s", b)
+	}
+
+	return code, out, h
+}
+
+// raw is one request and its answer as it was written, for what a parsed one
+// no longer says: the order an object's members are in.
+func (d *deployment) raw(t *testing.T, key, method, path string, body any) (int, []byte, http.Header) {
+	t.Helper()
 	x := require.New(t)
 
 	var r io.Reader
@@ -163,14 +177,10 @@ func (d *deployment) call(t *testing.T, key, method, path string, body any) (int
 	x.NoError(err)
 	defer res.Body.Close()
 
-	var out map[string]any
 	b, err := io.ReadAll(res.Body)
 	x.NoError(err)
-	if len(bytes.TrimSpace(b)) > 0 {
-		x.NoError(json.Unmarshal(b, &out), "%s", b)
-	}
 
-	return res.StatusCode, out, res.Header
+	return res.StatusCode, b, res.Header
 }
 
 func filter(attr, value string) string {
@@ -650,6 +660,10 @@ func TestAChangedUserNameIsKeptAndAnsweredAndTheAddressStays(t *testing.T) {
 	x.Equal(http.StatusOK, code, "%v", got)
 	x.Equal("erin.park@contoso.example", got["userName"])
 	x.Len(got["emails"], 2, "each address once")
+	// One of them is what a directory reads by `emails[type eq "work"]`: the
+	// one it said. The address they had here beside it is their other.
+	x.Equal(map[string]any{"value": "erin.park@contoso.example", "type": "work", "primary": true}, got["emails"].([]any)[0])
+	x.Equal(map[string]any{"value": "erin@contoso.example", "type": "other", "primary": false}, got["emails"].([]any)[1])
 	x.Equal(erinOid, got["externalId"])
 	x.Empty(d.holder(t, id).GetDirectorySubject(), "a whole User naming them as roster does keeps nothing")
 
@@ -1326,6 +1340,13 @@ func TestADirectorySaysWhoSomebodyReportsTo(t *testing.T) {
 	got := patch(map[string]any{"op": "Add", "path": path, "value": fred})
 	x.Equal(fred, said(got), "and read back")
 	x.Equal(map[string][]string{fred: {"manager"}}, d.relationsOf(t, erin))
+
+	// Written `value` first, and where they are read after it: an object
+	// that begins with `$ref` is, to what reads references, one and nothing
+	// else ([reference]).
+	code, raw, _ := d.raw(t, d.key, http.MethodGet, scim.Base+"/Users/"+erin, nil)
+	x.Equal(http.StatusOK, code, "%s", raw)
+	x.Contains(string(raw), `"manager":{"value":"`+fred+`","$ref":"`+scim.Base+`/Users/`+fred+`"}`)
 
 	// The RFC's: an object, with no path.
 	got = patch(map[string]any{"op": "replace", "value": map[string]any{enterprise: map[string]any{"manager": map[string]any{"value": gina}}}})
