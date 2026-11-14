@@ -92,7 +92,9 @@ rather than NULL. CI migrates empty databases and cannot see this, which is what
 goes into every table, and another starts on them twice. The `upgrade` job runs
 it from two builds: the one a change comes after -- a pull request's base, or
 what `main` was before a push -- and the oldest a deployment runs, OLDEST,
-which `.github/workflows/ci.yml` names and moves forward when staging moves.
+which `.github/workflows/ci.yml` names, with which deployment runs what, and
+moves forward when the one on the oldest build moves: to the oldest any of them
+then runs.
 
 **Nor from another compatibility epoch.** `.github/compat-epoch` is a number,
 and a build whose number is not the commit's is one the commit keeps nothing

@@ -295,10 +295,12 @@ jobs:
   # From two builds. The one this comes after -- the pull request's base, or
   # what `main` was before this push -- is one step. The oldest a deployment
   # still runs, OLDEST, is however many steps a deployment that skipped some
-  # takes at once: staging's, written below, and moved forward when staging
-  # moves. It was the nearest `v*` tag until the owner agreed that roster does
-  # without tags for this (2026-11-11): nothing tagged what staging ran, so the
-  # job upgraded from v0.1.1 and nothing else.
+  # takes at once: written below, with who runs what, and moved forward when
+  # the deployment on the oldest build moves -- to the oldest any of them then
+  # runs, which is not always where that one went. It was the nearest `v*` tag
+  # until the owner agreed that roster does without tags for this
+  # (2026-11-11): nothing tagged what staging ran, so the job upgraded from
+  # v0.1.1 and nothing else.
   #
   # Except across a compatibility epoch, `.github/compat-epoch`. Until the
   # first app launches, roster keeps nothing for an earlier roster (the
@@ -323,8 +325,15 @@ jobs:
       - name: this build, the one it comes after, and the oldest a deployment runs
         env:
           BEFORE: ${{ github.event.pull_request.base.sha || github.event.before }}
-          # The build staging runs, 1bcd27a (2026-11-11). It moves when staging
-          # moves: to what staging runs once it runs it.
+          # The oldest build a deployment runs. There are two deployments:
+          #
+          #   staging                  36fafda   since 2026-11-13
+          #   one with data, operating 59c0506   since 2026-11-14
+          #
+          # So it is staging's, and it moves when staging moves -- to the older
+          # of what the two then run. Moved to wherever staging went, it would
+          # pass the other by, and the one whose rows are somebody's is the one
+          # that would then upgrade over steps nothing here had taken.
           OLDEST: 36fafdadc11b7ab843eb0908b48b35da5efdd778
         run: |
           go build -o "${RUNNER_TEMP}/bin-now/" ./cmd/roster
