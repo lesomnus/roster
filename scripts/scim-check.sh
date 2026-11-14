@@ -62,7 +62,12 @@
 #
 #   SCIM_CHECK_MINUTES       the most it waits; 30.
 #   SCIM_CHECK_IDLE          minutes with nothing asked, after something was,
-#                            that end it early; 10.
+#                            that end it early; 10. That long because what is
+#                            asked first is the schema, and then a person
+#                            fills a form on a page that is slow.
+#   SCIM_CHECK_DONE          and the minutes that end it once the page's tests
+#                            have been asked; 3. They are over in seconds, and
+#                            nobody is filling anything in after them.
 #   SCIM_CHECK_OUT           where `requests.jsonl` and `roster.log` are left;
 #                            ./scim-check.
 #
@@ -87,6 +92,7 @@ cd "${__root}"
 
 : "${SCIM_CHECK_MINUTES:=30}"
 : "${SCIM_CHECK_IDLE:=10}"
+: "${SCIM_CHECK_DONE:=3}"
 : "${SCIM_CHECK_OUT:=${__root}/scim-check}"
 
 # Which tunnel and which record this run made, by their identifiers and
@@ -632,11 +638,16 @@ cat <<SAY
    \`displayName\` for a group, and an \`externalId\` is added here to a person
    made without one.
 
-   It ends by itself ${SCIM_CHECK_IDLE} minutes after the last thing it is asked.
+   It ends by itself ${SCIM_CHECK_DONE} minutes after the page's tests were asked, and
+   ${SCIM_CHECK_IDLE} minutes after the last thing it is asked before they are.
 
 SAY
 
 asked() { wc -l < "${out}/requests.jsonl" | tr -d ' '; }
+# tested is whether the page's tests have been asked: each begins by making
+# something, and what is asked before that -- the schema, a lookup -- is a
+# person still at the form.
+tested() { grep -q '"method": "POST"' "${out}/requests.jsonl"; }
 was=0
 idle=0
 for minute in $(seq 1 "${SCIM_CHECK_MINUTES}"); do
@@ -649,6 +660,9 @@ for minute in $(seq 1 "${SCIM_CHECK_MINUTES}"); do
 	fi
 	was="${now}"
 	echo "   ${minute}m: ${now} asked"
+	if tested && [ "${idle}" -ge "${SCIM_CHECK_DONE}" ]; then
+		break
+	fi
 	if [ "${now}" != 0 ] && [ "${idle}" -ge "${SCIM_CHECK_IDLE}" ]; then
 		break
 	fi

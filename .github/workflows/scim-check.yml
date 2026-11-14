@@ -20,7 +20,7 @@ on:
         description: The most it waits for the page to be run, in minutes
         default: "30"
       idle:
-        description: Minutes with nothing asked, after something was, that end it early
+        description: Minutes with nothing asked, after something was, that end it early -- before the page's tests are asked; three after
         default: "10"
 
 permissions:

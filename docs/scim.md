@@ -134,7 +134,8 @@ runs its tests, and what `TestTheValidatorAsksAtOnce` asks.
 workflow*. It stands a roster up from nothing with a tenant nobody is in, puts
 it behind a Cloudflare tunnel, and prints what to do next -- the five steps at
 the page, with the address and the token to paste -- then waits, and ends by
-itself ten minutes after the last thing it is asked. **Nothing is set up
+itself three minutes after the page's tests were asked: ten after the last
+thing it is asked before that, which is a person at a form. **Nothing is set up
 beforehand and nothing is remembered between runs**: the tunnel is one
 Cloudflare gives without an account, and the token is made up by the run.
 
