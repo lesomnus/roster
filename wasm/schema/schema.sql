@@ -27,6 +27,7 @@ CREATE TABLE `nomination` (`id` uuid NOT NULL, `labels` json NULL, `name` text N
 CREATE TABLE `outbox` (`id` uuid NOT NULL, `tenant_id` uuid NOT NULL, `actor_id` uuid NOT NULL, `method` text NOT NULL, `by` text NOT NULL, `object_id` uuid NOT NULL, `patch` blob NOT NULL, `date_created` datetime NULL, `event` blob NULL, PRIMARY KEY (`id`));
 CREATE TABLE `owed` (`id` uuid NOT NULL, `object` uuid NOT NULL, `held_by` json NULL, `date_created` datetime NULL, PRIMARY KEY (`id`));
 CREATE TABLE `phone` (`id` uuid NOT NULL, `number` text NOT NULL, `kind` text NOT NULL, `tenant_id` uuid NOT NULL, `date_updated` datetime NOT NULL, `date_erased` datetime NULL, `date_created` datetime NULL, `holder_id` uuid NOT NULL, PRIMARY KEY (`id`), CONSTRAINT `phone_holder_holder` FOREIGN KEY (`holder_id`) REFERENCES `holder` (`id`) ON DELETE NO ACTION);
+CREATE TABLE `relation` (`id` uuid NOT NULL, `labels` json NULL, `tenant_id` uuid NOT NULL, `date_updated` datetime NOT NULL, `date_erased` datetime NULL, `date_created` datetime NULL, `holder_id` uuid NOT NULL, `other_id` uuid NOT NULL, PRIMARY KEY (`id`), CONSTRAINT `relation_holder_holder` FOREIGN KEY (`holder_id`) REFERENCES `holder` (`id`) ON DELETE NO ACTION, CONSTRAINT `relation_holder_other` FOREIGN KEY (`other_id`) REFERENCES `holder` (`id`) ON DELETE NO ACTION);
 CREATE TABLE `role` (`id` uuid NOT NULL, `alias` text NOT NULL, `name` text NOT NULL, `desc` text NOT NULL, `labels` json NULL, `methods` json NULL, `date_updated` datetime NOT NULL, `date_erased` datetime NULL, `date_created` datetime NULL, `tenant_id` uuid NOT NULL, `site_id` uuid NULL, PRIMARY KEY (`id`), CONSTRAINT `role_tenant_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenant` (`id`) ON DELETE NO ACTION, CONSTRAINT `role_site_site` FOREIGN KEY (`site_id`) REFERENCES `site` (`id`) ON DELETE SET NULL);
 CREATE TABLE `rowseal` (`id` uuid NOT NULL, `tenant_id` uuid NOT NULL, `sum` blob NOT NULL, `fields` json NULL, PRIMARY KEY (`id`));
 CREATE TABLE `session` (`id` uuid NOT NULL, `grant` blob NOT NULL, `secret` blob NOT NULL, `date_expires` datetime NULL, `date_idle` datetime NULL, `date_updated` datetime NOT NULL, `date_erased` datetime NULL, `date_created` datetime NULL, `holder_id` uuid NOT NULL, PRIMARY KEY (`id`), CONSTRAINT `session_holder_holder` FOREIGN KEY (`holder_id`) REFERENCES `holder` (`id`) ON DELETE NO ACTION);
@@ -92,6 +93,8 @@ CREATE INDEX `outbox_queue` ON `outbox` (`id`);
 CREATE INDEX `owed_owed` ON `owed` (`date_created`, `id`);
 CREATE UNIQUE INDEX `phone_number` ON `phone` (`holder_id`, `number`) WHERE date_erased IS NULL;
 CREATE INDEX `phone_page` ON `phone` (`tenant_id`, `date_created`, `id`);
+CREATE INDEX `relation_page` ON `relation` (`tenant_id`, `date_created`, `id`);
+CREATE UNIQUE INDEX `relation_pair` ON `relation` (`holder_id`, `other_id`) WHERE date_erased IS NULL;
 CREATE INDEX `role_page` ON `role` (`tenant_id`, `date_created`, `id`);
 CREATE UNIQUE INDEX `role_slug` ON `role` (`alias`, `tenant_id`) WHERE date_erased IS NULL;
 CREATE INDEX `session_page` ON `session` (`date_created`, `id`);

@@ -297,6 +297,18 @@ func (f PhoneFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PhoneMutation", m)
 }
 
+// The RelationFunc type is an adapter to allow the use of ordinary
+// function as Relation mutator.
+type RelationFunc func(context.Context, *ent.RelationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RelationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RelationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RelationMutation", m)
+}
+
 // The RoleFunc type is an adapter to allow the use of ordinary
 // function as Role mutator.
 type RoleFunc func(context.Context, *ent.RoleMutation) (ent.Value, error)

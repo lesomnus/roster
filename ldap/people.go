@@ -33,6 +33,7 @@ const (
 	attrFax          = "facsimileTelephoneNumber"
 	attrHomePhone    = "homePhone"
 	attrPager        = "pager"
+	attrManager      = "manager"
 	attrEntryUUID    = "entryUUID"
 	attrObjectClass  = "objectClass"
 	classPerson      = "inetOrgPerson"
@@ -48,7 +49,13 @@ type wants struct {
 	memberOf bool
 	member   bool
 	phone    bool
+	manager  bool
 }
+
+// managerLabel is the label that says a relation's `other` is who its
+// `holder` reports to: the word the SCIM endpoint writes (`scim/manager.go`)
+// and this reads. roster itself reads no label of a relation.
+const managerLabel = "manager"
 
 // phoneAttrs is the attributes a person's numbers are published as, by which
 // of their numbers each is (`Phone.kind`). One of no kind, or of a kind with
@@ -89,11 +96,14 @@ func wanted(req wire.SearchRequest) wants {
 			w.member = true
 		case isPhoneAttr(a):
 			w.phone = true
+		case strings.EqualFold(a, attrManager):
+			w.manager = true
 		}
 	}
 	if all {
-		w = wants{mail: true, memberOf: true, member: true, phone: true}
+		w = wants{mail: true, memberOf: true, member: true, phone: true, manager: true}
 	}
+	w.manager = w.manager || req.Filter.Mentions(attrManager)
 	for _, a := range phoneAttrs {
 		w.phone = w.phone || req.Filter.Mentions(a)
 	}
@@ -211,8 +221,58 @@ func (s *search) personEntry(ctx context.Context, t *tenant, v *rstr.Holder) (*e
 			e.add(phoneAttrs[n.GetKind()], n.GetNumber())
 		}
 	}
+	if s.want.manager {
+		names, err := d.managers(ctx, t, s.reads, v.GetId())
+		if err != nil {
+			return nil, err
+		}
+		e.add(attrManager, names...)
+	}
 
 	return e, nil
+}
+
+// managers is `manager`: the DNs of who somebody reports to, which is a
+// `Relation` of theirs that says so (`managerLabel`). Somebody who is gone or
+// stopped is not named, as they are not listed.
+//
+// A role that does not name the read publishes none, for [Directory.numbers]'s
+// reason.
+func (d *Directory) managers(ctx context.Context, t *tenant, r *reads, holder []byte) ([]string, error) {
+	var out []string
+	after := ""
+	for {
+		vs, err := d.roster.Relation().List(t.on(ctx), rstr.RelationListRequest_builder{
+			Filters: []*rstr.RelationFilter{rstr.RelationFilter_builder{Holder: rstr.HolderRef_builder{Id: holder}.Build()}.Build()},
+			Size:    int32(d.c.PageSize),
+			After:   after,
+		}.Build())
+		if status.Code(err) == codes.PermissionDenied {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range vs.GetItems() {
+			if _, ok := v.GetLabels()[managerLabel]; !ok {
+				continue
+			}
+			who, err := d.holder(ctx, t, r, v.GetOther().GetId())
+			if status.Code(err) == codes.NotFound {
+				continue
+			}
+			if err != nil {
+				return nil, err
+			}
+			if who.GetDateDisabled() != nil || who.GetDateErased() != nil {
+				continue
+			}
+			out = append(out, d.personDN(t, who).String())
+		}
+		if after = vs.GetNext(); after == "" {
+			return out, nil
+		}
+	}
 }
 
 // numbers is where somebody is reached: `telephoneNumber`, `mobile` and the

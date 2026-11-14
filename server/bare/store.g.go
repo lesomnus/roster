@@ -33,6 +33,7 @@ import (
 	owed "github.com/lesomnus/roster/internal/ent/owed"
 	phone "github.com/lesomnus/roster/internal/ent/phone"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
+	relation "github.com/lesomnus/roster/internal/ent/relation"
 	role "github.com/lesomnus/roster/internal/ent/role"
 	rowseal "github.com/lesomnus/roster/internal/ent/rowseal"
 	session "github.com/lesomnus/roster/internal/ent/session"
@@ -416,6 +417,7 @@ type Scope interface {
 	GroupMembershipScope(ctx context.Context) (predicate.GroupMembership, error)
 	NominationScope(ctx context.Context) (predicate.Nomination, error)
 	PhoneScope(ctx context.Context) (predicate.Phone, error)
+	RelationScope(ctx context.Context) (predicate.Relation, error)
 	SessionScope(ctx context.Context) (predicate.Session, error)
 	AccessScope(ctx context.Context) (predicate.Access, error)
 	ArchivedScope(ctx context.Context) (predicate.Archived, error)
@@ -510,6 +512,9 @@ func (Unscoped) NominationScope(_ context.Context) (predicate.Nomination, error)
 	return nil, nil
 }
 func (Unscoped) PhoneScope(_ context.Context) (predicate.Phone, error) {
+	return nil, nil
+}
+func (Unscoped) RelationScope(_ context.Context) (predicate.Relation, error) {
 	return nil, nil
 }
 func (Unscoped) SessionScope(_ context.Context) (predicate.Session, error) {
@@ -1053,6 +1058,26 @@ func (ss Scopes) PhoneScope(ctx context.Context) (predicate.Phone, error) {
 	return phone.And(ps...), nil
 }
 
+func (ss Scopes) RelationScope(ctx context.Context) (predicate.Relation, error) {
+	ps := make([]predicate.Relation, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.RelationScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return relation.And(ps...), nil
+}
+
 func (ss Scopes) SessionScope(ctx context.Context) (predicate.Session, error) {
 	ps := make([]predicate.Session, 0, len(ss))
 	for _, s := range ss {
@@ -1328,7 +1353,7 @@ func ItemError(i int, err error) error {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. ApiKey, Binding, Connection, Consent, Continuation, Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Phone, Role, Session, Site, SiteMembership, Team and TeamMembership free the names they held when a row
+// check. ApiKey, Binding, Connection, Consent, Continuation, Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Phone, Relation, Role, Session, Site, SiteMembership, Team and TeamMembership free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -1413,6 +1438,7 @@ func (s Server) Nomination() rstr.NominationServiceServer {
 	return NominationServiceServer{Store: s.Store}
 }
 func (s Server) Phone() rstr.PhoneServiceServer       { return PhoneServiceServer{Store: s.Store} }
+func (s Server) Relation() rstr.RelationServiceServer { return RelationServiceServer{Store: s.Store} }
 func (s Server) Session() rstr.SessionServiceServer   { return SessionServiceServer{Store: s.Store} }
 func (s Server) Access() rstr.AccessServiceServer     { return AccessServiceServer{Store: s.Store} }
 func (s Server) Archived() rstr.ArchivedServiceServer { return ArchivedServiceServer{Store: s.Store} }

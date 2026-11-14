@@ -158,7 +158,8 @@ func (s *Server) phonesOf(ctx context.Context, holder []byte) ([]*rstr.Phone, er
 	}
 }
 
-// shown is a person as SCIM writes one, their numbers with them.
+// shownUser is a person as SCIM writes one, with what is kept of them in rows
+// of their own: their numbers, and who they report to.
 func (s *Server) shownUser(ctx context.Context, p *person) (map[string]any, error) {
 	u := p.user()
 
@@ -176,6 +177,22 @@ func (s *Server) shownUser(ctx context.Context, p *person) (map[string]any, erro
 			ns = append(ns, n)
 		}
 		u["phoneNumbers"] = ns
+	}
+
+	// And who they report to, beside what else their organisation says of
+	// them.
+	boss, err := s.managerOf(ctx, p.holder.GetId())
+	if err != nil {
+		return nil, err
+	}
+	if boss != nil {
+		ent, _ := u[enterpriseSchema].(map[string]any)
+		if ent == nil {
+			ent = map[string]any{}
+			u[enterpriseSchema] = ent
+		}
+		k := idOf(boss)
+		ent["manager"] = map[string]any{"value": k, "$ref": Base + "/Users/" + k}
 	}
 
 	return u, nil

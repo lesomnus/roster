@@ -76,6 +76,11 @@ var Methods = []string{
 	rstr.PhoneService_Erase_FullMethodName,
 	rstr.PhoneService_List_FullMethodName,
 
+	// Who they report to (`manager.go`): a record no rule reads.
+	rstr.RelationService_Add_FullMethodName,
+	rstr.RelationService_Erase_FullMethodName,
+	rstr.RelationService_List_FullMethodName,
+
 	// Its groups (`groups.go`): made, read, and -- the three [InGroups] names
 	// -- changed.
 	rstr.GroupService_Add_FullMethodName,

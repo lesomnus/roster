@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"strings"
 	"testing"
 
@@ -1109,4 +1110,101 @@ func TestAKeyMintedBeforeNumbersWereKeptStillProvisions(t *testing.T) {
 	code, got, _ = d.call(t, old, http.MethodGet, scim.Base+"/Users/"+id, nil)
 	x.Equal(http.StatusOK, code, "%v", got)
 	x.Equal("erin@contoso.example", got["userName"])
+}
+
+// relationsOf is what somebody is to anybody as roster has it: the other end
+// of each relation of theirs, and what each says.
+func (d *deployment) relationsOf(t *testing.T, id string) map[string][]string {
+	t.Helper()
+	k, err := pdid.Parse(id)
+	require.NoError(t, err)
+	vs, err := d.s.Ungated.Relation().List(t.Context(), rstr.RelationListRequest_builder{
+		Filters: []*rstr.RelationFilter{rstr.RelationFilter_builder{Holder: rstr.HolderRef_builder{Id: k.Bytes()}.Build()}.Build()},
+	}.Build())
+	require.NoError(t, err)
+
+	out := map[string][]string{}
+	for _, v := range vs.GetItems() {
+		other, err := pdid.From(v.GetOther().GetId())
+		require.NoError(t, err)
+		ls := []string{}
+		for l := range v.GetLabels() {
+			ls = append(ls, l)
+		}
+		slices.Sort(ls)
+		out[other.String()] = ls
+	}
+
+	return out
+}
+
+const ginaOid = "2b3c4d5e-6f70-8192-a3b4-c5d6e7f8091a"
+
+// TestADirectorySaysWhoSomebodyReportsTo: the enterprise schema's `manager`
+// is kept as a relation from the person to their manager, marked by the one
+// word this endpoint writes and the LDAP front reads. One at a time, as a
+// directory says it: a new one replaces the old, and the word comes out of a
+// row somebody else also wrote into rather than the row being erased for it.
+// A manager who is nobody here is said in the log and refuses nothing.
+func TestADirectorySaysWhoSomebodyReportsTo(t *testing.T) {
+	d := stand(t)
+	x := require.New(t)
+	ctx := t.Context()
+	erin, fred, gina := d.someone(t, "erin", erinOid), d.someone(t, "fred", fredOid), d.someone(t, "gina", ginaOid)
+	path := enterprise + ":manager"
+
+	patch := func(ops ...map[string]any) map[string]any {
+		t.Helper()
+		code, got, _ := d.call(t, d.key, http.MethodPatch, scim.Base+"/Users/"+erin, map[string]any{"Operations": ops})
+		x.Equal(http.StatusOK, code, "%v", got)
+
+		return got
+	}
+	said := func(got map[string]any) any {
+		ent, _ := got[enterprise].(map[string]any)
+		m, _ := ent["manager"].(map[string]any)
+
+		return m["value"]
+	}
+
+	// Entra's way: the manager's id, bare.
+	got := patch(map[string]any{"op": "Add", "path": path, "value": fred})
+	x.Equal(fred, said(got), "and read back")
+	x.Equal(map[string][]string{fred: {"manager"}}, d.relationsOf(t, erin))
+
+	// The RFC's: an object, with no path.
+	got = patch(map[string]any{"op": "replace", "value": map[string]any{enterprise: map[string]any{"manager": map[string]any{"value": gina}}}})
+	x.Equal(gina, said(got))
+	x.Equal(map[string][]string{gina: {"manager"}}, d.relationsOf(t, erin), "one at a time: who it was is not who it is")
+
+	// An operator says fred is something else to her. The directory saying he
+	// is her manager too is the same row saying both, and saying he no longer
+	// is leaves what the operator wrote.
+	k, err := pdid.Parse(erin)
+	x.NoError(err)
+	f, err := pdid.Parse(fred)
+	x.NoError(err)
+	_, err = d.s.Ungated.Relation().Add(ctx, rstr.RelationAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: k.Bytes()}.Build(), Other: rstr.HolderRef_builder{Id: f.Bytes()}.Build(),
+		Labels: map[string]string{"mentor": ""},
+	}.Build())
+	x.NoError(err)
+	patch(map[string]any{"op": "Replace", "path": path, "value": fred})
+	x.Equal(map[string][]string{fred: {"manager", "mentor"}}, d.relationsOf(t, erin))
+	patch(map[string]any{"op": "Replace", "path": path, "value": gina})
+	x.Equal(map[string][]string{fred: {"mentor"}, gina: {"manager"}}, d.relationsOf(t, erin))
+
+	// Somebody who is nobody here: said, and nothing else about the write is
+	// wrong.
+	got = patch(
+		map[string]any{"op": "Replace", "path": path, "value": "00000000-0000-4000-8000-000000000000"},
+		map[string]any{"op": "Replace", "path": "displayName", "value": "Erin Park"},
+	)
+	x.Equal("Erin Park", got["displayName"])
+	x.Equal(gina, said(got))
+
+	// And nobody.
+	got = patch(map[string]any{"op": "Remove", "path": path})
+	x.Nil(said(got))
+	x.Equal(map[string][]string{fred: {"mentor"}}, d.relationsOf(t, erin))
 }

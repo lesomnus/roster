@@ -72,6 +72,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/link"
 	"github.com/lesomnus/roster/internal/ent/nomination"
 	"github.com/lesomnus/roster/internal/ent/phone"
+	"github.com/lesomnus/roster/internal/ent/relation"
 	"github.com/lesomnus/roster/internal/ent/session"
 	"github.com/lesomnus/roster/internal/ent/sitemembership"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
@@ -406,6 +407,23 @@ func subjects() []subject {
 			},
 			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 				return db.Phone.Delete().Where(phone.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
+			},
+		},
+		// What they are to somebody, and what somebody is to them. Both ends:
+		// a relation to a person who is gone says something about nobody, and
+		// who they were to anybody is theirs as much as who anybody was to
+		// them.
+		{
+			name: "relation",
+			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+				return db.Relation.Query().Where(relation.Or(
+					relation.HasHolderWith(holder.IdEQ(k)), relation.HasOtherWith(holder.IdEQ(k)),
+				)).Ids(ctx)
+			},
+			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+				return db.Relation.Delete().Where(relation.Or(
+					relation.HasHolderWith(holder.IdEQ(k)), relation.HasOtherWith(holder.IdEQ(k)),
+				)).Exec(ctx)
 			},
 		},
 		{

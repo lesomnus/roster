@@ -89,6 +89,9 @@ type Owed func(*sql.Selector)
 // Phone is the predicate function for phone builders.
 type Phone func(*sql.Selector)
 
+// Relation is the predicate function for relation builders.
+type Relation func(*sql.Selector)
+
 // Role is the predicate function for role builders.
 type Role func(*sql.Selector)
 

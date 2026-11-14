@@ -60,6 +60,9 @@ type changes struct {
 	phones    map[string]string
 	allPhones *[]phone
 
+	// Who they report to, by their id (`manager.go`); empty is nobody.
+	manager *string
+
 	// ignored is what was said and is not kept here, said in the log.
 	ignored []string
 }
@@ -144,6 +147,15 @@ func (c *changes) set(path string, raw json.RawMessage) error {
 		}
 		c.employeeNo = &v
 
+	case p == managerPath, p == managerPath+".value":
+		// Their id, as a directory writes one: bare, which is Entra's, or in
+		// the RFC's `{value}`.
+		v, err := text(raw)
+		if err != nil {
+			return badRequest("invalidValue", "manager: "+err.Error())
+		}
+		c.manager = &v
+
 	case p == "externalid":
 		v, err := text(raw)
 		if err != nil {
@@ -217,6 +229,8 @@ func (c *changes) clear(path string) {
 		c.department = &empty
 	case ext + ":employeenumber":
 		c.employeeNo = &empty
+	case managerPath, managerPath + ".value":
+		c.manager = &empty
 	case "phonenumbers":
 		c.allPhones = &[]phone{}
 	default:

@@ -33,6 +33,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/outbox"
 	"github.com/lesomnus/roster/internal/ent/owed"
 	"github.com/lesomnus/roster/internal/ent/phone"
+	"github.com/lesomnus/roster/internal/ent/relation"
 	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/rowseal"
 	"github.com/lesomnus/roster/internal/ent/session"
@@ -128,6 +129,7 @@ func checkColumn(t, c string) error {
 			outbox.Table:          outbox.ValidColumn,
 			owed.Table:            owed.ValidColumn,
 			phone.Table:           phone.ValidColumn,
+			relation.Table:        relation.ValidColumn,
 			role.Table:            role.ValidColumn,
 			rowseal.Table:         rowseal.ValidColumn,
 			session.Table:         session.ValidColumn,
