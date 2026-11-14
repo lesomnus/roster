@@ -193,6 +193,7 @@ deployments of roster should agree on it.
 | `departmentNumber` | `Profile.department` | |
 | `preferredLanguage` | `Profile.locale` | |
 | `labeledURI` | `Profile.picture` | |
+| `telephoneNumber`, `mobile`, `facsimileTelephoneNumber`, `homePhone`, `pager` | `Phone.number`, by its `kind` | one of no kind, or of a kind with no attribute of its own, is a `telephoneNumber`; read only when asked for or filtered on, since it costs a list |
 | `memberOf` | the DNs of their groups and teams | AD's convenience, and the one most clients ask for; read only when asked for or filtered on, since it costs two lists |
 | `entryUUID` | `Holder.id` | |
 
@@ -304,6 +305,7 @@ writes the holder, the role, the binding and the nomination:
 /roster.HolderService/Search
 /roster.EmailService/Get
 /roster.EmailService/List
+/roster.PhoneService/List             # a role that does not name it publishes no numbers, and nothing else changes
 /roster.GroupService/Get
 /roster.GroupService/List
 /roster.GroupMembershipService/List

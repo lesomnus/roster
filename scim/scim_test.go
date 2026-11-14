@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/lesomnus/z"
@@ -989,4 +990,123 @@ func TestAGroupsMembersAreSaidTheRFCsWayToo(t *testing.T) {
 	}})
 	x.Equal(http.StatusBadRequest, code, "%v", got)
 	x.Equal("invalidValue", got["scimType"])
+}
+
+// numbersOf is somebody's numbers as roster has them, by kind.
+func (d *deployment) numbersOf(t *testing.T, id string) map[string]string {
+	t.Helper()
+	k, err := pdid.Parse(id)
+	require.NoError(t, err)
+	vs, err := d.s.Ungated.Phone().List(t.Context(), rstr.PhoneListRequest_builder{
+		Filters: []*rstr.PhoneFilter{rstr.PhoneFilter_builder{Holder: rstr.HolderRef_builder{Id: k.Bytes()}.Build()}.Build()},
+	}.Build())
+	require.NoError(t, err)
+
+	out := map[string]string{}
+	for _, v := range vs.GetItems() {
+		out[v.GetKind()] = v.GetNumber()
+	}
+
+	return out
+}
+
+// TestADirectoryKeepsSomebodysNumbers: `phoneNumbers` are kept a row each, one
+// number a kind as a directory says them. A number it changes is replaced and
+// one it takes away is gone -- which it may not do to an address, a number
+// being no way in -- a kind it does not mention is left, and what it sends
+// that is not a number is said in the log and refuses nothing.
+func TestADirectoryKeepsSomebodysNumbers(t *testing.T) {
+	d := stand(t)
+	x := require.New(t)
+
+	body := erin()
+	body["phoneNumbers"] = []map[string]any{
+		{"type": "work", "value": " +82 2-123-4567 "},
+		{"type": "mobile", "value": "010-0000-0000"},
+	}
+	code, got, _ := d.call(t, d.key, http.MethodPost, scim.Base+"/Users", body)
+	x.Equal(http.StatusCreated, code, "%v", got)
+	id := got["id"].(string)
+	x.Equal(map[string]string{"work": "+82 2-123-4567", "mobile": "010-0000-0000"}, d.numbersOf(t, id))
+	x.Len(got["phoneNumbers"], 2, "and read back")
+
+	patch := func(ops ...map[string]any) map[string]any {
+		t.Helper()
+		code, got, _ := d.call(t, d.key, http.MethodPatch, scim.Base+"/Users/"+id, map[string]any{"Operations": ops})
+		x.Equal(http.StatusOK, code, "%v", got)
+
+		return got
+	}
+
+	// Entra's way of saying one changed, and that another is gone.
+	patch(
+		map[string]any{"op": "Replace", "path": `phoneNumbers[type eq "work"].value`, "value": "+82 2-765-4321"},
+		map[string]any{"op": "Remove", "path": `phoneNumbers[type eq "mobile"].value`},
+	)
+	x.Equal(map[string]string{"work": "+82 2-765-4321"}, d.numbersOf(t, id))
+
+	// The same number said for another kind is that kind's now: a person lists
+	// a number once.
+	patch(map[string]any{"op": "Add", "path": `phoneNumbers[type eq "mobile"].value`, "value": "+82 2-765-4321"})
+	x.Equal(map[string]string{"mobile": "+82 2-765-4321"}, d.numbersOf(t, id))
+
+	// What is not a number is not kept, and is not a refusal: the rest of the
+	// write is written.
+	got = patch(
+		map[string]any{"op": "Add", "path": `phoneNumbers[type eq "work"].value`, "value": "ask at reception"},
+		map[string]any{"op": "Replace", "path": "displayName", "value": "Erin Park"},
+	)
+	x.Equal("Erin Park", got["displayName"])
+	x.Equal(map[string]string{"mobile": "+82 2-765-4321"}, d.numbersOf(t, id))
+
+	// A whole User that speaks of numbers says every one of them.
+	body = erin()
+	body["phoneNumbers"] = []map[string]any{{"type": "fax", "value": "02-000-0000"}}
+	code, got, _ = d.call(t, d.key, http.MethodPut, scim.Base+"/Users/"+id, body)
+	x.Equal(http.StatusOK, code, "%v", got)
+	x.Equal(map[string]string{"fax": "02-000-0000"}, d.numbersOf(t, id))
+
+	// And one that does not speak of them leaves them: a directory that maps
+	// no number takes none away.
+	code, got, _ = d.call(t, d.key, http.MethodPut, scim.Base+"/Users/"+id, erin())
+	x.Equal(http.StatusOK, code, "%v", got)
+	x.Equal(map[string]string{"fax": "02-000-0000"}, d.numbersOf(t, id))
+	x.Len(got["phoneNumbers"], 1)
+}
+
+// TestAKeyMintedBeforeNumbersWereKeptStillProvisions: a directory's key names
+// what it calls, and one minted before numbers were kept here names none of
+// `PhoneService`. It goes on reading and writing people as it did, and the
+// numbers it sends are said in the log and not kept -- until `roster scim
+// provision` mints the one that names them.
+func TestAKeyMintedBeforeNumbersWereKeptStillProvisions(t *testing.T) {
+	d := stand(t)
+	x := require.New(t)
+	ctx := t.Context()
+
+	var before []string
+	for _, m := range scim.Methods {
+		if !strings.HasPrefix(m, "/roster.PhoneService/") {
+			before = append(before, m)
+		}
+	}
+	self, err := d.s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+		Ref: rstr.HolderRef_builder{Slug: rstr.HolderRefBySlug_builder{
+			Alias: proto.String("scim"), Tenant: rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build(),
+		}.Build()}.Build(),
+	}.Build())
+	x.NoError(err)
+	old := d.mint(t, self.GetId(), "scim-before", before)
+
+	body := erin()
+	body["phoneNumbers"] = []map[string]any{{"type": "work", "value": "+82 2-123-4567"}}
+	code, got, _ := d.call(t, old, http.MethodPost, scim.Base+"/Users", body)
+	x.Equal(http.StatusCreated, code, "%v", got)
+	id := got["id"].(string)
+	x.NotContains(got, "phoneNumbers")
+	x.Empty(d.numbersOf(t, id))
+
+	code, got, _ = d.call(t, old, http.MethodGet, scim.Base+"/Users/"+id, nil)
+	x.Equal(http.StatusOK, code, "%v", got)
+	x.Equal("erin@contoso.example", got["userName"])
 }

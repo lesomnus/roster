@@ -54,6 +54,12 @@ type changes struct {
 	userName   *string
 	email      *string
 
+	// Their numbers (`phones.go`): one said for a kind, where empty takes
+	// that kind's away; and every one of them, when a write said the whole
+	// list, which a replaced User does.
+	phones    map[string]string
+	allPhones *[]phone
+
 	// ignored is what was said and is not kept here, said in the log.
 	ignored []string
 }
@@ -168,10 +174,28 @@ func (c *changes) set(path string, raw json.RawMessage) error {
 		}
 		c.email = &v
 
+	case p == "phonenumbers":
+		vs, err := phonesIn(raw)
+		if err != nil {
+			return err
+		}
+		for _, v := range vs {
+			c.say(v.kind, v.number)
+		}
+
 	case p == "schemas", p == "id", p == "meta":
 		// The envelope, not an attribute of anybody.
 
 	default:
+		if kind, ok := phonePath(path); ok {
+			v, err := text(raw)
+			if err != nil {
+				return badRequest("invalidValue", path+": "+err.Error())
+			}
+			c.say(kind, v)
+
+			break
+		}
 		c.ignored = append(c.ignored, path)
 	}
 
@@ -193,7 +217,14 @@ func (c *changes) clear(path string) {
 		c.department = &empty
 	case ext + ":employeenumber":
 		c.employeeNo = &empty
+	case "phonenumbers":
+		c.allPhones = &[]phone{}
 	default:
+		if kind, ok := phonePath(path); ok {
+			c.say(kind, "")
+
+			break
+		}
 		c.ignored = append(c.ignored, path)
 	}
 }
@@ -341,6 +372,17 @@ func parseUser(body []byte) (*incoming, error) {
 	}
 	if len(u.emails) > 0 {
 		u.changes.email = &u.emails[0]
+	}
+	// And every number they have: what a whole User does not name, it says is
+	// not theirs. Only where it speaks of numbers at all, since a directory
+	// that maps none sends none, and must not take away what somebody else
+	// wrote.
+	if u.changes.phones != nil {
+		all := make([]phone, 0, len(u.changes.phones))
+		for k, v := range u.changes.phones {
+			all = append(all, phone{kind: k, number: v})
+		}
+		u.changes.allPhones, u.changes.phones = &all, nil
 	}
 
 	return u, nil

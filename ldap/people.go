@@ -28,6 +28,11 @@ const (
 	attrLanguage     = "preferredLanguage"
 	attrLabeledURI   = "labeledURI"
 	attrMemberOf     = "memberOf"
+	attrTelephone    = "telephoneNumber"
+	attrMobile       = "mobile"
+	attrFax          = "facsimileTelephoneNumber"
+	attrHomePhone    = "homePhone"
+	attrPager        = "pager"
 	attrEntryUUID    = "entryUUID"
 	attrObjectClass  = "objectClass"
 	classPerson      = "inetOrgPerson"
@@ -42,6 +47,31 @@ type wants struct {
 	mail     bool
 	memberOf bool
 	member   bool
+	phone    bool
+}
+
+// phoneAttrs is the attributes a person's numbers are published as, by which
+// of their numbers each is (`Phone.kind`). One of no kind, or of a kind with
+// no attribute of its own, is their `telephoneNumber`.
+var phoneAttrs = map[string]string{
+	"":       attrTelephone,
+	"work":   attrTelephone,
+	"other":  attrTelephone,
+	"mobile": attrMobile,
+	"fax":    attrFax,
+	"home":   attrHomePhone,
+	"pager":  attrPager,
+}
+
+// isPhoneAttr is whether a name is one of [phoneAttrs]'s.
+func isPhoneAttr(name string) bool {
+	for _, a := range phoneAttrs {
+		if strings.EqualFold(a, name) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func wanted(req wire.SearchRequest) wants {
@@ -57,10 +87,15 @@ func wanted(req wire.SearchRequest) wants {
 			w.memberOf = true
 		case strings.EqualFold(a, attrMember):
 			w.member = true
+		case isPhoneAttr(a):
+			w.phone = true
 		}
 	}
 	if all {
-		w = wants{mail: true, memberOf: true, member: true}
+		w = wants{mail: true, memberOf: true, member: true, phone: true}
+	}
+	for _, a := range phoneAttrs {
+		w.phone = w.phone || req.Filter.Mentions(a)
 	}
 	w.mail = w.mail || req.Filter.Mentions(attrMail)
 	w.memberOf = w.memberOf || req.Filter.Mentions(attrMemberOf)
@@ -167,8 +202,47 @@ func (s *search) personEntry(ctx context.Context, t *tenant, v *rstr.Holder) (*e
 		}
 		e.add(attrMemberOf, names...)
 	}
+	if s.want.phone {
+		ns, err := d.numbers(ctx, t, v.GetId())
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range ns {
+			e.add(phoneAttrs[n.GetKind()], n.GetNumber())
+		}
+	}
 
 	return e, nil
+}
+
+// numbers is where somebody is reached: `telephoneNumber`, `mobile` and the
+// rest of [phoneAttrs]. Read only when asked for or filtered on, as their
+// addresses are, since it costs a list.
+//
+// A key whose role does not name the read publishes none, rather than failing
+// the search: a directory installed before numbers were kept here names what
+// it read then, and everything else about a person should go on being
+// answered (`docs/ldap.md` § *The key this process holds*).
+func (d *Directory) numbers(ctx context.Context, t *tenant, holder []byte) ([]*rstr.Phone, error) {
+	var out []*rstr.Phone
+	after := ""
+	for {
+		vs, err := d.roster.Phone().List(t.on(ctx), rstr.PhoneListRequest_builder{
+			Filters: []*rstr.PhoneFilter{rstr.PhoneFilter_builder{Holder: rstr.HolderRef_builder{Id: holder}.Build()}.Build()},
+			Size:    int32(d.c.PageSize),
+			After:   after,
+		}.Build())
+		if status.Code(err) == codes.PermissionDenied {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, vs.GetItems()...)
+		if after = vs.GetNext(); after == "" {
+			return out, nil
+		}
+	}
 }
 
 // verifiedAddresses is `mail`: the person's addresses somebody has checked.

@@ -71,6 +71,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/link"
 	"github.com/lesomnus/roster/internal/ent/nomination"
+	"github.com/lesomnus/roster/internal/ent/phone"
 	"github.com/lesomnus/roster/internal/ent/session"
 	"github.com/lesomnus/roster/internal/ent/sitemembership"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
@@ -394,6 +395,17 @@ func subjects() []subject {
 			},
 			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 				return db.Email.Delete().Where(email.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
+			},
+		},
+		// Where they are reached, which is no way in and is as much theirs: a
+		// number is personal, and the trail's copy of one goes with it.
+		{
+			name: "phone",
+			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+				return db.Phone.Query().Where(phone.HasHolderWith(holder.IdEQ(k))).Ids(ctx)
+			},
+			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+				return db.Phone.Delete().Where(phone.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
 		{

@@ -37,7 +37,7 @@ import (
 var reads = []string{
 	"/roster.TenantService/Get",
 	"/roster.HolderService/Get", "/roster.HolderService/List", "/roster.HolderService/Search",
-	"/roster.EmailService/Get", "/roster.EmailService/List",
+	"/roster.EmailService/Get", "/roster.EmailService/List", "/roster.PhoneService/List",
 	"/roster.GroupService/Get", "/roster.GroupService/List", "/roster.GroupMembershipService/List",
 	"/roster.SiteService/Get", "/roster.SiteService/List",
 	"/roster.TeamService/Get", "/roster.TeamService/List", "/roster.TeamMembershipService/List",
@@ -167,6 +167,13 @@ func stand(t *testing.T) *deployment {
 	// authenticator app confirmed by one code.
 	d.email(t, d.kim, "kim@contoso.example", true)
 	d.email(t, d.kim, "kim.old@contoso.example", false)
+	// And where she is reached: a desk and a mobile.
+	for kind, number := range map[string]string{"work": "+82 2-123-4567", "mobile": "010-0000-0000"} {
+		_, err := d.s.Ungated.Phone().Add(ctx, rstr.PhoneAddRequest_builder{
+			Holder: rstr.HolderRef_builder{Id: d.kim}.Build(), Number: number, Kind: kind,
+		}.Build())
+		x.NoError(err)
+	}
 	d.setPassword(t, d.kim)
 	res, err := s.Ungated.Credential().Enrol(ctx, rstr.CredentialEnrolRequest_builder{
 		Ref: rstr.HolderRef_builder{Id: d.kim}.Build(), Kind: vouch.KindTotp,
@@ -547,6 +554,8 @@ func TestAFilterIsARosterRead(t *testing.T) {
 		"(displayName=minji)":                          {kimDN},
 		"(departmentNumber=Payroll)":                   {leeDN},
 		"(employeeNumber=1001)":                        {kimDN},
+		"(mobile=010*)":                                {kimDN},
+		"(telephoneNumber=+82 2-123-4567)":             {kimDN},
 		"(mail=kim@contoso.example)":                   {kimDN},
 		"(mail=KIM@contoso.example)":                   {kimDN},
 		"(mail=kim.old@contoso.example)":               {},
@@ -587,6 +596,8 @@ func TestAFilterIsARosterRead(t *testing.T) {
 		x.Equal([]string{"kim@contoso.example"}, e.GetAttributeValues("mail"), "an unverified address was published")
 		x.Equal("1001", e.GetAttributeValue("employeeNumber"))
 		x.Equal("Platform", e.GetAttributeValue("departmentNumber"))
+		x.Equal([]string{"+82 2-123-4567"}, e.GetAttributeValues("telephoneNumber"))
+		x.Equal([]string{"010-0000-0000"}, e.GetAttributeValues("mobile"))
 		x.Empty(e.GetAttributeValues("entryUUID"), "an operational attribute answered unasked")
 
 		ops := search(t, c, kimDN, goldap.ScopeBaseObject, "(objectClass=*)", "entryUUID", "uid")

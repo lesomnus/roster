@@ -1,0 +1,122 @@
+edition = "2023";
+
+package roster;
+
+import "roster/payday/holder.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// Phone is a number somebody is reached at, and nothing more than that.
+//
+// # Why it is a row, and not a field of `Profile`
+//
+// `Email`'s reasons, each of them: a person has several -- a desk, a mobile --
+// they change, and an organisation hands a leaver's number to whoever sits
+// there next. A profile is one value replaced whole, with no room for two of
+// anything and no way to take one away without restating the rest.
+//
+// # Why it is not a way in, and what that buys
+//
+// Nothing in roster sends to a number, and nothing finds anybody by one: no
+// code is texted, no link, no sign-in is matched. So writing a number onto
+// somebody is not writing a way into their account, and it is not held to the
+// rule that is (`server/core/escalate.go`, `mayWriteAWayIn`). That is what
+// lets a tenant's directory keep it true -- write it, and replace it when it
+// changes -- which it may not do to an address (`docs/scim.md`).
+//
+// The day a number is somewhere a code is sent, it gains what `Email` has for
+// the same reason: when it was checked, stamped, and the rule about whose
+// account a way in is written into. A directory's write is asked that
+// question then, and not before there is anything to ask it about.
+//
+// # Not unique within a tenant
+//
+// A switchboard, a shared desk, a family's line: two people reached at one
+// number is ordinary, where two people at one address is a mistake. So it is
+// one row a person and a number, and that is all the index says.
+message Phone {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  Holder holder = 2 [(orm.edge) = {immutable: true}];
+
+  // 4 is empty: a number is not an alias.
+
+  // The number, as whoever wrote it wrote it, trimmed.
+  //
+  // # Why it is not held to one form
+  //
+  // A form strict enough to compare two numbers by -- E.164 -- is one a
+  // directory's numbers are mostly not in: `02-123-4567`, `(555) 010-0199
+  // x12`, an extension alone. Nothing here compares numbers, so refusing those
+  // would be refusing a tenant's directory every cycle for a property nothing
+  // reads. It is what a person dials, kept as it was said; the day a number is
+  // compared -- which is the day it is a way in -- is the day it is given one
+  // form, with the rest of what that takes.
+  //
+  // Personal (payday#92): the trail records that a number was set, and never
+  // which.
+  string number = 8 [(payday.field) = {personal: true}];
+
+  // Which of somebody's numbers this is, as a directory says it: `work`,
+  // `mobile`, `fax`, `home`, `pager`, `other` -- SCIM's words (RFC 7643
+  // §4.1.2), which are also what an LDAP client asks by. Empty is not said.
+  string kind = 9;
+
+  // The tenant `holder.tenant` reaches, kept here. payday stamps it, and
+  // `Identity` says at length why a column is worth it.
+  bytes tenant_id = 11 [(orm.field) = {
+    type: TYPE_UUID
+    immutable: true
+  }];
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    rpc: {crud: true}
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "tenant_id", number: 11},
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      {
+        // Nobody lists the same number twice, of the same kind or another.
+        name: "number"
+        refs: [
+          {name: "holder", number: 2},
+          {name: "number", number: 8}
+        ]
+        unique: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 30
+    tenanted: {via: "holder.tenant", stamp: "tenant_id"}
+    list: {
+      order: [
+        {field: {name: "date_created", number: 15}},
+        {field: {name: "id", number: 1}}
+      ]
+      by: [{name: "ref"}, {name: "holder"}]
+      size: 20
+      max: 100
+    }
+  };
+}

@@ -1038,6 +1038,46 @@ var (
 			},
 		},
 	}
+	// PhoneColumns holds the columns for the "phone" table.
+	PhoneColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "number", Type: field.TypeString},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "holder_id", Type: field.TypeUuid},
+	}
+	// PhoneTable holds the schema information for the "phone" table.
+	PhoneTable = &schema.Table{
+		Name:       "phone",
+		Columns:    PhoneColumns,
+		PrimaryKey: []*schema.Column{PhoneColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "phone_holder_holder",
+				Columns:    []*schema.Column{PhoneColumns[7]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "phone_page",
+				Unique:  false,
+				Columns: []*schema.Column{PhoneColumns[3], PhoneColumns[6], PhoneColumns[0]},
+			},
+			{
+				Name:    "phone_number",
+				Unique:  true,
+				Columns: []*schema.Column{PhoneColumns[7], PhoneColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// RoleColumns holds the columns for the "role" table.
 	RoleColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -1377,6 +1417,7 @@ var (
 		NominationTable,
 		OutboxTable,
 		OwedTable,
+		PhoneTable,
 		RoleTable,
 		RowsealTable,
 		SessionTable,
@@ -1484,6 +1525,10 @@ func init() {
 	}
 	OwedTable.Annotation = &entsql.Annotation{
 		Table: "owed",
+	}
+	PhoneTable.ForeignKeys[0].RefTable = HolderTable
+	PhoneTable.Annotation = &entsql.Annotation{
+		Table: "phone",
 	}
 	RoleTable.ForeignKeys[0].RefTable = TenantTable
 	RoleTable.ForeignKeys[1].RefTable = SiteTable

@@ -70,6 +70,12 @@ var Methods = []string{
 	rstr.IdentityService_Get_FullMethodName,
 	rstr.IdentityService_List_FullMethodName,
 
+	// Their numbers (`phones.go`), which are no way in and so are written
+	// onto anybody.
+	rstr.PhoneService_Add_FullMethodName,
+	rstr.PhoneService_Erase_FullMethodName,
+	rstr.PhoneService_List_FullMethodName,
+
 	// Its groups (`groups.go`): made, read, and -- the three [InGroups] names
 	// -- changed.
 	rstr.GroupService_Add_FullMethodName,

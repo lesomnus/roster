@@ -73,7 +73,11 @@ func (s *Server) listUsers(ctx context.Context, w http.ResponseWriter, r *http.R
 		}
 		items := []any{}
 		if p != nil && start == 1 && count > 0 {
-			items = append(items, p.user())
+			u, err := s.shownUser(ctx, p)
+			if err != nil {
+				return err
+			}
+			items = append(items, u)
 		}
 		total := 0
 		if p != nil {
@@ -94,7 +98,11 @@ func (s *Server) listUsers(ctx context.Context, w http.ResponseWriter, r *http.R
 		if err != nil {
 			return err
 		}
-		items = append(items, p.user())
+		u, err := s.shownUser(ctx, p)
+		if err != nil {
+			return err
+		}
+		items = append(items, u)
 	}
 	answer(w, http.StatusOK, list(items, len(ids), start))
 
@@ -317,7 +325,11 @@ func (s *Server) getUser(ctx context.Context, w http.ResponseWriter, r *http.Req
 	if err != nil {
 		return err
 	}
-	answer(w, http.StatusOK, p.user())
+	u, err := s.shownUser(ctx, p)
+	if err != nil {
+		return err
+	}
+	answer(w, http.StatusOK, u)
 
 	return nil
 }
@@ -402,14 +414,21 @@ func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.
 			return err
 		}
 	}
+	if err := s.dial(ctx, r, h.GetId(), &u.changes); err != nil {
+		return err
+	}
 	s.said(r, u.ignored)
 
 	p, err := s.read(ctx, t, h.GetId())
 	if err != nil {
 		return err
 	}
+	made, err := s.shownUser(ctx, p)
+	if err != nil {
+		return err
+	}
 	w.Header().Set("Location", Base+"/Users/"+idOf(h.GetId()))
-	answer(w, http.StatusCreated, p.user())
+	answer(w, http.StatusCreated, made)
 
 	return nil
 }
@@ -489,13 +508,20 @@ func (s *Server) change(ctx context.Context, w http.ResponseWriter, r *http.Requ
 			return err
 		}
 	}
+	if err := s.dial(ctx, r, id, c); err != nil {
+		return err
+	}
 	s.said(r, c.ignored)
 
 	p, err := s.read(ctx, t, id)
 	if err != nil {
 		return err
 	}
-	answer(w, http.StatusOK, p.user())
+	u, err := s.shownUser(ctx, p)
+	if err != nil {
+		return err
+	}
+	answer(w, http.StatusOK, u)
 
 	return nil
 }

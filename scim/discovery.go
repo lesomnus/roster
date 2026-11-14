@@ -116,6 +116,19 @@ func userSchemaDoc() map[string]any {
 			},
 			str("preferredLanguage", "Their locale.", "readWrite"),
 			{
+				"name": "phoneNumbers", "type": "complex", "multiValued": true, "required": false,
+				"mutability": "readWrite", "returned": "default",
+				"description": "Where they are reached: one number a kind.",
+				"subAttributes": []map[string]any{
+					str("value", "The number, as it was said.", "readWrite"),
+					{
+						"name": "type", "type": "string", "multiValued": false, "required": false, "caseExact": false,
+						"mutability": "readWrite", "returned": "default", "uniqueness": "none",
+						"canonicalValues": phoneKinds, "description": "Which of their numbers it is.",
+					},
+				},
+			},
+			{
 				"name": "active", "type": "boolean", "multiValued": false, "required": false,
 				"mutability": "readWrite", "returned": "default",
 				"description": "Whether they may sign in, as far as the directory is concerned.",
