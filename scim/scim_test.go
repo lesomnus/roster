@@ -6,12 +6,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/lesomnus/z"
@@ -55,6 +57,36 @@ type deployment struct {
 	// rpc is where roster itself answers, which the endpoint is in front of
 	// and a key that leaked would be presented to directly.
 	rpc string
+
+	// log is what the endpoint said in its log.
+	log *said
+}
+
+// said is a log a test reads while the endpoint writes it.
+type said struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (s *said) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.b.Write(p)
+}
+
+// lines is every line said since the last time it was asked.
+func (s *said) lines() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	out := strings.Split(strings.TrimSpace(s.b.String()), "\n")
+	s.b.Reset()
+	if len(out) == 1 && out[0] == "" {
+		return nil
+	}
+
+	return out
 }
 
 func stand(t *testing.T) *deployment {
@@ -115,7 +147,11 @@ func stand(t *testing.T) *deployment {
 	t.Cleanup(func() { g.Stop() })
 
 	d.rpc = l.Addr().String()
-	e, err := scim.New(scim.Config{Roster: l.Addr().String(), Insecure: true})
+	d.log = &said{}
+	e, err := scim.New(scim.Config{
+		Roster: l.Addr().String(), Insecure: true,
+		Log: slog.New(slog.NewTextHandler(d.log, nil)),
+	})
 	x.NoError(err)
 	t.Cleanup(func() { e.Close() })
 	d.scim = httptest.NewServer(e)

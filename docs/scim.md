@@ -392,6 +392,44 @@ that tenant may -- nobody it says is in the group is left in it, the group is
 still answered, and the log says so -- and what becomes of the row is an
 administrator's.
 
+## What it says in its log
+
+A directory's own provisioning log is where a tenant reads what happened to a
+person. Whoever runs the deployment has this one, and three kinds of thing are
+in it.
+
+**What was not kept**, at `INFO`: `scim: not kept here` with the attributes a
+write named and roster has nowhere for, `a number was not kept`, `a manager who
+is nobody here, so not kept`. The write went on without them.
+
+**What was refused**, at `INFO`, a line a refusal:
+
+```
+scim: refused - method=PATCH path=/scim/v2/Users/01a1dc32-… status=403 detail=the directory speaks for the people who sign in through entra, and this is not one of them
+scim: refused - method=POST path=/scim/v2/Users status=409 scimType=uniqueness detail=somebody here already has that address
+```
+
+The method, the path, the status, the `scimType` where there is one, and the
+words the directory was answered with. The path names a resource by identifier;
+a filter is never written, since it holds an address. A `WARN` beside it is the
+first time a directory names somebody it matched and could not link
+(*And matched is not linked*, above).
+
+**That roster did not answer**, at `WARN`, with why:
+
+```
+scim: roster did not answer - method=GET path=/scim/v2/Users err=… tls: first record does not look like a TLS handshake
+```
+
+The directory is answered `503` and tries again on its next cycle, so this is
+the only place the reason is. That one is `scim.insecure` left out in front of
+a listener with no TLS ([operating.md](operating.md) § *One process, or five*).
+
+Two answers leave no line: `404`, which a directory is told as a matter of
+course -- it looks before every create, and after every delete -- and `401`,
+which anybody who reaches the listener can cause. A key roster did not accept
+is in roster's own log, as the call that was denied.
+
 ## What its key may do, and why not more
 
 | method | what for |
