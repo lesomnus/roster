@@ -151,9 +151,21 @@ there no status says:
   with a word for `manager` and looks for the word in what it reads back. Who
   somebody reports to is a relation between two people here, so a word that
   names nobody is said in the log and not kept -- which the page's *Create a
-  new User* reports, and is the one test of its that is not passed for a
-  reason that is roster's. Its tests of a manager who is somebody -- added,
-  replaced, removed -- pass.
+  new User* reports, and is the one test of its that is not passed. Its tests
+  of a manager who is somebody -- added, replaced, removed -- pass.
+
+  **Decided, and not an oversight.** Nothing in roster would read the word: no
+  rule, no lookup, nothing but the answer it would be echoed in, and a place to
+  keep a value for a test to read back is the data model following a protocol's
+  tool. The RFC asks for none of it -- `manager.value` is *the "id" of the SCIM
+  resource representing the user's manager*, and whether a reference has to
+  name something is the provider's to say (RFC 7643 §2.3.7, *MAY choose to
+  enforce referential integrity*). Nor does Entra send one: it makes people
+  first and links who they report to in a later update, once both are there.
+  The page fills every attribute of its list with a value it makes up, which is
+  where the word comes from, and its list is its user's to edit: taking
+  `manager` out of it on the *Attributes* tab is how a run is made to say
+  nothing about this.
 
 **Nothing on its *Settings* tab is changed.** What it starts with is what
 roster does: *Supports Deactivation* and *Supports Delete* for a user, *Supports
