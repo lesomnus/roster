@@ -249,6 +249,12 @@ type Rules struct {
 	// refused rather than made. See [Administered].
 	Administered Administered
 
+	// Named is a tenant's role by its alias, which making a group asks to find
+	// the role its maker manages it by. Nil is a stack that cannot say, and a
+	// group is then made with nobody managing it, as every group was before a
+	// maker managed theirs. See [Named].
+	Named Named
+
 	// Borrower is the control-plane holder a deployment key hangs off -- what a
 	// `Nomination` names as `borrower_id`. The key is in another database and
 	// this package holds no client of either, so `cmd`, which has both, says.
@@ -300,6 +306,27 @@ type Everywhere func(ctx context.Context, who pdid.Id) ([]string, error)
 // a narrowing learns what it leaves before it is committed. Nil reads the rows
 // as they are.
 type Administered func(ctx context.Context, drv dialect.Driver, tenant pdid.Id, method string) (bool, error)
+
+// Named is a tenant's role of an alias, or nil when it has none: read for a
+// rule, and not for a caller.
+//
+// Past the wall and the second axis on purpose. Whoever makes a group manages
+// it by a role of the whole tenant ([Manages]), and somebody who sees one site
+// does not see a role that belongs to none -- so asked as them, the role is
+// not there, a second is made, and the tenant's alias refuses it. Which role
+// a maker holds cannot depend on what the maker can see.
+//
+// On the driver it is handed, as [Administered] is: the role made for one
+// group is the one the next group in the same transaction finds.
+type Named func(ctx context.Context, drv dialect.Driver, tenant pdid.Id, alias string) (*NamedRole, error)
+
+// NamedRole is what [Named] answers with: which role, what it names, and the
+// site it belongs to -- [pdid.Nil] for none.
+type NamedRole struct {
+	Id      pdid.Id
+	Methods []string
+	Site    pdid.Id
+}
 
 // holding is [Rules.Holding], or [Rules.Granted] where a stack was assembled
 // before there were two answers.

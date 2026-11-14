@@ -310,17 +310,32 @@ a group bound inside their own site and not to one bound across the tenant.
 > already holds all of it herself.
 
 A membership may also carry a role held **in that group**, which makes its
-holder the group's manager: they may put people into it and take them out, and
+holder the group's manager: they may put people into it, take them out and say
+what it is called (`Group.Update`: its name and its note, never its alias), and
 do nothing to another group. It is a team administrator's rule, asked the same
-way (`server/core/group.go`), and such a role names only those two writes,
+way (`server/core/group.go`), and such a role names only those three writes,
 since the gate holds it everywhere. Appointing one is held to what the
 appointer holds through a binding, so a manager does not make another. A
 manager is a member -- outside the group they would protect nothing, having an
 accomplice to put in.
 
+**Whoever makes a group manages it.** `Group.Add` by somebody of the tenant
+writes their place in the group with it, carrying the tenant's `group-manager`
+role -- one a tenant, made the first time it is needed, and a tenant's own of
+that name used as it stands. A group nobody manages is an unfinished one: its
+maker could put nobody into it without holding the membership writes across the
+whole tenant, which is every group there is. It hands out nothing, since a
+group just made is bound to nothing and shown to no client; what it changes is
+later, and is whoever binds a role to the group deciding that its manager says
+who holds it. So the maker is a member, and an administrator who makes a group
+takes themselves out when that is not wanted. A group made with nobody of the
+tenant asking -- a command at the box, a file's row, a deployment's key -- has
+no manager until an administrator appoints one.
+
 > contoso's administrator makes erin the manager of **dtrack-triage**. erin
 > adds a colleague to it, and is refused when she tries the same with
-> **on-call**, which somebody else manages.
+> **on-call**, which somebody else manages. A group erin makes herself is hers
+> to manage from the start.
 
 ### 📣 `GroupExposure` — a client whose tokens carry a group
 

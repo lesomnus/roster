@@ -22,6 +22,8 @@ service GroupService {
   rpc Erase(GroupRef) returns (GroupEraseResponse);
   // List reads Groups a page at a time.
   rpc List(GroupListRequest) returns (GroupListResponse);
+  // Update replaces what a group says about itself, under the version read.
+  rpc Update(GroupUpdateRequest) returns (Group);
 }
 
 service GroupExposureService {
@@ -46,6 +48,7 @@ message GroupAddRequest {
   string alias = 4 [features.field_presence = IMPLICIT];
   string name = 5 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
+  map<string, string> labels = 7;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -73,6 +76,7 @@ message GroupSelect {
   bool alias = 4;
   bool name = 5;
   bool desc = 6;
+  bool labels = 7;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -83,6 +87,7 @@ message GroupPatchRequest {
   string alias = 8;
   string name = 10;
   string desc = 12;
+  map<string, string> labels = 14;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.
@@ -153,6 +158,17 @@ message GroupFilter {
   GroupRef ref = 1;
   TenantRef tenant = 2;
   SiteRef site = 3;
+}
+
+message GroupUpdateRequest {
+  GroupRef ref = 1;
+
+  // Optimistic locking, as `Patch` takes it: the version this caller read.
+  google.protobuf.Timestamp date_updated = 13;
+
+  // What it is called, and the note about it. Unset is left as it was.
+  string name = 5;
+  string desc = 6;
 }
 
 message GroupExposureAddRequest {

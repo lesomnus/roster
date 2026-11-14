@@ -16784,6 +16784,11 @@ func (s interceptGroup) List(ctx context.Context, req *rstr.GroupListRequest) (*
 		rstr.GroupService_List_FullMethodName, req, s.GroupServiceServer.List)
 }
 
+func (s interceptGroup) Update(ctx context.Context, req *rstr.GroupUpdateRequest) (*rstr.Group, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.GroupServiceServer,
+		rstr.GroupService_Update_FullMethodName, req, s.GroupServiceServer.Update)
+}
+
 func (s Intercept) GroupExposure() rstr.GroupExposureServiceServer {
 	return interceptGroupExposure{s, s.Next().GroupExposure()}
 }

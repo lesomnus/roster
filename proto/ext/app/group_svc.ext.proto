@@ -1,0 +1,42 @@
+edition = "2023";
+
+package roster;
+
+import "google/protobuf/timestamp.proto";
+import "app/group.proto";
+
+// What this app adds to the generated contract for `Group`.
+//
+// # Why an Update and not the Patch
+//
+// `Patch` writes anything the schema holds and is closed at the transport for
+// it (`grpcx.GeneralWrite`), and nothing stood in its place -- so a group was
+// called, for good, what its `Add` called it, by an administrator as much as
+// by anybody. What a group says about itself is its `name` and its `desc`,
+// and this writes those. Never the `alias`: that is what a slug names the
+// group by, and what a token carries for a client it is shown to
+// (`GroupExposure`), so a group renamed must not change what a relying party
+// grants on. The same shape `Host.Update` and `Holder.Update` have, on the
+// entity's own service (CLAUDE.md, *overlay before service*).
+//
+// # And whose it is
+//
+// A caller holding it through a binding, for every group that binding
+// reaches; and a group's own managers, for that group -- the two ways
+// `GroupMembership.Add` is held (`server/core/group.go`). What a group is
+// called is its manager's to say for the reason who is in it is: it is theirs.
+service GroupService {
+  // Update replaces what a group says about itself, under the version read.
+  rpc Update(GroupUpdateRequest) returns (Group);
+}
+
+message GroupUpdateRequest {
+  GroupRef ref = 1;
+
+  // Optimistic locking, as `Patch` takes it: the version this caller read.
+  google.protobuf.Timestamp date_updated = 13;
+
+  // What it is called, and the note about it. Unset is left as it was.
+  string name = 5;
+  string desc = 6;
+}

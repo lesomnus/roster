@@ -19,12 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GroupService_Add_FullMethodName   = "/roster.GroupService/Add"
-	GroupService_Get_FullMethodName   = "/roster.GroupService/Get"
-	GroupService_Patch_FullMethodName = "/roster.GroupService/Patch"
-	GroupService_Apply_FullMethodName = "/roster.GroupService/Apply"
-	GroupService_Erase_FullMethodName = "/roster.GroupService/Erase"
-	GroupService_List_FullMethodName  = "/roster.GroupService/List"
+	GroupService_Add_FullMethodName    = "/roster.GroupService/Add"
+	GroupService_Get_FullMethodName    = "/roster.GroupService/Get"
+	GroupService_Patch_FullMethodName  = "/roster.GroupService/Patch"
+	GroupService_Apply_FullMethodName  = "/roster.GroupService/Apply"
+	GroupService_Erase_FullMethodName  = "/roster.GroupService/Erase"
+	GroupService_List_FullMethodName   = "/roster.GroupService/List"
+	GroupService_Update_FullMethodName = "/roster.GroupService/Update"
 )
 
 // GroupServiceClient is the client API for GroupService service.
@@ -43,6 +44,8 @@ type GroupServiceClient interface {
 	Erase(ctx context.Context, in *GroupRef, opts ...grpc.CallOption) (*GroupEraseResponse, error)
 	// List reads Groups a page at a time.
 	List(ctx context.Context, in *GroupListRequest, opts ...grpc.CallOption) (*GroupListResponse, error)
+	// Update replaces what a group says about itself, under the version read.
+	Update(ctx context.Context, in *GroupUpdateRequest, opts ...grpc.CallOption) (*Group, error)
 }
 
 type groupServiceClient struct {
@@ -113,6 +116,16 @@ func (c *groupServiceClient) List(ctx context.Context, in *GroupListRequest, opt
 	return out, nil
 }
 
+func (c *groupServiceClient) Update(ctx context.Context, in *GroupUpdateRequest, opts ...grpc.CallOption) (*Group, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Group)
+	err := c.cc.Invoke(ctx, GroupService_Update_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GroupServiceServer is the server API for GroupService service.
 // All implementations must embed UnimplementedGroupServiceServer
 // for forward compatibility.
@@ -129,6 +142,8 @@ type GroupServiceServer interface {
 	Erase(context.Context, *GroupRef) (*GroupEraseResponse, error)
 	// List reads Groups a page at a time.
 	List(context.Context, *GroupListRequest) (*GroupListResponse, error)
+	// Update replaces what a group says about itself, under the version read.
+	Update(context.Context, *GroupUpdateRequest) (*Group, error)
 	mustEmbedUnimplementedGroupServiceServer()
 }
 
@@ -156,6 +171,9 @@ func (UnimplementedGroupServiceServer) Erase(context.Context, *GroupRef) (*Group
 }
 func (UnimplementedGroupServiceServer) List(context.Context, *GroupListRequest) (*GroupListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
+}
+func (UnimplementedGroupServiceServer) Update(context.Context, *GroupUpdateRequest) (*Group, error) {
+	return nil, status.Error(codes.Unimplemented, "method Update not implemented")
 }
 func (UnimplementedGroupServiceServer) mustEmbedUnimplementedGroupServiceServer() {}
 func (UnimplementedGroupServiceServer) testEmbeddedByValue()                      {}
@@ -286,6 +304,24 @@ func _GroupService_List_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GroupService_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GroupUpdateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupServiceServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupService_Update_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupServiceServer).Update(ctx, req.(*GroupUpdateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GroupService_ServiceDesc is the grpc.ServiceDesc for GroupService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -316,6 +352,10 @@ var GroupService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "List",
 			Handler:    _GroupService_List_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _GroupService_Update_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

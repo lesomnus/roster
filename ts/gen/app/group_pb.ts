@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/group.proto.
  */
 export const file_app_group: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvZ3JvdXAucHJvdG8SBnJvc3RlciLoAwoFR3JvdXASFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIkCgRzaXRlGAMgASgLMgwucm9zdGVyLlNpdGVCCPKCFgQ4AUABEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6mgHK/BVTEgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxY/CBAyOwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGdGVuYW50GgYKBHNpdGUgFChkIrMDCg1Hcm91cEV4cG9zdXJlEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIkCgVncm91cBgCIAEoCzINLnJvc3Rlci5Hcm91cEIG8oIWAkABEhYKBmNsaWVudBgIIAEoCUIG6oIWAkABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqYAcr8FUoSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARoiEgdjYXJyaWVkGgkKBWdyb3VwEAIaCgoGY2xpZW50EAgwAYq7FkYIHDIyChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoHCgVncm91cCAUKGQiDgoMZ3JvdXAudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_tenant, file_app_site, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg9hcHAvZ3JvdXAucHJvdG8SBnJvc3RlciLCBAoFR3JvdXASFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIkCgRzaXRlGAMgASgLMgwucm9zdGVyLlNpdGVCCPKCFgQ4AUABEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRIpCgZsYWJlbHMYByADKAsyGS5yb3N0ZXIuR3JvdXAuTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6mgHK/BVTEgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxY/CBAyOwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGdGVuYW50GgYKBHNpdGUgFChkIrMDCg1Hcm91cEV4cG9zdXJlEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIkCgVncm91cBgCIAEoCzINLnJvc3Rlci5Hcm91cEIG8oIWAkABEhYKBmNsaWVudBgIIAEoCUIG6oIWAkABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqYAcr8FUoSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARoiEgdjYXJyaWVkGgkKBWdyb3VwEAIaCgoGY2xpZW50EAgwAYq7FkYIHDIyChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoHCgVncm91cCAUKGQiDgoMZ3JvdXAudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_tenant, file_app_site, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Group is a named set of people, and nothing else.
@@ -99,6 +99,20 @@ export type Group = Message<"roster.Group"> & {
    * @generated from field: string desc = 6;
    */
   desc: string;
+
+  /**
+   * Whatever is kept about this group that the schema does not name.
+   *
+   * Number seven, the one an entity spends on labels (`host.proto`). No rule
+   * reads one. It is where whoever makes a group says what the group is to
+   * them: a tenant's directory, which makes groups as its own holder and so
+   * manages them like anybody who makes one ([GroupMembership]), marks the
+   * ones it made with what it calls them (`roster.directory`, `docs/scim.md`),
+   * and that mark is how it finds them again -- not what lets it change them.
+   *
+   * @generated from field: map<string, string> labels = 7;
+   */
+  labels: { [key: string]: string };
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

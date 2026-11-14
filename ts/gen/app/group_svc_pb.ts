@@ -20,7 +20,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/group_svc.g.proto.
  */
 export const file_app_group_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChVhcHAvZ3JvdXBfc3ZjLmcucHJvdG8SBnJvc3RlciLRAQoPR3JvdXBBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSHQoEc2l0ZRgDIAEoCzIPLnJvc3Rlci5TaXRlUmVmEhQKBWFsaWFzGAQgASgJQgWqAQIIAhITCgRuYW1lGAUgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlUKD0dyb3VwR2V0UmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuR3JvdXBSZWYSIwoGc2VsZWN0GAIgASgLMhMucm9zdGVyLkdyb3VwU2VsZWN0IkcKCEdyb3VwUmVmEgwKAmlkGAEgASgMSAASJgoEc2x1ZxgEIAEoCzIWLnJvc3Rlci5Hcm91cFJlZkJ5U2x1Z0gAQgUKA2tleSJCCg5Hcm91cFJlZkJ5U2x1ZxINCgVhbGlhcxgEIAEoCRIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmIs4BCgtHcm91cFNlbGVjdBILCgNhbGwYASABKAgSJAoGdGVuYW50GAIgASgLMhQucm9zdGVyLlRlbmFudFNlbGVjdBIgCgRzaXRlGAMgASgLMhIucm9zdGVyLlNpdGVTZWxlY3QSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiqwEKEUdyb3VwUGF0Y2hSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5Hcm91cFJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiTwoRR3JvdXBBcHBseVJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkdyb3VwUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJAoSR3JvdXBFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJ7ChBHcm91cExpc3RSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuR3JvdXBGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCIkYKEUdyb3VwTGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0ucm9zdGVyLkdyb3VwEhMKBG5leHQYAiABKAlCBaoBAggCIm4KC0dyb3VwRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5Hcm91cFJlZhIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEh0KBHNpdGUYAyABKAsyDy5yb3N0ZXIuU2l0ZVJlZiKPAQoXR3JvdXBFeHBvc3VyZUFkZFJlcXVlc3QSCgoCaWQYASABKAwSHwoFZ3JvdXAYAiABKAsyEC5yb3N0ZXIuR3JvdXBSZWYSFQoGY2xpZW50GAggASgJQgWqAQIIAhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIm0KF0dyb3VwRXhwb3N1cmVHZXRSZXF1ZXN0EiUKA3JlZhgBIAEoCzIYLnJvc3Rlci5Hcm91cEV4cG9zdXJlUmVmEisKBnNlbGVjdBgCIAEoCzIbLnJvc3Rlci5Hcm91cEV4cG9zdXJlU2VsZWN0Il0KEEdyb3VwRXhwb3N1cmVSZWYSDAoCaWQYASABKAxIABI0CgdjYXJyaWVkGAIgASgLMiEucm9zdGVyLkdyb3VwRXhwb3N1cmVSZWZCeUNhcnJpZWRIAEIFCgNrZXkiTAoZR3JvdXBFeHBvc3VyZVJlZkJ5Q2FycmllZBIfCgVncm91cBgCIAEoCzIQLnJvc3Rlci5Hcm91cFJlZhIOCgZjbGllbnQYCCABKAkilwEKE0dyb3VwRXhwb3N1cmVTZWxlY3QSCwoDYWxsGAEgASgIEiIKBWdyb3VwGAIgASgLMhMucm9zdGVyLkdyb3VwU2VsZWN0Eg4KBmNsaWVudBgIIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIpABChlHcm91cEV4cG9zdXJlUGF0Y2hSZXF1ZXN0EiUKA3JlZhgBIAEoCzIYLnJvc3Rlci5Hcm91cEV4cG9zdXJlUmVmEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIl8KGUdyb3VwRXhwb3N1cmVBcHBseVJlcXVlc3QSJQoDcmVmGAEgASgLMhgucm9zdGVyLkdyb3VwRXhwb3N1cmVSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIsChpHcm91cEV4cG9zdXJlRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiiwEKGEdyb3VwRXhwb3N1cmVMaXN0UmVxdWVzdBIsCgdmaWx0ZXJzGAEgAygLMhsucm9zdGVyLkdyb3VwRXhwb3N1cmVGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCIlYKGUdyb3VwRXhwb3N1cmVMaXN0UmVzcG9uc2USJAoFaXRlbXMYASADKAsyFS5yb3N0ZXIuR3JvdXBFeHBvc3VyZRITCgRuZXh0GAIgASgJQgWqAQIIAiJdChNHcm91cEV4cG9zdXJlRmlsdGVyEiUKA3JlZhgBIAEoCzIYLnJvc3Rlci5Hcm91cEV4cG9zdXJlUmVmEh8KBWdyb3VwGAIgASgLMhAucm9zdGVyLkdyb3VwUmVmMsYCCgxHcm91cFNlcnZpY2USLQoDQWRkEhcucm9zdGVyLkdyb3VwQWRkUmVxdWVzdBoNLnJvc3Rlci5Hcm91cBItCgNHZXQSFy5yb3N0ZXIuR3JvdXBHZXRSZXF1ZXN0Gg0ucm9zdGVyLkdyb3VwEjEKBVBhdGNoEhkucm9zdGVyLkdyb3VwUGF0Y2hSZXF1ZXN0Gg0ucm9zdGVyLkdyb3VwEjEKBUFwcGx5Ehkucm9zdGVyLkdyb3VwQXBwbHlSZXF1ZXN0Gg0ucm9zdGVyLkdyb3VwEjUKBUVyYXNlEhAucm9zdGVyLkdyb3VwUmVmGhoucm9zdGVyLkdyb3VwRXJhc2VSZXNwb25zZRI7CgRMaXN0Ehgucm9zdGVyLkdyb3VwTGlzdFJlcXVlc3QaGS5yb3N0ZXIuR3JvdXBMaXN0UmVzcG9uc2UyrgMKFEdyb3VwRXhwb3N1cmVTZXJ2aWNlEj0KA0FkZBIfLnJvc3Rlci5Hcm91cEV4cG9zdXJlQWRkUmVxdWVzdBoVLnJvc3Rlci5Hcm91cEV4cG9zdXJlEj0KA0dldBIfLnJvc3Rlci5Hcm91cEV4cG9zdXJlR2V0UmVxdWVzdBoVLnJvc3Rlci5Hcm91cEV4cG9zdXJlEkEKBVBhdGNoEiEucm9zdGVyLkdyb3VwRXhwb3N1cmVQYXRjaFJlcXVlc3QaFS5yb3N0ZXIuR3JvdXBFeHBvc3VyZRJBCgVBcHBseRIhLnJvc3Rlci5Hcm91cEV4cG9zdXJlQXBwbHlSZXF1ZXN0GhUucm9zdGVyLkdyb3VwRXhwb3N1cmUSRQoFRXJhc2USGC5yb3N0ZXIuR3JvdXBFeHBvc3VyZVJlZhoiLnJvc3Rlci5Hcm91cEV4cG9zdXJlRXJhc2VSZXNwb25zZRJLCgRMaXN0EiAucm9zdGVyLkdyb3VwRXhwb3N1cmVMaXN0UmVxdWVzdBohLnJvc3Rlci5Hcm91cEV4cG9zdXJlTGlzdFJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_group, file_app_site_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_tenant_svc_g]);
+  fileDesc("ChVhcHAvZ3JvdXBfc3ZjLmcucHJvdG8SBnJvc3RlciK1AgoPR3JvdXBBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSHQoEc2l0ZRgDIAEoCzIPLnJvc3Rlci5TaXRlUmVmEhQKBWFsaWFzGAQgASgJQgWqAQIIAhITCgRuYW1lGAUgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhIzCgZsYWJlbHMYByADKAsyIy5yb3N0ZXIuR3JvdXBBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJVCg9Hcm91cEdldFJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkdyb3VwUmVmEiMKBnNlbGVjdBgCIAEoCzITLnJvc3Rlci5Hcm91cFNlbGVjdCJHCghHcm91cFJlZhIMCgJpZBgBIAEoDEgAEiYKBHNsdWcYBCABKAsyFi5yb3N0ZXIuR3JvdXBSZWZCeVNsdWdIAEIFCgNrZXkiQgoOR3JvdXBSZWZCeVNsdWcSDQoFYWxpYXMYBCABKAkSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZiLeAQoLR3JvdXBTZWxlY3QSCwoDYWxsGAEgASgIEiQKBnRlbmFudBgCIAEoCzIULnJvc3Rlci5UZW5hbnRTZWxlY3QSIAoEc2l0ZRgDIAEoCzISLnJvc3Rlci5TaXRlU2VsZWN0Eg0KBWFsaWFzGAQgASgIEgwKBG5hbWUYBSABKAgSDAoEZGVzYxgGIAEoCBIOCgZsYWJlbHMYByABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKRAgoRR3JvdXBQYXRjaFJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkdyb3VwUmVmEg0KBWFsaWFzGAggASgJEgwKBG5hbWUYCiABKAkSDAoEZGVzYxgMIAEoCRI1CgZsYWJlbHMYDiADKAsyJS5yb3N0ZXIuR3JvdXBQYXRjaFJlcXVlc3QuTGFiZWxzRW50cnkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJPChFHcm91cEFwcGx5UmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuR3JvdXBSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIkChJHcm91cEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIInsKEEdyb3VwTGlzdFJlcXVlc3QSJAoHZmlsdGVycxgBIAMoCzITLnJvc3Rlci5Hcm91cEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiRgoRR3JvdXBMaXN0UmVzcG9uc2USHAoFaXRlbXMYASADKAsyDS5yb3N0ZXIuR3JvdXASEwoEbmV4dBgCIAEoCUIFqgECCAIibgoLR3JvdXBGaWx0ZXISHQoDcmVmGAEgASgLMhAucm9zdGVyLkdyb3VwUmVmEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSHQoEc2l0ZRgDIAEoCzIPLnJvc3Rlci5TaXRlUmVmIoEBChJHcm91cFVwZGF0ZVJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkdyb3VwUmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJIo8BChdHcm91cEV4cG9zdXJlQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIfCgVncm91cBgCIAEoCzIQLnJvc3Rlci5Hcm91cFJlZhIVCgZjbGllbnQYCCABKAlCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAibQoXR3JvdXBFeHBvc3VyZUdldFJlcXVlc3QSJQoDcmVmGAEgASgLMhgucm9zdGVyLkdyb3VwRXhwb3N1cmVSZWYSKwoGc2VsZWN0GAIgASgLMhsucm9zdGVyLkdyb3VwRXhwb3N1cmVTZWxlY3QiXQoQR3JvdXBFeHBvc3VyZVJlZhIMCgJpZBgBIAEoDEgAEjQKB2NhcnJpZWQYAiABKAsyIS5yb3N0ZXIuR3JvdXBFeHBvc3VyZVJlZkJ5Q2FycmllZEgAQgUKA2tleSJMChlHcm91cEV4cG9zdXJlUmVmQnlDYXJyaWVkEh8KBWdyb3VwGAIgASgLMhAucm9zdGVyLkdyb3VwUmVmEg4KBmNsaWVudBgIIAEoCSKXAQoTR3JvdXBFeHBvc3VyZVNlbGVjdBILCgNhbGwYASABKAgSIgoFZ3JvdXAYAiABKAsyEy5yb3N0ZXIuR3JvdXBTZWxlY3QSDgoGY2xpZW50GAggASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgikAEKGUdyb3VwRXhwb3N1cmVQYXRjaFJlcXVlc3QSJQoDcmVmGAEgASgLMhgucm9zdGVyLkdyb3VwRXhwb3N1cmVSZWYSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiXwoZR3JvdXBFeHBvc3VyZUFwcGx5UmVxdWVzdBIlCgNyZWYYASABKAsyGC5yb3N0ZXIuR3JvdXBFeHBvc3VyZVJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiwKGkdyb3VwRXhwb3N1cmVFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKLAQoYR3JvdXBFeHBvc3VyZUxpc3RSZXF1ZXN0EiwKB2ZpbHRlcnMYASADKAsyGy5yb3N0ZXIuR3JvdXBFeHBvc3VyZUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiVgoZR3JvdXBFeHBvc3VyZUxpc3RSZXNwb25zZRIkCgVpdGVtcxgBIAMoCzIVLnJvc3Rlci5Hcm91cEV4cG9zdXJlEhMKBG5leHQYAiABKAlCBaoBAggCIl0KE0dyb3VwRXhwb3N1cmVGaWx0ZXISJQoDcmVmGAEgASgLMhgucm9zdGVyLkdyb3VwRXhwb3N1cmVSZWYSHwoFZ3JvdXAYAiABKAsyEC5yb3N0ZXIuR3JvdXBSZWYy+wIKDEdyb3VwU2VydmljZRItCgNBZGQSFy5yb3N0ZXIuR3JvdXBBZGRSZXF1ZXN0Gg0ucm9zdGVyLkdyb3VwEi0KA0dldBIXLnJvc3Rlci5Hcm91cEdldFJlcXVlc3QaDS5yb3N0ZXIuR3JvdXASMQoFUGF0Y2gSGS5yb3N0ZXIuR3JvdXBQYXRjaFJlcXVlc3QaDS5yb3N0ZXIuR3JvdXASMQoFQXBwbHkSGS5yb3N0ZXIuR3JvdXBBcHBseVJlcXVlc3QaDS5yb3N0ZXIuR3JvdXASNQoFRXJhc2USEC5yb3N0ZXIuR3JvdXBSZWYaGi5yb3N0ZXIuR3JvdXBFcmFzZVJlc3BvbnNlEjsKBExpc3QSGC5yb3N0ZXIuR3JvdXBMaXN0UmVxdWVzdBoZLnJvc3Rlci5Hcm91cExpc3RSZXNwb25zZRIzCgZVcGRhdGUSGi5yb3N0ZXIuR3JvdXBVcGRhdGVSZXF1ZXN0Gg0ucm9zdGVyLkdyb3VwMq4DChRHcm91cEV4cG9zdXJlU2VydmljZRI9CgNBZGQSHy5yb3N0ZXIuR3JvdXBFeHBvc3VyZUFkZFJlcXVlc3QaFS5yb3N0ZXIuR3JvdXBFeHBvc3VyZRI9CgNHZXQSHy5yb3N0ZXIuR3JvdXBFeHBvc3VyZUdldFJlcXVlc3QaFS5yb3N0ZXIuR3JvdXBFeHBvc3VyZRJBCgVQYXRjaBIhLnJvc3Rlci5Hcm91cEV4cG9zdXJlUGF0Y2hSZXF1ZXN0GhUucm9zdGVyLkdyb3VwRXhwb3N1cmUSQQoFQXBwbHkSIS5yb3N0ZXIuR3JvdXBFeHBvc3VyZUFwcGx5UmVxdWVzdBoVLnJvc3Rlci5Hcm91cEV4cG9zdXJlEkUKBUVyYXNlEhgucm9zdGVyLkdyb3VwRXhwb3N1cmVSZWYaIi5yb3N0ZXIuR3JvdXBFeHBvc3VyZUVyYXNlUmVzcG9uc2USSwoETGlzdBIgLnJvc3Rlci5Hcm91cEV4cG9zdXJlTGlzdFJlcXVlc3QaIS5yb3N0ZXIuR3JvdXBFeHBvc3VyZUxpc3RSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_group, file_app_site_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_tenant_svc_g]);
 
 /**
  * @generated from message roster.GroupAddRequest
@@ -55,6 +55,11 @@ export type GroupAddRequest = Message<"roster.GroupAddRequest"> & {
    * @generated from field: string desc = 6 [features.field_presence = IMPLICIT];
    */
   desc: string;
+
+  /**
+   * @generated from field: map<string, string> labels = 7;
+   */
+  labels: { [key: string]: string };
 
   /**
    * @generated from field: google.protobuf.Timestamp date_created = 15;
@@ -177,6 +182,11 @@ export type GroupSelect = Message<"roster.GroupSelect"> & {
   desc: boolean;
 
   /**
+   * @generated from field: bool labels = 7;
+   */
+  labels: boolean;
+
+  /**
    * @generated from field: bool date_updated = 13;
    */
   dateUpdated: boolean;
@@ -222,6 +232,11 @@ export type GroupPatchRequest = Message<"roster.GroupPatchRequest"> & {
    * @generated from field: string desc = 12;
    */
   desc: string;
+
+  /**
+   * @generated from field: map<string, string> labels = 14;
+   */
+  labels: { [key: string]: string };
 
   /**
    * The version this update requires the stored date_updated to be.
@@ -407,6 +422,42 @@ export const GroupFilterSchema: GenMessage<GroupFilter> = /*@__PURE__*/
   messageDesc(file_app_group_svc_g, 10);
 
 /**
+ * @generated from message roster.GroupUpdateRequest
+ */
+export type GroupUpdateRequest = Message<"roster.GroupUpdateRequest"> & {
+  /**
+   * @generated from field: roster.GroupRef ref = 1;
+   */
+  ref?: GroupRef | undefined;
+
+  /**
+   * Optimistic locking, as `Patch` takes it: the version this caller read.
+   *
+   * @generated from field: google.protobuf.Timestamp date_updated = 13;
+   */
+  dateUpdated?: Timestamp | undefined;
+
+  /**
+   * What it is called, and the note about it. Unset is left as it was.
+   *
+   * @generated from field: string name = 5;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string desc = 6;
+   */
+  desc: string;
+};
+
+/**
+ * Describes the message roster.GroupUpdateRequest.
+ * Use `create(GroupUpdateRequestSchema)` to create a new message.
+ */
+export const GroupUpdateRequestSchema: GenMessage<GroupUpdateRequest> = /*@__PURE__*/
+  messageDesc(file_app_group_svc_g, 11);
+
+/**
  * @generated from message roster.GroupExposureAddRequest
  */
 export type GroupExposureAddRequest = Message<"roster.GroupExposureAddRequest"> & {
@@ -436,7 +487,7 @@ export type GroupExposureAddRequest = Message<"roster.GroupExposureAddRequest"> 
  * Use `create(GroupExposureAddRequestSchema)` to create a new message.
  */
 export const GroupExposureAddRequestSchema: GenMessage<GroupExposureAddRequest> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 11);
+  messageDesc(file_app_group_svc_g, 12);
 
 /**
  * @generated from message roster.GroupExposureGetRequest
@@ -458,7 +509,7 @@ export type GroupExposureGetRequest = Message<"roster.GroupExposureGetRequest"> 
  * Use `create(GroupExposureGetRequestSchema)` to create a new message.
  */
 export const GroupExposureGetRequestSchema: GenMessage<GroupExposureGetRequest> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 12);
+  messageDesc(file_app_group_svc_g, 13);
 
 /**
  * @generated from message roster.GroupExposureRef
@@ -487,7 +538,7 @@ export type GroupExposureRef = Message<"roster.GroupExposureRef"> & {
  * Use `create(GroupExposureRefSchema)` to create a new message.
  */
 export const GroupExposureRefSchema: GenMessage<GroupExposureRef> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 13);
+  messageDesc(file_app_group_svc_g, 14);
 
 /**
  * @generated from message roster.GroupExposureRefByCarried
@@ -509,7 +560,7 @@ export type GroupExposureRefByCarried = Message<"roster.GroupExposureRefByCarrie
  * Use `create(GroupExposureRefByCarriedSchema)` to create a new message.
  */
 export const GroupExposureRefByCarriedSchema: GenMessage<GroupExposureRefByCarried> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 14);
+  messageDesc(file_app_group_svc_g, 15);
 
 /**
  * @generated from message roster.GroupExposureSelect
@@ -551,7 +602,7 @@ export type GroupExposureSelect = Message<"roster.GroupExposureSelect"> & {
  * Use `create(GroupExposureSelectSchema)` to create a new message.
  */
 export const GroupExposureSelectSchema: GenMessage<GroupExposureSelect> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 15);
+  messageDesc(file_app_group_svc_g, 16);
 
 /**
  * @generated from message roster.GroupExposurePatchRequest
@@ -592,7 +643,7 @@ export type GroupExposurePatchRequest = Message<"roster.GroupExposurePatchReques
  * Use `create(GroupExposurePatchRequestSchema)` to create a new message.
  */
 export const GroupExposurePatchRequestSchema: GenMessage<GroupExposurePatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 16);
+  messageDesc(file_app_group_svc_g, 17);
 
 /**
  * @generated from message roster.GroupExposureApplyRequest
@@ -614,7 +665,7 @@ export type GroupExposureApplyRequest = Message<"roster.GroupExposureApplyReques
  * Use `create(GroupExposureApplyRequestSchema)` to create a new message.
  */
 export const GroupExposureApplyRequestSchema: GenMessage<GroupExposureApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 17);
+  messageDesc(file_app_group_svc_g, 18);
 
 /**
  * @generated from message roster.GroupExposureEraseResponse
@@ -637,7 +688,7 @@ export type GroupExposureEraseResponse = Message<"roster.GroupExposureEraseRespo
  * Use `create(GroupExposureEraseResponseSchema)` to create a new message.
  */
 export const GroupExposureEraseResponseSchema: GenMessage<GroupExposureEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 18);
+  messageDesc(file_app_group_svc_g, 19);
 
 /**
  * @generated from message roster.GroupExposureListRequest
@@ -686,7 +737,7 @@ export type GroupExposureListRequest = Message<"roster.GroupExposureListRequest"
  * Use `create(GroupExposureListRequestSchema)` to create a new message.
  */
 export const GroupExposureListRequestSchema: GenMessage<GroupExposureListRequest> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 19);
+  messageDesc(file_app_group_svc_g, 20);
 
 /**
  * @generated from message roster.GroupExposureListResponse
@@ -716,7 +767,7 @@ export type GroupExposureListResponse = Message<"roster.GroupExposureListRespons
  * Use `create(GroupExposureListResponseSchema)` to create a new message.
  */
 export const GroupExposureListResponseSchema: GenMessage<GroupExposureListResponse> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 20);
+  messageDesc(file_app_group_svc_g, 21);
 
 /**
  * @generated from message roster.GroupExposureFilter
@@ -738,7 +789,7 @@ export type GroupExposureFilter = Message<"roster.GroupExposureFilter"> & {
  * Use `create(GroupExposureFilterSchema)` to create a new message.
  */
 export const GroupExposureFilterSchema: GenMessage<GroupExposureFilter> = /*@__PURE__*/
-  messageDesc(file_app_group_svc_g, 21);
+  messageDesc(file_app_group_svc_g, 22);
 
 /**
  * @generated from service roster.GroupService
@@ -803,6 +854,16 @@ export const GroupService: GenService<{
     methodKind: "unary";
     input: typeof GroupListRequestSchema;
     output: typeof GroupListResponseSchema;
+  },
+  /**
+   * Update replaces what a group says about itself, under the version read.
+   *
+   * @generated from rpc roster.GroupService.Update
+   */
+  update: {
+    methodKind: "unary";
+    input: typeof GroupUpdateRequestSchema;
+    output: typeof GroupSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_group_svc_g, 0);

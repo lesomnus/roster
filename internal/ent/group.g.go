@@ -29,6 +29,7 @@ func (e *Group) Proto() *rstr.Group {
 	x.SetAlias(e.Alias)
 	x.SetName(e.Name)
 	x.SetDesc(e.Desc)
+	x.SetLabels(e.Labels)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

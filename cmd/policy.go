@@ -637,6 +637,37 @@ func Rules(db *ent.Client, sources ...rbac.Source) core.Rules {
 		Everywhere:   Everywhere(db, sources...),
 		Administered: Administered(db),
 		Releasing:    Releasing(db),
+		Named:        Named(db),
+	}
+}
+
+// Named is a tenant's role by its alias, for [core.Named]: read from the rows
+// and not through a server, so that it answers the same whoever is asking.
+func Named(db *ent.Client) core.Named {
+	return func(ctx context.Context, drv dialect.Driver, tenant pdid.Id, alias string) (*core.NamedRole, error) {
+		// On the driver it is handed, as [Administered] is.
+		c := db
+		if drv != nil {
+			c = ent.NewClient(ent.Driver(drv))
+		}
+
+		v, err := c.Role.Query().
+			Where(entrole.TenantIdEQ(tenant.Uuid()), entrole.AliasEQ(alias), entrole.DateErasedIsNil()).
+			WithSite().
+			Only(ctx)
+		if ent.IsNotFound(err) {
+			return nil, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		out := &core.NamedRole{Id: pdid.Id(v.Id), Methods: v.Methods}
+		if v.Edges.Site != nil {
+			out.Site = pdid.Id(v.Edges.Site.Id)
+		}
+
+		return out, nil
 	}
 }
 

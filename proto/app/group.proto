@@ -69,6 +69,16 @@ message Group {
   string name = 5;
   string desc = 6;
 
+  // Whatever is kept about this group that the schema does not name.
+  //
+  // Number seven, the one an entity spends on labels (`host.proto`). No rule
+  // reads one. It is where whoever makes a group says what the group is to
+  // them: a tenant's directory, which makes groups as its own holder and so
+  // manages them like anybody who makes one ([GroupMembership]), marks the
+  // ones it made with what it calls them (`roster.directory`, `docs/scim.md`),
+  // and that mark is how it finds them again -- not what lets it change them.
+  map<string, string> labels = 7;
+
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {

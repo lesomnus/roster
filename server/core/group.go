@@ -6,6 +6,9 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/lesomnus/z"
+	"github.com/protobuf-orm/ent/dialect"
+	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -66,16 +69,201 @@ func groupDenied(method string) error {
 }
 
 // managing is what a role held in a group may name: the writes that change
-// that group's members, and nothing else.
+// that group -- who is in it, and what it is called -- and nothing else.
 //
 // Because the gate unions a role held in a group into what somebody may ever
-// call, and only these two are narrowed back to the one group by
+// call, and only these are narrowed back to the one group by
 // [Core.mayChangeGroup]. A read named here would read every group's members,
 // and anything else would be held across the tenant -- a binding by another
 // name, written by whoever may appoint a manager.
 var managing = []string{
 	app.GroupMembershipService_Add_FullMethodName,
 	app.GroupMembershipService_Erase_FullMethodName,
+	app.GroupService_Update_FullMethodName,
+}
+
+// Manages is the alias of the role a group's maker holds in it: a tenant's
+// one role naming exactly [managing], made the first time a group needs it.
+//
+// The name a tenant would give its own, on purpose. One that is already there
+// and is what a role held in a group may be -- of no site, naming nothing
+// [managing] does not -- is the tenant's word for what a manager does, and is
+// used as it stands: a tenant whose managers do not rename groups keeps them
+// so. One that is anything else is refused where a group is made, saying so.
+const Manages = "group-manager"
+
+// maker is who is making a group, when that is somebody of its tenant -- and
+// so somebody who can be in it.
+//
+// Nobody is when there is no frame, which is the deployment's own work
+// through an unwalled server, or when the caller is not a holder of this
+// tenant: a deployment's key, an operator at the admin port. Those make a
+// group nobody manages, as every group was before this, and an administrator
+// appoints its first manager.
+func (s Core) maker(ctx context.Context, tenant pdid.Id) (pdid.Id, bool, error) {
+	f, ok := frame.From(ctx)
+	if !ok || f.Actor.IsZero() || s.rules.Named == nil {
+		return pdid.Nil, false, nil
+	}
+
+	of, err := s.tenantOfHolder(ctx, app.HolderRef_builder{Id: f.Actor.Bytes()}.Build())
+	switch status.Code(err) {
+	case codes.OK:
+	case codes.NotFound, codes.InvalidArgument, codes.PermissionDenied:
+		return pdid.Nil, false, nil
+	default:
+		return pdid.Nil, false, err
+	}
+
+	return f.Actor, of == tenant, nil
+}
+
+// made is a group and its maker's place in it, carrying the manager's role, in
+// one transaction.
+//
+// # Whoever makes a group manages it
+//
+// A manager was somebody an administrator appointed
+// ([coreGroupMembership.mayAppoint]): attaching the role is held to holding
+// its methods through a binding, across the tenant. So a caller who may make
+// a group and holds no membership write that wide made a group it could put
+// nobody into -- a group nobody manages is not a smaller group, it is an
+// unfinished one -- and the only way to finish it was to hand that caller
+// every group of the tenant. The maker's place is the rest of the same act,
+// which is what `Tenant.Add` writing its administrator is.
+//
+// # Why this is not handing anything out
+//
+// The three writes go **below** this layer, past `mayChangeGroup`, `mayJoin`
+// and `mayAppoint`, which is the whole of the rule and why it is safe to
+// write here and nowhere else. A group made this moment is bound to nothing
+// and shown to no client, so being in it gives nothing; and a role held in it
+// reaches this group and no other. What it changes is later, and is somebody
+// else's decision: whoever binds a role to this group hands it to a manager
+// who decides who else holds it, as they hand it to everybody already in it.
+//
+// # And so the maker is a member
+//
+// A manager outside the group they manage would protect nothing
+// (`entity.md`), and the role is carried by a membership. An administrator
+// who makes a group is in it, and takes themselves out when that is not
+// wanted.
+func (s coreGroup) made(ctx context.Context, req *app.GroupAddRequest, tenant, who pdid.Id) (*app.Group, error) {
+	var out *app.Group
+	run := func(below app.Server, drv dialect.Driver) error {
+		g, err := below.Group().Add(ctx, req)
+		if err != nil {
+			return err
+		}
+		role, err := s.managersRole(ctx, below, drv, tenant)
+		if err != nil {
+			return err
+		}
+		if _, err := below.GroupMembership().Add(ctx, app.GroupMembershipAddRequest_builder{
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Group:  app.GroupRef_builder{Id: g.GetId()}.Build(),
+			Role:   role,
+		}.Build()); err != nil {
+			return err
+		}
+
+		out = g
+
+		return nil
+	}
+
+	if s.drv == nil {
+		// On somebody else's transaction, or on none: [Core.tx] is which.
+		if err := run(s.Next(), s.tx); err != nil {
+			return nil, err
+		}
+
+		return out, nil
+	}
+
+	drv, tx, err := dialect.BeginTx(ctx, s.drv)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	next, err := enttx.Rebind(s.Next(), drv)
+	if err != nil {
+		return nil, err
+	}
+	if err := run(next, drv); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+// managersRole is the tenant's [Manages], made when it is not there.
+//
+// Found by [Named], which reads past what the maker can see: a maker who sees
+// one site would not find a role of the whole tenant, and would make a
+// second. Made below this layer, like the rest of [coreGroup.made]: a role
+// naming what a manager may call is one its maker need not hold, since it is
+// held in a group and reaches no further.
+func (s Core) managersRole(ctx context.Context, below app.Server, drv dialect.Driver, tenant pdid.Id) (*app.RoleRef, error) {
+	v, err := s.rules.Named(ctx, drv, tenant, Manages)
+	if err != nil {
+		return nil, err
+	}
+	if v == nil {
+		made, err := below.Role().Add(ctx, app.RoleAddRequest_builder{
+			Tenant:  app.TenantRef_builder{Id: tenant.Bytes()}.Build(),
+			Alias:   Manages,
+			Desc:    "What a group's manager may do to their own group: put people in, take them out, and say what it is called.",
+			Methods: managing,
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		return app.RoleRef_builder{Id: made.GetId()}.Build(), nil
+	}
+
+	// The tenant's own, used as it stands where it is what a role held in a
+	// group may be.
+	if v.Site != pdid.Nil {
+		return nil, status.Errorf(codes.FailedPrecondition,
+			"the role %q of this tenant belongs to a site, and a group's maker manages it by that role; a role held in a group belongs to none", Manages)
+	}
+	for _, m := range v.Methods {
+		if !slices.Contains(managing, m) {
+			return nil, status.Errorf(codes.FailedPrecondition,
+				"the role %q of this tenant names %s, and a group's maker manages it by that role; it may name only what changes a group (%s)",
+				Manages, m, strings.Join(managing, ", "))
+		}
+	}
+
+	return app.RoleRef_builder{Id: v.Id.Bytes()}.Build(), nil
+}
+
+// coreGroup's `Update` is `Patch` with everything but what a group says about
+// itself held back -- `group_svc.ext.proto` says why -- and held as its members
+// are: through a binding, or by one of its managers ([Core.mayChangeGroup]).
+func (s coreGroup) Update(ctx context.Context, req *app.GroupUpdateRequest) (*app.Group, error) {
+	if err := s.mayChangeGroup(ctx, app.GroupService_Update_FullMethodName, req.GetRef()); err != nil {
+		return nil, err
+	}
+
+	patch := app.GroupPatchRequest_builder{
+		Ref:         req.GetRef(),
+		DateUpdated: req.GetDateUpdated(),
+	}
+	if req.HasName() {
+		patch.Name = z.Ptr(req.GetName())
+	}
+	if req.HasDesc() {
+		patch.Desc = z.Ptr(req.GetDesc())
+	}
+
+	return s.GroupServiceServer.Patch(ctx, patch.Build())
 }
 
 // mayHoldInGroup refuses a role that would reach past the group it is held in:

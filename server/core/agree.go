@@ -539,7 +539,18 @@ func (s coreGroup) Add(ctx context.Context, req *app.GroupAddRequest) (*app.Grou
 		return nil, err
 	}
 
-	return s.GroupServiceServer.Add(ctx, req)
+	// And whoever makes a group manages it, when they are somebody of its
+	// tenant: the row, and their place in it carrying the manager's role, in
+	// one write or none. See `group.go`.
+	who, ok, err := s.maker(ctx, of)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return s.GroupServiceServer.Add(ctx, req)
+	}
+
+	return s.made(ctx, req, of, who)
 }
 
 type coreBinding struct {
