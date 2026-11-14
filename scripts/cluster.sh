@@ -926,10 +926,23 @@ echo "== somebody to sign in as"
 # find out here rather than in a deployment's runbook.
 seed() { kube "kubectl -n ${NS} exec -i deploy/roster -c roster -- roster --config /config/config.yaml $*"; }
 # Who is at the shell, which a command there that reads or writes the database
-# names on the access record (#221). `deploy/` runs no `init`, so the rig makes
-# an operator of its own on the control plane -- naming one makes it, and the
-# key that comes with it is thrown away.
-seed "control key add --allow /roster.MeService/Get rig" >/dev/null 2>&1 || true
+# names on the access record (#221): the deployment's operator, whom `init`
+# makes. `deploy/` starts `serve` first, so `init` comes here after it, onto a
+# control plane `serve` already wrote a role and its provisioner on -- which is
+# where it was once refused as a second run (#268), and is refused now only on
+# a cluster this has been through before. The password is thrown away: the rig
+# is at the shell and never at the admin console.
+operator="$(kube "printf '%s' '$(head -c 24 /dev/urandom | base64)' \
+	| kubectl -n ${NS} exec -i deploy/roster -c roster -- roster --config /config/config.yaml init --operator rig --password-stdin 2>&1" || true)"
+case "${operator}" in
+*'holder rig is '* | *'has an operator already'*) ;;
+*)
+	echo "${operator}" >&2
+	echo "init made no operator on a deployment whose serve came first (#268)" >&2
+	exit 1
+	;;
+esac
+echo "rig, the operator init made after serve"
 seed "--as rig holder add @acme/erin" >/dev/null 2>&1 || true
 seed "--as rig role add @acme/everything '{\"methods\":[\"/roster.*/*\"]}'" >/dev/null 2>&1 || true
 kube "printf '%s' '{\"role\":{\"slug\":{\"alias\":\"everything\",\"tenant\":{\"alias\":\"acme\"}}},\"holder\":{\"slug\":{\"alias\":\"erin\",\"tenant\":{\"alias\":\"acme\"}}}}' \

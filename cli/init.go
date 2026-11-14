@@ -95,9 +95,16 @@ import (
 //
 // # Running it twice
 //
-// An error, because an alias is unique and the database says so. That is the
-// right answer -- an `init` that quietly did nothing is one somebody runs
-// against the wrong deployment and believes.
+// An error, because the deployment has its operator and this makes the first
+// (`cmd.ErrOperated`). That is the right answer -- an `init` that quietly did
+// nothing is one somebody runs against the wrong deployment and believes.
+//
+// # Running it after `serve`
+//
+// Not a second run. A deployment that declares resources has `serve` write
+// rows on the control plane before anybody ran this -- the provisioner, and
+// the role it holds -- and `deploy/` is that deployment. The operator is bound
+// to the role that is there (#268).
 func NewCmdInit(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "init",

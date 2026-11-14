@@ -11,13 +11,10 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/lesomnus/z"
-
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/core"
 )
 
 // Declaring a deployment's rows in a file, and applying them at start.
@@ -307,9 +304,10 @@ func asProvisioner(ctx context.Context, s *Server) (context.Context, error) {
 	// what the **caller** holds. A provisioner bound to nothing could make no
 	// tenant at all -- refused at the role, with the tenant rolled back.
 	//
-	// The control plane's own `everything`, which `roster init` wrote. Bound
-	// rather than written, so the provisioner holds what an operator holds and
-	// no more, and `AlreadyExists` is this having run before.
+	// The control plane's own `everything`, which is the one `roster init`
+	// binds its operator to, whichever of the two came first ([allow]). One
+	// role and not a second of the provisioner's own, so it holds what an
+	// operator holds and no more.
 	if err := allowProvisioner(ctx, s.Control, who); err != nil {
 		return nil, err
 	}
@@ -633,59 +631,19 @@ func same(a, b []string) bool {
 	return true
 }
 
-// allowProvisioner binds the provisioner to the control plane's `everything`,
+// allowProvisioner has the provisioner hold the control plane's `everything`,
 // and is a no-op on the second run.
+//
+// The role is [allow]'s to find or write, and it writes it on a control plane
+// nobody has run `roster init` on -- which is not only a test or the sandbox:
+// `deploy/` starts `serve` first, and its operator comes after (#268).
 func allowProvisioner(ctx context.Context, s *Server, who pdid.Id) error {
 	t, err := s.Ent.Tenant.Query().First(ctx)
 	if err != nil {
 		return fmt.Errorf("resources: the control plane has no owner: %w", err)
 	}
-
-	r, err := s.Ungated.Role().Get(ctx, app.RoleGetRequest_builder{
-		Ref: app.RoleRef_builder{
-			Slug: app.RoleRefBySlug_builder{
-				Alias:  z.Ptr(core.Everyverb),
-				Tenant: app.TenantRef_builder{Id: t.Id[:]}.Build(),
-			}.Build(),
-		}.Build(),
-	}.Build())
-	if status.Code(err) == codes.NotFound {
-		// A control plane raised by a Go call rather than by `roster init` --
-		// a test, the sandbox -- has the tenant and not the role. Written the
-		// way `init` writes it, through `Ungated`, where a frameless caller
-		// waives `mayGrant`.
-		return allow(ctx, s.Ungated, pdid.Id(t.Id), who)
-	}
-	if err != nil {
-		return fmt.Errorf("resources: the role a provisioner is bound to: %w", err)
-	}
-
-	// Looked for first, because nothing refuses a second: `Binding` has no
-	// unique index to answer `AlreadyExists` with, so this added one more on
-	// every start -- seven on one deployment's control plane before anybody
-	// counted. `cli`'s `ensureBinding` learned the same thing about the Login
-	// App's.
-	vs, err := s.Ungated.Binding().List(ctx, app.BindingListRequest_builder{
-		Filters: []*app.BindingFilter{app.BindingFilter_builder{
-			Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
-			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
-		}.Build()},
-	}.Build())
-	if err != nil {
-		return fmt.Errorf("resources: the provisioner's binding: %w", err)
-	}
-	for _, v := range vs.GetItems() {
-		if len(v.GetSite().GetId()) == 0 {
-			return nil
-		}
-	}
-
-	_, err = s.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
-		Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
-		Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
-	}.Build())
-	if err != nil && status.Code(err) != codes.AlreadyExists {
-		return fmt.Errorf("resources: binding the provisioner: %w", err)
+	if err := allow(ctx, s.Ungated, pdid.Id(t.Id), who); err != nil {
+		return fmt.Errorf("resources: what the provisioner holds: %w", err)
 	}
 
 	return nil

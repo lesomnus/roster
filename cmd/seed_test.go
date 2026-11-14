@@ -86,13 +86,20 @@ func TestInitRefusesToRunTwice(t *testing.T) {
 	_, err = initRun(t, c)
 	x.Error(err, "a second init against a seeded deployment reported success")
 
-	// Named by the row that collided, because the operator reading this is
+	// Named by who is already there, because the operator reading this is
 	// deciding whether they are looking at the wrong database or at a restart.
 	//
-	// The **operator**, which is what `init` writes now: it seeds the control
-	// plane and nothing else, so the first thing already there is the role
-	// bound to the person who runs this deployment.
-	x.ErrorContains(err, "admin")
+	// The **operator**, and not a row that collided: what refuses a second
+	// run is that somebody signs in here already (#268), and the role they
+	// hold is one `serve` may have written first.
+	x.ErrorIs(err, cmd.ErrOperated)
+	x.ErrorContains(err, `"admin" signs in`)
+
+	// And under another name, which is the run that would otherwise be a way
+	// to a second operator nobody at an admin console made.
+	_, err = initRun(t, c, "--operator", "second")
+	x.ErrorIs(err, cmd.ErrOperated, "a second init under another name made a second operator")
+	x.ErrorContains(err, `"admin" signs in`)
 
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
@@ -159,10 +166,9 @@ func TestInitRefusesToRunTwice(t *testing.T) {
 // the first call, so it says nothing about what a partial one leaves.
 //
 // A second seed naming a **different** tenant does get past it. The data
-// plane's four rows are written, and then the control plane refuses: the
-// operator's tenant already holds a role called "everything", and an alias is
-// unique. That refusal lands in `seedOperator` before the passphrase is
-// generated and before it is set -- which is the property worth pinning,
+// plane's four rows are written, and then the control plane refuses: somebody
+// signs in there already. That refusal lands in `seedOperator` before
+// anything is written and before a password is set -- which is the property worth pinning,
 // because the alternative is an operator who wrote down the first password
 // finding it no longer works after a command that failed.
 //
@@ -196,7 +202,7 @@ func TestASecondSeedStopsBeforeTheOperator(t *testing.T) {
 		Tenant: "fabrikam", Holder: "admin", Operator: "admin",
 	})
 	x.Error(err, "a second seed reseeded the control plane of a live deployment")
-	x.ErrorContains(err, "operator", "it failed somewhere other than the operator")
+	x.ErrorIs(err, cmd.ErrOperated, "it failed somewhere other than the operator")
 
 	// The half that did happen, said out loud so that a later change which
 	// makes `Seed` roll this back fails here and is looked at, rather than
@@ -219,6 +225,121 @@ func TestASecondSeedStopsBeforeTheOperator(t *testing.T) {
 
 		x.NotNil(signIn(t, s, "admin", secret),
 			"the failed run rotated the password its own output did not print")
+	})
+}
+
+// TestInitComesAfterServe is #268: the first operator of a deployment whose
+// `serve` started before anybody ran `init`, which is every one made from
+// `deploy/`.
+//
+// `serve` applies what the configuration declares as the control plane's
+// provisioner, and has it hold `everything` -- writing the role, since nobody
+// had. `init` then wrote the same role with `Add` and was refused,
+// `AlreadyExists`, as if it were a second run: on a deployment nobody could
+// sign in to, with an error that named a role. The other ways to an operator
+// ask who is at the shell (#221), and there was nobody to name.
+//
+// So the role is found where it is there, and what makes a run the second is
+// an operator, not a row `serve` also writes.
+func TestInitComesAfterServe(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	c := seedbed(t)
+
+	// What `serve` does before it serves, in its order: the schema, then the
+	// rows a file declares.
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	x.NoError(cli.Migrate(ctx, s))
+
+	rs, err := cmd.ReadResources(declare(t, `
+resources:
+  - kind: Tenant
+    alias: newco
+    name: Newco
+`))
+	x.NoError(err)
+	_, err = cmd.ApplyResources(ctx, s, rs, false)
+	x.NoError(err)
+
+	// And a caller named at the shell, as `roster control key add` names one:
+	// a holder of the control plane nobody signs in as.
+	_, err = cmd.HolderNamed(ctx, s.Control, "loft")
+	x.NoError(err)
+
+	n, err := s.Control.Ent.Role.Query().Count(ctx)
+	x.NoError(err)
+	x.Equal(1, n, "serve wrote the provisioner's role, which is what init then met")
+	x.NoError(s.Close())
+
+	out, err := initRun(t, c)
+	x.NoError(err, "init after serve: %s", out)
+	secret := passwordFrom(t, out)
+
+	s, err = cmd.Build(ctx, c)
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+
+	t.Run("one role, held by the provisioner and by the operator", func(t *testing.T) {
+		x := require.New(t)
+
+		n, err := s.Control.Ent.Role.Query().Count(ctx)
+		x.NoError(err)
+		x.Equal(1, n, "init wrote a second role beside the one it found")
+
+		n, err = s.Control.Ent.Binding.Query().Count(ctx)
+		x.NoError(err)
+		x.Equal(2, n, "the provisioner's, and the operator's")
+	})
+
+	// What the role is for, rather than that a row says so: the deadlock
+	// `TestInitLeavesADeploymentThatWorks` is about, on this deployment.
+	t.Run("and the operator administers the deployment", func(t *testing.T) {
+		x := require.New(t)
+
+		k := signIn(t, s, "admin", secret)
+		x.NotNil(k, "the password init printed does not sign in")
+
+		g, err := s.GrpcAdmin(ctx, cmd.Config{})
+		x.NoError(err)
+
+		as := metadata.NewOutgoingContext(ctx, metadata.Pairs("cookie", k.Name+"="+k.Value))
+		_, err = app.NewTenantServiceClient(pdtest.Serve(t, g)).Add(as,
+			app.TenantAddRequest_builder{Alias: "fabrikam"}.Build())
+		x.NoError(err, "the deployment cannot be administered by the person init named")
+	})
+
+	t.Run("and the provisioner still writes what a file declares", func(t *testing.T) {
+		x := require.New(t)
+
+		rs, err := cmd.ReadResources(declare(t, `
+resources:
+  - kind: Tenant
+    alias: newco
+    name: Newco
+  - kind: Tenant
+    alias: later
+    name: Later
+`))
+		x.NoError(err)
+		v, err := cmd.ApplyResources(ctx, s, rs, false)
+		x.NoError(err)
+		x.Len(v.Added, 1)
+
+		n, err := s.Control.Ent.Binding.Query().Count(ctx)
+		x.NoError(err)
+		x.Equal(2, n, "a start after init bound the provisioner again")
+	})
+
+	t.Run("and a second init is the second", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := initRun(t, c)
+		x.ErrorIs(err, cmd.ErrOperated)
+
+		x.NotNil(signIn(t, s, "admin", secret),
+			"the second init changed the password the first one printed")
 	})
 }
 
