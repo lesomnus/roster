@@ -180,10 +180,13 @@ func stand(t *testing.T) *deployment {
 		}.Build())
 		x.NoError(err)
 	}
-	// And where she is reached: a desk and a mobile.
-	for kind, number := range map[string]string{"work": "+82 2-123-4567", "mobile": "010-0000-0000"} {
+	// And where she is reached: a desk and a mobile -- and the desk again as
+	// her `other`, which is the same attribute here and so one value of it.
+	for _, n := range []struct{ kind, number string }{
+		{"work", "+82 2-123-4567"}, {"mobile", "010-0000-0000"}, {"other", "+82 2-123-4567"},
+	} {
 		_, err := d.s.Ungated.Phone().Add(ctx, rstr.PhoneAddRequest_builder{
-			Holder: rstr.HolderRef_builder{Id: d.kim}.Build(), Number: number, Kind: kind,
+			Holder: rstr.HolderRef_builder{Id: d.kim}.Build(), Number: n.number, Kind: n.kind,
 		}.Build())
 		x.NoError(err)
 	}
@@ -610,7 +613,7 @@ func TestAFilterIsARosterRead(t *testing.T) {
 		x.Equal([]string{"kim@contoso.example"}, e.GetAttributeValues("mail"), "an unverified address was published")
 		x.Equal("1001", e.GetAttributeValue("employeeNumber"))
 		x.Equal("Platform", e.GetAttributeValue("departmentNumber"))
-		x.Equal([]string{"+82 2-123-4567"}, e.GetAttributeValues("telephoneNumber"))
+		x.Equal([]string{"+82 2-123-4567"}, e.GetAttributeValues("telephoneNumber"), "an attribute is a set: a number of two kinds is there once")
 		x.Equal([]string{"010-0000-0000"}, e.GetAttributeValues("mobile"))
 		x.Equal([]string{leeDN}, e.GetAttributeValues("manager"))
 

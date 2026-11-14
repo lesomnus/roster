@@ -73,6 +73,11 @@
 #     ./scripts/scim-check.sh --down    # take away what a run that was stopped left
 #     ./scripts/scim-check.sh --sweep   # and what any run left, hours ago
 #
+# And what a run kept, as the test that replays it reads it
+# (`scim/validator_sent_test.go`, where what to add to a row is said):
+#
+#     ./scripts/scim-check.sh --fixture scim-check/requests.jsonl
+#
 # `.github/workflows/scim-check.yml` runs it on a runner, by hand.
 set -o errexit
 set -o pipefail
@@ -198,7 +203,56 @@ def sweep():
 PY
 }
 
+# fixture is a run's record with what a replay does not read left out: a
+# request a line -- what was asked, what was answered, and of the answer only
+# what a later request goes by, which is the id of what it made and how many
+# it found. A request that did not carry the token is nobody's the page sent,
+# and is left out too.
+#
+# The record is what anybody sent, so it is read as text and nothing in it is
+# run.
+fixture() {
+	python3 -I - "$1" <<'PY'
+import json
+import sys
+
+for line in open(sys.argv[1], encoding="utf-8"):
+    line = line.strip()
+    if not line:
+        continue
+    r = json.loads(line)
+    if r.get("refused"):
+        continue
+
+    out = {"method": r["method"], "path": r["path"]}
+    asked = r.get("request") or ""
+    if asked.strip():
+        try:
+            out["body"] = json.loads(asked)
+        except ValueError:
+            out["text"] = asked
+    out["answered"] = r["status"]
+
+    try:
+        said = json.loads(r.get("response") or "")
+    except ValueError:
+        said = None
+    if isinstance(said, dict):
+        if r["method"] == "POST" and r["status"] == 201 and said.get("id"):
+            out["made"] = said["id"]
+        if isinstance(said.get("totalResults"), int):
+            out["found"] = said["totalResults"]
+
+    print(json.dumps(out, ensure_ascii=False, separators=(",", ":")))
+PY
+}
+
 case "${1:-}" in
+--fixture)
+	[ -n "${2:-}" ] || { echo "--fixture: which record; a run leaves it at scim-check/requests.jsonl" >&2; exit 2; }
+	fixture "$2"
+	exit 0
+	;;
 --down)
 	[ -n "${SCIM_CHECK_CF_API_TOKEN:-}" ] && cf down
 	exit 0

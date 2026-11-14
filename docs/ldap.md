@@ -193,7 +193,7 @@ deployments of roster should agree on it.
 | `departmentNumber` | `Profile.department` | |
 | `preferredLanguage` | `Profile.locale` | |
 | `labeledURI` | `Profile.picture` | |
-| `telephoneNumber`, `mobile`, `facsimileTelephoneNumber`, `homePhone`, `pager` | `Phone.number`, by its `kind` | one of no kind, or of a kind with no attribute of its own, is a `telephoneNumber`; read only when asked for or filtered on, since it costs a list |
+| `telephoneNumber`, `mobile`, `facsimileTelephoneNumber`, `homePhone`, `pager` | `Phone.number`, by its `kind` | one of no kind, or of a kind with no attribute of its own, is a `telephoneNumber`, and a number that is two of those is there once; read only when asked for or filtered on, since it costs a list |
 | `manager` | the DN of who they report to | a `Relation` of theirs labelled `manager`, which is what a directory provisioning them writes ([scim.md](scim.md)); read only when asked for or filtered on |
 | `memberOf` | the DNs of their groups and teams | AD's convenience, and the one most clients ask for; read only when asked for or filtered on, since it costs two lists |
 | `entryUUID` | `Holder.id` | |

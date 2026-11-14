@@ -33,11 +33,14 @@ option go_package = "github.com/lesomnus/roster/rstr";
 // account a way in is written into. A directory's write is asked that
 // question then, and not before there is anything to ask it about.
 //
-// # Not unique within a tenant
+// # Not unique within a tenant, nor one row a number
 //
 // A switchboard, a shared desk, a family's line: two people reached at one
-// number is ordinary, where two people at one address is a mistake. So it is
-// one row a person and a number, and that is all the index says.
+// number is ordinary, where two people at one address is a mistake. And one
+// person's number is as ordinarily two of theirs: the mobile that is also
+// where their desk rings, which a directory says twice -- once as each
+// (`kind`) -- and asks for again by either. So it is one row a person, a
+// number and what the number is to them, and that is all the index says.
 message Phone {
   bytes id = 1 [(orm.field) = {
     type: TYPE_UUID
@@ -68,7 +71,9 @@ message Phone {
   // Which of somebody's numbers this is, as a directory says it: `work`,
   // `mobile`, `fax`, `home`, `pager`, `other` -- SCIM's words (RFC 7643
   // §4.1.2), which are also what an LDAP client asks by. Empty is not said.
-  string kind = 9;
+  //
+  // One of six words, and about no one: the trail keeps which.
+  string kind = 9 [(payday.field) = {personal: false}];
 
   // The tenant `holder.tenant` reaches, kept here. payday stamps it, and
   // `Identity` says at length why a column is worth it.
@@ -96,11 +101,13 @@ message Phone {
         ]
       },
       {
-        // Nobody lists the same number twice, of the same kind or another.
+        // Nobody lists a number twice as the same thing. As two -- their
+        // mobile, and where their desk rings -- they do.
         name: "number"
         refs: [
           {name: "holder", number: 2},
-          {name: "number", number: 8}
+          {name: "number", number: 8},
+          {name: "kind", number: 9}
         ]
         unique: true
       }

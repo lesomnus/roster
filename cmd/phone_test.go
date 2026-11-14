@@ -11,8 +11,9 @@ import (
 )
 
 // TestANumberIsWhereSomebodyIsReachedAndNoWayIn: a `Phone` is a number kept
-// as it was said, one row a person and a number, and held to being something
-// somebody could dial. What it is **not** held to is the rule a way in is:
+// as it was said, one row a person, a number and a kind, and held to being
+// something somebody could dial. What it is **not** held to is the rule a way
+// in is:
 // somebody who may write a number writes one onto an administrator, where the
 // same caller writing an address there is refused -- a link is mailed to an
 // address, and nothing is sent to a number.
@@ -59,10 +60,11 @@ func TestANumberIsWhereSomebodyIsReachedAndNoWayIn(t *testing.T) {
 		}
 	})
 
-	t.Run("listed once by a person, and by as many people as answer it", func(t *testing.T) {
+	t.Run("listed once as what it is, as each thing it is, and by as many people as answer it", func(t *testing.T) {
 		x := require.New(t)
-		err := add(ref(erin), "+82 2-123-4567", "mobile")
+		err := add(ref(erin), "+82 2-123-4567", "work")
 		x.Equal(codes.AlreadyExists, status.Code(err), "%v", err)
+		x.NoError(add(ref(erin), "+82 2-123-4567", "mobile"), "the mobile that is where their desk rings is two of theirs")
 		x.NoError(add(ref(fred), "+82 2-123-4567", "work"), "a switchboard is two people's number")
 	})
 

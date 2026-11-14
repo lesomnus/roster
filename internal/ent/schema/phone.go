@@ -51,7 +51,7 @@ func (Phone) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("tenant_id", "date_created", "id").
 			StorageKey("phone_page"),
-		index.Fields("holder_id", "number").
+		index.Fields("holder_id", "number", "kind").
 			StorageKey("phone_number").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),

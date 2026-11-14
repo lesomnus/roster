@@ -46,11 +46,14 @@ const (
 // account a way in is written into. A directory's write is asked that
 // question then, and not before there is anything to ask it about.
 //
-// # Not unique within a tenant
+// # Not unique within a tenant, nor one row a number
 //
 // A switchboard, a shared desk, a family's line: two people reached at one
-// number is ordinary, where two people at one address is a mistake. So it is
-// one row a person and a number, and that is all the index says.
+// number is ordinary, where two people at one address is a mistake. And one
+// person's number is as ordinarily two of theirs: the mobile that is also
+// where their desk rings, which a directory says twice -- once as each
+// (`kind`) -- and asks for again by either. So it is one row a person, a
+// number and what the number is to them, and that is all the index says.
 type Phone struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
@@ -251,6 +254,8 @@ type Phone_builder struct {
 	// Which of somebody's numbers this is, as a directory says it: `work`,
 	// `mobile`, `fax`, `home`, `pager`, `other` -- SCIM's words (RFC 7643
 	// §4.1.2), which are also what an LDAP client asks by. Empty is not said.
+	//
+	// One of six words, and about no one: the trail keeps which.
 	Kind string
 	// The tenant `holder.tenant` reaches, kept here. payday stamps it, and
 	// `Identity` says at length why a column is worth it.
@@ -279,24 +284,25 @@ var File_app_phone_proto protoreflect.FileDescriptor
 
 const file_app_phone_proto_rawDesc = "" +
 	"\n" +
-	"\x0fapp/phone.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xbe\x04\n" +
+	"\x0fapp/phone.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xd0\x04\n" +
 	"\x05Phone\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x1e\n" +
-	"\x06number\x18\b \x01(\tB\x06\xaa\xc1\x16\x02\x18\x01R\x06number\x12\x12\n" +
-	"\x04kind\x18\t \x01(\tR\x04kind\x12%\n" +
+	"\x06number\x18\b \x01(\tB\x06\xaa\xc1\x16\x02\x18\x01R\x06number\x12\x1a\n" +
+	"\x04kind\x18\t \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04kind\x12%\n" +
 	"\ttenant_id\x18\v \x01(\fB\b\xea\x82\x16\x04\x10@@\x01R\btenantId\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\xb4\x01\xca\xfc\x15Y\x12\x02\x10\x01\x1a/\x12\x04page\x1a\r\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:\xbe\x01\xca\xfc\x15c\x12\x02\x10\x01\x1a/\x12\x04page\x1a\r\n" +
 	"\ttenant_id\x10\v\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
-	"\x02id\x10\x01\x1a\"\x12\x06number\x1a\n" +
+	"\x02id\x10\x01\x1a,\x12\x06number\x1a\n" +
 	"\n" +
 	"\x06holder\x10\x02\x1a\n" +
 	"\n" +
-	"\x06number\x10\b0\x01\x8a\xbb\x16S\b\x1e23\n" +
+	"\x06number\x10\b\x1a\b\n" +
+	"\x04kind\x10\t0\x01\x8a\xbb\x16S\b\x1e23\n" +
 	"\x12\n" +
 	"\x10\n" +
 	"\fdate_created\x10\x0f\n" +

@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/phone.proto.
  */
 export const file_app_phone: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvcGhvbmUucHJvdG8SBnJvc3RlciL0AwoFUGhvbmUSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIWCgZudW1iZXIYCCABKAlCBqrBFgIYARIMCgRraW5kGAkgASgJEhsKCXRlbmFudF9pZBgLIAEoDEII6oIWBBBAQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOrQByvwVWRICEAEaLxIEcGFnZRoNCgl0ZW5hbnRfaWQQCxoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGiISBm51bWJlchoKCgZob2xkZXIQAhoKCgZudW1iZXIQCDABirsWUwgeMjMKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBmhvbGRlciAUKGQiGgoNaG9sZGVyLnRlbmFudBoJdGVuYW50X2lkQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg9hcHAvcGhvbmUucHJvdG8SBnJvc3RlciKGBAoFUGhvbmUSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIWCgZudW1iZXIYCCABKAlCBqrBFgIYARIUCgRraW5kGAkgASgJQgaqwRYCGAASGwoJdGVuYW50X2lkGAsgASgMQgjqghYEEEBAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6vgHK/BVjEgIQARovEgRwYWdlGg0KCXRlbmFudF9pZBALGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaLBIGbnVtYmVyGgoKBmhvbGRlchACGgoKBm51bWJlchAIGggKBGtpbmQQCTABirsWUwgeMjMKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBmhvbGRlciAUKGQiGgoNaG9sZGVyLnRlbmFudBoJdGVuYW50X2lkQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Phone is a number somebody is reached at, and nothing more than that.
@@ -43,11 +43,14 @@ export const file_app_phone: GenFile = /*@__PURE__*/
  * account a way in is written into. A directory's write is asked that
  * question then, and not before there is anything to ask it about.
  *
- * # Not unique within a tenant
+ * # Not unique within a tenant, nor one row a number
  *
  * A switchboard, a shared desk, a family's line: two people reached at one
- * number is ordinary, where two people at one address is a mistake. So it is
- * one row a person and a number, and that is all the index says.
+ * number is ordinary, where two people at one address is a mistake. And one
+ * person's number is as ordinarily two of theirs: the mobile that is also
+ * where their desk rings, which a directory says twice -- once as each
+ * (`kind`) -- and asks for again by either. So it is one row a person, a
+ * number and what the number is to them, and that is all the index says.
  *
  * @generated from message roster.Phone
  */
@@ -86,6 +89,8 @@ export type Phone = Message<"roster.Phone"> & {
    * Which of somebody's numbers this is, as a directory says it: `work`,
    * `mobile`, `fax`, `home`, `pager`, `other` -- SCIM's words (RFC 7643
    * §4.1.2), which are also what an LDAP client asks by. Empty is not said.
+   *
+   * One of six words, and about no one: the trail keeps which.
    *
    * @generated from field: string kind = 9;
    */

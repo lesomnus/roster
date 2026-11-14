@@ -47,6 +47,7 @@ message PhoneRef {
 message PhoneRefByNumber {
   HolderRef holder = 2;
   string number = 8;
+  string kind = 9;
 }
 
 message PhoneSelect {

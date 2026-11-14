@@ -150,8 +150,8 @@ func parseGroupPatch(body []byte) (*groupChanges, error) {
 	if err := json.Unmarshal(body, &p); err != nil {
 		return nil, badRequest("invalidSyntax", "a PatchOp, as JSON")
 	}
-	if len(p.Operations) == 0 {
-		return nil, badRequest("invalidSyntax", "Operations: at least one")
+	if p.Operations == nil {
+		return nil, badRequest("invalidSyntax", "Operations: a list")
 	}
 
 	c := &groupChanges{}

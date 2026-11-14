@@ -92,7 +92,7 @@ CREATE UNIQUE INDEX `nomination_borrower` ON `nomination` (`tenant_id`, `borrowe
 CREATE INDEX `nomination_page` ON `nomination` (`tenant_id`, `date_created`, `id`);
 CREATE INDEX `outbox_queue` ON `outbox` (`id`);
 CREATE INDEX `owed_owed` ON `owed` (`date_created`, `id`);
-CREATE UNIQUE INDEX `phone_number` ON `phone` (`holder_id`, `number`) WHERE date_erased IS NULL;
+CREATE UNIQUE INDEX `phone_number` ON `phone` (`holder_id`, `number`, `kind`) WHERE date_erased IS NULL;
 CREATE INDEX `phone_page` ON `phone` (`tenant_id`, `date_created`, `id`);
 CREATE INDEX `relation_page` ON `relation` (`tenant_id`, `date_created`, `id`);
 CREATE UNIQUE INDEX `relation_pair` ON `relation` (`holder_id`, `other_id`) WHERE date_erased IS NULL;

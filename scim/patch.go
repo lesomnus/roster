@@ -18,6 +18,14 @@ import (
 // either, and an operation with no path taken as an object of attributes.
 // `encoding/json` matching keys without regard to case is what lets
 // `Operations` be written either way.
+//
+// # A list of none
+//
+// The RFC asks for one operation or more, and Microsoft's validator sends
+// none -- `"Operations": []`, for a resource it found nothing to replace on --
+// and wants what a change gets. Nothing is what it says and nothing is done,
+// which is no reason to refuse it; a body with no list at all is not a
+// PatchOp, and still is.
 type patchOp struct {
 	Schemas    []string `json:"schemas"`
 	Operations []struct {
@@ -33,8 +41,8 @@ func parsePatch(body []byte) (*changes, error) {
 	if err := json.Unmarshal(body, &p); err != nil {
 		return nil, badRequest("invalidSyntax", "a PatchOp, as JSON")
 	}
-	if len(p.Operations) == 0 {
-		return nil, badRequest("invalidSyntax", "Operations: at least one")
+	if p.Operations == nil {
+		return nil, badRequest("invalidSyntax", "Operations: a list")
 	}
 
 	c := &changes{}

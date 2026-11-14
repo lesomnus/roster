@@ -38,6 +38,12 @@ import (
 // So what the schema lists is held to what is sent here
 // (`TestTheSchemaListsWhatIsKept`): an attribute added to one and not the
 // other is an attribute the validator would ask about and this would not.
+//
+// And as the page was seen to say them, the first time it was run against
+// this endpoint (`TestWhatMicrosoftsValidatorSent`, which replays that run):
+// one number under every `type` a number may have, `"primary": "true"` in
+// quotes, an address of no `type`, and a `manager` that is a word it made up
+// and nobody's id.
 
 // made is a string nobody else was given.
 func made(t *testing.T) string {
@@ -60,20 +66,26 @@ func guid(t *testing.T) string {
 }
 
 // validatorUser is a User with a value for every attribute `/Schemas` lists,
-// each its own.
+// as the page writes one.
 func validatorUser(t *testing.T) map[string]any {
 	n := made(t)
+
+	// One number, said once for each kind there is.
+	numbers := []map[string]any{}
+	for _, k := range []string{"work", "mobile", "fax", "home", "pager", "other"} {
+		numbers = append(numbers, map[string]any{"type": k, "value": "55-501-" + n[:4]})
+	}
 
 	return map[string]any{
 		"schemas":           []string{"urn:ietf:params:scim:schemas:core:2.0:User", enterprise},
 		"userName":          "login-" + n + "@contoso.example",
 		"externalId":        guid(t),
 		"displayName":       "Display " + n,
-		"preferredLanguage": "ko-KR",
+		"preferredLanguage": "sr-Latn-ME",
 		"active":            true,
-		"emails":            []map[string]any{{"value": "mail-" + n + "@contoso.example", "type": "work", "primary": true}},
-		"phoneNumbers":      []map[string]any{{"value": "+1 555 01" + n[:2], "type": "work"}},
-		enterprise:          map[string]any{"department": "Department " + n, "employeeNumber": n},
+		"emails":            []map[string]any{{"value": "mail-" + n + "@contoso.example", "primary": "true"}},
+		"phoneNumbers":      numbers,
+		enterprise:          map[string]any{"department": "Department " + n, "employeeNumber": n, "manager": "MANAGER" + n},
 	}
 }
 
@@ -117,8 +129,19 @@ func TestWhatMicrosoftsValidatorAsks(t *testing.T) {
 			x.Equal(sent[k], got[k], k)
 		}
 		x.Equal(sent["emails"].([]map[string]any)[0]["value"], got["emails"].([]any)[0].(map[string]any)["value"], "emails")
-		x.Equal(sent["phoneNumbers"].([]map[string]any)[0]["value"], got["phoneNumbers"].([]any)[0].(map[string]any)["value"], "phoneNumbers")
-		x.Equal(sent[enterprise], got[enterprise], "the enterprise schema's")
+
+		numbers := sent["phoneNumbers"].([]map[string]any)
+		x.Len(got["phoneNumbers"], len(numbers), "a number said for six kinds is six of theirs")
+		for i, v := range got["phoneNumbers"].([]any) {
+			x.Equal(numbers[i]["type"], v.(map[string]any)["type"], "phoneNumbers")
+			x.Equal(numbers[i]["value"], v.(map[string]any)["value"], "phoneNumbers")
+		}
+
+		// A manager who is nobody here is not kept, and the rest is.
+		ent := got[enterprise].(map[string]any)
+		x.Equal(sent[enterprise].(map[string]any)["department"], ent["department"])
+		x.Equal(sent[enterprise].(map[string]any)["employeeNumber"], ent["employeeNumber"])
+		x.NotContains(ent, "manager")
 	}
 
 	t.Run("Create New User", func(t *testing.T) {
@@ -302,9 +325,10 @@ func TestTheSchemaListsWhatIsKept(t *testing.T) {
 	for k := range u[enterprise].(map[string]any) {
 		ent = append(ent, k)
 	}
-	// `manager` is listed and not made up: it is somebody else's id, said once
-	// there is somebody else (`TestADirectorySaysWhoSomebodyReportsTo`).
-	x.ElementsMatch(append(ent, "manager"), listed(enterprise))
+	// `manager` among them: the page makes a word up for it, which is nobody
+	// here and is not kept, and says somebody's id once there is somebody
+	// (`TestADirectorySaysWhoSomebodyReportsTo`).
+	x.ElementsMatch(ent, listed(enterprise))
 }
 
 // TestWhatSomebodyIsCalledIsTheirDisplayName: a directory that says a

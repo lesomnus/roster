@@ -462,6 +462,7 @@ type PhoneRefByNumber struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Number      *string                `protobuf:"bytes,8,opt,name=number"`
+	xxx_hidden_Kind        *string                `protobuf:"bytes,9,opt,name=kind"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
@@ -510,13 +511,28 @@ func (x *PhoneRefByNumber) GetNumber() string {
 	return ""
 }
 
+func (x *PhoneRefByNumber) GetKind() string {
+	if x != nil {
+		if x.xxx_hidden_Kind != nil {
+			return *x.xxx_hidden_Kind
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *PhoneRefByNumber) SetHolder(v *HolderRef) {
 	x.xxx_hidden_Holder = v
 }
 
 func (x *PhoneRefByNumber) SetNumber(v string) {
 	x.xxx_hidden_Number = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 3)
+}
+
+func (x *PhoneRefByNumber) SetKind(v string) {
+	x.xxx_hidden_Kind = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
 }
 
 func (x *PhoneRefByNumber) HasHolder() bool {
@@ -533,6 +549,13 @@ func (x *PhoneRefByNumber) HasNumber() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
 }
 
+func (x *PhoneRefByNumber) HasKind() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
 func (x *PhoneRefByNumber) ClearHolder() {
 	x.xxx_hidden_Holder = nil
 }
@@ -542,11 +565,17 @@ func (x *PhoneRefByNumber) ClearNumber() {
 	x.xxx_hidden_Number = nil
 }
 
+func (x *PhoneRefByNumber) ClearKind() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Kind = nil
+}
+
 type PhoneRefByNumber_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Holder *HolderRef
 	Number *string
+	Kind   *string
 }
 
 func (b0 PhoneRefByNumber_builder) Build() *PhoneRefByNumber {
@@ -555,8 +584,12 @@ func (b0 PhoneRefByNumber_builder) Build() *PhoneRefByNumber {
 	_, _ = b, x
 	x.xxx_hidden_Holder = b.Holder
 	if b.Number != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 3)
 		x.xxx_hidden_Number = b.Number
+	}
+	if b.Kind != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
+		x.xxx_hidden_Kind = b.Kind
 	}
 	return m0
 }
@@ -1522,10 +1555,11 @@ const file_app_phone_svc_g_proto_rawDesc = "" +
 	"\bPhoneRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x122\n" +
 	"\x06number\x18\x02 \x01(\v2\x18.roster.PhoneRefByNumberH\x00R\x06numberB\x05\n" +
-	"\x03key\"U\n" +
+	"\x03key\"i\n" +
 	"\x10PhoneRefByNumber\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x16\n" +
-	"\x06number\x18\b \x01(\tR\x06number\"\xfd\x01\n" +
+	"\x06number\x18\b \x01(\tR\x06number\x12\x12\n" +
+	"\x04kind\x18\t \x01(\tR\x04kind\"\xfd\x01\n" +
 	"\vPhoneSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12\x16\n" +

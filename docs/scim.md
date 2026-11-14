@@ -111,6 +111,24 @@ tutorial does not say -- once, against a deployment. Two things to give it:
 A `userName` is answered lowered, as an address is kept. Whether the validator
 compares one without regard to case is one of the things its page is for.
 
+**What the page sent is kept, and asked again on every change.** Each time it
+is run against this endpoint, the requests it made become a file under
+`scim/testdata/validator`, and `TestWhatMicrosoftsValidatorSent` replays every
+one of them and holds each to what the page wanted -- the status roster
+answered where the page took it, and the one it wanted where it did not. So
+what a run found is found once:
+
+```sh
+./scripts/scim-check.sh --fixture scim-check/requests.jsonl > scim/testdata/validator/2026-11-14.jsonl
+```
+
+and then `wants` (a status) or `finds` (how many a list holds) is added by hand
+to the rows the page's report failed. The first run, 2026-11-14, sent what its
+tutorial does not say: one number under every `type` there is, a `manager` who
+is a word and nobody's id, `"primary": "true"`, a PATCH whose `Operations` is an
+empty list, and a dozen creates in the same few milliseconds -- which is how it
+runs its tests, and what `TestTheValidatorAsksAtOnce` asks.
+
 **Somewhere for it to call** is `scripts/scim-check.sh`, and the workflow
 `scim-check` that runs it on a runner, by hand: *Actions*, *scim-check*, *Run
 workflow*. It stands a roster up from nothing with a tenant nobody is in, puts
@@ -177,8 +195,10 @@ is no way into their account -- nothing here sends to a number or finds anybody
 by one -- so it is the one thing about a person who exists that the directory's
 word moves ([entity.md](entity.md) § *Phone*). A number said for a kind is that
 kind's one number, a kind not mentioned is left, and a whole User that speaks of
-numbers says every one of them. What a directory sends in that field that is not
-a number is said in the log and refuses nothing.
+numbers says every one of them. One number said for two kinds is kept as both
+-- a mobile that is also where a desk rings, and Microsoft's validator says one
+for all six -- and each is answered. What a directory sends in that field that
+is not a number is said in the log and refuses nothing.
 
 **Who somebody reports to is a relation, and one word.** roster keeps who one
 person is to another and reads none of it ([entity.md](entity.md) §
