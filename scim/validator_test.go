@@ -309,6 +309,40 @@ func TestWhatMicrosoftsValidatorAsks(t *testing.T) {
 		x.Equal(got["id"], now["id"])
 	})
 
+	// Its report, the second time: the one group it read with anybody in it
+	// was "not the schema of a group". Two people put in the way it puts them,
+	// read back as it reads them, and one taken out the way it takes one out
+	// where it got that far (`members[value eq "…"]`).
+	t.Run("Patch Group - Remove Member", func(t *testing.T) {
+		x := require.New(t)
+		code, g := post(t, "/Groups", group(t))
+		x.Equal(http.StatusCreated, code, "%v", g)
+		code, a := post(t, "/Users", validatorUser(t))
+		x.Equal(http.StatusCreated, code, "%v", a)
+		code, b := post(t, "/Users", validatorUser(t))
+		x.Equal(http.StatusCreated, code, "%v", b)
+		at := "/Groups/" + g["id"].(string)
+
+		x.Equal(http.StatusNoContent, patch(t, at, map[string]any{
+			"op": "replace", "path": "members", "value": []map[string]any{{"value": a["id"]}, {"value": b["id"]}},
+		}))
+		code, said, _ := d.raw(t, d.key, http.MethodGet, scim.Base+at, nil)
+		x.Equal(http.StatusOK, code, "%s", said)
+		x.NoError(readable(said), "%s", said)
+		for _, id := range []string{a["id"].(string), b["id"].(string)} {
+			x.Contains(string(said), `{"value":"`+id+`","$ref":"`+scim.Base+`/Users/`+id+`","type":"User"}`,
+				"a member as RFC 7644 §3.7.2 writes one: `value`, `$ref`, `type`")
+		}
+
+		x.Equal(http.StatusNoContent, patch(t, at, map[string]any{
+			"op": "remove", "path": `members[value eq "` + a["id"].(string) + `"]`,
+		}))
+		code, now, _ := d.call(t, d.key, http.MethodGet, scim.Base+at, nil)
+		x.Equal(http.StatusOK, code, "%v", now)
+		x.Len(now["members"], 1)
+		x.Equal(b["id"], now["members"].([]any)[0].(map[string]any)["value"])
+	})
+
 	t.Run("Create a New Group Resource", func(t *testing.T) {
 		x := require.New(t)
 		code, g := post(t, "/Groups", group(t))
@@ -344,6 +378,40 @@ func TestTheSchemaListsWhatIsKept(t *testing.T) {
 
 		return out
 	}
+
+	// And what it says of the two lists whose values have a type, which is
+	// what the page makes its values from: one for each type named. A number
+	// may be any of six things; an address is somebody's `work` one, said so --
+	// named none, the page sent an address of no type and looked for one.
+	types := func(attr string) (any, []string) {
+		t.Helper()
+		code, got, _ := d.call(t, d.key, http.MethodGet, scim.Base+"/Schemas/urn:ietf:params:scim:schemas:core:2.0:User", nil)
+		x.Equal(http.StatusOK, code, "%v", got)
+		for _, a := range got["attributes"].([]any) {
+			if a.(map[string]any)["name"] != attr {
+				continue
+			}
+			var canonical any
+			var subs []string
+			for _, sub := range a.(map[string]any)["subAttributes"].([]any) {
+				subs = append(subs, sub.(map[string]any)["name"].(string))
+				if sub.(map[string]any)["name"] == "type" {
+					canonical = sub.(map[string]any)["canonicalValues"]
+				}
+			}
+
+			return canonical, subs
+		}
+		x.Fail("not listed", attr)
+
+		return nil, nil
+	}
+	canonical, subs := types("emails")
+	x.Equal([]any{"work"}, canonical)
+	x.ElementsMatch([]string{"value", "type"}, subs, "`primary` is answered and is no value kept")
+	canonical, subs = types("phoneNumbers")
+	x.Equal([]any{"work", "mobile", "fax", "home", "pager", "other"}, canonical)
+	x.ElementsMatch([]string{"value", "type"}, subs)
 
 	u := validatorUser(t)
 	var sent []string

@@ -210,8 +210,7 @@ func (s *Server) shownUser(ctx context.Context, p *person) (map[string]any, erro
 			ent = map[string]any{}
 			u[enterpriseSchema] = ent
 		}
-		k := idOf(boss)
-		ent["manager"] = map[string]any{"value": k, "$ref": Base + "/Users/" + k}
+		ent["manager"] = referTo(idOf(boss), "")
 	}
 
 	return u, nil
