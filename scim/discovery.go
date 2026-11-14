@@ -135,10 +135,23 @@ func userSchemaDoc() map[string]any {
 			{
 				"name": "emails", "type": "complex", "multiValued": true, "required": false,
 				"mutability": "immutable", "returned": "default",
+				// Of one type, and said so. A directory writes and reads an
+				// address by its type -- `emails[type eq "work"].value` -- and
+				// Microsoft's validator makes one up for each type a schema
+				// names: named none, it sent an address of no type and looked
+				// for one of no type, which the `work` this answers was not.
+				//
+				// `primary` is answered and not listed, as `name` is read and
+				// not listed: it is no value kept. The address a directory
+				// says is the primary one, and there is no second for it to
+				// say which of.
 				"subAttributes": []map[string]any{
 					str("value", "An address.", "immutable"),
-					str("type", "work", "immutable"),
-					{"name": "primary", "type": "boolean", "multiValued": false, "required": false, "mutability": "immutable", "returned": "default"},
+					{
+						"name": "type", "type": "string", "multiValued": false, "required": false, "caseExact": false,
+						"mutability": "immutable", "returned": "default", "uniqueness": "none",
+						"canonicalValues": []string{"work"}, "description": "Which of their addresses it is: the one a directory says is their `work` one.",
+					},
 				},
 			},
 		},

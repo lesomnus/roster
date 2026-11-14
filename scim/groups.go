@@ -349,10 +349,9 @@ func groupOf(v *rstr.Group, members [][]byte) map[string]any {
 		g["externalId"] = x
 	}
 	if members != nil {
-		ms := make([]map[string]any, 0, len(members))
+		ms := make([]reference, 0, len(members))
 		for _, m := range members {
-			k := idOf(m)
-			ms = append(ms, map[string]any{"value": k, "$ref": Base + "/Users/" + k, "type": "User"})
+			ms = append(ms, referTo(idOf(m), "User"))
 		}
 		g["members"] = ms
 	}

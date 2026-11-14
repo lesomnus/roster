@@ -635,8 +635,8 @@ cat <<SAY
    5. "Test Schema".
 
    Nothing else to set: the joining property is \`userName\` for a user and
-   \`displayName\` for a group, and an \`externalId\` is added here to a person
-   made without one.
+   \`displayName\` for a group, its "Settings" tab is right as it stands, and
+   an \`externalId\` is added here to a person made without one.
 
    It ends by itself ${SCIM_CHECK_DONE} minutes after the page's tests were asked, and
    ${SCIM_CHECK_IDLE} minutes after the last thing it is asked before they are.

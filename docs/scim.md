@@ -129,6 +129,36 @@ is a word and nobody's id, `"primary": "true"`, a PATCH whose `Operations` is an
 empty list, and a dozen creates in the same few milliseconds -- which is how it
 runs its tests, and what `TestTheValidatorAsksAtOnce` asks.
 
+The second, the same day, got as far as reading its answers, and what it found
+there no status says:
+
+- **A group with anybody in it was "not the schema of a group".** Its members
+  were written `$ref` first, as a map's keys sort, and an object that begins
+  with `$ref` is how Json.NET -- which the page's own report is written with,
+  `$id` on every object of it -- says *a reference to another object, and
+  nothing else*. A reference is written `value` first now, as the RFC's
+  examples have one, for a member and for a manager; and the replay holds every
+  answer of every run to it.
+- **An address of no type was looked for, and not found.** The page makes a
+  value up for each `type` a schema names. `/Schemas` named six for a number
+  and none for an address, so it sent an address of no type, asked for it back
+  by `emails[type eq ""]` and by `emails[primary eq true]`, and found neither
+  in an answer that says `"type": "work"` and a `primary` that is a boolean.
+  The schema names the one type an address is said under, `work`, and no
+  longer lists a `primary` it keeps no value for; and an answer has one `work`
+  address, the one the directory said, with any other of theirs as `other`.
+- **A manager it makes up is nobody, and is not kept.** It creates a person
+  with a word for `manager` and looks for the word in what it reads back. Who
+  somebody reports to is a relation between two people here, so a word that
+  names nobody is said in the log and not kept -- which the page's *Create a
+  new User* reports, and is the one test of its that is not passed for a
+  reason that is roster's. Its tests of a manager who is somebody -- added,
+  replaced, removed -- pass.
+
+**Nothing on its *Settings* tab is changed.** What it starts with is what
+roster does: *Supports Deactivation* and *Supports Delete* for a user, *Supports
+Delete* for a group, and no *Verbose PATCH*.
+
 **Somewhere for it to call** is `scripts/scim-check.sh`, and the workflow
 `scim-check` that runs it on a runner, by hand: *Actions*, *scim-check*, *Run
 workflow*. It stands a roster up from nothing with a tenant nobody is in, puts
@@ -172,7 +202,7 @@ reaches, and one that can write any record of the zone: the environment is of
 | SCIM | roster |
 | --- | --- |
 | `id` | `Holder.id` |
-| `userName`, `emails` | an `Email` row, written **unverified** when they are made, and what the directory last said after that (`Holder.directory_address`); a lookup by `userName` finds a person by any address of theirs, or by the one it last said |
+| `userName`, `emails` | an `Email` row, written **unverified** when they are made, and what the directory last said after that (`Holder.directory_address`); a lookup by `userName` finds a person by any address of theirs, or by the one it last said. Answered, one address is their `work` one and the primary -- the one a directory said, which is what it reads back by `emails[type eq "work"]` -- and any they have here beside it are `other` |
 | `externalId` | their `Identity` at the provisioning connection when they are made; written onto somebody already here, kept as said and believed by nothing (`Holder.directory_subject`) |
 | `userName` | what the directory looks them up by, kept where it is not their address (`Holder.directory_name`) |
 | `displayName` | `Holder.name` when made, `profile.display_name` after; `name.formatted` is read as it where a directory says no `displayName` |

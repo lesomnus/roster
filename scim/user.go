@@ -626,9 +626,18 @@ func (p *person) user() map[string]any {
 		u["preferredLanguage"] = v
 	}
 	if len(emails) > 0 {
+		// One of them is their `work` address, and the primary one: the first,
+		// which is the one a directory said where it said one. A directory
+		// writes and reads an address by its type -- `emails[type eq
+		// "work"].value`, Entra's -- so there is one answer to that, and the
+		// addresses they have here beside it are their `other` ones.
 		es := make([]map[string]any, 0, len(emails))
 		for i, e := range emails {
-			es = append(es, map[string]any{"value": e, "type": "work", "primary": i == 0})
+			kind := "work"
+			if i > 0 {
+				kind = "other"
+			}
+			es = append(es, map[string]any{"value": e, "type": kind, "primary": i == 0})
 		}
 		u["emails"] = es
 	}
@@ -648,3 +657,31 @@ func (p *person) user() map[string]any {
 }
 
 func stamp(t time.Time) string { return t.UTC().Format(time.RFC3339) }
+
+// reference is another resource named from inside one: somebody in a group,
+// who somebody reports to.
+//
+// # Why it is not a map, like the rest of an answer
+//
+// For the order it is written in: `value`, then `$ref`, as the RFCs' examples
+// have them (RFC 7644 §3.7.2). A map is written with its keys sorted, and
+// `$ref` sorts before every letter.
+//
+// That order is read by something. Microsoft's validator answered *the schema
+// of the fetched group is invalid* to the one group it read with anybody in
+// it, whose members began with `$ref`, and pointed at that example. An object
+// whose first member is `$ref` is how Json.NET writes a reference to another
+// object of the same document, and reads one -- and it is what the validator's
+// own report is written with, `$id` on every object of it. So it is the first
+// thing an object here says only when it is the whole of what the object is.
+type reference struct {
+	Value string `json:"value"`
+	Ref   string `json:"$ref"`
+	Type  string `json:"type,omitempty"`
+}
+
+// referTo is a person by their id, and by where they are read. `kind` is what
+// a group says its member is, and nothing where there is one thing it can be.
+func referTo(id, kind string) reference {
+	return reference{Value: id, Ref: Base + "/Users/" + id, Type: kind}
+}
