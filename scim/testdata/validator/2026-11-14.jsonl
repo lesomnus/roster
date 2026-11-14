@@ -47,8 +47,8 @@
 {"method":"DELETE","path":"/scim/v2/Groups/01a1da46-4736-82eb-bc10-f30a948be048","answered":204}
 {"method":"GET","path":"/scim/v2/Groups?filter=displayName+eq+%22BWWERHWFCFMZ%22","answered":200,"found":1}
 {"method":"DELETE","path":"/scim/v2/Groups/01a1da46-47bc-892a-9710-9cb7829b94c3","answered":204}
-{"method":"GET","path":"/scim/v2/Groups/01a1da46-4736-82eb-bc10-f30a948be048","answered":200}
-{"method":"DELETE","path":"/scim/v2/Groups/01a1da46-47bc-892a-9710-9cb7829b94c3","answered":204}
+{"method":"GET","path":"/scim/v2/Groups/01a1da46-4736-82eb-bc10-f30a948be048","answered":200,"wants":404}
+{"method":"DELETE","path":"/scim/v2/Groups/01a1da46-47bc-892a-9710-9cb7829b94c3","answered":204,"wants":404}
 {"method":"GET","path":"/scim/v2/Groups?filter=displayName+eq+%22nonexistente997dccbd8b7_FZSLTPHLJGFY%22","answered":200,"found":0}
-{"method":"GET","path":"/scim/v2/Groups?filter=displayName+eq+%22LYJPHFTZUOPI%22","answered":200,"found":1}
+{"method":"GET","path":"/scim/v2/Groups?filter=displayName+eq+%22LYJPHFTZUOPI%22","answered":200,"found":1,"finds":0}
 {"method":"GET","path":"/scim/v2/Groups?filter=displayName+eq+%22bwwerhwfcfmz%22","answered":200,"found":1}

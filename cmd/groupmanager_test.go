@@ -137,7 +137,7 @@ func TestAGroupsManagersDecideItsMembers(t *testing.T) {
 }
 
 // TestARoleHeldInAGroupReachesNoFurther: the gate holds a role held in a group
-// everywhere, and only the group's own membership writes are narrowed back to
+// everywhere, and only the writes that change that group are narrowed back to
 // it -- so that is all such a role may name, and it belongs to no site.
 func TestARoleHeldInAGroupReachesNoFurther(t *testing.T) {
 	b, ctx := build(t)
@@ -337,6 +337,7 @@ func TestWhoeverMakesAGroupManagesIt(t *testing.T) {
 			app.GroupMembershipService_Add_FullMethodName,
 			app.GroupMembershipService_Erase_FullMethodName,
 			app.GroupService_Update_FullMethodName,
+			app.GroupService_Erase_FullMethodName,
 		}, vs[0].GetRole().GetMethods())
 	})
 
@@ -384,6 +385,90 @@ func TestWhoeverMakesAGroupManagesIt(t *testing.T) {
 	})
 }
 
+// TestWhoeverManagesAGroupMayEraseIt: the other end of whoever makes a group
+// managing it. Its manager erases it -- theirs, and no other: the gate lets
+// every group's manager ask, since a role held in a group may name the method,
+// and `mayChangeGroup` is what holds each to their own. A member who does not
+// manage it does not, an administrator erases any as before, and a group
+// erased leaves its alias for the next one.
+func TestWhoeverManagesAGroupMayEraseIt(t *testing.T) {
+	b, ctx := build(t)
+	g := groups{b: b, admin: b.as(ctx, b.ContosoUser, b.Contoso)}
+	at := app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build()
+
+	m, c, o := b.holder(t, ctx, b.Contoso, "maker"), b.holder(t, ctx, b.Contoso, "c"), b.holder(t, ctx, b.Contoso, "other")
+	g.staff(t, ctx, m, c, o)
+	asM, asC, asO := b.asNobody(ctx, m, b.Contoso), b.asNobody(ctx, c, b.Contoso), b.asNobody(ctx, o, b.Contoso)
+
+	make := func(as context.Context, alias string) *app.GroupRef {
+		t.Helper()
+		v, err := b.Walled.Group().Add(as, app.GroupAddRequest_builder{Tenant: at, Alias: alias}.Build())
+		require.NoError(t, err)
+
+		return app.GroupRef_builder{Id: v.GetId()}.Build()
+	}
+	erase := func(as context.Context, group *app.GroupRef) (bool, error) {
+		v, err := b.Walled.Group().Erase(as, group)
+
+		return v.GetErased(), err
+	}
+	there := func(group *app.GroupRef) bool {
+		t.Helper()
+		_, err := b.Ungated.Group().Get(ctx, app.GroupGetRequest_builder{Ref: group}.Build())
+		if status.Code(err) == codes.NotFound {
+			return false
+		}
+		require.NoError(t, err)
+
+		return true
+	}
+
+	mine, others, theirs := make(asM, "mine"), make(asO, "others"), g.add(t, "theirs")
+	_, err := g.join(asM, c, mine, nil)
+	require.NoError(t, err)
+
+	t.Run("not another manager's, nor one an administrator made", func(t *testing.T) {
+		x := require.New(t)
+		for _, group := range []*app.GroupRef{others, theirs} {
+			_, err := erase(asM, group)
+			x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
+			x.True(there(group))
+		}
+	})
+
+	t.Run("not by a member who does not manage it", func(t *testing.T) {
+		x := require.New(t)
+		_, err := erase(asC, mine)
+		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
+		x.True(there(mine))
+	})
+
+	t.Run("their own, which is then gone and its alias free", func(t *testing.T) {
+		x := require.New(t)
+		erased, err := erase(asM, mine)
+		x.NoError(err)
+		x.True(erased)
+		x.False(there(mine))
+
+		again := make(asM, "mine")
+		x.NotEqual(mine.GetId(), again.GetId(), "a group of that alias made now is another group")
+
+		// And what is gone is nobody's to erase twice: nothing is, and
+		// nothing is refused.
+		erased, err = erase(asM, mine)
+		x.NoError(err)
+		x.False(erased)
+	})
+
+	t.Run("an administrator erases any, as before", func(t *testing.T) {
+		x := require.New(t)
+		erased, err := erase(g.admin, others)
+		x.NoError(err)
+		x.True(erased)
+		x.False(there(others))
+	})
+}
+
 // TestATenantsOwnManagersRoleIsTheOneAMakerHolds: the role a maker holds is
 // the tenant's `group-manager`, made when it is not there. One that is already
 // there is the tenant's word for what a manager does and is used as it stands
@@ -423,6 +508,11 @@ func TestATenantsOwnManagersRoleIsTheOneAMakerHolds(t *testing.T) {
 			Ref: mine, Name: proto.String("renamed"), DateUpdated: made.GetDateUpdated(),
 		}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err), "this tenant's managers do not rename: %v", err)
+
+		_, err = b.Walled.Group().Erase(asM, mine)
+		x.Equal(codes.PermissionDenied, status.Code(err), "nor erase: %v", err)
+		_, err = b.Ungated.Group().Get(ctx, app.GroupGetRequest_builder{Ref: mine}.Build())
+		x.NoError(err)
 	})
 
 	// Somebody who sees one site does not see a role of the whole tenant. The

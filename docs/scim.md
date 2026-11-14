@@ -295,8 +295,8 @@ back ([operating.md](operating.md) § *Stopping somebody*).
 makes a group manages it ([entity.md](entity.md) § *GroupMembership*), and that
 is all that makes a group the directory's to change: its holder is in each group
 it made, holding the manager's role there, and its key holds the writes that
-change a group -- who is in it, what it is called -- through that role and
-through no binding. So the key reaches the groups it made and no other, by the
+change a group -- who is in it, what it is called, whether there is one --
+through that role and through no binding. So the key reaches the groups it made and no other, by the
 rule every manager is held to and none of the directory's own.
 
 **The label is how it finds them, and no rule reads it.** A group it made
@@ -323,12 +323,24 @@ administrator appointed to manage one beside it is theirs to take out. A member
 is a person the endpoint speaks of -- a group inside a group is not followed,
 and roster has none.
 
-**`DELETE` takes everybody out and keeps the row.** A manager changes who is in
-their group and not whether there is one, and `Group.Erase` on the key would
-reach every group of the tenant nothing is bound to. So the group is still
-answered afterwards, with nobody in it, a directory that makes one of that name
-again finds it, and what becomes of the row -- and of whatever was bound to it
--- is an administrator's.
+**`DELETE` erases the group.** Whoever manages a group may erase it
+([entity.md](entity.md) § *GroupMembership*), and the directory's holder
+manages each group it made. So a group it deletes is gone: `404` to every way
+of asking afterwards -- read, changed, deleted again -- and in no list, which is
+what RFC 7644 §3.6 asks and Microsoft's validator checks; and one made under
+that name again is another group, with the alias the first had and nobody in
+it. What an administrator bound to the group, or showed a client by it, goes
+with it, as with any group erased -- and the erase is held to what every one
+is: not a group that hands out what the directory's holder does not hold, which
+being in it gives, and not the group the tenant is administered through.
+
+**Where its role does not erase, everybody is taken out and the row is kept.**
+A tenant says what its managers do by its `group-manager` role, and one whose
+managers do not erase groups keeps the directory from it too; a key minted
+before this lists no such method. There a `DELETE` does the most a manager of
+that tenant may -- nobody it says is in the group is left in it, the group is
+still answered, and the log says so -- and what becomes of the row is an
+administrator's.
 
 ## What its key may do, and why not more
 
@@ -343,10 +355,10 @@ again finds it, and what becomes of the row -- and of whatever was bound to it
 | `EmailService/Get`, `List`, `IdentityService/Get`, `List` | finding somebody by an address or an `externalId` |
 | `MeService/Get`, `ConnectionService/List` | which tenant the key is, and its provisioning connection |
 | `GroupService/Add`, `Get`, `List`, `GroupMembershipService/List` | making a group, which makes its holder the group's manager, and reading the tenant's |
-| `GroupService/Update`, `GroupMembershipService/Add`, `Erase` | what a group is called and who is in it -- on the key, and **not bound**: held in each group it made, and so for that group alone |
+| `GroupService/Update`, `Erase`, `GroupMembershipService/Add`, `Erase` | what a group is called, who is in it and whether there is one -- on the key, and **not bound**: held in each group it made, and so for that group alone |
 
 **Not `Identity.Add`, not an address written or attested, not `Holder.Add`, not
-`Erase`.** Each of those reaches people who already exist, and `Core.mayReach`
+`Holder.Erase`.** Each of those reaches people who already exist, and `Core.mayReach`
 answers yes for everybody who holds nothing -- which is most people. A key a
 directory's cloud presents from the internet would then be a way into all of them.
 `Provision` writes ways in only into the person it makes in the same breath, so a
@@ -356,14 +368,16 @@ organisation's own door, where the account it names is one the organisation made
 the people who sign in through the provisioning connection -- not an app's holder,
 not a front door's.
 
-**Not `GroupMembership.Add` through a binding, and not `Group.Erase` at all.**
-Bound, the first reaches every group of the tenant: putting somebody into a
-group nothing is bound to is asked nothing else, and a group shown to a client
-is a permission somewhere roster cannot see. So `roster scim provision` binds
-the directory's holder everything in the table but the last row, and mints a
-key that lists it all -- a key's own list narrows what its holder holds, and
-would otherwise narrow those three away. A key minted before groups were
-provisioned here lists none of this: `provision` again, which is a rotation.
+**Not `GroupMembership.Add` through a binding, nor `Group.Erase`.** Bound, each
+reaches every group of the tenant: putting somebody into a group nothing is
+bound to is asked nothing else, erasing one is the same, and a group shown to
+a client is a permission somewhere roster cannot see. So `roster scim
+provision` binds the directory's holder everything in the table but the last
+row, and mints a key that lists it all -- a key's own list narrows what its
+holder holds, and would otherwise narrow those four away. A key minted before
+groups were provisioned here lists none of this, and one minted before a
+manager could erase a group does not list that: `provision` again, which is a
+rotation.
 
 ## Where each fact is
 
@@ -398,4 +412,5 @@ provisioned here lists none of this: `provision` again, which is a rotation.
 | somebody erased is neither found nor made again until forgotten, and its people do not leave on their own | `TestSomebodyErasedHereIsNeitherFoundNorMadeUntilForgotten` · `TestSomebodyTheirDirectoryProvisionsDoesNotLeaveOnTheirOwn` |
 | a group's whole life at the endpoint, in Entra's order and dialect | `TestADirectoryProvisionsAGroupTheWayEntraDoes` · `TestAGroupsMembersAreSaidTheRFCsWayToo` |
 | its key changes the groups it made and no other | `TestADirectoryChangesTheGroupsItMadeAndNoOther` · `TestADirectorysKeyIsMintedForOneTenantAndOneConnection` |
+| a group it deletes is erased, as its manager may, and where its role does not go that far is emptied and kept | `TestADirectoryDeletesAGroupAsFarAsItsRoleGoes` · `TestWhoeverManagesAGroupMayEraseIt` |
 | where a deployment turns it on, the endpoint reaches roster | `scripts/cluster.sh` and `scripts/hydra.sh`, *the directory's endpoint, asked by a key nobody minted* |
