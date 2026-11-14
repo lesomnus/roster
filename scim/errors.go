@@ -39,43 +39,83 @@ func notFound(detail string) error {
 }
 
 // failed answers an error as SCIM says an error is answered, with what roster
-// said of it where roster said it.
+// said of it where roster said it, and says in the log what it refused.
 //
 // Roster's codes are the meaning, and the mapping is the one the RFC's
 // statuses make: a taken address or subject is `uniqueness`, a value roster
 // refused is `invalidValue`, and a state that forbids the write -- somebody
 // the directory deleted, an operator's suspension -- is a conflict, so the
 // directory's logs say so rather than calling it a fault.
+//
+// # What is said here as well
+//
+// A refusal is answered to the directory, and the directory's log is where a
+// tenant's own administrator reads it. Whoever runs this deployment has this
+// log and not that one, and until it said so a person the directory could not
+// suspend, an address it could not take, and a roster this process could not
+// reach each left no line here at all -- the last answered `503` to every
+// call of a directory that tries again on its next cycle.
+//
+// So a refusal is a line: the method, the path -- which names a resource by
+// identifier and nobody by anything else -- the status, and what was said.
+// Louder where it is this deployment's to mend: roster not answering is a
+// warning with the error it gave, which is the only place *first record does
+// not look like a TLS handshake* is written down.
+//
+// Two answers are not refusals. `404` is what a directory is told of what is
+// not there, and it asks as a matter of course -- before every create, after
+// every delete. `401` is anybody's to cause on a listener a cloud reaches,
+// and roster's own log has the call that was denied.
 func (s *Server) failed(w http.ResponseWriter, r *http.Request, err error) {
+	code, scimType, detail := refusal(err)
+
+	switch code {
+	case http.StatusNotFound:
+	case http.StatusUnauthorized:
+		w.Header().Set("WWW-Authenticate", `Bearer realm="roster"`)
+	case http.StatusInternalServerError:
+		s.c.Log.ErrorContext(r.Context(), "scim: unexpected", "method", r.Method, "path", r.URL.Path, "err", err)
+	case http.StatusServiceUnavailable:
+		s.c.Log.WarnContext(r.Context(), "scim: roster did not answer", "method", r.Method, "path", r.URL.Path, "err", err)
+	default:
+		at := []any{"method", r.Method, "path", r.URL.Path, "status", code}
+		if scimType != "" {
+			at = append(at, "scimType", scimType)
+		}
+		s.c.Log.InfoContext(r.Context(), "scim: refused", append(at, "detail", detail)...)
+	}
+
+	fail(w, code, scimType, detail)
+}
+
+// refusal is an error as the status, the `scimType` and the words it is
+// answered with.
+func refusal(err error) (int, string, string) {
 	var p *problem
 	if errors.As(err, &p) {
-		fail(w, p.status, p.scimType, p.detail)
-
-		return
+		return p.status, p.scimType, p.detail
 	}
 
 	st, _ := status.FromError(err)
 	switch st.Code() {
 	case codes.InvalidArgument:
-		fail(w, http.StatusBadRequest, "invalidValue", st.Message())
+		return http.StatusBadRequest, "invalidValue", st.Message()
 	case codes.AlreadyExists:
-		fail(w, http.StatusConflict, "uniqueness", st.Message())
+		return http.StatusConflict, "uniqueness", st.Message()
 	case codes.NotFound:
-		fail(w, http.StatusNotFound, "", st.Message())
+		return http.StatusNotFound, "", st.Message()
 	case codes.FailedPrecondition, codes.Aborted:
-		fail(w, http.StatusConflict, "", st.Message())
+		return http.StatusConflict, "", st.Message()
 	case codes.PermissionDenied:
-		fail(w, http.StatusForbidden, "", st.Message())
+		return http.StatusForbidden, "", st.Message()
 	case codes.Unauthenticated:
-		w.Header().Set("WWW-Authenticate", `Bearer realm="roster"`)
-		fail(w, http.StatusUnauthorized, "", "the key was not accepted")
+		return http.StatusUnauthorized, "", "the key was not accepted"
 	case codes.ResourceExhausted:
-		fail(w, http.StatusTooManyRequests, "", st.Message())
+		return http.StatusTooManyRequests, "", st.Message()
 	case codes.Unavailable, codes.DeadlineExceeded:
-		fail(w, http.StatusServiceUnavailable, "", "roster did not answer; try again")
+		return http.StatusServiceUnavailable, "", "roster did not answer; try again"
 	default:
-		s.c.Log.ErrorContext(r.Context(), "scim: unexpected", "method", r.Method, "path", r.URL.Path, "err", err)
-		fail(w, http.StatusInternalServerError, "", "something went wrong here")
+		return http.StatusInternalServerError, "", "something went wrong here"
 	}
 }
 
