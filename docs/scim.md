@@ -111,7 +111,10 @@ publishes a SCIM validator that walks the same requests against a URL.
 **The directory owns what it sends.** A value it sends is written over what was
 there; a value it does not send is left, because a tenant that keeps names
 somewhere else takes them out of the mapping and must not have them wiped every
-cycle. Taking a value away is a `remove`. What it sends that is not kept here --
+cycle. Taking a value away is a `remove`. The person it is about is told so: the
+account page says, on the form somebody a directory provisions edits their
+profile in, that what the directory says of them is written over what is there.
+What it sends that is not kept here --
 a title, a postal address -- is answered as accepted and written to the log.
 
 **A number is written, and replaced when it changes.** Where somebody is reached
