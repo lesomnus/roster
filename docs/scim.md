@@ -386,8 +386,9 @@ provisioned here lists none of this: `provision` again, which is a rotation.
 | a changed `userName` is kept and answered, and the address stays | `TestAChangedUserNameIsKeptAndAnsweredAndTheAddressStays` |
 | what Microsoft's validator asks, request by request; and `/Schemas` lists what is kept | `TestWhatMicrosoftsValidatorAsks` · `TestTheSchemaListsWhatIsKept` |
 | the page itself, run by a person against a roster stood up for it | `scripts/scim-check.sh`, by the workflow `scim-check` |
+| what the page sent each time it was, replayed and held to what it wanted; and a dozen creates at once | `TestWhatMicrosoftsValidatorSent` · `TestTheValidatorAsksAtOnce` |
 | one thing a person is called, and which | `TestWhatSomebodyIsCalledIsTheirDisplayName` |
-| a number is written and replaced, one a kind, and is no way in | `TestADirectoryKeepsSomebodysNumbers` · `TestANumberIsWhereSomebodyIsReachedAndNoWayIn` |
+| a number is written and replaced, one a kind and one number as many kinds as it is said for, and is no way in | `TestADirectoryKeepsSomebodysNumbers` · `TestANumberIsWhereSomebodyIsReachedAndNoWayIn` |
 | who somebody reports to is one relation, and one word in it | `TestADirectorySaysWhoSomebodyReportsTo` · `TestWhatSomebodyIsToSomebodyIsARecordNothingReads` |
 | a key minted before a method was added goes on provisioning without it | `TestAKeyMintedBeforeNumbersWereKeptStillProvisions` |
 | the directory lifts only its own suspensions | `TestADirectoryLiftsOnlyItsOwnSuspension` · `TestTheDirectoryDoesNotLiftAnOperatorsSuspension` |
