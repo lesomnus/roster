@@ -111,6 +111,43 @@ tutorial does not say -- once, against a deployment. Two things to give it:
 A `userName` is answered lowered, as an address is kept. Whether the validator
 compares one without regard to case is one of the things its page is for.
 
+**Somewhere for it to call** is `scripts/scim-check.sh`, and the workflow
+`scim-check` that runs it on a runner, by hand: *Actions*, *scim-check*, *Run
+workflow*. It stands a roster up from nothing with a tenant nobody is in, puts
+it behind a Cloudflare tunnel, and prints what to do next -- the five steps at
+the page, with the address and the token to paste -- then waits, and ends by
+itself ten minutes after the last thing it is asked. **Nothing is set up
+beforehand and nothing is remembered between runs**: the tunnel is one
+Cloudflare gives without an account, and the token is made up by the run.
+
+Two things stand between the tunnel and roster's listener, in one process:
+
+- **The token pasted into the page is not roster's key.** It is one the run
+  made up. The tenant's key is minted on the runner and never leaves it: what
+  the tunnel reaches takes the first and forwards the second. The token is in a
+  log anybody may read, so anybody may ask while the run is up -- of a roster
+  with nobody in it, on a runner that holds no secret -- and what stands in
+  front takes no request larger than roster would read, and keeps no more than
+  a page run a hundred times over.
+- **Every request and its answer is kept**, without either token, and left as
+  the run's artifact. That is what a fixture is written from, where the page
+  said something its tutorial does not -- from the requests that are the
+  page's, since anybody's may be among them.
+
+One thing is added to what the page sends: an `externalId` on a person made
+without one. roster refuses that, a directory always sends one, and the page
+sends only what its form was given; what it sent is kept as it sent it.
+
+Where the page will not call a name under `trycloudflare.com`, the environment
+`scim-check` may hold a Cloudflare API token (`SCIM_CHECK_CF_API_TOKEN`;
+*Cloudflare Tunnel: Edit* on the account, *DNS: Edit* on one zone) and, as
+variables, the zone's name and identifier and the account's
+(`SCIM_CHECK_ZONE`, `SCIM_CHECK_ZONE_ID`, `SCIM_CHECK_ACCOUNT_ID`). A tunnel
+and a record `scim-check-<made up>.<zone>` are then made for the run and taken
+away when it ends. What that costs is a secret on the runner the tunnel
+reaches, and one that can write any record of the zone: the environment is of
+`main` alone, and the zone is one kept for this.
+
 ## What it does with a person
 
 | SCIM | roster |
@@ -328,6 +365,7 @@ provisioned here lists none of this: `provision` again, which is a rotation.
 | an operator links who the directory matched, from a list | `TestAnOperatorLinksWhoTheDirectoryMatched` |
 | a changed `userName` is kept and answered, and the address stays | `TestAChangedUserNameIsKeptAndAnsweredAndTheAddressStays` |
 | what Microsoft's validator asks, request by request; and `/Schemas` lists what is kept | `TestWhatMicrosoftsValidatorAsks` · `TestTheSchemaListsWhatIsKept` |
+| the page itself, run by a person against a roster stood up for it | `scripts/scim-check.sh`, by the workflow `scim-check` |
 | one thing a person is called, and which | `TestWhatSomebodyIsCalledIsTheirDisplayName` |
 | a number is written and replaced, one a kind, and is no way in | `TestADirectoryKeepsSomebodysNumbers` · `TestANumberIsWhereSomebodyIsReachedAndNoWayIn` |
 | who somebody reports to is one relation, and one word in it | `TestADirectorySaysWhoSomebodyReportsTo` · `TestWhatSomebodyIsToSomebodyIsARecordNothingReads` |
