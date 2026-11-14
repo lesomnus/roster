@@ -1,0 +1,143 @@
+# A roster for Microsoft's SCIM validator to call, for as long as somebody is
+# running it -- `scripts/scim-check.sh`, on a runner, by hand.
+#
+# The validator is a page Microsoft hosts: an endpoint's address and a token go
+# into a form and a person reads the result (`docs/scim.md` § "Microsoft's
+# validator"). So it is not a job of `ci`, and cannot be one. What it asks is
+# asked there on every change by `TestWhatMicrosoftsValidatorAsks`, written from
+# its tutorial; this is for what the tutorial does not say. It stands a roster
+# up from nothing with a tenant nobody is in, puts it behind a tunnel, waits
+# while the page is run against it, and leaves every request and its answer as
+# an artifact -- which is what a fixture is then written from.
+#
+# By hand and never on a push: it is somebody at a browser that it waits for.
+name: scim-check
+
+on:
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: The most it waits for the page to be run, in minutes
+        default: "30"
+      idle:
+        description: Minutes with nothing asked, after something was, that end it early
+        default: "10"
+
+permissions:
+  contents: read
+
+# One at a time: the tunnel answers at one name, and two rosters behind it
+# would each be asked half of what the page sends.
+concurrency:
+  group: scim-check
+
+jobs:
+  check:
+    runs-on: ubuntu-26.04
+    # Nothing has to be set for this to run. The token for the page is made up
+    # by the run and printed with the address, and the tunnel is one Cloudflare
+    # gives without an account, at a name of its choosing -- so there is
+    # nothing kept between runs, and nothing for whoever runs it to remember.
+    #
+    # The token is then in a log anybody may read, as this repository's are.
+    # What it lets them into is a roster with nobody in it, on a runner that
+    # holds no secret, for the minutes this is up; and the recorder in front of
+    # it takes no request larger than roster would read, and keeps no more than
+    # a page run a hundred times over (`scripts/scim-check.sh`). It is not
+    # roster's key: that is minted on the runner and stays there.
+    #
+    # Where the page will not call a name under `trycloudflare.com`, a name
+    # under a zone of one's own is made for the run and taken away after it,
+    # by a Cloudflare API token this environment holds:
+    #
+    #   secret    SCIM_CHECK_CF_API_TOKEN   Cloudflare Tunnel: Edit on the
+    #                                       account, DNS: Edit on the one zone
+    #   variable  SCIM_CHECK_ZONE           that zone, by its name,
+    #   variable  SCIM_CHECK_ZONE_ID        by its identifier,
+    #   variable  SCIM_CHECK_ACCOUNT_ID     and the account's
+    #
+    # That is then a secret on the runner the tunnel reaches, which the first
+    # way has none of: the environment is of `main` alone, and the zone is one
+    # kept for this.
+    environment: scim-check
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # Before anything is built: a token for a zone, without saying which.
+      - name: what the environment holds
+        env:
+          API: ${{ secrets.SCIM_CHECK_CF_API_TOKEN }}
+          ZONE: ${{ vars.SCIM_CHECK_ZONE }}
+          ZONE_ID: ${{ vars.SCIM_CHECK_ZONE_ID }}
+          ACCOUNT_ID: ${{ vars.SCIM_CHECK_ACCOUNT_ID }}
+        run: |
+          if [ -z "${API}" ]; then
+            echo "no token of Cloudflare's: a tunnel with no account, at a name of its choosing"
+            exit 0
+          fi
+          missing=""
+          [ -n "${ZONE}" ] || missing="${missing} variable SCIM_CHECK_ZONE;"
+          [ -n "${ZONE_ID}" ] || missing="${missing} variable SCIM_CHECK_ZONE_ID;"
+          [ -n "${ACCOUNT_ID}" ] || missing="${missing} variable SCIM_CHECK_ACCOUNT_ID;"
+          if [ -n "${missing}" ]; then
+            echo "::error::the environment scim-check holds SCIM_CHECK_CF_API_TOKEN and not:${missing} see the head of this workflow"
+            exit 1
+          fi
+
+      # The release's own binary, held to its digest, as `ci`'s k3d is and for
+      # its reasons.
+      - name: cloudflared
+        timeout-minutes: 5
+        run: |
+          mkdir -p "${RUNNER_TEMP}/bin"
+          curl -fsSL --connect-timeout 10 --max-time 120 --retry 5 --retry-all-errors --retry-delay 2 -o "${RUNNER_TEMP}/bin/cloudflared" https://github.com/cloudflare/cloudflared/releases/download/2026.11.0/cloudflared-linux-amd64
+          echo "51f7c68b57ed7269164075d7e789efce5b59355982f06392deeb037d982a51fd  ${RUNNER_TEMP}/bin/cloudflared" | sha256sum -c -
+          chmod +x "${RUNNER_TEMP}/bin/cloudflared"
+          echo "${RUNNER_TEMP}/bin" >> "${GITHUB_PATH}"
+
+      - name: ./scripts/scim-check.sh
+        env:
+          # A name of one's own where the environment holds the token for
+          # it, and otherwise one of Cloudflare's choosing: the script takes
+          # the first it is given.
+          SCIM_CHECK_CF_API_TOKEN: ${{ secrets.SCIM_CHECK_CF_API_TOKEN }}
+          SCIM_CHECK_ZONE: ${{ vars.SCIM_CHECK_ZONE }}
+          SCIM_CHECK_ZONE_ID: ${{ vars.SCIM_CHECK_ZONE_ID }}
+          SCIM_CHECK_ACCOUNT_ID: ${{ vars.SCIM_CHECK_ACCOUNT_ID }}
+          SCIM_CHECK_QUICK: "1"
+          SCIM_CHECK_MINUTES: ${{ inputs.minutes }}
+          SCIM_CHECK_IDLE: ${{ inputs.idle }}
+          # Which tunnel and record this run made, where the step below finds
+          # it when this one was stopped. Outside the checkout, and outside
+          # what is uploaded.
+          SCIM_CHECK_STATE: ${{ runner.temp }}/scim-check.cloudflare.json
+        run: ./scripts/scim-check.sh
+
+      # Again, whatever became of the step above. It takes away what it made
+      # as it ends, and a run that is cancelled is given seconds to: what is
+      # left when those were not enough is a name that answers nothing and a
+      # tunnel nothing is connected to, and this is what takes them away.
+      - name: take away the tunnel and its name
+        if: always()
+        env:
+          SCIM_CHECK_CF_API_TOKEN: ${{ secrets.SCIM_CHECK_CF_API_TOKEN }}
+          SCIM_CHECK_ZONE_ID: ${{ vars.SCIM_CHECK_ZONE_ID }}
+          SCIM_CHECK_ACCOUNT_ID: ${{ vars.SCIM_CHECK_ACCOUNT_ID }}
+          SCIM_CHECK_STATE: ${{ runner.temp }}/scim-check.cloudflare.json
+        run: ./scripts/scim-check.sh --down
+
+      # Kept whether it ended by itself, was stopped, or failed: what was asked
+      # before it stopped is the point of having run it. Made-up people and
+      # groups, and no token of any kind.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: scim-check
+          path: scim-check/
+          if-no-files-found: ignore
+          retention-days: 30
