@@ -229,6 +229,11 @@ that made those would grant access to whoever can write it. `scripts/cluster.sh`
 makes one person the way `docs/operating.md` says to, one `kubectl exec` per
 write -- the image is distroless and has no shell to hand a script to.
 
+The same goes for whoever **runs** the deployment. Nothing here runs `init`:
+`serve` comes up first, and the operator is made in the pod after it,
+`roster init --password-stdin` (`docs/operating.md`, § *The first operator*) --
+which the rig does too, since a command at that shell asks who is at it.
+
 ## What `--dev` was hiding
 
 Every one of these is a thing `compose.yaml` cannot find, and each cost a run:

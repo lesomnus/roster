@@ -7,6 +7,8 @@ import (
 
 	"github.com/protobuf-orm/ent/dialect"
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/pdid"
 
@@ -184,38 +186,123 @@ const (
 	EveryRosterMethod = core.EveryMethod
 )
 
-// allow writes the role that says everything and binds it.
+// allow has somebody hold the role that says everything: the role written where
+// this tenant has none, and bound to them where it is not yet.
+//
+// # Found before it is written
+//
+// Two things want this role on a control plane and neither is first by rule:
+// `roster init`, for the operator, and `serve`, for the provisioner of a
+// deployment that declares resources ([asProvisioner]). `deploy/` starts
+// `serve` and runs no `init`, so there the role is `serve`'s, and an `init`
+// that wrote it again stopped at `AlreadyExists` on a deployment nobody could
+// sign in to (#268). Whoever comes second finds it, and is bound to the one
+// there is.
+//
+// The binding is looked for too, because nothing refuses a second: `Binding`
+// has no unique index to answer `AlreadyExists` with, so a start that only
+// added one added one more every time -- seven on one deployment's control
+// plane before anybody counted. `cli`'s `ensureBinding` learned the same thing
+// about the Login App's.
+//
+// # Why writing it is allowed at all
 //
 // Through `Ungated`, where there is no frame, so `mayGrantEverything` waives
 // itself -- which is the only place it ever does. Every later grant of this
 // descends from somebody who already held it.
 func allow(ctx context.Context, at app.Server, in pdid.Id, to pdid.Id) error {
-	r, err := at.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: in.Bytes()}.Build(),
-		Alias:  Everyverb,
-		Desc:   "Every Rpc roster serves, including ones added by a later release.",
+	r, err := at.Role().Get(ctx, app.RoleGetRequest_builder{
+		Ref: app.RoleRef_builder{
+			Slug: app.RoleRefBySlug_builder{
+				Alias:  z.Ptr(Everyverb),
+				Tenant: app.TenantRef_builder{Id: in.Bytes()}.Build(),
+			}.Build(),
+		}.Build(),
+	}.Build())
+	if status.Code(err) == codes.NotFound {
+		r, err = at.Role().Add(ctx, app.RoleAddRequest_builder{
+			Tenant: app.TenantRef_builder{Id: in.Bytes()}.Build(),
+			Alias:  Everyverb,
+			Desc:   "Every Rpc roster serves, including ones added by a later release.",
 
-		// A pattern rather than an enumeration, for the reason in
-		// `Role.methods`: a list written here is what existed the day it was
-		// written, and the first administrator is the one person who must not
-		// have to notice that.
-		//
-		// `/roster.*/*` and not `/*.*/*`, which would take in payday's own --
-		// `TokenService` is asked by a product app holding a key rather than
-		// by anybody a role is written for. A deployment that wants it grants
-		// it, and does it on purpose.
-		Methods: []string{EveryRosterMethod},
+			// A pattern rather than an enumeration, for the reason in
+			// `Role.methods`: a list written here is what existed the day it
+			// was written, and the first administrator is the one person who
+			// must not have to notice that.
+			//
+			// `/roster.*/*` and not `/*.*/*`, which would take in payday's own
+			// -- `TokenService` is asked by a product app holding a key rather
+			// than by anybody a role is written for. A deployment that wants
+			// it grants it, and does it on purpose.
+			Methods: []string{EveryRosterMethod},
+		}.Build())
+	}
+	if err != nil {
+		return fmt.Errorf("the role %q: %w", Everyverb, err)
+	}
+
+	vs, err := at.Binding().List(ctx, app.BindingListRequest_builder{
+		Filters: []*app.BindingFilter{app.BindingFilter_builder{
+			Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
+			Holder: app.HolderRef_builder{Id: to.Bytes()}.Build(),
+		}.Build()},
 	}.Build())
 	if err != nil {
-		return err
+		return fmt.Errorf("who holds the role %q: %w", Everyverb, err)
+	}
+	for _, v := range vs.GetItems() {
+		// Everywhere, and not at one site: a binding narrowed to a site is
+		// not this one.
+		if len(v.GetSite().GetId()) == 0 {
+			return nil
+		}
 	}
 
 	_, err = at.Binding().Add(ctx, app.BindingAddRequest_builder{
 		Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
 		Holder: app.HolderRef_builder{Id: to.Bytes()}.Build(),
 	}.Build())
+	if err != nil && status.Code(err) != codes.AlreadyExists {
+		return fmt.Errorf("binding the role %q: %w", Everyverb, err)
+	}
 
-	return err
+	return nil
+}
+
+// ErrOperated is `roster init` on a deployment that has an operator already.
+//
+// An error and not a no-op: an `init` that quietly did nothing is one somebody
+// runs against the wrong deployment and believes.
+var ErrOperated = errors.New("this deployment has an operator already")
+
+// signsIn is somebody who signs in on this plane with a secret kept here, by
+// alias, and empty where nobody does.
+//
+// Any `Credential` at all -- a password, or what is enrolled beside one --
+// since each is a person's and none is a caller's: a key is an `ApiKey`, and a
+// holder made for one has no row here.
+func signsIn(ctx context.Context, at app.Server) (string, error) {
+	vs, err := at.Credential().List(ctx, app.CredentialListRequest_builder{Size: 1}.Build())
+	if err != nil {
+		return "", fmt.Errorf("who signs in here: %w", err)
+	}
+	if len(vs.GetItems()) == 0 {
+		return "", nil
+	}
+
+	id := vs.GetItems()[0].GetHolder().GetId()
+	v, err := at.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{Id: id}.Build(),
+	}.Build())
+	if status.Code(err) == codes.NotFound {
+		// Whoever it was, there is one; the name is for the reader.
+		return fmt.Sprintf("%x", id), nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("who signs in here: %w", err)
+	}
+
+	return v.GetAlias(), nil
 }
 
 // seedOperator is the person who signs in to the admin console, and the password they
@@ -254,9 +341,24 @@ func allow(ctx context.Context, at app.Server, in pdid.Id, to pdid.Id) error {
 // (#20). So all three are one transaction on the control plane, the stack
 // rebound onto it (`enttx.Rebind`), and a refused password leaves nothing.
 //
-// What that does not change is the refusal to run twice. On a seeded database
-// the role is still what fails, before the password is reached, and now it
-// takes the holder lookup with it rather than leaving it.
+// # The second run
+//
+// `init` is refused where the deployment has an operator already: somebody on
+// this plane who signs in with a secret kept here ([signsIn]). Asked before
+// anything is written, so a second run changes nothing -- least of all the
+// password the first one printed.
+//
+// It used to be the role that refused it. `everything` was written with `Add`,
+// and a second `init` stopped there with `AlreadyExists`. But the role is not
+// `init`'s alone: `serve` writes it for the provisioner of a deployment that
+// declares resources, which is every one made from `deploy/`, and there the
+// first `init` was refused as a second, on a deployment nobody could sign in
+// to (#268). What `init` alone leaves is the person, so that is what is asked,
+// and the role is found or written like anybody's ([allow]).
+//
+// A holder with no way in is not one. The provisioner is a holder of this
+// plane, and so is a caller `roster control key add` named; nobody signs in as
+// either, and a deployment that has only those has not been `init`ed.
 func seedOperator(ctx context.Context, s *Server, alias, given string) (pdid.Id, string, error) {
 	secret := given
 	if secret == "" {
@@ -276,6 +378,14 @@ func seedOperator(ctx context.Context, s *Server, alias, given string) (pdid.Id,
 	at, err := enttx.Rebind(s.Ungated, drv)
 	if err != nil {
 		return pdid.Nil, "", err
+	}
+
+	if has, err := signsIn(ctx, at); err != nil {
+		return pdid.Nil, "", err
+	} else if has != "" {
+		return pdid.Nil, "", fmt.Errorf("%w: %q signs in to its admin console. "+
+			"init makes the first operator and no other; if that is not who you expected to find, "+
+			"this is not the deployment you meant", ErrOperated, has)
 	}
 
 	// The same owner tenant `roster key add` uses, made here if this is a fresh

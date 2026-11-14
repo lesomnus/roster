@@ -180,7 +180,19 @@ The password is shown once and stored as an argon2id hash. There is no
 process list, which is the same rule `roster key add` is on -- and
 `--password-stdin` reads one from a pipe, which is what a container entrypoint
 uses. **Running `init` twice is an error** rather than a no-op: one that quietly
-did nothing is one somebody runs against the wrong deployment and believes.
+did nothing is one somebody runs against the wrong deployment and believes. What
+makes a run the second is an operator -- somebody on the control plane who signs
+in -- and the refusal names them.
+
+**`init` may come after `serve`**, and on a deployment that declares
+[resources](#declaring-the-rows-that-are-configuration) it does: `serve` applies them as a holder of the control
+plane, `provisioner`, and writes the role it holds, so the control plane is not
+empty when the operator's turn comes. That is not a second run. `init` binds the
+operator to the role that is there (#268) -- on a cluster, once the pod is up:
+
+```sh
+kubectl exec -i deploy/roster -c roster -- roster --config /config/config.yaml init --password-stdin < password
+```
 
 `init` writes no customer. A tenant *is* a customer, and one written by a command
 is a customer nobody asked for -- so the first act after `init` is the same act as
