@@ -55,6 +55,18 @@ describes, printing the SQL that is missing. That is what you want N replicas of
 run the migration as its own step. `control.db.migrate` is the same switch for the
 other plane, and both are read.
 
+**In `deploy/` the migration is the init container's.** `roster login provision`
+runs in the pod before `serve` and brings both planes to this build's shape
+first -- the data plane, then the control plane, each a migration of its own --
+and the Deployment is `Recreate`, since a SQLite file is one process's: the pod
+before is gone when the new one's init container starts. So a build that cannot
+migrate is a pod at `Init:Error` with nothing serving behind it, and what it
+refused is in that container's log and not in `roster`'s:
+
+```sh
+kubectl logs deploy/roster -c provision
+```
+
 **A migration refuses an index the schema declares that PostgreSQL left
 invalid** (payday#176). A build `CONCURRENTLY` writes the index into the catalog
 before it builds it, and one that does not finish -- a timeout, a cancel, a
@@ -84,6 +96,12 @@ index, it is not a cost to every write but the end of every write to its table.
 A column the schema does not declare that is nullable or has a default is left
 alone, and so is a table the schema does not declare.
 
+A build started on a database a **later** one migrated meets the same check from
+the other side, and starts where what the later build added is a table, or a
+column that takes a row without a value. Where it is refused, the statement it
+prints drops what the later build wrote there. Going back is the copy taken
+before the upgrade ([below](#backing-it-up)), and not that statement.
+
 **A column that comes to a table which already has rows** needs something for
 the rows already there. A field with no default is a NOT NULL column with none,
 and adding one to a table with rows is refused by SQLite and by Postgres alike:
@@ -110,6 +128,44 @@ stored, exported, issued or was configured with moves the number rather than
 carrying a way forward ([CLAUDE.md](../CLAUDE.md)), and the pull request that
 moves it names the build a deployment with data migrates on first. From the
 launch on it moves only on the owner's word.
+
+### Backing it up
+
+Two databases, and a few things beside them that no row holds.
+
+**A SQLite database being served is three files, and a copy of one of them is
+not a backup.** The DSN above is `journal_mode(WAL)`: a write is in
+`roster.db-wal` first and reaches `roster.db` when the log is folded in -- after
+a thousand pages of it or so, and when the last connection closes. Copied beside
+a running `serve`, `roster.db` alone is a file that opens, passes `PRAGMA
+integrity_check`, and lacks whatever the log still held: every table, on a
+deployment young enough. Either of two ways takes all of it:
+
+- **Through SQLite, while it serves**: its online backup -- `.backup`, `VACUUM
+  INTO`, or the same call from a driver -- which reads through the log and
+  writes one whole file. The image has no shell and no `sqlite3`, so in a
+  cluster that is a container of yours on the same claim: an ephemeral
+  container beside `roster`, or a Job.
+- **Stopped**: once nothing holds the file the log is folded in, and the one
+  file is everything. `deploy/` is one replica, so that is an outage as long as
+  the copy takes.
+
+Both planes, as near one moment as can be: a key on the control plane names a
+holder there, and a nomination on the data plane names it back.
+
+**Postgres** is backed up as that Postgres already is; nothing of it is roster's
+to say.
+
+**And what a restore needs that is not in either:**
+
+| | |
+| --- | --- |
+| `vouch.keys` | what every second factor's seed is sealed under ([below](#passwords-and-what-closes-an-account)). Restored without the key a seed was sealed with, the people who enrolled have a factor nobody can check |
+| `audit.checkpoints.key`, the archive and its witnesses | the trail's own account of itself ([The audit trail](#the-audit-trail)): kept apart from the database on purpose, so each is backed up as itself. A database restored behind its archive is accepted as a restore, and that section says how |
+
+`login.seal` and the keys the consumers hold are not on the list: with another
+seal people sign in again and lose nothing, and `roster login provision` mints a
+key where there is none.
 
 ## The two planes
 

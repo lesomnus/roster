@@ -73,12 +73,36 @@ resources:
 Pin a **commit**. `?ref=main` is a deployment whose manifests change when
 somebody else pushes, which is the thing GitOps exists to stop.
 
+**And the image by its digest, which no tag names by commit.** A build is
+tagged by the CI run that made it and its day -- `:r43640498656`, and
+`:261114-r43640498656`, which is also what `roster version` says inside it --
+and the commit is the image's label, `org.opencontainers.image.revision`. So
+from a commit to a digest is its `ci` run on `main`, whose id is the tag:
+
+```sh
+docker buildx imagetools inspect ghcr.io/lesomnus/roster:r<the run's id>   # Digest: sha256:…
+```
+
 What an overlay is expected to bring, and what it should leave alone:
 
 | | |
 | --- | --- |
 | its own | hosts, secrets (`roster-checkpoints` among them, `key.pem`, with the `trail` component), storage class, image digests, the products it actually runs, whether it keeps the trail's archive (below), and `config.yaml` -- by a `configMapGenerator` for `roster` with `behavior: replace` |
 | the base's | what a client has to be registered with, which `URLS_*` Hydra needs, that the clients are applied and then **checked** -- the four things that were wrong when they were written twice |
+
+**`config.yaml` is one file, and an overlay that replaces it restates all of
+it.** A file in a ConfigMap is not patched in part, so an overlay's own
+`config.yaml` is the base's with its values in -- the `login:` block too, which
+that file asks not to be written twice. What keeps the two from drifting is
+either of:
+
+- **the environment instead of the file.** Every setting has a variable
+  (`roster config env`), and a variable wins over the file, so an overlay that
+  patches the Deployment's `env` leaves the base's file the one in use. It is
+  how the `trail` and `scim` components say theirs.
+- **reading what changed.** An overlay that does replace the file reads
+  `git diff <the commit before>..<the commit after> -- deploy/config.yaml` at
+  every commit it moves to, and takes what the base changed.
 
 The piece of the rig that a deployment does not want is `product.yaml`, there to
 have something to sign in *to*; it comes out with a `$patch: delete`. The base
