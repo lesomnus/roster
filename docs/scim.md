@@ -167,6 +167,14 @@ there no status says:
   `manager` out of it on the *Attributes* tab is how a run is made to say
   nothing about this.
 
+The third, the same day, **passed every test of its but that one**: 30 of 31,
+and *Create a new User* failed for the made-up manager and for nothing else. It
+read the group with two people in it and took one out (`members[value eq
+"…"]`), which is what says the order a reference is written in was what stood
+in its way. And told an address is somebody's `work` one, it wrote and read
+addresses the way Entra does -- `emails[type eq "work"].value`, with no
+`primary` -- so what it asks of an address is now what a directory asks.
+
 **Nothing on its *Settings* tab is changed.** What it starts with is what
 roster does: *Supports Deactivation* and *Supports Delete* for a user, *Supports
 Delete* for a group, and no *Verbose PATCH*.

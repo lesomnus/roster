@@ -39,11 +39,13 @@ import (
 // (`TestTheSchemaListsWhatIsKept`): an attribute added to one and not the
 // other is an attribute the validator would ask about and this would not.
 //
-// And as the page was seen to say them, the first time it was run against
-// this endpoint (`TestWhatMicrosoftsValidatorSent`, which replays that run):
-// one number under every `type` a number may have, `"primary": "true"` in
-// quotes, an address of no `type`, and a `manager` that is a word it made up
-// and nobody's id.
+// And as the page was seen to say them, the times it was run against this
+// endpoint (`TestWhatMicrosoftsValidatorSent`, which replays each): one value
+// for each `type` the schema names -- one number under every one of six, and
+// an address under `work` -- and a `manager` that is a word it made up and
+// nobody's id. While the schema named no type for an address it sent one of
+// no type, with `"primary": "true"` in quotes; that is in the first two runs
+// and is still read.
 
 // made is a string nobody else was given.
 func made(t *testing.T) string {
@@ -83,7 +85,7 @@ func validatorUser(t *testing.T) map[string]any {
 		"displayName":       "Display " + n,
 		"preferredLanguage": "sr-Latn-ME",
 		"active":            true,
-		"emails":            []map[string]any{{"value": "mail-" + n + "@contoso.example", "primary": "true"}},
+		"emails":            []map[string]any{{"type": "work", "value": "mail-" + n + "@contoso.example"}},
 		"phoneNumbers":      numbers,
 		enterprise:          map[string]any{"department": "Department " + n, "employeeNumber": n, "manager": "MANAGER" + n},
 	}
