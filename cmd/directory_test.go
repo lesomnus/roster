@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
 )
 
@@ -37,6 +38,7 @@ func (b *built) directory(t *testing.T, ctx context.Context) context.Context {
 		app.HolderService_Provision_FullMethodName,
 		app.HolderService_Deactivate_FullMethodName,
 		app.HolderService_Activate_FullMethodName,
+		app.HolderService_Tell_FullMethodName,
 		app.HolderService_Get_FullMethodName,
 		app.HolderService_Update_FullMethodName,
 	)
@@ -395,4 +397,149 @@ func TestATenantProvisionsThroughOneConnection(t *testing.T) {
 	x.NoError(set("entra", true), "saying it again of the one that does is no second")
 	x.NoError(set("entra", false))
 	x.NoError(set("okta", true))
+}
+
+// TestWhatADirectorySaysIsKeptAndBelievedByNothing: `HolderService.Tell` keeps
+// what a directory calls somebody who was here before it -- its id for them,
+// the address it says is theirs -- and that is all it does. Nothing signs in
+// by it, no address moves, and the directory still does not speak for them:
+// the write that would make it so is a way in, and is an operator's
+// (`roster scim adopt`).
+func TestWhatADirectorySaysIsKeptAndBelievedByNothing(t *testing.T) {
+	b, ctx := build(t)
+	as := b.directory(t, ctx)
+	at := app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build()
+
+	// Somebody an operator entered: an address, and no identity anywhere.
+	fred := b.holder(t, ctx, b.Contoso, "fred")
+	ref := app.HolderRef_builder{Id: fred.Bytes()}.Build()
+	_, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{Holder: ref, Address: "fred@contoso.example"}.Build())
+	require.NoError(t, err)
+
+	read := func(ref *app.HolderRef) (*app.Holder, error) {
+		return b.Walled.Holder().Get(as, app.HolderGetRequest_builder{
+			Ref:    ref,
+			Select: app.HolderSelect_builder{DirectorySubject: z.Ptr(true), DirectoryAddress: z.Ptr(true)}.Build(),
+		}.Build())
+	}
+	tell := func(ref *app.HolderRef, subject, address *string) error {
+		_, err := b.Walled.Holder().Tell(as, app.HolderTellRequest_builder{Ref: ref, Subject: subject, Address: address}.Build())
+
+		return err
+	}
+
+	t.Run("kept, and nothing else moves", func(t *testing.T) {
+		x := require.New(t)
+		x.NoError(tell(ref, z.Ptr(fredOid), z.Ptr("fred.park@contoso.example")))
+
+		v, err := read(ref)
+		x.NoError(err)
+		x.Equal(fredOid, v.GetDirectorySubject())
+		x.Equal("fred.park@contoso.example", v.GetDirectoryAddress())
+
+		ids, err := b.Ungated.Identity().List(ctx, app.IdentityListRequest_builder{
+			Filters: []*app.IdentityFilter{app.IdentityFilter_builder{Holder: ref}.Build()},
+		}.Build())
+		x.NoError(err)
+		x.Empty(ids.GetItems(), "what a directory calls somebody is not an identity of theirs")
+
+		es, err := b.Ungated.Email().List(ctx, app.EmailListRequest_builder{
+			Filters: []*app.EmailFilter{app.EmailFilter_builder{Holder: ref}.Build()},
+		}.Build())
+		x.NoError(err)
+		x.Len(es.GetItems(), 1)
+		x.Equal("fred@contoso.example", es.GetItems()[0].GetAddress(), "and the address it says is not an address of theirs")
+
+		_, err = b.Walled.Holder().Deactivate(as, app.HolderDeactivateRequest_builder{Ref: ref}.Build())
+		x.Equal(codes.PermissionDenied, status.Code(err), "nor does saying so make it speak for them: %v", err)
+	})
+
+	t.Run("found by what was said", func(t *testing.T) {
+		x := require.New(t)
+		v, err := read(app.HolderRef_builder{Known: app.HolderRefByKnown_builder{
+			DirectorySubject: z.Ptr(fredOid), Tenant: at,
+		}.Build()}.Build())
+		x.NoError(err)
+		x.Equal(fred.Bytes(), v.GetId())
+
+		v, err = read(app.HolderRef_builder{Said: app.HolderRefBySaid_builder{
+			DirectoryAddress: z.Ptr("fred.park@contoso.example"), Tenant: at,
+		}.Build()}.Build())
+		x.NoError(err)
+		x.Equal(fred.Bytes(), v.GetId())
+	})
+
+	t.Run("saying one leaves the other", func(t *testing.T) {
+		x := require.New(t)
+		x.NoError(tell(ref, nil, z.Ptr("fred.p@contoso.example")))
+		v, err := read(ref)
+		x.NoError(err)
+		x.Equal(fredOid, v.GetDirectorySubject())
+		x.Equal("fred.p@contoso.example", v.GetDirectoryAddress())
+	})
+
+	t.Run("held to the form the real thing would have", func(t *testing.T) {
+		x := require.New(t)
+		err := tell(ref, z.Ptr("not-a-guid"), nil)
+		x.Equal(codes.InvalidArgument, status.Code(err), "%v", err)
+		err = tell(ref, nil, z.Ptr("Fred@Contoso.example"))
+		x.Equal(codes.InvalidArgument, status.Code(err), "%v", err)
+	})
+
+	t.Run("one person's within a tenant", func(t *testing.T) {
+		x := require.New(t)
+		gina := b.holder(t, ctx, b.Contoso, "gina")
+		other := app.HolderRef_builder{Id: gina.Bytes()}.Build()
+
+		err := tell(other, z.Ptr(fredOid), nil)
+		x.Equal(codes.AlreadyExists, status.Code(err), "%v", err)
+		err = tell(other, nil, z.Ptr("fred.p@contoso.example"))
+		x.Equal(codes.AlreadyExists, status.Code(err), "%v", err)
+	})
+
+	t.Run("taken away by saying nothing in its place", func(t *testing.T) {
+		x := require.New(t)
+		x.NoError(tell(ref, z.Ptr(""), z.Ptr("")))
+		v, err := read(ref)
+		x.NoError(err)
+		x.Empty(v.GetDirectorySubject())
+		x.Empty(v.GetDirectoryAddress())
+
+		_, err = read(app.HolderRef_builder{Known: app.HolderRefByKnown_builder{
+			DirectorySubject: z.Ptr(fredOid), Tenant: at,
+		}.Build()}.Build())
+		x.Equal(codes.NotFound, status.Code(err), "%v", err)
+	})
+
+	t.Run("not said in a request that makes somebody", func(t *testing.T) {
+		admin := b.as(ctx, b.ContosoUser, b.Contoso)
+		_, err := b.Walled.Holder().Add(admin, app.HolderAddRequest_builder{
+			Tenant: at, Alias: "henry", Name: "Henry", DirectorySubject: z.Ptr(erinOid),
+		}.Build())
+		require.Error(t, err, "a stamp is written by the verb that keeps it, and by no request")
+	})
+
+	t.Run("not about a row a file declares", func(t *testing.T) {
+		x := require.New(t)
+		h, err := b.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{
+			Tenant: at, Alias: "front", Name: "Front", Labels: map[string]string{cmd.Declared: "config: login"},
+		}.Build())
+		x.NoError(err)
+		err = tell(app.HolderRef_builder{Id: h.GetId()}.Build(), z.Ptr(erinOid), nil)
+		x.Equal(codes.FailedPrecondition, status.Code(err), "%v", err)
+	})
+}
+
+// TestATenantWithNoDirectoryIsToldNothing: what `Tell` keeps is a directory's
+// word, and a tenant that provisions through no connection has no directory to
+// have said it -- whoever is asking.
+func TestATenantWithNoDirectoryIsToldNothing(t *testing.T) {
+	b, ctx := build(t)
+	admin := b.as(ctx, b.ContosoUser, b.Contoso)
+
+	fred := b.holder(t, ctx, b.Contoso, "fred")
+	_, err := b.Walled.Holder().Tell(admin, app.HolderTellRequest_builder{
+		Ref: app.HolderRef_builder{Id: fred.Bytes()}.Build(), Subject: z.Ptr(fredOid),
+	}.Build())
+	require.Equal(t, codes.FailedPrecondition, status.Code(err), "%v", err)
 }

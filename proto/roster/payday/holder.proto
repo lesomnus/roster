@@ -105,6 +105,34 @@ message Holder {
             number: 1
           }
         ]
+      },
+      {
+        name: "known"
+        refs: [
+          {
+            name: "directory_subject"
+            number: 17
+          },
+          {
+            name: "tenant"
+            number: 2
+          }
+        ]
+        unique: true
+      },
+      {
+        name: "said"
+        refs: [
+          {
+            name: "directory_address"
+            number: 18
+          },
+          {
+            name: "tenant"
+            number: 2
+          }
+        ]
+        unique: true
       }
     ]
   };
@@ -318,6 +346,56 @@ message Holder {
   // by what a caller sends, which is why nothing writes it but roster. Not on
   // the trail: it is a picture of a person, and personal (payday#92).
   Portrait portrait = 16 [(payday.field) = {personal: true}];
+  // What their directory calls them, where that is not how roster knows them:
+  // the `externalId` it wrote onto somebody it matched by address and roster
+  // has not linked (`docs/scim.md` § *What it does with a person*).
+  //
+  // # Kept, and read by no rule
+  //
+  // A directory that finds somebody who was here before it says who they are
+  // to it. Believing that would be writing a way in -- an `Identity` at the
+  // connection it provisions through -- onto a person who exists, on the word
+  // of a key its cloud presents from the internet, which is the write that key
+  // is not given (`HolderService.Provision`). Dropping it leaves nothing to
+  // show that the directory has somebody roster has not linked. So it is
+  // kept here: nothing signs in by it and no rule reads it, and an operator
+  // who believes it links them (`roster scim adopt`).
+  //
+  // Written by `HolderService.Tell` and nothing else: **stamped**, so the
+  // generated gate refuses an `Add` that asserts it, and `Patch` is closed at
+  // the transport. Personal, as `Identity.subject` is.
+  //
+  // Nullable, because it is unique within a tenant (the index below) and
+  // nobody having been called anything is most rows.
+  string directory_subject = 17 [
+    (orm.field) = {nullable: true},
+    (payday.field) = {
+      stamped: true
+      personal: true
+    }
+  ];
+  // The address their directory last said, where it is not the first of
+  // theirs here.
+  //
+  // An address is a way in -- a recovery link goes to it, and a sign-in is
+  // matched by it -- so a directory saying somebody's address changed does not
+  // move it: it moves by the person or an operator. What the directory said
+  // is kept instead, so that the two having drifted apart is something to see
+  // rather than something to find out, and so that the directory is answered
+  // with what it said: a lookup by this finds them, and the User it reads
+  // back carries it. Where it is none of their addresses, the two have
+  // drifted; where it is one of them and not the first, it is only which one
+  // the directory is answered with.
+  //
+  // Written and guarded as `directory_subject` is, and personal as
+  // `Email.address` is.
+  string directory_address = 18 [
+    (orm.field) = {nullable: true},
+    (payday.field) = {
+      stamped: true
+      personal: true
+    }
+  ];
 }
 
 // Profile is what a person is called, and it is replaced whole.

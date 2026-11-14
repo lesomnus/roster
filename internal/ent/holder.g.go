@@ -44,5 +44,11 @@ func (e *Holder) Proto() *rstr.Holder {
 	if e.Portrait != nil {
 		x.SetPortrait(e.Portrait)
 	}
+	if e.DirectorySubject != nil {
+		x.SetDirectorySubject(*e.DirectorySubject)
+	}
+	if e.DirectoryAddress != nil {
+		x.SetDirectoryAddress(*e.DirectoryAddress)
+	}
 	return x
 }

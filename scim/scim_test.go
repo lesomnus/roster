@@ -501,3 +501,155 @@ func TestTheEndpointSpeaksOnlyOfPeople(t *testing.T) {
 	x.Equal(http.StatusOK, code)
 	x.EqualValues(1, got["totalResults"], "%v", got)
 }
+
+// TestSomebodyMatchedIsNotSuspendedByTheirDirectoryUntilTheyAreLinked:
+// somebody a tenant had before its directory provisioned anybody is found by
+// their address, and the `externalId` the directory then writes onto them is
+// kept and believed by nothing -- so they are answered as the directory calls
+// them, found by it, and still not somebody it speaks for: it cannot suspend
+// them. Linking them is a way in and an operator's, and once it is written
+// the directory suspends them as it does anybody, and what was kept is gone.
+func TestSomebodyMatchedIsNotSuspendedByTheirDirectoryUntilTheyAreLinked(t *testing.T) {
+	d := stand(t)
+	x := require.New(t)
+	ctx := t.Context()
+	at := rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build()
+
+	h, err := d.s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: "fred", Name: "Fred"}.Build())
+	x.NoError(err)
+	ref := rstr.HolderRef_builder{Id: h.GetId()}.Build()
+	_, err = d.s.Ungated.Email().Add(ctx, rstr.EmailAddRequest_builder{Holder: ref, Address: "fred@contoso.example"}.Build())
+	x.NoError(err)
+
+	code, got, _ := d.call(t, d.key, http.MethodGet, filter("userName", "fred@contoso.example"), nil)
+	x.Equal(http.StatusOK, code)
+	x.EqualValues(1, got["totalResults"])
+	id := got["Resources"].([]any)[0].(map[string]any)["id"].(string)
+
+	// What Entra writes onto somebody it matched: its own id for them.
+	said := map[string]any{"Operations": []map[string]any{{"op": "Add", "path": "externalId", "value": fredOid}}}
+	code, got, _ = d.call(t, d.key, http.MethodPatch, scim.Base+"/Users/"+id, said)
+	x.Equal(http.StatusOK, code, "%v", got)
+	x.Equal(fredOid, got["externalId"], "it reads back what it wrote")
+	x.Equal(fredOid, d.holder(t, id).GetDirectorySubject())
+
+	ids, err := d.s.Ungated.Identity().List(ctx, rstr.IdentityListRequest_builder{
+		Filters: []*rstr.IdentityFilter{rstr.IdentityFilter_builder{Holder: ref}.Build()},
+	}.Build())
+	x.NoError(err)
+	x.Empty(ids.GetItems(), "and nothing signs in by it")
+
+	code, got, _ = d.call(t, d.key, http.MethodGet, filter("externalId", fredOid), nil)
+	x.Equal(http.StatusOK, code)
+	x.EqualValues(1, got["totalResults"], "found by what the directory calls them")
+
+	left := map[string]any{"Operations": []map[string]any{{"op": "Replace", "path": "active", "value": "False"}}}
+	code, got, _ = d.call(t, d.key, http.MethodPatch, scim.Base+"/Users/"+id, left)
+	x.Equal(http.StatusForbidden, code, "%v", got)
+	x.Nil(d.holder(t, id).GetDateDisabled(), "matched is not spoken for")
+
+	// An operator who believes it links them, which is what `roster scim
+	// adopt` writes.
+	_, err = d.s.Ungated.Identity().Add(ctx, rstr.IdentityAddRequest_builder{Holder: ref, Provider: "entra", Subject: fredOid}.Build())
+	x.NoError(err)
+
+	code, got, _ = d.call(t, d.key, http.MethodPatch, scim.Base+"/Users/"+id, said)
+	x.Equal(http.StatusOK, code, "%v", got)
+	x.Equal(fredOid, got["externalId"])
+	x.Empty(d.holder(t, id).GetDirectorySubject(), "how roster knows them now, so nothing is kept beside it")
+
+	code, got, _ = d.call(t, d.key, http.MethodPatch, scim.Base+"/Users/"+id, left)
+	x.Equal(http.StatusOK, code, "%v", got)
+	x.Equal(false, got["active"])
+	x.NotNil(d.holder(t, id).GetDateDisabled())
+}
+
+// TestAChangedUserNameIsKeptAndAnsweredAndTheAddressStays: a directory saying
+// somebody's `userName` or address changed moves nothing -- an address is
+// where a link is mailed and how a sign-in is matched, and it moves by the
+// person or an operator. What it said is kept, and it is answered with it: the
+// User reads back as written, and a lookup by the new name finds them, as one
+// by the address they still have does. Once the address is theirs here,
+// nothing is kept beside it.
+func TestAChangedUserNameIsKeptAndAnsweredAndTheAddressStays(t *testing.T) {
+	d := stand(t)
+	x := require.New(t)
+	ctx := t.Context()
+
+	code, got, _ := d.call(t, d.key, http.MethodPost, scim.Base+"/Users", erin())
+	x.Equal(http.StatusCreated, code, "%v", got)
+	id := got["id"].(string)
+	x.Equal("erin@contoso.example", got["userName"])
+	k, err := pdid.Parse(id)
+	x.NoError(err)
+	ref := rstr.HolderRef_builder{Id: k.Bytes()}.Build()
+
+	addresses := func() []string {
+		t.Helper()
+		es, err := d.s.Ungated.Email().List(ctx, rstr.EmailListRequest_builder{
+			Filters: []*rstr.EmailFilter{rstr.EmailFilter_builder{Holder: ref}.Build()},
+		}.Build())
+		x.NoError(err)
+		var out []string
+		for _, e := range es.GetItems() {
+			out = append(out, e.GetAddress())
+		}
+
+		return out
+	}
+
+	// Entra's way of saying it: the user name, and the work address by its
+	// own path.
+	renamed := map[string]any{"Operations": []map[string]any{
+		{"op": "Replace", "path": "userName", "value": "Erin.Park@Contoso.example"},
+		{"op": "Replace", "path": `emails[type eq "work"].value`, "value": "Erin.Park@Contoso.example"},
+	}}
+	code, got, _ = d.call(t, d.key, http.MethodPatch, scim.Base+"/Users/"+id, renamed)
+	x.Equal(http.StatusOK, code, "%v", got)
+	x.Equal("erin.park@contoso.example", got["userName"], "it reads back what it wrote")
+	x.Equal("erin.park@contoso.example", got["emails"].([]any)[0].(map[string]any)["value"])
+	x.Equal("erin.park@contoso.example", d.holder(t, id).GetDirectoryAddress())
+	x.Equal([]string{"erin@contoso.example"}, addresses(), "and the address did not move")
+
+	for _, name := range []string{"Erin.Park@contoso.example", "erin@contoso.example"} {
+		code, got, _ = d.call(t, d.key, http.MethodGet, filter("userName", name), nil)
+		x.Equal(http.StatusOK, code)
+		x.EqualValues(1, got["totalResults"], name)
+		x.Equal(id, got["Resources"].([]any)[0].(map[string]any)["id"], name)
+	}
+
+	// Nobody else is made under the name it said, either.
+	body := erin()
+	body["userName"], body["externalId"] = "erin.park@contoso.example", fredOid
+	body["emails"] = []map[string]any{{"primary": true, "type": "work", "value": "erin.park@contoso.example"}}
+	code, got, _ = d.call(t, d.key, http.MethodPost, scim.Base+"/Users", body)
+	x.Equal(http.StatusConflict, code, "%v", got)
+	x.Equal("uniqueness", got["scimType"])
+
+	// An operator gives them the address, and the directory says the same
+	// again -- as a whole User this time, which a replace is. It is one of
+	// theirs now and not the first, so it is still what is answered.
+	_, err = d.s.Ungated.Email().Add(ctx, rstr.EmailAddRequest_builder{Holder: ref, Address: "erin.park@contoso.example"}.Build())
+	x.NoError(err)
+	body = erin()
+	body["userName"] = "Erin.Park@Contoso.example"
+	body["emails"] = []map[string]any{{"primary": true, "type": "work", "value": "Erin.Park@Contoso.example"}}
+	code, got, _ = d.call(t, d.key, http.MethodPut, scim.Base+"/Users/"+id, body)
+	x.Equal(http.StatusOK, code, "%v", got)
+	x.Equal("erin.park@contoso.example", got["userName"])
+	x.Len(got["emails"], 2, "each address once")
+	x.Equal(erinOid, got["externalId"])
+	x.Empty(d.holder(t, id).GetDirectorySubject(), "a whole User naming them as roster does keeps nothing")
+
+	// And takes the old one away. The address the directory says is the one
+	// they are answered with anyway, so nothing is kept beside it.
+	_, err = d.s.Ungated.Email().Erase(ctx, rstr.EmailRef_builder{At: rstr.EmailRefByAt_builder{
+		TenantId: d.contoso.Bytes(), Address: proto.String("erin@contoso.example"),
+	}.Build()}.Build())
+	x.NoError(err)
+	code, got, _ = d.call(t, d.key, http.MethodPut, scim.Base+"/Users/"+id, body)
+	x.Equal(http.StatusOK, code, "%v", got)
+	x.Equal("erin.park@contoso.example", got["userName"])
+	x.Equal([]string{"erin.park@contoso.example"}, addresses())
+	x.Empty(d.holder(t, id).GetDirectoryAddress())
+}

@@ -209,6 +209,46 @@ func (_u *HolderUpdate) ClearPortrait() *HolderUpdate {
 	return _u
 }
 
+// SetDirectorySubject sets the "directory_subject" field.
+func (_u *HolderUpdate) SetDirectorySubject(v string) *HolderUpdate {
+	_u.mutation.SetDirectorySubject(v)
+	return _u
+}
+
+// SetNillableDirectorySubject sets the "directory_subject" field if the given value is not nil.
+func (_u *HolderUpdate) SetNillableDirectorySubject(v *string) *HolderUpdate {
+	if v != nil {
+		_u.SetDirectorySubject(*v)
+	}
+	return _u
+}
+
+// ClearDirectorySubject clears the value of the "directory_subject" field.
+func (_u *HolderUpdate) ClearDirectorySubject() *HolderUpdate {
+	_u.mutation.ClearDirectorySubject()
+	return _u
+}
+
+// SetDirectoryAddress sets the "directory_address" field.
+func (_u *HolderUpdate) SetDirectoryAddress(v string) *HolderUpdate {
+	_u.mutation.SetDirectoryAddress(v)
+	return _u
+}
+
+// SetNillableDirectoryAddress sets the "directory_address" field if the given value is not nil.
+func (_u *HolderUpdate) SetNillableDirectoryAddress(v *string) *HolderUpdate {
+	if v != nil {
+		_u.SetDirectoryAddress(*v)
+	}
+	return _u
+}
+
+// ClearDirectoryAddress clears the value of the "directory_address" field.
+func (_u *HolderUpdate) ClearDirectoryAddress() *HolderUpdate {
+	_u.mutation.ClearDirectoryAddress()
+	return _u
+}
+
 // Mutation returns the HolderMutation object of the builder.
 func (_u *HolderUpdate) Mutation() *HolderMutation {
 	return _u.mutation
@@ -383,6 +423,24 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.PortraitCleared() {
 		_spec.ClearField(holder.FieldPortrait, field.TypeJson)
+	}
+	if value, ok := _u.mutation.DirectorySubject(); ok {
+		_spec.SetField(holder.FieldDirectorySubject, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDirectorySubject); ok {
+		_spec.SetField(holder.FieldDirectorySubject, field.TypeString, e)
+	}
+	if _u.mutation.DirectorySubjectCleared() {
+		_spec.ClearField(holder.FieldDirectorySubject, field.TypeString)
+	}
+	if value, ok := _u.mutation.DirectoryAddress(); ok {
+		_spec.SetField(holder.FieldDirectoryAddress, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDirectoryAddress); ok {
+		_spec.SetField(holder.FieldDirectoryAddress, field.TypeString, e)
+	}
+	if _u.mutation.DirectoryAddressCleared() {
+		_spec.ClearField(holder.FieldDirectoryAddress, field.TypeString)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
@@ -581,6 +639,46 @@ func (_u *HolderUpdateOne) SetPortrait(v *rstr.Portrait) *HolderUpdateOne {
 // ClearPortrait clears the value of the "portrait" field.
 func (_u *HolderUpdateOne) ClearPortrait() *HolderUpdateOne {
 	_u.mutation.ClearPortrait()
+	return _u
+}
+
+// SetDirectorySubject sets the "directory_subject" field.
+func (_u *HolderUpdateOne) SetDirectorySubject(v string) *HolderUpdateOne {
+	_u.mutation.SetDirectorySubject(v)
+	return _u
+}
+
+// SetNillableDirectorySubject sets the "directory_subject" field if the given value is not nil.
+func (_u *HolderUpdateOne) SetNillableDirectorySubject(v *string) *HolderUpdateOne {
+	if v != nil {
+		_u.SetDirectorySubject(*v)
+	}
+	return _u
+}
+
+// ClearDirectorySubject clears the value of the "directory_subject" field.
+func (_u *HolderUpdateOne) ClearDirectorySubject() *HolderUpdateOne {
+	_u.mutation.ClearDirectorySubject()
+	return _u
+}
+
+// SetDirectoryAddress sets the "directory_address" field.
+func (_u *HolderUpdateOne) SetDirectoryAddress(v string) *HolderUpdateOne {
+	_u.mutation.SetDirectoryAddress(v)
+	return _u
+}
+
+// SetNillableDirectoryAddress sets the "directory_address" field if the given value is not nil.
+func (_u *HolderUpdateOne) SetNillableDirectoryAddress(v *string) *HolderUpdateOne {
+	if v != nil {
+		_u.SetDirectoryAddress(*v)
+	}
+	return _u
+}
+
+// ClearDirectoryAddress clears the value of the "directory_address" field.
+func (_u *HolderUpdateOne) ClearDirectoryAddress() *HolderUpdateOne {
+	_u.mutation.ClearDirectoryAddress()
 	return _u
 }
 
@@ -788,6 +886,24 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 	}
 	if _u.mutation.PortraitCleared() {
 		_spec.ClearField(holder.FieldPortrait, field.TypeJson)
+	}
+	if value, ok := _u.mutation.DirectorySubject(); ok {
+		_spec.SetField(holder.FieldDirectorySubject, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDirectorySubject); ok {
+		_spec.SetField(holder.FieldDirectorySubject, field.TypeString, e)
+	}
+	if _u.mutation.DirectorySubjectCleared() {
+		_spec.ClearField(holder.FieldDirectorySubject, field.TypeString)
+	}
+	if value, ok := _u.mutation.DirectoryAddress(); ok {
+		_spec.SetField(holder.FieldDirectoryAddress, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDirectoryAddress); ok {
+		_spec.SetField(holder.FieldDirectoryAddress, field.TypeString, e)
+	}
+	if _u.mutation.DirectoryAddressCleared() {
+		_spec.ClearField(holder.FieldDirectoryAddress, field.TypeString)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &Holder{config: _u.config}

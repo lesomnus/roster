@@ -99,13 +99,23 @@ func (s *Server) lookup(ctx context.Context, t *tenancy, attr, value string) (*p
 			}.Build()}.Build(),
 			Select: rstr.EmailSelect_builder{Holder: rstr.HolderSelect_builder{}.Build()}.Build(),
 		}.Build())
-		if status.Code(err) == codes.NotFound {
-			return nil, nil
-		}
-		if err != nil {
+		switch status.Code(err) {
+		case codes.OK:
+			id = v.GetHolder().GetId()
+		case codes.NotFound:
+			// Nobody's address here. Then whoever the directory last said it
+			// of, which is how it finds again somebody whose `userName` it
+			// changed: the address did not move, and what it said was kept.
+			id, err = s.told(ctx, rstr.HolderRef_builder{Said: rstr.HolderRefBySaid_builder{
+				DirectoryAddress: proto.String(front.Address(value)),
+				Tenant:           rstr.TenantRef_builder{Id: t.tenant}.Build(),
+			}.Build()}.Build())
+			if err != nil || id == nil {
+				return nil, err
+			}
+		default:
 			return nil, err
 		}
-		id = v.GetHolder().GetId()
 
 	case byExternalId:
 		v, err := s.roster.Identity().Get(ctx, rstr.IdentityGetRequest_builder{
@@ -114,13 +124,22 @@ func (s *Server) lookup(ctx context.Context, t *tenancy, attr, value string) (*p
 			}.Build()}.Build(),
 			Select: rstr.IdentitySelect_builder{Holder: rstr.HolderSelect_builder{}.Build()}.Build(),
 		}.Build())
-		if status.Code(err) == codes.NotFound {
-			return nil, nil
-		}
-		if err != nil {
+		switch status.Code(err) {
+		case codes.OK:
+			id = v.GetHolder().GetId()
+		case codes.NotFound:
+			// Nobody signs in as that. Then whoever the directory calls it:
+			// somebody it matched by their address, whom nothing has linked.
+			id, err = s.told(ctx, rstr.HolderRef_builder{Known: rstr.HolderRefByKnown_builder{
+				DirectorySubject: proto.String(value),
+				Tenant:           rstr.TenantRef_builder{Id: t.tenant}.Build(),
+			}.Build()}.Build())
+			if err != nil || id == nil {
+				return nil, err
+			}
+		default:
 			return nil, err
 		}
-		id = v.GetHolder().GetId()
 
 	case byId:
 		v, ok := parseId(value)
@@ -141,6 +160,84 @@ func (s *Server) lookup(ctx context.Context, t *tenancy, attr, value string) (*p
 	}
 
 	return p, nil
+}
+
+// told is the person a directory's word names -- the address it last said, or
+// what it calls them -- or nil. roster believes neither, and the endpoint
+// reads both: it is the directory that is being answered.
+func (s *Server) told(ctx context.Context, ref *rstr.HolderRef) ([]byte, error) {
+	v, err := s.roster.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+		Ref:    ref,
+		Select: rstr.HolderSelect_builder{}.Build(),
+	}.Build())
+	switch status.Code(err) {
+	case codes.OK:
+		return v.GetId(), nil
+	case codes.NotFound, codes.InvalidArgument:
+		return nil, nil
+	default:
+		return nil, err
+	}
+}
+
+// tell keeps what this write says the directory calls somebody, where it is
+// not how roster knows them, and takes away what was kept where it now is.
+//
+// # What is kept, and why nothing moves
+//
+// A directory that matched somebody by their address writes its own id onto
+// them, and one whose `userName` changed writes the new one. Following either
+// is a way in written onto a person who exists -- an identity, an address a
+// link is mailed to -- which is what this endpoint's key is not given
+// (`docs/scim.md` § *What its key may do*). Dropping them is how the two
+// drift apart unseen. So they are kept as said (`HolderService.Tell`): the
+// directory reads back what it wrote, an operator sees where they differ, and
+// the one who believes an `externalId` links it (`roster scim adopt`).
+//
+// # And said once, where it matters
+//
+// Somebody matched and not linked is somebody their directory cannot suspend
+// (`HolderService.Deactivate`), which is the reason there is a directory at
+// all. That is a warning in the log the first time it is said of them, since
+// the refusal itself arrives only on the day they leave.
+func (s *Server) tell(ctx context.Context, r *http.Request, t *tenancy, p *person, c *changes) error {
+	h := p.holder
+	req := rstr.HolderTellRequest_builder{Ref: rstr.HolderRef_builder{Id: h.GetId()}.Build()}
+	said := false
+
+	if c.externalId != nil {
+		want := *c.externalId
+		if want == p.linked {
+			want = ""
+		}
+		if want != h.GetDirectorySubject() {
+			req.Subject, said = proto.String(want), true
+			if want != "" && p.linked == "" {
+				s.c.Log.WarnContext(r.Context(),
+					"scim: matched by their address and not linked, so the directory cannot suspend them; "+
+						"they are linked when they next sign in through the connection, or by `roster scim adopt`",
+					"path", r.URL.Path, "connection", t.provider)
+			}
+		}
+	}
+	if want := c.address(); want != "" {
+		// Kept unless it is what they would be answered with anyway: the
+		// first of their addresses. One of theirs that is not the first is
+		// still kept, so that the directory reads back the one it said.
+		if len(p.emails) > 0 && p.emails[0] == want {
+			want = ""
+		}
+		if want != h.GetDirectoryAddress() {
+			req.Address, said = proto.String(want), true
+		}
+	}
+	if !said {
+		return nil
+	}
+
+	_, err := s.roster.Holder().Tell(ctx, req.Build())
+
+	return err
 }
 
 func asProblem(err error, p **problem) bool {
@@ -344,7 +441,11 @@ func (s *Server) change(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	if !ok {
 		return notFound("nobody here by that id")
 	}
-	if _, err := s.read(ctx, t, id); err != nil {
+	was, err := s.read(ctx, t, id)
+	if err != nil {
+		return err
+	}
+	if err := s.tell(ctx, r, t, was, c); err != nil {
 		return err
 	}
 	ref := rstr.HolderRef_builder{Id: id}.Build()

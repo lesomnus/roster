@@ -98,8 +98,8 @@ publishes a SCIM validator that walks the same requests against a URL.
 | SCIM | roster |
 | --- | --- |
 | `id` | `Holder.id` |
-| `userName`, `emails` | an `Email` row, written **unverified**; a lookup by `userName` finds a person by any address of theirs |
-| `externalId` | their `Identity` at the provisioning connection |
+| `userName`, `emails` | an `Email` row, written **unverified** when they are made, and what the directory last said after that (`Holder.directory_address`); a lookup by `userName` finds a person by any address of theirs, or by the one it last said |
+| `externalId` | their `Identity` at the provisioning connection when they are made; written onto somebody already here, kept as said and believed by nothing (`Holder.directory_subject`) |
 | `displayName`, `name.formatted` | `Holder.name` when made, `profile.display_name` after |
 | enterprise `department`, `employeeNumber` | `profile.department`, `profile.employee_no` |
 | `preferredLanguage`, `locale` | `profile.locale` |
@@ -109,15 +109,44 @@ publishes a SCIM validator that walks the same requests against a URL.
 there; a value it does not send is left, because a tenant that keeps names
 somewhere else takes them out of the mapping and must not have them wiped every
 cycle. Taking a value away is a `remove`. What it sends that is not kept here --
-a title, a phone number -- is answered as accepted and written to the log, and a
-changed address or `externalId` is not followed: an address and an identity are a
-person's ways in, and they move by the person or an operator.
+a title, a phone number -- is answered as accepted and written to the log.
+
+**A changed address or `externalId` is kept, and not followed.** An address and
+an identity are a person's ways in -- a link is mailed to one, a sign-in is the
+other -- and they move by the person or an operator, never by a key a
+directory's cloud presents. But a word that is dropped is a drift nobody sees.
+So what the directory says is kept beside the person as it said it
+(`HolderService.Tell`), where no rule reads it and nothing signs in by it, and
+the directory is answered with it: the User reads back as written, and a lookup
+by a `userName` it changed finds them. The admin console shows where it is none
+of somebody's addresses. Once an operator gives them the address and it is the
+first of theirs, nothing is kept beside it.
 
 **Somebody already here is matched, not made again.** A directory looks a person
 up before it creates them, and the people a tenant had -- signed in already, or
 entered by an operator -- are found by their address. A create for an address or
 an `externalId` somebody has is refused as `uniqueness`, which is what tells a
 directory to match instead.
+
+**And matched is not linked.** The directory then writes its own id onto the
+person it found, and that is an identity written onto somebody who exists: the
+write its key is not given. So it is kept and believed by nothing, and they are
+somebody the directory does **not** speak for -- its `active: false` and its
+`DELETE` are refused, `403`, on the day they leave. They are linked by signing
+in through the connection, where `login.enrol` matches by address (`expected`,
+`enrolling`), or by an operator at the box:
+
+```sh
+roster scim adopt --tenant contoso                     # who, their address, what the directory calls them
+roster scim adopt --tenant contoso --confirm contoso   # and link them, the list believed
+```
+
+The list is where a pair that does not belong together is seen before it is
+written -- believing it is a decision about a way into somebody's account, which
+is why it is made there and not by the directory. The endpoint says so in its
+log the first time a directory names somebody it matched, and the admin console
+says it on the person. Run it after a directory's first cycle, and again when
+the log says so.
 
 **Leaving.** `active: false` suspends them -- the same suspension `Disable`
 writes, refused everywhere -- and `active: true` lifts it. `DELETE` suspends them
@@ -147,6 +176,7 @@ back ([operating.md](operating.md) § *Stopping somebody*).
 | `HolderService/Provision` | somebody new: the person, their identity, their address, in one write |
 | `HolderService/Deactivate`, `Activate` | a suspension of the directory's, for people who sign in through the connection |
 | `HolderService/Update`, `Get` | what it owns of a profile, and reading it back |
+| `HolderService/Tell` | what it calls somebody, kept beside them: reaches anybody, and is believed by nothing |
 | `EmailService/Get`, `List`, `IdentityService/Get`, `List` | finding somebody by an address or an `externalId` |
 | `MeService/Get`, `ConnectionService/List` | which tenant the key is, and its provisioning connection |
 
@@ -166,8 +196,8 @@ not a front door's.
 | | |
 | --- | --- |
 | `scim/` | the endpoint: auth, the routes, the mapping, both PATCH dialects |
-| `server/core/directory.go` | `Provision`, `Deactivate`, `Activate`, and who a directory speaks for |
-| `cli/scim.go` | `roster scim serve` and `roster scim provision` |
+| `server/core/directory.go` | `Provision`, `Deactivate`, `Activate`, and who a directory speaks for; `Tell`, and what is kept of what it says |
+| `cli/scim.go` | `roster scim serve`, `roster scim provision` and `roster scim adopt` |
 | `cmd/consumers.go` | the `scim:` block |
 | `deploy/scim/` | the endpoint in the reference deployment: a component an overlay turns on, and the Service its ingress routes to ([deploy/README.md](../deploy/README.md) § *A directory provisioning people*) |
 | `compose.yaml` | the same endpoint on a desk, `scim`, at `:8092` |
@@ -176,6 +206,9 @@ not a front door's.
 | --- | --- |
 | a person's whole life at the endpoint, in Entra's order and dialect | `TestADirectoryProvisionsSomebodyTheWayEntraDoes` |
 | somebody already here is matched and not made again | `TestSomebodyAlreadyHereIsMatchedAndNotMadeAgain` |
+| and is not suspended by their directory until they are linked; what it calls them is kept and believed by nothing | `TestSomebodyMatchedIsNotSuspendedByTheirDirectoryUntilTheyAreLinked` · `TestWhatADirectorySaysIsKeptAndBelievedByNothing` |
+| an operator links who the directory matched, from a list | `TestAnOperatorLinksWhoTheDirectoryMatched` |
+| a changed `userName` is kept and answered, and the address stays | `TestAChangedUserNameIsKeptAndAnsweredAndTheAddressStays` |
 | the directory lifts only its own suspensions | `TestADirectoryLiftsOnlyItsOwnSuspension` · `TestTheDirectoryDoesNotLiftAnOperatorsSuspension` |
 | its key reaches only the people it makes | `TestADirectoryMakesPeopleAndOnlyNewOnes` · `TestTheEndpointTakesATenantKeyAndNothingElse` |
 | and makes them only at the organisation's own door | `TestADirectoryProvisionsThroughItsOrganisationsOwnDoor` |
