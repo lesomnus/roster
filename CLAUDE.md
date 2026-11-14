@@ -115,21 +115,21 @@ that order -- and the two that have actually caught something are the two no
 compiler complains about. A list of commands to remember is a list somebody
 forgets one of, which is how this repository learned to want a script.
 
-It takes what it is handed (`./scripts/test.sh -run TestWall`), and the other
+It takes what it is handed (`./scripts/test.sh -run Wall`), and the other
 half of CI is the same command with `PDTEST_POSTGRES` set. The one thing it
 leaves to CI is `buf breaking`, which is about the branch rather than about the
 checkout.
 
 ```sh
-./scripts/e2e.sh          # the three pages, in a browser
+./scripts/e2e.sh          # the four pages, in a browser
 ./scripts/hydra.sh        # one OAuth flow, through a real Hydra, to an id_token
 ./scripts/cluster.sh      # deploy/ in k3d, and the class a fresh process hides
 ./scripts/upgrade.sh BEFORE NOW  # one build's databases, a row in every table, brought up by another -- within an epoch
 ```
 
 **Touching `ts/` means running this too.** It stands roster up the way
-`docs/operating.md` says to, seeds a customer, and drives the admin console and the
-account app with Playwright (`ts/e2e/`) -- and the Login App's page against
+`docs/operating.md` says to, seeds a customer, and drives the admin console, the
+user console and the account app with Playwright (`ts/e2e/`) -- and the Login App's page against
 **nothing**, because `ts/vite.login.ts` is that app made up and so it costs a
 port. It is not in `test.sh` because it needs a browser and a minute; it found
 three defects on its first run that every other gate was green on, so it is a
@@ -146,17 +146,19 @@ cure a registration mismatch, and putting the registration back must cure it
 with no restart. Take `AuthStyle` out and the rig fails on that line.
 
 **Touching `login/` means running `hydra.sh`.** It stands `compose.yaml` up
-from **nothing** and walks the flow four ways. Three are `curl` against the
-protocol, once per consent mode and once with a second factor: to an
+from **nothing** and walks the flow seven times. Four are `curl` against the
+protocol -- once per consent mode, once for an API the client is not
+registered for, and once with a second factor: to an
 `id_token` whose `sub` is the `Holder.id` roster holds, a second flow Hydra
 skips the form for -- **and the claims in the token that one hands back** --
 then `Holder.Invalidate`, then the form asked for again, then the person
-signing **out**, with the token and without it. The fourth and fifth are the
+signing **out**, with the token and without it. Two more are the
 two demo relying parties, which is where every defect a local gate could not
 see has come from: `docker/behind.sh` is `oauth2-proxy` in front of a page,
 `docker/itself.sh` is `examples/product` holding its own token and building
 its own URLs -- `docs/relying-party.md` is what each of the two is and which
-defects only its own shape produces. `login/`'s own tests use a fake Hydra,
+defects only its own shape produces. And one is a device with no browser,
+`docker/device.sh`. `login/`'s own tests use a fake Hydra,
 deliberately, and every defect this has found was one that fake was green on.
 `--hold` leaves it up.
 
@@ -280,7 +282,7 @@ reads or writes**:
 
 A new service is justified only when the operation belongs to **no single
 entity**: it reads the caller from the frame and holds only what a role cannot
-be asked for (`MeService`: `Get`, `Unlink`, `SignOutEverywhere` -- waived, so
+be asked for (`MeService`: `Get`, `Unlink`, `SignOutEverywhere`, `Leave` -- waived, so
 subject-less by necessity), it answers before
 anybody is resolved to a tenant so it reads the unwalled server and hands back
 one identifier and no row (`FrontService`), or it mints/spends secrets across
@@ -372,10 +374,10 @@ where *what this write hands out* is decided.
 > **A grant is any write that changes what the gate will answer for somebody.**
 
 Which is wider than the writes that name a role, and is the sentence three
-separate holes were found behind. `cmd/policy.go` answers from three sets --
-bindings written to a person, bindings written to a group they are in, and roles
-they hold in a team -- so a write that adds a row to any of the three hands out
-whatever that row reaches. `GroupMembership.Add` names no role and grants as
+separate holes were found behind. `cmd/policy.go` answers from four sets --
+bindings written to a person, bindings written to a group they are in, roles
+they hold in a team, and roles they hold in a group -- so a write that adds a
+row to any of the four hands out whatever that row reaches. `GroupMembership.Add` names no role and grants as
 much as `Binding.Add` does.
 
 And beside it, the rule that is not about permissions at all:
@@ -404,7 +406,7 @@ it (`server/core/administered.go`).
 ## Running
 
 ```sh
-go run ./cmd/roster init          # the first tenant, and somebody in it
+go run ./cmd/roster init          # the operator who runs this deployment
 go run ./cmd/roster serve
 go run ./cmd/roster config env    # every variable this can be told through
 
@@ -413,26 +415,33 @@ npm --prefix ts run dev:login                  # the sign-in pages, no backend a
 go run ./cmd/roster account serve --roster … \
   --connect … --deployment-key file:… --static ts/dist/account   # the front door
 go run ./cmd/roster ldap serve --roster … --deployment-key file:…  # the directory
+go run ./cmd/roster login serve --roster … --hydra … --key file:…   # the sign-in pages, behind Hydra
+go run ./cmd/roster scim serve --roster …                           # where a directory provisions people
 
-docker compose up --build       # Postgres, both planes, a customer, both pages, LDAP
+docker compose up --build       # Postgres, both planes, a customer, every page, LDAP, SCIM, Hydra
 ```
 
-Three UIs, and one to four processes. `roster serve` serves the admin console under
+Four pages, and one to five processes. `roster serve` serves the admin console under
 `/` on `admin.http` when `admin.console.dir` names the build -- the listener it
 calls, because a `__Host-` session cookie is host-only.
-`roster account serve` holds tenant keys and faces the internet; `roster ldap
-serve` is roster as a directory for clients that speak nothing else.
+`roster account serve` holds a deployment key and faces the internet;
+`roster ldap serve` is roster as a directory for clients that speak nothing else;
+`roster login serve` is the sign-in pages an issuer sends a browser to;
+`roster scim serve` is where a tenant's directory provisions its people, and
+holds no key.
 
-Those two are also **blocks** — `account:` and `ldap:`, named is a listener and
-empty is nowhere — so `roster serve` opens them and a deployment need not be
-three containers to run one binary. Which to want is a question about blast
-radius and it is the deployment's: `docs/operating.md`, "One process, or four",
-and `cmd/consumers.go` for why it is not this repository's answer.
+Those four are also **blocks** — `account:`, `ldap:`, `login:` and `scim:`,
+named is a listener and empty is nowhere — so `roster serve` opens them and a
+deployment need not be five containers to run one binary. Which to want is a
+question about blast radius and it is the deployment's: `docs/operating.md`,
+"One process, or five", and `cmd/consumers.go` for why it is not this
+repository's answer.
 
 **Either way they are consumers that reach roster only over the wire**
-(`account/`, `ldap/`, checked by `scripts/test.sh` — neither may import
-`internal`, `cmd` or `server`). In one process the account app dials roster's
-own listener, so nothing about that is relaxed.
+(`account/`, `ldap/`, `login/`, `scim/` and the packages they share, checked by
+`scripts/test.sh` — none may import `internal`, `cmd` or `server`, but for
+`server/front`, where an address is normalised as it is stored). In one process
+each dials roster's own listener, so nothing about that is relaxed.
 
 `docs/ldap.md` is the directory's design -- a bind is an app password (a key
 with `Me.Get` alone), and a password bind cannot pass a second factor because
@@ -455,7 +464,7 @@ a browser holds and `auth` reads credentials rather than making them.
 
 ## Reference
 
-- `docs/entity.md` — the twenty-seven entities, how they relate, one paragraph each
+- `docs/entity.md` — the thirty-three entities, how they relate, one paragraph each
 - `docs/glossary.md` — the vocabulary this file uses as given: the wall, the gate,
   a grant, a layer, a plane, a walk, a rig. Four words name two things each and it
   says which
@@ -471,6 +480,6 @@ a browser holds and `auth` reads credentials rather than making them.
   that asks what somebody may call, and the roles an app ships and widens
 - `docs/README.md` — the map of all of it, by the question each page answers
 - `docs/development.md` — the mechanics above at length: generation, upgrading
-  payday, the three pages, the sandbox, and what the generator refuses
+  payday, the four pages, the sandbox, and what the generator refuses
 - <https://github.com/lesomnus/payday/tree/main/docs> — the guides and the
   references behind them

@@ -425,8 +425,8 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 	// manager -- counted for a team role's reason: the gate never sees which
 	// group a call is about, so it lets them through, and `server/core`
 	// refuses every group but theirs (`mayChangeGroup`). Such a role names
-	// only the group's own membership writes (`mayHoldInGroup`), so what this
-	// adds is those two methods, and no site.
+	// only what a group's manager writes (`mayHoldInGroup`, `core`'s
+	// `managing`), so what this adds is those methods, and no site.
 	gs, err := groupRoles(ctx, p.db, who)
 	if err != nil {
 		return held{}, err

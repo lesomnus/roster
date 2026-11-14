@@ -261,7 +261,7 @@ first one:
 
 - **A deployment has to turn this on**: `account.terminal`, off unless said,
   because it is a door into an account. Off, the command is told so rather than
-  waiting (`docs/operating.md` § "One process, or four").
+  waiting (`docs/operating.md` § "One process, or five").
 - **You can only sign a terminal in for methods your own role names.** A key acts
   as you, so `ApiKeyService/Issue` refuses one naming anything you do not hold --
   and a *waived* method is not a held one, so a role that names nothing cannot
@@ -426,8 +426,8 @@ From a terminal it is a key handed over in a browser, which carries **the
 browser's** sign-in:
 
 ```sh
-roster sign-in --allow /roster.MeService/Leave   # approve it at a page you signed in to a moment ago
-roster me leave --confirm alice                  # within five minutes of that sign-in
+roster sign-in --at https://account.contoso.example --allow /roster.MeService/Leave   # approve it at a page you signed in to a moment ago
+roster me leave --confirm alice                                                       # within five minutes of that sign-in
 ```
 
 That road is narrower than `Leave` itself, and it is worth knowing why before
@@ -590,7 +590,7 @@ roster --as admin holder invalidate @newco/alice  # everything issued before now
 
 The server stamps the time — there is none to give, so a stale clock cannot
 un-suspend anybody, and a suspension cannot lose a race with somebody editing a
-profile. `roster holder signs-in @newco/alice` is the read beside them: how
+profile. `roster --as admin holder signs-in @newco/alice` is the read beside them: how
 somebody signs in, keys included, with no verifier anywhere in the answer. And
 `roster sync watch` is where a stop can be seen landing — one line per event,
 the same stream every app holds.

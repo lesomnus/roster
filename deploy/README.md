@@ -106,7 +106,7 @@ host ends in `.localhost`, so that shape needs something terminating TLS in fron
 of it -- an **ingress**, which is the deployment's and not this base's.
 `product.yaml` is here only because it can serve its own certificate.
 So the proxy demo lives in whatever has a terminator: `scripts/cluster.sh`'s
-overlay, or a deployment beside its own ingress. `scripts/cluster.sh`'s own overlay (`--behind`'s phases) is a
+overlay, or a deployment beside its own ingress. `scripts/cluster.sh`'s own overlay (its last phases) is a
 worked example of everything on this list except the secrets.
 
 ## The trail, kept and heard
@@ -136,8 +136,9 @@ environment -- `ROSTER_AUDIT_PROFILE`, `ROSTER_AUDIT_ARCHIVE`,
 `ROSTER_AUDIT_CHECKPOINTS_KEY` and `ROSTER_AUDIT_CHECKPOINTS_WITNESSES` -- which
 wins over `config.yaml`, so another window or witness is a patch of those
 variables. Forgetting the Secret is a refusal in
-roster's log where the process comes up, told how to make a key, rather than a
-pod that waits.
+roster's log where the process comes up -- the key's path, and *no such file* --
+rather than a pod that waits; how to make one is
+[operating.md](../docs/operating.md) § *The audit trail*.
 
 A component and not the base, because what it brings is storage a deployment
 chooses: an overlay that inherited the two claims and did not keep an archive

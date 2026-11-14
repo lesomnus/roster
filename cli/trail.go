@@ -48,7 +48,7 @@ import (
 //
 // So this needs the database, which is the boundary that was being asked for.
 // `serve` applies the same policy on a clock; see `audit:` in the
-// configuration, and `server/trail` for what the two clocks are.
+// configuration, and payday's `trail` package for what the two clocks are.
 //
 // # And what it is not
 //

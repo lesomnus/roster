@@ -41,7 +41,7 @@ import (
 // are -- one thing to build and pin, the same `rstr` clients -- and a separate
 // process for the same reason too: it holds tenant keys and faces the internet,
 // and roster's own listeners must not be in the process that does. See
-// `docs/operating.md`, "One process, or four", which says the same thing about
+// `docs/operating.md`, "One process, or five", which says the same thing about
 // all of them.
 func NewCmdLogin(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
@@ -135,7 +135,7 @@ func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 // cannot exist before this deployment has run once: minting one takes a tenant,
 // and a customer is made afterwards. So a deployment either does it by hand and
 // keeps the answer in a Secret, or runs this beside the process -- in the same
-// pod, on the same volume, before the server -- and points `login.keys` at the
+// pod, on the same volume, before the server -- and points `login.key` at the
 // file it writes.
 //
 // The second is better than a Secret and not only shorter. The key never leaves
@@ -167,10 +167,10 @@ func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "provision",
-		Brief: "mint this deployment's own Login App key into a file, for `login.keys: file:…`",
+		Brief: "mint this deployment's own Login App key into a file, for `login.key: file:…`",
 
 		Flags: flg.Flags{
-			&flg.String{Name: "out", Brief: "the directory to write login.key into; /run/roster-login if empty"},
+			&flg.String{Name: "out", Brief: "the directory to write login-app.key into; /run/roster-login if empty"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {

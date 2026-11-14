@@ -1251,7 +1251,7 @@ spec:
     spec:
       containers:
         - name: proxy
-          image: quay.io/oauth2-proxy/oauth2-proxy:v7.14.2
+          image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.6
           env:
             - { name: OAUTH2_PROXY_PROVIDER, value: oidc }
             - { name: OAUTH2_PROXY_CLIENT_ID, value: behind }

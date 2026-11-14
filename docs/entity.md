@@ -1,6 +1,6 @@
 # The entities
 
-roster is twenty-nine tables and the arguments for why each is a table. This
+roster is thirty-three tables and the arguments for why each is a table. This
 file is the map: the shape they make, and a paragraph on each.
 
 It is **not** where the reasoning lives. Every entity is declared in a `.proto`
@@ -11,7 +11,7 @@ is short enough to read in one sitting and points at them.
 `docs/position.md` is what roster is for and where it stops. `docs/roadmap.md`
 is the order it was built in.
 
-## One story, told twenty-nine times
+## One story, told thirty-three times
 
 Every entity below ends with a line or two about the same deployment, so that
 what a row is **next to** is visible from its own section. Read them in order
@@ -45,14 +45,16 @@ flowchart TB
 
   W["ways in<br/>🔒 Credential · 🪪 Identity<br/>📧 Email · 🔑 ApiKey"]
   B["with a clock on them<br/>🎫 Delegation · ⏳ Continuation<br/>✨ Link · 🍪 Session"]
-  M["what they may do<br/>📜 Role · 🔗 Binding<br/>👥 Group · 🫂 GroupMembership<br/>🎽 Team · 🏅 TeamMembership"]
+  M["what they may do<br/>📜 Role · 🔗 Binding<br/>👥 Group · 🫂 GroupMembership · 📣 GroupExposure<br/>🎽 Team · 🏅 TeamMembership"]
+  K["what is kept of them<br/>📞 Phone · 🤝 Relation · ✍️ Consent"]
   F["the front door<br/>🌐 Host · 🔎 HostProof · 🎟️ Nomination<br/>📮 MailDomain · 🔌 Connection"]
-  R["the record<br/>📖 Audit · 📤 Outbox"]
+  R["the record<br/>📖 Audit · 👁️ Access · 📤 Outbox<br/>🗄️ Archived · 🧾 Owed · 🔏 RowSeal"]
   SM["🚩 SiteMembership"]
 
   H --> W
   H --> B
   H --> M
+  H --> K
   S -.->|narrows| M
   H --> SM
   S --> SM
@@ -65,7 +67,7 @@ flowchart TB
 it: there is no binding that makes somebody see another customer.
 
 **👤 `Holder` is who.** A credential resolves to one, the trail names one on
-every line, and thirteen foreign keys point at one.
+every line, and seventeen foreign keys point at one.
 
 **📍 `Site` is the second axis.** A tenant is the wall between customers and a
 site is the wall inside one -- a factory, a region, an environment. An entity
@@ -85,6 +87,9 @@ erDiagram
   "🏢 Tenant"  ||--o{  "👤 Holder" : holds
   "📍 Site"    ||--o{  "🚩 SiteMembership" : ""
   "👤 Holder"  ||--o{  "🚩 SiteMembership" : "is in"
+  "👤 Holder"  ||--o{  "📞 Phone" : "is reached at"
+  "👤 Holder"  ||--o{  "🤝 Relation" : "is something to another"
+  "👤 Holder"  ||--o{  "🤝 Relation" : "and another to them"
 ```
 
 ### 🏢 `Tenant` — the wall an app is divided by
@@ -250,7 +255,7 @@ maps *manager* to *may approve* has made a permission roster does not know of.
 
 ## What somebody may do
 
-There are **two** paths from a role to a person, and the gate reads both.
+There are **three** paths from a role to a person, and the gate reads each.
 
 A role handed out by a binding, to somebody or to a group they are in:
 
@@ -264,6 +269,7 @@ erDiagram
   "🔗 Binding"  }o--o|  "📍 Site" : "within"
   "👥 Group"   ||--o{  "🫂 GroupMembership" : ""
   "👤 Holder"  ||--o{  "🫂 GroupMembership" : "is in"
+  "👥 Group"   ||--o{  "📣 GroupExposure" : "is shown to a client by"
 ```
 
 And a role carried by being on a team, which is how the same person is an
@@ -278,6 +284,16 @@ erDiagram
   "📜 Role"    |o--o{  "🏅 TeamMembership" : "carried by"
 ```
 
+And a role held **in a group**, which is what makes somebody its manager and
+reaches that group alone:
+
+```mermaid
+erDiagram
+  "👥 Group"   ||--o{  "🫂 GroupMembership" : ""
+  "👤 Holder"  ||--o{  "🫂 GroupMembership" : "is in"
+  "📜 Role"    |o--o{  "🫂 GroupMembership" : "held in it by"
+```
+
 📜 `Role` and 👥 `Group` each carry a nullable site of their own as well, at field
 3, and the two are not the same rule. A **role** that names a site may only be
 bound in that site -- `server/core` reads the role's site and refuses a binding
@@ -286,9 +302,9 @@ more; see below.
 
 > **A grant is any write that changes what the gate will answer for somebody**,
 > which is wider than the writes that name a role. `cmd/policy.go` answers from
-> three sets -- bindings to a person, bindings to a group they are in, and roles
-> held in a team -- so a row added to any of the three hands out whatever it
-> reaches. `GroupMembership.Add` names no role and grants as much as
+> four sets -- bindings to a person, bindings to a group they are in, roles
+> held in a team, and roles held in a group -- so a row added to any of the
+> four hands out whatever it reaches. `GroupMembership.Add` names no role and grants as much as
 > `Binding.Add` does.
 
 ### 📜 `Role` — a named set of gRPC methods
@@ -344,6 +360,11 @@ and in Frankfurt, bound to a role within Seoul, gives all of them that role in
 Seoul -- `cmd/policy.go` unions the sites off the bindings that reach somebody
 and never reads their 🚩 `SiteMembership`. Read *a group in a site* as **whose
 group this is**, never as *whose people these are*.
+
+**Its `labels` are whatever its maker keeps of it, and no rule reads one.** A
+tenant's directory marks the groups it made with what it calls them
+(`roster.directory`, [scim.md](scim.md)), which is how it finds them again and
+not what lets it change them: that is managing them, like anybody who makes one.
 
 > contoso makes a group **on-call**, with people from seoul and from frankfurt
 > in it. The group grants nothing until a 🔗 `Binding` names it -- and the
@@ -795,9 +816,9 @@ or a workspace of the app's. An erase and `forget` leave the rows, and
 
 ## The record
 
-Neither of these has a foreign key, which is the one place in payday's own
-schema that is true: `tenant_id`, `actor_id` and `object_id` are plain columns,
-because a record has to outlive what it names. A foreign key would mean either
+None of these six has a foreign key, which is the one place in the schema that
+is true: `tenant_id`, `actor_id` and `object_id` are plain columns, because a
+record has to outlive what it names. A foreign key would mean either
 that a tenant can never be erased, or that erasing one erases the record of what
 was done in it.
 
@@ -823,6 +844,25 @@ for, and what `roster forget` destroys per person.
 > the control plane's own trail, which contoso cannot read. When contoso has to
 > answer *who put erin in on-call*, this is the only table that can.
 
+### 👁️ `Access` — one call that read or wrote somebody's personal data
+
+What the trail is not. The trail holds **writes**, without where they came from,
+and its `object_id` is the row that changed; this is who **saw** what -- who
+asked, in which tenant, from where, the RPC, whose rows the answer carried, and
+how it ended (payday#111). The `access` interceptor writes it from what each
+call carried, and a command at the box writes it under the operator `--as`
+named (#221); a call that carried nobody's data leaves nothing, and nothing
+else writes one -- `AccessService` answers a `Get` and a `List`.
+
+It is kept as the trail is: a kind of the trail's archive, `access`, so the same
+passes archive, checkpoint and destroy it with its tenant, under that kind's own
+window ([operating.md](operating.md) § *Who read whose data*). The wall is the
+OR of `tenant_id` and `actor_tenant_id`.
+
+> **admin** opens alice's row at the admin console, and a row here says so: who,
+> from where, which RPC, and that the answer carried alice. contoso, asked who
+> looked at her record, reads it under their own tenant.
+
 ### 📤 `Outbox` — a write that has to be published even if this process dies
 
 `payday/watch` publishes in-process once the handler has answered **without an
@@ -843,17 +883,61 @@ loop. Rows are deleted once published, which is the whole difference from
 > between the commit and the publish. By the time anybody looks, the row is
 > usually gone: an empty queue is what working looks like.
 
+### 🗄️ `Archived` — one blob of the trail's archive, as the database accounts for it
+
+A chunk of the archive is named by its digest, so its bytes cannot change
+without its name changing. What the name does not say is whether the archive
+still holds **what it should** -- a chunk taken away looks like any other
+absence. So the account of what should be there is kept where the archive's own
+credentials do not reach: a row here before a chunk is written and settled
+after, the same for an erase, each signed by the deployment's key, and numbered
+by the checkpoint it was first in and first not in. `roster trail verify` reads
+the two against each other. Served to nobody, and of no tenant.
+
+> The first pass that moves contoso's older trail rows out of the table writes a
+> row here for each chunk before the chunk exists. A chunk gone from the bucket
+> a year later is one this table still says should be there.
+
+### 🧾 `Owed` — an erasure the archive still owes
+
+Forgetting somebody is one transaction in the database, and the archive takes
+part in no transaction. So the database's half is done in it, and the
+archive's half is written down in it as owed: a rollback takes the row with it,
+a commit keeps it for whatever pays it -- the next pass, or the process straight
+after its commit -- and the row goes once both halves are done. `Outbox`'s
+shape, for `Outbox`'s reason. A legal hold that keeps part of an erasure keeps
+the row.
+
+> `roster forget @contoso/alice` blanks her in the database, and leaves a row
+> here saying the archive has the same to do. The pass that does it removes the
+> row; one that finds contoso held leaves it, and says whose hold.
+
+### 🔏 `RowSeal` — what vouches for the personal fields of a row
+
+The trail's digest leaves out the fields a kind declared `personal`: a line of
+the trail is copied to the archive and kept for years, and a keyed MAC of
+somebody's address kept that long is something of them that outlives their
+erasure. The seal over those fields lives with the row instead -- one a row,
+under the row's own identifier, written in the transaction of the write it
+seals, removed with the row and blanked when the person is forgotten. Never on
+the trail and never in the archive. Only a deployment that digests its trail
+(`audit.digest.key`) writes any.
+
+> With a digest key named, every write of alice's row seals it here. Her address
+> altered in the table by somebody with the database's password is a row whose
+> seal no longer matches, which `roster trail rows` finds.
+
 ## Every entity at a glance
 
 **Domain** is the number written into the ninth byte of every identifier of that
 entity, and the key a per-kind retention policy is written against. It is chosen
 once and never reused -- an identifier outlives the row it named, so handing a
-retired number to something else makes old trail rows say the wrong word. 5 and
-6 are a gap payday keeps for itself, which is why an app's own entities start at
-7.
+retired number to something else makes old trail rows say the wrong word. 1 to
+6 are payday's, and so are the last two a byte holds, which is why an app's own
+entities start at 7.
 
 **Declared in** is where the schema is -- `proto/app/` for roster's own, the
-copied-in `proto/roster/payday/` for the four it inherits, and *+ overlay* for the
+copied-in `proto/roster/payday/` for the eight it inherits, and *+ overlay* for the
 two it adds fields to in `proto/ext/payday/`. The fields are **not** listed here on purpose: a column list
 in prose is wrong on the commit that adds a field, and the declaration is two
 clicks away and carries the argument as well.
@@ -868,6 +952,10 @@ hard (gone).
 | 👤 `Holder` | 2 | `tenant` edge | yes | soft | `proto/roster/payday/holder.proto` + overlay |
 | 📖 `Audit` | 3 | `tenant_id` OR `actor_tenant_id` OR `counterpart_tenant_id` | -- | hard | `proto/roster/payday/audit.proto` |
 | 📤 `Outbox` | 4 | `global:` — served to nobody | -- | hard | `proto/roster/payday/outbox.proto` |
+| 🗄️ `Archived` | 5 | `global:` — served to nobody | -- | hard | `proto/roster/payday/archived.proto` |
+| 👁️ `Access` | 6 | `tenant_id` OR `actor_tenant_id` | -- | hard | `proto/roster/payday/access.proto` |
+| 🧾 `Owed` | 254 | `global:` — served to nobody | -- | hard | `proto/roster/payday/owed.proto` |
+| 🔏 `RowSeal` | 255 | `tenant_id` | -- | hard | `proto/roster/payday/rowseal.proto` |
 | 📍 `Site` | 7 | `tenant` edge | yes | soft | `proto/app/site.proto` |
 | 🪪 `Identity` | 8 | via `holder.tenant`, stamped | yes | soft | `proto/app/identity.proto` |
 | 📧 `Email` | 9 | via `holder.tenant`, stamped | yes | soft | `proto/app/email.proto` |
@@ -897,9 +985,10 @@ hard (gone).
 `id` and `date_created` are on everything and are left out above, and so are
 `date_updated` and `date_erased` wherever an entity has them. Neither is
 everywhere. `date_updated` is the version a `Patch` compares against, which
-📖 `Audit` and 📤 `Outbox` do not carry -- a row written once and never revised
-has no version to disagree about. And 🏢 `Tenant` joins those two in having no
-`date_erased`, because the three of them erase hard.
+📖 `Audit`, 👁️ `Access`, 📤 `Outbox`, 🧾 `Owed` and 🔏 `RowSeal` do not carry -- a
+row written once and never revised, or written over whole, has no version to
+disagree about. And 🏢 `Tenant` joins the six of
+the record in having no `date_erased`, because the seven of them erase hard.
 
 Field numbers are read **by name** across every entity, which is what lets one
 generator write the same code for all of them:
@@ -921,7 +1010,7 @@ spending them on something else.
 | | |
 | --- | --- |
 | `proto/app/*.proto` | the entity, and the whole argument for it |
-| `proto/roster/payday/*.proto` | payday's four, **copied in** — do not edit; write an overlay in `proto/ext/payday/` |
+| `proto/roster/payday/*.proto` | payday's eight, **copied in** — do not edit; write an overlay in `proto/ext/payday/` |
 | `internal/ent/migrate/schema.go` | the tables as they are actually created |
 | `docs/baseline.md` | what a normal user may rely on, and the test that pins each promise |
 | `docs/operating.md` | what an operator does with these |

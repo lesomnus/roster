@@ -647,8 +647,9 @@ type ControlConfig struct {
 // The page is here rather than on `control.http` because a browser's session
 // cookie is `__Host-` prefixed and host-only: a page and the listener it calls
 // must be the same host, and the tenants screen calls this one. What is left
-// on the control listener is the RPCs a shell makes -- `roster control …` --
-// and no page at all.
+// on the control listener is the RPCs a shell makes of the deployment's own
+// rows -- `roster holder list` with `client.addr` naming it -- and no page at
+// all.
 type AdminConfig struct {
 	config.ServerConfig `yaml:",inline"`
 

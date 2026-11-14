@@ -94,7 +94,7 @@ func newCmdControlKeyAdd(c *cmd.Config) *xli.Command {
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			alias, _ := arg.Get[string](cl, "HOLDER")
 
-			m, err := mintingOf(cl)
+			m, err := mintingOf(cl, true)
 			if err != nil {
 				return err
 			}

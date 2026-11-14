@@ -56,7 +56,8 @@ import (
 const accountProvisioned = "account"
 
 // provisionAccount ensures the account app's rows in every tenant that has a
-// name, mints one key per tenant, and answers with the keys by alias.
+// name, mints its one deployment key, and answers with the key and how many
+// tenants nominated its holder.
 func provisionAccount(ctx context.Context, s *cmd.Server, enrol string, out string) (string, int, error) {
 	methods := policyMethods(account.Calls, enrol)
 

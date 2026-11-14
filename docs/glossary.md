@@ -27,7 +27,7 @@ Three notes about the list itself:
 | **roster user** | a holder of the **data plane** -- somebody in a tenant. What they may do is their bindings, and the wall narrows every read to their own tenant |
 | **tenant administrator** | a roster user whose role administers their tenant. **Not a kind of row**: the schema has no such thing, and it is a holder with a binding (#29) |
 | **customer** | a tenant, from the roster operator's side of the table. `roster tenant add` makes one. A word for **prose** and not a name: what names rows uses the row's name, so the admin console's screen is *tenants* -- see below |
-| **admin console** | the page a **roster operator** opens. Today it is served by the control listener and reaches `admin.addr` for tenants; #32 moves it whole onto the admin listener |
+| **admin console** | the page a **roster operator** opens, served by the admin listener (`admin.http`), which is also what it calls |
 | **user console** | the page a **roster user** opens, showing their own tenant and nothing else, over the walled data plane. `ts/user/`, served by `server.http` at `/` where `user_console.dir` names a build (#34) |
 | **a holder's credential** | what tells two holders apart, since the row does not: a `Credential` (a password, a second factor) or an `ApiKey`. One holder may have both, and roster refuses neither -- `roster control key add --allow … admin` mints a key on the operator's own row. Which plane it is in is the other difference, and the one the `rk_`/`rt_` prefix comes from |
 
@@ -80,9 +80,9 @@ Three notes about the list itself:
 
 | | |
 | --- | --- |
-| **the trail** (437) | the audit table: who wrote what, when, and what it was before. payday's `Audit` entity, `server/trail` for retention. A deployment key whose methods reach it reads every tenant's, which `roster control key add` says out loud |
+| **the trail** (437) | the audit table: who wrote what, when, and what it was before. payday's `Audit` entity, and payday's `trail` package for its retention. A deployment key whose methods reach it reads every tenant's, which `roster control key add` says out loud |
 | **the corpus** (73) | the breached-password list a new password is checked against, in the one place that holds the row |
-| **an epoch** | a counter on a `Holder` that invalidates everything issued before it. `Holder.Invalidate` moves it, which is how *sign this person out of everything* reaches sessions and delegations that are already open |
+| **an epoch** | a time on a `Holder` (`date_invalidated`) that invalidates everything issued before it. (The *compatibility epoch* is another thing, the number in `.github/compat-epoch`: [../CLAUDE.md](../CLAUDE.md).) `Holder.Invalidate` moves it, which is how *sign this person out of everything* reaches sessions and delegations that are already open |
 | **a seam** (29) | payday's word for a place it deliberately leaves for an app to fill -- `auth` reads a credential and does not issue one, and `AuthService` is roster filling that seam |
 
 ## A word for prose is not a name
@@ -109,7 +109,7 @@ tenant seen from the roster operator's side of the table, and a true and useful
 thing to write. What it may not be is the name of a screen, which it was.
 
 **A deliberate alias, applied everywhere.** **the trail** is payday's `Audit`
-entity, and roster calls it the trail in the CLI (`roster trail`), in `server/trail`,
+entity, and roster calls it the trail in the CLI (`roster trail`),
 in the documentation and on both consoles. Nothing in roster says *audit*, so
 nobody looking for the trail fails to find it -- which is the whole of what the rule
 protects. An alias that is written down here and used without exception is the
@@ -133,5 +133,5 @@ tools over the schema and the account app is a front door -- which is the line
 
 - [position.md](position.md) — what roster is and where it stops, which is where
   most of these words get their force
-- [entity.md](entity.md) — the twenty-six tables the nouns above are rows in
+- [entity.md](entity.md) — the thirty-three tables the nouns above are rows in
 - [../CLAUDE.md](../CLAUDE.md) — the rules that use this vocabulary as given

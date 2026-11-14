@@ -14,7 +14,8 @@ repository's history were a layer away.
 ## 2. Get it running
 
 [../README.md#quick-start](../README.md#quick-start) is `docker compose up` and
-five commands from a checkout.
+five commands from a checkout, which `TestTheQuickStartRunsAsWritten` reads off
+the page and types.
 
 [usage/tutorial.md](usage/tutorial.md) is the same ground slowly: an empty
 directory, a customer, somebody who signs in, a service that calls. `cmd/tutorial_test.go`
@@ -73,7 +74,7 @@ listening -- asked about again before an app acts.
 
 | | |
 | --- | --- |
-| [entity.md](entity.md) | the twenty-six tables, drawn, with a paragraph each |
+| [entity.md](entity.md) | the thirty-three tables, drawn, with a paragraph each |
 | [glossary.md](glossary.md) | the words -- the wall, the gate, a grant, a layer, a plane -- and the four that name two things |
 | [baseline.md](baseline.md) | the promises a normal user relies on, each pinned to the tests that hold it |
 | [development.md](development.md) | working on roster: generation, upgrading payday, the pages, the sandbox |

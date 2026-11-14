@@ -1,9 +1,11 @@
 # The CLI
 
 `roster tenant add` and `TenantService.Add` are the same call. Every entity has
-the same six verbs -- `get`, `list` (or `ls`), `watch`, `add`, `patch`, `erase`
--- and each command is a client for exactly the RPC of that name, so what you
-learn typing is what you write in code. `roster <entity> <verb> --help` prints
+the same five verbs -- `get`, `list` (or `ls`), `add`, `patch`, `erase` -- and
+`watch` where its rows are watched (`holder`, `email`, `identity`, `credential`,
+`team` and a few more; `--help` says). `access` is read and never written, so it
+has `get` and `list` alone. Each command is a client for exactly the RPC of that
+name, so what you learn typing is what you write in code. `roster <entity> <verb> --help` prints
 the request shape.
 
 ## Two modes, and the configuration decides which
@@ -21,7 +23,8 @@ client:
   addr: "roster.internal:50051"
   auth:
     scheme: bearer
-    credential_file: ~/.roster/key      # an rt_, which resolves to them
+    credential_file: /home/kim/.roster/key   # an rt_, which resolves to them; the path as it is, `~` is not expanded
+  # insecure: true                           # only for a listener that has no `tls:`
 ```
 
 ```sh
@@ -51,8 +54,8 @@ roster --as admin key list
 
 What a local command shows or writes of anybody is on the access record, and
 the record names a person: `--as`, an operator of the control plane by alias --
-who `init` made, or anybody the admin console signs in. The entity commands and
-`key list` refuse to open anything without it on a deployment with a control
+who `init` made, or anybody the admin console signs in. The entity commands,
+`key list` and `scim adopt` refuse to open anything without it on a deployment with a control
 plane, and refuse a name that matches nobody or a disabled operator. A row is
 written before the answer is printed, and a read whose row cannot be written is
 refused rather than shown. It is a flag on the root, before the command, and
@@ -69,8 +72,8 @@ or under a broker every process hears.
 
 | | |
 | --- | --- |
-| local only | `init`, `key add`, `key list`, `vouch reset\|set\|unlock`, `trail`, `forget`, `restore`, `resources`, and all of `control` -- what they write is not served, which is the whole reason they are commands |
-| remote only | the rest of `vouch` (`verify`, `delegate`, `continue`, `link`, `redeem`, `revoke`, `enrol`, `accept`), `issue`, `me` -- those calls are a *caller's*, and a local run has none |
+| local only | `init`, `key add`, `key list`, `key revoke`, `vouch reset\|set\|unlock`, `trail`, `forget`, `restore`, `hold`, `resources`, `app install\|uninstall`, `login provision`, `account provision`, `scim provision\|adopt`, and all of `control` -- what they write is not served, which is the whole reason they are commands |
+| remote only | the rest of `vouch` (`verify`, `delegate`, `continue`, `link`, `redeem`, `revoke`, `enrol`, `accept`, `leave-link`, `leave`), `issue`, `me`, `front`, `sync` -- those calls are a *caller's*, and a local run has none |
 
 ### The control plane is `roster control`
 
@@ -84,7 +87,9 @@ roster --as admin control holder list                                   # every 
 ```
 
 The entity commands are all there except `tenant add`: the control plane has
-one tenant, and an operator is named by alias alone because of it. What answers
+one tenant, `owner`. `--as`, `control vouch` and `control key add` name an
+operator by alias alone because of it; an entity command's reference is
+written whole, `@owner/admin`. What answers
 across both planes stays outside -- `roster key list` and `roster key revoke`,
 because a key's identifier does not say which database it is in.
 
@@ -99,7 +104,7 @@ an `rt_`: `roster key add --tenant … --holder …`.
 ## How anything is named
 
 ```
-roster <entity> <verb> [NAME] [REQ...] [options]
+roster <entity> <verb> [options] [NAME] [REQ...]
 ```
 
 - `NAME` is a **reference**: an identifier, `@tenant`, or `@tenant/alias`.

@@ -11,10 +11,10 @@ and a real deployment has both in it.
 | | `behind` | `itself` |
 | --- | --- | --- |
 | the app is | **oblivious.** It serves bytes and a proxy holds the session | **the relying party.** It exchanges, verifies, and keeps a session of its own |
-| what runs | `quay.io/oauth2-proxy/oauth2-proxy:v7.14.2` in front of a page (`static://200` in compose) | `examples/product`, ours |
+| what runs | `quay.io/oauth2-proxy/oauth2-proxy:v7.15.6` in front of a page (`static://200` in compose) | `examples/product`, ours |
 | the OAuth client | `behind` | `itself` in compose, `product` in `deploy/` |
 | the walk | `docker/behind.sh` | `docker/itself.sh` |
-| in a real cluster | nowhere yet | `scripts/cluster.sh`, as a Job |
+| in a real cluster | `scripts/cluster.sh`, as a Job | `scripts/cluster.sh`, as a Job |
 | it proves | the issuer is one a **standard third party** accepts -- not our own code being lenient about our own tokens | the pieces an app written against payday actually uses |
 
 `docs/position.md` § *It does not replace a reverse proxy* is why the first one
@@ -34,7 +34,7 @@ the issuer's side; this document is it from the product's.
 | `docker/device.sh` | the third shape: a client with **no browser**, RFC 8628 ([`login.md`](login.md) § *A device with no browser*) |
 | `compose.yaml` | both services, their clients, and Hydra's five `URLS_*` |
 | `deploy/product.yaml`, `deploy/clients/product.json` | `itself` as a manifest and a declared client |
-| `scripts/hydra.sh` | stands compose up and runs six walks |
+| `scripts/hydra.sh` | stands compose up and runs seven walks |
 | `scripts/cluster.sh` | k3d over `deploy/`, and `itself.sh` as a Job inside it |
 | `login/doctor.go` | `roster login doctor`: whether the clients are registered in a way any of this works with |
 
@@ -296,7 +296,7 @@ defaults, from `compose.yaml`:
 
 ```yaml
   behind:
-    image: quay.io/oauth2-proxy/oauth2-proxy:v7.14.2
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.6
     environment:
       OAUTH2_PROXY_OIDC_ISSUER_URL: http://${ISSUER_HOST:-${PUBLIC_HOST:-localhost}}:4444
 
@@ -681,8 +681,8 @@ And Hydra, five variables of it (`compose.yaml`, and the same five in
 ## The gates, and what each can see
 
 ```sh
-roster login doctor --hydra … --client contoso=demo,behind,itself
-./scripts/hydra.sh      # compose: doctor, then six walks
+roster login doctor --hydra …
+./scripts/hydra.sh      # compose: doctor, then seven walks
 ./scripts/cluster.sh    # k3d over deploy/, and itself.sh as a Job inside it
 ```
 
