@@ -675,13 +675,15 @@ esac
 cp -r deploy "${work}/deploy"
 # The rig runs what was just built rather than what is published -- and with the
 # trail kept, the component a deployment turns on in its own overlay
-# (`deploy/README.md`), so that what its witness heard is asked below.
+# (`deploy/README.md`), so that what its witness heard is asked below. And with
+# the directory's endpoint open, the other component, so that it is asked too.
 cat >> "${work}/deploy/kustomization.yaml" <<EOF
 
 # Appended by scripts/cluster.sh.
 patches: []
 components:
   - ./trail
+  - ./scim
 EOF
 python3 - "${work}/deploy/kustomization.yaml" "roster-cluster:${CLUSTER}" <<'PY'
 import sys
@@ -829,6 +831,25 @@ echo
 echo "== the trail's newest checkpoint, as its witness heard it"
 said "heard by store:/witness: checkpoint " "the trail's witness heard no checkpoint; the verification said:" \
 	"kubectl -n ${NS} exec deploy/roster -c roster -- roster --config /config/config.yaml trail verify 2>&1"
+
+# **And whether the directory's endpoint reaches roster** (#86).
+#
+# `deploy/scim/` opens the listener and tells it to dial this process's own
+# data plane in the clear. A key nobody minted says all of it in one answer:
+# roster refusing the key is the endpoint having asked roster. A dial that
+# fails -- which is what leaving `ROSTER_SCIM_INSECURE` out is, and nothing
+# says so until a directory calls -- answers that roster did not answer, and a
+# Service that selects nothing answers nothing at all. Asked through the
+# Service, since that is what a deployment routes its directory to, from a pod
+# of the walk's image, which has curl in it.
+echo
+echo "== the directory's endpoint, asked by a key nobody minted"
+said "the key was not accepted" "the SCIM endpoint did not reach roster; it said:" \
+	"kubectl -n ${NS} delete pod scim-probe --ignore-not-found >/dev/null 2>&1; \
+	kubectl -n ${NS} run scim-probe --rm -i --quiet --restart=Never \
+		--image=roster-walk:${CLUSTER} --image-pull-policy=Never --command -- \
+		curl -sS -m 20 -H 'Authorization: Bearer rt_nobody' \
+		http://roster-scim:8092/scim/v2/ServiceProviderConfig 2>&1"
 
 echo
 echo "== the clients, as hydra has them"

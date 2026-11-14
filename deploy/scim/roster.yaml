@@ -1,0 +1,25 @@
+# The listener, told through the environment rather than `config.yaml`, for
+# `deploy/trail/`'s reason: a component cannot add to a file inside a
+# ConfigMap, and the environment wins over the file. A strategic merge: `env`
+# and `ports` merge by name, so the base's are inherited and these are added.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roster
+spec:
+  template:
+    spec:
+      containers:
+        - name: roster
+          env:
+            # `/scim/v2` and nothing else: not a path on the data plane's HTTP
+            # listener, which answers every RPC, so a route that forwards a
+            # little too much publishes SCIM and not everything.
+            - { name: ROSTER_SCIM_ADDR, value: "0.0.0.0:8092" }
+            # The endpoint dials this process's own data plane, which speaks
+            # plain gRPC on the pod network -- `login.insecure` in
+            # `config.yaml`, for the same listener. Without it nothing fails
+            # until a directory calls, and then every call is a `503`.
+            - { name: ROSTER_SCIM_INSECURE, value: "true" }
+          ports:
+            - { name: scim-http, containerPort: 8092 }

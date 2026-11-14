@@ -127,6 +127,26 @@ case "${heard}" in
 	;;
 esac
 
+# **And whether the directory's endpoint reaches roster** (#86). Not a flow
+# either, and here for the witness's reason: nothing else brings `compose.yaml`'s
+# `scim` up. A key nobody minted says it in one answer -- roster refusing the
+# key is the endpoint having asked roster, where a dial that fails answers that
+# roster did not answer. Asked on the compose network, from the dev image,
+# which has curl in it.
+echo "== the directory's endpoint, asked by a key nobody minted"
+docker compose up -d --no-deps scim >/dev/null
+asked="$(docker compose run --rm --no-deps --entrypoint curl roster \
+	-sS -m 20 --retry 10 --retry-connrefused --retry-delay 1 \
+	-H 'Authorization: Bearer rt_nobody' \
+	http://scim:8092/scim/v2/ServiceProviderConfig 2>&1)" || true
+case "${asked}" in
+*"the key was not accepted"*) echo "   it asked roster, and roster refused the key" ;;
+*)
+	printf 'the SCIM endpoint did not reach roster:\n%s\n' "${asked}" >&2
+	exit 1
+	;;
+esac
+
 # A key that may sign her out and give her an authenticator, for the steps of
 # the walk that are about her rather than about a flow. `erin` holds the seeded
 # `everything` role and `mayReach` passes for your own row, so this is her doing

@@ -150,6 +150,46 @@ is held to it are each something only a running deployment can say, and nothing
 else in the rig would go red for them. `compose.yaml` keeps the trail the same
 way, and `scripts/hydra.sh` asks it the same.
 
+## A directory provisioning people
+
+The base answers no SCIM. Where a tenant's directory provisions its people
+(`docs/scim.md`), the endpoint is the component `scim/`, which a deployment
+turns on in its own overlay:
+
+```yaml
+resources:
+  - github.com/lesomnus/roster//deploy?ref=<a commit>
+components:
+  - github.com/lesomnus/roster//deploy/scim?ref=<the same commit>
+```
+
+With it roster opens a listener of its own in the same process -- `scim.addr`,
+said through `ROSTER_SCIM_ADDR` -- that answers `/scim/v2` and nothing else, and
+there is a Service for it, `roster-scim`. That Service is what the overlay's
+ingress routes the directory's public name to: the path `/scim/v2`, over TLS
+the ingress terminates, and from the directory's address ranges only where the
+platform can say so. It is the one listener here a cloud outside the cluster
+reaches, which is why it is not a path on `roster-data` -- that listener answers
+every RPC -- and why it is a component: a deployment with no directory to hear
+from has no such door.
+
+It holds no Secret. A directory presents its tenant's own key, minted once in
+the pod and pasted where the directory asks for a token:
+
+```sh
+kubectl exec deploy/roster -c roster -- roster --config /config/config.yaml \
+  scim provision --tenant <alias> --connection <the one its people sign in through>
+```
+
+`ROSTER_SCIM_INSECURE` is the line that is easy to lose. The endpoint dials this
+process's own data plane, which speaks plain gRPC on the pod network, and
+without it nothing fails until a directory calls -- and then every call is
+answered `503`, *roster did not answer*. So `scripts/cluster.sh` includes the
+component and asks through the Service with a key nobody minted: roster
+refusing that key is the endpoint having reached roster, and it is red on
+anything else. `compose.yaml` runs the same endpoint as a process of its own,
+`scim`, and `scripts/hydra.sh` asks it the same.
+
 ## TLS, and the `--dev` that is not here
 
 Hydra outside `--dev` refuses an `http://` issuer -- *issuer URL scheme must be

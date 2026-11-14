@@ -1,0 +1,15 @@
+# What a deployment's ingress routes the directory's public name to: the path
+# `/scim/v2`, over TLS the ingress terminates, and where it can, from the
+# directory's address ranges only. It holds no key and keeps no session --
+# every request carries the directory's own tenant key, and that is all roster
+# answers (`docs/scim.md` § "The shape").
+apiVersion: v1
+kind: Service
+metadata:
+  name: roster-scim
+spec:
+  selector:
+    app.kubernetes.io/name: roster
+    app.kubernetes.io/component: server
+  ports:
+    - { name: http, port: 8092, targetPort: scim-http }
