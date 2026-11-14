@@ -114,9 +114,27 @@ func (s *Server) lookup(ctx context.Context, t *tenancy, attr, value string) (*p
 	var id []byte
 	switch attr {
 	case byUserName, byEmail:
+		at := rstr.TenantRef_builder{Id: t.tenant}.Build()
+		value := front.Address(value)
+
+		// By the name the directory said first, where that is what is asked:
+		// what it calls somebody is theirs before it is anybody's address.
+		if attr == byUserName {
+			var err error
+			id, err = s.told(ctx, rstr.HolderRef_builder{Named: rstr.HolderRefByNamed_builder{
+				DirectoryName: proto.String(value), Tenant: at,
+			}.Build()}.Build())
+			if err != nil {
+				return nil, err
+			}
+		}
+		if id != nil {
+			break
+		}
+
 		v, err := s.roster.Email().Get(ctx, rstr.EmailGetRequest_builder{
 			Ref: rstr.EmailRef_builder{At: rstr.EmailRefByAt_builder{
-				TenantId: t.tenant, Address: proto.String(front.Address(value)),
+				TenantId: t.tenant, Address: proto.String(value),
 			}.Build()}.Build(),
 			Select: rstr.EmailSelect_builder{Holder: rstr.HolderSelect_builder{}.Build()}.Build(),
 		}.Build())
@@ -125,11 +143,9 @@ func (s *Server) lookup(ctx context.Context, t *tenancy, attr, value string) (*p
 			id = v.GetHolder().GetId()
 		case codes.NotFound:
 			// Nobody's address here. Then whoever the directory last said it
-			// of, which is how it finds again somebody whose `userName` it
-			// changed: the address did not move, and what it said was kept.
+			// of: the address did not move, and what it said was kept.
 			id, err = s.told(ctx, rstr.HolderRef_builder{Said: rstr.HolderRefBySaid_builder{
-				DirectoryAddress: proto.String(front.Address(value)),
-				Tenant:           rstr.TenantRef_builder{Id: t.tenant}.Build(),
+				DirectoryAddress: proto.String(value), Tenant: at,
 			}.Build()}.Build())
 			if err != nil || id == nil {
 				return nil, err
@@ -241,15 +257,27 @@ func (s *Server) tell(ctx context.Context, r *http.Request, t *tenancy, p *perso
 			}
 		}
 	}
+	// Each kept unless it is what they would be answered with anyway: the
+	// first of their addresses. One of theirs that is not the first is still
+	// kept, so that the directory reads back the one it said.
+	first := ""
+	if len(p.emails) > 0 {
+		first = p.emails[0]
+	}
 	if want := c.address(); want != "" {
-		// Kept unless it is what they would be answered with anyway: the
-		// first of their addresses. One of theirs that is not the first is
-		// still kept, so that the directory reads back the one it said.
-		if len(p.emails) > 0 && p.emails[0] == want {
+		if want == first {
 			want = ""
 		}
 		if want != h.GetDirectoryAddress() {
 			req.Address, said = proto.String(want), true
+		}
+	}
+	if want := c.name(); want != "" {
+		if want == first {
+			want = ""
+		}
+		if want != h.GetDirectoryName() {
+			req.Name, said = proto.String(want), true
 		}
 	}
 	if !said {
@@ -359,7 +387,7 @@ func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.
 	}
 
 	address := front.Address(u.address())
-	for attr, value := range map[string]string{byEmail: address, byExternalId: u.externalId} {
+	for attr, value := range map[string]string{byEmail: address, byExternalId: u.externalId, byUserName: u.userName} {
 		if value == "" {
 			continue
 		}
@@ -369,13 +397,14 @@ func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.
 		}
 		if p != nil {
 			return &problem{status: http.StatusConflict, scimType: "uniqueness",
-				detail: "somebody here already has that " + map[string]string{byEmail: "address", byExternalId: "externalId"}[attr]}
+				detail: "somebody here already has that " +
+					map[string]string{byEmail: "address", byExternalId: "externalId", byUserName: "userName"}[attr]}
 		}
 	}
 
 	profile := rstr.Profile_builder{}
-	if u.display != nil {
-		profile.DisplayName = *u.display
+	if v := u.called(); v != nil {
+		profile.DisplayName = *v
 	}
 	if u.department != nil {
 		profile.Department = *u.department
@@ -387,8 +416,8 @@ func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.
 		profile.Locale = *u.locale
 	}
 	name := ""
-	if u.display != nil {
-		name = *u.display
+	if v := u.called(); v != nil {
+		name = *v
 	}
 
 	alias := address
@@ -406,6 +435,17 @@ func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.
 	}.Build())
 	if err != nil {
 		return err
+	}
+	// The name the directory made them by, where it is not the address they
+	// were made with: a sign-in name beside a mail alias, or a name that is no
+	// address at all. Kept, so that the lookup by it that comes next -- and
+	// every one after a restart -- finds who was just made.
+	if n := front.Address(u.userName); n != address {
+		if _, err := s.roster.Holder().Tell(ctx, rstr.HolderTellRequest_builder{
+			Ref: rstr.HolderRef_builder{Id: h.GetId()}.Build(), Name: proto.String(n),
+		}.Build()); err != nil {
+			return err
+		}
 	}
 	if u.active != nil && !*u.active {
 		if _, err := s.roster.Holder().Deactivate(ctx, rstr.HolderDeactivateRequest_builder{
@@ -547,8 +587,8 @@ func (s *Server) reprofile(ctx context.Context, ref *rstr.HolderRef, c *changes)
 	if now == nil {
 		now = &rstr.Profile{}
 	}
-	if c.display != nil {
-		now.SetDisplayName(*c.display)
+	if v := c.called(); v != nil {
+		now.SetDisplayName(*v)
 	}
 	if c.department != nil {
 		now.SetDepartment(*c.department)

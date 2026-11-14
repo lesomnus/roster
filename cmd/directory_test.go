@@ -469,6 +469,38 @@ func TestWhatADirectorySaysIsKeptAndBelievedByNothing(t *testing.T) {
 		x.Equal(fred.Bytes(), v.GetId())
 	})
 
+	t.Run("and the name it looks them up by, which is not their address", func(t *testing.T) {
+		x := require.New(t)
+		name := func(ref *app.HolderRef, v string) error {
+			_, err := b.Walled.Holder().Tell(as, app.HolderTellRequest_builder{Ref: ref, Name: z.Ptr(v)}.Build())
+
+			return err
+		}
+		x.NoError(name(ref, "fpark@corp.contoso.example"))
+
+		v, err := b.Walled.Holder().Get(as, app.HolderGetRequest_builder{
+			Ref: app.HolderRef_builder{Named: app.HolderRefByNamed_builder{
+				DirectoryName: z.Ptr("fpark@corp.contoso.example"), Tenant: at,
+			}.Build()}.Build(),
+			Select: app.HolderSelect_builder{DirectoryName: z.Ptr(true), DirectoryAddress: z.Ptr(true)}.Build(),
+		}.Build())
+		x.NoError(err)
+		x.Equal(fred.Bytes(), v.GetId())
+		x.Equal("fred.park@contoso.example", v.GetDirectoryAddress(), "a sign-in name and a mail alias, each kept")
+
+		err = name(ref, "FPark@Corp.Contoso.example")
+		x.Equal(codes.InvalidArgument, status.Code(err), "compared without regard to case, so kept in one: %v", err)
+
+		other := b.holder(t, ctx, b.Contoso, "frank")
+		err = name(app.HolderRef_builder{Id: other.Bytes()}.Build(), "fpark@corp.contoso.example")
+		x.Equal(codes.AlreadyExists, status.Code(err), "%v", err)
+
+		x.NoError(name(ref, ""))
+		v, err = read(ref)
+		x.NoError(err)
+		x.Empty(v.GetDirectoryName())
+	})
+
 	t.Run("saying one leaves the other", func(t *testing.T) {
 		x := require.New(t)
 		x.NoError(tell(ref, nil, z.Ptr("fred.p@contoso.example")))

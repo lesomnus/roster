@@ -22,6 +22,13 @@ func (x *Holder) Ref() *HolderRef {
 		}
 	}
 	{
+		v1 := x.GetDirectoryName()
+		v2 := x.GetTenant()
+		if len(v1) > 0 && v2 != nil {
+			return HolderByNamed(v1, v2.Ref())
+		}
+	}
+	{
 		v1 := x.GetDirectorySubject()
 		v2 := x.GetTenant()
 		if len(v1) > 0 && v2 != nil {
@@ -50,6 +57,10 @@ func (x *HolderRef) Picks(v *Holder) bool {
 	case HolderRef_Slug_case:
 		x := x.GetSlug()
 		return (x.GetAlias() == v.GetAlias()) &&
+			(x.GetTenant().Picks(v.GetTenant()))
+	case HolderRef_Named_case:
+		x := x.GetNamed()
+		return (x.GetDirectoryName() == v.GetDirectoryName()) &&
 			(x.GetTenant().Picks(v.GetTenant()))
 	case HolderRef_Known_case:
 		x := x.GetKnown()
@@ -91,6 +102,17 @@ func HolderBySlug(alias string, tenant *TenantRef) *HolderRef {
 
 func HolderGetBySlug(alias string, tenant *TenantRef) *HolderGetRequest {
 	return HolderGetRequest_builder{Ref: HolderBySlug(alias, tenant)}.Build()
+}
+
+func HolderByNamed(directory_name string, tenant *TenantRef) *HolderRef {
+	x := &HolderRefByNamed{}
+	x.SetDirectoryName(directory_name)
+	x.SetTenant(tenant)
+	return HolderRef_builder{Named: x}.Build()
+}
+
+func HolderGetByNamed(directory_name string, tenant *TenantRef) *HolderGetRequest {
+	return HolderGetRequest_builder{Ref: HolderByNamed(directory_name, tenant)}.Build()
 }
 
 func HolderByKnown(directory_subject string, tenant *TenantRef) *HolderRef {

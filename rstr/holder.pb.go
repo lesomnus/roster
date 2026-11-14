@@ -53,6 +53,7 @@ type Holder struct {
 	xxx_hidden_Portrait         *Portrait              `protobuf:"bytes,16,opt,name=portrait"`
 	xxx_hidden_DirectorySubject string                 `protobuf:"bytes,17,opt,name=directory_subject,json=directorySubject"`
 	xxx_hidden_DirectoryAddress string                 `protobuf:"bytes,18,opt,name=directory_address,json=directoryAddress"`
+	xxx_hidden_DirectoryName    string                 `protobuf:"bytes,19,opt,name=directory_name,json=directoryName"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -201,6 +202,13 @@ func (x *Holder) GetDirectoryAddress() string {
 	return ""
 }
 
+func (x *Holder) GetDirectoryName() string {
+	if x != nil {
+		return x.xxx_hidden_DirectoryName
+	}
+	return ""
+}
+
 func (x *Holder) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -270,6 +278,10 @@ func (x *Holder) SetDirectorySubject(v string) {
 
 func (x *Holder) SetDirectoryAddress(v string) {
 	x.xxx_hidden_DirectoryAddress = v
+}
+
+func (x *Holder) SetDirectoryName(v string) {
+	x.xxx_hidden_DirectoryName = v
 }
 
 func (x *Holder) HasTenant() bool {
@@ -590,6 +602,24 @@ type Holder_builder struct {
 	// Written and guarded as `directory_subject` is, and personal as
 	// `Email.address` is.
 	DirectoryAddress string
+	// The name their directory looks them up by -- SCIM's `userName`, which is
+	// Entra's `userPrincipalName` -- where it is not the first of their
+	// addresses here.
+	//
+	// # Why it is not the address above
+	//
+	// A directory says two things that are each an address in shape and are not
+	// the same thing: what it calls somebody (`userName`), and where they are
+	// written to (`emails`). They differ as often as an organisation's sign-in
+	// name differs from its mail alias, and from the day somebody is made:
+	// roster keeps the mail as their `Email`, and had nowhere to keep the name
+	// -- so the directory that had just made somebody by one name looked them
+	// up by it and was told there was nobody. It reads its own name back now,
+	// and finds them by it.
+	//
+	// Written and guarded as the two above. Lowered and trimmed, as an address
+	// is, since a `userName` is compared without regard to case.
+	DirectoryName string
 }
 
 func (b0 Holder_builder) Build() *Holder {
@@ -613,6 +643,7 @@ func (b0 Holder_builder) Build() *Holder {
 	x.xxx_hidden_Portrait = b.Portrait
 	x.xxx_hidden_DirectorySubject = b.DirectorySubject
 	x.xxx_hidden_DirectoryAddress = b.DirectoryAddress
+	x.xxx_hidden_DirectoryName = b.DirectoryName
 	return m0
 }
 
@@ -904,7 +935,8 @@ var File_roster_payday_holder_proto protoreflect.FileDescriptor
 
 const file_roster_payday_holder_proto_rawDesc = "" +
 	"\n" +
-	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xca\t\n" +
+	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xac\n" +
+	"\n" +
 	"\x06Holder\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x1c\n" +
@@ -924,17 +956,21 @@ const file_roster_payday_holder_proto_rawDesc = "" +
 	"\tdirectory\x18\b \x01(\tB\b\xaa\xc1\x16\x04\x10\x01\x18\x00R\tdirectory\x124\n" +
 	"\bportrait\x18\x10 \x01(\v2\x10.roster.PortraitB\x06\xaa\xc1\x16\x02\x18\x01R\bportrait\x12;\n" +
 	"\x11directory_subject\x18\x11 \x01(\tB\x0e\xea\x82\x16\x028\x01\xaa\xc1\x16\x04\x10\x01\x18\x01R\x10directorySubject\x12;\n" +
-	"\x11directory_address\x18\x12 \x01(\tB\x0e\xea\x82\x16\x028\x01\xaa\xc1\x16\x04\x10\x01\x18\x01R\x10directoryAddress\x1a9\n" +
+	"\x11directory_address\x18\x12 \x01(\tB\x0e\xea\x82\x16\x028\x01\xaa\xc1\x16\x04\x10\x01\x18\x01R\x10directoryAddress\x125\n" +
+	"\x0edirectory_name\x18\x13 \x01(\tB\x0e\xea\x82\x16\x028\x01\xaa\xc1\x16\x04\x10\x01\x18\x01R\rdirectoryName\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xf8\x01\xca\xfc\x15\xae\x01\x12\x02\x10\x01\x1a\x1f\x12\x04slug\x1a\t\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:\xa3\x02\xca\xfc\x15\xd9\x01\x12\x02\x10\x01\x1a\x1f\x12\x04slug\x1a\t\n" +
 	"\x05alias\x10\x04\x1a\n" +
 	"\n" +
 	"\x06tenant\x10\x020\x01\x1a,\x12\x04page\x1a\n" +
 	"\n" +
 	"\x06tenant\x10\x02\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
-	"\x02id\x10\x01\x1a,\x12\x05known\x1a\x15\n" +
+	"\x02id\x10\x01\x1a)\x12\x05named\x1a\x12\n" +
+	"\x0edirectory_name\x10\x13\x1a\n" +
+	"\n" +
+	"\x06tenant\x10\x020\x01\x1a,\x12\x05known\x1a\x15\n" +
 	"\x11directory_subject\x10\x11\x1a\n" +
 	"\n" +
 	"\x06tenant\x10\x020\x01\x1a+\x12\x04said\x1a\x15\n" +

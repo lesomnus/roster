@@ -50,5 +50,8 @@ func (e *Holder) Proto() *rstr.Holder {
 	if e.DirectoryAddress != nil {
 		x.SetDirectoryAddress(*e.DirectoryAddress)
 	}
+	if e.DirectoryName != nil {
+		x.SetDirectoryName(*e.DirectoryName)
+	}
 	return x
 }

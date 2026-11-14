@@ -35,7 +35,7 @@ func TestBothDialectsOfAPatchReadTheSame(t *testing.T) {
 			x.NoError(err)
 			x.NotNil(c.active)
 			x.False(*c.active)
-			x.Equal("Erin K.", *c.display)
+			x.Equal("Erin K.", *c.called())
 			x.Equal("Platform", *c.department)
 		})
 	}

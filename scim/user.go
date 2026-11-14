@@ -39,7 +39,11 @@ const directoryDeleted = "deleted"
 // every cycle. So an attribute is written when it is sent and left otherwise,
 // and taking a value away is a `remove`.
 type changes struct {
+	// What they are called. `displayName` is that; `name.formatted` is that
+	// too where a directory says no `displayName`, and is not a second name
+	// kept beside it ([changes.called]).
 	display    *string
+	formatted  *string
 	department *string
 	employeeNo *string
 	locale     *string
@@ -67,21 +71,53 @@ type changes struct {
 	ignored []string
 }
 
-// address is the address the directory says is theirs, by the rule a person
-// is made under ([incoming.address]): the one it calls primary, or the user
-// name when that is one. Empty when this write said neither.
+// address is the address the directory says they are written to -- the one in
+// `emails` it calls primary -- in the form an address is kept. Empty when this
+// write said none.
 func (c *changes) address() string {
-	for _, v := range []*string{c.email, c.userName} {
-		if v != nil && strings.Contains(*v, "@") {
-			return front.Address(*v)
-		}
+	if c.email != nil && strings.Contains(*c.email, "@") {
+		return front.Address(*c.email)
+	}
+
+	return ""
+}
+
+// name is what the directory says it looks them up by, its `userName`, in the
+// form one is compared: lowered and trimmed, since a `userName` is matched
+// without regard to case. Empty when this write said none.
+//
+// Not [changes.address], though each is an address in shape: a sign-in name
+// and a mail alias differ wherever an organisation's do, and a directory that
+// says both means both.
+func (c *changes) name() string {
+	if c.userName != nil {
+		return front.Address(*c.userName)
 	}
 
 	return ""
 }
 
 func (c *changes) profiled() bool {
-	return c.display != nil || c.department != nil || c.employeeNo != nil || c.locale != nil
+	return c.called() != nil || c.department != nil || c.employeeNo != nil || c.locale != nil
+}
+
+// called is what a write says somebody is called: its `displayName`, or its
+// `name.formatted` where it says no `displayName`.
+//
+// # One name, and which
+//
+// roster keeps one thing a person is called. A directory may say two -- Entra
+// maps `displayName` and builds `name.formatted` out of a given name and a
+// surname -- and they need not agree. Both were read into one value in the
+// order a JSON object happened to be walked, so which of the two somebody
+// ended up called was not the same from one request to the next.
+// `displayName` is the one a directory means by it, and wins.
+func (c *changes) called() *string {
+	if c.display != nil {
+		return c.display
+	}
+
+	return c.formatted
 }
 
 // set is one attribute, by its path as a directory writes it.
@@ -90,12 +126,19 @@ func (c *changes) set(path string, raw json.RawMessage) error {
 	ext := strings.ToLower(enterpriseSchema)
 
 	switch {
-	case p == "displayname", p == "name.formatted":
+	case p == "displayname":
 		v, err := text(raw)
 		if err != nil {
 			return badRequest("invalidValue", path+": "+err.Error())
 		}
 		c.display = &v
+
+	case p == "name.formatted":
+		v, err := text(raw)
+		if err != nil {
+			return badRequest("invalidValue", path+": "+err.Error())
+		}
+		c.formatted = &v
 
 	case p == "name":
 		var name map[string]json.RawMessage
@@ -460,6 +503,7 @@ func (s *Server) read(ctx context.Context, t *tenancy, id []byte) (*person, erro
 			Directory:        proto.Bool(true),
 			DirectorySubject: proto.Bool(true),
 			DirectoryAddress: proto.Bool(true),
+			DirectoryName:    proto.Bool(true),
 			DateCreated:      proto.Bool(true),
 			DateUpdated:      proto.Bool(true),
 		}.Build(),
@@ -536,9 +580,8 @@ func (p *person) user() map[string]any {
 		name = h.GetName()
 	}
 	// Their addresses, led by the one the directory last said where that is
-	// none of theirs here: it is answered with what it said, so that a
-	// `userName` it changed reads back changed, while the address a link is
-	// mailed to stays where the person or an operator put it.
+	// none of theirs here: it is answered with what it said, while the address
+	// a link is mailed to stays where the person or an operator put it.
 	emails := p.emails
 	if v := h.GetDirectoryAddress(); v != "" {
 		emails = []string{v}
@@ -548,9 +591,16 @@ func (p *person) user() map[string]any {
 			}
 		}
 	}
+
+	// And what the directory looks them up by: the name it said, where it said
+	// one that is not their first address here; else that address; else what
+	// roster calls them.
 	userName := h.GetAlias()
-	if len(emails) > 0 {
-		userName = emails[0]
+	if len(p.emails) > 0 {
+		userName = p.emails[0]
+	}
+	if v := h.GetDirectoryName(); v != "" {
+		userName = v
 	}
 
 	u := map[string]any{

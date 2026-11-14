@@ -107,6 +107,20 @@ message Holder {
         ]
       },
       {
+        name: "named"
+        refs: [
+          {
+            name: "directory_name"
+            number: 19
+          },
+          {
+            name: "tenant"
+            number: 2
+          }
+        ]
+        unique: true
+      },
+      {
         name: "known"
         refs: [
           {
@@ -390,6 +404,30 @@ message Holder {
   // Written and guarded as `directory_subject` is, and personal as
   // `Email.address` is.
   string directory_address = 18 [
+    (orm.field) = {nullable: true},
+    (payday.field) = {
+      stamped: true
+      personal: true
+    }
+  ];
+  // The name their directory looks them up by -- SCIM's `userName`, which is
+  // Entra's `userPrincipalName` -- where it is not the first of their
+  // addresses here.
+  //
+  // # Why it is not the address above
+  //
+  // A directory says two things that are each an address in shape and are not
+  // the same thing: what it calls somebody (`userName`), and where they are
+  // written to (`emails`). They differ as often as an organisation's sign-in
+  // name differs from its mail alias, and from the day somebody is made:
+  // roster keeps the mail as their `Email`, and had nowhere to keep the name
+  // -- so the directory that had just made somebody by one name looked them
+  // up by it and was told there was nobody. It reads its own name back now,
+  // and finds them by it.
+  //
+  // Written and guarded as the two above. Lowered and trimmed, as an address
+  // is, since a `userName` is compared without regard to case.
+  string directory_name = 19 [
     (orm.field) = {nullable: true},
     (payday.field) = {
       stamped: true

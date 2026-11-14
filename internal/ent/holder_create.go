@@ -164,6 +164,20 @@ func (_c *HolderCreate) SetNillableDirectoryAddress(v *string) *HolderCreate {
 	return _c
 }
 
+// SetDirectoryName sets the "directory_name" field.
+func (_c *HolderCreate) SetDirectoryName(v string) *HolderCreate {
+	_c.mutation.SetDirectoryName(v)
+	return _c
+}
+
+// SetNillableDirectoryName sets the "directory_name" field if the given value is not nil.
+func (_c *HolderCreate) SetNillableDirectoryName(v *string) *HolderCreate {
+	if v != nil {
+		_c.SetDirectoryName(*v)
+	}
+	return _c
+}
+
 // SetTenantId sets the "tenant_id" field.
 func (_c *HolderCreate) SetTenantId(v uuid.UUID) *HolderCreate {
 	_c.mutation.SetTenantId(v)
@@ -373,6 +387,10 @@ func (_c *HolderCreate) createSpec() (*Holder, *sqlgraph.CreateSpec, error) {
 	if value, ok := _c.mutation.DirectoryAddress(); ok {
 		_spec.SetField(holder.FieldDirectoryAddress, field.TypeString, value)
 		_node.DirectoryAddress = &value
+	}
+	if value, ok := _c.mutation.DirectoryName(); ok {
+		_spec.SetField(holder.FieldDirectoryName, field.TypeString, value)
+		_node.DirectoryName = &value
 	}
 	if nodes := _c.mutation.TenantIds(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

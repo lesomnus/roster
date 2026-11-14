@@ -316,6 +316,7 @@ message HolderAddRequest {
   Portrait portrait = 16;
   string directory_subject = 17;
   string directory_address = 18;
+  string directory_name = 19;
 }
 
 message HolderGetRequest {
@@ -329,6 +330,7 @@ message HolderRef {
     HolderRefBySlug slug = 4;
     HolderRefByKnown known = 17;
     HolderRefBySaid said = 18;
+    HolderRefByNamed named = 19;
   }
 }
 
@@ -344,6 +346,11 @@ message HolderRefByKnown {
 
 message HolderRefBySaid {
   string directory_address = 18;
+  TenantRef tenant = 2;
+}
+
+message HolderRefByNamed {
+  string directory_name = 19;
   TenantRef tenant = 2;
 }
 
@@ -365,6 +372,7 @@ message HolderSelect {
   bool portrait = 16;
   bool directory_subject = 17;
   bool directory_address = 18;
+  bool directory_name = 19;
 }
 
 message HolderPatchRequest {
@@ -430,6 +438,12 @@ message HolderPatchRequest {
   // "leave it alone", so no value could have meant NULL. It wins
   // outright: setting both this and directory_address clears.
   bool directory_address_null = 37;
+  string directory_name = 38;
+  // Clear directory_name instead of writing it.
+  // It takes a field of its own because an unset value already means
+  // "leave it alone", so no value could have meant NULL. It wins
+  // outright: setting both this and directory_name clears.
+  bool directory_name_null = 39;
 }
 
 message HolderApplyRequest {
@@ -744,6 +758,10 @@ message HolderTellRequest {
   // The address the directory says is theirs, lowercased and trimmed. Unset
   // and empty as `subject`: empty is the address having been moved here.
   string address = 3;
+
+  // The name the directory looks them up by, lowercased and trimmed. Unset
+  // and empty as `subject`: empty is their first address being that name.
+  string name = 4;
 
   // Optimistic locking, as `Disable` takes it.
   google.protobuf.Timestamp date_updated = 13;

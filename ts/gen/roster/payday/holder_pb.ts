@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/holder.proto.
  */
 export const file_roster_payday_holder: GenFile = /*@__PURE__*/
-  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L2hvbGRlci5wcm90bxIGcm9zdGVyIooICgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIVCgVhbGlhcxgEIAEoCUIGqsEWAhgBEhQKBG5hbWUYBSABKAlCBqrBFgIYARIUCgRkZXNjGAYgASgJQgaqwRYCGAESMgoGbGFiZWxzGAcgAygLMhoucm9zdGVyLkhvbGRlci5MYWJlbHNFbnRyeUIGqsEWAhgBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIoCgdwcm9maWxlGAkgASgLMg8ucm9zdGVyLlByb2ZpbGVCBqrBFgIYARIqCgRkYXRhGAogASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueUIGqsEWAhgBEjwKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOQoNZGF0ZV9kaXNhYmxlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIbCglkaXJlY3RvcnkYCCABKAlCCKrBFgQQARgAEioKCHBvcnRyYWl0GBAgASgLMhAucm9zdGVyLlBvcnRyYWl0QgaqwRYCGAESKQoRZGlyZWN0b3J5X3N1YmplY3QYESABKAlCDuqCFgI4AarBFgQQARgBEikKEWRpcmVjdG9yeV9hZGRyZXNzGBIgASgJQg7qghYCOAGqwRYEEAEYARotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOvgByvwVrgESAhABGh8SBHNsdWcaCQoFYWxpYXMQBBoKCgZ0ZW5hbnQQAjABGiwSBHBhZ2UaCgoGdGVuYW50EAIaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARosEgVrbm93bhoVChFkaXJlY3Rvcnlfc3ViamVjdBARGgoKBnRlbmFudBACMAEaKxIEc2FpZBoVChFkaXJlY3RvcnlfYWRkcmVzcxASGgoKBnRlbmFudBACMAGKuxZBCAIyOQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQaCAoGbGFiZWxzIBQoZDoASAIiaQoHUHJvZmlsZRIUCgxkaXNwbGF5X25hbWUYASABKAkSDwoHcGljdHVyZRgCIAEoCRISCgpkZXBhcnRtZW50GAMgASgJEhMKC2VtcGxveWVlX25vGAQgASgJEg4KBmxvY2FsZRgFIAEoCSIxCghQb3J0cmFpdBIlCgpyZW5kaXRpb25zGAEgAygLMhEucm9zdGVyLlJlbmRpdGlvbiImCglSZW5kaXRpb24SDAoEc2l6ZRgBIAEoDRILCgN1cmkYAiABKAlCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_any, file_google_protobuf_timestamp, file_orm, file_payday, file_roster_payday_tenant]);
+  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L2hvbGRlci5wcm90bxIGcm9zdGVyIt0ICgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIVCgVhbGlhcxgEIAEoCUIGqsEWAhgBEhQKBG5hbWUYBSABKAlCBqrBFgIYARIUCgRkZXNjGAYgASgJQgaqwRYCGAESMgoGbGFiZWxzGAcgAygLMhoucm9zdGVyLkhvbGRlci5MYWJlbHNFbnRyeUIGqsEWAhgBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIoCgdwcm9maWxlGAkgASgLMg8ucm9zdGVyLlByb2ZpbGVCBqrBFgIYARIqCgRkYXRhGAogASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueUIGqsEWAhgBEjwKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOQoNZGF0ZV9kaXNhYmxlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIbCglkaXJlY3RvcnkYCCABKAlCCKrBFgQQARgAEioKCHBvcnRyYWl0GBAgASgLMhAucm9zdGVyLlBvcnRyYWl0QgaqwRYCGAESKQoRZGlyZWN0b3J5X3N1YmplY3QYESABKAlCDuqCFgI4AarBFgQQARgBEikKEWRpcmVjdG9yeV9hZGRyZXNzGBIgASgJQg7qghYCOAGqwRYEEAEYARImCg5kaXJlY3RvcnlfbmFtZRgTIAEoCUIO6oIWAjgBqsEWBBABGAEaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATqjAsr8FdkBEgIQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaKRIFbmFtZWQaEgoOZGlyZWN0b3J5X25hbWUQExoKCgZ0ZW5hbnQQAjABGiwSBWtub3duGhUKEWRpcmVjdG9yeV9zdWJqZWN0EBEaCgoGdGVuYW50EAIwARorEgRzYWlkGhUKEWRpcmVjdG9yeV9hZGRyZXNzEBIaCgoGdGVuYW50EAIwAYq7FkEIAjI5ChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudBoICgZsYWJlbHMgFChkOgBIAiJpCgdQcm9maWxlEhQKDGRpc3BsYXlfbmFtZRgBIAEoCRIPCgdwaWN0dXJlGAIgASgJEhIKCmRlcGFydG1lbnQYAyABKAkSEwoLZW1wbG95ZWVfbm8YBCABKAkSDgoGbG9jYWxlGAUgASgJIjEKCFBvcnRyYWl0EiUKCnJlbmRpdGlvbnMYASADKAsyES5yb3N0ZXIuUmVuZGl0aW9uIiYKCVJlbmRpdGlvbhIMCgRzaXplGAEgASgNEgsKA3VyaRgCIAEoCUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_any, file_google_protobuf_timestamp, file_orm, file_payday, file_roster_payday_tenant]);
 
 /**
  * Holder is who a request is from.
@@ -329,6 +329,29 @@ export type Holder = Message<"roster.Holder"> & {
    * @generated from field: string directory_address = 18;
    */
   directoryAddress: string;
+
+  /**
+   * The name their directory looks them up by -- SCIM's `userName`, which is
+   * Entra's `userPrincipalName` -- where it is not the first of their
+   * addresses here.
+   *
+   * # Why it is not the address above
+   *
+   * A directory says two things that are each an address in shape and are not
+   * the same thing: what it calls somebody (`userName`), and where they are
+   * written to (`emails`). They differ as often as an organisation's sign-in
+   * name differs from its mail alias, and from the day somebody is made:
+   * roster keeps the mail as their `Email`, and had nowhere to keep the name
+   * -- so the directory that had just made somebody by one name looked them
+   * up by it and was told there was nobody. It reads its own name back now,
+   * and finds them by it.
+   *
+   * Written and guarded as the two above. Lowered and trimmed, as an address
+   * is, since a `userName` is compared without regard to case.
+   *
+   * @generated from field: string directory_name = 19;
+   */
+  directoryName: string;
 };
 
 /**
