@@ -674,6 +674,8 @@ func stamp(t time.Time) string { return t.UTC().Format(time.RFC3339) }
 // object of the same document, and reads one -- and it is what the validator's
 // own report is written with, `$id` on every object of it. So it is the first
 // thing an object here says only when it is the whole of what the object is.
+// Written this way, the same group was read by the page's next run, and
+// somebody taken out of it.
 type reference struct {
 	Value string `json:"value"`
 	Ref   string `json:"$ref"`
