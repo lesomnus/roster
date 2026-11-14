@@ -993,8 +993,8 @@ func TestAGroupsMembersAreSaidTheRFCsWayToo(t *testing.T) {
 	x.Equal("invalidValue", got["scimType"])
 }
 
-// numbersOf is somebody's numbers as roster has them, by kind.
-func (d *deployment) numbersOf(t *testing.T, id string) map[string]string {
+// numbers is somebody's numbers as roster has them, a row each.
+func (d *deployment) numbers(t *testing.T, id string) []*rstr.Phone {
 	t.Helper()
 	k, err := pdid.Parse(id)
 	require.NoError(t, err)
@@ -1003,8 +1003,15 @@ func (d *deployment) numbersOf(t *testing.T, id string) map[string]string {
 	}.Build())
 	require.NoError(t, err)
 
+	return vs.GetItems()
+}
+
+// numbersOf is those by kind.
+func (d *deployment) numbersOf(t *testing.T, id string) map[string]string {
+	t.Helper()
+
 	out := map[string]string{}
-	for _, v := range vs.GetItems() {
+	for _, v := range d.numbers(t, id) {
 		out[v.GetKind()] = v.GetNumber()
 	}
 
@@ -1012,10 +1019,11 @@ func (d *deployment) numbersOf(t *testing.T, id string) map[string]string {
 }
 
 // TestADirectoryKeepsSomebodysNumbers: `phoneNumbers` are kept a row each, one
-// number a kind as a directory says them. A number it changes is replaced and
-// one it takes away is gone -- which it may not do to an address, a number
-// being no way in -- a kind it does not mention is left, and what it sends
-// that is not a number is said in the log and refuses nothing.
+// number a kind as a directory says them -- and one number as many kinds as it
+// says it for. A number it changes is replaced and one it takes away is gone --
+// which it may not do to an address, a number being no way in -- a kind it does
+// not mention is left, and what it sends that is not a number is said in the
+// log and refuses nothing.
 func TestADirectoryKeepsSomebodysNumbers(t *testing.T) {
 	d := stand(t)
 	x := require.New(t)
@@ -1046,9 +1054,22 @@ func TestADirectoryKeepsSomebodysNumbers(t *testing.T) {
 	)
 	x.Equal(map[string]string{"work": "+82 2-765-4321"}, d.numbersOf(t, id))
 
-	// The same number said for another kind is that kind's now: a person lists
-	// a number once.
-	patch(map[string]any{"op": "Add", "path": `phoneNumbers[type eq "mobile"].value`, "value": "+82 2-765-4321"})
+	// The same number said for another kind is that kind's as well: the mobile
+	// that is where their desk rings is said twice, and asked for by either.
+	got = patch(map[string]any{"op": "Add", "path": `phoneNumbers[type eq "mobile"].value`, "value": "+82 2-765-4321"})
+	x.Equal(map[string]string{"work": "+82 2-765-4321", "mobile": "+82 2-765-4321"}, d.numbersOf(t, id))
+	x.Len(got["phoneNumbers"], 2, "and read back as both")
+
+	// And said again changes nothing, nor makes a second of either.
+	patch(
+		map[string]any{"op": "Replace", "path": `phoneNumbers[type eq "work"].value`, "value": "+82 2-765-4321"},
+		map[string]any{"op": "Replace", "path": `phoneNumbers[type eq "mobile"].value`, "value": "+82 2-765-4321"},
+	)
+	x.Equal(map[string]string{"work": "+82 2-765-4321", "mobile": "+82 2-765-4321"}, d.numbersOf(t, id))
+	x.Len(d.numbers(t, id), 2)
+
+	// One of them gone leaves the other, which is the same number.
+	patch(map[string]any{"op": "Remove", "path": `phoneNumbers[type eq "work"].value`})
 	x.Equal(map[string]string{"mobile": "+82 2-765-4321"}, d.numbersOf(t, id))
 
 	// What is not a number is not kept, and is not a refusal: the rest of the
@@ -1059,6 +1080,25 @@ func TestADirectoryKeepsSomebodysNumbers(t *testing.T) {
 	)
 	x.Equal("Erin Park", got["displayName"])
 	x.Equal(map[string]string{"mobile": "+82 2-765-4321"}, d.numbersOf(t, id))
+
+	// Microsoft's validator says one number for every kind there is, in a
+	// whole User, and reads each back.
+	body = erin()
+	every := []map[string]any{}
+	for _, k := range []string{"work", "mobile", "fax", "home", "pager", "other"} {
+		every = append(every, map[string]any{"type": k, "value": "62-426-2716"})
+	}
+	body["phoneNumbers"] = every
+	code, got, _ = d.call(t, d.key, http.MethodPut, scim.Base+"/Users/"+id, body)
+	x.Equal(http.StatusOK, code, "%v", got)
+	x.Equal(map[string]string{
+		"work": "62-426-2716", "mobile": "62-426-2716", "fax": "62-426-2716",
+		"home": "62-426-2716", "pager": "62-426-2716", "other": "62-426-2716",
+	}, d.numbersOf(t, id))
+	x.Len(got["phoneNumbers"], 6)
+	for i, v := range got["phoneNumbers"].([]any) {
+		x.Equal(every[i]["type"], v.(map[string]any)["type"], "in the order SCIM lists the kinds")
+	}
 
 	// A whole User that speaks of numbers says every one of them.
 	body = erin()

@@ -1,6 +1,7 @@
 package scim
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -58,6 +59,16 @@ func kindOf(v string) string {
 	default:
 		return "other"
 	}
+}
+
+// kindOrder is where a kind stands among [phoneKinds], and after all of them
+// for one of no kind.
+func kindOrder(kind string) int {
+	if i := slices.Index(phoneKinds, kind); i >= 0 {
+		return i
+	}
+
+	return len(phoneKinds)
 }
 
 // dialled is a number as roster keeps one -- trimmed -- and whether it is one
@@ -168,6 +179,14 @@ func (s *Server) shownUser(ctx context.Context, p *person) (map[string]any, erro
 		return nil, err
 	}
 	if len(vs) > 0 {
+		// By kind, in the order SCIM lists the kinds, and not by when each
+		// was written: a number replaced is a row erased and another made
+		// (`dial`), and somebody's `work` would move to the end of what a
+		// directory reads back each time it changed.
+		slices.SortStableFunc(vs, func(a, b *rstr.Phone) int {
+			return cmp.Compare(kindOrder(a.GetKind()), kindOrder(b.GetKind()))
+		})
+
 		ns := make([]map[string]any, 0, len(vs))
 		for _, v := range vs {
 			n := map[string]any{"value": v.GetNumber()}
@@ -201,9 +220,11 @@ func (s *Server) shownUser(ctx context.Context, p *person) (map[string]any, erro
 // dial writes what a write says of somebody's numbers.
 //
 // A number said for a kind is that kind's one number: the rows of that kind
-// holding another go, and so does a row holding this number under another
-// kind, since a person lists a number once. A whole list -- a User replaced --
-// is every number they have, and what it does not name goes too.
+// holding another go, and a row of another kind is left, whatever it holds --
+// a directory says one number as two of somebody's, their mobile and where
+// their desk rings, and asks for it again by either (`Phone`). A whole list --
+// a User replaced -- is every number they have, and what it does not name
+// goes too.
 //
 // There is no verb that changes a row, so a change is the old row erased and
 // a new one made; nothing reads a `Phone` by its id from one write to the
@@ -252,8 +273,6 @@ func (s *Server) dial(ctx context.Context, r *http.Request, holder []byte, c *ch
 			// This kind's, and not the number it is now.
 		case c.allPhones != nil:
 			// Every number was said, and this is none of them.
-		case numberOf(want, v.GetNumber()):
-			// Said for another kind now.
 		default:
 			continue
 		}
@@ -263,7 +282,10 @@ func (s *Server) dial(ctx context.Context, r *http.Request, holder []byte, c *ch
 		}
 	}
 
-	for k, n := range want {
+	// In the order a directory lists them, which is the order they are then
+	// answered in: a map's would be another every time.
+	for _, k := range phoneKindsAnd(want) {
+		n := want[k]
 		if n == "" || kept[k] {
 			continue
 		}
@@ -286,12 +308,18 @@ func (s *Server) dial(ctx context.Context, r *http.Request, holder []byte, c *ch
 	return nil
 }
 
-func numberOf(want map[string]string, number string) bool {
-	for _, n := range want {
-		if n == number {
-			return true
+// phoneKindsAnd is the kinds `want` names, [phoneKinds] first and in its
+// order, and then the one that is none of them: a number of no kind.
+func phoneKindsAnd(want map[string]string) []string {
+	out := make([]string, 0, len(want))
+	for _, k := range phoneKinds {
+		if _, ok := want[k]; ok {
+			out = append(out, k)
 		}
 	}
+	if _, ok := want[""]; ok {
+		out = append(out, "")
+	}
 
-	return false
+	return out
 }

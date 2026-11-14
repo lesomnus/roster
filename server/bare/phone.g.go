@@ -606,13 +606,14 @@ func pickPhone(req *rstr.PhoneRef) (predicate.Phone, error) {
 		}
 	case rstr.PhoneRef_Number_case:
 		k := req.GetNumber()
-		ps := make([]predicate.Phone, 0, 2)
+		ps := make([]predicate.Phone, 0, 3)
 		if p, err := HolderPick(k.GetHolder()); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "number.holder: %s", err)
 		} else {
 			ps = append(ps, phone.HasHolderWith(p))
 		}
 		ps = append(ps, phone.NumberEQ(k.GetNumber()))
+		ps = append(ps, phone.KindEQ(k.GetKind()))
 		return phone.And(ps...), nil
 	case rstr.PhoneRef_Key_not_set_case:
 		return nil, status.Errorf(codes.InvalidArgument, "key not set: Phone")

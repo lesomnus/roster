@@ -17,8 +17,9 @@ func (x *Phone) Ref() *PhoneRef {
 	{
 		v1 := x.GetHolder()
 		v2 := x.GetNumber()
-		if v1 != nil && len(v2) > 0 {
-			return PhoneByNumber(v1.Ref(), v2)
+		v3 := x.GetKind()
+		if v1 != nil && len(v2) > 0 && len(v3) > 0 {
+			return PhoneByNumber(v1.Ref(), v2, v3)
 		}
 	}
 
@@ -36,7 +37,8 @@ func (x *PhoneRef) Picks(v *Phone) bool {
 	case PhoneRef_Number_case:
 		x := x.GetNumber()
 		return (x.GetHolder().Picks(v.GetHolder())) &&
-			(x.GetNumber() == v.GetNumber())
+			(x.GetNumber() == v.GetNumber()) &&
+			(x.GetKind() == v.GetKind())
 	default:
 		return false
 	}
@@ -60,13 +62,14 @@ func PhoneGetById(v []byte) *PhoneGetRequest {
 	return PhoneGetRequest_builder{Ref: PhoneById(v)}.Build()
 }
 
-func PhoneByNumber(holder *HolderRef, number string) *PhoneRef {
+func PhoneByNumber(holder *HolderRef, number string, kind string) *PhoneRef {
 	x := &PhoneRefByNumber{}
 	x.SetHolder(holder)
 	x.SetNumber(number)
+	x.SetKind(kind)
 	return PhoneRef_builder{Number: x}.Build()
 }
 
-func PhoneGetByNumber(holder *HolderRef, number string) *PhoneGetRequest {
-	return PhoneGetRequest_builder{Ref: PhoneByNumber(holder, number)}.Build()
+func PhoneGetByNumber(holder *HolderRef, number string, kind string) *PhoneGetRequest {
+	return PhoneGetRequest_builder{Ref: PhoneByNumber(holder, number, kind)}.Build()
 }

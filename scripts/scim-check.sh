@@ -62,7 +62,12 @@
 #
 #   SCIM_CHECK_MINUTES       the most it waits; 30.
 #   SCIM_CHECK_IDLE          minutes with nothing asked, after something was,
-#                            that end it early; 10.
+#                            that end it early; 10. That long because what is
+#                            asked first is the schema, and then a person
+#                            fills a form on a page that is slow.
+#   SCIM_CHECK_DONE          and the minutes that end it once the page's tests
+#                            have been asked; 3. They are over in seconds, and
+#                            nobody is filling anything in after them.
 #   SCIM_CHECK_OUT           where `requests.jsonl` and `roster.log` are left;
 #                            ./scim-check.
 #
@@ -73,6 +78,11 @@
 #     ./scripts/scim-check.sh --down    # take away what a run that was stopped left
 #     ./scripts/scim-check.sh --sweep   # and what any run left, hours ago
 #
+# And what a run kept, as the test that replays it reads it
+# (`scim/validator_sent_test.go`, where what to add to a row is said):
+#
+#     ./scripts/scim-check.sh --fixture scim-check/requests.jsonl
+#
 # `.github/workflows/scim-check.yml` runs it on a runner, by hand.
 set -o errexit
 set -o pipefail
@@ -82,6 +92,7 @@ cd "${__root}"
 
 : "${SCIM_CHECK_MINUTES:=30}"
 : "${SCIM_CHECK_IDLE:=10}"
+: "${SCIM_CHECK_DONE:=3}"
 : "${SCIM_CHECK_OUT:=${__root}/scim-check}"
 
 # Which tunnel and which record this run made, by their identifiers and
@@ -198,7 +209,56 @@ def sweep():
 PY
 }
 
+# fixture is a run's record with what a replay does not read left out: a
+# request a line -- what was asked, what was answered, and of the answer only
+# what a later request goes by, which is the id of what it made and how many
+# it found. A request that did not carry the token is nobody's the page sent,
+# and is left out too.
+#
+# The record is what anybody sent, so it is read as text and nothing in it is
+# run.
+fixture() {
+	python3 -I - "$1" <<'PY'
+import json
+import sys
+
+for line in open(sys.argv[1], encoding="utf-8"):
+    line = line.strip()
+    if not line:
+        continue
+    r = json.loads(line)
+    if r.get("refused"):
+        continue
+
+    out = {"method": r["method"], "path": r["path"]}
+    asked = r.get("request") or ""
+    if asked.strip():
+        try:
+            out["body"] = json.loads(asked)
+        except ValueError:
+            out["text"] = asked
+    out["answered"] = r["status"]
+
+    try:
+        said = json.loads(r.get("response") or "")
+    except ValueError:
+        said = None
+    if isinstance(said, dict):
+        if r["method"] == "POST" and r["status"] == 201 and said.get("id"):
+            out["made"] = said["id"]
+        if isinstance(said.get("totalResults"), int):
+            out["found"] = said["totalResults"]
+
+    print(json.dumps(out, ensure_ascii=False, separators=(",", ":")))
+PY
+}
+
 case "${1:-}" in
+--fixture)
+	[ -n "${2:-}" ] || { echo "--fixture: which record; a run leaves it at scim-check/requests.jsonl" >&2; exit 2; }
+	fixture "$2"
+	exit 0
+	;;
 --down)
 	[ -n "${SCIM_CHECK_CF_API_TOKEN:-}" ] && cf down
 	exit 0
@@ -578,11 +638,16 @@ cat <<SAY
    \`displayName\` for a group, and an \`externalId\` is added here to a person
    made without one.
 
-   It ends by itself ${SCIM_CHECK_IDLE} minutes after the last thing it is asked.
+   It ends by itself ${SCIM_CHECK_DONE} minutes after the page's tests were asked, and
+   ${SCIM_CHECK_IDLE} minutes after the last thing it is asked before they are.
 
 SAY
 
 asked() { wc -l < "${out}/requests.jsonl" | tr -d ' '; }
+# tested is whether the page's tests have been asked: each begins by making
+# something, and what is asked before that -- the schema, a lookup -- is a
+# person still at the form.
+tested() { grep -q '"method": "POST"' "${out}/requests.jsonl"; }
 was=0
 idle=0
 for minute in $(seq 1 "${SCIM_CHECK_MINUTES}"); do
@@ -595,6 +660,9 @@ for minute in $(seq 1 "${SCIM_CHECK_MINUTES}"); do
 	fi
 	was="${now}"
 	echo "   ${minute}m: ${now} asked"
+	if tested && [ "${idle}" -ge "${SCIM_CHECK_DONE}" ]; then
+		break
+	fi
 	if [ "${now}" != 0 ] && [ "${idle}" -ge "${SCIM_CHECK_IDLE}" ]; then
 		break
 	fi

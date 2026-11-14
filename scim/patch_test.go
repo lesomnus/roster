@@ -68,9 +68,21 @@ func TestBothDialectsOfAPatchReadTheSame(t *testing.T) {
 		x.Empty(*c.allPhones)
 	})
 
+	t.Run("none at all says nothing, which Microsoft's validator sends", func(t *testing.T) {
+		x := require.New(t)
+		c, err := parsePatch([]byte(`{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[]}`))
+		x.NoError(err)
+		x.Equal(&changes{}, c)
+
+		g, err := parseGroupPatch([]byte(`{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[]}`))
+		x.NoError(err)
+		x.Equal(&groupChanges{}, g)
+	})
+
 	t.Run("and what is not an operation is refused", func(t *testing.T) {
 		for _, body := range []string{
-			`{"Operations":[]}`,
+			`{}`,
+			`{"Operations":null}`,
 			`{"Operations":[{"op":"move","path":"active","value":true}]}`,
 			`{"Operations":[{"op":"replace","path":"active","value":"maybe"}]}`,
 			`{"Operations":[{"op":"remove"}]}`,

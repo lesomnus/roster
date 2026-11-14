@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"slices"
 	"strings"
 	"unicode"
@@ -173,33 +174,70 @@ func (s coreGroup) made(ctx context.Context, req *app.GroupAddRequest, tenant, w
 	}
 
 	if s.drv == nil {
-		// On somebody else's transaction, or on none: [Core.tx] is which.
-		if err := run(s.Next(), s.tx); err != nil {
+		// On somebody else's transaction, or on none: [Core.tx] is which. It
+		// is not this layer's to begin again, so a tenant's first groups made
+		// at once are said to be, and asked again.
+		err := run(s.Next(), s.tx)
+		if errors.Is(err, errManagesTaken) {
+			return nil, status.Errorf(codes.Aborted,
+				"the role %q of this tenant was being made by another group's maker; ask again", Manages)
+		}
+		if err != nil {
 			return nil, err
 		}
 
 		return out, nil
 	}
 
-	drv, tx, err := dialect.BeginTx(ctx, s.drv)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
+	once := func() error {
+		drv, tx, err := dialect.BeginTx(ctx, s.drv)
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
 
-	next, err := enttx.Rebind(s.Next(), drv)
+		next, err := enttx.Rebind(s.Next(), drv)
+		if err != nil {
+			return err
+		}
+		if err := run(next, drv); err != nil {
+			return err
+		}
+
+		return tx.Commit()
+	}
+
+	// Again, where the role was made by somebody else between this looking
+	// for it and making it: a tenant's first groups, made at once
+	// ([errManagesTaken]). The transaction that lost is over -- a database
+	// that refuses a write refuses the rest of what it was part of -- so it
+	// is the whole of it that is begun again, and it finds the role there.
+	// Once would do; the second is for a role erased and made in between.
+	err := once()
+	for range 2 {
+		if !errors.Is(err, errManagesTaken) {
+			break
+		}
+		err = once()
+	}
+	if errors.Is(err, errManagesTaken) {
+		return nil, status.Errorf(codes.Aborted,
+			"the role %q of this tenant is being made and erased by others; ask again", Manages)
+	}
 	if err != nil {
-		return nil, err
-	}
-	if err := run(next, drv); err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
 	return out, nil
 }
+
+// errManagesTaken is the tenant's [Manages] having been made by somebody else
+// between [Core.managersRole] not finding it and making it: two of a tenant's
+// first groups, made at once, which is how a directory's first cycle and
+// Microsoft's validator make them. Whoever made it made the one this was
+// about to, so it is no refusal -- [coreGroup.made] begins again and finds
+// it.
+var errManagesTaken = errors.New("the manager's role was made by another")
 
 // managersRole is the tenant's [Manages], made when it is not there.
 //
@@ -220,6 +258,9 @@ func (s Core) managersRole(ctx context.Context, below app.Server, drv dialect.Dr
 			Desc:    "What a group's manager may do to their own group: put people in, take them out, and say what it is called.",
 			Methods: managing,
 		}.Build())
+		if status.Code(err) == codes.AlreadyExists {
+			return nil, errManagesTaken
+		}
 		if err != nil {
 			return nil, err
 		}

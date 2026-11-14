@@ -1,6 +1,7 @@
 package ldap
 
 import (
+	"slices"
 	"sort"
 	"strings"
 
@@ -45,6 +46,12 @@ func (e *entry) add(name string, values ...string) {
 		if _, ok := e.names[k]; !ok {
 			e.names[k] = name
 			e.order = append(e.order, k)
+		}
+		// An attribute is a set of values: one said twice -- a number that
+		// is somebody's `work` and their `other`, both a `telephoneNumber`
+		// -- is there once.
+		if slices.Contains(e.attrs[k], v) {
+			continue
 		}
 		e.attrs[k] = append(e.attrs[k], v)
 	}

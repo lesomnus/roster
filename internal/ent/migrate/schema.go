@@ -1080,7 +1080,7 @@ var (
 			{
 				Name:    "phone_number",
 				Unique:  true,
-				Columns: []*schema.Column{PhoneColumns[7], PhoneColumns[1]},
+				Columns: []*schema.Column{PhoneColumns[7], PhoneColumns[1], PhoneColumns[2]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},

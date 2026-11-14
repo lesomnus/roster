@@ -208,6 +208,12 @@ nothing compares two numbers, and a form strict enough to would refuse most of
 what a directory holds. `kind` is which of somebody's numbers it is, in SCIM's
 words (`work`, `mobile`, ...), which are also what an LDAP client asks by.
 
+**One row a person, a number and a kind.** Two people at one number is ordinary
+-- a switchboard, a shared desk -- and so is one person's number being two of
+theirs: the mobile that is also where their desk rings, which a directory says
+once as each and asks for again by either. Nobody lists a number twice as the
+same thing, and that is all that is unique about one.
+
 **It is not a way in, and that is what it is for.** Nothing here sends to a
 number or finds anybody by one, so writing one onto somebody is not held to the
 rule an address is (`mayWriteAWayIn`): a tenant's directory writes it, and
