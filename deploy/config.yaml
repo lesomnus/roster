@@ -4,7 +4,9 @@
 # and the secrets, and inherits the rest. What it must **not** restate is the
 # `login:` block, because that is where two of this week's four defects were --
 # a client list and an issuer address that were written once here and once
-# somewhere else, and disagreed.
+# somewhere else, and disagreed. Which it does by saying its own values through
+# the environment: a file in a ConfigMap is replaced whole (`deploy/README.md`,
+# "Using it as a base").
 resources: [/config/resources.yaml]
 
 server:

@@ -43,6 +43,18 @@ which would have to.
 
 ## Setting a tenant up
 
+**First, the connection names people by what the directory will call them.** A
+directory sends its own identifier as `externalId`, and a person it provisions
+is the person who signs in only where the connection reads that same identifier
+out of a token. For Entra that is the object id: `oid` in a token, and
+`subject_claim: oid` on the connection ([login.md](login.md) § *Which claim is
+the person*) -- Entra's `sub` is one per app, so a directory could never have
+named anybody by it. **Nothing refuses a provisioning connection left on
+`sub`**: the people it then makes are made, each under an identifier no sign-in
+carries, and each is a second person the day they sign in. Moving a connection
+people already sign in through is one line and loses nobody (the same section),
+so it is done before this and not after.
+
 ```sh
 roster scim provision --tenant contoso --connection entra
 ```
@@ -64,11 +76,9 @@ an open door, a key that leaked would name its holder's own account and sign the
 in. A door of the organisation's own that lets anybody sign up is the same, and
 roster cannot tell it apart -- do not mark one.
 
-The connection should name people by the identifier the directory sends as
-`externalId`. For Entra that is the object id, which is `oid` in a token and
-`subject_claim: oid` on the connection ([login.md](login.md) § *Which claim is the
-person*): Entra's `sub` is one per app, so a directory could never have named
-anybody by it.
+The endpoint works on a few requests at once and has the rest wait -- four,
+unless `scim.concurrency` says another number -- which is what a directory that
+sends a dozen at a time meets, and nothing it has to be told.
 
 ### Entra
 
@@ -291,8 +301,26 @@ entered by an operator -- are found by their address. A create for an address or
 an `externalId` somebody has is refused as `uniqueness`, which is what tells a
 directory to match instead.
 
-**And matched is not linked.** The directory then writes its own id onto the
-person it found, and that is an identity written onto somebody who exists: the
+**Found by the address roster has, which is not always what the directory calls
+them.** The lookup is by `userName`, and a directory whose `userName` is a
+sign-in name (`kim.lee@corp.contoso.example`) while its mail is the address
+kept here (`kim@contoso.example`) finds nobody, then creates, and is refused
+for the address: `409`, every cycle, with nobody matched and so nobody for
+`adopt` to list. Either end mends it -- the directory maps `userName` from the
+attribute that is the address here, or an operator gives the person the other
+address (`roster email add`), after which the lookup finds them.
+
+**Whoever already signs in through the connection is the directory's from its
+first cycle.** They have an identity at it, which is all *speaks for* asks, so
+its `active: false` suspends them the first time it says so, and `adopt` has
+nothing to list of them. Until they next sign in they are read back under the
+subject their identity has: where the connection moved from `sub` to `oid`, that
+is the old one, and the directory's `externalId` for them is kept beside it and
+answered once the sign-in moves the identity.
+
+**Whoever does not is matched, and matched is not linked.** Entered by an
+operator, or signing in another way: the directory writes its own id onto the
+person it found, and that is an identity written onto somebody who exists, the
 write its key is not given. So it is kept and believed by nothing, and they are
 somebody the directory does **not** speak for -- its `active: false` and its
 `DELETE` are refused, `403`, on the day they leave. They are linked by signing
@@ -315,7 +343,8 @@ the log says so.
 writes, refused everywhere -- and `active: true` lifts it. `DELETE` suspends them
 and keeps the row: what becomes of it is an operator's decision, and the endpoint
 speaks of them no more. A re-hire with the same address is refused as taken until
-an operator frees it.
+an operator brings them back -- `roster --as admin holder enable @contoso/dave`
+-- after which the directory finds them again, and they are who they were.
 
 **An erase is not something the directory hears.** Somebody erased here -- by an
 operator, or by themselves -- is somebody it no longer finds, and making them
@@ -392,6 +421,34 @@ that tenant may -- nobody it says is in the group is left in it, the group is
 still answered, and the log says so -- and what becomes of the row is an
 administrator's.
 
+## Turning it off
+
+Three things were turned on, and each goes by itself.
+
+**The key**, which stops the directory at once and changes nothing else:
+
+```sh
+roster --as admin key list                  # the directory's is @contoso/scim/scim
+roster key revoke --id <its identifier>
+```
+
+Every call after is `401`. Nobody it suspended comes back and nobody it made
+goes: they are the tenant's people, as they were. `roster scim provision` again
+mints another key -- which is also all a rotation is, the key before it ended
+by the same command.
+
+**The mark on the connection**, which says the tenant has no directory: for a
+connection a file declares, `provisions: true` taken out of `resources.yaml`
+and a restart. The endpoint then answers `409`, *no connection of this tenant
+provisions its people* -- a write at once, and a read within the minute it
+keeps a key's tenant for.
+
+**The listener**: the `scim` component out of the overlay, or `scim.addr` out
+of the configuration.
+
+What `provision` wrote stays -- the holder `scim`, its role and the binding --
+and holds nothing anybody can use without a key.
+
 ## What it says in its log
 
 A directory's own provisioning log is where a tenant reads what happened to a
@@ -466,6 +523,12 @@ holder holds, and would otherwise narrow those four away. A key minted before
 groups were provisioned here lists none of this, and one minted before a
 manager could erase a group does not list that: `provision` again, which is a
 rotation.
+
+**So a build that has the endpoint call something more needs `provision`
+again**, and the new key pasted where the directory keeps the old. Only
+`provision` writes the role and the key; `serve` opens the listener and writes
+neither. Until then the endpoint does what the key it has allows, and says in
+its log what it could not.
 
 ## Where each fact is
 
