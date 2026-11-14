@@ -434,7 +434,7 @@ comment beside what it decides.
   turned out not to be `Holder.Add` and `Email.Add` behind a JSON schema --
   those reach people who already exist, and a directory's key should reach only
   the people it makes -- so it is `HolderService.Provision` and the verbs beside
-  it. Groups are its next step.
+  it, and the groups it keeps them in.
 - **Kerberos, certificates, nested groups**: `position.md` says why, and
   this process does not change the answer.
 - **A manager edge, more profile fields**: the conversation that produced

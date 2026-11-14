@@ -58,17 +58,33 @@ func userResourceType() map[string]any {
 	}
 }
 
+func groupResourceType() map[string]any {
+	return map[string]any{
+		"schemas":     []string{resourceTypeSchema},
+		"id":          "Group",
+		"name":        "Group",
+		"endpoint":    "/Groups",
+		"description": "A group of this tenant that its directory made.",
+		"schema":      groupSchema,
+		"meta":        map[string]any{"resourceType": "ResourceType", "location": Base + "/ResourceTypes/Group"},
+	}
+}
+
 func resourceTypes(_ context.Context, w http.ResponseWriter, _ *http.Request, _ *tenancy) error {
-	answer(w, http.StatusOK, list([]any{userResourceType()}, 1, 1))
+	answer(w, http.StatusOK, list([]any{userResourceType(), groupResourceType()}, 2, 1))
 
 	return nil
 }
 
 func resourceType(_ context.Context, w http.ResponseWriter, r *http.Request, _ *tenancy) error {
-	if r.PathValue("name") != "User" {
-		return notFound("the one resource type here is User")
+	switch r.PathValue("name") {
+	case "User":
+		answer(w, http.StatusOK, userResourceType())
+	case "Group":
+		answer(w, http.StatusOK, groupResourceType())
+	default:
+		return notFound("the resource types here are User and Group")
 	}
-	answer(w, http.StatusOK, userResourceType())
 
 	return nil
 }
@@ -132,8 +148,37 @@ func enterpriseSchemaDoc() map[string]any {
 	}
 }
 
+// What a group is here: what it is called, and who is in it. `externalId` is
+// common to every resource and is not a schema's to list.
+func groupSchemaDoc() map[string]any {
+	return map[string]any{
+		"schemas":     []string{schemaSchema},
+		"id":          groupSchema,
+		"name":        "Group",
+		"description": "A group, as roster keeps one a directory made.",
+		"attributes": []map[string]any{
+			{
+				"name": "displayName", "type": "string", "multiValued": false, "required": true, "caseExact": false,
+				"mutability": "readWrite", "returned": "default", "uniqueness": "server",
+				"description": "What the group is called.",
+			},
+			{
+				"name": "members", "type": "complex", "multiValued": true, "required": false,
+				"mutability": "readWrite", "returned": "default",
+				"description": "Who is in it: the people this endpoint speaks of.",
+				"subAttributes": []map[string]any{
+					{"name": "value", "type": "string", "multiValued": false, "required": false, "caseExact": true, "mutability": "immutable", "returned": "default", "uniqueness": "none", "description": "A User's id."},
+					{"name": "$ref", "type": "reference", "referenceTypes": []string{"User"}, "multiValued": false, "required": false, "mutability": "immutable", "returned": "default"},
+					{"name": "type", "type": "string", "multiValued": false, "required": false, "caseExact": false, "mutability": "immutable", "returned": "default", "uniqueness": "none", "description": "User."},
+				},
+			},
+		},
+		"meta": map[string]any{"resourceType": "Schema", "location": Base + "/Schemas/" + groupSchema},
+	}
+}
+
 func schemas(_ context.Context, w http.ResponseWriter, _ *http.Request, _ *tenancy) error {
-	answer(w, http.StatusOK, list([]any{userSchemaDoc(), enterpriseSchemaDoc()}, 2, 1))
+	answer(w, http.StatusOK, list([]any{userSchemaDoc(), enterpriseSchemaDoc(), groupSchemaDoc()}, 3, 1))
 
 	return nil
 }
@@ -144,15 +189,11 @@ func schema(_ context.Context, w http.ResponseWriter, r *http.Request, _ *tenanc
 		answer(w, http.StatusOK, userSchemaDoc())
 	case enterpriseSchema:
 		answer(w, http.StatusOK, enterpriseSchemaDoc())
+	case groupSchema:
+		answer(w, http.StatusOK, groupSchemaDoc())
 	default:
 		return notFound("no such schema here")
 	}
-
-	return nil
-}
-
-func groups(_ context.Context, w http.ResponseWriter, _ *http.Request, _ *tenancy) error {
-	fail(w, http.StatusNotImplemented, "", "groups are not provisioned here yet; provision users only")
 
 	return nil
 }

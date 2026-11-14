@@ -13,9 +13,9 @@ OneLogin and JumpCloud all push to an endpoint of their customer's naming.
 Google Workspace does not, to an app that is not in its own catalogue -- a tenant
 on Google is still a sign-in, and a directory read is a separate plan.
 
-What this is for is the people. Groups are the next step (#86). The endpoint
-answers `501` for them, which a directory that sends them anyway logs as a
-failure every cycle -- so Entra's group mapping is turned off (§ *Entra*).
+It is for the people first, and for the groups a directory keeps them in: who is
+in which is the other thing it knows and roster otherwise does not (§ *What it
+does with a group*).
 
 ## The shape
 
@@ -82,10 +82,11 @@ On the enterprise application, *Provisioning*, *Automatic*:
   `userPrincipalName` is how somebody already here is found. Leave `displayName`
   mapped only if names come from the directory: a tenant that keeps names in Slack
   takes it out, and the directory then writes none.
-- **Provision Microsoft Entra ID Groups**: off, which it is not by default. Groups
-  are not provisioned here yet, and left on, every group assigned to the
-  application is sent and refused each cycle. Off, an assigned group still brings
-  its members in as users.
+- **Provision Microsoft Entra ID Groups**: on, as it is by default, where the
+  groups assigned to the application should be groups here; its mappings are
+  left as they are -- `displayName`, `members`, and `externalId` from `objectId`.
+  Off, an assigned group still brings its members in as users and makes no
+  group.
 - **Scope**: the users assigned to the application. A group assigned to it brings
   its direct members and not the members of groups inside it: Entra does not
   follow nesting.
@@ -169,6 +170,54 @@ hears that an operator suspended somebody, and restarting its provisioning says
 suspension theirs, and somebody the directory deleted is an operator's to bring
 back ([operating.md](operating.md) § *Stopping somebody*).
 
+## What it does with a group
+
+| SCIM | roster |
+| --- | --- |
+| `id` | `Group.id` |
+| `displayName` | `Group.name`; the alias is made from it once, and stays |
+| `externalId` | the label `roster.directory` on the group |
+| `members` | a `GroupMembership` each, for the people the endpoint speaks of |
+
+**The directory's own holder makes the group, and so manages it.** Whoever
+makes a group manages it ([entity.md](entity.md) § *GroupMembership*), and that
+is all that makes a group the directory's to change: its holder is in each group
+it made, holding the manager's role there, and its key holds the writes that
+change a group -- who is in it, what it is called -- through that role and
+through no binding. So the key reaches the groups it made and no other, by the
+rule every manager is held to and none of the directory's own.
+
+**The label is how it finds them, and no rule reads it.** A group it made
+carries `roster.directory`, holding what the directory calls it. The endpoint
+speaks of the groups that carry it and of no other: one an operator made is not
+found, not changed, and **not taken over** by a directory naming a group alike
+-- that create is refused as `uniqueness`, since handing a group to a directory
+is deciding who says what its bindings reach.
+
+**A role may be bound to such a group, or a client shown it, as to any other.**
+Nothing is refused a directory's group that is not refused every group. What
+follows is the administrator's to know when they do it: the directory's holder
+is a member, so it holds what is bound to the group, and the directory then says
+who else does -- which is what binding a role to a directory's group is for.
+
+**What it is called follows the directory, and the alias does not.** A rename
+writes `Group.name` (`Group.Update`). The alias was made from the first name and
+is what a token carries for a client the group is shown to (`GroupExposure`), so
+a rename in the directory never changes what a relying party grants on.
+
+**Who is in it, as far as the directory is told, is the plain members.** Its
+own holder is in every group it made and is no member to it; somebody an
+administrator appointed to manage one beside it is theirs to take out. A member
+is a person the endpoint speaks of -- a group inside a group is not followed,
+and roster has none.
+
+**`DELETE` takes everybody out and keeps the row.** A manager changes who is in
+their group and not whether there is one, and `Group.Erase` on the key would
+reach every group of the tenant nothing is bound to. So the group is still
+answered afterwards, with nobody in it, a directory that makes one of that name
+again finds it, and what becomes of the row -- and of whatever was bound to it
+-- is an administrator's.
+
 ## What its key may do, and why not more
 
 | method | what for |
@@ -179,6 +228,8 @@ back ([operating.md](operating.md) § *Stopping somebody*).
 | `HolderService/Tell` | what it calls somebody, kept beside them: reaches anybody, and is believed by nothing |
 | `EmailService/Get`, `List`, `IdentityService/Get`, `List` | finding somebody by an address or an `externalId` |
 | `MeService/Get`, `ConnectionService/List` | which tenant the key is, and its provisioning connection |
+| `GroupService/Add`, `Get`, `List`, `GroupMembershipService/List` | making a group, which makes its holder the group's manager, and reading the tenant's |
+| `GroupService/Update`, `GroupMembershipService/Add`, `Erase` | what a group is called and who is in it -- on the key, and **not bound**: held in each group it made, and so for that group alone |
 
 **Not `Identity.Add`, not an address written or attested, not `Holder.Add`, not
 `Erase`.** Each of those reaches people who already exist, and `Core.mayReach`
@@ -191,6 +242,15 @@ organisation's own door, where the account it names is one the organisation made
 the people who sign in through the provisioning connection -- not an app's holder,
 not a front door's.
 
+**Not `GroupMembership.Add` through a binding, and not `Group.Erase` at all.**
+Bound, the first reaches every group of the tenant: putting somebody into a
+group nothing is bound to is asked nothing else, and a group shown to a client
+is a permission somewhere roster cannot see. So `roster scim provision` binds
+the directory's holder everything in the table but the last row, and mints a
+key that lists it all -- a key's own list narrows what its holder holds, and
+would otherwise narrow those three away. A key minted before groups were
+provisioned here lists none of this: `provision` again, which is a rotation.
+
 ## Where each fact is
 
 | | |
@@ -198,6 +258,8 @@ not a front door's.
 | `scim/` | the endpoint: auth, the routes, the mapping, both PATCH dialects |
 | `server/core/directory.go` | `Provision`, `Deactivate`, `Activate`, and who a directory speaks for; `Tell`, and what is kept of what it says |
 | `cli/scim.go` | `roster scim serve`, `roster scim provision` and `roster scim adopt` |
+| `scim/groups.go` | a directory's groups: which it speaks of, and who is in one as far as it says |
+| `server/core/group.go` | why its holder manages the groups it makes, and what a manager may do |
 | `cmd/consumers.go` | the `scim:` block |
 | `deploy/scim/` | the endpoint in the reference deployment: a component an overlay turns on, and the Service its ingress routes to ([deploy/README.md](../deploy/README.md) § *A directory provisioning people*) |
 | `compose.yaml` | the same endpoint on a desk, `scim`, at `:8092` |
@@ -213,4 +275,6 @@ not a front door's.
 | its key reaches only the people it makes | `TestADirectoryMakesPeopleAndOnlyNewOnes` · `TestTheEndpointTakesATenantKeyAndNothingElse` |
 | and makes them only at the organisation's own door | `TestADirectoryProvisionsThroughItsOrganisationsOwnDoor` |
 | somebody erased is neither found nor made again until forgotten, and its people do not leave on their own | `TestSomebodyErasedHereIsNeitherFoundNorMadeUntilForgotten` · `TestSomebodyTheirDirectoryProvisionsDoesNotLeaveOnTheirOwn` |
+| a group's whole life at the endpoint, in Entra's order and dialect | `TestADirectoryProvisionsAGroupTheWayEntraDoes` · `TestAGroupsMembersAreSaidTheRFCsWayToo` |
+| its key changes the groups it made and no other | `TestADirectoryChangesTheGroupsItMadeAndNoOther` · `TestADirectorysKeyIsMintedForOneTenantAndOneConnection` |
 | where a deployment turns it on, the endpoint reaches roster | `scripts/cluster.sh` and `scripts/hydra.sh`, *the directory's endpoint, asked by a key nobody minted* |

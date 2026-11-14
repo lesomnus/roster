@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -46,8 +47,8 @@ import (
 const Base = "/scim/v2"
 
 // Methods is what a directory's key calls, and the whole of it: what `roster
-// scim provision` writes into the role it binds the directory's holder and
-// into the key it mints.
+// scim provision` writes into the key it mints, and -- but for [InGroups] --
+// into the role it binds the directory's holder.
 //
 // What is **not** here is the point of it. No `Identity.Add`, no address
 // written or attested, no `Holder.Add`, no `Erase`: each of those reaches
@@ -68,6 +69,44 @@ var Methods = []string{
 	rstr.EmailService_List_FullMethodName,
 	rstr.IdentityService_Get_FullMethodName,
 	rstr.IdentityService_List_FullMethodName,
+
+	// Its groups (`groups.go`): made, read, and -- the three [InGroups] names
+	// -- changed.
+	rstr.GroupService_Add_FullMethodName,
+	rstr.GroupService_Get_FullMethodName,
+	rstr.GroupService_List_FullMethodName,
+	rstr.GroupMembershipService_List_FullMethodName,
+	rstr.GroupService_Update_FullMethodName,
+	rstr.GroupMembershipService_Add_FullMethodName,
+	rstr.GroupMembershipService_Erase_FullMethodName,
+}
+
+// InGroups is what of [Methods] a directory's holder is **not** bound: the
+// writes that change a group, which it holds in each group it made -- as that
+// group's manager, the way anybody who makes a group is -- and so for that
+// group alone.
+//
+// Bound, they would reach every group of the tenant: `GroupMembership.Add`
+// into a group nothing is bound to is asked nothing else. The key lists them
+// all the same, because a key's own list narrows what its holder holds and
+// would otherwise narrow these away.
+var InGroups = []string{
+	rstr.GroupService_Update_FullMethodName,
+	rstr.GroupMembershipService_Add_FullMethodName,
+	rstr.GroupMembershipService_Erase_FullMethodName,
+}
+
+// Bound is what the role a directory's holder is bound names: [Methods]
+// without [InGroups].
+func Bound() []string {
+	out := make([]string, 0, len(Methods))
+	for _, m := range Methods {
+		if !slices.Contains(InGroups, m) {
+			out = append(out, m)
+		}
+	}
+
+	return out
 }
 
 // DefaultConcurrency is how many requests are worked on at once when nothing
@@ -179,11 +218,12 @@ func (s *Server) routes() {
 	m.Handle("PATCH "+Base+"/Users/{id}", s.authed(s.patchUser))
 	m.Handle("DELETE "+Base+"/Users/{id}", s.authed(s.deleteUser))
 
-	// Groups are the next step (#86). Told so by status rather than by silence,
-	// a directory that sends them anyway logs a failure that says why -- Entra
-	// does, every cycle, until its group mapping is off (`docs/scim.md`).
-	m.Handle(Base+"/Groups", s.authed(groups))
-	m.Handle(Base+"/Groups/", s.authed(groups))
+	m.Handle("GET "+Base+"/Groups", s.authed(s.listGroups))
+	m.Handle("POST "+Base+"/Groups", s.authed(s.createGroup))
+	m.Handle("GET "+Base+"/Groups/{id}", s.authed(s.getGroup))
+	m.Handle("PUT "+Base+"/Groups/{id}", s.authed(s.replaceGroup))
+	m.Handle("PATCH "+Base+"/Groups/{id}", s.authed(s.patchGroup))
+	m.Handle("DELETE "+Base+"/Groups/{id}", s.authed(s.deleteGroup))
 
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusNotFound, "", "nothing is served here but "+Base)

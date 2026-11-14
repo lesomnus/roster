@@ -28,25 +28,38 @@ func body(r *http.Request) ([]byte, error) {
 	return b, nil
 }
 
-// listUsers is a lookup by one attribute, or every person the directory signs
-// in, a page at a time.
-func (s *Server) listUsers(ctx context.Context, w http.ResponseWriter, r *http.Request, t *tenancy) error {
+// page is which of a list a request asks for: where it starts, counted from
+// one, and how many, at most [maxResults].
+func page(r *http.Request) (int, int, error) {
 	q := r.URL.Query()
 
 	start, count := 1, maxResults
 	if v := q.Get("startIndex"); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil {
-			return badRequest("invalidValue", "startIndex: a number")
+			return 0, 0, badRequest("invalidValue", "startIndex: a number")
 		}
 		start = max(n, 1)
 	}
 	if v := q.Get("count"); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil {
-			return badRequest("invalidValue", "count: a number")
+			return 0, 0, badRequest("invalidValue", "count: a number")
 		}
 		count = min(max(n, 0), maxResults)
+	}
+
+	return start, count, nil
+}
+
+// listUsers is a lookup by one attribute, or every person the directory signs
+// in, a page at a time.
+func (s *Server) listUsers(ctx context.Context, w http.ResponseWriter, r *http.Request, t *tenancy) error {
+	q := r.URL.Query()
+
+	start, count, err := page(r)
+	if err != nil {
+		return err
 	}
 
 	if f := q.Get("filter"); f != "" {
