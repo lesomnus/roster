@@ -102,7 +102,7 @@ func newCmdAccountProvision(c *cmd.Config) *xli.Command {
 		Brief: "mint the account app's deployment key into a directory, and nominate it in every tenant with a name, for `account.key: file:…`",
 
 		Flags: flg.Flags{
-			&flg.String{Name: "out", Brief: "the directory to write <alias>.key into; /run/roster-account if empty"},
+			&flg.String{Name: "out", Brief: "the directory to write account.key into; /run/roster-account if empty"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {

@@ -5,6 +5,12 @@ what grows and what deletes it. What to **type** to manage customers, ways in an
 permissions is [usage/](usage/); the fastest way to see it all working is the
 quick start in [../README.md](../README.md#quick-start).
 
+Every setting is a key of the configuration file and a variable beside it, and
+this page names the ones a decision hangs on, not all of them:
+`roster config env` lists every variable, each the key it is in capitals
+(`audit.checkpoints.key` is `ROSTER_AUDIT_CHECKPOINTS_KEY`), and a key the file
+names that nothing reads is refused at start, by name.
+
 ## Which database
 
 Either, and the trade is size rather than capability. Everything roster generates
@@ -364,15 +370,19 @@ for.
 
 ## The listeners
 
-Five at most, and which open is what the configuration named.
+Five of roster's own at most, and which open is what the configuration named.
 
 | | who calls it | |
 | --- | --- | --- |
 | `server.addr` | product apps | gRPC, **walled** and gated. Keys only -- a cookie names nobody here |
 | `server.http.addr` | anything that cannot speak gRPC, and a roster user's browser | the same, transcoded (Connect, gRPC-Web). Serves the **user console** and the sign-in behind it |
 | `control.addr` | the roster operators' shells, and their jobs | who runs this deployment and the deployment keys of the apps they run. Takes an `rk_` |
-| `control.http.addr` | the same, over HTTP | the RPCs a shell makes -- `roster control …`. **No page**, and no sign-in |
+| `control.http.addr` | the same, over HTTP | the same RPCs, transcoded. **No page**, and no sign-in |
 | `admin.addr` / `.http.addr` | a roster operator's browser | **customers**: the data plane with no wall, behind an operator's session. Serves the **admin console** and the sign-in behind it |
+
+And one for each consumer `roster serve` is told to run beside them --
+`account.addr`, `ldap.addr` (and `ldap.addr_tls`), `login.addr`, `scim.addr` --
+which are those apps' and not roster's: [One process, or five](#one-process-or-five).
 
 ```yaml
 admin:
@@ -431,10 +441,12 @@ a header. It is opaque: 32 bytes from `crypto/rand` naming a row, `HttpOnly`,
 `SameSite=Lax` and `__Host-` prefixed, so signing out is a delete that takes
 effect at once.
 
-**The control listener serves no page.** What it answers is what a shell asks --
-`roster control holder list`, `roster control key add`, the deployment's own rows
--- and it takes an `rk_` rather than a cookie. Managing who runs the deployment
-is a terminal's job; a browser's is customers.
+**The control listener serves no page.** What it answers is what a shell asks
+of the deployment's own rows -- `roster holder list` with `client.addr` naming
+it, and an `rk_` rather than a cookie. (`roster control …` is the same rows read
+at the box, from the database, and dials nothing:
+[usage/cli.md](usage/cli.md).) Managing who runs the deployment is a
+terminal's job; a browser's is customers.
 
 **The sessions are in a table**, on the control plane, because an operator is a
 holder of that plane. In memory they were right for one replica and *silently
@@ -479,11 +491,11 @@ surprised by what it cannot do is worse than one that is documented, and the
 answer to *should an operator be doing this?* is a question about the deployment
 rather than a method table.
 
-## One process, or four
+## One process, or five
 
-`roster serve`, `roster account serve`, `roster ldap serve` and `roster login
-serve` are four commands of one binary. A deployment that wants them all can be
-four containers, or one:
+`roster serve`, `roster account serve`, `roster ldap serve`, `roster login
+serve` and `roster scim serve` are five commands of one binary. A deployment
+that wants them all can be five containers, or one:
 
 ```yaml
 account:
@@ -697,6 +709,15 @@ directory's cloud should answer SCIM alone ([scim.md](scim.md)).
 process they default to this deployment's own listeners, and writing them again in
 the file that already says `server.addr` is one more place for two answers to
 drift.
+
+**Each block dials that listener as any consumer would, so with TLS unless it is
+told not to.** A `server:` with no `tls:` -- `roster.yaml`'s, and a pod network's
+-- speaks plain gRPC, and each block there says `insecure: true`
+(`account.insecure`, `ldap.insecure`, `login.insecure`, `scim.insecure`).
+Without it the account app and the directory do not start, the Login App's sync
+stream never connects, and the SCIM endpoint answers every call `503`; the
+message is *first record does not look like a TLS handshake*, which reads like
+a certificate problem and is a missing line.
 
 **A flag of their own commands is the setting it says.** `roster account serve`,
 `roster ldap serve`, `roster login serve` and `roster scim serve` read the same
@@ -1194,8 +1215,9 @@ roster --as admin key list
 - A deployment with no control plane has no operators to name: its rows name
   nobody, from this shell, and `--as` is refused there.
 
-The other commands -- `init`, `key add`, `vouch`, `forget`, `restore`, `hold`,
-`trail`, `login provision` -- print no field anybody's row declares personal:
+`roster scim adopt` is asked too: it lists people, by address. The other
+commands -- `init`, `key add`, `vouch`, `forget`, `restore`, `hold`, `trail`,
+`login provision`, `scim provision` -- print no field anybody's row declares personal:
 identifiers, keys, secrets made for the occasion. They need no `--as`, and
 leave no row; `cli/recorded_test.go` holds every read of a person's rows a
 command makes to one or the other.
@@ -1299,8 +1321,8 @@ neither find nor make them until they are forgotten, and makes them again after.
 connection it provisions through. Somebody who was here before it -- entered by
 an operator, or signing in another way -- is matched by their address and is not
 one of them until they are linked, so its suspension of them is refused.
-`roster scim adopt --tenant …` lists who that is, and links them once the list
-is believed ([scim.md](scim.md) § *What it does with a person*).
+`roster --as <operator> scim adopt --tenant …` lists who that is, and links them
+once the list is believed ([scim.md](scim.md) § *What it does with a person*).
 
 ## The audit trail
 
@@ -1333,14 +1355,14 @@ audit:
 the disk is. `destroy` is the obligation, normally years the longer of the two.
 Between them the row lives in `archive`: a store in that directory with a namespace
 per tenant, a gzipped chunk per kind and month, and a namespace of its own for rows two
-tenants may both read. A directory a version before this one wrote files into is the
-same setting -- the first pass takes the files in.
+tenants may both read.
 
 `by:` is why it is two clocks *per kind* rather than two clocks: what was done to a
 person has to stop existing eventually, and an operating record of what a machine
 did usually has the opposite requirement, so one clock over the table forces the
 shorter of the two onto everything. The kinds are the names the schema registered;
-`roster trail prune --kind nonsense` lists them.
+`roster trail prune --kind nonsense --older-than 1h --dry-run` lists them. (With
+no window `prune` is a pass of what `audit:` says, and reads no `--kind`.)
 
 ```sh
 roster trail profiles
@@ -2090,9 +2112,11 @@ roster:
 ```
 
 Nothing written down is plaintext, and it warns once. Serving TLS is the
-deployment's: either roster's own listeners (`tls:` beside an `addr`) or a
-terminator in front, which is what `deploy/` assumes and what
-`scripts/cluster.sh` exercises.
+deployment's: either roster's own listeners (`tls:` beside `server.addr`,
+`control.addr` or `admin.addr`, and `ldap.tls`) or a terminator in front, which
+is what `deploy/` assumes and what `scripts/cluster.sh` exercises. The account
+app, the Login App and the SCIM endpoint speak plain HTTP and have no `tls:` of
+their own: each is always behind one.
 
 ## Locally, in one command
 
@@ -2148,9 +2172,9 @@ own (§ "Who heard the newest checkpoint"). `roster trail verify`, run in the
   With no mail the *somebody else* is a person, and what they hand over is a
   password from `Credential.Issue`. The same holds for every link: one that
   confirms an address, and one that deletes an account (`Vouch.LeaveLink`), are
-  minted here and delivered by a front door -- the account app's `Config.Mail`,
-  which `roster account serve` does not fill, so the front door as shipped
-  sends none of them and says so.
+  minted here and delivered by a front door -- the account app, from
+  `account.mail` ([above](#the-front-doors-mail)); with none named it sends
+  none of them and says so.
 - **Nothing here signs a token.** If several products need one sign-in, that is
   Hydra in front and roster answering it: [login.md](login.md). Do not reach for a
   JWT minted here -- [position.md](position.md) § "The line, in one sentence" is

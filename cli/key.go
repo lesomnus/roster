@@ -107,7 +107,7 @@ func newCmdKeyAdd(c *cmd.Config) *xli.Command {
 				return fmt.Errorf("--holder: whose key this is, inside %q", tenant)
 			}
 
-			m, err := mintingOf(cl)
+			m, err := mintingOf(cl, false)
 			if err != nil {
 				return err
 			}
@@ -150,7 +150,10 @@ type minting struct {
 	expires *timestamppb.Timestamp
 }
 
-func mintingOf(cl *xli.Command) (minting, error) {
+// mintingOf is what a command was asked to mint. `narrows` is whether it has
+// `--narrowed` to offer ([narrowedFlag]): a refusal that named a flag the
+// command does not take would send somebody to look for it.
+func mintingOf(cl *xli.Command, narrows bool) (minting, error) {
 	name, _ := flg.Find[string](cl, "name")
 	if name == "" {
 		name = "default"
@@ -167,6 +170,10 @@ func mintingOf(cl *xli.Command) (minting, error) {
 		//
 		// `--narrowed` is the one key with nothing on it that works, and it
 		// has to be said: see [narrowedFlag].
+		if !narrows {
+			return minting{}, errors.New("--allow: a key that allows nothing is not a key; name the methods")
+		}
+
 		return minting{}, errors.New("--allow: a key that allows nothing is not a key; name the methods, or say --narrowed")
 	}
 	if len(methods) > 0 && narrowed {

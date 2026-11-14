@@ -13,7 +13,7 @@
 # It takes whatever it is handed, so the ordinary narrowing still works:
 #
 #     ./scripts/test.sh                  # the gate
-#     ./scripts/test.sh -run TestWall    # while working on one thing
+#     ./scripts/test.sh -run Wall        # while working on one thing
 #
 # `PDTEST_POSTGRES` is obeyed by the tests rather than by this, so the other
 # half of CI is the same command with it set -- everything roster generates is
@@ -91,8 +91,9 @@ go tool pd gen --check --ts .
 # normalising an address is one function and a copy of it is an index comparing
 # strings roster never compares.
 #
-# So is the Login App (`login/`), which needs neither exception: what it reads
-# of roster is `rstr` and `frontdoor` and nothing else.
+# So is the Login App (`login/`), with the same exception for the same reason:
+# a host is named as it is stored (`front.Hostname`), and what else it reads
+# of roster is `rstr` and `frontdoor`.
 #
 # And `standing/`, which no process here is either: it is what an app in
 # another repository imports to keep asking roster after a sign-in, and an app

@@ -59,7 +59,9 @@ spec:
           persistentVolumeClaim: { claimName: roster-witness }
         # The key the archive's account and its checkpoints are signed with.
         # **Optional**, so that a deployment that forgets the Secret is refused
-        # where the process comes up, told how to make a key, rather than left
-        # with a pod that waits for a volume. Readable by the pod's group alone.
+        # where the process comes up -- the key's path, and no such file --
+        # rather than left with a pod that waits for a volume. How to make one
+        # is `docs/operating.md` § "The audit trail". Readable by the pod's
+        # group alone.
         - name: checkpoints
           secret: { secretName: roster-checkpoints, optional: true, defaultMode: 0440 }

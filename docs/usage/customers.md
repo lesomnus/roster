@@ -138,7 +138,7 @@ unique only *within* a tenant, so two operators saying something about
 `@gmail.com` are two facts and this one is safe to hand out.
 
 ```sh
-roster --as admin mail-domain add '{"tenant":{"alias":"newco"},"name":"newco.com","routes":"entra"}'
+roster --as admin mail-domain add '{"tenant":{"alias":"newco"},"name":"newco.com","provider":"entra"}'
 ```
 
 ## Removing somebody

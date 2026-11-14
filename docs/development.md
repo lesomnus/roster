@@ -63,7 +63,8 @@ go tool pd gen . && go tool pd gen --ts .
 By commit and not `@main`: the module proxy caches what `@main` resolves to, so a
 `go get` right after a push reports success and changes nothing.
 
-payday owns some of this app's schema -- `Tenant`, `Holder`, `Audit`, `Outbox` --
+payday owns some of this app's schema -- `Tenant`, `Holder`, `Audit`, `Outbox`,
+and the four the record is kept with (`Access`, `Archived`, `Owed`, `RowSeal`) --
 so a field added to one of them there arrives in `internal/ent` here the next
 time you generate, and **nothing about that is loud on its own**. It compiles,
 the tests pass against a database the tests just created, and the first sign of
@@ -202,8 +203,9 @@ credential, the same wall -- speaking Connect and gRPC-Web. A Connect call is a
 POST with a JSON body, so it is also what to reach for from a shell:
 
 ```sh
-curl -sX POST http://localhost:8080/roster.ThingService/List \
-  -H 'Content-Type: application/json' -H 'Connect-Protocol-Version: 1' -d '{}'
+curl -sX POST http://localhost:8080/roster.HolderService/List \
+  -H 'Content-Type: application/json' -H 'Connect-Protocol-Version: 1' \
+  -H "Authorization: Bearer ${KEY}" -d '{}'
 ```
 
 Under TLS the same listener carries native gRPC as well, by ALPN.

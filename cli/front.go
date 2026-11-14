@@ -27,7 +27,7 @@ import (
 //
 // These are questions to a **served deployment**, and the local pipe mounts
 // the entity services alone. A shell on the box reading the rows is
-// `roster host ls` and `roster maildomain ls`, which is a different question:
+// `roster host ls` and `roster mail-domain ls`, which is a different question:
 // what is written down, not what a front door is told.
 func newCmdFront(c *cmd.Config) *xli.Command {
 	return &xli.Command{
@@ -48,7 +48,7 @@ func fronting(ctx context.Context, c *cmd.Config) (pdcmd.Conn, error) {
 		return nil, errors.New(
 			"`front` asks a served deployment what a front door would be told, and a local run " +
 				"reads the database instead. name client.addr; the rows behind the answers are " +
-				"`roster host ls` and `roster maildomain ls`")
+				"`roster host ls` and `roster mail-domain ls`")
 	}
 
 	return pdcmd.MustConn(ctx), nil

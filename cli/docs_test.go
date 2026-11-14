@@ -624,6 +624,47 @@ func TestTheHydraPinIsOneVersion(t *testing.T) {
 	}
 }
 
+// TestAnImageIsOneVersionWhereverItIsNamed holds every place that names an
+// image by its version against every other: a manifest, a rig's script, a
+// page that quotes one.
+//
+// [TestTheHydraPinIsOneVersion] is this for Hydra, written after the pin was
+// wrong for four days. The next one was `oauth2-proxy`: `compose.yaml` took an
+// update, and `scripts/cluster.sh` -- which writes the same proxy into a
+// manifest of its own -- went on running the version before, beside a page that
+// said so of both. What moves a pin moves the file it knows of, so it is the
+// tree that is asked whether the others followed.
+func TestAnImageIsOneVersionWhereverItIsNamed(t *testing.T) {
+	x := require.New(t)
+	root := repoRoot(t)
+
+	named := regexp.MustCompile(`\b([a-z0-9.-]+(?:/[a-z0-9._-]+)+):(v\d+\.\d+\.\d+)\b`)
+
+	pinned := map[string]map[string][]string{}
+	for _, f := range sources(t, root) {
+		// Where an image is run, or quoted from where it is: not a comment in
+		// Go, which names an old tag to say why it was wrong.
+		if strings.HasSuffix(f, ".go") {
+			continue
+		}
+
+		src, err := os.ReadFile(filepath.Join(root, f))
+		x.NoError(err)
+
+		for _, m := range named.FindAllStringSubmatch(string(src), -1) {
+			if pinned[m[1]] == nil {
+				pinned[m[1]] = map[string][]string{}
+			}
+			pinned[m[1]][m[2]] = append(pinned[m[1]][m[2]], f)
+		}
+	}
+	x.NotEmpty(pinned, "no image is named by a version anywhere, which is this test reading nothing")
+
+	for image, versions := range pinned {
+		x.Len(versions, 1, "%s is named at more than one version: %v", image, versions)
+	}
+}
+
 // banned is a phrase the glossary settled against, and what to write instead.
 //
 // Only phrases where the word names the **wrong thing** rather than reading

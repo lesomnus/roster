@@ -216,7 +216,7 @@ for a scope generally stops working without it, so the choice would be between
 *allow* and *allow, then find out something is broken*.
 
 How a deployment turns it on is [operating.md](operating.md) § "One process, or
-four"; `compose.yaml` runs the whole of it, Hydra included.
+five"; `compose.yaml` runs the whole of it, Hydra included.
 
 ### Every hop, and the call it makes
 
@@ -489,8 +489,9 @@ permissions of their own. For them the token carries `groups`:
 Who is in such a group is its managers' and the tenant's administrator's
 ([usage/permissions.md](usage/permissions.md) § *Its managers*), and what it
 lets somebody do is the relying party's mapping, kept there. The claim is the
-group's alias, which nothing over the wire renames -- a group has no `Update`,
-and `Patch` is closed -- so a mapping written against it stays true.
+group's alias, which nothing over the wire renames -- a group's `Update` writes
+its name and its note and never its alias, and `Patch` is closed -- so a
+mapping written against it stays true.
 
 **It is a copy, read at consent.** A refresh reuses it -- nothing recomputes a
 token's claims at a refresh yet -- so a name taken away reaches the relying
@@ -1034,8 +1035,9 @@ the key may make only the reads that work out *whose* flow this is, and everythi
 a flow does is the role's. A key as wide as the role would be one that could do
 all of it without naming a tenant, which is the frame this exists to take away.
 
-`roster key add --tenant contoso --holder account` mints an `rt_`, `roster account
-provision` mints one per tenant with the role beside it, and
+`roster key add --tenant contoso --holder account --allow …` mints an `rt_`;
+`roster account provision` mints one deployment key and, in every tenant with a
+name, the holder it is answered as there with the role beside it; and
 `cmd/accountkey_test.go` is that fact per call.
 
 The tenant an app names is always the app's **assertion** -- roster never sees the

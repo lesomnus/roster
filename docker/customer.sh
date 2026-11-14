@@ -69,7 +69,7 @@ done
 # this process holds) -- the binding, and the nomination its key is answered
 # through. The key itself is minted below, with the others.
 roster app install --tenant "${t}" \
-	--role /roster.TenantService/Get,/roster.HolderService/Get,/roster.HolderService/List,/roster.HolderService/Search,/roster.EmailService/Get,/roster.EmailService/List,/roster.GroupService/Get,/roster.GroupService/List,/roster.GroupMembershipService/List,/roster.SiteService/Get,/roster.SiteService/List,/roster.TeamService/Get,/roster.TeamService/List,/roster.TeamMembershipService/List,/roster.VouchService/Verify directory >/dev/null
+	--role /roster.TenantService/Get,/roster.HolderService/Get,/roster.HolderService/List,/roster.HolderService/Search,/roster.EmailService/Get,/roster.EmailService/List,/roster.PhoneService/List,/roster.RelationService/List,/roster.GroupService/Get,/roster.GroupService/List,/roster.GroupMembershipService/List,/roster.SiteService/Get,/roster.SiteService/List,/roster.TeamService/Get,/roster.TeamService/List,/roster.TeamMembershipService/List,/roster.VouchService/Verify directory >/dev/null
 
 # To a file first and moved into place, so a half-written key is never read.
 # The directory's and the Login App's first and the account app's last, because

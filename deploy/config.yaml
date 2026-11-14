@@ -91,7 +91,7 @@ admin:
     dir: /usr/share/roster/console
 
 # The Login App, in the same process. `docs/operating.md` § "One process, or
-# three" is the question of whether it should be, and the answer is a
+# five" is the question of whether it should be, and the answer is a
 # deployment's; this is the cheap one.
 login:
   addr: 0.0.0.0:8091

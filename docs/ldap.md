@@ -31,7 +31,7 @@ every time).
 (umask 077 && roster control key add --allow /roster.NominationService/List directory > directory.key)
 roster app install --tenant contoso --role '<the methods below>' directory
 
-roster ldap serve --roster roster:8080 \
+roster ldap serve --roster roster:50051 \
   --deployment-key file:directory.key \
   --tls cert.pem,key.pem --require-tls \
   --listen :389 --listen-tls :636
@@ -50,7 +50,7 @@ was once only *whether* the connection was bound, and a person bound in contoso
 searched `o=fabrikam` and read fabrikam's people.
 
 Or as a block in `roster.yaml`, which puts it in the same process as the server
-(`operating.md` § "One process, or four" is the trade -- this process holds tenant
+(`operating.md` § "One process, or five" is the trade -- this process holds tenant
 keys and faces a network of appliances, so a deployment that cares keeps it in a
 container of its own):
 
@@ -106,8 +106,10 @@ not let work for everybody, so it is a setting: `--bind key` (the default),
 in its diagnostic, and an app password refused in `password` mode likewise,
 so the person reading their client's log learns which the deployment wanted
 -- and nothing else, because the result code is the same 49 a wrong password
-gets. Every other refusal of a bind is that code with no message: an unknown
-name, somebody else's key, a name that is not a person's.
+gets. One more is said, and only to somebody holding the right password: where
+a second factor is enrolled, *use an app password for this client* (below).
+Every other refusal of a bind is that code with no message: an unknown name,
+somebody else's key, a name that is not a person's.
 
 ### Why `password` mode still cannot walk around a second factor
 
@@ -249,6 +251,7 @@ decides the cost is which roster read a filter becomes:
 | --- | --- |
 | `(uid=kim)` | `Holder.Get` by alias, then `Holder.Search` for the alias spelled with other case |
 | `(mail=kim@contoso.example)` | `Email.Get` by address at the tenant, normalised as `Email.Add` stores it |
+| `(cn=Kim Minji)`, `(displayName=…)` | `Holder.Search{q}`, which is a contains; the filter then keeps the exact ones |
 | a substring on `uid`, `cn`, `displayName` | `Holder.Search{q}` |
 | `(departmentNumber=…)`, `(employeeNumber=…)` | `Holder.Search{department}`, `{employee_no}` |
 | `(memberOf=cn=payroll,…)` | `GroupMembership.List` or `TeamMembership.List` by the group or team named |
@@ -261,11 +264,11 @@ suffixes are two keys. Size limits are the client's `sizeLimit`, and the paged
 results control (RFC 2696) carries roster's own cursor as its cookie, so a
 client paging through ten thousand people reads them once each and no page is
 bigger than `SearchPageLimit`. A subtree search from a suffix (or from the
-root, which is every suffix) pages in stages -- the fixed nodes and the
-people on roster's cursor, then the groups, then the sites and teams -- and
-the cookie carries which tenant and which stage beside the cursor, so the
-whole server is read once, entry by entry, with nothing kept on the server
-between pages. A page shorter than asked for means the filter dropped rows,
+root, which is the bound tenant's suffix and no other) pages in stages -- the
+fixed nodes and the people on roster's cursor, then the groups, then the sites
+and teams -- and the cookie carries which tenant and which stage beside the
+cursor, so the tenant is read once, entry by entry, with nothing kept on the
+server between pages. A page shorter than asked for means the filter dropped rows,
 which RFC 2696 allows; a page that would be empty reads on.
 
 The reads of groups, teams, sites and people one search makes are kept for
@@ -345,7 +348,7 @@ minted by the app's name*).
 | `ldap/wire/` | the protocol: one connection's loop, and the handful of messages this process speaks, decoded from and encoded to BER. Nothing in it knows what a holder is |
 | `cli/ldap.go` | `roster ldap serve`: `--listen` (`:389`), `--listen-tls`, `--roster`, `--insecure`, `--deployment-key` (or `--key`/`ROSTER_LDAP_KEY_<ALIAS>` for a tenant's own copy), `--base`, `--bind`, `--tls`, `--require-tls` |
 | `docker/ldap.sh`, `compose.yaml` | the `ldap` service beside `account`, on `1389`, its key from the same `customer` one-shot; `LDAP_BIND=either` turns password binds on |
-| `docs/operating.md` | § "One process, or four" -- where the `ldap:` block sits |
+| `docs/operating.md` | § "One process, or five" -- where the `ldap:` block sits |
 | `docs/usage/ways-in.md` | a paragraph under the tenant key: an app password is a key |
 | `docs/baseline.md` | § A directory over LDAP, one row per promise below |
 
@@ -453,4 +456,4 @@ comment beside what it decides.
 | L0 | the wire | **done** — `ldap/wire`: the loop, simple bind, search, unbind, abandon, StartTLS (and LDAPS as the listener's), WhoAmI, paging, the refusal table. Proved against `go-ldap` as the client and by hand for what it has no call for (abandon); under the race detector |
 | L1 | people | **done** — `ldap/`: the tree above the people, `ou=people` with every attribute in the table (`mail` verified only, disabled absent), bind in all three modes with roster's `ok` as the second-factor rule, search planned into `Holder.Get`/`Holder.Search`/`Email.Get`/`Holder.List` and evaluated off the BER tree, paging on roster's own cursor, `uid` and `mail` found without regard to case. `roster ldap serve` with `--key`/`ROSTER_LDAP_KEY_`, `--base`, `--bind`, `--tls`, `--listen-tls`, `--require-tls`. The import check learned `ldap/`. Eight tests in `ldap/`, one in `cmd/` |
 | L2 | groups, teams, sites | **done** — `ou=groups` as `groupOfNames` with `member` the DNs of people in the tree (the disabled are not named), `ou=sites/ou=<site>/ou=teams/cn=<team>` and `ou=teams` under the suffix for a team with no site, `memberOf` on a person from the other end, `(memberOf=…)` planned into one membership list. A subtree search from a suffix or the root pages in stages -- people on roster's cursor, then the groups, then the sites -- carried in the cookie, so a client paging from the root sees every entry of the tenant it is bound in once. `TestGroupsTeamsAndSitesAreTheTree` |
-| L3 | shipped | **done** — the `ldap` compose service on `1389` with its key from `customer.sh`, `operating.md` § "One process, or four", `usage/ways-in.md` on app passwords, `baseline.md` § A directory over LDAP, the account page's *mint an app password* form and its spec, and this file as a description |
+| L3 | shipped | **done** — the `ldap` compose service on `1389` with its key from `customer.sh`, `operating.md` § "One process, or five", `usage/ways-in.md` on app passwords, `baseline.md` § A directory over LDAP, the account page's *mint an app password* form and its spec, and this file as a description |

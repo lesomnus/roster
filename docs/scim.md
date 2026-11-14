@@ -300,8 +300,8 @@ in through the connection, where `login.enrol` matches by address (`expected`,
 `enrolling`), or by an operator at the box:
 
 ```sh
-roster scim adopt --tenant contoso                     # who, their address, what the directory calls them
-roster scim adopt --tenant contoso --confirm contoso   # and link them, the list believed
+roster --as admin scim adopt --tenant contoso                     # who, their address, what the directory calls them
+roster --as admin scim adopt --tenant contoso --confirm contoso   # and link them, the list believed
 ```
 
 The list is where a pair that does not belong together is seen before it is

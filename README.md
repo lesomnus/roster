@@ -39,8 +39,10 @@ docker compose up --build
 | the same page behind `oauth2-proxy` | <http://localhost:4180/> | the other relying-party shape |
 | the data plane, for your app | `localhost:50051`, or `:8080` over HTTP | a key, below |
 | the directory | `ldap://localhost:1389` | an app password |
+| where a directory provisions people | <http://localhost:8092/scim/v2> | a tenant's key, from `roster scim provision` |
+| what the app in front mailed | <http://localhost:8025/> | Mailpit, and nothing of roster's |
 
-That is four processes, Hydra, and two demo products
+That is five processes of roster's, Hydra, a mailbox, and two demo products
 ([docs/relying-party.md](docs/relying-party.md)). `docker compose down -v` takes
 it all away.
 
@@ -50,12 +52,7 @@ it all away.
 go run ./cmd/roster init                      # the operator who runs this deployment
 go run ./cmd/roster serve &                   # the listeners roster.yaml names
 
-roster --as admin tenant add @newco           # your first customer
-roster --as admin holder add @newco/admin     # somebody in it
-roster --as admin role   add @newco/everything '{"methods":["/roster.*/*"]}'
-echo '{"role":  {"slug":{"alias":"everything","tenant":{"alias":"newco"}}},
-       "holder":{"slug":{"alias":"admin",     "tenant":{"alias":"newco"}}}}' \
-  | roster --as admin binding add -
+roster --as admin tenant add @newco           # your first customer, and who administers it
 
 KEY=$(roster key add --tenant newco --holder admin --allow '/roster.*/*')
 ```
@@ -64,8 +61,10 @@ KEY=$(roster key add --tenant newco --holder admin --allow '/roster.*/*')
 written by a command is a customer nobody asked for. `--as admin` is that
 operator: a command that reads the database directly says who is at the shell,
 and what it shows or writes of anybody is on the access record under that name.
-The key is printed once and resolves to that person, so the loop closes with a
-call:
+A tenant arrives with somebody in it -- `@newco/admin`, the role `everything`,
+and the binding between them -- so there is nobody to add before the key. It is
+printed once and resolves to that person, and the loop closes with the fifth
+command, a call:
 
 ```sh
 curl -sS -X POST http://127.0.0.1:8080/roster.MeService/Get \
@@ -168,7 +167,7 @@ go tool pd gen . && go tool pd gen --ts .    # after touching proto/
   one about fixing [payday](https://github.com/lesomnus/payday) rather than
   working around it here.
 - [docs/development.md](docs/development.md) -- the same ground at length:
-  generation, upgrading payday, the three pages, the sandbox, and what the
+  generation, upgrading payday, the four pages, the sandbox, and what the
   generator refuses.
 - [docs/baseline.md](docs/baseline.md) -- the promises a normal user relies on,
   each pinned to its tests.

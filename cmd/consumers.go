@@ -4,10 +4,11 @@ import "time"
 
 // The consumers, as configuration.
 //
-// `roster account serve`, `roster ldap serve` and `roster login serve` are
-// separate processes that reach roster over the wire, and `scripts/test.sh`
-// holds them to it: none of those packages may import `internal`, `cmd` or
-// `server` (`server/front` excepted, and `login/` takes not even that).
+// `roster account serve`, `roster ldap serve`, `roster login serve` and
+// `roster scim serve` are separate processes that reach roster over the wire,
+// and `scripts/test.sh` holds them to it: none of those packages may import
+// `internal`, `cmd` or `server` (`server/front` excepted, for how an address
+// and a host are written as they are stored).
 // That is what makes them proof that roster's wire API is enough, and none of
 // it changes here.
 //

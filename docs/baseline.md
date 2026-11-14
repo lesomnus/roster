@@ -16,7 +16,8 @@ is the one that day taught:
 > promise itself has to change, that is a decision to write down first — beside
 > the thing it decides — this table second, and the test third, in that order.
 
-Every test named here is `cmd/…_test.go`, wire-level where the promise is
+Most of the tests named here are `cmd/…_test.go`, and the rest are the package's
+whose promise it is (`login/`, `account/`, `scim/`, `ldap/`) -- wire-level where the promise is
 about a caller: it dials a served port and presents the credential a real
 caller would. `TestBaselineNamesRealTests` reads this file and fails if a name
 below stops existing, so a rename cannot quietly orphan a row.
@@ -171,7 +172,7 @@ the page, one of the two is wrong and both are load-bearing.
 | --- | --- |
 | an app password — a key with `Me.Get` alone — binds its owner's name and nobody else's; a wrong key, somebody else's, the directory's own, an empty password and a name that is not a person's are the same `invalidCredentials` | `TestAnAppPasswordBindsItsOwnerAndNobodyElse` |
 | under `--bind key` a password does not bind; under `password` it does for somebody with no second factor and does **not** for somebody with one, because `Vouch.Verify` answers `ok` only for a finished sign-in; `either` takes both | `TestAPasswordBindStopsAtASecondFactor` |
-| a suffix is a tenant: a search under one answers none of another's, a renamed suffix is the same tenant, the root DSE lists them all, and nothing below the root is read unbound | `TestASuffixIsATenant` |
+| a suffix is a tenant: a search under one answers none of another's, a renamed suffix is the same tenant, the root DSE names the bound tenant's suffix and none before a bind, and nothing below the root is read unbound | `TestASuffixIsATenant` |
 | every filter shape is the roster read that covers it, evaluated without regard to case; a person's attributes are the table in ldap.md, `mail` the verified addresses only, nothing operational unasked | `TestAFilterIsARosterRead` |
 | groups and teams name their members and nobody disabled, a site holds its teams, `memberOf` agrees with `member`, and the whole suffix in one search and in pages is the same tree | `TestGroupsTeamsAndSitesAreTheTree` |
 | paging reads everybody once, with a filter that drops rows and with one roster has no index for; the client's size limit is a bound | `TestPagingReadsEverybodyOnce` |
@@ -215,6 +216,6 @@ the page, one of the two is wrong and both are load-bearing.
 | a product app that trusts the issuer signs somebody in and keeps a session of its own: the identity is `sub` alone, what a browser holds is opaque, a token minted for another relying party is refused, and a callback carrying a state this browser did not start is refused | `TestAProductAppSignsSomebodyInAndKeepsItsOwnSession` · `TestATokenForSomebodyElsesApp` · `TestSigningOutEndsThisAppsSessionAndNotTheIssuers` |
 | **a cookie is marked `Secure` because the deployment says so, never because a request looked encrypted.** A flow's state cookie carries it wherever the app was not started with `--insecure-cookie`, which is every deployment that ends TLS at an ingress -- where `r.TLS` is nil and guessing from it drops the flag on exactly the deployments that have a certificate | `docker/itself.sh`, *and the state cookie is marked* · `scripts/cluster.sh` |
 | **how a client sends its secret is said in code, not discovered.** `client_secret_basic`, matching what every client is registered with -- so a registration that disagrees fails the **first** exchange rather than the first one after a restart, a restart does not cure it, and putting the registration back cures it without one. `golang.org/x/oauth2` probes and then caches for the life of the process, which is why the discovered version was an outage that began hours after the change and that no fresh-process gate could see | `TestDoctorFindsWhatCostAnHourEach` · `docker/itself.sh` · `scripts/cluster.sh`, *a registration changed under the running pods* |
-| `login/` reaches roster only over the wire, and imports no server package at all | `scripts/test.sh`, *the consumers reach roster only over the wire* |
+| `login/` reaches roster only over the wire, and imports no server package but `server/front`, where a host is named as it is stored | `scripts/test.sh`, *the consumers reach roster only over the wire* |
 | the page draws it: the brand, the client and the provider buttons come from the app and not from the browser, a second form is drawn from what the server said is left to prove and never from a label it sent, one wrong code goes back to the password, and the consent screen is a screen with two answers and no checkboxes | `ts/e2e/login.spec.ts` |
 | the account page mints an app password by the app's name, shows it once beside its one method, and revokes it from the same list | `scripts/e2e.sh` — `ts/e2e/account.spec.ts`, *an app password is a key minted by the app's name* |

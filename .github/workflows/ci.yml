@@ -327,13 +327,13 @@ jobs:
           BEFORE: ${{ github.event.pull_request.base.sha || github.event.before }}
           # The oldest build a deployment runs. There are two deployments:
           #
-          #   staging                  36fafda   since 2026-11-13
-          #   one with data, operating 59c0506   since 2026-11-14
+          #   staging   36fafda   since 2026-11-13
+          #   another   59c0506   since 2026-11-14
           #
           # So it is staging's, and it moves when staging moves -- to the older
           # of what the two then run. Moved to wherever staging went, it would
-          # pass the other by, and the one whose rows are somebody's is the one
-          # that would then upgrade over steps nothing here had taken.
+          # pass the other by, which would then upgrade over steps nothing here
+          # had taken.
           OLDEST: 36fafdadc11b7ab843eb0908b48b35da5efdd778
         run: |
           go build -o "${RUNNER_TEMP}/bin-now/" ./cmd/roster
