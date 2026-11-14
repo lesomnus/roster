@@ -100,6 +100,10 @@ func TestWhatMicrosoftsValidatorAsks(t *testing.T) {
 	}
 	patch := func(t *testing.T, path string, ops ...map[string]any) int {
 		t.Helper()
+		if ops == nil {
+			// None is a list of none, which is what the page sends.
+			ops = []map[string]any{}
+		}
 		code, _, _ := d.call(t, d.key, http.MethodPatch, scim.Base+path, map[string]any{
 			"schemas": []string{"urn:ietf:params:scim:api:messages:2.0:PatchOp"}, "Operations": ops,
 		})
@@ -271,6 +275,17 @@ func TestWhatMicrosoftsValidatorAsks(t *testing.T) {
 		now := one(t, "Groups", "displayName", renamed)
 		x.Equal(got["id"], now["id"])
 		x.Equal(renamed, now["displayName"])
+	})
+
+	t.Run("Patch Group - Replace Attributes, of which it found none", func(t *testing.T) {
+		x := require.New(t)
+		g := group(t)
+		code, got := post(t, "/Groups", g)
+		x.Equal(http.StatusCreated, code, "%v", got)
+
+		x.Equal(http.StatusNoContent, patch(t, "/Groups/"+got["id"].(string)))
+		now := one(t, "Groups", "displayName", g["displayName"].(string))
+		x.Equal(got["id"], now["id"])
 	})
 
 	t.Run("Create a New Group Resource", func(t *testing.T) {
