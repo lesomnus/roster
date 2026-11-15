@@ -256,7 +256,7 @@ configuration.
 | Whether a password is a way in | the tenant | `config.password` | `TestATenantSaysWhetherAPasswordIsAWayIn` |
 | Whether somebody arriving through a provider for the first time is made, or refused | the deployment | a front door's `enrol` | `TestAStrangerIsRefusedUnlessTheDeploymentEnrols` · `TestAStrangerIsEnrolledWhereTheDeploymentSaysSo` |
 | Whether a terminal is signed in from a browser | the deployment | `account.terminal` | `TestADeploymentThatDoesNotSignTerminalsInSaysSo` |
-| How many wrong secrets lock an account, and for how long | the deployment | `vouch.lockout` | `TestTheLockoutIsTheDeploymentsNumbers` |
+| How many wrong secrets lock an account, and for how long | the deployment | `vouch.lockout` | `TestTheLockoutIsTheDeploymentsNumbers`, `TestTheConsolesSignInCountsByTheDeploymentsLockout` |
 | How long a stream left open goes before whoever opened it is asked again | the deployment | `stream.recheck` | `TestAStreamLeftOpenIsAskedAgainWhoOpenedIt` |
 | What somebody holds beyond their rows | the deployment | a file ([file-policy.md](file-policy.md)) | `TestFilePolicyJoinsEveryPermissionReader` |
 

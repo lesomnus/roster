@@ -56,16 +56,34 @@ import (
 // direction: one that carried on with no tenant would look somebody up in
 // whichever one it happened to reach, the failure `front.WhoseHost` names.
 func Auth(s app.Server, db *ent.Client, sessions *authsession.Sessions, opts ...Option) app.AuthServiceServer {
-	a := authed{s: s, db: db, sessions: sessions, v: vouch.New(s, s)}
+	a := authed{s: s, db: db, sessions: sessions}
 	for _, opt := range opts {
 		opt(&a)
 	}
+
+	// Built last, from what it was told: see [WithVouch].
+	a.v = vouch.New(s, s, a.vouch...)
 
 	return a
 }
 
 // Option is what [Auth] is told beyond the three things it is built on.
 type Option func(*authed)
+
+// WithVouch is what the verifier behind this door is built with: the
+// deployment's lockout.
+//
+// This door checks a password with a `vouch.Server` of its own, since the one
+// on the wire reads behind the wall and nobody here has been resolved yet. It
+// built that server with nothing, and so counted wrong answers by the default
+// -- ten, and fifteen minutes -- whatever `vouch.lockout` said: a deployment
+// that asked for an account to close at the third wrong password had it close
+// there for every app that asks roster, and at the tenth at the one sign-in
+// anybody with a browser reaches (#275). What a deployment says of checking a
+// secret is said once, and every server that checks one is handed it.
+func WithVouch(opts ...vouch.Option) Option {
+	return func(a *authed) { a.vouch = append(a.vouch, opts...) }
+}
 
 // WithTenant is which tenant a sign-in is about, by alias, from the request.
 func WithTenant(fn func(ctx context.Context) (string, error)) Option {
@@ -91,6 +109,9 @@ type authed struct {
 	db       *ent.Client
 	sessions *authsession.Sessions
 	v        *vouch.Server
+
+	// vouch is [WithVouch], and none is `server/vouch`'s own defaults.
+	vouch []vouch.Option
 
 	// tenant is [WithTenant], and nil is the one this plane has.
 	tenant func(ctx context.Context) (string, error)

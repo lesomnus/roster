@@ -8,7 +8,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+
+	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
@@ -72,6 +75,81 @@ func TestTheLockoutIsTheDeploymentsNumbers(t *testing.T) {
 		x := require.New(t)
 		s, _ := personOn(t, nil)
 		x.Equal(vouch.DefaultLockout, s.Lockout)
+	})
+}
+
+// TestTheConsolesSignInCountsByTheDeploymentsLockout: `AuthService/SignIn`
+// closes an account at the number the deployment said, on the data plane and
+// at the admin listener.
+//
+// # What it was
+//
+// The test above builds the `vouch.Server` it asks, with the deployment's
+// numbers handed to it, and so held nothing about the one a served deployment
+// asks at its own door. `server/console` built that one itself and was handed
+// nothing: `AuthService/SignIn` counted by the default, ten and fifteen
+// minutes, whatever `vouch.lockout` said. A deployment that asked for an
+// account to close at the third wrong password had it close there for every
+// app that asks roster, and at the tenth at the one sign-in anybody with a
+// browser reaches (#275).
+func TestTheConsolesSignInCountsByTheDeploymentsLockout(t *testing.T) {
+	two := func(c *cmd.Config) {
+		c.SignIn.Enabled = true
+		c.Vouch.Lockout = cmd.LockoutConfig{Failures: 2, For: time.Hour}
+	}
+
+	// wrongTwiceThenRight is the whole of it: two wrong passwords, and then
+	// the right one, which a closed account refuses as it refuses a wrong one.
+	wrongTwiceThenRight := func(t *testing.T, auth app.AuthServiceClient, at context.Context, alias, secret string) {
+		t.Helper()
+		x := require.New(t)
+
+		for range 2 {
+			_, err := auth.SignIn(at, app.AuthSignInRequest_builder{Alias: alias, Password: "not it, not it"}.Build())
+			x.Equal(codes.Unauthenticated, status.Code(err), "%v", err)
+		}
+
+		_, err := auth.SignIn(at, app.AuthSignInRequest_builder{Alias: alias, Password: secret}.Build())
+		x.Equal(codes.Unauthenticated, status.Code(err),
+			"two wrong passwords did not close the account at this door, as the deployment said they should: %v", err)
+	}
+
+	t.Run("a tenant's person, on the data plane", func(t *testing.T) {
+		x := require.New(t)
+		b, ctx := build(t, two)
+
+		_, err := b.Ungated.Host().Add(ctx, app.HostAddRequest_builder{
+			Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+			Name:   "contoso.example",
+		}.Build())
+		x.NoError(err)
+
+		const secret = "correct horse battery staple"
+		x.NoError(setFor(ctx, b.Server, b.ContosoUser.Bytes(), secret))
+
+		auth := app.NewAuthServiceClient(pdtest.Serve(t, b.grpc(t)))
+		at := metadata.NewOutgoingContext(ctx, arrivingAt(t, "contoso.example"))
+		wrongTwiceThenRight(t, auth, at, "someone", secret)
+
+		// And it is the row that says so, for an hour and not for a quarter.
+		v, err := b.Ungated.Holder().SignsIn(ctx, app.HolderSignsInRequest_builder{
+			Ref: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		}.Build())
+		x.NoError(err)
+		x.Len(v.GetCredentials(), 1)
+		x.NotNil(v.GetCredentials()[0].GetDateLocked())
+		x.WithinDuration(time.Now().Add(time.Hour), v.GetCredentials()[0].GetDateLocked().AsTime(), time.Minute)
+	})
+
+	t.Run("an operator, at the admin listener", func(t *testing.T) {
+		x := require.New(t)
+		s, c, out := adminDeployment(t, two)
+
+		g, err := s.GrpcAdmin(t.Context(), c)
+		x.NoError(err)
+
+		auth := app.NewAuthServiceClient(pdtest.Serve(t, g))
+		wrongTwiceThenRight(t, auth, t.Context(), "admin", passwordFrom(t, out))
 	})
 }
 
