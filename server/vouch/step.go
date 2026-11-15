@@ -183,6 +183,16 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 		return no(), nil, nil
 	}
 
+	// And the step, by the same rule one row over: many attempts may hold the
+	// same right code, and only the one that spends it goes on.
+	v, mine, err := s.claim(ctx, v, at)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !mine {
+		return no(), nil, nil
+	}
+
 	done := append(slices.Clone(c.GetSatisfied()), kindOf(kind))
 
 	res, err := s.answer(ctx, v.GetHolder(), done, c.GetMeteredBy(), issuer)
