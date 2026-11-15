@@ -8,7 +8,6 @@ import (
 	errors "errors"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
-	holder "github.com/lesomnus/roster/internal/ent/holder"
 	nomination "github.com/lesomnus/roster/internal/ent/nomination"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
@@ -284,7 +283,9 @@ func (s NominationServiceServer) Get(ctx context.Context, req *rstr.NominationGe
 	}
 
 	q := s.Db.Nomination.Query().Where(p)
-	NominationSelectInit(q, req.GetSelect())
+	if err := NominationSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -331,28 +332,55 @@ func NominationSelectedFields(m *rstr.NominationSelect) []string {
 	return vs
 }
 
-func NominationSelect(q *ent.NominationQuery, m *rstr.NominationSelect) {
+// NominationSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func NominationSelect(ctx context.Context, scope Scope, q *ent.NominationQuery, m *rstr.NominationSelect) error {
 	if !m.GetAll() {
 		fields := NominationSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasActsAs() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithActsAs(func(q *ent.HolderQuery) {
-			q.Where(holder.DateErasedIsNil())
-			HolderSelect(q, m.GetActsAs())
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetActsAs())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func NominationSelectInit(q *ent.NominationQuery, m *rstr.NominationSelect) {
+// NominationSelectInit is [NominationSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func NominationSelectInit(ctx context.Context, scope Scope, q *ent.NominationQuery, m *rstr.NominationSelect) error {
 	if m != nil {
-		NominationSelect(q, m)
+		return NominationSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s NominationServiceServer) Patch(ctx context.Context, req *rstr.NominationPatchRequest) (*rstr.Nomination, error) {

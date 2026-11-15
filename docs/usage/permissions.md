@@ -181,6 +181,12 @@ group may each be a site's, and one still there refuses the erase, which says
 what is left: a binding that outlived its site would go on counting for a place
 nobody can see any more. Take them out, and then the site.
 
+**A row a read is asked to bring along is read by its own rule.** A `Get` may
+ask for the rows its row points at (`select`: a membership's team, the team's
+site, a role). Each is narrowed as it is when asked for by itself -- to the
+tenant, and to the sites the caller sees -- and one out of reach comes back as
+its reference alone, as it does when nobody asked for it.
+
 **And what is the tenant's as a whole needs a binding across it.** A role that
 reaches somebody only in a site or only in a team writes none of these, whatever
 its methods say:

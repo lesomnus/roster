@@ -11,7 +11,6 @@ import (
 	group "github.com/lesomnus/roster/internal/ent/group"
 	groupexposure "github.com/lesomnus/roster/internal/ent/groupexposure"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
-	site "github.com/lesomnus/roster/internal/ent/site"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
@@ -283,7 +282,9 @@ func (s GroupServiceServer) Get(ctx context.Context, req *rstr.GroupGetRequest) 
 	}
 
 	q := s.Db.Group.Query().Where(p)
-	GroupSelectInit(q, req.GetSelect())
+	if err := GroupSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -333,28 +334,55 @@ func GroupSelectedFields(m *rstr.GroupSelect) []string {
 	return vs
 }
 
-func GroupSelect(q *ent.GroupQuery, m *rstr.GroupSelect) {
+// GroupSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func GroupSelect(ctx context.Context, scope Scope, q *ent.GroupQuery, m *rstr.GroupSelect) error {
 	if !m.GetAll() {
 		fields := GroupSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func GroupSelectInit(q *ent.GroupQuery, m *rstr.GroupSelect) {
+// GroupSelectInit is [GroupSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func GroupSelectInit(ctx context.Context, scope Scope, q *ent.GroupQuery, m *rstr.GroupSelect) error {
 	if m != nil {
-		GroupSelect(q, m)
+		return GroupSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s GroupServiceServer) Patch(ctx context.Context, req *rstr.GroupPatchRequest) (*rstr.Group, error) {
@@ -880,7 +908,9 @@ func (s GroupExposureServiceServer) Get(ctx context.Context, req *rstr.GroupExpo
 	}
 
 	q := s.Db.GroupExposure.Query().Where(p)
-	GroupExposureSelectInit(q, req.GetSelect())
+	if err := GroupExposureSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -921,23 +951,40 @@ func GroupExposureSelectedFields(m *rstr.GroupExposureSelect) []string {
 	return vs
 }
 
-func GroupExposureSelect(q *ent.GroupExposureQuery, m *rstr.GroupExposureSelect) {
+// GroupExposureSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func GroupExposureSelect(ctx context.Context, scope Scope, q *ent.GroupExposureQuery, m *rstr.GroupExposureSelect) error {
 	if !m.GetAll() {
 		fields := GroupExposureSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasGroup() {
+		p, err := GroupNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithGroup(func(q *ent.GroupQuery) {
-			q.Where(group.DateErasedIsNil())
-			GroupSelect(q, m.GetGroup())
+			if p != nil {
+				q.Where(p)
+			}
+			err = GroupSelect(ctx, scope, q, m.GetGroup())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func GroupExposureSelectInit(q *ent.GroupExposureQuery, m *rstr.GroupExposureSelect) {
+// GroupExposureSelectInit is [GroupExposureSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func GroupExposureSelectInit(ctx context.Context, scope Scope, q *ent.GroupExposureQuery, m *rstr.GroupExposureSelect) error {
 	if m != nil {
-		GroupExposureSelect(q, m)
+		return GroupExposureSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s GroupExposureServiceServer) Patch(ctx context.Context, req *rstr.GroupExposurePatchRequest) (*rstr.GroupExposure, error) {

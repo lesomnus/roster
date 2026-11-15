@@ -9,7 +9,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	delegation "github.com/lesomnus/roster/internal/ent/delegation"
-	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
@@ -263,7 +262,9 @@ func (s DelegationServiceServer) Get(ctx context.Context, req *rstr.DelegationGe
 	}
 
 	q := s.Db.Delegation.Query().Where(p)
-	DelegationSelectInit(q, req.GetSelect())
+	if err := DelegationSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -316,23 +317,40 @@ func DelegationSelectedFields(m *rstr.DelegationSelect) []string {
 	return vs
 }
 
-func DelegationSelect(q *ent.DelegationQuery, m *rstr.DelegationSelect) {
+// DelegationSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func DelegationSelect(ctx context.Context, scope Scope, q *ent.DelegationQuery, m *rstr.DelegationSelect) error {
 	if !m.GetAll() {
 		fields := DelegationSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasHolder() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithHolder(func(q *ent.HolderQuery) {
-			q.Where(holder.DateErasedIsNil())
-			HolderSelect(q, m.GetHolder())
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetHolder())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func DelegationSelectInit(q *ent.DelegationQuery, m *rstr.DelegationSelect) {
+// DelegationSelectInit is [DelegationSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func DelegationSelectInit(ctx context.Context, scope Scope, q *ent.DelegationQuery, m *rstr.DelegationSelect) error {
 	if m != nil {
-		DelegationSelect(q, m)
+		return DelegationSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s DelegationServiceServer) Patch(ctx context.Context, req *rstr.DelegationPatchRequest) (*rstr.Delegation, error) {

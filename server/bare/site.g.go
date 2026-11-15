@@ -257,7 +257,9 @@ func (s SiteServiceServer) Get(ctx context.Context, req *rstr.SiteGetRequest) (*
 	}
 
 	q := s.Db.Site.Query().Where(p)
-	SiteSelectInit(q, req.GetSelect())
+	if err := SiteSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -307,22 +309,40 @@ func SiteSelectedFields(m *rstr.SiteSelect) []string {
 	return vs
 }
 
-func SiteSelect(q *ent.SiteQuery, m *rstr.SiteSelect) {
+// SiteSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func SiteSelect(ctx context.Context, scope Scope, q *ent.SiteQuery, m *rstr.SiteSelect) error {
 	if !m.GetAll() {
 		fields := SiteSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func SiteSelectInit(q *ent.SiteQuery, m *rstr.SiteSelect) {
+// SiteSelectInit is [SiteSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func SiteSelectInit(ctx context.Context, scope Scope, q *ent.SiteQuery, m *rstr.SiteSelect) error {
 	if m != nil {
-		SiteSelect(q, m)
+		return SiteSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s SiteServiceServer) Patch(ctx context.Context, req *rstr.SitePatchRequest) (*rstr.Site, error) {

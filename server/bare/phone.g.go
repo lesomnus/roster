@@ -8,7 +8,6 @@ import (
 	errors "errors"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
-	holder "github.com/lesomnus/roster/internal/ent/holder"
 	phone "github.com/lesomnus/roster/internal/ent/phone"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
@@ -259,7 +258,9 @@ func (s PhoneServiceServer) Get(ctx context.Context, req *rstr.PhoneGetRequest) 
 	}
 
 	q := s.Db.Phone.Query().Where(p)
-	PhoneSelectInit(q, req.GetSelect())
+	if err := PhoneSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -306,23 +307,40 @@ func PhoneSelectedFields(m *rstr.PhoneSelect) []string {
 	return vs
 }
 
-func PhoneSelect(q *ent.PhoneQuery, m *rstr.PhoneSelect) {
+// PhoneSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func PhoneSelect(ctx context.Context, scope Scope, q *ent.PhoneQuery, m *rstr.PhoneSelect) error {
 	if !m.GetAll() {
 		fields := PhoneSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasHolder() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithHolder(func(q *ent.HolderQuery) {
-			q.Where(holder.DateErasedIsNil())
-			HolderSelect(q, m.GetHolder())
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetHolder())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func PhoneSelectInit(q *ent.PhoneQuery, m *rstr.PhoneSelect) {
+// PhoneSelectInit is [PhoneSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func PhoneSelectInit(ctx context.Context, scope Scope, q *ent.PhoneQuery, m *rstr.PhoneSelect) error {
 	if m != nil {
-		PhoneSelect(q, m)
+		return PhoneSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s PhoneServiceServer) Patch(ctx context.Context, req *rstr.PhonePatchRequest) (*rstr.Phone, error) {

@@ -9,7 +9,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	continuation "github.com/lesomnus/roster/internal/ent/continuation"
-	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
@@ -267,7 +266,9 @@ func (s ContinuationServiceServer) Get(ctx context.Context, req *rstr.Continuati
 	}
 
 	q := s.Db.Continuation.Query().Where(p)
-	ContinuationSelectInit(q, req.GetSelect())
+	if err := ContinuationSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -320,23 +321,40 @@ func ContinuationSelectedFields(m *rstr.ContinuationSelect) []string {
 	return vs
 }
 
-func ContinuationSelect(q *ent.ContinuationQuery, m *rstr.ContinuationSelect) {
+// ContinuationSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func ContinuationSelect(ctx context.Context, scope Scope, q *ent.ContinuationQuery, m *rstr.ContinuationSelect) error {
 	if !m.GetAll() {
 		fields := ContinuationSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasHolder() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithHolder(func(q *ent.HolderQuery) {
-			q.Where(holder.DateErasedIsNil())
-			HolderSelect(q, m.GetHolder())
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetHolder())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func ContinuationSelectInit(q *ent.ContinuationQuery, m *rstr.ContinuationSelect) {
+// ContinuationSelectInit is [ContinuationSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func ContinuationSelectInit(ctx context.Context, scope Scope, q *ent.ContinuationQuery, m *rstr.ContinuationSelect) error {
 	if m != nil {
-		ContinuationSelect(q, m)
+		return ContinuationSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s ContinuationServiceServer) Patch(ctx context.Context, req *rstr.ContinuationPatchRequest) (*rstr.Continuation, error) {

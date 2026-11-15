@@ -9,7 +9,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	credential "github.com/lesomnus/roster/internal/ent/credential"
-	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
@@ -266,7 +265,9 @@ func (s CredentialServiceServer) Get(ctx context.Context, req *rstr.CredentialGe
 	}
 
 	q := s.Db.Credential.Query().Where(p)
-	CredentialSelectInit(q, req.GetSelect())
+	if err := CredentialSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -328,23 +329,40 @@ func CredentialSelectedFields(m *rstr.CredentialSelect) []string {
 	return vs
 }
 
-func CredentialSelect(q *ent.CredentialQuery, m *rstr.CredentialSelect) {
+// CredentialSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func CredentialSelect(ctx context.Context, scope Scope, q *ent.CredentialQuery, m *rstr.CredentialSelect) error {
 	if !m.GetAll() {
 		fields := CredentialSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasHolder() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithHolder(func(q *ent.HolderQuery) {
-			q.Where(holder.DateErasedIsNil())
-			HolderSelect(q, m.GetHolder())
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetHolder())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func CredentialSelectInit(q *ent.CredentialQuery, m *rstr.CredentialSelect) {
+// CredentialSelectInit is [CredentialSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func CredentialSelectInit(ctx context.Context, scope Scope, q *ent.CredentialQuery, m *rstr.CredentialSelect) error {
 	if m != nil {
-		CredentialSelect(q, m)
+		return CredentialSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s CredentialServiceServer) Patch(ctx context.Context, req *rstr.CredentialPatchRequest) (*rstr.Credential, error) {

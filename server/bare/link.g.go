@@ -8,8 +8,6 @@ import (
 	errors "errors"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
-	email "github.com/lesomnus/roster/internal/ent/email"
-	holder "github.com/lesomnus/roster/internal/ent/holder"
 	link "github.com/lesomnus/roster/internal/ent/link"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
@@ -288,7 +286,9 @@ func (s LinkServiceServer) Get(ctx context.Context, req *rstr.LinkGetRequest) (*
 	}
 
 	q := s.Db.Link.Query().Where(p)
-	LinkSelectInit(q, req.GetSelect())
+	if err := LinkSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -341,29 +341,55 @@ func LinkSelectedFields(m *rstr.LinkSelect) []string {
 	return vs
 }
 
-func LinkSelect(q *ent.LinkQuery, m *rstr.LinkSelect) {
+// LinkSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func LinkSelect(ctx context.Context, scope Scope, q *ent.LinkQuery, m *rstr.LinkSelect) error {
 	if !m.GetAll() {
 		fields := LinkSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasHolder() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithHolder(func(q *ent.HolderQuery) {
-			q.Where(holder.DateErasedIsNil())
-			HolderSelect(q, m.GetHolder())
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetHolder())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasEmail() {
+		p, err := EmailNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithEmail(func(q *ent.EmailQuery) {
-			q.Where(email.DateErasedIsNil())
-			EmailSelect(q, m.GetEmail())
+			if p != nil {
+				q.Where(p)
+			}
+			err = EmailSelect(ctx, scope, q, m.GetEmail())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func LinkSelectInit(q *ent.LinkQuery, m *rstr.LinkSelect) {
+// LinkSelectInit is [LinkSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func LinkSelectInit(ctx context.Context, scope Scope, q *ent.LinkQuery, m *rstr.LinkSelect) error {
 	if m != nil {
-		LinkSelect(q, m)
+		return LinkSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s LinkServiceServer) Patch(ctx context.Context, req *rstr.LinkPatchRequest) (*rstr.Link, error) {

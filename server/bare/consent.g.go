@@ -9,7 +9,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	consent "github.com/lesomnus/roster/internal/ent/consent"
-	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
@@ -269,7 +268,9 @@ func (s ConsentServiceServer) Get(ctx context.Context, req *rstr.ConsentGetReque
 	}
 
 	q := s.Db.Consent.Query().Where(p)
-	ConsentSelectInit(q, req.GetSelect())
+	if err := ConsentSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -334,23 +335,40 @@ func ConsentSelectedFields(m *rstr.ConsentSelect) []string {
 	return vs
 }
 
-func ConsentSelect(q *ent.ConsentQuery, m *rstr.ConsentSelect) {
+// ConsentSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func ConsentSelect(ctx context.Context, scope Scope, q *ent.ConsentQuery, m *rstr.ConsentSelect) error {
 	if !m.GetAll() {
 		fields := ConsentSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasHolder() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithHolder(func(q *ent.HolderQuery) {
-			q.Where(holder.DateErasedIsNil())
-			HolderSelect(q, m.GetHolder())
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetHolder())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func ConsentSelectInit(q *ent.ConsentQuery, m *rstr.ConsentSelect) {
+// ConsentSelectInit is [ConsentSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func ConsentSelectInit(ctx context.Context, scope Scope, q *ent.ConsentQuery, m *rstr.ConsentSelect) error {
 	if m != nil {
-		ConsentSelect(q, m)
+		return ConsentSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s ConsentServiceServer) Patch(ctx context.Context, req *rstr.ConsentPatchRequest) (*rstr.Consent, error) {

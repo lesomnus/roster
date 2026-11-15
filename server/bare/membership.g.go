@@ -8,14 +8,9 @@ import (
 	errors "errors"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
-	group "github.com/lesomnus/roster/internal/ent/group"
 	groupmembership "github.com/lesomnus/roster/internal/ent/groupmembership"
-	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
-	role "github.com/lesomnus/roster/internal/ent/role"
-	site "github.com/lesomnus/roster/internal/ent/site"
 	sitemembership "github.com/lesomnus/roster/internal/ent/sitemembership"
-	team "github.com/lesomnus/roster/internal/ent/team"
 	teammembership "github.com/lesomnus/roster/internal/ent/teammembership"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
@@ -281,7 +276,9 @@ func (s SiteMembershipServiceServer) Get(ctx context.Context, req *rstr.SiteMemb
 	}
 
 	q := s.Db.SiteMembership.Query().Where(p)
-	SiteMembershipSelectInit(q, req.GetSelect())
+	if err := SiteMembershipSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -319,29 +316,55 @@ func SiteMembershipSelectedFields(m *rstr.SiteMembershipSelect) []string {
 	return vs
 }
 
-func SiteMembershipSelect(q *ent.SiteMembershipQuery, m *rstr.SiteMembershipSelect) {
+// SiteMembershipSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func SiteMembershipSelect(ctx context.Context, scope Scope, q *ent.SiteMembershipQuery, m *rstr.SiteMembershipSelect) error {
 	if !m.GetAll() {
 		fields := SiteMembershipSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasHolder() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithHolder(func(q *ent.HolderQuery) {
-			q.Where(holder.DateErasedIsNil())
-			HolderSelect(q, m.GetHolder())
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetHolder())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func SiteMembershipSelectInit(q *ent.SiteMembershipQuery, m *rstr.SiteMembershipSelect) {
+// SiteMembershipSelectInit is [SiteMembershipSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func SiteMembershipSelectInit(ctx context.Context, scope Scope, q *ent.SiteMembershipQuery, m *rstr.SiteMembershipSelect) error {
 	if m != nil {
-		SiteMembershipSelect(q, m)
+		return SiteMembershipSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s SiteMembershipServiceServer) Patch(ctx context.Context, req *rstr.SiteMembershipPatchRequest) (*rstr.SiteMembership, error) {
@@ -916,7 +939,9 @@ func (s TeamMembershipServiceServer) Get(ctx context.Context, req *rstr.TeamMemb
 	}
 
 	q := s.Db.TeamMembership.Query().Where(p)
-	TeamMembershipSelectInit(q, req.GetSelect())
+	if err := TeamMembershipSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -954,35 +979,70 @@ func TeamMembershipSelectedFields(m *rstr.TeamMembershipSelect) []string {
 	return vs
 }
 
-func TeamMembershipSelect(q *ent.TeamMembershipQuery, m *rstr.TeamMembershipSelect) {
+// TeamMembershipSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func TeamMembershipSelect(ctx context.Context, scope Scope, q *ent.TeamMembershipQuery, m *rstr.TeamMembershipSelect) error {
 	if !m.GetAll() {
 		fields := TeamMembershipSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasHolder() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithHolder(func(q *ent.HolderQuery) {
-			q.Where(holder.DateErasedIsNil())
-			HolderSelect(q, m.GetHolder())
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetHolder())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasTeam() {
+		p, err := TeamNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTeam(func(q *ent.TeamQuery) {
-			q.Where(team.DateErasedIsNil())
-			TeamSelect(q, m.GetTeam())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TeamSelect(ctx, scope, q, m.GetTeam())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasRole() {
+		p, err := RoleNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithRole(func(q *ent.RoleQuery) {
-			q.Where(role.DateErasedIsNil())
-			RoleSelect(q, m.GetRole())
+			if p != nil {
+				q.Where(p)
+			}
+			err = RoleSelect(ctx, scope, q, m.GetRole())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func TeamMembershipSelectInit(q *ent.TeamMembershipQuery, m *rstr.TeamMembershipSelect) {
+// TeamMembershipSelectInit is [TeamMembershipSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func TeamMembershipSelectInit(ctx context.Context, scope Scope, q *ent.TeamMembershipQuery, m *rstr.TeamMembershipSelect) error {
 	if m != nil {
-		TeamMembershipSelect(q, m)
+		return TeamMembershipSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s TeamMembershipServiceServer) Patch(ctx context.Context, req *rstr.TeamMembershipPatchRequest) (*rstr.TeamMembership, error) {
@@ -1567,7 +1627,9 @@ func (s GroupMembershipServiceServer) Get(ctx context.Context, req *rstr.GroupMe
 	}
 
 	q := s.Db.GroupMembership.Query().Where(p)
-	GroupMembershipSelectInit(q, req.GetSelect())
+	if err := GroupMembershipSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -1605,35 +1667,70 @@ func GroupMembershipSelectedFields(m *rstr.GroupMembershipSelect) []string {
 	return vs
 }
 
-func GroupMembershipSelect(q *ent.GroupMembershipQuery, m *rstr.GroupMembershipSelect) {
+// GroupMembershipSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func GroupMembershipSelect(ctx context.Context, scope Scope, q *ent.GroupMembershipQuery, m *rstr.GroupMembershipSelect) error {
 	if !m.GetAll() {
 		fields := GroupMembershipSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasHolder() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithHolder(func(q *ent.HolderQuery) {
-			q.Where(holder.DateErasedIsNil())
-			HolderSelect(q, m.GetHolder())
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetHolder())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasGroup() {
+		p, err := GroupNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithGroup(func(q *ent.GroupQuery) {
-			q.Where(group.DateErasedIsNil())
-			GroupSelect(q, m.GetGroup())
+			if p != nil {
+				q.Where(p)
+			}
+			err = GroupSelect(ctx, scope, q, m.GetGroup())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasRole() {
+		p, err := RoleNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithRole(func(q *ent.RoleQuery) {
-			q.Where(role.DateErasedIsNil())
-			RoleSelect(q, m.GetRole())
+			if p != nil {
+				q.Where(p)
+			}
+			err = RoleSelect(ctx, scope, q, m.GetRole())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func GroupMembershipSelectInit(q *ent.GroupMembershipQuery, m *rstr.GroupMembershipSelect) {
+// GroupMembershipSelectInit is [GroupMembershipSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func GroupMembershipSelectInit(ctx context.Context, scope Scope, q *ent.GroupMembershipQuery, m *rstr.GroupMembershipSelect) error {
 	if m != nil {
-		GroupMembershipSelect(q, m)
+		return GroupMembershipSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s GroupMembershipServiceServer) Patch(ctx context.Context, req *rstr.GroupMembershipPatchRequest) (*rstr.GroupMembership, error) {

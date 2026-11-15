@@ -9,11 +9,8 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	binding "github.com/lesomnus/roster/internal/ent/binding"
-	group "github.com/lesomnus/roster/internal/ent/group"
-	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	role "github.com/lesomnus/roster/internal/ent/role"
-	site "github.com/lesomnus/roster/internal/ent/site"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
@@ -288,7 +285,9 @@ func (s RoleServiceServer) Get(ctx context.Context, req *rstr.RoleGetRequest) (*
 	}
 
 	q := s.Db.Role.Query().Where(p)
-	RoleSelectInit(q, req.GetSelect())
+	if err := RoleSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -341,28 +340,55 @@ func RoleSelectedFields(m *rstr.RoleSelect) []string {
 	return vs
 }
 
-func RoleSelect(q *ent.RoleQuery, m *rstr.RoleSelect) {
+// RoleSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func RoleSelect(ctx context.Context, scope Scope, q *ent.RoleQuery, m *rstr.RoleSelect) error {
 	if !m.GetAll() {
 		fields := RoleSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func RoleSelectInit(q *ent.RoleQuery, m *rstr.RoleSelect) {
+// RoleSelectInit is [RoleSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func RoleSelectInit(ctx context.Context, scope Scope, q *ent.RoleQuery, m *rstr.RoleSelect) error {
 	if m != nil {
-		RoleSelect(q, m)
+		return RoleSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s RoleServiceServer) Patch(ctx context.Context, req *rstr.RolePatchRequest) (*rstr.Role, error) {
@@ -962,7 +988,9 @@ func (s BindingServiceServer) Get(ctx context.Context, req *rstr.BindingGetReque
 	}
 
 	q := s.Db.Binding.Query().Where(p)
-	BindingSelectInit(q, req.GetSelect())
+	if err := BindingSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -1003,41 +1031,85 @@ func BindingSelectedFields(m *rstr.BindingSelect) []string {
 	return vs
 }
 
-func BindingSelect(q *ent.BindingQuery, m *rstr.BindingSelect) {
+// BindingSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func BindingSelect(ctx context.Context, scope Scope, q *ent.BindingQuery, m *rstr.BindingSelect) error {
 	if !m.GetAll() {
 		fields := BindingSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasRole() {
+		p, err := RoleNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithRole(func(q *ent.RoleQuery) {
-			q.Where(role.DateErasedIsNil())
-			RoleSelect(q, m.GetRole())
+			if p != nil {
+				q.Where(p)
+			}
+			err = RoleSelect(ctx, scope, q, m.GetRole())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasHolder() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithHolder(func(q *ent.HolderQuery) {
-			q.Where(holder.DateErasedIsNil())
-			HolderSelect(q, m.GetHolder())
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetHolder())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasGroup() {
+		p, err := GroupNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithGroup(func(q *ent.GroupQuery) {
-			q.Where(group.DateErasedIsNil())
-			GroupSelect(q, m.GetGroup())
+			if p != nil {
+				q.Where(p)
+			}
+			err = GroupSelect(ctx, scope, q, m.GetGroup())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func BindingSelectInit(q *ent.BindingQuery, m *rstr.BindingSelect) {
+// BindingSelectInit is [BindingSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func BindingSelectInit(ctx context.Context, scope Scope, q *ent.BindingQuery, m *rstr.BindingSelect) error {
 	if m != nil {
-		BindingSelect(q, m)
+		return BindingSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s BindingServiceServer) Patch(ctx context.Context, req *rstr.BindingPatchRequest) (*rstr.Binding, error) {
