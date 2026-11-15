@@ -1259,8 +1259,12 @@ func (s *Server) closed(c Config) func(method string) bool {
 	}
 	if !s.Keys {
 		// Everywhere but the one port whose reason for existing is managing
-		// the deployment's own keys (see [Server.Keys]), the general writes stay
-		// shut. `Get`, `List` and `Erase` are served: the verifier is stripped on
+		// the deployment's own keys (see [Server.Keys]), the general writes are
+		// shut **by name**, whatever the configuration says of general writes.
+		// On that port they are not named here and are still not served: no
+		// `Patch` or `Apply` is, anywhere, unless a deployment says
+		// `allow_general_writes`, and only then are these two open there and
+		// nowhere else. `Get`, `List` and `Erase` are served: the verifier is stripped on
 		// the way out like every other secret, `server/core` holds the rows to
 		// `mayReach`, and a person listing and ending their own keys is what the
 		// account screen is -- which is why `Holder.RevokeKey` is gone.
@@ -1337,7 +1341,9 @@ func Public(method string) bool {
 	//
 	// It costs less than `SignIn` does, and the reason is the subject: this one
 	// answers about **the tenant the request arrived at**, with no field to point
-	// it elsewhere, so there is nothing here to enumerate. The same fact the
+	// it elsewhere. The name it arrived at is still the caller's to say -- it is
+	// a header -- so this answers of any tenant's name; what it answers is what
+	// that tenant's sign-in page shows anybody who opens it. The same fact the
 	// account app's `GET /providers` has answered anonymously at a tenant's own
 	// host for as long as it existed.
 	if method == app.AuthService_Offers_FullMethodName {

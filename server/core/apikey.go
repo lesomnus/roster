@@ -121,6 +121,15 @@ func (s coreApiKey) Issue(ctx context.Context, req *app.ApiKeyIssueRequest) (*ap
 			"this server was not told which kind of key it mints")
 	}
 
+	// What the key may call, asked before whose it is. On the control plane
+	// naming a holder makes them ([Core.holderNamed]), and `Add` below asks
+	// this again where it has always asked it -- after: a key that was
+	// refused left behind the holder it had named, on a plane where a holder
+	// is a caller (#274). So nobody is made for a key that will not be.
+	if err := s.mayGrant(ctx, "methods", req.GetMethods(), pdid.Nil); err != nil {
+		return nil, err
+	}
+
 	ref, err := s.whoseKey(ctx, req)
 	if err != nil {
 		return nil, err
