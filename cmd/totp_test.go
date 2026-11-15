@@ -70,7 +70,7 @@ func TestASecondFactorIsEnrolledOnceAndReadBackNever(t *testing.T) {
 			Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30)),
 		}.Build())
 		x.NoError(err)
-		x.True(got.GetOk())
+		x.Equal([]string{vouch.KindTotp}, got.GetSatisfied())
 	})
 
 	// D20 puts replay in roster's half: *a TOTP step that has been used must not
@@ -88,7 +88,8 @@ func TestASecondFactorIsEnrolledOnceAndReadBackNever(t *testing.T) {
 			Secret: code,
 		}.Build())
 		x.NoError(err)
-		x.False(again.GetOk(), "a spent code worked twice")
+		x.Empty(again.GetSatisfied(), "a spent code worked twice")
+		x.False(again.GetOk())
 
 		row, err := b.Ent.Credential.Query().Only(ctx)
 		x.NoError(err)
@@ -109,7 +110,11 @@ func TestASecondFactorIsEnrolledOnceAndReadBackNever(t *testing.T) {
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
 		x.NoError(err)
-		x.True(got.GetOk())
+
+		// The password is theirs, and it is one of two: this read `ok` here,
+		// which is what roster's own sign-in minted a session on (#275).
+		x.Equal([]string{vouch.KindPassword}, got.GetSatisfied())
+		x.False(got.GetOk(), "one factor of two answered as the whole sign-in")
 
 		n, err := b.Ent.Credential.Query().Count(ctx)
 		x.NoError(err)

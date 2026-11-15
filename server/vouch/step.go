@@ -191,6 +191,9 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 // `ok` and a continuation are mutually exclusive, and that is the whole of what
 // keeps an app that has not heard of second factors failing **closed**: it goes
 // on gating on `ok`, and `ok` is set only when there is nothing left.
+//
+// `issuer` is who an attempt is minted for, and [pdid.Nil] is nobody: the
+// answer is the same less the handle.
 func (s *Server) answer(ctx context.Context, h *app.Holder, satisfied []string, metered []byte, issuer pdid.Id) (*app.VouchVerifyResponse, error) {
 	holder, err := pdid.From(h.GetId())
 	if err != nil {
@@ -218,6 +221,19 @@ func (s *Server) answer(ctx context.Context, h *app.Holder, satisfied []string, 
 		// second factors fail closed -- so the emptier somebody's account, the
 		// more finished their sign-in looked.
 		if !begun(satisfied) {
+			if issuer == pdid.Nil {
+				// Asked by nobody, which is a seed being confirmed at the box
+				// or by a test: what was proved, and no `ok`, since it is no
+				// more a sign-in here than anywhere. Said rather than refused,
+				// so that the step is recorded and the factor counts as
+				// confirmed -- which is what the asking was for.
+				return app.VouchVerifyResponse_builder{
+					Holder:    holder.Bytes(),
+					Tenant:    tenant.Bytes(),
+					Satisfied: satisfied,
+				}.Build(), nil
+			}
+
 			return nil, errAlone
 		}
 
@@ -225,6 +241,18 @@ func (s *Server) answer(ctx context.Context, h *app.Holder, satisfied []string, 
 			Ok:     true,
 			Holder: holder.Bytes(),
 			Tenant: tenant.Bytes(),
+		}.Build(), nil
+	}
+
+	if issuer == pdid.Nil {
+		// Nobody asked, so there is nobody an attempt could be minted for and
+		// spent by: what is proved and what is left, and no handle. `ok` is
+		// unset, which is the whole of what a caller gating on it needs.
+		return app.VouchVerifyResponse_builder{
+			Holder:    holder.Bytes(),
+			Tenant:    tenant.Bytes(),
+			Satisfied: satisfied,
+			Available: left,
 		}.Build(), nil
 	}
 

@@ -1115,7 +1115,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	if s.People != nil {
 		app.RegisterAuthServiceServer(g, console.Auth(s.Ungated, s.Ent, s.People,
 			console.WithTenant(Hosted(s.Ent)), console.WithArrival(ArrivedAt),
-			console.WithVouch(vouch.WithLockout(s.Lockout))))
+			console.WithVouch(vouch.WithLockout(s.Lockout), vouch.WithKeys(s.Keyring))))
 	}
 
 	// And what a caller is, in one round trip. None of its methods takes a

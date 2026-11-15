@@ -63,7 +63,7 @@ func TestASeedIsNotAWayIn(t *testing.T) {
 			Secret: []byte(vouchtest.CodeBefore(seed)),
 		}.Build())
 		x.NoError(err)
-		x.True(got.GetOk())
+		x.Equal([]string{vouch.KindTotp}, got.GetSatisfied())
 
 		_, err = b.Ungated.Identity().Erase(ctx, app.IdentityRef_builder{Id: id.GetId()}.Build())
 		x.ErrorContains(err, "the only way they can sign in")

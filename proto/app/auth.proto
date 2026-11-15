@@ -2,6 +2,8 @@ edition = "2023";
 
 package roster;
 
+import "app/vouch.proto";
+
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/roster/rstr";
 
@@ -102,6 +104,21 @@ service AuthService {
   // The cookie is the whole answer. It is `HttpOnly`, so the page that called
   // this cannot read it -- which is the point, since script that can read a
   // credential is script that can send it somewhere else.
+  //
+  // # Somebody with a second factor is asked for it
+  //
+  // A password that is right, for somebody who has more to prove, sets no
+  // cookie: the answer is what is left and a `continuation`, and a second call
+  // carrying that and the next proof is what ends in the session. One call or
+  // two, the session is the same one.
+  //
+  // It was one call whoever it was. `Vouch.Verify` answers `ok` only when
+  // nothing is left to prove, and withholds it behind a continuation -- which
+  // it mints for whoever asked, and nobody had asked: this method is public,
+  // so it has no caller, and a verifier with nobody to mint for answered `ok`
+  // to the first factor. Every other door asked for the second -- the Login
+  // App, the account app, an LDAP bind -- and roster's own let somebody with
+  // an authenticator app in on the password alone (#275).
   rpc SignIn(AuthSignInRequest) returns (AuthSignInResponse);
 
   // SignOut deletes the session and clears the cookie.
@@ -227,9 +244,26 @@ message AuthSignInRequest {
   // control plane nothing arrives at a name, so there is nowhere for a link to
   // have been minted for, and one presented there is refused.
   string link = 3;
+
+  // The second call: the attempt a first answer left open, and the next proof.
+  //
+  // `continuation` is what `AuthSignInResponse` answered, and `kind`, `name`
+  // and `secret` are what `Vouch.Continue` takes by the same names -- a code
+  // from an authenticator app, or a security key's assertion. It is a third
+  // way of asking and is refused beside either of the other two.
+  //
+  // An attempt is spent by its first answer, right or wrong, and lasts
+  // minutes: a wrong code is the first form again, where the lockout counts.
+  // It is spent at the tenant it was begun at and by nothing else -- not a
+  // key, and not this method at another tenant's name.
+  string continuation = 12;
+  string kind = 8;
+  string name = 5;
+  bytes secret = 9;
 }
 
-// AuthSignInResponse is empty, and that is the answer.
+// AuthSignInResponse is empty for somebody who is signed in, and that is the
+// answer.
 //
 // What a page needs about the person is a request it should make, against the
 // same server, behind the same rules -- `MeService`. An answer composed here
@@ -238,7 +272,18 @@ message AuthSignInRequest {
 //
 // And the credential is not in it. It is in the cookie, which this page never
 // sees.
-message AuthSignInResponse {}
+message AuthSignInResponse {
+  // What is left to prove, for somebody whose first proof was right and was
+  // not the whole of it. Set with `continuation`, and with no cookie.
+  //
+  // `Vouch.Verify`'s two fields by their own names and numbers, and for its
+  // reason: what somebody has is answered only once something of theirs has
+  // been proved, or anybody could ask which factors a stranger registered.
+  repeated VouchFactor available = 11;
+
+  // What the second call carries. Empty is signed in.
+  string continuation = 12;
+}
 
 message AuthSignOutRequest {}
 

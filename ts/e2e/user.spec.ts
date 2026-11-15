@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 import { kept, mirrors, movedOn } from './mirror.js'
+import { totp } from './totp.js'
 
 // The user console, as somebody in a tenant uses it: sign in at the name their
 // tenant answers at, and see their own organisation.
@@ -305,4 +306,56 @@ test('a page left holding one person\'s store lets go of it when somebody else s
 	// go of the store, and draws hers.
 	await one.locator('nav button', { hasText: 'apps' }).click()
 	await expect(one.locator('nav .who')).toHaveText('grace')
+})
+
+// Somebody with an authenticator app is asked for its code here, as at every
+// other page that signs them in.
+//
+// This page took the password and was done: `AuthService.SignIn` answered a
+// session for the first proof, whoever it was (#275). heidi enrols at the
+// account page, which is where a person does, and then signs in here.
+test('somebody with an authenticator app is asked for its code', async ({ page }) => {
+	const account = process.env['E2E_ACCOUNT'] ?? 'http://localhost:18090'
+	const heidi = process.env['E2E_HEIDI_PASSWORD'] ?? ''
+
+	await page.goto(account)
+	await page.locator('input[name=alias]').fill('heidi')
+	await page.locator('input[name=password]').fill(heidi)
+	await page.locator('form button[type=submit]', { hasText: 'sign in' }).click()
+	await expect(page.getByRole('heading', { name: 'you', exact: true })).toBeVisible()
+
+	const enrol = page.locator('form', { has: page.locator('select[name=kind]') })
+	await enrol.locator('select[name=kind]').selectOption('totp')
+	await enrol.locator('input[name=name]').fill('phone')
+	await enrol.locator('button[type=submit]').click()
+
+	const uri = (await page.locator('code', { hasText: 'otpauth://' }).textContent()) ?? ''
+	expect(uri).toContain('otpauth://totp/')
+
+	// Proved with this step's code; the sign-in below uses the next one,
+	// because a step that was spent is not accepted twice.
+	await page.locator('input[placeholder="the code it shows"]').fill(totp(uri))
+	await page.locator('button', { hasText: 'prove' }).click()
+	await expect(page.locator('.note', { hasText: 'proved; it counts from now on' })).toBeVisible()
+
+	// The user console: the password is right, and is not the whole of it.
+	await page.goto(base)
+	await page.locator('input[name=alias]').fill('heidi')
+	await page.locator('input[name=password]').fill(heidi)
+	await page.locator('button[type=submit]', { hasText: 'sign in' }).click()
+	await expect(page.locator('input[name=code]')).toBeVisible()
+	await expect(page.locator('nav .who')).toHaveCount(0)
+
+	// A wrong code costs the first form again: one attempt per password.
+	await page.locator('input[name=code]').fill('000000')
+	await page.locator('button[type=submit]', { hasText: 'sign in' }).click()
+	await expect(page.locator('input[name=password]')).toBeVisible()
+	await expect(page.locator('.bad', { hasText: 'no' })).toBeVisible()
+
+	await page.locator('input[name=alias]').fill('heidi')
+	await page.locator('input[name=password]').fill(heidi)
+	await page.locator('button[type=submit]', { hasText: 'sign in' }).click()
+	await page.locator('input[name=code]').fill(totp(uri, new Date(), 1))
+	await page.locator('button[type=submit]', { hasText: 'sign in' }).click()
+	await expect(page.locator('nav .who')).toHaveText('heidi')
 })

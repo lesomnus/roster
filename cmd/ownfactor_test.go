@@ -50,7 +50,7 @@ func TestAPersonEnrolsTheirOwnSecondFactor(t *testing.T) {
 		Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30)),
 	}.Build())
 	x.NoError(err)
-	x.True(got.GetOk(), "the factor a person enrolled on themselves does not verify for them")
+	x.Equal([]string{vouch.KindTotp}, got.GetSatisfied(), "the factor a person enrolled on themselves does not verify for them")
 
 	row, err := b.Ent.Credential.Query().Only(ctx)
 	x.NoError(err)

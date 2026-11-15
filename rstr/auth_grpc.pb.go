@@ -126,6 +126,21 @@ type AuthServiceClient interface {
 	// The cookie is the whole answer. It is `HttpOnly`, so the page that called
 	// this cannot read it -- which is the point, since script that can read a
 	// credential is script that can send it somewhere else.
+	//
+	// # Somebody with a second factor is asked for it
+	//
+	// A password that is right, for somebody who has more to prove, sets no
+	// cookie: the answer is what is left and a `continuation`, and a second call
+	// carrying that and the next proof is what ends in the session. One call or
+	// two, the session is the same one.
+	//
+	// It was one call whoever it was. `Vouch.Verify` answers `ok` only when
+	// nothing is left to prove, and withholds it behind a continuation -- which
+	// it mints for whoever asked, and nobody had asked: this method is public,
+	// so it has no caller, and a verifier with nobody to mint for answered `ok`
+	// to the first factor. Every other door asked for the second -- the Login
+	// App, the account app, an LDAP bind -- and roster's own let somebody with
+	// an authenticator app in on the password alone (#275).
 	SignIn(ctx context.Context, in *AuthSignInRequest, opts ...grpc.CallOption) (*AuthSignInResponse, error)
 	// SignOut deletes the session and clears the cookie.
 	//
@@ -352,6 +367,21 @@ type AuthServiceServer interface {
 	// The cookie is the whole answer. It is `HttpOnly`, so the page that called
 	// this cannot read it -- which is the point, since script that can read a
 	// credential is script that can send it somewhere else.
+	//
+	// # Somebody with a second factor is asked for it
+	//
+	// A password that is right, for somebody who has more to prove, sets no
+	// cookie: the answer is what is left and a `continuation`, and a second call
+	// carrying that and the next proof is what ends in the session. One call or
+	// two, the session is the same one.
+	//
+	// It was one call whoever it was. `Vouch.Verify` answers `ok` only when
+	// nothing is left to prove, and withholds it behind a continuation -- which
+	// it mints for whoever asked, and nobody had asked: this method is public,
+	// so it has no caller, and a verifier with nobody to mint for answered `ok`
+	// to the first factor. Every other door asked for the second -- the Login
+	// App, the account app, an LDAP bind -- and roster's own let somebody with
+	// an authenticator app in on the password alone (#275).
 	SignIn(context.Context, *AuthSignInRequest) (*AuthSignInResponse, error)
 	// SignOut deletes the session and clears the cookie.
 	//

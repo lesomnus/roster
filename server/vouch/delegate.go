@@ -197,7 +197,52 @@ func mayDelegate(ctx context.Context, methods []string) error {
 	return nil
 }
 
+// doorKey is where [Server.VerifyAt] and [Server.ContinueAt] say which door of
+// roster's own is asking, for [issuerOf] to read.
+type doorKey struct{}
+
+// VerifyAt is [Server.Verify] asked by a door of roster's own rather than by a
+// caller: `AuthService/SignIn`, which is public, so that nothing about the
+// request says who is asking.
+//
+// # Why a door says who it is
+//
+// An attempt is minted for whoever asked and spent by nobody else
+// (`continuation.proto`, D21's third condition), and *whoever asked* is the
+// frame's actor. A public method has none. So the door names itself: `door` is
+// what the attempt is issued to, and [Server.ContinueAt] with the same `door`
+// is the only thing that spends it -- not a key, whose actor is a row of
+// another kind, and not another door.
+//
+// It is a Go call and takes the door as an argument, as `keys.Delegate` takes
+// who a delegation is for: nothing arriving on the wire can say it is one.
+func (s *Server) VerifyAt(ctx context.Context, door pdid.Id, req *app.VouchVerifyRequest) (*app.VouchVerifyResponse, error) {
+	if door == pdid.Nil {
+		return nil, status.Error(codes.Internal, "a door that asks says which door it is")
+	}
+
+	return s.Verify(context.WithValue(ctx, doorKey{}, door), req)
+}
+
+// ContinueAt is [Server.Continue] for an attempt [Server.VerifyAt] began, at
+// the same door.
+func (s *Server) ContinueAt(ctx context.Context, door pdid.Id, req *app.VouchContinueRequest) (*app.VouchVerifyResponse, error) {
+	if door == pdid.Nil {
+		return nil, status.Error(codes.Internal, "a door that asks says which door it is")
+	}
+
+	res, err := s.Continue(context.WithValue(ctx, doorKey{}, door), req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.GetVerified(), nil
+}
+
 // issuerOf is who the delegation is being minted for, or revoked by.
+//
+// A door of roster's own first, where one said it is asking: see
+// [Server.VerifyAt].
 //
 // The frame's actor, which for a deployment key is the **key row** rather than
 // the service holding it -- `cmd.Resolver` reads one with an empty select and
@@ -211,6 +256,10 @@ func mayDelegate(ctx context.Context, methods []string) error {
 // this process there is `keys.Delegate` itself, which is a Go call and says who
 // it is for.
 func issuerOf(ctx context.Context) (pdid.Id, error) {
+	if door, ok := ctx.Value(doorKey{}).(pdid.Id); ok && door != pdid.Nil {
+		return door, nil
+	}
+
 	f, ok := frame.From(ctx)
 	if !ok || f.Actor == pdid.Nil {
 		return pdid.Nil, status.Error(codes.Unauthenticated,

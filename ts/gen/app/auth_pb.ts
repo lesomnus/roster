@@ -5,13 +5,15 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { VouchFactor } from "./vouch_pb.js";
+import { file_app_vouch } from "./vouch_pb.js";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file app/auth.proto.
  */
 export const file_app_auth: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvYXV0aC5wcm90bxIGcm9zdGVyIkIKEUF1dGhTaWduSW5SZXF1ZXN0Eg0KBWFsaWFzGAEgASgJEhAKCHBhc3N3b3JkGAIgASgJEgwKBGxpbmsYAyABKAkiFAoSQXV0aFNpZ25JblJlc3BvbnNlIhQKEkF1dGhTaWduT3V0UmVxdWVzdCIVChNBdXRoU2lnbk91dFJlc3BvbnNlIhIKEEF1dGhXaGljaFJlcXVlc3QiJQoRQXV0aFdoaWNoUmVzcG9uc2USEAoIaWRlbnRpdHkYASABKAkiEwoRQXV0aE9mZmVyc1JlcXVlc3QiaQoSQXV0aE9mZmVyc1Jlc3BvbnNlEhAKCHBhc3N3b3JkGAEgASgIEi0KCXByb3ZpZGVycxgCIAMoCzIaLnJvc3Rlci5BdXRoT2ZmZXJzUHJvdmlkZXISEgoKZnJvbnRfZG9vchgDIAEoCSIyChJBdXRoT2ZmZXJzUHJvdmlkZXISDAoEbmFtZRgBIAEoCRIOCgZpc3N1ZXIYAiABKAkykQIKC0F1dGhTZXJ2aWNlEj8KBlNpZ25JbhIZLnJvc3Rlci5BdXRoU2lnbkluUmVxdWVzdBoaLnJvc3Rlci5BdXRoU2lnbkluUmVzcG9uc2USQgoHU2lnbk91dBIaLnJvc3Rlci5BdXRoU2lnbk91dFJlcXVlc3QaGy5yb3N0ZXIuQXV0aFNpZ25PdXRSZXNwb25zZRI/CgZPZmZlcnMSGS5yb3N0ZXIuQXV0aE9mZmVyc1JlcXVlc3QaGi5yb3N0ZXIuQXV0aE9mZmVyc1Jlc3BvbnNlEjwKBVdoaWNoEhgucm9zdGVyLkF1dGhXaGljaFJlcXVlc3QaGS5yb3N0ZXIuQXV0aFdoaWNoUmVzcG9uc2VCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw");
+  fileDesc("Cg5hcHAvYXV0aC5wcm90bxIGcm9zdGVyIoQBChFBdXRoU2lnbkluUmVxdWVzdBINCgVhbGlhcxgBIAEoCRIQCghwYXNzd29yZBgCIAEoCRIMCgRsaW5rGAMgASgJEhQKDGNvbnRpbnVhdGlvbhgMIAEoCRIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSDgoGc2VjcmV0GAkgASgMIlIKEkF1dGhTaWduSW5SZXNwb25zZRImCglhdmFpbGFibGUYCyADKAsyEy5yb3N0ZXIuVm91Y2hGYWN0b3ISFAoMY29udGludWF0aW9uGAwgASgJIhQKEkF1dGhTaWduT3V0UmVxdWVzdCIVChNBdXRoU2lnbk91dFJlc3BvbnNlIhIKEEF1dGhXaGljaFJlcXVlc3QiJQoRQXV0aFdoaWNoUmVzcG9uc2USEAoIaWRlbnRpdHkYASABKAkiEwoRQXV0aE9mZmVyc1JlcXVlc3QiaQoSQXV0aE9mZmVyc1Jlc3BvbnNlEhAKCHBhc3N3b3JkGAEgASgIEi0KCXByb3ZpZGVycxgCIAMoCzIaLnJvc3Rlci5BdXRoT2ZmZXJzUHJvdmlkZXISEgoKZnJvbnRfZG9vchgDIAEoCSIyChJBdXRoT2ZmZXJzUHJvdmlkZXISDAoEbmFtZRgBIAEoCRIOCgZpc3N1ZXIYAiABKAkykQIKC0F1dGhTZXJ2aWNlEj8KBlNpZ25JbhIZLnJvc3Rlci5BdXRoU2lnbkluUmVxdWVzdBoaLnJvc3Rlci5BdXRoU2lnbkluUmVzcG9uc2USQgoHU2lnbk91dBIaLnJvc3Rlci5BdXRoU2lnbk91dFJlcXVlc3QaGy5yb3N0ZXIuQXV0aFNpZ25PdXRSZXNwb25zZRI/CgZPZmZlcnMSGS5yb3N0ZXIuQXV0aE9mZmVyc1JlcXVlc3QaGi5yb3N0ZXIuQXV0aE9mZmVyc1Jlc3BvbnNlEjwKBVdoaWNoEhgucm9zdGVyLkF1dGhXaGljaFJlcXVlc3QaGS5yb3N0ZXIuQXV0aFdoaWNoUmVzcG9uc2VCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_app_vouch]);
 
 /**
  * @generated from message roster.AuthSignInRequest
@@ -73,6 +75,38 @@ export type AuthSignInRequest = Message<"roster.AuthSignInRequest"> & {
    * @generated from field: string link = 3;
    */
   link: string;
+
+  /**
+   * The second call: the attempt a first answer left open, and the next proof.
+   *
+   * `continuation` is what `AuthSignInResponse` answered, and `kind`, `name`
+   * and `secret` are what `Vouch.Continue` takes by the same names -- a code
+   * from an authenticator app, or a security key's assertion. It is a third
+   * way of asking and is refused beside either of the other two.
+   *
+   * An attempt is spent by its first answer, right or wrong, and lasts
+   * minutes: a wrong code is the first form again, where the lockout counts.
+   * It is spent at the tenant it was begun at and by nothing else -- not a
+   * key, and not this method at another tenant's name.
+   *
+   * @generated from field: string continuation = 12;
+   */
+  continuation: string;
+
+  /**
+   * @generated from field: string kind = 8;
+   */
+  kind: string;
+
+  /**
+   * @generated from field: string name = 5;
+   */
+  name: string;
+
+  /**
+   * @generated from field: bytes secret = 9;
+   */
+  secret: Uint8Array;
 };
 
 /**
@@ -83,7 +117,8 @@ export const AuthSignInRequestSchema: GenMessage<AuthSignInRequest> = /*@__PURE_
   messageDesc(file_app_auth, 0);
 
 /**
- * AuthSignInResponse is empty, and that is the answer.
+ * AuthSignInResponse is empty for somebody who is signed in, and that is the
+ * answer.
  *
  * What a page needs about the person is a request it should make, against the
  * same server, behind the same rules -- `MeService`. An answer composed here
@@ -96,6 +131,24 @@ export const AuthSignInRequestSchema: GenMessage<AuthSignInRequest> = /*@__PURE_
  * @generated from message roster.AuthSignInResponse
  */
 export type AuthSignInResponse = Message<"roster.AuthSignInResponse"> & {
+  /**
+   * What is left to prove, for somebody whose first proof was right and was
+   * not the whole of it. Set with `continuation`, and with no cookie.
+   *
+   * `Vouch.Verify`'s two fields by their own names and numbers, and for its
+   * reason: what somebody has is answered only once something of theirs has
+   * been proved, or anybody could ask which factors a stranger registered.
+   *
+   * @generated from field: repeated roster.VouchFactor available = 11;
+   */
+  available: VouchFactor[];
+
+  /**
+   * What the second call carries. Empty is signed in.
+   *
+   * @generated from field: string continuation = 12;
+   */
+  continuation: string;
 };
 
 /**
@@ -366,6 +419,21 @@ export const AuthService: GenService<{
    * The cookie is the whole answer. It is `HttpOnly`, so the page that called
    * this cannot read it -- which is the point, since script that can read a
    * credential is script that can send it somewhere else.
+   *
+   * # Somebody with a second factor is asked for it
+   *
+   * A password that is right, for somebody who has more to prove, sets no
+   * cookie: the answer is what is left and a `continuation`, and a second call
+   * carrying that and the next proof is what ends in the session. One call or
+   * two, the session is the same one.
+   *
+   * It was one call whoever it was. `Vouch.Verify` answers `ok` only when
+   * nothing is left to prove, and withholds it behind a continuation -- which
+   * it mints for whoever asked, and nobody had asked: this method is public,
+   * so it has no caller, and a verifier with nobody to mint for answered `ok`
+   * to the first factor. Every other door asked for the second -- the Login
+   * App, the account app, an LDAP bind -- and roster's own let somebody with
+   * an authenticator app in on the password alone (#275).
    *
    * @generated from rpc roster.AuthService.SignIn
    */
