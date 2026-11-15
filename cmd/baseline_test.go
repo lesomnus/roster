@@ -4,9 +4,12 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/lesomnus/roster/cmd"
 )
 
 // TestBaselineNamesRealTests keeps docs/baseline.md honest the mechanical way.
@@ -84,5 +87,42 @@ func TestTheRulesPageNamesRealTests(t *testing.T) {
 
 	for _, m := range named {
 		x.True(have[m[1]], "docs/usage/rules.md names %s, and no such test exists", m[1])
+	}
+}
+
+// TestTheWideGrantsPageSaysWhatAKeyIsWarnedOf holds `docs/usage/wide-grants.md`
+// to the one place roster already says a grant is wider than it reads:
+// `Widest`, which `roster key add` prints. Every method it has a note for is
+// on the page, so that a note added there is a grant somebody reading the page
+// before binding a role is told about too -- and the tests the page names are
+// there.
+func TestTheWideGrantsPageSaysWhatAKeyIsWarnedOf(t *testing.T) {
+	x := require.New(t)
+	b, _ := build(t)
+
+	doc, err := os.ReadFile(filepath.Join("..", "docs", "usage", "wide-grants.md"))
+	x.NoError(err)
+
+	warned := 0
+	for svc, info := range b.grpc(t).GetServiceInfo() {
+		for _, m := range info.Methods {
+			method := "/" + svc + "/" + m.Name
+			if cmd.Widest([]string{method}) == "" {
+				continue
+			}
+			warned++
+
+			// By the service, which is how the page names the trail's two
+			// reads at once, or by the method.
+			short := strings.TrimPrefix(svc, "roster.")
+			x.True(strings.Contains(string(doc), short+"/"+m.Name) || strings.Contains(string(doc), "`"+short+"`"),
+				"`roster key add` says %s is wider than it reads, and docs/usage/wide-grants.md does not", method)
+		}
+	}
+	x.NotZero(warned, "nothing is warned of, so the loop above proved nothing")
+
+	have := testsThatExist(t)
+	for _, m := range regexp.MustCompile("`(Test\\w+)`").FindAllStringSubmatch(string(doc), -1) {
+		x.True(have[m[1]], "docs/usage/wide-grants.md names %s, and no such test exists", m[1])
 	}
 }

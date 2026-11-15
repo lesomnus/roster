@@ -33,6 +33,7 @@ client for exactly the RPC of that name.
 | [usage/ways-in.md](usage/ways-in.md) | passwords, keys, delegations, provider accounts, second factors -- and stopping one |
 | [usage/permissions.md](usage/permissions.md) | roles, bindings, groups, sites, teams, and what you may hand out |
 | [usage/rules.md](usage/rules.md) | every rule a call is held to, one line each, with the test that holds it -- and what roster leaves to a deployment |
+| [usage/wide-grants.md](usage/wide-grants.md) | the grants that hand over more than they read as, each with an example: read before binding a role or minting a key |
 
 ## 4. Run it
 

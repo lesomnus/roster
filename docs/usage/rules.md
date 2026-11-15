@@ -263,7 +263,8 @@ configuration.
 ## What is not a rule, on purpose
 
 Each of these was looked at and left. They are where a deployment that wants
-otherwise would say so.
+otherwise would say so. What some of them let through is told, with an
+example each, in [wide-grants.md](wide-grants.md).
 
 | | why |
 | --- | --- |
