@@ -1263,14 +1263,26 @@ func (s *Server) closed(c Config) func(method string) bool {
 	// `CredentialService` is registered now, so its verbs are shut one at a
 	// time rather than the whole name: the reads answer the `secret` column and
 	// the raw writes take a caller-chosen verifier, and only the overlays
-	// (`Set`, `Unlock`, `Enrol`) are meant to be reachable.
-	// `Patch`/`Apply` are already off by `GeneralWrite`.
+	// (`Set`, `Issue`, `Unlock`, `Enrol`, `Erase`) are meant to be reachable.
+	//
+	// Its `Patch` and `Apply` are shut **by name** too, whatever the
+	// configuration says of general writes. This said they *are already off by
+	// `GeneralWrite`*, which is true until a deployment says
+	// `allow_general_writes` for some other entity's sake -- and then they were
+	// served with nothing over them, because every rule a credential is
+	// written by is on a verb of its own and `server/core` overrides neither of
+	// these: a role naming `CredentialService/Patch` reached the store for
+	// anybody's row, past the reach rule, the length, the corpus and
+	// `current` (#275). A key's and a delegation's are shut the same way below,
+	// for the same reason.
 	byMethod := []string{
 		app.ApiKeyService_Add_FullMethodName,
 		app.CredentialService_Get_FullMethodName,
 		app.CredentialService_List_FullMethodName,
 		app.CredentialService_Watch_FullMethodName,
 		app.CredentialService_Add_FullMethodName,
+		app.CredentialService_Patch_FullMethodName,
+		app.CredentialService_Apply_FullMethodName,
 		// `Credential.Erase` is served: it answers with no verifier and takes
 		// none, and `server/core` gives it the rules it needs (a password is
 		// replaced and not removed; not the last way in).
