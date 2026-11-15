@@ -26,6 +26,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/host"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	entrole "github.com/lesomnus/roster/internal/ent/role"
+	entsite "github.com/lesomnus/roster/internal/ent/site"
 	entteam "github.com/lesomnus/roster/internal/ent/team"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	enttenant "github.com/lesomnus/roster/internal/ent/tenant"
@@ -647,6 +648,37 @@ func Rules(db *ent.Client, sources ...rbac.Source) core.Rules {
 		Administered: Administered(db),
 		Releasing:    Releasing(db),
 		Named:        Named(db),
+		Sited:        Sited(db),
+	}
+}
+
+// Sited is what a site still has in it, for [core.Sited]: the live roles,
+// bindings, teams and groups that name it, counted from the rows.
+func Sited(db *ent.Client) core.Sited {
+	return func(ctx context.Context, site pdid.Id) (core.InSite, error) {
+		var (
+			in  core.InSite
+			err error
+			at  = site.Uuid()
+		)
+		if in.Bindings, err = db.Binding.Query().
+			Where(binding.DateErasedIsNil(), binding.HasSiteWith(entsite.IdEQ(at))).Count(ctx); err != nil {
+			return in, err
+		}
+		if in.Roles, err = db.Role.Query().
+			Where(entrole.DateErasedIsNil(), entrole.HasSiteWith(entsite.IdEQ(at))).Count(ctx); err != nil {
+			return in, err
+		}
+		if in.Teams, err = db.Team.Query().
+			Where(entteam.DateErasedIsNil(), entteam.HasSiteWith(entsite.IdEQ(at))).Count(ctx); err != nil {
+			return in, err
+		}
+		if in.Groups, err = db.Group.Query().
+			Where(group.DateErasedIsNil(), group.HasSiteWith(entsite.IdEQ(at))).Count(ctx); err != nil {
+			return in, err
+		}
+
+		return in, nil
 	}
 }
 
