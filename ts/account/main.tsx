@@ -129,7 +129,10 @@ function Account(props: { of: Providers; onSignOut: () => void; onLeft: (forgott
 
 	const v = me.data
 	const own = v.id
-	const held = v.methods
+	// What they hold, and what is theirs to do to their own account -- which
+	// nobody is bound and `own` answers apart (`MeGetResponse.own`). This page
+	// is somebody's own account, so it draws by both.
+	const held = [...v.methods, ...v.own]
 	const may = (method: string): boolean => held.some((m) => covers(m, method))
 
 	return (

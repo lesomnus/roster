@@ -454,6 +454,7 @@ type MeGetResponse struct {
 	xxx_hidden_Methods            []string               `protobuf:"bytes,10,rep,name=methods"`
 	xxx_hidden_Sites              [][]byte               `protobuf:"bytes,11,rep,name=sites"`
 	xxx_hidden_EverySite          bool                   `protobuf:"varint,12,opt,name=every_site,json=everySite"`
+	xxx_hidden_Own                []string               `protobuf:"bytes,18,rep,name=own"`
 	xxx_hidden_Identities         *[]*SignInIdentity     `protobuf:"bytes,13,rep,name=identities"`
 	xxx_hidden_Credentials        *[]*SignInCredential   `protobuf:"bytes,14,rep,name=credentials"`
 	xxx_hidden_Keys               *[]*SignInKey          `protobuf:"bytes,15,rep,name=keys"`
@@ -555,6 +556,13 @@ func (x *MeGetResponse) GetEverySite() bool {
 	return false
 }
 
+func (x *MeGetResponse) GetOwn() []string {
+	if x != nil {
+		return x.xxx_hidden_Own
+	}
+	return nil
+}
+
 func (x *MeGetResponse) GetIdentities() []*SignInIdentity {
 	if x != nil {
 		if x.xxx_hidden_Identities != nil {
@@ -640,6 +648,10 @@ func (x *MeGetResponse) SetEverySite(v bool) {
 	x.xxx_hidden_EverySite = v
 }
 
+func (x *MeGetResponse) SetOwn(v []string) {
+	x.xxx_hidden_Own = v
+}
+
 func (x *MeGetResponse) SetIdentities(v []*SignInIdentity) {
 	x.xxx_hidden_Identities = &v
 }
@@ -698,6 +710,19 @@ type MeGetResponse_builder struct {
 	// tenant. It is `frame.Sets` as an answer; see `cmd.Sets`.
 	Sites     [][]byte
 	EverySite bool
+	// What they may call about **their own account**, and nobody else's: the
+	// methods of their tenant's `self-service` role, which everybody of the
+	// tenant holds over what is theirs and nobody is bound (`server/core`,
+	// `own.go`). Their address, their numbers, their keys, how they sign in.
+	//
+	// Apart from `methods` on purpose. That list is what they hold, and reaches
+	// whoever it reaches; this one reaches them. A page of somebody's own
+	// account draws by this; a page about other people draws by `methods`, and
+	// a method that is only here is refused there -- `NotFound`, since somebody
+	// else's row is not one they see.
+	//
+	// Narrowed to the credential, as `methods` is.
+	Own []string
 	// How they sign in elsewhere, and how they sign in here.
 	//
 	// # Why they are here and not read from their own services
@@ -757,6 +782,7 @@ func (b0 MeGetResponse_builder) Build() *MeGetResponse {
 	x.xxx_hidden_Methods = b.Methods
 	x.xxx_hidden_Sites = b.Sites
 	x.xxx_hidden_EverySite = b.EverySite
+	x.xxx_hidden_Own = b.Own
 	x.xxx_hidden_Identities = &b.Identities
 	x.xxx_hidden_Credentials = &b.Credentials
 	x.xxx_hidden_Keys = &b.Keys
@@ -1536,7 +1562,7 @@ const file_app_me_proto_rawDesc = "" +
 	"\x0fMeLeaveResponse\x12;\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"dateErased\x12A\n" +
-	"\x0edate_forgotten\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\rdateForgotten\"\xf4\x03\n" +
+	"\x0edate_forgotten\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\rdateForgotten\"\x86\x04\n" +
 	"\rMeGetResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x16\n" +
 	"\x06tenant\x18\x02 \x01(\fR\x06tenant\x12\x14\n" +
@@ -1548,7 +1574,8 @@ const file_app_me_proto_rawDesc = "" +
 	" \x03(\tR\amethods\x12\x14\n" +
 	"\x05sites\x18\v \x03(\fR\x05sites\x12\x1d\n" +
 	"\n" +
-	"every_site\x18\f \x01(\bR\teverySite\x126\n" +
+	"every_site\x18\f \x01(\bR\teverySite\x12\x10\n" +
+	"\x03own\x18\x12 \x03(\tR\x03own\x126\n" +
 	"\n" +
 	"identities\x18\r \x03(\v2\x16.roster.SignInIdentityR\n" +
 	"identities\x12:\n" +

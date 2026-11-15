@@ -97,7 +97,7 @@ func (s Core) speaksFor(ctx context.Context, holder []byte, tenant pdid.Id) erro
 // Every write goes through this layer's own rules -- the identity is held to
 // its connection's claim, the address to its normal form, both to
 // [Core.mayWriteAWayIn] -- over a stack bound to one transaction, as
-// `Tenant.Add` writes its four. The way-in rules pass because the person is
+// `Tenant.Add` writes its five. The way-in rules pass because the person is
 // new and holds nothing; that they are new is what makes this safe to hold
 // where `Identity.Add` is not.
 func (s coreHolder) Provision(ctx context.Context, req *app.HolderProvisionRequest) (*app.Holder, error) {

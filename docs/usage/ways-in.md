@@ -472,9 +472,11 @@ Google where its project does not let it: all are refused with *sign in again*.
 Everything else a person does about their own row is the **operator's verb with
 their own reference**: `IdentityService/Add` to attach a provider account,
 `ApiKeyService/Issue` and `/Erase` for their own keys. There is no self-only twin
-of a verb anywhere in roster, and the two rules in
-[permissions.md](permissions.md) are what keep such a write no wider than the
-person making it. `examples/sso` draws all of it.
+of a verb anywhere in roster. What lets somebody call one about themselves is
+their tenant's `self-service` role, which everybody of it holds over what is
+their own and nobody is bound ([permissions.md](permissions.md) § *What
+somebody does to their own account*); somebody else's row is not one such a call
+sees. `examples/sso` draws all of it.
 
 ## An account somewhere else — an identity
 

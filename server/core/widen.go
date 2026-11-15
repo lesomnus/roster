@@ -49,6 +49,10 @@ func (s coreRole) Widen(ctx context.Context, req *app.RoleWidenRequest) (*app.Ro
 			return nil, err
 		}
 
+		if err := mayBeOwned(got.GetAlias(), false, req.GetMethods()); err != nil {
+			return nil, err
+		}
+
 		next := widened(got.GetMethods(), req.GetMethods())
 		if len(next) == len(got.GetMethods()) {
 			// Nothing new, and so no write: the role as it is.

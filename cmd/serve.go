@@ -1085,7 +1085,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// missing subject has already narrowed them; the writes have rules on them,
 	// and the rules live in a layer. And the forget window, for `Leave` to say
 	// when somebody who left will be forgotten.
-	mine := me.New(s.Ent, Everything(s.Ent, s.policySources...), me.WithWrites(s.Walled),
+	mine := me.New(s.Ent, Everything(s.Ent, s.policySources...), me.WithWrites(s.Walled), me.WithOwn(Own(s.Ent)),
 		me.WithForgetAfter(c.Holder.ForgetAfter))
 
 	// The one service that is not an entity: it answers yes or no about a row

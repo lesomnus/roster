@@ -514,6 +514,10 @@ type coreRole struct {
 func (s Core) Role() app.RoleServiceServer { return coreRole{s, s.Next().Role()} }
 
 func (s coreRole) Add(ctx context.Context, req *app.RoleAddRequest) (*app.Role, error) {
+	if err := mayBeOwned(req.GetAlias(), req.GetSite() != nil, req.GetMethods()); err != nil {
+		return nil, err
+	}
+
 	of, err := s.tenantOfRef(ctx, req.GetTenant())
 	if err != nil {
 		return nil, err

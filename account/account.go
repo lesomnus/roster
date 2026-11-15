@@ -201,10 +201,13 @@ type Config struct {
 
 // Methods is what the delegation this app mints for a person allows: exactly
 // the calls the account screens make, each with the person's own reference,
-// which the page passes and this app never takes from a request. A role the
-// person holds still has to name each one -- a delegation narrows to the
-// intersection -- so a deployment that does not want self-service key minting
-// simply grants no role naming `ApiKey.Issue`.
+// which the page passes and this app never takes from a request. The gate
+// still has to let the person call each one -- a delegation narrows to the
+// intersection -- and what does is their tenant's `self-service` role, which
+// everybody of it holds over what is their own (`server/core`, `own.go`). So
+// a tenant that does not want self-service key minting takes `ApiKey.Issue`
+// out of that role. `Email.Verify` is on it as the switch for the page's
+// *confirm*: the link itself is minted by this app, as itself, and mailed.
 var Methods = []string{
 	rstr.MeService_Get_FullMethodName,
 	rstr.MeService_Unlink_FullMethodName,

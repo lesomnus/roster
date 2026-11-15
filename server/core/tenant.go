@@ -304,7 +304,7 @@ const (
 //
 // # One transaction
 //
-// Four writes, and a refusal at any of them leaves nothing: an alias already
+// Five writes, and a refusal at any of them leaves nothing: an alias already
 // taken, a role wider than the caller holds. Written one at a time a refusal
 // would leave a tenant nobody can get into whose alias cannot be used again --
 // `roster init`'s failure before #20, at a larger size. A caller who has
@@ -358,6 +358,17 @@ func (s coreTenant) Add(ctx context.Context, req *app.TenantAddRequest) (*app.Te
 		if _, err := at.Binding().Add(ctx, app.BindingAddRequest_builder{
 			Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
 			Holder: app.HolderRef_builder{Id: h.GetId()}.Build(),
+		}.Build()); err != nil {
+			return err
+		}
+
+		// And what everybody of it does to their own account, which nobody is
+		// bound: see `own.go`.
+		if _, err := at.Role().Add(ctx, app.RoleAddRequest_builder{
+			Tenant:  app.TenantRef_builder{Id: t.GetId()}.Build(),
+			Alias:   Owns,
+			Desc:    "What somebody of this tenant does to their own account. Everybody holds it, over what is theirs; take a method out to turn it off for everybody.",
+			Methods: Owning,
 		}.Build()); err != nil {
 			return err
 		}

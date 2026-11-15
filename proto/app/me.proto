@@ -236,6 +236,20 @@ message MeGetResponse {
   repeated bytes sites = 11;
   bool every_site = 12;
 
+  // What they may call about **their own account**, and nobody else's: the
+  // methods of their tenant's `self-service` role, which everybody of the
+  // tenant holds over what is theirs and nobody is bound (`server/core`,
+  // `own.go`). Their address, their numbers, their keys, how they sign in.
+  //
+  // Apart from `methods` on purpose. That list is what they hold, and reaches
+  // whoever it reaches; this one reaches them. A page of somebody's own
+  // account draws by this; a page about other people draws by `methods`, and
+  // a method that is only here is refused there -- `NotFound`, since somebody
+  // else's row is not one they see.
+  //
+  // Narrowed to the credential, as `methods` is.
+  repeated string own = 18;
+
   // How they sign in elsewhere, and how they sign in here.
   //
   // # Why they are here and not read from their own services
