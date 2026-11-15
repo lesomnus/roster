@@ -398,8 +398,8 @@ func subjects() []subject {
 				return db.Email.Delete().Where(email.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
-		// Where they are reached, which is no way in and is as much theirs: a
-		// number is personal, and the trail's copy of one goes with it.
+		// Where they are reached, which is as much theirs: a number is
+		// personal, and the trail's copy of one goes with it.
 		{
 			name: "phone",
 			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {

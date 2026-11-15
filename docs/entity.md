@@ -204,7 +204,7 @@ purpose.
 > give her is either site's data -- that is a 🔗 `Binding`, one section down.
 > These say where she works, and something has to.
 
-### 📞 `Phone` — a number somebody is reached at, and no way in
+### 📞 `Phone` — a number somebody is reached at
 
 A row rather than a field of the profile, for 📧 `Email`'s reasons: a person has
 several, they change, and an organisation hands a leaver's number to whoever
@@ -219,16 +219,20 @@ theirs: the mobile that is also where their desk rings, which a directory says
 once as each and asks for again by either. Nobody lists a number twice as the
 same thing, and that is all that is unique about one.
 
-**It is not a way in, and that is what it is for.** Nothing here sends to a
-number or finds anybody by one, so writing one onto somebody is not held to the
-rule an address is (`mayWriteAWayIn`): a tenant's directory writes it, and
-replaces it when it changes, which it may not do to an address
-([scim.md](scim.md)). The day a number is somewhere a code is sent, it gains
-what 📧 `Email` has -- when it was checked, and that rule.
+**It is somebody's as an address is.** A number says who somebody is to whoever
+reads it, and is where a code is sent the day one is. So it is written onto
+somebody, and taken from them, by whoever may write a way into their account
+(`mayWriteAWayIn`) and by them -- the rule an address is held to, there before
+the first thing that sends to a number. What it does not have yet is what the
+sending needs: when it was checked, and one form to compare two by. A tenant's
+directory writes the numbers of the people it provisions, who hold nothing, and
+replaces one when it changes; the number of somebody who holds more than the
+directory does is not its to write ([scim.md](scim.md)).
 
 > erin's desk is `+82 2-123-4567` and her mobile is another row. contoso's
-> Entra wrote both, and writes the new one the day she moves desks; nobody had
-> to reach erin, or be her, to do it.
+> Entra wrote both, and writes the new one the day she moves desks. The day
+> erin is made contoso's administrator her numbers stop following Entra: she
+> changes them, or somebody who holds what she does.
 
 ### 🤝 `Relation` — one person being something to another, and roster not saying what
 

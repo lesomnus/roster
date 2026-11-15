@@ -10,14 +10,16 @@ import (
 	app "github.com/lesomnus/roster/rstr"
 )
 
-// TestANumberIsWhereSomebodyIsReachedAndNoWayIn: a `Phone` is a number kept
-// as it was said, one row a person, a number and a kind, and held to being
-// something somebody could dial. What it is **not** held to is the rule a way
-// in is:
-// somebody who may write a number writes one onto an administrator, where the
-// same caller writing an address there is refused -- a link is mailed to an
-// address, and nothing is sent to a number.
-func TestANumberIsWhereSomebodyIsReachedAndNoWayIn(t *testing.T) {
+// TestANumberIsSomebodysAsAnAddressIs: a `Phone` is a number kept as it was
+// said, one row a person, a number and a kind, and held to being something
+// somebody could dial -- and written onto somebody, and taken from them, by
+// whoever may write a way into their account.
+//
+// It was asked nothing about whose account, on the grounds that nothing is
+// sent to a number yet (#274). A number says who somebody is to whoever reads
+// it, as an address does, and is where a code is sent the day one is; the rule
+// is there before the first thing that depends on it.
+func TestANumberIsSomebodysAsAnAddressIs(t *testing.T) {
 	b, ctx := build(t)
 	admin := b.as(ctx, b.ContosoUser, b.Contoso)
 	erin, fred := b.holder(t, ctx, b.Contoso, "erin"), b.holder(t, ctx, b.Contoso, "fred")
@@ -68,12 +70,14 @@ func TestANumberIsWhereSomebodyIsReachedAndNoWayIn(t *testing.T) {
 		x.NoError(add(ref(fred), "+82 2-123-4567", "work"), "a switchboard is two people's number")
 	})
 
-	t.Run("and not held to the rule a way in is", func(t *testing.T) {
+	t.Run("and held to the rule a way in is", func(t *testing.T) {
 		x := require.New(t)
-		// Somebody who may write numbers and addresses, and holds nothing else.
+		// Somebody who may write and erase numbers and addresses, and holds
+		// nothing else.
 		clerk := b.holder(t, ctx, b.Contoso, "clerk")
 		b.binds(t, clerk, b.role(t, ctx, "contacts",
-			app.PhoneService_Add_FullMethodName, app.EmailService_Add_FullMethodName), nil)
+			app.PhoneService_Add_FullMethodName, app.PhoneService_Erase_FullMethodName,
+			app.EmailService_Add_FullMethodName), nil)
 		as := b.asNobody(ctx, clerk, b.Contoso)
 
 		_, err := b.Walled.Email().Add(as, app.EmailAddRequest_builder{
@@ -84,6 +88,40 @@ func TestANumberIsWhereSomebodyIsReachedAndNoWayIn(t *testing.T) {
 		_, err = b.Walled.Phone().Add(as, app.PhoneAddRequest_builder{
 			Holder: ref(b.ContosoUser), Number: "555 0100", Kind: "work",
 		}.Build())
-		x.NoError(err, "and a number there is where they are reached")
+		x.Equal(codes.PermissionDenied, status.Code(err), "and so is a number there: %v", err)
+
+		// Nor is the administrator's taken away.
+		theirs, err := b.Ungated.Phone().Add(ctx, app.PhoneAddRequest_builder{
+			Holder: ref(b.ContosoUser), Number: "555 0100", Kind: "work",
+		}.Build())
+		x.NoError(err)
+		_, err = b.Walled.Phone().Erase(as, app.PhoneRef_builder{Id: theirs.GetId()}.Build())
+		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
+		_, err = b.Ungated.Phone().Get(ctx, app.PhoneGetRequest_builder{Ref: app.PhoneRef_builder{Id: theirs.GetId()}.Build()}.Build())
+		x.NoError(err, "a number refused its erase is gone")
+
+		// Somebody who holds nothing the clerk does not: written, and taken
+		// away.
+		v, err := b.Walled.Phone().Add(as, app.PhoneAddRequest_builder{
+			Holder: ref(fred), Number: "555 0101", Kind: "home",
+		}.Build())
+		x.NoError(err)
+		gone, err := b.Walled.Phone().Erase(as, app.PhoneRef_builder{Id: v.GetId()}.Build())
+		x.NoError(err)
+		x.True(gone.GetErased())
+
+		// And the clerk's own, as anybody's own is.
+		v, err = b.Walled.Phone().Add(as, app.PhoneAddRequest_builder{
+			Holder: ref(clerk), Number: "555 0102", Kind: "mobile",
+		}.Build())
+		x.NoError(err)
+		gone, err = b.Walled.Phone().Erase(as, app.PhoneRef_builder{Id: v.GetId()}.Build())
+		x.NoError(err)
+		x.True(gone.GetErased())
+
+		// What is not there is erased by nobody, as it always was.
+		gone, err = b.Walled.Phone().Erase(as, app.PhoneRef_builder{Id: clerk.Bytes()}.Build())
+		x.NoError(err)
+		x.False(gone.GetErased())
 	})
 }

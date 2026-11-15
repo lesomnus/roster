@@ -44,7 +44,7 @@ that outlives the answer and has to be believed by people who cannot ask.**
 | **Who a request is from** | `Holder` -- a person, or an app acting in a tenant; the row does not say which. Its identifier is the `sub` every product knows them by, which is why it is roster's and not a provider's |
 | **How they sign in elsewhere** | `Identity` — `(tenant, provider, subject)`, unique, so Entra at work and GitHub for the same human is one person |
 | **Addresses** | `Email`, several per person, each with whether anybody checked it |
-| **Where else they are reached, and who they are to each other** | `Phone`, a number and what it is to them, and no way in; `Relation`, one person being something to another -- a manager, as a directory says it -- with roster not saying what |
+| **Where else they are reached, and who they are to each other** | `Phone`, a number and what it is to them, written onto somebody by whoever may write an address there; `Relation`, one person being something to another -- a manager, as a directory says it -- with roster not saying what |
 | **How they sign in here** | `Credential` — a password when there is no provider in front, and the second factor beside it. Verified here, never handed out |
 | **Where they belong** | `Tenant`, `Site`, `Team`, and the memberships between |
 | **Who may call this** | `ApiKey` in both planes — `rk_` on the control plane for an app a roster operator runs across tenants, `rt_` on a holder in a tenant — and `Role`/`Group`/`Binding` in the data plane |
