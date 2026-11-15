@@ -216,6 +216,17 @@ Naming a holder who is not there is a **refusal**, unlike `roster control key
 add`. A customer's people are the customer's, and a command that made one by
 mentioning them would write rows into somebody else's tenant by typo.
 
+**It is told what it reaches, which is its tenant's.** A method wider than it
+reads is said when the key is minted, as it is of a deployment key, and what
+is said is this kind's: the trail a tenant key reads is its own tenant's, where
+whoever it is for is allowed the read across the tenant.
+
+```
+NOTE: `/roster.AuditService/List` reaches the audit trail of its tenant, which holds the
+contents of every write there, of rows long since erased too, for as long as
+the retention policy keeps them.
+```
+
 Three other ways to get one, all the same row:
 
 | | |

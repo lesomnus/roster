@@ -240,7 +240,7 @@ func (m minting) mint(ctx context.Context, at app.Server, who pdid.Id, prefix st
 			k, whose, len(m.methods))
 	}
 
-	if v := cmd.Widest(m.methods); v != "" {
+	if v := cmd.Widest(prefix, m.methods); v != "" {
 		fmt.Fprintf(os.Stderr, "\n%s\n", v)
 	}
 

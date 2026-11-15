@@ -78,8 +78,8 @@ import (
 // caller may see.
 //
 //   - [PrefixDeployment] is the control plane: the operator's own services,
-//     minted by `roster key add`. It resolves to the **key**, holds no tenant,
-//     and the policy hands it every tenant there is.
+//     minted by `roster control key add`. It resolves to the **key**, holds no
+//     tenant, and the policy hands it every tenant there is.
 //   - [PrefixTenant] is this plane: a key belonging to somebody inside a
 //     tenant. It resolves to that **holder**, so the wall, the bindings and the
 //     second axis all apply exactly as they do when that person calls, and the

@@ -194,17 +194,17 @@ func TestIssueMintsOverTheWire(t *testing.T) {
 	t.Run("and the mint no longer needs a warning, while the wide one still does", func(t *testing.T) {
 		x := require.New(t)
 
-		x.Empty(cmd.Widest([]string{"/roster.CredentialService/Issue"}))
-		x.Empty(cmd.Widest([]string{"/roster.CredentialService/*"}))
+		x.Empty(cmd.Widest(keys.PrefixTenant, []string{"/roster.CredentialService/Issue"}))
+		x.Empty(cmd.Widest(keys.PrefixTenant, []string{"/roster.CredentialService/*"}))
 
-		x.NotEmpty(cmd.Widest([]string{"/roster.VouchService/Accept"}))
+		x.NotEmpty(cmd.Widest(keys.PrefixTenant, []string{"/roster.VouchService/Accept"}))
 
 		// And the two a front door mails a link by, which are every account
 		// to whoever holds both (#274): said, since nothing refuses it.
-		x.Contains(cmd.Widest([]string{"/roster.VouchService/Link"}), "every account")
-		x.Empty(cmd.Widest([]string{"/roster.VouchService/Redeem"}),
+		x.Contains(cmd.Widest(keys.PrefixTenant, []string{"/roster.VouchService/Link"}), "every account")
+		x.Empty(cmd.Widest(keys.PrefixTenant, []string{"/roster.VouchService/Redeem"}),
 			"spending a link is nothing without one; it is asking for one that is said")
-		x.NotEmpty(cmd.Widest([]string{"/roster.VouchService/*"}),
+		x.NotEmpty(cmd.Widest(keys.PrefixTenant, []string{"/roster.VouchService/*"}),
 			"the warning must survive a wildcard, or reaching for `*` is how it is missed")
 	})
 }

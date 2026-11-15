@@ -145,7 +145,7 @@ func newCmdIssueKey(c *cmd.Config) *xli.Command {
 			fmt.Fprintf(os.Stderr,
 				"key %q, allowing %d method(s). This is the only time it is shown.\n",
 				v.GetKey().GetAlias(), len(methods))
-			if w := cmd.Widest(methods); w != "" {
+			if w := cmd.Widest(v.GetToken(), methods); w != "" {
 				fmt.Fprintf(os.Stderr, "\n%s\n", w)
 			}
 
