@@ -206,8 +206,9 @@ type Config struct {
 // intersection -- and what does is their tenant's `self-service` role, which
 // everybody of it holds over what is their own (`server/core`, `own.go`). So
 // a tenant that does not want self-service key minting takes `ApiKey.Issue`
-// out of that role. `Email.Verify` is on it as the switch for the page's
-// *confirm*: the link itself is minted by this app, as itself, and mailed.
+// out of that role. `Email.Verify` is not on it, and a person's delegation
+// does not carry it past the gate: the link that confirms an address is minted
+// by this app, as itself, and mailed (`verify` below).
 var Methods = []string{
 	rstr.MeService_Get_FullMethodName,
 	rstr.MeService_Unlink_FullMethodName,

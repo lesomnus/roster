@@ -59,15 +59,16 @@ const Owns = "self-service"
 // `MeService` is not here because it needs no role at all: it takes no
 // "whose". What is here takes one, and is the caller's own by the wall.
 //
-// `EmailService/Verify` is here, and is worth a second look: it answers the
-// link that proves an address **to its caller**, where everything else here
-// hands back nothing a mailbox was meant to carry. What makes it somebody's
-// own to call is that the link is spent by whoever minted it
-// (`coreEmail.Confirm` compares the issuer) through `EmailService/Confirm`,
-// which is not here and is a front door's. So somebody calling it themselves
-// holds a link they cannot spend; what it switches is whether their account
-// page offers to confirm an address, which the page's own app then does, as
-// itself, by mail.
+// `EmailService/Verify` is not here, though an address is confirmed from
+// somebody's own account page. It answers the link that proves an address
+// **to its caller**, and a link is spent by whoever minted it
+// (`coreEmail.Confirm`). So a person who may call it holds, of an address they
+// wrote onto their own account a moment ago, a proof nobody mailed: all that is
+// left between them and an address that is somebody else's is
+// `EmailService/Confirm`. It was here for a day, as the switch for the page's
+// *confirm*, and somebody bound `Confirm` alone proved the CEO's address onto
+// their own account with it (#274). Both verbs are a front door's, which mints
+// the link as itself and mails it; the page asks its own app.
 var Owning = []string{
 	// Who they are, as they say it.
 	app.HolderService_Get_FullMethodName,
@@ -79,7 +80,6 @@ var Owning = []string{
 	app.EmailService_List_FullMethodName,
 	app.EmailService_Add_FullMethodName,
 	app.EmailService_Erase_FullMethodName,
-	app.EmailService_Verify_FullMethodName,
 	app.PhoneService_Get_FullMethodName,
 	app.PhoneService_List_FullMethodName,
 	app.PhoneService_Add_FullMethodName,
