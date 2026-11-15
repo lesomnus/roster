@@ -18,13 +18,16 @@ import (
 
 // A person's numbers (#252): `phoneNumbers`, kept a row each (`Phone`).
 //
-// # Why a directory writes these and not an address
+// # Whose numbers a directory writes
 //
-// A number is where somebody is reached and no way into their account --
-// nothing here sends to one or finds anybody by one -- so the key this
-// endpoint forwards may write it onto somebody who exists, and replace it
-// when it changes. An address it says changed is kept and not followed
-// (`HolderService.Tell`), for being the opposite.
+// A number is somebody's as an address is, and is written onto them and
+// taken from them by whoever may write a way into their account
+// (`server/core/phone.go`). The people a directory provisions hold nothing,
+// so it writes theirs, and replaces one when it changes -- where an address
+// it says changed is kept and not followed (`HolderService.Tell`), an address
+// being what signs somebody in today. Somebody who holds more than the
+// directory's key does is not its to write: their number is said in the log
+// and left, and the rest of the write goes on.
 //
 // # One number a kind, as a directory says them
 //
@@ -275,8 +278,15 @@ func (s *Server) dial(ctx context.Context, r *http.Request, holder []byte, c *ch
 		default:
 			continue
 		}
-		if _, err := s.roster.Phone().Erase(ctx, rstr.PhoneRef_builder{Id: v.GetId()}.Build()); err != nil &&
-			status.Code(err) != codes.NotFound {
+		_, err := s.roster.Phone().Erase(ctx, rstr.PhoneRef_builder{Id: v.GetId()}.Build())
+		switch status.Code(err) {
+		case codes.OK, codes.NotFound:
+		case codes.PermissionDenied:
+			// Somebody who holds more than this key does, whose number is not
+			// a directory's to take away: said, and the rest goes on, as a
+			// number not kept is below.
+			s.c.Log.InfoContext(r.Context(), "scim: a number was not taken away", "path", r.URL.Path, "kind", v.GetKind(), "err", status.Convert(err).Message())
+		default:
 			return err
 		}
 	}
@@ -296,8 +306,9 @@ func (s *Server) dial(ctx context.Context, r *http.Request, holder []byte, c *ch
 		switch status.Code(err) {
 		case codes.OK:
 		case codes.PermissionDenied, codes.InvalidArgument:
-			// A key that does not name the write, or a number roster will not
-			// keep after all: said, and the rest of the write goes on.
+			// A key that does not name the write, a number roster will not
+			// keep after all, or somebody who holds more than this key does:
+			// said, and the rest of the write goes on.
 			s.c.Log.InfoContext(r.Context(), "scim: a number was not kept", "path", r.URL.Path, "kind", k, "err", status.Convert(err).Message())
 		default:
 			return err

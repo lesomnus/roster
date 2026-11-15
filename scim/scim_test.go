@@ -1186,7 +1186,8 @@ func (d *deployment) numbersOf(t *testing.T, id string) map[string]string {
 // TestADirectoryKeepsSomebodysNumbers: `phoneNumbers` are kept a row each, one
 // number a kind as a directory says them -- and one number as many kinds as it
 // says it for. A number it changes is replaced and one it takes away is gone --
-// which it may not do to an address, a number being no way in -- a kind it does
+// which it may not do to an address, and may to the number of somebody who
+// holds no more than it does, as everybody it provisions does -- a kind it does
 // not mention is left, and what it sends that is not a number is said in the
 // log and refuses nothing.
 func TestADirectoryKeepsSomebodysNumbers(t *testing.T) {
@@ -1278,6 +1279,51 @@ func TestADirectoryKeepsSomebodysNumbers(t *testing.T) {
 	x.Equal(http.StatusOK, code, "%v", got)
 	x.Equal(map[string]string{"fax": "02-000-0000"}, d.numbersOf(t, id))
 	x.Len(got["phoneNumbers"], 1)
+}
+
+// TestADirectoryLeavesTheNumbersOfSomebodyWiderThanIt: a number is written
+// onto somebody by whoever may write a way into their account, and a
+// directory's key holds what a directory calls. So the numbers of somebody it
+// provisioned who has since been given more than that -- a tenant's
+// administrator -- are not its to change: said in the log, left as they are,
+// and the rest of what it says of them is written.
+func TestADirectoryLeavesTheNumbersOfSomebodyWiderThanIt(t *testing.T) {
+	d := stand(t)
+	x := require.New(t)
+	ctx := t.Context()
+
+	body := erin()
+	body["phoneNumbers"] = []map[string]any{{"type": "work", "value": "+82 2-123-4567"}}
+	code, got, _ := d.call(t, d.key, http.MethodPost, scim.Base+"/Users", body)
+	x.Equal(http.StatusCreated, code, "%v", got)
+	id := got["id"].(string)
+	x.Equal(map[string]string{"work": "+82 2-123-4567"}, d.numbersOf(t, id))
+
+	// The tenant makes her somebody who holds what the directory does not.
+	k, err := pdid.Parse(id)
+	x.NoError(err)
+	at := rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build()
+	role, err := d.s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
+		Tenant: at, Alias: "closes", Methods: []string{rstr.TenantService_Close_FullMethodName},
+	}.Build())
+	x.NoError(err)
+	_, err = d.s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+		Role:   rstr.RoleRef_builder{Id: role.GetId()}.Build(),
+		Holder: rstr.HolderRef_builder{Id: k.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	code, got, _ = d.call(t, d.key, http.MethodPatch, scim.Base+"/Users/"+id, map[string]any{"Operations": []map[string]any{
+		{"op": "Replace", "path": `phoneNumbers[type eq "work"].value`, "value": "+82 2-765-4321"},
+		{"op": "Add", "path": `phoneNumbers[type eq "mobile"].value`, "value": "010-0000-0000"},
+		{"op": "Replace", "path": "displayName", "value": "Erin Park"},
+	}})
+	x.Equal(http.StatusOK, code, "a number it may not write refused the whole of what it said: %v", got)
+	x.Equal("Erin Park", got["displayName"], "and the rest is written")
+	x.Equal(map[string]string{"work": "+82 2-123-4567"}, d.numbersOf(t, id), "her number is as it was")
+	said := strings.Join(d.log.lines(), "\n")
+	x.Contains(said, "scim: a number was not taken away")
+	x.Contains(said, "scim: a number was not kept")
 }
 
 // TestAKeyMintedBeforeNumbersWereKeptStillProvisions: a directory's key names

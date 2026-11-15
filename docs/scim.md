@@ -251,10 +251,15 @@ profile in, that what the directory says of them is written over what is there.
 What it sends that is not kept here --
 a title, a postal address -- is answered as accepted and written to the log.
 
-**A number is written, and replaced when it changes.** Where somebody is reached
-is no way into their account -- nothing here sends to a number or finds anybody
-by one -- so it is the one thing about a person who exists that the directory's
-word moves ([entity.md](entity.md) § *Phone*). A number said for a kind is that
+**A number is written, and replaced when it changes.** The people a directory
+provisions hold nothing, and a number is written onto somebody by whoever holds
+at least what they do ([entity.md](entity.md) § *Phone*) -- so of what a
+directory says about a person who exists, a number is the one thing its word
+moves. **Not of somebody who holds more than the directory's key does**: a
+tenant's administrator, somebody bound a role. Their number is theirs and their
+tenant's to write, as their address is; what the directory says of it is said
+in the log (`scim: a number was not kept`, `scim: a number was not taken
+away`), left as it is, and the rest of the request is written. A number said for a kind is that
 kind's one number, a kind not mentioned is left, and a whole User that speaks of
 numbers says every one of them. One number said for two kinds is kept as both
 -- a mobile that is also where a desk rings, and Microsoft's validator says one
@@ -495,7 +500,7 @@ is in roster's own log, as the call that was denied.
 | `HolderService/Deactivate`, `Activate` | a suspension of the directory's, for people who sign in through the connection |
 | `HolderService/Update`, `Get` | what it owns of a profile, and reading it back |
 | `HolderService/Tell` | what it calls somebody, kept beside them: reaches anybody, and is believed by nothing |
-| `PhoneService/Add`, `Erase`, `List` | where somebody is reached: reaches anybody, and is no way in |
+| `PhoneService/Add`, `Erase`, `List` | where somebody is reached: written onto whoever holds no more than this key does, which is everybody it provisions |
 | `RelationService/Add`, `Erase`, `List` | who somebody reports to: a record no rule reads |
 | `EmailService/Get`, `List`, `IdentityService/Get`, `List` | finding somebody by an address or an `externalId` |
 | `MeService/Get`, `ConnectionService/List` | which tenant the key is, and its provisioning connection |
@@ -554,7 +559,7 @@ its log what it could not.
 | the page itself, run by a person against a roster stood up for it | `scripts/scim-check.sh`, by the workflow `scim-check` |
 | what the page sent each time it was, replayed and held to what it wanted; and a dozen creates at once | `TestWhatMicrosoftsValidatorSent` · `TestTheValidatorAsksAtOnce` |
 | one thing a person is called, and which | `TestWhatSomebodyIsCalledIsTheirDisplayName` |
-| a number is written and replaced, one a kind and one number as many kinds as it is said for, and is no way in | `TestADirectoryKeepsSomebodysNumbers` · `TestANumberIsWhereSomebodyIsReachedAndNoWayIn` |
+| a number is written and replaced, one a kind and one number as many kinds as it is said for; and is left where it is somebody's who holds more than the directory | `TestADirectoryKeepsSomebodysNumbers` · `TestADirectoryLeavesTheNumbersOfSomebodyWiderThanIt` · `TestANumberIsSomebodysAsAnAddressIs` |
 | who somebody reports to is one relation, and one word in it | `TestADirectorySaysWhoSomebodyReportsTo` · `TestWhatSomebodyIsToSomebodyIsARecordNothingReads` |
 | a key minted before a method was added goes on provisioning without it | `TestAKeyMintedBeforeNumbersWereKeptStillProvisions` |
 | the directory lifts only its own suspensions | `TestADirectoryLiftsOnlyItsOwnSuspension` · `TestTheDirectoryDoesNotLiftAnOperatorsSuspension` |

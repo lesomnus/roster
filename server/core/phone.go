@@ -8,6 +8,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/lesomnus/payday/pderr"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	app "github.com/lesomnus/roster/rstr"
 )
@@ -15,12 +17,18 @@ import (
 // corePhone is the layer over the generated `PhoneService`: a number is kept
 // as it was said, and that is held to being something a person could dial.
 //
-// # What it does not ask
+// # And whose account it is written into
 //
-// Whose account the number is written into. A number is where somebody is
-// reached, and nothing here sends to one or finds anybody by one, so it is no
-// way in and `mayWriteAWayIn` is not asked (`phone.proto`). The wall, and the
-// role that names the write, are the whole of who may.
+// A number is somebody's as an address is: it says who they are to whoever
+// reads it, and it is where a code is sent the day one is. So it is written
+// onto somebody, and taken from them, by whoever may write a way into their
+// account -- [Core.mayWriteAWayIn], [Core.mayTakeAWayIn] -- and by them
+// (`phone.proto`). It was asked nothing, on the grounds that nothing sends to
+// a number yet; the rule about a kind of row is better there before the first
+// thing that depends on it than after.
+//
+// What it does not have yet is what the sending needs: when a number was
+// checked, and one form to compare two by. Those arrive with it.
 type corePhone struct {
 	Core
 	app.PhoneServiceServer
@@ -44,8 +52,30 @@ func (s corePhone) Add(ctx context.Context, req *app.PhoneAddRequest) (*app.Phon
 	if k := req.GetKind(); k != "" && !slices.Contains(PhoneKinds, k) {
 		return nil, pderr.Invalidf("kind", "%q: one of %s, or nothing", k, strings.Join(PhoneKinds, ", "))
 	}
+	if err := s.mayWriteAWayIn(ctx, "holder", req.GetHolder()); err != nil {
+		return nil, err
+	}
 
 	return s.PhoneServiceServer.Add(ctx, req)
+}
+
+// Erase takes a number away from somebody: [coreEmail.Erase], of a number.
+func (s corePhone) Erase(ctx context.Context, req *app.PhoneRef) (*app.PhoneEraseResponse, error) {
+	v, err := s.PhoneServiceServer.Get(ctx, app.PhoneGetRequest_builder{
+		Ref:    req,
+		Select: app.PhoneSelect_builder{Holder: app.HolderSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if status.Code(err) == codes.NotFound {
+		return s.PhoneServiceServer.Erase(ctx, req)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayTakeAWayIn(ctx, "ref", v.GetHolder().GetId()); err != nil {
+		return nil, err
+	}
+
+	return s.PhoneServiceServer.Erase(ctx, req)
 }
 
 // isPhone refuses what nobody dials: nothing, something not trimmed, something

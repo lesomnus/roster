@@ -10,7 +10,7 @@ import "payday.proto";
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/roster/rstr";
 
-// Phone is a number somebody is reached at, and nothing more than that.
+// Phone is a number somebody is reached at.
 //
 // # Why it is a row, and not a field of `Profile`
 //
@@ -19,19 +19,23 @@ option go_package = "github.com/lesomnus/roster/rstr";
 // there next. A profile is one value replaced whole, with no room for two of
 // anything and no way to take one away without restating the rest.
 //
-// # Why it is not a way in, and what that buys
+// # Whose account it is written into
 //
-// Nothing in roster sends to a number, and nothing finds anybody by one: no
-// code is texted, no link, no sign-in is matched. So writing a number onto
-// somebody is not writing a way into their account, and it is not held to the
-// rule that is (`server/core/escalate.go`, `mayWriteAWayIn`). That is what
-// lets a tenant's directory keep it true -- write it, and replace it when it
-// changes -- which it may not do to an address (`docs/scim.md`).
+// A number is somebody's as an address is: it says who they are to whoever
+// reads it, and it is where a code is sent the day one is. So it is written
+// onto somebody, and taken from them, by whoever may write a way into their
+// account, and by them (`server/core/escalate.go`, `mayWriteAWayIn`).
 //
-// The day a number is somewhere a code is sent, it gains what `Email` has for
-// the same reason: when it was checked, stamped, and the rule about whose
-// account a way in is written into. A directory's write is asked that
-// question then, and not before there is anything to ask it about.
+// It was asked nothing at first, on the grounds that nothing in roster sends
+// to a number or finds anybody by one yet. The rule about a kind of row is
+// better there before the first thing that depends on it than after -- a
+// directory, a console and a role are each written against who may write one.
+// What that costs is said in `docs/scim.md`: a directory writes the numbers of
+// the people it provisions, who hold nothing, and not of somebody who holds
+// more than its key does.
+//
+// What a number does not have yet is what sending to one needs: when it was
+// checked, and one form to compare two by. Those arrive with the sending.
 //
 // # Not unique within a tenant, nor one row a number
 //
@@ -61,8 +65,8 @@ message Phone {
   // x12`, an extension alone. Nothing here compares numbers, so refusing those
   // would be refusing a tenant's directory every cycle for a property nothing
   // reads. It is what a person dials, kept as it was said; the day a number is
-  // compared -- which is the day it is a way in -- is the day it is given one
-  // form, with the rest of what that takes.
+  // compared -- which is the day a code is sent to one -- is the day it is
+  // given one form, with the rest of what that takes.
   //
   // Personal (payday#92): the trail records that a number was set, and never
   // which.

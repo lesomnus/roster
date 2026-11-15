@@ -387,6 +387,7 @@ unless that person's permissions are a subset of the caller's:
 | `CredentialService/Enrol` | their second factor |
 | `IdentityService/Add` | an account at a provider that signs in as them |
 | `EmailService/Add` | a mailbox a recovery link is sent to |
+| `PhoneService/Add` | a number, which says who they are to whoever reads it, and is where a code is sent the day one is |
 | `ApiKeyService/Add`, `/Issue` | a key that **acts as** them |
 | `NominationService/Add`, `/Patch` | an app's deployment key answered **as** them in this tenant |
 
@@ -417,9 +418,9 @@ the one that names `Accept`, and no person's role should. *May send recovery lin
 permission and is the tenant. `roster key add` says so when a key's methods name
 one.
 
-**Taking one away is asked the same.** `EmailService/Erase` and
-`IdentityService/Erase` are refused unless that person's permissions are a
-subset of the caller's, as `ApiKeyService/Erase` and `DelegationService/Erase`
+**Taking one away is asked the same.** `EmailService/Erase`,
+`PhoneService/Erase` and `IdentityService/Erase` are refused unless that
+person's permissions are a subset of the caller's, as `ApiKeyService/Erase` and `DelegationService/Erase`
 are: an address erased is the mail-borne way back gone, and -- an address being
 one person's in a tenant -- free to be written onto another row, which the
 caller's own is.

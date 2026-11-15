@@ -70,8 +70,8 @@ var Methods = []string{
 	rstr.IdentityService_Get_FullMethodName,
 	rstr.IdentityService_List_FullMethodName,
 
-	// Their numbers (`phones.go`), which are no way in and so are written
-	// onto anybody.
+	// Their numbers (`phones.go`): written onto whoever holds no more than
+	// the directory does, which is everybody it provisions.
 	rstr.PhoneService_Add_FullMethodName,
 	rstr.PhoneService_Erase_FullMethodName,
 	rstr.PhoneService_List_FullMethodName,

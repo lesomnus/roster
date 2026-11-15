@@ -1200,8 +1200,8 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 	app.RegisterIdentityServiceServer(g, s.Identity())
 	app.RegisterEmailServiceServer(g, s.Email())
 	// Served, reads and all: a number is where somebody is reached, the wall
-	// narrows it to their tenant, and it is no secret and no way in
-	// (`phone.proto`).
+	// narrows it to their tenant, and it is no secret. Whose account one is
+	// written into is `server/core/phone.go`'s (`phone.proto`).
 	app.RegisterPhoneServiceServer(g, s.Phone())
 	// Served, reads and all: who somebody is to somebody else is a record of
 	// two people the wall already narrows, and no rule reads it

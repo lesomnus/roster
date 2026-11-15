@@ -750,7 +750,7 @@ func (s Core) onlyMine(ctx context.Context) (*app.HolderRef, error) {
 }
 
 // mayTakeAWayIn refuses erasing a way into the account of somebody who holds
-// more than the caller: an address, an identity.
+// more than the caller: an address, a number, an identity.
 //
 // # Why an erase is asked what a write is
 //
