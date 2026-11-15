@@ -249,6 +249,10 @@ type Rules struct {
 	// refused rather than made. See [Administered].
 	Administered Administered
 
+	// Sited is what is still a site's, which erasing one asks. Nil is a stack
+	// that cannot say, and a site is then erased as it always was. See [Sited].
+	Sited Sited
+
 	// Named is a tenant's role by its alias, which making a group asks to find
 	// the role its maker manages it by. Nil is a stack that cannot say, and a
 	// group is then made with nobody managing it, as every group was before a

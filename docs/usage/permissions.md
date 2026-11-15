@@ -176,6 +176,11 @@ A binding with no site reaches the whole tenant. One made in a site reaches that
 site alone — and that is also the scope the escalation rule compares, so a site
 administrator can grant inside their site and not across the tenant.
 
+**A site is erased when nothing is in it.** A role, a binding, a team and a
+group may each be a site's, and one still there refuses the erase, which says
+what is left: a binding that outlived its site would go on counting for a place
+nobody can see any more. Take them out, and then the site.
+
 **And what is the tenant's as a whole needs a binding across it.** A role that
 reaches somebody only in a site or only in a team writes none of these, whatever
 its methods say:

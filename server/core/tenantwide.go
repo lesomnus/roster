@@ -2,12 +2,15 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"slices"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
 )
@@ -138,12 +141,81 @@ func (s coreSite) Add(ctx context.Context, req *app.SiteAddRequest) (*app.Site, 
 	return s.SiteServiceServer.Add(ctx, req)
 }
 
+// Erase takes a site that has nothing in it.
+//
+// # What is a site's, and why it goes first
+//
+// A role, a binding, a team and a group may each name a site, and each means
+// what it means **there**: the role is bound there alone, the binding reaches
+// there alone. An erase asked who was erasing and nothing of the site, so what
+// was in it stayed, naming a place that was gone, and went on counting --
+// somebody bound there kept every method the binding carried, in a site nobody
+// could see or administer any more (#274). A team erased takes its roles with
+// it (`cmd/policy.go`, `liveTeam`); a site erased took nothing.
+//
+// Refused, rather than taken with it or counted as gone. Erasing everything
+// in a site because the site went is a great deal to undo for one call made
+// by mistake. And a binding that stopped counting because its site was erased
+// is a row that says something nothing reads, there for whoever next asks why
+// somebody holds what they hold. So each is taken out by whoever decides it,
+// and the refusal says what is left.
+//
+// It is about the site and not about who asks, so a call with no frame is
+// held to it too. Who is recorded as being in a site ([SiteMembership]) is
+// not what is asked: it grants nothing, and is a record of somewhere that
+// was.
 func (s coreSite) Erase(ctx context.Context, req *app.SiteRef) (*app.SiteEraseResponse, error) {
 	if err := s.acrossTheTenant(ctx, app.SiteService_Erase_FullMethodName); err != nil {
 		return nil, err
 	}
+	if s.rules.Sited != nil {
+		k, err := s.siteOf(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		in, err := s.rules.Sited(ctx, k)
+		if err != nil {
+			return nil, err
+		}
+		if left := in.String(); left != "" {
+			return nil, status.Errorf(codes.FailedPrecondition,
+				"ref: this site still has %s in it, each of which means what it means there; take them out first", left)
+		}
+	}
 
 	return s.SiteServiceServer.Erase(ctx, req)
+}
+
+// Sited is what is still a site's: the live rows that name it, by kind.
+//
+// Asked of the rows and not through a server, for [Administered]'s reason: it
+// answers the same whoever is asking, and somebody erasing a site need not be
+// somebody who may list its bindings.
+type Sited func(ctx context.Context, site pdid.Id) (InSite, error)
+
+// InSite is how many of each kind a site still has.
+type InSite struct {
+	Bindings, Roles, Teams, Groups int
+}
+
+// String is what is left, as a refusal says it, and empty for nothing.
+func (v InSite) String() string {
+	var out []string
+	for _, k := range []struct {
+		n    int
+		kind string
+	}{
+		{v.Bindings, "binding"}, {v.Roles, "role"}, {v.Teams, "team"}, {v.Groups, "group"},
+	} {
+		switch {
+		case k.n == 1:
+			out = append(out, "a "+k.kind)
+		case k.n > 1:
+			out = append(out, fmt.Sprintf("%d %ss", k.n, k.kind))
+		}
+	}
+
+	return strings.Join(out, ", ")
 }
 
 func (s coreSite) Patch(ctx context.Context, req *app.SitePatchRequest) (*app.Site, error) {
