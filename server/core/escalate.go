@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"context"
 	"slices"
 
@@ -666,6 +667,86 @@ func (s Core) mayReach(ctx context.Context, field string, target pdid.Id) error 
 	}
 
 	return nil
+}
+
+// mayReadOf is who reads what ways in somebody has -- their keys, where they
+// are signed in, how they sign in: **they do, and whoever holds
+// `HolderService/SignsIn` across the tenant.**
+//
+// # Why it is not the reach rule
+//
+// It was. A read of somebody's keys asked what a write of one asks -- the
+// caller holds everything the person holds ([Core.mayReach]) -- on the
+// reasoning that a list of where somebody is signed in is about their
+// credentials too. Three things were wrong with that, and the third is what
+// found the other two (#274):
+//
+//   - **It let strangers through.** Somebody who holds nothing is a subset of
+//     anybody, so two people with no role between them read each other's.
+//   - **It kept the reader out.** An auditor holds the reads and nothing else,
+//     which is less than an administrator holds, and so could not read an
+//     administrator's.
+//   - **It was asked only where a request said whose.** A list that named
+//     nobody was asked nothing, and answered every key of the tenant.
+//
+// A read hands nothing out, so there is nothing to compare. What is asked is
+// whether this is the caller's own, or the caller is somebody told to read
+// how everybody signs in.
+//
+// # Why that is `SignsIn`, and not the read itself
+//
+// Because the read itself is what somebody is given to see **their own**. A
+// tenant that lets its people mint and end their own keys binds them
+// `ApiKey.List`, across the tenant, all of them -- and if holding that were
+// being told to read everybody's, each would read every key there is, the
+// administrator's among them. There has to be a second thing to hold, and
+// there is one already: `HolderService/SignsIn` takes a person and answers how
+// they sign in, their keys by name with it. It is the same fact about the same
+// person, so it is one permission, and whoever holds it reads a key's row as
+// they read that answer.
+//
+// Across the tenant, as every verb on a person's row is: held in a site or on
+// a team it is not being told about everybody ([Core.acrossTheTenant]).
+//
+// Ending a key is still a write, and still [Core.mayReach].
+//
+// `whose` is [pdid.Nil] for what is nobody's, which is asked nothing.
+func (s Core) mayReadOf(ctx context.Context, field string, whose pdid.Id) error {
+	mine, err := s.onlyMine(ctx)
+	if err != nil || mine == nil || whose == pdid.Nil {
+		return err
+	}
+	if bytes.Equal(mine.GetId(), whose.Bytes()) {
+		return nil
+	}
+
+	return status.Errorf(codes.PermissionDenied,
+		"%s: that is somebody else's, and how somebody else signs in is read by whoever holds %s across the tenant",
+		field, app.HolderService_SignsIn_FullMethodName)
+}
+
+// onlyMine is the caller, where what they may read of anybody's ways in is
+// their own and no more; and nil where it is everybody's -- they hold
+// `HolderService/SignsIn` across the tenant, or are the deployment.
+func (s Core) onlyMine(ctx context.Context) (*app.HolderRef, error) {
+	if s.deployment(ctx) {
+		return nil, nil
+	}
+	f, _ := frame.From(ctx)
+	if s.rules.Everywhere == nil {
+		return nil, status.Error(codes.PermissionDenied,
+			"this server cannot say what you hold across the tenant, so it will not show you anybody's")
+	}
+
+	held, err := s.rules.Everywhere(ctx, f.Actor)
+	if err != nil {
+		return nil, err
+	}
+	if slices.ContainsFunc(held, func(m string) bool { return frame.Covers(m, app.HolderService_SignsIn_FullMethodName) }) {
+		return nil, nil
+	}
+
+	return app.HolderRef_builder{Id: f.Actor.Bytes()}.Build(), nil
 }
 
 // holdsAt is whether one of `mine` covers `m` where `at` is held.

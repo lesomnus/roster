@@ -1648,6 +1648,14 @@ export const HolderService: GenService<{
    * reason: it is a read of a holder, and a second service would be a second
    * name for the same rows.
    *
+   * # Whose it answers
+   *
+   * The caller's own, to anybody who holds it. Somebody else's, to whoever
+   * holds it **across the tenant** -- and holding it so is also what reads
+   * somebody else's keys and delegations as rows (`ApiKeyService`,
+   * `DelegationService`): the same fact about the same person, so one
+   * permission.
+   *
    * @generated from rpc roster.HolderService.SignsIn
    */
   signsIn: {
