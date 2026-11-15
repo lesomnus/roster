@@ -169,6 +169,10 @@ type Server struct {
 	Lockout  vouch.Lockout
 	Password core.Password
 
+	// recheck is `stream.recheck`: how often a stream these servers have open
+	// is asked again who opened it ([AskedAgain]).
+	recheck time.Duration
+
 	// RestoreWithin is `tenant.restore_within`, for the same servers: a close
 	// undone at the admin port answers to the same grace as one undone here.
 	RestoreWithin time.Duration
@@ -502,6 +506,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, broker: c.Watch.Broker, Queue: queue, sink: sink, narrow: narrow,
 		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password,
 		RestoreWithin: c.Tenant.RestoreWithin,
+		recheck:       c.Stream.Recheck,
 	}
 
 	if policyFile != nil {
@@ -565,6 +570,10 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 			// was written down: this said `memory` in the code, which made the
 			// console the one screen a second replica broke without saying so.
 			Watch: c.Control.watch(c.Watch),
+
+			// How often an open stream is asked again, which is one setting
+			// for the deployment and so the control listener's too.
+			Stream: c.Stream,
 
 			// The same numbers for an operator's password as for anybody's:
 			// `vouch.lockout` and `vouch.password` are one block in the file,
@@ -985,14 +994,19 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// than a constructor called wherever it is needed.
 	rate := c.Server.Limiter()
 
+	// One policy, asked when a call arrives and asked again of a stream that
+	// is still open ([AskedAgain]).
+	policy := Policy(s.Ent, s.policySources...)
+
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(c.Server.CallTimeout())).
 		With(s.policyInterceptors()).
+		WithStream(AskedAgain(s.recheck, h, r, Public, policy)).
 		WithUnary(auth.InterceptorUnary(h, r, Public)).
 		WithStream(auth.InterceptorStream(h, r, Public)).
 		WithUnary(grpcx.LimitUnary(rate, gate.ByTenant(), pd.Cost)).
 		WithStream(grpcx.LimitStream(rate, gate.ByTenant())).
 		With(s.accessed().Interceptor()).
-		With(gate.Interceptor(Policy(s.Ent, s.policySources...))).
+		With(gate.Interceptor(policy)).
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(shut)).
 		WithStream(grpcx.ClosedStream(shut)).
