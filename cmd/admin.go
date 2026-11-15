@@ -60,7 +60,8 @@ import (
 // name is on the wire at all. What is shut is their generated reads and raw
 // writes, a method at a time, in the same `closed()` the data plane uses: their
 // `Get` answers with the verifier column, and a port being private is not a
-// reason to serve a password hash over it.
+// reason to serve a password hash over it. A key's and a delegation's reads
+// are served, and what clears the verifier from those is [answered].
 
 // Admin is the stack this port answers through.
 func Admin(s *Server) (app.Server, error) {
@@ -104,6 +105,20 @@ func Admin(s *Server) (app.Server, error) {
 			core.Operated()),
 		pd.AuditBuild())
 }
+
+// answered is the admin listener's stack as a caller of it is answered: with
+// what a row keeps to be checked against -- a key's hash, a delegation's --
+// cleared, as it is at the port a customer reaches.
+//
+// [Admin] is built without that layer and has to be: `VouchService` here reads
+// a credential through it to check one, as the data plane's reads through
+// `Ungated`. But the same stack was what `Register` served, so the generated
+// reads of a key answered its `secret` -- `ApiKey.Get` with `select.secret`,
+// `Delegation.List` with no select at all -- on the port whose own comment
+// says that being private is no reason to serve a hash over it (#274). What
+// that comment shut was `Credential`'s reads, by name, in `closed()`; a key's
+// and a delegation's are served, and it is this layer that makes them safe to.
+func answered(admin app.Server) app.Server { return pd.NewSecret(admin) }
 
 // Intent records that an operator decided to do something, in the control
 // plane, **before** it is attempted in the data plane.
@@ -348,7 +363,10 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 	os = append(os, vs...)
 
 	g := grpc.NewServer(os...)
-	Register(g, admin)
+
+	// What is served is the stack with a verifier cleared from every answer:
+	// see [answered].
+	Register(g, answered(admin))
 
 	// Signing in, and who the caller is -- both over the **control plane's**
 	// rows, because a roster operator is a holder of that plane and this port

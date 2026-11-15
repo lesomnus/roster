@@ -432,7 +432,7 @@ Five of roster's own at most, and which open is what the configuration named.
 | --- | --- | --- |
 | `server.addr` | product apps | gRPC, **walled** and gated. Keys only -- a cookie names nobody here |
 | `server.http.addr` | anything that cannot speak gRPC, and a roster user's browser | the same, transcoded (Connect, gRPC-Web). Serves the **user console** and the sign-in behind it |
-| `control.addr` | the roster operators' shells, and their jobs | who runs this deployment and the deployment keys of the apps they run. Takes an `rk_` |
+| `control.addr` | the roster operators' shells, and their jobs | who runs this deployment and the deployment keys of the apps they run. Takes an `rk_`, and an operator's session from the admin listener |
 | `control.http.addr` | the same, over HTTP | the same RPCs, transcoded. **No page**, and no sign-in |
 | `admin.addr` / `.http.addr` | a roster operator's browser | **customers**: the data plane with no wall, behind an operator's session. Serves the **admin console** and the sign-in behind it |
 
