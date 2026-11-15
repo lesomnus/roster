@@ -38,13 +38,21 @@ import (
 //	MailDomain  where an address at its domains is sent to sign in       Add, Update, Erase, Patch, Apply
 //	Nomination  who an app's key is answered as here                     Add, Erase, Patch, Apply
 //	Site        the parts it is divided into                             Add, Erase, Patch, Apply
+//	Holder      a person made, and one erased who is not the caller      Add, Erase
+//	SiteMembership  who is of which site, and so in whose reach          Add, Erase
+//	Team, Group one of no site, made                                     Add
+//	GroupExposure   which relying party's tokens carry a group           Add, Erase
+//
+// And the trail, read, which no layer here is over: `cmd/policy.go`,
+// `ofTheWholeTenant`.
 //
 // Each asks what the caller holds **across the tenant**: a binding with no
 // site, to them or to a group they are in, which is [Rules.Everywhere] and what
 // `HolderService.Reaches` answers as `everywhere`. Rows that carry a site --
 // roles, bindings, teams, groups, their memberships -- are not here: the site
 // on the row is the scope, and the rules about granting are what hold a write
-// of one to it (`escalate.go`).
+// of one to it (`escalate.go`). Nor is a person's row otherwise: it is reached
+// by a grant made in a site the person is in (`cmd/people.go`).
 //
 // The deployment's own work is not asked, as everywhere in this package: a
 // file it declares, a command on its database, its operators.

@@ -156,8 +156,25 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 		return status.Errorf(codes.PermissionDenied,
 			"%s: no role of yours allows that", c.Action)
 	}
+	if ofTheWholeTenant(c.Action) && !held.allowsEverywhere(c.Action) {
+		return status.Errorf(codes.PermissionDenied,
+			"%s is about the whole tenant, and you hold it only in part of it -- a site, or a team", c.Action)
+	}
 
 	return nil
+}
+
+// ofTheWholeTenant is the reads that are no site's, held to a binding across
+// the tenant here because no layer of `server/core` is over them: the trail.
+//
+// A line of the trail is about whatever was written, in whichever site, by
+// whoever wrote it, and carries what the write said. Narrowed to nothing by
+// the second axis -- it is in no set -- it answered somebody bound in one site
+// with every row of every other: a role of another site, and what it allows,
+// read by its id (#274). The writes that are the tenant's as a whole ask the
+// same in `server/core/tenantwide.go`, where the request is.
+func ofTheWholeTenant(method string) bool {
+	return frame.Covers("/roster.AuditService/*", method)
 }
 
 // aboutYourself is the methods a binding is not required for.
@@ -304,6 +321,16 @@ func Sets(db *ent.Client, sources ...rbac.Source) frame.Sets {
 // is narrowed by nothing. Otherwise it is the sites their bindings name, and a
 // caller with no binding at all sees no site -- which matches [policy.May]
 // refusing them anyway, and is the safe direction if the two ever disagree.
+//
+// # And it is asked of the method
+//
+// Somebody holds more than one grant, and each reaches where it was made. So
+// a call is narrowed to where its caller holds **the method it is**
+// ([held.sitesFor]), when the context says which that is ([Calling]): a role
+// across the tenant that reads teams does not carry a role held in Seoul that
+// erases them into Busan. It was asked of the caller alone -- every site
+// anything they hold reaches, and nothing once one thing was held across the
+// tenant -- and that is still the answer where no method was said.
 func (p policy) sets(ctx context.Context) ([]uuid.UUID, bool, error) {
 	f, ok := frame.From(ctx)
 	if !ok {
@@ -316,6 +343,11 @@ func (p policy) sets(ctx context.Context) ([]uuid.UUID, bool, error) {
 	held, err := p.of(ctx, f.Actor.Uuid())
 	if err != nil {
 		return nil, false, err
+	}
+	if m, ok := calling(ctx); ok {
+		vs, all := held.sitesFor(m)
+
+		return vs, all, nil
 	}
 
 	return held.sites, held.anySite, nil
@@ -334,6 +366,56 @@ type held struct {
 	// everywhere is the methods of the bindings with no site: the part of
 	// `methods` the wall does not narrow. A role held in a team is not in it.
 	everywhere map[string]struct{}
+
+	// reaches is the same holdings kept apart: each with where it reaches,
+	// which is what a call is narrowed by ([held.sitesFor]).
+	reaches []reach
+}
+
+// reach is one thing somebody holds, and where: a site, or the whole tenant.
+//
+//   - a binding reaches the site it was made in, or the tenant when it names
+//     none -- to them, or to a group they are in;
+//   - a role held in a team reaches the team's site, a site being as fine as
+//     the second axis gets (see [policy.of]); or the tenant when the team is
+//     in none, which only somebody holding it across the tenant could have
+//     given (`mayGrant`);
+//   - a manager's role in a group reaches the group's site, or the tenant
+//     when it is in none -- and names only what changes that group's members;
+//   - what a file grants reaches the tenant.
+type reach struct {
+	methods []string
+	site    uuid.UUID
+	all     bool
+}
+
+// sitesFor is where this caller holds `method`: the sites, or everywhere.
+func (h held) sitesFor(method string) (sites []uuid.UUID, all bool) {
+	for _, r := range h.reaches {
+		if !slices.ContainsFunc(r.methods, func(m string) bool { return frame.Covers(m, method) }) {
+			continue
+		}
+		if r.all {
+			return nil, true
+		}
+		if !slices.Contains(sites, r.site) {
+			sites = append(sites, r.site)
+		}
+	}
+
+	return sites, false
+}
+
+// allowsEverywhere is whether they hold `method` through a binding across the
+// tenant, which is [Everywhere]'s reading of the same rows.
+func (h held) allowsEverywhere(method string) bool {
+	for m := range h.everywhere {
+		if frame.Covers(m, method) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // allows asks each pattern rather than looking the method up.
@@ -475,6 +557,12 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 			for _, m := range v.Edges.Role.Methods {
 				h.methods[m] = struct{}{}
 			}
+
+			r := reach{methods: v.Edges.Role.Methods, all: true}
+			if v.Edges.Team != nil && v.Edges.Team.Edges.Site != nil {
+				r = reach{methods: v.Edges.Role.Methods, site: v.Edges.Team.Edges.Site.Id}
+			}
+			h.reaches = append(h.reaches, r)
 		}
 
 		// And the **site** their team is in, which they have to be able to see
@@ -497,14 +585,32 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 	// refuses every group but theirs (`mayChangeGroup`). Such a role names
 	// only what a group's manager writes (`mayHoldInGroup`, `core`'s
 	// `managing`), so what this adds is those methods, and no site.
-	gs, err := groupRoles(ctx, p.db, who)
+	gs, err := p.db.GroupMembership.Query().
+		Where(
+			groupmembership.DateErasedIsNil(),
+			groupmembership.HasHolderWith(holder.IdEQ(who)),
+			groupmembership.HasGroupWith(group.DateErasedIsNil()),
+			groupmembership.HasRoleWith(entrole.DateErasedIsNil()),
+		).
+		WithRole(live).
+		WithGroup(func(q *ent.GroupQuery) { q.WithSite() }).
+		All(ctx)
 	if err != nil {
 		return held{}, err
 	}
-	for _, r := range gs {
-		for _, m := range r.Methods {
+	for _, v := range gs {
+		if v.Edges.Role == nil {
+			continue
+		}
+		for _, m := range v.Edges.Role.Methods {
 			h.methods[m] = struct{}{}
 		}
+
+		r := reach{methods: v.Edges.Role.Methods, all: true}
+		if v.Edges.Group != nil && v.Edges.Group.Edges.Site != nil {
+			r = reach{methods: v.Edges.Role.Methods, site: v.Edges.Group.Edges.Site.Id}
+		}
+		h.reaches = append(h.reaches, r)
 	}
 
 	for _, v := range vs {
@@ -525,11 +631,13 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 					h.everywhere[m] = struct{}{}
 				}
 			}
+			h.reaches = append(h.reaches, reach{methods: v.Edges.Role.Methods, all: true})
 
 			continue
 		}
 
 		h.sites = append(h.sites, v.Edges.Site.Id)
+		h.reaches = append(h.reaches, reach{methods: v.Edges.Role.Methods, site: v.Edges.Site.Id})
 	}
 
 	extra, err := configuredGrants(ctx, p.db, who, p.sources)
@@ -539,6 +647,7 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 	for _, g := range extra {
 		if len(g.Methods) > 0 {
 			h.anySite = true
+			h.reaches = append(h.reaches, reach{methods: g.Methods, all: true})
 		}
 		for _, m := range g.Methods {
 			h.methods[m] = struct{}{}
@@ -997,8 +1106,30 @@ func Holds(db *ent.Client, sources ...rbac.Source) core.Holds {
 		if err != nil {
 			return false, err
 		}
+
+		// A binding across the tenant reaches every team and group in it, and
+		// one made in a site reaches the ones of that site: where it was made
+		// is compared, and was not -- any binding naming the method was
+		// enough, so a role held in Seoul changed a team of Busan's once the
+		// wall had shown it (#274).
+		var (
+			at     uuid.UUID
+			looked bool
+		)
 		for _, v := range vs {
-			if allows(v.Edges.Role, method) {
+			if !allows(v.Edges.Role, method) {
+				continue
+			}
+			if v.Edges.Site == nil || scope == pdid.Nil {
+				return true, nil
+			}
+			if !looked {
+				if at, err = siteOf(ctx, db, scope); err != nil {
+					return false, err
+				}
+				looked = true
+			}
+			if at != uuid.Nil() && at == v.Edges.Site.Id {
 				return true, nil
 			}
 		}
@@ -1058,6 +1189,32 @@ func Holds(db *ent.Client, sources ...rbac.Source) core.Holds {
 
 		return false, nil
 	}
+}
+
+// siteOf is the site a team or a group is in, and the nil identifier for one in none
+// -- which a binding made in a site does not reach.
+func siteOf(ctx context.Context, db *ent.Client, scope pdid.Id) (uuid.UUID, error) {
+	if scope.Domain() == pd.GroupDomain {
+		v, err := db.Group.Query().Where(group.IdEQ(scope.Uuid())).Only(ctx)
+		if ent.IsNotFound(err) {
+			return uuid.Nil(), nil
+		}
+		if err != nil {
+			return uuid.Nil(), err
+		}
+
+		return v.SiteId, nil
+	}
+
+	v, err := db.Team.Query().Where(entteam.IdEQ(scope.Uuid())).Only(ctx)
+	if ent.IsNotFound(err) {
+		return uuid.Nil(), nil
+	}
+	if err != nil {
+		return uuid.Nil(), err
+	}
+
+	return v.SiteId, nil
 }
 
 func allows(r *ent.Role, method string) bool {

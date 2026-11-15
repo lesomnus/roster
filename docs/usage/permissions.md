@@ -176,6 +176,74 @@ A binding with no site reaches the whole tenant. One made in a site reaches that
 site alone — and that is also the scope the escalation rule compares, so a site
 administrator can grant inside their site and not across the tenant.
 
+**Each thing somebody holds reaches where it was given, whatever else they
+hold.** A call is narrowed to where its caller holds *the method it is*.
+Somebody bound a role that reads teams across the tenant, and another that
+erases them in Seoul, reads every team and erases Seoul's: the first role shows
+them Busan's team and does not carry the second one there.
+
+### The people of a site
+
+A person is in a site by a `SiteMembership` -- several, if they work at one and
+audit another -- and **a grant made in a site reaches the people who are in
+it**, and what is theirs: their addresses, numbers, identities, keys, where
+they are signed in.
+
+```sh
+echo '{"holder":{"slug":{"alias":"park","tenant":{"alias":"newco"}}},
+       "site":  {"slug":{"alias":"eu",  "tenant":{"alias":"newco"}}}}' \
+  | roster --as admin site-membership add -
+```
+
+That is a site's helpdesk. Bind somebody a role naming
+`CredentialService/Issue` and `HolderService/Update` in `eu`, and they reset
+the password of somebody of `eu` and edit their profile. Somebody of another
+site is `NotFound` to them, as a team of another site is. Three things it does
+not make them:
+
+- **Who is of a site is not the site's to say.** `SiteMembership`'s `Add` and
+  `Erase` are held across the tenant: otherwise somebody bound in `eu` puts
+  anybody in `eu`, and is then their helpdesk.
+- **Nor is a person theirs to make or erase.** `HolderService/Add` and `/Erase`
+  are the tenant's as a whole; a site suspends somebody of its own
+  (`HolderService/Disable`), which stops them, and does not take them out of the
+  tenant.
+- **Nor does it reach somebody wider than they are**, of their site or not: the
+  tenant's administrator who is of `eu` is seen, and the rule about writing a
+  way in ([below](#and-you-cannot-write-a-way-into-an-account-wider-than-yours))
+  refuses their password as it always did.
+
+Somebody reads and writes what is **their own** wherever they are, or nowhere:
+what is narrowed is the reach of a grant. And a place in a team or a group is
+read where the team or group is -- a `TeamMembership` of another site's team is
+not there either.
+
+**Somebody of no site** is seen and reached by whoever holds the method across
+the tenant, and by themselves: no grant made in a site reaches them. That is
+everybody a directory provisions, until the tenant says which site they are
+of -- and everybody, in a tenant that uses no sites, where nothing here
+changes anything.
+
+**To let a site see the whole tenant and act on its own**, bind the read
+across the tenant and the write in the site. The two are narrowed apart,
+since each call is narrowed by the method it is:
+
+```sh
+# kim reads everybody of newco ...
+echo '{"role":  {"slug":{"alias":"directory","tenant":{"alias":"newco"}}},
+       "holder":{"slug":{"alias":"kim",      "tenant":{"alias":"newco"}}}}' \
+  | roster --as admin binding add -
+
+# ... and resets the password of somebody of eu.
+echo '{"role":  {"slug":{"alias":"helpdesk","tenant":{"alias":"newco"}}},
+       "holder":{"slug":{"alias":"kim",     "tenant":{"alias":"newco"}}},
+       "site":  {"slug":{"alias":"eu",      "tenant":{"alias":"newco"}}}}' \
+  | roster --as admin binding add -
+```
+
+Bound to a group everybody is in, the first is a tenant whose people all see
+each other, whichever site they are of.
+
 **A site is erased when nothing is in it.** A role, a binding, a team and a
 group may each be a site's, and one still there refuses the erase, which says
 what is left: a binding that outlived its site would go on counting for a place
@@ -202,7 +270,14 @@ its methods say:
 - which relying party's tokens carry a group (`GroupExposure`), shown and taken
   away. The group may be a site's, and what its name means at that party is
   not: it grants there whatever that party grants on it, which no rule here can
-  measure.
+  measure;
+- a person made or erased (`HolderService/Add`, `/Erase` -- their own, by
+  leaving, is theirs), and who is of which site (`SiteMembership`'s `Add` and
+  `Erase`);
+- a team or a group of **no** site, made: it is the tenant's, and somebody
+  bound in a site makes one in that site;
+- the trail (`AuditService`), read. A line of it is about whatever was written,
+  wherever, and carries what the write said.
 
 The gate counts every place a role reaches, which is right for rows a site
 narrows; none of these is a site's. Rows that carry a site -- roles, bindings,
@@ -210,9 +285,9 @@ teams, groups -- are scoped by it, and the granting rules above hold them to it.
 
 A role that names a site may only be bound in that site.
 
-`SiteMembership` exists and **is read by nothing**: it records where somebody
-is, and does not change what they may see. What decides that is the site on the
-binding.
+`SiteMembership` is **who a grant made in a site reaches**, and nothing else:
+being of a site gives somebody no sight of it and nothing to do there. What
+does is a binding made in that site, to them.
 
 ## A team
 

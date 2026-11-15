@@ -151,7 +151,7 @@ func (s coreHolder) Provision(ctx context.Context, req *app.HolderProvisionReque
 
 	var out *app.Holder
 	run := func(at Core) error {
-		h, err := at.Holder().Add(ctx, app.HolderAddRequest_builder{
+		h, err := coreHolder{at, at.Next().Holder()}.add(ctx, app.HolderAddRequest_builder{
 			Tenant:  app.TenantRef_builder{Id: t.GetId()}.Build(),
 			Alias:   alias,
 			Name:    req.GetName(),

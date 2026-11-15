@@ -50,7 +50,10 @@ func TestTheRecordOfAnEraseBelongsToWhoseRowItWas(t *testing.T) {
 	who := b.holder(t, ctx, b.Contoso, "leaver")
 	operator := b.holder(t, ctx, b.Fabrikam, "ops")
 
-	res, err := b.Ungated.Holder().Erase(b.asNobody(ctx, operator, b.Fabrikam),
+	// Holding the erase across their own tenant, which is what erasing a
+	// person asks of a caller (`core.acrossTheTenant`); whose tenant the person
+	// is in is the wall's to say, and this server has none.
+	res, err := b.Ungated.Holder().Erase(b.as(ctx, operator, b.Fabrikam),
 		app.HolderRef_builder{Id: who.Bytes()}.Build())
 	x.NoError(err)
 	x.True(res.GetErased())

@@ -64,13 +64,15 @@ func (g groups) manages(t *testing.T, ctx context.Context) *app.RoleRef {
 	return app.RoleRef_builder{Id: v.GetId()}.Build()
 }
 
-// staff binds people a role that lets them see the tenant's groups and do
-// nothing to them: how a manager sees the group they manage, which a role held
-// in it does not give -- the wall narrows by where a binding reaches, and a
-// group of no site is the whole tenant's.
+// staff binds people a role that lets them see the tenant's groups and make
+// one, and do nothing to anybody else's: how a manager sees the group they
+// manage, which a role held in it does not give when they ask to read it --
+// the wall narrows by where a binding reaches -- and how somebody makes a
+// group of no site, which is the tenant's and is made by whoever holds the
+// write across it (`core.acrossTheTenant`).
 func (g groups) staff(t *testing.T, ctx context.Context, who ...pdid.Id) {
 	t.Helper()
-	role := g.b.role(t, ctx, "staff", app.GroupService_Get_FullMethodName)
+	role := g.b.role(t, ctx, "staff", app.GroupService_Get_FullMethodName, app.GroupService_Add_FullMethodName)
 	for _, k := range who {
 		_, err := g.b.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
 			Role:   roleRef(role),
@@ -557,7 +559,8 @@ func TestATenantsOwnManagersRoleIsTheOneAMakerHolds(t *testing.T) {
 		b.role(t, ctx, core.Manages, app.HolderService_Get_FullMethodName)
 
 		m := b.holder(t, ctx, b.Contoso, "maker")
-		_, err := b.Walled.Group().Add(b.asNobody(ctx, m, b.Contoso), app.GroupAddRequest_builder{Tenant: at(b), Alias: "mine"}.Build())
+		asM := b.mayCall(t, ctx, m, "makes-groups", app.GroupService_Add_FullMethodName)
+		_, err := b.Walled.Group().Add(asM, app.GroupAddRequest_builder{Tenant: at(b), Alias: "mine"}.Build())
 		x.Equal(codes.FailedPrecondition, status.Code(err), "%v", err)
 
 		_, err = b.Ungated.Group().Get(ctx, app.GroupGetRequest_builder{

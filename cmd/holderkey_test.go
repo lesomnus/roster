@@ -111,7 +111,11 @@ func TestOneScreenShowsEveryWayIntoOneAccount(t *testing.T) {
 		x.NoError(err)
 		x.Len(vs.GetKeys(), 1)
 
-		_, err = b.Walled.ApiKey().Erase(b.asNobody(ctx, who, b.Contoso),
+		// Holding the write across the tenant, as somebody given their own
+		// keys to end is: a caller who holds it nowhere does not see the key
+		// at all (`cmd.People`), and never gets as far as this rule.
+		ends := b.mayCall(t, ctx, who, "ends-keys", app.ApiKeyService_Erase_FullMethodName)
+		_, err = b.Walled.ApiKey().Erase(ends,
 			app.ApiKeyRef_builder{Id: vs.GetKeys()[0].GetId()}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err),
 			"a plain person ended an administrator's key")

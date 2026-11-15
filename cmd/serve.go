@@ -414,7 +414,11 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// `pd.Grouped` has existed since the first generation and had nothing to
 	// ask until now. What answers it is a caller's bindings: no site means the
 	// whole tenant, and otherwise the sites they were bound in.
-	narrow := bare.Scopes{pd.Wall(), pd.Grouped(Sets(client, policySources...))}
+	//
+	// And [People], for the rows that name no site: a person and what is
+	// theirs, reached by a grant made in a site when they are in it.
+	sets := Sets(client, policySources...)
+	narrow := bare.Scopes{pd.Wall(), pd.Grouped(sets), People(sets)}
 
 	walled, err := pd.NewSink(client, append(opts, bare.WithScope(narrow))...)
 	if err != nil {
@@ -1016,6 +1020,8 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 		WithUnary(grpcx.LimitUnary(rate, gate.ByTenant(), pd.Cost)).
 		WithStream(grpcx.LimitStream(rate, gate.ByTenant())).
 		With(s.accessed().Interceptor()).
+		WithUnary(callingUnary()).
+		WithStream(callingStream()).
 		With(gate.Interceptor(policy)).
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(shut)).

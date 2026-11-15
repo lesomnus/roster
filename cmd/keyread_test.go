@@ -141,7 +141,18 @@ func TestAKeyIsReadByWhoseItIsAndByWhoeverIsToldTo(t *testing.T) {
 	t.Run("and nobody else's", func(t *testing.T) {
 		x := require.New(t)
 
+		// Somebody who is not of the site the read is held in is not there
+		// for them at all (`cmd.People`).
 		_, err := aliases(asLocal, of(boss))
+		x.Equal(codes.NotFound, status.Code(err), "%v", err)
+		_, err = b.Walled.ApiKey().Get(asLocal, app.ApiKeyGetRequest_builder{Ref: app.ApiKeyRef_builder{Id: bosss}.Build()}.Build())
+		x.Equal(codes.NotFound, status.Code(err), "%v", err)
+
+		// And somebody who is, is seen -- and their keys are still theirs.
+		b.joins(t, ctx, boss, east)
+		b.joins(t, ctx, auditor, east)
+
+		_, err = aliases(asLocal, of(boss))
 		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
 
 		// Nor somebody's who holds no more than they do: it is not a

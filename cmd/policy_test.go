@@ -211,7 +211,10 @@ func TestATeamAdministratorManagesTheirOwnTeam(t *testing.T) {
 	conn := served(t, b.Server)
 	wire := asOverTheWire(ctx, b.ContosoUser)
 
+	// Somebody of the team's site: a role held in a team reaches the people
+	// who are in its site, and nobody else of the tenant (`cmd.People`).
 	somebody := b.holder(t, ctx, b.Contoso, "newcomer")
+	b.joins(t, ctx, somebody, seoul)
 	add := func(team pdid.Id) error {
 		_, err := app.NewTeamMembershipServiceClient(conn).Add(wire,
 			app.TeamMembershipAddRequest_builder{
@@ -568,8 +571,10 @@ func TestASiteAdministratorStaysInTheirSite(t *testing.T) {
 		}.Build())
 		x.NoError(err, "a site administrator could not delegate within their own site")
 
-		// And binding it, in that site.
+		// And binding it, in that site, to somebody who is in it: who a grant
+		// made in a site reaches is the people of that site (`cmd.People`).
 		mate := b.holder(t, ctx, b.Contoso, "colleague")
+		b.joins(t, ctx, mate, mustId(t, seoul.GetId()))
 		_, err = b.Walled.Binding().Add(as, app.BindingAddRequest_builder{
 			Role:   app.RoleRef_builder{Id: w.GetId()}.Build(),
 			Holder: app.HolderRef_builder{Id: mate.Bytes()}.Build(),
