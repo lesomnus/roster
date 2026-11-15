@@ -995,7 +995,8 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 		With(gate.Interceptor(Policy(s.Ent, s.policySources...))).
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(shut)).
-		WithStream(grpcx.ClosedStream(shut))
+		WithStream(grpcx.ClosedStream(shut)).
+		WithUnary(Undeclared())
 
 	// A certificate that cannot be read is a server that must not start, which
 	// is why this answers with an error: `GrpcOptions` reads the files

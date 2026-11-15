@@ -1202,6 +1202,10 @@ a name, labelled `roster.declared: config: login` / `config: account`. Either
 way the row is read-only to everybody who reaches it through a port: a tenant
 administrator, the user console, the admin console.
 
+And the label is theirs alone to write. A request that carries
+`roster.declared` is refused at every port, whoever sent it, so a row is
+read-only because a file says it is and never because a caller said a file did.
+
 Turning one off is two steps, and neither is at a console:
 
 1. Take it out of where it is declared -- the resource out of the file; the front

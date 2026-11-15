@@ -62,6 +62,10 @@ import (
 // test. `cmd.Declared` is the name; it is spelled out here rather than imported
 // because `server` may not import `cmd` -- the sandbox's dependency graph is
 // the reason, and `cmd/consumers.go` has it.
+//
+// Its presence being the whole test is safe only while nobody else writes it,
+// and a label was anybody's to write: so a request that carries this one is
+// refused where requests arrive (`cmd.Undeclared`), on every listener.
 const declaredBy = "roster.declared"
 
 // mayWriteDeclared refuses a write to a row a file owns, unless the caller is
