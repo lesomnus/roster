@@ -612,4 +612,7 @@ expanded it would show what exists in one binary.
 [rules.md](rules.md) — every rule on this page and the rest, one line each,
 beside the test that holds it.
 
+[wide-grants.md](wide-grants.md) — the grants that hand over more than they
+read as, each with an example. Read it before binding a role to somebody.
+
 [tutorial.md](tutorial.md) — all of it once, on a deployment that answers.
