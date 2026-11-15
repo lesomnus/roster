@@ -278,11 +278,52 @@ roster --as admin role narrow @newco/self-service '{"methods":["/roster.Identity
 
 ## What says so when one is granted
 
-Today, three of these are said at the moment of granting, and only for a key:
-`roster key add` and `roster control key add` print a note when a key's methods
-reach the trail, `VouchService/Accept` or `VouchService/Link`, and the note is
-the one for that kind of key -- a tenant's, or every tenant's.
+**A list of methods can be asked.** `RoleService/HandsOver` answers this page
+for one list: which of its methods are here, what each reads as, and what it
+is where it would be held. It is what a page asks before a role is bound,
+widened or put on a key, so that what it says beside the button is this page
+and not a copy of it.
 
-Nothing says it of a role or of a binding, at a terminal or on a page. That a
-page should, before the write, is
+```sh
+roster --as admin role hands-over '{"methods":["/roster.ApiKeyService/Issue","/roster.HolderService/Get"]}'
+```
+
+```
+grants (1)
+  grant      a-persons-verb-across-the-tenant
+  methods    (1)
+    /roster.ApiKeyService/Issue
+  reads_as   may manage somebody's keys, password or addresses
+  hands_over a way into the account of anybody of the tenant who holds no more than whoever is given it -- which, given to two people, is each other
+```
+
+`grant` is the heading here, as its link is written. `methods` is which of the
+ones asked about reach it, as they were written, so a pattern is answered for
+everything it covers. A list that means what it says is answered nothing.
+
+Where it would be held is `held`, and it changes the answer, because a sentence
+said of the wrong place is one nobody reads the next time:
+
+| `held` | |
+| --- | --- |
+| `ROLE_HELD_ACROSS_THE_TENANT` | a binding that names no site. Not said is read as this, the widest |
+| `ROLE_HELD_IN_A_SITE` | a binding that names a site, or a role held in a team. A person's verb reaches the people of that site; what is held across the tenant or not at all -- the trail, `SiteMembershipService/Add` -- hands over nothing there and is not answered |
+| `ROLE_HELD_NOWHERE` | the tenant's `self-service` role, which reaches nobody else |
+
+Asked of the control plane -- `roster control role hands-over` -- the answer is
+a deployment's: every tenant, since that is where an operator's role and a
+deployment key are exercised.
+
+Three entries above are not about a method and are not answered: a role bound
+to a group, a deployment key, and a directory's key. Whoever is making one of
+those knows it is one.
+
+**A key is told at the terminal.** `roster key add` and `roster control key
+add` print a note when a key's methods reach the trail, `VouchService/Accept`
+or `VouchService/Link`, and the note is the one for that kind of key -- a
+tenant's, or every tenant's.
+
+**Nothing refuses.** A page that asks may still not say, and `roster role add`
+and `roster binding add` print nothing of their own. Whether a write should
+wait until it is said to be meant is
 [#310](https://github.com/lesomnus/roster/issues/310).

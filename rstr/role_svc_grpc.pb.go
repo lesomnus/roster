@@ -19,14 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RoleService_Add_FullMethodName    = "/roster.RoleService/Add"
-	RoleService_Get_FullMethodName    = "/roster.RoleService/Get"
-	RoleService_Patch_FullMethodName  = "/roster.RoleService/Patch"
-	RoleService_Apply_FullMethodName  = "/roster.RoleService/Apply"
-	RoleService_Erase_FullMethodName  = "/roster.RoleService/Erase"
-	RoleService_List_FullMethodName   = "/roster.RoleService/List"
-	RoleService_Widen_FullMethodName  = "/roster.RoleService/Widen"
-	RoleService_Narrow_FullMethodName = "/roster.RoleService/Narrow"
+	RoleService_Add_FullMethodName       = "/roster.RoleService/Add"
+	RoleService_Get_FullMethodName       = "/roster.RoleService/Get"
+	RoleService_Patch_FullMethodName     = "/roster.RoleService/Patch"
+	RoleService_Apply_FullMethodName     = "/roster.RoleService/Apply"
+	RoleService_Erase_FullMethodName     = "/roster.RoleService/Erase"
+	RoleService_List_FullMethodName      = "/roster.RoleService/List"
+	RoleService_Widen_FullMethodName     = "/roster.RoleService/Widen"
+	RoleService_Narrow_FullMethodName    = "/roster.RoleService/Narrow"
+	RoleService_HandsOver_FullMethodName = "/roster.RoleService/HandsOver"
 )
 
 // RoleServiceClient is the client API for RoleService service.
@@ -82,6 +83,44 @@ type RoleServiceClient interface {
 	// administering it: a narrowing that takes `/roster.*/*` from the last
 	// person holding it across the tenant is refused.
 	Narrow(ctx context.Context, in *RoleNarrowRequest, opts ...grpc.CallOption) (*Role, error)
+	// HandsOver says which of a list of methods hand over more than they read
+	// as, where they would be held: what a page says beside a role before it is
+	// bound, widened, or put on a key.
+	//
+	// A role is a list of method names, and most of them mean what they say.
+	// `docs/usage/wide-grants.md` is the ones that do not -- *may send recovery
+	// links* is every account of the tenant -- and this is that page asked of
+	// one list, in its words. Nothing in a role's row says which of its methods
+	// are these, and a page that wanted to say so had the list to copy: a second
+	// one, in every product's own administration, a release behind the first.
+	//
+	// # Why it is `RoleService`'s, and reads no row
+	//
+	// What it is asked about is what `Role.methods` holds, written as `Widen`
+	// and `Narrow` take it. It takes the list and not a `RoleRef` because the
+	// moment worth saying it at is before the write: a role being drafted has no
+	// row, a role about to be widened is not yet what it would be, and a key's
+	// list is no role's at all. Whoever asks holds the row they are asking about
+	// or is about to write it, so they send its methods.
+	//
+	// # What it answers by
+	//
+	// The methods, where they would be held (`held`), and which plane was asked:
+	// a role of this deployment's own is exercised in every tenant, at
+	// `admin.addr` and by a deployment's key, and is told so. Never by who is
+	// asking -- it reads nothing of anybody, and answers every caller alike.
+	//
+	// It says and does not refuse. Each of these is a grant somebody has a
+	// reason to make; a write that would not go through until it was said to be
+	// meant is another decision (#310).
+	//
+	// # What it does not answer
+	//
+	// Three entries of that page are not about a method, and whoever is making
+	// one of them knows it without asking: a role bound to a **group** is its
+	// manager's to give out whatever it names, and a deployment's key and a
+	// directory's are kinds of key.
+	HandsOver(ctx context.Context, in *RoleHandsOverRequest, opts ...grpc.CallOption) (*RoleHandsOverResponse, error)
 }
 
 type roleServiceClient struct {
@@ -172,6 +211,16 @@ func (c *roleServiceClient) Narrow(ctx context.Context, in *RoleNarrowRequest, o
 	return out, nil
 }
 
+func (c *roleServiceClient) HandsOver(ctx context.Context, in *RoleHandsOverRequest, opts ...grpc.CallOption) (*RoleHandsOverResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RoleHandsOverResponse)
+	err := c.cc.Invoke(ctx, RoleService_HandsOver_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RoleServiceServer is the server API for RoleService service.
 // All implementations must embed UnimplementedRoleServiceServer
 // for forward compatibility.
@@ -225,6 +274,44 @@ type RoleServiceServer interface {
 	// administering it: a narrowing that takes `/roster.*/*` from the last
 	// person holding it across the tenant is refused.
 	Narrow(context.Context, *RoleNarrowRequest) (*Role, error)
+	// HandsOver says which of a list of methods hand over more than they read
+	// as, where they would be held: what a page says beside a role before it is
+	// bound, widened, or put on a key.
+	//
+	// A role is a list of method names, and most of them mean what they say.
+	// `docs/usage/wide-grants.md` is the ones that do not -- *may send recovery
+	// links* is every account of the tenant -- and this is that page asked of
+	// one list, in its words. Nothing in a role's row says which of its methods
+	// are these, and a page that wanted to say so had the list to copy: a second
+	// one, in every product's own administration, a release behind the first.
+	//
+	// # Why it is `RoleService`'s, and reads no row
+	//
+	// What it is asked about is what `Role.methods` holds, written as `Widen`
+	// and `Narrow` take it. It takes the list and not a `RoleRef` because the
+	// moment worth saying it at is before the write: a role being drafted has no
+	// row, a role about to be widened is not yet what it would be, and a key's
+	// list is no role's at all. Whoever asks holds the row they are asking about
+	// or is about to write it, so they send its methods.
+	//
+	// # What it answers by
+	//
+	// The methods, where they would be held (`held`), and which plane was asked:
+	// a role of this deployment's own is exercised in every tenant, at
+	// `admin.addr` and by a deployment's key, and is told so. Never by who is
+	// asking -- it reads nothing of anybody, and answers every caller alike.
+	//
+	// It says and does not refuse. Each of these is a grant somebody has a
+	// reason to make; a write that would not go through until it was said to be
+	// meant is another decision (#310).
+	//
+	// # What it does not answer
+	//
+	// Three entries of that page are not about a method, and whoever is making
+	// one of them knows it without asking: a role bound to a **group** is its
+	// manager's to give out whatever it names, and a deployment's key and a
+	// directory's are kinds of key.
+	HandsOver(context.Context, *RoleHandsOverRequest) (*RoleHandsOverResponse, error)
 	mustEmbedUnimplementedRoleServiceServer()
 }
 
@@ -258,6 +345,9 @@ func (UnimplementedRoleServiceServer) Widen(context.Context, *RoleWidenRequest) 
 }
 func (UnimplementedRoleServiceServer) Narrow(context.Context, *RoleNarrowRequest) (*Role, error) {
 	return nil, status.Error(codes.Unimplemented, "method Narrow not implemented")
+}
+func (UnimplementedRoleServiceServer) HandsOver(context.Context, *RoleHandsOverRequest) (*RoleHandsOverResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method HandsOver not implemented")
 }
 func (UnimplementedRoleServiceServer) mustEmbedUnimplementedRoleServiceServer() {}
 func (UnimplementedRoleServiceServer) testEmbeddedByValue()                     {}
@@ -424,6 +514,24 @@ func _RoleService_Narrow_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RoleService_HandsOver_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RoleHandsOverRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoleServiceServer).HandsOver(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RoleService_HandsOver_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoleServiceServer).HandsOver(ctx, req.(*RoleHandsOverRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RoleService_ServiceDesc is the grpc.ServiceDesc for RoleService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -462,6 +570,10 @@ var RoleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Narrow",
 			Handler:    _RoleService_Narrow_Handler,
+		},
+		{
+			MethodName: "HandsOver",
+			Handler:    _RoleService_HandsOver_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

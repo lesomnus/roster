@@ -329,7 +329,10 @@ union, so read order cannot matter. On the wire a role is added, erased,
 widened or narrowed -- `Role.Widen` adds methods and takes none away, which is
 what an app does to the roles it shipped ([apps.md](apps.md)), and
 `Role.Narrow` takes them out and adds none, which is what a tenant does in its
-console -- and `Patch` is the box's.
+console -- and `Patch` is the box's. `Role.HandsOver` reads no row: it says
+which of a list of methods hand over more than they read as
+([usage/wide-grants.md](usage/wide-grants.md)), which is what a page says
+beside a role before binding it.
 
 > contoso writes a role **operator** naming `/roster.HolderService/*`. It says
 > nothing about seoul or frankfurt -- a role is what may be done and never

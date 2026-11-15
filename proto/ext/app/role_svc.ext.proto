@@ -67,6 +67,45 @@ service RoleService {
   // administering it: a narrowing that takes `/roster.*/*` from the last
   // person holding it across the tenant is refused.
   rpc Narrow(RoleNarrowRequest) returns (Role);
+
+  // HandsOver says which of a list of methods hand over more than they read
+  // as, where they would be held: what a page says beside a role before it is
+  // bound, widened, or put on a key.
+  //
+  // A role is a list of method names, and most of them mean what they say.
+  // `docs/usage/wide-grants.md` is the ones that do not -- *may send recovery
+  // links* is every account of the tenant -- and this is that page asked of
+  // one list, in its words. Nothing in a role's row says which of its methods
+  // are these, and a page that wanted to say so had the list to copy: a second
+  // one, in every product's own administration, a release behind the first.
+  //
+  // # Why it is `RoleService`'s, and reads no row
+  //
+  // What it is asked about is what `Role.methods` holds, written as `Widen`
+  // and `Narrow` take it. It takes the list and not a `RoleRef` because the
+  // moment worth saying it at is before the write: a role being drafted has no
+  // row, a role about to be widened is not yet what it would be, and a key's
+  // list is no role's at all. Whoever asks holds the row they are asking about
+  // or is about to write it, so they send its methods.
+  //
+  // # What it answers by
+  //
+  // The methods, where they would be held (`held`), and which plane was asked:
+  // a role of this deployment's own is exercised in every tenant, at
+  // `admin.addr` and by a deployment's key, and is told so. Never by who is
+  // asking -- it reads nothing of anybody, and answers every caller alike.
+  //
+  // It says and does not refuse. Each of these is a grant somebody has a
+  // reason to make; a write that would not go through until it was said to be
+  // meant is another decision (#310).
+  //
+  // # What it does not answer
+  //
+  // Three entries of that page are not about a method, and whoever is making
+  // one of them knows it without asking: a role bound to a **group** is its
+  // manager's to give out whatever it names, and a deployment's key and a
+  // directory's are kinds of key.
+  rpc HandsOver(RoleHandsOverRequest) returns (RoleHandsOverResponse);
 }
 
 message RoleWidenRequest {
@@ -83,4 +122,56 @@ message RoleNarrowRequest {
   // What to take out: whole method names or patterns, each taking out every
   // entry it covers. At least one.
   repeated string methods = 8;
+}
+
+// RoleHeld is where a role's methods are held, which is what decides who a
+// grant reaches (`docs/usage/rules.md`, *Where a grant reaches*).
+enum RoleHeld {
+  // Not said, and read as across the tenant: the widest, so that what was not
+  // said is never under-told.
+  ROLE_HELD_UNSPECIFIED = 0;
+
+  // A binding that names no site.
+  ROLE_HELD_ACROSS_THE_TENANT = 1;
+
+  // A binding that names a site, or a role held in a team, which reaches the
+  // people of the team's site.
+  ROLE_HELD_IN_A_SITE = 2;
+
+  // The tenant's `self-service` role: bound to nobody, and held by everybody
+  // over what is their own.
+  ROLE_HELD_NOWHERE = 3;
+}
+
+message RoleHandsOverRequest {
+  // The methods, whole names or patterns, as `Role.methods` takes them: a
+  // role's as it is or as it would be, or a key's. At least one.
+  repeated string methods = 8;
+
+  // Where they would be held.
+  RoleHeld held = 9 [features.field_presence = IMPLICIT];
+}
+
+message RoleHandsOverResponse {
+  // One for each grant the methods reach, in the order of the page. Empty is
+  // a list that means what it says.
+  repeated RoleHandedOver grants = 8;
+}
+
+// RoleHandedOver is one grant that hands over more than it reads as.
+message RoleHandedOver {
+  // Which one: the anchor of its heading in `docs/usage/wide-grants.md`, which
+  // does not change when its sentences do. What a page links to, and what it
+  // keys a sentence of its own by.
+  string grant = 4 [features.field_presence = IMPLICIT];
+
+  // Which of the methods asked about reach it, as they were written -- so
+  // `/roster.*/*` is answered here for every grant it covers.
+  repeated string methods = 8;
+
+  // What it reads as: *may send recovery links*.
+  string reads_as = 9 [features.field_presence = IMPLICIT];
+
+  // What it is, where it would be held: *every account of the tenant*.
+  string hands_over = 10 [features.field_presence = IMPLICIT];
 }
