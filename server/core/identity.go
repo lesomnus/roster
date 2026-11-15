@@ -418,6 +418,12 @@ func (s coreIdentity) Erase(ctx context.Context, req *app.IdentityRef) (*app.Ide
 		return nil, err
 	}
 
+	// Whose it is, before how many they have left: an identity is taken from
+	// somebody by whoever may write one onto them, and by them.
+	if err := s.mayTakeAWayIn(ctx, "ref", v.GetHolder().GetId()); err != nil {
+		return nil, err
+	}
+
 	// The count and the erase together, or neither.
 	//
 	// See [Core.only] for why a count on its own decides nothing, and what the

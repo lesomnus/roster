@@ -17,6 +17,10 @@ import (
 // them. A relation is a record no rule reads (`relation.proto`), so writing
 // one hands out nothing: the wall, and the role that names the write, are the
 // whole of who may.
+//
+// Erasing one is asked nothing for the same reason, and that was looked at
+// and left (#274): it takes away nothing anybody holds, opens no account, and
+// frees no name another row could take.
 type coreRelation struct {
 	Core
 	app.RelationServiceServer

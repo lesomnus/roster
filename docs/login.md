@@ -480,8 +480,9 @@ permissions of their own. For them the token carries `groups`:
   registration, beside `openid` -- which Hydra refuses to grant to any other.
 - **Only the groups shown to that client**: a `GroupExposure` naming the group
   and the client's id, which a tenant's administrator writes
-  (`roster group-exposure add`). None of the person's other groups, whatever
-  they are in.
+  (`roster group-exposure add`) -- held across the tenant, so somebody bound
+  only in the group's site neither shows it nor takes it away. None of the
+  person's other groups, whatever they are in.
 - **Present whenever the scope is**, and empty when none of their groups is
   shown to the client, so that a relying party syncing its teams from the claim
   takes somebody out of the last one.

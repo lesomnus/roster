@@ -245,6 +245,76 @@ func (s coreTeam) Add(ctx context.Context, req *app.TeamAddRequest) (*app.Team, 
 	return s.TeamServiceServer.Add(ctx, req)
 }
 
+// Erase takes from each of a team's people the role they hold in it, and is
+// held to what taking one of them out is: [coreTeamMembership.Erase], once
+// for each.
+//
+// A team erased hands out nothing (`cmd/policy.go`, `liveTeam`), so this is
+// every one of those erases at once -- and it was asked nothing, where the
+// one was asked whether the caller may change the team and holds what the
+// role there gave. `Group.Erase` is the same question of a group's bindings
+// (`takeaway.go`). Unlike a group's, a team's role is never held across the
+// tenant, so nothing about who administers it changes here.
+//
+// A team that is not there, or that the wall hides, is answered as the
+// generated `Erase` answers it.
+func (s coreTeam) Erase(ctx context.Context, req *app.TeamRef) (*app.TeamEraseResponse, error) {
+	got, err := s.TeamServiceServer.Get(ctx, app.TeamGetRequest_builder{
+		Ref:    req,
+		Select: app.TeamSelect_builder{Site: app.SiteSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if status.Code(err) == codes.NotFound {
+		return s.TeamServiceServer.Erase(ctx, req)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	team := app.TeamRef_builder{Id: got.GetId()}.Build()
+	if err := s.mayChangeTeam(ctx, app.TeamService_Erase_FullMethodName, team); err != nil {
+		return nil, err
+	}
+
+	at, err := idOr(got.GetSite().GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	after := ""
+	for {
+		ms, err := s.Next().TeamMembership().List(ctx, app.TeamMembershipListRequest_builder{
+			Filters: []*app.TeamMembershipFilter{app.TeamMembershipFilter_builder{Team: team}.Build()},
+			After:   after,
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+		for _, m := range ms.GetItems() {
+			if len(m.GetRole().GetId()) == 0 {
+				// In the team and holding nothing in it.
+				continue
+			}
+
+			// A list answers a role as its reference, so each is read; a team
+			// is a handful of people and their roles fewer.
+			methods, err := s.methodsOf(ctx, app.RoleRef_builder{Id: m.GetRole().GetId()}.Build())
+			if err != nil {
+				return nil, err
+			}
+			if err := s.mayTakeAway(ctx, "ref", methods, at); err != nil {
+				return nil, err
+			}
+		}
+
+		after = ms.GetNext()
+		if after == "" {
+			break
+		}
+	}
+
+	return s.TeamServiceServer.Erase(ctx, req)
+}
+
 type coreGroupMembership struct {
 	Core
 	app.GroupMembershipServiceServer

@@ -749,6 +749,46 @@ func (s Core) onlyMine(ctx context.Context) (*app.HolderRef, error) {
 	return app.HolderRef_builder{Id: f.Actor.Bytes()}.Build(), nil
 }
 
+// mayTakeAWayIn refuses erasing a way into the account of somebody who holds
+// more than the caller: an address, an identity.
+//
+// # Why an erase is asked what a write is
+//
+// [Core.mayWriteAWayIn] guards the row arriving. The row leaving was asked
+// nothing, and it is the same account from the other side: an address erased
+// is the mail-borne way back gone, and -- an address being one person's in a
+// tenant -- free to be written onto another row, which the erasing caller's own
+// is and which no rule refuses. So somebody holding `Email.Erase` and nothing
+// else took the administrator's address and put it on their own account
+// (#274). A key and a delegation were already erased by whoever reaches their
+// holder (`coreApiKey.reaches`); this is that, for the ways in that had no
+// layer over their erase.
+//
+// It passes for the caller's own, as [Core.mayReach] does: somebody removes
+// their own address whatever they hold. Being let call the method at all is
+// the gate's.
+//
+// # What it is not
+//
+// Suspending somebody, which stops them and is not held to this (D26):
+// somebody on call suspends an account wider than they are, and that is the
+// way a way in somebody else has taken over is cut.
+//
+// `holder` is the row's own, read through the wall by the caller; empty is a
+// row that names nobody, and nothing to compare.
+func (s Core) mayTakeAWayIn(ctx context.Context, field string, holder []byte) error {
+	if len(holder) == 0 {
+		return nil
+	}
+
+	k, err := pdid.From(holder)
+	if err != nil {
+		return err
+	}
+
+	return s.mayReach(ctx, field, k)
+}
+
 // holdsAt is whether one of `mine` covers `m` where `at` is held.
 //
 // A grant made across the tenant reaches everywhere and one made in a site
