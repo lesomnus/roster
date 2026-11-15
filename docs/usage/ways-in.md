@@ -604,6 +604,21 @@ where a wrong password is. A link a front door hands a browser is the one
 sign-in there that asks no second factor, since the directory that checked the
 person is what the link stands for.
 
+**Whoever runs the deployment has one too**, enrolled from a shell on the box,
+since that is where an operator is managed and the admin console's work is
+customers. An authenticator app; a security key is registered by a browser at
+the name it will be asked for at.
+
+```sh
+roster --as admin control vouch enrol @admin        # an otpauth:// Uri, once, on stdout
+roster --as admin control vouch prove --code-stdin @admin
+```
+
+It counts from the code that proves it, and the admin console asks for it from
+then on. An operator who has lost the app is somebody at the box again:
+`roster --as admin control credential list` names the row, and `control
+credential erase` takes it away.
+
 ## Stopping one
 
 ```sh

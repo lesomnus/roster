@@ -605,9 +605,15 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 			// The same numbers for an operator's password as for anybody's:
 			// `vouch.lockout` and `vouch.password` are one block in the file,
 			// and a floor that held for a customer's people and not for the
-			// person who runs the deployment would be backwards. The keyring
-			// is not carried over -- the control plane holds no second factors.
-			Vouch: VouchConfig{Lockout: c.Vouch.Lockout, Password: c.Vouch.Password},
+			// person who runs the deployment would be backwards.
+			//
+			// And the same keyring, for that reason. It was left out -- *the
+			// control plane holds no second factors* -- so whoever runs a
+			// deployment, who is every customer's root at `admin.addr`, was
+			// the one account in it that could not ask for a second proof:
+			// enrolling answered that the deployment held no key to wrap a
+			// seed with, whatever `vouch.keys` said (#275).
+			Vouch: VouchConfig{Lockout: c.Vouch.Lockout, Password: c.Vouch.Password, Keys: c.Vouch.Keys},
 
 			// What the trail keeps of a write, and nothing else of `audit`
 			// (payday#92). It is one decision for the deployment's trail,

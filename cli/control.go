@@ -153,15 +153,22 @@ func narrowedFlag() flg.Flag {
 // `reset @admin` here is how a deployment of one operator who lost their
 // password gets back in (#16); `whom` says why it looks the person up rather
 // than letting `Credential.Issue` make one.
+//
+// And two that are only here: an operator's second factor, enrolled and
+// proved. A customer's person does both at their account page or with a key;
+// whoever runs a deployment has neither, and a shell on the box is where they
+// are managed.
 func newCmdControlVouch(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "vouch",
-		Brief: "an operator's way in: reset it, set it, unlock it",
+		Brief: "an operator's way in: reset it, set it, unlock it, and a second factor beside it",
 
 		Commands: xli.Commands{
 			newCmdVouchReset(c, true),
 			newCmdVouchSet(c, true),
 			newCmdVouchUnlock(c, true),
+			newCmdOperatorEnrol(c),
+			newCmdOperatorProve(c),
 		},
 
 		Handler: xli.RequireSubcommand(),
