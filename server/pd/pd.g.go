@@ -18106,6 +18106,11 @@ func (s interceptRole) Narrow(ctx context.Context, req *rstr.RoleNarrowRequest) 
 		rstr.RoleService_Narrow_FullMethodName, req, s.RoleServiceServer.Narrow)
 }
 
+func (s interceptRole) HandsOver(ctx context.Context, req *rstr.RoleHandsOverRequest) (*rstr.RoleHandsOverResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.RoleServiceServer,
+		rstr.RoleService_HandsOver_FullMethodName, req, s.RoleServiceServer.HandsOver)
+}
+
 func (s Intercept) Binding() rstr.BindingServiceServer {
 	return interceptBinding{s, s.Next().Binding()}
 }

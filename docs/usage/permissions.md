@@ -39,6 +39,15 @@ It is what an app gives the roles it shipped at an upgrade, over the wire
 ([apps.md](../apps.md) § *The roles an app ships*), and it is a grant like any
 other write here: every method the role would hold has to be yours to hand out.
 
+Some methods hand over more than they read as -- *may send recovery links* is
+every account of the tenant -- and `role hands-over` says which of a list are
+those, before it is written into a role or bound
+([wide-grants.md](wide-grants.md) § *What says so when one is granted*):
+
+```sh
+roster --as admin role hands-over '{"methods":["/roster.VouchService/Link"]}'
+```
+
 And fewer with `role narrow`, which takes out every entry a method you name
 covers -- so a pattern takes everything under it -- and adds none:
 

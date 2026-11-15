@@ -552,6 +552,7 @@ no app sweeps a ledger it shares.
 | `server/sync/reach.go` | who a write to a role, a binding or a membership reaches, for the stream |
 | `proto/ext/app/role_svc.ext.proto`, `server/core/widen.go` | `Role.Widen`: what an app adds to the roles it ships, and the rule it is held to |
 | `server/core/narrow.go` | `Role.Narrow`: what a tenant takes out of a role, what it may take, and the administrator it may not |
+| `server/core/handsover.go` | `Role.HandsOver`: which of a list of methods hand over more than they read as, for an app's own page that binds a role |
 | `proto/app/consent.proto`, `server/core/consent.go` | an app's ledger of consent, and why every act is a row |
 | `account/account.go`, `ldap/ldap.go` | two consumers in the A shape |
 | `ts/lib/tenant/apps.tsx` | the *apps* tab, in both consoles |
