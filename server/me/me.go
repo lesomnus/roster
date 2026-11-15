@@ -51,6 +51,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/identity"
 	"github.com/lesomnus/roster/internal/ent/role"
+	"github.com/lesomnus/roster/internal/ent/team"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	app "github.com/lesomnus/roster/rstr"
@@ -229,6 +230,9 @@ func (s *Server) teams(ctx context.Context, who pdid.Id) ([]*app.MeTeam, error) 
 		Where(
 			teammembership.DateErasedIsNil(),
 			teammembership.HasHolderWith(holder.IdEQ(who.Uuid())),
+			// A team that was erased is no team they are on, as the gate
+			// reads it: the membership's row outlives its team.
+			teammembership.HasTeamWith(team.DateErasedIsNil()),
 		).
 		// A role that was erased is no role they hold, as the gate reads it.
 		WithRole(func(q *ent.RoleQuery) { q.Where(role.DateErasedIsNil()) }).

@@ -305,6 +305,14 @@ func (h held) allows(method string) bool {
 // that an erased role is gone.
 func live(q *ent.RoleQuery) { q.Where(entrole.DateErasedIsNil()) }
 
+// liveTeam is a place on a team that is still a team.
+//
+// A membership's row is not erased with its team, so every read of what a
+// team's role hands out asks this beside the membership's own `date_erased`:
+// without it `Team.Erase` took nothing from anybody on the team (#274), which
+// is [live]'s finding one edge along. [groupRoles] asks the same of a group.
+var liveTeam = teammembership.HasTeamWith(entteam.DateErasedIsNil())
+
 // groupRoles is the roles somebody holds in the groups they are in: what makes
 // them a manager of each, and one row per group, held or not.
 func groupRoles(ctx context.Context, db *ent.Client, who uuid.UUID) ([]*ent.Role, error) {
@@ -393,6 +401,7 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 		Where(
 			teammembership.DateErasedIsNil(),
 			teammembership.HasHolderWith(holder.IdEQ(who)),
+			liveTeam,
 		).
 		WithRole(live).
 		WithTeam(func(q *ent.TeamQuery) { q.WithSite() }).
@@ -815,6 +824,7 @@ func Holding(db *ent.Client, sources ...rbac.Source) core.Holding {
 			Where(
 				teammembership.DateErasedIsNil(),
 				teammembership.HasHolderWith(holder.IdEQ(who.Uuid())),
+				liveTeam,
 			).
 			WithRole(live).
 			All(ctx)
@@ -941,6 +951,7 @@ func Holds(db *ent.Client, sources ...rbac.Source) core.Holds {
 				teammembership.DateErasedIsNil(),
 				teammembership.HasHolderWith(holder.IdEQ(who.Uuid())),
 				teammembership.HasTeamWith(entteam.IdEQ(scope.Uuid())),
+				liveTeam,
 			).
 			WithRole(live).
 			All(ctx)

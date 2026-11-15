@@ -368,3 +368,49 @@ func TestAnErasedRoleGrantsNothing(t *testing.T) {
 	x.NoError(err)
 	x.Empty(gs, "and on being passed on")
 }
+
+// TestATeamErasedHandsOutNothing is the test above, one edge along: a role
+// somebody carries on a team is theirs while there is a team.
+//
+// The membership was read, and the role it carries, and nobody asked whether
+// the team was still one. So `Team.Erase` answered that it was erased and
+// everybody on it went on holding what it had carried -- `Me.Get` listed the
+// team and the methods, and a call only that role allowed still answered. An
+// administrator who erased a team to take its role away had taken nothing
+// (#274). A group was asked ([groupRoles]); a team was not.
+func TestATeamErasedHandsOutNothing(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	who := b.holder(t, ctx, b.Contoso, "on-it")
+	west := b.site(t, ctx, b.Contoso, "west")
+	team := b.team(t, ctx, west, "west-team")
+	b.inTeam(t, ctx, who, team, b.role(t, ctx, "west-admin", "/roster.HolderService/Get"))
+
+	held := cmd.Everything(b.Ent)
+	ms, sites, _, err := held(ctx, who)
+	x.NoError(err)
+	x.Equal([]string{"/roster.HolderService/Get"}, ms)
+	x.Len(sites, 1, "the team's site, which a place on it reaches")
+
+	gone, err := b.Ungated.Team().Erase(ctx, app.TeamRef_builder{Id: team.Bytes()}.Build())
+	x.NoError(err)
+	x.True(gone.GetErased())
+
+	ms, sites, every, err := held(ctx, who)
+	x.NoError(err)
+	x.Empty(ms, "a team that was erased went on handing out its role")
+	x.Empty(sites, "and its site")
+	x.False(every)
+
+	// And to whoever would write a way into their account, they hold nothing
+	// more than the gate lets them call.
+	gs, err := cmd.Holding(b.Ent)(ctx, who)
+	x.NoError(err)
+	x.Empty(gs)
+
+	// Nor are they the team's administrator, there being no team.
+	ok, err := cmd.Holds(b.Ent)(ctx, who, "/roster.HolderService/Get", team)
+	x.NoError(err)
+	x.False(ok)
+}
