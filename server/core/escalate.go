@@ -582,6 +582,31 @@ func (s Core) methodsOf(ctx context.Context, ref *app.RoleRef) ([]string, error)
 // it makes "operator" a smaller word than the permission it carries, which is
 // the thing that gets forgotten when somebody hands the role out.
 //
+// # Whose side is read how
+//
+// The two sides of the comparison are not read by one function, because being
+// wrong about each costs the opposite thing.
+//
+// The **target** is read by [Holding]: everything, by any path, a role on a
+// team or in a group counted across the tenant. Counting more there refuses
+// more, and missing a path allowed -- an administrator provisioned through a
+// team read as holding nothing.
+//
+// The **caller** is read by [Granted]: bindings, each where it was made, which
+// is what `mayGrant` reads for what somebody may pass on. It was `Holding`
+// too, and there counting more **allows**. A site's administrator, refused
+// the tenant administrator's password, put themselves on a team of their own
+// site carrying their own role -- which they may, holding it there -- and was
+// then counted as holding it across the tenant: the password was theirs to
+// write, and the tenant with it (#274). Somebody only ever given a role on a
+// team reached it in one call.
+//
+// A role held on a team is not a role to wield across the tenant, for the
+// reason it is not one to bind across it. What this costs is somebody whose
+// whole standing is a team's being told they may not write a way in for
+// anybody who holds something -- which is a conversation, and a binding ends
+// it.
+//
 // # What is not covered
 //
 // Suspending somebody (D26) is a denial of service rather than an escalation,
@@ -620,7 +645,13 @@ func (s Core) mayReach(ctx context.Context, field string, target pdid.Id) error 
 		return nil
 	}
 
-	mine, err := s.rules.holding()(ctx, f.Actor)
+	// What the caller holds is asked the other way round from what the target
+	// holds, and by the other function: see "# Whose side is read how".
+	if s.rules.Granted == nil {
+		return status.Error(codes.PermissionDenied,
+			"this server cannot say what you hold, so it will not let you write their credential")
+	}
+	mine, err := s.rules.Granted(ctx, f.Actor)
 	if err != nil {
 		return err
 	}
