@@ -70,7 +70,17 @@ func Hosted(db *ent.Client) func(ctx context.Context) (string, error) {
 				"a sign-in here is about the tenant whose name you arrived at, and this request carries none")
 		}
 
-		v, err := db.Host.Query().Where(enthost.NameEQ(name)).QueryTenant().First(ctx)
+		// The row that has the name **now**. An erase keeps its row, and this
+		// read asked only for the name and took the first: so a name a tenant
+		// had given up went on signing its people in, and one that had moved
+		// went on being the tenant's before -- whose name it now was could not
+		// sign in at it, and whose it had been still could (#274). What
+		// `FrontService.WhoseHost` answers of the same name is read through the
+		// server, which never showed an erased row.
+		v, err := db.Host.Query().
+			Where(enthost.NameEQ(name), enthost.DateErasedIsNil()).
+			QueryTenant().
+			First(ctx)
 		if err != nil {
 			if ent.IsNotFound(err) {
 				return "", status.Errorf(codes.FailedPrecondition,
