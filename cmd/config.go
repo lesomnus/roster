@@ -113,6 +113,10 @@ type Config struct {
 	// Scim is the fourth: where a directory pushes the people it provisions.
 	Scim ScimConfig `yaml:"scim"`
 
+	// Stream is how often a stream that is open asks again who opened it. See
+	// [StreamConfig].
+	Stream StreamConfig `yaml:"stream"`
+
 	// SignIn is whether the **data plane** answers `AuthService.SignIn`, so a
 	// roster user can be a caller of roster itself rather than only of an app
 	// in front of it.
@@ -297,6 +301,26 @@ type HolderConfig struct {
 	// only how far past the window somebody may sit.
 	Every time.Duration `yaml:"every"`
 }
+
+// StreamConfig is how a stream is held to who opened it, once it is open.
+//
+// A call carries its credential every time, so somebody stopped is refused at
+// their next call. A stream carries one once, when it opens, and a `Watch` is
+// then served until somebody hangs up -- so it is asked again, on a clock
+// ([AskedAgain]).
+type StreamConfig struct {
+	// Recheck is how often. Empty is [DefaultRecheck]; a stream is never left
+	// unasked, so there is no value that turns this off.
+	//
+	// What it decides is how long after somebody is stopped -- suspended,
+	// erased, their key ended, their role taken away -- a stream they had open
+	// goes on being served: at most this. Shorter is more reads, a few a
+	// stream each time; it is not a setting about anything else.
+	Recheck time.Duration `yaml:"recheck"`
+}
+
+// DefaultRecheck is [StreamConfig.Recheck] where nothing says.
+const DefaultRecheck = 5 * time.Minute
 
 // ConsentConfig is how long an account's consents outlive it.
 //

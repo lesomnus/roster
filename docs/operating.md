@@ -1367,6 +1367,21 @@ How an app in front hears about it is one stream, `SyncService.Watch`, and that 
 the app's half: [login.md](login.md) § *Signing out reaches the issuer* and
 `sync.proto`.
 
+**A call is refused at once, and a stream left open within `stream.recheck`.** A
+call carries its credential every time; a stream carries one once, when it
+opens, and a `Watch` is then served until somebody hangs up. So every stream is
+asked again, on a clock, what it was asked as it opened -- who this is, and
+whether they may -- and one whose caller is now refused is ended, in the words
+a stream cut for any reason is: *reconnect*.
+
+```yaml
+stream:
+  recheck: 5m     # the default. How long somebody stopped may still be served by a stream they had open
+```
+
+Shorter is a few more reads for each open stream, and nothing else. There is no
+value that leaves a stream unasked.
+
 **A directory that provisions people suspends them too**, through verbs of its
 own -- `HolderService/Deactivate` and `Activate` -- and it is the same suspension:
 one `date_disabled`, refused everywhere `Disable` is. What differs is whose it is

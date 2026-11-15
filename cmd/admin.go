@@ -316,7 +316,12 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 	// let through.
 	rate := c.Admin.Limiter()
 
+	// An operator's stream is asked again who opened it, as a customer's is
+	// ([AskedAgain]): a session ended is a console that stops being told.
+	policy := Policy(s.Control.Ent)
+
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(c.Admin.CallTimeout())).
+		WithStream(AskedAgain(s.recheck, s.Sessions.Handler(), Resolver(s.Control.Ungated, nil), Public, policy)).
 		WithUnary(auth.InterceptorUnary(s.Sessions.Handler(), Resolver(s.Control.Ungated, nil), Public)).
 		WithStream(auth.InterceptorStream(s.Sessions.Handler(), Resolver(s.Control.Ungated, nil), Public)).
 
@@ -347,7 +352,7 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 		// record's (payday#111), on the data plane whose rows they are: filed
 		// under the customer's tenant, and naming the operator.
 		With(s.accessed().Interceptor()).
-		With(gate.Interceptor(Policy(s.Control.Ent))).
+		With(gate.Interceptor(policy)).
 		WithUnary(Intent(s.Control.Ent)).
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(shut)).
