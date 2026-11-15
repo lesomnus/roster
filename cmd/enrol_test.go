@@ -10,6 +10,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/credential"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/vouch"
+	"github.com/lesomnus/roster/server/vouch/vouchtest"
 )
 
 // TestAFactorWithANameCanBeConfirmed.
@@ -114,7 +115,7 @@ func TestAConfirmedNamedFactorIsThenAsked(t *testing.T) {
 		Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind:   vouch.KindTotp,
 		Name:   "the phone",
-		Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30-1)),
+		Secret: []byte(vouchtest.CodeBefore(seed)),
 	}.Build())
 	x.NoError(err)
 	x.Equal([]string{vouch.KindTotp}, got.GetSatisfied(), "the code was not accepted")

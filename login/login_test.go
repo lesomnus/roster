@@ -35,6 +35,7 @@ import (
 	rstr "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/vouch"
+	"github.com/lesomnus/roster/server/vouch/vouchtest"
 )
 
 const password = "correct horse battery staple"
@@ -1490,7 +1491,7 @@ func (d *deployment) enrolTotp(t *testing.T, ctx context.Context, who pdid.Id) [
 	got, err := rstr.NewVouchServiceClient(d.conn).Verify(d.ops, rstr.VouchVerifyRequest_builder{
 		Who:    rstr.VouchWho_builder{Id: who.Bytes()}.Build(),
 		Kind:   vouch.KindTotp,
-		Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30-1)),
+		Secret: []byte(vouchtest.CodeBefore(seed)),
 	}.Build())
 	x.NoError(err)
 

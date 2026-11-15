@@ -16,6 +16,7 @@ import (
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/vouch"
+	"github.com/lesomnus/roster/server/vouch/vouchtest"
 )
 
 // enrolled gives somebody a password and a confirmed second factor, and answers
@@ -48,7 +49,7 @@ func enrolled(t *testing.T, ctx context.Context, cred app.CredentialServiceServe
 	got, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
 		Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
 		Kind:   vouch.KindTotp,
-		Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30-1)),
+		Secret: []byte(vouchtest.CodeBefore(seed)),
 	}.Build())
 	x.NoError(err)
 	x.True(got.GetOk())

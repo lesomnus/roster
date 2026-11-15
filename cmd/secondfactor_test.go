@@ -10,6 +10,7 @@ import (
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/vouch"
+	"github.com/lesomnus/roster/server/vouch/vouchtest"
 )
 
 // TestASeedIsNotAWayIn.
@@ -59,7 +60,7 @@ func TestASeedIsNotAWayIn(t *testing.T) {
 		got, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
 			Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
 			Kind:   vouch.KindTotp,
-			Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30-1)),
+			Secret: []byte(vouchtest.CodeBefore(seed)),
 		}.Build())
 		x.NoError(err)
 		x.True(got.GetOk())

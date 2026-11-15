@@ -25,9 +25,12 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/fxamacker/cbor/v2"
 	"github.com/stretchr/testify/require"
+
+	"github.com/lesomnus/roster/server/vouch"
 )
 
 const (
@@ -219,4 +222,25 @@ func Challenge(t *testing.T) string {
 	require.NoError(t, err)
 
 	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+// CodeBefore is the code an authenticator app showed a step ago: the one a
+// test confirms a factor with, since roster takes it inside its drift and it
+// leaves the code of this step unspent for the sign-in that follows.
+//
+// # Why it waits
+//
+// A step is thirty seconds, and *the step before this one* is a different
+// step once this one turns. Worked out a moment before it does and checked a
+// moment after, the code is then two steps old, which is outside the drift --
+// and a test that asked for it there failed once in a few thousand runs, on
+// whichever of the many tests that confirm a factor happened to be standing
+// at the half minute. So this does not answer in a step's last two seconds:
+// what it hands back has that long to be checked in.
+func CodeBefore(seed []byte) string {
+	for time.Now().Unix()%30 >= 28 {
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	return vouch.CodeAt(seed, time.Now().Unix()/30-1)
 }
