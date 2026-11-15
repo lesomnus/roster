@@ -842,14 +842,29 @@ said "heard by store:/witness: checkpoint " "the trail's witness heard no checkp
 # Service that selects nothing answers nothing at all. Asked through the
 # Service, since that is what a deployment routes its directory to, from a pod
 # of the walk's image, which has curl in it.
+#
+# What it said is read from the pod's **log**, once the pod has ended. It was
+# read by being attached to it (`run --rm -i`), and a pod whose one command is
+# over in a moment is over before anything attaches as often as not on a busy
+# node: what came back was nothing, which this then read as an endpoint that
+# answered nothing -- red, twice in a day, on changes that touched none of it.
+# A log is there whenever it is asked for.
 echo
 echo "== the directory's endpoint, asked by a key nobody minted"
 said "the key was not accepted" "the SCIM endpoint did not reach roster; it said:" \
 	"kubectl -n ${NS} delete pod scim-probe --ignore-not-found >/dev/null 2>&1; \
-	kubectl -n ${NS} run scim-probe --rm -i --quiet --restart=Never \
+	kubectl -n ${NS} run scim-probe --restart=Never \
 		--image=roster-walk:${CLUSTER} --image-pull-policy=Never --command -- \
 		curl -sS -m 20 -H 'Authorization: Bearer rt_nobody' \
-		http://roster-scim:8092/scim/v2/ServiceProviderConfig 2>&1"
+		http://roster-scim:8092/scim/v2/ServiceProviderConfig >/dev/null 2>&1; \
+	i=0; while [ \$i -lt 60 ]; do \
+		case \"\$(kubectl -n ${NS} get pod scim-probe -o jsonpath='{.status.phase}' 2>/dev/null)\" in \
+		Succeeded | Failed) break ;; \
+		esac; \
+		i=\$((i + 1)); sleep 1; \
+	done; \
+	kubectl -n ${NS} logs pod/scim-probe 2>&1; \
+	kubectl -n ${NS} delete pod scim-probe --ignore-not-found >/dev/null 2>&1"
 
 echo
 echo "== the clients, as hydra has them"
