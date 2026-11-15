@@ -355,6 +355,17 @@ func (s Core) mayHoldInGroup(ctx context.Context, ref *app.RoleRef) error {
 // coreGroupExposure is the layer over the generated `GroupExposureService`. The
 // client a group is shown to is a name its issuer gave it, and is held to the
 // shape one has; which tenant the row is in is the group's, through the wall.
+//
+// # And who says so is the tenant
+//
+// What a group's name means at a relying party is what that party grants on
+// it, which roster cannot read and no rule about granting here measures. So
+// showing a group to one, and taking it out of one's tokens, are held across
+// the tenant ([Core.acrossTheTenant]) -- `group.proto` says a group reaches a
+// client because a tenant's administrator said it does, and nothing had held
+// the write to one. A group may be a site's, and the wall narrows its
+// exposures with it: somebody bound in that site made a group there, named
+// for what a relying party grants on, and showed it to that party (#274).
 type coreGroupExposure struct {
 	Core
 	app.GroupExposureServiceServer
@@ -373,8 +384,19 @@ func (s coreGroupExposure) Add(ctx context.Context, req *app.GroupExposureAddReq
 	if err := isClient(req.GetClient()); err != nil {
 		return nil, err
 	}
+	if err := s.acrossTheTenant(ctx, app.GroupExposureService_Add_FullMethodName); err != nil {
+		return nil, err
+	}
 
 	return s.GroupExposureServiceServer.Add(ctx, req)
+}
+
+func (s coreGroupExposure) Erase(ctx context.Context, req *app.GroupExposureRef) (*app.GroupExposureEraseResponse, error) {
+	if err := s.acrossTheTenant(ctx, app.GroupExposureService_Erase_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.GroupExposureServiceServer.Erase(ctx, req)
 }
 
 // isClient refuses what no issuer would call a client. Compared as it is

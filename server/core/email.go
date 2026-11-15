@@ -123,6 +123,34 @@ func (s coreEmail) Patch(ctx context.Context, req *app.EmailPatchRequest) (*app.
 	return s.EmailServiceServer.Patch(ctx, req)
 }
 
+// Erase takes an address away from somebody, and is held to what writing one
+// onto them is: [Core.mayTakeAWayIn].
+//
+// The row is read through the wall first, so a caller who cannot see it is
+// answered as the generated `Erase` answers -- nothing erased -- and learns
+// nothing of whose it is.
+//
+// The two erases this file makes itself -- an unproved address giving way to
+// whoever proved it (`moved`, `attested`) -- go through the layer below and
+// are not asked: there the rule is the proof.
+func (s coreEmail) Erase(ctx context.Context, req *app.EmailRef) (*app.EmailEraseResponse, error) {
+	v, err := s.EmailServiceServer.Get(ctx, app.EmailGetRequest_builder{
+		Ref:    req,
+		Select: app.EmailSelect_builder{Holder: app.HolderSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if status.Code(err) == codes.NotFound {
+		return s.EmailServiceServer.Erase(ctx, req)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayTakeAWayIn(ctx, "ref", v.GetHolder().GetId()); err != nil {
+		return nil, err
+	}
+
+	return s.EmailServiceServer.Erase(ctx, req)
+}
+
 // Verify mints a link that proves this address, and answers with it once.
 //
 // Through the wall first (`Get`), so a caller who cannot see the row cannot

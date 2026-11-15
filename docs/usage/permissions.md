@@ -192,7 +192,11 @@ its methods say:
   at and the claims to them (`Host`, `HostProof`), where an address at its
   domains signs in (`MailDomain`), who an app's key is answered as
   (`Nomination`), and the sites it is divided into (`Site`) -- every write of
-  each.
+  each;
+- which relying party's tokens carry a group (`GroupExposure`), shown and taken
+  away. The group may be a site's, and what its name means at that party is
+  not: it grants there whatever that party grants on it, which no rule here can
+  measure.
 
 The gate counts every place a role reaches, which is right for rows a site
 narrows; none of these is a site's. Rows that carry a site -- roles, bindings,
@@ -323,11 +327,13 @@ section.
 ## Taking away is held the other way round
 
 A narrowing hands nobody anything, and neither does erasing a binding, a role, a
-group, or somebody's place in a group or a team -- so none of them is asked what
-you could grant of what is left. Each is asked about what it takes, at the scope
-it was given at: the binding's role where the binding was made, a role's methods
-where it may be bound, a group's bindings each where it was made (and a
-manager's role, across the tenant), a team's role at the team's site:
+group, a team, or somebody's place in a group or a team -- so none of them is
+asked what you could grant of what is left. Each is asked about what it takes,
+at the scope it was given at: the binding's role where the binding was made, a
+role's methods where it may be bound, a group's bindings each where it was made
+(and a manager's role, across the tenant), a team's role at the team's site --
+and erasing a team is that for every role held in it, since a team erased hands
+out nothing:
 
 ```
 methods: you do not hold /roster.HolderService/Erase here, so you may not take it away
@@ -410,6 +416,13 @@ provision` writes the role that names all three and `roster login provision`
 the one that names `Accept`, and no person's role should. *May send recovery links* reads like a helpdesk's
 permission and is the tenant. `roster key add` says so when a key's methods name
 one.
+
+**Taking one away is asked the same.** `EmailService/Erase` and
+`IdentityService/Erase` are refused unless that person's permissions are a
+subset of the caller's, as `ApiKeyService/Erase` and `DelegationService/Erase`
+are: an address erased is the mail-borne way back gone, and -- an address being
+one person's in a tenant -- free to be written onto another row, which the
+caller's own is.
 
 Changing your own is always allowed, and nothing here stops you **suspending** an
 administrator -- that is a denial of service rather than an escalation, and it is
