@@ -55,7 +55,8 @@ func TestAFactorWithANameCanBeConfirmed(t *testing.T) {
 		Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30)),
 	}.Build())
 	x.NoError(err)
-	x.True(got.GetOk(), "the factor they had just enrolled did not verify")
+	x.Equal([]string{vouch.KindTotp}, got.GetSatisfied(), "the factor they had just enrolled did not verify")
+	x.False(got.GetOk(), "and a code alone is a sign-in for nobody, whoever asks")
 
 	// And it counts as confirmed now, which is what `available` reads.
 	row, err := b.Ent.Credential.Query().Where(credential.NameEQ("the phone")).Only(ctx)

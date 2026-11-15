@@ -588,6 +588,22 @@ rather than storing a seed in the clear.
 not a sign-in on its own, and somebody whose only credential is a seed cannot
 sign in with it.
 
+**It is asked for wherever a password is taken**, roster's own sign-in
+included. Somebody who has proved one -- a factor counts from the first code
+that verifies -- is not signed in by their password at the user console or the
+admin console: `AuthService.SignIn` answers what is left and a `continuation`
+with no cookie, and a second call carries that and the code.
+
+```
+AuthService.SignIn { alias: …, password: … }                        -> { available: [{kind: "totp"}], continuation: "vc_…" }
+AuthService.SignIn { continuation: "vc_…", kind: "totp", secret: "123456" }  -> a cookie
+```
+
+One attempt per password: a wrong code spends the continuation, and is counted
+where a wrong password is. A link a front door hands a browser is the one
+sign-in there that asks no second factor, since the directory that checked the
+person is what the link stands for.
+
 ## Stopping one
 
 ```sh

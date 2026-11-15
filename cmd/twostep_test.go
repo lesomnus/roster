@@ -52,7 +52,11 @@ func enrolled(t *testing.T, ctx context.Context, cred app.CredentialServiceServe
 		Secret: []byte(vouchtest.CodeBefore(seed)),
 	}.Build())
 	x.NoError(err)
-	x.True(got.GetOk())
+
+	// Proved, and not a sign-in: asked by nobody, the verifier says what was
+	// proved and what is left, and `ok` is for when nothing is.
+	x.False(got.GetOk())
+	x.Equal([]string{vouch.KindTotp}, got.GetSatisfied(), "the code that confirms a seed was not taken")
 
 	return seed
 }

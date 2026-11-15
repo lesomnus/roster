@@ -1037,7 +1037,7 @@ func TestTwoFormsAndTheAppRemembersNothing(t *testing.T) {
 		Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30-1)),
 	}.Build())
 	x.NoError(err)
-	x.True(got.GetOk())
+	x.Equal([]string{vouch.KindTotp}, got.GetSatisfied())
 
 	jar, err := cookiejar.New(nil)
 	x.NoError(err)

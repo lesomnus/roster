@@ -372,43 +372,29 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 		return res, nil, err
 	}
 
-	holder, err := pdid.From(v.GetHolder().GetId())
-	if err != nil {
-		return nil, nil, err
-	}
-	tenant, err := pdid.From(v.GetHolder().GetTenant().GetId())
-	if err != nil {
-		return nil, nil, err
-	}
-
 	// And now the part that is not a yes or a no: what else this person could
 	// prove. `answer` mints a continuation when there is something, and sets
 	// `ok` when there is not -- the two are mutually exclusive, which is what
 	// keeps a caller that has never heard of second factors failing closed.
 	//
-	// A caller with no frame -- `init`, the sandbox -- cannot be issued one and
-	// does not want one, so it gets the answer this always gave.
+	// # A caller with no frame is answered the same, less the handle
 	//
-	// Which is also why [Begins] is not asked here, and it is worth saying so
-	// where somebody will look for it. This branch already answers `ok` to a
-	// **first** factor without asking for a second, because it has nowhere to
-	// put a continuation -- so what its `ok` means is *the secret matched*
-	// rather than *the sign-in is finished*, and a rule about which factor
-	// finishes one has nothing to decide here. Nothing in a deployment reaches
-	// it either: every caller that gets this far holds a key or a certificate
-	// and so carries an actor. It is `init`, and it is the tests and the
-	// example confirming a freshly enrolled seed without signing anybody in.
+	// `init`, a command at the box, a test: nobody a continuation could be
+	// minted for, so none is. What is proved and what is left are still said,
+	// and `ok` still means there is nothing left.
+	//
+	// It did not. This branch answered `ok` to a **first** factor -- *the
+	// secret matched* rather than *the sign-in is finished* -- which is the
+	// second meaning `vouch.proto` says the field must never have, on the
+	// argument that nothing in a deployment reached it: every caller that got
+	// this far held a key or a certificate. `AuthService/SignIn` is public and
+	// holds neither, and roster's own sign-in minted a session on that `ok`
+	// for somebody with an authenticator app (#275). A door of roster's own
+	// says who it is ([Server.VerifyAt]); whatever else arrives with no frame
+	// fails closed.
 	issuer, err := issuerOf(ctx)
 	if err != nil {
-		if err := s.passed(ctx, v, step, true); err != nil {
-			return nil, nil, err
-		}
-
-		return app.VouchVerifyResponse_builder{
-			Ok:     true,
-			Holder: holder.Bytes(),
-			Tenant: tenant.Bytes(),
-		}.Build(), v, nil
+		issuer = pdid.Nil
 	}
 
 	res, err := s.answer(ctx, v.GetHolder(), []string{kindOf(kind)}, v.GetId(), issuer)
