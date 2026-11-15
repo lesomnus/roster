@@ -8,7 +8,6 @@ import (
 	errors "errors"
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
-	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	relation "github.com/lesomnus/roster/internal/ent/relation"
 	rstr "github.com/lesomnus/roster/rstr"
@@ -282,7 +281,9 @@ func (s RelationServiceServer) Get(ctx context.Context, req *rstr.RelationGetReq
 	}
 
 	q := s.Db.Relation.Query().Where(p)
-	RelationSelectInit(q, req.GetSelect())
+	if err := RelationSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -326,29 +327,55 @@ func RelationSelectedFields(m *rstr.RelationSelect) []string {
 	return vs
 }
 
-func RelationSelect(q *ent.RelationQuery, m *rstr.RelationSelect) {
+// RelationSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func RelationSelect(ctx context.Context, scope Scope, q *ent.RelationQuery, m *rstr.RelationSelect) error {
 	if !m.GetAll() {
 		fields := RelationSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasHolder() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithHolder(func(q *ent.HolderQuery) {
-			q.Where(holder.DateErasedIsNil())
-			HolderSelect(q, m.GetHolder())
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetHolder())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasOther() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithOther(func(q *ent.HolderQuery) {
-			q.Where(holder.DateErasedIsNil())
-			HolderSelect(q, m.GetOther())
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetOther())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func RelationSelectInit(q *ent.RelationQuery, m *rstr.RelationSelect) {
+// RelationSelectInit is [RelationSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func RelationSelectInit(ctx context.Context, scope Scope, q *ent.RelationQuery, m *rstr.RelationSelect) error {
 	if m != nil {
-		RelationSelect(q, m)
+		return RelationSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s RelationServiceServer) Patch(ctx context.Context, req *rstr.RelationPatchRequest) (*rstr.Relation, error) {

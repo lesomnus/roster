@@ -196,7 +196,7 @@ func TestRowsFromBeforeSealsAreSealedByAnAcceptance(t *testing.T) {
 	newest, err := b.Ent.Audit.Query().Where(audit.ObjectId(h.Uuid())).Order(audit.ByDateCreated(entsql.OrderDesc())).First(ctx)
 	x.NoError(err)
 	q := b.Ent.Holder.Query().Where(holder.IdEQ(h.Uuid()))
-	bare.HolderSelectInit(q, nil)
+	x.NoError(bare.HolderSelectInit(ctx, nil, q, nil))
 	row, err := q.Only(ctx)
 	x.NoError(err)
 	sum, err := cs.Digest.Of(h, row.Proto(), newest.DigestFields, payaudit.Line{Id: newest.Id, Created: newest.DateCreated, Action: newest.Action})

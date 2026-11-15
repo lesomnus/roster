@@ -9,8 +9,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	email "github.com/lesomnus/roster/internal/ent/email"
-	holder "github.com/lesomnus/roster/internal/ent/holder"
-	identity "github.com/lesomnus/roster/internal/ent/identity"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
@@ -290,7 +288,9 @@ func (s EmailServiceServer) Get(ctx context.Context, req *rstr.EmailGetRequest) 
 	}
 
 	q := s.Db.Email.Query().Where(p)
-	EmailSelectInit(q, req.GetSelect())
+	if err := EmailSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -340,29 +340,55 @@ func EmailSelectedFields(m *rstr.EmailSelect) []string {
 	return vs
 }
 
-func EmailSelect(q *ent.EmailQuery, m *rstr.EmailSelect) {
+// EmailSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func EmailSelect(ctx context.Context, scope Scope, q *ent.EmailQuery, m *rstr.EmailSelect) error {
 	if !m.GetAll() {
 		fields := EmailSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasHolder() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithHolder(func(q *ent.HolderQuery) {
-			q.Where(holder.DateErasedIsNil())
-			HolderSelect(q, m.GetHolder())
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetHolder())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasVouchedBy() {
+		p, err := IdentityNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithVouchedBy(func(q *ent.IdentityQuery) {
-			q.Where(identity.DateErasedIsNil())
-			IdentitySelect(q, m.GetVouchedBy())
+			if p != nil {
+				q.Where(p)
+			}
+			err = IdentitySelect(ctx, scope, q, m.GetVouchedBy())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func EmailSelectInit(q *ent.EmailQuery, m *rstr.EmailSelect) {
+// EmailSelectInit is [EmailSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func EmailSelectInit(ctx context.Context, scope Scope, q *ent.EmailQuery, m *rstr.EmailSelect) error {
 	if m != nil {
-		EmailSelect(q, m)
+		return EmailSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s EmailServiceServer) Patch(ctx context.Context, req *rstr.EmailPatchRequest) (*rstr.Email, error) {

@@ -261,7 +261,9 @@ func (s HostServiceServer) Get(ctx context.Context, req *rstr.HostGetRequest) (*
 	}
 
 	q := s.Db.Host.Query().Where(p)
-	HostSelectInit(q, req.GetSelect())
+	if err := HostSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -311,22 +313,40 @@ func HostSelectedFields(m *rstr.HostSelect) []string {
 	return vs
 }
 
-func HostSelect(q *ent.HostQuery, m *rstr.HostSelect) {
+// HostSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func HostSelect(ctx context.Context, scope Scope, q *ent.HostQuery, m *rstr.HostSelect) error {
 	if !m.GetAll() {
 		fields := HostSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func HostSelectInit(q *ent.HostQuery, m *rstr.HostSelect) {
+// HostSelectInit is [HostSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func HostSelectInit(ctx context.Context, scope Scope, q *ent.HostQuery, m *rstr.HostSelect) error {
 	if m != nil {
-		HostSelect(q, m)
+		return HostSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s HostServiceServer) Patch(ctx context.Context, req *rstr.HostPatchRequest) (*rstr.Host, error) {
@@ -849,7 +869,9 @@ func (s MailDomainServiceServer) Get(ctx context.Context, req *rstr.MailDomainGe
 	}
 
 	q := s.Db.MailDomain.Query().Where(p)
-	MailDomainSelectInit(q, req.GetSelect())
+	if err := MailDomainSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -899,22 +921,40 @@ func MailDomainSelectedFields(m *rstr.MailDomainSelect) []string {
 	return vs
 }
 
-func MailDomainSelect(q *ent.MailDomainQuery, m *rstr.MailDomainSelect) {
+// MailDomainSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func MailDomainSelect(ctx context.Context, scope Scope, q *ent.MailDomainQuery, m *rstr.MailDomainSelect) error {
 	if !m.GetAll() {
 		fields := MailDomainSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func MailDomainSelectInit(q *ent.MailDomainQuery, m *rstr.MailDomainSelect) {
+// MailDomainSelectInit is [MailDomainSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func MailDomainSelectInit(ctx context.Context, scope Scope, q *ent.MailDomainQuery, m *rstr.MailDomainSelect) error {
 	if m != nil {
-		MailDomainSelect(q, m)
+		return MailDomainSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s MailDomainServiceServer) Patch(ctx context.Context, req *rstr.MailDomainPatchRequest) (*rstr.MailDomain, error) {
@@ -1445,7 +1485,9 @@ func (s HostProofServiceServer) Get(ctx context.Context, req *rstr.HostProofGetR
 	}
 
 	q := s.Db.HostProof.Query().Where(p)
-	HostProofSelectInit(q, req.GetSelect())
+	if err := HostProofSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -1495,22 +1537,40 @@ func HostProofSelectedFields(m *rstr.HostProofSelect) []string {
 	return vs
 }
 
-func HostProofSelect(q *ent.HostProofQuery, m *rstr.HostProofSelect) {
+// HostProofSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func HostProofSelect(ctx context.Context, scope Scope, q *ent.HostProofQuery, m *rstr.HostProofSelect) error {
 	if !m.GetAll() {
 		fields := HostProofSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func HostProofSelectInit(q *ent.HostProofQuery, m *rstr.HostProofSelect) {
+// HostProofSelectInit is [HostProofSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func HostProofSelectInit(ctx context.Context, scope Scope, q *ent.HostProofQuery, m *rstr.HostProofSelect) error {
 	if m != nil {
-		HostProofSelect(q, m)
+		return HostProofSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s HostProofServiceServer) Patch(ctx context.Context, req *rstr.HostProofPatchRequest) (*rstr.HostProof, error) {

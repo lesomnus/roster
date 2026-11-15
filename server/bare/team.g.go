@@ -9,7 +9,6 @@ import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
-	site "github.com/lesomnus/roster/internal/ent/site"
 	team "github.com/lesomnus/roster/internal/ent/team"
 	rstr "github.com/lesomnus/roster/rstr"
 	ent1 "github.com/protobuf-orm/ent"
@@ -279,7 +278,9 @@ func (s TeamServiceServer) Get(ctx context.Context, req *rstr.TeamGetRequest) (*
 	}
 
 	q := s.Db.Team.Query().Where(p)
-	TeamSelectInit(q, req.GetSelect())
+	if err := TeamSelectInit(ctx, s.Scope, q, req.GetSelect()); err != nil {
+		return nil, err
+	}
 
 	v, err := q.Only(ctx)
 	if err != nil {
@@ -326,28 +327,55 @@ func TeamSelectedFields(m *rstr.TeamSelect) []string {
 	return vs
 }
 
-func TeamSelect(q *ent.TeamQuery, m *rstr.TeamSelect) {
+// TeamSelect loads what `m` asks for, each edge through the Narrow
+// of the entity it reaches: an edge whose target `scope` keeps from this
+// caller is answered as its reference alone, as an edge nobody asked for
+// is. A nil scope narrows by nothing but whether the row is still there.
+func TeamSelect(ctx context.Context, scope Scope, q *ent.TeamQuery, m *rstr.TeamSelect) error {
 	if !m.GetAll() {
 		fields := TeamSelectedFields(m)
 		q.Select(fields...)
 	}
 	if m.HasTenant() {
+		p, err := TenantNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithTenant(func(q *ent.TenantQuery) {
-			TenantSelect(q, m.GetTenant())
+			if p != nil {
+				q.Where(p)
+			}
+			err = TenantSelect(ctx, scope, q, m.GetTenant())
 		})
+		if err != nil {
+			return err
+		}
 	}
 	if m.HasSite() {
+		p, err := SiteNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
 		q.WithSite(func(q *ent.SiteQuery) {
-			q.Where(site.DateErasedIsNil())
-			SiteSelect(q, m.GetSite())
+			if p != nil {
+				q.Where(p)
+			}
+			err = SiteSelect(ctx, scope, q, m.GetSite())
 		})
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func TeamSelectInit(q *ent.TeamQuery, m *rstr.TeamSelect) {
+// TeamSelectInit is [TeamSelect] for a select that may be
+// nil, which loads the keys of a list edge and nothing else.
+func TeamSelectInit(ctx context.Context, scope Scope, q *ent.TeamQuery, m *rstr.TeamSelect) error {
 	if m != nil {
-		TeamSelect(q, m)
+		return TeamSelect(ctx, scope, q, m)
 	}
+	return nil
 }
 
 func (s TeamServiceServer) Patch(ctx context.Context, req *rstr.TeamPatchRequest) (*rstr.Team, error) {
