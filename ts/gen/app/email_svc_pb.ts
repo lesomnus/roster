@@ -695,6 +695,10 @@ export type EmailAttestRequest = Message<"roster.EmailAttestRequest"> & {
    * Which identity vouched, and it is **required**: an attestation with no
    * voucher is an address somebody typed, and that has `Add` and a link.
    *
+   * An identity of `holder`, and one the caller can see. Somebody else's says
+   * nothing of them and is refused, `InvalidArgument`; one of another tenant
+   * is `NotFound`, as one nobody has is.
+   *
    * @generated from field: roster.IdentityRef vouched_by = 10;
    */
   vouchedBy?: IdentityRef | undefined;

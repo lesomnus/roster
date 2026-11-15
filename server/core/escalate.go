@@ -341,15 +341,34 @@ func (s Core) mayWriteAWayIn(ctx context.Context, field string, ref *app.HolderR
 	return s.mayReach(ctx, field, k)
 }
 
-// holderOf is the identifier a `HolderRef` names, read when it named something
-// else -- an alias, or an address. Through `Next()`, so a caller who cannot see
-// the person cannot write a way into their account either.
+// holderOf is the identifier a `HolderRef` names. Through `Next()`, so a caller
+// who cannot see the person cannot write a way into their account either.
+//
+// # Read, even when it was an identifier
+//
+// It took an identifier at its word and read only an alias or an address. But
+// what is asked next is the reach rule, which answers in the words that say
+// what the person holds -- and asked of an identifier nobody had read, it said
+// so of **another tenant's** person, where somebody who is nobody is
+// `NotFound`: whether an identifier is anybody's, and what they may call, to
+// a caller the wall shows neither (#274). So the person is read as the caller
+// reads them first, and one they cannot see is nobody, whoever they are.
+//
+// A call with no frame has no wall to be read through and is asked nothing by
+// the rules this feeds, so its identifier is still its word: what refuses one
+// that names no person there is the write, where the row it hangs off is
+// resolved (`TestAnIdentifierNamesOnlyItsOwnKind`).
 func (s Core) holderOf(ctx context.Context, ref *app.HolderRef) (pdid.Id, error) {
 	if b := ref.GetId(); len(b) > 0 {
-		return pdid.From(b)
+		if _, framed := frame.From(ctx); !framed {
+			return pdid.From(b)
+		}
 	}
 
-	v, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{Ref: ref}.Build())
+	v, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref:    ref,
+		Select: app.HolderSelect_builder{}.Build(),
+	}.Build())
 	if err != nil {
 		return pdid.Nil, err
 	}
