@@ -192,16 +192,15 @@ op host add '{"tenant":{"alias":"contoso"},"name":"localhost"}' >/dev/null
 # account is for. Before the account app is provisioned, which reaches every
 # tenant with a name.
 #
-# frank holds a role of his own, the calls his page makes about his
-# addresses, and not the `everything` the tenant arrived with: what the app
-# does for him as itself -- a link minted for his address, a password handed
-# over, his account deleted -- is writing a way into him, which is held to his
-# permissions being within the app's (`mayReach`), and `everything` is not.
+# frank is bound nothing. The calls his page makes about his own addresses are
+# the tenant's `self-service` role, which everybody of it holds over what is
+# theirs and nobody is bound; and not the `everything` the tenant arrived
+# with: what the app does for him as itself -- a link minted for his address,
+# a password handed over, his account deleted -- is writing a way into him,
+# which is held to his permissions being within the app's (`mayReach`), and
+# `everything` is not.
 op tenant add @tailspin '{"name":"Tailspin","config":{"leave":true}}' >/dev/null
 op holder add @tailspin/frank >/dev/null
-op role add '{"tenant":{"alias":"tailspin"},"alias":"self","methods":["/roster.EmailService/List","/roster.EmailService/Get","/roster.EmailService/Add","/roster.EmailService/Verify"]}' >/dev/null
-echo '{"role":{"slug":{"alias":"self","tenant":{"alias":"tailspin"}}},"holder":{"slug":{"alias":"frank","tenant":{"alias":"tailspin"}}}}' \
-	| op binding add - >/dev/null
 echo "${E2E_FRANK_PASSWORD}" | r vouch set --password-stdin @tailspin/frank >/dev/null 2>&1
 op email add '{"holder":{"slug":{"alias":"frank","tenant":{"alias":"tailspin"}}},"address":"frank@tailspin.example"}' >/dev/null
 op host add '{"tenant":{"alias":"tailspin"},"name":"127.0.0.1"}' >/dev/null

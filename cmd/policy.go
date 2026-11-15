@@ -153,8 +153,20 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 		return err
 	}
 	if !held.allows(c.Action) {
-		return status.Errorf(codes.PermissionDenied,
-			"%s: no role of yours allows that", c.Action)
+		// Nothing they were bound. What is left is what everybody of their
+		// tenant does to their own account, which nobody is bound ([policy.own]):
+		// let through here, and narrowed to their own rows by the wall, since
+		// they hold it nowhere ([held.sitesFor], [People]).
+		theirs, err := p.own(ctx, c.Tenant.Uuid())
+		if err != nil {
+			return err
+		}
+		if !slices.Contains(theirs, c.Action) {
+			return status.Errorf(codes.PermissionDenied,
+				"%s: no role of yours allows that", c.Action)
+		}
+
+		return nil
 	}
 	if ofTheWholeTenant(c.Action) && !held.allowsEverywhere(c.Action) {
 		return status.Errorf(codes.PermissionDenied,
@@ -162,6 +174,47 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 	}
 
 	return nil
+}
+
+// own is what everybody of a tenant holds over what is their own: the methods
+// of the tenant's role named [core.Owns], of the ones such a role may name.
+//
+// It is in no binding, so it is in nothing [policy.of] reads, and that is on
+// purpose three times over. It reaches nowhere, so a call it lets through is
+// narrowed to the caller's own rows. It is not what somebody **holds** for
+// the rules that compare holdings -- whose account a way in may be written
+// into, what may be granted or taken away -- since everybody has it and it
+// reaches nobody else. And it is not held across the tenant.
+//
+// A role of that name in a site, or erased, is no such role; and a method it
+// names that is not somebody's own to call is not held through it
+// ([core.Owned]).
+func (p policy) own(ctx context.Context, tenant uuid.UUID) ([]string, error) {
+	if tenant == uuid.Nil() {
+		return nil, nil
+	}
+
+	r, err := p.db.Role.Query().
+		Where(entrole.TenantIdEQ(tenant), entrole.AliasEQ(core.Owns), entrole.SiteIdIsNil(), entrole.DateErasedIsNil()).
+		First(ctx)
+	if ent.IsNotFound(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return core.Owned(r.Methods), nil
+}
+
+// Own is [policy.own] for `server/me`, which answers with it beside what
+// somebody holds and apart from it.
+func Own(db *ent.Client) me.Own {
+	p := policy{db: db}
+
+	return func(ctx context.Context, tenant pdid.Id) ([]string, error) {
+		return p.own(ctx, tenant.Uuid())
+	}
 }
 
 // ofTheWholeTenant is the reads that are no site's, held to a binding across
@@ -1277,6 +1330,7 @@ func Everything(db *ent.Client, sources ...rbac.Source) me.Held {
 		for m := range h.methods {
 			ms = append(ms, m)
 		}
+
 		slices.Sort(ms)
 
 		ks := make([]pdid.Id, 0, len(h.sites))

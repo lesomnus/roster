@@ -55,9 +55,12 @@ roster --as admin tenant add @newco '{"name":"Newco Ltd"}'
 roster vouch reset @newco/admin          # a password, printed once
 ```
 
-The first command writes four rows: the tenant, `admin` in it, a role called
-`everything` that holds `/roster.*/*`, and the binding. The second is the
-ordinary way anybody gets a password, pointed at the person the first made.
+The first command writes five rows: the tenant, `admin` in it, a role called
+`everything` that holds `/roster.*/*`, the binding, and a role called
+`self-service` that nobody is bound -- what everybody of the tenant does to
+their own account ([permissions.md](permissions.md) § *What somebody does to
+their own account*). The second is the ordinary way anybody gets a password,
+pointed at the person the first made.
 
 `everything` is a **pattern** and not a list. A list written the day a customer
 is created is what existed that day; the next release adds an RPC their
@@ -66,18 +69,18 @@ is refused for anything the granter does not already hold. It is still an
 ordinary role -- unbind it and it is gone, erase it and every binding to it goes
 too.
 
-### Why `add` writes four rows
+### Why `add` writes more than the tenant
 
-It used to write one, and the other three were yours. This page argued they
-should stay four separate writes: each is held to the same rules every other
-write is, and a composite would be a fifth thing to hold to them.
+It used to write one row, and the rest were yours. This page argued they
+should stay separate writes: each is held to the same rules every other
+write is, and a composite would be one more thing to hold to them.
 
 That argument is about a **caller** composing them, and `Tenant.Add` is not one.
-The three writes after the row go back through the same layer they would have
+The writes after the row go back through the same layer they would have
 arrived at on their own, so a role naming methods the caller does not hold is
 refused there exactly as `Role.Add` refuses it.
 
-What the four actually left was worse than the risk: a tenant with **nobody who
+What the separate writes actually left was worse than the risk: a tenant with **nobody who
 could do anything in it**, finishable only by a roster operator reaching inside
 through `admin.addr` -- where standing comes from the port and two escalation
 rules are waived. That is what made *let a customer manage their own people*

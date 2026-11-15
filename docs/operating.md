@@ -601,9 +601,11 @@ setting in that block that opens a door into an account: it lets a machine with 
 browser ask for a key, approved by the person in a page they are already signed in
 at ([usage/ways-in.md](usage/ways-in.md) § *A terminal, signed in from a browser*).
 Off, those endpoints answer 501 and the page draws no form for them. The blunt
-control is a different thing and turns off more: grant no role naming
-`ApiKey.Issue` and **no** self-service key can be minted, the page's own app
-passwords included.
+control is a different thing and turns off more: take `ApiKeyService/Issue` out
+of the tenant's `self-service` role and **no** self-service key can be minted,
+the page's own app passwords included
+([usage/permissions.md](usage/permissions.md) § *What somebody does to their
+own account*).
 
 ### The front door's mail
 

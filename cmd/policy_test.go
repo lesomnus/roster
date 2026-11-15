@@ -41,16 +41,30 @@ func (b *built) binds(t *testing.T, who pdid.Id, role pdid.Id, site *pdid.Id) {
 // The alternative is that adding the first role **takes away** permissions
 // everybody silently had -- a change nobody can review, because there is no
 // before-state written down anywhere.
+//
+// Nothing about anybody else, that is. What is their own to do to their own
+// account is the tenant's `self-service` role, which nobody is bound and
+// which reaches no other row (`own_test.go`); a tenant that erases it has the
+// sentence above with no exception.
 func TestSomebodyWithNoBindingMayCallNothing(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
 	conn := served(t, b.Server)
-	ctx = asOverTheWire(ctx, b.ContosoUser)
+	wire := asOverTheWire(ctx, b.ContosoUser)
+	own := app.HolderGetRequest_builder{Ref: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build()}.Build()
 
-	_, err := app.NewHolderServiceClient(conn).Get(ctx, app.HolderGetRequest_builder{
-		Ref: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+	// What is not about themselves, and somebody else's row.
+	_, err := app.NewHolderServiceClient(conn).List(wire, app.HolderListRequest_builder{}.Build())
+	x.Equal(codes.PermissionDenied, status.Code(err))
+	_, err = app.NewHolderServiceClient(conn).Get(wire, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "somebody-else").Bytes()}.Build(),
 	}.Build())
+	x.Equal(codes.NotFound, status.Code(err))
+
+	// And in a tenant that has no such role, their own row too.
+	b.withoutSelfService(t, ctx)
+	_, err = app.NewHolderServiceClient(conn).Get(wire, own)
 	x.Equal(codes.PermissionDenied, status.Code(err))
 }
 
@@ -81,6 +95,10 @@ func TestARoleIsWhatOpensIt(t *testing.T) {
 func TestAGroupCarriesItToo(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
+
+	// Read by somebody's own row, which they would otherwise read with no
+	// role at all: what is asked here is what a group carries.
+	b.withoutSelfService(t, ctx)
 
 	g, err := b.Ungated.Group().Add(ctx, app.GroupAddRequest_builder{
 		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
@@ -366,6 +384,10 @@ func TestATeamRoleIsNotYoursToHandOut(t *testing.T) {
 // added, and nobody noticed until somebody needed it.
 func TestARoleMayNameAServiceOrAPackage(t *testing.T) {
 	b, ctx := build(t)
+
+	// Tried on somebody's own row, which they would otherwise read with no
+	// role at all: what is asked here is what a pattern opens.
+	b.withoutSelfService(t, ctx)
 
 	roleOf := func(t *testing.T, alias string, ms ...string) pdid.Id {
 		t.Helper()

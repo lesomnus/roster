@@ -65,7 +65,7 @@ the page, one of the two is wrong and both are load-bearing.
 
 | the promise | pinned by |
 | --- | --- |
-| deny by default: no binding, no call — whatever the credential | `TestSomebodyWithNoBindingMayCallNothing` |
+| deny by default: no binding, no call about anybody else — whatever the credential; what is somebody's own to do is the tenant's `self-service` role, which reaches nobody else | `TestSomebodyWithNoBindingMayCallNothing` · `TestWhatIsSomebodysOwnReachesNobodyElse` |
 | patterns match whole segments and are evaluated, never expanded: `/roster.HolderService/*` is one service, `/roster.*/*` survives an upgrade, a partial segment opens nothing | `TestARoleMayNameAServiceOrAPackage` |
 | nobody grants what they do not hold, by any door — a role, a binding, a membership, a patch, a widen | `TestNobodyGrantsWhatTheyDoNotHold` · `TestNobodyWidensARoleTheyHold` · `TestNobodyAttachesARoleByPatchingAMembership` · `TestNobodyWidensARoleBeyondWhatTheyHold` |
 | a widen adds what is new and takes nothing away -- nothing new is no write -- and a declared role is nobody's to widen at a port | `TestAWidenAddsWhatIsNewAndTakesNothingAway` · `TestADeclaredRoleIsNobodysToWiden` |

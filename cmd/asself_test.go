@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"testing"
 
@@ -20,6 +21,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/credential"
 	entholder "github.com/lesomnus/roster/internal/ent/holder"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/vouch"
 )
 
@@ -90,6 +92,13 @@ var namesNobody = map[string]bool{
 // missing permission, it is a permission granted to the entire customer base
 // at once.
 //
+// One kind of method is let through and does take a subject: what somebody
+// does to their own account (`core.Owning`), by the role everybody of a
+// tenant holds over what is theirs. Those are not waived for having no
+// subject, so reading the message proves nothing of them; they are held by
+// the wall and tried against it, which the loop below says where it skips
+// them.
+//
 // It is written this way round on purpose. A test naming `MeService`'s three
 // methods would pass forever while the fourth thing somebody adds to the list
 // -- `Holder.Invalidate` reads like "sign somebody out", `Holder.Get` reads
@@ -129,6 +138,17 @@ func TestNothingTheWallIsWaivedForCanNameAnybody(t *testing.T) {
 			}
 
 			waived = append(waived, method)
+
+			if slices.Contains(core.Owning, method) {
+				// Let through for another reason, and held another way. It
+				// takes a subject, and what keeps it from being about anybody
+				// is the wall: a method somebody holds nowhere reaches their
+				// own rows (`cmd.People`). So it is tried rather than read --
+				// each of them, about somebody else, in
+				// `TestWhatIsSomebodysOwnReachesNobodyElse`, which fails for
+				// one of these it has no case for.
+				continue
+			}
 
 			d, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(svc))
 			x.NoError(err, "%s is waived and its schema cannot be read", method)

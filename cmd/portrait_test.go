@@ -185,12 +185,15 @@ func TestFillWritesOnlyTheBlanks(t *testing.T) {
 	t.Run("it reads and writes nothing else", func(t *testing.T) {
 		x := require.New(t)
 
+		// Of anybody else, that is: `Update` and `Get` of its own row are what
+		// everybody may call (`core.Owns`), and somebody else's row is not
+		// one it sees.
 		_, err := c.Update(door, app.HolderUpdateRequest_builder{
 			Ref: ref(b.ContosoUser), Profile: app.Profile_builder{DisplayName: "Mallory"}.Build(),
 		}.Build())
-		x.Equal(codes.PermissionDenied, status.Code(err))
+		x.Equal(codes.NotFound, status.Code(err))
 		_, err = c.Get(door, app.HolderGetRequest_builder{Ref: ref(b.ContosoUser)}.Build())
-		x.Equal(codes.PermissionDenied, status.Code(err))
+		x.Equal(codes.NotFound, status.Code(err))
 	})
 
 	t.Run("a declared row is the file's", func(t *testing.T) {

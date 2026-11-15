@@ -515,6 +515,64 @@ comment that says how they were arrived at.
 from the port rather than from a role: [operating.md](../operating.md) § "What the
 admin port waives" is the whole of it.
 
+## What somebody does to their own account
+
+Their address, their numbers, their keys, their password, their profile:
+somebody changes their own with **no role bound to them**. Every tenant is made
+with a role called `self-service`, and everybody of the tenant holds it -- over
+what is their own, and over nobody else's.
+
+```sh
+roster --as admin role get @newco/self-service
+```
+
+```
+methods   /roster.HolderService/Get  /roster.HolderService/Update  /roster.HolderService/Portray
+          /roster.EmailService/Get   /roster.EmailService/List     /roster.EmailService/Add   /roster.EmailService/Erase
+          /roster.EmailService/Verify
+          /roster.PhoneService/Get   /roster.PhoneService/List     /roster.PhoneService/Add   /roster.PhoneService/Erase
+          /roster.IdentityService/Add
+          /roster.CredentialService/Set  /roster.CredentialService/Enrol  /roster.CredentialService/Erase
+          /roster.ApiKeyService/List /roster.ApiKeyService/Issue   /roster.ApiKeyService/Erase
+          /roster.DelegationService/List  /roster.DelegationService/Erase
+```
+
+It is the entity's own verb each time, with the person's own reference:
+`EmailService/Erase` of their address, and not a second verb beside it. What
+makes it theirs alone is where they hold it, which is nowhere: a call is
+narrowed to where its caller holds the method ([A site](#a-site)), so one held
+in no site and not across the tenant reaches the caller's own rows. Somebody
+else's address is `NotFound` to them.
+
+**It is the tenant's to narrow.** Take a method out and nobody of the tenant
+does that to their own account any more:
+
+```sh
+# nobody mints a key for themselves
+roster --as admin role narrow @newco/self-service '{"methods":["/roster.ApiKeyService/Issue"]}'
+```
+
+Erase the role and there is none of it. It names only what is on the list
+above: a write that would put `HolderService/Erase` there is refused, and one
+that got there another way is not held through it.
+
+`EmailService/Verify` answers the link that proves an address to whoever
+called it, and is on the list all the same: a link is spent by whoever minted
+it, through `EmailService/Confirm`, which is not on the list and is a front
+door's. Somebody who calls it themselves holds a link they cannot spend. What
+it switches is whether their account page offers to confirm an address, which
+the page's app then does as itself, by mail.
+
+**So a role that names these verbs is for somebody who manages other people.**
+`EmailService/Add` in a role bound across the tenant is *may add an address to
+anybody who holds no more than I do* -- which, bound to everybody so that each
+could manage their own, was everybody over everybody else. Nobody needs that
+binding to manage their own, and it should not be given for it.
+
+`MeService.Get` answers what is theirs to do apart from what they hold: `own`,
+beside `methods`. `HolderService/Reaches` does not answer it at all: it is not
+something somebody holds over anybody.
+
 ## Whose ways in somebody reads
 
 A key's row says what it is called, what it may call and when it was last used
@@ -544,7 +602,7 @@ roster --as admin role list -o wide
 and, as the person themselves, over the wire:
 
 ```
-MeService.Get → { alias, tenant, methods: ["/roster.*/*"], sites, every_site, teams }
+MeService.Get → { alias, tenant, methods: ["/roster.*/*"], own: [...], sites, every_site, teams }
 ```
 
 `methods` comes back as the **pattern**, not what it expands to. A page that

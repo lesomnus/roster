@@ -1518,12 +1518,23 @@ func TestAddingAWayInIsRoutedNow(t *testing.T) {
 	x.NoError(err)
 	x.Len(was.GetItems(), 1, "signing in wrote something other than one identity")
 
-	t.Run("and until a role says so, it is refused", func(t *testing.T) {
+	// Linking is what somebody does to their own account, which their
+	// tenant's `self-service` role lets everybody do and nobody is bound
+	// (`server/core`, `own.go`). A deployment that does not want it takes the
+	// method out of that role, and then it is refused -- for everybody.
+	own := rstr.RoleRef_builder{Slug: rstr.RoleRefBySlug_builder{
+		Alias:  proto.String("self-service"),
+		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
+	}.Build()}.Build()
+
+	t.Run("and where a tenant took it out of what everybody does, it is refused", func(t *testing.T) {
 		x := require.New(t)
 
-		// `Identity.Add` is not waived, so somebody the login app enrolled
-		// holds nothing that allows it -- and the app does not grant it, on
-		// purpose: doing so would mean its key could bind any role to anybody.
+		_, err := d.ungated.Role().Narrow(ctx, rstr.RoleNarrowRequest_builder{
+			Ref: own, Methods: []string{rstr.IdentityService_Add_FullMethodName},
+		}.Build())
+		x.NoError(err)
+
 		d.idp.subject = "3002"
 
 		res, err := c.Post(d.app.URL+"/me/ways", "application/json", nil)
@@ -1532,26 +1543,14 @@ func TestAddingAWayInIsRoutedNow(t *testing.T) {
 		x.Equal(http.StatusForbidden, res.StatusCode)
 	})
 
-	// What a deployment does about it: one role, one method, written where it
-	// decides what an ordinary account is.
-	role, err := d.ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
-		Tenant:  rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(),
-		Alias:   "self-service",
-		Methods: []string{rstr.IdentityService_Add_FullMethodName},
+	// Put back, which is the role as a tenant is made with it. Nobody is
+	// bound anything: it is not a role that names a verb about anybody.
+	_, err = d.ungated.Role().Widen(ctx, rstr.RoleWidenRequest_builder{
+		Ref: own, Methods: []string{rstr.IdentityService_Add_FullMethodName},
 	}.Build())
 	x.NoError(err)
 
-	people, err := d.ungated.Holder().List(ctx, rstr.HolderListRequest_builder{}.Build())
-	x.NoError(err)
-	for _, v := range people.GetItems() {
-		_, err = d.ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
-			Role:   rstr.RoleRef_builder{Id: role.GetId()}.Build(),
-			Holder: rstr.HolderRef_builder{Id: v.GetId()}.Build(),
-		}.Build())
-		x.NoError(err)
-	}
-
-	// A fresh browser, so the delegation carries the role that now exists.
+	// A fresh browser, as somebody signing in again.
 	jar2, err := cookiejar.New(nil)
 	x.NoError(err)
 

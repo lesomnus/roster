@@ -125,11 +125,13 @@ func TestUpdateIsTheNarrowWrite(t *testing.T) {
 
 		other := b.holder(t, ctx, b.Contoso, "nobody")
 
+		// About somebody else, it is a row they do not see: their own profile
+		// is theirs to update with no role (`core.Owns`), and nobody else's.
 		_, err := c.Update(asOverTheWire(ctx, other), app.HolderUpdateRequest_builder{
 			Ref:     me,
 			Profile: app.Profile_builder{DisplayName: "Nope"}.Build(),
 		}.Build())
 		x.Error(err)
-		x.Equal(codes.PermissionDenied, status.Code(err))
+		x.Equal(codes.NotFound, status.Code(err))
 	})
 }

@@ -66,11 +66,17 @@ import (
 // drift.
 type Held func(ctx context.Context, who pdid.Id) (methods []string, sites []pdid.Id, every bool, err error)
 
+// Own is what somebody may call about their own account and nobody else's:
+// what the gate lets through for everybody of their tenant, by its
+// `self-service` role. Given, as [Held] is.
+type Own func(ctx context.Context, tenant pdid.Id) ([]string, error)
+
 type Server struct {
 	app.UnimplementedMeServiceServer
 
 	db   *ent.Client
 	held Held
+	own  Own
 
 	// walled is the stack the two writes go through: `Unlink` and
 	// `SignOutEverywhere`, the waived ones. What a person does beyond those is
@@ -107,6 +113,10 @@ type Option func(*Server)
 
 // WithWrites gives the service the stack its writes go through.
 func WithWrites(v app.Server) Option { return func(s *Server) { s.walled = v } }
+
+// WithOwn says what somebody may do to their own account, for `Get` to answer
+// with. Without it `Get` answers none, which is a plane that has no such role.
+func WithOwn(v Own) Option { return func(s *Server) { s.own = v } }
 
 // WithForgetAfter is how long after an erase the deployment forgets somebody,
 // which `Leave` tells the person who asked.
@@ -184,6 +194,16 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 		// `frame.Whole` allows everything, so somebody signing in the ordinary
 		// way sees no difference.
 		res.Methods = meet(ms, f.Grant)
+
+		// And what is theirs to do to their own account, said apart: it
+		// reaches nobody else, and `methods` is what does.
+		if s.own != nil {
+			theirs, err := s.own(ctx, f.Tenant)
+			if err != nil {
+				return nil, err
+			}
+			res.Own = meet(theirs, f.Grant)
+		}
 
 		res.EverySite = every
 		for _, k := range sites {
