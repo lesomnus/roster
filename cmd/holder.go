@@ -25,6 +25,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent"
 	entapikey "github.com/lesomnus/roster/internal/ent/apikey"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
 )
 
 // HolderNamed is a holder of this plane by alias, made if there is none.
@@ -229,36 +230,55 @@ func SplitMethods(vs []string) []string {
 	return out
 }
 
-// Widest says so when a key's methods reach the one read that is wider than
-// every other one put together.
+// Widest says so when what was just minted reaches further than its methods
+// read: the trail, a credential for anybody, a link to anybody's account.
 //
-// # Why this and nothing else
+// # By the kind of key it is
 //
-// A key is the deployment's, and the deployment is every tenant in it -- so
-// `cmd.Policy.Where` answers `frame.Everything` and the wall narrows nothing.
-// That is the design and it is right: a key allowed `/roster.HolderService/List`
-// reads every customer's people, and a service that manages customers has to.
+// `kind` is how the key begins -- [keys.PrefixDeployment] or
+// [keys.PrefixTenant], or the token itself, which begins with one -- because
+// what a method reaches is the kind's and not the method's:
 //
-// `AuditService` is the same property with a different magnitude. `Audit.value`
-// is the row as each write left it, so one method answers **every table's
-// contents, across every tenant, across all time** -- including rows long since
-// deleted, since nothing erases a trail row. It is the single widest read this
-// app has, and `cmd/trailkey_test.go` is what says so.
+//   - A **deployment's** key is every tenant in it: `cmd.Policy.Where` answers
+//     `frame.Everything` and the wall narrows nothing. That is the design and
+//     it is right -- a key allowed `/roster.HolderService/List` reads every
+//     customer's people, and a service that manages customers has to.
+//   - A **customer's** -- a key for one of a tenant's people, or a delegation
+//     -- is answered as that person, behind their tenant's wall, and calls what
+//     they hold.
+//
+// It was one sentence for both, the deployment's, and `roster key add` mints
+// the other kind: an administrator minting a key for their own tenant's
+// exporter was told it read every customer's history (#274). A sentence that
+// is wrong half the times it is printed is not read the other half.
+//
+// # Why the trail
+//
+// `AuditService` is the same property as any other read with a different
+// magnitude. `Audit.value` is the row as each write left it, so one method
+// answers **every table's contents, across all time** -- including rows long
+// since deleted, since nothing erases a trail row -- and on a deployment's key
+// across every tenant. It is the single widest read this app has, and
+// `cmd/trailkey_test.go` is what says so.
 //
 // Said rather than refused. A compliance exporter is a real service and this is
 // the method it needs; what is wrong is granting it by reaching for `*` and not
 // noticing. So this is the sentence that makes somebody notice, once, at the
 // moment they could still choose otherwise.
-func Widest(methods []string) string {
+func Widest(kind string, methods []string) string {
 	wide := []struct {
 		method string
-		why    string
+
+		// What is said of a customer's, and of a deployment's.
+		theirs, ours string
 	}{
-		{app.AuditService_List_FullMethodName, ReadsTheTrail},
-		{app.AuditService_Get_FullMethodName, ReadsTheTrail},
-		{app.VouchService_Accept_FullMethodName, MintsForAnybody},
-		{app.VouchService_Link_FullMethodName, LinksAnybody},
+		{app.AuditService_List_FullMethodName, ReadsItsTenantsTrail, ReadsTheTrail},
+		{app.AuditService_Get_FullMethodName, ReadsItsTenantsTrail, ReadsTheTrail},
+		{app.VouchService_Accept_FullMethodName, MintsForAnybody, MintsForAnybody},
+		{app.VouchService_Link_FullMethodName, LinksAnybody, LinksAnybodyAnywhere},
 	}
+
+	deployments := strings.HasPrefix(kind, keys.PrefixDeployment)
 
 	for _, held := range methods {
 		for _, v := range wide {
@@ -266,17 +286,31 @@ func Widest(methods []string) string {
 				continue
 			}
 
-			return "NOTE: `" + held + "` " + v.why
+			why := v.theirs
+			if deployments {
+				why = v.ours
+			}
+
+			return "NOTE: `" + held + "` " + why
 		}
 	}
 
 	return ""
 }
 
+// ReadsTheTrail is said of a deployment's key.
 const ReadsTheTrail = "reaches the audit trail, which holds the contents of every\n" +
 	"write in this deployment, in every tenant, for as long as the retention policy\n" +
-	"keeps them. A key is not walled by tenant. Grant it only to something that has\n" +
-	"to read other customers' history."
+	"keeps them. A deployment's key is not walled by tenant. Grant it only to\n" +
+	"something that has to read other customers' history."
+
+// ReadsItsTenantsTrail is said of a customer's, which reads its own tenant's
+// and nobody else's -- and that only where whoever it is for is allowed the
+// read across the tenant (`ofTheWholeTenant`).
+const ReadsItsTenantsTrail = "reaches the audit trail of its tenant, which holds the\n" +
+	"contents of every write there, of rows long since erased too, for as long as\n" +
+	"the retention policy keeps them. It reads it where whoever it is for is allowed\n" +
+	"to across the tenant. Grant it only to something that has to read that history."
 
 // accepts is the other one, and it is the sharper of the two.
 //
@@ -307,6 +341,14 @@ const LinksAnybody = "hands its caller a way into anybody's account.\n" +
 	"one: together they are every account of the tenant, an administrator's among\n" +
 	"them. They are for a front door -- the app a tenant's people sign in at, which\n" +
 	"mails the link -- and for nothing and nobody else."
+
+// LinksAnybodyAnywhere is that of a deployment's key, which has no tenant to
+// be *the* tenant: a front door every customer signs in at.
+const LinksAnybodyAnywhere = "hands its caller a way into anybody's account.\n" +
+	"`Vouch.Link` answers the link to whoever asked for it, and `Vouch.Redeem` spends\n" +
+	"one: together they are every account of every tenant, an administrator's among\n" +
+	"them. They are for a front door -- the app people sign in at, which mails the\n" +
+	"link -- and for nothing and nobody else."
 
 // There was a third, `BecomesAnOperator`, and it is gone because the hole it
 // warned about closed.

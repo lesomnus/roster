@@ -219,8 +219,9 @@ too. Not what the schema calls personal or secret -- names, addresses and
 verifiers are on the trail as having been set, and never as what to.
 
 It is held across the tenant. On a deployment key it is every tenant
-(`TestADeploymentKeyReadsEveryTenantsTrail`), and `roster key add` says so
-(`TestMintingAKeyThatReachesTheTrailSaysSo`).
+(`TestADeploymentKeyReadsEveryTenantsTrail`), and minting a key says which it
+is: `roster control key add` of every tenant's, `roster key add` of the key's
+own (`TestAKeyIsToldWhatItsOwnKindReads`).
 
 ### `HolderService/SignsIn`
 
@@ -278,8 +279,9 @@ roster --as admin role narrow @newco/self-service '{"methods":["/roster.Identity
 ## What says so when one is granted
 
 Today, three of these are said at the moment of granting, and only for a key:
-`roster key add` prints a note when a key's methods reach the trail,
-`VouchService/Accept` or `VouchService/Link`.
+`roster key add` and `roster control key add` print a note when a key's methods
+reach the trail, `VouchService/Accept` or `VouchService/Link`, and the note is
+the one for that kind of key -- a tenant's, or every tenant's.
 
 Nothing says it of a role or of a binding, at a terminal or on a page. That a
 page should, before the write, is

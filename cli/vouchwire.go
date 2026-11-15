@@ -441,7 +441,7 @@ func newCmdVouchDelegate(c *cmd.Config) *xli.Command {
 			if err := answered(v.GetVerified(), v.GetToken(), v.GetDateExpires()); err != nil {
 				return err
 			}
-			if w := cmd.Widest(methods); w != "" && v.GetToken() != "" {
+			if w := cmd.Widest(v.GetToken(), methods); w != "" && v.GetToken() != "" {
 				fmt.Fprintf(os.Stderr, "\n%s\n", w)
 			}
 

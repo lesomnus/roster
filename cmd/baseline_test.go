@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/lesomnus/roster/cmd"
+	"github.com/lesomnus/roster/server/keys"
 )
 
 // TestBaselineNamesRealTests keeps docs/baseline.md honest the mechanical way.
@@ -107,7 +108,10 @@ func TestTheWideGrantsPageSaysWhatAKeyIsWarnedOf(t *testing.T) {
 	for svc, info := range b.grpc(t).GetServiceInfo() {
 		for _, m := range info.Methods {
 			method := "/" + svc + "/" + m.Name
-			if cmd.Widest([]string{method}) == "" {
+			// Of either kind of key: the page is read before a role is bound,
+			// and a role is a customer's.
+			if cmd.Widest(keys.PrefixDeployment, []string{method}) == "" &&
+				cmd.Widest(keys.PrefixTenant, []string{method}) == "" {
 				continue
 			}
 			warned++

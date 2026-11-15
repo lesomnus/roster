@@ -194,7 +194,7 @@ func TestNobodyAcceptsWithoutBeingAllowedTo(t *testing.T) {
 	t.Run("and minting one is warned about", func(t *testing.T) {
 		x := require.New(t)
 
-		v := cmd.Widest([]string{accept})
+		v := cmd.Widest(keys.PrefixDeployment, []string{accept})
 		x.NotEmpty(v, "a key that mints for anybody was minted quietly")
 		x.Contains(v, "on the caller's word")
 	})
