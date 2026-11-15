@@ -394,6 +394,21 @@ anywhere. The two readings differ on purpose: missing a path in the first rule
 refuses a grant somebody could have made, which is a conversation, and missing one
 in the second lets an administrator be reset by anybody.
 
+**Three verbs are not held to it, and cannot be. Each is every account of the
+tenant.** A front door -- the app a tenant's people sign in at -- holds nothing
+of its own, and has to sign anybody in:
+
+| | |
+| --- | --- |
+| `VouchService/Link` with `/Redeem` | `Link` answers a way into somebody's account **to whoever asked**, since roster sends nothing and the caller is who mails it; `Redeem` spends one. Whoever may call both asks for an administrator's and spends it themselves |
+| `VouchService/Accept` | mints a credential for anybody, on the caller's word that a provider signed them in |
+
+So these are granted to a front door and to nothing else: `roster account
+provision` writes the role that names all three and `roster login provision`
+the one that names `Accept`, and no person's role should. *May send recovery links* reads like a helpdesk's
+permission and is the tenant. `roster key add` says so when a key's methods name
+one.
+
 Changing your own is always allowed, and nothing here stops you **suspending** an
 administrator -- that is a denial of service rather than an escalation, and it is
 deliberately not covered. `server/core/escalate.go` is both rules, with the file
