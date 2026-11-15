@@ -610,4 +610,7 @@ expanded it would show what exists in one binary.
 
 ## Next
 
+[rules.md](rules.md) — every rule on this page and the rest, one line each,
+beside the test that holds it.
+
 [tutorial.md](tutorial.md) — all of it once, on a deployment that answers.
