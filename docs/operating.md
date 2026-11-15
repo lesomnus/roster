@@ -203,6 +203,16 @@ decides whether the plane exists is `control.db.driver` and nothing else, so an
 address alone built a server that read no key, honoured no delegation and opened
 no port, while the only line in the log was the `Plain` warning.
 
+**`control.db` is another database than `db`, and one named twice is refused.**
+Who runs the deployment and who is a customer of it are told apart by which
+database their row is in -- the sessions of each plane are a table of its own,
+and so are the holders and what they are bound. In one database a customer's
+administrator, signed in on the data plane, is an operator at `admin.addr` with
+the cookie they were given. So a file that names the same database in both
+blocks is refused when it is read, and one that names it by two spellings when
+it is served: the tenant `roster init` wrote for whoever runs the deployment is
+looked for on the data plane, and found there only if the two are one.
+
 ## The first operator
 
 ```sh
