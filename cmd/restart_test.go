@@ -82,6 +82,12 @@ func TestARestartKeepsEveryCredential(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
+	// Its holder is bound the call on the control plane too, because the key
+	// is presented at that listener below and a key is asked there what its
+	// holder holds. The binding is a row like the others, and has to be there
+	// after the restart as they are.
+	boundOnControl(t, ctx, s1, svc.Bytes(), "introspects", "/payday.TokenService/Introspect")
+
 	// The two stops, written while the first process is alive.
 	_, err = s1.Ungated.Holder().Disable(ctx, app.HolderDisableRequest_builder{
 		Ref: app.HolderRef_builder{Id: bob.Bytes()}.Build(),

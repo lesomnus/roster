@@ -62,6 +62,12 @@ func TestTheControlPlaneAuthenticatesItsOwnKeys(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
+	// And its holder bound the call there, which is what a key is asked at
+	// this listener (`TestAKeyAtTheControlListenerIsWhoseItIs`): its list says
+	// what the key is for, and the binding that whoever runs the deployment
+	// meant it for this plane.
+	boundOnControl(t, ctx, s, svc.GetId(), "introspects", "/payday.TokenService/Introspect")
+
 	g, err := s.GrpcControl(ctx, c)
 	x.NoError(err)
 	x.NotNil(g)

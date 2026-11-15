@@ -102,6 +102,12 @@ func TestIssueMintsOverTheWire(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
+	// And its holder bound the mint on the control plane, which is what makes
+	// this a key for that plane: at the control listener a key calls what its
+	// holder holds there, of what its list names
+	// (`TestAKeyAtTheControlListenerIsWhoseItIs`).
+	boundOnControl(t, ctx, b.Server, svc.GetId(), "issues", "/roster.CredentialService/Issue")
+
 	g, err := b.Server.GrpcControl(ctx, b.Local)
 	x.NoError(err)
 

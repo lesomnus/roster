@@ -19,6 +19,7 @@ import (
 	app "github.com/lesomnus/roster/rstr"
 
 	"github.com/lesomnus/roster/internal/ent"
+	entapikey "github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/binding"
 	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
@@ -68,23 +69,82 @@ func Policy(db *ent.Client, sources ...rbac.Source) gate.Policy {
 	return policy{db: db, sources: sources}
 }
 
+// PolicyOfKeys is [Policy] for the plane the deployment's keys are rows of:
+// the control plane, where a key is asked what its holder holds.
+//
+// # Why there, and why its holder
+//
+// A key's list names methods and no plane, and the same services answer at
+// both listeners -- `HolderService` is a customer's people at one and the
+// deployment's operators at the other. On the data plane a key's list is the
+// whole of what it may call, since a key is the deployment's and is not
+// somebody a role is written for: that is [policy.May]'s first line, and it
+// was its answer at the control listener too. So a key made for an app that
+// manages customers -- `Holder.List`, `Holder.Disable` -- listed the operators
+// there and suspended one (#274): every key the deployment had minted was, at
+// that listener, a key to the deployment.
+//
+// At the control listener the rows are who runs the deployment and what it
+// may be called by, and who may do what to those is a role and a binding
+// there, as for any operator. A key is not somebody who holds one; the holder
+// it hangs off is. So a key calls there what its **holder** was bound, of what
+// its own list names -- and an app's holder, bound nothing, calls nothing.
+//
+// No field says which plane a key is for. What says it is what its holder was
+// given on the plane that is about the deployment, which is what says it of
+// everybody else.
+func PolicyOfKeys(db *ent.Client, sources ...rbac.Source) gate.Policy {
+	return policy{db: db, sources: sources, keysAreHolders: true}
+}
+
 type policy struct {
 	db      *ent.Client
 	sources []rbac.Source
+
+	// keysAreHolders is whether a key is asked what its holder holds, which is
+	// so on the plane keys are rows of and nowhere else ([PolicyOfKeys]).
+	keysAreHolders bool
 }
 
 var _ gate.Policy = policy{}
 
 // May answers whether this caller may call this method at all.
 func (p policy) May(ctx context.Context, c gate.Call) error {
+	if aboutYourself(c.Action) {
+		return nil
+	}
+
 	if c.Actor.Domain() == pd.ApiKeyDomain {
 		// A key's methods are its own, applied by `auth.Interceptor` from the
 		// credential before this runs. Asking again here would mean a key
 		// needed a binding as well, and a key is not somebody who can hold one.
-		return nil
-	}
+		if !p.keysAreHolders {
+			return nil
+		}
 
-	if aboutYourself(c.Action) {
+		// But its holder is, and on this plane that is who is asked.
+		holder, err := p.db.ApiKey.Query().
+			Where(entapikey.IdEQ(c.Actor.Uuid()), entapikey.DateErasedIsNil()).
+			QueryHolder().
+			OnlyId(ctx)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return status.Errorf(codes.PermissionDenied, "%s: this key hangs off nobody here", c.Action)
+			}
+
+			return err
+		}
+
+		held, err := p.of(ctx, holder)
+		if err != nil {
+			return err
+		}
+		if !held.allows(c.Action) {
+			return status.Errorf(codes.PermissionDenied,
+				"%s: at this listener a key calls what its holder was bound on the control plane, and no role of theirs allows that",
+				c.Action)
+		}
+
 		return nil
 	}
 

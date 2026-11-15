@@ -93,6 +93,10 @@ written whole, `@owner/admin`. What answers
 across both planes stays outside -- `roster key list` and `roster key revoke`,
 because a key's identifier does not say which database it is in.
 
+The same rows are served at `control.addr`, to a key: one hanging off somebody
+bound there, since at that listener a key calls what its holder holds on the
+control plane (`ways-in.md`). A key made for an app is refused there.
+
 `control key add --narrowed NAME` is the key for an app you host that always names
 a tenant: it allows nothing until a request does (`ways-in.md`). `roster app
 install --tenant T --role … NAME` puts that app into a tenant -- its holder there,

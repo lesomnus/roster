@@ -67,7 +67,9 @@ func administers(methods []string) bool {
 // `write` is handed the server to write through: inside the transaction, the
 // one under this layer bound to it.
 func (s Core) keepsAdministered(ctx context.Context, tenant pdid.Id, could bool, what string, write func(next app.Server) error) error {
-	if !could || s.deployment(ctx) {
+	if !could || s.operators || inProcess(ctx) {
+		// A command at the box, what applies a file, the operators' port. Not
+		// a key of the deployment's: [inProcess].
 		return write(s.Next())
 	}
 	if s.rules.Administered == nil {
