@@ -154,7 +154,10 @@ func TestARevokeReachesNobodyWider(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	_, err = b.Walled.ApiKey().Erase(b.asNobody(ctx, who, b.Contoso), app.ApiKeyRef_builder{Id: v.GetKey().GetId()}.Build())
+	// Erin holds the write across the tenant and nothing else: holding it
+	// nowhere she would not see sam's key at all (`cmd.People`).
+	ends := b.mayCall(t, ctx, who, "ends-keys", app.ApiKeyService_Erase_FullMethodName)
+	_, err = b.Walled.ApiKey().Erase(ends, app.ApiKeyRef_builder{Id: v.GetKey().GetId()}.Build())
 	x.Equal(codes.PermissionDenied, status.Code(err))
 
 	// And it is still there, which is the half a status code does not say.

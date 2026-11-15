@@ -16,24 +16,30 @@ option go_package = "github.com/lesomnus/roster/rstr";
 
 // SiteMembership is somebody being in a site.
 //
-// Unlike the two memberships below it, writing one is **not** a grant: nothing
-// that decides what the gate answers reads this row. Worth saying because it is
-// the reader's next question once the other two are refused as grants, and
-// because the answer is a property of `cmd.policy` rather than of this message
-// -- a row the policy started reading would become one.
+// # It gives the person nothing
 //
-// # And it does not widen a read either
+// Unlike the two memberships below it, writing one is **not** a grant to
+// whoever it names: nothing that decides what the gate answers for them reads
+// this row, and it does not widen what they read either. `policy.of` builds
+// the sites a caller is narrowed to out of the site on each `Binding` that
+// reaches them and the site of each `Team` they are on -- so somebody with a
+// membership in Frankfurt and no binding there reads nothing of Frankfurt's.
+// Giving somebody a site's rows is a binding scoped to that site, and it is a
+// separate act on purpose.
 //
-// Which is the half that is easy to get wrong, and was written here wrongly
-// once: *changes what they may see and not what they may do*. It changes
-// neither. `policy.of` builds the sites a caller is narrowed to out of the site
-// on each `Binding` that reaches them and the site of each `Team` they are on,
-// and it never queries this table -- so somebody with a membership in Frankfurt
-// and no binding there reads nothing of Frankfurt's.
+// # And it says whose reach they are in
 //
-// So this is a **record** rather than an input: it answers *who is here*, which
-// is a question a product asks and a console draws. Giving somebody a site's
-// rows is a binding scoped to that site, and it is a separate act on purpose.
+// A person carries no site -- see below -- and neither does their address,
+// their key, their password. So a grant made in a site had nothing to narrow
+// a person's rows by, and narrowed them by nothing: a role bound in one site
+// and naming a person's verbs reached everybody in the tenant. This row is
+// what it is narrowed by: **a grant made in a site reaches the people who are
+// in that site** (`cmd/people.go`). A site's helpdesk resets the password of
+// somebody of the site, and does not see somebody who is not.
+//
+// Which makes writing one the tenant's to do, across the whole of it
+// (`server/core`, `acrossTheTenant`). A site that could say who is in it would
+// say who is in its own reach.
 //
 // A row rather than an edge on the Holder because it is many-to-many: a person
 // works at one factory and audits another, and a support engineer sees several.

@@ -144,6 +144,10 @@ func TestWhatIsTheTenantsAsAWholeIsWrittenAcrossIt(t *testing.T) {
 		return fmt.Sprintf("%s%d", prefix, n)
 	}
 	app2 := b.holder(t, ctx, b.Contoso, "an-app")
+	// In the site, so that somebody bound there sees who is nominated and what
+	// refuses them is this rule: a holder they cannot see is `NotFound` first
+	// (`cmd.People`).
+	b.joins(t, ctx, app2, seoul)
 
 	// A write is answered for each caller: over the wire for the verbs a
 	// caller reaches, and through the stack for the two that are shut there.

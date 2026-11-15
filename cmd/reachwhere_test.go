@@ -68,6 +68,16 @@ func TestARoleOnATeamIsNotOneToBecomeSomebodyBy(t *testing.T) {
 
 	ops := b.team(t, ctx, east, "east-ops")
 
+	// The chief is of that site as well as administering the tenant, which is
+	// what puts them within a grant made there at all: somebody of no site of
+	// the caller's is not seen (`cmd.People`), and what is asked here is the
+	// rule that protects somebody who is.
+	_, err = b.Walled.Holder().Get(b.asNobody(ctx, sam, b.Contoso), app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{Id: chief.Bytes()}.Build(),
+	}.Build())
+	require.Equal(t, codes.NotFound, status.Code(err), "somebody of no site of his is there for a site's administrator: %v", err)
+	b.joins(t, ctx, chief, east)
+
 	// link is somebody writing a way in onto the administrator: an account of
 	// the caller's own at a provider, which is then the administrator's. A
 	// provider each, since a person has one account at one.

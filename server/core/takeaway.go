@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -185,6 +186,14 @@ func (s coreGroup) Erase(ctx context.Context, req *app.GroupRef) (*app.GroupEras
 }
 
 func (s coreHolder) Erase(ctx context.Context, req *app.HolderRef) (*app.HolderEraseResponse, error) {
+	// A person is no site's, and erasing one is the tenant's as a whole, as
+	// making one is ([coreHolder.Add]). Somebody bound in a site suspends a
+	// person of that site, which stops them, and does not take them out of
+	// the tenant. Their own is theirs to end: somebody leaving
+	// (`MeService/Leave`) erases themselves through here.
+	if err := s.erasesAcrossTheTenant(ctx, req); err != nil {
+		return nil, err
+	}
 	if err := s.declaredHolder(ctx, req); err != nil {
 		return nil, err
 	}
@@ -198,6 +207,27 @@ func (s coreHolder) Erase(ctx context.Context, req *app.HolderRef) (*app.HolderE
 	})
 
 	return out, err
+}
+
+// erasesAcrossTheTenant is [Core.acrossTheTenant] for erasing a person, which
+// passes for the caller's own row.
+func (s coreHolder) erasesAcrossTheTenant(ctx context.Context, ref *app.HolderRef) error {
+	if f, ok := frame.From(ctx); ok && !s.deployment(ctx) {
+		who, err := s.holderOf(ctx, ref)
+		if status.Code(err) == codes.NotFound {
+			// Nobody this caller can see, which the erase answers as it
+			// always did.
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if who == f.Actor {
+			return nil
+		}
+	}
+
+	return s.acrossTheTenant(ctx, app.HolderService_Erase_FullMethodName)
 }
 
 // keepsTheirs is [Core.keepsAdministered] for a write that ends a person --

@@ -184,25 +184,31 @@ is a selector over these, resolved to a set of sites by roster.
 > the two never meet; `alias` is unique within the tenant, not across the
 > deployment.
 
-### 🚩 `SiteMembership` — somebody being in a site, and not a grant
+### 🚩 `SiteMembership` — somebody being in a site: who a grant made there reaches
 
 Many-to-many, which is why 👤 `Holder` carries no site of its own: a person works
 at one factory and audits another. Both edges are immutable, because moving
 somebody between sites is leaving one and joining another, and the trail should
 say both happened.
 
-**It is a record and not an input.** Writing one changes neither what somebody
-may do nor what they may see: `cmd/policy.go` builds the sites a caller is
-narrowed to out of the site on each 🔗 `Binding` that reaches them and the site
-of each 🎽 `Team` they are on, and never queries this table. So this answers *who
-is here* -- a question a product asks and a console draws -- and giving somebody
-a site's rows is a binding scoped to that site, which is a separate act on
-purpose.
+**It gives the person nothing, and says who they are within reach of.**
+Writing one changes neither what somebody may do nor what they may see:
+`cmd/policy.go` builds the sites a caller is narrowed to out of the site on each
+🔗 `Binding` that reaches them and the site of each 🎽 `Team` they are on. What
+it changes is the other end. A person carries no site, and a grant made in a
+site reaches the people who are in it by one of these rows -- them, and their
+addresses, numbers, identities and keys (`cmd/people.go`). It was read by
+nothing, and a role bound in one site and naming a person's verbs reached
+everybody.
+
+**So it is the tenant's to write.** `Add` and `Erase` are held across the
+tenant: a site that could say who is in it would say who is in its own reach.
 
 > alice works in seoul and audits frankfurt, so she has **two** rows here, and
 > that is why a `Holder` has no site of its own. What the two rows do **not**
 > give her is either site's data -- that is a 🔗 `Binding`, one section down.
-> These say where she works, and something has to.
+> What they do is put her within the reach of seoul's helpdesk and of
+> frankfurt's, and of nobody's in tokyo.
 
 ### 📞 `Phone` — a number somebody is reached at
 
@@ -248,8 +254,8 @@ endpoint writes and the LDAP front reads ([scim.md](scim.md),
 itself comes to decide something by is given a field of its own, with the
 argument for it, the day there is one; reporting to somebody is not that.
 
-**A record and not an input**, as 🚩 `SiteMembership` is: no rule reads one and
-the gate answers nothing by one, so writing one hands out nothing. A client that
+**A record and not an input**: no rule reads one and the gate answers nothing
+by one, so writing one hands out nothing. A client that
 maps *manager* to *may approve* has made a permission roster does not know of.
 
 > erin reports to fred, which contoso's Entra said and nothing here decides
@@ -339,9 +345,10 @@ a team manages its members* is a product invariant rather than something to
 configure, and what carries a role for a team is 🏅 `TeamMembership`.
 
 > contoso binds **operator** to alice **within seoul**. She is an operator there
-> and nothing at all in frankfurt -- the 🚩 `SiteMembership` she has there
-> records that she audits the place and hands her none of it. A site's rows come
-> through this row, and only through this row.
+> -- over seoul's teams and roles, and over the people who are of seoul -- and
+> nothing at all in frankfurt: the 🚩 `SiteMembership` she has there says she
+> audits the place and hands her none of it. A site's rows come through this
+> row, and only through this row.
 
 ### 👥 `Group` — a named set of people, and nothing else
 

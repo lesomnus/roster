@@ -340,9 +340,11 @@ func permitting(t *testing.T, ctx context.Context, b *keyedBuilt, who pdid.Id, a
 // unions the methods of a team role into what the person may **ever** call, and
 // the only thing that narrows one back down to a team is
 // `core.mayChangeTeam`, which guards `TeamMembership.Add` and `Erase` and
-// nothing else. So a role naming `Holder.Erase`, attached in one team, is
-// `Holder.Erase` over the whole tenant -- this test asserts that first, because
-// otherwise the refusal it wants would be about a permission nobody has.
+// nothing else. So a role naming a person's verb, attached in one team, is that
+// verb over the people of the team's site -- over the whole tenant, until what
+// a grant made in a site reaches was said (#274) -- and this test asserts where
+// it stops first, because otherwise the refusal it wants would be about a
+// permission nobody has.
 //
 // Which leaves the same silence the group binding left, for the same reason
 // `escalate.go` gives about direction:
@@ -388,17 +390,31 @@ func TestARoleHeldThroughATeamIsStillHeld(t *testing.T) {
 		return err
 	}
 
-	// The premise, asserted rather than assumed: what he holds in one team is
-	// not confined to it. He erases somebody who is in no team of his, in no
-	// site of his, through the wall and the gate exactly as they are wired.
-	t.Run("a team role reaches past the team", func(t *testing.T) {
+	// The premise was that what he holds in one team is not confined to it: a
+	// role naming `Holder.Erase`, held in one team, erased anybody of the
+	// tenant, and this asserted that first. It is confined now (#274): a role
+	// held in a team reaches the people of the team's site (`cmd.People`), and
+	// erasing a person is the tenant's as a whole whoever they are
+	// (`core.acrossTheTenant`). What is left of the premise is the half the
+	// rule below is about -- that he **holds** it -- and that is asserted by
+	// the refusal itself, which names the method.
+	t.Run("a team role reaches no further than the people of its site", func(t *testing.T) {
 		x := require.New(t)
 
 		conn := served(t, b.Server)
-		_, err := app.NewHolderServiceClient(conn).Erase(asOverTheWire(ctx, boss),
-			app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "stranger").Bytes()}.Build())
-		x.NoError(err,
-			"the premise is gone: a team role no longer reaches the tenant, and this test needs rewriting rather than deleting")
+		stranger := app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "stranger").Bytes()}.Build()
+
+		// Somebody in no site of his is not there for him.
+		_, err := app.NewHolderServiceClient(conn).Erase(asOverTheWire(ctx, boss), stranger)
+		x.Equal(codes.NotFound, status.Code(err), "%v", err)
+
+		// And somebody of his team's site is seen, and is not his to erase.
+		b.joins(t, ctx, mustId(t, stranger.GetId()), seoul)
+		_, err = app.NewHolderServiceClient(conn).Erase(asOverTheWire(ctx, boss), stranger)
+		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
+
+		_, err = b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{Ref: stranger}.Build())
+		x.NoError(err, "somebody a team role may not erase is gone")
 	})
 
 	t.Run("so it is not nothing when somebody narrower writes his credential", func(t *testing.T) {

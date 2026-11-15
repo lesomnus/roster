@@ -32,7 +32,16 @@ func (s Core) SiteMembership() app.SiteMembershipServiceServer {
 	return coreSiteMembership{s, s.Next().SiteMembership()}
 }
 
+// Add puts somebody in a site, which is who a grant made in that site reaches
+// (`cmd.People`) -- so it is the tenant's to say, across the whole of it
+// ([Core.acrossTheTenant]). Held in the site alone it would be the site
+// saying who is in its own reach: somebody bound in Seoul puts anybody in
+// Seoul, and is then their helpdesk.
 func (s coreSiteMembership) Add(ctx context.Context, req *app.SiteMembershipAddRequest) (*app.SiteMembership, error) {
+	if err := s.acrossTheTenant(ctx, app.SiteMembershipService_Add_FullMethodName); err != nil {
+		return nil, err
+	}
+
 	who, err := s.tenantOfHolder(ctx, req.GetHolder())
 	if err != nil {
 		return nil, err
@@ -46,6 +55,17 @@ func (s coreSiteMembership) Add(ctx context.Context, req *app.SiteMembershipAddR
 	}
 
 	return s.SiteMembershipServiceServer.Add(ctx, req)
+}
+
+// Erase takes somebody out of a site, and is the tenant's to say as putting
+// them in is: out of a site is out of the reach of whoever is bound there,
+// which somebody bound there could otherwise arrange for themselves.
+func (s coreSiteMembership) Erase(ctx context.Context, req *app.SiteMembershipRef) (*app.SiteMembershipEraseResponse, error) {
+	if err := s.acrossTheTenant(ctx, app.SiteMembershipService_Erase_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.SiteMembershipServiceServer.Erase(ctx, req)
 }
 
 type coreTeamMembership struct {
@@ -230,6 +250,15 @@ type coreTeam struct {
 func (s Core) Team() app.TeamServiceServer { return coreTeam{s, s.Next().Team()} }
 
 func (s coreTeam) Add(ctx context.Context, req *app.TeamAddRequest) (*app.Team, error) {
+	// A team of no site is the tenant's, and is made by whoever holds the
+	// write across it. Somebody bound in a site made one, and was then of a
+	// team they could not see (#274).
+	if req.GetSite() == nil {
+		if err := s.acrossTheTenant(ctx, app.TeamService_Add_FullMethodName); err != nil {
+			return nil, err
+		}
+	}
+
 	of, err := s.tenantOfRef(ctx, req.GetTenant())
 	if err != nil {
 		return nil, err
@@ -597,6 +626,15 @@ type coreGroup struct {
 func (s Core) Group() app.GroupServiceServer { return coreGroup{s, s.Next().Group()} }
 
 func (s coreGroup) Add(ctx context.Context, req *app.GroupAddRequest) (*app.Group, error) {
+	// A group of no site is the tenant's, as a team of none is
+	// ([coreTeam.Add]): its maker manages it, and somebody bound in a site
+	// would manage a group of the whole tenant.
+	if req.GetSite() == nil {
+		if err := s.acrossTheTenant(ctx, app.GroupService_Add_FullMethodName); err != nil {
+			return nil, err
+		}
+	}
+
 	of, err := s.tenantOfRef(ctx, req.GetTenant())
 	if err != nil {
 		return nil, err

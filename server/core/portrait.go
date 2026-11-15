@@ -34,6 +34,20 @@ const maxDisplayName = 256
 // portrait is built not to be. The URL is held to the rule `Update` holds a
 // changed one to, since a new row's is new.
 func (s coreHolder) Add(ctx context.Context, req *app.HolderAddRequest) (*app.Holder, error) {
+	// A person is no site's, so making one is the tenant's as a whole
+	// ([Core.acrossTheTenant]): a grant made in a site reaches the people who
+	// are in it (`cmd.People`), and does not add to the tenant's.
+	if err := s.acrossTheTenant(ctx, app.HolderService_Add_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.add(ctx, req)
+}
+
+// add is [coreHolder.Add] for a verb of this layer's own that makes somebody
+// -- a directory's `Provision` -- which is asked about itself where it
+// arrives, and not about `Add`.
+func (s coreHolder) add(ctx context.Context, req *app.HolderAddRequest) (*app.Holder, error) {
 	if req.HasPortrait() {
 		return nil, status.Error(codes.InvalidArgument,
 			"portrait: roster makes one from an image, and Portray is what takes it")

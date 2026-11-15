@@ -224,12 +224,13 @@ func TestNobodyClaimsAnAddressOntoAnAccountWiderThanTheirOwn(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	// A person who holds nothing, claiming the address onto the administrator.
-	// Which is `mayWriteAWayIn`'s own example, one door along: the mailbox would
-	// be theirs and the account would be his.
+	// A person who holds the verb and nothing else, claiming the address onto
+	// the administrator. Which is `mayWriteAWayIn`'s own example, one door
+	// along: the mailbox would be theirs and the account would be his. (Holding
+	// it nowhere, they would not see the administrator at all: `cmd.People`.)
 	nobody := b.holder(t, ctx, b.Contoso, "nobody")
 
-	_, err = b.Walled.Email().Verify(b.asNobody(ctx, nobody, b.Contoso), app.EmailVerifyRequest_builder{
+	_, err = b.Walled.Email().Verify(b.mayCall(t, ctx, nobody, "verifies", app.EmailService_Verify_FullMethodName), app.EmailVerifyRequest_builder{
 		Ref:    app.EmailRef_builder{At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: z.Ptr(theirs)}.Build()}.Build(),
 		Holder: app.HolderRef_builder{Id: admin.Bytes()}.Build(),
 	}.Build())

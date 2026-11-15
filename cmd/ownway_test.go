@@ -97,13 +97,15 @@ func TestSomebodyAddsAWayIntoTheirOwnAccount(t *testing.T) {
 		// The same verb, pointed at somebody else: `mayWriteAWayIn` is what
 		// answers, and it is the whole of what "only your own" costs roster --
 		// a reference the wall narrows and a rule about who holds more. Somebody
-		// holding **nothing** does the pointing: erin above was handed
-		// everything by `b.as`, which would make her wider than anybody.
+		// holding **the write and nothing else** does the pointing: erin above
+		// was handed everything by `b.as`, which would make her wider than
+		// anybody, and somebody holding it nowhere does not see the boss at
+		// all (`cmd.People`).
 		joe := b.holder(t, ctx, b.Contoso, "joe")
 		boss := b.holder(t, ctx, b.Contoso, "boss")
 		b.mayCall(t, ctx, boss, "admin", "/roster.HolderService/Erase")
 
-		_, err := b.Walled.Identity().Add(b.asNobody(ctx, joe, b.Contoso), app.IdentityAddRequest_builder{
+		_, err := b.Walled.Identity().Add(b.mayCall(t, ctx, joe, "links", app.IdentityService_Add_FullMethodName), app.IdentityAddRequest_builder{
 			Holder:   app.HolderRef_builder{Id: boss.Bytes()}.Build(),
 			Provider: "entra",
 			Subject:  "entra-boss-but-erins",
