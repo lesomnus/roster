@@ -7,6 +7,7 @@ import (
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/frame"
@@ -287,11 +288,16 @@ func (s Core) holderNamed(ctx context.Context, alias string) (*app.HolderRef, er
 // every secret -- the sink strips it on the way out -- so a person lists their
 // own keys and ends one by reference, and `Holder.RevokeKey`, which existed
 // because there was no served road to a key row, is gone: a second name for
-// the same rows (CLAUDE.md, *Overlay before service*). The rule that stays is
-// the one every credential read and write meets: `mayReach` on the row's
-// holder, self passing, nobody wider than the caller.
+// the same rows (CLAUDE.md, *Overlay before service*). A write of one -- ending
+// it -- meets the rule every write of a way in meets: `mayReach` on the row's
+// holder, self passing, nobody wider than the caller. A read meets
+// [Core.mayReadOf].
 func (s coreApiKey) Get(ctx context.Context, req *app.ApiKeyGetRequest) (*app.ApiKey, error) {
-	if err := s.reaches(ctx, req.GetRef()); err != nil {
+	whose, err := s.whose(ctx, req.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayReadOf(ctx, "ref", whose); err != nil {
 		return nil, err
 	}
 
@@ -299,17 +305,31 @@ func (s coreApiKey) Get(ctx context.Context, req *app.ApiKeyGetRequest) (*app.Ap
 }
 
 func (s coreApiKey) List(ctx context.Context, req *app.ApiKeyListRequest) (*app.ApiKeyListResponse, error) {
-	for _, f := range req.GetFilters() {
-		if f.GetHolder() == nil {
-			continue
+	mine, err := s.onlyMine(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if mine != nil {
+		// Their own, whatever was asked for: a filter that names nobody is
+		// given them, and one that names somebody else is refused.
+		req = proto.CloneOf(req)
+		fs := req.GetFilters()
+		if len(fs) == 0 {
+			fs = []*app.ApiKeyFilter{{}}
 		}
-		holder, err := s.holderOf(ctx, f.GetHolder())
-		if err != nil {
-			return nil, err
+		for _, f := range fs {
+			if f.GetHolder() != nil {
+				holder, err := s.holderOf(ctx, f.GetHolder())
+				if err != nil {
+					return nil, err
+				}
+				if err := s.mayReadOf(ctx, "holder", holder); err != nil {
+					return nil, err
+				}
+			}
+			f.SetHolder(mine)
 		}
-		if err := s.mayReach(ctx, "holder", holder); err != nil {
-			return nil, err
-		}
+		req.SetFilters(fs)
 	}
 
 	res, err := s.ApiKeyServiceServer.List(ctx, req)
@@ -345,23 +365,28 @@ func (s coreApiKey) Erase(ctx context.Context, req *app.ApiKeyRef) (*app.ApiKeyE
 // through the wall first so a key outside the caller's tenant is `NotFound`
 // before anybody is compared.
 func (s coreApiKey) reaches(ctx context.Context, ref *app.ApiKeyRef) error {
+	holder, err := s.whose(ctx, ref)
+	if err != nil || holder == pdid.Nil {
+		return err
+	}
+
+	return s.mayReach(ctx, "ref", holder)
+}
+
+// whose is the holder a key hangs off, and nobody for the deployment's own:
+// that hangs off a holder of the control plane, who is not somebody whose
+// standing is compared or asked -- the control port's own rules stand.
+func (s coreApiKey) whose(ctx context.Context, ref *app.ApiKeyRef) (pdid.Id, error) {
 	v, err := s.ApiKeyServiceServer.Get(ctx, app.ApiKeyGetRequest_builder{
 		Ref:    ref,
 		Select: app.ApiKeySelect_builder{Holder: app.HolderSelect_builder{}.Build()}.Build(),
 	}.Build())
 	if err != nil {
-		return err
+		return pdid.Nil, err
 	}
 	if len(v.GetHolder().GetId()) == 0 {
-		// The deployment's own key hangs off a holder of the control plane, and
-		// that is not somebody whose reach is compared: the control port's own
-		// rules stand.
-		return nil
-	}
-	holder, err := pdid.From(v.GetHolder().GetId())
-	if err != nil {
-		return err
+		return pdid.Nil, nil
 	}
 
-	return s.mayReach(ctx, "ref", holder)
+	return pdid.From(v.GetHolder().GetId())
 }

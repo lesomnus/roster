@@ -176,6 +176,14 @@ type HolderServiceClient interface {
 	// It is on `HolderService` and not a service of its own for `Update`'s
 	// reason: it is a read of a holder, and a second service would be a second
 	// name for the same rows.
+	//
+	// # Whose it answers
+	//
+	// The caller's own, to anybody who holds it. Somebody else's, to whoever
+	// holds it **across the tenant** -- and holding it so is also what reads
+	// somebody else's keys and delegations as rows (`ApiKeyService`,
+	// `DelegationService`): the same fact about the same person, so one
+	// permission.
 	SignsIn(ctx context.Context, in *HolderSignsInRequest, opts ...grpc.CallOption) (*HolderSignsInResponse, error)
 	// Reaches is what somebody may call, as the gate would decide it -- the same
 	// answer `MeService.Get` gives about the caller, about somebody else.
@@ -696,6 +704,14 @@ type HolderServiceServer interface {
 	// It is on `HolderService` and not a service of its own for `Update`'s
 	// reason: it is a read of a holder, and a second service would be a second
 	// name for the same rows.
+	//
+	// # Whose it answers
+	//
+	// The caller's own, to anybody who holds it. Somebody else's, to whoever
+	// holds it **across the tenant** -- and holding it so is also what reads
+	// somebody else's keys and delegations as rows (`ApiKeyService`,
+	// `DelegationService`): the same fact about the same person, so one
+	// permission.
 	SignsIn(context.Context, *HolderSignsInRequest) (*HolderSignsInResponse, error)
 	// Reaches is what somebody may call, as the gate would decide it -- the same
 	// answer `MeService.Get` gives about the caller, about somebody else.

@@ -403,6 +403,24 @@ comment that says how they were arrived at.
 from the port rather than from a role: [operating.md](../operating.md) § "What the
 admin port waives" is the whole of it.
 
+## Whose ways in somebody reads
+
+A key's row says what it is called, what it may call and when it was last used
+-- never the key -- and a delegation's says where somebody is signed in. Reading
+one is not writing one, so nothing is compared. It is read by **whose it is**,
+and by whoever holds **`HolderService/SignsIn` across the tenant**.
+
+| holds | reads |
+| --- | --- |
+| `ApiKeyService/List`, however it reaches them | their own keys; a list that names nobody is their own |
+| and `HolderService/SignsIn`, by a binding with no site | everybody's, an administrator's among them |
+
+So a role that lets people mint and end their own keys can be bound to everybody
+without showing anybody anybody else's, and an auditor is the reads and
+`SignsIn` and nothing that writes. `DelegationService`'s reads and
+`HolderService/SignsIn` itself go by the same rule. Ending somebody else's key is
+a write, and is held to the rule above.
+
 ## Seeing what somebody holds
 
 ```sh

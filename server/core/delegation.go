@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pderr"
@@ -70,29 +71,60 @@ func (s coreDelegation) Revoke(ctx context.Context, req *app.DelegationRevokeReq
 // operator does the same for somebody they reach. `Revoke` stays for the caller
 // that holds a token and no reference.
 //
-// The reach rule is the one every write about somebody's ways in meets, applied
-// here to a read as well: a delegation is a credential, and listing them is
-// listing where somebody is signed in.
+// Ending one is a write about somebody's ways in and meets the reach rule.
+// Reading where somebody is signed in is theirs, and whoever was told to read
+// everybody's ([Core.mayReadOf]) -- and the app's that issued it, which is
+// reading what it holds.
 func (s coreDelegation) Get(ctx context.Context, req *app.DelegationGetRequest) (*app.Delegation, error) {
-	if err := s.reachesOrWasIssued(ctx, req.GetRef()); err != nil {
+	v, err := s.DelegationServiceServer.Get(ctx, app.DelegationGetRequest_builder{
+		Ref: req.GetRef(),
+		Select: app.DelegationSelect_builder{
+			Issuer: z.Ptr(true),
+			Holder: app.HolderSelect_builder{}.Build(),
+		}.Build(),
+	}.Build())
+	if err != nil {
 		return nil, err
+	}
+	if f, ok := frame.From(ctx); !ok || f.Actor.IsZero() || subtle.ConstantTimeCompare(v.GetIssuer(), f.Actor.Bytes()) != 1 {
+		holder, err := pdid.From(v.GetHolder().GetId())
+		if err != nil {
+			return nil, err
+		}
+		if err := s.mayReadOf(ctx, "ref", holder); err != nil {
+			return nil, err
+		}
 	}
 
 	return s.DelegationServiceServer.Get(ctx, req)
 }
 
 func (s coreDelegation) List(ctx context.Context, req *app.DelegationListRequest) (*app.DelegationListResponse, error) {
-	for _, f := range req.GetFilters() {
-		if f.GetHolder() == nil {
-			continue
+	mine, err := s.onlyMine(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if mine != nil {
+		// Their own, whatever was asked for, as a list of keys is
+		// ([coreApiKey.List]).
+		req = proto.CloneOf(req)
+		fs := req.GetFilters()
+		if len(fs) == 0 {
+			fs = []*app.DelegationFilter{{}}
 		}
-		holder, err := s.holderOf(ctx, f.GetHolder())
-		if err != nil {
-			return nil, err
+		for _, f := range fs {
+			if f.GetHolder() != nil {
+				holder, err := s.holderOf(ctx, f.GetHolder())
+				if err != nil {
+					return nil, err
+				}
+				if err := s.mayReadOf(ctx, "holder", holder); err != nil {
+					return nil, err
+				}
+			}
+			f.SetHolder(mine)
 		}
-		if err := s.mayReach(ctx, "holder", holder); err != nil {
-			return nil, err
-		}
+		req.SetFilters(fs)
 	}
 
 	return s.DelegationServiceServer.List(ctx, req)

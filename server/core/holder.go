@@ -274,6 +274,17 @@ func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) 
 		return nil, err
 	}
 
+	// How somebody signs in is theirs to read, and whoever was told to read
+	// everybody's ([Core.mayReadOf]): it is their keys and their factors by
+	// name, which a list of keys is refused for the same.
+	whose, err := pdid.From(v.GetId())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayReadOf(ctx, "ref", whose); err != nil {
+		return nil, err
+	}
+
 	who := app.HolderRef_builder{Id: v.GetId()}.Build()
 
 	ids, err := s.Next().Identity().List(ctx, app.IdentityListRequest_builder{
