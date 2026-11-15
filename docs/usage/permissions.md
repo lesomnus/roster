@@ -365,7 +365,9 @@ it is not refused anything for it. Two such writes at once each wait for the
 other, so they cannot both take the last. A command at the box is the
 deployment's, and is not held to it; nor is a directory suspending somebody it
 removed (`HolderService/Deactivate`), whose word about who works there is not
-refused.
+refused. A deployment key **is** held to it, in a customer's tenant and on the
+control plane alike: a key is what the deployment handed an app, and not the
+deployment.
 
 ## And you cannot write a way into an account wider than yours
 

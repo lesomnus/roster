@@ -432,7 +432,7 @@ Five of roster's own at most, and which open is what the configuration named.
 | --- | --- | --- |
 | `server.addr` | product apps | gRPC, **walled** and gated. Keys only -- a cookie names nobody here |
 | `server.http.addr` | anything that cannot speak gRPC, and a roster user's browser | the same, transcoded (Connect, gRPC-Web). Serves the **user console** and the sign-in behind it |
-| `control.addr` | the roster operators' shells, and their jobs | who runs this deployment and the deployment keys of the apps they run. Takes an `rk_`, and an operator's session from the admin listener |
+| `control.addr` | the roster operators' shells, and their jobs | who runs this deployment and the deployment keys of the apps they run. Takes an `rk_`, asked what its **holder** is bound on the control plane, and an operator's session from the admin listener |
 | `control.http.addr` | the same, over HTTP | the same RPCs, transcoded. **No page**, and no sign-in |
 | `admin.addr` / `.http.addr` | a roster operator's browser | **customers**: the data plane with no wall, behind an operator's session. Serves the **admin console** and the sign-in behind it |
 
@@ -503,6 +503,16 @@ it, and an `rk_` rather than a cookie. (`roster control …` is the same rows re
 at the box, from the database, and dials nothing:
 [usage/cli.md](usage/cli.md).) Managing who runs the deployment is a
 terminal's job; a browser's is customers.
+
+**And a key is asked there what its holder holds.** The same services answer
+on both planes, and a key's list says which methods and not which rows: a key
+made for an app that suspends a customer's people would otherwise list the
+operators here and suspend one. So at this listener a key calls what its list
+names **and** its holder was bound on the control plane, which for an app's
+holder is nothing. A shell's key hangs off an operator, or off a holder bound a
+role for the job ([usage/ways-in.md](usage/ways-in.md#a-deployment-key--rk_)).
+On `server.addr` nothing changed: there a deployment key's list is the whole of
+what it may call.
 
 **The sessions are in a table**, on the control plane, because an operator is a
 holder of that plane. In memory they were right for one replica and *silently
@@ -1200,7 +1210,7 @@ roster's own front doors -- `login provision` and the in-process account app
 write the front door's holder, role, binding and nomination in every tenant with
 a name, labelled `roster.declared: config: login` / `config: account`. Either
 way the row is read-only to everybody who reaches it through a port: a tenant
-administrator, the user console, the admin console.
+administrator, the user console, the admin console, a deployment key.
 
 And the label is theirs alone to write. A request that carries
 `roster.declared` is refused at every port, whoever sent it, so a row is

@@ -927,6 +927,16 @@ func (s *Server) Close() error {
 	return err
 }
 
+// policy is what the gate asks at this server's listener: [Policy], and
+// [PolicyOfKeys] on the plane the deployment's keys are rows of.
+func (s *Server) policy() gate.Policy {
+	if s.Keys {
+		return PolicyOfKeys(s.Ent, s.policySources...)
+	}
+
+	return Policy(s.Ent, s.policySources...)
+}
+
 // Grpc builds the server every call arrives at.
 //
 // The chain is payday's and the order is this app's to read: what records a
@@ -996,7 +1006,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 
 	// One policy, asked when a call arrives and asked again of a stream that
 	// is still open ([AskedAgain]).
-	policy := Policy(s.Ent, s.policySources...)
+	policy := s.policy()
 
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(c.Server.CallTimeout())).
 		With(s.policyInterceptors()).

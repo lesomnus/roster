@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/z"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/pd"
 )
 
 // A row a file declared is a row the file owns.
@@ -71,17 +72,17 @@ const declaredBy = "roster.declared"
 // mayWriteDeclared refuses a write to a row a file owns, unless the caller is
 // the one that owns it.
 //
-// The provisioner is told apart by its **scope**: it frames itself over every
-// tenant, which is what nothing reaching a listener can have. A caller that got
-// here from a port was resolved to a tenant and narrowed to it; the provisioner
-// runs in-process, before anything is served, and so does a person holding the
-// database with `roster connection update` -- which is right, because they have
-// the file too.
+// The provisioner is told apart by being **in this process**: it frames itself
+// over every tenant as somebody of the control plane, before anything is
+// served, and a person holding the database with `roster connection update`
+// has no frame at all -- which is right, because they have the file too. A
+// caller that got here from a port was resolved to a tenant and narrowed to
+// it, or is a key ([inProcess]).
 func (s Core) mayWriteDeclared(ctx context.Context, field string, labels map[string]string) error {
 	if _, ok := labels[declaredBy]; !ok {
 		return nil
 	}
-	if deployment(ctx) {
+	if inProcess(ctx) {
 		return nil
 	}
 
@@ -108,6 +109,30 @@ func deployment(ctx context.Context) bool {
 	f, ok := frame.From(ctx)
 
 	return !ok || f.Scope.All()
+}
+
+// inProcess is whether a call is the deployment at work in its own process: no
+// frame, which is a command on the database, or what applies its files, which
+// frames itself over every tenant as a holder of the control plane.
+//
+// # And not a key
+//
+// [deployment] takes a frame over every tenant for the deployment, which a
+// deployment key's is: that is right for what it is asked there -- a key
+// calls what its list names in every tenant, and names the deployment's own
+// secrets, being the operator's to hand out. It is wrong for the two rules
+// that say **whose work** they are not asked of. A tenant is left with
+// somebody administering it unless it is a command at the box or the
+// operators' port that says otherwise, and a row a file declares is written by
+// what applies the file: neither says a key, and both tested for a frame
+// *nothing reaching a listener can have*, which a key reaching a listener has.
+// So a key made to suspend a customer's people suspended the deployment's only
+// operator, and one that could write a kind of row wrote the ones a file owns
+// (#274).
+func inProcess(ctx context.Context) bool {
+	f, ok := frame.From(ctx)
+
+	return !ok || (f.Scope.All() && f.Actor.Domain() != pd.ApiKeyDomain)
 }
 
 // The guard asked of each declarable kind before a write, by reading the row's

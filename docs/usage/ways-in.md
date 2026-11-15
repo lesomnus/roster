@@ -177,6 +177,31 @@ keeps them.
 
 `--expires 720h` bounds one. Empty is forever, which is what an unattended app wants.
 
+**At the control listener it is whose it is.** A key's list names methods and no
+plane, and `control.addr` answers the same services over other rows: there
+`HolderService` is the people who run this deployment, and `ApiKeyService` the
+keys of the apps they run. So there a key calls what its **holder** was bound on
+the control plane, of what its own list names -- and the holder that
+`roster control key add` made for `loft` above is bound nothing, so a key made
+for an app calls nothing there:
+
+```
+/roster.HolderService/List: at this listener a key calls what its holder was bound on the control plane, and no role of theirs allows that
+```
+
+A key for a job that does manage the deployment's own rows hangs off somebody
+who may: an operator -- `roster control key add --allow … admin` names one who
+is there, and makes nobody -- or a holder of the control plane bound a role for
+the job with `roster control role add` and `roster control binding add`, as an
+operator is.
+
+**And it is not the deployment.** A deployment key calls its list in every
+tenant, and is held in calling it to what anybody at a port is: it does not take
+a tenant's last administrator away, or the deployment's last operator
+([permissions.md](permissions.md)), and does not write a row a file declares
+([operating.md](../operating.md#declared-rows)). The first is a command's at
+the box and an operator's at `admin.addr`; the second is the file's.
+
 ## A tenant key — `rt_`
 
 For **one of a customer's people**, or their machine. It resolves to that
