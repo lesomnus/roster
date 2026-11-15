@@ -25,11 +25,10 @@ import (
 // which is a caller's experience too, as `standing/` is the stream an app
 // follows. A promise that seems to need a deeper test's name is a promise that
 // should be re-stated at the wire.
-func TestBaselineNamesRealTests(t *testing.T) {
+// testsThatExist is every test declared where a page may name one.
+func testsThatExist(t *testing.T) map[string]bool {
+	t.Helper()
 	x := require.New(t)
-
-	doc, err := os.ReadFile(filepath.Join("..", "docs", "baseline.md"))
-	x.NoError(err)
 
 	have := map[string]bool{}
 	var files []string
@@ -49,10 +48,41 @@ func TestBaselineNamesRealTests(t *testing.T) {
 		}
 	}
 
+	return have
+}
+
+func TestBaselineNamesRealTests(t *testing.T) {
+	x := require.New(t)
+
+	doc, err := os.ReadFile(filepath.Join("..", "docs", "baseline.md"))
+	x.NoError(err)
+
+	have := testsThatExist(t)
+
 	named := regexp.MustCompile("`(Test\\w+)`").FindAllStringSubmatch(string(doc), -1)
 	x.NotEmpty(named, "the baseline names no tests at all, which cannot be right")
 
 	for _, m := range named {
 		x.True(have[m[1]], "docs/baseline.md names %s, and no such test exists", m[1])
+	}
+}
+
+// TestTheRulesPageNamesRealTests is the same check of `docs/usage/rules.md`,
+// which lists every rule a call is held to beside the test that holds it. A
+// rule whose test was renamed away reads as held and is not, and that page is
+// what a deployment, a page and the next change are checked against.
+func TestTheRulesPageNamesRealTests(t *testing.T) {
+	x := require.New(t)
+
+	doc, err := os.ReadFile(filepath.Join("..", "docs", "usage", "rules.md"))
+	x.NoError(err)
+
+	have := testsThatExist(t)
+
+	named := regexp.MustCompile("`(Test\\w+)`").FindAllStringSubmatch(string(doc), -1)
+	x.NotEmpty(named, "the page names no tests at all, which cannot be right")
+
+	for _, m := range named {
+		x.True(have[m[1]], "docs/usage/rules.md names %s, and no such test exists", m[1])
 	}
 }

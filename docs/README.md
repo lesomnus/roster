@@ -32,6 +32,7 @@ client for exactly the RPC of that name.
 | [usage/customers.md](usage/customers.md) | a tenant, the people in it, standing one up |
 | [usage/ways-in.md](usage/ways-in.md) | passwords, keys, delegations, provider accounts, second factors -- and stopping one |
 | [usage/permissions.md](usage/permissions.md) | roles, bindings, groups, sites, teams, and what you may hand out |
+| [usage/rules.md](usage/rules.md) | every rule a call is held to, one line each, with the test that holds it -- and what roster leaves to a deployment |
 
 ## 4. Run it
 
