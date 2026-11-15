@@ -113,6 +113,26 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 		return app.VouchVerifyResponse_builder{DateLocked: until}.Build(), nil, nil
 	}
 
+	// And the row this attempt is **metered on**, which is the one a wrong
+	// answer here is counted against and so the one a lock is written on.
+	//
+	// The check above reads the factor's own row, where nothing is ever
+	// counted when there was a first step. So a lock run up by wrong codes
+	// closed the first step and nothing else: an attempt opened before it was
+	// still compared, and a right password with a factor outstanding counts
+	// nothing and opens as many attempts as five minutes allow. Whoever had
+	// the password opened them all first and tried a code on each, and the
+	// lockout bounded only attempts they had not thought to open (#275).
+	until, err := s.lockedAt(ctx, c.GetMeteredBy())
+	if err != nil {
+		return nil, nil, err
+	}
+	if until != nil {
+		_, _ = s.spend(ctx, c)
+
+		return app.VouchVerifyResponse_builder{DateLocked: until}.Build(), nil, nil
+	}
+
 	ok, at, err := by.Compare(v.GetSecret(), secret, v.GetLastStep())
 	if err != nil {
 		return nil, nil, status.Error(codes.Internal, "the stored verifier cannot be read")
@@ -178,12 +198,91 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 		return nil, nil, err
 	}
 	if res.GetOk() {
+		// And what the wrong answers of this sign-in ran up is paid off, on
+		// the row they were counted on. `passed` above clears the row it was
+		// handed, which is this step's own -- where, after a first step,
+		// nothing is counted. So for somebody with a second factor the count
+		// only went up, and ten wrong codes **ever** closed the account,
+		// however many times they had signed in between (#275).
+		if err := s.settle(ctx, c.GetMeteredBy(), v.GetId()); err != nil {
+			return nil, nil, err
+		}
+
 		// Nothing left to prove, so the attempt is finished and the credential
 		// travels back for a caller that wants to mint from it.
 		return res, v, nil
 	}
 
 	return res, nil, nil
+}
+
+// lockedAt is until when the credential named by id is closed, or nil for one
+// that is open, or gone, or was never named.
+func (s *Server) lockedAt(ctx context.Context, id []byte) (*timestamppb.Timestamp, error) {
+	if len(id) == 0 {
+		// An attempt begun by a link, where the first factor is no row.
+		return nil, nil
+	}
+
+	v, err := s.open.Credential().Get(ctx, app.CredentialGetRequest_builder{
+		Ref:    app.CredentialRef_builder{Id: id}.Build(),
+		Select: app.CredentialSelect_builder{DateLocked: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			// Gone between the two forms. Not closed, and [Server.failedAt]
+			// is what finishes nothing for it.
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	if until := v.GetDateLocked(); until != nil && until.AsTime().After(time.Now()) {
+		return until, nil
+	}
+
+	return nil, nil
+}
+
+// settle clears the count on the row a finished attempt was metered on, where
+// that is not the row `passed` has already cleared.
+func (s *Server) settle(ctx context.Context, metered, last []byte) error {
+	if len(metered) == 0 || slices.Equal(metered, last) {
+		return nil
+	}
+
+	v, err := s.open.Credential().Get(ctx, app.CredentialGetRequest_builder{
+		Ref: app.CredentialRef_builder{Id: metered}.Build(),
+		Select: app.CredentialSelect_builder{
+			Failures:    z.Ptr(true),
+			DateLocked:  z.Ptr(true),
+			DateUpdated: z.Ptr(true),
+		}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil
+		}
+
+		return err
+	}
+	if v.GetFailures() == 0 && v.GetDateLocked() == nil {
+		return nil
+	}
+
+	_, err = s.open.Credential().Patch(ctx, app.CredentialPatchRequest_builder{
+		Ref:            app.CredentialRef_builder{Id: metered}.Build(),
+		Failures:       z.Ptr(int32(0)),
+		DateLockedNull: z.Ptr(true),
+		DateUpdated:    v.GetDateUpdated(),
+	}.Build())
+	if raced(err) {
+		// Somebody counted, or cleared, this instant: theirs stands.
+		return nil
+	}
+
+	return err
 }
 
 // answer is the shape every step of an attempt answers with.
