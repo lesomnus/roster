@@ -389,7 +389,10 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 	// things. `MeService` is the one to watch -- the data plane's is on
 	// `server.addr` and answers about a customer's person, and this one
 	// answers about the operator.
-	app.RegisterAuthServiceServer(g, console.Auth(s.Control.Ungated, s.Control.Ent, s.Sessions))
+	// Counting wrong answers by the deployment's numbers, which the control
+	// plane is built with for this (`serve.go`, where its config is made).
+	app.RegisterAuthServiceServer(g, console.Auth(s.Control.Ungated, s.Control.Ent, s.Sessions,
+		console.WithVouch(vouch.WithLockout(s.Control.Lockout))))
 	app.RegisterMeServiceServer(g, me.New(s.Control.Ent, Everything(s.Control.Ent),
 		me.WithWrites(s.Control.Walled)))
 
