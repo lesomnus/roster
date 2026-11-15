@@ -165,7 +165,7 @@ removed (`TestADirectoryMaySuspendTheLastAdministrator`).
 | A proved address does not change hands | `server/core/email.go` | `TestAProvedAddressDoesNotChangeHands` |
 | Nobody says their own address was checked | `server/core/email.go` | `TestNobodyAssertsThatTheirOwnAddressWasChecked` |
 | An address is vouched for by an identity of its own person | `server/core/email.go` | `TestAnAddressIsVouchedForByItsOwnPersonsIdentity` |
-| A link that proves is spent by whoever minted it | `server/core/email.go` | `TestWhatSomebodyDoesToTheirOwnAccountNeedsNoRole` |
+| A link that proves is spent by whoever minted it, and asking roster for one is a front door's and nobody's own | `server/core/email.go` | `TestWhatSomebodyDoesToTheirOwnAccountNeedsNoRole` |
 | A subject is the identifier its provider keeps fixed, and a person has one account at a provider | `server/core/identity.go` | `TestASubjectThatLooksLikeAnAddressIsRefused` · `TestASecondAccountAtOneProviderIsRefused` · `TestTwoPeopleCannotBeOneSubject` |
 | A hostname is claimed by a record published for it, and the latest proof takes it | `server/core/hostproof.go` | `TestTheLatestProofTakesTheName` |
 

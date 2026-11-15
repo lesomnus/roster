@@ -529,7 +529,6 @@ roster --as admin role get @newco/self-service
 ```
 methods   /roster.HolderService/Get  /roster.HolderService/Update  /roster.HolderService/Portray
           /roster.EmailService/Get   /roster.EmailService/List     /roster.EmailService/Add   /roster.EmailService/Erase
-          /roster.EmailService/Verify
           /roster.PhoneService/Get   /roster.PhoneService/List     /roster.PhoneService/Add   /roster.PhoneService/Erase
           /roster.IdentityService/Add
           /roster.CredentialService/Set  /roster.CredentialService/Enrol  /roster.CredentialService/Erase
@@ -556,12 +555,12 @@ Erase the role and there is none of it. It names only what is on the list
 above: a write that would put `HolderService/Erase` there is refused, and one
 that got there another way is not held through it.
 
-`EmailService/Verify` answers the link that proves an address to whoever
-called it, and is on the list all the same: a link is spent by whoever minted
-it, through `EmailService/Confirm`, which is not on the list and is a front
-door's. Somebody who calls it themselves holds a link they cannot spend. What
-it switches is whether their account page offers to confirm an address, which
-the page's app then does as itself, by mail.
+`EmailService/Verify` is **not** on the list, though an address is confirmed
+from somebody's own page. It answers the link that proves an address to
+whoever called it, and a link is spent by whoever minted it -- so a person who
+may call it is one verb, `EmailService/Confirm`, from proving an address they
+do not read. Both are a front door's: the account app mints the link as itself
+and mails it.
 
 **So a role that names these verbs is for somebody who manages other people.**
 `EmailService/Add` in a role bound across the tenant is *may add an address to

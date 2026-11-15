@@ -81,27 +81,37 @@ func TestWhatSomebodyDoesToTheirOwnAccountNeedsNoRole(t *testing.T) {
 		x.True(gone.GetErased())
 	})
 
-	t.Run("a link that proves their address is theirs to ask for, and not to spend", func(t *testing.T) {
+	t.Run("a link that proves an address is not theirs to ask roster for", func(t *testing.T) {
 		x := require.New(t)
 
-		v, err := app.NewEmailServiceClient(conn).Add(as, app.EmailAddRequest_builder{Holder: own, Address: "unproved@contoso.example"}.Build())
-		x.NoError(err)
+		v, err := app.NewEmailServiceClient(conn).Add(as, app.EmailAddRequest_builder{Holder: own, Address: "ceo@contoso.example"}.Build())
+		x.NoError(err, "writing an address onto your own account is not what is refused")
 
-		// Asked for by the person, which is what their page offering to
-		// confirm an address is switched by. The app that serves the page
-		// mints the one it mails, as itself.
-		link, err := app.NewEmailServiceClient(conn).Verify(as, app.EmailVerifyRequest_builder{Ref: app.EmailRef_builder{Id: v.GetId()}.Build()}.Build())
-		x.NoError(err)
-		x.NotEmpty(link.GetToken())
-
-		// Spending it is `Confirm`, which is not somebody's own to call: the
-		// address is proved by whoever reads its mailbox, and not by asking.
-		_, err = app.NewEmailServiceClient(conn).Confirm(as, app.EmailConfirmRequest_builder{Token: link.GetToken()}.Build())
+		// `Verify` answers the link to its caller, and whoever minted a link
+		// spends it. Somebody's own to call, it left one verb between them
+		// and an address they do not read -- and somebody bound that verb
+		// alone, `Confirm`, proved the CEO's address onto their own account.
+		_, err = app.NewEmailServiceClient(conn).Verify(as, app.EmailVerifyRequest_builder{Ref: app.EmailRef_builder{Id: v.GetId()}.Build()}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
 
-		got, err := b.Ungated.Email().Get(ctx, app.EmailGetRequest_builder{Ref: app.EmailRef_builder{Id: v.GetId()}.Build()}.Build())
+		// And somebody bound `Confirm`, which is what it took: there is no
+		// link of theirs to spend.
+		sam := b.holder(t, ctx, b.Contoso, "sam")
+		b.binds(t, sam, b.role(t, ctx, "confirms", app.EmailService_Confirm_FullMethodName), nil)
+		asSam := asOverTheWire(ctx, sam)
+
+		w, err := app.NewEmailServiceClient(conn).Add(asSam, app.EmailAddRequest_builder{
+			Holder: app.HolderRef_builder{Id: sam.Bytes()}.Build(), Address: "cfo@contoso.example",
+		}.Build())
 		x.NoError(err)
-		x.Nil(got.GetDateVerified(), "an address was proved by somebody asking roster for the link")
+		_, err = app.NewEmailServiceClient(conn).Verify(asSam, app.EmailVerifyRequest_builder{Ref: app.EmailRef_builder{Id: w.GetId()}.Build()}.Build())
+		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
+
+		for _, id := range [][]byte{v.GetId(), w.GetId()} {
+			got, err := b.Ungated.Email().Get(ctx, app.EmailGetRequest_builder{Ref: app.EmailRef_builder{Id: id}.Build()}.Build())
+			x.NoError(err)
+			x.Nil(got.GetDateVerified(), "an address was proved by somebody asking roster for the link")
+		}
 	})
 
 	t.Run("and who they say they are", func(t *testing.T) {
@@ -250,19 +260,6 @@ func TestWhatIsSomebodysOwnReachesNobodyElse(t *testing.T) {
 			v, err := emails.Erase(as, app.EmailRef_builder{Id: e.GetId()}.Build())
 			x.NoError(err)
 			x.False(v.GetErased())
-		},
-
-		app.EmailService_Verify_FullMethodName: func(x *require.Assertions) {
-			// The link that proves the victim's address, and a claim of it
-			// onto mallory's own row: the address is on a row she does not
-			// see, either way.
-			_, err := emails.Verify(as, app.EmailVerifyRequest_builder{Ref: app.EmailRef_builder{Id: e.GetId()}.Build()}.Build())
-			x.Equal(codes.NotFound, status.Code(err), "%v", err)
-			_, err = emails.Verify(as, app.EmailVerifyRequest_builder{
-				Ref:    app.EmailRef_builder{Id: e.GetId()}.Build(),
-				Holder: app.HolderRef_builder{Id: mallory.Bytes()}.Build(),
-			}.Build())
-			x.Equal(codes.NotFound, status.Code(err), "%v", err)
 		},
 
 		app.PhoneService_Get_FullMethodName: func(x *require.Assertions) {

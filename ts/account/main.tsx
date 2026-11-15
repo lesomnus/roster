@@ -449,7 +449,7 @@ function Addresses(props: { own: Uint8Array; may: (m: string) => boolean }): Rea
 								<td>
 									{v.dateVerified === undefined ? (
 										<button
-											disabled={!props.may('/roster.EmailService/Verify')}
+											disabled={!props.may('/roster.EmailService/Get')}
 											onClick={() => {
 												setNote(null)
 												void fetch('/verify', json({ id: b64url(v.id) })).then(async (res) => {
