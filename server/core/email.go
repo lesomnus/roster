@@ -250,8 +250,10 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 //   - **`mayWriteAWayIn`**, exactly as `Add` is. An address is a way into an
 //     account and this writes one; that it arrived in somebody's token changes
 //     nothing about whose row it lands on.
-//   - **A voucher is required.** An attestation with no identity behind it is
-//     an address somebody typed, and that has `Add` and a link.
+//   - **A voucher is required, and is theirs.** An attestation with no
+//     identity behind it is an address somebody typed, and that has `Add` and a
+//     link. And the identity is one of the person the address is for, read as
+//     the caller reads: see [coreEmail.vouching].
 //   - **The stamp goes through `Next().Patch`**, which is `Confirm`'s road and
 //     for `Confirm`'s reason: `date_verified` is refused to a request, so the
 //     one way to it is a server writing it below the gate.
@@ -289,6 +291,12 @@ func (s coreEmail) Attest(ctx context.Context, req *app.EmailAttestRequest) (*ap
 	if err != nil {
 		return nil, err
 	}
+
+	by, err := s.vouching(ctx, req.GetVouchedBy(), who.GetId())
+	if err != nil {
+		return nil, err
+	}
+	req.SetVouchedBy(by)
 
 	// Through the wall, by address alone -- which is the read `Email`'s `at`
 	// index exists for -- so this finds the row whoever holds it, within the
@@ -354,6 +362,45 @@ func (s coreEmail) Attest(ctx context.Context, req *app.EmailAttestRequest) (*ap
 		DateVerified: timestamppb.Now(),
 		DateUpdated:  held.GetDateUpdated(),
 	}.Build())
+}
+
+// vouching is the identity an attestation names, by identifier, once it is one
+// the attestation may name: an identity of `whose`, the person the address is
+// for, that the caller can see.
+//
+// # Why it is read, and whose it has to be
+//
+// What is written is an edge, `Email.vouched_by`, and the sink writes an edge
+// to whatever the reference finds: below the gate nothing asks whether the
+// caller may see it. `Attest` handed the reference straight down. So an
+// identity of **another tenant**, named by its identifier or by `(tenant,
+// provider, subject)`, became the voucher of an address in this one -- and a
+// read of that address with a `select` through the edge, which is loaded with
+// no wall, answered the other tenant's identity, its holder and their tenant
+// (#274). It was the one edge between two people's rows that
+// [tenantsAgree] was never asked about.
+//
+// Read through `Next()`, an identity the caller cannot see is `NotFound` as one
+// nobody has is, so the verb no longer says which subjects another tenant has.
+//
+// And it is theirs, not only their tenant's. An attestation is a provider
+// saying *this person's address is this* in the token it signed them in with:
+// somebody else's identity says nothing of them, and written here it would
+// read as if it had.
+func (s coreEmail) vouching(ctx context.Context, ref *app.IdentityRef, whose []byte) (*app.IdentityRef, error) {
+	v, err := s.Next().Identity().Get(ctx, app.IdentityGetRequest_builder{
+		Ref:    ref,
+		Select: app.IdentitySelect_builder{Holder: app.HolderSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+	if !bytes.Equal(v.GetHolder().GetId(), whose) {
+		return nil, status.Error(codes.InvalidArgument,
+			"vouched_by: an identity of the person the address is for; somebody else's says nothing of them")
+	}
+
+	return app.IdentityRef_builder{Id: v.GetId()}.Build(), nil
 }
 
 // Confirm spends a verification link and stamps its address.
