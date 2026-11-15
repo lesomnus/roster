@@ -257,6 +257,7 @@ func Widest(methods []string) string {
 		{app.AuditService_List_FullMethodName, ReadsTheTrail},
 		{app.AuditService_Get_FullMethodName, ReadsTheTrail},
 		{app.VouchService_Accept_FullMethodName, MintsForAnybody},
+		{app.VouchService_Link_FullMethodName, LinksAnybody},
 	}
 
 	for _, held := range methods {
@@ -287,6 +288,25 @@ const MintsForAnybody = "mints a credential for anybody, on the caller's word.\n
 	"`Vouch.Accept` is for a front door that did its own checking -- an OIDC flow --\n" +
 	"and it verifies nothing itself. An app that checks passwords through `Verify`\n" +
 	"does not need it, and should not have it."
+
+// LinksAnybody is the third, and the one that does not look like it.
+//
+// `Vouch.Link` mints a way into somebody's account and answers with it -- to
+// its **caller**, since roster sends nothing and whoever asked is who mails
+// it. `Vouch.Redeem` spends one. So whoever may call both needs no mailbox:
+// they ask for an administrator's link and spend it themselves, and are the
+// administrator (#274). Neither is held to the reach rule every other write
+// of a way in is, and cannot be: a front door holds nothing, and has to be
+// able to mail a link to anybody who signs in at it.
+//
+// So the grant is the whole of the control, as it is for `Accept`, and this is
+// the sentence that says what is being granted. It was said nowhere: "may
+// send recovery links" reads like a helpdesk's permission, and is the tenant.
+const LinksAnybody = "hands its caller a way into anybody's account.\n" +
+	"`Vouch.Link` answers the link to whoever asked for it, and `Vouch.Redeem` spends\n" +
+	"one: together they are every account of the tenant, an administrator's among\n" +
+	"them. They are for a front door -- the app a tenant's people sign in at, which\n" +
+	"mails the link -- and for nothing and nobody else."
 
 // There was a third, `BecomesAnOperator`, and it is gone because the hole it
 // warned about closed.
