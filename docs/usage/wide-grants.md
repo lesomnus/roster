@@ -19,6 +19,7 @@ writing a role whose methods end in `*`.
 | [A person's verb, across the tenant](#a-persons-verb-across-the-tenant) | *may manage keys*, *may add an address* | every colleague who holds no more |
 | [`VouchService/Link` with `Redeem`](#vouchservicelink-with-redeem) | *may send recovery links* | every account of the tenant |
 | [`VouchService/Accept`](#vouchserviceaccept) | *may sign people in* | a credential for anybody, on the caller's word |
+| [`ConnectionService/Add` and `Update`](#connectionserviceadd-and-update) | *may set up sign-in through a directory* | everybody who signs in through it |
 | [`EmailService/Verify` with `Confirm`](#emailserviceverify-with-confirm) | *may confirm addresses* | any address, proved with no mailbox |
 | [`EmailService/Attest`](#emailserviceattest) | *may record a directory's address* | an address proved on the caller's word |
 | [`NominationService/Add`](#nominationserviceadd) | *may install an app* | an app's key answered as somebody |
@@ -42,8 +43,8 @@ writing a role whose methods end in `*`.
 ### A person's verb, across the tenant
 
 `ApiKeyService/Issue`, `CredentialService/Issue`, `/Enrol`, `/Unlock`,
-`IdentityService/Add`, `EmailService/Add`, `PhoneService/Add` -- each writes a
-way into an account, and each takes a *whose*.
+`IdentityService/Add`, `/Resubject`, `EmailService/Add`, `PhoneService/Add` --
+each writes a way into an account, and each takes a *whose*.
 
 **Reads as** *may manage their keys*. **Is** *may write a way into anybody who
 holds no more than they do* -- which, bound to two people, is each other.
@@ -92,6 +93,36 @@ the caller's word that a provider signed them in. It checks nothing itself.
 **It is for** a front door that ran the provider's flow, and `roster key add`
 says so (`TestNobodyAcceptsWithoutBeingAllowedTo`). An app that checks a
 password through `Vouch.Verify` does not need it.
+
+### `ConnectionService/Add` and `Update`
+
+**Reads as** *may set up sign-in through a directory*. **Is** the account of
+everybody who signs in through that connection, an administrator's among them.
+
+A connection says where a tenant's people are asked who they are, and roster
+believes the answer. Somebody's account at a provider is kept by the
+connection's **name**, so a connection moved to another issuer -- or erased and
+added again under the same name -- is where those people are asked from the next
+sign-in on, and whoever the new issuer says they are is who signs in.
+
+> contoso binds its helpdesk lead a role naming `ConnectionService/*`, to set up
+> a second directory. The connection the administrator signs in through keeps no
+> secret. The lead moves its issuer to one they run, which says the
+> administrator's subject, and signs in as the administrator.
+
+What is kept: it is held across the tenant, so a role bound in a site writes no
+connection; a tenant cannot move a connection that carries one of the
+deployment's secrets, nor give one a secret of the deployment's
+(`TestAConnectionsSecretGoesWhereTheDeploymentSays`); and a connection a file
+declares is written from the file. What is not asked is who arrives through it,
+and it cannot be: that is everybody, on purpose.
+
+Where the front door links a first sign-in by address (`enrol: expected`), it
+also reaches somebody who has never signed in through it: a new connection whose
+issuer says a person's proved address is verified is linked to that person.
+
+**It is for** whoever administers the tenant, and nobody narrower. `Erase`
+alone signs nobody in.
 
 ### `EmailService/Verify` with `Confirm`
 

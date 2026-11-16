@@ -1090,6 +1090,15 @@ erased and added again under the same name -- it is the new one from the next
 sign-in on, with no restart. A round trip already on its way to the first
 issuer is not finished at the second, and the person starts again.
 
+**And its people come with it.** Somebody's account at a provider is kept by
+the connection's name and the subject it called them by, so everybody who
+signed in through the connection before is asked at the new issuer now, and is
+whoever it says they are. Moving a connection is therefore deciding who its
+people are, which is why writing one is on the page of grants that are wider
+than they read ([usage/wide-grants.md](usage/wide-grants.md#connectionserviceadd-and-update)).
+A tenant cannot move a connection that carries one of the deployment's
+secrets; one that carries none, it can.
+
 ### GitHub
 
 GitHub signs people in with OAuth 2.0 and no OpenID Connect -- there is no
@@ -1168,8 +1177,9 @@ in, so the connection names that directory's issuer, which is the third row.
 
 - **Who somebody is**: `sub` by default, one per app registration, or
   `subject_claim: oid`, the same for every app and needing the `profile` scope.
-  Microsoft issues both as GUIDs that are unique on their own, so either names
-  one person whichever directory they came from.
+  `oid` is a GUID; `sub` is a string of the app registration's own and is not
+  one. Each is unique on its own, so either names one person whichever
+  directory they came from.
 - **What their address is worth.** Microsoft sends no `email_verified`. What it
   sends instead is `xms_edov`, *the address's domain is one the person's
   directory has proved it owns* -- an optional claim the registration has to ask

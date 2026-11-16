@@ -73,6 +73,10 @@ var aPersonsVerbs = []string{
 	app.CredentialService_Enrol_FullMethodName,
 	app.CredentialService_Unlock_FullMethodName,
 	app.IdentityService_Add_FullMethodName,
+	// The subject of an account somebody already has, moved to one the caller
+	// names (`identity.go`, `Resubject`): whoever the directory says that is
+	// signs in as them from then on.
+	app.IdentityService_Resubject_FullMethodName,
 	app.EmailService_Add_FullMethodName,
 	app.PhoneService_Add_FullMethodName,
 }
@@ -109,6 +113,25 @@ var handsOver = []handedOver{
 		tenant:     "a credential for anybody of the tenant, minted on the caller's word that a provider signed them in",
 		site:       "a credential for anybody it reaches there, minted on the caller's word that a provider signed them in",
 		deployment: "a credential for anybody of any tenant, minted on the caller's word that a provider signed them in",
+	},
+	{
+		// The tenant's as a whole (`tenantwide.go`), and held to nothing about
+		// who arrives through the connection: an account at a provider is kept
+		// by the connection's **name**, `VouchService/Accept` asks no reach,
+		// and what a write here asks is that the deployment's secret is not
+		// sent somewhere a tenant chose (`connection.go`, `maySend`). So it is
+		// said rather than ruled: whoever says where a tenant's people are
+		// asked who they are is who answers for them, in any system that asks
+		// somewhere else.
+		grant:   "connectionserviceadd-and-update",
+		methods: []string{app.ConnectionService_Add_FullMethodName, app.ConnectionService_Update_FullMethodName},
+		readsAs: "may set up sign-in through a directory",
+		tenant: "the account of anybody of the tenant who signs in through that connection, an administrator's " +
+			"among them: an account at a provider is kept by the connection's name, and a connection moved to " +
+			"another issuer, or added again under a name, is where its people are asked from then on",
+		deployment: "the account of anybody of any tenant who signs in through a connection, an administrator's " +
+			"among them: an account at a provider is kept by the connection's name, and a connection moved to " +
+			"another issuer, or added again under a name, is where its people are asked from then on",
 	},
 	{
 		// `Verify` answers the link to its caller, as `Link` does (#309).
