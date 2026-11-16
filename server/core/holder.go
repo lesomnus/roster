@@ -157,11 +157,13 @@ func (s coreHolder) Realias(ctx context.Context, req *app.HolderRealiasRequest) 
 // the tenant with nobody administering it is refused (`administered.go`),
 // since nobody in the tenant could undo it.
 //
-// **A password change does not invalidate.** *A password reset that leaves old
-// sessions alive is not a reset* is true, and it belongs with the recovery
-// work that has the reset in it: coupling it here would make somebody changing
-// their own password sign themselves out of everything with nothing having said
-// so.
+// **A password change invalidates, where it is somebody's own.** *A password
+// reset that leaves old sessions alive is not a reset* was held to be true of a
+// reset alone, and somebody changing their own was left signed in everywhere,
+// so as not to sign them out with nothing having said so. But a password is
+// changed because somebody else may have it, and that somebody was signed in
+// already (`coreCredential.Set`, #275). A password the box writes for somebody
+// ends nothing, as before: `reset` is the one that does.
 func (s coreHolder) Disable(ctx context.Context, req *app.HolderDisableRequest) (*app.Holder, error) {
 	if err := s.declaredHolder(ctx, req.GetRef()); err != nil {
 		return nil, err

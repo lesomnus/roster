@@ -381,6 +381,19 @@ where a new account cannot be told what it is for. `MeService/Unlink` and
 `MeService/SignOutEverywhere` are waived for the same reason -- neither can be
 pointed at anybody else, and only a subject-less method can be waived at all.
 
+### Changing your own password
+
+```
+CredentialService.Set { ref: <you>, current: …, secret: … }
+```
+
+It asks for the password you hold, and **signs you out everywhere**: every
+session and delegation the old one opened, the one that made the change among
+them. A password is changed because somebody else may have it, and whoever
+that is was signed in already. So the next thing a page does after *changed*
+is sign in again, with the new one. It is the stamp `HolderService/Invalidate`
+leaves, so a key is not touched: a key is revoked by name.
+
 ### Deleting your own account
 
 ```
