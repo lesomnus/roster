@@ -852,7 +852,7 @@ sequenceDiagram
   C->>R: AuthService.Offers
   R-->>C: {password: false, providers: [entra], front_door}
   B->>F: /login?connection=entra&next=https://contoso.example
-  Note over F: next is a name this tenant answers at, or 400, before anything else
+  Note over F: next is an https origin this tenant answers at, or 400, before anything else
   F->>E: the flow it runs
   E-->>F: (provider, subject)
   F->>R: Vouch.Accept {claim, methods, at: contoso.example}
