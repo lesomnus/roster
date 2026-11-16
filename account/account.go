@@ -579,7 +579,9 @@ func (a *App) Handler() http.Handler {
 		page.ServeHTTP(w, r)
 	})
 
-	return a.resolve(m)
+	// Whatever changes something is asked by this origin's own page, or by
+	// what is not a browser; and no page here is drawn inside another's.
+	return a.resolve(frontdoor.Guard(m))
 }
 
 // resolve puts the tenant a request is about -- and its key -- in the context,
@@ -814,7 +816,23 @@ type flow struct {
 	next *url.URL
 }
 
+// stateCookie is the round trip's cookie, by the name [App.stateName] gives it.
 const stateCookie = "account_state"
+
+// stateName is the name the round trip's cookie goes by: `__Host-` in front of
+// it wherever cookies are `Secure`, which is everywhere but a development rig.
+//
+// The session's cookie has always had the prefix, so that another host of the
+// same domain cannot write one over it. This one had not, and it is what a
+// callback is held to: a host beside this one could set it, and with it choose
+// which of its own round trips a browser's callback finished (#277).
+func (a *App) stateName() string {
+	if a.c.InsecureCookie {
+		return stateCookie
+	}
+
+	return "__Host-" + stateCookie
+}
 
 // login starts a sign-in through one of the tenant's providers.
 //
@@ -893,7 +911,7 @@ func (a *App) start(w http.ResponseWriter, r *http.Request, link bool, who pdid.
 	a.flows.Put(state, flow{tenant: t, trip: trip, link: link, who: who, next: next}, 10*time.Minute)
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     stateCookie,
+		Name:     a.stateName(),
 		Value:    state,
 		Path:     "/",
 		HttpOnly: true,
@@ -908,10 +926,10 @@ func (a *App) start(w http.ResponseWriter, r *http.Request, link bool, who pdid.
 // the flow went to, which is the one it has to come back to (`arrives.Trip`).
 func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	http.SetCookie(w, &http.Cookie{Name: stateCookie, Path: "/", MaxAge: -1})
+	http.SetCookie(w, &http.Cookie{Name: a.stateName(), Path: "/", MaxAge: -1, HttpOnly: true, Secure: !a.c.InsecureCookie})
 
 	state := r.URL.Query().Get("state")
-	c, err := r.Cookie(stateCookie)
+	c, err := r.Cookie(a.stateName())
 	if err != nil || state == "" || c.Value != state {
 		// One answer for a missing cookie, a missing parameter and a
 		// mismatch: saying which would tell whoever sent this browser how far
