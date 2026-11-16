@@ -150,3 +150,66 @@ func TestTheIdleClockIsTheOneColumnThatMoves(t *testing.T) {
 	x.NoError(err)
 	x.Equal(1, n, "a second write made a second row")
 }
+
+// TestASessionThatEndedIsNotWrittenAgain: once a session has been ended, the
+// idle clock of a request that was already in flight does not bring it back.
+//
+// # What it was
+//
+// `Put` is asked for two things by one name: a cookie being minted, and --
+// rarely -- the idle clock of a live one moving. It told them apart by looking
+// for a live row, and made one when it found none. A request reads its
+// session, the person signs out in another tab, and the request's clock is
+// written: no live row, so a new one, with the same secret, the expiry it had,
+// and *created now*. The cookie that was signed out answered again until that
+// expiry -- and past `Holder.Invalidate` too, which voids what was issued
+// before its stamp and reads when a row was made (#275).
+//
+// The sweep's own comment said *`Put` resurrects on a miss*, of rows it
+// collects, and arranged itself around it.
+//
+// A cookie's value is thirty-two random bytes and is minted once, so a secret
+// that has ever been a row here is not one being minted.
+func TestASessionThatEndedIsNotWrittenAgain(t *testing.T) {
+	x := require.New(t)
+	b := keyFor(t)
+	ctx := t.Context()
+
+	who := addHolder(t, ctx, b.Control, controlTenantOf(t, ctx, b), "ops")
+	store := session.New(b.Control.Ent)
+
+	v := authsession.Session{
+		Key:     "a-cookie-value",
+		Id:      who.String(),
+		Grant:   frame.Whole(),
+		Expires: time.Now().Add(time.Hour),
+		Idle:    time.Now().Add(30 * time.Minute),
+	}
+	x.NoError(store.Put(ctx, v))
+
+	// Signed out, between a request reading its session and writing its clock.
+	x.NoError(store.Del(ctx, v.Key))
+
+	later := v
+	later.Idle = time.Now().Add(45 * time.Minute)
+	x.ErrorIs(store.Put(ctx, later), authsession.ErrNoSession,
+		"the clock of a session that had ended was written as a session")
+
+	_, err := store.Get(ctx, v.Key)
+	x.ErrorIs(err, authsession.ErrNoSession, "a session that was signed out answers again")
+
+	n, err := b.Control.Ent.Session.Query().Count(ctx)
+	x.NoError(err)
+	x.Equal(1, n, "and a second row was made for it")
+
+	// The clock of a live one still moves, and a new cookie is still a row.
+	other := v
+	other.Key = "another-cookie-value"
+	x.NoError(store.Put(ctx, other))
+	other.Idle = time.Now().Add(50 * time.Minute)
+	x.NoError(store.Put(ctx, other))
+
+	got, err := store.Get(ctx, other.Key)
+	x.NoError(err)
+	x.WithinDuration(other.Idle, got.Idle, time.Second)
+}

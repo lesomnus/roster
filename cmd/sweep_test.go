@@ -85,9 +85,8 @@ func TestExpiredSessionsAreCollected(t *testing.T) {
 // predicate `date_expires` alone.
 //
 // `Del` erases softly, so a signed-out session is out of reach and still
-// present. It blocks nothing while it waits -- the unique index on the secret
-// is partial, `date_erased IS NULL` -- and it is collected when its own expiry
-// passes, exactly as `keys.Sweep` leaves a revoked delegation.
+// present, and it is collected when its own expiry passes, exactly as
+// `keys.Sweep` leaves a revoked delegation.
 func TestSigningOutLeavesARowUntilItsOwnClockRuns(t *testing.T) {
 	x := require.New(t)
 	b := keyFor(t)
@@ -114,12 +113,15 @@ func TestSigningOutLeavesARowUntilItsOwnClockRuns(t *testing.T) {
 	x.NoError(err)
 	x.Zero(n, "a revoked session was collected before its own clock ran out")
 
-	// And the secret can be used again, because the index that would have
-	// stopped it does not cover erased rows.
-	x.NoError(store.Put(ctx, v))
-	got, err := store.Get(ctx, v.Key)
-	x.NoError(err)
-	x.Equal(who.String(), got.Id)
+	// And the secret is not a session again. This asserted that it could be --
+	// *the index that would have stopped it does not cover erased rows* --
+	// which is true of the index and was the defect: a cookie's value is
+	// minted once, so a `Put` of one that has ended is the idle clock of a
+	// request that was in flight when it did, and wrote the session back
+	// (`TestASessionThatEndedIsNotWrittenAgain`).
+	x.ErrorIs(store.Put(ctx, v), authsession.ErrNoSession)
+	_, err = store.Get(ctx, v.Key)
+	x.ErrorIs(err, authsession.ErrNoSession)
 }
 
 // TestTheControlPlaneRunsItsOwnBackgroundWork.
