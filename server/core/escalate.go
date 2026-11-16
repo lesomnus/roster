@@ -95,19 +95,19 @@ import (
 // The `Patch`es are checked **here as well**, and that is worth being exact
 // about because this paragraph was wrong twice.
 //
-// `grpcx.GeneralWrite` closes `/Patch` and `/Apply` alike, and roster sets no
-// `AllowGeneralWrites`, so neither is on the wire. That is not the same as
-// being guarded: the transport is one road and the layer is what every other
-// one goes through -- the servers' own writes, an RPC that composes writes,
-// and any deployment that opens general writes because it has a reason to. A role that can grow
-// methods after it was written is a role whose first version says nothing, and
-// leaving that to a setting is leaving it to somebody who did not know they
-// were deciding it.
+// `/Patch` and `/Apply` are not on the wire: no port serves a general write,
+// whatever a configuration says (`closed`, `cmd/serve.go`). That is not the
+// same as being guarded: the transport is one road and the layer is what every
+// other one goes through -- the servers' own writes, and an RPC that composes
+// writes. A role that can grow methods after it was written is a role whose
+// first version says nothing.
 //
-// `Apply` is the one still standing on the transport alone. It carries a patch
+// `Apply` is the one standing on the transport alone. It carries a patch
 // document rather than named fields, so refusing it here means reading the
-// document to find out what it sets, which is work nothing has needed yet -- a
-// deployment that opens general writes takes that on with them.
+// document to find out what it sets, which is work nothing has needed -- and
+// it was the reason the setting that opened general writes is gone rather than
+// guarded entity by entity: with it on, `RoleService/Apply` wrote a caller's
+// own role to everything (#278).
 
 // Granted is every pattern somebody holds through a binding, and therefore may
 // pass on.

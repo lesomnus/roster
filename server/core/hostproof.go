@@ -79,10 +79,9 @@ func (s coreHostProof) Add(ctx context.Context, req *app.HostProofAddRequest) (*
 //
 // `token` and `date_expires` are immutable and nullable-with-a-flag
 // respectively, so a patch could clear the window a claim is bounded by. It is
-// closed at the transport with every other general write (`grpcx.GeneralWrite`,
-// and roster sets no `AllowGeneralWrites`), which is what the equivalent gap in
-// `coreEmail.Patch` rests on as well -- said here too, because a deployment that
-// opened general writes would need this to refuse a cleared expiry.
+// closed at the transport with every other general write (`closed`,
+// `cmd/serve.go`: no port serves one, whatever a configuration says), which is
+// what the equivalent gap in `coreEmail.Patch` rests on as well.
 func (s coreHostProof) Patch(ctx context.Context, req *app.HostProofPatchRequest) (*app.HostProof, error) {
 	if err := s.acrossTheTenant(ctx, app.HostProofService_Patch_FullMethodName); err != nil {
 		return nil, err

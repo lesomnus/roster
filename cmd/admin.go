@@ -308,7 +308,7 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 		return nil, nil
 	}
 
-	shut := s.closed(Config{Server: c.Admin.ServerConfig})
+	shut := s.closed()
 
 	// One limiter, handed to both halves -- see the same line in
 	// [Server.Grpc]. `Limiter()` builds a bucket, so calling it twice is two

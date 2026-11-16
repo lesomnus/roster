@@ -124,19 +124,21 @@ func TestNobodyAttachesARoleByPatchingAMembership(t *testing.T) {
 }
 
 // TestAGeneralWriteIsNotAWayRoundTheEscalationRule is the same hole from the
-// wire, in the deployment that has to live with it.
+// wire.
 //
-// `escalate.go` says `Patch` and `Apply` are closed at the transport and that a
-// deployment which opens them opens this with them. That reading is what makes
+// `escalate.go` said `Patch` and `Apply` are closed at the transport and that a
+// deployment which opens them opens this with them. That reading is what made
 // the missing check above look like somebody else's problem -- and it is not
 // the reading the rest of the file was written to: `Role.Patch` and
 // `ApiKey.Patch` both ask `mayGrant`, in the layer, precisely so that the
 // setting is a decision about the API rather than about who may become the
 // administrator.
 //
-// So this is the same two Rpcs against a server built the way that deployment
-// builds one, and it shows what they buy: a caller who manages memberships
-// erases a person she was never allowed to read.
+// The decision has since been taken for every entity at once: no port serves a
+// general write, whatever it is told (`TestNoGeneralWriteIsServed`). So this
+// is the same two Rpcs against a server handed the setting, and the first is
+// not served. The layer's own check is still there for what does not come over
+// the wire, and the test above is what holds it.
 func TestAGeneralWriteIsNotAWayRoundTheEscalationRule(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
@@ -146,8 +148,8 @@ func TestAGeneralWriteIsNotAWayRoundTheEscalationRule(t *testing.T) {
 
 	b.binds(t, b.ContosoUser, b.role(t, ctx, "manager", addMember, patchMembership), nil)
 
-	// A deployment that turned general writes on, which is one line of
-	// configuration and nothing else.
+	// A server handed the setting that used to open general writes. A file
+	// cannot say it any more; a caller of this package still can.
 	g, err := b.Grpc(ctx, cmd.Config{Server: config.ServerConfig{AllowGeneralWrites: true}})
 	x.NoError(err)
 
@@ -166,8 +168,9 @@ func TestAGeneralWriteIsNotAWayRoundTheEscalationRule(t *testing.T) {
 		Role:        app.RoleRef_builder{Id: b.role(t, ctx, "admin", eraseHold).Bytes()}.Build(),
 		DateUpdated: v.GetDateUpdated(),
 	}.Build())
-	x.Equal(codes.PermissionDenied, status.Code(err),
-		"a general write attached a role its caller does not hold")
+	x.Equal(codes.Unimplemented, status.Code(err),
+		"a general write attached a role its caller does not hold: %v", err)
+	x.ErrorContains(err, "is not served")
 
 	// The escalation itself, which is what this is about rather than which
 	// error code the patch answered with.

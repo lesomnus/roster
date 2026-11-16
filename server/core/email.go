@@ -99,13 +99,14 @@ func entered(ctx context.Context, req *app.EmailAddRequest) *app.EmailAddRequest
 // Patch is the normalisation, and **not** the rule about whose row it is.
 //
 // Which is a gap on purpose rather than the other rule being forgotten, and it
-// is only safe because of something one file away: `/Patch` is closed at the
-// transport by `grpcx.GeneralWrite` and roster sets no `AllowGeneralWrites`, so
-// nothing a caller reaches gets here. What does is the servers' own writes,
-// which are not somebody naming a row.
+// is only safe because of something one file away: no port serves `/Patch`,
+// whatever a configuration says (`closed`, `cmd/serve.go`), so nothing a
+// caller reaches gets here. What does is the servers' own writes, which are
+// not somebody naming a row.
 //
-// If that changes -- a deployment with a reason to open general writes -- this
-// wants [Core.mayWriteAWayIn] beside the normalisation, because the holder
+// If that ever changes this wants [Core.mayWriteAWayIn] beside the
+// normalisation -- with general writes opened, a proved address was changed
+// to another and stayed proved (#278), which is why they are not -- because the holder
 // being immutable is not the protection it looks like: a patch cannot move an
 // address onto somebody else's row and it can change what the address on
 // **their** row is, which reaches the same place. The address is theirs; the

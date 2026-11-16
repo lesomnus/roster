@@ -66,8 +66,8 @@ import (
 // with no address and torn down when the command finishes.
 //
 // It also carries **no `closed` interceptor**, which is worth saying out loud
-// because the wire does. `grpcx.GeneralWrite` closes `/Patch` and `/Apply`
-// unless a deployment opens them, and none of that is installed here -- so
+// because the wire does. No port serves `/Patch` or `/Apply`, whatever a
+// configuration says (`closed`, `cmd/serve.go`), and none of that is installed here -- so
 // `roster holder patch` reaches the general write at a shell, and can null a
 // person's profile or overwrite their alias.
 //
