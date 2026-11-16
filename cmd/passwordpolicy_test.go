@@ -153,6 +153,72 @@ func TestTheConsolesSignInCountsByTheDeploymentsLockout(t *testing.T) {
 	})
 }
 
+// TestAClosedAccountCostsWhatAWrongPasswordCosts: an answer for an account
+// that wrong answers have closed takes the time any other refusal takes.
+//
+// # What it was
+//
+// Every refusal burns what a comparison costs -- a name nobody has, somebody
+// with no password, somebody suspended -- so that how long *no* took says
+// nothing. A closed account was the one that did not: it answered before any
+// hashing, in a millisecond where the others took thirty.
+//
+// `Vouch.Verify` says a lock outright, to a caller that holds a key, and that
+// is a trade written down. `AuthService/SignIn` is public and folds it into
+// *no* on purpose -- *which of "no such person", "wrong password" and "locked"
+// it was is an oracle* -- and the clock said it anyway. So anybody could learn
+// that a name is somebody's, with a password, by sending ten wrong ones and
+// timing the eleventh (#275).
+func TestAClosedAccountCostsWhatAWrongPasswordCosts(t *testing.T) {
+	x := require.New(t)
+	ctx := context.Background()
+
+	s, who := personOn(t, func(c *cmd.Config) {
+		c.Vouch.Lockout = cmd.LockoutConfig{Failures: 1, For: time.Hour}
+	})
+	x.NoError(setFor(ctx, s, who, "correct horse battery staple"))
+
+	v := vouch.New(s.Ungated, s.Ungated, vouch.WithLockout(s.Lockout))
+	ask := func(who *app.VouchWho) (*app.VouchVerifyResponse, time.Duration) {
+		t.Helper()
+
+		// The quickest of a few, so that what is compared is the work and not
+		// whatever else the machine was doing.
+		var (
+			res  *app.VouchVerifyResponse
+			best time.Duration
+		)
+		for range 5 {
+			began := time.Now()
+			got, err := v.Verify(ctx, app.VouchVerifyRequest_builder{Who: who, Secret: []byte("not it, not it")}.Build())
+			took := time.Since(began)
+			x.NoError(err)
+
+			if res == nil || took < best {
+				res, best = got, took
+			}
+		}
+
+		return res, best
+	}
+
+	// One wrong answer closes it, and every one after finds it closed.
+	theirs := app.VouchWho_builder{Id: who}.Build()
+	_, err := v.Verify(ctx, app.VouchVerifyRequest_builder{Who: theirs, Secret: []byte("not it, not it")}.Build())
+	x.NoError(err)
+
+	closed, locked := ask(theirs)
+	x.NotNil(closed.GetDateLocked(), "the account is not closed, so this measured nothing")
+
+	_, stranger := ask(app.VouchWho_builder{Tenant: "contoso", Alias: "nobody-by-this-name"}.Build())
+
+	// Not *equal*, which no clock would hold to. A closed account answered
+	// some thirty times sooner; a third is far inside what the same work on
+	// the same machine varies by.
+	x.Greater(locked, stranger/3,
+		"a closed account answered in %s where a name nobody has took %s", locked, stranger)
+}
+
 // TestAPasswordHasToBeLongEnough: eight unless the deployment says, checked
 // wherever a password arrives, and a ceiling that keeps the hash honest.
 func TestAPasswordHasToBeLongEnough(t *testing.T) {
