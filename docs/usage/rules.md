@@ -134,6 +134,7 @@ person (`server/core/escalate.go`, `mayReach`).
 | --- | --- |
 | A password issued, a lockout cleared, a second factor enrolled | `TestNobodyWritesTheCredentialOfSomebodyWiderThanThey` · `TestUnlockIsHeldToTheRuleResetIs` · `TestNobodyEnrolsASecondFactorOnSomebodyWiderThanThey` |
 | A password is **set** by its own person alone, who says the current one; anybody else's is issued, and shown once | `TestAPersonChangesTheirOwnPassword` |
+| A second factor of one's own is taken off only from a sign-in a few minutes old, by the credential the call came with; somebody else's is the rule above | `TestTakingOnesOwnSecondFactorOffTakesAFreshSignIn` |
 | An account at a provider, an address, a number | `TestNobodyWritesAWayInForSomebodyWiderThanThey` · `TestSomebodyAddsAWayIntoTheirOwnAccount` · `TestANumberIsSomebodysAsAnAddressIs` |
 | A subject moved to another claim | `TestAMoveIsAWayInAndIsHeldToIt` |
 | A key on somebody's account | `TestNobodyMintsAKeyOnSomebodyElsesAccount` · `TestNobodyMintsAKeyOnSomebodyElsesHolder` |

@@ -588,6 +588,14 @@ rather than storing a seed in the clear.
 not a sign-in on its own, and somebody whose only credential is a seed cannot
 sign in with it.
 
+**Taking your own off takes having just signed in.** Within five minutes of
+proving who you are, by the credential the call came with -- so at your account
+page, a moment after signing in there with the factor itself. A key of yours
+and a page left open are refused: what is left when a second factor goes is
+the password alone, and a credential that merely acts as you must not be what
+decides that. Somebody who has lost the phone asks whoever administers them,
+who takes it off as they would reset a password.
+
 **It is asked for wherever a password is taken**, roster's own sign-in
 included. Somebody who has proved one -- a factor counts from the first code
 that verifies -- is not signed in by their password at the user console or the
