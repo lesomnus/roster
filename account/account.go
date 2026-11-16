@@ -548,11 +548,15 @@ func (a *App) Handler() http.Handler {
 	m.HandleFunc("POST /device/approve", a.deviceApprove)
 	m.HandleFunc("GET /callback/{tenant}/{connection}", a.callback)
 	m.HandleFunc("POST /recover", a.recover)
-	m.HandleFunc("GET /redeem", a.redeem)
+	// A mailed link is a `GET` that asks and a `POST` that does: see
+	// [App.asking].
+	m.HandleFunc("GET /redeem", a.asking(redeemAsk))
+	m.HandleFunc("POST /redeem", a.redeem)
 	m.HandleFunc("POST /verify", a.verify)
 	m.HandleFunc("POST /claim", a.claim)
 	m.HandleFunc("POST /prove", a.prove)
-	m.HandleFunc("GET /confirm", a.confirm)
+	m.HandleFunc("GET /confirm", a.asking(confirmAsk))
+	m.HandleFunc("POST /confirm", a.confirm)
 	m.HandleFunc("POST /leave/link", a.leaveLink)
 	m.HandleFunc("GET /leave", a.leaving)
 	m.HandleFunc("POST /leave", a.leave)
@@ -1361,17 +1365,15 @@ func redeemable(row *rstr.Email) bool {
 // issued before it, which is what recovering from a takeover requires. Their
 // own row asks for the current password on `Set` and there is none to give,
 // which is exactly why this road exists.
+//
+// It is the answer to the page the link opens ([App.asking]), and not the link
+// itself: the link fetched changes nothing.
 func (a *App) redeem(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	token := r.URL.Query().Get("token")
-	if token == "" {
-		http.Error(w, "no", http.StatusBadRequest)
-		return
-	}
 
 	// The tenant the link names, whose key minted it and is the one that
 	// redeems it; see [App.finish].
-	if t, ok := a.linkTenant(r); ok {
+	if token, t, ok := a.answered(w, r); ok {
 		as := t.on(ctx)
 		res, err := a.vouch.Redeem(as, rstr.VouchRedeemRequest_builder{
 			Token:   token,
@@ -1391,13 +1393,64 @@ func (a *App) redeem(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.Header().Set("content-type", "text/html; charset=utf-8")
-		w.Header().Set("cache-control", "no-store")
-		fmt.Fprintf(w, recovered, htmlEscape(reset.GetSecret()))
-		return
+		page(w, http.StatusOK, fmt.Sprintf(recovered, htmlEscape(reset.GetSecret())))
+	}
+}
+
+// asking is where a mailed link lands: a page that says what the link does and
+// asks, and spends nothing. What the page posts is what acts.
+//
+// Nothing, because a link is fetched by more than the person it was sent to: a
+// mail client previewing it, a gateway following every link in a message. The
+// link that deletes an account was written this way from the start
+// ([App.leaving]). The one that recovers an account and the one that confirms
+// an address did the whole act on the fetch -- on a `HEAD` too, which a mux
+// answers on a `GET` pattern -- so where mail is scanned, the scanner replaced
+// the person's password and was shown the new one, and proved an address for
+// whoever had written it onto their account; and `POST /recover` takes an
+// address from anybody (#277).
+//
+// roster is not asked whether the link is one. Asking is a call per fetch for
+// anybody who can write a URL, and what it would add -- *this link is no
+// longer* a click earlier -- the answer says anyway.
+func (a *App) asking(form string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		token := r.URL.Query().Get("token")
+		t, ok := a.linkTenant(r)
+		if token == "" || !ok {
+			http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
+			return
+		}
+
+		page(w, http.StatusOK, fmt.Sprintf(form, htmlEscape(url.Values{"at": {t.id.String()}}.Encode()), htmlEscape(token)))
+	}
+}
+
+// answered reads what a link's page posted: the token, under the tenant the
+// link named. It has answered the request itself when it says no.
+//
+// Read to a size, as every other body here is: a form was the one thing
+// `ParseForm` read to Go's own ten megabytes.
+func (a *App) answered(w http.ResponseWriter, r *http.Request) (string, *tenant, bool) {
+	t, ok := a.linkTenant(r)
+	if !ok {
+		http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
+		return "", nil, false
 	}
 
-	http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
+	r.Body = http.MaxBytesReader(w, r.Body, 4<<10)
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "no", http.StatusBadRequest)
+		return "", nil, false
+	}
+
+	token := r.PostForm.Get("token")
+	if token == "" {
+		http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
+		return "", nil, false
+	}
+
+	return token, t, true
 }
 
 // verify mails a link that proves one of the signed-in person's addresses.
@@ -1618,29 +1671,21 @@ func (a *App) post(ctx context.Context, w http.ResponseWriter, kind, to, by, sub
 }
 
 // confirm spends a verification link. Nobody is signed in by it, and nobody
-// need be signed in to click it: the key that minted it confirms it.
+// need be signed in to answer its page: the key that minted it confirms it.
+//
+// The page's answer, as [App.redeem] is: [App.asking].
 func (a *App) confirm(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	token := r.URL.Query().Get("token")
-	if token == "" {
-		http.Error(w, "no", http.StatusBadRequest)
-		return
-	}
 
-	if t, ok := a.linkTenant(r); ok {
+	if token, t, ok := a.answered(w, r); ok {
 		res, err := a.roster.Email().Confirm(t.on(ctx), rstr.EmailConfirmRequest_builder{Token: token}.Build())
 		if err != nil {
 			http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
 			return
 		}
 
-		w.Header().Set("content-type", "text/html; charset=utf-8")
-		w.Header().Set("cache-control", "no-store")
-		fmt.Fprintf(w, confirmed, htmlEscape(res.GetEmail().GetAddress()))
-		return
+		page(w, http.StatusOK, fmt.Sprintf(confirmed, htmlEscape(res.GetEmail().GetAddress())))
 	}
-
-	http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
 }
 
 // leaveLink mails the signed-in person a link that deletes their account, to
@@ -1746,20 +1791,11 @@ func (a *App) leaving(w http.ResponseWriter, r *http.Request) {
 // still good where nothing about it was wrong.
 func (a *App) leave(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	t, ok := a.linkTenant(r)
+	token, t, ok := a.answered(w, r)
 	if !ok {
-		http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
 		return
 	}
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "no", http.StatusBadRequest)
-		return
-	}
-	token, confirm := r.PostForm.Get("token"), r.PostForm.Get("confirm")
-	if token == "" {
-		http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
-		return
-	}
+	confirm := r.PostForm.Get("confirm")
 
 	res, err := a.vouch.Leave(t.on(ctx), rstr.VouchLeaveRequest_builder{Token: token, Confirm: confirm}.Build())
 	if err != nil {
@@ -1856,8 +1892,32 @@ func htmlEscape(v string) string {
 	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", "\"", "&quot;").Replace(v)
 }
 
-// The two pages a mailed link ends at. Plain HTML, because a person arriving
-// from a mail client has no session and the page has one thing to say.
+// What a link that recovers an account and one that confirms an address ask
+// before anything happens ([App.asking]): what the link does, one button, and
+// what to do with a message nobody asked for. The tenant in the action, the
+// token in the form.
+const redeemAsk = `<!doctype html><meta charset="utf-8"><title>recover your account</title>
+<main style="font-family:system-ui;max-width:32rem;margin:3rem auto;padding:0 1rem">
+<h1>Recover your account</h1>
+<p>You will be shown a new password, <strong>once</strong>. The one you had stops working, and everything you are signed in to is signed out.</p>
+<form method="post" action="/redeem?%s">
+<input type="hidden" name="token" value="%s">
+<p><button type="submit">make me a new password</button></p>
+</form>
+<p>Did not ask for this? Close this page: nothing has happened, and the link stops working by itself a few minutes after it was sent.</p></main>`
+
+const confirmAsk = `<!doctype html><meta charset="utf-8"><title>confirm your address</title>
+<main style="font-family:system-ui;max-width:32rem;margin:3rem auto;padding:0 1rem">
+<h1>Confirm your address</h1>
+<p>Somebody asked to have the address this message reached recorded as theirs. Confirming says that it is, and signs nobody in.</p>
+<form method="post" action="/confirm?%s">
+<input type="hidden" name="token" value="%s">
+<p><button type="submit">this address is mine</button></p>
+</form>
+<p>Did not ask for this? Close this page, and do not confirm: the address would be recorded as somebody else's. Nothing has happened, and the link stops working by itself a few minutes after it was sent.</p></main>`
+
+// The two pages those end at. Plain HTML, because a person arriving from a
+// mail client has no session and the page has one thing to say.
 const recovered = `<!doctype html><meta charset="utf-8"><title>recovered</title>
 <main style="font-family:system-ui;max-width:32rem;margin:3rem auto;padding:0 1rem">
 <h1>Your new password</h1>

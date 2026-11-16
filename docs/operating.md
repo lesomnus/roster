@@ -668,7 +668,12 @@ page says to ask whoever runs the tenant. Nothing else changes.
 
 **What goes out** is plain text in the account app's language: what the link is
 for, the link on a line of its own, and what to do with a message nobody asked
-for -- the link is the one thing in it to follow. A recovery link goes only where
+for -- the link is the one thing in it to follow. **Following it does nothing.**
+Each of the three opens a page that says what the link does and asks, and the
+page's answer is what spends it: a link is fetched by more than the person it
+was sent to -- a mail client previewing it, a gateway following every link in a
+message -- and a link that acted on the fetch would have replaced a password, or
+proved an address, for them. A recovery link goes only where
 it would work: to an address somebody proved, of somebody not suspended, in a
 tenant that is open and offers passwords -- exactly what roster mints a working
 link for, asked by the front door before it asks roster for one. The recovery
