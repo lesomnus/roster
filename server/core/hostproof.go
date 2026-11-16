@@ -10,7 +10,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/prove"
 )
 
@@ -49,7 +48,7 @@ func (s coreHostProof) Add(ctx context.Context, req *app.HostProofAddRequest) (*
 	if err := s.acrossTheTenant(ctx, app.HostProofService_Add_FullMethodName); err != nil {
 		return nil, err
 	}
-	if err := normalised("name", req.GetName(), front.Hostname); err != nil {
+	if err := hostnamed("name", req.GetName()); err != nil {
 		return nil, err
 	}
 	if req.GetToken() != "" {

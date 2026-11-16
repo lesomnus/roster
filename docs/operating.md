@@ -399,6 +399,13 @@ The second call is where the lookup happens -- **there is no third verb**. A
 tenant who has not published yet is refused, saying which record is missing and
 what it should say, so pressing the button again is the whole of what a retry is.
 
+A lookup that could not be made is refused apart from that, as `Unavailable`,
+and in one sentence whatever failed. What the resolver said -- its address, the
+server it was sent to, whether that server's name exists -- is in the log
+instead, under `host: could not ask DNS whether a claim's record is there`:
+which servers are asked is what the claimed name's zone lists, and a tenant
+writes its own zone.
+
 The operator's road is the same second call and nothing before it:
 
 ```sh
@@ -444,10 +451,14 @@ so somebody who publishes a record and presses the button is otherwise refused b
 an `NXDOMAIN` their resolver remembered thirty seconds ago, twice, and concludes
 roster is broken. ACME does it the same way for the same reason.
 
-**Finding** those servers is an ordinary `NS` lookup, so a deployment whose
-resolver answers for its customers' domains out of an internal zone names one
-that does not: that is what `host.resolver` is for, and it is the only thing it is
-for.
+**Finding** those servers is ordinary lookups -- which servers hold the zone,
+and where each of them is -- so a deployment whose resolver answers for its
+customers' domains out of an internal zone names one that does not: that is what
+`host.resolver` is for, and it is the only thing it is for. Every one of those
+lookups goes to it, so nothing about a zone is asked of the system's resolver
+once another is named. A name that is an alias (`CNAME`) is not taken for a
+zone, whatever name servers a resolver answers with for it: the record is
+looked for in the zone the alias is written in.
 
 ## The listeners
 

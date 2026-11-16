@@ -173,6 +173,7 @@ removed (`TestADirectoryMaySuspendTheLastAdministrator`).
 | A subject is the identifier its provider keeps fixed, and a person has one account at a provider | `server/core/identity.go` | `TestASubjectThatLooksLikeAnAddressIsRefused` · `TestASecondAccountAtOneProviderIsRefused` · `TestTwoPeopleCannotBeOneSubject` |
 | A hostname is claimed by a record published for it, and the latest proof takes it -- written down in the trail of the tenant that held it, and never a name a file declares | `server/core/host.go` | `TestTheLatestProofTakesTheName` · `TestANameTakenIsOnTheTrailOfWhoeverHeldIt` |
 | A name is written by its proof alone: its general writes, a claim's and a tenant's are not served, whatever `allow_general_writes` says | `cmd/serve.go` | `TestAGeneralWriteDoesNotWriteANamePastItsProof` |
+| The record is asked of the name's own zone, never of where an alias points; a name is one spelling, a hostname, and a lookup that failed says nothing of the resolver | `server/prove/prove.go` | `TestANameIsAskedOfItsOwnZone` · `TestATrailingDotIsTheSameName` · `TestANameThatIsNotAHostnameIsRefused` · `TestALookupThatFailedSaysNothingOfTheResolver` |
 
 ### One tenant is not reached from another
 

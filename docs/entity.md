@@ -698,7 +698,7 @@ there is a tenant to read it for.
 ### 🌐 `Host` — a name a front door answers at
 
 Turns the name a browser arrived at -- `contoso.example.com`, lowercased and
-without a port -- into a tenant. A row rather than a repeated field on
+without a port or a last dot -- into a tenant. A row rather than a repeated field on
 🏢 `Tenant` because it has to be looked up, and a repeated field is one value to
 the database with no index. `name` is unique **across the deployment**, one of
 the few constraints that crosses the wall: two operators cannot both own the

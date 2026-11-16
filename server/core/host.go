@@ -2,13 +2,18 @@ package core
 
 import (
 	"context"
+	"log/slog"
+	"net/netip"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/protobuf-orm/ent/dialect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/otx/log"
 	"github.com/lesomnus/z"
 
 	"github.com/lesomnus/payday/frame"
@@ -42,6 +47,20 @@ import (
 // what a browser arrived at, so a row that is not normalised is a row no
 // request ever reaches. The symptom is a sign-in page saying nobody is there,
 // on a tenant that is plainly configured, which is a long way from the cause.
+//
+// # And a host's name is a hostname
+//
+// Being what `front.Hostname` answers is a rule about spelling, and it passes
+// anything that function leaves alone: `*.example.com`, `a b`,
+// `contoso.example.com/x`, `@fabrikam`. None of those is a name a request
+// arrives at, so each is a row that never matches, listed as though it could
+// -- and the last is how `roster-at` spells a tenant, which
+// `front.TenantMark` says no hostname can be mistaken for.
+//
+// So a `Host` and a claim on one are held to what DNS could hold
+// ([hostnamed]), by whichever road writes them. A proof is asked about the
+// name as written, and a name DNS cannot hold is one nothing can be asked
+// about.
 
 type coreHost struct {
 	Core
@@ -78,7 +97,7 @@ func (s coreHost) Add(ctx context.Context, req *app.HostAddRequest) (*app.Host, 
 	if err := s.acrossTheTenant(ctx, app.HostService_Add_FullMethodName); err != nil {
 		return nil, err
 	}
-	if err := normalised("name", req.GetName(), front.Hostname); err != nil {
+	if err := hostnamed("name", req.GetName()); err != nil {
 		return nil, err
 	}
 	own, err := s.ownName(ctx, req.GetTenant())
@@ -190,10 +209,22 @@ func (s coreHost) proved(ctx context.Context, req *app.HostAddRequest) (*app.Hos
 	// mornings: a lookup that never left is not a record that is wrong, and
 	// telling somebody their zone is wrong when it is not is how an afternoon
 	// goes on a correct zone file.
+	//
+	// And refused in one sentence, whatever failed. The error is the
+	// resolver's own words -- its address, the server it was sent to, whether
+	// that server's name exists -- and which servers are asked is what the
+	// claimed name's zone lists, which the caller writes. Repeated to them, it
+	// answers a question about this deployment's network per claim. So what
+	// failed goes to the log, for the operator it is news to, and the caller
+	// is told only that the asking failed.
 	held, err := prove.Held(ctx, s.proving, name, c.GetToken())
 	if err != nil {
+		log.From(ctx).WarnContext(ctx, "host: could not ask DNS whether a claim's record is there",
+			slog.String("name", name), slog.Any("err", err))
+
 		return nil, status.Errorf(codes.Unavailable,
-			"%s: could not ask DNS whether the record is there: %v", name, err)
+			"%s: could not ask DNS whether the record is there, which says nothing about the record; "+
+				"what failed is in this deployment's log, for a roster operator to read", name)
 	}
 	if !held {
 		return nil, status.Errorf(codes.FailedPrecondition,
@@ -256,7 +287,7 @@ func (s coreHost) Patch(ctx context.Context, req *app.HostPatchRequest) (*app.Ho
 		return nil, err
 	}
 	if req.HasName() {
-		if err := normalised("name", req.GetName(), front.Hostname); err != nil {
+		if err := hostnamed("name", req.GetName()); err != nil {
 			return nil, err
 		}
 	}
@@ -341,6 +372,76 @@ func normalised(field, v string, by func(string) string) error {
 
 	return status.Errorf(codes.InvalidArgument,
 		"%s: stored as it is compared, so %q rather than %q", field, w, v)
+}
+
+// hostnamed is [normalised] for a host's name, which is also held to being a
+// hostname.
+//
+// What is held to it is what the name would be stored as, and before the other
+// rule speaks: a refusal that says *write it this way* names a form the next
+// write would be refused for otherwise, and somebody is sent round twice.
+func hostnamed(field, v string) error {
+	if w := front.Hostname(v); w != "" {
+		if why := notHostname(w); why != "" {
+			return status.Errorf(codes.InvalidArgument, "%s: %q is not a hostname: %s", field, v, why)
+		}
+	}
+
+	return normalised(field, v, front.Hostname)
+}
+
+// notHostname says why a name is not one DNS could hold, and nothing where it
+// is.
+//
+// Labels between dots, each of letters, digits and hyphens, with a hyphen at
+// neither end, 63 bytes at most and 253 for the whole. That is RFC 1123's
+// hostname and nothing further:
+//
+//   - **No dot is asked for.** `localhost` is where a deployment on one machine
+//     is reached, and `scripts/e2e.sh` is one.
+//   - **An address is a name too.** A request arrives at `127.0.0.1` or
+//     `[::1]` as readily as at a name, and `front.Hostname` stores the second
+//     without its brackets. Nothing can be proved about one, so it is a row an
+//     operator writes.
+//   - **An A-label is an ordinary label.** `xn--bcher-kva.example` is what a
+//     browser sends and what a zone file has. The same name in its own letters
+//     is refused, saying so: it is a spelling no request arrives as and no
+//     server can be asked about.
+//
+// An underscore is refused with everything else that is not one of the three.
+// It begins a name that is data rather than a host -- `_dmarc`,
+// `prove.Record` itself -- and a front door is not reached at one.
+func notHostname(v string) string {
+	if at, err := netip.ParseAddr(v); err == nil && at.Zone() == "" {
+		return ""
+	}
+	if strings.IndexFunc(v, func(r rune) bool { return r >= utf8.RuneSelf }) >= 0 {
+		return "write its A-label, the \"xn--\" form a browser sends, because DNS holds no character outside ASCII"
+	}
+	if len(v) > 253 {
+		return "a name is 253 bytes at most"
+	}
+
+	for _, label := range strings.Split(v, ".") {
+		switch {
+		case label == "":
+			return "a label between its dots is empty"
+		case len(label) > 63:
+			return "a label is 63 bytes at most"
+		case label[0] == '-' || label[len(label)-1] == '-':
+			return "a label neither begins nor ends with a hyphen"
+		}
+
+		for _, c := range []byte(label) {
+			switch {
+			case 'a' <= c && c <= 'z', 'A' <= c && c <= 'Z', '0' <= c && c <= '9', c == '-':
+			default:
+				return "a label holds something other than a letter, a digit or a hyphen"
+			}
+		}
+	}
+
+	return ""
 }
 
 // Update is `Patch` with the name held back; `host_svc.ext.proto` says why.
