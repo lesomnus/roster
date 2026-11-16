@@ -85,7 +85,7 @@ func TestATerminalIsSignedInFromABrowser(t *testing.T) {
 
 	// The terminal's next poll carries the key away, once.
 	key := ""
-	code, body = term.do(t, http.MethodGet, "/device/poll?device_code="+began.DeviceCode, "", nil)
+	code, body = asked(t, term, began.DeviceCode)
 	x.Equal(http.StatusOK, code, body)
 	var got struct{ Token string }
 	x.NoError(json.Unmarshal([]byte(body), &got))
@@ -298,7 +298,7 @@ func TestADeploymentThatDoesNotSignTerminalsInSaysSo(t *testing.T) {
 
 	for _, at := range []struct{ method, path string }{
 		{http.MethodPost, "/device/begin"},
-		{http.MethodGet, "/device/poll?device_code=x"},
+		{http.MethodPost, "/device/poll"},
 		{http.MethodGet, "/device/pending?user_code=x"},
 		{http.MethodPost, "/device/approve"},
 	} {
@@ -364,7 +364,7 @@ func mints(t *testing.T, d *deployment) {
 func polls(t *testing.T, b *browser, code string) string {
 	t.Helper()
 
-	_, body := b.do(t, http.MethodGet, "/device/poll?device_code="+code, "", nil)
+	_, body := asked(t, b, code)
 
 	var out struct{ Error string }
 	require.NoError(t, json.Unmarshal([]byte(body), &out), body)

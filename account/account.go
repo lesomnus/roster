@@ -545,7 +545,10 @@ func (a *App) Handler() http.Handler {
 
 	// A terminal, which has no browser and no credential: `device.go`.
 	m.HandleFunc("POST /device/begin", a.deviceBegin)
-	m.HandleFunc("GET /device/poll", a.devicePoll)
+	// No method on the pattern: one would leave every other method to the page
+	// below, and a poll asked by its address is told so ([App.devicePoll]).
+	m.HandleFunc("/device/poll", a.devicePoll)
+	m.HandleFunc("GET /device", a.devicePage)
 	m.HandleFunc("GET /device/pending", a.devicePending)
 	m.HandleFunc("POST /device/approve", a.deviceApprove)
 	m.HandleFunc("GET /callback/{tenant}/{connection}", a.callback)

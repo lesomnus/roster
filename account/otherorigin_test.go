@@ -79,7 +79,7 @@ func TestTheAppsOwnRoutesTakeNoRequestFromAnotherOrigin(t *testing.T) {
 			x.Equal(http.StatusForbidden, code, "%s: %s", name, body)
 		}
 
-		code, body = d.browser(t, "contoso.test").do(t, http.MethodGet, "/device/poll?device_code="+began.DeviceCode, "", nil)
+		code, body = asked(t, d.browser(t, "contoso.test"), began.DeviceCode)
 		x.Equal(http.StatusBadRequest, code, body)
 		x.Contains(body, "authorization_pending", "a terminal was handed a key by another site's form")
 

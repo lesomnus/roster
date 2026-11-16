@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -84,7 +86,17 @@ func NewCmdSignIn(c *cmd.Config) *xli.Command {
 				return errors.New("--allow: what this terminal may call, e.g. /roster.MeService/Get")
 			}
 
-			key, err := SignIn(ctx, cl.Printf, http.DefaultClient, strings.TrimSuffix(at, "/"), name, allow)
+			// Over `https`, since what comes back is a key; `http` is taken
+			// for this machine alone, which is a development rig.
+			u, err := url.Parse(at)
+			if err != nil || u.Host == "" || (u.Scheme != "https" && !(u.Scheme == "http" && thisMachine(u.Hostname()))) {
+				return fmt.Errorf("--at %s: an https address of the account app; http is taken for this machine alone", at)
+			}
+
+			// A client that gives up on one request, which the default never
+			// does: a front door that took a connection and said nothing held
+			// this command for as long as it liked.
+			key, err := SignIn(ctx, cl.Printf, &http.Client{Timeout: 30 * time.Second}, strings.TrimSuffix(at, "/"), name, allow)
 			if err != nil {
 				return err
 			}
@@ -183,10 +195,18 @@ func SignIn(ctx context.Context, say func(string, ...any) (int, error), cl *http
 	_, _ = say("waiting, for up to %s...\n", (time.Duration(v.ExpiresIn) * time.Second).String())
 
 	wait := time.Duration(max(v.Interval, 1)) * time.Second
+
+	// The code's own clock, kept here too: a front door that cannot be reached
+	// reads as *not yet* below, so that a moment's outage is not the end of
+	// the flow, and without this it read as *not yet* for ever.
+	ctx, cancel := context.WithTimeoutCause(ctx, time.Duration(max(v.ExpiresIn, 1))*time.Second+wait,
+		errors.New("the code ran out before anybody approved it"))
+	defer cancel()
+
 	for {
 		select {
 		case <-ctx.Done():
-			return "", ctx.Err()
+			return "", context.Cause(ctx)
 		case <-time.After(wait):
 		}
 
@@ -215,10 +235,18 @@ func SignIn(ctx context.Context, say func(string, ...any) (int, error), cl *http
 
 // poll asks once. It answers the key, or the reason to keep waiting.
 func poll(ctx context.Context, cl *http.Client, at, code string) (string, string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, at+"/device/poll?device_code="+code, nil)
+	// Posted, with the code in the body: it is the whole of what a poll is held
+	// to, and an address is what every log between here and there keeps
+	// (`account/device.go`, `devicePoll`).
+	body, err := json.Marshal(map[string]string{"device_code": code})
 	if err != nil {
 		return "", "", err
 	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, at+"/device/poll", bytes.NewReader(body))
+	if err != nil {
+		return "", "", err
+	}
+	req.Header.Set("content-type", "application/json")
 
 	res, err := cl.Do(req)
 	if err != nil {
@@ -244,6 +272,16 @@ func poll(ctx context.Context, cl *http.Client, at, code string) (string, string
 	}
 
 	return "", out.Error, nil
+}
+
+// thisMachine is whether a host is this machine's own name for itself.
+func thisMachine(host string) bool {
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+
+	return ip != nil && ip.IsLoopback()
 }
 
 func read(res *http.Response) string {
