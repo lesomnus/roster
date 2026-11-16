@@ -64,10 +64,11 @@ narrowing every read (`server/keys/at.go`). Nothing about the frame is the
 key's own -- its `methods` are not consulted on a narrowed call.
 
 What the key's `methods` are for is the call that **does not** name a tenant,
-across all of them, as the key. The Login App has three (`WhoseHost`,
-`TenantService/Get`, `SyncService/Watch`), because it has to work out whose
-flow a challenge is before it can narrow. A product that always knows which
-tenant a request is about has none, and is minted with nothing on it:
+across all of them, as the key. The Login App has two: `WhoseHost`, because it
+has to work out whose flow a challenge is before it can narrow, and
+`SyncService/Watch`, one stream that hears every tenant's sign-outs. A product
+that always knows which tenant a request is about has none, and is minted with
+nothing on it:
 
 ```sh
 roster control key add --narrowed loft

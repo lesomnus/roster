@@ -47,7 +47,7 @@ import (
 // lists are deliberately **different**, and what each one has to be is what this
 // pins:
 //
-//	the key's        the three reads made before the tenant is known
+//	the key's        what is called before the tenant is known, or about all of them
 //	the role's       everything a call inside a flow does, widened by `enrolling`
 //
 // A key as wide as the role would be a key that could do all of it **without**
@@ -200,24 +200,117 @@ func TestTheProvisionedRoleAllowsWhatThePolicyAsksFor(t *testing.T) {
 // TestTheProvisionedKeyIsNarrowerThanTheRole is the bound that replaced *the two
 // lists must match*.
 //
-// The key may make the three reads that work out whose flow this is, and nothing
-// else. Everything a flow actually does is the nominated holder's role, reached
-// only by a request that **names a tenant** -- so a key as wide as the role would
-// be one that could do all of it with the wide frame a `Nomination` exists to
-// take away.
+// The key may ask which tenant a name is and hear every tenant's sign-outs, and
+// nothing else. Everything a flow actually does is the nominated holder's role,
+// reached only by a request that **names a tenant** -- so a key as wide as the
+// role would be one that could do all of it with the wide frame a `Nomination`
+// exists to take away.
+//
+// # Each list is what the app calls there, and no more
+//
+// The two calls are written out here rather than read off `cli.LoginResolving`
+// alone, because a list held only to itself says nothing. The key held
+// `TenantService/Get` as well, for the alias and the name of the tenant a name
+// had just resolved to -- and held unnarrowed, that read any tenant's whole row,
+// by identifier or by alias, fronted or not: its name, its labels, its
+// configuration, whether it is held or closing. The app reads that row narrowed
+// to the tenant now, so it is the role's. And the role held two the app never
+// calls in a tenant: `VouchService/Verify`, where a front door checks a
+// password with `Delegate`, and `SyncService/Watch`, which is one stream opened
+// by the key as itself.
 func TestTheProvisionedKeyIsNarrowerThanTheRole(t *testing.T) {
 	x := require.New(t)
 
 	key, role := provisioned(t, "enrolling")
 
 	x.ElementsMatch(cli.LoginResolving, key)
+	x.ElementsMatch([]string{"/roster.FrontService/WhoseHost", "/roster.SyncService/Watch"}, key,
+		"the key is allowed something other than what the app calls before a flow names a tenant")
 	x.NotContains(key, "/roster.HolderService/Add")
 	x.NotContains(key, "/roster.VouchService/Verify",
 		"the key can verify a password without naming a tenant, which is the frame this removes")
+	x.NotContains(key, "/roster.TenantService/Get",
+		"the key can read any tenant's row without naming a tenant")
 
 	// And the role is the wider of the two, which is the direction that has to
 	// hold: it is reached only through a nomination.
 	x.Greater(len(role), len(key))
+	x.Contains(role, "/roster.TenantService/Get", "what a tenant is called is read as the holder it nominated")
+	x.Contains(role, "/roster.VouchService/Delegate")
+	x.NotContains(role, "/roster.VouchService/Verify", "nothing in a flow calls it: a password is checked with `Delegate`")
+	x.NotContains(role, "/roster.SyncService/Watch", "the stream is the key's as itself, and is opened in no tenant")
+}
+
+// TestTheLoginAppsKeyReadsATenantAsWhoThatTenantNominated is what the two
+// lists mean at the port, with the key `roster login provision` wrote.
+//
+// As itself the key is told which tenant a name is, and reads no tenant's row:
+// it answered contoso's alias and name to a call that named no tenant, and
+// right is `PermissionDenied`. Narrowed to a name, it reads the tenant that
+// name is -- which is the read the app makes for the alias a sign-in is
+// addressed by -- and another tenant's is not there.
+func TestTheLoginAppsKeyReadsATenantAsWhoThatTenantNominated(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	drv, dsn := pdtest.DB(t)
+	cdrv, cdsn := pdtest.DB(t)
+	out := t.TempDir()
+	c := cmd.Config{
+		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
+	}
+
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	x.NoError(entmigrate.NewSchema(s.Drv).Create(ctx))
+	x.NoError(entmigrate.NewSchema(s.Control.Drv).Create(ctx))
+	ids := map[string][]byte{}
+	for _, alias := range []string{"contoso", "fabrikam"} {
+		tn, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: alias}.Build())
+		x.NoError(err)
+		_, err = s.Ungated.Host().Add(ctx, app.HostAddRequest_builder{
+			Tenant: app.TenantRef_builder{Id: tn.GetId()}.Build(),
+			Name:   alias + ".example.com",
+		}.Build())
+		x.NoError(err)
+		ids[alias] = tn.GetId()
+	}
+	x.NoError(s.Close())
+
+	x.NoError(cli.NewCmdLogin(cfg.New(cmd.Name, &c), &c).Run(ctx, []string{"provision", "--out", out}))
+	b, err := os.ReadFile(filepath.Join(out, "login-app.key"))
+	x.NoError(err)
+	key := strings.TrimSpace(string(b))
+
+	s, err = cmd.Build(ctx, c)
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+	conn := served(t, s)
+
+	read := func(ctx context.Context, alias string) (*app.Tenant, error) {
+		return app.NewTenantServiceClient(conn).Get(ctx, app.TenantGetRequest_builder{
+			Ref:    app.TenantRef_builder{Id: ids[alias]}.Build(),
+			Select: app.TenantSelect_builder{Alias: proto.Bool(true), Name: proto.Bool(true)}.Build(),
+		}.Build())
+	}
+
+	res, err := app.NewFrontServiceClient(conn).WhoseHost(bearing(ctx, key),
+		app.FrontWhoseHostRequest_builder{Host: "contoso.example.com"}.Build())
+	x.NoError(err, "the key is not told which tenant a name is")
+	x.Equal(ids["contoso"], res.GetTenant())
+
+	_, err = read(bearing(ctx, key), "contoso")
+	x.Equal(codes.PermissionDenied, status.Code(err),
+		"the key read a tenant's row as itself, naming no tenant: %v", err)
+
+	v, err := read(arrivedAt(ctx, key, "contoso.example.com"), "contoso")
+	x.NoError(err, "narrowed to a name, the key does not read the tenant that name is")
+	x.Equal("contoso", v.GetAlias())
+
+	_, err = read(arrivedAt(ctx, key, "contoso.example.com"), "fabrikam")
+	x.Equal(codes.NotFound, status.Code(err), "narrowed to one tenant's name, the key read another's row: %v", err)
 }
 
 // TestProvisionMigratesBothPlanes is the first start of a fresh deployment, and

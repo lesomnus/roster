@@ -29,6 +29,7 @@ import (
 	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/roster/arrives"
+	"github.com/lesomnus/roster/cli"
 	"github.com/lesomnus/roster/cmd"
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	"github.com/lesomnus/roster/internal/idptest"
@@ -527,8 +528,9 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 
 	// The app's one credential: a deployment key, on a control-plane holder.
 	//
-	// The three reads it makes before it knows whose flow it is, and nothing
-	// else -- `cli.LoginResolving` is the same list and says why. What every
+	// What it calls before a flow names a tenant, and nothing else:
+	// `cli.LoginResolving`, the list `roster login provision` mints its key
+	// with, so that every flow walked here is walked on that list. What every
 	// call *inside* a flow may do is the nominated holder's role, because
 	// `keys.At` answers as that holder with `frame.Whole()` and does not carry
 	// the key's own list through.
@@ -541,11 +543,7 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 		x.NoError(err)
 		_, err = s.Control.Ungated.ApiKey().Add(ctx, rstr.ApiKeyAddRequest_builder{
 			Holder: rstr.HolderRef_builder{Id: who.Bytes()}.Build(), Alias: "login-app", Secret: sum,
-			Methods: []string{
-				rstr.FrontService_WhoseHost_FullMethodName,
-				rstr.TenantService_Get_FullMethodName,
-				rstr.SyncService_Watch_FullMethodName,
-			},
+			Methods: cli.LoginResolving,
 		}.Build())
 		x.NoError(err)
 
@@ -594,43 +592,25 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 		x.NoError(err)
 
 		// The app, as a holder in this tenant, with a key that acts as it.
+		//
+		// Its role is `cli.LoginMethods`, the list `roster login provision`
+		// writes: what a flow walked here may call is what a flow in a
+		// deployment may, so a call the app makes that the list has not got is
+		// a test here that fails.
 		front, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: "login-app"}.Build())
 		x.NoError(err)
 		frontRole, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
 			Tenant: at, Alias: "front-door",
 			Methods: append([]string{
-				"/roster.TenantService/Get",
 				"/roster.TenantService/Update",
-				"/roster.VouchService/Verify",
-				"/roster.VouchService/Delegate",
-				"/roster.VouchService/Accept",
-				"/roster.DelegationService/Revoke",
-				"/roster.SyncService/Watch",
-				"/roster.ConnectionService/Get",
-				"/roster.ConnectionService/List",
-				"/roster.IdentityService/Get",
-				"/roster.IdentityService/Add",
-				"/roster.EmailService/Get",
-				"/roster.EmailService/Attest",
 				"/roster.EmailService/Add",
 
-				// Whether somebody an address names has arrived yet, which is
-				// what an invitation is read under (`arrives.invitation`).
-				"/roster.HolderService/SignsIn",
-
-				// What `enrol: enrolling` needs, and what the key `roster login
-				// provision` mints deliberately does not hold. Here so that one
-				// test can be about the policy rather than about the grant.
+				// What `enrol: enrolling` needs, and what the role `roster login
+				// provision` writes holds only where a deployment said so. Here
+				// so that one test can be about the policy rather than about the
+				// grant.
 				"/roster.HolderService/Add",
-
-				// And what fills a tenant's blanks, which `roster login
-				// provision` writes into the role whatever the policy.
-				"/roster.HolderService/Fill",
-
-				// And what moves somebody to the claim their connection
-				// names, which it writes in whatever the connection says.
-				"/roster.IdentityService/Resubject",
-			}, login.Methods...),
+			}, cli.LoginMethods...),
 		}.Build())
 		x.NoError(err)
 		_, err = s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{

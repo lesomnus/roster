@@ -192,6 +192,17 @@ through that tenant's own `Host` row. Not the hostname the browser arrived at:
 Hydra has one `urls.login` for the whole issuer, so every flow lands here under
 one name and the arrival host says nothing about anybody.
 
+What a name resolved to is **remembered a minute**, as the account app
+remembers one, and then asked about again: which tenant it is, and that
+tenant's alias and what it is called. So a name that moved to another tenant
+signs that tenant's people in within a minute, and a tenant whose alias or name
+changed is addressed and drawn by the new one, with no restart. It was kept for
+the life of the process, and a changed alias was every password of that tenant
+refused until one (`TestATenantsNewAliasSignsItsPeopleInOnceAMinuteHasPassed`,
+`TestANameThatMovedSignsInTheTenantItMovedTo`). A round trip to a provider that
+was already under way is finished as the tenant it began with, which is ten
+minutes at most.
+
 It was the OAuth **client**, through a map this app was configured with
 (`login.clients`), and that had to go: one product serving a hundred tenants is
 one client, so a discriminator that is the client forces a Hydra registration per
@@ -1091,8 +1102,9 @@ the mechanism, `proto/app/nomination.proto` the row and why it is not a field on
 **And the key's own method list is not carried through.** `keys.At` answers as the
 nominated holder with `frame.Whole()`, so what bounds a call inside a flow is that
 holder's role -- which is why `roster login provision` writes two different lists:
-the key may make only the reads that work out *whose* flow this is, and everything
-a flow does is the role's. A key as wide as the role would be one that could do
+the key may make only the calls that name no tenant -- *whose* name a flow named,
+and the stream of every tenant's sign-outs -- and everything a flow does is the
+role's. A key as wide as the role would be one that could do
 all of it without naming a tenant, which is the frame this exists to take away.
 
 `roster key add --tenant contoso --holder account --allow …` mints an `rt_`;
@@ -1108,10 +1120,16 @@ browser -- and the key is the only thing that assertion is held against.
 This is what a front door calls, in general. A **self-hosted** one holds it all on
 its one `rt_` -- the holder's bindings narrowed by the key's own methods. A
 **roster-hosted** one splits it: the key holds only what it calls without naming
-a tenant -- for the Login App, `WhoseHost` and `TenantService/Get` before a flow's
-tenant is known, and the one `SyncService/Watch` stream that hears every tenant --
-and the rest is the role of the holder each tenant nominated. `cli.LoginResolving`
-and `cli.LoginMethods` are the Login App's two lists exactly.
+a tenant -- for the Login App, `WhoseHost` before a flow's tenant is known, and
+the one `SyncService/Watch` stream that hears every tenant -- and the rest is the
+role of the holder each tenant nominated. `cli.LoginResolving` and
+`cli.LoginMethods` are the Login App's two lists exactly, and each is what it
+calls there and no more: what the tenant a name resolved to is called
+(`TenantService/Get`) is read as that tenant's nominee and is the role's, so the
+key reads no tenant's row as itself; and the role holds neither `Verify`, since
+the app checks a password with `Delegate`, nor `Watch`, which is the key's
+(`TestTheProvisionedKeyIsNarrowerThanTheRole`,
+`TestTheLoginAppsKeyReadsATenantAsWhoThatTenantNominated`).
 
 | | |
 | --- | --- |
@@ -1188,7 +1206,7 @@ off a control-plane row, because it is answered across tenants when it is not
 narrowed -- so a roster-hosted app has one row there, owning its key, and that
 row is never who a narrowed call is answered as. The control plane's other rows
 are the roster operators themselves. What an unnarrowed `rk_` may do is exactly
-its `methods`: three reads for the Login App, none for an app minted
+its `methods`: two calls for the Login App, none for an app minted
 `--narrowed`, and for a job whose work really is every tenant's -- reading the
 trail -- whatever that work names.
 

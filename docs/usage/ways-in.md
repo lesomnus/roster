@@ -112,8 +112,8 @@ hangs off a row of the control plane, which is why the command says `control`:
 it writes to the other database.
 
 It answers two ways. **Unnarrowed**, as itself, across every tenant, allowed
-exactly its `--allow` -- the job reading the trail, or the Login App's three reads
-before it knows whose flow a challenge is. **Narrowed**, with `roster-at: <a name
+exactly its `--allow` -- the job reading the trail, or the Login App asking which
+tenant a name is before it knows whose flow a challenge is. **Narrowed**, with `roster-at: <a name
 a tenant answers at>`, as the holder that tenant nominated for this key, with
 that holder's bindings: everything a product does for one of your customers.
 [apps.md](../apps.md) is which of those an app needs, and the shapes it can take.
