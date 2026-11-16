@@ -434,11 +434,12 @@ func (s coreEmail) vouching(ctx context.Context, ref *app.IdentityRef, whose []b
 // Confirm spends a verification link and stamps its address.
 //
 // Every refusal is one `NotFound`, for `Vouch.Redeem`'s reason: a token never
-// minted, one spent, one expired, one another caller minted, and one that is a
-// recovery link (no `email`) must be told apart by nobody holding a found
-// string. What is different from `Redeem` is the whole point -- nothing is
-// minted. `date_verified` is written here, through the generated `Patch`, which
-// is the one road to it: the gate refuses a request that asserts it.
+// minted, one spent, one expired, one another caller minted, one that is a
+// recovery link (no `email`), and one for somebody who may no longer sign in
+// must be told apart by nobody holding a found string. What is different from
+// `Redeem` is the whole point -- nothing is minted. `date_verified` is written
+// here, through the generated `Patch`, which is the one road to it: the gate
+// refuses a request that asserts it.
 //
 // # And it is where an address changes hands
 //
@@ -479,8 +480,12 @@ func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*
 			// Whose claim it is, which for an ordinary verification is the row's
 			// own holder and for a claim is somebody else. Read here rather than
 			// assumed, which is the difference between stamping a row and moving
-			// an address.
-			Holder: app.HolderSelect_builder{}.Build(),
+			// an address -- and with whether they may still sign in, which is
+			// asked below.
+			Holder: app.HolderSelect_builder{
+				Tenant:       app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
+				DateDisabled: z.Ptr(true),
+			}.Build(),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -500,6 +505,31 @@ func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*
 		// would be a departure somebody confirmed and nobody made (`link.proto`
 		// § `leave`).
 		l.GetLeave():
+		return nil, no
+	}
+
+	// Somebody erased or suspended between the sending and the clicking, or
+	// whose tenant closed, is somebody nothing is proved for -- what
+	// `vouch.Server.row` asks of the other three kinds of link, and this door
+	// did not ask. An address proved is a name that resolves somebody and a
+	// mailbox a recovery link goes to: it was stamped for a person who had
+	// been stopped, and was theirs, proved, the moment they were enabled or
+	// restored (#277).
+	//
+	// Whoever the link is **for**, which for a claim is the claimant. The
+	// row's holder is who loses an address nobody proved, and their standing
+	// was never what kept it.
+	//
+	// Erased is read as a holder that did not come back, as `vouch.Server.row`
+	// and `keys.signable` read it: an edge is loaded through the rows still
+	// there, so somebody erased is a bare reference with no `date_erased` to
+	// read and no tenant, and every holder has a tenant.
+	//
+	// The epoch is not read, on purpose (`Link.date_created`): proving a
+	// mailbox signs nobody in. And before the spend, like every refusal above,
+	// so that what is refused is not also used up.
+	h := l.GetHolder()
+	if gone := len(h.GetTenant().GetId()) == 0; gone || h.GetDateDisabled() != nil || h.GetTenant().GetDateClosed() != nil {
 		return nil, no
 	}
 

@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
@@ -13,7 +14,9 @@ import (
 	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/roster/cmd"
+	entsession "github.com/lesomnus/roster/internal/ent/session"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/session"
 )
 
 // These are docs/usage/ways-in.md § stopping one, asked at the doors a caller
@@ -100,6 +103,44 @@ func TestInvalidateEndsTheConsolesOwnSessions(t *testing.T) {
 		_, err := me.Get(metadata.NewOutgoingContext(ctx, with(again.Name, again.Value)),
 			app.MeGetRequest_builder{}.Build())
 		x.NoError(err)
+	})
+
+	// Written rather than minted, because nothing mints at a moment it is told:
+	// a session with the grant of one that was signed in, and a `date_created`
+	// that is the stamp to the digit. The store read *before*, so this one
+	// instant was the one credential a stamp left standing -- a delegation, the
+	// sign-in a key carries, a link and a sign-in half made all read a tie as
+	// too old (#277).
+	t.Run("and one minted in the instant of the stamp is too old, as a delegation is", func(t *testing.T) {
+		x := require.New(t)
+
+		was, err := s.Control.Ent.Session.Query().Where(entsession.SecretEQ(session.Sum(one.Value))).Only(ctx)
+		x.NoError(err)
+		who, err := s.Control.Ent.Holder.Get(ctx, was.HolderId)
+		x.NoError(err)
+		x.NotNil(who.DateInvalidated)
+
+		written := func(key string, at time.Time) metadata.MD {
+			x.NoError(s.Control.Ent.Session.Create().
+				SetId(uuid.New()).
+				SetHolderId(was.HolderId).
+				SetSecret(session.Sum(key)).
+				SetGrant(was.Grant).
+				SetDateExpires(time.Now().Add(time.Hour)).
+				SetDateUpdated(at).
+				SetDateCreated(at).
+				Exec(ctx))
+
+			return with(one.Name, key)
+		}
+
+		_, err = me.Get(metadata.NewOutgoingContext(ctx, written("minted-with-the-stamp", *who.DateInvalidated)),
+			app.MeGetRequest_builder{}.Build())
+		x.Equal(codes.Unauthenticated, status.Code(err), "a tie was read as newer: %v", err)
+
+		_, err = me.Get(metadata.NewOutgoingContext(ctx, written("minted-a-moment-after", who.DateInvalidated.Add(time.Millisecond))),
+			app.MeGetRequest_builder{}.Build())
+		x.NoError(err, "the control: the same row, a moment later")
 	})
 }
 
