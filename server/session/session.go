@@ -52,7 +52,8 @@ var _ authsession.Store = (*Store)(nil)
 // `authsession` calls this twice for two different reasons: once when a cookie
 // is minted, and again -- rarely -- when the idle clock has passed its halfway
 // point. So a row that is already there is updated rather than refused, and the
-// update touches the one column that can have changed.
+// update touches the one column that can have changed. A session that has
+// ended is neither, and is answered [authsession.ErrNoSession].
 func (s *Store) Put(ctx context.Context, v authsession.Session) error {
 	// Nowhere to put it, and said so rather than dropped: the admin console holds
 	// nothing beside a session, and an app that did would find its sign-in
@@ -80,6 +81,29 @@ func (s *Store) Put(ctx context.Context, v authsession.Session) error {
 
 	case !ent.IsNotFound(err):
 		return err
+	}
+
+	// No live row. A cookie being minted, or the clock of a session that has
+	// **ended** since the request carrying it read it -- signed out in another
+	// tab, voided, collected.
+	//
+	// This made a row either way, and for the second that was the session
+	// back: the same secret, the expiry it had, and *created now*, which is
+	// also past the stamp `Holder.Invalidate` voids by. The cookie somebody
+	// had just signed out answered again until its expiry (#275).
+	//
+	// They are told apart by the secret. A cookie's value is thirty-two random
+	// bytes and is minted once, so one that has ever been a row here is not
+	// one being minted -- and an ended row is still a row, since ending one is
+	// an erase and not a delete. The caller is `authsession`'s `used`, which
+	// ignores a refusal: the request in flight is served, and nothing is
+	// written.
+	ended, err := s.db.Session.Query().Where(session.SecretEQ(sum)).Exist(ctx)
+	if err != nil {
+		return err
+	}
+	if ended {
+		return authsession.ErrNoSession
 	}
 
 	who, err := pdid.Parse(v.Id)
