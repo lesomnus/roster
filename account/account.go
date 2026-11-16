@@ -794,12 +794,27 @@ func (a *App) origin(r *http.Request) string {
 	if a.c.Base != nil {
 		return a.c.Base.String()
 	}
-	scheme := "http"
-	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
-		scheme = "https"
+
+	return a.scheme(r) + "://" + r.Host
+}
+
+// scheme is how this app is reached, where no `Base` says: `https`, wherever
+// its own cookies are `Secure`.
+//
+// It was what the request said of itself -- `https` if the connection was TLS
+// or `X-Forwarded-Proto` said so, and `http` otherwise. Behind what terminates
+// TLS the connection never is, and the header is whoever sent the request's to
+// write or leave out; so a recovery link a stranger asked for went out as
+// `http://`, and so did the address a provider is told to send a browser back
+// to (#277). An app whose cookies are `Secure` works over `https` and nothing
+// else, so that is what it says, whatever a request says. A development rig,
+// which said its cookies are not, is read as it was.
+func (a *App) scheme(r *http.Request) string {
+	if !a.c.InsecureCookie || r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		return "https"
 	}
 
-	return scheme + "://" + r.Host
+	return "http"
 }
 
 // A flow is one round trip to a provider, started and not yet finished. It is
@@ -1124,15 +1139,20 @@ func claimOf(t *tenant, who arrives.Caller) frontdoor.Claim {
 // console's to name and not the caller's. One answer for a name nobody serves
 // and a name another tenant does: which of the two it was is not the browser's
 // to learn at a form strangers reach.
+//
+// And `https`, wherever this app's own cookies are `Secure`. What is sent
+// there is the link that ends in the person's whole session at that console,
+// and `/login` is a `GET` anybody can write: `next=http://<the tenant's name>`
+// was taken, and the link travelled in the clear (#277).
 func (a *App) nextOf(ctx context.Context, v string, t *tenant) (*url.URL, error) {
 	if v == "" {
 		return nil, nil
 	}
 
-	bad := errors.New("an origin this tenant answers at, and nothing after the host")
+	bad := errors.New("an https origin this tenant answers at, and nothing after the host")
 
 	u, err := url.Parse(v)
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil ||
+	if err != nil || (u.Scheme != "https" && !(u.Scheme == "http" && a.c.InsecureCookie)) || u.Host == "" || u.User != nil ||
 		(u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" {
 		return nil, bad
 	}
@@ -1980,12 +2000,8 @@ func (a *App) redirectBase(r *http.Request) *url.URL {
 
 		return &u
 	}
-	scheme := "http"
-	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
-		scheme = "https"
-	}
 
-	return &url.URL{Scheme: scheme, Host: r.Host}
+	return &url.URL{Scheme: a.scheme(r), Host: r.Host}
 }
 
 func htmlEscape(v string) string {

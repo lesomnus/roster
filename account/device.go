@@ -292,7 +292,13 @@ func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 		expires: time.Now().Add(deviceFor),
 	})
 
-	at := strings.TrimSuffix(a.c.Base.String(), "/") + "/device"
+	// `Base` if the deployment named one, else the origin this was asked at,
+	// as every other address this app hands out is ([App.redirectBase]). It
+	// read `Base` alone, and a deployment that turned terminals on and named
+	// no base -- one that fronts several tenants' names has none to name --
+	// dereferenced nothing on every request to a route that asks for no
+	// session (#277).
+	at := strings.TrimSuffix(a.redirectBase(r).String(), "/") + "/device"
 	w.Header().Set("content-type", "application/json")
 	w.Header().Set("cache-control", "no-store")
 	_ = json.NewEncoder(w).Encode(map[string]any{

@@ -629,6 +629,16 @@ the page's own app passwords included
 ([usage/permissions.md](usage/permissions.md) § *What somebody does to their
 own account*).
 
+**The account app says `https` of itself.** `account.base` is its origin where
+it has one. A deployment that fronts several tenants' names has none to name,
+and what the app then hands out -- a mailed link, the address a provider sends a
+browser back to, where a terminal is told to go -- is the name the request
+arrived at, under `https`: its cookies are `Secure`, so it works over nothing
+else, and what a request says of its own scheme is the sender's to write. For
+the same reason a sign-in begun at a tenant's console (`next`) goes back to an
+`https` origin of that tenant's or is refused. A development rig that said its
+cookies are not `Secure` (`--insecure-cookie`) is read as it says.
+
 **What is in front of the account app passes three headers as the browser wrote
 them.** `Host`, because which tenant a request is about is the name it arrived
 at. And `Origin` and `Sec-Fetch-Site`, because whatever changes something there
