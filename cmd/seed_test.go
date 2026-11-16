@@ -385,6 +385,53 @@ func TestARefusedInitLeavesNothing(t *testing.T) {
 	})
 }
 
+// TestInitDoesNotPrintAPasswordItWasGiven: a password piped to `init` is in no
+// argument and no history, and is not on stdout either.
+//
+// # What it was
+//
+// `--password-stdin` exists so that a secret is neither on a command line nor
+// in a process list: a pipe is neither. `init` then printed it -- *password
+// <the one given>*, under a line telling whoever had typed it to write it down
+// now, since it is shown once -- the lines it prints for a password it
+// generated. A container's entrypoint is who pipes one, and what a container
+// prints is its log: `docker/entrypoint.sh` handed over
+// `ROSTER_ROOT_PASSWORD` and left it in `docker logs` for whoever reads those
+// (#275).
+//
+// A password this generated is still printed, once: that is the only place it
+// is.
+func TestInitDoesNotPrintAPasswordItWasGiven(t *testing.T) {
+	x := require.New(t)
+
+	const given = "a password somebody chose"
+
+	c := seedbed(t)
+	out := &bytes.Buffer{}
+	k := cli.NewCmdInit(&c)
+	k.Writer = out
+
+	x.NoError(piped(t, given, k, "--password-stdin"))
+	x.NotContains(out.String(), given, "a password given on stdin was printed back")
+	x.Contains(out.String(), "the one given on stdin")
+
+	// And it is the one that signs them in.
+	s, err := cmd.Build(t.Context(), c)
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+	x.NotNil(signIn(t, s, "admin", given))
+
+	t.Run("one it made is printed, once", func(t *testing.T) {
+		x := require.New(t)
+
+		c := seedbed(t)
+		out, err := initRun(t, c)
+		x.NoError(err)
+		x.Contains(out, "shown once")
+		x.NotEmpty(passwordFrom(t, out))
+	})
+}
+
 // TestAConsoleIssuesAPasswordForAnOperator is `Credential.Issue` with a
 // `service` -- the control plane's half -- travelled end to end.
 //

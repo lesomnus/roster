@@ -251,7 +251,8 @@ The password is shown once and stored as an argon2id hash. There is no
 `--password` flag on purpose -- an argument is in the shell history and the
 process list, which is the same rule `roster key add` is on -- and
 `--password-stdin` reads one from a pipe, which is what a container entrypoint
-uses. **Running `init` twice is an error** rather than a no-op: one that quietly
+uses. One that was given is not printed back, since what a container prints is
+its log; only one `init` made is shown. **Running `init` twice is an error** rather than a no-op: one that quietly
 did nothing is one somebody runs against the wrong deployment and believes. What
 makes a run the second is an operator -- somebody on the control plane who signs
 in -- and the refusal names them.
