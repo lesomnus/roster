@@ -97,6 +97,13 @@ func provisionAccount(ctx context.Context, s *cmd.Server, enrol string, out stri
 // `labels` are written on a holder it makes, and added to one it finds; nil
 // writes none. A front door's own holder is declared by the configuration that
 // turns the front door on, and carries [cmd.Declared] to say so.
+//
+// **So it is not how a holder is looked at**, and it was: finding one and
+// labelling it were this one call, made before anything had decided whose the
+// holder was. A person a provisioner then declined to use had been marked as
+// the configuration's all the same -- read-only at every port, their own
+// administrator refused erasing them (#276). [holderFound] looks; this writes,
+// once the holder is the app's to write.
 func holderNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string, labels map[string]string) ([]byte, bool, error) {
 	v, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: alias, Labels: labels}.Build())
 	if err == nil {
@@ -124,6 +131,58 @@ func holderNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias s
 	}
 
 	return got.GetId(), false, nil
+}
+
+// holderFound is the holder called `alias` in the tenant, or nil where there is
+// none. It makes nobody and writes nothing: what a provisioner asks before it
+// decides whether a holder of its app's name is its own to use
+// ([holderNamed]).
+func holderFound(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string) ([]byte, error) {
+	v, err := s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+		Ref: rstr.HolderRef_builder{
+			Slug: rstr.HolderRefBySlug_builder{Alias: z.Ptr(alias), Tenant: at}.Build(),
+		}.Build(),
+		Select: rstr.HolderSelect_builder{}.Build(),
+	}.Build())
+	if status.Code(err) == codes.NotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return v.GetId(), nil
+}
+
+// somebodys is why a holder and a role found by an app's name are not the
+// app's to take, or "" where they are: the holder holds something of its own
+// -- a role, a way in -- so the app would be answered as them; or the role is
+// bound to others, who would be handed the app's methods by its rewriting.
+//
+// `who` nil is nobody of that name yet, and `role` nil no such role. Asked
+// before anything is written, by every provisioner that finds its rows by
+// name.
+func somebodys(ctx context.Context, s *cmd.Server, tenant, alias string, who, role []byte) (string, error) {
+	if who != nil {
+		h, err := holdingOf(ctx, s, who, role)
+		if err != nil {
+			return "", err
+		}
+		if h.wayIn() || len(h.roles) > 0 {
+			return fmt.Sprintf("@%s/%s is already somebody's -- it holds %s -- and this would answer the app as them", tenant, alias, h), nil
+		}
+	}
+	if role != nil {
+		others, err := boundToOthers(ctx, s, role, who)
+		if err != nil {
+			return "", err
+		}
+		if others {
+			return fmt.Sprintf("the tenant's role %q is bound to others, and rewriting it would hand them the app's methods", alias), nil
+		}
+	}
+
+	return "", nil
 }
 
 // withLabels is `have` with `want` over it, and whether that differs from
