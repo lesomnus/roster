@@ -176,6 +176,28 @@ func provisionScim(ctx context.Context, s *cmd.Server, tenant, connection string
 	}
 	at = rstr.TenantRef_builder{Id: t.GetId()}.Build()
 
+	// Whose the rows of the directory's name are, before anything is written:
+	// a person the tenant already calls `scim`, or a role of that name bound
+	// to its people, is not the directory's to take. Nothing asked -- the
+	// holder was found and handed the directory's role, and the key minted
+	// below acted as them (#276). Refused here and not skipped, as the front
+	// doors skip: this is one tenant, asked for by name at a terminal.
+	found, err := holderFound(ctx, s, at, ScimHolder)
+	if err != nil {
+		return "", err
+	}
+	existing, err := roleNamed(ctx, s, at, ScimHolder)
+	if err != nil {
+		return "", err
+	}
+	why, err := somebodys(ctx, s, tenant, ScimHolder, found, existing)
+	if err != nil {
+		return "", err
+	}
+	if why != "" {
+		return "", fmt.Errorf("--tenant %s: %s. rename them, or take what they hold away, and run this again", tenant, why)
+	}
+
 	conn, err := s.Ungated.Connection().Get(ctx, rstr.ConnectionGetRequest_builder{
 		Ref: rstr.ConnectionRef_builder{At: rstr.ConnectionRefByAt_builder{
 			Tenant: at, Name: z.Ptr(connection),

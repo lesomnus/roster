@@ -610,7 +610,9 @@ func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []stri
 			fmt.Fprintf(os.Stderr, "roster: %s: not answering @%s's key as @%s/%s: %s.\n", name, alias, name, alias, why)
 		}
 
-		who, made, err := holderNamed(ctx, s, at, alias, labels)
+		// Whose the rows of this name are, asked before anything is written:
+		// the holder is looked at and not yet made or marked ([holderFound]).
+		found, err := holderFound(ctx, s, at, alias)
 		if err != nil {
 			return n, fmt.Errorf("%s: %w", name, err)
 		}
@@ -618,25 +620,18 @@ func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []stri
 		if err != nil {
 			return n, fmt.Errorf("%s: %w", name, err)
 		}
-		if !made {
-			h, err := holdingOf(ctx, s, who, existing)
-			if err != nil {
-				return n, fmt.Errorf("%s: %w", name, err)
-			}
-			if h.wayIn() || len(h.roles) > 0 {
-				skip(fmt.Sprintf("@%s/%s is already somebody's -- it holds %s -- and this would answer the app as them", name, alias, h))
-				continue
-			}
+		why, err := somebodys(ctx, s, name, alias, found, existing)
+		if err != nil {
+			return n, fmt.Errorf("%s: %w", name, err)
 		}
-		if existing != nil {
-			others, err := boundToOthers(ctx, s, existing, who)
-			if err != nil {
-				return n, fmt.Errorf("%s: %w", name, err)
-			}
-			if others {
-				skip(fmt.Sprintf("the tenant's role %q is bound to others, and rewriting it would hand them the app's methods", alias))
-				continue
-			}
+		if why != "" {
+			skip(why)
+			continue
+		}
+
+		who, _, err := holderNamed(ctx, s, at, alias, labels)
+		if err != nil {
+			return n, fmt.Errorf("%s: %w", name, err)
 		}
 		role, err := ensureRoleNamed(ctx, s, at, alias, methods, labels)
 		if err != nil {
