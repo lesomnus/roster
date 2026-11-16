@@ -195,6 +195,7 @@ removed (`TestADirectoryMaySuspendTheLastAdministrator`).
 | An erased role, an erased team | `cmd/policy.go` | `TestAnErasedRoleGrantsNothing` · `TestATeamErasedHandsOutNothing` |
 | A site is erased when nothing is in it | `server/core/tenantwide.go` | `TestASiteIsErasedWhenNothingIsInIt` |
 | Somebody suspended, somebody erased, a tenant closed: no credential of theirs works, and a stream they left open ends | `cmd/auth.go` | `TestASuspendedHolderReachesNothing` · `TestAnErasedHolderIsStoppedAtTheWire` · `TestAClosedTenantLetsNobodyIn` · `TestAStreamLeftOpenIsAskedAgainWhoOpenedIt` |
+| Nor does an app in front hear otherwise, nor a key whose holder is the deployment's own; and an app suspended or erased in a tenant acts as nobody there, whatever delegation it holds | `server/keys/delegate.go` | `TestASuspendedPersonIsSuspendedInFrontOfEveryApp` · `TestAnErasedHoldersKeyStandsForNobody` · `TestADelegationStopsWithItsAppsStandingInTheTenant` |
 | Nothing of somebody erased is read, by naming them or through a row that outlived them | `server/bare/holder.g.go` | `TestNothingOfAnErasedHolderIsReadableByNamingThem` · `TestNothingOfAnErasedHolderIsReadableThroughARowThatOutlivedThem` |
 | A name erased answers nobody at sign-in | `cmd/hosted.go` | `TestANameErasedAnswersNobodyAndANameMovedAnswersWhoHasIt` |
 

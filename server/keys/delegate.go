@@ -185,8 +185,21 @@ func findKey(ctx context.Context, s app.Server, token string) (*bearer, error) {
 	}, nil
 }
 
-// signable refuses a token whose holder is suspended, or whose tenant is
-// closed. See [findKey].
+// signable refuses a token whose holder is suspended or erased, or whose
+// tenant is closed. See [findKey].
+//
+// **Erased** was not asked, and it is the stronger of the two: a key is not
+// erased with its holder -- the row stays, the edge is immutable, and the
+// lookup is by the verifier alone -- so an app removed by erasing its holder
+// went on being answered, and an app in front that introspected the key of
+// somebody erased was told it is good (#276). It differs from a suspension in
+// one thing, which is that nothing gives it back.
+//
+// It is read as **a holder that did not come back**. An edge is loaded through
+// the narrowing every read is -- the rows still there -- so somebody erased is
+// answered as a bare reference: the identifier the row points at, and nothing
+// of them. Every reader here selects the holder's tenant, which every holder
+// has, so one with none is one that was not found.
 //
 // The same `NotFound` everything else about a token is refused with, so that
 // telling them apart says nothing: an app hearing it stops trusting the string
@@ -196,7 +209,8 @@ func findKey(ctx context.Context, s app.Server, token string) (*bearer, error) {
 // the same reason the person's is: an app in front introspects a token, and
 // nothing about that passes the resolver.
 func signable(v *app.Holder) error {
-	if v.GetDateDisabled() != nil || v.GetTenant().GetDateClosed() != nil {
+	gone := len(v.GetTenant().GetId()) == 0
+	if gone || v.GetDateDisabled() != nil || v.GetTenant().GetDateClosed() != nil {
 		return status.Error(codes.NotFound, "no such token")
 	}
 
