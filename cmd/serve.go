@@ -693,7 +693,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 			auth.Bearer(keys.Store(control.Ungated, s.Ungated)),
 		}
 
-		// And a roster user's own cookie in front of both, where this
+		// And a roster user's own cookie after all three, where this
 		// deployment serves the door that mints one.
 		//
 		// **This** plane's rows: the same table on the other database, so a
@@ -701,12 +701,17 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		// difference from the operator's below, and the reason that one is not
 		// on this chain.
 		//
-		// First for the reason the two below are ordered: a cookie and an
-		// `authorization` header are read from different places, so a request
-		// carries at most one and the order decides nothing but which answers a
-		// request carrying both.
+		// **Last**, and it was first. A cookie and a header are read from
+		// different places, so the order decides only which answers a request
+		// carrying both -- and that was said to decide nothing. It decides
+		// what was checked. Answered by the cookie, a request's `roster-as`
+		// and its key were looked at by no handler, and `keys.Authenticated`
+		// reads those headers for when somebody signed in: a session, which
+		// says nothing of when, was fresh by a delegation nothing had checked
+		// (#276). A header is a caller saying who is asking, so it is what
+		// answers, and a wrong one refuses; a browser sends neither.
 		if s.People != nil {
-			chain = append([]auth.Handler{s.People.Handler()}, chain...)
+			chain = append(chain, s.People.Handler())
 		}
 
 		s.Auth = auth.Seq(chain...)

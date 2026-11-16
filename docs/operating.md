@@ -284,6 +284,10 @@ answers from. On, a **roster user** signs in to roster itself, and the cookie
 they get names a holder of that plane, so every read it makes is narrowed by the
 wall to their own tenant.
 
+A request that carries a key as well is answered as the key, and refused if the
+key is wrong: a header is a caller saying who is asking, and a cookie is what a
+browser sends whether or not anybody meant it.
+
 **Which tenant is the name they arrived at.** A `Host` row says which tenant
 answers at which name, and a name nothing claims is a refusal that says so. That
 is the only place the answer could come from: this request has no tenant field,
