@@ -282,6 +282,7 @@ example each, in [wide-grants.md](wide-grants.md).
 | **Leaving a group or a team by oneself** | not something somebody does to their own account; decided 2026-11-15 |
 | **An account at a provider is written onto the caller's own row with no proof the subject is theirs** | the account page links a second directory as the person. To be read with signing in ([#275](https://github.com/lesomnus/roster/issues/275)) |
 | **A key that names what is somebody's own to do** still asks for a binding | the rule about a key's methods reads bindings |
+| **A key or a delegation that lists `ApiKeyService/Issue` mints up to what its holder holds**, and its own list is not asked | the list narrows what the credential *calls*; what it hands out is its holder's, as for `BindingService/Add`. It is how a terminal is signed in -- the account page's delegation mints the key `roster sign-in` asked for. A key that has to be narrow does not list `Issue` ([wide-grants.md](wide-grants.md) § *A key that mints keys*); `TestAKeyThatMintsKeysMintsWhatItsHolderHolds`. Decided 2026-11-16 |
 | **An identifier the caller chose on `Add`** is taken, and says whether it was free | decided 2026-11-15 |
 | **A `Relation`** is written and erased by whoever the role lets | no rule reads one |
 | **A second factor** is not a way in on its own | it is asked for after somebody has said who they are |

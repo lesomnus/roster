@@ -31,6 +31,7 @@ writing a role whose methods end in `*`.
 | [`AuditService`](#auditservice) | *may read the audit log* | what every write said, of every row |
 | [`HolderService/SignsIn`](#holderservicesignsin) | *may see how somebody signs in* | everybody's keys and sessions, by name |
 | [A deployment key](#a-deployment-key) | a key for one app | its list, in every tenant |
+| [A key that mints keys](#a-key-that-mints-keys) | a key that lists one method | everything its holder holds |
 | [A directory's key](#a-directorys-key) | a sync job | makes people, and suspends the last administrator |
 | [The `self-service` role](#the-self-service-role) | a role nobody is bound | on for everybody the moment a method is in it |
 
@@ -247,6 +248,32 @@ narrowed -- and narrowed, it is whoever each tenant nominated for it.
 about. A key that reads across tenants on purpose -- a job that exports the
 trail -- is the other kind, and should be the only kind that is not narrowed
 ([ways-in.md](ways-in.md) § *A deployment key*).
+
+### A key that mints keys
+
+A key, or a delegation, that lists `ApiKeyService/Issue`. **Reads as** a
+narrow credential: its list says one method. **Is** as wide as whoever it
+is for. What a caller may put on a key is what its **holder** is bound, and
+the list on the credential it called with is not asked -- so a key that lists
+`Issue` and nothing else mints a second key, for its own holder, listing
+anything they hold.
+
+> A build job is given a key on an administrator's account listing
+> `ApiKeyService/Issue` alone, to mint short-lived keys for its steps.
+> Whoever reads that job's environment mints one listing `/roster.*/*`.
+
+It is meant. A terminal is signed in this way: the account page's delegation
+lists the dozen methods the page calls, and when somebody approves
+`roster sign-in` it mints the key the terminal asked for, as wide as the
+person approving and no wider
+(`TestATerminalIsNeverAllowedMoreThanWhoeverApprovesIt`). So a key that has to
+be narrow does not list `Issue`, and a key that has to mint is put on a holder
+bound only what it should hand out -- which is the bound that is asked
+(`TestAKeyThatMintsKeysMintsWhatItsHolderHolds`).
+
+A **delegation** is the other way round: an app is handed one for the methods
+it may itself call, by its key's list and by what it is bound, and for no other
+([rules.md](rules.md)).
 
 ### A directory's key
 

@@ -219,6 +219,18 @@ var handsOver = []handedOver{
 			"is signed in",
 	},
 	{
+		// `mayGrant` reads what the caller's **holder** is bound, and not the
+		// list of the credential that asks: it is how a terminal is signed in
+		// (`account`, the device grant). Said of the tenant, where a key is
+		// held: a key names no site, so what is held in one is put on none,
+		// and a key of the deployment's own hands out nothing.
+		grant:   "a-key-that-mints-keys",
+		methods: []string{app.ApiKeyService_Issue_FullMethodName},
+		readsAs: "on a key, one method",
+		tenant: "listed on a key or a delegation, everything whoever it is for holds across the tenant: the key " +
+			"it mints lists anything they are bound, and the list it was itself minted with is not asked",
+	},
+	{
 		// The one of what is somebody's own that is worth knowing (`own.go`).
 		grant:   "the-self-service-role",
 		methods: []string{app.IdentityService_Add_FullMethodName},
