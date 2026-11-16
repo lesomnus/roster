@@ -483,7 +483,7 @@ func adminRules(s *Server) core.Rules {
 	r := Rules(s.Control.Ent)
 	r.Held = core.Held(Everything(s.Ent, s.policySources...))
 	r.Everywhere = Everywhere(s.Ent, s.policySources...)
-	r.Releasing = Releasing(s.Ent)
+	r.Releasing = Releasing(s.Ent, s.contents)
 
 	return r
 }

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -530,6 +531,22 @@ func applyHost(ctx context.Context, s app.Server, r Resource, dry bool) (string,
 	if err != nil {
 		return what, "", err
 	}
+
+	// Whose row it found, which it did not look at: a name is one row across
+	// the deployment, so the row of that name may be another tenant's. A file
+	// that said a name is contoso's, where it was fabrikam's, applied *changed*
+	// with the name still fabrikam's -- and marked fabrikam's row as the
+	// file's, which its own tenant then could not erase (#277). A file does not
+	// take a name: it is refused, before a dry run says otherwise.
+	theirs, err := s.Tenant().Get(ctx, app.TenantGetRequest_builder{Ref: at, Select: app.TenantSelect_builder{}.Build()}.Build())
+	if err != nil {
+		return what, "", err
+	}
+	if !bytes.Equal(got.GetTenant().GetId(), theirs.GetId()) {
+		return what, "", fmt.Errorf("%s is held by another tenant, and a file does not take a name: "+
+			"declared for %s here, and their row would have to be erased first", r.Name, r.Tenant)
+	}
+
 	if got.GetDesc() == r.Desc && declared(got.GetLabels()) {
 		return what, "same", nil
 	}

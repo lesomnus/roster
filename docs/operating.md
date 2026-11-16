@@ -422,7 +422,10 @@ Proving requires present control of DNS, and whoever has that has the name
 whatever a row here says. So the latest proof wins: the incumbent's row is erased
 and the new one written in one transaction. What that costs is worth knowing --
 **their people stop being able to sign in at that name**, with no warning, and
-where it is written down is the erase in the trail.
+where it is written down is their own trail: the row that held the name, as
+`roster.host.release`, by whoever took it. A name a file declares
+(`resources:`) is not taken this way: the file is where it is written from, and
+a proof of it is refused until whoever runs the deployment takes it out.
 
 ### Why roster resolves DNS at all, having said it should not
 
@@ -1673,8 +1676,8 @@ and vouches for what its digest covers, until the next write seals it again.
 It prints the kinds kept off the trail (`not checked:`) with why, every run.
 What roster itself writes or removes past its servers is on the trail as
 that act, so it is no finding: a tenant destroyed and what went with it, a
-person forgotten and their rows, a person brought back, and what the sweeps
-collect -- a session, an attempt, a link, a delegation or a claim past its
+person forgotten and their rows, a person brought back, a name taken from the
+tenant that held it, and what the sweeps collect -- a session, an attempt, a link, a delegation or a claim past its
 expiry. Before a pass destroys the newest row of the trail about a row that is
 still there, it carries that row's digest forward, so a row nobody wrote since
 its window is still checked.

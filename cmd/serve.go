@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/lesomnus/payday/access"
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/config"
@@ -198,6 +199,11 @@ type Server struct {
 	// `crypto/rand` rather than something signed, so there is no per-process
 	// secret to keep in step either.
 	Sessions *authsession.Sessions
+
+	// contents is what the trail keeps of each kind's rows, `audit.content`,
+	// for what is written on the trail by something other than the recorder:
+	// a name taken at the admin listener ([Releasing]).
+	contents audit.Contents
 
 	// Access is this plane's access record writer (payday#111): what a read's
 	// row waits in to be written with the others of its second. Its loop is in
@@ -501,6 +507,9 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	owners := &keyOwners{}
 	rules := Rules(client, policySources...)
 	rules.Borrower = owners.of
+	// With what this deployment's trail keeps of a row, which `Rules` is not
+	// handed: a name taken is on the trail of whoever held it.
+	rules.Releasing = Releasing(client, content)
 
 	stacked, err := app.Build(walled.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin)), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
 	if err != nil {
@@ -529,6 +538,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password,
 		RestoreWithin: c.Tenant.RestoreWithin,
 		recheck:       c.Stream.Recheck,
+		contents:      content,
 	}
 
 	if policyFile != nil {
@@ -1332,6 +1342,18 @@ func (s *Server) closed(c Config) func(method string) bool {
 		// `Patch`/`Apply` are off by `GeneralWrite` beside these.
 		app.ConsentService_Add_FullMethodName,
 		app.ConsentService_Erase_FullMethodName,
+		// A name, a claim to one, and a tenant's own settings: each is
+		// written by a verb that carries its rule, and each has `Update` for
+		// whatever of it may be changed. Their general writes went round both
+		// -- a name renamed past its proof, a claim's window set by its
+		// caller, a front door that is not an origin (#277) -- so they are
+		// shut by name, as a credential's and a key's are.
+		app.HostService_Patch_FullMethodName,
+		app.HostService_Apply_FullMethodName,
+		app.HostProofService_Patch_FullMethodName,
+		app.HostProofService_Apply_FullMethodName,
+		app.TenantService_Patch_FullMethodName,
+		app.TenantService_Apply_FullMethodName,
 	}
 	// A key's general writes, shut **by name** on every port, whatever the
 	// configuration says of general writes.
