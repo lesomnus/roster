@@ -108,6 +108,12 @@ const (
 //
 // A field would be worse than either: a caller naming the tenant it would like
 // to be checked against is a caller choosing which passwords it is guessing at.
+// The name is no secret from a caller either -- it is `Host`, or
+// `X-Forwarded-Host` where a proxy says the public one, and whoever reaches
+// the listener with nothing in front writes both. What the name buys over a
+// field is that a browser cannot be made to send another origin's, and that a
+// tenant answers only at names it has claimed; `docs/operating.md` says what a
+// deployment that keeps names apart by network puts in front.
 //
 // And `SignIn` is served without a credential, which it has to be -- that is
 // what is being asked for -- as is `Offers`, which a page asks one step earlier
@@ -349,6 +355,12 @@ func (c *authServiceClient) Which(ctx context.Context, in *AuthWhichRequest, opt
 //
 // A field would be worse than either: a caller naming the tenant it would like
 // to be checked against is a caller choosing which passwords it is guessing at.
+// The name is no secret from a caller either -- it is `Host`, or
+// `X-Forwarded-Host` where a proxy says the public one, and whoever reaches
+// the listener with nothing in front writes both. What the name buys over a
+// field is that a browser cannot be made to send another origin's, and that a
+// tenant answers only at names it has claimed; `docs/operating.md` says what a
+// deployment that keeps names apart by network puts in front.
 //
 // And `SignIn` is served without a credential, which it has to be -- that is
 // what is being asked for -- as is `Offers`, which a page asks one step earlier

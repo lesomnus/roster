@@ -57,7 +57,10 @@ const (
 // A session names an operator, and an operator is a `Holder` of the control
 // plane -- which is where the people who run this deployment live. The data
 // plane has this table too, because the two planes are one schema run twice,
-// and nothing there ever writes a row.
+// and writes a row there only where `sign_in.enabled`: a roster user signed in
+// at their tenant's name, who is a holder of that plane and whose session is
+// a row of it. The two tables are in two databases, and no cookie is found in
+// both.
 //
 // # The key is hashed, unlike the one it replaces
 //
