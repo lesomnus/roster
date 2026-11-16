@@ -356,6 +356,15 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 		// nothing here can: ten wrong guesses every [LockFor] will close it
 		// again, which is what locking by name costs; the package comment says
 		// why that is accepted.
+		//
+		// **Burned**, though nothing is compared, as every other refusal
+		// here is. This answered before any hashing -- a millisecond where a
+		// name nobody has takes thirty -- and that is the lock said by the
+		// clock, to a caller the answer is kept from: roster's own sign-in is
+		// public and folds a lock into *no* on purpose, and whoever timed the
+		// eleventh wrong password knew the name was somebody's (#275).
+		by.Burn(secret)
+
 		return app.VouchVerifyResponse_builder{DateLocked: until}.Build(), nil, nil
 	}
 
