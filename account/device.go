@@ -13,6 +13,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/lesomnus/payday/pdid"
+
 	"github.com/lesomnus/roster/arrives"
 	rstr "github.com/lesomnus/roster/rstr"
 )
@@ -363,15 +365,22 @@ func (a *App) devicePending(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	who, ok := a.door.Who(r.Context(), r)
+	t, ok := tenantFrom(r.Context())
+	if !ok {
+		http.Error(w, "no operator here serves this name", http.StatusNotFound)
+		return
+	}
+
+	// Somebody roster says is there, and not whoever a cookie names
+	// ([App.present]).
+	me, ok := a.present(r, t)
 	if !ok {
 		http.Error(w, "no", http.StatusForbidden)
 		return
 	}
-
-	t, ok := tenantFrom(r.Context())
-	if !ok {
-		http.Error(w, "no operator here serves this name", http.StatusNotFound)
+	who, err := pdid.From(me.GetId())
+	if err != nil {
+		http.Error(w, "no", http.StatusForbidden)
 		return
 	}
 
@@ -411,15 +420,22 @@ func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	who, ok := a.door.Who(ctx, r)
+	t, ok := tenantFrom(ctx)
+	if !ok {
+		http.Error(w, "no operator here serves this name", http.StatusNotFound)
+		return
+	}
+
+	// Somebody roster says is there, for the refusal as for the yes: saying no
+	// to a terminal is this app's own doing, and was any cookie's.
+	me, ok := a.present(r, t)
 	if !ok {
 		http.Error(w, "no", http.StatusForbidden)
 		return
 	}
-
-	t, ok := tenantFrom(ctx)
-	if !ok {
-		http.Error(w, "no operator here serves this name", http.StatusNotFound)
+	who, err := pdid.From(me.GetId())
+	if err != nil {
+		http.Error(w, "no", http.StatusForbidden)
 		return
 	}
 
