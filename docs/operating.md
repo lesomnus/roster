@@ -733,8 +733,9 @@ would keep its owner from ever being sent the confirmation that claims it back.
 What one person has sent an address spends nothing of what another may send it,
 and the person's own allowance is what bounds them. The recovery form has nobody
 to count by, so a stranger there can spend an address's allowance -- with links
-sent to its owner, which work for them. What is counted is a message that went,
-never a request refused before one would, and the recovery form counts only what
+sent to its owner, which work for them. What is counted is a message this set
+out to send, whether or not the mail server took it -- never a request refused
+before one would, and the recovery form counts only what
 it sends, so a stranger typing addresses adds nothing. It answers 202 whatever
 the limits did, so a message held back there is the log's
 (`not sent, its recovery messages are spent`). Confirming, claiming and the

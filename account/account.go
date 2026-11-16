@@ -226,7 +226,6 @@ var Methods = []string{
 	rstr.EmailService_Get_FullMethodName,
 	rstr.EmailService_Add_FullMethodName,
 	rstr.EmailService_Erase_FullMethodName,
-	rstr.EmailService_Verify_FullMethodName,
 	rstr.ApiKeyService_Issue_FullMethodName,
 	rstr.CredentialService_Set_FullMethodName,
 	rstr.CredentialService_Enrol_FullMethodName,
@@ -260,7 +259,6 @@ var Resolving = []string{
 var Calls = append([]string{
 	rstr.TenantService_Get_FullMethodName,
 	rstr.FrontService_WhoseHost_FullMethodName,
-	rstr.FrontService_WhereFrom_FullMethodName,
 	rstr.ConnectionService_List_FullMethodName,
 	rstr.ConnectionService_Get_FullMethodName,
 	rstr.IdentityService_Get_FullMethodName,
@@ -279,6 +277,11 @@ var Calls = append([]string{
 	rstr.VouchService_Leave_FullMethodName,
 	rstr.DelegationService_Revoke_FullMethodName,
 	rstr.CredentialService_Issue_FullMethodName,
+	// The link that confirms an address, minted by this app as itself and
+	// mailed (`verify`), and spent by what its page posts. `Verify` is here
+	// and not on [Methods]: it answers the link to its caller, and through
+	// the page's road that caller was a browser.
+	rstr.EmailService_Verify_FullMethodName,
 	rstr.EmailService_Confirm_FullMethodName,
 
 	// What a tenant's profile setting fills at a sign-in here, as the Login
@@ -719,7 +722,10 @@ func (a *App) providers(w http.ResponseWriter, r *http.Request) {
 	tn, err := a.roster.Tenant().Get(t.on(r.Context()), rstr.TenantGetRequest_builder{
 		Ref: rstr.TenantRef_builder{Id: t.id.Bytes()}.Build(),
 		Select: rstr.TenantSelect_builder{
-			Alias: proto.Bool(true), Name: proto.Bool(true), Labels: proto.Bool(true),
+			// What the page draws of the tenant, and no more: this is answered
+			// to anybody, and it answered the tenant's labels too, which are
+			// where a deployment puts what the schema does not name.
+			Alias: proto.Bool(true), Name: proto.Bool(true),
 			Config: proto.Bool(true),
 		}.Build(),
 	}.Build())
@@ -734,9 +740,8 @@ func (a *App) providers(w http.ResponseWriter, r *http.Request) {
 	}
 	out := struct {
 		Tenant struct {
-			Alias  string            `json:"alias"`
-			Name   string            `json:"name"`
-			Labels map[string]string `json:"labels"`
+			Alias string `json:"alias"`
+			Name  string `json:"name"`
 		} `json:"tenant"`
 		Providers []provider `json:"providers"`
 		Password  bool       `json:"password"`
@@ -773,7 +778,6 @@ func (a *App) providers(w http.ResponseWriter, r *http.Request) {
 	}
 	out.Tenant.Alias = tn.GetAlias()
 	out.Tenant.Name = tn.GetName()
-	out.Tenant.Labels = tn.GetLabels()
 	for _, c := range cs {
 		out.Providers = append(out.Providers, provider{Name: c.GetName(), Issuer: c.GetIssuer()})
 	}
@@ -1495,6 +1499,15 @@ func (a *App) redeem(w http.ResponseWriter, r *http.Request) {
 			Token:   token,
 			Methods: []string{rstr.MeService_Get_FullMethodName},
 		}.Build())
+		if err == nil && !res.GetVerified().GetOk() && res.GetVerified().GetContinuation() != "" {
+			// The link was one, and proved the mailbox; roster asks for a
+			// second proof, which somebody who holds one is always asked, and
+			// this page has no form for it. Said, where it was *this link is
+			// not one*: the link is spent, and the road is whoever administers
+			// them.
+			page(w, http.StatusForbidden, noSecond)
+			return
+		}
 		if err != nil || !res.GetVerified().GetOk() {
 			http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
 			return
@@ -1571,10 +1584,11 @@ func (a *App) answered(w http.ResponseWriter, r *http.Request) (string, *tenant,
 
 // verify mails a link that proves one of the signed-in person's addresses.
 //
-// `Email.Verify` is called as the person, through their delegation -- the same
-// call the page could make itself -- and the reason it is a route here is
-// delivery: the app mails, roster does not. The address is read off the row,
-// never from the request.
+// The row is read as the person, through their delegation, and the link is
+// minted by this app as itself: `Email.Verify` answers the link to whoever
+// calls it, so it is not a call the page makes -- it is not on [Methods] -- and
+// the reason there is a route here at all is delivery: the app mails, roster
+// does not. The address is read off the row, never from the request.
 func (a *App) verify(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if a.c.Mail == nil {
@@ -2034,6 +2048,13 @@ const confirmAsk = `<!doctype html><meta charset="utf-8"><title>confirm your add
 <p><button type="submit">this address is mine</button></p>
 </form>
 <p>Did not ask for this? Close this page, and do not confirm: the address would be recorded as somebody else's. Nothing has happened, and the link stops working by itself a few minutes after it was sent.</p></main>`
+
+// What a recovery link ends at for somebody who holds a second factor.
+const noSecond = `<!doctype html><meta charset="utf-8"><title>not recovered</title>
+<main style="font-family:system-ui;max-width:32rem;margin:3rem auto;padding:0 1rem">
+<h1>This account is not recovered by mail</h1>
+<p>It asks for a second proof when somebody signs in, and a link in a message is not one. Nothing has changed: your password is the one you had.</p>
+<p>Whoever administers your organisation can give you a new password.</p></main>`
 
 // The two pages those end at. Plain HTML, because a person arriving from a
 // mail client has no session and the page has one thing to say.
