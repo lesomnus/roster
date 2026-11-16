@@ -627,6 +627,12 @@ is a list of methods, and what you can grant is exactly what you can name:
 timestamp, which roster answers and each app compares its own sessions against.
 There is no registry of live sessions here and there will not be.
 
+**`Enable` brings back what `Disable` stopped, as it was.** A suspension refuses
+a session and ends none: one still inside its life when the person is enabled
+answers again, on whichever browser holds its cookie. So an account stopped
+because somebody else was in it is `Invalidate`d before it is enabled, or the
+session that was the reason comes back with the person.
+
 It **deliberately does not touch an API key**. A key is named, listed and
 revoked one at a time; killing somebody's scripts silently under "sign out
 everywhere" is an outage with nothing anywhere saying why. That is a second act

@@ -296,6 +296,13 @@ second. A deployment whose proxy does not set it will resolve to the internal
 name, and no `Host` row will claim that -- which fails loudly rather than
 signing somebody in to the wrong tenant.
 
+**So the name is whatever the request says it is.** A caller that reaches the
+listener with nothing in front sends `X-Forwarded-Host` itself, and is asking
+at whichever tenant's name it wrote. That hands over nothing a tenant's own
+name in DNS does not -- the same form, the same lockout -- unless the
+deployment was counting on a name being reachable from only some networks. One
+that is puts a proxy in front that sets the header rather than passing it on.
+
 What it costs is what any public sign-in costs: whoever reaches the port may
 guess passwords. The lockout in `vouch.lockout` is what makes that expensive,
 and this being off by default is what keeps the surface off a port that is
@@ -441,7 +448,7 @@ Five of roster's own at most, and which open is what the configuration named.
 
 | | who calls it | |
 | --- | --- | --- |
-| `server.addr` | product apps | gRPC, **walled** and gated. Keys only -- a cookie names nobody here |
+| `server.addr` | product apps | gRPC, **walled** and gated. Keys, and -- only where `sign_in.enabled` -- the session a roster user signed in for: the sign-in is served here and on the listener below alike, since one is the other transcoded |
 | `server.http.addr` | anything that cannot speak gRPC, and a roster user's browser | the same, transcoded (Connect, gRPC-Web). Serves the **user console** and the sign-in behind it |
 | `control.addr` | the roster operators' shells, and their jobs | who runs this deployment and the deployment keys of the apps they run. Takes an `rk_`, asked what its **holder** is bound on the control plane, and an operator's session from the admin listener |
 | `control.http.addr` | the same, over HTTP | the same RPCs, transcoded. **No page**, and no sign-in |
