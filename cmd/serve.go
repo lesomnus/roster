@@ -145,7 +145,7 @@ type Server struct {
 	// the trail names them.
 	//
 	// It used to open a key's general writes here as well, where a deployment
-	// said `allow_general_writes`. They are shut by name on every port now
+	// said `allow_general_writes`. No port serves a general write now
 	// (`closed`).
 	Keys bool
 
@@ -280,6 +280,26 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 			"admin: the port takes a session cookie and resolves it against the control plane's " +
 				"holders, and control.db.driver names no database, so there is nobody to be and no " +
 				"listener is opened. name a control plane, or take the block out")
+	}
+	// A file that opens general writes, on whichever listener. No port serves
+	// one whatever it is told (`closed`), so this is not what keeps them shut:
+	// it is that a file which says the setting believes something this server
+	// will not do, and a server that starts anyway leaves that for somebody to
+	// find the day they lean on it.
+	for _, v := range []struct {
+		block string
+		said  bool
+	}{
+		{"server", c.Server.AllowGeneralWrites},
+		{"control", c.Control.AllowGeneralWrites},
+		{"admin", c.Admin.AllowGeneralWrites},
+	} {
+		if v.said {
+			return nil, fmt.Errorf(
+				"%s.allow_general_writes: roster serves no general write -- `Patch` and `Apply` are how "+
+					"its servers write, and a row is written over the wire by the verbs that carry its "+
+					"rules (`Update`, and each entity's own). take the setting out", v.block)
+		}
 	}
 	// A directory's key is a tenant key, and a deployment with no control
 	// plane reads none: its callers are believed by name (`auth.Plain`), so
@@ -1036,7 +1056,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// One function, installed twice, because a stream and a unary call are two
 	// interceptors and `closed` is one answer. Built here rather than called
 	// twice below so that the two cannot come to disagree.
-	shut := s.closed(c)
+	shut := s.closed()
 
 	// One limiter, handed to both halves.
 	//
@@ -1276,10 +1296,42 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 
 // closed is what this server does not answer at all.
 //
-// Whatever the configuration closed, and the methods below that are shut one
-// at a time on a service that is registered for its others: a service that is
-// not registered at all needs nothing here, since gRPC dispatches by name and
-// has nothing to dispatch to.
+// No general write, and the methods below that are shut one at a time on a
+// service that is registered for its others: a service that is not registered
+// at all needs nothing here, since gRPC dispatches by name and has nothing to
+// dispatch to.
+//
+// # No general write is served, on any port, whatever a file says
+//
+// `Patch` takes a field per property and `Apply` a patch document, and between
+// them they write anything the schema has. They are how the servers write.
+// What a caller may change, and under what conditions, is on a verb of its
+// own -- `Update`, `Set`, `Issue`, `Resubject`, `Narrow` -- and that is where
+// every rule about a row was put.
+//
+// payday closes both unless a deployment says `allow_general_writes`, and
+// calls saying it *a decision about the API rather than about a deployment*.
+// This is roster's: it is not a setting here. It was read, and each time this
+// repository was read for what the setting opened, it had gone round a rule
+// that lives on a verb: a credential's row written past the reach rule and the
+// corpus (#275); a key's verifier chosen by its caller (#276); a name renamed
+// past its proof (#277); and then a connection's secret and issuer, somebody
+// else's account at a provider, a proved address, a role widened to
+// everything through `Apply`, and the name a relying party grants on (#278).
+// Each of the first three was shut by name as it was found. The fourth time is
+// the rule: an entity nobody had read yet was open by default, and a rule
+// written tomorrow would have had to be written three times -- on the verb, on
+// `Patch`, and on a document `Apply` would have to be read to refuse.
+//
+// So the setting is refused at start ([Build]) rather than ignored, because a
+// file that says it believes something this server will not do; and this
+// closes both whatever configuration it is handed, so a server built by a
+// test, or by a caller of this package, is not a second answer.
+// `TestNoGeneralWriteIsServed` asks every service that is registered.
+//
+// The shell at the box is not this: it reaches the servers with no transport
+// in between, and `roster holder patch` there is somebody who already holds
+// the database (`cli/entity.go`).
 //
 // It is installed as **both** interceptors, in the pair `auth` is installed as
 // two lines above. Only the unary one was here, which was F10: a deployment that
@@ -1287,109 +1339,50 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 // and left its stream open, and a `WatchItem` carries the whole message with no
 // `select` to narrow it. Nothing said so, in the one word whose whole job is to
 // mean *not served*.
-func (s *Server) closed(c Config) func(method string) bool {
-	was := c.Server.Closed()
-
-	// `DelegationService` is registered now for its `Revoke` overlay, so it too
-	// is shut a method at a time rather than whole: the reads answer the token
-	// column and the raw writes take a caller-chosen one, and only `Revoke` --
-	// which answers nothing -- is meant to reach the wire.
-	shut := []string{}
-
+func (s *Server) closed() func(method string) bool {
 	// `ApiKey.Add` takes a verifier from the caller, so serving it beside
 	// `IssueService` would be offering the thing `Issue` exists to stop: a key
 	// whose secret somebody else chose, in a prefix they picked.
 	//
-	// It stays what the servers write through, which is the convention `Patch`
-	// and `Apply` already have. One more method of one entity joining them is
-	// not a new rule.
-	// `CredentialService` is registered now, so its verbs are shut one at a
-	// time rather than the whole name: the reads answer the `secret` column and
-	// the raw writes take a caller-chosen verifier, and only the overlays
-	// (`Set`, `Issue`, `Unlock`, `Enrol`, `Erase`) are meant to be reachable.
-	//
-	// Its `Patch` and `Apply` are shut **by name** too, whatever the
-	// configuration says of general writes. This said they *are already off by
-	// `GeneralWrite`*, which is true until a deployment says
-	// `allow_general_writes` for some other entity's sake -- and then they were
-	// served with nothing over them, because every rule a credential is
-	// written by is on a verb of its own and `server/core` overrides neither of
-	// these: a role naming `CredentialService/Patch` reached the store for
-	// anybody's row, past the reach rule, the length, the corpus and
-	// `current` (#275). A key's and a delegation's are shut the same way below,
-	// for the same reason.
+	// `CredentialService` is registered for its verbs (`Set`, `Issue`,
+	// `Unlock`, `Enrol`, `Erase`), so the rest of it is shut one method at a
+	// time rather than the whole name: the reads answer the `secret` column
+	// and `Add` takes a caller-chosen verifier.
 	byMethod := []string{
 		app.ApiKeyService_Add_FullMethodName,
 		app.CredentialService_Get_FullMethodName,
 		app.CredentialService_List_FullMethodName,
 		app.CredentialService_Watch_FullMethodName,
 		app.CredentialService_Add_FullMethodName,
-		app.CredentialService_Patch_FullMethodName,
-		app.CredentialService_Apply_FullMethodName,
 		// `Credential.Erase` is served: it answers with no verifier and takes
 		// none, and `server/core` gives it the rules it needs (a password is
 		// replaced and not removed; not the last way in).
 		// `Delegation.Get`/`List`/`Erase` are served too: the token in `secret`
 		// is stripped on the way out like every other secret, and the layer
 		// holds them to `mayReach` on the row's holder. What stays closed is
-		// `Add` -- a caller-chosen token -- and the general writes.
+		// `Add` -- a caller-chosen token. `DelegationService` is registered
+		// for its `Revoke` overlay.
 		app.DelegationService_Add_FullMethodName,
-		app.DelegationService_Patch_FullMethodName,
-		app.DelegationService_Apply_FullMethodName,
 		// `Consent` is a ledger: `Agree` and `Withdraw` add to it, stamping
 		// what a request must not say, and nothing changes or removes a row of
 		// it -- the deployment destroys them once their account is gone.
-		// `Patch`/`Apply` are off by `GeneralWrite` beside these.
 		app.ConsentService_Add_FullMethodName,
 		app.ConsentService_Erase_FullMethodName,
-		// A name, a claim to one, and a tenant's own settings: each is
-		// written by a verb that carries its rule, and each has `Update` for
-		// whatever of it may be changed. Their general writes went round both
-		// -- a name renamed past its proof, a claim's window set by its
-		// caller, a front door that is not an origin (#277) -- so they are
-		// shut by name, as a credential's and a key's are.
-		app.HostService_Patch_FullMethodName,
-		app.HostService_Apply_FullMethodName,
-		app.HostProofService_Patch_FullMethodName,
-		app.HostProofService_Apply_FullMethodName,
-		app.TenantService_Patch_FullMethodName,
-		app.TenantService_Apply_FullMethodName,
 	}
-	// A key's general writes, shut **by name** on every port, whatever the
-	// configuration says of general writes.
-	//
-	// On the one port whose reason for existing is managing the deployment's
-	// own keys ([Server.Keys]) they were left to `GeneralWrite`, on the reading
-	// that managing a key is what the port is for. `Patch` takes a `secret` --
-	// a verifier the caller chose -- for any key row, `server/core` holds it to
-	// the method list and not to whose key it is, and holds `Apply` to nothing;
-	// so with `control.allow_general_writes` a role naming either was every
-	// key of the deployment (#276). Nothing calls them over the wire: a key is
-	// minted by `Issue` and ended by `Erase`, each held to its rules, and what
-	// `Patch` writes is `date_used`, by the server, in process.
-	//
-	// `Get`, `List` and `Erase` are served: the verifier is stripped on the way
-	// out like every other secret, `server/core` holds the rows to `mayReach`,
-	// and a person listing and ending their own keys is what the account
-	// screen is -- which is why `Holder.RevokeKey` is gone.
-	byMethod = append(byMethod,
-		app.ApiKeyService_Patch_FullMethodName,
-		app.ApiKeyService_Apply_FullMethodName,
-	)
+
+	// `ApiKey.Get`, `List` and `Erase` are served: the verifier is stripped on
+	// the way out like every other secret, `server/core` holds the rows to
+	// `mayReach`, and a person listing and ending their own keys is what the
+	// account screen is -- which is why `Holder.RevokeKey` is gone.
 
 	return func(method string) bool {
-		for _, v := range shut {
-			if strings.HasPrefix(method, "/"+v+"/") {
-				return true
-			}
-		}
 		for _, v := range byMethod {
 			if method == v {
 				return true
 			}
 		}
 
-		return was != nil && was(method)
+		return grpcx.GeneralWrite(method)
 	}
 }
 

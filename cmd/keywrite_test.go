@@ -9,7 +9,6 @@ import (
 
 	"github.com/lesomnus/payday/pdtest"
 
-	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
 )
@@ -36,9 +35,8 @@ import (
 // A credential's were shut by name in #275, on the sentence that a key's and a
 // delegation's already were. A delegation's were. This makes the sentence true.
 func TestAGeneralWriteDoesNotOpenAKeysRow(t *testing.T) {
-	// An operator's key that names every method the service has, on a
-	// deployment that turned general writes on at the keys port.
-	b := keyedFor(t, func(c *cmd.Config) { c.Control.AllowGeneralWrites = true }, "/roster.ApiKeyService/*")
+	// An operator's key that names every method the service has.
+	b := keyedFor(t, nil, "/roster.ApiKeyService/*")
 	ctx := t.Context()
 	x := require.New(t)
 
@@ -52,7 +50,14 @@ func TestAGeneralWriteDoesNotOpenAKeysRow(t *testing.T) {
 	x.NoError(err)
 	theirs := app.ApiKeyRef_builder{Id: row.GetId()}.Build()
 
-	g, err := b.GrpcControl(ctx, b.Config)
+	// The keys port, handed the setting that used to open general writes
+	// there. A file that says it is refused at start now
+	// (`TestAFileThatOpensGeneralWritesIsRefused`), so the server is told
+	// directly.
+	told := b.Config
+	told.Control.AllowGeneralWrites = true
+
+	g, err := b.GrpcControl(ctx, told)
 	x.NoError(err)
 
 	c := app.NewApiKeyServiceClient(pdtest.Serve(t, g))

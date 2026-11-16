@@ -231,6 +231,7 @@ written against (`server/core/directory.go`).
 | | held to it by |
 | --- | --- |
 | `server.addr`: walled and gated; the general writes (`Patch`, `Apply`) are closed, and each entity's own verbs are the writes there are | `TestUpdateIsTheNarrowWrite` |
+| No port serves a general write, of any entity, and it is not a setting: a file that says `allow_general_writes` is refused at start | `TestNoGeneralWriteIsServed` · `TestAFileThatOpensGeneralWritesIsRefused` |
 | No port answers a verifier -- a key's hash, a password's -- nor does the trail | `TestTheAdminListenerAnswersNoVerifier` · `TestNoVerifierReachesTheTrail` · `TestAKeyListCarriesNoVerifier` |
 | No port takes a verifier from a caller either: a credential's general writes are shut by name, whatever `allow_general_writes` says, as a key's and a delegation's are -- the port that manages the deployment's own keys included | `TestAGeneralWriteDoesNotOpenACredentialsRow` · `TestAGeneralWriteDoesNotOpenAKeysRow` |
 | `control.addr`: a key calls what its holder is bound on the control plane | `TestAKeyAtTheControlListenerIsWhoseItIs` |
