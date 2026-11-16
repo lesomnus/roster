@@ -12,7 +12,6 @@ import (
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/pdcmd"
 	"github.com/lesomnus/payday/pdid"
@@ -185,13 +184,12 @@ func newCmdMeIssueKey(c *cmd.Config) *xli.Command {
 			}
 
 			req := app.ApiKeyIssueRequest_builder{Holder: own, Alias: name, Methods: methods}
-			if v, _ := flg.Find[string](cl, "expires"); v != "" {
-				d, err := time.ParseDuration(v)
-				if err != nil {
-					return fmt.Errorf("--expires: %w", err)
-				}
-
-				req.DateExpires = timestamppb.New(time.Now().Add(d))
+			expires, err := expiresOf(cl)
+			if err != nil {
+				return err
+			}
+			if expires != nil {
+				req.DateExpires = expires
 			}
 
 			v, err := app.NewApiKeyServiceClient(conn).Issue(ctx, req.Build())

@@ -115,6 +115,12 @@ func (s coreApiKey) Issue(ctx context.Context, req *app.ApiKeyIssueRequest) (*ap
 		// not work.
 		return nil, status.Error(codes.InvalidArgument, "methods: a key that allows nothing opens no door")
 	}
+	if v := req.GetDateExpires(); v != nil && !v.AsTime().After(time.Now()) {
+		// As a delegation is refused one (`keys.Delegate`): a caller that
+		// computed an expiry and got the sign wrong would otherwise be
+		// answered a token, once, that had already stopped working.
+		return nil, status.Error(codes.InvalidArgument, "date_expires: a key cannot have already expired")
+	}
 	if s.prefix == "" {
 		// A stack assembled without `WithPrefix` cannot say which plane a key
 		// belongs to, so it mints none rather than an unprefixed one.

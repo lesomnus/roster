@@ -356,7 +356,9 @@ func administered(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, method
 }
 
 // newCmdAppUninstall ends an app's nomination in a tenant, which is the whole of
-// taking it out: its key is refused there from the next request.
+// taking it out: its narrowed key is answered as nobody there from the next
+// request. A key of the app's that lists methods of its own is the
+// deployment's in every tenant, asks no nomination, and is ended by name.
 //
 // The holder, its role and its binding stay. The trail names the holder, so it
 // stays as every holder does, and a role the tenant may have shaped is theirs to
@@ -365,7 +367,7 @@ func administered(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, method
 func newCmdAppUninstall(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "uninstall",
-		Brief: "end an app's nomination in a tenant; its key is refused there from then on",
+		Brief: "end an app's nomination in a tenant; its narrowed key is refused there from then on",
 
 		Args: arg.Args{
 			&arg.String{Name: "APP", Brief: "the app, as the control-plane holder its deployment key hangs off"},
@@ -415,7 +417,13 @@ func newCmdAppUninstall(c *cmd.Config) *xli.Command {
 			if _, err := s.Ungated.Nomination().Erase(ctx, rstr.NominationRef_builder{Id: n.GetId()}.Build()); err != nil {
 				return err
 			}
-			fmt.Fprintf(os.Stderr, "roster: %s's key is refused in %s from now on.\n", name, tenant)
+			// Said of what a nomination is: who a key is answered as when a
+			// request names the tenant. A key of this app's that lists methods
+			// of its own never asked one, and is answered as itself in every
+			// tenant as before -- the line said *refused* of that key too.
+			fmt.Fprintf(os.Stderr, "roster: %s's key is answered as nobody in %s from now on: a request that names %s with it is refused. "+
+				"A key of %s's that allows methods of its own was never narrowed, and this does not change it.\n",
+				name, tenant, tenant, name)
 
 			return nil
 		}),

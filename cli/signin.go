@@ -99,11 +99,7 @@ func NewCmdSignIn(c *cmd.Config) *xli.Command {
 				return nil
 			}
 
-			if err := os.MkdirAll(filepath.Dir(out), 0o700); err != nil {
-				return err
-			}
-			// 0600: it is a credential, and the file is the only thing keeping it.
-			if err := os.WriteFile(out, []byte(key+"\n"), 0o600); err != nil {
+			if err := keep(out, key); err != nil {
 				return err
 			}
 			cl.Printf("written to %s. point `client.auth.credential_file` at it.\n", out)
@@ -111,6 +107,23 @@ func NewCmdSignIn(c *cmd.Config) *xli.Command {
 			return nil
 		}),
 	}
+}
+
+// keep writes a key a terminal was handed into the file `--out` names.
+//
+// `0600` in a directory made at `0700`: it is a credential, and the file is the
+// only thing keeping it. Through [writeKey] -- written beside and moved into
+// place -- because that is what makes the mode true. It was `os.WriteFile`
+// with `0600`, which is the mode of a file it **creates**: one that is already
+// there keeps its own, and the file a second sign-in writes to is the one the
+// first left, or one somebody made by hand, readable by whoever it was
+// readable by (#276).
+func keep(out, key string) error {
+	if err := os.MkdirAll(filepath.Dir(out), 0o700); err != nil {
+		return err
+	}
+
+	return writeKey(out, key)
 }
 
 // begun is what the front door answers when a flow starts: RFC 8628 §3.2.

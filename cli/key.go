@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/lesomnus/roster/cmd"
 	"os"
-	"time"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
@@ -183,17 +182,12 @@ func mintingOf(cl *xli.Command, narrows bool) (minting, error) {
 		return minting{}, errors.New("--narrowed: a narrowed key allows nothing as itself; drop --allow, or drop --narrowed")
 	}
 
-	m := minting{name: name, methods: methods}
-	if v, _ := flg.Find[string](cl, "expires"); v != "" {
-		d, err := time.ParseDuration(v)
-		if err != nil {
-			return minting{}, fmt.Errorf("--expires: %w", err)
-		}
-
-		m.expires = timestamppb.New(time.Now().Add(d))
+	expires, err := expiresOf(cl)
+	if err != nil {
+		return minting{}, err
 	}
 
-	return m, nil
+	return minting{name: name, methods: methods, expires: expires}, nil
 }
 
 // mint writes the row on `at`, hung off `who`, and prints the token once.
