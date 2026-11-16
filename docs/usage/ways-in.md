@@ -396,7 +396,11 @@ session and delegation the old one opened, the one that made the change among
 them. A password is changed because somebody else may have it, and whoever
 that is was signed in already. So the next thing a page does after *changed*
 is sign in again, with the new one. It is the stamp `HolderService/Invalidate`
-leaves, so a key is not touched: a key is revoked by name.
+leaves, so a key is not touched: a key is revoked by name. A link already out
+for you goes with the sessions -- a recovery link, one that deletes the
+account, one a front door handed a browser -- and so does a sign-in that was
+waiting for its second factor. A link that confirms an address does not, since
+it signs nobody in.
 
 ### Deleting your own account
 
@@ -454,12 +458,14 @@ not provision them, no file declares them. Those are asked when the link is
 minted, so that nothing is mailed that could not be spent, and again when it is
 spent, since anything may have changed in between; a mistyped alias, or any
 other refusal, leaves the link unspent. The address has to still be theirs and
-still proved when it is spent. And it signs nobody in: it mints no delegation,
-no session and no password, and the doors the other links are spent at --
-`Vouch.Redeem`, the user console, `Email.Confirm` -- each refuse it. A caller
-allowed both methods can delete anybody it can see, which is why they are a
-front door's grant and nobody's own; from a shell, as the front door's key,
-they are `roster vouch leave-link` and `roster vouch leave`.
+still proved when it is spent, and nothing may have ended their sign-ins since
+it was minted: a password changed or issued, or *sign out everywhere*, ends a
+link already out as it ends a session. And it signs nobody in: it mints no
+delegation, no session and no password, and the doors the other links are
+spent at -- `Vouch.Redeem`, the user console, `Email.Confirm` -- each refuse
+it. A caller allowed both methods can delete anybody it can see, which is why
+they are a front door's grant and nobody's own; from a shell, as the front
+door's key, they are `roster vouch leave-link` and `roster vouch leave`.
 
 A **recovery link**, where the tenant offers passwords, is the longer way round:
 it hands them a password, and a sign-in with it is a moment ago. It is a way in,
@@ -670,7 +676,13 @@ is a list of methods, and what you can grant is exactly what you can name:
 
 `Invalidate` is *sign out everywhere* as a **fact** rather than as a list: one
 timestamp, which roster answers and each app compares its own sessions against.
-There is no registry of live sessions here and there will not be.
+There is no registry of live sessions here and there will not be. A link roster
+minted for the person before it is void with them -- a recovery link, one that
+deletes the account, one a front door handed a browser -- so a recovery
+followed, which ends in a password issued, ends every link asked for before it.
+So is a sign-in begun before it and waiting for its second factor. A link that
+confirms an address is not, since it signs nobody in; what stops that one is
+what stops every link -- the person suspended or erased, or their tenant closed.
 
 **`Enable` brings back what `Disable` stopped, as it was.** A suspension refuses
 a session and ends none: one still inside its life when the person is enabled

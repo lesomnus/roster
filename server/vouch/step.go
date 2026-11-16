@@ -81,9 +81,10 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 		}
 
 		// A handle that was never here, one that has been spent, one that
-		// expired, one somebody else was issued: one answer, and it costs what
-		// a real comparison costs. Told apart, this says whether a string was
-		// ever a real attempt.
+		// expired, one somebody else was issued, one begun before everything
+		// of its holder's was ended: one answer, and it costs what a real
+		// comparison costs. Told apart, this says whether a string was ever a
+		// real attempt.
 		by.Burn(secret)
 
 		return no(), nil, nil
@@ -465,7 +466,13 @@ func (s *Server) begin(ctx context.Context, who pdid.Id, satisfied []string, met
 	return handle, nil
 }
 
-// continuation finds the attempt a handle names, if it is the caller's.
+// continuation finds the attempt a handle names, if it is the caller's, still
+// open, for somebody who may still sign in, and begun since everything of
+// theirs was last ended.
+//
+// The one read of an attempt: [Server.step] is all that calls it, and every
+// door that finishes a sign-in is a step -- `Continue`, `Delegate` with a
+// continuation, and roster's own ([Server.ContinueAt]).
 func (s *Server) continuation(ctx context.Context, handle string, by pdid.Id) (*app.Continuation, error) {
 	if len(handle) == 0 || handle[:min(len(handle), len(PrefixContinuation))] != PrefixContinuation {
 		return nil, status.Error(codes.NotFound, "no such continuation")
@@ -482,11 +489,16 @@ func (s *Server) continuation(ctx context.Context, handle string, by pdid.Id) (*
 			MeteredBy:   z.Ptr(true),
 			DateExpires: z.Ptr(true),
 			DateUpdated: z.Ptr(true),
+			// When it was begun, to read against when everything of its
+			// holder's was last ended (`date_invalidated`, below).
+			DateCreated: z.Ptr(true),
 
+			// With their tenant, which is also how somebody erased is read:
+			// see below.
 			Holder: app.HolderSelect_builder{
-				Tenant:       app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
-				DateErased:   z.Ptr(true),
-				DateDisabled: z.Ptr(true),
+				Tenant:          app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
+				DateDisabled:    z.Ptr(true),
+				DateInvalidated: z.Ptr(true),
 			}.Build(),
 		}.Build(),
 	}.Build())
@@ -508,7 +520,38 @@ func (s *Server) continuation(ctx context.Context, handle string, by pdid.Id) (*
 	// Somebody who has been erased or suspended since the first form -- or
 	// whose tenant has closed -- is somebody the second form must not finish
 	// for.
-	if h := v.GetHolder(); h.GetDateErased() != nil || h.GetDateDisabled() != nil || h.GetTenant().GetDateClosed() != nil {
+	//
+	// Erased is read as a holder that did not come back, as [Server.row] reads
+	// a link's and for its reason: the edge is loaded through the rows still
+	// there, so somebody erased is a bare reference with no tenant on it, and
+	// the `date_erased` this selected was a column of a row that was not
+	// loaded. They were refused all the same, further on, by a credential that
+	// was not found -- and the attempt was spent to say so (#277). Refused
+	// here, nothing is.
+	h := v.GetHolder()
+	if gone := len(h.GetTenant().GetId()) == 0; gone || h.GetDateDisabled() != nil || h.GetTenant().GetDateClosed() != nil {
+		return nil, status.Error(codes.NotFound, "no such continuation")
+	}
+
+	// And an attempt begun at or before the holder's epoch is void: the
+	// reading [Server.row] gives a link, which is `keys.findDelegation`'s of a
+	// delegation, a tie included.
+	//
+	// A first factor proved before everything was ended is not proved after
+	// it. The password it was proved with may be the one a reset has just
+	// replaced, and what finishing mints is dated after the stamp, so nothing
+	// further on would read it as old: a sign-in begun with the old password
+	// finished with the code, for as long as the attempt had left. A recovery
+	// link spent before the stamp by somebody with a second factor was the
+	// same sign-in, which the link's own read cannot refuse (#277).
+	//
+	// Nothing in a sign-in stamps the epoch between its steps -- this package
+	// never writes it -- so one begun after the stamp finishes. A further step
+	// is a new row, minted in the call that read this one as begun since.
+	//
+	// The same `NotFound` as every dead attempt, which [Server.step] burns
+	// for and answers as it answers a handle that was never one.
+	if w := h.GetDateInvalidated(); w != nil && !v.GetDateCreated().AsTime().After(w.AsTime()) {
 		return nil, status.Error(codes.NotFound, "no such continuation")
 	}
 

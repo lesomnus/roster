@@ -50,9 +50,11 @@ const (
 // # Where account takeover lives
 //
 // So the rules are beside the row rather than in each app that sends one:
-// single use, minutes, and bound to the caller it was issued to. The first two
-// are what stop a link found in a mailbox six months later; the third is what
-// stops one app spending what another was given.
+// single use, minutes, bound to the caller it was issued to, and ended by what
+// ends a sign-in. The first two are what stop a link found in a mailbox six
+// months later; the third is what stops one app spending what another was
+// given; and the fourth is what makes a recovery the end of the links asked
+// for before it (`date_created`).
 type Link struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
@@ -375,7 +377,23 @@ type Link_builder struct {
 	DateUpdated *timestamppb.Timestamp
 	// Spending it is an erase, which is the whole of what single-use means here
 	// -- `Undelegate`'s answer, and one mechanism rather than two.
-	DateErased  *timestamppb.Timestamp
+	DateErased *timestamppb.Timestamp
+	// When it was minted, which is what its holder's epoch is read against: a
+	// link minted at or before `Holder.date_invalidated` is no link, as a
+	// delegation minted then is no delegation, and a tie is too old for both.
+	//
+	// A password issued for somebody stamps that epoch, a password they change
+	// does, and so does *sign out everywhere*. Each says that what was out
+	// before is not to be trusted, and a link in a mailbox is out: until this
+	// was read, the first of two recovery links asked for outlived the second
+	// being followed, and replaced the password it had handed over.
+	//
+	// It ends the three kinds that act for the person: a recovery, a hand into
+	// the user console (`at`) and a departure (`leave`). Not a verification
+	// (`email`), which signs nobody in and hands nothing over: somebody who
+	// changed their password a minute ago still reads their mailbox. What ends
+	// that one is what ends every kind -- whoever it is for erased or
+	// suspended, or their tenant closed.
 	DateCreated *timestamppb.Timestamp
 }
 

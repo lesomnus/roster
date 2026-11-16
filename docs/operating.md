@@ -719,6 +719,14 @@ with `recover: false`: that is the tenant's configuration and says nothing about
 anybody. The confirmation and deletion links are asked for by somebody signed
 in, and a failure is said to them as *cannot send*.
 
+**A recovery followed ends the links before it.** Somebody who asked three
+times has three links, and each works until one is followed: that one hands
+over a password, a password issued signs them out everywhere, and a link roster
+minted before that moment is no link -- the other two, and a deletion link
+already out, are refused as an expired one is. So is every such link once the
+person changes their password or signs out everywhere. A confirmation is not
+ended, since it signs nobody in.
+
 **What the log carries** is the address cut to its domain and the server's code:
 never the link, its token, or a whole address. A server that refuses a recipient
 says who, and that is cut out too.

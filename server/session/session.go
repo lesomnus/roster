@@ -170,13 +170,21 @@ func (s *Store) Get(ctx context.Context, key string) (authsession.Session, error
 		return authsession.Session{}, authsession.ErrNoSession
 	}
 
-	if w := h.DateInvalidated; w != nil && v.DateCreated.Before(*w) {
-		// Issued before the holder's stamp, so it is void -- and this store is
-		// the place that can say so, which is worth spelling out because
-		// `MeService.SignOutEverywhere`'s contract sounds like it forbids it.
-		// roster answers *invalid since when* and an app answers *what is
-		// still alive* -- and for the admin console's cookies, **roster is the
-		// app**. This is roster answering as one.
+	if w := h.DateInvalidated; w != nil && !v.DateCreated.After(*w) {
+		// Issued at or before the holder's stamp, so it is void -- and this
+		// store is the place that can say so, which is worth spelling out
+		// because `MeService.SignOutEverywhere`'s contract sounds like it
+		// forbids it. roster answers *invalid since when* and an app answers
+		// *what is still alive* -- and for the admin console's cookies,
+		// **roster is the app**. This is roster answering as one.
+		//
+		// Not after, which is `keys.findDelegation`'s reading, a tie included:
+		// a session minted in the instant of the stamp is too old, as a
+		// delegation, the sign-in a key carries, a link and a sign-in half
+		// made are. It read *before*, so that one instant was the one
+		// credential a stamp left standing (#277). No call stamps and then
+		// mints: a sign-in after a changed password or a recovery is a call
+		// of its own, later.
 		//
 		// Nothing here read the stamp until 2026-08-28, so "sign out
 		// everywhere" pressed in the admin console voided delegations a customer's

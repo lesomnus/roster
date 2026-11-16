@@ -843,8 +843,10 @@ export const EmailService: GenService<{
    *
    * Everything wrong answers the same `NotFound`: a token never minted, one
    * spent, one expired, one minted by somebody else, one that is a recovery
-   * link. What a caller may rely on is that after `OK` the address is
-   * `date_verified` at this moment, and that nothing was signed in.
+   * link, and one for somebody erased or suspended since, or whose tenant
+   * closed -- nothing is proved for a person who may not sign in. What a
+   * caller may rely on is that after `OK` the address is `date_verified` at
+   * this moment, and that nothing was signed in.
    *
    * # And it is where an address changes hands
    *

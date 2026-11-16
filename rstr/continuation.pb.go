@@ -340,6 +340,16 @@ type Continuation_builder struct {
 	DateExpires *timestamppb.Timestamp
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
+	// When the attempt was begun, which is what its holder's epoch is read
+	// against: one begun at or before `Holder.date_invalidated` is no attempt,
+	// as a link minted then is no link (`Link.date_created`), and a tie is too
+	// old.
+	//
+	// A first factor proved before everything was ended is not proved after it.
+	// The password it was proved with may be the one a reset has just replaced,
+	// and what finishing mints is dated after the stamp, so nothing further on
+	// would read it as old: until this was read, a sign-in begun with the old
+	// password finished with the code for as long as the attempt had left.
 	DateCreated *timestamppb.Timestamp
 }
 
