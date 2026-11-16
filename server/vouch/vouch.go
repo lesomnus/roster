@@ -174,6 +174,20 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 		return nil, nil, err
 	}
 
+	if kindOf(kind) == KindWebAuthn {
+		// A security key answers an attempt, and here there is none: nothing
+		// for it to have signed but a challenge its presenter chose, which a
+		// captured assertion carries with it. It begins no sign-in either
+		// ([Begins]), so nothing is lost but the order -- what begins one is
+		// proved first, and the answer says what the key is to sign.
+		//
+		// A fact about the request and not about the person, so it is said
+		// before anybody is looked for, as an unknown kind is.
+		return nil, nil, status.Error(codes.FailedPrecondition,
+			"kind: a security key answers an attempt -- prove what begins a sign-in first, and "+
+				"have the key sign the challenge that answer carries")
+	}
+
 	by, err := s.verifierOf(kind)
 	if err != nil {
 		// A kind this deployment cannot check at all, refused before anybody is

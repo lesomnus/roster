@@ -291,8 +291,17 @@ WebAuthn is worth naming separately, because a public key **is not a secret** â€
 the reason a password hash must not travel does not apply to it. What keeps
 verification here anyway is the **signature counter**, which is state that has
 to advance exactly once per assertion. So roster verifies, and takes the
-relying-party id, origin and challenge as arguments: those are the browser's
-half and roster has no browser.
+relying-party id and the origin as arguments: those are the browser's half and
+roster has no browser.
+
+The **challenge** is roster's. It was the third argument, and an argument is
+whatever its presenter says: an assertion checked against the challenge written
+beside it is good more than once, and a key that reports no counter -- a
+passkey kept by a platform never does -- was a second factor again for whoever
+had seen one. What makes an assertion good once has to be minted, remembered
+and spent, and the continuation is already all three. So what a key signs at a
+second step is derived from the attempt it answers, and roster says it with
+the attempt.
 
 **Not roster's.** Whether this deployment requires a second factor, who is
 exempt, whether to remember a browser, what order to prompt in, and what

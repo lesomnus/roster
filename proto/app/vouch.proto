@@ -428,6 +428,20 @@ message VouchFactor {
   // and nothing a caller could use -- it is the public half of a public key.
   // Empty for every other kind.
   string credential_id = 9;
+
+  // For `webauthn`: what the key is to sign, base64url -- the `challenge` a
+  // page hands `navigator.credentials.get`. It is this attempt's, derived from
+  // the continuation it is answered with, and an assertion over anything else
+  // is refused: so one that was seen once is good for the attempt it was made
+  // for, which is spent, and for no other.
+  //
+  // The challenge was the presenter's, written beside the assertion it was
+  // checked against, and in the front door roster ships the browser made it
+  // up; a key that reports no counter then signed one thing once and passed
+  // for good (#275). Not a secret, and says nothing of the continuation: it is
+  // a digest of it. Empty for every other kind, and where there is no
+  // continuation.
+  string challenge = 10;
 }
 
 message VouchVerifyResponse {
