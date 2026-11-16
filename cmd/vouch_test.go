@@ -22,8 +22,11 @@ import (
 	"github.com/lesomnus/roster/server/vouch"
 )
 
-// vouched is the service under test, wired the way `cmd.Grpc` wires it.
-func (b *built) vouched() *vouch.Server { return vouch.New(b.Ungated, b.Ungated) }
+// vouched is the service under test, wired the way `cmd.Grpc` wires it: with
+// the gate's own policy, which a delegation's list is held to.
+func (b *built) vouched() *vouch.Server {
+	return vouch.New(b.Ungated, b.Ungated, vouch.WithGate(cmd.Policy(b.Ent)))
+}
 
 func (b *built) sets(t *testing.T, ctx context.Context, who pdid.Id, secret string) {
 	t.Helper()

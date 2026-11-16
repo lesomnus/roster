@@ -455,8 +455,11 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 	// `Reset` hands its write to `Credential.Set`, where the check lives now. So
 	// the vouch server below carries only the keyring, and the corpus is
 	// `core`'s on both planes -- one wire rather than three.
+	//
+	// And this port's own policy, which is an operator's roles: a delegation
+	// asked here is within what the operator asking may call (`vouch.WithGate`).
 	app.RegisterVouchServiceServer(g, vouch.New(admin, admin,
-		vouch.WithKeys(s.Keyring), vouch.WithLockout(s.Lockout)))
+		vouch.WithKeys(s.Keyring), vouch.WithLockout(s.Lockout), vouch.WithGate(policy)))
 
 	// Minting a key for one of a customer's people is `ApiKey.Issue` now, and
 	// `register` above already served it on this port -- the same `rt_`, on the
