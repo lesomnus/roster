@@ -288,7 +288,11 @@ eight characters, sees what the terminal asked to be allowed, and says yes; the
 command writes the key and stops. That is RFC 8628, the device grant -- the same
 flow every CLI with a *go here and type this* screen uses -- and it is polling
 rather than anything cleverer, because a machine in that position has nothing that
-can be called back.
+can be called back. A poll is posted, with the terminal's own code in its body
+and in no address; a wrong code typed costs whoever typed it, ten of them stop
+any code of theirs being answered for a quarter of an hour; one code is one key,
+whoever says yes how many times; and a front door holds a thousand terminals
+waiting and tells the next to come back.
 
 What comes out is an ordinary `rt_`: it belongs to the person who approved it, is
 **never wider than they are**, appears in their keys beside the app passwords, and

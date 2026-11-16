@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -81,9 +82,20 @@ const (
 	deviceInterval = 5 * time.Second
 
 	// deviceMisses is how many codes one person may get wrong before this stops
-	// answering them for a while. The code space makes guessing hopeless; this is
+	// answering them for a while -- [deviceFor], the life of a code -- about any
+	// code, a right one too. The code space makes guessing hopeless; this is
 	// for the other thing, which is somebody pointing a script at the form.
 	deviceMisses = 10
+
+	// TerminalsWaiting is how many terminals may be waiting to be approved at
+	// once, across every tenant this app fronts.
+	//
+	// Beginning asks for no session, so it is anybody's to ask, and each asking
+	// is held for [deviceFor] with up to eight kilobytes of what it said. It
+	// was held without number: the one thing in this app a stranger could grow
+	// (#277). Past this a terminal is told to come back, which is what a
+	// front door that cannot hold another row has to say.
+	TerminalsWaiting = 1024
 )
 
 // device is one terminal waiting to be signed in.
@@ -96,6 +108,10 @@ type device struct {
 	token  string
 	denied bool
 
+	// answering is that somebody's answer is being acted on: the row is taken
+	// for it under the lock and given back, answered or not, under it.
+	answering bool
+
 	last    time.Time // the previous poll, for `slow_down`
 	expires time.Time
 }
@@ -106,23 +122,41 @@ type device struct {
 // a poll carries the `device_code` and an approval carries the `user_code`
 // somebody read out. `arrives.States` is take-once and cannot be either of them
 // -- a poll that took the row would end the flow it is waiting on.
+//
+// # Everything about a row is read and written under the lock
+//
+// A row is answered by one request and read by another, and it was marked
+// answered after the lock was let go: two approvals of one code each found it
+// waiting and each minted a key, and a poll read what an approval was writing
+// (#277). So an answer **takes** the row first ([devices.claim]) and gives it
+// back when it is done, and a poll is told what the row says rather than
+// handed the row.
 type devices struct {
 	mu       sync.Mutex
 	byDevice map[string]*device
 	byUser   map[string]*device
-	misses   map[string]int // by holder, so a wrong code costs somebody something
+	misses   map[string]miss // by holder, so a wrong code costs somebody something
+}
+
+// miss is how many codes somebody got wrong, and since when.
+type miss struct {
+	n     int
+	since time.Time
 }
 
 func held() *devices {
 	return &devices{
 		byDevice: map[string]*device{},
 		byUser:   map[string]*device{},
-		misses:   map[string]int{},
+		misses:   map[string]miss{},
 	}
 }
 
-// put remembers one, and sweeps what has run out while it is here.
-func (d *devices) put(code, user string, v *device) {
+// put remembers one, and sweeps what has run out while it is here. It answers
+// whether it did, and if not whether that is for want of room: the other
+// reason is a `user` already waiting, which a caller answers with another code
+// -- kept, the later terminal's code would have named the earlier one's row.
+func (d *devices) put(code, user string, v *device) (ok, full bool) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -137,50 +171,112 @@ func (d *devices) put(code, user string, v *device) {
 			delete(d.byUser, k)
 		}
 	}
+	for k, w := range d.misses {
+		if now.Sub(w.since) > deviceFor {
+			delete(d.misses, k)
+		}
+	}
+
+	if len(d.byDevice) >= TerminalsWaiting {
+		return false, true
+	}
+	if _, taken := d.byUser[user]; taken {
+		return false, false
+	}
 
 	d.byDevice[code] = v
 	d.byUser[user] = v
+
+	return true, false
 }
 
-// waiting answers the row a `user_code` names, live and not yet answered.
-func (d *devices) waiting(user string) (*device, bool) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
+// row is what a `user_code` names in a tenant, live and not yet answered, or
+// nothing. Called with the lock held.
+func (d *devices) row(user, tenant string) (*device, bool) {
 	v, ok := d.byUser[strings.ToUpper(strings.TrimSpace(user))]
-	if !ok || time.Now().After(v.expires) || v.token != "" || v.denied {
+	if !ok || v.tenant != tenant || time.Now().After(v.expires) || v.token != "" || v.denied || v.answering {
 		return nil, false
 	}
 
 	return v, true
 }
 
-// polled answers the row a `device_code` names, and whether this poll arrived
-// too soon after the last one.
-func (d *devices) polled(code string) (*device, bool, bool) {
+// waiting is what the terminal a `user_code` names asked for: its name, the
+// methods, and when the code runs out.
+func (d *devices) waiting(user, tenant string) (string, []string, time.Time, bool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	v, ok := d.row(user, tenant)
+	if !ok {
+		return "", nil, time.Time{}, false
+	}
+
+	return v.name, v.methods, v.expires, true
+}
+
+// claim takes the row a `user_code` names for one answer, so that a second
+// answer finds none; [devices.settle] gives it back.
+func (d *devices) claim(user, tenant string) (*device, bool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	v, ok := d.row(user, tenant)
+	if ok {
+		v.answering = true
+	}
+
+	return v, ok
+}
+
+// settle gives a claimed row back: with the key somebody's yes minted, with
+// their no, or with neither, as it was -- an answer that failed leaves the
+// code to be answered again.
+func (d *devices) settle(v *device, token string, denied bool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	v.answering = false
+	v.token, v.denied = token, denied
+}
+
+// polled answers a poll for the row a `device_code` names: the key, once, and
+// the row gone with it; or the RFC's word for why not.
+func (d *devices) polled(code string) (token, why string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	v, ok := d.byDevice[code]
 	if !ok || time.Now().After(v.expires) {
-		return nil, false, false
+		return "", "expired_token"
 	}
 
 	soon := time.Since(v.last) < deviceInterval
 	v.last = time.Now()
 
-	return v, true, soon
+	switch {
+	case v.denied:
+		d.gone(code, v)
+
+		return "", "access_denied"
+	case v.token == "":
+		if soon {
+			return "", "slow_down"
+		}
+
+		return "", "authorization_pending"
+	}
+
+	// Once. The row goes with the answer, so a second poll with the same
+	// `device_code` finds nothing -- and a credential this app is holding for
+	// somebody else stops being held the moment it is delivered.
+	d.gone(code, v)
+
+	return v.token, ""
 }
 
-// done takes the row away, which is what handing the key over does.
-func (d *devices) done(code string) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	v, ok := d.byDevice[code]
-	if !ok {
-		return
-	}
+// gone takes a row away. Called with the lock held.
+func (d *devices) gone(code string, v *device) {
 	delete(d.byDevice, code)
 	for k, w := range d.byUser {
 		if w == v {
@@ -189,15 +285,41 @@ func (d *devices) done(code string) {
 	}
 }
 
-// missed counts a code somebody got wrong, and answers whether they have run out
-// of tries.
-func (d *devices) missed(who string) bool {
+// blocked is whether somebody has got too many codes wrong, lately, to be
+// answered about another.
+//
+// Asked **before** a code is looked up. It was asked after, of a code already
+// found wrong -- so past [deviceMisses] a right code was still answered and
+// approved, and what the count bounded was nothing. And it never ran down:
+// *wait a while* was until the process restarted (#277).
+func (d *devices) blocked(who string) bool {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	d.misses[who]++
+	m, ok := d.misses[who]
+	if !ok {
+		return false
+	}
+	if time.Since(m.since) > deviceFor {
+		delete(d.misses, who)
 
-	return d.misses[who] > deviceMisses
+		return false
+	}
+
+	return m.n >= deviceMisses
+}
+
+// missed counts a code somebody got wrong.
+func (d *devices) missed(who string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	m := d.misses[who]
+	if m.n == 0 || time.Since(m.since) > deviceFor {
+		m = miss{since: time.Now()}
+	}
+	m.n++
+	d.misses[who] = m
 }
 
 // userCode is eight characters of [deviceAlphabet], written `XXXX-XXXX`.
@@ -279,18 +401,36 @@ func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "cannot begin", http.StatusInternalServerError)
 		return
 	}
-	user, err := userCode()
-	if err != nil {
+
+	// A code somebody else is already waiting on is not handed out twice: a
+	// few tries at another, which among a thousand rows and 2.56e10 codes is
+	// one try.
+	user, kept := "", false
+	for range 4 {
+		if user, err = userCode(); err != nil {
+			http.Error(w, "cannot begin", http.StatusInternalServerError)
+			return
+		}
+
+		ok, full := a.devices.put(code, user, &device{
+			tenant:  t.alias,
+			name:    in.Name,
+			methods: in.Allow,
+			expires: time.Now().Add(deviceFor),
+		})
+		if full {
+			w.Header().Set("retry-after", "60")
+			http.Error(w, "too many terminals are waiting to be approved here; try again in a minute", http.StatusServiceUnavailable)
+			return
+		}
+		if kept = ok; kept {
+			break
+		}
+	}
+	if !kept {
 		http.Error(w, "cannot begin", http.StatusInternalServerError)
 		return
 	}
-
-	a.devices.put(code, user, &device{
-		tenant:  t.alias,
-		name:    in.Name,
-		methods: in.Allow,
-		expires: time.Now().Add(deviceFor),
-	})
 
 	// `Base` if the deployment named one, else the origin this was asked at,
 	// as every other address this app hands out is ([App.redirectBase]). It
@@ -316,45 +456,42 @@ func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 // The errors are RFC 8628 §3.5's, by name, because that is what a client is
 // written to read: `authorization_pending` means keep going, `slow_down` means
 // keep going more slowly, and the other two are over.
+//
+// # A `POST`, with the code in its body
+//
+// It was a `GET` with the device code in the query, and the device code is the
+// whole of what a poll is held to: whoever has it is answered the key. An
+// address is what a proxy's log keeps, what a browser's history keeps, and
+// what a `HEAD` asks for -- and a mux answers `HEAD` on a `GET` pattern, so a
+// fetch of the address took the key and delivered it to nobody (#277). The RFC
+// has it posted, for that reason.
 func (a *App) devicePoll(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("allow", http.MethodPost)
+		http.Error(w, "a poll is posted, with the device code in its body", http.StatusMethodNotAllowed)
+		return
+	}
 	if !a.offered(w) {
 		return
 	}
 
-	code := r.URL.Query().Get("device_code")
-	if code == "" {
+	var in struct {
+		DeviceCode string `json:"device_code"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&in); err != nil || in.DeviceCode == "" {
 		http.Error(w, "device_code", http.StatusBadRequest)
 		return
 	}
 
-	v, ok, soon := a.devices.polled(code)
-	if !ok {
-		deviceErr(w, "expired_token")
+	token, why := a.devices.polled(in.DeviceCode)
+	if why != "" {
+		deviceErr(w, why)
 		return
 	}
 
-	switch {
-	case v.denied:
-		a.devices.done(code)
-		deviceErr(w, "access_denied")
-	case v.token == "":
-		if soon {
-			deviceErr(w, "slow_down")
-
-			return
-		}
-		deviceErr(w, "authorization_pending")
-	default:
-		// Once. The row goes with the answer, so a second poll with the same
-		// `device_code` finds nothing -- and a credential this app is holding for
-		// somebody else stops being held the moment it is delivered.
-		token := v.token
-		a.devices.done(code)
-
-		w.Header().Set("content-type", "application/json")
-		w.Header().Set("cache-control", "no-store")
-		_ = json.NewEncoder(w).Encode(map[string]any{"token": token})
-	}
+	w.Header().Set("content-type", "application/json")
+	w.Header().Set("cache-control", "no-store")
+	_ = json.NewEncoder(w).Encode(map[string]any{"token": token})
 }
 
 func deviceErr(w http.ResponseWriter, why string) {
@@ -390,16 +527,17 @@ func (a *App) devicePending(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v, ok := a.devices.waiting(r.URL.Query().Get("user_code"))
-	if !ok || v.tenant != t.alias {
+	if a.devices.blocked(who.String()) {
+		http.Error(w, "too many codes that were not one; wait a while", http.StatusTooManyRequests)
+		return
+	}
+
+	name, methods, expires, ok := a.devices.waiting(r.URL.Query().Get("user_code"), t.alias)
+	if !ok {
 		// A code of another operator's is *no such code* here, which is the same
 		// answer as one that never existed: this front door serves several, and
 		// which of them a code belongs to is not somebody else's to learn.
-		if a.devices.missed(who.String()) {
-			http.Error(w, "too many codes that were not one; wait a while", http.StatusTooManyRequests)
-
-			return
-		}
+		a.devices.missed(who.String())
 		http.Error(w, "that is not a code this is waiting for", http.StatusNotFound)
 
 		return
@@ -408,10 +546,26 @@ func (a *App) devicePending(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 	w.Header().Set("cache-control", "no-store")
 	_ = json.NewEncoder(w).Encode(map[string]any{
-		"name":    v.name,
-		"methods": v.methods,
-		"expires": v.expires.UTC().Format(time.RFC3339),
+		"name":    name,
+		"methods": methods,
+		"expires": expires.UTC().Format(time.RFC3339),
 	})
+}
+
+// devicePage is where a terminal is told to go: `/device`, with the code in
+// the query for anybody who followed the complete address.
+//
+// The page that asks is this app's one page, at `/`, which reads
+// `?user_code=` wherever it is drawn. `/device` itself was served by nothing --
+// a build is a document and its bundles, and a path that is neither is not
+// found -- so the address a terminal printed opened a 404 (#277).
+func (a *App) devicePage(w http.ResponseWriter, r *http.Request) {
+	to := "/"
+	if v := r.URL.Query().Get("user_code"); v != "" {
+		to += "?" + url.Values{"user_code": {v}}.Encode()
+	}
+
+	http.Redirect(w, r, to, http.StatusFound)
 }
 
 // deviceApprove is the person saying yes, and it is where the key is minted.
@@ -454,20 +608,23 @@ func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v, ok := a.devices.waiting(in.UserCode)
-	if !ok || v.tenant != t.alias {
-		if a.devices.missed(who.String()) {
-			http.Error(w, "too many codes that were not one; wait a while", http.StatusTooManyRequests)
+	if a.devices.blocked(who.String()) {
+		http.Error(w, "too many codes that were not one; wait a while", http.StatusTooManyRequests)
+		return
+	}
 
-			return
-		}
+	// Taken for this answer, so that a second one finds no code waiting: two
+	// approvals of one code each minted a key ([devices]).
+	v, ok := a.devices.claim(in.UserCode, t.alias)
+	if !ok {
+		a.devices.missed(who.String())
 		http.Error(w, "that is not a code this is waiting for", http.StatusNotFound)
 
 		return
 	}
 
 	if in.Deny {
-		v.denied = true
+		a.devices.settle(v, "", true)
 		w.WriteHeader(http.StatusNoContent)
 
 		return
@@ -475,6 +632,7 @@ func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
 
 	as, err := a.door.Acting(ctx, r)
 	if err != nil {
+		a.devices.settle(v, "", false)
 		http.Error(w, "no", http.StatusForbidden)
 		return
 	}
@@ -490,6 +648,8 @@ func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
 		Methods: v.methods,
 	}.Build())
 	if err != nil {
+		// Not answered: the code waits for another try, or for its clock.
+		a.devices.settle(v, "", false)
 		fmt.Fprintf(os.Stderr, "account: device approve at %s: %v\n", t.alias, err)
 
 		// The two refusals worth telling apart are the rules a person can do
@@ -508,7 +668,7 @@ func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// The terminal's next poll carries this away and the row goes with it.
-	v.token = res.GetToken()
+	a.devices.settle(v, res.GetToken(), false)
 
 	w.Header().Set("content-type", "application/json")
 	w.Header().Set("cache-control", "no-store")
