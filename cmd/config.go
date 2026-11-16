@@ -723,7 +723,8 @@ func (c ControlConfig) Serves() bool { return c.Db.Driver != "" }
 // Answers reports whether the control plane is reachable over the network.
 func (c ControlConfig) Answers() bool { return c.Serves() && c.Addr != "" }
 
-// Said reports whether this block says anything beyond which database it is on.
+// Said reports whether this block says anything beyond which kind of database
+// it is on.
 //
 // It is the other half of [ControlConfig.Serves], and it exists because that
 // one reads `control.db.driver` **and nothing else**. That is the right field
@@ -735,10 +736,17 @@ func (c ControlConfig) Answers() bool { return c.Serves() && c.Addr != "" }
 // Whatever the block said rather than its address alone, because
 // `control.http.addr`, `control.watch.broker` and every limit under it are as
 // inert without a database as `control.addr` is. Compared against the zero
-// value with the database taken out, so that the next field added here does
-// not have to be remembered.
+// value with the driver taken out, so that the next field added here does not
+// have to be remembered.
+//
+// The **driver** and not the whole `db` block, which is what was taken out.
+// [ControlConfig.Serves] reads the one field, so the rest of `db` is as inert
+// without it as an address is -- and is what somebody writes first: a block
+// that says where the database is (`db.dsn`) with `driver:` misspelled, or
+// left to a default it has not got, said nothing by this reading and started
+// a deployment that believed every caller (#276).
 func (c ControlConfig) Said() bool {
-	c.Db = config.DbConfig{}
+	c.Db.Driver = ""
 
 	return !reflect.DeepEqual(c, ControlConfig{})
 }
