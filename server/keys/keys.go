@@ -307,8 +307,8 @@ func lookup(ctx context.Context, s app.Server, token string) (*app.ApiKey, error
 			// edge is a join the query does either way once it is asked for,
 			// and a second shape here is a second thing to keep in step.
 			//
-			// And whether they are suspended, which both halves do use; see
-			// [findKey].
+			// And whether they are suspended or gone, which both halves do use;
+			// see [findKey].
 			Holder: app.HolderSelect_builder{
 				Tenant:       app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
 				DateDisabled: z.Ptr(true),

@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -52,6 +53,16 @@ const HeaderAt = front.HeaderAt
 // which holder a name borrows.
 //
 // The tenant comes back on the holder, selected, because both callers need it.
+//
+// # Nobody, for a holder who may not call
+//
+// Suspended, erased, or of a tenant that is closed: [signable], which is what a
+// key's own holder is asked. A tenant that suspends who an app is has turned
+// the app off there, and the resolver said so for the key as itself. [Acting]
+// does not resolve to this holder -- it answers as the person a delegation
+// names -- so nothing on that path asked, and an app turned off in a tenant
+// went on acting as everybody whose delegation it held (#276). Asked here, it
+// is asked for both readers.
 func Nominated(ctx context.Context, tenant app.Server, at string, borrower []byte) (*app.Holder, error) {
 	if tenant == nil || at == "" || len(borrower) == 0 {
 		return nil, nil
@@ -71,7 +82,8 @@ func Nominated(ctx context.Context, tenant app.Server, at string, borrower []byt
 		}.Build(),
 		Select: app.NominationSelect_builder{
 			ActsAs: app.HolderSelect_builder{
-				Tenant: app.TenantSelect_builder{}.Build(),
+				Tenant:       app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
+				DateDisabled: z.Ptr(true),
 			}.Build(),
 		}.Build(),
 	}.Build())
@@ -86,7 +98,7 @@ func Nominated(ctx context.Context, tenant app.Server, at string, borrower []byt
 	}
 
 	h := n.GetActsAs()
-	if h == nil || len(h.GetId()) == 0 {
+	if h == nil || len(h.GetId()) == 0 || signable(h) != nil {
 		return nil, nil
 	}
 
