@@ -46,6 +46,9 @@ interface Factor {
 	kind: string
 	name: string
 	id?: string
+
+	/** What a security key is to sign: this attempt's, as roster answered it. */
+	challenge?: string
 }
 
 function b64urlDecode(v: string): Uint8Array<ArrayBuffer> {
@@ -59,13 +62,20 @@ function b64urlDecode(v: string): Uint8Array<ArrayBuffer> {
 
 /**
  * assert is the browser's half of a security key at sign-in: the challenge is
- * this page's, `navigator.credentials.get` is asked for exactly the key roster
- * offered, and what comes back is wrapped in the envelope `server/vouch`
- * checks -- relying party, origin, challenge, and the authenticator's answer.
+ * the one roster answered for this attempt, `navigator.credentials.get` is
+ * asked for exactly the key roster offered, and what comes back is wrapped in
+ * the envelope `server/vouch` checks -- relying party, origin, and the
+ * authenticator's answer.
+ *
+ * The challenge was this page's own, made here. An assertion was then good
+ * for whatever challenge came back beside it, which is an assertion good more
+ * than once; roster reads the one it derived from the attempt and not the one
+ * written here (`vouch.ChallengeOf`).
  */
 async function assertKey(f: Factor): Promise<string> {
 	if (f.id === undefined) throw new Error('roster did not say which key')
-	const challenge = crypto.getRandomValues(new Uint8Array(32))
+	if (f.challenge === undefined || f.challenge === '') throw new Error('roster did not say what the key is to sign')
+	const challenge = b64urlDecode(f.challenge)
 	const cred = (await navigator.credentials.get({
 		publicKey: {
 			challenge,

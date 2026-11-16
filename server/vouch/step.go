@@ -62,6 +62,13 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 		return nil, nil, err
 	}
 
+	if w, ok := by.(WebAuthn); ok {
+		// A security key signs **this** attempt, and an assertion over
+		// anything else is not one: [ChallengeOf].
+		w.Challenge = ChallengeOf(handle)
+		by = w
+	}
+
 	issuer, err := issuerOf(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -368,6 +375,14 @@ func (s *Server) answer(ctx context.Context, h *app.Holder, satisfied []string, 
 	handle, err := s.begin(ctx, holder, satisfied, metered, issuer)
 	if err != nil {
 		return nil, err
+	}
+
+	// What a security key is to sign, which is this attempt and so could not
+	// be said until there was one.
+	for _, f := range left {
+		if f.GetKind() == KindWebAuthn {
+			f.SetChallenge(ChallengeOf(handle))
+		}
 	}
 
 	return app.VouchVerifyResponse_builder{

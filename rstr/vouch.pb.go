@@ -474,6 +474,7 @@ type VouchFactor struct {
 	xxx_hidden_Name         string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_DateLocked   *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_locked,json=dateLocked"`
 	xxx_hidden_CredentialId string                 `protobuf:"bytes,9,opt,name=credential_id,json=credentialId"`
+	xxx_hidden_Challenge    string                 `protobuf:"bytes,10,opt,name=challenge"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -531,6 +532,13 @@ func (x *VouchFactor) GetCredentialId() string {
 	return ""
 }
 
+func (x *VouchFactor) GetChallenge() string {
+	if x != nil {
+		return x.xxx_hidden_Challenge
+	}
+	return ""
+}
+
 func (x *VouchFactor) SetKind(v string) {
 	x.xxx_hidden_Kind = v
 }
@@ -545,6 +553,10 @@ func (x *VouchFactor) SetDateLocked(v *timestamppb.Timestamp) {
 
 func (x *VouchFactor) SetCredentialId(v string) {
 	x.xxx_hidden_CredentialId = v
+}
+
+func (x *VouchFactor) SetChallenge(v string) {
+	x.xxx_hidden_Challenge = v
 }
 
 func (x *VouchFactor) HasDateLocked() bool {
@@ -574,6 +586,19 @@ type VouchFactor_builder struct {
 	// and nothing a caller could use -- it is the public half of a public key.
 	// Empty for every other kind.
 	CredentialId string
+	// For `webauthn`: what the key is to sign, base64url -- the `challenge` a
+	// page hands `navigator.credentials.get`. It is this attempt's, derived from
+	// the continuation it is answered with, and an assertion over anything else
+	// is refused: so one that was seen once is good for the attempt it was made
+	// for, which is spent, and for no other.
+	//
+	// The challenge was the presenter's, written beside the assertion it was
+	// checked against, and in the front door roster ships the browser made it
+	// up; a key that reports no counter then signed one thing once and passed
+	// for good (#275). Not a secret, and says nothing of the continuation: it is
+	// a digest of it. Empty for every other kind, and where there is no
+	// continuation.
+	Challenge string
 }
 
 func (b0 VouchFactor_builder) Build() *VouchFactor {
@@ -584,6 +609,7 @@ func (b0 VouchFactor_builder) Build() *VouchFactor {
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_DateLocked = b.DateLocked
 	x.xxx_hidden_CredentialId = b.CredentialId
+	x.xxx_hidden_Challenge = b.Challenge
 	return m0
 }
 
@@ -2065,13 +2091,15 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x16\n" +
 	"\x06secret\x18\t \x01(\fR\x06secret\x12\x12\n" +
-	"\x04name\x18\x05 \x01(\tR\x04name\"\x97\x01\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\"\xb5\x01\n" +
 	"\vVouchFactor\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12;\n" +
 	"\vdate_locked\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"dateLocked\x12#\n" +
-	"\rcredential_id\x18\t \x01(\tR\fcredentialId\"\x87\x02\n" +
+	"\rcredential_id\x18\t \x01(\tR\fcredentialId\x12\x1c\n" +
+	"\tchallenge\x18\n" +
+	" \x01(\tR\tchallenge\"\x87\x02\n" +
 	"\x13VouchVerifyResponse\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x16\n" +
 	"\x06holder\x18\x02 \x01(\fR\x06holder\x12\x16\n" +

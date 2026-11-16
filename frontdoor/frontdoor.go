@@ -773,18 +773,25 @@ func ids(holder, tenant []byte) (pdid.Id, pdid.Id, error) {
 
 // factor is one second factor a page may offer, with what the page needs to
 // offer it: for a security key, the credential identifier the browser has to
-// be told to look for. `available` keeps the kinds alone, for the pages that
-// read only that.
+// be told to look for, and the challenge the key is to sign. `available` keeps
+// the kinds alone, for the pages that read only that.
+//
+// The challenge is roster's, and is this attempt's (`vouch.ChallengeOf`). A
+// page made one up, and this passed on whatever came back: an assertion was
+// checked against the challenge written beside it, so one that had been seen
+// once answered again (#275). It is handed to the page and is not the
+// continuation, which stays here.
 type factor struct {
-	Kind string `json:"kind"`
-	Name string `json:"name"`
-	Id   string `json:"id,omitempty"`
+	Kind      string `json:"kind"`
+	Name      string `json:"name"`
+	Id        string `json:"id,omitempty"`
+	Challenge string `json:"challenge,omitempty"`
 }
 
 func factorsOf(vs []*rstr.VouchFactor) []factor {
 	out := make([]factor, 0, len(vs))
 	for _, v := range vs {
-		out = append(out, factor{Kind: v.GetKind(), Name: v.GetName(), Id: v.GetCredentialId()})
+		out = append(out, factor{Kind: v.GetKind(), Name: v.GetName(), Id: v.GetCredentialId(), Challenge: v.GetChallenge()})
 	}
 
 	return out
