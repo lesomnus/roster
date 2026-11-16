@@ -80,7 +80,11 @@ func TestAPageIsToldWhatAGrantHandsOver(t *testing.T) {
 			app.ApiKeyService_Issue_FullMethodName,
 			app.EmailService_Add_FullMethodName,
 		)
-		x.Len(got, 1)
+		// Two of the page's: whose account it writes a way into, and -- of the
+		// one of them that mints -- what it mints when it is on a key.
+		x.Len(got, 2)
+		x.Equal([]string{app.ApiKeyService_Issue_FullMethodName}, got["a-key-that-mints-keys"].GetMethods())
+		x.Contains(got["a-key-that-mints-keys"].GetHandsOver(), "the list it was itself minted with is not asked")
 
 		g := got["a-persons-verb-across-the-tenant"]
 		x.NotNil(g)
@@ -136,11 +140,12 @@ func TestAPageIsToldWhatAGrantHandsOver(t *testing.T) {
 			"holderservicedisable",
 			"auditservice",
 			"holderservicesignsin",
+			"a-key-that-mints-keys",
 		} {
 			x.Contains(got, grant)
 			x.Equal([]string{"/roster.*/*"}, got[grant].GetMethods(), grant)
 		}
-		x.Len(got, 12, "and nothing that is another plane's, or somebody's own")
+		x.Len(got, 13, "and nothing that is another plane's, or somebody's own")
 
 		// A service's, for what is that service's and no more.
 		got = handedOver(t, ctx, b.Ungated, tenant, "/roster.VouchService/*")
