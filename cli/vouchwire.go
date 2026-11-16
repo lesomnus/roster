@@ -230,6 +230,13 @@ func expiresOf(cl *xli.Command) (*timestamppb.Timestamp, error) {
 	if err != nil {
 		return nil, fmt.Errorf("--expires: %w", err)
 	}
+	if d <= 0 {
+		// A sign the wrong way round, or a zero that was meant as forever
+		// (which is the flag left out). Minted, it was a credential that had
+		// already stopped working, printed under *this is the only time it is
+		// shown* (#276).
+		return nil, fmt.Errorf("--expires %s: how long it lasts from now, so more than nothing; leave it out for one that does not expire", v)
+	}
 
 	return timestamppb.New(time.Now().Add(d)), nil
 }

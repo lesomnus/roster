@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -80,4 +82,36 @@ func TestProvisioningTakesNothingThatIsSomebodys(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 	x.Equal([]string{"/roster.MeService/Get"}, got.GetMethods(), "contoso's role was rewritten to the app's")
+}
+
+// TestAKeyIsKeptWhereNobodyElseReadsIt: the file `roster sign-in --out` writes
+// a key into is the key's alone to read, whatever was there.
+//
+// It was `os.WriteFile(out, …, 0o600)`, and that mode is the mode of a file it
+// creates. A file already there keeps its own: the one a second sign-in writes
+// to, or one somebody made by hand, stayed readable by whoever it was readable
+// by, with a fresh credential in it (#276).
+func TestAKeyIsKeptWhereNobodyElseReadsIt(t *testing.T) {
+	x := require.New(t)
+
+	out := filepath.Join(t.TempDir(), "sub", "terminal.key")
+	x.NoError(os.MkdirAll(filepath.Dir(out), 0o755))
+	x.NoError(os.WriteFile(out, []byte("rt_the-one-before\n"), 0o644))
+
+	x.NoError(keep(out, "rt_the-one-just-handed-over"))
+
+	st, err := os.Stat(out)
+	x.NoError(err)
+	x.Equal(os.FileMode(0o600), st.Mode().Perm(), "a key was written into a file others read")
+
+	b, err := os.ReadFile(out)
+	x.NoError(err)
+	x.Equal("rt_the-one-just-handed-over\n", string(b))
+
+	// And one that was not there.
+	fresh := filepath.Join(t.TempDir(), "made", "terminal.key")
+	x.NoError(keep(fresh, "rt_x"))
+	st, err = os.Stat(fresh)
+	x.NoError(err)
+	x.Equal(os.FileMode(0o600), st.Mode().Perm())
 }

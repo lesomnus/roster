@@ -307,7 +307,14 @@ var Calls = append([]string{
 func EnvSecret(ref string) (string, error) {
 	name, ok := strings.CutPrefix(ref, "env:")
 	if !ok || name == "" {
-		return "", fmt.Errorf("secret_ref %q: only env:NAME is understood here", ref)
+		// **Not repeated.** What is written where a reference belongs and is
+		// not one is, more often than anything else, the secret itself -- and
+		// this refusal is a line in a start-up log. It quoted the value, so
+		// the mistake this exists to catch put the secret where logs are kept
+		// (#276). A reference that does resolve to a name is quoted below: a
+		// name is not a secret.
+		return "", errors.New("secret_ref: only env:NAME is understood here, and what is written is not that. " +
+			"it is not repeated, since a secret written where a reference belongs is what this usually is")
 	}
 	v, ok := os.LookupEnv(name)
 	if !ok {
