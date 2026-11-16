@@ -134,23 +134,18 @@ type Server struct {
 	// Keys is whether this instance is the one that holds them, which is the
 	// control plane and nothing else.
 	//
-	// It exists because `closed` cannot work it out. Both planes are the same
+	// It exists because nothing can work it out. Both planes are the same
 	// `Build` and the same `Grpc`, and `Control == nil` is true of the control
 	// plane *and* of a deployment that has none -- so the one place they differ
 	// has to be said rather than inferred.
 	//
-	// What it changes is two services. `ApiKeyService` is closed everywhere by
-	// default because its generated `Get` answers with the verifier column; on
-	// the port where the deployment's own operator manages keys, that is the
-	// point. `CredentialService` stays closed on both, because a password hash
-	// is nobody's to read.
+	// What it changes is who a key is at this listener: on the plane keys are
+	// rows of, one is asked what its holder was bound ([Server.policy]), and
+	// the trail names them.
 	//
-	// And `IssueService`, which both planes serve and which mints a different
-	// **kind** on each -- `rk_` there and `rt_` here. `Grpc` registers the
-	// customer's one unless this flag says otherwise, and `GrpcControl` adds
-	// the deployment's own after; without the flag they would both land on the
-	// control plane's server, and gRPC refuses a service registered twice. It
-	// did, loudly, which is the good direction for that mistake to fail in.
+	// It used to open a key's general writes here as well, where a deployment
+	// said `allow_general_writes`. They are shut by name on every port now
+	// (`closed`).
 	Keys bool
 
 	// Keyring is what this deployment can wrap a seed with, from `vouch.keys`.
@@ -1223,9 +1218,9 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 	// the wire answers with the token column.
 	app.RegisterDelegationServiceServer(g, s.Delegation())
 	// `ApiKeyService` for its `Issue` overlay -- the mint `IssueService.IssueKey`
-	// was. Its reads and raw `Add`/`Erase` are shut by method in `closed` (and
-	// the management verbs everywhere but the keys port), so only `Issue`
-	// answers here and the prefix it stamps is the stack's, not the caller's.
+	// was. Its raw `Add` and its general writes are shut by method in `closed`,
+	// on every port, so a key is made by `Issue` alone and the prefix it stamps
+	// is the stack's, not the caller's.
 	app.RegisterApiKeyServiceServer(g, s.ApiKey())
 	app.RegisterTenantServiceServer(g, s.Tenant())
 	app.RegisterHostServiceServer(g, s.Host())
@@ -1338,22 +1333,27 @@ func (s *Server) closed(c Config) func(method string) bool {
 		app.ConsentService_Add_FullMethodName,
 		app.ConsentService_Erase_FullMethodName,
 	}
-	if !s.Keys {
-		// Everywhere but the one port whose reason for existing is managing
-		// the deployment's own keys (see [Server.Keys]), the general writes are
-		// shut **by name**, whatever the configuration says of general writes.
-		// On that port they are not named here and are still not served: no
-		// `Patch` or `Apply` is, anywhere, unless a deployment says
-		// `allow_general_writes`, and only then are these two open there and
-		// nowhere else. `Get`, `List` and `Erase` are served: the verifier is stripped on
-		// the way out like every other secret, `server/core` holds the rows to
-		// `mayReach`, and a person listing and ending their own keys is what the
-		// account screen is -- which is why `Holder.RevokeKey` is gone.
-		byMethod = append(byMethod,
-			app.ApiKeyService_Patch_FullMethodName,
-			app.ApiKeyService_Apply_FullMethodName,
-		)
-	}
+	// A key's general writes, shut **by name** on every port, whatever the
+	// configuration says of general writes.
+	//
+	// On the one port whose reason for existing is managing the deployment's
+	// own keys ([Server.Keys]) they were left to `GeneralWrite`, on the reading
+	// that managing a key is what the port is for. `Patch` takes a `secret` --
+	// a verifier the caller chose -- for any key row, `server/core` holds it to
+	// the method list and not to whose key it is, and holds `Apply` to nothing;
+	// so with `control.allow_general_writes` a role naming either was every
+	// key of the deployment (#276). Nothing calls them over the wire: a key is
+	// minted by `Issue` and ended by `Erase`, each held to its rules, and what
+	// `Patch` writes is `date_used`, by the server, in process.
+	//
+	// `Get`, `List` and `Erase` are served: the verifier is stripped on the way
+	// out like every other secret, `server/core` holds the rows to `mayReach`,
+	// and a person listing and ending their own keys is what the account
+	// screen is -- which is why `Holder.RevokeKey` is gone.
+	byMethod = append(byMethod,
+		app.ApiKeyService_Patch_FullMethodName,
+		app.ApiKeyService_Apply_FullMethodName,
+	)
 
 	return func(method string) bool {
 		for _, v := range shut {
@@ -1648,13 +1648,13 @@ func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerO
 		return nil, err
 	}
 
-	// The keys themselves, which the data plane refuses to serve and this port
-	// exists to serve. It takes no registration: `Register` puts
-	// `ApiKeyService` on every server for its `Issue` overlay, and what differs
-	// here is `closed()` -- the general writes that manage a key stay open when
-	// [Server.Keys] is set, and are shut everywhere else. So this port must not
-	// be reachable by anybody who is not administering the deployment. Nothing
-	// in this process can enforce that; the address is what enforces it.
+	// The keys themselves, which are the deployment's own on this plane. It
+	// takes no registration: `Register` puts `ApiKeyService` on every server
+	// for its `Issue` overlay, and what differs here is the kind it mints
+	// ([Server.Keys]) and whose rows it reads. A key's general writes are shut
+	// here as everywhere (`closed`). This port must still not be reachable by
+	// anybody who is not administering the deployment. Nothing in this process
+	// can enforce that; the address is what enforces it.
 
 	// No `AuthService` here, and no page either. Both moved to `admin.http`,
 	// which is where a roster operator opens a browser: a session cookie is
