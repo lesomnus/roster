@@ -998,7 +998,12 @@ func (a *App) start(w http.ResponseWriter, r *http.Request, link bool, who pdid.
 		http.Error(w, "cannot start", http.StatusInternalServerError)
 		return
 	}
-	a.flows.Put(state, flow{tenant: t, trip: trip, link: link, who: who, next: next}, 10*time.Minute)
+	if !a.flows.Put(state, flow{tenant: t, trip: trip, link: link, who: who, next: next}, 10*time.Minute) {
+		// As many round trips are under way as this holds (`arrives.StatesHeld`).
+		w.Header().Set("retry-after", "30")
+		http.Error(w, "too many sign-ins are under way here; try again in a moment", http.StatusServiceUnavailable)
+		return
+	}
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     a.stateName(),

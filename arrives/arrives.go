@@ -1134,8 +1134,19 @@ type held[T any] struct {
 // Held is an empty store.
 func Held[T any]() *States[T] { return &States[T]{by: map[string]held[T]{}} }
 
+// StatesHeld is how many round trips a front door holds unfinished at once.
+//
+// A round trip is begun by a `GET` that asks for no session, so it is
+// anybody's to begin, and what it began was held for its ten minutes without
+// number -- each insert sweeping everything held, under the lock a callback
+// takes too (#277). A sign-in is seconds between its two ends, so this is
+// thousands of people signing in at one moment; past it the next is told to
+// come back.
+const StatesHeld = 4096
+
 // Put remembers one flow, and sweeps whatever has run out while it is here.
-func (s *States[T]) Put(state string, v T, ttl time.Duration) {
+// It answers whether it did: not past [StatesHeld].
+func (s *States[T]) Put(state string, v T, ttl time.Duration) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	now := time.Now()
@@ -1144,7 +1155,12 @@ func (s *States[T]) Put(state string, v T, ttl time.Duration) {
 			delete(s.by, k)
 		}
 	}
+	if len(s.by) >= StatesHeld {
+		return false
+	}
 	s.by[state] = held[T]{v: v, expires: now.Add(ttl)}
+
+	return true
 }
 
 // Take answers one flow once. A state that names none, or one that has run out,

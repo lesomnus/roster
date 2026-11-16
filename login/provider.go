@@ -84,7 +84,12 @@ func (a *App) provider(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-	a.flows.Put(state, flow{tenant: o, trip: trip, challenge: r.URL.Query().Get(Challenge)}, 10*time.Minute)
+	if !a.flows.Put(state, flow{tenant: o, trip: trip, challenge: r.URL.Query().Get(Challenge)}, 10*time.Minute) {
+		// As many round trips are under way as this holds (`arrives.StatesHeld`).
+		w.Header().Set("retry-after", "30")
+		http.Error(w, "too many sign-ins are under way here; try again in a moment", http.StatusServiceUnavailable)
+		return
+	}
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     stateCookie,
