@@ -16,7 +16,8 @@ func Letter(subject, link string) string {
 	return subject + "\n\n" +
 		"Open this link to go on:\n\n" +
 		link + "\n\n" +
-		"If you did not ask for this, ignore this message. Nothing changes unless the link is opened.\n"
+		"If you did not ask for this, ignore this message. Nothing changes by the link being opened: " +
+		"the page it opens asks first.\n"
 }
 
 // unsent says a message did not go, as a log may carry it: the address cut to
