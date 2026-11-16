@@ -171,13 +171,14 @@ removed (`TestADirectoryMaySuspendTheLastAdministrator`).
 | An address is vouched for by an identity of its own person | `server/core/email.go` | `TestAnAddressIsVouchedForByItsOwnPersonsIdentity` |
 | A link that proves is spent by whoever minted it, and asking roster for one is a front door's and nobody's own | `server/core/email.go` | `TestWhatSomebodyDoesToTheirOwnAccountNeedsNoRole` |
 | A subject is the identifier its provider keeps fixed, and a person has one account at a provider | `server/core/identity.go` | `TestASubjectThatLooksLikeAnAddressIsRefused` · `TestASecondAccountAtOneProviderIsRefused` · `TestTwoPeopleCannotBeOneSubject` |
-| A hostname is claimed by a record published for it, and the latest proof takes it | `server/core/hostproof.go` | `TestTheLatestProofTakesTheName` |
+| A hostname is claimed by a record published for it, and the latest proof takes it -- written down in the trail of the tenant that held it, and never a name a file declares | `server/core/host.go` | `TestTheLatestProofTakesTheName` · `TestANameTakenIsOnTheTrailOfWhoeverHeldIt` |
+| A name is written by its proof alone: its general writes, a claim's and a tenant's are not served, whatever `allow_general_writes` says | `cmd/serve.go` | `TestAGeneralWriteDoesNotWriteANamePastItsProof` |
 
 ### One tenant is not reached from another
 
 | | written in | held to it by |
 | --- | --- | --- |
-| Every read and write is of the caller's tenant | `cmd/policy.go` | `TestTheTenantWallStillApplies` · `TestNoFilterCarriesARowFromAnotherTenant` |
+| Every read and write is of the caller's tenant | `cmd/policy.go` | `TestTheTenantWallStillApplies` · `TestNoFilterCarriesARowFromAnotherTenant` · `TestWhereFromAnswersACallerOfItsOwnTenant` |
 | A reference to another tenant's row names nobody | `server/core/tenant.go` | `TestNamingSomebodyInAnotherTenantNamesNobody` · `TestAnEdgeIsNotAWayThroughTheWall` |
 | A row's edges are all of one tenant | `server/core/tenant.go` | `TestATeamCannotBeInAnotherTenantsSite` · `TestAClaimDoesNotCrossATenant` |
 | No key or way in is minted into another tenant | `server/core/apikey.go` | `TestAKeyIsNotMintedIntoAnotherTenant` · `TestNobodyMintsAWayIntoAnotherTenant` |
@@ -188,6 +189,7 @@ removed (`TestADirectoryMaySuspendTheLastAdministrator`).
 | | written in | held to it by |
 | --- | --- | --- |
 | A row a file declares is read-only at every port: not edited, not erased, not narrowed, not widened | `server/core/declared.go` | `TestARowAFileDeclaredIsWrittenFromThere` · `TestADeclaredRoleIsNobodysToNarrow` · `TestADeclaredRoleIsNobodysToWiden` · `TestAFrontDoorsOwnRowsAreDeclared` |
+| A file declares a row of the tenant it names, and takes nobody else's | `cmd/resources.go` | `TestAFileDeclaresANameOfItsOwnTenant` |
 | Nobody at a port says a file declared a row | `cmd/undeclared.go` | `TestNobodyAtAPortSaysAFileDeclaredARow` |
 
 ### What is gone grants nothing

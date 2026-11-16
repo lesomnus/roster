@@ -62,7 +62,8 @@ option go_package = "github.com/lesomnus/roster/rstr";
 // proving requires present control of DNS, and whoever has that has the name
 // whatever a row here says. The incumbent is not asked, which is the right way
 // round and is worth knowing: their people stop being able to sign in at that
-// name, and the erase in the trail is where it is written down.
+// name, and their own trail is where it is written down, by whoever took it
+// (`roster.host.release`). A row a file declares is not taken.
 //
 // # Proving the name is yours
 //

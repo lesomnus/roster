@@ -31,6 +31,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -211,6 +212,18 @@ func (s *Server) WhereFrom(ctx context.Context, req *app.FrontWhereFromRequest) 
 	tenant, err := pdid.From(req.GetTenant())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "tenant: %s", err)
+	}
+
+	// A caller of a tenant asks about its own. The row is read through no
+	// wall, since a front door asks this before anybody is resolved to a
+	// person, and the tenant is the request's to say -- so a caller inside one
+	// tenant, whose role named this method, was answered how another tenant's
+	// people sign in: the row `MailDomain.Get` refuses the same caller (#277).
+	// Answered as a domain nobody has said anything about is, and for its
+	// reason. A caller held by no tenant is a deployment's key calling as
+	// itself, whose list is what it may ask.
+	if f, ok := frame.From(ctx); ok && f.Tenant != pdid.Nil && f.Tenant != tenant {
+		return app.FrontWhereFromResponse_builder{}.Build(), nil
 	}
 
 	v, err := s.open.MailDomain().Get(ctx, app.MailDomainGetRequest_builder{

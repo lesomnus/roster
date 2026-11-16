@@ -204,7 +204,8 @@ func TestTheLatestProofTakesTheName(t *testing.T) {
 
 			// Erased and not moved, because `Host.tenant` is immutable and a row
 			// that changed tenant would mean something else. What contoso sees is
-			// the name gone, and the erase is in the trail.
+			// the name gone, and their trail says who took it
+			// (`TestANameTakenIsOnTheTrailOfWhoeverHeldIt`).
 			vs, err := b.Walled.Host().List(b.as(ctx, b.ContosoUser, b.Contoso),
 				app.HostListRequest_builder{}.Build())
 			x.NoError(err)

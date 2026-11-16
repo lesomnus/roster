@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 	"uuid"
 
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/pdid"
@@ -868,7 +869,7 @@ func Rules(db *ent.Client, sources ...rbac.Source) core.Rules {
 		Held:         core.Held(Everything(db, sources...)),
 		Everywhere:   Everywhere(db, sources...),
 		Administered: Administered(db),
-		Releasing:    Releasing(db),
+		Releasing:    Releasing(db, audit.Contents{}),
 		Named:        Named(db),
 		Sited:        Sited(db),
 	}
@@ -950,7 +951,25 @@ func Named(db *ent.Client) core.Named {
 // Bounded by the name and by nothing else, which is the whole of why this is
 // safe to hand to a layer a caller reaches: there is no argument here that could
 // be widened, and at most one live row can match.
-func Releasing(db *ent.Client) core.Releasing {
+//
+// # And it is written down where whoever held the name reads
+//
+// The incumbent is not asked, and what makes that bearable is that they are
+// told: `host.proto`, `docs/operating.md` and this function's own comment each
+// said the erase is on the trail. It was not. A row erased beneath the servers
+// is on the trail only if something puts it there, and nothing did: a tenant
+// whose name had gone found its row erased and nothing saying who, when or how
+// (#277). So the row is put there ([Released]), by whoever `ctx` is framed as,
+// filed under the row's own tenant -- `pd.Record`, which is what a row written
+// beneath the servers on purpose is recorded by. `cs` is what the trail keeps
+// of a row, as the recorder is handed it.
+//
+// # A row a file declares is not taken
+//
+// Every other road refuses a write to one, since the file is where it is
+// written from (`core.mayWriteDeclared`); this one erased it, and the next
+// `resources apply` then met a name that was somebody else's.
+func Releasing(db *ent.Client, cs audit.Contents) core.Releasing {
 	return func(ctx context.Context, drv dialect.Driver, name string) error {
 		// On the driver it is handed, which is the transaction `server/core`
 		// opened, for `Locking`'s reason: a write outside it could not be undone
@@ -963,14 +982,32 @@ func Releasing(db *ent.Client) core.Releasing {
 
 		// Not an error when nothing holds it. Taking a free name is the ordinary
 		// case, and refusing here would make the caller read first.
-		_, err := c.Host.Update().
-			Where(host.NameEQ(name), host.DateErasedIsNil()).
-			SetDateErased(time.Now()).
-			Save(ctx)
+		held, err := c.Host.Query().Where(host.NameEQ(name), host.DateErasedIsNil()).Only(ctx)
+		if ent.IsNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if from, ok := held.Labels[Declared]; ok {
+			return status.Errorf(codes.FailedPrecondition,
+				"%s: the name is declared in %s, and a name a file declares is not taken by a proof; "+
+					"whoever runs this deployment takes it out of the file first", name, from)
+		}
+
+		if err := c.Host.UpdateOneId(held.Id).SetDateErased(time.Now()).Exec(ctx); err != nil {
+			return err
+		}
+
+		_, err = pd.Record(ctx, c, cs, Released, []pdid.Id{pdid.Id(held.Id)})
 
 		return err
 	}
 }
+
+// Released is the act a name taken by a newer proof is on the trail as, in the
+// trail of the tenant that held it.
+const Released = "roster.host.release"
 
 // Granted is every pattern somebody holds through a binding, and **where**.
 //
