@@ -98,7 +98,13 @@ func anyDirectory(issuer string) string {
 // discoverAt is what an issuer publishes, accepting the one difference between
 // the connection's issuer and its document's that is Microsoft's design rather
 // than a mistake.
-func discoverAt(ctx context.Context, issuer string) (*oidc.Provider, error) {
+//
+// Asked through the client every provider is asked by ([Providers.through]).
+// What it answers keeps that client, so the keys the document names are
+// fetched by it too.
+func (p *Providers) discoverAt(ctx context.Context, issuer string) (*oidc.Provider, error) {
+	ctx = p.through(ctx)
+
 	v, err := oidc.NewProvider(ctx, issuer)
 	var mismatch *oidc.IssuerMismatchError
 	if !errors.As(err, &mismatch) {

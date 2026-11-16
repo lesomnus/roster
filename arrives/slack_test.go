@@ -72,7 +72,8 @@ func fakeSlack(t *testing.T, img []byte) *httptest.Server {
 func TestSlackIsAskedForSomebodyByTheirAddress(t *testing.T) {
 	ctx := t.Context()
 	s := fakeSlack(t, photo(t))
-	p := &Providers{own: ownClient(), anywhere: publicClient(public), SlackAPI: s.URL}
+	p := onThisMachine(t, nil)
+	p.SlackAPI = s.URL
 
 	t.Run("somebody, and the picture they chose", func(t *testing.T) {
 		x := require.New(t)
@@ -111,7 +112,8 @@ func TestSlacksPictureIsFetchedTheWayAClaimsIs(t *testing.T) {
 	t.Run("on the API's host", func(t *testing.T) {
 		x := require.New(t)
 		s := fakeSlack(t, img)
-		p := &Providers{own: ownClient(), anywhere: publicClient(public), SlackAPI: s.URL}
+		p := onThisMachine(t, nil)
+		p.SlackAPI = s.URL
 
 		got, where, err := p.slackPicture(ctx, s.URL+"/512.png")
 		x.NoError(err)
@@ -129,7 +131,8 @@ func TestSlacksPictureIsFetchedTheWayAClaimsIs(t *testing.T) {
 
 		// The test's own client, which trusts the test's certificate: the
 		// refusal of an address inside the network is `fill_test.go`'s.
-		p := &Providers{own: ownClient(), anywhere: cdn.Client(), SlackAPI: "https://slack.example/api"}
+		p := onThisMachine(t, nil)
+		p.anywhere, p.SlackAPI = cdn.Client(), "https://slack.example/api"
 		got, where, err := p.slackPicture(ctx, cdn.URL+"/T1-U1-512.png")
 		x.NoError(err)
 		x.Equal(img, got)

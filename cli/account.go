@@ -21,6 +21,7 @@ import (
 	"github.com/lesomnus/payday/auth/authsession"
 
 	"github.com/lesomnus/roster/account"
+	"github.com/lesomnus/roster/arrives"
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/mail"
 )
@@ -263,6 +264,13 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 	}
 	if cfg.Mail, err = mailOf(ac.Mail); err != nil {
 		return err
+	}
+
+	// Which hosts off the internet a provider may be at, read at start: a
+	// name that is not one is this file's mistake, and somebody's sign-in is
+	// a poor place to learn of it.
+	if cfg.PrivateHosts, err = arrives.ParsePrivateHosts(ac.PrivateHosts); err != nil {
+		return fmt.Errorf("account.private_hosts: %w", err)
 	}
 
 	// The cookie is this app's, and the session is **in** it: sealed under a

@@ -51,7 +51,8 @@ func TestAGitHubConnectionAsksForTheAddresses(t *testing.T) {
 func TestSomebodyArrivesFromGitHub(t *testing.T) {
 	ctx := t.Context()
 	g := idptest.NewGitHub(t, "the-app", "the-secret")
-	p := &Providers{own: ownClient(), anywhere: publicClient(public), GitHub: g.URL}
+	p := onThisMachine(t, nil)
+	p.GitHub = g.URL
 
 	cfg := gitHubRelying(g.URL, "the-app", "the-secret", "https://account.example/callback", nil)
 	check := &verifier{gitHub: p.gitHub(g.URL)}

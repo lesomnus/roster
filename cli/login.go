@@ -846,6 +846,12 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		return fmt.Errorf("login.enrol (--enrol): %q is not one of invited, expected, enrolling", lc.Enrol)
 	}
 
+	// Read at start, as the account app's is and for its reason.
+	private, err := arrives.ParsePrivateHosts(lc.PrivateHosts)
+	if err != nil {
+		return fmt.Errorf("login.private_hosts: %w", err)
+	}
+
 	cfg := login.Config{
 		Consent:        how,
 		Roster:         lc.Roster,
@@ -856,6 +862,7 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		InsecureCookie: lc.InsecureCookie,
 		Base:           base,
 		Enrol:          enrol,
+		PrivateHosts:   private,
 
 		// `env:NAME`, roster's one vocabulary for a reference to a secret. The
 		// same function the account app and the directory resolve theirs with,

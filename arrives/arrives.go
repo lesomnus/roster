@@ -110,6 +110,11 @@ type Caller struct {
 	// the provider with and for nothing else. Unexported, so it is never in
 	// anything an app logs or passes on by accident.
 	token *oauth2.Token
+
+	// issuer is the one the connection named when they signed in, which is
+	// whose token that is: a row moved since is another provider, and is asked
+	// nothing with it.
+	issuer string
 }
 
 // tokenSub is the ID token's `sub`, whichever claim Subject is.
@@ -190,6 +195,19 @@ func Expected() Enrol {
 // The lookup is not an optimisation. Without it, entering somebody in advance
 // **breaks** their sign-in: the alias an operator chose is the alias this
 // derives, and `Holder.Add` answers AlreadyExists.
+//
+// # Only an address the provider checked is a name
+//
+// The alias is read off the address when the provider says the address is
+// verified, which is the condition an invitation is found under ([invitation])
+// and for the same reason: an address a provider did not check is one the
+// person typed. Named by it, the first stranger to type `ceo@` at a directory
+// that asks no proof is `ceo` here, in every list an administrator reads and
+// every token a product is handed, and whoever that address belongs to is
+// `ceo-x7kq` when they arrive. So somebody whose address nobody checked is
+// named as somebody with no address is: a name nobody chose ([aliasOf]),
+// which is theirs to change. They are enrolled all the same -- who may arrive
+// is the policy's, and this is only what they are called.
 func Enrolling() Enrol {
 	return func(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, error) {
 		id, ok, err := invitation(ctx, c, who)
@@ -200,7 +218,11 @@ func Enrolling() Enrol {
 			return id, nil
 		}
 
-		alias := aliasOf(who.Email)
+		named := ""
+		if who.Verified {
+			named = who.Email
+		}
+		alias := aliasOf(named)
 
 		v, err := c.Holder().Add(ctx, rstr.HolderAddRequest_builder{
 			Tenant: rstr.TenantRef_builder{Alias: proto.String(who.TenantAlias)}.Build(),
@@ -416,13 +438,22 @@ type Providers struct {
 	roster rstr.Client
 	secret func(ref string) (string, error)
 
-	// discovery is the document per (tenant, connection), fetched once.
-	discovery sync.Map // tenantId + "\x00" + name -> *oidc.Provider
+	// discovery is what a connection's issuer publishes, fetched once for as
+	// long as the connection names that issuer ([discovered]).
+	discovery sync.Map // tenantId + "\x00" + name -> *discovered
 
-	// own and anywhere fetch a picture: from the provider's own API, with
-	// the token it handed over, and from anywhere else, without it and only
-	// on the internet. `fill.go` says why there are two.
+	// own is how a provider is asked anything -- its document, its token
+	// endpoint, its keys, its userinfo, its API, a picture on that API's
+	// host -- and `dial.go` says what it is held to. anywhere fetches a
+	// picture from wherever else a claim pointed, without the token and only
+	// on the internet; `fill.go` says why there are two.
 	own, anywhere *http.Client
+
+	// PrivateHosts is the hosts off the internet a provider may be at,
+	// because the deployment said so: a directory on the premises, a test's
+	// on this machine. None is none, and a provider is then asked only at an
+	// address on the internet (`dial.go`).
+	PrivateHosts PrivateHosts
 
 	// SlackAPI is where Slack's Web API is, for a tenant whose profiles are
 	// filled from Slack (`TenantProfile.slack_secret_ref`). Empty is Slack's
@@ -451,7 +482,13 @@ type Providers struct {
 // see. `secret` turns a `Connection.secret_ref` into the client secret it
 // names; roster stores that reference and never reads it.
 func New(c rstr.Client, secret func(ref string) (string, error)) *Providers {
-	return &Providers{roster: c, secret: secret, own: ownClient(), anywhere: publicClient(public)}
+	p := &Providers{roster: c, secret: secret, anywhere: publicClient(public)}
+
+	// Asked of `p` at each connection, so what a deployment names after this
+	// -- as it names its GitHub or its Slack -- is what is read.
+	p.own = ownClient(p.reaches)
+
+	return p
 }
 
 // Connections is one tenant's providers, in the order roster lists them.
@@ -498,6 +535,12 @@ func (p *Providers) Connections(ctx context.Context, tenant pdid.Id) ([]*rstr.Co
 //     provider that does not ignores it (RFC 7636 § 5).
 //   - **The nonce**, on an OpenID connection, held against the ID token's own.
 //     GitHub issues no ID token, so there is nothing for one to be in.
+//   - **The issuer.** A connection is read again at the callback, and the row
+//     may have moved to another issuer since the browser left. The code is the
+//     first issuer's, and the exchange would send it -- with the verifier that
+//     makes it worth something -- to the second one's token endpoint. So an
+//     answer is finished only while the connection still names the issuer the
+//     trip went to, and the person starts again otherwise.
 type Trip struct {
 	// URL is where to send the browser.
 	URL string
@@ -505,6 +548,7 @@ type Trip struct {
 	tenant     pdid.Id
 	alias      string
 	connection string
+	issuer     string
 	redirect   string
 	verifier   string
 	nonce      string
@@ -540,6 +584,7 @@ func (p *Providers) Begin(ctx context.Context, tenant pdid.Id, alias, connection
 		return nil, err
 	}
 
+	t.issuer = v.issuer
 	t.verifier = oauth2.GenerateVerifier()
 	opts := []oauth2.AuthCodeOption{oauth2.S256ChallengeOption(t.verifier)}
 	if v.gitHub == "" {
@@ -614,6 +659,10 @@ func asking(v *verifier, again bool) []oauth2.AuthCodeOption {
 type verifier struct {
 	id *oidc.IDTokenVerifier
 
+	// issuer is the one the connection named when this was made, which is
+	// whose check this is ([Trip]).
+	issuer string
+
 	subject     string
 	gitHub      string
 	directories string
@@ -652,7 +701,7 @@ func (p *Providers) relying(ctx context.Context, t *Trip) (*oauth2.Config, *veri
 			return nil, nil, fmt.Errorf("connection %s: GitHub names its people by their account's id, and %q is a claim of an ID token, which GitHub does not issue", t.connection, named)
 		}
 
-		return gitHubRelying(c.GetIssuer(), c.GetClientId(), secret, t.redirect, c.GetScopes()), &verifier{gitHub: api}, nil
+		return gitHubRelying(c.GetIssuer(), c.GetClientId(), secret, t.redirect, c.GetScopes()), &verifier{issuer: c.GetIssuer(), gitHub: api}, nil
 	}
 
 	// The issuer is checked here, against the token's own directory, for an
@@ -668,6 +717,7 @@ func (p *Providers) relying(ctx context.Context, t *Trip) (*oauth2.Config, *veri
 		Scopes:       append([]string{oidc.ScopeOpenID}, c.GetScopes()...),
 	}, &verifier{
 		id:          v.Verifier(&oidc.Config{ClientID: c.GetClientId(), SkipIssuerCheck: every != ""}),
+		issuer:      c.GetIssuer(),
 		subject:     c.GetSubjectClaim(),
 		directories: every,
 		microsoft:   p.microsoft(c.GetIssuer()),
@@ -675,8 +725,30 @@ func (p *Providers) relying(ctx context.Context, t *Trip) (*oauth2.Config, *veri
 	}, nil
 }
 
+// discovered is what one issuer publishes, kept for the connection that named
+// it.
+//
+// # Why the issuer is kept beside it
+//
+// What is fetched once is a fact about an **issuer**: where it signs people
+// in, where its token endpoint is, which keys it signs with. It was kept by
+// the connection's name alone and never held against the row again, while the
+// row is read at every request -- so a connection moved to another issuer, or
+// erased and added again under the same name, went on being the first one
+// until the process restarted: browsers were sent to the first issuer, its
+// keys were believed, and the client's secret, which is read fresh, was posted
+// to its token endpoint. A row that names another issuer is another provider
+// from the next request on, so the entry is good for the issuer it was
+// fetched from and is replaced when the row names another. One entry for a
+// connection, as before.
+type discovered struct {
+	issuer string
+	v      *oidc.Provider
+}
+
 // discover is one connection of one tenant and what its issuer publishes, the
-// second fetched once -- and nil for GitHub's, which publishes nothing.
+// second fetched once for that issuer ([discovered]) -- and nil for GitHub's,
+// which publishes nothing.
 func (p *Providers) discover(ctx context.Context, tenant pdid.Id, name string) (*rstr.Connection, *oidc.Provider, error) {
 	c, err := p.roster.Connection().Get(ctx, rstr.ConnectionGetRequest_builder{
 		Ref: rstr.ConnectionRef_builder{
@@ -696,13 +768,15 @@ func (p *Providers) discover(ctx context.Context, tenant pdid.Id, name string) (
 
 	k := tenant.String() + "\x00" + name
 	if had, ok := p.discovery.Load(k); ok {
-		return c, had.(*oidc.Provider), nil
+		if had := had.(*discovered); had.issuer == c.GetIssuer() {
+			return c, had.v, nil
+		}
 	}
-	v, err := discoverAt(ctx, c.GetIssuer())
+	v, err := p.discoverAt(ctx, c.GetIssuer())
 	if err != nil {
-		return nil, nil, fmt.Errorf("discovery at %s: %w", c.GetIssuer(), err)
+		return nil, nil, fmt.Errorf("discovery at %s: %w", c.GetIssuer(), said(err))
 	}
-	p.discovery.Store(k, v)
+	p.discovery.Store(k, &discovered{issuer: c.GetIssuer(), v: v})
 
 	return c, v, nil
 }
@@ -740,11 +814,16 @@ func (p *Providers) Claim(ctx context.Context, t *Trip, back *http.Request) (Cal
 	if err != nil {
 		return Caller{}, fmt.Errorf("%w: %w", ErrUnfinished, err)
 	}
+	if v.issuer != t.issuer {
+		return Caller{}, fmt.Errorf("%w: connection %s was moved to another issuer after this round trip began, and the first one's code is not sent to the second",
+			ErrUnfinished, t.connection)
+	}
 	who, err := p.exchange(ctx, cfg, v, t, back.URL.Query().Get("code"))
 	if err != nil {
 		return Caller{}, err
 	}
 	who.Tenant, who.TenantAlias, who.Provider = t.tenant, t.alias, t.connection
+	who.issuer = t.issuer
 
 	return who, nil
 }
@@ -755,9 +834,9 @@ func (p *Providers) exchange(ctx context.Context, cfg *oauth2.Config, v *verifie
 	if code == "" {
 		return Caller{}, errors.New("no code")
 	}
-	tok, err := cfg.Exchange(ctx, code, oauth2.VerifierOption(t.verifier))
+	tok, err := cfg.Exchange(p.through(ctx), code, oauth2.VerifierOption(t.verifier))
 	if err != nil {
-		return Caller{}, err
+		return Caller{}, said(err)
 	}
 	if v.gitHub != "" {
 		return p.fromGitHub(ctx, v.gitHub, tok)
@@ -768,7 +847,10 @@ func (p *Providers) exchange(ctx context.Context, cfg *oauth2.Config, v *verifie
 	}
 	id, err := v.id.Verify(ctx, raw)
 	if err != nil {
-		return Caller{}, err
+		// The keys are fetched here, by the client the document was fetched
+		// with ([Providers.through]), and an answer that is not a set of keys
+		// is in the error.
+		return Caller{}, said(err)
 	}
 	if v.directories != "" {
 		if err := inDirectory(id, v.directories); err != nil {

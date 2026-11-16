@@ -38,26 +38,27 @@ func TestAnAuthorityOfMoreThanOneDirectoryIsSaidByItsIssuer(t *testing.T) {
 func TestDiscoveryAcceptsMicrosoftsTemplateAndNothingElse(t *testing.T) {
 	ctx := t.Context()
 	idp := idptest.New(t, "app")
+	p := onThisMachine(t, nil)
 
 	for _, word := range []string{"common", "organizations"} {
-		v, err := discoverAt(ctx, idp.URL+"/"+word+"/v2.0")
+		v, err := p.discoverAt(ctx, idp.URL+"/"+word+"/v2.0")
 		require.NoError(t, err, word)
 		require.Equal(t, idp.URL+"/{tenantid}/v2.0", directoriesOf(idp.URL+"/"+word+"/v2.0", v), word)
 	}
 
 	// `consumers` names one directory, which is not the template: a mismatch
 	// like any other, refused as it was.
-	_, err := discoverAt(ctx, idp.URL+"/consumers/v2.0")
+	_, err := p.discoverAt(ctx, idp.URL+"/consumers/v2.0")
 	var mismatch *oidc.IssuerMismatchError
 	require.ErrorAs(t, err, &mismatch)
 
 	// Which is why personal accounts are that directory's issuer, and that is
 	// one directory.
-	v, err := discoverAt(ctx, idp.URL+"/"+idptest.Consumers+"/v2.0")
+	v, err := p.discoverAt(ctx, idp.URL+"/"+idptest.Consumers+"/v2.0")
 	require.NoError(t, err)
 	require.Empty(t, directoriesOf(idp.URL+"/"+idptest.Consumers+"/v2.0", v))
 
-	v, err = discoverAt(ctx, idp.URL)
+	v, err = p.discoverAt(ctx, idp.URL)
 	require.NoError(t, err)
 	require.Empty(t, directoriesOf(idp.URL, v))
 }
@@ -68,7 +69,7 @@ func TestDiscoveryAcceptsMicrosoftsTemplateAndNothingElse(t *testing.T) {
 func TestATokenIsFromTheDirectoryItSays(t *testing.T) {
 	ctx := t.Context()
 	idp := idptest.New(t, "app")
-	v, err := discoverAt(ctx, idp.URL+"/common/v2.0")
+	v, err := onThisMachine(t, nil).discoverAt(ctx, idp.URL+"/common/v2.0")
 	require.NoError(t, err)
 	template := directoriesOf(idp.URL+"/common/v2.0", v)
 	verifier := v.Verifier(&oidc.Config{ClientID: "app", SkipIssuerCheck: true})

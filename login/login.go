@@ -207,6 +207,12 @@ type Config struct {
 	// ([arrives.Providers.Google]).
 	Google string
 
+	// PrivateHosts is the hosts off the internet a tenant's provider may be
+	// at, which is the deployment's to say and is none unless it does
+	// ([arrives.Providers.PrivateHosts]): a provider is otherwise asked only
+	// at an address on the internet.
+	PrivateHosts arrives.PrivateHosts
+
 	// InsecureCookie drops `Secure` from the session cookie, for a page served
 	// over plain http in development. It is `authsession`'s and is said there;
 	// this app sets no cookie of its own.
@@ -360,6 +366,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 	a.arrives.GitHub = c.GitHub
 	a.arrives.Microsoft = c.Microsoft
 	a.arrives.Google = c.Google
+	a.arrives.PrivateHosts = c.PrivateHosts
 
 	// Nothing per tenant is resolved here, because there is nothing to resolve:
 	// who this app fronts is every tenant with a `Host` row, and that is a

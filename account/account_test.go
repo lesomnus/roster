@@ -289,6 +289,9 @@ func serve(t *testing.T, enrol account.Enrol, with ...func(*account.Config)) *de
 		Base:     base,
 		Enrol:    enrol,
 		Sessions: sessions(),
+		// The fake provider is on this machine, and a deployment whose
+		// provider is says so.
+		PrivateHosts: onThisMachine(t),
 		// Over plain http, like `sessions()` above says: a `Secure` cookie is
 		// one this browser would not send back, and a test that lied about the
 		// scheme would pass while a deployment over http did not.
@@ -548,11 +551,14 @@ func TestTheAccountAppFrontsTwoOperators(t *testing.T) {
 }
 
 // TestAStrangerIsEnrolledWhereTheDeploymentSaysSo is the other policy.
+//
+// The address is one the provider says it checked, which is what makes it a
+// name: `arrives`'s `TestAnAddressNobodyCheckedNamesNobody` is the other half.
 func TestAStrangerIsEnrolledWhereTheDeploymentSaysSo(t *testing.T) {
 	x := require.New(t)
 	d := serve(t, account.Enrolling())
 	d.idp.Subject = "7777"
-	d.idp.Claims = map[string]any{"email": "newcomer@contoso.com", "name": "New Comer"}
+	d.idp.Claims = map[string]any{"email": "newcomer@contoso.com", "email_verified": true, "name": "New Comer"}
 
 	b := d.browser(t, "contoso.test")
 	code, body := b.do(t, http.MethodGet, "/login?connection=example", "", nil)
