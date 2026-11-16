@@ -111,11 +111,12 @@ func TestAPageIsToldWhatAGrantHandsOver(t *testing.T) {
 		// `mayReadOf`): bound there it is a line of a role that does nothing,
 		// and a warning beside it is one that teaches nobody to read the next.
 		whole := map[string]string{
-			"nominationserviceadd":     app.NominationService_Add_FullMethodName,
-			"groupexposureserviceadd":  app.GroupExposureService_Add_FullMethodName,
-			"sitemembershipserviceadd": app.SiteMembershipService_Add_FullMethodName,
-			"auditservice":             app.AuditService_List_FullMethodName,
-			"holderservicesignsin":     app.HolderService_SignsIn_FullMethodName,
+			"nominationserviceadd":            app.NominationService_Add_FullMethodName,
+			"connectionserviceadd-and-update": app.ConnectionService_Update_FullMethodName,
+			"groupexposureserviceadd":         app.GroupExposureService_Add_FullMethodName,
+			"sitemembershipserviceadd":        app.SiteMembershipService_Add_FullMethodName,
+			"auditservice":                    app.AuditService_List_FullMethodName,
+			"holderservicesignsin":            app.HolderService_SignsIn_FullMethodName,
 		}
 		for grant, method := range whole {
 			x.Contains(handedOver(t, ctx, b.Ungated, tenant, method), grant, method)
@@ -143,11 +144,12 @@ func TestAPageIsToldWhatAGrantHandsOver(t *testing.T) {
 			"a-key-that-mints-keys",
 			"emailserviceattest",
 			"vouchserviceleavelink-with-leave",
+			"connectionserviceadd-and-update",
 		} {
 			x.Contains(got, grant)
 			x.Equal([]string{"/roster.*/*"}, got[grant].GetMethods(), grant)
 		}
-		x.Len(got, 15, "and nothing that is another plane's, or somebody's own")
+		x.Len(got, 16, "and nothing that is another plane's, or somebody's own")
 
 		// A service's, for what is that service's and no more.
 		got = handedOver(t, ctx, b.Ungated, tenant, "/roster.VouchService/*")
@@ -177,6 +179,18 @@ func TestAPageIsToldWhatAGrantHandsOver(t *testing.T) {
 
 		got = handedOver(t, ctx, b.Ungated, tenant, app.VouchService_LeaveLink_FullMethodName)
 		x.Contains(got["vouchserviceleavelink-with-leave"].GetHandsOver(), "`VouchService/Leave`")
+
+		// And where a tenant's people are asked who they are: a connection's
+		// writes ask nothing about who arrives through it, and the move of an
+		// account's subject is a way in like the other verbs that take a whose
+		// (#278).
+		got = handedOver(t, ctx, b.Ungated, tenant, app.ConnectionService_Add_FullMethodName, app.ConnectionService_Erase_FullMethodName)
+		x.Len(got, 1, "erasing a connection signs nobody in")
+		x.Equal([]string{app.ConnectionService_Add_FullMethodName}, got["connectionserviceadd-and-update"].GetMethods())
+		x.Contains(got["connectionserviceadd-and-update"].GetHandsOver(), "an administrator's among them")
+
+		got = handedOver(t, ctx, b.Ungated, tenant, app.IdentityService_Resubject_FullMethodName)
+		x.Contains(got["a-persons-verb-across-the-tenant"].GetHandsOver(), "holds no more")
 	})
 
 	t.Run("what is somebody's own reaches nobody else", func(t *testing.T) {
