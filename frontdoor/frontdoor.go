@@ -193,6 +193,46 @@ func New(c Config) (*Door, error) {
 	return &Door{c: c}, nil
 }
 
+// Guard holds a front door's own routes to two things a browser says of a
+// request, and is what an app wraps its whole mux in.
+//
+// # No request from another origin changes anything
+//
+// [Door.Proxy] asks for a header a form cannot set, and that is what stops
+// another site there. The routes an app writes by hand asked for nothing, and
+// `SameSite=Lax` on the cookie was the whole of it -- which is about another
+// **site**. Another host of the same registrable domain is the same site: the
+// organisation's blog, a second app of the tenant's. Its form's POST carries
+// the cookie, and a body is read here whatever its content type. So a form
+// there approved a terminal's code as whoever was signed in, and the terminal
+// was handed their key; and `POST /session`, which needs no cookie, signed a
+// browser in as somebody of any site's choosing (#277).
+//
+// What a browser says is `Sec-Fetch-Site`, and before 2023 `Origin`; a method
+// that only reads is not asked, and a request that says neither is not a
+// browser's -- a terminal, an app -- and is let through, as it has no cookie
+// to be carried along with (`net/http.CrossOriginProtection`, which is all of
+// that rule).
+//
+// # And no page of it is drawn inside another's
+//
+// A page with one button on it -- *approve*, *delete my account* -- drawn
+// invisibly inside somebody else's is that button pressed by a click meant for
+// something else.
+func Guard(next http.Handler) http.Handler {
+	origin := http.NewCrossOriginProtection()
+	origin.SetDenyHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "this is asked by this site's own page, and by no other", http.StatusForbidden)
+	}))
+
+	return origin.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Content-Security-Policy", "frame-ancestors 'none'")
+
+		next.ServeHTTP(w, r)
+	}))
+}
+
 // Handler is `POST /session`, `POST /session/continue` and `DELETE /session`.
 //
 // Mounted on the app's mux, beside the app's own pages. It is a handler and not

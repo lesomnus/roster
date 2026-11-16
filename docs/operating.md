@@ -629,6 +629,17 @@ the page's own app passwords included
 ([usage/permissions.md](usage/permissions.md) § *What somebody does to their
 own account*).
 
+**What is in front of the account app passes three headers as the browser wrote
+them.** `Host`, because which tenant a request is about is the name it arrived
+at. And `Origin` and `Sec-Fetch-Site`, because whatever changes something there
+-- a sign-in, a terminal approved, a link asked for -- is taken from the app's
+own page and from no other origin: another site's form is refused, and so is a
+form on another host of the same domain, which a cookie's `SameSite` does not
+stop. A request that carries neither header is not a browser's and is let
+through, since it has no cookie that came along by itself: that is a terminal
+running `roster sign-in`. No page of the app is drawn inside another site's
+(`frame-ancestors 'none'`).
+
 ### The front door's mail
 
 The account app mails three links roster mints for it: one that **recovers** an
