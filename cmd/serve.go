@@ -1122,8 +1122,12 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// The rule about who may write whose credential travels with the service,
 	// because `VouchService` is hand-written and no layer wraps it. Same rules
 	// the gate reads, handed over rather than asked for a second time.
+	//
+	// And the gate's own policy, for the one rule that asks what a caller may
+	// call rather than whose row it is: a delegation is within that
+	// (`vouch.WithGate`).
 	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Walled, vouch.WithLockout(s.Lockout),
-		vouch.WithKeys(s.Keyring), vouch.WithLeaving(mine)))
+		vouch.WithKeys(s.Keyring), vouch.WithLeaving(mine), vouch.WithGate(s.policy())))
 
 	// What a front door asks before it knows anything, and therefore through
 	// the server the wall was never installed on. Neither RPC answers with a

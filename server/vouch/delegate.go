@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 
@@ -65,7 +66,7 @@ func (s *Server) Delegate(ctx context.Context, req *app.VouchDelegateRequest) (*
 		return nil, status.Error(codes.InvalidArgument,
 			"methods: a delegation that allows nothing opens no door")
 	}
-	if err := mayDelegate(ctx, methods); err != nil {
+	if err := s.mayDelegate(ctx, methods); err != nil {
 		return nil, err
 	}
 
@@ -158,30 +159,49 @@ func (s *Server) mint(ctx context.Context, res *app.VouchVerifyResponse, who, is
 // by what its holder may do, so it can never reach past them -- but an app
 // allowed only to check passwords could mint one carrying
 // `/roster.HolderService/Erase` and then use it through somebody who may erase.
-// It would have gained, through a person, a method its own credential does not
-// carry.
+// It would have gained, through a person, a method it may not itself call.
 //
-// # What it is not
+// # What a caller may call is two questions, and both are asked
 //
-// It is **not** `server/core/escalate.go`'s rule, and the difference matters
-// enough to say. `mayGrant` reads what the caller holds through *bindings*,
-// because what it is guarding is a row that hands permissions to somebody else.
-// Here the caller is a machine with a key, its bindings are in another database
-// entirely, and what bounds it is the attenuation on its own credential. So
-// this reads `f.Grant`, which is the key's `methods` column.
+// The **credential's** list, which is the grant on the frame: a key's `methods`
+// column, applied by the interceptor. And what **whoever the credential is**
+// may call, which the gate answers on every call from their bindings.
+//
+// Only the first was asked, on the reading that the caller is a machine with a
+// key and its list is what bounds it. That is a deployment key calling as
+// itself, which holds nothing else. It is not a deployment key sent with
+// `roster-at`: that one is answered as the holder a tenant nominated, and its
+// frame's grant is `frame.Whole()` -- *whatever that holder may do, which their
+// bindings decide on every call* (`keys.At`). So for the shape every
+// roster-hosted front door calls in, the list said everything and nothing asked
+// the bindings: an app a tenant bound `Verify` and `Delegate` was handed a
+// delegation for `/roster.*/*` (#276). A tenant's own key was the same hole
+// from the other side, its list asked and its holder never.
+//
+// The second is asked of the gate itself rather than read again here
+// ([WithGate]): it is the question *may this caller call that*, word for word,
+// and a second reading of bindings is a second answer to it. So what nobody
+// needs a role for is handed on with no role -- `MeService/Get`, which is the
+// whole of a Login App's delegation -- and a deployment key calling as itself
+// is still bounded by its list alone, because that is what the gate says of
+// one.
+//
+// It is still **not** `server/core/escalate.go`'s rule. `mayGrant` guards a row
+// that hands permissions to somebody else, and reads what may be passed on.
+// This hands nobody anything they do not hold: it narrows a person to a list,
+// and asks only that the list is one the app could have called.
 //
 // # How hard it bites
 //
-// Exactly as hard as the caller's own credential is narrow. `auth.Plain` and
-// mTls both carry `frame.Whole`, because a header and a certificate have
-// nowhere to put an attenuation -- so in those deployments this refuses
-// nothing, and correctly: there is nothing there to be wider than. It is a
-// rule about keys, and `roster key add --allow` is where a deployment writes
-// it down.
+// As hard as the caller is narrow, by either reading. `auth.Plain` and mTls
+// carry `frame.Whole`, because a header and a certificate have nowhere to put
+// an attenuation, and what bounds a caller there is what they are bound.
 //
 // A request with no frame at all is the deployment's own work in this process,
-// which is `mayGrant`'s reading of the same case and the same answer.
-func mayDelegate(ctx context.Context, methods []string) error {
+// which is `mayGrant`'s reading of the same case and the same answer. A frame
+// and no gate is a stack assembled without one, and it refuses: it cannot say
+// what the caller may call.
+func (s *Server) mayDelegate(ctx context.Context, methods []string) error {
 	f, ok := frame.From(ctx)
 	if !ok {
 		return nil
@@ -191,6 +211,27 @@ func mayDelegate(ctx context.Context, methods []string) error {
 		if !f.Grant.Allows(m) {
 			return status.Errorf(codes.PermissionDenied,
 				"methods: you may not call %s, so you may not hand it out", m)
+		}
+	}
+
+	if s.gate == nil {
+		return status.Error(codes.PermissionDenied,
+			"methods: this server cannot say what you may call, so it will not let you hand anything out")
+	}
+	for _, m := range methods {
+		err := s.gate.May(ctx, gate.Call{
+			Actor: f.Actor, Tenant: f.Tenant, Name: f.Name, Row: f.Row,
+			Action:  m,
+			Account: f.Account, AsAccount: f.AsAccount(),
+		})
+		if status.Code(err) == codes.PermissionDenied {
+			// In this rule's words and not the gate's, which are about a call
+			// that was made: nothing here was called.
+			return status.Errorf(codes.PermissionDenied,
+				"methods: you may not call %s, so you may not hand it out", m)
+		}
+		if err != nil {
+			return err
 		}
 	}
 
@@ -308,7 +349,7 @@ func (s *Server) Accept(ctx context.Context, req *app.VouchAcceptRequest) (*app.
 		return nil, status.Error(codes.InvalidArgument,
 			"methods: a delegation that allows nothing opens no door")
 	}
-	if err := mayDelegate(ctx, methods); err != nil {
+	if err := s.mayDelegate(ctx, methods); err != nil {
 		return nil, err
 	}
 

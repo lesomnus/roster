@@ -51,6 +51,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/pdid"
 
 	"google.golang.org/protobuf/proto"
@@ -111,6 +112,11 @@ type Server struct {
 	// leaving is what leaving is, for the link that confirms it
 	// (`leave.go`); nil answers that nobody leaves by one here.
 	leaving Leaving
+
+	// gate is what this listener's gate asks about a caller; nil is a stack
+	// with none, which hands out no delegation to a caller it has a frame for
+	// (`delegate.go`, `mayDelegate`).
+	gate gate.Policy
 }
 
 // Option is how a deployment says what this service is allowed to assume.
@@ -127,6 +133,11 @@ func WithKeys(v Keyring) Option { return func(s *Server) { s.keys = v } }
 // WithLockout gives the server the deployment's numbers; unset is
 // [DefaultLockout].
 func WithLockout(v Lockout) Option { return func(s *Server) { s.lockout = v } }
+
+// WithGate gives the service the policy this listener's gate asks, so that a
+// delegation is within what its caller may call: the one question, asked of
+// the one thing that answers it (`delegate.go`, `mayDelegate`).
+func WithGate(v gate.Policy) Option { return func(s *Server) { s.gate = v } }
 
 // New makes the service from the two stacks it needs.
 //

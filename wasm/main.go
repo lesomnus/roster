@@ -297,7 +297,8 @@ func main() {
 		),
 	)
 	cmd.Register(asrv, admin)
-	app.RegisterVouchServiceServer(asrv, vouch.New(admin, admin, vouch.WithKeys(s.Keyring), vouch.WithLockout(s.Lockout)))
+	app.RegisterVouchServiceServer(asrv, vouch.New(admin, admin, vouch.WithKeys(s.Keyring), vouch.WithLockout(s.Lockout),
+		vouch.WithGate(cmd.Policy(s.Control.Ent))))
 
 	// The user console's server: the **walled** data plane, which is what
 	// `Server.Grpc` puts on `server.http` -- less the deadline, the limiter and
@@ -343,7 +344,7 @@ func main() {
 	app.RegisterAuthServiceServer(usrv, sandbox.Auth(
 		console.Auth(s.Ungated, s.Ent, s.People, console.WithTenant(at), console.WithArrival(arrived)), at, user))
 	app.RegisterVouchServiceServer(usrv, vouch.New(s.Ungated, s.Walled,
-		vouch.WithKeys(s.Keyring), vouch.WithLockout(s.Lockout)))
+		vouch.WithKeys(s.Keyring), vouch.WithLockout(s.Lockout), vouch.WithGate(cmd.Policy(s.Ent))))
 
 	// The three unwalled stacks, for the panel: the same call log, no auth and
 	// no gate, because there is nobody to be and nothing to refuse.

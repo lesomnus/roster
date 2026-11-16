@@ -14,6 +14,7 @@ import (
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
+	"github.com/lesomnus/roster/cmd"
 	entcredential "github.com/lesomnus/roster/internal/ent/credential"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/vouch"
@@ -421,7 +422,7 @@ func (b *keyedBuilt) keyed(t *testing.T) *vouch.Server {
 	// process is a deployment that cannot read what it wrote, and finding that
 	// out took a morning: the row was right, the key name was right, and the
 	// bytes were not.
-	return vouch.New(b.Ungated, b.Ungated, vouch.WithKeys(b.Keyring))
+	return vouch.New(b.Ungated, b.Ungated, vouch.WithKeys(b.Keyring), vouch.WithGate(cmd.Policy(b.Ent)))
 }
 
 // keyedLocal is the same on the plain harness -- the deployment's keyring, which
@@ -429,7 +430,7 @@ func (b *keyedBuilt) keyed(t *testing.T) *vouch.Server {
 func (b *built) keyedLocal(t *testing.T) *vouch.Server {
 	t.Helper()
 
-	return vouch.New(b.Ungated, b.Ungated, vouch.WithKeys(b.Keyring))
+	return vouch.New(b.Ungated, b.Ungated, vouch.WithKeys(b.Keyring), vouch.WithGate(cmd.Policy(b.Ent)))
 }
 
 func newKeyring(t *testing.T) vouch.Keyring {
@@ -442,4 +443,6 @@ func newKeyring(t *testing.T) vouch.Keyring {
 }
 
 // vouchedLocal is the plain service on a keyed harness.
-func (b *keyedBuilt) vouchedLocal() *vouch.Server { return vouch.New(b.Ungated, b.Ungated) }
+func (b *keyedBuilt) vouchedLocal() *vouch.Server {
+	return vouch.New(b.Ungated, b.Ungated, vouch.WithGate(cmd.Policy(b.Ent)))
+}

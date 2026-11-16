@@ -192,7 +192,7 @@ func (s *Server) Redeem(ctx context.Context, req *app.VouchRedeemRequest) (*app.
 		return nil, status.Error(codes.InvalidArgument,
 			"methods: a delegation that allows nothing opens no door")
 	}
-	if err := mayDelegate(ctx, methods); err != nil {
+	if err := s.mayDelegate(ctx, methods); err != nil {
 		return nil, err
 	}
 

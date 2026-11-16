@@ -545,13 +545,17 @@ message VouchDelegateRequest {
   // out more than was asked for, and nothing mints a credential that silently
   // does not work.
   //
-  // **No wider than the caller.** Each of these has to be covered by what the
-  // calling key itself may do -- otherwise an app allowed only to check
-  // passwords could mint a token that erases holders and use it through
-  // somebody who may. The check bites exactly as hard as the caller's own
-  // credential is narrow: under `auth.Plain` or mTLS a caller carries
-  // `frame.Whole`, so it refuses nothing, because there is nothing there to be
-  // wider than.
+  // **No wider than the caller.** Each of these has to be a method the caller
+  // may itself call -- otherwise an app allowed only to check passwords could
+  // mint a token that erases holders and use it through somebody who may.
+  // *May call* is both things a call is asked: the list on the credential it
+  // arrived with, and what whoever that credential is has been bound. So a
+  // deployment key calling as itself hands out what its list names; one
+  // narrowed to a tenant (`roster-at`), what the holder that tenant nominated
+  // is bound; a tenant's own key, what its holder is bound of what its list
+  // names. Under `auth.Plain` or mTLS a caller carries no list, and what they
+  // are bound is the whole of it. What nobody needs a role for
+  // (`MeService.Get`) is handed on with none.
   //
   // It is checked **before the secret is compared**, which is not a detail. Run
   // after, a caller that over-asks would get one answer for a wrong password
