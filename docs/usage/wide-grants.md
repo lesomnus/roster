@@ -20,6 +20,7 @@ writing a role whose methods end in `*`.
 | [`VouchService/Link` with `Redeem`](#vouchservicelink-with-redeem) | *may send recovery links* | every account of the tenant |
 | [`VouchService/Accept`](#vouchserviceaccept) | *may sign people in* | a credential for anybody, on the caller's word |
 | [`EmailService/Verify` with `Confirm`](#emailserviceverify-with-confirm) | *may confirm addresses* | any address, proved with no mailbox |
+| [`EmailService/Attest`](#emailserviceattest) | *may record a directory's address* | an address proved on the caller's word |
 | [`NominationService/Add`](#nominationserviceadd) | *may install an app* | an app's key answered as somebody |
 | [The same verbs at `admin.addr`](#the-same-verbs-at-adminaddr) | an operator's helpdesk role | any account in any tenant |
 | [`BindingService/Add`](#bindingserviceadd) | *may assign roles* | everything its holder holds, to anybody |
@@ -28,6 +29,7 @@ writing a role whose methods end in `*`.
 | [`SiteMembershipService/Add`](#sitemembershipserviceadd) | *may say who works where* | who is within a site's helpdesk's reach |
 | [A pattern](#a-pattern) | `/roster.HolderService/*` | every method of it, and the next one added |
 | [`HolderService/Disable`](#holderservicedisable) | *may suspend an account* | anybody's, the administrator's included |
+| [`VouchService/LeaveLink` with `Leave`](#vouchserviceleavelink-with-leave) | *may mail a link that deletes an account* | anybody's account, deleted |
 | [`AuditService`](#auditservice) | *may read the audit log* | what every write said, of every row |
 | [`HolderService/SignsIn`](#holderservicesignsin) | *may see how somebody signs in* | everybody's keys and sessions, by name |
 | [A deployment key](#a-deployment-key) | a key for one app | its list, in every tenant |
@@ -107,6 +109,25 @@ owner cannot take it back: a proved address does not change hands.
 **It is for** a front door, which mints the link as itself and mails it. Neither
 verb is somebody's own to call, and `Confirm` alone is one step from this the
 day `Verify` is granted beside it.
+
+### `EmailService/Attest`
+
+**Reads as** *may record the address a directory handed over*. **Is** an
+address proved on the caller's word, with no mailbox read and no link sent.
+
+It is what a front door calls when somebody signs in through a provider that
+says their address is verified: the address is written down as proved, on the
+word of that sign-in. roster cannot see the sign-in. What it asks is that the
+person has an account at a directory to be the word's source, and that they
+hold no more than the caller.
+
+> A key that lists `EmailService/Attest` names a colleague who signs in through
+> the tenant's directory, and an address. The address is theirs and proved, and
+> if somebody had written it onto their own account without proving it, it has
+> been taken from them.
+
+**It is for** a front door. Beside `Verify` with `Confirm` it is the shorter
+road to the same place, and it is not somebody's own to call.
 
 ### `NominationService/Add`
 
@@ -209,6 +230,26 @@ and somebody on call has to be able to stop a compromised account that is
 wider than they are. What is kept is that a tenant is left with somebody
 administering it. `HolderService/Invalidate` -- *sign them out everywhere* --
 is the same.
+
+### `VouchService/LeaveLink` with `Leave`
+
+**Reads as** *may mail a link that deletes an account*. **Is** anybody's
+account the caller can see, deleted, where the tenant lets its people leave.
+
+`LeaveLink` answers the link to its caller, for the caller to mail, as
+`VouchService/Link` does; `Leave` spends one and asks for the person's alias,
+which the caller knows.
+
+> A key that lists both names the tenant's administrator and one of their
+> proved addresses. It is answered the link, and spends it.
+
+What is kept: the address has to be one of the person's that somebody proved, a
+tenant has to offer leaving at all (`TenantConfig.leave`), a tenant is left with
+somebody administering it, and an operator can bring the account back until it
+is forgotten.
+
+**It is for** a front door, which asks about whoever is signed in at it and
+mails the link to them. Neither verb is somebody's own to call.
 
 ## Reading
 
