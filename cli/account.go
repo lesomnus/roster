@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/cfg"
@@ -297,7 +298,18 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 	log.From(ctx).InfoContext(ctx, "account", slog.String("addr", l.Addr().String()),
 		slog.Int("tenants", a.Fronts()))
 
-	srv := &http.Server{Handler: a.Handler()}
+	// With clocks on what a stranger controls: how long a request's headers
+	// may take to arrive, and how long a connection may sit idle. The server
+	// had none, and this is the listener that faces the internet -- a
+	// connection opened and left half way through a header was kept for ever.
+	// Nothing bounds the answer, which for the page's road to roster may be a
+	// stream.
+	srv := &http.Server{
+		Handler:           a.Handler(),
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       2 * time.Minute,
+		MaxHeaderBytes:    64 << 10,
+	}
 	go func() {
 		<-ctx.Done()
 		_ = srv.Close()

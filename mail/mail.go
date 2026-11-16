@@ -52,6 +52,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // TLS is how the connection to the server is protected.
@@ -295,15 +296,23 @@ func Redact(s string) string {
 }
 
 // Mask is an address as a log may show it: its domain, and nothing of whose.
+//
+// A domain, or nothing. It was everything after the first `@`, of what
+// somebody typed into a form anybody reaches: what was not an address, with a
+// line break in it, wrote a line of its own into the log (#277).
 func Mask(address string) string {
 	if a, err := netmail.ParseAddress(address); err == nil {
 		address = a.Address
 	}
-	if _, domain, ok := strings.Cut(address, "@"); ok && domain != "" {
-		return "…@" + domain
+
+	_, domain, ok := strings.Cut(address, "@")
+	if !ok || domain == "" || len(domain) > 253 || strings.ContainsFunc(domain, func(r rune) bool {
+		return !(r == '.' || r == '-' || r >= '0' && r <= '9' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r > 0x7f && unicode.IsLetter(r))
+	}) {
+		return "…"
 	}
 
-	return "…"
+	return "…@" + domain
 }
 
 // compose is a message as it is sent: headers in ASCII, the subject encoded,

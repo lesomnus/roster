@@ -57,7 +57,7 @@ const root = createRoot(document.getElementById('root') as HTMLElement)
 
 /** Providers is what `/providers` says: who this front door is for, and how they arrive. */
 interface Providers {
-	tenant: { alias: string; name: string; labels: Record<string, string> }
+	tenant: { alias: string; name: string }
 	providers: { name: string; issuer: string }[]
 	terminal?: boolean
 	password: boolean
