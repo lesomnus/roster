@@ -31,8 +31,8 @@ import (
 // **Anything unverified, under `email`.** An address nobody has confirmed is a
 // fact roster keeps on purpose, and it is not one to hand a relying party as
 // *this is their email* -- `email_verified: false` reads as a smaller claim
-// than it is, because most consumers of it do not branch. So the claim is the
-// verified address, or there is no claim.
+// than it is, because most consumers of it do not branch. So the claim is a
+// verified address -- the one verified first -- or there is no claim.
 //
 // **Any group not shown to this client.** `groups` is for the relying parties
 // that cannot ask roster and grant on a list of names -- Dependency-Track,
@@ -54,10 +54,18 @@ func claimsOf(v *rstr.MeGetResponse, scope []string, client string) map[string]a
 		// and a team is an organisation's structure, nothing to grant on. What
 		// somebody may do is `HolderService/Reaches`, and `groups`, below, is
 		// roster's own `Group`s, for the relying parties that cannot ask.
+		//
+		// Each alias once, in order. A team's alias is unique within a site
+		// and not within a tenant, so somebody in `operators` at Seoul and at
+		// Busan is in two teams of one name -- and the claim said it twice, in
+		// whatever order the store answered. The site is not in a token, so
+		// the second says nothing the first did not.
 		teams := []string{}
 		for _, t := range v.GetTeams() {
 			teams = append(teams, t.GetAlias())
 		}
+		slices.Sort(teams)
+		teams = slices.Compact(teams)
 		if len(teams) > 0 {
 			claims["teams"] = teams
 		}
@@ -76,6 +84,11 @@ func claimsOf(v *rstr.MeGetResponse, scope []string, client string) map[string]a
 		claims["groups"] = groups
 	}
 
+	// The address they proved first, of the ones they still have. `Me.Get`
+	// answers proved addresses in the order they were proved (`server/me`), so
+	// the first proved one of its answer is that: proving another does not
+	// change what a relying party keys an account on, and the next one proved
+	// is the claim only once the first is erased.
 	if slices.Contains(scope, "email") {
 		for _, e := range v.GetEmails() {
 			if e.GetDateVerified() == nil {

@@ -640,6 +640,11 @@ where a wrong password is. A link a front door hands a browser is the one
 sign-in there that asks no second factor, since the directory that checked the
 person is what the link stands for.
 
+**And nowhere else.** Somebody who arrives through a provider is signed in on
+the directory's word, at the account app and at the Login App alike:
+`VouchService.Accept` answers at once, whatever factor of roster's they have
+proved. What stood between them and that sign-in was the directory's to ask.
+
 **Whoever runs the deployment has one too**, enrolled from a shell on the box,
 since that is where an operator is managed and the admin console's work is
 customers. An authenticator app; a security key is registered by a browser at
