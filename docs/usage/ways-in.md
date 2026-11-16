@@ -564,7 +564,12 @@ arrived through one of them and may want both. That is the account page's *signs
 in with* section: a row per directory the operator offers, where the one they
 arrived through says who they are there and offers to unlink, and the one they
 have not used offers **connect**. Pressing it is a round trip to that directory
-and back, and what lands on their row is `Identity.Add` with their own reference.
+and back, and what lands on their row is `Identity.Add` with their own
+reference, **made as them**: the provider proves the account, which is the
+front door's part, and roster is asked what it is asked of any call of theirs --
+that their session still stands when the round trip ends, and that their tenant
+lets them (`IdentityService/Add` in its `self-service` role, or a role of their
+own).
 
 Two things it does not do, each for a reason:
 

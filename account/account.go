@@ -70,6 +70,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -85,6 +86,7 @@ import (
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/auth/authsession"
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/roster/arrives"
@@ -854,15 +856,76 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	a.start(w, r, false, pdid.Nil)
 }
 
+// present is who roster says is at this browser, asked now: `Me.Get` through
+// the delegation their session holds.
+//
+// # Why the cookie is not asked
+//
+// The sealed cookie says who signed in, and it opens until its own clock runs
+// out. Whether that sign-in still stands is roster's to say: signed out of,
+// signed out everywhere, suspended, erased -- each ends the delegation there
+// and none of them reaches a cookie. A call the page makes of roster goes as
+// the person and is refused by all of those. What this app does for the person
+// **with its own key** has to ask the same thing first, or it is the one road
+// a session that ended still walks: it linked a provider's account, claimed an
+// address and answered whether a password was theirs, from any copy of the
+// cookie (#277).
+//
+// And the answer says what they may do of their own accord ([lets]), which is
+// the second thing a write made for them has to ask.
+func (a *App) present(r *http.Request, t *tenant) (*rstr.MeGetResponse, bool) {
+	as, err := a.door.Acting(r.Context(), r)
+	if err != nil {
+		return nil, false
+	}
+
+	me, err := rstr.NewMeServiceClient(a.conn).Get(t.on(as), rstr.MeGetRequest_builder{}.Build())
+	if err != nil || len(me.GetId()) == 0 {
+		return nil, false
+	}
+
+	return me, true
+}
+
+// lets is whether roster lets somebody call `method` themselves: a role of
+// theirs names it, or it is among what everybody of their tenant does to their
+// own account (`MeGetResponse.own`).
+//
+// Asked before this app writes for them with its own key, which is bound the
+// method for everybody: a tenant that took a method out of `self-service` has
+// turned it off for its people (`docs/usage/permissions.md`), and that was the
+// page's button and nothing behind it.
+func lets(me *rstr.MeGetResponse, method string) bool {
+	return slices.Contains(me.GetOwn(), method) ||
+		slices.ContainsFunc(me.GetMethods(), func(v string) bool { return frame.Covers(v, method) })
+}
+
 // addWay is the same round trip by somebody already signed in, attaching what
 // the provider proves to **their** account. The session says whose; the
 // request never does.
+//
+// Somebody roster says is there, and may ([App.present], [lets]).
 func (a *App) addWay(w http.ResponseWriter, r *http.Request) {
-	who, ok := a.door.Who(r.Context(), r)
+	t, ok := tenantFrom(r.Context())
+	if !ok {
+		http.Error(w, "no operator here serves this name", http.StatusNotFound)
+		return
+	}
+	me, ok := a.present(r, t)
 	if !ok {
 		http.Error(w, "no", http.StatusForbidden)
 		return
 	}
+	if !lets(me, rstr.IdentityService_Add_FullMethodName) {
+		http.Error(w, "your organisation does not let its people connect an account themselves", http.StatusForbidden)
+		return
+	}
+	who, err := pdid.From(me.GetId())
+	if err != nil {
+		http.Error(w, "no", http.StatusForbidden)
+		return
+	}
+
 	a.start(w, r, true, who)
 }
 
@@ -958,11 +1021,23 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if f.link {
-		_, err := a.roster.Identity().Add(as, rstr.IdentityAddRequest_builder{
-			Holder:   rstr.HolderRef_builder{Id: f.who.Bytes()}.Build(),
-			Provider: who.Provider,
-			Subject:  who.Subject,
-		}.Build())
+		// Written **as the person**, through the delegation their session
+		// holds now, and not with this app's key as it was: the provider has
+		// proved the subject, which is this app's part; whether they are still
+		// signed in, and whether their tenant lets them, is roster's, and a
+		// write made as them is asked both. A round trip is ten minutes long,
+		// and one begun before somebody signed out finished after it.
+		err := status.Error(codes.Unauthenticated, "nobody is signed in")
+		if now, ok := a.door.Who(ctx, r); ok && now == f.who {
+			var theirs context.Context
+			if theirs, err = a.door.Acting(ctx, r); err == nil {
+				_, err = a.roster.Identity().Add(f.tenant.on(theirs), rstr.IdentityAddRequest_builder{
+					Holder:   rstr.HolderRef_builder{Id: f.who.Bytes()}.Build(),
+					Provider: who.Provider,
+					Subject:  who.Subject,
+				}.Build())
+			}
+		}
 		// Back to the page, whichever way it went, with a word for it.
 		//
 		// A browser is here because somebody pressed *connect* on their own
@@ -1581,17 +1656,24 @@ func (a *App) claim(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "this deployment cannot send mail, so it cannot claim an address this way", http.StatusNotImplemented)
 		return
 	}
-	if _, err := a.door.Acting(ctx, r); err != nil {
-		http.Error(w, "no", http.StatusUnauthorized)
-		return
-	}
 	t, ok := tenantFrom(ctx)
 	if !ok {
 		http.Error(w, "no operator here serves this name", http.StatusNotFound)
 		return
 	}
-	who, ok := a.door.Who(ctx, r)
+	// Somebody roster says is there, who may add an address themselves: the
+	// link this mints ends with one on their account ([App.present], [lets]).
+	me, ok := a.present(r, t)
 	if !ok {
+		http.Error(w, "no", http.StatusUnauthorized)
+		return
+	}
+	if !lets(me, rstr.EmailService_Add_FullMethodName) {
+		http.Error(w, "your organisation does not let its people add an address themselves", http.StatusForbidden)
+		return
+	}
+	who, err := pdid.From(me.GetId())
+	if err != nil {
 		http.Error(w, "no", http.StatusUnauthorized)
 		return
 	}
@@ -1997,14 +2079,22 @@ func bytesEqual(a, b []byte) bool {
 // security key needs no proving: the ceremony that enrolled it was one.
 func (a *App) prove(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	who, ok := a.door.Who(ctx, r)
+	t, ok := tenantFrom(ctx)
+	if !ok {
+		http.Error(w, "no operator here serves this name", http.StatusNotFound)
+		return
+	}
+	// Somebody roster says is there ([App.present]): the check below is made
+	// with this app's key about whoever is named, and for a cookie whose
+	// session had ended it went on saying whether a password was theirs.
+	me, ok := a.present(r, t)
 	if !ok {
 		http.Error(w, "no", http.StatusUnauthorized)
 		return
 	}
-	t, ok := tenantFrom(ctx)
-	if !ok {
-		http.Error(w, "no operator here serves this name", http.StatusNotFound)
+	who, err := pdid.From(me.GetId())
+	if err != nil {
+		http.Error(w, "no", http.StatusUnauthorized)
 		return
 	}
 
