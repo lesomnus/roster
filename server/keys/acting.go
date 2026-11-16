@@ -75,13 +75,8 @@ func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 			return auth.Identity{}, auth.ErrNoCredential
 		}
 
-		as := ""
-		for _, v := range md.Get(HeaderActing) {
-			if v != "" {
-				as = v
-			}
-		}
-		if as == "" {
+		acting := md.Get(HeaderActing)
+		if len(acting) == 0 {
 			// Not this handler's request. Everything else in the chain still
 			// gets its turn.
 			return auth.Identity{}, auth.ErrNoCredential
@@ -95,17 +90,25 @@ func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 			return auth.Identity{}, status.Error(codes.Unauthenticated, "no")
 		}
 
+		// **There and saying nothing is refused**, as [ArrivedAt] refuses it
+		// of the other header. It read as not there -- the last value that was
+		// not empty, and none was -- so the request was passed on and `Bearer`
+		// answered it as the app's key itself: a caller that meant to act as
+		// one person and sent an empty value was served wider than it asked,
+		// across every tenant for a deployment key, and nothing said so (#276).
+		as, ok := one(acting)
+		if !ok {
+			return no()
+		}
+
 		if tenant == nil {
 			return no()
 		}
 
-		token := ""
-		for _, v := range md.Get(auth.Header) {
-			if rest, ok := strings.CutPrefix(v, auth.BearerScheme+" "); ok && rest != "" {
-				token = rest
-			}
-		}
-		if token == "" || !strings.HasPrefix(as, PrefixDelegation) {
+		// One key, which is the one `Bearer` would have read and the one
+		// [Authenticated] reads: see [bearerOf].
+		token, ok := bearerOf(md)
+		if !ok || token == "" || !strings.HasPrefix(as, PrefixDelegation) {
 			return no()
 		}
 
