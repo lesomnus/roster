@@ -34,6 +34,16 @@ func TestAHostIsStoredAsItIsCompared(t *testing.T) {
 		{"[fe80::1]:8443", "fe80::1"},
 		{"fe80::1", "fe80::1"},
 		{"[2001:DB8::7]", "2001:db8::7"},
+
+		// The dot a fully qualified name ends in is not part of the name. DNS
+		// reads `contoso.example.com.` and `contoso.example.com` as one, so two
+		// rows for them were two tenants holding one name, both proved by the
+		// same record (#277). It comes off after the port does, because that
+		// is the side of the colon it is on.
+		{"contoso.example.com.", "contoso.example.com"},
+		{"CONTOSO.Example.com.", "contoso.example.com"},
+		{"contoso.example.com.:8443", "contoso.example.com"},
+		{"localhost.", "localhost"},
 	} {
 		t.Run(tc.in, func(t *testing.T) {
 			x := require.New(t)

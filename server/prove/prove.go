@@ -30,9 +30,10 @@
 //
 // Validate DNSSEC, or walk from the root. What the delegation walk here is for
 // is finding the closest enclosing zone, which is a lookup of `NS` records
-// through the ordinary resolver -- so a deployment whose resolver owns the name
-// internally can still be misled about where the zone is, and
-// [Config.Resolver] is how that deployment says otherwise.
+// through the ordinary resolver, and of where each server is after it -- so a
+// deployment whose resolver owns the name internally can still be misled about
+// where the zone is, and [Config.Resolver] is how that deployment says
+// otherwise.
 //
 // That is the honest bound of this check: it proves somebody could write a
 // record in the zone this deployment's network agrees is the zone. A deployment
@@ -103,7 +104,8 @@ const None = "none"
 
 // Config is what this deployment needs to ask.
 type Config struct {
-	// Resolver is where the `NS` lookup goes. Three answers:
+	// Resolver is where the zone is looked for: which servers hold it, and
+	// where each of them is. Three answers:
 	//
 	//	(empty)          the system's
 	//	host:port        that one
@@ -113,7 +115,9 @@ type Config struct {
 	// own servers whatever this says, but **finding** those servers is an
 	// ordinary lookup -- so a resolver that answers for `example.com` out of an
 	// internal zone answers this one too, and a deployment in that position
-	// names a resolver that does not.
+	// names a resolver that does not. Finding them is their names and then
+	// their addresses, and both are asked here: a setting that decided one and
+	// left the other to the system's resolver would decide nothing.
 	//
 	// `none` is an air gap, and it is a setting rather than an inference for the
 	// reason `watch.broker` is: a deployment that cannot reach DNS and one whose
@@ -150,7 +154,9 @@ func (c Config) Asking() Resolver {
 	return authoritative{boot: bootstrap(c.Resolver)}
 }
 
-// bootstrap is the resolver the `NS` lookup goes through.
+// bootstrap is the resolver everything but the TXT question goes through:
+// which servers hold a zone, whether a name is a zone at all, and where a
+// server is.
 func bootstrap(at string) *net.Resolver {
 	if at == "" {
 		return net.DefaultResolver
@@ -180,7 +186,17 @@ func Held(ctx context.Context, at Resolver, name, want string) (bool, error) {
 }
 
 // authoritative asks the servers that hold the zone.
-type authoritative struct{ boot *net.Resolver }
+type authoritative struct {
+	boot *net.Resolver
+
+	// port is where a name server is asked, and empty is 53.
+	//
+	// A field for one reason, which is a test: a server a test writes cannot
+	// have 53, and a test that stops short of asking one has not shown which
+	// machine would have been asked. Nothing a deployment configures reaches
+	// it.
+	port string
+}
 
 func (r authoritative) TXT(ctx context.Context, name string) ([]string, error) {
 	servers, at, err := r.zone(ctx, name)
@@ -194,7 +210,20 @@ func (r authoritative) TXT(ctx context.Context, name string) ([]string, error) {
 	// and is returned as such.
 	var last error
 	for _, s := range servers {
-		vs, err := r.ask(ctx, s).LookupTXT(ctx, name)
+		// Where the server is, asked of the resolver that said which server it
+		// is. Dialing the hostname asks the system's resolver instead, and a
+		// deployment names one of its own because the system's answers for
+		// names it should not -- so one resolver decides all of it, or the
+		// setting decides half. A server that cannot be found is a server that
+		// did not answer, and the next one is asked.
+		addrs, err := r.boot.LookupHost(ctx, whole(s))
+		if err != nil {
+			last = err
+
+			continue
+		}
+
+		vs, err := r.ask(addrs).LookupTXT(ctx, whole(name))
 		if err == nil {
 			return vs, nil
 		}
@@ -210,15 +239,43 @@ func (r authoritative) TXT(ctx context.Context, name string) ([]string, error) {
 	return nil, fmt.Errorf("%s: no server for %s answered: %w", name, at, last)
 }
 
-// ask is a resolver pointed at one server.
-func (r authoritative) ask(ctx context.Context, server string) *net.Resolver {
+// ask is a resolver pointed at one server, at the addresses it was found at.
+//
+// In the order they came, and the first that can be dialed. A server with an
+// address in a family this machine has no route for is an ordinary thing to be
+// handed, and the next address is the same server.
+func (r authoritative) ask(addrs []string) *net.Resolver {
+	port := r.port
+	if port == "" {
+		port = "53"
+	}
+
 	return &net.Resolver{
 		PreferGo: true,
 		Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
-			return (&net.Dialer{}).DialContext(ctx, network, net.JoinHostPort(server, "53"))
+			var last error
+			for _, a := range addrs {
+				c, err := (&net.Dialer{}).DialContext(ctx, network, net.JoinHostPort(a, port))
+				if err == nil {
+					return c, nil
+				}
+
+				last = err
+			}
+
+			return nil, last
 		},
 	}
 }
+
+// whole is a name with the dot that ends it, which is how one is asked here.
+//
+// `net.Resolver` reads a name without one as possibly relative and tries it
+// under each domain in the machine's search list -- before the name itself
+// where `ndots` says so, which in a cluster it does. Every name asked about
+// here is whole already: one somebody is claiming, or one out of an `NS`
+// record. Under a search domain it is another name, in a zone nobody claimed.
+func whole(name string) string { return strings.TrimSuffix(name, ".") + "." }
 
 // zone is the closest enclosing zone's servers, and the zone they hold.
 //
@@ -231,10 +288,36 @@ func (r authoritative) ask(ctx context.Context, server string) *net.Resolver {
 // something and nobody delegates that label; and it stops before the last,
 // because a TLD's servers hold no TXT record anybody here is asking for and
 // asking them is a referral this does not follow.
+//
+// # A name that is an alias is not a zone
+//
+// Asked for the `NS` of a name that is a `CNAME`, a resolver follows the alias
+// and answers with the servers of where it points, and [net.Resolver.LookupNS]
+// hands them back without the name that owns them -- so the answer cannot be
+// told from the name's own. A name pointed at the apex of somebody else's zone
+// would be a zone held by their servers, and what they said about a name they
+// do not hold would be the proof.
+//
+// What tells the two apart is that a zone's apex is never an alias: a `CNAME`
+// sits beside no other record, and an apex has `NS` and `SOA`. So a candidate
+// that is one is walked past, to the zone the alias is written in -- which is
+// also where a record under the alias is written.
+//
+// A resolver that could not say which it is has not answered, and that is an
+// error rather than either guess: walking on asks servers that may not hold
+// the name, and stopping is the alias's target taken for the zone.
 func (r authoritative) zone(ctx context.Context, name string) ([]string, string, error) {
 	for _, at := range candidates(name) {
-		ns, err := r.boot.LookupNS(ctx, at)
+		ns, err := r.boot.LookupNS(ctx, whole(at))
 		if err != nil || len(ns) == 0 {
+			continue
+		}
+
+		alias, err := r.alias(ctx, at)
+		if err != nil {
+			return nil, "", err
+		}
+		if alias {
 			continue
 		}
 
@@ -247,6 +330,28 @@ func (r authoritative) zone(ctx context.Context, name string) ([]string, string,
 	}
 
 	return nil, "", fmt.Errorf("%s: nothing says which nameservers hold this name", name)
+}
+
+// alias reports whether a name is a `CNAME` for another.
+//
+// The canonical name is asked for, which is the name itself where it is not an
+// alias and where the alias points where it is. Compared without regard to
+// capitals or the last dot, because a resolver answers in whichever spelling
+// the zone file has.
+func (r authoritative) alias(ctx context.Context, name string) (bool, error) {
+	to, err := r.boot.LookupCNAME(ctx, whole(name))
+	if err != nil {
+		// Nothing at the name but what delegates it: a zone whose apex serves
+		// no address, which is ordinary and is not an alias.
+		var dns *net.DNSError
+		if errors.As(err, &dns) && dns.IsNotFound {
+			return false, nil
+		}
+
+		return false, fmt.Errorf("%s: could not ask whether this is a zone or an alias for one: %w", name, err)
+	}
+
+	return !strings.EqualFold(strings.TrimSuffix(to, "."), strings.TrimSuffix(name, ".")), nil
 }
 
 // candidates is the names a zone cut could be at, closest first.

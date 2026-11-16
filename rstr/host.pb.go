@@ -310,13 +310,20 @@ type Host_builder struct {
 
 	Id     []byte
 	Tenant *Tenant
-	// The name a browser arrived at, lowercased and without a port:
-	// "contoso.example.com".
+	// The name a browser arrived at, lowercased, without a port and without the
+	// dot a fully qualified name ends in: "contoso.example.com".
 	//
-	// Stored as it is compared. A host is case-insensitive and a port is not part
-	// of it, so whatever writes one normalises first -- `server/core` refuses one
-	// that is not already normalised, because a row that differs from what a
-	// front door will look up is a row that silently never matches.
+	// Stored as it is compared. A host is case-insensitive, a port is not part of
+	// it and `contoso.example.com.` is the same name, so whatever writes one
+	// normalises first -- `server/core` refuses one that is not already
+	// normalised, because a row that differs from what a front door will look up
+	// is a row that silently never matches.
+	//
+	// And a hostname, or an address: labels of letters, digits and hyphens
+	// between dots, as DNS could hold them. `server/core` refuses anything else
+	// -- a wildcard, a path, an underscore -- because no request arrives at it,
+	// and refuses a name in other letters with the form to write instead, which
+	// is its A-label ("xn--...").
 	Name string
 	Desc string
 	// Whatever the deployment keeps about this row that the schema does not name.

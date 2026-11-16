@@ -82,15 +82,30 @@ const HeaderAt = "roster-at"
 func AtTenant(ref string) string { return TenantMark + ref }
 
 // TenantMark is what a [HeaderAt] value naming a tenant begins with. Not a
-// character a hostname may hold, so the two cannot be mistaken for each other.
+// character a hostname may hold, so the two cannot be mistaken for each other
+// -- and `server/core` holds a `Host` to being a hostname, so no row is named
+// with one.
 const TenantMark = "@"
 
 // Hostname is a host as this app stores and compares one: lowercased, with any
-// port removed and an address literal unbracketed.
+// port removed, an address literal unbracketed, and without the dot a fully
+// qualified name ends in.
 //
 // Exported because both sides need it and neither may disagree. A row written
 // as `Contoso.Example.com:8443` is a row that silently never matches, and the
 // symptom is a sign-in page saying nobody is there.
+//
+// # The last dot is not part of the name
+//
+// `contoso.example.com.` is how DNS writes `contoso.example.com` when it means
+// the whole of it, and a request that arrives at the first is looking for the
+// row of the second. Left on, the dotted spelling was a name of its own: a
+// second `Host` row, proved by the same TXT record as the first because the
+// lookup trims the dot, and so one name two tenants each held (#277).
+//
+// One dot, after the port is off, because that is the side of the colon it is
+// on. A second is an empty label rather than a spelling of anything, and it is
+// left for `server/core` to refuse as one.
 //
 // # Why the splitting is not done by hand
 //
@@ -116,13 +131,12 @@ func Hostname(v string) string {
 	v = strings.ToLower(strings.TrimSpace(v))
 
 	if h, _, err := net.SplitHostPort(v); err == nil {
-		return h
-	}
-	if strings.HasPrefix(v, "[") && strings.HasSuffix(v, "]") {
-		return v[1 : len(v)-1]
+		v = h
+	} else if strings.HasPrefix(v, "[") && strings.HasSuffix(v, "]") {
+		v = v[1 : len(v)-1]
 	}
 
-	return v
+	return strings.TrimSuffix(v, ".")
 }
 
 // Address is an address as this app stores and compares one: lowercased and
