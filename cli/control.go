@@ -129,9 +129,8 @@ func newCmdControlKeyAdd(c *cmd.Config) *xli.Command {
 // tenant, as itself. A request carrying `roster-at` is answered instead as the
 // holder a tenant nominated for it, with that holder's bindings, and the key's
 // own list is not consulted (`server/keys/at.go`). So the list is the width of
-// the calls an app makes before it knows the tenant: three reads for the Login
-// App, and none at all for a product that always knows which tenant a request is
-// about.
+// the calls an app makes before it knows the tenant: two for the Login App, and
+// none at all for a product that always knows which tenant a request is about.
 //
 // That product could not be minted a key. `--allow` refuses empty, because an
 // empty list on any other key is one that silently opens nothing -- and on this

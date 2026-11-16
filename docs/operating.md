@@ -897,8 +897,10 @@ Two halves, and neither takes a list of tenants.
 
 **Once:** one deployment key (`rk_`), on a control-plane holder, written to
 `<out>/login-app.key` -- so `login.key` is `file:/run/roster-login/login-app.key`
-and there is no Secret at all. What it allows is the three reads that work out
-whose flow this is and nothing else.
+and there is no Secret at all. What it allows is what the app calls before a
+flow names a tenant, and nothing else: which tenant a name is
+(`FrontService/WhoseHost`), and the one stream that hears every tenant's
+sign-outs (`SyncService/Watch`). As itself it reads no tenant's row.
 
 **Per tenant that registered a name:** this deployment's own front door inside
 that tenant -- a `login-app` holder, a role holding what the app calls as itself,
@@ -912,15 +914,18 @@ fight over (#73).
 
 A deployment with no names yet is **said and not refused**, because this runs on
 every start and a fresh volume has nothing to nominate. It replaces rather than
-adds -- a key cannot be read back, so a restart is a rotation.
+adds -- a key cannot be read back, so a restart is a rotation -- and it writes
+each tenant's role again with the list this build's app calls, so both lists
+are this build's from its first start.
 
 **A tenant's first name declared in `resources:` is nominated in on the next
 start, not this one.** This runs *before* the server, and the server is what
 applies `resources:` -- so the pass that would nominate in a tenant that has just
 got its first `Host` row happens before the row exists, and the tenant has no
 `Nomination` for the key. A flow for it then resolves to a tenant and is refused
-at `Vouch.Delegate`, because `keys.At` will not answer as the key for a tenant
-that nominated nobody for it. One restart fixes it. A further name for a tenant
+at the next read, of what that tenant is called -- before a form is drawn, as
+*this login is not working* -- because `keys.At` will not answer as the key for
+a tenant that nominated nobody for it. One restart fixes it. A further name for a tenant
 already nominated in works on the start that applies it, and a deployment that
 adds names by hand rather than by file does not have it at all: write the row,
 and the next start nominates.

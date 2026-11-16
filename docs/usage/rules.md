@@ -184,6 +184,7 @@ removed (`TestADirectoryMaySuspendTheLastAdministrator`).
 | A reference to another tenant's row names nobody | `server/core/tenant.go` | `TestNamingSomebodyInAnotherTenantNamesNobody` · `TestAnEdgeIsNotAWayThroughTheWall` |
 | A row's edges are all of one tenant | `server/core/tenant.go` | `TestATeamCannotBeInAnotherTenantsSite` · `TestAClaimDoesNotCrossATenant` |
 | No key or way in is minted into another tenant | `server/core/apikey.go` | `TestAKeyIsNotMintedIntoAnotherTenant` · `TestNobodyMintsAWayIntoAnotherTenant` |
+| The Login App's own key, as itself, is told which tenant a name is and hears who was signed out, and reads no tenant's row: what a tenant is called it reads as the holder that tenant nominated | `cli/login.go` | `TestTheProvisionedKeyIsNarrowerThanTheRole` · `TestTheLoginAppsKeyReadsATenantAsWhoThatTenantNominated` |
 | Nobody is told what another customer may call | `server/core/holder.go` | `TestNobodyIsToldWhatAnotherCustomerMayCall` |
 
 ### What a file declares is the file's
@@ -204,7 +205,7 @@ removed (`TestADirectoryMaySuspendTheLastAdministrator`).
 | What ends every sign-in of somebody's -- a password issued or changed, *sign out everywhere* -- ends a link out for them and a sign-in half made, a tie included; a link that confirms an address is not ended, and confirms nothing for somebody who may not sign in | `server/vouch/link.go` | `TestALinkEndsWithWhatEndsASignIn` · `TestASignInBegunBeforeEverythingWasEndedDoesNotFinish` · `TestALinkOfSomebodyErasedIsOneThatWasNeverThere` |
 | Nor does an app in front hear otherwise, nor a key whose holder is the deployment's own; and an app suspended or erased in a tenant acts as nobody there, whatever delegation it holds | `server/keys/delegate.go` | `TestASuspendedPersonIsSuspendedInFrontOfEveryApp` · `TestAnErasedHoldersKeyStandsForNobody` · `TestADelegationStopsWithItsAppsStandingInTheTenant` |
 | Nothing of somebody erased is read, by naming them or through a row that outlived them | `server/bare/holder.g.go` | `TestNothingOfAnErasedHolderIsReadableByNamingThem` · `TestNothingOfAnErasedHolderIsReadableThroughARowThatOutlivedThem` |
-| A name erased answers nobody at roster's own sign-in, a closed tenant's says so, and a request that names two is about neither; a front door may go on answering for a name it resolved for up to a minute | `cmd/hosted.go` | `TestANameErasedAnswersNobodyAndANameMovedAnswersWhoHasIt` · `TestRostersOwnDoorReadsANameAsAFrontDoorDoes` |
+| A name erased answers nobody at roster's own sign-in, a closed tenant's says so, and a request that names two is about neither; a front door may go on answering for a name it resolved for up to a minute, and the Login App then asks again which tenant the name is and what that tenant's alias is | `cmd/hosted.go`, `login/at.go` | `TestANameErasedAnswersNobodyAndANameMovedAnswersWhoHasIt` · `TestRostersOwnDoorReadsANameAsAFrontDoorDoes` · `TestANameThatMovedSignsInTheTenantItMovedTo` · `TestATenantsNewAliasSignsItsPeopleInOnceAMinuteHasPassed` |
 
 ### What a directory may do
 

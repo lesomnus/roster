@@ -361,15 +361,24 @@ func newCmdLoginDoctor(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	}
 }
 
-// LoginMethods is what the Login App calls as itself, and the whole of it.
+// LoginMethods is what the Login App calls as itself in a tenant, and the whole
+// of it.
 //
-// The password half is the flow: resolve the tenant, check a secret, mint the
-// delegation, end it. The provider half is the other way in -- read the
+// The password half is the flow: read what the tenant is called and whether it
+// takes passwords, check a secret and mint the delegation in one call
+// (`Delegate`), end it. The provider half is the other way in -- read the
 // tenant's `Connection` rows to draw the buttons and to be the relying party,
 // find the `Identity` a directory's answer names, link one for somebody the
-// policy enrolled, and hand the claim over. `Sync.Watch` is how it hears that
-// somebody has been signed out everywhere so that Hydra can be told to forget
-// them. `login.Methods` is `Me.Get`, which is the claims that go in the token.
+// policy enrolled, and hand the claim over. `login.Methods` is `Me.Get`, which
+// is the claims that go in the token.
+//
+// **In a tenant**, because this is the role of the holder a tenant nominated:
+// it lists what the app calls narrowed to that tenant, and nothing it calls
+// otherwise. Two were here that it never calls so. `VouchService/Verify` checks
+// a password and hands nothing back to act with, and a front door needs the
+// delegation, so it calls `Delegate` and never this. `SyncService/Watch` is one
+// stream that hears every tenant, opened by the key as itself, and is
+// [LoginResolving]'s.
 //
 // `Email.Get` is the invitation: an tenant who entered somebody in advance
 // knows their address and not the subject a directory will assert, so the first
@@ -393,12 +402,13 @@ func newCmdLoginDoctor(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 // signing in, which is why this list is short and why it is written here rather
 // than left to whoever runs the command.
 var LoginMethods = append([]string{
+	// What the tenant a name resolved to is called, and its alias, which a
+	// sign-in is addressed by (`login/at.go`); and whether it takes passwords
+	// and fills profiles. Its own row, as the holder it nominated.
 	rstr.TenantService_Get_FullMethodName,
-	rstr.VouchService_Verify_FullMethodName,
 	rstr.VouchService_Delegate_FullMethodName,
 	rstr.VouchService_Accept_FullMethodName,
 	rstr.DelegationService_Revoke_FullMethodName,
-	rstr.SyncService_Watch_FullMethodName,
 	rstr.ConnectionService_Get_FullMethodName,
 	rstr.ConnectionService_List_FullMethodName,
 	rstr.IdentityService_Get_FullMethodName,
@@ -432,20 +442,28 @@ var LoginMethods = append([]string{
 	rstr.HolderService_Fill_FullMethodName,
 }, login.Methods...)
 
-// LoginResolving is what this app calls **before** it knows whose flow it is,
-// and the whole of what its key allows.
+// LoginResolving is what this app calls naming no tenant -- **before** it knows
+// whose flow it is, or about every tenant at once -- and the whole of what its
+// key allows.
 //
-// Three reads, and the list is short because of where the other bound is.
+// Two calls, and the list is short because of where the other bound is.
 // `keys.At` answers a request carrying `roster-at` as the nominated holder with
 // `frame.Whole()` -- the key's own method list is **not** carried through -- so
 // what bounds every call inside a flow is that holder's role, which `nominate`
 // writes with [LoginMethods]. What this list bounds is the calls that cannot be
-// narrowed that way, because they are the calls that work out what the
-// narrowing is:
+// narrowed that way: the one that works out what the narrowing is, and the one
+// that is about every tenant at once.
 //
 //	FrontService.WhoseHost   which tenant claims the name a flow named
-//	TenantService.Get        what that tenant is called, for the screen
-//	SyncService.Watch        every tenant's sign-outs, on one stream
+//	SyncService.Watch        every tenant's sign-outs, on one stream, so that
+//	                         Hydra can be told to forget somebody
+//
+// `TenantService.Get` was a third, for what the tenant a name resolved to is
+// called. It does not come before the narrowing: by then the name has answered
+// with a tenant, and the name is what narrows. Held here it was the key reading
+// **any** tenant's whole row as itself -- by identifier or by alias, fronted or
+// not -- where the app needs one tenant's alias and name. It is asked as the
+// holder that tenant nominated now, and is the role's.
 //
 // A key with no methods at all was the first draft, on the reading that the
 // policy hands an `rk_` `frame.Everything` and a list would be a narrowing
@@ -455,7 +473,6 @@ var LoginMethods = append([]string{
 // tests said in as many words.
 var LoginResolving = []string{
 	rstr.FrontService_WhoseHost_FullMethodName,
-	rstr.TenantService_Get_FullMethodName,
 	rstr.SyncService_Watch_FullMethodName,
 }
 
@@ -495,7 +512,7 @@ func provisionDeploymentKey(ctx context.Context, s *cmd.Server, alias string, me
 
 	// [LoginResolving] and not [LoginMethods], which is the split that matters:
 	// what a call inside a flow may do is the nominated holder's role, and what
-	// this key may do is the three reads that decide which holder that is.
+	// this key may do is what it calls before a request names a tenant.
 	token, err := mintNamed(ctx, s.Control.Ungated, who.Bytes(), alias, methods, keys.PrefixDeployment)
 	if err != nil {
 		return "", pdid.Nil, err

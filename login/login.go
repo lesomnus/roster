@@ -157,6 +157,10 @@ type Config struct {
 	// [App.Watch] hears every tenant, which is what an `rk_` is for.
 	Key string
 
+	// Now is the clock what a name resolved to is aged by (`login/at.go`). Nil
+	// is `time.Now`.
+	Now func() time.Time
+
 	// Remember is how long Hydra should skip the form, and the consent screen,
 	// for a browser that has already been through them. Zero asks every time.
 	//

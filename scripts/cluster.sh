@@ -413,11 +413,12 @@ resync() {
 # what applies `resources:`. So the pass that would nominate the Login App in a
 # tenant that has just got its first `Host` row happens before the row exists,
 # and the tenant has no `Nomination` for the app's key yet. What that looks like
-# from a walk is `WhoseHost` answering fine and `Vouch.Delegate` answering
-# `Unauthenticated`, because `keys.At` refuses a tenant that nominated nobody for
-# this key rather than answering as the key. A further name in a tenant already
-# nominated in needs no second start: the nomination is the tenant's, not the
-# name's.
+# from a walk is `WhoseHost` answering fine and the read after it, of what the
+# tenant is called, answering `Unauthenticated` -- *this login is not working*,
+# before a form is drawn -- because `keys.At` refuses a tenant that nominated
+# nobody for this key rather than answering as the key. A further name in a
+# tenant already nominated in needs no second start: the nomination is the
+# tenant's, not the name's.
 #
 # It is not a rig quirk: any deployment that declares a name in a file has it, and
 # `docs/operating.md` says so beside the command. The first start already needed
