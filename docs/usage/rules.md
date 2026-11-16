@@ -228,6 +228,7 @@ written against (`server/core/directory.go`).
 | `admin.addr`: no wall, and the rule about whose way in is written is not asked. It is the deployment's root, and said to be ([operating.md](../operating.md)) | `TestAnOperatorAdministersCustomers` |
 | What needs no credential is named one method at a time, and a password is not checked for nobody | `TestNobodyVerifiesAPasswordAnonymously` · `TestIntrospectIsNotPublic` |
 | A session is minted when nothing is left to prove: roster's own sign-in asks somebody's second factor, on both planes | `TestRostersOwnSignInAsksTheSecondFactor` |
+| The two planes are two databases: a deployment that names one for both is refused, so that a customer's session is never an operator's | `TestTwoPlanesAreTwoDatabases` |
 
 ## What roster does by itself
 

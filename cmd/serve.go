@@ -34,6 +34,7 @@ import (
 	"github.com/lesomnus/payday/web"
 
 	"github.com/lesomnus/roster/internal/ent"
+	enttenant "github.com/lesomnus/roster/internal/ent/tenant"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/console"
@@ -287,6 +288,28 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 			"scim: a directory signs in with a tenant key, and control.db.driver names no database, so " +
 				"no key is read and every caller would be believed by name. name a control plane, or take the block out")
 	}
+	// And the two planes are two databases.
+	//
+	// Somebody who runs this deployment and somebody who is a customer of it
+	// are told apart by nothing but which database their row is in: the
+	// sessions of each plane are a table of its own, and so are the holders
+	// and what they are bound. A file that names one database twice --
+	// `control.db` pasted from `db`, which two blocks of one shape invite --
+	// made a deployment that started and served like any other, in which a
+	// customer's administrator sent the cookie the data plane gave them to
+	// `admin.addr` and was an operator: their binding in their own tenant,
+	// read where an operator's is, on the stack with no wall (#275).
+	//
+	// Here for the file that says so outright, before anything is opened or
+	// written. [Apart] is the same refusal for one that says it by another
+	// spelling, asked of the rows once there are any.
+	if c.Control.Serves() && sameDatabase(c.Db, c.Control.Db) {
+		return nil, errors.New(
+			"control.db: the same database as db. The two planes are two databases -- who runs this " +
+				"deployment and who is a customer of it are told apart by which one their row is in, " +
+				"and in one a customer's session is an operator's at admin.addr. name another database for control.db")
+	}
+
 	// And the same shape once more, for the page a roster user opens.
 	//
 	// `sign_in.enabled` is what registers `AuthService` on this listener, so
@@ -1849,6 +1872,61 @@ func Arrived(h http.Handler) http.Handler {
 
 		h.ServeHTTP(w, r)
 	})
+}
+
+// sameDatabase is whether two `db` blocks name one database in the same words.
+//
+// A database kept in memory and named by nothing is a new one each time it is
+// opened, so two blocks that say `:memory:` are two databases and are not
+// refused; a test and the sandbox say that.
+func sameDatabase(a, b config.DbConfig) bool {
+	if a.Driver != b.Driver || a.Dsn != b.Dsn {
+		return false
+	}
+
+	return a.Dsn != "" && !strings.Contains(a.Dsn, ":memory:") && !strings.Contains(a.Dsn, "mode=memory")
+}
+
+// Apart refuses a deployment whose two planes are one database, by the row
+// that says who runs it: the control plane's tenant, which no customer is.
+//
+// [Build] refuses a file that names one database twice in the same words. Two
+// spellings of one -- a relative path and an absolute one, a parameter more --
+// are the same mistake and are not seen there, and nothing about a connection
+// says which database it reached in a way two engines agree on. A row does:
+// the tenant `init` wrote on the control plane is found on the data plane only
+// if they are one.
+//
+// Asked when a deployment is about to serve, since before `init` there is no
+// such row and before the schema is there no table to ask.
+func Apart(ctx context.Context, s *Server) error {
+	if s.Control == nil {
+		return nil
+	}
+
+	owner, err := s.Control.Ent.Tenant.Query().First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			// Nobody has run `init`, so there is nobody to be taken for.
+			return nil
+		}
+
+		return err
+	}
+
+	here, err := s.Ent.Tenant.Query().Where(enttenant.IdEQ(owner.Id)).Exist(ctx)
+	if err != nil {
+		return err
+	}
+	if here {
+		return fmt.Errorf(
+			"control.db: the same database as db, by another spelling -- the tenant %q that runs this "+
+				"deployment is a row of the data plane too. The two planes are two databases: in one, a "+
+				"customer's session is an operator's at admin.addr. name another database for control.db, "+
+				"run `roster init` on it, and erase %q from the data plane", owner.Alias, owner.Alias)
+	}
+
+	return nil
 }
 
 func (s *Server) policyInterceptors() grpcx.Chain {

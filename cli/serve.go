@@ -69,7 +69,8 @@ func Ready(ctx context.Context, s *cmd.Server, c cmd.Config) error {
 		return fmt.Errorf("control: %w", err)
 	}
 
-	return nil
+	// And that the two are two, now that both have their tables: `cmd.Apart`.
+	return cmd.Apart(ctx, s)
 }
 
 // ready is [Server.Ready] for one plane, told what that plane's `db` block
