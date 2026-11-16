@@ -228,7 +228,7 @@ written against (`server/core/directory.go`).
 | --- | --- |
 | `server.addr`: walled and gated; the general writes (`Patch`, `Apply`) are closed, and each entity's own verbs are the writes there are | `TestUpdateIsTheNarrowWrite` |
 | No port answers a verifier -- a key's hash, a password's -- nor does the trail | `TestTheAdminListenerAnswersNoVerifier` · `TestNoVerifierReachesTheTrail` · `TestAKeyListCarriesNoVerifier` |
-| No port takes a verifier from a caller either: a credential's general writes are shut by name, whatever `allow_general_writes` says, as a key's and a delegation's are | `TestAGeneralWriteDoesNotOpenACredentialsRow` |
+| No port takes a verifier from a caller either: a credential's general writes are shut by name, whatever `allow_general_writes` says, as a key's and a delegation's are -- the port that manages the deployment's own keys included | `TestAGeneralWriteDoesNotOpenACredentialsRow` · `TestAGeneralWriteDoesNotOpenAKeysRow` |
 | `control.addr`: a key calls what its holder is bound on the control plane | `TestAKeyAtTheControlListenerIsWhoseItIs` |
 | `admin.addr`: no wall, and the rule about whose way in is written is not asked. It is the deployment's root, and said to be ([operating.md](../operating.md)) | `TestAnOperatorAdministersCustomers` |
 | What needs no credential is named one method at a time, and a password is not checked for nobody | `TestNobodyVerifiesAPasswordAnonymously` · `TestIntrospectIsNotPublic` |
