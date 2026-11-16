@@ -132,6 +132,12 @@ func heldTo(asked url.Values, form url.Values) string {
 // `/photo` want back.
 const AccessToken = "the-access-token"
 
+// Loopback is where every fake here listens: this machine, which a front door
+// asks no provider at unless its deployment says it may (`private_hosts`;
+// `arrives/dial.go` says why). It is what a relying party under test is told,
+// as its deployment would be told of a directory on the premises.
+var Loopback = []string{"127.0.0.0/8", "::1"}
+
 // Consumers is the directory every personal Microsoft account is in.
 const Consumers = "9188040d-6c67-4c5b-b112-36a304b66dad"
 

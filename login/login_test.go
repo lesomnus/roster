@@ -28,6 +28,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdtest"
 
+	"github.com/lesomnus/roster/arrives"
 	"github.com/lesomnus/roster/cmd"
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	"github.com/lesomnus/roster/internal/idptest"
@@ -728,6 +729,10 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 		Key:            front,
 		InsecureCookie: true,
 	}
+	// The fake providers are on this machine, where this app asks no provider
+	// unless its deployment says it may (`login.private_hosts`).
+	cfg.PrivateHosts, err = arrives.ParsePrivateHosts(idptest.Loopback)
+	x.NoError(err)
 	if with != nil {
 		with(&cfg)
 	}

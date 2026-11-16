@@ -605,6 +605,7 @@ account:
   base: https://account.contoso.example
   page: { dir: /usr/share/roster/account }
   terminal: true                          # `roster sign-in`; off unless said
+  # private_hosts: [idp.corp.example]     # a provider off the internet; none unless named
   # key: left out -- one rk_ made at start, narrowed per request to the holder
   # each tenant nominated. A process of its own names it: file:… from
   # `roster account provision`. (`keys:` is a tenant running its own copy.)
@@ -624,6 +625,7 @@ login:                                    # only with Hydra in front; see login.
   consent: skip                           # ask draws a screen instead
   base: https://login.contoso.example     # the origin every connection's redirect is under
   enrol: invited                          # invited | expected | enrolling
+  # private_hosts: [idp.corp.example]     # as account's: where a provider may be asked
   page: { dir: /usr/share/roster/login }
   remember: 1h
   seal: [env:LOGIN_SEAL]
@@ -1036,6 +1038,58 @@ Beside it, every round trip carries a **PKCE** challenge (S256), so a code is
 worth nothing without the verifier only the front door that asked holds, and an
 OpenID one a **nonce** the ID token has to carry back.
 
+### Where a provider is asked
+
+A `Connection` says where its provider is, and one with no secret is its
+tenant's administrator's to write, issuer and all. So a front door asks a
+provider only at **an address on the internet**: for its document -- which is
+at the sign-in link, before anybody has signed in -- at the token endpoint and
+for the keys that document names, at its userinfo, and for a picture on that
+host. This machine, a private network, a link's own addresses and with them the
+cloud's metadata service are refused where the connection is made, whatever the
+name resolved to and whenever it last did. No redirect is followed off the host
+that was asked, and each request is given five seconds to connect and ten in
+all.
+
+A directory on the premises is at one of those addresses, and saying so is the
+**deployment's**, for each front door that offers the connection:
+
+```yaml
+login:
+  private_hosts: [idp.corp.example, 10.20.0.0/16]   # a name, an address or a network
+account:
+  private_hosts: [idp.corp.example, 10.20.0.0/16]
+```
+
+A name is that host and no other, on any port, and whatever it resolves to is
+your word about a name of your own; an address or a network is held against the
+address actually connected to. None unless said, and what is written is checked
+at start. Nothing a tenant writes says it. Nor does declaring the row in
+`resources.yaml`: the rule is about the address, so a declared connection to a
+host inside is named here as well. A sign-in through a provider at an address
+nobody named answers *cannot start* (the Login App: *this login is not
+working*), and the front door's log says which address, and `private_hosts`.
+What a provider answered instead of what was asked for is in that log too, cut
+to a line.
+
+**Through your proxy, where the environment names one.** `HTTPS_PROXY`,
+`HTTP_PROXY` and `NO_PROXY` are read as Go reads them, when the front door
+starts, and a connection to the proxy is made wherever the proxy is: it is your
+own host, named by you, as a `private_hosts` entry is. For a request that goes
+out through it, **where the provider is, is the proxy's to refuse** -- the front
+door connects to the proxy and never sees the address the proxy then connects
+to, so nothing above is asked of it. A deployment that sends its way out
+through a proxy has put the proxy in charge of which addresses a tenant's
+issuer may be at: configure it to refuse your own network, its own machine and
+the metadata service. `private_hosts` then matters only for what `NO_PROXY`
+sends direct, which the front door still dials itself and holds to the rule
+above.
+
+**A connection is the issuer its row names now.** Moved to another issuer -- or
+erased and added again under the same name -- it is the new one from the next
+sign-in on, with no restart. A round trip already on its way to the first
+issuer is not finished at the second, and the person starts again.
+
 ### GitHub
 
 GitHub signs people in with OAuth 2.0 and no OpenID Connect -- there is no
@@ -1128,7 +1182,8 @@ in, so the connection names that directory's issuer, which is the third row.
   that matched an invitation by the bare `email` of a token from any directory
   would hand that user whichever account carries it -- the mistake known as
   nOAuth. So with no `xms_edov` every address from Microsoft is kept
-  unverified, and `expected` finds nobody through it by address. Microsoft's
+  unverified: `expected` finds nobody through it by address, `enrolling` names
+  nobody by it, and a tenant's Slack is asked about nobody by it. Microsoft's
   manifest reference says a registration for personal accounts as well as
   directories cannot use optional claims; where that holds, nothing a `common`
   connection hands over is verified, and people are found by their subject.
@@ -1215,7 +1270,7 @@ one:
 | Google | the token's `picture`, a URL anybody can fetch | `profile` among its scopes, which a Google sign-in asks for anyway. Nothing to consent to beyond the sign-in. The URL is kept as `profile.picture`, beside roster's copy |
 | Entra | behind Microsoft Graph, where userinfo points | `User.Read` among its scopes, **consented for the whole directory first** (below). The URL is not kept, since no browser holds the token it needs |
 | GitHub | the account's `avatar_url`, which the sign-in already read | nothing. github.com's is a URL anybody can fetch and is kept as `profile.picture`; GitHub Enterprise Server's is on its own host, so it is fetched with the token and the URL is not kept |
-| anything else | the token's `picture`, else userinfo's | `profile`. A picture on the provider's own API host is fetched with the token, as Entra's is; one anywhere else only over https from an address on the internet -- so a directory inside the network that keeps pictures on another inside host gives none |
+| anything else | the token's `picture`, else userinfo's | `profile`. A picture on the provider's own API host is fetched with the token, as Entra's is, and from inside the network only where `private_hosts` names that host (§ *Where a provider is asked*); one anywhere else only over https from an address on the internet, whatever was named -- so a directory inside the network that keeps pictures on another inside host gives none |
 
 **Entra: the consent before the scope.** A scope added to a connection is asked
 for at the next sign-in, and Entra asks each person for a permission the
@@ -1247,6 +1302,14 @@ fills the blank with their **real name** and the **picture they chose** --
 Slack's placeholder is nobody's picture and is left out. A person with nothing
 blank costs Slack nothing; somebody Slack does not have, or has deactivated, is
 left as they were.
+
+**Only by an address the directory says is verified** -- `email_verified`, or
+Microsoft's `xms_edov` (§ *Any Microsoft account*). One it does not vouch for
+is one the person typed, and looking them up by it would give them the name
+and the photograph of whoever that address belongs to; such a sign-in is
+filled with nothing, and the blanks wait for one that carries a checked
+address. A tenant that signs in through Entra and fills from Slack therefore
+needs `xms_edov` in its tokens.
 
 `slack` is a reference, in a `Connection.secret_ref`'s words: where the
 deployment keeps the token -- `env:NAME`, in the front door's environment --

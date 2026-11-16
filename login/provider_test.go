@@ -151,15 +151,16 @@ func TestAStrangerIsRefusedUnlessTheDeploymentEnrols(t *testing.T) {
 
 		d.connect(t, p, "entra")
 		p.Subject = "new-at-entra"
-		p.Claims = map[string]any{"email": "dana@contoso.example", "name": "Dana"}
+		p.Claims = map[string]any{"email": "dana@contoso.example", "email_verified": true, "name": "Dana"}
 		d.hydra.raise("c1", "contoso-web")
 
 		res := d.through(t, d.browser(t), "c1", "entra")
 		x.Equal(http.StatusSeeOther, res.StatusCode)
 
-		// Named by the local part of the address, which is `Enrolling`'s whole
-		// policy and the one thing a deployment cannot change without writing
-		// its own.
+		// Named by the local part of the address -- one the directory says it
+		// checked, since one it did not is nobody's name -- which is
+		// `Enrolling`'s whole policy and the one thing a deployment cannot
+		// change without writing its own.
 		who, err := d.s.Ungated.Holder().Get(t.Context(), rstr.HolderGetRequest_builder{
 			Ref: rstr.HolderRef_builder{
 				Slug: rstr.HolderRefBySlug_builder{
@@ -1033,9 +1034,11 @@ func TestATenantsSlackFillsWhatTheProfileLacks(t *testing.T) {
 		}.Build())
 		require.NoError(t, err)
 
-		// What the directory would say, which nobody is to read.
+		// What the directory would say, which nobody is to read -- but for
+		// the address, which is who Slack is asked about and is one the
+		// directory checked.
 		p.Subject = "erin-at-entra"
-		p.Claims = map[string]any{"name": "Erin of Entra", "email": email}
+		p.Claims = map[string]any{"name": "Erin of Entra", "email": email, "email_verified": true}
 		p.UserInfo = map[string]any{"picture": p.URL + "/photo"}
 		p.Photo = face(t, 200)
 

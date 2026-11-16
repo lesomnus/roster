@@ -159,6 +159,10 @@ type Config struct {
 	// sign-in, which is asked for `auth_time` the way Google documents it.
 	Google string
 
+	// PrivateHosts is the Login App's `login.Config.PrivateHosts`: the hosts
+	// off the internet a tenant's provider may be at, none unless said.
+	PrivateHosts arrives.PrivateHosts
+
 	// Sessions is this app's own cookie. Never roster's.
 	Sessions *authsession.Sessions
 
@@ -458,6 +462,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 	a.arrives.GitHub = c.GitHub
 	a.arrives.Microsoft = c.Microsoft
 	a.arrives.Google = c.Google
+	a.arrives.PrivateHosts = c.PrivateHosts
 
 	if c.Key != "" {
 		if err := a.nominated(ctx); err != nil {

@@ -76,6 +76,31 @@ type AccountConfig struct {
 	// `enrolling`. See [LoginConfig.Enrol], which says what each is.
 	Enrol string `yaml:"enrol"`
 
+	// PrivateHosts is the hosts off the internet this front door may ask a
+	// provider at, each a name, an address or a network: `idp.corp.example`,
+	// `10.20.0.5`, `10.20.0.0/16`.
+	//
+	// A `Connection` says where its provider is, and a connection with no
+	// secret is its tenant's administrator's to write. So a front door asks a
+	// provider -- for its document, at its token endpoint, for its keys and
+	// its userinfo -- only at an address on the internet, and refuses this
+	// machine, a private network, a link's own addresses and with them the
+	// cloud's metadata service, whatever the name it was given resolves to.
+	// A directory on the premises is at one of those, and which hosts inside
+	// are a provider's is the deployment's to say: here, and nowhere a tenant
+	// writes. A row this deployment's own file declares is held to it like
+	// any other, since the rule is about the address.
+	//
+	// Named rather than a switch, as [MailConfig.PlaintextHosts] is and for
+	// its reason: a switch would open every address inside to every tenant's
+	// row. Empty is none.
+	//
+	// It is about what this process connects to itself. Where the environment
+	// names a proxy (`HTTPS_PROXY`), a request goes out through that and where
+	// the provider is, is the proxy's to refuse; this then holds only what
+	// `NO_PROXY` sends direct.
+	PrivateHosts []string `yaml:"private_hosts"`
+
 	// Keys is one tenant key per tenant fronted, by alias.
 	//
 	// The values are **references** and not tokens: `env:NAME` or
@@ -333,7 +358,7 @@ type LoginConfig struct {
 	//	expected   somebody an tenant entered, matched by the **address** on
 	//	           their row, and nobody else
 	//	enrolling  that, and a stranger too, named by the local part of their
-	//	           address
+	//	           address where the directory says it is verified
 	//
 	// `expected` is what an tenant means by *putting people in*, and
 	// `invited` is not: the subject a directory asserts is issued there and is
@@ -346,12 +371,19 @@ type LoginConfig struct {
 	// to sign in as whoever the row is about*, `CLAUDE.md`): the directory has
 	// to say the address is **verified**. One that lets somebody type an
 	// address into their own profile would otherwise hand out whichever account
-	// carries it.
+	// carries it. A name is read off an address on the same condition: a
+	// stranger whose address nobody checked is enrolled under a name nobody
+	// chose, and not under whatever they typed before the `@`.
 	//
 	// `enrolling` needs the key to hold `HolderService.Add`, which the one
 	// `roster login provision` mints does not: making people is a wider grant
 	// than signing them in, and `--enrol` is what says so out loud.
 	Enrol string `yaml:"enrol"`
+
+	// PrivateHosts is the hosts off the internet this app may ask a provider
+	// at; see [AccountConfig.PrivateHosts], which says why it asks only
+	// outside unless told.
+	PrivateHosts []string `yaml:"private_hosts"`
 
 	// Consent is what happens at the consent hop: `skip`, which grants what the
 	// client asked for and draws nothing, or `ask`, which draws a screen.

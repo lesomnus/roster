@@ -5,12 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/netip"
 	"net/url"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -110,6 +108,11 @@ func (p *Providers) Fill(ctx context.Context, holder pdid.Id, who Caller) error 
 	if err != nil {
 		return err
 	}
+	if c.GetIssuer() != who.issuer {
+		// The row is read again here, and may have moved while they were
+		// signing in. The token is the issuer's that handed it over.
+		return fmt.Errorf("connection %s was moved to another issuer during this sign-in, and the first one's token is not sent to the second", who.Provider)
+	}
 	var img []byte
 	var where string
 	if api := p.gitHub(c.GetIssuer()); api != "" {
@@ -148,7 +151,9 @@ func (p *Providers) Fill(ctx context.Context, holder pdid.Id, who Caller) error 
 // never a URL roster keeps, since no browser has that token. Anywhere else is
 // fetched without it, over https, and only from an address on the internet --
 // a `picture` claim is a URL somebody else wrote, and this process can reach
-// what its author cannot.
+// what its author cannot. The provider's own API is held to an address on the
+// internet too, or to one the deployment named (`dial.go`): where a provider
+// is, is a row's word, and a row is a tenant's to write.
 func (p *Providers) picture(ctx context.Context, v *oidc.Provider, who Caller) ([]byte, string, error) {
 	var err error
 	at := who.Picture
@@ -197,9 +202,9 @@ func (p *Providers) userinfo(ctx context.Context, v *oidc.Provider, who Caller) 
 		return "", nil
 	}
 
-	info, err := v.UserInfo(oidc.ClientContext(ctx, p.own), oauth2.StaticTokenSource(who.token))
+	info, err := v.UserInfo(p.through(ctx), oauth2.StaticTokenSource(who.token))
 	if err != nil {
-		return "", fmt.Errorf("userinfo: %w", err)
+		return "", fmt.Errorf("userinfo: %w", said(err))
 	}
 
 	// OpenID Connect Core 5.3.2: an answer about anybody but the token's
@@ -268,52 +273,21 @@ func get(ctx context.Context, c *http.Client, u *url.URL, tok *oauth2.Token) ([]
 	return b, nil
 }
 
-// ownClient fetches from the provider's own API, with its token: wherever the
-// deployment's `Connection` says the provider is, which may be inside its own
-// network -- a directory on the premises -- because the deployment named it.
-// It follows no redirect off that host, since the token goes with every hop.
-func ownClient() *http.Client {
-	return &http.Client{
-		Timeout: 5 * time.Second,
-		CheckRedirect: func(r *http.Request, via []*http.Request) error {
-			if len(via) >= 3 || r.URL.Scheme != via[0].URL.Scheme || !strings.EqualFold(r.URL.Host, via[0].URL.Host) {
-				return errors.New("a redirect off the provider's own host")
-			}
-
-			return nil
-		},
-	}
-}
-
 // publicClient fetches from wherever a `picture` claim pointed: over https, and
-// only from an address `allow` says is on the internet.
+// only from an address `allow` says is on the internet -- whatever the
+// deployment said of its providers, since a claim is not one.
 //
-// The address is checked where the connection is made, so it is the one
-// actually dialled -- after every redirect, and after whatever DNS answered,
-// including an answer that changed since anybody last looked. And no proxy,
-// because a proxy is a host this process can reach and a claim's author cannot,
-// which is the thing being refused.
+// The address is checked where the connection is made ([dialTo]), so it is
+// the one actually dialled -- after every redirect, and after whatever DNS
+// answered, including an answer that changed since anybody last looked. And no
+// proxy, because a proxy is a host this process can reach and a claim's author
+// cannot, which is the thing being refused.
 func publicClient(allow func(netip.Addr) bool) *http.Client {
-	d := &net.Dialer{
-		Timeout: 5 * time.Second,
-		Control: func(_, address string, _ syscall.RawConn) error {
-			host, _, err := net.SplitHostPort(address)
-			if err != nil {
-				return err
-			}
-			ip, err := netip.ParseAddr(host)
-			if err != nil || !allow(ip) {
-				return fmt.Errorf("%s is not an address on the internet", host)
-			}
-
-			return nil
-		},
-	}
-
 	return &http.Client{
 		Timeout: 5 * time.Second,
 		Transport: &http.Transport{
-			DialContext:         d.DialContext,
+			DialContext: dialTo(func(_ string, ip netip.Addr) bool { return allow(ip) },
+				"is not an address on the internet"),
 			TLSHandshakeTimeout: 5 * time.Second,
 			ForceAttemptHTTP2:   true,
 		},
