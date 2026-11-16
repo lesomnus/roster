@@ -194,6 +194,19 @@ func TestAControlPlaneThatIsNotOneIsRefused(t *testing.T) {
 		{"a broker for a plane that is not there", cmd.ControlConfig{
 			Watch: config.WatchConfig{Broker: config.BrokerMemory},
 		}},
+
+		// The block the others cannot be mistaken for: somebody who wrote
+		// where the database **is** and not which kind. It was the one block
+		// this let through -- the whole of `db` was set aside before asking
+		// whether anything was said -- so a `control:` with a DSN under it, and
+		// `driver:` misspelled or left to a default it has not got, started a
+		// deployment that believed every caller (#276).
+		{"where its database is, and not which kind", cmd.ControlConfig{
+			Db: config.DbConfig{Dsn: "file:control.db"},
+		}},
+		{"how many connections to it", cmd.ControlConfig{
+			Db: config.DbConfig{MaxOpenConns: 4},
+		}},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			x := require.New(t)
