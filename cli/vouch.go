@@ -7,6 +7,7 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/lesomnus/xli"
@@ -368,6 +369,139 @@ func newCmdVouchUnlock(c *cmd.Config, control bool) *xli.Command {
 			}
 
 			return nil
+		}),
+	}
+}
+
+// newCmdOperatorEnrol makes a second factor for an operator, at the box.
+//
+// `roster vouch enrol` is the same act for a customer's person and goes over
+// the wire, as a caller holding a key. Whoever runs a deployment is enrolled
+// here instead, by a shell that is already trusted with their password
+// (`reset`, `set`): the control listener has no page, and its callers are
+// jobs.
+//
+// An authenticator app only. A security key is registered by a browser, at the
+// name it will be asked for at, and there is none of either here.
+func newCmdOperatorEnrol(c *cmd.Config) *xli.Command {
+	return &xli.Command{
+		Name:  "enrol",
+		Brief: "make an authenticator app's seed for an operator, printed once as an otpauth:// Uri",
+
+		Args: refArg(),
+
+		Flags: flg.Flags{
+			&flg.String{Name: "name", Brief: "what they call it, when there is more than one to tell apart"},
+			&flg.String{Name: "issuer", Brief: "what their authenticator app lists it under; empty is \"roster\""},
+		},
+
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			s, _, err := vouching(ctx, c)
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+
+			w, err := whom(ctx, s, cl, true)
+			if err != nil {
+				return err
+			}
+
+			name, _ := flg.Find[string](cl, "name")
+			issuer, _ := flg.Find[string](cl, "issuer")
+
+			v, err := w.at.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
+				Ref:    app.HolderRef_builder{Id: w.who.GetId()}.Build(),
+				Kind:   vouch.KindTotp,
+				Name:   name,
+				Issuer: issuer,
+			}.Build())
+			if err != nil {
+				return err
+			}
+
+			fmt.Fprintf(os.Stdout, "%s\n", v.GetUri())
+			fmt.Fprintf(os.Stderr,
+				"the seed is the `secret` parameter of the Uri, and this is the only time it is "+
+					"shown. It does not count until it is proved: one code, via\n  roster control vouch "+
+					"prove --code-stdin%s @%s\n",
+				nameFlag(name), w.alias)
+
+			return next(ctx)
+		}),
+	}
+}
+
+// newCmdOperatorProve proves an operator's second factor with one code, which
+// is what makes it count.
+//
+// A seed nobody has proved is a QR somebody may have mis-scanned, so it is
+// not asked for at a sign-in until a code has verified against it once
+// (`vouch.Server.factors`). For a customer's person that code is typed into
+// their account page. This is that, for whoever runs the deployment.
+//
+// It signs nobody in and mints nothing: a code beside nothing else is no
+// sign-in, here or anywhere.
+func newCmdOperatorProve(c *cmd.Config) *xli.Command {
+	return &xli.Command{
+		Name:  "prove",
+		Brief: "prove an operator's authenticator app with one code from it, so that it counts",
+
+		Args: refArg(),
+
+		Flags: flg.Flags{
+			&flg.Switch{Name: "code-stdin", Brief: "read the code from stdin; required"},
+			&flg.String{Name: "name", Brief: "which, when they have more than one"},
+		},
+
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			if v, _ := flg.Find[bool](cl, "code-stdin"); !v {
+				return errors.New("--code-stdin: the code is read from stdin, as every secret here is")
+			}
+
+			b, err := io.ReadAll(io.LimitReader(os.Stdin, 4<<10))
+			if err != nil {
+				return fmt.Errorf("the code on stdin: %w", err)
+			}
+
+			code := strings.TrimSpace(string(b))
+			if code == "" {
+				return errors.New("--code-stdin was given and stdin was empty")
+			}
+
+			s, _, err := vouching(ctx, c)
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+
+			w, err := whom(ctx, s, cl, true)
+			if err != nil {
+				return err
+			}
+
+			name, _ := flg.Find[string](cl, "name")
+
+			// The control plane's own verifier, with its keyring: the seed was
+			// sealed under it.
+			v := vouch.New(w.at, w.at, vouch.WithKeys(s.Control.Keyring), vouch.WithLockout(s.Control.Lockout))
+
+			res, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
+				Who:    w.who,
+				Kind:   vouch.KindTotp,
+				Name:   name,
+				Secret: []byte(code),
+			}.Build())
+			if err != nil {
+				return err
+			}
+			if !slices.Contains(res.GetSatisfied(), vouch.KindTotp) {
+				return errors.New("no: that is not a code this seed makes now. Nothing is proved")
+			}
+
+			fmt.Fprintln(os.Stderr, "proved; it counts from now on.")
+
+			return next(ctx)
 		}),
 	}
 }
