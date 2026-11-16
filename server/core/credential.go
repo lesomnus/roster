@@ -257,7 +257,8 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 		// `current` is ignored rather than refused: a page that sent one has
 		// not done anything wrong, it has guessed about a row it cannot read.
 		if own {
-			if err := s.freshlySignedIn(ctx, holder); err != nil {
+			if err := s.freshlySignedIn(ctx, holder, "a first password of your own",
+				"a recovery link mailed to your address hands you one instead"); err != nil {
 				return nil, err
 			}
 		}
@@ -327,7 +328,10 @@ const FirstPasswordWithin = 5 * time.Minute
 
 // freshlySignedIn refuses a call whose credential does not say `who` proved who
 // they are within [FirstPasswordWithin].
-func (s coreCredential) freshlySignedIn(ctx context.Context, who pdid.Id) error {
+//
+// `what` is the act, as the refusal names it; `instead` is what to do where no
+// sign-in could ever say so.
+func (s coreCredential) freshlySignedIn(ctx context.Context, who pdid.Id, what, instead string) error {
 	since, err := keys.Authenticated(ctx, s.Next(), who)
 	if err != nil {
 		return err
@@ -335,17 +339,51 @@ func (s coreCredential) freshlySignedIn(ctx context.Context, who pdid.Id) error 
 
 	switch ago := time.Since(since); {
 	case since.IsZero():
-		return status.Error(codes.FailedPrecondition,
-			"a first password of your own takes a sign-in that says when you proved who you are, and this call "+
-				"came with none -- a key somebody else minted for you, or a directory that does not say when it "+
-				"asked you; a recovery link mailed to your address hands you one instead")
+		return status.Errorf(codes.FailedPrecondition,
+			"%s takes a sign-in that says when you proved who you are, and this call "+
+				"came with none -- a key somebody else minted for you, a session at a console, or a directory "+
+				"that does not say when it asked you; %s", what, instead)
 	case ago > FirstPasswordWithin:
 		return status.Errorf(codes.FailedPrecondition,
-			"you proved who you are %s ago; sign in again to give yourself a first password, within %s of doing so",
-			ago.Truncate(time.Minute), FirstPasswordWithin)
+			"you proved who you are %s ago; sign in again, and %s takes being within %s of doing so",
+			ago.Truncate(time.Minute), what, FirstPasswordWithin)
 	}
 
 	return nil
+}
+
+// ownFactor holds taking away a second factor of the caller's **own** to a
+// sign-in a few minutes old.
+//
+// # Why
+//
+// It asked that the caller be the person and nothing more, and a credential
+// that acts as somebody is not somebody having just proved it. `Set` asks for
+// the password held, and a first one for this same fresh sign-in, *so that
+// temporary access cannot be turned into a way in of its own choosing*. Taking
+// a second factor off is the mirror: what is left is the password alone, for
+// whoever has it, and a key minted last year or a page open since the morning
+// did it (#275).
+//
+// The whole sign-in and not the password alone. Since roster's own sign-in
+// asks the second factor, somebody who has one has just answered it -- which
+// is what taking it off should take. Somebody who has lost it cannot, and is
+// who the next paragraph is for.
+//
+// Somebody else's is not asked this. It is the reach rule's, and a lost phone
+// is taken off by whoever administers the person.
+//
+// Adding one is not asked either, yet: it is what a person with a key of their
+// own does from a terminal (`roster vouch enrol`), and what somebody a
+// directory signed in does where the directory does not say when.
+func (s coreCredential) ownFactor(ctx context.Context, holder pdid.Id) error {
+	f, framed := frame.From(ctx)
+	if !framed || f.Actor.IsZero() || f.Actor != holder {
+		return nil
+	}
+
+	return s.freshlySignedIn(ctx, holder, "taking a second factor off your own account",
+		"sign in at your account page and do it there, or ask whoever administers you")
 }
 
 // Issue makes a password nobody chose, answers with it once, and ends every
@@ -731,6 +769,9 @@ func (s coreCredential) Erase(ctx context.Context, req *app.CredentialRef) (*app
 		return nil, err
 	}
 	if err := s.mayReach(ctx, "ref", holder); err != nil {
+		return nil, err
+	}
+	if err := s.ownFactor(ctx, holder); err != nil {
 		return nil, err
 	}
 
