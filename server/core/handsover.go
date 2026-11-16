@@ -123,6 +123,21 @@ var handsOver = []handedOver{
 			"asked for it, and `EmailService/Confirm` spends one",
 	},
 	{
+		// Held to the rule about a way in and to the person having an identity
+		// to be the word's source (`email.go`, `Attest`); what proves the
+		// address is the caller saying a directory did.
+		grant:   "emailserviceattest",
+		methods: []string{app.EmailService_Attest_FullMethodName},
+		readsAs: "may record the address a directory handed over",
+		tenant: "an address proved on the caller's word, with no mailbox read, for anybody of the tenant who signs " +
+			"in through a directory and holds no more than whoever is given it -- taken from whoever had written " +
+			"it unproved",
+		site: "an address proved on the caller's word, with no mailbox read, for anybody it reaches there who " +
+			"signs in through a directory and holds no more than whoever is given it",
+		deployment: "an address proved on the caller's word, with no mailbox read, for anybody of any tenant who " +
+			"signs in through a directory",
+	},
+	{
 		// The tenant's as a whole (`nomination.go`).
 		grant:   "nominationserviceadd",
 		methods: []string{app.NominationService_Add_FullMethodName},
@@ -195,6 +210,20 @@ var handsOver = []handedOver{
 			"and sessions stop at once",
 		site:       "anybody's of that site, wider than whoever is given it included",
 		deployment: "anybody's of any tenant, an administrator's included",
+	},
+	{
+		// `LeaveLink` answers the link to its caller, as `Link` does, and
+		// `Leave` spends one (`server/vouch/leave.go`). Said of the one that
+		// mints.
+		grant:   "vouchserviceleavelink-with-leave",
+		methods: []string{app.VouchService_LeaveLink_FullMethodName},
+		readsAs: "may mail a link that deletes an account",
+		tenant: "anybody's account of the tenant, deleted, where the tenant lets its people leave: the link is " +
+			"answered to whoever asked for it, and `VouchService/Leave` spends one",
+		site: "the account of anybody it reaches there, deleted, where the tenant lets its people leave: the link " +
+			"is answered to whoever asked for it, and `VouchService/Leave` spends one",
+		deployment: "anybody's account of any tenant that lets its people leave, deleted: the link is answered to " +
+			"whoever asked for it, and `VouchService/Leave` spends one",
 	},
 	{
 		// The tenant's as a whole (`cmd/policy.go`, `ofTheWholeTenant`).

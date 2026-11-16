@@ -141,17 +141,20 @@ func TestAPageIsToldWhatAGrantHandsOver(t *testing.T) {
 			"auditservice",
 			"holderservicesignsin",
 			"a-key-that-mints-keys",
+			"emailserviceattest",
+			"vouchserviceleavelink-with-leave",
 		} {
 			x.Contains(got, grant)
 			x.Equal([]string{"/roster.*/*"}, got[grant].GetMethods(), grant)
 		}
-		x.Len(got, 13, "and nothing that is another plane's, or somebody's own")
+		x.Len(got, 15, "and nothing that is another plane's, or somebody's own")
 
 		// A service's, for what is that service's and no more.
 		got = handedOver(t, ctx, b.Ungated, tenant, "/roster.VouchService/*")
-		x.Len(got, 3)
+		x.Len(got, 4)
 		x.Contains(got, "vouchservicelink-with-redeem")
 		x.Contains(got, "vouchserviceaccept")
+		x.Contains(got, "vouchserviceleavelink-with-leave")
 		x.Contains(got, "a-pattern")
 		x.Contains(got["a-pattern"].GetHandsOver(), "a later release adds")
 	})
@@ -165,6 +168,15 @@ func TestAPageIsToldWhatAGrantHandsOver(t *testing.T) {
 
 		got = handedOver(t, ctx, b.Ungated, tenant, app.EmailService_Verify_FullMethodName)
 		x.Contains(got["emailserviceverify-with-confirm"].GetHandsOver(), "no mailbox")
+
+		// And the two a front door calls beside them, which the page did not
+		// have: an address proved on the caller's word, and a link that
+		// deletes an account, answered to whoever asked (#277).
+		got = handedOver(t, ctx, b.Ungated, tenant, app.EmailService_Attest_FullMethodName)
+		x.Contains(got["emailserviceattest"].GetHandsOver(), "on the caller's word")
+
+		got = handedOver(t, ctx, b.Ungated, tenant, app.VouchService_LeaveLink_FullMethodName)
+		x.Contains(got["vouchserviceleavelink-with-leave"].GetHandsOver(), "`VouchService/Leave`")
 	})
 
 	t.Run("what is somebody's own reaches nobody else", func(t *testing.T) {
