@@ -164,8 +164,10 @@ func TestDoctorFindsWhatCostAnHourEach(t *testing.T) {
 // never heard of is harmless (no flow can be raised for it), and a client Hydra
 // holds that nothing here claims is broken (every flow for it reaches a page
 // saying the login is not working). The list is gone, so the second half is
-// asked of roster's rows instead -- does this client's redirect resolve to a
-// tenant, and to exactly one.
+// asked of roster's rows instead -- does any redirect of this client resolve to
+// a tenant. Resolving to several is not that direction: it is one product
+// serving them, which is said and does not fail a run, unless the client has a
+// flow that names no redirect.
 func TestDoctorKnowsWhichDirectionCosts(t *testing.T) {
 	t.Run("a redirect no tenant answers at", func(t *testing.T) {
 		x := require.New(t)
@@ -181,31 +183,52 @@ func TestDoctorKnowsWhichDirectionCosts(t *testing.T) {
 		x.Contains(found[0].What, "no tenant answers at any of its redirect_uris")
 	})
 
-	t.Run("and redirects that answer with two tenants", func(t *testing.T) {
+	// One client of several tenants, which is what reading the tenant off the
+	// redirect is for: one product serving a hundred tenants is one client
+	// (`login/at.go`). It was reported **Broken**, which fails a run, for the
+	// registration the design asks for. Nothing about it stops anybody signing
+	// in, so it is said and the run passes -- with what it leaves to the
+	// product, because a token names no tenant.
+	t.Run("and redirects of two tenants are one product serving both", func(t *testing.T) {
 		x := require.New(t)
 
 		both := good()
 		both["redirect_uris"] = []string{"https://app.test/callback", "https://other.test/callback"}
 
 		at := clients(t, map[string]map[string]any{"app": both})
-		found, err := login.Doctor(context.Background(), at, "", nil, func(_ context.Context, host string) (string, error) {
-			switch host {
-			case "app.test":
-				return "contoso", nil
-			case "other.test":
-				return "fabrikam", nil
-			}
+		found, err := login.Doctor(context.Background(), at, "", nil, twoTenants)
+		x.NoError(err)
+		x.Len(found, 1)
+		x.Equal(login.Fragile, found[0].Severity, "a client of several tenants was reported as one nobody can sign in through")
+		x.Equal("app", found[0].About)
+		x.Contains(found[0].What, "contoso and fabrikam")
 
-			return "", errNobody
-		})
+		// What is true of it: a flow is about the tenant whose redirect it
+		// named, and telling tenants apart is the product's, by that redirect.
+		x.Contains(found[0].Costs, "the tenant whose redirect it named")
+		x.Contains(found[0].Costs, "a token says nothing of the tenant")
+	})
+
+	// Except where a flow names no redirect. A device flow carries none, so
+	// which tenant it is about is read off the client's registration
+	// (`login/device.go`) -- and of two tenants' redirects that has two
+	// answers, which the app refuses rather than picks between. That one does
+	// stop somebody, with a code in their hand.
+	t.Run("but not where the client can do the device grant", func(t *testing.T) {
+		x := require.New(t)
+
+		both := good()
+		both["redirect_uris"] = []string{"https://app.test/callback", "https://other.test/callback"}
+		both["grant_types"] = []string{"authorization_code", "refresh_token", login.DeviceGrant}
+
+		at := clients(t, map[string]map[string]any{"app": both})
+		found, err := login.Doctor(context.Background(), at, "", nil, twoTenants)
 		x.NoError(err)
 		x.Len(found, 1)
 		x.Equal(login.Broken, found[0].Severity)
-		x.Equal("app", found[0].About)
-
-		// A **determinism** finding: which tenant a flow is about would depend
-		// on which registered redirect the browser asked for.
+		x.Contains(found[0].What, "device grant")
 		x.Contains(found[0].What, "contoso and fabrikam")
+		x.Contains(found[0].Costs, "names no redirect")
 	})
 
 	t.Run("and a run that could not ask says so", func(t *testing.T) {
@@ -237,6 +260,19 @@ func at_(t *testing.T, name, alias string) login.Whose {
 // errNobody is what a resolver answers for a name nothing claims, which is what
 // `FrontService.WhoseHost` answers with `NotFound`.
 var errNobody = errors.New("no tenant answers at that name")
+
+// twoTenants is a resolver for a product two tenants are served by: contoso at
+// `app.test`, fabrikam at `other.test`.
+func twoTenants(_ context.Context, host string) (string, error) {
+	switch host {
+	case "app.test":
+		return "contoso", nil
+	case "other.test":
+		return "fabrikam", nil
+	}
+
+	return "", errNobody
+}
 
 // TestDoctorPutsWhatIsBrokenFirst, because a deployment reads the first line.
 func TestDoctorPutsWhatIsBrokenFirst(t *testing.T) {
