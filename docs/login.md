@@ -294,7 +294,7 @@ sequenceDiagram
 | the first form | `VouchService.Delegate` | 204 signed in · 200 one factor proved, another to prove · 401 everything else. `Delegate` and not `Verify` because a yes has to come back with the `rd_` the consent hop reads `Me.Get` with |
 | the second form | `VouchService.Delegate` with the continuation | the app holds no half-signed-in state: the continuation is roster's, short-lived and single-use |
 | the accept | `PUT …/login/accept` | **`subject` is the `Holder.id`.** Nobody is named until every form is answered -- accepting after the first would hand a product a token for somebody who proved half of what the deployment asked for |
-| the claims | `MeService.Get`, as the person | `preferred_username`, `name`, `teams`, a **verified** address, `groups` -- each only if the client asked for the scope that carries it. Never `methods`. `teams` is the aliases of the person's teams -- an organisation's structure, and nothing a product should grant on. It was `groups`, which relying parties read as permission groups; roster's own `Group`s are in a token only as `groups`, and only the ones a `GroupExposure` shows to the client the token is for (§ *A relying party that grants on groups*) -- what somebody may do is otherwise `HolderService/Reaches` ([apps.md](apps.md)) |
+| the claims | `MeService.Get`, as the person | `preferred_username`, `name`, `teams`, a **verified** address, `groups` -- each only if the client asked for the scope that carries it, and each as § *What a token says of somebody* says. Never `methods`. `teams` is the aliases of the person's teams -- an organisation's structure, and nothing a product should grant on. It was `groups`, which relying parties read as permission groups; roster's own `Group`s are in a token only as `groups`, and only the ones a `GroupExposure` shows to the client the token is for (§ *A relying party that grants on groups*) -- what somebody may do is otherwise `HolderService/Reaches` ([apps.md](apps.md)) |
 | the grant | `PUT …/consent/accept` | `consent: skip` grants and draws nothing; `ask` draws the screen and `POST /consent` is its answer. With nobody here to read the subject -- a session that ended between the hops of one flow -- a client that asked for the person is refused with `login_required` (`PUT …/consent/reject`) rather than granted `sub` alone; one that asked for `openid` and nothing more still gets it |
 
 The delegation this app minted is **kept** after the grant, for as long as Hydra
@@ -470,6 +470,55 @@ And the rules, which are the part that is easy to get wrong and the reason
   sign-in into Hydra's answer; a page without it signs somebody in and leaves the
   flow hanging with nothing on screen to say so.
 
+### What a token says of somebody
+
+One answer for each claim, which is what a product writes against. All of it is
+in the `id_token`, each claim only for a client that asked the scope that
+carries it; the access token carries nothing of roster's.
+
+| claim | scope | what it is |
+| --- | --- | --- |
+| `sub` | `openid` | the `Holder.id`: one person of one tenant, and nobody else in the deployment. It does not change when they are renamed, when their alias changes, or with the way they signed in |
+| `preferred_username` | `profile` | their alias, as it is now. One person's within their tenant, and somebody else's to take once it is changed or its holder erased |
+| `name` | `profile` | what they are called now: their profile's display name, and where that is blank the name they were added with. Absent for somebody with neither |
+| `teams` | `profile` | the aliases of the teams they are in, each once and in order. The site is not said, so a team of one name at two sites is one word. Absent for somebody in none |
+| `email`, `email_verified` | `email` | the address they **proved first**, of the ones they still have: the earliest `Email.date_verified`, and of two stamped at one instant the row written first. Proving another address does not change it, and erasing it makes the next one proved the answer; a link confirmed again for an address already proved stamps it again, and it counts from then. An address nobody proved is never said, so `email_verified` is never false, and somebody with none proved has neither claim |
+| `groups` | `groups` | the aliases of their groups that are shown to this client, in order; present and empty when none is (§ *A relying party that grants on groups*) |
+
+**Every claim is a copy, made when consent is answered.** The person is read
+once, at the consent hop -- of every authorization flow, the ones Hydra answers
+with no form and no screen included -- and Hydra keeps what it was handed beside
+the grant. A refresh mints from that copy and reads nothing of roster's again.
+So a change to somebody reaches a product at their next flow through the
+authorization endpoint, and what it does to a refresh token already issued is:
+
+| what changed | a refresh token already issued |
+| --- | --- |
+| they were suspended or erased, signed out everywhere, or their tenant closed | **ended**. The Login App hears it and has Hydra revoke every client's grant for them -- *signing somebody out in roster reaches Hydra*, above |
+| a group or a team was taken from them, or given; a group of theirs was erased | mints on, with the `groups` and `teams` of the last consent. roster says only that what they may call may have changed (`SYNC_REASON_REACH`), which is no sign-out and tells Hydra nothing |
+| a group stopped being shown to the client; an address was proved, erased or moved; their alias or their name changed | mints on, with the old claims. Nothing tells the Login App |
+
+An access token already issued verifies until it expires, in every row. And no
+registration this repository ships sets a refresh lifetime
+(`deploy/clients/`), so how long a copy can go on being minted is the issuer's
+own default: a relying party that grants on a claim has its client registered
+with a short one.
+
+**Every claim but `sub` is the tenant's own word.** One issuer signs for every
+tenant, and nothing in a token says which tenant its person is of.
+`preferred_username` is one person's within a tenant and so is an address:
+contoso and fabrikam can each have an `erin`, and each somebody at
+`erin@example.com` with `email_verified: true`, because an address is proved
+to its tenant -- by a link a front door mailed for it, on the word of a
+directory it connected, or by a key it lets mint such a link and spend it --
+and is held against no other tenant's. `groups` and `teams` are names a
+tenant's administrator chose. So a product that serves several tenants **keys
+its accounts on `sub`**, and never on an address or a username read across
+tenants. It tells its tenants apart by the **redirect**: it registers one
+`redirect_uri` for each, at a name that tenant claimed, a flow is about the
+tenant whose redirect it named, and the code comes back to that redirect and no
+other.
+
 ### A relying party that grants on groups
 
 Some relying parties cannot ask roster what somebody may do: Dependency-Track,
@@ -494,9 +543,10 @@ group's alias, which nothing over the wire renames -- a group's `Update` writes
 its name and its note and never its alias, and `Patch` is closed -- so a
 mapping written against it stays true.
 
-**It is a copy, read at consent.** A refresh reuses it -- nothing recomputes a
-token's claims at a refresh yet -- so a name taken away reaches the relying
-party at the next sign-in. Dependency-Track re-syncs a person's teams at each
+**It is a copy, read at consent, as every claim is** (§ *What a token says of
+somebody*). A refresh reuses it -- nothing recomputes a token's claims at a
+refresh yet -- so a name taken away reaches the relying party at the next
+sign-in. Dependency-Track re-syncs a person's teams at each
 of theirs, which bounds it; for kube-apiserver, whose clients refresh, give the
 client a short refresh lifetime in its Hydra registration. A suspension is
 not this: it ends the person's sessions and grants at Hydra, refresh included,
@@ -834,7 +884,7 @@ Three things it deliberately does not reach:
 | | |
 | --- | --- |
 | `Credential.Set` | a tenant that turns it back on should find its people's passwords where they left them |
-| a second factor | not a way in, so a tenant's answer about ways in does not touch it -- somebody who arrived through a directory still proves a TOTP step |
+| a second factor | not a way in, so a tenant's answer about ways in does not touch it: the row stays as it was. It is asked for where a password is taken and nowhere else -- somebody who arrives through a directory is signed in on the directory's word, and is asked no factor of roster's (`Vouch.Accept`; [usage/ways-in.md](usage/ways-in.md) § *A second factor*) |
 | another tenant | it is one row's setting, read through the wall on a call that was reading that row anyway |
 
 **Unset is yes.** The field carries presence where everything around it does not,

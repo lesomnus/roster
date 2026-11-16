@@ -23,6 +23,7 @@
 package me
 
 import (
+	"bytes"
 	"context"
 	"slices"
 	"strings"
@@ -148,7 +149,7 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 		Id:     f.Actor.Bytes(),
 		Tenant: f.Tenant.Bytes(),
 		Alias:  v.Alias,
-		Name:   v.Name,
+		Name:   called(v),
 	}
 
 	if res.Emails, err = s.emails(ctx, f.Actor); err != nil {
@@ -214,11 +215,54 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 	return res.Build(), nil
 }
 
-// emails is every address roster holds for them, verified or not.
+// called is what somebody is called now.
+//
+// A holder carries three things that look like a name
+// (`holder_svc.ext.proto`): the alias; `name`, which is set when the row is
+// added and which nothing may change; and the profile's display name, which is
+// what every write that renames somebody writes -- `HolderService/Update`, a
+// tenant's profile setting filling a blank, a directory. This answered the
+// second, and a front door fills a token's `name` from here: somebody renamed
+// went on being called what they were added as, and somebody added by their
+// alias alone was called nothing however their profile was filled since.
+//
+// So it is the display name where there is one, and what they were added as
+// where there is none -- which is how a directory is answered the same
+// question (`scim/user.go`).
+func called(v *ent.Holder) string {
+	if n := v.Profile.GetDisplayName(); n != "" {
+		return n
+	}
+
+	return v.Name
+}
+
+// emails is every address roster holds for them, verified or not: the ones
+// somebody proved in the order they were proved, and then the rest in the
+// order they were written.
 //
 // Unverified ones are included rather than filtered: "we have this and nobody
 // has confirmed it" is a different fact from not having it, and a page that
 // wants to prompt somebody needs the difference.
+//
+// # Why there is an order
+//
+// The first proved address here is the one a front door says is theirs --
+// `email` in a token (`login/claims.go`) -- and a relying party keys accounts
+// on that. No order was asked for, so it was whichever the store returned
+// first, which on SQLite is the one that sorts first: proving a second address
+// could change the claim under a product that had an account by the first.
+//
+// *Proved first* is a rule that stays where it was put. Proving another
+// address never moves it, and it is the next one proved only once the first is
+// erased. Two proved at one instant are in the order of their rows'
+// identifiers, which is the order they were written in, so that there is one
+// answer. What is read is `date_verified`, and `Email.Confirm` writes that
+// anew when a link for an address already proved is spent: an address proved
+// again counts from then.
+//
+// Sorted here rather than by the query, because where a null sorts is the
+// database's to say and SQLite and PostgreSQL say opposite things.
 func (s *Server) emails(ctx context.Context, who pdid.Id) ([]*app.MeEmail, error) {
 	vs, err := s.db.Email.Query().
 		Where(email.DateErasedIsNil(), email.HasHolderWith(holder.IdEQ(who.Uuid()))).
@@ -226,6 +270,20 @@ func (s *Server) emails(ctx context.Context, who pdid.Id) ([]*app.MeEmail, error
 	if err != nil {
 		return nil, err
 	}
+	slices.SortFunc(vs, func(a, b *ent.Email) int {
+		switch {
+		case a.DateVerified != nil && b.DateVerified != nil:
+			if c := a.DateVerified.Compare(*b.DateVerified); c != 0 {
+				return c
+			}
+		case a.DateVerified != nil:
+			return -1
+		case b.DateVerified != nil:
+			return 1
+		}
+
+		return bytes.Compare(a.Id[:], b.Id[:])
+	})
 
 	out := make([]*app.MeEmail, 0, len(vs))
 	for _, v := range vs {
