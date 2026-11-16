@@ -325,3 +325,117 @@ func TestALinkSignInSetsAFirstPasswordAndLeaves(t *testing.T) {
 	erased, _ := erasedAt(t, ctx, b.Server, b.Who)
 	x.NotNil(erased)
 }
+
+// TestChangingOnesOwnPasswordEndsWhatTheOldOneOpened: somebody who changes
+// their own password is signed out everywhere, by the same stamp an operator's
+// reset leaves -- the session that changed it included.
+//
+// # What it was
+//
+// `Credential.Issue` voids everything issued before it, *since a reset that
+// leaves the old sessions alive is not a reset*. `Set` on one's own row did
+// not, on purpose: coupling it, said the comment, *would make somebody
+// changing their own password sign themselves out of everything with nothing
+// having said so*.
+//
+// Which is who it was for and not who it protects. Somebody changes their
+// password because somebody else may have it, and whoever that is was signed
+// in already: on a served deployment the session in another browser went on
+// answering after the password it was opened with was gone, for as long as it
+// had left (#275; the owner's decision, 2026-11-16).
+//
+// Everything, the changing session too. One stamp, read by every door, which
+// is what `Holder.Invalidate` is; keeping one session back would be a list of
+// sessions, and there is none.
+func TestChangingOnesOwnPasswordEndsWhatTheOldOneOpened(t *testing.T) {
+	const set = "/roster.CredentialService/Set"
+
+	x := require.New(t)
+	b := keyFor(t, set, listHolders)
+	ctx := t.Context()
+
+	const old, next = "correct horse battery staple", "a whole new set of words entirely"
+
+	own := app.HolderRef_builder{Id: b.Who.Bytes()}.Build()
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{Ref: own, Secret: []byte(old)}.Build())
+	x.NoError(err)
+	permits(t, ctx, b, b.Contoso, b.Who, "self", set, listHolders)
+
+	stamped := func(t *testing.T) *time.Time {
+		t.Helper()
+
+		row, err := b.Ent.Holder.Get(ctx, b.Who.Uuid())
+		require.NoError(t, err)
+
+		return row.DateInvalidated
+	}
+	x.Nil(stamped(t))
+
+	// Two sign-ins of hers, as two browsers hold them.
+	here := acting(ctx, b.Token, signedInAt(t, ctx, b, b.Who, []string{set, listHolders}, time.Now()))
+	elsewhere := acting(ctx, b.Token, signedInAt(t, ctx, b, b.Who, []string{listHolders}, time.Now()))
+
+	holders := app.NewHolderServiceClient(b.Conn)
+	_, err = holders.List(elsewhere, app.HolderListRequest_builder{}.Build())
+	x.NoError(err, "the other sign-in does not work to begin with, so this would prove nothing")
+
+	t.Run("a change that is refused ends nothing", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := app.NewCredentialServiceClient(b.Conn).Set(here, app.CredentialSetRequest_builder{
+			Ref: own, Current: []byte("not it"), Secret: []byte(next),
+		}.Build())
+		x.Equal(codes.PermissionDenied, status.Code(err))
+		x.Nil(stamped(t))
+	})
+
+	_, err = app.NewCredentialServiceClient(b.Conn).Set(here, app.CredentialSetRequest_builder{
+		Ref: own, Current: []byte(old), Secret: []byte(next),
+	}.Build())
+	x.NoError(err)
+	x.NotNil(stamped(t), "a password changed, and nothing says what was issued before it is void")
+
+	t.Run("the other sign-in is nobody", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := holders.List(elsewhere, app.HolderListRequest_builder{}.Build())
+		x.Equal(codes.Unauthenticated, status.Code(err), "%v", err)
+	})
+
+	t.Run("and so is the one that changed it", func(t *testing.T) {
+		x := require.New(t)
+
+		_, err := holders.List(here, app.HolderListRequest_builder{}.Build())
+		x.Equal(codes.Unauthenticated, status.Code(err), "%v", err)
+	})
+
+	t.Run("a sign-in after it is not", func(t *testing.T) {
+		x := require.New(t)
+
+		after := acting(ctx, b.Token, signedInAt(t, ctx, b, b.Who, []string{listHolders}, time.Now().Add(time.Second)))
+		_, err := holders.List(after, app.HolderListRequest_builder{}.Build())
+		x.NoError(err)
+	})
+}
+
+// TestAPasswordSomebodyElseSetsEndsNothing: a password written for somebody
+// by the box, or a first one somebody gives themselves, voids nothing.
+//
+// The first is `roster vouch set`, and `docs/usage/ways-in.md` says which of
+// the two commands to use when the old sessions should go (`reset`). The
+// second has no old password for anything to have been opened with.
+func TestAPasswordSomebodyElseSetsEndsNothing(t *testing.T) {
+	x := require.New(t)
+	b := keyFor(t)
+	ctx := t.Context()
+
+	own := app.HolderRef_builder{Id: b.Who.Bytes()}.Build()
+	for _, secret := range []string{"correct horse battery staple", "a whole new set of words entirely"} {
+		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{Ref: own, Secret: []byte(secret)}.Build())
+		x.NoError(err)
+	}
+
+	row, err := b.Ent.Holder.Get(ctx, b.Who.Uuid())
+	x.NoError(err)
+	x.Nil(row.DateInvalidated)
+}

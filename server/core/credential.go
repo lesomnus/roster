@@ -312,6 +312,39 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 		patch.Previous = previous
 	}
 
+	if own && kind == vouch.KindPassword {
+		// Their own password, replaced by proving the one before it: and what
+		// that one opened is ended with it, as [coreCredential.Issue] ends it
+		// for a password somebody else wrote.
+		//
+		// It did not, on purpose -- *somebody changing their own password would
+		// sign themselves out of everything with nothing having said so*. That
+		// is who it was for and not who it protects: a password is changed
+		// because somebody else may have it, and whoever that is was signed in
+		// already, and went on being for as long as their session had left
+		// (#275).
+		//
+		// Everything, the session making this call too: one stamp every door
+		// reads, which is what `Holder.Invalidate` is. Keeping one back would
+		// be a list of sessions, and there is none.
+		//
+		// One transaction with the write, so that neither is there without the
+		// other.
+		if err := s.only(ctx, who.GetId(), func(next app.Server, tx dialect.Driver) error {
+			if _, err := next.Credential().Patch(ctx, patch.Build()); err != nil {
+				return err
+			}
+
+			_, err := s.over(next, tx).Holder().Invalidate(ctx, app.HolderInvalidateRequest_builder{Ref: ref}.Build())
+
+			return err
+		}); err != nil {
+			return nil, err
+		}
+
+		return &app.CredentialSetResponse{}, nil
+	}
+
 	if _, err := s.Next().Credential().Patch(ctx, patch.Build()); err != nil {
 		return nil, err
 	}
