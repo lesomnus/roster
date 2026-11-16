@@ -203,7 +203,7 @@ removed (`TestADirectoryMaySuspendTheLastAdministrator`).
 | What ends every sign-in of somebody's -- a password issued or changed, *sign out everywhere* -- ends a link out for them and a sign-in half made, a tie included; a link that confirms an address is not ended, and confirms nothing for somebody who may not sign in | `server/vouch/link.go` | `TestALinkEndsWithWhatEndsASignIn` · `TestASignInBegunBeforeEverythingWasEndedDoesNotFinish` · `TestALinkOfSomebodyErasedIsOneThatWasNeverThere` |
 | Nor does an app in front hear otherwise, nor a key whose holder is the deployment's own; and an app suspended or erased in a tenant acts as nobody there, whatever delegation it holds | `server/keys/delegate.go` | `TestASuspendedPersonIsSuspendedInFrontOfEveryApp` · `TestAnErasedHoldersKeyStandsForNobody` · `TestADelegationStopsWithItsAppsStandingInTheTenant` |
 | Nothing of somebody erased is read, by naming them or through a row that outlived them | `server/bare/holder.g.go` | `TestNothingOfAnErasedHolderIsReadableByNamingThem` · `TestNothingOfAnErasedHolderIsReadableThroughARowThatOutlivedThem` |
-| A name erased answers nobody at sign-in | `cmd/hosted.go` | `TestANameErasedAnswersNobodyAndANameMovedAnswersWhoHasIt` |
+| A name erased answers nobody at roster's own sign-in, a closed tenant's says so, and a request that names two is about neither; a front door may go on answering for a name it resolved for up to a minute | `cmd/hosted.go` | `TestANameErasedAnswersNobodyAndANameMovedAnswersWhoHasIt` · `TestRostersOwnDoorReadsANameAsAFrontDoorDoes` |
 
 ### What a directory may do
 
