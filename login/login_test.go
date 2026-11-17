@@ -101,6 +101,12 @@ type hydra struct {
 	// instead of accepted.
 	remembered map[string]string
 	loginNo    map[string]string
+
+	// The consents Hydra remembers, which it raises with `skip` too; and the
+	// challenges raised by a device's code rather than by a client's redirect,
+	// which a real Hydra records another request for ([hydra.printedFor]).
+	consented map[string]bool
+	device    map[string]bool
 }
 
 func newHydra(t *testing.T) *hydra {
@@ -121,6 +127,8 @@ func newHydra(t *testing.T) *hydra {
 		subjectOf:  map[string]string{},
 		remembered: map[string]string{},
 		loginNo:    map[string]string{},
+		consented:  map[string]bool{},
+		device:     map[string]bool{},
 	}
 
 	m := http.NewServeMux()
@@ -236,6 +244,17 @@ func newHydra(t *testing.T) *hydra {
 		writeJson(w, map[string]string{"redirect_to": "https://issuer.test/oauth2/device/verify?login_challenge=" + c})
 	})
 
+	// What a client registered, which a flow with no redirect in its request is
+	// resolved through (`login/at.go`): a device's. One redirect, at the host
+	// the harness gives that client's tenant.
+	m.HandleFunc("GET /admin/clients/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		writeJson(w, map[string]any{
+			"client_id":     id,
+			"redirect_uris": []string{"https://" + redirectHostFor(id) + "/callback"},
+		})
+	})
+
 	m.HandleFunc("DELETE /admin/oauth2/auth/sessions/login", func(w http.ResponseWriter, r *http.Request) {
 		h.mu.Lock()
 		h.forgotten = append(h.forgotten, r.URL.Query().Get("subject"))
@@ -310,15 +329,33 @@ func (h *hydra) raised(w http.ResponseWriter, r *http.Request, param string) {
 	}
 	scope := h.scope[c]
 
-	// A consent is about whoever its login was accepted as; a login is about
-	// nobody yet, unless this is a browser Hydra remembers.
-	subject, skip := h.subjectOf[c], false
+	// A consent is about whoever its login was accepted as, and skipped where
+	// Hydra remembers one; a login is about nobody yet, unless this is a
+	// browser Hydra remembers.
+	subject, skip := h.subjectOf[c], h.consented[c]
 	if param == "login_challenge" {
 		subject, skip = h.remembered[c], h.remembered[c] != ""
 	}
+	device := h.device[c]
 	h.mu.Unlock()
 	if scope == nil {
 		scope = []string{"openid", "profile", "email"}
+	}
+
+	// The authorization request, whole, which is what a real Hydra records
+	// and what says **which tenant** this flow is about (#36): the host of
+	// the `redirect_uri` in it. Derived from the client id here because the
+	// harness names clients `<alias>-web` and `<alias>-mobile`, so one
+	// fixture covers both of a tenant's products reaching one sign-in.
+	//
+	// A device's flow has no authorization request. What Hydra v26.2.0 records
+	// for one is the address the browser brought the code to, its own
+	// verification endpoint, with the client and no redirect: read off the
+	// image, for the login request and the consent request alike.
+	request := "https://issuer.test/oauth2/auth?client_id=" + client +
+		"&redirect_uri=" + url.QueryEscape("https://"+redirectHostFor(client)+"/callback") + extra
+	if device {
+		request = "https://issuer.test/oauth2/device/verify?client_id=" + client
 	}
 
 	writeJson(w, map[string]any{
@@ -328,16 +365,8 @@ func (h *hydra) raised(w http.ResponseWriter, r *http.Request, param string) {
 		"skip":      skip,
 
 		"requested_access_token_audience": asked,
-
-		// The authorization request, whole, which is what a real Hydra records
-		// and what says **which tenant** this flow is about (#36): the host of
-		// the `redirect_uri` in it. Derived from the client id here because the
-		// harness names clients `<alias>-web` and `<alias>-mobile`, so one
-		// fixture covers both of a tenant's products reaching one sign-in.
-		"request_url": "https://issuer.test/oauth2/auth?client_id=" + client +
-			"&redirect_uri=" + url.QueryEscape("https://"+redirectHostFor(client)+"/callback") + extra,
-
-		"requested_scope": scope,
+		"request_url":                     request,
+		"requested_scope":                 scope,
 	})
 }
 
@@ -424,6 +453,25 @@ func (h *hydra) raiseWith(challenge, client string, scope ...string) {
 	defer h.mu.Unlock()
 	h.client[challenge] = client
 	h.scope[challenge] = scope
+}
+
+// printedFor is [hydra.raise] for a flow a device began: the login challenge,
+// and the consent challenge after it, that Hydra raises once somebody has typed
+// the device's code. The same two requests as any flow's, about a request that
+// is not an authorization request.
+func (h *hydra) printedFor(challenge, client string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.client[challenge] = client
+	h.device[challenge] = true
+}
+
+// consents is Hydra remembering the consent a challenge asks for, so that it
+// raises it with `skip`.
+func (h *hydra) consents(challenge string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.consented[challenge] = true
 }
 
 // remembers is [hydra.raise] for a browser Hydra already knows as `subject`:
@@ -1197,12 +1245,14 @@ func TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne(t *testing.T) {
 		res := consent(t, d, b, "c3")
 		res.Body.Close()
 
+		// Answered to the page, which goes where it says
+		// (`TestAConsentIsAnsweredWhereThePageCanFollowIt`).
 		res, err := b.PostForm(d.app.URL+"/consent", url.Values{
 			"consent_challenge": {"c3"}, "allow": {"1"},
 		})
 		x.NoError(err)
 		defer res.Body.Close()
-		x.Equal(http.StatusSeeOther, res.StatusCode)
+		x.Equal(http.StatusOK, res.StatusCode)
 
 		_, claims := d.hydra.told()
 		x.Equal("erin", claims["preferred_username"])
@@ -1223,7 +1273,7 @@ func TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne(t *testing.T) {
 		res, err := b.PostForm(d.app.URL+"/consent", url.Values{"consent_challenge": {"c4"}})
 		x.NoError(err)
 		defer res.Body.Close()
-		x.Equal(http.StatusSeeOther, res.StatusCode)
+		x.Equal(http.StatusOK, res.StatusCode)
 
 		_, rejected := d.hydra.said()
 		x.True(rejected, "a no granted anyway")

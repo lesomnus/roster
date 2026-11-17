@@ -106,8 +106,17 @@ function says(scope: string): { what: string; how?: string } {
 	}
 }
 
-/** Consent is the screen a deployment asks for, when it asks for one. */
-function Consent(props: { of: Flow }): React.ReactNode {
+/** Consent is the screen a deployment asks for, when it asks for one -- and the
+ * one a device's flow is always given, since nothing before it could name the
+ * client.
+ *
+ * Its answer comes back as `{redirect_to}` and the page goes there, which is
+ * the last hop's shape and for its reason: where the browser goes next is the
+ * issuer, another origin, and a `fetch` cannot follow a redirect to one. It
+ * was a redirect, followed, and in a browser the buttons stayed disabled for
+ * ever.
+ */
+function Consent(props: { of: Flow; onBroken: () => void }): React.ReactNode {
 	const [sent, setSent] = useState(false)
 
 	const answer = (allow: boolean): void => {
@@ -118,8 +127,10 @@ function Consent(props: { of: Flow }): React.ReactNode {
 			method: 'POST',
 			headers: { 'content-type': 'application/x-www-form-urlencoded' },
 			body,
-			redirect: 'follow',
-		}).then((res) => location.assign(res.url))
+		})
+			.then(async (res) => (res.ok ? ((await res.json()) as { redirect_to: string }) : Promise.reject(new Error('no'))))
+			.then((v) => location.assign(v.redirect_to))
+			.catch(props.onBroken)
 	}
 
 	return (
@@ -394,7 +405,7 @@ function Root(): React.ReactNode {
 	if (bad) return <Broken />
 	if (of === null) return <main className="sign-in" />
 
-	if (c.name === 'consent_challenge') return <Consent of={of} />
+	if (c.name === 'consent_challenge') return <Consent of={of} onBroken={() => setBad(true)} />
 	if (c.name === 'logout_challenge') return <Logout of={of} />
 
 	// The last hop, and the only thing on this page that is not an ordinary

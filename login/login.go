@@ -257,6 +257,10 @@ const (
 	// Skip grants what the client asked for and draws nothing. The default, and
 	// right for the clients this app can have: every one of them was registered
 	// by this deployment for one of its own tenants.
+	//
+	// For a browser one of those clients sent here. A device's flow is drawn a
+	// screen under either mode ([App.consent]): what brings a browser to it is
+	// a code, and nothing before the consent can say whose device it is.
 	Skip Consent = iota
 
 	// Ask draws a screen and grants nothing until somebody says so.
@@ -988,6 +992,18 @@ func (a *App) leave(w http.ResponseWriter, r *http.Request) {
 // Hydra's own `skip` is answered first and is not a mode: it means this browser
 // has already consented and Hydra remembered, so there is nothing to ask and
 // asking again is the dialog people learn to click through.
+//
+// # A device's is always asked about
+//
+// Neither of those is an argument about a device. `skip` rests on where the
+// browser came from -- a client of this deployment's sent it here, so whoever
+// is looking at the screen was just at that client -- and a device's flow
+// begins with a code somebody was shown, or sent. The screen the code is typed
+// at cannot name the client (`login/device.go`), and said the consent screen
+// does *before anything is granted*; under `skip` there was no consent screen,
+// so a code typed and a sign-in were a device granted with nothing having said
+// whose (#278). So a consent that belongs to a device's flow is drawn,
+// whatever the deployment's mode and whatever Hydra remembers.
 func (a *App) consent(w http.ResponseWriter, r *http.Request) {
 	v, o, err := a.asking(r.Context(), r.URL.Query().Get(consentChallenge))
 	if err != nil {
@@ -996,8 +1012,10 @@ func (a *App) consent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if v.Skip || a.c.Consent == Skip {
-		a.grant(w, r, v, o)
+	if (v.Skip || a.c.Consent == Skip) && sentByItsClient(v.Url) {
+		if to, ok := a.grant(w, r, v, o); ok {
+			http.Redirect(w, r, to, http.StatusSeeOther)
+		}
 
 		return
 	}
@@ -1006,6 +1024,43 @@ func (a *App) consent(w http.ResponseWriter, r *http.Request) {
 	// rather than rendered here, so there is one screen and not two of them in
 	// two technologies.
 	a.page().ServeHTTP(w, r)
+}
+
+// sentByItsClient is whether a consent is for a request a client sent the
+// browser to Hydra with -- an authorization request -- which is the one kind
+// that may be granted with no screen.
+//
+// # What Hydra says of a device's flow, and what it does not
+//
+// Nothing by name. The consent request of v26.2.0 has no field that says a
+// device began the flow -- read off the image, a device's beside a client's
+// redirect's: the same keys in both -- and there is no getter for a device
+// challenge to ask instead. What differs is the request Hydra recorded,
+// `request_url`:
+//
+//	a client's redirect   <issuer>/oauth2/auth?client_id=…&redirect_uri=…&…
+//	a device's code       <issuer>/oauth2/device/verify?client_id=…
+//
+// the second being where the browser brought the code, for the login request
+// and the consent request alike. It is the field `login/at.go` already reads
+// for the tenant, and has always found no redirect in for a device.
+//
+// # Read towards a screen
+//
+// As *is the authorization endpoint*, not as *is not the verification
+// endpoint*. A request this cannot place -- empty, unparseable, an endpoint a
+// later Hydra raises a consent from -- is then drawn, which costs somebody a
+// click on a screen that names the client. Read the other way, an endpoint
+// renamed would be a device granted with nothing drawn, and nothing would say
+// so. `docker/device.sh` holds the reading against the real Hydra: its walk
+// runs under `consent: skip` and passes only if the screen was drawn.
+//
+// By the end of the path, so that an issuer served under a prefix is the same
+// issuer.
+func sentByItsClient(request string) bool {
+	u, err := url.Parse(request)
+
+	return err == nil && strings.HasSuffix(u.Path, "/oauth2/auth")
 }
 
 // flow is what the page needs about the challenge in its own URL, and the only
@@ -1185,6 +1240,17 @@ func named(c client) string {
 }
 
 // decide is the screen's answer, and the only two there are.
+//
+// # `{redirect_to}`, and not a redirect
+//
+// Where the browser goes next is Hydra's to say, and it is said to the page
+// rather than done to it: `POST /accept`'s shape, and for its reason. The page
+// asks with `fetch`, and this answered a 303 to the issuer -- another origin,
+// which sends no CORS headers, so the `fetch` failed where a browser's own
+// navigation would have gone on. The screen's two buttons stayed disabled and
+// `consent: ask` could not be got past in a browser at all (#278). Nothing here
+// saw it: a walk with curl follows anything, and the page's spec ran against a
+// made-up server whose redirect was to itself.
 func (a *App) decide(w http.ResponseWriter, r *http.Request) {
 	if !answered(w, r) {
 		return
@@ -1206,7 +1272,7 @@ func (a *App) decide(w http.ResponseWriter, r *http.Request) {
 		if a.c.Remember <= 0 {
 			http.SetCookie(w, a.door.End(r.Context(), r))
 		}
-		http.Redirect(w, r, to, http.StatusSeeOther)
+		writeJson(w, map[string]string{"redirect_to": to})
 
 		return
 	}
@@ -1218,10 +1284,19 @@ func (a *App) decide(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.grant(w, r, v, o)
+	if to, ok := a.grant(w, r, v, o); ok {
+		writeJson(w, map[string]string{"redirect_to": to})
+	}
 }
 
-// grant reads the person once, as them, and answers Hydra.
+// grant reads the person once, as them, and answers Hydra. What it hands back
+// is where Hydra says the browser goes next -- to the client with a code, or
+// with the refusal this hop made -- and false where it has answered the
+// request itself, as broken.
+//
+// Handed back and not redirected to, because its two callers tell a browser
+// differently: one Hydra sent here is redirected (`consent`), and a page that
+// asked with `fetch` is told (`decide`).
 //
 // The only place this app keeps what it read of anybody. What it reads is
 // `Me.Get`, which answers everything a claim could come from in one call, and
@@ -1240,7 +1315,7 @@ func (a *App) decide(w http.ResponseWriter, r *http.Request) {
 // registered for Loft's, it got levyan's and one that names nothing.
 // Compared here as strings, exactly, and anything else refused: the client is
 // sent back with `invalid_target` (RFC 8707) and nobody's token.
-func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o *tenant) {
+func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o *tenant) (string, bool) {
 	ctx := r.Context()
 
 	for _, aud := range v.Audience {
@@ -1253,11 +1328,10 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 		if err != nil {
 			a.broken(w, r, err)
 
-			return
+			return "", false
 		}
-		http.Redirect(w, r, to, http.StatusSeeOther)
 
-		return
+		return to, true
 	}
 
 	me, err := a.reads(ctx, r, o, v.Subject)
@@ -1295,23 +1369,22 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 		if err != nil {
 			a.broken(w, r, err)
 
-			return
+			return "", false
 		}
-		http.Redirect(w, r, to, http.StatusSeeOther)
 
-		return
+		return to, true
 	}
 	if err != nil {
 		a.broken(w, r, err)
 
-		return
+		return "", false
 	}
 
 	to, err := a.admin.acceptConsent(ctx, v.Challenge, v, claimsOf(me, v.Scope, v.Client.Id), a.c.Remember)
 	if err != nil {
 		a.broken(w, r, err)
 
-		return
+		return "", false
 	}
 
 	// And the session **stays**, for as long as Hydra will skip the form.
@@ -1340,7 +1413,7 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 		http.SetCookie(w, a.door.End(ctx, r))
 	}
 
-	http.Redirect(w, r, to, http.StatusSeeOther)
+	return to, true
 }
 
 // asking is the consent request and the tenant it belongs to.

@@ -622,7 +622,7 @@ login:                                    # only with Hydra in front; see login.
   # key: left out -- one rk_ made at start, narrowed per request. A process of
   # its own names it: env:ROSTER_LOGIN_KEY, or file:… from `roster login provision`
 
-  consent: skip                           # ask draws a screen instead
+  consent: skip                           # ask draws a screen instead; a device's flow is always drawn one
   base: https://login.contoso.example     # the origin every connection's redirect is under
   enrol: invited                          # invited | expected | enrolling
   # private_hosts: [idp.corp.example]     # as account's: where a provider may be asked

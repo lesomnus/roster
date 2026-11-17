@@ -395,6 +395,10 @@ type LoginConfig struct {
 	// dialog people learn to click through. `ask` is for a deployment that
 	// registers clients somebody else wrote, where the screen is the whole
 	// point.
+	//
+	// A device's flow (RFC 8628) is drawn the screen whichever this says: the
+	// screen its code is typed at cannot name the client, so the consent is
+	// where somebody first sees whose device they are letting in.
 	Consent string `yaml:"consent"`
 
 	// Remember is how long Hydra should skip the form for a browser that has
