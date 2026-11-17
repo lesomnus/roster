@@ -205,7 +205,9 @@ roster's `restore` brings back somebody erased, while the grace lasts, and
 `forget` destroys what was left of them. Both write past roster's servers, on
 purpose (`server/forget`), and each puts the person on the stream itself, in the
 transaction that writes them: a restore is heard as the person back -- an event
-with no erasure on it, about somebody the stream said was erased -- and a
+with no erasure on it, about somebody the stream said was erased, and with
+`date_invalidated` at the restore, since it gives back the account and not the
+sign-ins: a session kept through the erasure is one to drop -- and a
 forget as the erasure it is, which is news about anybody nobody had erased yet
 (`TestARestoreIsHeardAsItIsMade`, `TestAForgetIsHeardAsTheErasureItIs`). They
 were not, until roster#214: a restore reached the app as the next event about that

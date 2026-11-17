@@ -146,7 +146,7 @@ func TestARestoreIsHeardAsItIsMade(t *testing.T) {
 
 	// Invalidated first, for the stream to be known to be open: an erasure is
 	// made once, and one made before the stream is open is heard by nobody.
-	heard(t, got, e.kim, func() error {
+	was := heard(t, got, e.kim, func() error {
 		_, err := op.Invalidate(as, rstr.HolderInvalidateRequest_builder{Ref: ref}.Build())
 		return err
 	}, func(v standing.Standing) bool { return !v.Invalidated.IsZero() })
@@ -157,6 +157,11 @@ func TestARestoreIsHeardAsItIsMade(t *testing.T) {
 	e.shell(t, "restore", "@acme/kim")
 	v := heard(t, got, e.kim, said, func(v standing.Standing) bool { return v.Erased.IsZero() })
 	x.False(v.Invalidated.IsZero(), "what roster says of them now, which is everything but the erasure")
+
+	// And the moment is the restore's: it gives back the account and not the
+	// sign-ins (#279), so a session an app kept through the erasure is one it
+	// drops on hearing them back.
+	x.True(v.Invalidated.After(was.Invalidated), "a restore is heard with the sign-ins from before it still good")
 }
 
 // TestAForgetIsHeardAsTheErasureItIs: somebody nobody had erased, forgotten on

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/roster/cmd"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/lesomnus/xli"
@@ -13,6 +14,7 @@ import (
 	"github.com/lesomnus/xli/flg"
 
 	"github.com/lesomnus/payday/audit"
+	"github.com/lesomnus/payday/grpcx"
 	"github.com/lesomnus/payday/pdcmd"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/trail"
@@ -288,6 +290,10 @@ func tenantOrHolder(ctx context.Context, db *ent.Client, ref pdcmd.Ref) (pdid.Id
 // window exists for a mistaken deletion, a compromised account and a billing
 // dispute, and every one of those is a reason that needs the mistake to be
 // reversible.
+//
+// What comes back is the account and not how they were signed in, and a
+// restore of somebody whose name was taken while they were gone says who has
+// it: both are `forget.Restore`'s, and said there.
 func NewCmdRestore(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "restore",
@@ -317,7 +323,15 @@ func NewCmdRestore(c *cmd.Config) *xli.Command {
 				// Through the server the wall was never installed on, which
 				// is the verb an operator over the wire reaches too: the same
 				// grace answers both, and the trail records it.
-				if _, err := s.Ungated.Tenant().Restore(ctx, rstr.TenantRestoreRequest_builder{
+				//
+				// As the verb it is. A write is filed on the trail under the
+				// method gRPC says is being served, and a call made in
+				// process is served as none, so this one was filed under the
+				// generated method that wrote it: `Apply`, where the close
+				// before it says `Close` (#279). The context says which
+				// method this is, as a call over the wire would have.
+				as := grpcx.AsMethod(ctx, rstr.TenantService_Restore_FullMethodName)
+				if _, err := s.Ungated.Tenant().Restore(as, rstr.TenantRestoreRequest_builder{
 					Ref: rstr.TenantRef_builder{Id: who.Bytes()}.Build(),
 				}.Build()); err != nil {
 					return err
@@ -380,7 +394,7 @@ func whoIs(ctx context.Context, db *ent.Client, ref pdcmd.Ref) (pdid.Id, error) 
 		q = q.Where(entholder.HasTenantWith(enttenant.AliasEQ(ref.Tenant)))
 	}
 
-	vs, err := q.Limit(2).All(ctx)
+	vs, err := q.WithTenant().Limit(many + 1).All(ctx)
 	if err != nil {
 		return pdid.Nil, err
 	}
@@ -395,6 +409,31 @@ func whoIs(ctx context.Context, db *ent.Client, ref pdcmd.Ref) (pdid.Id, error) 
 		// An alias is unique **within a tenant and among the living**, so two
 		// answers is either two tenants or a name reused after a leaver. Both
 		// are things to be told about rather than to have chosen between.
-		return pdid.Nil, fmt.Errorf("more than one holder is called %q; name the tenant, or use an identifier", ref.Alias)
+		//
+		// Told about with who they are. It said to use an identifier and gave
+		// none, so somebody restoring a leaver whose name had been taken since
+		// -- which is one tenant, named already -- was sent to find an
+		// identifier nothing here would show them (#279).
+		said := make([]string, 0, many)
+		for _, v := range vs[:min(len(vs), many)] {
+			one := pdid.Id(v.Id).String()
+			if v.Edges.Tenant != nil {
+				one += " of @" + v.Edges.Tenant.Alias
+			}
+			if v.DateErased != nil {
+				one += ", erased " + v.DateErased.UTC().Format(time.RFC3339)
+			}
+			said = append(said, one)
+		}
+		if len(vs) > many {
+			said = append(said, "and more")
+		}
+
+		return pdid.Nil, fmt.Errorf("more than one holder is called %q: %s. Name the tenant where that tells them apart, or use an identifier",
+			ref.Alias, strings.Join(said, "; "))
 	}
 }
+
+// many is how many holders of one alias [whoIs] names before it says there
+// are more.
+const many = 8

@@ -301,6 +301,32 @@ func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 // in the same transaction, as [Forget] puts itself there (#214): an app that
 // marked them as leaving hears them back when they are, rather than at the
 // next thing that happens to them.
+//
+// # It gives back the account, and not the sign-ins
+//
+// An erase stops everything issued to somebody, and clearing it started all of
+// it again: a delegation, a recovery link inside its quarter hour, a session
+// at a console, each as it was before an operator erased the account -- which
+// is as often because somebody else was in it as by mistake. Nothing could be
+// done about them first, since somebody erased is read by no server, and
+// `Invalidate` of them is `NotFound`. Somebody who left on their own had no
+// such thing to come back to: `MeService/Leave` signs out everywhere before it
+// erases (#279).
+//
+// So a restore stamps `date_invalidated`, the moment everything issued before
+// it is void, as `Invalidate` does and in the write that brings them back.
+// Now, and taken from nobody, for `Invalidate`'s reason. What comes back is
+// the rows: the name, the ways in, what they may do. A key comes back too --
+// it is not ended by signing somebody out everywhere, on purpose
+// (`holder.ext.proto`, `date_invalidated`) -- and is an operator's to revoke,
+// which they can while its holder is erased.
+//
+// # And it says which name is taken
+//
+// An alias is one person's among the living of a tenant, so an erase frees it
+// at once and somebody new may have it by the time this runs. The index
+// refused the write, and what an operator read was the store's own sentence
+// about a constraint. [taken] says it in words, before anything is written.
 func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents, q bare.Recorder) error {
 	v, err := db.Holder.Get(ctx, who.Uuid())
 	if err != nil {
@@ -312,6 +338,9 @@ func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents
 	if v.Alias == "" {
 		return fmt.Errorf("%s has been forgotten; what is left is an identifier, and it names nobody", who)
 	}
+	if err := taken(ctx, db, v); err != nil {
+		return err
+	}
 
 	tx, err := db.Tx(ctx)
 	if err != nil {
@@ -319,10 +348,21 @@ func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents
 	}
 	defer tx.Rollback()
 
+	now := time.Now()
 	if err := tx.Holder.UpdateOneId(who.Uuid()).
 		ClearDateErased().
-		SetDateUpdated(time.Now()).
+		SetDateInvalidated(now).
+		SetDateUpdated(now).
 		Exec(ctx); err != nil {
+		if ent.IsConstraintError(err) {
+			// Somebody took a name of theirs between the question and the
+			// write. Asked again outside the transaction, which this ends.
+			tx.Rollback()
+			if said := taken(ctx, db, v); said != nil {
+				return said
+			}
+		}
+
 		return err
 	}
 	if _, err := pd.Record(ctx, tx.Client(), cs, RestoredHolder, []pdid.Id{who}); err != nil {
@@ -333,6 +373,74 @@ func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents
 	}
 
 	return tx.Commit()
+}
+
+// taken is the refusal a restore answers when a name of somebody erased is
+// somebody else's now, and nil when every name of theirs is free.
+//
+// The indexes that keep a name one person's cover the living of a tenant, so
+// each of them is free from the erase: the alias, and the three things a
+// directory calls somebody. The alias is the one an operator can do something
+// about with a command, and the sentence gives it in the spelling the binary
+// takes. Somebody erased is renamed by nothing -- no server reads them -- so it
+// is whoever has the name now that makes way.
+func taken(ctx context.Context, db *ent.Client, v *ent.Holder) error {
+	who := pdid.Id(v.Id)
+	living := func(p predicate.Holder) (pdid.Id, bool, error) {
+		id, err := db.Holder.Query().
+			Where(holder.TenantId(v.TenantId), holder.DateErasedIsNil(), holder.IdNEQ(v.Id), p).
+			FirstId(ctx)
+		if ent.IsNotFound(err) {
+			return pdid.Nil, false, nil
+		}
+
+		return pdid.Id(id), err == nil, err
+	}
+
+	has, ok, err := living(holder.AliasEQ(v.Alias))
+	if err != nil {
+		return err
+	}
+	if ok {
+		in, err := db.Tenant.Get(ctx, v.TenantId)
+		if err != nil {
+			return err
+		}
+		at := "@" + in.Alias + "/" + v.Alias
+
+		return fmt.Errorf("%[1]s was %[2]s, and %[3]s is %[2]s now: an erase frees an alias at once, and it is one person's in a tenant. "+
+			"Somebody erased is renamed by nothing, so whoever has the name makes way. Read the version a rename takes with "+
+			"`roster --as <alias> holder get -o json %[2]s`, rename them with "+
+			"`roster --as <alias> holder realias %[2]s '{\"alias\":\"<another>\",\"date_updated\":\"<its dateUpdated>\"}'`, and restore %[1]s again",
+			who, at, has)
+	}
+
+	for _, d := range []struct {
+		column string
+		said   *string
+		is     func(string) predicate.Holder
+	}{
+		{holder.FieldDirectoryName, v.DirectoryName, holder.DirectoryNameEQ},
+		{holder.FieldDirectorySubject, v.DirectorySubject, holder.DirectorySubjectEQ},
+		{holder.FieldDirectoryAddress, v.DirectoryAddress, holder.DirectoryAddressEQ},
+	} {
+		if d.said == nil {
+			continue
+		}
+
+		has, ok, err := living(d.is(*d.said))
+		if err != nil {
+			return err
+		}
+		if ok {
+			return fmt.Errorf("what their directory called %[1]s (`%[2]s`) is what it calls %[3]s now, and it calls one person of a tenant that. "+
+				"Which of the two the directory means is an operator's to say: erase the other with "+
+				"`roster --as <alias> holder erase %[3]s` and restore %[1]s again, or leave %[1]s erased",
+				who, d.column, has)
+		}
+	}
+
+	return nil
 }
 
 // heard puts a person's row on the stream apps follow, as the act `act` names:

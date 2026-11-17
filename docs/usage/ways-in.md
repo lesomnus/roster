@@ -714,11 +714,19 @@ answers again, on whichever browser holds its cookie. So an account stopped
 because somebody else was in it is `Invalidate`d before it is enabled, or the
 session that was the reason comes back with the person.
 
+**`roster restore` does not bring them back.** Somebody erased cannot be
+`Invalidate`d first -- no verb reads them -- so a restore does it itself: it
+stamps the same moment in the write that brings the person back, and nothing
+issued before it answers again
+([operating.md](../operating.md) § "Destroying somebody, which an erase does not").
+
 It **deliberately does not touch an API key**. A key is named, listed and
 revoked one at a time; killing somebody's scripts silently under "sign out
 everywhere" is an outage with nothing anywhere saying why. That is a second act
 and it has a second name — `roster key revoke`, or `roster me revoke-key` for
-your own.
+your own. A restore is no different: a key of somebody erased answers again
+with them, unless it was revoked while they were gone, which `roster key list`
+and `roster key revoke` do for somebody erased as for anybody.
 
 Each is a verb of its own on the CLI, and they are ordinary RPCs — remote with
 a role that names them, local through `Ungated` like everything else:

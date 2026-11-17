@@ -2123,6 +2123,44 @@ compromised account deleting things, a billing dispute.
 destruction is a delay. It refuses somebody already forgotten, which is the honest
 answer: a forgotten holder has no alias, so there is no name left to bring back.
 
+**It gives back the account, and not the sign-ins.** A restore stamps the moment
+everything issued before it is void, as `roster holder invalidate` does and in the
+same write: a delegation a front door held, a session at a console, a link mailed
+before the erase and a sign-in half made do not answer again, and an app holding a
+session for them hears so on the sync stream. They sign in again. Somebody erased
+cannot be signed out everywhere first -- no verb reads them -- so the restore is
+where it is done, and one who left by themselves was signed out before the erase
+already.
+
+**A key is not ended by it.** Signing somebody out everywhere ends no key, on
+purpose ([usage/ways-in.md](usage/ways-in.md) § *Stopping one*), and a restore
+is the same: a key that was theirs answers again the moment they are back. Where an
+account was erased because somebody else was in it, revoke its keys **while it is
+erased**, and then restore:
+
+```sh
+roster --as admin key list                 # an erased person's keys are listed with everybody's
+roster key revoke --id 01a03322-…          # now, and for good
+roster restore @contoso/erin
+```
+
+**And it says when their name is somebody else's.** An erase frees the alias at
+once, so somebody new may be called it by the time of a restore, which then refuses
+in words: who has the name now, and the rename that makes way. Somebody erased is
+renamed by nothing, so it is the other who is:
+
+```sh
+roster --as admin holder get -o json @contoso/erin     # their dateUpdated, whole
+roster --as admin holder realias @contoso/erin '{"alias":"erin-2","date_updated":"2026-11-17T03:45:23.443111678Z"}'
+roster restore 01a0332f-…                              # the one who was erased, by identifier
+```
+
+`@contoso/erin` names two people then, and `restore` and `forget` refuse to choose:
+each says who they are, by identifier, and which was erased and when. The same
+refusal is made where it is what their directory called them that somebody else is
+called now (`directory_name`, `directory_subject`, `directory_address`), and which
+of the two the directory means is yours to say.
+
 What goes: everything that says *this person reaches here, signs in there, holds
 this* -- addresses, identities, verifiers, API keys, sessions, attempts, links, and
 the rows that say what they may do, and any app's nomination to act as them. A link
@@ -2227,7 +2265,8 @@ declared is the file's to close, and the control plane's one tenant cannot be.
 exactly as it was, keys and all, until `restore_within` has run out -- and refused
 after it even if the sweep has not got there yet, because what decides is the window
 and not when something ran. With no window, a close can be restored until somebody
-destroys the tenant.
+destroys the tenant. On the trail it is `TenantService/Restore`, whether it was made
+over the wire or by `roster restore @newco` at the box.
 
 **Destroy** takes what is left: every person forgotten as `roster forget` forgets
 anybody, every other row of the tenant removed -- roles, bindings, groups, sites and
