@@ -354,7 +354,9 @@ func (r Rules) holding() Holding {
 // to its lengths and its spelling between this layer and the store, so that
 // it is asked of every write this layer makes or passes on, and of no read.
 func New(next app.Server, rules Rules, opts ...Option) Core {
-	s := Core{Overlay: app.NewOverlay(formed(next)), rules: rules}
+	// Over `next` with two things in front of it that are asked of the writes
+	// themselves, and not of any one verb ([fronted]).
+	s := Core{Overlay: app.NewOverlay(fronted(next)), rules: rules}
 	for _, opt := range opts {
 		opt(&s)
 	}
@@ -424,6 +426,23 @@ func (s Core) WithDriver(drv dialect.Driver) (app.Server, error) {
 	return s.over(next, drv), nil
 }
 
+// fronted is `next` with what is asked of every write in front of it, once
+// each: what is written has a length and a form ([form]), and nothing is
+// added under a tenant that is destroyed ([living]). The second is asked
+// last, so that a write refused for its form is told so whichever tenant it
+// names.
+//
+// Once, because both rebind themselves onto a transaction (`WithDriver`): a
+// server that was rebound arrives here carrying them already, and putting
+// them on again would ask each question twice of every write inside one.
+func fronted(next app.Server) app.Server {
+	if _, ok := next.(form); ok {
+		return next
+	}
+
+	return formed(alive(next))
+}
+
 // over is this layer again, over a server rebound onto the transaction `tx`.
 //
 // A copy of this one with the server and the driver swapped, and not a list of
@@ -437,7 +456,7 @@ func (s Core) WithDriver(drv dialect.Driver) (app.Server, error) {
 // particular inside a transaction. A copy carries what is added next.
 func (s Core) over(next app.Server, tx dialect.Driver) Core {
 	in := s
-	in.Overlay = app.NewOverlay(next)
+	in.Overlay = app.NewOverlay(fronted(next))
 	in.drv = nil
 	in.tx = tx
 

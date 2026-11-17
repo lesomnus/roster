@@ -27,8 +27,15 @@ db:
   dsn: "file:roster.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_txlock=immediate"
 ```
 
-Four things in that DSN, and each is there because leaving it out fails quietly.
-`foreign_keys` is off in SQLite unless asked and the schema relies on it.
+Four things in that DSN. `foreign_keys` is what the schema relies on: a row is
+not written naming one that is not there, and none is deleted from under the
+rows that name it. The SQLite roster is built with has it on whether a DSN asks
+or not -- SQLite as it is distributed leaves it off unless asked, and this
+build's default is the other way -- so it is written out to be read rather than
+to switch anything. The spelling that does switch something is
+`foreign_keys(0)`, which turns it off, and nothing else in roster refuses what
+that lets through. The other three are there because leaving them out fails
+quietly.
 `busy_timeout` is how long a connection waits for a lock before failing the
 statement -- the driver's own default is a **minute**, so a lock held by a shell
 command reads as a request that hangs rather than an error naming the statement.
@@ -1046,6 +1053,12 @@ Three properties, each deliberate:
   during an outage becomes a git round trip -- so a deployment that would rather
   have the text field declares fewer things.
 
+**And it leaves a tenant that is leaving alone.** What a file declares of a tenant
+that is closed or destroyed -- the tenant, and every row declared under it -- is
+not written and not compared; `serve` starts, and says at each start which files
+still declare it. Closing and destroying are an operator's acts and a file does
+neither, nor undoes either: [A tenant leaving](#a-tenant-leaving).
+
 **A tenant's settings are applied field by field.** `config.password` and
 `config.front_door` are how a tenant signs in -- the switch `Vouch.Verify`
 enforces, and the origin the user console sends a browser to -- and they are
@@ -1435,7 +1448,9 @@ one it lacks.
 Two things declare rows: this file, and the configuration that turns on one of
 roster's own front doors -- `login provision` and the in-process account app
 write the front door's holder, role, binding and nomination in every tenant with
-a name, labelled `roster.declared: config: login` / `config: account`. Either
+a name, labelled `roster.declared: config: login` / `config: account`. A tenant
+that is being destroyed is passed by, and said on stderr: nothing is written
+into one that is gone. Either
 way the row is read-only to everybody who reaches it through a port: a tenant
 administrator, the user console, the admin console, a deployment key. Not
 edited, not suspended, not erased, and not renamed: what applies the file finds
@@ -1452,6 +1467,17 @@ Turning one off is two steps, and neither is at a console:
    included) -- and deploy.
 2. Erase what is left, from a shell on the box: `roster ... erase` reading the
    database directly is the deployment's own work, which a declared row allows.
+
+A declared **tenant** is the one that is not erased, since no tenant is: it is
+closed at the box and then destroyed, and its file leaves it alone from the
+close on -- [A tenant leaving](#a-tenant-leaving) has the steps.
+
+And one field of a declared row is not the box's either: a declared tenant's
+`alias`, which is what its file finds it by. `roster tenant patch` refuses to
+change it while the row carries the label, because the next start would find
+nobody of the old alias and make a second tenant. Take the tenant out of the
+file and the label off the row first, rename it, and declare it again by the
+new alias if a file is to own it.
 
 ### The CLI on the box is the deployment
 
@@ -2240,7 +2266,7 @@ the rows that say what they may do, and any app's nomination to act as them. A l
 that names an address of theirs goes with the address, whoever it was mailed for:
 somebody else's claim of it has nothing left to prove, and is not left to be read as
 a link that signs its claimant in. The `Holder` row **stays, blank**: its
-identifier is `Audit.actor_id` and thirteen foreign keys point at it, and what makes
+identifier is `Audit.actor_id` and seventeen foreign keys point at it, and what makes
 it personal data is that it *resolves*. Emptied, it is a stable pseudonym reaching
 nothing.
 
@@ -2340,7 +2366,9 @@ key that names it **through a binding across the tenant** may close a tenant ove
 wire, including the tenant's own administrator, who is then locked out with everybody
 else; one that names it only in a site or a team is refused, since a close reaches
 everybody ([usage/permissions.md](usage/permissions.md) § *A site*). A tenant a file
-declared is the file's to close, and the control plane's one tenant cannot be.
+declares is not closed over the wire, as it is not edited there; it is closed at the
+box, with the command above, since a file has no key that closes one. And the control
+plane's one tenant cannot be closed at all.
 
 **Restore** is what makes the window a grace, as for a person: the tenant comes back
 exactly as it was, keys and all, until `restore_within` has run out -- and refused
@@ -2364,6 +2392,33 @@ written into a tenant after it was destroyed, since a destroyed tenant holds
 nothing. Each of those writes is
 made on what was decided: the stamp only on a tenant still closed and held by nobody,
 and a restore only on one not yet stamped, so the two cannot cross.
+
+**Nothing is written into a tenant that is destroyed.** A row of any kind that names
+its tenant -- a person, a site, a team, a role, a group, a name or a claim on one, a
+mail domain, a connection, a nomination -- is refused there with `FailedPrecondition`,
+at `admin.addr` and at the box alike, and so is `TenantService.Update`: the row says
+nothing about itself again. What is still written on it is the deployment's own: the
+alias given back, and an operator's hold, which keeps what the trail has of the tenant
+and stops a destruction that is under way. A **closed** tenant is not this. Whoever
+runs the deployment still writes in one, at `admin.addr` and at the box, which is how
+a customer is put right before it is restored.
+
+**A file does not close a tenant, and does not bring one back.** From the close on,
+what a `resources:` file declares of the tenant -- the tenant itself, and every
+connection, name and mail domain declared under it -- is left exactly as it is:
+nothing is written and nothing is compared, while the tenant is closed and after it
+is destroyed. `serve` starts all the same, and says at every start, as a warning,
+which tenant and which files (`resources: a file declares a tenant that is closed`,
+`… that was destroyed`); `roster resources apply --dry-run` marks each such row `!`.
+Restored, the tenant is the file's again at the next start. So a declared tenant
+leaves in three steps:
+
+1. Close it, at the box.
+2. Take it, and what is declared under it, out of the file, and deploy.
+3. Let `restore_within` run out, or `roster forget @tenant`.
+
+Left in the file past the day its alias is free again, it declares a tenant nobody
+is, and the next start makes a new one of that name.
 
 **A hold stops all of it.** `roster hold place` writes `Tenant.date_held` and what it
 is for; while it is there `forget` refuses the tenant, the sweep passes it by, its

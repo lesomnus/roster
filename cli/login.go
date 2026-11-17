@@ -615,7 +615,7 @@ func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []stri
 
 		tn, err := s.Ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
 			Ref:    at,
-			Select: rstr.TenantSelect_builder{Alias: z.Ptr(true)}.Build(),
+			Select: rstr.TenantSelect_builder{Alias: z.Ptr(true), DateDestroyed: z.Ptr(true)}.Build(),
 		}.Build())
 		if err != nil {
 			return n, err
@@ -628,6 +628,18 @@ func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []stri
 		// one tenant named somebody `login-app`.
 		skip := func(why string) {
 			fmt.Fprintf(os.Stderr, "roster: %s: not answering @%s's key as @%s/%s: %s.\n", name, alias, name, alias, why)
+		}
+
+		// And a tenant that is being destroyed, for the same reason. Its
+		// names are the last of it to go, so one whose destruction is under
+		// way -- or that an operator holds half way -- is still walked here,
+		// and nothing is written into a tenant that is gone: this made a
+		// person there at every start, and refused, it would stop the run
+		// (#279). A closed tenant is not this, and is provisioned as it was:
+		// restored, its people sign in at once.
+		if tn.GetDateDestroyed() != nil {
+			skip("the tenant is destroyed, and nothing is written into one that is gone")
+			continue
 		}
 
 		// Whose the rows of this name are, asked before anything is written:
