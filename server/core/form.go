@@ -11,6 +11,7 @@ import (
 
 	"github.com/lesomnus/payday/header"
 	"github.com/lesomnus/payday/pderr"
+	"github.com/lesomnus/payday/slug"
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
@@ -78,7 +79,8 @@ const (
 )
 
 // form is the last thing in front of the store: what a write says of a row is
-// held to a length here, whichever verb made the write.
+// held to a form here -- its text to a length, its alias to a spelling
+// ([spelled]) -- whichever verb made the write.
 //
 // # Why it is under everything else of this layer, and not in each verb
 //
@@ -87,9 +89,9 @@ const (
 // ends in `Patch` -- a person's `Update`, a tenant's, a group's; a directory's
 // `Provision` and what it tells; the rows `Tenant.Add` writes beside the
 // tenant; the deployment's own work at the box. Said in each, it is said again
-// for the next verb written, and the one that forgets is the megabyte. So
-// [New] puts every `Core` over this, and nothing of this package reaches the
-// store except through it.
+// for the next verb written, and the one that forgets is the megabyte, or the
+// name nobody finds. So [New] puts every `Core` over this, and nothing of
+// this package reaches the store except through it.
 //
 // # What it does not read
 //
@@ -118,11 +120,12 @@ var (
 	_ enttx.Binder[app.Server] = form{}
 )
 
-// written holds what a request says of a row to its lengths: the `name`, the
-// `desc` and the `labels`, wherever the request has them.
+// written holds what a request says of a row to its form: the `alias` to its
+// spelling, and the `name`, the `desc` and the `labels` to their lengths,
+// wherever the request has them.
 //
 // Read by name, as payday's `header` reads a row whose type it does not know:
-// the three are the same field at the same number in every entity, so the rule
+// the four are the same field at the same number in every entity, so the rule
 // is written once and holds for the entity somebody adds next -- once that
 // entity is listed below, which `TestEveryRowIsHeldToTheForm` asks of each.
 //
@@ -131,6 +134,9 @@ func written(req interface {
 	ProtoReflect() protoreflect.Message
 }) error {
 	h := header.Of(req)
+	if err := spelled("alias", h.Alias); err != nil {
+		return err
+	}
 	if err := lettered("name", h.Name, MaxName); err != nil {
 		return err
 	}
@@ -139,6 +145,55 @@ func written(req interface {
 	}
 
 	return labelled(h.Labels)
+}
+
+// spelled refuses an alias that is not written as it will be read: in small
+// letters, with nothing before or after it.
+//
+// # Why it is refused, and was folded
+//
+// payday folds an alias on its way in, and says why: `"  Acme "` and `acme`
+// are one row to a person and two to a unique index. That is right about the
+// index and it left the caller out. A reference compares an alias as it is
+// sent, so `Add` with `ACME` answered OK and wrote `acme`, and `Get` by
+// `ACME` was `NotFound`; adding `SEOUL` beside `seoul` was `AlreadyExists`,
+// about a name its caller never wrote. `normalised` argues the rest at a
+// hostname: a row that comes back different from what was written is a
+// console that cannot find what somebody just typed.
+//
+// So the index gets what the fold gave it -- one spelling -- and the caller is
+// told which, by the refusal every other name here makes.
+//
+// # Why it is here
+//
+// The fold is payday's, in the generated store below this. For an `Add` it is
+// what the store's namer does and an app may hand the store another
+// (`Sink.WithNamer`); for a `Patch` it is not the app's to switch off. One
+// rule in two places with two wirings is not one rule, so it is asked here for
+// both, in front of the store, where the lengths are: the fold below is left
+// with nothing to fold. It reads `alias` wherever a request has one, which is
+// every entity that is named by one.
+//
+// # What it leaves alone
+//
+// An `Add` that says no alias, for which the store makes one up as it always
+// did. And an alias that is not one in any spelling -- a space inside it, a
+// digit first -- which is refused in the words the grammar has for it, since
+// there is no spelling to name.
+func spelled(field, v string) error {
+	if v == "" {
+		return nil
+	}
+
+	w, err := slug.ParseAlias(v)
+	if err != nil {
+		return pderr.At(field, err)
+	}
+	if w != v {
+		return pderr.Invalidf(field, "written as it is read, so %q rather than %s", w, quoted(v))
+	}
+
+	return nil
 }
 
 // lettered refuses text of more than `most` characters.

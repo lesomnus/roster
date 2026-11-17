@@ -86,9 +86,9 @@ func (s Core) maySend(ctx context.Context, was *app.Connection, ref, issuer stri
 // compared as written. So one directory under two names that differ by a
 // capital is one person twice.
 //
-// Refused, and not folded as an alias somebody typed is (`slug.ParseAlias`):
-// the name is written again wherever the provider is told its redirect, and a
-// row called something other than what was typed is not found by it.
+// Refused and not folded, as an alias is ([spelled]) and for its reason: the
+// name is written again wherever the provider is told its redirect, and a row
+// called something other than what was typed is not found by it.
 func named(field, v string) error {
 	err := slug.Validate(v)
 	if err == nil {

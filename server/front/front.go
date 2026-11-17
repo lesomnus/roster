@@ -324,6 +324,23 @@ func NotHostname(v string) string {
 	return ""
 }
 
+// Alias is an alias as somebody typed one, in the spelling every alias is kept
+// in: lowercased and trimmed.
+//
+// It is not what a write does to one. A row's alias is written in this
+// spelling or refused (`server/core`, `spelled`): `Add` used to fold what it
+// was handed and say nothing, a reference compares an alias as it is sent,
+// and so a row added as `ACME` was `acme` and was not found by the name its
+// caller had just written.
+//
+// It is what a **sign-in** does, and whatever else takes a name from a person
+// rather than from a program: the alias and the tenant typed into a form are
+// folded and then looked for, as an address is ([Address]), since every row
+// they could mean is in small letters. Exported for [Hostname]'s reason: a
+// front door that takes a name from somebody -- what a terminal is to be
+// called -- says it to roster in the spelling it will be kept in.
+func Alias(v string) string { return strings.ToLower(strings.TrimSpace(v)) }
+
 // Domain is the part of an address that is looked up, from either an address or
 // a bare domain.
 func Domain(v string) string {
