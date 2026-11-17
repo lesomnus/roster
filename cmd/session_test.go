@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/frame"
 
@@ -33,7 +34,7 @@ func TestAConsoleSessionSurvivesTheProcess(t *testing.T) {
 
 	who := addHolder(t, ctx, b.Control, controlTenantOf(t, ctx, b), "ops")
 
-	one := session.New(b.Control.Ent)
+	one := session.New(b.Control.Ent, audit.Contents{})
 
 	v := authsession.Session{
 		Key:     "a-cookie-value",
@@ -45,7 +46,7 @@ func TestAConsoleSessionSurvivesTheProcess(t *testing.T) {
 	x.NoError(one.Put(ctx, v))
 
 	// A second store, which is what a second replica is.
-	two := session.New(b.Control.Ent)
+	two := session.New(b.Control.Ent, audit.Contents{})
 
 	got, err := two.Get(ctx, "a-cookie-value")
 	x.NoError(err)
@@ -97,7 +98,7 @@ func TestAnErasedOperatorHasNoSessions(t *testing.T) {
 
 	who := addHolder(t, ctx, b.Control, controlTenantOf(t, ctx, b), "ops")
 
-	s := session.New(b.Control.Ent)
+	s := session.New(b.Control.Ent, audit.Contents{})
 	x.NoError(s.Put(ctx, authsession.Session{
 		Key:     "a-cookie-value",
 		Id:      who.String(),
@@ -129,7 +130,7 @@ func TestTheIdleClockIsTheOneColumnThatMoves(t *testing.T) {
 
 	who := addHolder(t, ctx, b.Control, controlTenantOf(t, ctx, b), "ops")
 
-	s := session.New(b.Control.Ent)
+	s := session.New(b.Control.Ent, audit.Contents{})
 	v := authsession.Session{
 		Key:     "a-cookie-value",
 		Id:      who.String(),
@@ -176,7 +177,7 @@ func TestASessionThatEndedIsNotWrittenAgain(t *testing.T) {
 	ctx := t.Context()
 
 	who := addHolder(t, ctx, b.Control, controlTenantOf(t, ctx, b), "ops")
-	store := session.New(b.Control.Ent)
+	store := session.New(b.Control.Ent, audit.Contents{})
 
 	v := authsession.Session{
 		Key:     "a-cookie-value",

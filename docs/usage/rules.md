@@ -339,6 +339,7 @@ writes anybody would use.
 | The tenant's `group-manager` role is made the first time a group needs it, and one that is there already is used as it stands -- or refused, where it names what a manager may not hold | `server/core/group.go` | `TestATenantsOwnManagersRoleIsTheOneAMakerHolds` |
 | A directory's `Provision` makes the person, their identity and their address in one write, or none of them | `server/core/directory.go` | `TestADirectoryMakesPeopleAndOnlyNewOnes` |
 | A rule that counts other rows under two callers at once takes a write on a row both of them name -- the person's, the tenant's, the site's -- and that write changes nothing of the row: it is as the trail keeps it, and `roster trail rows` finds nothing in it | `cmd/policy.go` | `TestALockLeavesItsRowAsTheTrailKeepsIt` |
+| A session at roster's own door is on the trail of the plane it is a row of: made by a sign-in, its idle clock moved, ended by a sign-out -- each by whoever it is of, under their tenant -- and collected by the sweep. A line says which session and when, and nothing of the cookie; and `roster trail rows` finds nothing in one | `server/session` | `TestASessionMadeAtRostersOwnDoorIsOnTheTrail` · `TestAnOperatorsSessionIsOnTheControlPlanesTrail` |
 
 ## What a tenant or a deployment switches
 

@@ -186,7 +186,7 @@ type Server struct {
 	// handler that reads it back. Nil where there is no control plane, since
 	// the people who sign in are its holders and there would be nobody to be.
 	//
-	// **A table**, not a map: `authsession.New(session.New(control.Ent))`
+	// **A table**, not a map: `authsession.New(session.New(control.Ent, ...))`
 	// below, over `server/session`. So a cookie minted by one replica resolves
 	// on another, which is what it has to do -- payday's `MemStore` is right
 	// for one replica and silently wrong for two, a browser signed in or out
@@ -582,8 +582,11 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// Built before the branch below because it is this plane's and not the
 	// control plane's: a deployment with no `control` still has tenants, and
 	// the people in them are who this is for.
+	//
+	// Handed what this plane's recorder is, since a session made, used and
+	// ended is on this plane's trail as each (`server/session`).
 	if c.SignIn.Enabled {
-		s.People = authsession.New(session.New(client))
+		s.People = authsession.New(session.New(client, content))
 		s.Spin = append(s.Spin, loop(prefix, "sessions", session.Sweep(client, content, session.Swept)))
 
 		// And with no control plane there is no chain below to join, so this
@@ -771,7 +774,16 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		// cookie minted on one is unknown to the other -- intermittently, per
 		// request, with nothing in any log saying why. `session.proto` carries
 		// the rest, including why the table is roster's and not payday's.
-		s.Sessions = authsession.New(session.New(control.Ent))
+		//
+		// What it records of a session -- made, used, ended, and collected by
+		// the sweep below -- is what the control plane's own recorder is
+		// handed: `contentOf`, which keeps no digest.
+		controlContent, err := contentOf(c.Audit).Contents()
+		if err != nil {
+			db.Close()
+			return nil, err
+		}
+		s.Sessions = authsession.New(session.New(control.Ent, controlContent))
 
 		// And somebody to collect them, because nobody else will. A store
 		// behind `authsession.Store` has `Put`, `Get` and `Del` and no pass
@@ -785,14 +797,6 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		//
 		// Named as the control plane's, whose rows it collects, though it is
 		// appended by this one.
-		//
-		// What it records of a session it collects is what the control plane's
-		// own recorder is handed: `contentOf`, which keeps no digest.
-		controlContent, err := contentOf(c.Audit).Contents()
-		if err != nil {
-			db.Close()
-			return nil, err
-		}
 		s.Spin = append(s.Spin, loop(keys.PrefixDeployment, "sessions", session.Sweep(control.Ent, controlContent, session.Swept)))
 
 		// A console's cookie in front of a service's key, and **on this plane
