@@ -5,8 +5,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/subtle"
+	"fmt"
+	"strconv"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/roster/server/vouch"
 	"github.com/lesomnus/z"
@@ -57,6 +60,15 @@ import (
 // `coreHost` gives -- a caller whose row comes back different from what it
 // wrote is a console that cannot find the address somebody just typed --
 // and `front.Address` is exported so there is nothing to reimplement.
+//
+// # And it is an address
+//
+// The spelling was the whole of what was asked, as it was of a hostname
+// before `hostnamed`, and it passes whatever lowering and trimming leave
+// alone: two words with no `@`, a megabyte, a name and an address in one
+// string, the same mailbox in brackets or with a dot after it. So an address
+// is held to being one, in the one form [front.NotAddress] says, by every
+// road that writes one ([mailboxed]).
 type coreEmail struct {
 	Core
 	app.EmailServiceServer
@@ -65,7 +77,7 @@ type coreEmail struct {
 func (s Core) Email() app.EmailServiceServer { return coreEmail{s, s.Next().Email()} }
 
 func (s coreEmail) Add(ctx context.Context, req *app.EmailAddRequest) (*app.Email, error) {
-	if err := normalised("address", req.GetAddress(), front.Address); err != nil {
+	if err := mailboxed("address", req.GetAddress()); err != nil {
 		return nil, err
 	}
 	if err := s.mayWriteAWayIn(ctx, "holder", req.GetHolder()); err != nil {
@@ -116,12 +128,39 @@ func entered(ctx context.Context, req *app.EmailAddRequest) *app.EmailAddRequest
 // about the caller and those other roads write values too.
 func (s coreEmail) Patch(ctx context.Context, req *app.EmailPatchRequest) (*app.Email, error) {
 	if req.HasAddress() {
-		if err := normalised("address", req.GetAddress(), front.Address); err != nil {
+		if err := mailboxed("address", req.GetAddress()); err != nil {
 			return nil, err
 		}
 	}
 
 	return s.EmailServiceServer.Patch(ctx, req)
+}
+
+// mailboxed is [normalised] for an address, which is also held to being one:
+// [hostnamed], of a mailbox.
+//
+// The form is asked of what the address would be stored as, and before the
+// spelling speaks, for the reason given there: a refusal that says *write it
+// this way* names a form the next write would be refused for otherwise.
+func mailboxed(field, v string) error {
+	if w := front.Address(v); w != "" {
+		if why := front.NotAddress(w); why != "" {
+			return pderr.Invalidf(field, "%s is not an address: %s", quoted(v), why)
+		}
+	}
+
+	return normalised(field, v, front.Address)
+}
+
+// quoted is a value said back in a refusal, cut where it is long: what was
+// refused may be a megabyte, and a refusal is not where it is kept.
+func quoted(v string) string {
+	const most = 80
+	if len(v) <= most {
+		return strconv.Quote(v)
+	}
+
+	return strconv.Quote(strings.ToValidUTF8(v[:most], "")) + fmt.Sprintf("... (%d bytes)", len(v))
 }
 
 // Erase takes an address away from somebody, and is held to what writing one
@@ -311,7 +350,7 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 // first, by address within the holder's tenant, and the one write that follows
 // is the one that answer calls for.
 func (s coreEmail) Attest(ctx context.Context, req *app.EmailAttestRequest) (*app.Email, error) {
-	if err := normalised("address", req.GetAddress(), front.Address); err != nil {
+	if err := mailboxed("address", req.GetAddress()); err != nil {
 		return nil, err
 	}
 	if req.GetVouchedBy() == nil {
