@@ -666,15 +666,19 @@ func why(prior, now stamps, told bool) app.SyncReason {
 		return app.SyncReason_SYNC_REASON_SUSPENDED
 
 	case now.invalidated.After(prior.invalidated):
+		// A restore is heard here too. `forget.Restore` clears `date_erased`
+		// and stamps this in the one write, and puts the person on the
+		// stream as it does (#214, #279): what an app hears is that
+		// everything it holds for them from before is void, on an event with
+		// no erasure on it, which says they are back.
 		return app.SyncReason_SYNC_REASON_INVALIDATED
 
 	default:
 		// Something moved -- the caller checked -- and it was none of the
-		// three going forward. A stamp cleared or wound back is the only way
-		// here, which is a restore -- `forget.Restore` clearing `date_erased`,
-		// and putting the person on the stream as it does (#214) -- and no
-		// RPC. There is no word for it; the facts are on the event regardless,
-		// and say they are back.
+		// three going forward. A stamp cleared or wound back, and nothing
+		// else, is the only way here, which no RPC does and a restore no
+		// longer does. There is no word for it; the facts are on the event
+		// regardless.
 		return app.SyncReason_SYNC_REASON_UNSPECIFIED
 	}
 }

@@ -155,7 +155,11 @@ roster forget @newco/alice           # destroys, including the trail's copy
 `erase` is *this person has left*: two columns written, and the alias, addresses,
 identities and the whole trail still there. `forget` is *destroy what you hold
 about them*, which is a different request with a legal clock on it, and
-`holder.forget_after` is the window between them.
+`holder.forget_after` is the window between them. `restore` gives back the
+account and not how they were signed in: everything issued to them before it is
+void, and they sign in again. Their keys are the exception, and their alias may
+have been taken meanwhile; [operating.md](../operating.md) § "Destroying
+somebody, which an erase does not" says what to do about each.
 
 **Or they leave by themselves**, where the tenant offers it: `config.leave` on
 the tenant (the admin console's *people here may delete their own account*, or a
