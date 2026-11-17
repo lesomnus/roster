@@ -98,8 +98,11 @@ payday's rather than each app's, because everything that reads a request reads
 it: the wall narrows every query by it, the trail stamps it, a rate limit counts
 against it. Its `alias` is unique across the whole deployment, so
 `@contoso/arm-01` says which tenant before it says which row. Unlike 👤 `Holder`
-it is erased **hard** -- nothing names a tenant the way every trail row names
-the holder that acted, so there is nothing for its row to outlive.
+its erase is declared **hard**, with no `date_erased` to stamp -- and it is
+served by nothing. Every row of a tenant is keyed to it, so the row cannot go
+while anything of it is there, and `TenantService/Erase` answers `Unimplemented`
+at every port. A tenant leaves by being closed and then destroyed, and the row
+stays (below).
 
 It carries one thing an operator decides about itself: `config.password`, which
 is whether a password is a way in here. A fact rather than a screen setting --

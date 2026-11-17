@@ -8,6 +8,8 @@ import (
 	"github.com/lesomnus/z"
 	"github.com/protobuf-orm/ent/dialect"
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
@@ -242,6 +244,40 @@ func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*
 	}
 
 	return s.TenantServiceServer.Patch(ctx, patch.Build())
+}
+
+// NotErased is what is said to anybody who asks for a tenant to be erased:
+// that none is, and what ends one instead.
+const NotErased = "a tenant is not erased. It is closed, which shuts its people out and is undone while tenant.restore_within lasts " +
+	"(TenantService/Close; `roster tenant close @tenant`), and a closed one is destroyed by whoever runs this deployment, " +
+	"from a shell on the box (`roster forget @tenant`)"
+
+// Erase is not served: a tenant is not erased, by anybody, through any stack.
+//
+// # What it was
+//
+// `Tenant` declares a hard erase, and the generated one is a `DELETE` of the
+// row. Every row of a tenant is keyed to it, and `Add` makes a tenant with a
+// person and two roles; a destroyed one keeps the blank rows of its people.
+// So the delete met a foreign key at every point of a tenant's life, and what
+// a caller was answered was the database's own words about that: `Unknown`,
+// *FOREIGN KEY constraint failed*, `500` over HTTP. The gate refuses the
+// method in a sentence, so that was the answer wherever there is no gate --
+// `admin.addr`, and `roster tenant erase` at the box (#279).
+//
+// # Why it refuses rather than doing what was meant
+//
+// What was meant is one of two things, and they are different acts with
+// different words. Closing is one row and can be undone
+// ([coreTenant.Close]). Destroying forgets every person and removes every
+// other row, through ent and past every server, from a shell or a sweep
+// (`server/forget`): it is not reachable over the wire on purpose. A verb
+// called *erase* that did either would be the other one's surprise.
+//
+// `Unimplemented`, the gate's own code for it: this is not about who is
+// asking, and no credential changes it.
+func (s coreTenant) Erase(context.Context, *app.TenantRef) (*app.TenantEraseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, NotErased)
 }
 
 // Everyverb is what the first role of a tenant is called, and EveryMethod is

@@ -183,21 +183,8 @@ func (s coreNomination) declaredNomination(ctx context.Context, ref *app.Nominat
 }
 
 // Erase, for every kind a deployment declares: refused on a declared row, as
-// every other write to one is. See the top of this file.
-
-func (s coreTenant) Erase(ctx context.Context, req *app.TenantRef) (*app.TenantEraseResponse, error) {
-	got, err := s.TenantServiceServer.Get(ctx, app.TenantGetRequest_builder{
-		Ref: req, Select: app.TenantSelect_builder{Labels: z.Ptr(true)}.Build(),
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
-	if err := s.mayWriteDeclared(ctx, "ref", got.GetLabels()); err != nil {
-		return nil, err
-	}
-
-	return s.TenantServiceServer.Erase(ctx, req)
-}
+// every other write to one is. See the top of this file. A tenant's is not
+// here: no tenant is erased, declared or not ([coreTenant.Erase]).
 
 func (s coreConnection) Erase(ctx context.Context, req *app.ConnectionRef) (*app.ConnectionEraseResponse, error) {
 	if err := s.acrossTheTenant(ctx, app.ConnectionService_Erase_FullMethodName); err != nil {
