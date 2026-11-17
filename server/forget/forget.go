@@ -398,6 +398,11 @@ type subject struct {
 	name   string
 	ids    func(context.Context, *ent.Client, uuid.UUID) ([]uuid.UUID, error)
 	remove func(context.Context, *ent.Client, uuid.UUID) (int, error)
+
+	// table and tenant are a tenant's kind's table and the column of it that
+	// says which tenant a row is of, where its rows say so themselves: see
+	// [tenanted]. Empty for a person's.
+	table, tenant string
 }
 
 func subjects() []subject {

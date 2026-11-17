@@ -77,3 +77,57 @@ func TestEveryTenantedTableGoesWithItsTenant(t *testing.T) {
 		}
 	}
 }
+
+// TestEveryTableKeyedToATenantIsWhereItsLeftoversAreLookedFor is the other
+// thing [tenanted] says, held to the schema: which of a tenant's kinds say
+// whose they are in a column of their own.
+//
+// [Unfinished] finds a destruction that stopped by what is left of the tenant,
+// and looks where those columns are. A table with a key to the tenant that is
+// not written with `own` is one whose rows a stopped destruction could leave
+// with nothing to find them by -- the defect this list was added for, where
+// the only place looked was the people.
+func TestEveryTableKeyedToATenantIsWhereItsLeftoversAreLookedFor(t *testing.T) {
+	x := require.New(t)
+
+	looked := map[string]string{}
+	for _, v := range tenanted() {
+		if v.table != "" {
+			looked[v.table] = v.tenant
+		}
+	}
+	x.NotEmpty(looked, "nothing is looked for, so this proves nothing")
+
+	keyed := 0
+	for _, v := range migrate.Tables {
+		if v.Name == "holder" || v.Name == "tenant" {
+			continue
+		}
+		for _, fk := range v.ForeignKeys {
+			if fk.RefTable == nil || fk.RefTable.Name != "tenant" {
+				continue
+			}
+
+			keyed++
+			x.Len(fk.Columns, 1)
+			x.Equal(fk.Columns[0].Name, looked[v.Name],
+				"%s is keyed to a tenant by %s, and a destruction that stopped is not found by it", v.Name, fk.Columns[0].Name)
+		}
+	}
+	x.NotZero(keyed, "no table is keyed to the tenant, so this proves nothing")
+
+	// And each place looked is a column there is: a name mistyped is a query
+	// that fails at every pass of the sweep.
+	for table, column := range looked {
+		has := false
+		for _, v := range migrate.Tables {
+			if v.Name != table {
+				continue
+			}
+			for _, c := range v.Columns {
+				has = has || c.Name == column
+			}
+		}
+		x.True(has, "%s.%s is looked in and is not a column", table, column)
+	}
+}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/lesomnus/otx/log"
 	"github.com/lesomnus/z"
+	"github.com/protobuf-orm/ent/dialect/sql"
 
 	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/pdid"
@@ -29,6 +30,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/hostproof"
 	"github.com/lesomnus/roster/internal/ent/maildomain"
 	"github.com/lesomnus/roster/internal/ent/nomination"
+	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/site"
 	"github.com/lesomnus/roster/internal/ent/sitemembership"
@@ -123,9 +125,10 @@ func (r TenantResult) String() string {
 // restore made in between; and the hold is asked again before each person.
 // What a hold placed half way through stops is the rest of the people: those
 // forgotten before it stay forgotten, and lifting it lets the sweep finish
-// ([Unfinished] finds a destroyed tenant by the people it still has). Once
-// they are all gone, what is left is a few statements about rows that name
-// nobody, and they finish with the run.
+// ([Unfinished] finds a destroyed tenant by what is left of it). Once they
+// are all gone, what is left is a few statements about rows that name nobody,
+// in one transaction; and if that one does not commit, the tenant is found
+// the same way and the next pass makes it again.
 //
 // Each person goes on the stream through `q` as [Forget] puts them there: a
 // closed tenant's people were heard shut out when it closed, and this is them
@@ -288,9 +291,18 @@ const (
 // rows are a tenant's is not something a foreign key says. What keeps it whole
 // is `TestEveryTenantedTableGoesWithItsTenant`, which holds it to the schema:
 // a table added with a key to a tenant, and not added here, fails there.
+//
+// A kind whose rows say which tenant they are of in a column of their own is
+// written with `own`, naming the table and the column: that is what
+// [Unfinished] finds a destruction that stopped by. The others say it through
+// one of those -- a membership through its team, a binding through its role
+// -- and are left only while that row is.
 func tenanted() []subject {
 	of := func(name string, ids func(context.Context, *ent.Client, uuid.UUID) ([]uuid.UUID, error), remove func(context.Context, *ent.Client, uuid.UUID) (int, error)) subject {
 		return subject{name: name, ids: ids, remove: remove}
+	}
+	own := func(table, column, name string, ids func(context.Context, *ent.Client, uuid.UUID) ([]uuid.UUID, error), remove func(context.Context, *ent.Client, uuid.UUID) (int, error)) subject {
+		return subject{name: name, ids: ids, remove: remove, table: table, tenant: column}
 	}
 
 	return []subject{
@@ -314,7 +326,7 @@ func tenanted() []subject {
 		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.TeamMembership.Delete().Where(teammembership.HasTeamWith(team.TenantId(k))).Exec(ctx)
 		}),
-		of("team", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+		own(team.Table, team.FieldTenantId, "team", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
 			return db.Team.Query().Where(team.TenantId(k)).Ids(ctx)
 		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Team.Delete().Where(team.TenantId(k)).Exec(ctx)
@@ -329,7 +341,7 @@ func tenanted() []subject {
 		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.GroupExposure.Delete().Where(groupexposure.HasGroupWith(group.TenantId(k))).Exec(ctx)
 		}),
-		of("group", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+		own(group.Table, group.FieldTenantId, "group", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
 			return db.Group.Query().Where(group.TenantId(k)).Ids(ctx)
 		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Group.Delete().Where(group.TenantId(k)).Exec(ctx)
@@ -339,12 +351,12 @@ func tenanted() []subject {
 		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.SiteMembership.Delete().Where(sitemembership.HasSiteWith(site.TenantId(k))).Exec(ctx)
 		}),
-		of("role", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+		own(role.Table, role.FieldTenantId, "role", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
 			return db.Role.Query().Where(role.TenantId(k)).Ids(ctx)
 		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Role.Delete().Where(role.TenantId(k)).Exec(ctx)
 		}),
-		of("site", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+		own(site.Table, site.FieldTenantId, "site", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
 			return db.Site.Query().Where(site.TenantId(k)).Ids(ctx)
 		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Site.Delete().Where(site.TenantId(k)).Exec(ctx)
@@ -352,27 +364,27 @@ func tenanted() []subject {
 		// The ways the tenant was reached from outside: who answered as which
 		// app here, its directories, and its names. A hostname needs proof to
 		// be taken again (#42), so it is freed at once and not held.
-		of("nomination", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+		own(nomination.Table, nomination.FieldTenantId, "nomination", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
 			return db.Nomination.Query().Where(nomination.TenantId(k)).Ids(ctx)
 		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Nomination.Delete().Where(nomination.TenantId(k)).Exec(ctx)
 		}),
-		of("connection", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+		own(connection.Table, connection.FieldTenantId, "connection", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
 			return db.Connection.Query().Where(connection.TenantId(k)).Ids(ctx)
 		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Connection.Delete().Where(connection.TenantId(k)).Exec(ctx)
 		}),
-		of("mail domain", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+		own(maildomain.Table, maildomain.FieldTenantId, "mail domain", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
 			return db.MailDomain.Query().Where(maildomain.TenantId(k)).Ids(ctx)
 		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.MailDomain.Delete().Where(maildomain.TenantId(k)).Exec(ctx)
 		}),
-		of("host proof", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+		own(hostproof.Table, hostproof.FieldTenantId, "host proof", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
 			return db.HostProof.Query().Where(hostproof.TenantId(k)).Ids(ctx)
 		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.HostProof.Delete().Where(hostproof.TenantId(k)).Exec(ctx)
 		}),
-		of("host", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+		own(host.Table, host.FieldTenantId, "host", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
 			return db.Host.Query().Where(host.TenantId(k)).Ids(ctx)
 		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Host.Delete().Where(host.TenantId(k)).Exec(ctx)
@@ -381,7 +393,7 @@ func tenanted() []subject {
 		// past its account as proof, for `consent.keep` ([SweepConsents]). Not
 		// past its tenant -- a tenant destroyed is one whose people are all gone
 		// and whose apps answer nobody, so there is nobody left to show it to.
-		of("consent", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+		own(consent.Table, consent.FieldTenantId, "consent", func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
 			return db.Consent.Query().Where(consent.TenantId(k)).Ids(ctx)
 		}, func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
 			return db.Consent.Delete().Where(consent.TenantId(k)).Exec(ctx)
@@ -438,41 +450,101 @@ func DueTenants(ctx context.Context, db *ent.Client, before time.Time) ([]pdid.I
 	return append(out, unfinished...), nil
 }
 
-// Unfinished is every tenant stamped destroyed with somebody of it not yet
-// forgotten: a destruction that stopped part way, whatever the window.
+// Unfinished is every tenant stamped destroyed, and held by nobody, with
+// something of it left: a destruction that stopped part way, whatever the
+// window.
+//
+// # By what is left of it, and not by its people alone
+//
+// It found one by the people it still had. The people are forgotten first,
+// each in a transaction of their own, and everything else is one transaction
+// after the last of them -- so a destruction that stopped *there* had nobody
+// left to be found by, and nothing finished it: the tenant stayed stamped,
+// with its name, its roles and its hosts, and its hostname went on answering
+// for it (#279). A database that is busy once is enough.
+//
+// So it is asked of everything [DestroyTenant] takes: somebody not yet
+// forgotten, a row of a kind that goes with a tenant ([tenanted]), or what
+// its own row says. Its labels and settings are not asked: they are blanked
+// by the write that blanks the name, in the transaction that removes the
+// rows, so they are left only where one of those is.
+//
+// One read, which a tenant that is finished is not in. A pass does not walk
+// every tenant a deployment ever destroyed, which is [Due]'s reason for
+// leaving out the forgotten.
+//
+// What is written into a tenant after it was destroyed is found by this too,
+// and the next pass takes it: a destroyed tenant holds nothing.
 func Unfinished(ctx context.Context, db *ent.Client) ([]pdid.Id, error) {
-	vs, err := db.Holder.Query().
-		Where(
-			holder.AliasNEQ(""),
-			holder.HasTenantWith(tenant.DateDestroyedNotNil(), tenant.DateHeldIsNil()),
-		).
-		Select(holder.FieldTenantId).
-		All(ctx)
+	vs, err := db.Tenant.Query().
+		Where(tenant.DateDestroyedNotNil(), tenant.DateHeldIsNil(), left()).
+		Ids(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	out := []pdid.Id{}
-	seen := map[uuid.UUID]bool{}
-	for _, v := range vs {
-		if seen[v.TenantId] {
-			continue
-		}
-		seen[v.TenantId] = true
-		out = append(out, pdid.Id(v.TenantId))
+	out := make([]pdid.Id, len(vs))
+	for i, v := range vs {
+		out[i] = pdid.Id(v)
 	}
 
 	return out, nil
 }
 
+// left is a tenant something is left of, for [Unfinished].
+//
+// Subqueries on each table's own column and not edge predicates: a `Tenant`
+// has no edge to what is in it.
+func left() predicate.Tenant {
+	return func(s *sql.Selector) {
+		id := s.C(tenant.FieldId)
+		has := func(table, column string, where ...func(*sql.SelectTable) *sql.Predicate) *sql.Predicate {
+			t := sql.Table(table)
+			q := sql.Select(t.C(column)).From(t).Where(sql.ColumnsEQ(t.C(column), id))
+			for _, w := range where {
+				q.Where(w(t))
+			}
+
+			return sql.Exists(q)
+		}
+
+		// What the last write of a destruction blanks.
+		found := []*sql.Predicate{
+			sql.NEQ(s.C(tenant.FieldName), ""),
+			sql.NEQ(s.C(tenant.FieldDesc), ""),
+		}
+
+		// Somebody not yet forgotten: a forgotten row stays, with no alias.
+		found = append(found, has(holder.Table, holder.FieldTenantId, func(t *sql.SelectTable) *sql.Predicate {
+			return sql.NEQ(t.C(holder.FieldAlias), "")
+		}))
+
+		for _, of := range tenanted() {
+			if of.table != "" {
+				found = append(found, has(of.table, of.tenant))
+			}
+		}
+
+		s.Where(sql.Or(found...))
+	}
+}
+
 // DueAliases is every destroyed tenant whose alias has been held long enough.
+//
+// One already freed is told by the exact name freeing writes ([Gone]), which
+// is that tenant's alone. It was told by the prefix, and an alias is anybody's
+// to choose: a tenant somebody named `gone-fishing` was never due, and kept
+// the name for good (#279). The comparison is made here and not by the
+// database, which cannot spell a row's identifier the way [Gone] does; so a
+// pass reads the identifier and the alias of every tenant destroyed that long
+// ago, and nothing else of them.
 func DueAliases(ctx context.Context, db *ent.Client, before time.Time) ([]pdid.Id, error) {
 	vs, err := db.Tenant.Query().
 		Where(
 			tenant.DateDestroyedNotNil(),
 			tenant.DateDestroyedLT(before),
-			tenant.Not(tenant.AliasHasPrefix("gone-")),
 		).
+		Select(tenant.FieldAlias).
 		All(ctx)
 	if err != nil {
 		return nil, err
