@@ -211,6 +211,21 @@ void, and they sign in again. Their keys are the exception, and their alias may
 have been taken meanwhile; [operating.md](../operating.md) § "Destroying
 somebody, which an erase does not" says what to do about each.
 
+**What hung on something erased is still listed.** An erase writes the row it
+names and no other -- of a person, a team, a group, a role or a site alike. So
+somebody's places in sites, teams and groups, the bindings to them and the
+relations other people have to them stay where they were, and so do the places
+in a team or a group that was erased, the bindings to that group and of an
+erased role, and the clients an erased group was shown to. A `list` goes on
+answering each, pointing at something `get` answers `NotFound` for. None of
+them gives anybody anything: an erased role, team or group grants nothing, and
+somebody erased signs in nowhere. A reader that draws such a list reads what
+each row names and leaves out the rows whose thing is not there. Somebody who
+wants one gone erases it like any other row of its kind; one that gives
+nothing because its role, its team or its group is gone is erased by whoever
+may erase where it is
+([permissions.md](permissions.md#taking-away-is-held-the-other-way-round)).
+
 **Or they leave by themselves**, where the tenant offers it: `config.leave` on
 the tenant (the admin console's *people here may delete their own account*, or a
 resources file), and the account page draws a *delete your account* section that

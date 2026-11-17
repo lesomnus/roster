@@ -33,9 +33,15 @@ const (
 // every site in it.
 //
 // It is a row rather than a label because things point at it and because it has
-// a name people say. `labels` is what an administrative grant matches on --
-// "every site in Asia" is a selector over these, resolved to a set of sites by
-// this app rather than by payday.
+// a name people say.
+//
+// # What is said of one is said when it is made
+//
+// A site has `Add` and `Erase` and no write between them, and no port serves
+// a general one (`cmd/serve.go`). So over the wire its alias, its name, its
+// description and its labels are what `Add` was told. Changing one is the
+// deployment's, at the box (`roster site patch`); or the site is erased and
+// made again, which takes what is in it out first.
 type Site struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
@@ -232,9 +238,12 @@ type Site_builder struct {
 	Alias string
 	Name  string
 	Desc  string
-	// What a grant selects on. `{"region": "asia"}` and a grant matching it is
-	// the design's `admin_scope`; resolving the match to a set of sites is this
-	// app's, since payday's grant carries identifiers rather than selectors.
+	// Whatever the deployment keeps about a site that the schema does not name.
+	//
+	// Nothing reads them. They were to be what a grant selects on -- a grant
+	// over `{"region": "asia"}`, the design's `admin_scope` -- and no grant
+	// does: a binding names one site or none (`role.proto`), and nothing
+	// resolves a selector to a set of sites.
 	Labels      map[string]string
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp

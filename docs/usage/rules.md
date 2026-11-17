@@ -256,6 +256,7 @@ is roster's to say and not a caller's (`server/portrait/portrait.go`).
 | | written in | held to it by |
 | --- | --- | --- |
 | An erased role, an erased team | `cmd/policy.go` | `TestAnErasedRoleGrantsNothing` · `TestATeamErasedHandsOutNothing` |
+| And an erase writes the row it names and no other: what hung on it -- a place on the team, in the group or the site, a binding, a relation -- is still listed, pointing at something that is not read | `server/bare` | `TestWhatHungOnSomethingErasedIsStillListed` |
 | A site is erased when nothing is in it | `server/core/tenantwide.go` | `TestASiteIsErasedWhenNothingIsInIt` |
 | And when two act at once: of an erase and a team, a role, a group or a binding put in the site in the same moment, one is refused; and what is in a customer's site is counted at the operators' port too | `server/core/tenantwide.go` | `TestASiteIsErasedWithNothingInItByTwoCallersAtOnce` · `TestAnOperatorErasesASiteWhenNothingIsInItToo` |
 | Somebody suspended, somebody erased, a tenant closed: no credential of theirs works, and a stream they left open ends | `cmd/auth.go` | `TestASuspendedHolderReachesNothing` · `TestAnErasedHolderIsStoppedAtTheWire` · `TestAClosedTenantLetsNobodyIn` · `TestAStreamLeftOpenIsAskedAgainWhoOpenedIt` |

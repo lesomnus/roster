@@ -2153,7 +2153,11 @@ box, or `serve` applying the policy on its own clock.
 keeps their alias, name and profile, and their addresses and identities keep
 theirs. The trail holds that each was set and when, and not what to -- they are
 declared personal (payday#92), so the row is the only copy. That is right for
-*this person has left*.
+*this person has left*. Nor does it erase what hung on them: their places in
+sites, teams and groups and the relations others have to them are still
+listed, each naming somebody `get` answers `NotFound` for
+([customers.md](usage/customers.md#removing-somebody) says what a reader does
+about it).
 For *destroy what you hold about them* there is a second act:
 
 ```sh

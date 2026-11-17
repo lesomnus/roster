@@ -161,6 +161,11 @@ is not managing it.
   and one naming anything else is refused where a group is made.
 - **Appointing a manager is held to what the appointer holds through a
   binding**, so a manager does not make another. A tenant's administrator does.
+- **A place's role is said when the place is made.** Over the wire it is not
+  changed on a place that is there: a member is made a manager, or a manager
+  stood down, by taking their place away and adding it again with the role or
+  without. A group's own name and note are changed (`group update`); its alias
+  is not.
 - **A manager is a member.** Kept out of the group they would protect nothing,
   since they could put an accomplice in.
 - **It does not replace the rule below.** A group bound to a role still asks
@@ -190,6 +195,14 @@ echo '{"role":  {"slug":{"alias":"eu-support","tenant":{"alias":"newco"}}},
 A binding with no site reaches the whole tenant. One made in a site reaches that
 site alone — and that is also the scope the escalation rule compares, so a site
 administrator can grant inside their site and not across the tenant.
+
+**What is said of a site is said when it is made.** A site has `add` and `erase`
+and nothing between: its alias, its name, its description and its labels are
+not changed over the wire, since no port serves a general write
+([cli.md](cli.md)). At the box `roster site patch` changes them; otherwise a
+site is erased and made again, which takes what is in it out first (below).
+And **nothing reads a site's labels**: a binding names one site or none, and no
+grant selects sites by a label.
 
 **Each thing somebody holds reaches where it was given, whatever else they
 hold.** A call is narrowed to where its caller holds *the method it is*.
@@ -331,6 +344,21 @@ roster --as admin team list -o name  # and use the identifier
 A team of no site is the tenant's, and its name is unique among the tenant's
 teams of no site: a second `board` there answers `AlreadyExists`, as a second
 `eu-ops` in `eu` does.
+
+**What is said of a team is said when it is made**, as of a site: its site
+never changes, and over the wire neither do its alias, its name and its
+description. `roster team patch` at the box changes those; otherwise the team
+is erased and another made, and its people added to that one. **Nor is the role
+on somebody's place in it changed over the wire**: take the place away and add
+it again, carrying the other role.
+
+```sh
+roster --as admin team-membership erase 01a1e7f0-…
+echo '{"team":  {"id":"01a1e7ef-…"},
+       "holder":{"slug": {"alias":"alice", "tenant":{"alias":"newco"}}},
+       "role":  {"slug":{"alias":"eu-lead","tenant":{"alias":"newco"}}}}' \
+  | roster --as admin team-membership add -
+```
 
 The role a team membership names is granted at the team's site — a team with no
 site answers the tenant. Which is why attaching a role to somebody *is* granting
@@ -636,6 +664,9 @@ roster --as admin binding list -o wide
 roster --as admin role get @newco/support
 roster --as admin role list -o wide
 ```
+
+Each `list` is a page of twenty, and `-o wide` does not say when there are
+more: `-n` and `--next` ask for the rest ([cli.md](cli.md#how-anything-is-named)).
 
 and, as the person themselves, over the wire:
 

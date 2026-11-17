@@ -185,8 +185,12 @@ payday's **second axis**: a caller who may see a tenant does not thereby see
 every site in it. A row rather than a label because things point at it and
 because it has a name people say -- `alias` is unique within the tenant, which
 is what makes `@contoso/seoul` something somebody types into a configuration
-file. `labels` is what an administrative grant matches on: *every site in Asia*
-is a selector over these, resolved to a set of sites by roster.
+file. `labels` are the deployment's to keep and nothing reads them: they were
+to be what an administrative grant matches on -- *every site in Asia* -- and no
+grant does, since a 🔗 `Binding` names one site or none. What is said of a site
+is said when it is made: it has `Add` and `Erase`, and no port serves a general
+write, so its alias, name, description and labels are changed at the box or by
+erasing it and making it again.
 
 > contoso runs the product in **seoul** and in **frankfurt**, so those are two
 > `Site` rows in contoso's tenant. fabrikam's own seoul is a different row and
@@ -468,7 +472,8 @@ thing everywhere could not say that. The site sits at field 3 -- payday's number
 for a set smaller than a tenant -- and a read narrowed to the sites a caller may
 see is generated from that one number. `site` is nullable, and a team with no
 site is seen by a read of the whole tenant rather than turning up in every
-scoped one.
+scoped one. Like a 📍 `Site`, a team has `Add` and `Erase` and no write between
+them on the wire: its alias, name and description are what `Add` was told.
 
 > seoul has a team **line-1**. It belongs to that site and its alias is unique
 > there, so frankfurt may have a `line-1` of its own and they are two teams.
@@ -478,9 +483,12 @@ scoped one.
 The gate is outermost and never sees which team a call is about, so `policy.of`
 unions the methods of a role held in a team into what somebody may **ever**
 call, and `server/core` refuses the wrong team per call. Attaching a role here
-therefore hands out its methods, and `Add` and `Patch` are both refused when
-they name one the caller does not hold. `role` is a nullable edge and empty is a
-plain member -- it used to be a string, and a string is a role nothing reads.
+therefore hands out its methods, and `Add` is refused when it names one the
+caller does not hold. `Patch` is held to the same and is not served on any
+port, so over the wire the role on a place that is there is changed by taking
+the place away and adding it again -- as a manager's is in a 🫂
+`GroupMembership`. `role` is a nullable edge and empty is a plain member -- it
+used to be a string, and a string is a role nothing reads.
 
 > erin is on **line-1** carrying the role **reader**. The same erin on
 > frankfurt's `line-1` could carry **operator** instead, which is the thing a

@@ -1,7 +1,7 @@
 # The CLI
 
 `roster tenant add` and `TenantService.Add` are the same call. Every entity has
-the same five verbs -- `get`, `list` (or `ls`), `add`, `patch`, `erase` -- and
+the same four verbs -- `get`, `list` (or `ls`), `add`, `erase` -- and
 `watch` where its rows are watched (`holder`, `email`, `identity`, `credential`,
 `team` and a few more; `--help` says). `access` is read and never written, so it
 has `get` and `list` alone. `tenant` has no `erase`, because no tenant is erased:
@@ -10,6 +10,23 @@ one is closed with `roster tenant close` and a closed one destroyed with
 and `roster tenant erase` typed all the same says so and fails. Each command is a client for exactly the RPC of that
 name, so what you learn typing is what you write in code. `roster <entity> <verb> --help` prints
 the request shape.
+
+**`patch` is a fifth, and it is the box's.** It is the general write: any field
+of the row, under the version you read. No port serves one, whatever a
+configuration says, so over the wire `roster team patch` answers
+`Unimplemented`, *it is how the servers write, not how a caller asks*. Locally
+it writes, like everything else there:
+
+```sh
+roster --as admin team get -o json 01a1e7ef-…    # `dateUpdated` is the version
+roster --as admin team patch 01a1e7ef-… '{"name":"Operations","date_updated":"2026-11-17T05:16:48.623925973Z"}'
+```
+
+What changes a row over the wire is a verb of its own, where the entity has
+one: `holder update`, `group update`, `tenant update`, `connection update`,
+`role widen` and `role narrow`. A site and a team have none, nor does the role
+on somebody's place in a team or a group: those are erased and added again
+([permissions.md](permissions.md) says so where each is described).
 
 ## Two modes, and the configuration decides which
 
@@ -86,7 +103,7 @@ The operators and this deployment's own callers live on a second database,
 ```sh
 roster control key add --allow '/roster.VouchService/Verify' portal   # an rk_; naming it makes it
 roster control vouch reset @admin                                     # the operator's way back in
-roster --as admin control holder list                                   # every holder of the control plane
+roster --as admin control holder list                                   # the holders of the control plane, a page of them
 ```
 
 The entity commands are all there except `tenant add`: the control plane has
@@ -128,6 +145,23 @@ roster --as admin holder list -o wide
 `wide`, or `template=…`. `-o name` prints the identifier alone, which is what a
 script wants.
 
+**A `list` is a page, and not the whole.** It answers twenty rows unless told,
+in the order they were made. `-n` (`--size`) asks for more, up to a hundred,
+and where there are more than it answered, the answer says where to carry on
+from, which `--next` takes:
+
+```sh
+roster --as admin holder list -n 100                 # ends with `next: WyIyMDI2…` when there are more
+roster --as admin holder list -n 100 --next WyIyMDI2…
+```
+
+`pretty` prints that as its last line, and `json`, `protojson` and `prototext`
+print the answer whole, its `next` included. **`name`, `table`, `wide` and
+`template` print the rows and nothing else**: twenty lines of `-o name` are all
+there is or the first twenty, and nothing on either stream says which. A script
+that wants every row reads `next` out of `-o json` and asks again until there
+is none. Every `list` this manual shows is one page.
+
 An **alias** is unique within a tenant and among the living: two tenants may both
 have an `admin`, and a tenant may reuse an alias after the person holding it is
 erased.
@@ -163,6 +197,32 @@ there is no parent to name it within. Everything else is
 `{"slug": {"alias": …, "<parent>": …}}`, and the parent is whatever the alias is
 unique inside: a tenant for most, a **site** for a team, a **holder** for a key.
 
+## What a `watch` says
+
+`roster holder watch @newco/alice` is `HolderService/Watch`: a stream that says
+what is there, and then what changes. The comments generated onto every
+`…WatchRequest` and `…WatchItem` say three things of it that are not so. This
+is what is so:
+
+- **A watch names its rows.** Its filters have the shape a `list`'s have, and
+  only one that names a row by reference is taken. A filter by tenant, by site
+  or by anything else a `list` takes is refused -- *a watch says which rows it
+  is about by naming them* -- and so is no filter at all. To follow a set,
+  list it and watch what it answered.
+- **A row that is gone is said with the call that took it.** An item with no
+  `value` is a row this stream carried and its caller no longer sees. It still
+  carries `action`, the RPC that was called: `…/Erase` for a row that was
+  erased, and whatever touched it for one that left the caller's reach. So the
+  two are told apart, where the comment says there is deliberately no way to.
+- **A row that leaves the caller's reach is not said until it is next
+  written.** A stream hears the writes of its own entity. What takes a row out
+  of somebody's reach is mostly a write of another -- their place in a site
+  erased, a binding taken away -- and nothing is said then: the row's next
+  write is answered as an item with no value. Until it is, the last value sent
+  is one the caller was allowed when it was sent. A caller who may no longer
+  call `Watch` at all has the stream ended, when it is next asked who opened
+  it (`stream.recheck`, [operating.md](../operating.md)).
+
 ## Every RPC that can have a command has one
 
 Three of roster's own methods are left out on purpose, and each absence is a
@@ -170,7 +230,7 @@ decision rather than a gap:
 
 | | |
 | --- | --- |
-| `Apply` | one of payday's two general writes, closed unless a deployment opts in, and roster does not |
+| `Apply` | one of payday's two general writes. No port serves either and no setting opens one (`cmd/serve.go`); `patch`, the other, is a command because the box reaches it |
 | `AuthService` | it mints the admin console's session, and a session cookie is a browser's credential where a terminal's is a key |
 | a *service's* key over the wire | minting is granting, the grant rule reads bindings, and a key holds none. The mints for a service are `roster control key add` and a console |
 
