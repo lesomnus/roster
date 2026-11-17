@@ -174,6 +174,15 @@ func (s coreNomination) voidIfNobodySignsIn(ctx context.Context, who []byte) err
 	h, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{
 		Ref: ref, Select: app.HolderSelect_builder{DateUpdated: z.Ptr(true)}.Build(),
 	}.Build())
+	if status.Code(err) == codes.NotFound {
+		// Erased since they were nominated. Whoever is erased answers as
+		// nobody, and a delegation about them is refused where it is read
+		// (`keys.signable`), so there is nothing left to void -- and passing
+		// this on made a nomination of somebody erased one that nobody could
+		// end: `NotFound`, about a holder, for the erase of a nomination
+		// (#279).
+		return nil
+	}
 	if err != nil {
 		return err
 	}

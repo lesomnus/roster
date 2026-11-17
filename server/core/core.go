@@ -227,6 +227,12 @@ type Rules struct {
 	// [Core.mayReach] compares. See [Holding].
 	Holding Holding
 
+	// Giving is what one row hands whoever it names -- a binding, a place on
+	// a team, a manager's place in a group -- which is what erasing it takes
+	// away. Nil is a stack that cannot say, and such an erase is refused
+	// rather than made. See [Giving].
+	Giving Giving
+
 	// Releasing lets go of the `Host` row holding a name, whoever's it is. Nil
 	// is a stack that cannot, and taking a name is refused rather than
 	// attempted. See [Releasing].

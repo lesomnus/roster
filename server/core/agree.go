@@ -208,11 +208,8 @@ func (s coreTeamMembership) Patch(ctx context.Context, req *app.TeamMembershipPa
 // comment there is the long version.
 func (s coreTeamMembership) Erase(ctx context.Context, req *app.TeamMembershipRef) (*app.TeamMembershipEraseResponse, error) {
 	v, err := s.Next().TeamMembership().Get(ctx, app.TeamMembershipGetRequest_builder{
-		Ref: req,
-		Select: app.TeamMembershipSelect_builder{
-			Team: app.TeamSelect_builder{Site: app.SiteSelect_builder{}.Build()}.Build(),
-			Role: app.RoleSelect_builder{Methods: z.Ptr(true)}.Build(),
-		}.Build(),
+		Ref:    req,
+		Select: app.TeamMembershipSelect_builder{Team: app.TeamSelect_builder{}.Build()}.Build(),
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -229,13 +226,14 @@ func (s coreTeamMembership) Erase(ctx context.Context, req *app.TeamMembershipRe
 	}
 
 	// And what the role held there gave them, which `Add` asked `mayGrant`
-	// about at the team's site (`takeaway.go`). A team's role is never held
+	// about at the team's site (`takeaway.go`): read from the row, and nothing
+	// when the role or the team was erased. A team's role is never held
 	// across the tenant, so nothing about who administers it changes here.
-	at, err := idOr(v.GetTeam().GetSite().GetId())
+	gs, err := s.given(ctx, v.GetId())
 	if err != nil {
 		return nil, err
 	}
-	if err := s.mayTakeAway(ctx, "ref", v.GetRole().GetMethods(), at); err != nil {
+	if err := s.mayTakeAll(ctx, "ref", gs); err != nil {
 		return nil, err
 	}
 
@@ -290,7 +288,7 @@ func (s coreTeam) Add(ctx context.Context, req *app.TeamAddRequest) (*app.Team, 
 func (s coreTeam) Erase(ctx context.Context, req *app.TeamRef) (*app.TeamEraseResponse, error) {
 	got, err := s.TeamServiceServer.Get(ctx, app.TeamGetRequest_builder{
 		Ref:    req,
-		Select: app.TeamSelect_builder{Site: app.SiteSelect_builder{}.Build()}.Build(),
+		Select: app.TeamSelect_builder{}.Build(),
 	}.Build())
 	if status.Code(err) == codes.NotFound {
 		return s.TeamServiceServer.Erase(ctx, req)
@@ -301,11 +299,6 @@ func (s coreTeam) Erase(ctx context.Context, req *app.TeamRef) (*app.TeamEraseRe
 
 	team := app.TeamRef_builder{Id: got.GetId()}.Build()
 	if err := s.mayChangeTeam(ctx, app.TeamService_Erase_FullMethodName, team); err != nil {
-		return nil, err
-	}
-
-	at, err := idOr(got.GetSite().GetId())
-	if err != nil {
 		return nil, err
 	}
 
@@ -324,13 +317,17 @@ func (s coreTeam) Erase(ctx context.Context, req *app.TeamRef) (*app.TeamEraseRe
 				continue
 			}
 
-			// A list answers a role as its reference, so each is read; a team
-			// is a handful of people and their roles fewer.
-			methods, err := s.methodsOf(ctx, app.RoleRef_builder{Id: m.GetRole().GetId()}.Build())
+			// What each place gives is read as taking it out alone reads it
+			// (`takeaway.go`), one at a time: a team is a handful of people
+			// and their roles fewer. It was the role itself that was read,
+			// as the caller reads one, and a role erased since -- or one of
+			// the whole tenant, to somebody who sees one site -- was a
+			// `NotFound` about a role, for the erase of a team (#279).
+			gs, err := s.given(ctx, m.GetId())
 			if err != nil {
 				return nil, err
 			}
-			if err := s.mayTakeAway(ctx, "ref", methods, at); err != nil {
+			if err := s.mayTakeAll(ctx, "ref", gs); err != nil {
 				return nil, err
 			}
 		}
@@ -455,7 +452,6 @@ func (s coreGroupMembership) Erase(ctx context.Context, req *app.GroupMembership
 		Ref: req,
 		Select: app.GroupMembershipSelect_builder{
 			Group: app.GroupSelect_builder{Alias: z.Ptr(true), Tenant: app.TenantSelect_builder{}.Build()}.Build(),
-			Role:  app.RoleSelect_builder{Methods: z.Ptr(true)}.Build(),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -475,7 +471,8 @@ func (s coreGroupMembership) Erase(ctx context.Context, req *app.GroupMembership
 	// And what being in it gave them -- the group's bindings, each at its
 	// scope, and a manager's role -- which nobody takes away who could not
 	// have given it (`takeaway.go`); and the tenant's administration, when
-	// the group carries it.
+	// the group carries it. Both are read from the rows, and are nothing for a
+	// group that was erased.
 	group, err := pdid.From(v.GetGroup().GetId())
 	if err != nil {
 		return nil, err
@@ -487,16 +484,28 @@ func (s coreGroupMembership) Erase(ctx context.Context, req *app.GroupMembership
 	if err := s.mayTakeAll(ctx, "ref", gs); err != nil {
 		return nil, err
 	}
-	if err := s.mayTakeAway(ctx, "ref", v.GetRole().GetMethods(), pdid.Nil); err != nil {
+	theirs, err := s.given(ctx, v.GetId())
+	if err != nil {
 		return nil, err
 	}
+	if err := s.mayTakeAll(ctx, "ref", theirs); err != nil {
+		return nil, err
+	}
+	if !grantsAdministration(gs) {
+		// Nothing a tenant is administered through: a group bound to less,
+		// and one that is not there any more, whose places give nothing.
+		return s.GroupMembershipServiceServer.Erase(ctx, req)
+	}
+
+	// A group that is there, bound across the tenant, which whoever passed
+	// for it above reads with the row.
 	tenant, err := pdid.From(v.GetGroup().GetTenant().GetId())
 	if err != nil {
 		return nil, err
 	}
 
 	var out *app.GroupMembershipEraseResponse
-	err = s.keepsAdministered(ctx, tenant, grantsAdministration(gs), "taking them out of group "+v.GetGroup().GetAlias(), func(next app.Server) error {
+	err = s.keepsAdministered(ctx, tenant, true, "taking them out of group "+v.GetGroup().GetAlias(), func(next app.Server) error {
 		var err error
 		out, err = next.GroupMembership().Erase(ctx, req)
 

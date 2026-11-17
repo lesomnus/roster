@@ -125,6 +125,8 @@ grants has to cover the method **on its own** (`server/core/escalate.go`,
 | A narrowing takes out what is named and adds nothing | `TestANarrowTakesOutWhatIsNamedAndAddsNothing` |
 | A team erased is every role held in it, taken | `TestATeamIsErasedByWhoeverCouldHaveGivenWhatItGives` |
 | A group's manager holds what the group is bound to by being in it, and so may erase it | `TestWhoeverManagesAGroupMayEraseIt` |
+| What a row gave is read from the row: a role of the whole tenant, which somebody who erases in one site does not see, is still what its binding gave there, and what a place on a team or a manager's place in a group carried | `TestWhatARowGaveIsReadFromTheRowAndNotAsItsTakerSeesIt` |
+| A row that gives nothing any more -- its role erased, or the team or the group it is of -- is taken away by whoever may erase where it is, and a site is emptied of one like any other | `TestWhatGrantsNothingAnyMoreIsTakenAway` · `TestAnOperatorTakesAwayWhatGrantsNothingToo` |
 
 ### Nobody writes a way into an account wider than their own, or takes one away
 
