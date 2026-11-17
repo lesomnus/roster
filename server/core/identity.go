@@ -174,6 +174,9 @@ func (s coreIdentity) add(ctx context.Context, req *app.IdentityAddRequest) (*ap
 		return nil, err
 	}
 
+	// Asked here, where it always was, so that a caller refused for this is
+	// told so before being told whose account it is -- and asked again below,
+	// where the answer is one two writes cannot both be given.
 	if err := s.oneAccountPerProvider(ctx, req); err != nil {
 		return nil, err
 	}
@@ -185,7 +188,11 @@ func (s coreIdentity) add(ctx context.Context, req *app.IdentityAddRequest) (*ap
 		return nil, err
 	}
 
-	subject, err := s.subjectFits(ctx, req.GetHolder(), req.GetProvider(), req.GetSubject())
+	holder, tenant, err := s.whose(ctx, req.GetHolder())
+	if err != nil {
+		return nil, err
+	}
+	subject, err := s.subjectFits(ctx, tenant, req.GetProvider(), req.GetSubject())
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +203,68 @@ func (s coreIdentity) add(ctx context.Context, req *app.IdentityAddRequest) (*ap
 		req.SetSubject(subject)
 	}
 
-	return s.IdentityServiceServer.Add(ctx, req)
+	// The count and the write together, or neither.
+	//
+	// What [coreIdentity.oneAccountPerProvider] asks is how many accounts the
+	// person has at this provider, which is a count of other rows, and the
+	// write after it adds to that count: [Core.only]'s case, from the other
+	// side of [coreIdentity.Erase]. Two accounts added at once each counted
+	// none and both landed. So both make one write on the person's own row
+	// first, and whichever is second counts what the first wrote.
+	var out *app.Identity
+	err = s.only(ctx, holder, func(next app.Server, _ dialect.Driver) error {
+		if err := s.on(next).oneAccountPerProvider(ctx, req); err != nil {
+			return err
+		}
+
+		v, err := next.Identity().Add(ctx, req)
+		if err != nil {
+			return err
+		}
+
+		out = v
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+// whose is the person an account is written for, as this caller reads them:
+// their identifier, which is the row two writes of their accounts contend on
+// ([Core.only]), and their tenant, whose connection says what shape a subject
+// has ([coreIdentity.subjectFits]).
+//
+// Neither, for a reference that names no person this caller can see. `Add`
+// refuses that as what it is -- a reference naming no person is an argument
+// and not a missing row -- and there is then nobody whose accounts two writes
+// could both count.
+func (s coreIdentity) whose(ctx context.Context, ref *app.HolderRef) ([]byte, pdid.Id, error) {
+	if ref == nil {
+		return nil, pdid.Nil, nil
+	}
+
+	v, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref:    ref,
+		Select: app.HolderSelect_builder{Tenant: app.TenantSelect_builder{}.Build()}.Build(),
+	}.Build())
+	switch status.Code(err) {
+	case codes.OK:
+	case codes.NotFound, codes.InvalidArgument:
+		return nil, pdid.Nil, nil
+	default:
+		return nil, pdid.Nil, err
+	}
+
+	tenant, err := pdid.From(v.GetTenant().GetId())
+	if err != nil {
+		return nil, pdid.Nil, err
+	}
+
+	return v.GetId(), tenant, nil
 }
 
 // Get finds an identity, and one named by its subject in the one spelling the
@@ -305,18 +373,11 @@ func subjectIsStable(v string) error {
 //
 // What it answers is the subject as it is kept: a GUID in the one spelling it
 // has ([front.Subject]), and anything else as it was written.
-func (s coreIdentity) subjectFits(ctx context.Context, holder *app.HolderRef, provider, subject string) (string, error) {
-	tenant, err := s.tenantOfHolder(ctx, holder)
-	switch status.Code(err) {
-	case codes.OK:
-	case codes.NotFound, codes.InvalidArgument:
-		// Not a person this caller can see. `Add` refuses that as what it is
-		// -- a reference naming no person is an argument and not a missing
-		// row -- and this has nothing to hold it to.
-		return subject, nil
-	default:
-		return "", err
-	}
+//
+// `tenant` is the person's ([coreIdentity.whose]), and none where they are
+// nobody this caller can see: there is then no connection to hold it to, and
+// it is answered as it was written.
+func (s coreIdentity) subjectFits(ctx context.Context, tenant pdid.Id, provider, subject string) (string, error) {
 	claim, err := s.claimOf(ctx, tenant, provider)
 	if err != nil {
 		return "", err
@@ -511,20 +572,28 @@ func (s coreIdentity) Resubject(ctx context.Context, req *app.IdentityResubjectR
 // person may have more of them than a page holds and a check that is right only
 // for the first twenty is the bug this is replacing.
 //
-// # And what asking the database still does not decide
+// # And what asking the database did not decide
 //
 // Two `Add`s at one provider with different subjects, at the same time. Both
-// list, neither sees the other, and both are written -- the same read-then-write
-// gap [coreIdentity.Erase] has, and the same person accumulating two accounts
-// this refuses when it is asked once.
+// listed, neither saw the other, and both were written -- the same
+// read-then-write gap [coreIdentity.Erase] had, and the same person
+// accumulating two accounts this refuses when it is asked once. Forty people,
+// each given two at once: thirty-eight held both (#279).
 //
-// This half a database can decide on its own, and should: the uniqueness that
-// exists is `(tenant, provider, subject)` where nothing is erased, and what
-// this function means is `(holder, provider)` on the same terms. That is an
-// index in the schema rather than a judgement in a layer, so it is not written
-// here -- and this function stays either way, because a constraint violation
-// says "already exists" and what a caller needs to be told is which link went
-// to the wrong row.
+// So it is asked where [coreIdentity.Erase] counts: in one transaction with
+// the write, after a write on the person's own row that both callers make
+// first ([Core.only], which [coreIdentity.add] takes). Whichever is second
+// lists what the first wrote, and is told what this says.
+//
+// # Why not an index
+//
+// The uniqueness that exists is `(tenant, provider, subject)` where nothing
+// is erased, and what this means is `(holder, provider)` on the same terms,
+// which a schema can say. It is not said there because a unique index is a
+// key, and a key is a way to name the row: `IdentityRef` would gain a third
+// on the wire, for a rule that is this layer's to state. This function would
+// stay either way: a constraint says "already exists", and what a caller
+// needs to be told is which link went to the wrong row.
 func (s coreIdentity) oneAccountPerProvider(ctx context.Context, req *app.IdentityAddRequest) error {
 	ref := req.GetHolder()
 	if ref == nil {
