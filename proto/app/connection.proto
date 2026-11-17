@@ -111,6 +111,10 @@ message Connection {
   // how D13 survives a connection: nothing here is a secret, so nothing here is
   // a secret being handed out.
   //
+  // The front doors roster ships read `env:NAME` and refuse every other word
+  // (`account.EnvSecret`): a `file:` reference is one a front door of a
+  // deployment's own would have to read.
+  //
   // Empty is a provider that needs none -- a public client with PKCE, which is
   // what a front door with no back end has.
   //

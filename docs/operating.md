@@ -834,6 +834,13 @@ The directory's key is still yours to write either way:
 `roster control key add --allow /roster.NominationService/List directory`, and
 `roster app install --tenant … --role … directory` in each tenant it serves.
 
+**A sign-in through a provider is finished by the process that began it.** The
+Login App and the account app keep a round trip to a provider in memory for its
+ten minutes, so with two replicas a browser that comes back to the other one is
+answered `400` and starts again, and a restart ends the round trips under way.
+Run one replica of each, or keep a browser at the replica it began at. A
+sign-in by password has no such state.
+
 **A seal unsaid is one too**, and costs the same kind of thing. `account.seal` and
 `login.seal` left out are a key made at start, so a second replica opens none of
 the sessions the first sealed and neither does the process after a restart. The
