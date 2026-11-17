@@ -845,6 +845,14 @@ answered `400` and starts again, and a restart ends the round trips under way.
 Run one replica of each, or keep a browser at the replica it began at. A
 sign-in by password has no such state.
 
+One replica is also what makes a first sign-in one person. Under `enrolling` a
+front door looks for an account, and where there is none makes the person and
+links them; arrivals of one account take turns inside a process, and nothing
+orders them across two. Somebody new who arrives at two replicas in one moment
+is signed in at both as one person, and may leave a second, with a name nobody
+chose and no way in, which the log names as a warning and an administrator
+erases ([login.md](login.md) § *Putting people in, and letting them arrive*).
+
 **A seal unsaid is one too**, and costs the same kind of thing. `account.seal` and
 `login.seal` left out are a key made at start, so a second replica opens none of
 the sessions the first sealed and neither does the process after a restart. The

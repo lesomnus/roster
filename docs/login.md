@@ -938,6 +938,36 @@ in there: nothing holds such a connection to one organisation's accounts, and
 Google's `hd` is not read. It is the setting for a deployment where that is
 meant, or whose tenants connect only directories of their own.
 
+**A first sign-in under `enrolling` is two writes, the person and then their
+account, and the front door keeps them together as far as it can.** Roster has
+no one write for both that a front door may call
+(`HolderService.Provision` is a directory's). So:
+
+- What the account would be refused for on its form is asked **before anybody
+  is made**: a subject that is an address or has a space at an end, and one
+  that is no GUID where the connection names people by `oid`. That is a
+  connection naming the wrong claim, and everybody who arrives through it is
+  answered that this login is not working, as before -- and no longer leaves a
+  person behind at every try, with the plain name and no way in.
+- Arrivals of one account **take turns** at a front door, so two tabs of one
+  new person are one person: the second finds what the first made.
+- Two front doors are not one. A person arriving at both in the same moment --
+  the Login App and the account app, or two replicas of one -- is looked for
+  twice before either writes. Each is signed in as the one person the account
+  was linked to; whoever the other made is left with a name nobody chose and no
+  way in, and the log says who, as a warning, for an administrator to erase
+  (`roster --as admin holder erase`). A front door does not take them back
+  itself: erasing a person is not held to what they hold, so a role that
+  could would reach everybody in the tenant.
+
+What cannot be asked beforehand is what is about a row. For somebody an
+operator entered, a link refused because they hold more than the front door is
+the refusal below. For somebody `enrolling` has just made, who holds nothing,
+it is a front door whose role lets it make people and not link them, which is
+not the role `roster login provision` or `roster account provision` writes; a
+front door given such a role still leaves a person at each try, and its log
+names each.
+
 Matching asks two things. The **directory** has to say the address is verified:
 one that let somebody type an address into their own profile would hand out
 whichever account carries it. And the **row** has to be somebody's word that it

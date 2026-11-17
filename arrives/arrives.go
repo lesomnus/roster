@@ -86,6 +86,12 @@ type Caller struct {
 	// Core 5.3.2). Empty when Subject is the `sub`.
 	sub string
 
+	// claim is the claim the connection names its people by
+	// (`Connection.subject_claim`), which is what gives Subject a shape where
+	// it has one: an `oid` is a GUID ([unkept]). Empty is a connection that
+	// names none, and so `sub`.
+	claim string
+
 	// What else the token carried, for a policy that names people by it.
 	Email    string
 	Verified bool
@@ -293,6 +299,18 @@ func Expected() Enrol {
 // named as somebody with no address is: a name nobody chose ([aliasOf]),
 // which is theirs to change. They are enrolled all the same -- who may arrive
 // is the policy's, and this is only what they are called.
+//
+// # And nobody is made whose account roster would not keep
+//
+// Making somebody and linking their account are two calls: this is the first,
+// and [Providers.Known] makes the second. A subject roster keeps none of -- an
+// address, where a connection names the wrong claim -- was refused at the
+// second, after the first: the person stayed, with the plain alias and no way
+// in, and since nothing of theirs was found at the next try, that one made
+// another, with a suffix. Three tries left three people (#279). So what the
+// link is refused for on its form is asked here, before anybody is made
+// ([unkept]). It is the connection's failure, as it was, and the app's to
+// answer as its own.
 func Enrolling() Enrol {
 	return func(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, error) {
 		id, ok, err := invitation(ctx, c, who)
@@ -301,6 +319,11 @@ func Enrolling() Enrol {
 		}
 		if ok {
 			return id, nil
+		}
+
+		if why := unkept(who); why != "" {
+			return pdid.Nil, fmt.Errorf("enrol %s/%s: nobody is made, because roster would keep no account for them: the subject %s",
+				who.Provider, who.Subject, why)
 		}
 
 		named := ""
@@ -333,6 +356,27 @@ func Enrolling() Enrol {
 
 		return pdid.From(v.GetId())
 	}
+}
+
+// unkept is why roster would keep no account for this arrival, whoever it were
+// linked to, and empty where it would: what `IdentityService/Add` refuses a
+// subject for on its form.
+//
+// The rule is roster's and is asked of roster's own functions, since a copy of
+// it here would be the one that fell behind: [front.Unstable] for what no
+// subject is, and [front.GUID] where the connection names its people by `oid`.
+// What else that write refuses is about a row -- who the person is, what they
+// hold, whether the account is somebody's already -- and cannot be asked
+// before there is one.
+func unkept(who Caller) string {
+	if why := front.Unstable(who.Subject); why != "" {
+		return why
+	}
+	if who.claim == front.ClaimOid && !front.GUID(who.Subject) {
+		return "is not a GUID, and this connection names its people by `oid`, which is one"
+	}
+
+	return ""
 }
 
 // AliasOf is what to call somebody a directory sent, from their address: the
@@ -549,6 +593,10 @@ type Providers struct {
 	// discovery is what a connection's issuer publishes, fetched once for as
 	// long as the connection names that issuer ([discovered]).
 	discovery sync.Map // tenantId + "\x00" + name -> *discovered
+
+	// arriving is the sign-ins under way here, one at a time for one account
+	// ([turns]).
+	arriving turns // tenantId + "\x00" + provider + "\x00" + subject
 
 	// own is how a provider is asked anything -- its document, its token
 	// endpoint, its keys, its userinfo, its API, a picture on that API's
@@ -999,6 +1047,7 @@ func (p *Providers) exchange(ctx context.Context, cfg *oauth2.Config, v *verifie
 		Name:     claims.Name,
 		Picture:  claims.Picture,
 		token:    tok,
+		claim:    v.subject,
 	}
 	who.Authenticated = authTime(claims.AuthTime)
 	if named := v.subject; named != "" && named != "sub" {
@@ -1073,6 +1122,14 @@ func authTime(v any) time.Time {
 // forgotten, so either may be what this arrival is found by. Nobody is signed
 // in, linked or made, under any policy, and what is answered is [ErrErased].
 //
+// # And one account arrives one at a time
+//
+// A first sign-in looks, finds nobody, and may then make somebody and link
+// them. Arrivals of one account take turns at this front door ([turns]), so
+// the second finds what the first made. One finished first at another front
+// door is found when the link is refused as taken, and whoever it names is
+// who this is.
+//
 // # And it attests on every sign-in, not only the first
 //
 // Somebody already linked used to be answered before [Providers.attest] was
@@ -1083,22 +1140,13 @@ func authTime(v any) time.Time {
 // unproved for good. `Email.Attest` is idempotent for exactly this, so the
 // returning half calls it too.
 func (p *Providers) Known(ctx context.Context, enrol Enrol, who *Caller) (pdid.Id, error) {
-	v, err := p.identity(ctx, who, who.Subject)
-	switch status.Code(err) {
-	case codes.OK:
-		id, err := pdid.From(v.GetHolder().GetId())
-		if err != nil {
-			return pdid.Nil, err
-		}
-		if gone(v.GetHolder()) {
-			return pdid.Nil, erased(ctx, *who, id, "the account they had")
-		}
-		p.attest(ctx, id, v, *who)
+	// One arrival at a time for one account ([turns]): what follows looks,
+	// and then may make somebody and link them, and two arrivals of one new
+	// person that both looked first are two people.
+	defer p.arriving.take(who.Tenant.String() + "\x00" + who.Provider + "\x00" + who.Subject)()
 
-		return id, nil
-	case codes.NotFound:
-	default:
-		return pdid.Nil, err
+	if id, ok, err := p.linked(ctx, who); err != nil || ok {
+		return id, err
 	}
 
 	if who.sub != "" && who.sub != who.Subject {
@@ -1149,6 +1197,28 @@ func (p *Providers) Known(ctx context.Context, enrol Enrol, who *Caller) (pdid.I
 			return pdid.Nil, ErrAnotherAccount
 		}
 	}
+	if status.Code(err) == codes.AlreadyExists {
+		// Taken since this arrival looked, which is another arrival of the
+		// same account, finished first at another front door: the account is
+		// there now, and whoever it names is who this is. It was an error like
+		// any other, about an account that had just been made for the very
+		// person arriving.
+		//
+		// Whoever the policy made for this arrival is then left, with no way
+		// in. That is said, with who: a front door erases nobody -- erasing a
+		// person is not held to what they hold, so a role that could take
+		// this one back could erase anybody in the tenant -- and an
+		// administrator does (`roster holder erase`).
+		if has, ok, again := p.linked(ctx, who); again == nil && ok {
+			if has != id {
+				slog.WarnContext(ctx, "arrives: one new person arrived at two front doors at once, and the other linked their account first; "+
+					"whoever was made for them here is left with no way in, for an administrator of the tenant to erase (`roster holder erase`)",
+					"tenant", who.TenantAlias, "left", id.String(), "holder", has.String(), "provider", who.Provider, "subject", who.Subject)
+			}
+
+			return has, nil
+		}
+	}
 	if err != nil {
 		return pdid.Nil, fmt.Errorf("link %s/%s: %w", who.Provider, who.Subject, err)
 	}
@@ -1156,6 +1226,100 @@ func (p *Providers) Known(ctx context.Context, enrol Enrol, who *Caller) (pdid.I
 	p.attest(ctx, id, link, *who)
 
 	return id, nil
+}
+
+// linked is who the claim already names here, if it names anybody: the
+// ordinary lookup, which every sign-in after the first is.
+//
+// Somebody erased is still named by the account they had, and is refused
+// ([ErrErased]). Anybody else is attested, at every sign-in ([Providers.Known]).
+func (p *Providers) linked(ctx context.Context, who *Caller) (pdid.Id, bool, error) {
+	v, err := p.identity(ctx, who, who.Subject)
+	switch status.Code(err) {
+	case codes.OK:
+	case codes.NotFound:
+		return pdid.Nil, false, nil
+	default:
+		return pdid.Nil, false, err
+	}
+
+	id, err := pdid.From(v.GetHolder().GetId())
+	if err != nil {
+		return pdid.Nil, false, err
+	}
+	if gone(v.GetHolder()) {
+		return pdid.Nil, false, erased(ctx, *who, id, "the account they had")
+	}
+	p.attest(ctx, id, v, *who)
+
+	return id, true, nil
+}
+
+// turns is one arrival at a time under a name, at this front door: a lock by
+// key, kept for as long as somebody holds it or waits for it.
+//
+// # What it is for
+//
+// A first sign-in is a lookup that finds nobody, and then -- where the policy
+// enrols -- two writes: the person, and their account. Nothing makes the three
+// one. Four arrivals of one new person at once each found nobody and each
+// made somebody; one link landed and three were refused as taken, so three
+// tabs were answered *cannot sign in* and three people were left with a name
+// nobody chose and no way in (#279).
+//
+// Roster has no one write for a person and their account that a front door
+// may call, and a verb is not added for it; and a front door does not take
+// back what it made ([Providers.Known] says why). So the arrivals of one
+// account take turns here, and the second finds what the first made.
+//
+// # What it is not
+//
+// More than this process. Two front doors -- the Login App and the account
+// app, or two replicas of one -- are two of these, and a person arriving at
+// both in one moment is still looked for twice before either writes. Each is
+// then answered as the one person the account was linked to
+// ([Providers.Known]), and whoever the other made is left, and said in the
+// log. A round trip is finished by the process that began it, so one of each
+// is how a deployment runs them (`docs/operating.md`).
+type turns struct {
+	mu   sync.Mutex
+	held map[string]*turn
+}
+
+type turn struct {
+	sync.Mutex
+
+	// wanted is how many arrivals hold this turn or wait for it: at none, it
+	// is forgotten, so that what is kept is the sign-ins under way and not
+	// everybody who ever arrived.
+	wanted int
+}
+
+// take waits for the turn under `key`, and answers what gives it back.
+func (t *turns) take(key string) func() {
+	t.mu.Lock()
+	if t.held == nil {
+		t.held = map[string]*turn{}
+	}
+	v := t.held[key]
+	if v == nil {
+		v = &turn{}
+		t.held[key] = v
+	}
+	v.wanted++
+	t.mu.Unlock()
+
+	v.Lock()
+
+	return func() {
+		v.Unlock()
+
+		t.mu.Lock()
+		defer t.mu.Unlock()
+		if v.wanted--; v.wanted == 0 {
+			delete(t.held, key)
+		}
+	}
 }
 
 // accountAt is the subject somebody already signs in by at a provider, and
