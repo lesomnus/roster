@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"github.com/lesomnus/z"
@@ -10,6 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 
@@ -33,7 +35,93 @@ func (s Core) Identity() app.IdentityServiceServer {
 // Neither is something the schema can state. Uniqueness of the pair is a column
 // constraint; these are judgements about what a good pair looks like and about
 // what a second one means.
+//
+// And it refuses the one somebody writes themselves where it is not theirs to
+// say: at the connection their tenant's directory provisions through
+// ([coreIdentity.directorys]).
 func (s coreIdentity) Add(ctx context.Context, req *app.IdentityAddRequest) (*app.Identity, error) {
+	if err := s.directorys(ctx, req.GetHolder(), req.GetProvider()); err != nil {
+		return nil, err
+	}
+
+	return s.add(ctx, req)
+}
+
+// directorys refuses an account at the connection a tenant's directory
+// provisions through to somebody who writes it of their own accord.
+//
+// # What a person's own write did there
+//
+// `IdentityService/Add` is somebody's own to call about their own row
+// (`self-service`), and roster checks nothing about the subject: being the
+// relying party is what it is not. Anywhere else that is a second way into the
+// account of whoever wrote it, and nobody else's business.
+//
+// At the connection a directory provisions through, the row is also **who the
+// directory means**. It finds its user by `externalId` through that identity
+// (`scim`), and speaks for whoever has one ([Core.speaksFor]). So somebody who
+// wrote a colleague's id onto their own row was that colleague to the
+// directory: found by a lookup for them, the reason creating them was refused
+// as taken, and the row every later word about the colleague was written
+// onto -- a name, a suspension, a place in a group the directory grants
+// through (#278).
+//
+// # Whose it is
+//
+// The directory's to say. It writes these as it makes people
+// (`HolderService.Provision`, which does not come through here: [coreIdentity.add]).
+// One for somebody already here is written on a grant, as `Provision` is
+// called on one: by whoever holds `IdentityService/Add` across the tenant by
+// a binding -- which what everybody may do to their own account is not
+// (`cmd/policy.go`, `policy.own`). That is a front door, which links somebody
+// it saw the provider sign in; an administrator; an operator's `roster scim
+// adopt`. Across the tenant because the directory finds its people across it:
+// a grant made in a site does not say who somebody is to everybody.
+//
+// The deployment's own work is not asked, as everywhere in this package.
+func (s coreIdentity) directorys(ctx context.Context, holder *app.HolderRef, provider string) error {
+	if s.deployment(ctx) {
+		return nil
+	}
+
+	tenant, err := s.tenantOfHolder(ctx, holder)
+	switch status.Code(err) {
+	case codes.OK:
+	case codes.NotFound, codes.InvalidArgument:
+		// Not a person this caller can see, which `add` refuses as what it is.
+		return nil
+	default:
+		return err
+	}
+	c, err := s.connectionOf(ctx, tenant, provider)
+	if err != nil || !c.GetProvisions() {
+		return err
+	}
+
+	f, _ := frame.From(ctx)
+	if s.rules.Everywhere == nil {
+		return status.Error(codes.PermissionDenied,
+			"this server cannot say what you hold across the tenant, so it will not let you say who has an account at the connection its directory provisions through")
+	}
+	held, err := s.rules.Everywhere(ctx, f.Actor)
+	if err != nil {
+		return err
+	}
+	if slices.ContainsFunc(held, func(m string) bool { return frame.Covers(m, app.IdentityService_Add_FullMethodName) }) {
+		return nil
+	}
+
+	return status.Errorf(codes.PermissionDenied,
+		"provider: this tenant's directory provisions through %s, so who has an account there is the directory's to say. "+
+			"It writes these as it makes people, and one for somebody already here is written by whoever holds %s across the tenant "+
+			"-- a front door they signed in through, or an administrator -- and not by the person",
+		provider, app.IdentityService_Add_FullMethodName)
+}
+
+// add is [coreIdentity.Add] for a verb of this layer's own that writes an
+// account as it makes the person -- a directory's `Provision` -- which is
+// asked about itself where it arrives, and not about `Add`.
+func (s coreIdentity) add(ctx context.Context, req *app.IdentityAddRequest) (*app.Identity, error) {
 	// The provider is a connection's name wherever it is one, and is held to
 	// what a connection's name is held to ([named]): `Entra` beside the
 	// connection `entra` was a second account for one person, which nothing
@@ -213,27 +301,39 @@ func (s coreIdentity) subjectFits(ctx context.Context, holder *app.HolderRef, pr
 // claim, and its subjects are whatever it says they are. Read through this
 // stack, so a connection the caller cannot see is one they are not held to.
 func (s Core) claimOf(ctx context.Context, tenant pdid.Id, provider string) (string, error) {
+	v, err := s.connectionOf(ctx, tenant, provider)
+	if err != nil {
+		return "", err
+	}
+
+	return subjectClaimOf(v.GetSubjectClaim()), nil
+}
+
+// connectionOf is a tenant's connection of that name, with what this layer
+// asks of one about an identity at it -- the claim it names its people by, and
+// whether a directory provisions through it -- and nil where there is none.
+func (s Core) connectionOf(ctx context.Context, tenant pdid.Id, name string) (*app.Connection, error) {
 	if tenant == pdid.Nil {
-		return claimSub, nil
+		return nil, nil
 	}
 
 	v, err := s.Next().Connection().Get(ctx, app.ConnectionGetRequest_builder{
 		Ref: app.ConnectionRef_builder{
 			At: app.ConnectionRefByAt_builder{
 				Tenant: app.TenantRef_builder{Id: tenant.Bytes()}.Build(),
-				Name:   z.Ptr(provider),
+				Name:   z.Ptr(name),
 			}.Build(),
 		}.Build(),
-		Select: app.ConnectionSelect_builder{SubjectClaim: z.Ptr(true)}.Build(),
+		Select: app.ConnectionSelect_builder{SubjectClaim: z.Ptr(true), Provisions: z.Ptr(true)}.Build(),
 	}.Build())
 	if status.Code(err) == codes.NotFound {
-		return claimSub, nil
+		return nil, nil
 	}
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return subjectClaimOf(v.GetSubjectClaim()), nil
+	return v, nil
 }
 
 // Resubject moves an identity to the subject its connection now names.

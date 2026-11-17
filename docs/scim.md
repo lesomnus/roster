@@ -348,6 +348,19 @@ log the first time a directory names somebody it matched, and the admin console
 says it on the person. Run it after a directory's first cycle, and again when
 the log says so.
 
+**An account at the connection is not somebody's own to write.** Anywhere else
+a person may write an account at a provider onto their own row, and roster
+checks nothing about it (`IdentityService/Add`, in the tenant's `self-service`
+role). At the connection a directory provisions through, that row is who the
+directory means: it finds its user by `externalId` through it and speaks for
+whoever has one. Somebody who wrote a colleague's id onto their own row would
+be that colleague to the directory -- found by its lookup, the reason creating
+the colleague is refused as taken, and the row its `active: false` and its
+groups land on. So there the write takes `IdentityService/Add` held **across
+the tenant**: a front door, which links somebody it saw the provider sign in;
+an administrator; `adopt` above. A person's own is refused, and so is the
+account page's *connect* for that connection, which is made as them.
+
 **Leaving.** `active: false` suspends them -- the same suspension `Disable`
 writes, refused everywhere -- and `active: true` lifts it. `DELETE` suspends them
 and keeps the row: what becomes of it is an operator's decision, and the endpoint

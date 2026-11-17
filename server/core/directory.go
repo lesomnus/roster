@@ -100,6 +100,10 @@ func (s Core) speaksFor(ctx context.Context, holder []byte, tenant pdid.Id) erro
 // `Tenant.Add` writes its five. The way-in rules pass because the person is
 // new and holds nothing; that they are new is what makes this safe to hold
 // where `Identity.Add` is not.
+//
+// The identity is written by [coreIdentity.add] and not by `Add`: who may say
+// somebody has an account at this connection is what `Add` asks there
+// ([coreIdentity.directorys]), and this verb is the directory saying so.
 func (s coreHolder) Provision(ctx context.Context, req *app.HolderProvisionRequest) (*app.Holder, error) {
 	t, err := s.Next().Tenant().Get(ctx, app.TenantGetRequest_builder{
 		Ref:    req.GetTenant(),
@@ -162,7 +166,7 @@ func (s coreHolder) Provision(ctx context.Context, req *app.HolderProvisionReque
 		}
 		ref := app.HolderRef_builder{Id: h.GetId()}.Build()
 
-		if _, err := at.Identity().Add(ctx, app.IdentityAddRequest_builder{
+		if _, err := (coreIdentity{at, at.Next().Identity()}).add(ctx, app.IdentityAddRequest_builder{
 			Holder:   ref,
 			Provider: req.GetProvider(),
 			Subject:  req.GetSubject(),
