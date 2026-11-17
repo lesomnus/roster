@@ -4,7 +4,10 @@
 the same five verbs -- `get`, `list` (or `ls`), `add`, `patch`, `erase` -- and
 `watch` where its rows are watched (`holder`, `email`, `identity`, `credential`,
 `team` and a few more; `--help` says). `access` is read and never written, so it
-has `get` and `list` alone. Each command is a client for exactly the RPC of that
+has `get` and `list` alone. `tenant` has no `erase`, because no tenant is erased:
+one is closed with `roster tenant close` and a closed one destroyed with
+`roster forget @tenant` ([operating.md](../operating.md) § *A tenant leaving*),
+and `roster tenant erase` typed all the same says so and fails. Each command is a client for exactly the RPC of that
 name, so what you learn typing is what you write in code. `roster <entity> <verb> --help` prints
 the request shape.
 

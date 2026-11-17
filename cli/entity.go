@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/lesomnus/roster/cmd"
 	"net"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/lesomnus/xli"
+	"github.com/lesomnus/xli/arg"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -21,6 +23,7 @@ import (
 	"github.com/lesomnus/payday/pdcmd"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/core"
 )
 
 // NewCmdEntities is `tenant`, `holder`, `identity` and the rest -- `get`, `ls`,
@@ -29,7 +32,9 @@ import (
 //
 // Nothing here says which entities there are or which verbs they have. `ls`
 // exists for an entity that declared `list:` and not otherwise, so the commands
-// and the schema cannot disagree; see `payday/pdcmd`.
+// and the schema cannot disagree; see `payday/pdcmd`. One verb is taken back
+// out by hand, since the schema declares it and no server does it: a tenant's
+// `erase` ([newCmdTenantNotErased]).
 //
 // # Two ways in, and `client.addr` chooses -- or `--HAL` does
 //
@@ -170,6 +175,12 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 
 	overlays(t)
 
+	if err := t.Replace("tenant/erase", newCmdTenantNotErased()); err != nil {
+		// A path the schema no longer has, which is a mistake in this file
+		// rather than something a deployment can cause.
+		panic(err)
+	}
+
 	// And this app's other hand-written services, remote only for `me`'s
 	// reason each: they are questions to a served deployment, and the local
 	// pipe mounts the entity services alone.
@@ -186,6 +197,41 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 	}
 
 	return t.Commands()
+}
+
+// newCmdTenantNotErased is what stands where `tenant erase` was built.
+//
+// The tree is built from the schema, and `Tenant` declares an erase, so there
+// was a `roster tenant erase`. It could never work: every row of a tenant is
+// keyed to it, and what the command printed was the database's own words about
+// a foreign key, at every point of a tenant's life (#279). The server refuses
+// the method now, in a sentence ([core.NotErased]).
+//
+// # Not offered, and answered all the same
+//
+// A command that can only refuse is not one to offer, so it is hidden: `roster
+// tenant --help` lists what does end a tenant, `close`, and no `erase`. It is
+// not dropped, because every other entity has one and somebody who has typed
+// `roster holder erase` types this next. Dropped, they are told *unknown
+// subcommand*, which reads as a slip of the hand, and not that the act they
+// mean has two other names. So it is there to say so, in the server's words,
+// and it fails.
+//
+// It opens nothing: no database, no connection, and so nobody is asked who is
+// at the shell. The answer is the same in both modes and of every tenant.
+func newCmdTenantNotErased() *xli.Command {
+	return &xli.Command{
+		Brief:  "not a thing a tenant has: see `tenant close`, and `roster forget`",
+		Hidden: true,
+
+		// Whatever was typed after it, as every other `erase` takes it: a
+		// refusal about the arguments would be about the wrong thing.
+		Args: arg.Args{&arg.RestStrings{Name: "REF", Brief: "ignored"}},
+
+		Handler: xli.OnRun(func(context.Context, *xli.Command, xli.Next) error {
+			return errors.New(core.NotErased)
+		}),
+	}
 }
 
 // wireOnly is `t.WithConn()` for a tree of questions only a served deployment

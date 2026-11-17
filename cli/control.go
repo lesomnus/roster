@@ -190,14 +190,22 @@ func newCmdControlVouch(c *cmd.Config) *xli.Command {
 // where there is one tenant. A second tenant would make both answer about
 // whichever row a query happened to return first -- so the command that could
 // make one is not here. The tenant itself is made by whatever writes first.
+//
+// # Nor `tenant erase`
+//
+// No tenant is erased (`core.NotErased`), and this one is the deployment
+// itself: it is not closed either, so there is nothing to say a command there
+// would mean instead, as the data plane's says (`newCmdTenantNotErased`).
 func newCmdControlEntities(c *cmd.Config) xli.Commands {
 	t := pdcmd.NewIn(controlConnector{c}, "roster")
 	overlays(t)
 
-	if err := t.Drop("tenant/add"); err != nil {
-		// A path the schema no longer has, which is a mistake in this file
-		// rather than something a deployment can cause.
-		panic(err)
+	for _, path := range []string{"tenant/add", "tenant/erase"} {
+		if err := t.Drop(path); err != nil {
+			// A path the schema no longer has, which is a mistake in this file
+			// rather than something a deployment can cause.
+			panic(err)
+		}
 	}
 
 	return t.Commands()
