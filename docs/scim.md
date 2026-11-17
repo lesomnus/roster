@@ -383,10 +383,13 @@ an operator brings them back -- `roster --as admin holder enable @contoso/dave`
 **An erase is not something the directory hears.** Somebody erased here -- by an
 operator, or by themselves -- is somebody it no longer finds, and making them
 again is refused as taken, since an erase leaves their identity and their address
-where they were. It fails for them every cycle until they are forgotten, and
-then makes them again, as somebody new. So an operator unassigns a person in the
-directory before erasing them here, and the people a directory provisions do not
-delete their own account, whatever their tenant offers (`MeService.Leave`).
+where they were. It fails for them every cycle until they are forgotten -- or
+until an administrator erases the identity and the address they left
+([operating.md](operating.md) § "Destroying somebody, which an erase does not")
+-- and then makes them again, as somebody new. So an operator unassigns a person
+in the directory before erasing them here, and the people a directory provisions
+do not delete their own account, whatever their tenant offers
+(`MeService.Leave`).
 
 **The directory lifts its own suspensions and no other.** It is one way: it never
 hears that an operator suspended somebody, and restarting its provisioning says
@@ -594,7 +597,7 @@ its log what it could not.
 | the directory lifts only its own suspensions | `TestADirectoryLiftsOnlyItsOwnSuspension` · `TestTheDirectoryDoesNotLiftAnOperatorsSuspension` |
 | its key reaches only the people it makes | `TestADirectoryMakesPeopleAndOnlyNewOnes` · `TestTheEndpointTakesATenantKeyAndNothingElse` |
 | and makes them only at the organisation's own door | `TestADirectoryProvisionsThroughItsOrganisationsOwnDoor` |
-| somebody erased is neither found nor made again until forgotten, and its people do not leave on their own | `TestSomebodyErasedHereIsNeitherFoundNorMadeUntilForgotten` · `TestSomebodyTheirDirectoryProvisionsDoesNotLeaveOnTheirOwn` |
+| somebody erased is neither found nor made again until forgotten, or until an administrator erases the identity and the address they left, and its people do not leave on their own | `TestSomebodyErasedHereIsNeitherFoundNorMadeUntilForgotten` · `TestSomebodyTheirDirectoryProvisionsDoesNotLeaveOnTheirOwn` |
 | a group's whole life at the endpoint, in Entra's order and dialect | `TestADirectoryProvisionsAGroupTheWayEntraDoes` · `TestAGroupsMembersAreSaidTheRFCsWayToo` |
 | its key changes the groups it made and no other | `TestADirectoryChangesTheGroupsItMadeAndNoOther` · `TestADirectorysKeyIsMintedForOneTenantAndOneConnection` |
 | a group it deletes is erased, as its manager may, and where its role does not go that far is emptied and kept | `TestADirectoryDeletesAGroupAsFarAsItsRoleGoes` · `TestWhoeverManagesAGroupMayEraseIt` |

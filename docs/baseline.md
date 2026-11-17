@@ -198,7 +198,7 @@ the page, one of the two is wrong and both are load-bearing.
 | it owns what it sends: an attribute it does not send is left, and a `remove` takes one away | `TestWhatTheDirectoryDoesNotSendIsLeftAlone` |
 | it speaks of people only -- never a front door's declared holder or its own -- and one connection a tenant provisions through | `TestTheEndpointSpeaksOnlyOfPeople` · `TestATenantProvisionsThroughOneConnection` |
 | a directory provisions only at its organisation's own door: `provisions` is refused at an issuer anybody can make an account at, to the deployment as well, whether the mark or the issuer moves, and `Provision` refuses a row that says so all the same | `TestADirectoryProvisionsThroughItsOrganisationsOwnDoor` |
-| an erase is not something the directory hears: somebody erased is neither found nor made again until they are forgotten, and the people it provisions do not delete their own account | `TestSomebodyErasedHereIsNeitherFoundNorMadeUntilForgotten` · `TestSomebodyTheirDirectoryProvisionsDoesNotLeaveOnTheirOwn` |
+| an erase is not something the directory hears: somebody erased is neither found nor made again until they are forgotten, or an administrator erases the identity and the address they left, and the people it provisions do not delete their own account | `TestSomebodyErasedHereIsNeitherFoundNorMadeUntilForgotten` · `TestSomebodyTheirDirectoryProvisionsDoesNotLeaveOnTheirOwn` |
 | `scim:` with no control plane is a start-up failure, and `scim/` reaches roster only over the wire | `TestAnEndpointWithNoControlPlaneIsRefused` · `scripts/test.sh`, *the consumers reach roster only over the wire* |
 
 ## The Login App

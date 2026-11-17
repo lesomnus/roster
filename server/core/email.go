@@ -189,6 +189,8 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 			// The stamp, which decides which of the two shapes below this is.
 			DateVerified: z.Ptr(true),
 			Holder:       app.HolderSelect_builder{}.Build(),
+			// And the address's tenant, which a claimant has to be of.
+			TenantId: z.Ptr(true),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -218,7 +220,13 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 		// and a message sent to the address -- for somebody the address's
 		// tenant never had. The agreement every row naming two holders is
 		// held to (`agree.go`).
-		row, err := s.tenantOfHolder(ctx, app.HolderRef_builder{Id: v.GetHolder().GetId()}.Build())
+		//
+		// The address's tenant is the row's own (`Email.tenant_id`), and was
+		// read off its holder: who, erased, is not there to be read, so a
+		// claim of an address they never proved was `NotFound: Holder not
+		// found`, and the address was kept from whoever reads its mailbox by
+		// a person who had left (#279).
+		row, err := pdid.From(v.GetTenantId())
 		if err != nil {
 			return nil, err
 		}

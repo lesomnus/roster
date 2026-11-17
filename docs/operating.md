@@ -1619,7 +1619,8 @@ restarting its provisioning says `active` for everybody in scope; an operator's
 `Disable` or `Enable` makes a suspension theirs, and somebody the directory deleted
 is an operator's to bring back ([scim.md](scim.md)). An erase it does not hear at
 all: unassign somebody in the directory before erasing them here, or it can
-neither find nor make them until they are forgotten, and makes them again after.
+neither find nor make them until they are forgotten -- or an administrator
+erases the identity and the address they left -- and makes them again after.
 
 **And it suspends only the people it speaks for**: those who sign in through the
 connection it provisions through. Somebody who was here before it -- entered by
@@ -2179,6 +2180,49 @@ each says who they are, by identifier, and which was erased and when. The same
 refusal is made where it is what their directory called them that somebody else is
 called now (`directory_name`, `directory_subject`, `directory_address`), and which
 of the two the directory means is yours to say.
+
+**Until they are forgotten, what they held is still held.** An erase stamps the
+person and nothing else. Their alias is anybody's to take at once. Their
+addresses and their accounts at providers stay theirs, because a restore gives
+back who they were -- and so, for as long as they are neither restored nor
+forgotten:
+
+- nobody else is written that address or that account (`AlreadyExists`). An
+  address they never proved is the exception it is everywhere: it names nobody,
+  and goes to whoever proves it;
+- somebody arriving at a front door by that account, or verified at an address
+  they proved, is refused under every `enrol` -- `403`, *this account was deleted
+  here; an administrator of your organisation can bring it back, or let it go*
+  -- and nobody is made in their place ([login.md](login.md) § *Putting people
+  in, and letting them arrive*);
+- a directory that provisions them is refused as taken, every cycle
+  ([scim.md](scim.md)).
+
+It ends one of three ways. `roster restore` brings them back. `roster forget`
+destroys everything. Or one thing they hold is let go and the rest kept -- by
+an administrator of the tenant, or an operator at the box -- having found it by
+a list filtered to them:
+
+```sh
+roster --as admin identity list '{"filters":[{"holder":{"id":"<their identifier>"}}]}'
+roster --as admin identity erase <the id of the account>
+roster --as admin email erase <the id of the address>
+roster --as admin phone erase <the id of the number>
+```
+
+Each is held to the rule a way in is taken away by -- whoever holds everything
+the person held ([usage/rules.md](usage/rules.md)) -- and an account is not held
+to *nobody removes their last way in*: they are erased, and nothing signs them
+in. Restored afterwards, they are who they were without it.
+
+**And `forget_after` is never unless you set it.** Left empty, an erase holds an
+address and an account for good, and somebody who comes back is refused at the
+door until an operator runs `roster forget` for them. That is right where an
+operator erases people and means it. It is wrong for **a product whose people
+delete their own account and come back** (`config.leave`,
+[usage/customers.md](usage/customers.md)): set the window to as long as a
+mistaken deletion should be undoable, and they are refused within it and arrive
+as somebody new after it.
 
 What goes: everything that says *this person reaches here, signs in there, holds
 this* -- addresses, identities, verifiers, API keys, sessions, attempts, links, and

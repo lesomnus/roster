@@ -169,12 +169,23 @@ erases them exactly as the first line above does, signed out everywhere first.
 sign-ins. It is off unless a tenant turns it on, because a directory a company
 provisions is the company's to empty -- a person deleting themselves out of it is
 somebody the directory can neither find nor make again until they are forgotten,
-and then makes again with nothing of theirs -- and where a tenant with a directory
+or an administrator erases the identity and the address they left, and then makes
+again with nothing of theirs -- and where a tenant with a directory
 does turn it on, the people that directory provisions are refused all the same
 ([scim.md](../scim.md)). A consumer product's
 directory, where an account is the person's own, is the case it is for: Loft's
 SaaS turns it on for the one tenant every account is in, and links to the account
 page's `/#leave` from its own.
+
+**Such a product sets `holder.forget_after` as well.** It is never unless set,
+and until somebody is forgotten their addresses and their accounts at providers
+are still theirs, for a restore to give back. So one who deletes their account
+and signs up again is not made again: at the front door they are answered *this
+account was deleted here; an administrator of your organisation can bring it
+back, or let it go*, at every try, until an operator restores or forgets them.
+With the window set they are refused inside it, where `roster restore` gives
+them back what they had, and arrive as somebody new once it has run out.
+
 [ways-in.md](ways-in.md) § *Deleting your own account* is what it asks first.
 [operating.md](../operating.md) § "Destroying somebody, which an erase does not"
 is what each one leaves behind.

@@ -482,16 +482,16 @@ func (s *Server) claimed(ctx context.Context, claim *app.VouchClaim) (*app.Holde
 				Subject:  z.Ptr(subject),
 			}.Build(),
 		}.Build(),
-		// The same three the credential read asks for, and for the same
-		// reasons: the tenant because a delegation names one, and the two
-		// stamps because a person who is suspended or gone is not somebody a
-		// token gets to be. And the tenant's settings, for [Server.mayHandOn]:
-		// one read either way, and the alternative is a second one on a path
-		// that was reading the row anyway.
+		// What the credential read asks for, and for the same reasons: the
+		// tenant because a delegation names one -- and because a holder that
+		// comes back without one is gone, below -- and the stamp because a
+		// person who is suspended is not somebody a token gets to be. And the
+		// tenant's settings, for [Server.mayHandOn]: one read either way, and
+		// the alternative is a second one on a path that was reading the row
+		// anyway.
 		Select: app.IdentitySelect_builder{
 			Holder: app.HolderSelect_builder{
 				Tenant:       app.TenantSelect_builder{Config: z.Ptr(true), DateClosed: z.Ptr(true)}.Build(),
-				DateErased:   z.Ptr(true),
 				DateDisabled: z.Ptr(true),
 			}.Build(),
 		}.Build(),
@@ -509,18 +509,32 @@ func (s *Server) claimed(ctx context.Context, claim *app.VouchClaim) (*app.Holde
 	}
 
 	who := v.GetHolder()
+	if gone := len(who.GetTenant().GetId()) == 0; gone {
+		// `holder.proto` states this as a guarantee -- an erased holder "cannot
+		// authenticate" -- and this is the control: an erase stamps the holder
+		// alone, so their identity is still here to be found by its subject.
+		//
+		// Erased is read as **a holder that did not come back**, as
+		// [Server.row] reads a link's and `keys.signable` a token's. An edge is
+		// loaded through the rows still there, so somebody erased is answered
+		// as a bare reference: the identifier, and nothing of them. Every
+		// holder has a tenant and this read selects it, so one with none was
+		// not found.
+		//
+		// It asked for `date_erased` on that edge, which is a column of a row
+		// that was not loaded: the check never fired. What stopped somebody
+		// erased was [Server.Accept] reading their tenant next, as an
+		// identifier with no bytes, which a front door saw as `Unknown` and
+		// could only answer as its own failure (#279). Refused here, it is the
+		// answer a claim that reaches nobody gets, and says nothing of which.
+		return nil, status.Error(codes.NotFound, "no such identity")
+	}
 	if who.GetDateDisabled() != nil || who.GetTenant().GetDateClosed() != nil {
 		// The same refusal `verify` makes, and it has to be here too: a
 		// suspension that held for a password and not for a token would be a
 		// suspension that depends on which door somebody came through. A
 		// tenant that closed is everybody in it suspended at once.
 		return nil, status.Error(codes.PermissionDenied, "not to sign in")
-	}
-	if who.GetDateErased() != nil {
-		// `holder.proto` states this as a guarantee -- an erased holder "cannot
-		// authenticate" -- and a reference narrows to the rows still there, so
-		// this is belt beside braces rather than the only control.
-		return nil, status.Error(codes.NotFound, "no such identity")
 	}
 
 	return who, nil
