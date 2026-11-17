@@ -153,7 +153,7 @@ person (`server/core/escalate.go`, `mayReach`).
 
 | | written in | held to it by |
 | --- | --- | --- |
-| A tenant is made with somebody who administers it | `server/core/tenant.go` | `TestATenantIsMadeWithSomebodyWhoCanAdministerIt` |
+| A tenant is made with somebody who administers it, whole or not at all: a refusal or a failure part way leaves nothing, and the alias free -- at the data plane, at `admin.addr`, at the box, and for a tenant a file declares | `server/core/tenant.go`, `cmd/admin.go` | `TestATenantIsMadeWithSomebodyWhoCanAdministerIt` · `TestATenantMadeAtTheOperatorsPortIsWholeOrNotThere` · `TestAFilesTenantIsWholeOrNotThere` |
 | No write leaves a tenant with nobody administering it -- narrowing, erasing, unbinding, suspending, whichever way | `server/core/administered.go` | `TestATenantKeepsSomebodyAdministeringIt` · `TestEveryWriteThatEndsTheLastAdministrationIsRefused` · `TestAnAdministratorThroughAGroupCounts` · `TestTwoNarrowingsCannotBothTakeTheLast` |
 | Leaving is signed out everywhere and erased, both or neither: the last administrator who asks to leave is refused, and stays signed in | `server/me/me.go` | `TestTheLastAdministratorWhoAsksToLeaveStaysSignedIn` |
 | Nor the deployment with nobody operating it, by a key | `server/core/administered.go` | `TestAKeyOfTheDeploymentsIsNotTheDeployment` |
@@ -305,6 +305,7 @@ written against (`server/core/directory.go`).
 | No port takes a moment the server stamps, of any entity: when a row was made, when somebody was suspended, when their sign-ins were ended. A write made in process -- the deployment's own, at start or from a shell on the box -- may say one | `TestNobodyAtAPortSaysWhenARowWasMade` · `TestAnOperatorSaysNoMomentEither` |
 | `control.addr`: a key calls what its holder is bound on the control plane | `TestAKeyAtTheControlListenerIsWhoseItIs` |
 | `admin.addr`: no wall, and the rule about whose way in is written is not asked. It is the deployment's root, and said to be ([operating.md](../operating.md)) | `TestAnOperatorAdministersCustomers` |
+| `admin.addr` writes as one what the data plane writes as one: a tenant, a directory's person, an address that moves from one person to another -- and two operators asking at once do not take somebody's last two ways in | `TestATenantMadeAtTheOperatorsPortIsWholeOrNotThere` · `TestTheOperatorsStackWritesAsOneWhatTheDataPlaneDoes` |
 | What needs no credential is named one method at a time, and a password is not checked for nobody | `TestNobodyVerifiesAPasswordAnonymously` · `TestIntrospectIsNotPublic` |
 | A session is minted when nothing is left to prove: roster's own sign-in asks somebody's second factor, on both planes | `TestRostersOwnSignInAsksTheSecondFactor` |
 | The two planes are two databases: a deployment that names one for both is refused, so that a customer's session is never an operator's | `TestTwoPlanesAreTwoDatabases` |
