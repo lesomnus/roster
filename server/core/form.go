@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"unicode/utf8"
 
 	"github.com/protobuf-orm/ent/dialect"
@@ -15,6 +16,7 @@ import (
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
+	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/portrait"
 )
 
@@ -43,6 +45,18 @@ import (
 // Hangul as in Latin; a label, an address and `data` in bytes, since those are
 // compared and carried rather than read. `docs/usage/customers.md` has the
 // table a caller reads.
+//
+// # And the rest of what a caller writes
+//
+// The first of these were what is written of a person, since that is what
+// anybody writes. What was left had no length either, and two of them are
+// everybody's own to write as well: an account at a provider
+// (`IdentityService/Add`) and a key (`ApiKeyService/Issue`), whose subject and
+// whose list of methods made the list of accounts and the list of keys
+// unanswerable as a name made the list of people. So a subject, an
+// identifier, an address something is asked at and a list -- of methods
+// ([keys.Listed]), of scopes -- each have one, by the same logic: bytes, since
+// every one of them is compared and none is read.
 const (
 	// MaxName is the most characters a `name` has, of anything -- a person, a
 	// team, a tenant -- and the most a profile's display name or department
@@ -72,10 +86,25 @@ const (
 	// identifier.
 	MaxData = 4096
 
-	// MaxDirectorySubject is the most bytes of what a directory calls
-	// somebody (`Holder.directory_subject`): what OpenID Connect lets a
-	// subject be.
-	MaxDirectorySubject = 255
+	// MaxSubject is the most bytes a subject at a provider is: what OpenID
+	// Connect lets one be. MaxDirectorySubject is the same of what a
+	// directory calls somebody (`Holder.directory_subject`), which is a
+	// subject somebody has yet to be linked by.
+	MaxSubject          = 255
+	MaxDirectorySubject = MaxSubject
+
+	// MaxIdentifier is the most bytes an identifier of somebody else's
+	// making is, compared and never read: the id an issuer gave a client,
+	// the name of a provider, the name of one of the deployment's secrets, a
+	// scope, and each of the words an app says a consent in.
+	MaxIdentifier = 255
+
+	// MaxLocation is the most bytes an address something is asked at is: a
+	// connection's issuer, as a picture's address is ([portrait.MaxURL]).
+	MaxLocation = portrait.MaxURL
+
+	// MaxScopes is how many scopes a connection asks its provider for.
+	MaxScopes = 32
 )
 
 // form is the last thing in front of the store: what a write says of a row is
@@ -270,6 +299,44 @@ func personal(p *app.Profile, data *anypb.Any) error {
 	return nil
 }
 
+// bounded is the first of several refusals, or none.
+func bounded(refusals ...error) error {
+	for _, err := range refusals {
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// scoped refuses more scopes than a connection asks for, and one longer than
+// an identifier is.
+func scoped(scopes []string) error {
+	if len(scopes) > MaxScopes {
+		return pderr.Invalidf("scopes", "at most %d of them, and these are %d", MaxScopes, len(scopes))
+	}
+	for i, v := range scopes {
+		if err := sized(fmt.Sprintf("scopes[%d]", i), v, MaxIdentifier); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// connected holds what a connection says beyond the three every row has:
+// where its provider is asked, what the provider calls this app, which of the
+// deployment's secrets it sends, and what it asks for.
+func connected(issuer, client, secret string, scopes []string) error {
+	return bounded(
+		sized("issuer", issuer, MaxLocation),
+		sized("client_id", client, MaxIdentifier),
+		sized("secret_ref", secret, MaxIdentifier),
+		scoped(scopes),
+	)
+}
+
 // held is a write made once what it says has passed [written].
 func held[Q interface {
 	ProtoReflect() protoreflect.Message
@@ -315,8 +382,80 @@ func (s formHolder) Patch(ctx context.Context, req *app.HolderPatchRequest) (*ap
 	return held(ctx, req, s.HolderServiceServer.Patch)
 }
 
+// An account at a provider, which is somebody's own to write: its subject, and
+// the name of the provider.
+
+type formIdentity struct{ app.IdentityServiceServer }
+
+func (s form) Identity() app.IdentityServiceServer { return formIdentity{s.Next().Identity()} }
+
+func (s formIdentity) Add(ctx context.Context, req *app.IdentityAddRequest) (*app.Identity, error) {
+	err := bounded(sized("provider", req.GetProvider(), MaxIdentifier), sized("subject", req.GetSubject(), MaxSubject))
+	if err != nil {
+		return nil, err
+	}
+
+	return s.IdentityServiceServer.Add(ctx, req)
+}
+
+func (s formIdentity) Patch(ctx context.Context, req *app.IdentityPatchRequest) (*app.Identity, error) {
+	err := bounded(sized("provider", req.GetProvider(), MaxIdentifier), sized("subject", req.GetSubject(), MaxSubject))
+	if err != nil {
+		return nil, err
+	}
+
+	return s.IdentityServiceServer.Patch(ctx, req)
+}
+
+// The rows that are written once and have neither a name nor a note: a
+// delegation's list, the client a group is shown to, and the four words an app
+// says a consent in.
+
+type (
+	formConsent       struct{ app.ConsentServiceServer }
+	formDelegation    struct{ app.DelegationServiceServer }
+	formGroupExposure struct{ app.GroupExposureServiceServer }
+)
+
+func (s form) Consent() app.ConsentServiceServer       { return formConsent{s.Next().Consent()} }
+func (s form) Delegation() app.DelegationServiceServer { return formDelegation{s.Next().Delegation()} }
+func (s form) GroupExposure() app.GroupExposureServiceServer {
+	return formGroupExposure{s.Next().GroupExposure()}
+}
+
+func (s formConsent) Add(ctx context.Context, req *app.ConsentAddRequest) (*app.Consent, error) {
+	err := bounded(
+		sized("scope", req.GetScope(), MaxIdentifier),
+		sized("document", req.GetDocument(), MaxIdentifier),
+		sized("version", req.GetVersion(), MaxIdentifier),
+		sized("client", req.GetClient(), MaxIdentifier),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.ConsentServiceServer.Add(ctx, req)
+}
+
+func (s formDelegation) Add(ctx context.Context, req *app.DelegationAddRequest) (*app.Delegation, error) {
+	if err := keys.Listed("methods", req.GetMethods()); err != nil {
+		return nil, err
+	}
+
+	return s.DelegationServiceServer.Add(ctx, req)
+}
+
+func (s formGroupExposure) Add(ctx context.Context, req *app.GroupExposureAddRequest) (*app.GroupExposure, error) {
+	if err := sized("client", req.GetClient(), MaxIdentifier); err != nil {
+		return nil, err
+	}
+
+	return s.GroupExposureServiceServer.Add(ctx, req)
+}
+
 // And every other row that has a name, a note or labels: one type each, since
-// each service is a type of its own, and one rule.
+// each service is a type of its own, and one rule -- with what a key, a role,
+// a connection and a mail domain say beside those three.
 
 type (
 	formApiKey     struct{ app.ApiKeyServiceServer }
@@ -351,10 +490,18 @@ func (s form) Team() app.TeamServiceServer             { return formTeam{s.Next(
 func (s form) Tenant() app.TenantServiceServer         { return formTenant{s.Next().Tenant()} }
 
 func (s formApiKey) Add(ctx context.Context, req *app.ApiKeyAddRequest) (*app.ApiKey, error) {
+	if err := keys.Listed("methods", req.GetMethods()); err != nil {
+		return nil, err
+	}
+
 	return held(ctx, req, s.ApiKeyServiceServer.Add)
 }
 
 func (s formApiKey) Patch(ctx context.Context, req *app.ApiKeyPatchRequest) (*app.ApiKey, error) {
+	if err := keys.Listed("methods", req.GetMethods()); err != nil {
+		return nil, err
+	}
+
 	return held(ctx, req, s.ApiKeyServiceServer.Patch)
 }
 
@@ -367,10 +514,18 @@ func (s formBinding) Patch(ctx context.Context, req *app.BindingPatchRequest) (*
 }
 
 func (s formConnection) Add(ctx context.Context, req *app.ConnectionAddRequest) (*app.Connection, error) {
+	if err := connected(req.GetIssuer(), req.GetClientId(), req.GetSecretRef(), req.GetScopes()); err != nil {
+		return nil, err
+	}
+
 	return held(ctx, req, s.ConnectionServiceServer.Add)
 }
 
 func (s formConnection) Patch(ctx context.Context, req *app.ConnectionPatchRequest) (*app.Connection, error) {
+	if err := connected(req.GetIssuer(), req.GetClientId(), req.GetSecretRef(), req.GetScopes()); err != nil {
+		return nil, err
+	}
+
 	return held(ctx, req, s.ConnectionServiceServer.Patch)
 }
 
@@ -407,10 +562,18 @@ func (s formHostProof) Patch(ctx context.Context, req *app.HostProofPatchRequest
 }
 
 func (s formMailDomain) Add(ctx context.Context, req *app.MailDomainAddRequest) (*app.MailDomain, error) {
+	if err := sized("provider", req.GetProvider(), MaxIdentifier); err != nil {
+		return nil, err
+	}
+
 	return held(ctx, req, s.MailDomainServiceServer.Add)
 }
 
 func (s formMailDomain) Patch(ctx context.Context, req *app.MailDomainPatchRequest) (*app.MailDomain, error) {
+	if err := sized("provider", req.GetProvider(), MaxIdentifier); err != nil {
+		return nil, err
+	}
+
 	return held(ctx, req, s.MailDomainServiceServer.Patch)
 }
 
@@ -431,10 +594,18 @@ func (s formRelation) Patch(ctx context.Context, req *app.RelationPatchRequest) 
 }
 
 func (s formRole) Add(ctx context.Context, req *app.RoleAddRequest) (*app.Role, error) {
+	if err := keys.Listed("methods", req.GetMethods()); err != nil {
+		return nil, err
+	}
+
 	return held(ctx, req, s.RoleServiceServer.Add)
 }
 
 func (s formRole) Patch(ctx context.Context, req *app.RolePatchRequest) (*app.Role, error) {
+	if err := keys.Listed("methods", req.GetMethods()); err != nil {
+		return nil, err
+	}
+
 	return held(ctx, req, s.RoleServiceServer.Patch)
 }
 
