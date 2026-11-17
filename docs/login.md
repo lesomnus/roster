@@ -214,9 +214,15 @@ a list.
 A browser picks its `redirect_uri` from the set its client registered, and Hydra
 refuses anything else -- so what picking another tenant's buys is nothing: the
 password is then checked against that tenant's holders, at a front door that is
-public anyway. What a client whose redirects span two tenants *is* is a flow that
-resolves differently depending on what the browser sent, and
-`roster login doctor` says so.
+public anyway. A client whose redirects are several tenants' is the product the
+paragraph above is about, and each of its flows is about the tenant whose
+redirect it named. `roster login doctor` says so and fails no run for it; it
+used to report that client as broken, which was the check saying the opposite
+of this page. What it leaves to the product is telling its tenants apart, by
+the redirect, because a token says nothing of the tenant (§ *What a token says
+of somebody*). The one such client that is broken is one that can do the device
+grant: a device flow names no redirect, so of two tenants' it is about neither
+(§ *A device with no browser*).
 
 The consent hop **grants what the client asked for and draws nothing**, which is
 `consent: skip`, the default and a decision: every client this app can have was
@@ -728,7 +734,9 @@ Three things to know before deploying it:
   flow has no redirect -- so what answers is the one the client registered, and a
   device client with none resolves to nobody. What that looks like is **the right
   password being refused**, which is why `roster login doctor` reports it as broken
-  and says why. Register the tenant's own host; nothing will redirect to it.
+  and says why. Register the tenant's own host; nothing will redirect to it. And
+  one tenant's: with redirects at two tenants' names a device flow is about
+  neither and is refused, which `doctor` reports as broken too.
 - **The screen cannot say what is being authorised.** Hydra offers no way to read a
   device challenge -- there is `.../requests/device/accept` and no getter beside it
   -- so there is no `/flow` for this screen, no client name and no brand on it. What

@@ -56,7 +56,9 @@ const (
 	Broken Severity = iota
 
 	// Fragile is a thing that works and will stop, or works and does half of
-	// what it looks like it does.
+	// what it looks like it does -- or works as it was meant to, and leaves to
+	// somebody else a thing this cannot see them do. It is printed, and it
+	// fails no run.
 	Fragile
 )
 
@@ -220,20 +222,35 @@ type Whose func(ctx context.Context, host string) (alias string, err error)
 //
 // A flow resolves to a tenant through the **redirect** the authorization request
 // named. So what breaks a client is not being unclaimed -- there is no list to be
-// absent from any more -- but having redirects that answer differently:
+// absent from any more -- but having redirects no flow can be read off:
 //
 //	none of them resolves    every flow raised for it reaches a page saying the
 //	                         login is not working; the tenant has no `Host` row
-//	more than one tenant     which tenant a flow is about depends on which
-//	                         redirect the browser asked for, and the browser
-//	                         chooses from the registered set
+//	more than one tenant,    a device flow names no redirect, so it is read off
+//	and the device grant     the registration, which then has two answers and
+//	                         is refused (`arrivedAt`)
 //
-// The second is a **determinism** finding and not a security one, which is worth
-// being exact about because it looks like the other thing. A browser can only
-// pick a redirect its client registered, and picking another tenant's means its
-// password is checked against that tenant's holders -- whose passwords it does
-// not have, at a front door that is public anyway. What is wrong with it is that
-// one client then means two customers, which nobody meant to write down.
+// # More than one tenant is otherwise what this is for
+//
+// It was reported **Broken** whatever the client's grants, as *which tenant a
+// flow is about then depends on which redirect the browser asked for* -- and
+// that is the design and not a defect of it. `login/at.go` took the tenant off
+// the client and put it on the redirect for exactly this registration: one
+// product serving a hundred tenants is one client, with a redirect at each
+// tenant's name. So a run failed for every deployment that did what the manual
+// says, and a check that is loud about a correct registration is one a
+// deployment learns to ignore ([deviceOnly] says the same of another).
+//
+// Each of its flows is about the tenant whose redirect it named. A browser can
+// only pick a redirect the client registered, and picking another tenant's
+// means its password is checked against that tenant's holders -- whose
+// passwords it does not have, at a front door that is public anyway.
+//
+// It is still **said**, as [Fragile], because of what it leaves to the product
+// and this cannot check: a token says nothing of the tenant its person is of,
+// so a product of several tells them apart by the redirect the code came back
+// to, and keys its accounts on `sub` -- every other claim is one tenant's own
+// word (docs/login.md, § *What a token says of somebody*).
 func ambiguous(ctx context.Context, whose Whose, id string, v *hydraClient) []Finding {
 	if v == nil || len(v.Redirects) == 0 {
 		// Both already said by `check`, and saying them twice is a run somebody
@@ -279,12 +296,24 @@ func ambiguous(ctx context.Context, whose Whose, id string, v *hydraClient) []Fi
 		names = append(names, alias)
 	}
 	sort.Strings(names)
+	theirs := strings.Join(names, " and ")
+
+	// The one flow that names no redirect. Not [deviceOnly]: a client that
+	// does both has device flows too, and it is those that are refused.
+	if slices.Contains(v.Grants, DeviceGrant) {
+		return []Finding{{
+			Severity: Broken,
+			About:    id,
+			What:     fmt.Sprintf("it can do the device grant and its redirect_uris are %s's", theirs),
+			Costs:    "a device flow names no redirect, so nothing says which of them it is about and it reaches a page saying the login is not working",
+		}}
+	}
 
 	return []Finding{{
-		Severity: Broken,
+		Severity: Fragile,
 		About:    id,
-		What:     fmt.Sprintf("its redirect_uris are %s's", strings.Join(names, " and ")),
-		Costs:    "which tenant a flow is about then depends on which redirect the browser asked for, and the browser chooses",
+		What:     fmt.Sprintf("it is one client of several tenants: its redirect_uris are %s's", theirs),
+		Costs:    "each flow is about the tenant whose redirect it named, and a token says nothing of the tenant: the product tells them apart by the redirect, and keys its accounts on sub",
 	}}
 }
 

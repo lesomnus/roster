@@ -63,10 +63,11 @@ import (
 //
 // What is left is one narrow case: a tenant whose product is **not** public
 // sharing an OAuth client with one that is. That is registration hygiene, and
-// `roster login doctor` is where a deployment is told about it -- as an
-// ambiguity rather than as an attack, because a client whose redirects span
-// tenants is a client whose flows resolve differently depending on what the
-// browser sent.
+// `roster login doctor` says of a client whose redirects are several tenants'
+// that it is one -- and fails no run for it, because it is the registration
+// the section above took the tenant off the client for. Each of its flows is
+// about the tenant whose redirect it named. What that leaves to the product is
+// telling its tenants apart, which a token does not do for it.
 
 // remembered is how long what a name resolved to is believed before it is asked
 // about again.
@@ -206,7 +207,9 @@ func (a *App) at(ctx context.Context, name string) (*tenant, error) {
 // **one host**: several that resolve to one tenant would be fine and several
 // that do not are a flow with two answers, which is not something to pick
 // between. Refused, naming them, and `roster login doctor` is where a deployment
-// finds out before somebody tries to sign in.
+// finds out before somebody tries to sign in: a client that can do the device
+// grant, with redirects of several tenants, is the one such client it reports
+// broken.
 func (a *App) arrivedAt(ctx context.Context, requested, client string) (string, error) {
 	if h := redirectHost(requested); h != "" {
 		return h, nil
