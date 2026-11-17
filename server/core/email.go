@@ -382,7 +382,10 @@ func (s coreEmail) Attest(ctx context.Context, req *app.EmailAttestRequest) (*ap
 	}
 
 	if !req.GetVerified() || held.GetDateVerified() != nil {
-		// Nothing the provider said to write down, or it is already written.
+		// Nothing the provider said to write down, or it is already written --
+		// and stays the moment it was first written. A front door attests at
+		// every sign-in, and a stamp that moved with each would move which
+		// address a token says is theirs ([coreEmail.Confirm]).
 		return held, nil
 	}
 
@@ -457,6 +460,20 @@ func (s coreEmail) vouching(ctx context.Context, ref *app.IdentityRef, whose []b
 // again here rather than trusted, for the reason every hop in this app rechecks:
 // minutes pass between the two, and what the row said then is not what it says
 // now. Somebody who proved the address in the meantime keeps it.
+//
+// # A proof of an address already proved moves nothing
+//
+// The link is spent and the row is answered as it stands, with the moment it
+// was first proved. It was stamped again, and `date_verified` is what orders
+// somebody's proved addresses: the one proved first is the one a token says is
+// theirs (`server/me`), so that proving another never changes what a relying
+// party keys an account on. Stamped again, the first address confirmed a
+// second time was the newest, and the claim was another address -- changed by
+// proving nothing new. [coreEmail.Attest] has always left a proved row as it
+// was, which it has to: a directory says the same thing at every sign-in.
+//
+// An address erased and written again is another row, and its proof is a new
+// one, as an address that changed hands is.
 func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*app.EmailConfirmResponse, error) {
 	f, ok := frame.From(ctx)
 	if !ok || f.Actor.IsZero() {
@@ -561,6 +578,17 @@ func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*
 	// A claim, which is a link for somebody who does not hold the row.
 	if !bytes.Equal(l.GetHolder().GetId(), e.GetHolder().GetId()) {
 		return s.moved(ctx, l, e)
+	}
+
+	// Proved already: the proof stands as it was made, and the answer is the
+	// row -- read whole, which is what the stamp below answers with.
+	if e.GetDateVerified() != nil {
+		out, err := s.Next().Email().Get(ctx, app.EmailGetRequest_builder{Ref: ref}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		return app.EmailConfirmResponse_builder{Email: out}.Build(), nil
 	}
 
 	out, err := s.Next().Email().Patch(ctx, app.EmailPatchRequest_builder{

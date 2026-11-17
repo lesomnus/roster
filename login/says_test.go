@@ -166,6 +166,89 @@ func TestTheAddressATokenSaysIsTheOneProvedFirst(t *testing.T) {
 		"with the first address erased, the claim is not the next one proved")
 }
 
+// TestAnAddressProvedAgainIsStillTheOneProvedFirst: a proof of an address that
+// is proved already leaves the moment it was first proved.
+//
+// `email` is the address proved first, which is read off `date_verified`, and
+// `Email.Confirm` wrote that anew whenever a link for the row was spent,
+// proved or not. So somebody who confirmed their first address a second time
+// had made it their newest: the token said `abe@`, their second, where right
+// is `zed@` as it was before the link -- the one thing the rule exists to
+// stop, done by proving nothing new. The link is still spent, and still
+// answers with the row.
+//
+// A directory vouching for the address again is the same act by the other
+// road, and a front door does it at every sign-in through one
+// (`Email.Attest`). That never moved the stamp, and is held to it here.
+func TestAnAddressProvedAgainIsStillTheOneProvedFirst(t *testing.T) {
+	const first, second = "zed@contoso.example", "abe@contoso.example"
+
+	x := require.New(t)
+	d := serve(t)
+	ctx := t.Context()
+
+	scope := []string{"openid", "email"}
+	began := time.Now().Add(-24 * time.Hour).Truncate(time.Second)
+	erin := rstr.HolderRef_builder{Id: d.who["contoso"].Bytes()}.Build()
+
+	// proved is an address of Erin's, stamped `after` the moment this began.
+	proved := func(address string, after time.Duration) *rstr.EmailRef {
+		t.Helper()
+		v, err := d.s.Ungated.Email().Add(ctx, rstr.EmailAddRequest_builder{Holder: erin, Address: address}.Build())
+		require.NoError(t, err)
+		ref := rstr.EmailRef_builder{Id: v.GetId()}.Build()
+		_, err = d.s.Ungated.Email().Patch(ctx, rstr.EmailPatchRequest_builder{
+			Ref: ref, DateVerified: timestamppb.New(began.Add(after)), DateUpdated: v.GetDateUpdated(),
+		}.Build())
+		require.NoError(t, err)
+
+		return ref
+	}
+	// when is the moment the row says it was proved.
+	when := func(ref *rstr.EmailRef) time.Time {
+		t.Helper()
+		v, err := d.s.Ungated.Email().Get(ctx, rstr.EmailGetRequest_builder{Ref: ref}.Build())
+		require.NoError(t, err)
+		require.NotNil(t, v.GetDateVerified())
+
+		return v.GetDateVerified().AsTime()
+	}
+
+	zed := proved(first, time.Hour)
+	proved(second, 2*time.Hour)
+	x.Equal(first, d.saidOf(t, "c1", "contoso", "erin", scope...)["email"])
+
+	// A link for the first, minted and spent as a front door does both: over
+	// the wire, by one caller.
+	emails := rstr.NewEmailServiceClient(d.conn)
+	link, err := emails.Verify(d.ops, rstr.EmailVerifyRequest_builder{Ref: zed}.Build())
+	x.NoError(err)
+	res, err := emails.Confirm(d.ops, rstr.EmailConfirmRequest_builder{Token: link.GetToken()}.Build())
+	x.NoError(err)
+	x.Equal(first, res.GetEmail().GetAddress(), "the link was not answered with the row it is about")
+
+	x.Equal(first, d.saidOf(t, "c2", "contoso", "erin", scope...)["email"],
+		"confirming the first address again made another one the claim")
+	x.True(began.Add(time.Hour).Equal(when(zed)), "an address proved already was stamped again by a second proof: %s", when(zed))
+
+	// And a directory saying, again, that it checked the address.
+	id, err := d.s.Ungated.Identity().Add(ctx, rstr.IdentityAddRequest_builder{
+		Holder: erin, Provider: "entra", Subject: "erin-at-entra",
+	}.Build())
+	x.NoError(err)
+	_, err = emails.Attest(d.ops, rstr.EmailAttestRequest_builder{
+		Holder:    erin,
+		Address:   proto.String(first),
+		VouchedBy: rstr.IdentityRef_builder{Id: id.GetId()}.Build(),
+		Verified:  proto.Bool(true),
+	}.Build())
+	x.NoError(err)
+
+	x.Equal(first, d.saidOf(t, "c3", "contoso", "erin", scope...)["email"],
+		"a directory vouching for the first address again made another one the claim")
+	x.True(began.Add(time.Hour).Equal(when(zed)), "an address proved already was stamped again by a directory's word: %s", when(zed))
+}
+
 // TestATeamOfOneNameAtTwoSitesIsSaidOnce: `teams` is each alias once, in
 // order.
 //

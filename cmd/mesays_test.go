@@ -83,3 +83,48 @@ func TestMeSaysAddressesInTheOrderTheyWereProved(t *testing.T) {
 	x.NotNil(v.GetEmails()[3].GetDateVerified())
 	x.Nil(v.GetEmails()[4].GetDateVerified(), "an address nobody proved is answered as one")
 }
+
+// TestMeSaysTeamsBySiteAndThenByAlias: somebody's teams are answered in one
+// order, the site's alias and then the team's.
+//
+// The read asked for none, so every reader of `Me.Get` got the store's: the
+// account page drew somebody's teams in the order their places were written,
+// and a front door sorted the aliases for itself to say one thing in a token.
+// Here it answered Seoul's `release` first, the place written first; right is
+// the team of no site, then Busan's two, then Seoul's. A team of no site has
+// no site to be ordered by and comes before the ones that have.
+func TestMeSaysTeamsBySiteAndThenByAlias(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	contoso := app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build()
+	join := func(team []byte) {
+		t.Helper()
+		_, err := b.Ungated.TeamMembership().Add(ctx, app.TeamMembershipAddRequest_builder{
+			Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Team:   app.TeamRef_builder{Id: team}.Build(),
+		}.Build())
+		require.NoError(t, err)
+	}
+
+	// Sites, teams and places each written out of the order they are answered
+	// in.
+	seoul := b.site(t, ctx, b.Contoso, "seoul")
+	busan := b.site(t, ctx, b.Contoso, "busan")
+	join(b.team(t, ctx, seoul, "release").Bytes())
+	join(b.team(t, ctx, busan, "release").Bytes())
+	everybody, err := b.Ungated.Team().Add(ctx, app.TeamAddRequest_builder{Tenant: contoso, Alias: "everybody"}.Build())
+	x.NoError(err)
+	join(everybody.GetId())
+	join(b.team(t, ctx, seoul, "operators").Bytes())
+	join(b.team(t, ctx, busan, "operators").Bytes())
+
+	v, err := app.NewMeServiceClient(served(t, b.Server)).Get(asOverTheWire(ctx, b.ContosoUser), app.MeGetRequest_builder{}.Build())
+	x.NoError(err)
+
+	got := []string{}
+	for _, m := range v.GetTeams() {
+		got = append(got, m.GetSiteAlias()+"/"+m.GetAlias())
+	}
+	x.Equal([]string{"/everybody", "busan/operators", "busan/release", "seoul/operators", "seoul/release"}, got)
+}
