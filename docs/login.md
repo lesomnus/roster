@@ -391,7 +391,7 @@ sequenceDiagram
 | the redirect | `login.base` | **one origin for the whole app**, because Hydra sends every browser here under one name, and **one path per connection** under it: `<base>/callback/<tenant>/<connection>`, which is what a deployment registers at that provider. Which flow a callback belongs to comes from the state, a nonce naming a row this app kept; the path has to name the connection that flow went to, so a provider's code can only come back through its own connection's door -- one URL for every connection let a server of one tenant's send a browser on to another's provider and be handed the code that came back (a mix-up, RFC 9700 § 4.4) |
 | the round trip's own checks | `arrives.Trip` | a **PKCE** challenge (S256) on every connection, whose verifier the exchange sends, so a code injected into somebody else's browser is refused by the provider itself; and on an OpenID connection a **nonce**, which the ID token has to carry back. GitHub issues no ID token, so it has the first and not the second |
 | the exchange | the provider's own | the Login App is the relying party, exactly as the account app is. Where the connection's row says the provider is, which is asked only at an address on the internet, and only over `https`, unless the deployment named the host (`login.private_hosts`; [operating.md](operating.md) § *Where a provider is asked*) -- and the issuer the row names now, with no restart when it moves |
-| who may sign in | `login.enrol`, `HolderService.SignsIn` | `invited` admits only somebody already linked; `expected` admits somebody an operator entered, matched by the **address** on their row; `enrolling` admits a stranger too, named by their address where the directory says it is verified and by a name nobody chose where it does not. An address matches only when it is **proved**, or is an **invitation** -- written by somebody other than the person (`Email.entered_by`), vouched for by no directory, about somebody with no identity, credential or key yet, which `SignsIn` says. An address somebody wrote onto their own account, or a directory handed over unchecked, matches nobody: it would hand whoever arrived verified at that mailbox to the account that claimed it first. **Somebody matched who holds more than this app is not linked by it**: the first link is a way in written by the app, which writes none for anybody who holds what its own role does not -- so somebody entered and given a role is answered `403`, *an administrator of your organisation has to link it for you*, until one does (§ *Putting people in, and letting them arrive*). `enrolling` needs `HolderService.Add`, which `roster login provision` puts on the nominated holder's role and never on the key |
+| who may sign in | `login.enrol`, `HolderService.SignsIn` | `invited` admits only somebody already linked; `expected` admits somebody an operator entered, matched by the **address** on their row; `enrolling` admits a stranger too, named by their address where the directory says it is verified and by a name nobody chose where it does not. An address matches only when it is **proved**, or is an **invitation** -- written by somebody other than the person (`Email.entered_by`), vouched for by no directory, about somebody with no identity, credential or key yet, which `SignsIn` says. An address somebody wrote onto their own account, or a directory handed over unchecked, matches nobody: it would hand whoever arrived verified at that mailbox to the account that claimed it first. **Somebody matched who holds more than this app is not linked by it**: the first link is a way in written by the app, which writes none for anybody who holds what its own role does not -- so somebody entered and given a role is answered `403`, *an administrator of your organisation has to link it for you*, until one does (§ *Putting people in, and letting them arrive*). **Somebody erased is neither signed in nor made again**, under any of the three: their account and the address they proved are theirs until they are forgotten, and arriving by either they are answered `403`, *this account was deleted here*, until they are brought back or let go (the same section). `enrolling` needs `HolderService.Add`, which `roster login provision` puts on the nominated holder's role and never on the key |
 | what the profile lacks | the tenant's `config.profile` | `fill` gives the profile what its source says where it has **nothing**: a display name, and a picture for somebody with none. The source is the provider -- the token's `name` and `picture`, else userinfo's, the picture fetched with the token from the provider's own API (Entra's needs `User.Read` among the connection's scopes, consented for the directory first) -- or, where the deployment named the tenant's Slack workspace, Slack's real name and the picture the person chose, found by their address where the directory says it is verified. [operating.md](operating.md) § *A picture from the directory*. Only blanks, through `HolderService.Fill`, which writes nothing over a value and reads nothing back. Never a reason to refuse the sign-in |
 | the sign-in | `VouchService.Accept` | the claim this app verified, exchanged for a delegation. Not `Verify`: there is no password here to check |
 | the session | `Door.Accept` | minted here for the same reason the password path has one -- the consent hop reads the person **as them** to fill the claims |
@@ -1010,6 +1010,42 @@ roster --as admin identity add '{"holder":{"slug":{"alias":"dana","tenant":{"ali
 Where it is another person, an administrator enters them on a row of their own
 and says whose the address is: a proved address does not change hands by
 itself.
+
+**Nor is somebody who was erased signed in, or made again.** An erase stamps
+the person and leaves their account at the provider and their addresses theirs,
+so that `roster restore` gives back who they were
+([operating.md](operating.md) § "Destroying somebody, which an erase does
+not"). So somebody arriving by that account, or verified at an address they
+proved, is found to be a person who is not here -- under every policy, and
+`enrolling` makes nobody in their place. They are answered `403`, *this account
+was deleted here; an administrator of your organisation can bring it back, or
+let it go*, at the Login App and at the account app alike. It is one sentence
+whichever of the two they were found by, and it is said only to whoever the
+provider says holds the account or the mailbox: an address the provider did not
+check is told nothing. The log says, as a warning, who they were, by identifier
+-- their alias came free when they were erased -- and what they were found by:
+
+```
+arrives: somebody erased arrived, and was told their account was deleted; … tenant=contoso holder=<their identifier> provider=entra subject=… by="the account they had"
+```
+
+An operator brings them back, at the box; or an administrator of the tenant
+lets go of what they still hold, after which the next arrival is a stranger's
+and the policy decides:
+
+```sh
+roster restore <the holder the log said>                # they are who they were
+roster --as admin identity list '{"filters":[{"holder":{"id":"<the holder the log said>"}}]}'
+roster --as admin identity erase <the id of the account>    # or: the account is nobody's
+roster --as admin email list '{"filters":[{"holder":{"id":"<the holder the log said>"}}]}'
+roster --as admin email erase <the id of the address>       # and the address
+```
+
+An address they never proved needs none of it: it names nobody, so whoever
+arrives verified at it is a stranger, and takes it. And **`holder.forget_after`
+is never unless the deployment set it**: where people delete their own account
+and come back, set it, or each of them is refused here until an operator forgets
+them.
 
 What `enrolling` calls somebody is derived from the address and is **not** the
 local part of it: an alias begins with a lowercase letter and holds lowercase

@@ -186,6 +186,46 @@ var ErrUnlinked = errors.New("arrives: known here, and not this front door's to 
 // own.
 var ErrAnotherAccount = errors.New("arrives: the address is somebody's who signs in here by another account at this provider")
 
+// ErrErased is what [Providers.Known] answers for somebody who was erased:
+// found by the account they had at this provider, or by an address they
+// proved.
+//
+// # Why they are found at all
+//
+// An erase stamps the person and nothing else. Their alias comes free at once;
+// their accounts at providers and their addresses stay theirs, because
+// somebody erased can be brought back until they are forgotten (`roster
+// restore`), and a restore gives back who they were. So the row a sign-in is
+// resolved by is still there, and names somebody who is not.
+//
+// Nothing here knew that. Arriving by the account they had, they were found
+// and handed to `VouchService/Accept`, which refused them as a fault; arriving
+// verified at an address they proved, they were matched to it ([invitation])
+// and the link to a person who is not there failed. Each came back as an
+// error like any other, which an app answered as its own failure, at every
+// try -- for as long as nobody forgot them, which is for good where the
+// deployment set no `holder.forget_after`.
+//
+// # What it is instead
+//
+// A refusal about this arrival, like [ErrUnlinked]: the account was deleted,
+// and whoever administers their tenant ends it -- by bringing them back, or
+// by letting go of what they hold, so that the next arrival is a stranger's
+// and the policy decides. Nobody is made in their place under any policy: the
+// account and the address are still theirs to come back to, and a second
+// person holding neither would be who they are from then on.
+//
+// # And who is told
+//
+// Whoever the provider says holds that account, or holds a mailbox somebody
+// here **proved**: the two an arrival is matched by, and what
+// [ErrAnotherAccount] and [ErrUnlinked] already answer about. Not an address
+// the provider did not check, which is matched to nobody; and not an address
+// the erased person never proved, which names nobody and keeps nobody out
+// (`server/core/email.go`), so whoever arrives verified at it is a stranger
+// and takes it.
+var ErrErased = errors.New("arrives: somebody erased, who is their tenant's to bring back or let go")
+
 // Invited refuses everybody roster has not been told about, where *told about*
 // means an `Identity` row: this is only reached when there is none, so it is
 // the policy that never makes one.
@@ -409,6 +449,13 @@ func aliasOf(address string) string {
 // as about anybody. The address then follows the proof the way it does
 // everywhere: [Providers.attest] hands it to `Email.Attest`, which takes an
 // address nobody proved from whoever held it.
+//
+// # And the somebody may have been erased
+//
+// An address outlives its person until they are forgotten. A proved one is
+// still theirs, and what it names is somebody who is not here: the answer is
+// [ErrErased], and not a holder to link. One nobody proved is a stranger's to
+// this lookup like any other.
 func invitation(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, bool, error) {
 	if who.Email == "" || !who.Verified {
 		return pdid.Nil, false, nil
@@ -428,7 +475,8 @@ func invitation(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, bool, 
 			DateVerified: proto.Bool(true),
 			EnteredBy:    proto.Bool(true),
 			VouchedBy:    rstr.IdentitySelect_builder{}.Build(),
-			Holder:       rstr.HolderSelect_builder{}.Build(),
+			// With their tenant, which is how somebody erased is told ([gone]).
+			Holder: rstr.HolderSelect_builder{Tenant: rstr.TenantSelect_builder{}.Build()}.Build(),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -446,6 +494,21 @@ func invitation(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, bool, 
 	id, err := pdid.From(h.GetId())
 	if err != nil {
 		return pdid.Nil, false, err
+	}
+
+	if gone(h) {
+		// The address outlived its person. One they proved is still theirs,
+		// and whoever arrives verified at it is refused as them
+		// ([ErrErased]). One nobody proved names nobody, an invitation
+		// included -- it was read as one, and asking how somebody who is not
+		// there signs in failed the sign-in of whoever holds the mailbox --
+		// so they are a stranger, and the address goes to them with the
+		// proof ([Providers.attest]).
+		if v.GetDateVerified() == nil {
+			return pdid.Nil, false, nil
+		}
+
+		return pdid.Nil, false, erased(ctx, who, id, "an address they proved")
 	}
 
 	switch {
@@ -1004,6 +1067,12 @@ func authTime(v any) time.Time {
 // signs in through this provider by another account, which roster refuses as
 // a second account at one provider: [ErrAnotherAccount].
 //
+// # And so is somebody who was erased
+//
+// Their account here and the address they proved outlive them until they are
+// forgotten, so either may be what this arrival is found by. Nobody is signed
+// in, linked or made, under any policy, and what is answered is [ErrErased].
+//
 // # And it attests on every sign-in, not only the first
 //
 // Somebody already linked used to be answered before [Providers.attest] was
@@ -1020,6 +1089,9 @@ func (p *Providers) Known(ctx context.Context, enrol Enrol, who *Caller) (pdid.I
 		id, err := pdid.From(v.GetHolder().GetId())
 		if err != nil {
 			return pdid.Nil, err
+		}
+		if gone(v.GetHolder()) {
+			return pdid.Nil, erased(ctx, *who, id, "the account they had")
 		}
 		p.attest(ctx, id, v, *who)
 
@@ -1116,9 +1188,35 @@ func (p *Providers) identity(ctx context.Context, who *Caller, subject string) (
 			}.Build(),
 		}.Build(),
 		Select: rstr.IdentitySelect_builder{
-			Holder: rstr.HolderSelect_builder{}.Build(),
+			// With their tenant, which is how somebody erased is told ([gone]).
+			Holder: rstr.HolderSelect_builder{Tenant: rstr.TenantSelect_builder{}.Build()}.Build(),
 		}.Build(),
 	}.Build())
+}
+
+// gone is whether a holder read through a row of theirs -- an identity, an
+// address -- has been erased.
+//
+// An erase stamps the holder and leaves those rows, and an edge is loaded
+// through the rows still there: somebody erased comes back as a bare
+// reference, the identifier and nothing of them. Every holder has a tenant,
+// so one read with its tenant selected that comes back with none was not
+// found -- which is how roster reads it of a key's holder and a link's
+// (`server/keys`, `server/vouch`). A read that did not select the tenant says
+// nothing, and every read this is asked of does.
+func gone(h *rstr.Holder) bool { return len(h.GetTenant().GetId()) == 0 }
+
+// erased is [ErrErased], said once in the log for both front doors, as a
+// warning: who arrived, as whom, and what ends it. The holder is named by
+// identifier because that is all that still names them -- their alias came
+// free when they were erased, and may be somebody else's by now.
+func erased(ctx context.Context, who Caller, holder pdid.Id, by string) error {
+	slog.WarnContext(ctx, "arrives: somebody erased arrived, and was told their account was deleted; "+
+		"an operator brings them back (`roster restore`), "+
+		"or an administrator of the tenant lets go of what they hold (`roster identity erase`, `roster email erase`)",
+		"tenant", who.TenantAlias, "holder", holder.String(), "provider", who.Provider, "subject", who.Subject, "by", by)
+
+	return ErrErased
 }
 
 // moved finds somebody by the `sub` their identity was keyed by before the
@@ -1127,7 +1225,8 @@ func (p *Providers) identity(ctx context.Context, who *Caller, subject string) (
 // Answers false when there is no such row: they are new under either claim,
 // and enrolment decides. A refused move is said and not refused -- they signed
 // in by a row the token's own `sub` names, exactly as they did before the
-// connection moved -- and `who.Subject` goes back to that row's subject.
+// connection moved -- and `who.Subject` goes back to that row's subject. A row
+// whose person was erased is neither: [ErrErased].
 func (p *Providers) moved(ctx context.Context, who *Caller) (pdid.Id, bool, error) {
 	v, err := p.identity(ctx, who, who.sub)
 	switch status.Code(err) {
@@ -1141,6 +1240,11 @@ func (p *Providers) moved(ctx context.Context, who *Caller) (pdid.Id, bool, erro
 	id, err := pdid.From(v.GetHolder().GetId())
 	if err != nil {
 		return pdid.Nil, false, err
+	}
+	if gone(v.GetHolder()) {
+		// Not moved, and not signed in by the row they had: nobody is there
+		// to be either.
+		return pdid.Nil, false, erased(ctx, *who, id, "the account they had, by the `sub` it was keyed by")
 	}
 
 	if _, err := p.roster.Identity().Resubject(ctx, rstr.IdentityResubjectRequest_builder{

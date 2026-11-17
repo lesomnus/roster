@@ -413,11 +413,23 @@ a person deletes their own account: their holder is erased the way an operator's
 `roster holder erase` erases one, after they are signed out everywhere. Nothing
 is destroyed yet -- the operator can `roster restore` them while
 `holder.forget_after` lasts, and they are forgotten when it ends -- and every app
-holding a session for them hears it on the sync stream. Not somebody their
-tenant's directory provisions, though: whoever signs in through the connection it
-provisions through is the directory's to remove ([scim.md](../scim.md)), and
-`MeService.Get` names that connection as `provisioned_through`, so the account
-page offers them no such section.
+holding a session for them hears it on the sync stream.
+
+**Until they are forgotten, they cannot simply come back.** Their alias is free
+at once, and their addresses and their accounts at providers are still theirs,
+for a restore to give back. So signing in again through the provider they used,
+or through one that vouches for an address they proved, makes them no new
+account, whatever the front door's `enrol`: they are answered *this account was
+deleted here; an administrator of your organisation can bring it back, or let it
+go*. And `holder.forget_after` is **never** unless the deployment set it, which
+makes that for good. A product that lets its people leave and come back sets it
+([operating.md](../operating.md) § "Destroying somebody, which an erase does
+not"); otherwise each of them waits for an operator to forget them.
+
+Leaving is not for somebody their tenant's directory provisions, though: whoever
+signs in through the connection it provisions through is the directory's to
+remove ([scim.md](../scim.md)), and `MeService.Get` names that connection as
+`provisioned_through`, so the account page offers them no such section.
 
 It is waived like the two above, and asks for one more thing they do not: that
 the person **proved who they are a few minutes ago** (`server/me.LeaveWithin`,

@@ -622,6 +622,22 @@ func (s coreIdentity) oneAccountPerProvider(ctx context.Context, req *app.Identi
 // is about somebody removing their own last way in, not about anybody being
 // locked out on purpose.
 //
+// # Somebody erased has no last way in
+//
+// An erase stamps the person and leaves their accounts at providers theirs,
+// for a restore to give back. Until they are forgotten an administrator may
+// decide one is not -- the account at the directory is somebody else's now --
+// and could not: the count asked the tenant of a holder who is not there, and
+// the erase was `NotFound: Holder not found`, about a person the caller never
+// named (#279). Their address and their number had no such count and were
+// erased all along.
+//
+// They are erased, and nothing signs them in, so no account of theirs is the
+// last way anybody has. It is taken away by whoever could have taken it while
+// they were there: the two rules above the count read what the person holds
+// and where the account is, and neither needs them to be there to be read.
+// Brought back afterwards, they are who they were without it.
+//
 // # And what a count on its own cannot say
 //
 // A count is a read, and the erase after it is a write. Two callers unlinking a
@@ -736,6 +752,19 @@ func (s coreIdentity) notTheirLastWayIn(ctx context.Context, holder, erasing []b
 			Tenant: app.TenantSelect_builder{Config: z.Ptr(true)}.Build(),
 		}.Build(),
 	}.Build())
+	if status.Code(err) == codes.NotFound {
+		// Nobody there to be left with nothing. Where that is somebody
+		// erased, it is not their last way in, and the erase goes on
+		// ([coreIdentity.Erase], *Somebody erased has no last way in*); any
+		// other reading of it is the refusal it was.
+		gone, failed := s.gone(ctx, erasing)
+		if failed != nil {
+			return failed
+		}
+		if gone {
+			return nil
+		}
+	}
 	if err != nil {
 		return err
 	}
@@ -807,6 +836,29 @@ func (s coreIdentity) notTheirLastWayIn(ctx context.Context, holder, erasing []b
 
 	return status.Error(codes.FailedPrecondition,
 		"this is the only way they can sign in; give them another before taking it away")
+}
+
+// gone is whether the person an identity is a way into has been erased.
+//
+// Read as every reader of an edge reads it (`vouch.Server.row`,
+// `keys.signable`): an edge is loaded through the rows still there, so
+// somebody erased comes back as a bare reference, and every holder has a
+// tenant, so one that comes back with none was not found. Asked of the
+// identity and not of the holder, because a holder who cannot be read is one
+// of two things -- erased, or not this caller's to see -- and only the first
+// is nobody.
+func (s coreIdentity) gone(ctx context.Context, identity []byte) (bool, error) {
+	v, err := s.IdentityServiceServer.Get(ctx, app.IdentityGetRequest_builder{
+		Ref: app.IdentityRef_builder{Id: identity}.Build(),
+		Select: app.IdentitySelect_builder{
+			Holder: app.HolderSelect_builder{Tenant: app.TenantSelect_builder{}.Build()}.Build(),
+		}.Build(),
+	}.Build())
+	if err != nil {
+		return false, err
+	}
+
+	return len(v.GetHolder().GetTenant().GetId()) == 0, nil
 }
 
 // connected is the names of a tenant's connections: the providers a front

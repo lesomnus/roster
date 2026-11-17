@@ -1121,6 +1121,16 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 				"an administrator of your organisation has to say which account is theirs", http.StatusForbidden)
 			return
 		}
+		if errors.Is(err, arrives.ErrErased) {
+			// Somebody erased, whose account at the provider and whose proved
+			// address are theirs until they are forgotten: a refusal too, and
+			// not this app failing. One sentence whichever of the two they
+			// were found by, and nothing of who they were -- `arrives` has
+			// said that in the log, for whoever ends it.
+			http.Error(w, "this account was deleted here; "+
+				"an administrator of your organisation can bring it back, or let it go", http.StatusForbidden)
+			return
+		}
 		fmt.Fprintf(os.Stderr, "account: %s/%s: %v\n", who.Provider, who.Subject, err)
 		http.Error(w, "cannot sign in", http.StatusInternalServerError)
 		return
