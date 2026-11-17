@@ -1004,7 +1004,9 @@ letter -- because it is the `provider` of every identity through it and a
 segment of its redirect (§ *Where a provider sends people back*), and `Entra`
 beside `entra` would be one directory twice. Its `issuer` is an address as the
 provider publishes it: written `https://` (or `http://`, § *Where a provider is
-asked*), with a host, and with no query, fragment or password. Its `client_id`
+asked*), with a host in small letters, and with no query, fragment or password
+-- `https://GitHub.com` is refused, since a front door reads an issuer as it is
+written and would not know it for GitHub's. Its `client_id`
 is not empty. And it names its people by `oid` only where the provider may
 issue one: not at GitHub's, and not at Google's. A row that is none of that is
 refused where it is written, with the field it was, rather than at somebody's

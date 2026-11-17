@@ -607,6 +607,11 @@ is a row and not a way in, and so is a password where passwords are off; a
 second factor never was one. Somebody left with only those is given another way
 in first.
 
+**And the account a directory provisions them through is not theirs to
+unlink.** It is what their tenant's directory finds them by, and what lets it
+suspend them when they leave; unlinked, they would be out of its hands. Taking
+one away there is an administrator's ([scim.md](../scim.md)).
+
 ## A second factor
 
 ```

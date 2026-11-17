@@ -141,6 +141,7 @@ person (`server/core/escalate.go`, `mayReach`).
 | An account at a provider, an address, a number | `TestNobodyWritesAWayInForSomebodyWiderThanThey` · `TestSomebodyAddsAWayIntoTheirOwnAccount` · `TestANumberIsSomebodysAsAnAddressIs` |
 | A subject moved to another claim | `TestAMoveIsAWayInAndIsHeldToIt` |
 | A front door's link of somebody's first sign-in is such a write: somebody it matched who holds more than it is not linked, and is told that an administrator links them rather than answered a failure | `TestSomebodyTheDoorMayNotLinkIsToldWhoCan` · `TestSomebodyTheAccountAppMayNotLinkIsToldWhoCan` |
+| Nor is somebody it matched who already signs in through that provider by another account: a second account at one provider is refused, and they are told so, and that an administrator says which is theirs | `TestAnAddressOfSomebodyWithAnotherAccountThereIsARefusal` · `TestAnAddressOfSomebodyWithAnotherAccountThereIsARefusalHereToo` |
 | A key on somebody's account | `TestNobodyMintsAKeyOnSomebodyElsesAccount` · `TestNobodyMintsAKeyOnSomebodyElsesHolder` |
 | An address claimed onto an account | `TestNobodyClaimsAnAddressOntoAnAccountWiderThanTheirOwn` |
 | Any of them erased | `TestAWayInIsTakenAwayByWhoeverCouldWriteIt` · `TestARevokeReachesNobodyWider` · `TestSomebodyRemovesTheirOwnWayInAndNobodyElseS` |
@@ -187,7 +188,7 @@ in is the same whoever wrote it.
 
 | | written in | held to it by |
 | --- | --- | --- |
-| A connection's name is an alias, its issuer an address with a host and no query or fragment, and its client has a name | `server/core/connection.go` | `TestAConnectionsNameIsHeldToAnAliasesGrammar` · `TestAConnectionsIssuerIsAnAddress` |
+| A connection's name is an alias, its issuer an address with a host in small letters and no query or fragment, and its client has a name | `server/core/connection.go` | `TestAConnectionsNameIsHeldToAnAliasesGrammar` · `TestAConnectionsIssuerIsAnAddress` |
 | It names its people by `oid` only where the provider may issue one: not at GitHub's, and not at Google's | `server/core/connection.go` | `TestAConnectionNamesNoClaimItsProviderIssuesNone` |
 | A front door asks a provider in plain `http` only at a host its deployment named (`private_hosts`) | `arrives/dial.go` | `TestAProviderIsAskedInTheClearOnlyWhereTheDeploymentNamedIt` |
 
@@ -238,6 +239,7 @@ written against (`server/core/directory.go`).
 | What it says of somebody already here is kept and believed by nothing | `TestWhatADirectorySaysIsKeptAndBelievedByNothing` |
 | It provisions through one connection a tenant, and through its organisation's own door | `TestATenantProvisionsThroughOneConnection` · `TestADirectoryProvisionsThroughItsOrganisationsOwnDoor` |
 | Who has an account at that connection is its to say: nobody writes themselves one there, and one for somebody already here takes `IdentityService/Add` held across the tenant, which a front door that saw them sign in holds | `TestADirectoryFindsNobodyByAnAccountTheyWroteThemselves` · `TestAFrontDoorLinksSomebodyAtTheConnectionTheirDirectoryProvisionsThrough` |
+| Nor does anybody take their own away there, or move one, and so leave their directory's hands: an erase, an *unlink* and a move each take their verb held across the tenant, not a grant made in a site | `TestSomebodyDoesNotTakeThemselvesOutOfTheirDirectorysHands` · `TestAnAccountAtTheDirectorysConnectionIsTakenAwayAcrossTheTenant` |
 | It writes the numbers of whoever holds no more than its key does | `TestADirectoryLeavesTheNumbersOfSomebodyWiderThanIt` |
 
 ### What only the deployment writes

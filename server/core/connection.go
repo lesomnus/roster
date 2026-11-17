@@ -112,9 +112,15 @@ func named(field, v string) error {
 // answered to whoever reads the row -- and a front door would send what is
 // written there with every request.
 //
-// The scheme is written in small letters, as a provider publishes it. A front
-// door finds a provider by comparing its issuer with the one a document or a
-// token says, exactly, so another spelling is another issuer.
+// The scheme and the host are written in small letters, as a provider
+// publishes them. A front door finds a provider by comparing its issuer with
+// the one a document or a token says, exactly, so another spelling is another
+// issuer -- and two readers of one row must not differ about whose it is: this
+// package knows GitHub's and Google's with the case folded ([spelt]), and a
+// front door knows GitHub's as written (`arrives/github.go`), so
+// `https://GitHub.com` was GitHub's to the rule about `provisions` and an
+// OpenID provider that answers nothing to the door. A path is the provider's
+// own to spell, capitals and all.
 //
 // # Plain `http` is not refused here
 //
@@ -135,6 +141,11 @@ func addressed(field, v string) error {
 		return pderr.Invalidf(field,
 			"%q is not an issuer: an address written `https://` (or `http://`) with a host, and no query, fragment, password or space, "+
 				"as the provider publishes it", v)
+	}
+	if u.Host != strings.ToLower(u.Host) {
+		return pderr.Invalidf(field,
+			"%q names its host in capitals: an issuer is compared as it is written, so write the host in small letters, as %q",
+			v, u.Scheme+"://"+strings.ToLower(u.Host)+u.EscapedPath())
 	}
 
 	return nil
