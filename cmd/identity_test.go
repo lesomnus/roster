@@ -431,9 +431,12 @@ func TestTheStampIsTheServersToWrite(t *testing.T) {
 //
 // What counts as a way in is an `Identity` **or** a `Credential`: they are the
 // two things a Login App and `VouchService` between them can turn into a
-// signed-in person, so the count is over both.
+// signed-in person, so the count is over both. Each where it is one that
+// works, which `TestALastWayInIsOneThatWorks` holds: the two providers here
+// are ones the tenant has a connection to.
 func TestNobodyRemovesTheirLastWayIn(t *testing.T) {
 	b, ctx := build(t)
+	b.connected(t, ctx, b.Contoso, "github", "entra")
 
 	t.Run("the only identity, and no password", func(t *testing.T) {
 		x := require.New(t)

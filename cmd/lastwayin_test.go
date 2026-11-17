@@ -35,6 +35,11 @@ func TestTheLastWayInSurvivesTwoCallersAtOnce(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
 
+	// Two providers the tenant has a connection to, so that each identity is
+	// a way in and either may go while the other stays: at providers nothing
+	// is connected to, both erases are refused and nothing is raced.
+	b.connected(t, ctx, b.Contoso, "github", "entra")
+
 	const people = 40
 
 	lost := 0
@@ -86,6 +91,7 @@ func TestTheLastWayInSurvivesTwoCallersAtOnce(t *testing.T) {
 func TestTheLoserIsToldTheRuleAndNotAVersion(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
+	b.connected(t, ctx, b.Contoso, "github", "entra")
 
 	who := b.holder(t, ctx, b.Contoso, "person")
 	one := b.identity(t, ctx, who, "github", "gh-1")

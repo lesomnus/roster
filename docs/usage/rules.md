@@ -154,7 +154,7 @@ person (`server/core/escalate.go`, `mayReach`).
 | A tenant is made with somebody who administers it | `server/core/tenant.go` | `TestATenantIsMadeWithSomebodyWhoCanAdministerIt` |
 | No write leaves a tenant with nobody administering it -- narrowing, erasing, unbinding, suspending, whichever way | `server/core/administered.go` | `TestATenantKeepsSomebodyAdministeringIt` · `TestEveryWriteThatEndsTheLastAdministrationIsRefused` · `TestAnAdministratorThroughAGroupCounts` · `TestTwoNarrowingsCannotBothTakeTheLast` |
 | Nor the deployment with nobody operating it, by a key | `server/core/administered.go` | `TestAKeyOfTheDeploymentsIsNotTheDeployment` |
-| Nobody removes their last way in | `server/core/identity.go` | `TestNobodyRemovesTheirLastWayIn` · `TestTheLastWayInSurvivesTwoCallersAtOnce` |
+| Nobody removes their last way in, and what is left is one that works: an account at a provider the tenant has a connection to, or a password where the tenant takes one | `server/core/identity.go` | `TestNobodyRemovesTheirLastWayIn` · `TestTheLastWayInSurvivesTwoCallersAtOnce` · `TestALastWayInIsOneThatWorks` |
 | A tenant is not closed where nobody could undo it | `server/core/close.go` | `TestClosingIsRefusedWhereNobodyCouldUndoIt` |
 
 A command at the box and an operator at `admin.addr` are not held to the
