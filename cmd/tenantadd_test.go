@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/lesomnus/z"
@@ -8,6 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/lesomnus/roster/internal/ent"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/core"
 )
@@ -79,27 +81,45 @@ func TestATenantIsMadeWithSomebodyWhoCanAdministerIt(t *testing.T) {
 		x.NotEmpty(res.GetSecret())
 	})
 
-	// The transaction, tested where it can be: the tenant is written first, so
-	// a refusal after it is what would leave a tenant nobody can get into --
-	// the shape `roster init` was in before #20.
+	// The transaction: the tenant is written first, so a refusal after it is
+	// what would leave a tenant nobody can get into -- the shape `roster init`
+	// was in before #20.
+	//
+	// Tested by a refusal that comes after a write. This asked again for
+	// `newco`, which is refused at the first write, the tenant's own alias:
+	// nothing had been written for a transaction to take back, so it passed
+	// with the five made one at a time as well -- which they were, at the
+	// operators' port (#279; `TestATenantMadeAtTheOperatorsPortIsWholeOrNotThere`).
+	// Somebody who holds nothing is refused at the second, the tenant's
+	// `admin`, once the tenant is written; and that it was written is counted,
+	// so that a rule which one day refuses them sooner fails this rather than
+	// emptying it again.
 	t.Run("and a refusal after the first write leaves nothing", func(t *testing.T) {
 		x := require.New(t)
 
-		was, err := b.Ent.Tenant.Query().Count(ctx)
-		x.NoError(err)
+		written := 0
+		b.Ent.Tenant.Use(func(next ent.Mutator) ent.Mutator {
+			return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+				if m.Op().Is(ent.OpCreate) {
+					written++
+				}
 
-		// A tenant whose alias is free, and a role that is not: the role alias
-		// is unique per tenant, so this refuses at the third write only if the
-		// tenant was written -- which is the point.
-		_, err = b.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{
-			Alias: "newco",
+				return next.Mutate(ctx, m)
+			})
+		})
+
+		_, err := b.Ungated.Tenant().Add(b.asNobody(ctx, b.ContosoUser, b.Contoso), app.TenantAddRequest_builder{
+			Alias: "halfco",
 		}.Build())
-		x.Error(err)
-		x.Equal(codes.AlreadyExists, status.Code(err))
+		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
+		x.Equal(1, written, "refused before the tenant was written, which asks nothing of a transaction")
 
-		now, err := b.Ent.Tenant.Query().Count(ctx)
+		there, people, roles, bindings := whatIsOf(t, ctx, b.Ent, "halfco")
+		x.False(there, "a refusal after the tenant was written left it: %d person(s), %d role(s), %d binding(s)", people, roles, bindings)
+
+		// And nothing is in the way of making it.
+		_, err = b.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "halfco"}.Build())
 		x.NoError(err)
-		x.Equal(was, now)
 	})
 }
 
