@@ -3,10 +3,7 @@ package core
 import (
 	"context"
 	"log/slog"
-	"net/netip"
-	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/protobuf-orm/ent/dialect"
 	"google.golang.org/grpc/codes"
@@ -58,9 +55,9 @@ import (
 // `front.TenantMark` says no hostname can be mistaken for.
 //
 // So a `Host` and a claim on one are held to what DNS could hold
-// ([hostnamed]), by whichever road writes them. A proof is asked about the
-// name as written, and a name DNS cannot hold is one nothing can be asked
-// about.
+// ([hostnamed], [front.NotHostname]), by whichever road writes them. A proof
+// is asked about the name as written, and a name DNS cannot hold is one
+// nothing can be asked about.
 
 type coreHost struct {
 	Core
@@ -382,66 +379,12 @@ func normalised(field, v string, by func(string) string) error {
 // write would be refused for otherwise, and somebody is sent round twice.
 func hostnamed(field, v string) error {
 	if w := front.Hostname(v); w != "" {
-		if why := notHostname(w); why != "" {
+		if why := front.NotHostname(w); why != "" {
 			return status.Errorf(codes.InvalidArgument, "%s: %q is not a hostname: %s", field, v, why)
 		}
 	}
 
 	return normalised(field, v, front.Hostname)
-}
-
-// notHostname says why a name is not one DNS could hold, and nothing where it
-// is.
-//
-// Labels between dots, each of letters, digits and hyphens, with a hyphen at
-// neither end, 63 bytes at most and 253 for the whole. That is RFC 1123's
-// hostname and nothing further:
-//
-//   - **No dot is asked for.** `localhost` is where a deployment on one machine
-//     is reached, and `scripts/e2e.sh` is one.
-//   - **An address is a name too.** A request arrives at `127.0.0.1` or
-//     `[::1]` as readily as at a name, and `front.Hostname` stores the second
-//     without its brackets. Nothing can be proved about one, so it is a row an
-//     operator writes.
-//   - **An A-label is an ordinary label.** `xn--bcher-kva.example` is what a
-//     browser sends and what a zone file has. The same name in its own letters
-//     is refused, saying so: it is a spelling no request arrives as and no
-//     server can be asked about.
-//
-// An underscore is refused with everything else that is not one of the three.
-// It begins a name that is data rather than a host -- `_dmarc`,
-// `prove.Record` itself -- and a front door is not reached at one.
-func notHostname(v string) string {
-	if at, err := netip.ParseAddr(v); err == nil && at.Zone() == "" {
-		return ""
-	}
-	if strings.IndexFunc(v, func(r rune) bool { return r >= utf8.RuneSelf }) >= 0 {
-		return "write its A-label, the \"xn--\" form a browser sends, because DNS holds no character outside ASCII"
-	}
-	if len(v) > 253 {
-		return "a name is 253 bytes at most"
-	}
-
-	for _, label := range strings.Split(v, ".") {
-		switch {
-		case label == "":
-			return "a label between its dots is empty"
-		case len(label) > 63:
-			return "a label is 63 bytes at most"
-		case label[0] == '-' || label[len(label)-1] == '-':
-			return "a label neither begins nor ends with a hyphen"
-		}
-
-		for _, c := range []byte(label) {
-			switch {
-			case 'a' <= c && c <= 'z', 'A' <= c && c <= 'Z', '0' <= c && c <= '9', c == '-':
-			default:
-				return "a label holds something other than a letter, a digit or a hyphen"
-			}
-		}
-	}
-
-	return ""
 }
 
 // Update is `Patch` with the name held back; `host_svc.ext.proto` says why.

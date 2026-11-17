@@ -183,6 +183,18 @@ removed (`TestADirectoryMaySuspendTheLastAdministrator`).
 | A claim of a name that has run out is replaced by making another, as the refusal of it says to; one still good is not, and another tenant's is not touched | `server/core/hostproof.go` | `TestAnExpiredClaimOfANameIsReplacedByMakingAnother` |
 | The record is asked of the name's own zone, never of where an alias points; a name is one spelling, a hostname, and a lookup that failed says nothing of the resolver | `server/prove/prove.go` | `TestANameIsAskedOfItsOwnZone` · `TestATrailingDotIsTheSameName` · `TestANameThatIsNotAHostnameIsRefused` · `TestALookupThatFailedSaysNothingOfTheResolver` |
 
+### What is written is held to a form
+
+Asked of the value and not of the caller, so the deployment's own writes are
+held to it too. The numbers are in [customers.md](customers.md#how-much-is-written-of-anybody).
+
+| | written in | held to it by |
+| --- | --- | --- |
+| What is written of a row has a length -- a name, a note, labels, each field of a profile, `data` -- and a write past it is refused, by whichever verb | `server/core/form.go` | `TestWhatSomebodyWritesOfThemselvesHasALength` · `TestARowsNameNoteAndLabelsHaveALength` |
+| So nobody makes a list unanswerable by what they write of themselves: a full page of people, each at every bound, is one answer | `server/core/form.go` | `TestAListOfPeopleAtTheirLongestIsAnswered` |
+| An address is 254 bytes at most and a number 64 characters | `server/front/front.go` | `TestANumberAndAnAddressHaveALength` |
+| An address is one spelling of one mailbox -- the plain form, at a hostname, in small letters, with nothing outside ASCII before the `@` -- by every road that writes one; what somebody types is folded and looked for | `server/front/front.go` | `TestAnAddressIsOneSpelling` · `TestAnAddressIsHeldToItsFormByEveryRoad` |
+
 ### A connection is one a front door can use
 
 Asked of the deployment as of a tenant: what a row has to be to sign anybody

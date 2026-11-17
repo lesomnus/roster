@@ -46,6 +46,47 @@ Neither is written for you, deliberately. A command that created a person with a
 password would put a secret on the screen before there was anybody to give it to,
 and one that created them with permissions would decide something only you know.
 
+### How much is written of anybody
+
+Everything a caller writes onto a row has a length. A write past it is refused
+-- `InvalidArgument`, naming the field and the bound -- and nothing is cut to
+fit. Each number is past anything the thing it bounds is, and together they are
+small enough that a full page of any list is one answer: nobody makes their
+organisation's list of people unreadable by what they write about themselves.
+
+| what | at most | counted in |
+| --- | --- | --- |
+| an `alias`, of anything | 63 | bytes: small letters, digits and single hyphens |
+| a `name`, of anything -- a person, a team, a site, a group, a role, a tenant | 256 | characters |
+| a `desc`, of anything | 1,024 | characters |
+| `labels` | 32 on one row; a key 128, a value 256 | bytes |
+| a profile's `display_name` and `department` | 256 each | characters |
+| a profile's `employee_no` | 64 | characters |
+| a profile's `locale` | 35 | characters |
+| a profile's `picture` | 2,048 | bytes; an `https` address |
+| `data` | 4,096 | bytes, its type's name and its value together |
+| an address | 254, and 64 before the `@` | bytes |
+| a number | 64 | characters |
+| what a directory calls somebody: its id for them, its name for them | 255, 256 | bytes, characters |
+
+A name and a note are counted in characters, so a name is as long in Hangul as
+in Latin. `data` is one slot for a few facts an app keeps beside a person; what
+is large, or has to be looked up, the app keeps itself, by the person's
+identifier.
+
+An **address** is also held to being one, in one spelling: the plain mailbox,
+`someone@example.com`. Small letters; before the `@`, letters, digits and the
+marks an address is written with (``!#$%&'*+-/=?^_`{|}~``), with single dots
+between; after it a hostname, with no dot at its end. A name beside the
+address, brackets round it, a quoted or a commented mailbox and a line break
+are each refused, and so is a letter outside ASCII before the `@` -- for now:
+the same letter has more than one encoding, and taking them later breaks
+nobody, where refusing them later would. A name after the `@` in its own
+script is written as its A-label (`xn--…`), as a hostname is. Whoever writes
+an address is held to this -- a person, an administrator, a directory, a
+provider's word at a sign-in -- and what somebody *types* to sign in or to
+recover an account is folded to small letters and looked for, as before.
+
 ## Standing a customer up
 
 One write, and then a way in:

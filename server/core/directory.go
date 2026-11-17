@@ -141,7 +141,7 @@ func (s coreHolder) Provision(ctx context.Context, req *app.HolderProvisionReque
 			"the %s connection names people by `oid`, which is a GUID, and %q is not one", c.GetName(), req.GetSubject())
 	}
 	if a := req.GetAddress(); a != "" {
-		if err := normalised("address", a, front.Address); err != nil {
+		if err := mailboxed("address", a); err != nil {
 			return nil, err
 		}
 	}
@@ -381,7 +381,7 @@ func (s coreHolder) Tell(ctx context.Context, req *app.HolderTellRequest) (*app.
 		case "":
 			patch.DirectoryAddressNull = z.Ptr(true)
 		default:
-			if err := normalised("address", address, front.Address); err != nil {
+			if err := mailboxed("address", address); err != nil {
 				return nil, err
 			}
 			patch.DirectoryAddress = z.Ptr(address)
