@@ -100,6 +100,12 @@ VouchService.Verify { who: {tenant: "newco", alias: "alice"}, secret: … }
 and then mints whatever **it** uses for a session. roster does not mint that,
 which is the rule at the top of this page.
 
+The tenant and the alias are what somebody typed into a form, and roster folds
+them to small letters before it looks: `Alice` at `Newco` is `alice` at
+`newco`, as `Alice@Newco.Example` has always been `alice@newco.example`. It is
+the same at `Delegate`, at a mailed link, and at roster's own sign-in. Nowhere
+else: a reference in any other call is exact.
+
 If your front door would rather be handed something it can call roster with,
 `VouchService.Delegate` is `Verify` plus an `rd_` — see § a delegation.
 

@@ -15,16 +15,16 @@ import (
 	app "github.com/lesomnus/roster/rstr"
 )
 
-// TestEveryRowIsHeldToTheForm: every entity whose `Add` or `Patch` carries a
-// name, a note or labels is held to the table by [form], and [New] puts every
-// `Core` over it.
+// TestEveryRowIsHeldToTheForm: every entity whose `Add` or `Patch` carries an
+// alias, a name, a note or labels is held to the form by [form] -- the alias to
+// its spelling, the rest to the table -- and [New] puts every `Core` over it.
 //
 // The rule is one function and the entities it is asked of are a list, since
 // each service is a type of its own: a list written by hand is right on the
 // day it is written. So the list is read off the services themselves here. An
 // entity that gains a `desc`, or a new one that has a `name`, and is not
-// listed in `form.go` reaches the store with a megabyte in it, and this says
-// which.
+// listed in `form.go` reaches the store with a megabyte in it, or is folded
+// there and not found by the name it was given, and this says which.
 func TestEveryRowIsHeldToTheForm(t *testing.T) {
 	// A store that answers nothing: a write that reaches it is one the form
 	// let through.
@@ -34,6 +34,11 @@ func TestEveryRowIsHeldToTheForm(t *testing.T) {
 	require.True(t, over, "a Core is built over the form")
 
 	long := map[string]func(m protoreflect.Message, f protoreflect.FieldDescriptor){
+		// Not long: spelled otherwise than it is read, which is the other
+		// thing the form holds a row to.
+		"alias": func(m protoreflect.Message, f protoreflect.FieldDescriptor) {
+			m.Set(f, protoreflect.ValueOfString("Seoul"))
+		},
 		"name": func(m protoreflect.Message, f protoreflect.FieldDescriptor) {
 			m.Set(f, protoreflect.ValueOfString(strings.Repeat("n", MaxName+1)))
 		},
@@ -73,14 +78,14 @@ func TestEveryRowIsHeldToTheForm(t *testing.T) {
 				out := write.Call([]reflect.Value{reflect.ValueOf(context.Background()), req})
 				err, _ := out[1].Interface().(error)
 				require.Equal(t, codes.InvalidArgument, status.Code(err),
-					"%s.%s with a %s past its bound reached the store: %v", entity, verb, field, err)
+					"%s.%s with a %s the form refuses reached the store: %v", entity, verb, field, err)
 				require.Contains(t, status.Convert(err).Message(), field)
 				asked++
 			}
 		}
 	}
 
-	// Fifteen entities carry one of the three, on two verbs each: were the walk
+	// Fifteen entities carry one of the four, on two verbs each: were the walk
 	// to find none, it would hold nothing and pass.
-	require.GreaterOrEqual(t, asked, 60)
+	require.GreaterOrEqual(t, asked, 80)
 }

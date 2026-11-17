@@ -129,6 +129,21 @@ An **alias** is unique within a tenant and among the living: two tenants may bot
 have an `admin`, and a tenant may reuse an alias after the person holding it is
 erased.
 
+And it is **written as it is read**: small letters, digits and single hyphens,
+beginning with a letter, 63 at most. A write that says one with a capital in it
+or a space at either end is refused with the spelling it would have to be --
+`alias: written as it is read, so "acme" rather than "ACME"` -- for a tenant,
+a person, a site, a team, a group, a role and a key alike. It used to be
+lowered and trimmed without a word, and the row was then not found by the name
+it had just been given, since a reference is compared exactly.
+
+A `NAME` typed at the command line is folded by the command line before
+anything is sent, so `roster holder add @Newco/Alice` makes `alice` in `newco`
+and `roster holder get @NEWCO/ALICE` finds them: a person types there. An
+alias inside `REQ` is sent as it is written, and refused like any caller's.
+The other place a person types a name is a sign-in, and there roster folds
+it: [ways-in.md](ways-in.md).
+
 ### A reference in JSON is the oneof it is declared as
 
 The outer key says *which way of naming*, and the inner one is the name:

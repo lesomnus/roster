@@ -351,8 +351,8 @@ func (r Rules) holding() Holding {
 }
 
 // New puts this layer in front of `next`, over [form]: what is written is held
-// to its lengths between this layer and the store, so that it is asked of
-// every write this layer makes or passes on, and of no read.
+// to its lengths and its spelling between this layer and the store, so that
+// it is asked of every write this layer makes or passes on, and of no read.
 func New(next app.Server, rules Rules, opts ...Option) Core {
 	s := Core{Overlay: app.NewOverlay(formed(next)), rules: rules}
 	for _, opt := range opts {

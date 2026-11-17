@@ -194,6 +194,8 @@ held to it too. The numbers are in [customers.md](customers.md#how-much-is-writt
 | So nobody makes a list unanswerable by what they write of themselves: a full page of people, each at every bound, is one answer | `server/core/form.go` | `TestAListOfPeopleAtTheirLongestIsAnswered` |
 | An address is 254 bytes at most and a number 64 characters | `server/front/front.go` | `TestANumberAndAnAddressHaveALength` |
 | An address is one spelling of one mailbox -- the plain form, at a hostname, in small letters, with nothing outside ASCII before the `@` -- by every road that writes one; what somebody types is folded and looked for | `server/front/front.go` | `TestAnAddressIsOneSpelling` · `TestAnAddressIsHeldToItsFormByEveryRoad` |
+| An alias is written as it is read: a write that says one with a capital or a space at either end is refused with the spelling it would have to be, for every row that has one, by `Add`, a rename and a directory alike; a reference is exact, so what is written is what is found | `server/core/form.go` | `TestAnAliasIsWrittenAsItWillBeRead` |
+| What somebody *types* is folded and then looked for: the alias and the tenant at a sign-in -- `Verify`, `Delegate`, a mailed link, roster's own -- as an address is, and a name typed at the command line or for a terminal | `server/vouch/vouch.go` | `TestASignInFoldsWhatSomebodyTyped` · `TestRostersOwnSignInFoldsWhatAnOperatorTyped` · `TestTheCommandLineFoldsANameSomebodyTypes` · `TestATerminalIsCalledWhatItsKeyWillBe` |
 
 ### A connection is one a front door can use
 

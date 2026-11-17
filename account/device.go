@@ -18,6 +18,7 @@ import (
 
 	"github.com/lesomnus/roster/arrives"
 	rstr "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/front"
 )
 
 // A terminal that signs in without a clipboard: RFC 8628, the device grant.
@@ -413,8 +414,14 @@ func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 		}
 
 		ok, full := a.devices.put(code, user, &device{
-			tenant:  t.alias,
-			name:    in.Name,
+			tenant: t.alias,
+
+			// What the key will be called, in the spelling a key's name is
+			// kept in: it is what somebody typed, or a machine's own name,
+			// and roster refuses a name written otherwise than it is read
+			// rather than folding it unsaid. So the page that asks somebody
+			// to approve it shows the name they will then find.
+			name:    front.Alias(in.Name),
 			methods: in.Allow,
 			expires: time.Now().Add(deviceFor),
 		})

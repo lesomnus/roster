@@ -743,8 +743,19 @@ func kindOf(v string) string {
 // A caller that names one anyway is not trusted more for it: the walled read in
 // [Server.verify] answers for the key either way, so a field that disagrees with
 // the credential resolves to nobody.
+//
+// # What somebody typed is folded
+//
+// The tenant here and the alias in [refOf] are what a person typed into a
+// form, as an address is, and an address has always been folded before it is
+// looked for ([Server.byAddress]). These two were looked for as typed: a
+// password that was right was refused for `Alice` and for `Contoso`, and
+// accepted for `Alice@Contoso.Example`. A row's alias is in small letters or
+// it was not written (`server/core`, `spelled`), so there is one row a typed
+// name can mean, and it is found. Here and not in a reference anywhere else:
+// what a program names, it names exactly.
 func tenantOf(w *app.VouchWho, ctx context.Context) *app.TenantRef {
-	if v := w.GetTenant(); v != "" {
+	if v := front.Alias(w.GetTenant()); v != "" {
 		return app.TenantRef_builder{Alias: z.Ptr(v)}.Build()
 	}
 
@@ -766,7 +777,9 @@ func tenantOf(w *app.VouchWho, ctx context.Context) *app.TenantRef {
 // named nothing. Nil is a caller that is in no tenant and named none.
 func refOf(w *app.VouchWho, in *app.TenantRef) (*app.HolderRef, error) {
 	id := w.GetId()
-	tenant, alias, address := w.GetTenant(), w.GetAlias(), w.GetAddress()
+
+	// Folded, as [tenantOf] folds the tenant and for its reason.
+	tenant, alias, address := front.Alias(w.GetTenant()), front.Alias(w.GetAlias()), w.GetAddress()
 
 	byId := len(id) > 0
 	bySlug := alias != ""

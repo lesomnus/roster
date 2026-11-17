@@ -110,8 +110,9 @@ func (s coreHolder) Update(ctx context.Context, req *app.HolderUpdateRequest) (*
 //
 // Nothing else is checked here, and that is the point of it being a narrow
 // write: an alias that is not one is refused by the grammar payday already
-// holds every alias to, and one somebody in this tenant already has is refused
-// by the unique index that was there before this method was.
+// holds every alias to, one written otherwise than it is read by the rule
+// every write of an alias meets ([spelled]), and one somebody in this tenant
+// already has by the unique index that was there before this method was.
 //
 // **No `mayReach`, and that is the same answer `Disable` gives.** Renaming an
 // administrator does not let anybody become them; it only makes them harder to
