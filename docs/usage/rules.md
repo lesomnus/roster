@@ -140,6 +140,7 @@ person (`server/core/escalate.go`, `mayReach`).
 | And *when* is what that credential says: not a delegation beside a session, not a second key, and not a sign-in that was since ended | `TestWhatSaysWhenSomebodySignedInIsWhatTheCallCameWith` · `TestASignInFromBeforeEverythingWasEndedIsNotFresh` |
 | An account at a provider, an address, a number | `TestNobodyWritesAWayInForSomebodyWiderThanThey` · `TestSomebodyAddsAWayIntoTheirOwnAccount` · `TestANumberIsSomebodysAsAnAddressIs` |
 | A subject moved to another claim | `TestAMoveIsAWayInAndIsHeldToIt` |
+| A front door's link of somebody's first sign-in is such a write: somebody it matched who holds more than it is not linked, and is told that an administrator links them rather than answered a failure | `TestSomebodyTheDoorMayNotLinkIsToldWhoCan` · `TestSomebodyTheAccountAppMayNotLinkIsToldWhoCan` |
 | A key on somebody's account | `TestNobodyMintsAKeyOnSomebodyElsesAccount` · `TestNobodyMintsAKeyOnSomebodyElsesHolder` |
 | An address claimed onto an account | `TestNobodyClaimsAnAddressOntoAnAccountWiderThanTheirOwn` |
 | Any of them erased | `TestAWayInIsTakenAwayByWhoeverCouldWriteIt` · `TestARevokeReachesNobodyWider` · `TestSomebodyRemovesTheirOwnWayInAndNobodyElseS` |

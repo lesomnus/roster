@@ -141,6 +141,32 @@ type Enrol func(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, error)
 // ErrUninvited is what an [Enrol] answers when this person gets no account.
 var ErrUninvited = errors.New("arrives: nobody here")
 
+// ErrUnlinked is what [Providers.Known] answers for somebody the policy found
+// here whose account this front door may not link: they are who the claim
+// says, and writing them this way in is not the front door's.
+//
+// # Why it is an answer of its own
+//
+// A first sign-in is linked by the front door's own `IdentityService/Add`,
+// and that write is held to what every way in is held to: nobody writes one
+// for somebody who holds more than they do (`server/core/escalate.go`). A
+// front door holds little, on purpose, so anybody an operator entered **and
+// gave a role** -- every administrator invited by address -- is refused it.
+//
+// That is the rule working. A front door that linked whoever it matched would
+// be a way to become anybody whose address a directory will vouch for, and
+// the people it is refused are the ones worth becoming. But the refusal came
+// back as an error like any other, and an app answered it as its own
+// failure: *this login is not working*, at every try, with nothing to say what
+// would end it.
+//
+// So it is told apart, as [ErrUninvited] is: a refusal about this person,
+// which an app answers them with, and which an administrator of their tenant
+// ends by linking the account. What to link is in the log [Providers.Known]
+// writes, since a subject is issued at the directory and nobody knows it
+// before the first sign-in.
+var ErrUnlinked = errors.New("arrives: known here, and not this front door's to link")
+
 // Invited refuses everybody roster has not been told about, where *told about*
 // means an `Identity` row: this is only reached when there is none, so it is
 // the policy that never makes one.
@@ -949,6 +975,14 @@ func authTime(v any) time.Time {
 // moved, and an operator moves them. `who.Subject` is then that row's subject,
 // because it is what `Door.Accept` resolves them by next.
 //
+// # And a first link it may not write is a refusal, not a failure
+//
+// The same rule refuses the first link of somebody the policy found who holds
+// more than this front door. There is no row they had to sign in by, so they
+// are not signed in, and what is answered is [ErrUnlinked]: an app tells them
+// an administrator links the account, as it tells a stranger they were not
+// invited.
+//
 // # And it attests on every sign-in, not only the first
 //
 // Somebody already linked used to be answered before [Providers.attest] was
@@ -996,6 +1030,17 @@ func (p *Providers) Known(ctx context.Context, enrol Enrol, who *Caller) (pdid.I
 		Provider: who.Provider,
 		Subject:  who.Subject,
 	}.Build())
+	if status.Code(err) == codes.PermissionDenied {
+		// roster's answer about this write and this person, and not a fault
+		// of anybody's ([ErrUnlinked]). Said here once, for both front doors,
+		// with the one thing whoever links them cannot know otherwise: the
+		// subject the provider just said.
+		slog.WarnContext(ctx, "arrives: known here and not linked, because this front door may not write their way in; "+
+			"an administrator of the tenant links them (`roster identity add`)",
+			"tenant", who.TenantAlias, "holder", id.String(), "provider", who.Provider, "subject", who.Subject, "err", err)
+
+		return pdid.Nil, ErrUnlinked
+	}
 	if err != nil {
 		return pdid.Nil, fmt.Errorf("link %s/%s: %w", who.Provider, who.Subject, err)
 	}
