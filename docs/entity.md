@@ -164,6 +164,12 @@ pixels, JPEG, inline -- rendered by roster from whatever image `Portray` or
 `Fill` is handed, so what a row carries is bounded by roster and not by a
 caller. A page of people carries one size of it, and `Get` all of them.
 
+What an image may be is bounded the same way, since rendering one is the serving
+process's memory: JPEG, PNG, GIF or WebP, at most 2 MiB and 2048 pixels a side,
+which is read from its header before any of it is decoded. A process renders two
+at once, and a call beyond those waits its turn for as long as it lasts
+([operating.md](operating.md) § *A picture from the directory*).
+
 > **alice** is a `Holder` in contoso. Whatever signs her in -- a password here,
 > an account at Entra, a key in a script -- resolves to this one row, and the
 > identifier of it is the `sub` every product knows her by. Suspend her and the

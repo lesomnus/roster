@@ -1183,7 +1183,8 @@ export type HolderFillRequest = Message<"roster.HolderFillRequest"> & {
 
   /**
    * The picture itself, as the provider handed it over: JPEG, PNG, GIF or
-   * WebP, rendered as `Portray` renders one.
+   * WebP, rendered as `Portray` renders one and held to what `Portray` holds
+   * one to -- 2 MiB, 2048 pixels a side, a turn to be rendered in.
    *
    * @generated from field: bytes image = 10 [features.field_presence = IMPLICIT];
    */
@@ -1243,8 +1244,13 @@ export type HolderPortrayRequest = Message<"roster.HolderPortrayRequest"> & {
   dateUpdated?: Timestamp | undefined;
 
   /**
-   * JPEG, PNG, GIF or WebP, at most 2 MiB and 4096 pixels a side. Empty takes
-   * their picture away.
+   * JPEG, PNG, GIF or WebP, at most 2 MiB and 2048 pixels a side. How large
+   * one is, is read from its header, and one larger is refused before any of
+   * it is decoded; a photograph from a camera is made smaller by whoever sends
+   * it. A process renders two images at once: a call beyond those waits its
+   * turn for as long as it lasts, and one that ends waiting is answered as a
+   * call that ran out of time is, not as an image refused. Empty takes their
+   * picture away.
    *
    * @generated from field: bytes image = 8 [features.field_presence = IMPLICIT];
    */

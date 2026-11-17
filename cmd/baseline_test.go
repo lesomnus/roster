@@ -39,7 +39,7 @@ func testsThatExist(t *testing.T) map[string]bool {
 
 	have := map[string]bool{}
 	var files []string
-	for _, dir := range []string{".", filepath.Join("..", "account"), filepath.Join("..", "arrives"), filepath.Join("..", "examples", "product"), filepath.Join("..", "frontdoor"), filepath.Join("..", "wasm", "sandbox"), filepath.Join("..", "ldap"), filepath.Join("..", "ldap", "wire"), filepath.Join("..", "login"), filepath.Join("..", "scim"), filepath.Join("..", "cli"), filepath.Join("..", "standing"), filepath.Join("..", "server", "prove")} {
+	for _, dir := range []string{".", filepath.Join("..", "account"), filepath.Join("..", "arrives"), filepath.Join("..", "examples", "product"), filepath.Join("..", "frontdoor"), filepath.Join("..", "wasm", "sandbox"), filepath.Join("..", "ldap"), filepath.Join("..", "ldap", "wire"), filepath.Join("..", "login"), filepath.Join("..", "scim"), filepath.Join("..", "cli"), filepath.Join("..", "standing"), filepath.Join("..", "server", "prove"), filepath.Join("..", "server", "portrait"), filepath.Join("..", "server", "core")} {
 		vs, err := filepath.Glob(filepath.Join(dir, "*_test.go"))
 		x.NoError(err)
 		files = append(files, vs...)
