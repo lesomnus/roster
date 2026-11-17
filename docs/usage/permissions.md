@@ -258,7 +258,9 @@ group may each be a site's, and one still there refuses the erase, which says
 what is left: a binding that outlived its site would go on counting for a place
 nobody can see any more. Take them out, and then the site. A binding of a role
 that was erased since is still one of them: it gives nobody anything, and is
-erased like any other.
+erased like any other. It holds when two act at once: of an erase and something
+put in the site in the same moment, one is refused -- the erase because the
+site has something in it, or the other because there is no such site.
 
 **A row a read is asked to bring along is read by its own rule.** A `Get` may
 ask for the rows its row points at (`select`: a membership's team, the team's

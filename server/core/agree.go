@@ -269,7 +269,20 @@ func (s coreTeam) Add(ctx context.Context, req *app.TeamAddRequest) (*app.Team, 
 		return nil, err
 	}
 
-	return s.TeamServiceServer.Add(ctx, req)
+	// In a site that is still one when the team is written, and not one
+	// being erased at the same moment ([Core.inSite]).
+	var out *app.Team
+	err = s.inSite(ctx, req.GetSite(), func(next app.Server) error {
+		var err error
+		out, err = next.Team().Add(ctx, req)
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 // Erase takes from each of a team's people the role they hold in it, and is
@@ -553,7 +566,19 @@ func (s coreRole) Add(ctx context.Context, req *app.RoleAddRequest) (*app.Role, 
 		return nil, err
 	}
 
-	return s.RoleServiceServer.Add(ctx, req)
+	// In a site that is still one when the role is written ([Core.inSite]).
+	var out *app.Role
+	err = s.inSite(ctx, req.GetSite(), func(next app.Server) error {
+		var err error
+		out, err = next.Role().Add(ctx, req)
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 // Patch is held to the same rule as Add, and it has to be.
@@ -667,11 +692,27 @@ func (s coreGroup) Add(ctx context.Context, req *app.GroupAddRequest) (*app.Grou
 	if err != nil {
 		return nil, err
 	}
-	if !ok {
-		return s.GroupServiceServer.Add(ctx, req)
+
+	if ok {
+		return s.made(ctx, req, of, who)
 	}
 
-	return s.made(ctx, req, of, who)
+	// In a site that is still one when the group is written, and not one
+	// being erased at the same moment ([Core.inSite]). A group its maker
+	// manages is written in a transaction of its own, which begins with the
+	// same write ([coreGroup.made]).
+	var out *app.Group
+	err = s.inSite(ctx, req.GetSite(), func(next app.Server) error {
+		var err error
+		out, err = next.Group().Add(ctx, req)
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 type coreBinding struct {
@@ -744,5 +785,19 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 		return nil, err
 	}
 
-	return s.BindingServiceServer.Add(ctx, req)
+	// In a site that is still one when the binding is written, and not one
+	// being erased at the same moment ([Core.inSite]): a binding that
+	// outlived its site is the row the site's erase is refused for.
+	var out *app.Binding
+	err = s.inSite(ctx, req.GetSite(), func(next app.Server) error {
+		var err error
+		out, err = next.Binding().Add(ctx, req)
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }

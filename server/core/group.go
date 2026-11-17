@@ -163,9 +163,27 @@ func (s Core) maker(ctx context.Context, tenant pdid.Id) (pdid.Id, bool, error) 
 // (`entity.md`), and the role is carried by a membership. An administrator
 // who makes a group is in it, and takes themselves out when that is not
 // wanted.
+//
+// # And a group of a site is made in a site that is still one
+//
+// The transaction begins with the write on the site's row that everything put
+// in a site makes ([Core.inSite]), so that the group does not land in a site
+// being erased at the same moment. Here, and not around this, because the
+// transaction is this function's to begin again.
 func (s coreGroup) made(ctx context.Context, req *app.GroupAddRequest, tenant, who pdid.Id) (*app.Group, error) {
+	site, err := s.siteOf(ctx, req.GetSite())
+	if err != nil {
+		return nil, err
+	}
+
 	var out *app.Group
 	run := func(below app.Server, drv dialect.Driver) error {
+		if site != pdid.Nil && s.lock != nil {
+			if err := s.lock(ctx, drv, site); err != nil {
+				return err
+			}
+		}
+
 		g, err := below.Group().Add(ctx, req)
 		if err != nil {
 			return err
@@ -227,7 +245,7 @@ func (s coreGroup) made(ctx context.Context, req *app.GroupAddRequest, tenant, w
 	// that refuses a write refuses the rest of what it was part of -- so it
 	// is the whole of it that is begun again, and it finds the role there.
 	// Once would do; the second is for a role erased and made in between.
-	err := once()
+	err = once()
 	for range 2 {
 		if !errors.Is(err, errManagesTaken) {
 			break
