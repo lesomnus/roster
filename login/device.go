@@ -50,6 +50,13 @@ import (
 // still in front of them before anything is granted, one screen later than it
 // would be.
 //
+// Shown it **whatever `login.consent` says**, and whatever Hydra remembers: a
+// consent that belongs to a device's flow is always drawn (`App.consent`,
+// `sentByItsClient`). The paragraph above was written of a deployment that asks,
+// and under `skip`, the default, no consent screen was drawn at all: a code typed
+// and a sign-in were a device granted, with nothing anywhere having named it
+// (#278).
+//
 // # And which tenant a device flow is about
 //
 // The client's **registered** redirect, which is `arrivedAt`'s fallback and the

@@ -244,8 +244,14 @@ sign_in() {
 		printf '%s' "${asking}" | grep -q "${OAUTH_CLIENT}" || die "the screen has nothing to say which app is asking: ${asking}"
 		step "consent, drawn and not yet granted" "a screen"
 
-		l=$(c -o /dev/null -D - -X POST "${LOGIN}/consent" \
-			-d "consent_challenge=${consent}" -d "allow=1" | loc | fix)
+		# Told where to go, as `/accept` tells it, and not redirected: the
+		# screen is a page that asks with `fetch`, and where this leads is the
+		# issuer, another origin, which a `fetch` cannot be redirected to. It
+		# was a 303, which this walk followed and a browser could not.
+		l=$(c -X POST "${LOGIN}/consent" \
+			-d "consent_challenge=${consent}" -d "allow=1" \
+			| sed 's/.*"redirect_to":"//; s/".*//; s|\\u0026|\&|g' | fix)
+		case "${l}" in http*) ;; *) die "the consent's answer named nowhere to go: ${l}";; esac
 		step "somebody says allow" "$(printf '%s' "${l}" | cut -c1-40)…"
 	else
 		l=$(c -o /dev/null -D - "${l}" | loc | fix)

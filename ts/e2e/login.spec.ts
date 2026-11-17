@@ -132,8 +132,26 @@ test('the consent screen is a screen, and a no is an answer', async ({ page }) =
 	// for reads like a choice and is not one.
 	await expect(page.locator('input[type=checkbox]')).toHaveCount(0)
 
+	// The answer is read and then gone to, not followed: where it leads in a
+	// deployment is the issuer, another origin, which a `fetch` cannot be
+	// redirected to. So the page is told, as it is at the last hop -- an
+	// answer of its own, and not a redirect. What it says is where the page
+	// is next; its body is not asked for here, since the page has left by
+	// then and a browser keeps no body for a page that has.
+	const answered = page.waitForResponse((res) => res.request().method() === 'POST' && new URL(res.url()).pathname === '/consent')
 	await page.getByRole('button', { name: 'no' }).click()
+	const answer = await answered
+	expect(answer.status()).toBe(200)
+	expect(answer.headers()['content-type']).toContain('application/json')
 	await expect(page).toHaveURL(/denied/)
+})
+
+test('and a yes goes where the app says', async ({ page }) => {
+	await begin(page)
+	await first(page, 'erin')
+
+	await page.getByRole('button', { name: 'allow' }).click()
+	await expect(page).toHaveURL(/allowed/)
 })
 
 // The third screen, and the one whose absence was a defect a cluster reported.

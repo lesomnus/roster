@@ -293,12 +293,15 @@ const sandbox = (): Connect.NextHandleFunction => async (req, res, next) => {
 		}
 
 		case 'POST /consent': {
+			// Told where to go, as the real one tells it: what comes next there
+			// is the issuer, another origin, which a page's `fetch` cannot be
+			// redirected to. This answered a 303 to itself, which a `fetch`
+			// follows -- so the page passed here and could not finish against
+			// the real app.
 			const v = new URLSearchParams(await body(req))
 			flows.delete(key(req, res))
-			res.statusCode = 303
-			res.setHeader('location', v.get('allow') === null ? '/?denied' : '/?allowed')
 
-			return res.end()
+			return json(res, 200, { redirect_to: v.get('allow') === null ? '/?denied' : '/?allowed' })
 		}
 	}
 

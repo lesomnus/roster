@@ -230,7 +230,10 @@ registered by the deployment for one of its own operators, and a screen for an a
 the operator wrote is a dialog people learn to click through. `consent: ask` draws
 one. Neither mode lets a person grant *less* than was asked -- an app that asked
 for a scope generally stops working without it, so the choice would be between
-*allow* and *allow, then find out something is broken*.
+*allow* and *allow, then find out something is broken*. And a **device's** flow
+is drawn the screen under either: what brings a browser to it is a code, not a
+client's redirect, and the consent is the first screen that can say whose device
+it is (§ *A device with no browser*).
 
 How a deployment turns it on is [operating.md](operating.md) § "One process, or
 five"; `compose.yaml` runs the whole of it, Hydra included.
@@ -313,7 +316,7 @@ sequenceDiagram
 | the second form | `VouchService.Delegate` with the continuation | the app holds no half-signed-in state: the continuation is roster's, short-lived and single-use |
 | the accept | `MeService.Get`, as the person; `PUT …/login/accept` | **`subject` is the `Holder.id`.** Nobody is named until every form is answered -- accepting after the first would hand a product a token for somebody who proved half of what the deployment asked for. And nobody is named but **the sign-in made at this challenge, still standing**: the session answers the challenge its form was posted at and no other, in that challenge's tenant, and roster is asked who is there before Hydra is told -- signed out of, signed out everywhere or suspended is a 401 and Hydra hears nothing (§ *The last hop answers the sign-in made for it*) |
 | the claims | `MeService.Get`, as the person | `preferred_username`, `name`, `teams`, a **verified** address, `groups` -- each only if the client asked for the scope that carries it, and each as § *What a token says of somebody* says. Never `methods`. `teams` is the aliases of the person's teams -- an organisation's structure, and nothing a product should grant on. It was `groups`, which relying parties read as permission groups; roster's own `Group`s are in a token only as `groups`, and only the ones a `GroupExposure` shows to the client the token is for (§ *A relying party that grants on groups*) -- what somebody may do is otherwise `HolderService/Reaches` ([apps.md](apps.md)) |
-| the grant | `PUT …/consent/accept` | `consent: skip` grants and draws nothing; `ask` draws the screen and `POST /consent` is its answer. With nobody here to read the subject -- a session that ended between the hops of one flow, or somebody signed out everywhere or suspended between them -- the client is refused with `login_required` (`PUT …/consent/reject`) rather than granted `sub` alone, **whatever it asked for**: the read is also how this hop knows the subject is still somebody |
+| the grant | `PUT …/consent/accept` | `consent: skip` grants and draws nothing; `ask` draws the screen and `POST /consent` is its answer, told `{redirect_to}` as the accept is. A device's flow is drawn the screen either way. With nobody here to read the subject -- a session that ended between the hops of one flow, or somebody signed out everywhere or suspended between them -- the client is refused with `login_required` (`PUT …/consent/reject`) rather than granted `sub` alone, **whatever it asked for**: the read is also how this hop knows the subject is still somebody |
 
 The delegation this app minted is **kept** after the grant, for as long as Hydra
 remembers the browser, because the next flow Hydra answers without a form reads
@@ -521,8 +524,8 @@ functions stop agreeing, in either direction.
 | `POST /accept` | `{redirect_to}`, and **the hop no other front door has**: it turns a finished sign-in into `acceptLoginRequest{subject}`. A page that leaves this out signs somebody in and never ends the flow. 401 when nobody is signed in, or is half way; when the sign-in was not made at **this** `login_challenge`; and when roster no longer answers for whoever it was | `TestALoginAppTellsHydraWhoSignedIn` · `TestAFlowReachesOnlyItsOwnOperator` · `TestASignInAnswersOnlyTheChallengeItWasMadeFor` · `TestASessionOfOneTenantDoesNotAnswerAnothersChallenge` · `TestAnAcceptAsksRosterWhoIsThere` |
 | `GET /provider` | 302 to the directory this operator's `Connection` names, with the state in a cookie that is this host's alone (`__Host-login_state`; bare under `--insecure-cookie`) | `TestSomebodyArrivesThroughAProvider` · `TestAProviderFlowReachesOnlyItsOwnOperator` · `TestTheRoundTripsCookieIsThisHostsAlone` |
 | `GET /callback/{tenant}/{connection}` | where a directory sends the browser back: one URL per connection, which is what is registered at that provider. **Not** in a flow: which flow it belongs to comes from the state, and the connection the path names has to be the one that flow went to | `TestACallbackWithoutItsOwnStateIsRefused` · `TestAnAnswerIsHeldToTheRoundTripThatAskedForIt` · `TestAStrangerIsRefusedUnlessTheDeploymentEnrols` |
-| `GET /consent` | a screen when `login.consent` is `ask`, a 303 when it is `skip` or Hydra remembered -- to Hydra with the claims, or carrying `login_required` when there is nobody here to read the subject as | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor` · `TestAConsentWhoseSubjectCannotBeReadIsRefused` |
-| `POST /consent` | the screen's answer. A no is `consent/reject` and the browser goes back to the client with a refusal | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `ts/e2e/login.spec.ts` |
+| `GET /consent` | a screen when `login.consent` is `ask`, a 303 when it is `skip` or Hydra remembered -- to Hydra with the claims, or carrying `login_required` when there is nobody here to read the subject as. **Always a screen for a consent that belongs to a device's flow**, which nothing before it could name the client of | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor` · `TestAConsentWhoseSubjectCannotBeReadIsRefused` · `TestADeviceIsGrantedOnAScreen` · `docker/device.sh` |
+| `POST /consent` | the screen's answer: `{consent_challenge, allow}` → `{redirect_to}`, which is Hydra -- with the grant, or with a refusal for the client where the answer was a no (`consent/reject`) or this app refused. **Told, not redirected**, as `POST /accept` is: the issuer is another origin and a page's `fetch` cannot follow a redirect to one | `TestAConsentIsAnsweredWhereThePageCanFollowIt` · `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `ts/e2e/login.spec.ts` · `docker/flow.sh` |
 | `GET /logout` | a screen only half the time: drawn when nothing proved a relying party started the sign-out, answered with a 303 when something did. With that 303 this app's own session is ended and its delegation revoked, when the logout is about whoever this browser is signed in as here | `TestALogoutNobodyProvedAnAppAskedForIsConfirmed` · `TestSigningOutEndsWhatTheIssuerRemembers` · `TestEveryEndingRevokesTheDelegation` · `TestASignOutEndsOnlyItsOwnSubjectsSession` · `docker/behind.sh` |
 | `POST /logout` | `{logout_challenge, allow}` → `{signed_out, to}`, or `{signed_out: false}` and nowhere to go. **400 for a logout an app did prove it started**, because that one is never drawn | `TestTheConfirmedSignOutIsTheOneThatEnds` · `TestTheAnswerIsForTheScreenThatWasDrawn` · `TestALogoutChallengeIsAskedAbout` |
 | `GET /signed-out` | the page a sign-out that asked to come back nowhere ends on. The one screen here with no challenge on it | `docker/behind.sh` · `ts/e2e/login.spec.ts` |
@@ -891,6 +894,19 @@ Three things to know before deploying it:
   -- so there is no `/flow` for this screen, no client name and no brand on it. What
   the device is asking for is named on the **consent** screen, one hop after the
   code is accepted, so a person still sees it before anything is granted.
+- **So a device's consent is always drawn**, whatever `login.consent` says and
+  whatever Hydra remembers. The sentence above was true of `consent: ask` only:
+  under `skip`, the default, there was no consent screen, and somebody who typed
+  a code and signed in -- or only typed it, in a browser Hydra remembers -- had
+  let a device in with nothing having named it. `skip` rests on a client of the
+  deployment's having sent the browser here; a code is typed by somebody who was
+  shown one, or sent one. Hydra's consent request has no field that says a device
+  began the flow (v26.2.0), so it is told by the request Hydra recorded:
+  `…/oauth2/auth?…` for a client's redirect, `…/oauth2/device/verify?client_id=…`
+  for a device's code. Anything that is not the first is drawn, so that what this
+  app cannot place costs a click and not a grant
+  (`TestADeviceIsGrantedOnAScreen`; `docker/device.sh` walks it against the real
+  Hydra under `consent: skip`).
 
 A code Hydra refuses is answered **400 with no detail**, one answer for one never
 issued, one already spent and one expired. Telling them apart would answer *is this
