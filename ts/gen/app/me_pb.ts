@@ -216,7 +216,9 @@ export type MeGetResponse = Message<"roster.MeGetResponse"> & {
 
   /**
    * The sites they are narrowed to, and empty means every site of their
-   * tenant. It is `frame.Sets` as an answer; see `cmd.Sets`.
+   * tenant. It is `frame.Sets` as an answer; see `cmd.Sets`. Each is said
+   * once, in the order of their identifiers, which is the order they were
+   * made in.
    *
    * @generated from field: repeated bytes sites = 11;
    */
@@ -261,6 +263,10 @@ export type MeGetResponse = Message<"roster.MeGetResponse"> & {
    * This message is the one shape narrowed to the person **by construction**:
    * it takes no subject, so there is nothing to point at somebody else. That is
    * also why `cmd.Policy` can waive a binding for it and for nothing else.
+   *
+   * Each of these, and `keys` below, is every one they have, in the order
+   * they were made in: what `HolderService.SignsIn` answers an administrator
+   * about them, in the same order.
    *
    * @generated from field: repeated roster.SignInIdentity identities = 13;
    */

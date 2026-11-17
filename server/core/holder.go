@@ -342,77 +342,113 @@ func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) 
 
 	who := app.HolderRef_builder{Id: v.GetId()}.Build()
 
-	ids, err := s.Next().Identity().List(ctx, app.IdentityListRequest_builder{
-		Filters: []*app.IdentityFilter{
-			app.IdentityFilter_builder{Holder: who}.Build(),
-		},
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
-
-	creds, err := s.Next().Credential().List(ctx, app.CredentialListRequest_builder{
-		Filters: []*app.CredentialFilter{
-			app.CredentialFilter_builder{Holder: who}.Build(),
-		},
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
-
+	// Every page of each. The answer has no cursor, so what it says is all
+	// there is: read once with no size, each was a list's first page --
+	// twenty -- and somebody with twenty-five keys was answered twenty, with
+	// nothing saying there were more, to whoever reads this to end the keys
+	// of an account (#279). In the order a list is in, which is the order
+	// they were made in.
 	res := app.HolderSignsInResponse_builder{}
-	for _, i := range ids.GetItems() {
-		res.Identities = append(res.Identities, app.SignInIdentity_builder{
-			Id:          i.GetId(),
-			Provider:    i.GetProvider(),
-			Subject:     i.GetSubject(),
-			DateCreated: i.GetDateCreated(),
+	for after := ""; ; {
+		page, err := s.Next().Identity().List(ctx, app.IdentityListRequest_builder{
+			Filters: []*app.IdentityFilter{
+				app.IdentityFilter_builder{Holder: who}.Build(),
+			},
+			Size:  signsInPage,
+			After: after,
 		}.Build())
-	}
-	for _, c := range creds.GetItems() {
-		// The fields are written out, so the verifier is absent rather than
-		// deselected -- there is no `Select` here to get wrong, and the shape
-		// itself is the statement D13 makes by not registering the service.
-		f := app.SignInCredential_builder{Kind: c.GetKind(), Name: c.GetName()}
-		if u := c.GetDateRotated(); u != nil {
-			f.DateRotated = u
+		if err != nil {
+			return nil, err
 		}
-		if u := c.GetDateLocked(); u != nil && u.AsTime().After(time.Now()) {
-			f.DateLocked = u
-		}
-
-		res.Credentials = append(res.Credentials, f.Build())
-	}
-
-	keys, err := s.Next().ApiKey().List(ctx, app.ApiKeyListRequest_builder{
-		Filters: []*app.ApiKeyFilter{
-			app.ApiKeyFilter_builder{Holder: who}.Build(),
-		},
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
-	for _, k := range keys.GetItems() {
-		// Written out like the credentials above, and for the identical
-		// reason: the verifier is **absent** rather than deselected. There is
-		// no `Select` here to get wrong, and the shape is the statement.
-		f := app.SignInKey_builder{
-			Id:      k.GetId(),
-			Alias:   k.GetAlias(),
-			Methods: k.GetMethods(),
-		}
-		if u := k.GetDateExpires(); u != nil {
-			f.DateExpires = u
-		}
-		if u := k.GetDateUsed(); u != nil {
-			f.DateUsed = u
+		for _, i := range page.GetItems() {
+			res.Identities = append(res.Identities, app.SignInIdentity_builder{
+				Id:          i.GetId(),
+				Provider:    i.GetProvider(),
+				Subject:     i.GetSubject(),
+				DateCreated: i.GetDateCreated(),
+			}.Build())
 		}
 
-		res.Keys = append(res.Keys, f.Build())
+		if after = page.GetNext(); after == "" {
+			break
+		}
+	}
+
+	for after := ""; ; {
+		page, err := s.Next().Credential().List(ctx, app.CredentialListRequest_builder{
+			Filters: []*app.CredentialFilter{
+				app.CredentialFilter_builder{Holder: who}.Build(),
+			},
+			Size:  signsInPage,
+			After: after,
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+		for _, c := range page.GetItems() {
+			// The fields are written out, so the verifier is absent rather
+			// than deselected -- there is no `Select` here to get wrong, and
+			// the shape itself is the statement D13 makes by not registering
+			// the service.
+			f := app.SignInCredential_builder{Kind: c.GetKind(), Name: c.GetName()}
+			if u := c.GetDateRotated(); u != nil {
+				f.DateRotated = u
+			}
+			if u := c.GetDateLocked(); u != nil && u.AsTime().After(time.Now()) {
+				f.DateLocked = u
+			}
+
+			res.Credentials = append(res.Credentials, f.Build())
+		}
+
+		if after = page.GetNext(); after == "" {
+			break
+		}
+	}
+
+	for after := ""; ; {
+		page, err := s.Next().ApiKey().List(ctx, app.ApiKeyListRequest_builder{
+			Filters: []*app.ApiKeyFilter{
+				app.ApiKeyFilter_builder{Holder: who}.Build(),
+			},
+			Size:  signsInPage,
+			After: after,
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+		for _, k := range page.GetItems() {
+			// Written out like the credentials above, and for the identical
+			// reason: the verifier is **absent** rather than deselected.
+			// There is no `Select` here to get wrong, and the shape is the
+			// statement.
+			f := app.SignInKey_builder{
+				Id:      k.GetId(),
+				Alias:   k.GetAlias(),
+				Methods: k.GetMethods(),
+			}
+			if u := k.GetDateExpires(); u != nil {
+				f.DateExpires = u
+			}
+			if u := k.GetDateUsed(); u != nil {
+				f.DateUsed = u
+			}
+
+			res.Keys = append(res.Keys, f.Build())
+		}
+
+		if after = page.GetNext(); after == "" {
+			break
+		}
 	}
 
 	return res.Build(), nil
 }
+
+// signsInPage is how many rows [coreHolder.SignsIn] asks a list for at a
+// time: the most one answers with, so that somebody's ways in are a read or
+// two of each.
+const signsInPage = 100
 
 func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) (*app.HolderReachesResponse, error) {
 	v, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
@@ -472,9 +508,20 @@ const (
 // costs less than the round trip. `holder_svc.ext.proto` says what is matched
 // and why an address is not.
 //
-// The cursor is `List`'s: the row this stopped at, encoded the way `List`
-// encodes the last row of a page, so the next call carries on after it and no
+// The cursor is `List`'s: the last row of the page, encoded the way `List`
+// encodes the last row of one, so the next call carries on after it and no
 // row is answered twice or skipped.
+//
+// # And it is empty when the page was the last
+//
+// It stopped at the row that filled the page and answered that row as where
+// to carry on from, whether or not anything after it matched: ten matches
+// asked for ten at a time were a full page and a cursor, and the page after
+// was empty (#279). A full page is not the end of the reading. It goes on
+// until one more row matches, which is what there being more means, or until
+// there are no more rows -- so the call that answers the last page has read
+// to the end of the people its caller may see, as a call that finds nothing
+// always did.
 func (s coreHolder) Search(ctx context.Context, req *app.HolderSearchRequest) (*app.HolderSearchResponse, error) {
 	q := strings.ToLower(strings.TrimSpace(req.GetQ()))
 	department := strings.TrimSpace(req.GetDepartment())
@@ -513,6 +560,10 @@ func (s coreHolder) Search(ctx context.Context, req *app.HolderSearchRequest) (*
 
 	res := app.HolderSearchResponse_builder{Items: make([]*app.Holder, 0, size)}
 	after := req.GetAfter()
+
+	// Where the page ends, once it is full: said only when a row after it
+	// matches.
+	last := ""
 	for {
 		page, err := s.Next().Holder().List(ctx, app.HolderListRequest_builder{
 			Filters: req.GetFilters(),
@@ -527,6 +578,12 @@ func (s coreHolder) Search(ctx context.Context, req *app.HolderSearchRequest) (*
 			if !matches(v) {
 				continue
 			}
+			if len(res.Items) == size {
+				// One more than the page holds: there is more.
+				res.Next = last
+
+				return res.Build(), nil
+			}
 
 			// Read through `Next()`, so the page arrives as it is stored;
 			// what this answers is a page, and carries what `List` does.
@@ -539,13 +596,9 @@ func (s coreHolder) Search(ctx context.Context, req *app.HolderSearchRequest) (*
 			if err != nil {
 				return nil, err
 			}
-			next, err := sqlpage.Encode(v.GetDateCreated().AsTime(), id.Uuid())
-			if err != nil {
+			if last, err = sqlpage.Encode(v.GetDateCreated().AsTime(), id.Uuid()); err != nil {
 				return nil, status.Errorf(codes.Internal, "next: %s", err)
 			}
-			res.Next = next
-
-			return res.Build(), nil
 		}
 
 		if page.GetNext() == "" {

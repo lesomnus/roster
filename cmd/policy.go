@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"time"
 
@@ -1579,10 +1580,21 @@ func Everything(db *ent.Client, sources ...rbac.Source) me.Held {
 
 		slices.Sort(ms)
 
+		// Each site once, in the order of their identifiers, which is the
+		// order they were made in.
+		//
+		// `h.sites` is a site for every binding and every team that names
+		// it, as the rows came, and that is what a query is narrowed by: a
+		// site named twice narrows as it does named once. Answered as it
+		// stood, somebody bound twice in Seoul, once in Busan and on two of
+		// Seoul's teams was told `[seoul seoul seoul busan seoul]`, in an
+		// order that was the store's (#279).
 		ks := make([]pdid.Id, 0, len(h.sites))
 		for _, v := range h.sites {
 			ks = append(ks, pdid.Id(v))
 		}
+		slices.SortFunc(ks, func(a, b pdid.Id) int { return bytes.Compare(a.Bytes(), b.Bytes()) })
+		ks = slices.Compact(ks)
 
 		return ms, ks, h.anySite, nil
 	}

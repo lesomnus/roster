@@ -7,6 +7,7 @@ import (
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/frame"
@@ -272,7 +273,14 @@ func (s coreNomination) List(ctx context.Context, req *app.NominationListRequest
 			return nil, err
 		}
 
-		req = app.NominationListRequest_builder{Filters: fs, Size: req.GetSize(), After: req.GetAfter()}.Build()
+		// The caller's request with the filters held to its own, and not one
+		// built again out of what this function thought of: built out of the
+		// filters, the size and the cursor, it dropped `reverse`, and a key
+		// that asked for its newest nominations first was answered its oldest
+		// (#279). A copy, since the request is the caller's.
+		held := proto.CloneOf(req)
+		held.SetFilters(fs)
+		req = held
 	}
 
 	return s.NominationServiceServer.List(ctx, req)
