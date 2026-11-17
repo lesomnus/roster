@@ -283,18 +283,12 @@ func (s Core) spelled(ctx context.Context, ref *app.IdentityRef) (*app.IdentityR
 // and somebody's paste. It is refused and not trimmed: a subject is found by
 // what was written, and a row that holds something else than its writer wrote
 // is one they do not find.
+//
+// What it asks is [front.Unstable], which a front door asks too, before it
+// makes somebody whose account this would then refuse.
 func subjectIsStable(v string) error {
-	if v == "" {
-		return pderr.Invalidf("subject", "must not be empty")
-	}
-	if v != strings.TrimSpace(v) {
-		return pderr.Invalidf("subject",
-			"has a space before or after it; a subject is compared as it is written, so write it as the provider says it")
-	}
-	if strings.Contains(v, "@") {
-		return pderr.Invalidf("subject",
-			"looks like an address; it must be the identifier the provider treats as immutable, "+
-				"because an address is reassigned and whoever gets it next would be served as this person")
+	if why := front.Unstable(v); why != "" {
+		return pderr.Invalidf("subject", "%s", why)
 	}
 
 	return nil

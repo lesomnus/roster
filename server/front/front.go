@@ -234,6 +234,33 @@ func GUID(v string) bool {
 	return true
 }
 
+// Unstable is why a string is nobody's subject at any provider, and empty for
+// one that may be: what `IdentityService/Add` refuses a subject for on its
+// form, before it asks anything of the row.
+//
+// `server/core/identity.go` says why each is refused, and refuses in these
+// words. It is here, exported, for [Address]'s reason from the other side of a
+// write. Under `enrolling` a front door makes somebody and then links their
+// account, in two calls (`arrives.Enrolling`), so a subject the link is
+// refused for was a person made and left with no way in, and another at every
+// try (#279). What can be known of a subject before anybody is made is asked
+// before anybody is made -- of the function the write asks, so that the two
+// cannot come to differ. The other half of a subject's form is its
+// connection's claim, which [GUID] and [ClaimOid] say.
+func Unstable(v string) string {
+	switch {
+	case v == "":
+		return "must not be empty"
+	case v != strings.TrimSpace(v):
+		return "has a space before or after it; a subject is compared as it is written, so write it as the provider says it"
+	case strings.Contains(v, "@"):
+		return "looks like an address; it must be the identifier the provider treats as immutable, " +
+			"because an address is reassigned and whoever gets it next would be served as this person"
+	}
+
+	return ""
+}
+
 // WhoseHost answers which tenant serves a name.
 func (s *Server) WhoseHost(ctx context.Context, req *app.FrontWhoseHostRequest) (*app.FrontWhoseHostResponse, error) {
 	name := Hostname(req.GetHost())
