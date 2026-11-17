@@ -866,6 +866,7 @@ func Rules(db *ent.Client, sources ...rbac.Source) core.Rules {
 		Granted:      Granted(db, sources...),
 		Joining:      Joining(db),
 		Holding:      Holding(db, sources...),
+		Giving:       Giving(db),
 		Held:         core.Held(Everything(db, sources...)),
 		Everywhere:   Everywhere(db, sources...),
 		Administered: Administered(db),
@@ -1081,6 +1082,92 @@ func Joining(db *ent.Client) core.Joining {
 		}
 
 		return grantsOf(vs), nil
+	}
+}
+
+// Giving is what one row hands whoever it names, for [core.Giving]: a
+// binding, a place on a team, or a manager's place in a group, told apart by
+// the identifier.
+//
+// Each is read as [policy.of] reads it, so that what an erase is held to is
+// what the gate stops counting when the row goes. A role that was erased
+// gives nothing ([live]); nor does a place on a team that was ([liveTeam]),
+// a place in a group that was ([groupRoles]), or a binding to one
+// ([bindingsReaching]).
+//
+// Where each is held is where granting it was asked about, which for two of
+// the three is where the gate holds it too: a binding at its site, a team's
+// role at the team's site. A manager's role is answered across the tenant,
+// whichever site the group is in, since that is what appointing one asks
+// (`core`'s `mayAppoint`).
+func Giving(db *ent.Client) core.Giving {
+	return func(ctx context.Context, row pdid.Id) ([]core.Grant, error) {
+		switch row.Domain() {
+		case pd.BindingDomain:
+			vs, err := db.Binding.Query().
+				Where(
+					binding.IdEQ(row.Uuid()),
+					binding.DateErasedIsNil(),
+					binding.Or(binding.Not(binding.HasGroup()), binding.HasGroupWith(group.DateErasedIsNil())),
+				).
+				WithRole(live).
+				WithSite().
+				All(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			return grantsOf(vs), nil
+
+		case pd.TeamMembershipDomain:
+			vs, err := db.TeamMembership.Query().
+				Where(teammembership.IdEQ(row.Uuid()), teammembership.DateErasedIsNil(), liveTeam).
+				WithRole(live).
+				WithTeam(func(q *ent.TeamQuery) { q.WithSite() }).
+				All(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			var gs []core.Grant
+			for _, v := range vs {
+				if v.Edges.Role == nil {
+					continue
+				}
+
+				g := core.Grant{Methods: v.Edges.Role.Methods}
+				if v.Edges.Team != nil && v.Edges.Team.Edges.Site != nil {
+					g.Site = pdid.Id(v.Edges.Team.Edges.Site.Id)
+				}
+				gs = append(gs, g)
+			}
+
+			return gs, nil
+
+		case pd.GroupMembershipDomain:
+			vs, err := db.GroupMembership.Query().
+				Where(
+					groupmembership.IdEQ(row.Uuid()),
+					groupmembership.DateErasedIsNil(),
+					groupmembership.HasGroupWith(group.DateErasedIsNil()),
+				).
+				WithRole(live).
+				All(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			var gs []core.Grant
+			for _, v := range vs {
+				if v.Edges.Role != nil {
+					gs = append(gs, core.Grant{Methods: v.Edges.Role.Methods})
+				}
+			}
+
+			return gs, nil
+		}
+
+		return nil, nil
 	}
 }
 

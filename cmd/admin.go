@@ -496,11 +496,16 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 // control plane it would answer that everybody holds nothing. So it is the
 // data plane's, from the same function `MeService` and the data plane's own
 // stack use, which is what keeps three readers of one set from disagreeing.
+//
+// So is `Giving`: what a customer's binding hands whoever it names is a
+// data-plane row, and what an operator takes away by erasing one is read
+// there, as it was when the erase read it through the role.
 func adminRules(s *Server) core.Rules {
 	r := Rules(s.Control.Ent)
 	r.Held = core.Held(Everything(s.Ent, s.policySources...))
 	r.Everywhere = Everywhere(s.Ent, s.policySources...)
 	r.Releasing = Releasing(s.Ent, s.contents)
+	r.Giving = Giving(s.Ent)
 
 	return r
 }

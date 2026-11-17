@@ -256,7 +256,9 @@ each other, whichever site they are of.
 **A site is erased when nothing is in it.** A role, a binding, a team and a
 group may each be a site's, and one still there refuses the erase, which says
 what is left: a binding that outlived its site would go on counting for a place
-nobody can see any more. Take them out, and then the site.
+nobody can see any more. Take them out, and then the site. A binding of a role
+that was erased since is still one of them: it gives nobody anything, and is
+erased like any other.
 
 **A row a read is asked to bring along is read by its own rule.** A `Get` may
 ask for the rows its row points at (`select`: a membership's team, the team's
@@ -436,6 +438,18 @@ administrator below their own could then reset the administrator's password.
 Taking only what you hold leaves everybody holding at least what you do not. A
 tenant's administrator holds what the tenant was given, and a group's manager
 holds what their group is bound to by being in it, so it asks nothing of either.
+
+What a row gave is read from the row, and not as whoever erases it sees its
+role. A role of the whole tenant is in no site, so somebody who holds the erase
+in one site does not read it -- and a binding made there of such a role, or a
+place on a team or a manager's place in a group that carries one, is still
+taken away only by somebody who holds what it names.
+
+And **a row that gives nothing any more is taken away by whoever may erase
+where it is**: a binding of a role that was erased, or to a group that was; a
+place on a team that was erased, or in a group that was. Nothing is taken from
+anybody, so nothing is asked about what you hold. That is how a site is emptied
+after a role bound in it was erased.
 
 Suspending somebody is not a taking away: their bindings stay, so everything
 above still sees what they hold, and somebody on call has to be able to suspend
