@@ -360,7 +360,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	var policySources []rbac.Source
 	if c.Policy.File != "" {
 		var err error
-		policyFile, err = rbacfile.Open(c.Policy, policySubjects(client))
+		policyFile, err = rbacfile.Open(c.Policy, policySubjects(ctx, client, c.Policy.File))
 		if err != nil {
 			db.Close()
 			return nil, fmt.Errorf("policy: %w", err)
