@@ -361,6 +361,18 @@ the tenant**: a front door, which links somebody it saw the provider sign in;
 an administrator; `adopt` above. A person's own is refused, and so is the
 account page's *connect* for that connection, which is made as them.
 
+**Nor theirs to take away.** The same row is what makes somebody one the
+directory speaks for. Somebody it made, who also has a password, could
+*unlink* the account it made them by, and from then on its `active: false`
+was refused, `403`, and its lookup found nobody: they had taken themselves out
+of its hands, and went on signing in after it said they had left. So an erase
+there, the account page's *unlink*, and a move to another subject
+(`IdentityService/Resubject`) each take their verb held **across the
+tenant** by a binding -- an administrator; for the move, a front door at their
+sign-in -- and not the person's own doing, nor a grant made in a site. The
+directory's own word that somebody has left removes no account, and is heard
+as before.
+
 **Leaving.** `active: false` suspends them -- the same suspension `Disable`
 writes, refused everywhere -- and `active: true` lifts it. `DELETE` suspends them
 and keeps the row: what becomes of it is an operator's decision, and the endpoint

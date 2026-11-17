@@ -40,15 +40,53 @@ func (s Core) Identity() app.IdentityServiceServer {
 // say: at the connection their tenant's directory provisions through
 // ([coreIdentity.directorys]).
 func (s coreIdentity) Add(ctx context.Context, req *app.IdentityAddRequest) (*app.Identity, error) {
-	if err := s.directorys(ctx, req.GetHolder(), req.GetProvider()); err != nil {
-		return nil, err
+	if !s.deployment(ctx) {
+		tenant, err := s.tenantOfHolder(ctx, req.GetHolder())
+		switch status.Code(err) {
+		case codes.OK:
+			if err := s.directorys(ctx, "provider", tenant, req.GetProvider(), accountWritten); err != nil {
+				return nil, err
+			}
+		case codes.NotFound, codes.InvalidArgument:
+			// Not a person this caller can see, which `add` refuses as what
+			// it is.
+		default:
+			return nil, err
+		}
 	}
 
 	return s.add(ctx, req)
 }
 
-// directorys refuses an account at the connection a tenant's directory
-// provisions through to somebody who writes it of their own accord.
+// What is done to an account at the connection a directory provisions
+// through, each with the verb that does it and who holds that verb across a
+// tenant ([coreIdentity.directorys]).
+var (
+	accountWritten = directorysWrite{
+		method: app.IdentityService_Add_FullMethodName,
+		done:   "written for somebody already here",
+		by:     "a front door they signed in through, or an administrator",
+	}
+	accountTakenAway = directorysWrite{
+		method: app.IdentityService_Erase_FullMethodName,
+		done:   "taken away",
+		by:     "an administrator; a directory that means somebody has left suspends them",
+	}
+	accountMoved = directorysWrite{
+		method: app.IdentityService_Resubject_FullMethodName,
+		done:   "moved to another subject",
+		by:     "a front door at their sign-in, or an administrator",
+	}
+)
+
+type directorysWrite struct {
+	method   string
+	done, by string
+}
+
+// directorys refuses a write of an account at the connection a tenant's
+// directory provisions through -- one added, one taken away, one moved to
+// another subject -- to anybody who does not hold that verb across the tenant.
 //
 // # What a person's own write did there
 //
@@ -66,33 +104,36 @@ func (s coreIdentity) Add(ctx context.Context, req *app.IdentityAddRequest) (*ap
 // onto -- a name, a suspension, a place in a group the directory grants
 // through (#278).
 //
+// # And what taking one away did
+//
+// The same thing from the other side. *Unlink*, on somebody's own page, needs
+// no role (`MeService/Unlink`), and asked only that another way in be left.
+// Somebody the directory made, who also had a password, unlinked the account
+// it made them by, and was from then on nobody the directory spoke for: its
+// `active: false` on the day they left was refused, and they went on signing
+// in. And an account moved to another subject (`Resubject`) is another of the
+// directory's people, which a grant made in one site could do.
+//
 // # Whose it is
 //
 // The directory's to say. It writes these as it makes people
-// (`HolderService.Provision`, which does not come through here: [coreIdentity.add]).
-// One for somebody already here is written on a grant, as `Provision` is
-// called on one: by whoever holds `IdentityService/Add` across the tenant by
-// a binding -- which what everybody may do to their own account is not
-// (`cmd/policy.go`, `policy.own`). That is a front door, which links somebody
-// it saw the provider sign in; an administrator; an operator's `roster scim
-// adopt`. Across the tenant because the directory finds its people across it:
-// a grant made in a site does not say who somebody is to everybody.
+// (`HolderService.Provision`, which does not come through here: [coreIdentity.add]),
+// and says somebody has left by suspending them, which removes no account.
+// Any other write of one is made on a grant, as `Provision` is called on one:
+// by whoever holds the verb across the tenant by a binding -- which what
+// everybody may do to their own account is not (`cmd/policy.go`,
+// `policy.own`), and neither is what needs no role. That is a front door,
+// which links somebody it saw the provider sign in and moves them to the claim
+// their token carries; an administrator; an operator's `roster scim adopt`.
+// Across the tenant because the directory finds its people across it: a grant
+// made in a site does not say who somebody is to everybody.
 //
 // The deployment's own work is not asked, as everywhere in this package.
-func (s coreIdentity) directorys(ctx context.Context, holder *app.HolderRef, provider string) error {
+func (s coreIdentity) directorys(ctx context.Context, field string, tenant pdid.Id, provider string, what directorysWrite) error {
 	if s.deployment(ctx) {
 		return nil
 	}
 
-	tenant, err := s.tenantOfHolder(ctx, holder)
-	switch status.Code(err) {
-	case codes.OK:
-	case codes.NotFound, codes.InvalidArgument:
-		// Not a person this caller can see, which `add` refuses as what it is.
-		return nil
-	default:
-		return err
-	}
 	c, err := s.connectionOf(ctx, tenant, provider)
 	if err != nil || !c.GetProvisions() {
 		return err
@@ -107,15 +148,15 @@ func (s coreIdentity) directorys(ctx context.Context, holder *app.HolderRef, pro
 	if err != nil {
 		return err
 	}
-	if slices.ContainsFunc(held, func(m string) bool { return frame.Covers(m, app.IdentityService_Add_FullMethodName) }) {
+	if slices.ContainsFunc(held, func(m string) bool { return frame.Covers(m, what.method) }) {
 		return nil
 	}
 
 	return status.Errorf(codes.PermissionDenied,
-		"provider: this tenant's directory provisions through %s, so who has an account there is the directory's to say. "+
-			"It writes these as it makes people, and one for somebody already here is written by whoever holds %s across the tenant "+
-			"-- a front door they signed in through, or an administrator -- and not by the person",
-		provider, app.IdentityService_Add_FullMethodName)
+		"%s: this tenant's directory provisions through %s, so who has an account there is the directory's to say. "+
+			"It writes these as it makes people, and one is %s by whoever holds %s across the tenant -- %s -- "+
+			"and not by the person, nor on a grant made in part of the tenant",
+		field, provider, what.done, what.method, what.by)
 }
 
 // add is [coreIdentity.Add] for a verb of this layer's own that writes an
@@ -409,6 +450,12 @@ func (s coreIdentity) Resubject(ctx context.Context, req *app.IdentityResubjectR
 	if err := s.mayWriteAWayIn(ctx, "ref", app.HolderRef_builder{Id: holder}.Build()); err != nil {
 		return nil, err
 	}
+	// And at the connection their directory provisions through, the subject
+	// is who the directory finds them by: moved, they are another of its
+	// people ([coreIdentity.directorys]).
+	if err := s.directorys(ctx, "ref", tenant, v.GetProvider(), accountMoved); err != nil {
+		return nil, err
+	}
 
 	var out *app.Identity
 	err = s.only(ctx, holder, func(next app.Server, _ dialect.Driver) error {
@@ -602,7 +649,9 @@ func (s coreIdentity) Erase(ctx context.Context, req *app.IdentityRef) (*app.Ide
 	v, err := s.IdentityServiceServer.Get(ctx, app.IdentityGetRequest_builder{
 		Ref: req,
 		Select: app.IdentitySelect_builder{
-			Holder: app.HolderSelect_builder{}.Build(),
+			Holder:   app.HolderSelect_builder{}.Build(),
+			Provider: z.Ptr(true),
+			TenantId: z.Ptr(true),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -622,6 +671,18 @@ func (s coreIdentity) Erase(ctx context.Context, req *app.IdentityRef) (*app.Ide
 	// Whose it is, before how many they have left: an identity is taken from
 	// somebody by whoever may write one onto them, and by them.
 	if err := s.mayTakeAWayIn(ctx, "ref", v.GetHolder().GetId()); err != nil {
+		return nil, err
+	}
+
+	// And not by them, nor on a grant made in a site, at the connection their
+	// directory provisions through: the account is what makes them somebody
+	// it speaks for, and without it its word that they have left is refused
+	// ([coreIdentity.directorys]).
+	tenant, err := pdid.From(v.GetTenantId())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.directorys(ctx, "ref", tenant, v.GetProvider(), accountTakenAway); err != nil {
 		return nil, err
 	}
 

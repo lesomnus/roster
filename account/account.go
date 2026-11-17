@@ -1113,6 +1113,14 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 				"an administrator of your organisation has to link it for you", http.StatusForbidden)
 			return
 		}
+		if errors.Is(err, arrives.ErrAnotherAccount) {
+			// Their address is somebody's here who signs in through this
+			// provider already, by another account: a refusal too, and not
+			// one this app can end by linking.
+			http.Error(w, "somebody here already signs in with another account at this provider, under the address this one carries; "+
+				"an administrator of your organisation has to say which account is theirs", http.StatusForbidden)
+			return
+		}
 		fmt.Fprintf(os.Stderr, "account: %s/%s: %v\n", who.Provider, who.Subject, err)
 		http.Error(w, "cannot sign in", http.StatusInternalServerError)
 		return

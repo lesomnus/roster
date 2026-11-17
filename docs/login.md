@@ -978,6 +978,30 @@ roster --as admin identity add '{"holder":{"slug":{"alias":"dana","tenant":{"ali
 Enter somebody first and bind them their role after they have arrived once, and
 the front door links them itself.
 
+**Nor is somebody linked who already signs in through that provider by another
+account.** A proved address names its holder to whoever arrives verified at
+it, and that holder may have an account at the same provider already: theirs
+at the directory was made again, or the address is somebody else's there now.
+roster refuses a second account at one provider, and which of the two it is,
+is not a front door's to guess. They are answered `403` too -- *somebody here
+already signs in with another account at this provider, under the address
+this one carries; an administrator of your organisation has to say which
+account is theirs* -- and the log says, as a warning, the subject that arrived
+and the one they have. Where it is the same person, an administrator takes the
+old account away and links the new one; an account that is somebody's only way
+in is not taken away, so they are given another first:
+
+```sh
+roster --as admin vouch reset @contoso/dana          # or any other way in; printed once
+roster --as admin identity erase <the id of the account they had>
+roster --as admin identity add '{"holder":{"slug":{"alias":"dana","tenant":{"alias":"contoso"}}},
+                      "provider":"entra","subject":"<the subject the log said>"}'
+```
+
+Where it is another person, an administrator enters them on a row of their own
+and says whose the address is: a proved address does not change hands by
+itself.
+
 What `enrolling` calls somebody is derived from the address and is **not** the
 local part of it: an alias begins with a lowercase letter and holds lowercase
 letters, digits and single hyphens, so `first.last` -- which is what a corporate

@@ -167,6 +167,25 @@ var ErrUninvited = errors.New("arrives: nobody here")
 // before the first sign-in.
 var ErrUnlinked = errors.New("arrives: known here, and not this front door's to link")
 
+// ErrAnotherAccount is what [Providers.Known] answers for somebody whose
+// address the policy matched to a person who already signs in through this
+// provider, by another account.
+//
+// A proved address names its holder to whoever arrives verified at it
+// ([invitation]), and that holder may have an identity at this provider
+// already: their account at the directory was made again, or the address is
+// somebody else's there now. roster refuses the link -- a second account at
+// one provider is a link that found the wrong row
+// (`server/core/identity.go`) -- and which of the two it is, is not a front
+// door's to guess.
+//
+// It is a refusal about this arrival, like [ErrUnlinked], and came back the
+// same way: as an error an app answered as its own failure. An administrator
+// of the tenant ends it, by saying which account is the person's -- the one
+// they have taken away and this one linked, or this arrival given a row of its
+// own.
+var ErrAnotherAccount = errors.New("arrives: the address is somebody's who signs in here by another account at this provider")
+
 // Invited refuses everybody roster has not been told about, where *told about*
 // means an `Identity` row: this is only reached when there is none, so it is
 // the policy that never makes one.
@@ -981,7 +1000,9 @@ func authTime(v any) time.Time {
 // more than this front door. There is no row they had to sign in by, so they
 // are not signed in, and what is answered is [ErrUnlinked]: an app tells them
 // an administrator links the account, as it tells a stranger they were not
-// invited.
+// invited. So is the link of somebody found by their address who already
+// signs in through this provider by another account, which roster refuses as
+// a second account at one provider: [ErrAnotherAccount].
 //
 // # And it attests on every sign-in, not only the first
 //
@@ -1041,6 +1062,21 @@ func (p *Providers) Known(ctx context.Context, enrol Enrol, who *Caller) (pdid.I
 
 		return pdid.Nil, ErrUnlinked
 	}
+	if status.Code(err) == codes.InvalidArgument {
+		// Refused as a row roster would not keep. One reason is about this
+		// arrival and nobody's fault: the person the policy found already
+		// signs in through this provider, by another account
+		// ([ErrAnotherAccount]). Any other is the connection's -- a subject
+		// that is an address, or not of the claim's shape -- and is everybody's
+		// who arrives through it, so it stays the error it was.
+		if has, ok := p.accountAt(ctx, id, who.Provider); ok {
+			slog.WarnContext(ctx, "arrives: matched by an address of somebody who already signs in through this provider by another account, and not linked; "+
+				"an administrator of the tenant says which account is theirs",
+				"tenant", who.TenantAlias, "holder", id.String(), "provider", who.Provider, "subject", who.Subject, "has", has, "err", err)
+
+			return pdid.Nil, ErrAnotherAccount
+		}
+	}
 	if err != nil {
 		return pdid.Nil, fmt.Errorf("link %s/%s: %w", who.Provider, who.Subject, err)
 	}
@@ -1048,6 +1084,25 @@ func (p *Providers) Known(ctx context.Context, enrol Enrol, who *Caller) (pdid.I
 	p.attest(ctx, id, link, *who)
 
 	return id, nil
+}
+
+// accountAt is the subject somebody already signs in by at a provider, and
+// whether they have one. Asked only after a link was refused, to say why; a
+// front door that may not ask is one that cannot say, and answers as it did.
+func (p *Providers) accountAt(ctx context.Context, holder pdid.Id, provider string) (string, bool) {
+	ways, err := p.roster.Holder().SignsIn(ctx, rstr.HolderSignsInRequest_builder{
+		Ref: rstr.HolderRef_builder{Id: holder.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		return "", false
+	}
+	for _, v := range ways.GetIdentities() {
+		if v.GetProvider() == provider {
+			return v.GetSubject(), true
+		}
+	}
+
+	return "", false
 }
 
 // identity is the row a subject at this provider names in this tenant.

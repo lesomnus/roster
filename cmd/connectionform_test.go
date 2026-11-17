@@ -108,6 +108,8 @@ func TestAConnectionsIssuerIsAnAddress(t *testing.T) {
 		x.NoError(add(admin, b.Walled, "google", "https://accounts.google.com", "the-app"))
 		x.NoError(add(admin, b.Walled, "premises", "http://idp.corp.example:8080/realms/contoso", "the-app"),
 			"plain http is the front door's to refuse, which knows where the provider is")
+		x.NoError(add(admin, b.Walled, "okta", "https://contoso.okta.example/oauth2/ausAbC123", "the-app"),
+			"a path is the provider's to spell, capitals and all")
 	})
 
 	t.Run("and nothing else is", func(t *testing.T) {
@@ -121,6 +123,9 @@ func TestAConnectionsIssuerIsAnAddress(t *testing.T) {
 			"ftp://idp.example.test",
 			"file:///etc/passwd",
 			"HTTPS://idp.example.test",
+			// A host is one spelling too: `server/core` read this one as
+			// GitHub's and a front door did not.
+			"https://GitHub.com",
 			" https://idp.example.test",
 			"https://idp.example.test ",
 			"https://idp.example.test/v2.0 ",
