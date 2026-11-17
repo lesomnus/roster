@@ -191,6 +191,12 @@ func TestAPageIsToldWhatAGrantHandsOver(t *testing.T) {
 
 		got = handedOver(t, ctx, b.Ungated, tenant, app.IdentityService_Resubject_FullMethodName)
 		x.Contains(got["a-persons-verb-across-the-tenant"].GetHandsOver(), "holds no more")
+
+		// And erasing somebody, which asks what suspending them asks and was
+		// the one of the three the page did not say (#279).
+		got = handedOver(t, ctx, b.Ungated, tenant, app.HolderService_Erase_FullMethodName)
+		x.Equal([]string{app.HolderService_Erase_FullMethodName}, got["holderservicedisable"].GetMethods())
+		x.Contains(got["holderservicedisable"].GetHandsOver(), "wider than whoever is given it included")
 	})
 
 	t.Run("what is somebody's own reaches nobody else", func(t *testing.T) {

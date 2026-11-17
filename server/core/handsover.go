@@ -227,8 +227,13 @@ var handsOver = []handedOver{
 		methods: []string{
 			app.HolderService_Disable_FullMethodName,
 			app.HolderService_Invalidate_FullMethodName,
+			// And erasing somebody, which asks what suspending them asks: the
+			// verb across the tenant, a row no file declares, and a tenant left
+			// with somebody administering it (`takeaway.go`). It was the one of
+			// the three the page did not say (#279).
+			app.HolderService_Erase_FullMethodName,
 		},
-		readsAs: "may suspend an account, or sign somebody out everywhere",
+		readsAs: "may suspend an account, sign somebody out everywhere, or erase them",
 		tenant: "anybody's of the tenant, wider than whoever is given it included: an administrator's keys " +
 			"and sessions stop at once",
 		site:       "anybody's of that site, wider than whoever is given it included",
