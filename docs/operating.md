@@ -666,6 +666,18 @@ through, since it has no cookie that came along by itself: that is a terminal
 running `roster sign-in`. No page of the app is drawn inside another site's
 (`frame-ancestors 'none'`).
 
+**And so does what is in front of the Login App**, for the second reason: a
+sign-in, the last hop, a consent answered, a sign-out confirmed and a device's
+code typed are taken from its own page and from no other origin, and most of
+them need no cookie, so nothing else stood in the way. What Hydra and a
+provider send a browser there with are redirects, which only read and are not
+asked where they are from. `Host` it reads for nothing about a tenant -- which
+tenant a flow is about is Hydra's word -- but a browser that says no
+`Sec-Fetch-Site`, which is one reaching it over plain http at a name that is not
+`localhost`, is believed by its `Origin` against the `Host` the request arrived
+with: a development rig behind something that rewrites `Host` answers that
+browser 403.
+
 ### The front door's mail
 
 The account app mails three links roster mints for it: one that **recovers** an

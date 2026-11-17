@@ -114,6 +114,9 @@ func (a *App) device(w http.ResponseWriter, r *http.Request) {
 func (a *App) verify(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	if !answered(w, r) {
+		return
+	}
 	challenge := r.FormValue(deviceChallenge)
 	if challenge == "" {
 		a.broken(w, r, errors.New("login: no challenge"))

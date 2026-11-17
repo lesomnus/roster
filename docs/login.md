@@ -483,6 +483,17 @@ negotiable: **this app sends no CORS headers**, so the page has to reach
 `POST /session` and `POST /accept` as **same origin** -- in practice a proxy
 putting the page and this listener under one name.
 
+**And it takes nothing that changes something from any other origin.** Every
+`POST` below, and the `DELETE`, is answered 403 when the browser says the request
+is another origin's -- `Sec-Fetch-Site`, or `Origin` against `Host` for a browser
+that does not say -- so that proxy passes those three headers as the browser
+wrote them. Another host of the same domain is another origin, which a cookie's
+`SameSite` does not stop; and most of these routes need no cookie at all. A
+request that says neither header is not a browser's and is let through. No
+screen is drawn inside another site's (`frame-ancestors 'none'`). It is the
+account app's rule and the same wrapper, `frontdoor.Guard`
+(`TestTheLoginAppsOwnRoutesTakeNoRequestFromAnotherOrigin`).
+
 ⚠️ **Empty means this binary serves no page at all**, and what a browser gets at
 `/login` is a **404** with *this deployment serves no sign-in page*. It looks
 exactly like the issuer being broken, and the two ways to arrive at it are
@@ -508,7 +519,7 @@ functions stop agreeing, in either direction.
 | `POST /session/continue` | *frontdoor.* `{kind, name, secret}` → **204** · **401**. One attempt per first form: the half-session is spent whether the answer was right or not | `TestAWrongSecondFactorFinishesNothing` · `TestAHalfSessionIsOverWhenTheAppSaidItWas` · `TestASignedInBrowserSurvivesAStraySecondForm` |
 | `DELETE /session` | *frontdoor.* Drops this app's session and revokes the delegation, in the tenant the session is of. Not part of the flow -- the flow's own ending is `POST /accept` -- and mounted because it is the same handler | `TestSigningOutRevokesEvenAWindowThatHasPassed` · `TestASessionIsEndedInItsOwnTenant` · `TestEveryEndingRevokesTheDelegation` |
 | `POST /accept` | `{redirect_to}`, and **the hop no other front door has**: it turns a finished sign-in into `acceptLoginRequest{subject}`. A page that leaves this out signs somebody in and never ends the flow. 401 when nobody is signed in, or is half way; when the sign-in was not made at **this** `login_challenge`; and when roster no longer answers for whoever it was | `TestALoginAppTellsHydraWhoSignedIn` · `TestAFlowReachesOnlyItsOwnOperator` · `TestASignInAnswersOnlyTheChallengeItWasMadeFor` · `TestASessionOfOneTenantDoesNotAnswerAnothersChallenge` · `TestAnAcceptAsksRosterWhoIsThere` |
-| `GET /provider` | 302 to the directory this operator's `Connection` names, with the state in a cookie | `TestSomebodyArrivesThroughAProvider` · `TestAProviderFlowReachesOnlyItsOwnOperator` |
+| `GET /provider` | 302 to the directory this operator's `Connection` names, with the state in a cookie that is this host's alone (`__Host-login_state`; bare under `--insecure-cookie`) | `TestSomebodyArrivesThroughAProvider` · `TestAProviderFlowReachesOnlyItsOwnOperator` · `TestTheRoundTripsCookieIsThisHostsAlone` |
 | `GET /callback/{tenant}/{connection}` | where a directory sends the browser back: one URL per connection, which is what is registered at that provider. **Not** in a flow: which flow it belongs to comes from the state, and the connection the path names has to be the one that flow went to | `TestACallbackWithoutItsOwnStateIsRefused` · `TestAnAnswerIsHeldToTheRoundTripThatAskedForIt` · `TestAStrangerIsRefusedUnlessTheDeploymentEnrols` |
 | `GET /consent` | a screen when `login.consent` is `ask`, a 303 when it is `skip` or Hydra remembered -- to Hydra with the claims, or carrying `login_required` when there is nobody here to read the subject as | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor` · `TestAConsentWhoseSubjectCannotBeReadIsRefused` |
 | `POST /consent` | the screen's answer. A no is `consent/reject` and the browser goes back to the client with a refusal | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `ts/e2e/login.spec.ts` |
@@ -539,6 +550,10 @@ And the rules, which are the part that is easy to get wrong and the reason
   every screen; a stale copy is a browser posting to a challenge that has been
   spent. What the screen loads is another matter: the bundles beside it are
   named by their content and served `immutable`, like every other page's.
+- **A screen's answer is a form of a few kilobytes.** `POST /consent`,
+  `POST /logout` and `POST /device` read a form -- urlencoded, or the multipart
+  a `FormData` is -- to sixteen kilobytes, which is a challenge and a word or
+  two, and answer 413 to more (`TestAScreensAnswerIsReadToASize`).
 - **An answer you do not recognise is a refusal, not a crash.** Two rows above
   gained a state after they were first written, and a page that draws *this did not
   work* for an unknown answer survives that. It is the one thing asked of a page in

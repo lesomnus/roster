@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
@@ -927,7 +928,19 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 	log.From(ctx).InfoContext(ctx, "login", slog.String("addr", l.Addr().String()),
 		slog.String("hydra", cfg.Hydra))
 
-	srv := &http.Server{Handler: a.Handler()}
+	// With clocks on what a stranger controls, as the account app's listener
+	// has (`serveAccount`) and for its reason: how long a request's headers may
+	// take to arrive, how long a connection may sit idle, and how much header
+	// is read. This listener had none, and it is the one Hydra sends every
+	// browser to -- a connection opened and left half way through a header was
+	// kept for ever. Nothing bounds a body here, which each route does for
+	// itself, or an answer.
+	srv := &http.Server{
+		Handler:           a.Handler(),
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       2 * time.Minute,
+		MaxHeaderBytes:    64 << 10,
+	}
 	go func() {
 		<-ctx.Done()
 		_ = srv.Close()
