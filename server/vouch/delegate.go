@@ -202,6 +202,13 @@ func (s *Server) mint(ctx context.Context, res *app.VouchVerifyResponse, who, is
 // and no gate is a stack assembled without one, and it refuses: it cannot say
 // what the caller may call.
 func (s *Server) mayDelegate(ctx context.Context, methods []string) error {
+	// And a list is one, before any of it is asked: what follows asks the gate
+	// an entry at a time, and what comes after that checks a password or
+	// spends a link, for a list the store would then refuse ([keys.Listed]).
+	if err := keys.Listed("methods", methods); err != nil {
+		return err
+	}
+
 	f, ok := frame.From(ctx)
 	if !ok {
 		return nil

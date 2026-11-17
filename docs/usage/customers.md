@@ -68,9 +68,18 @@ organisation's list of people unreadable by what they write about themselves.
 | an address | 254, and 64 before the `@` | bytes |
 | a number | 64 | characters |
 | what a directory calls somebody: its id for them, its name for them | 255, 256 | bytes, characters |
+| a `subject` at a provider | 255 | bytes |
+| a list of `methods`, on a role, a key or a delegation | 1,024 entries; an entry 255; 16,384 in all | bytes |
+| a connection's `issuer` | 2,048 | bytes |
+| a connection's `scopes` | 32 of them; each 255 | bytes |
+| an identifier: a connection's `client_id` and `secret_ref`, the `provider` a mail domain names, the `client` a group is shown to, each of the words a consent is said in | 255 | bytes |
 
 A name and a note are counted in characters, so a name is as long in Hangul as
-in Latin. `data` is one slot for a few facts an app keeps beside a person; what
+in Latin; what is compared and not read -- a subject, a method, an identifier
+-- in bytes. A list of methods has a length in all as well as a count: roster
+serves some two hundred methods, which named one by one are six thousand
+bytes, and a list that means all of them is one pattern (`/roster.*/*`).
+`data` is one slot for a few facts an app keeps beside a person; what
 is large, or has to be looked up, the app keeps itself, by the person's
 identifier.
 
