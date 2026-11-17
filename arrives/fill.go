@@ -286,8 +286,13 @@ func publicClient(allow func(netip.Addr) bool) *http.Client {
 	return &http.Client{
 		Timeout: 5 * time.Second,
 		Transport: &http.Transport{
-			DialContext: dialTo(func(_ string, ip netip.Addr) bool { return allow(ip) },
-				"is not an address on the internet"),
+			DialContext: dialTo(func(_ string, ip netip.Addr) string {
+				if allow(ip) {
+					return ""
+				}
+
+				return "is not an address on the internet"
+			}),
 			TLSHandshakeTimeout: 5 * time.Second,
 			ForceAttemptHTTP2:   true,
 		},

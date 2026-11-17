@@ -119,7 +119,11 @@ tutorial does not say -- once, against a deployment. Two things to give it:
   sign-in could carry is refused.
 
 A `userName` is answered lowered, as an address is kept. Whether the validator
-compares one without regard to case is one of the things its page is for.
+compares one without regard to case is one of the things its page is for. An
+`externalId` that is a GUID is answered in small letters too, where the
+connection names people by `oid`: it is kept and found in the one spelling a
+sign-in says, so one sent in capitals is the same person, read back as Entra
+writes an `objectId`.
 
 **What the page sent is kept, and asked again on every change.** Each time it
 is run against this endpoint, the requests it made become a file under

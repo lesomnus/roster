@@ -173,9 +173,22 @@ removed (`TestADirectoryMaySuspendTheLastAdministrator`).
 | An address proved keeps the moment it was first proved: a link confirmed again, or a directory vouching for it again, moves nothing, so proving the first address a second time does not make another the one a token says. Erased and written again, it is proved anew | `server/core/email.go` | `TestAnAddressProvedAgainIsStillTheOneProvedFirst` |
 | A link that proves is spent by whoever minted it, and asking roster for one is a front door's and nobody's own | `server/core/email.go` | `TestWhatSomebodyDoesToTheirOwnAccountNeedsNoRole` |
 | A subject is the identifier its provider keeps fixed, and a person has one account at a provider | `server/core/identity.go` | `TestASubjectThatLooksLikeAnAddressIsRefused` · `TestASecondAccountAtOneProviderIsRefused` · `TestTwoPeopleCannotBeOneSubject` |
+| A provider is named as a connection is, and a subject has no space before or after it; neither is folded into what was meant | `server/core/identity.go` | `TestAnIdentityIsHeldToAForm` |
+| A GUID is one spelling where its connection names people by `oid`: kept in small letters, and found in either by a write, a sign-in and a directory | `server/front/front.go` | `TestAGUIDIsOneSpelling` · `TestASignInFindsAnOidInEitherSpelling` · `TestATokensOidIsTheSamePersonInEitherSpelling` · `TestADirectoryFindsSomebodyByEitherSpellingOfTheirId` |
 | A hostname is claimed by a record published for it, and the latest proof takes it -- written down in the trail of the tenant that held it, and never a name a file declares | `server/core/host.go` | `TestTheLatestProofTakesTheName` · `TestANameTakenIsOnTheTrailOfWhoeverHeldIt` |
 | A name is written by its proof alone: its general writes, a claim's and a tenant's are not served, whatever `allow_general_writes` says | `cmd/serve.go` | `TestAGeneralWriteDoesNotWriteANamePastItsProof` |
 | The record is asked of the name's own zone, never of where an alias points; a name is one spelling, a hostname, and a lookup that failed says nothing of the resolver | `server/prove/prove.go` | `TestANameIsAskedOfItsOwnZone` · `TestATrailingDotIsTheSameName` · `TestANameThatIsNotAHostnameIsRefused` · `TestALookupThatFailedSaysNothingOfTheResolver` |
+
+### A connection is one a front door can use
+
+Asked of the deployment as of a tenant: what a row has to be to sign anybody
+in is the same whoever wrote it.
+
+| | written in | held to it by |
+| --- | --- | --- |
+| A connection's name is an alias, its issuer an address with a host and no query or fragment, and its client has a name | `server/core/connection.go` | `TestAConnectionsNameIsHeldToAnAliasesGrammar` · `TestAConnectionsIssuerIsAnAddress` |
+| It names its people by `oid` only where the provider may issue one: not at GitHub's, and not at Google's | `server/core/connection.go` | `TestAConnectionNamesNoClaimItsProviderIssuesNone` |
+| A front door asks a provider in plain `http` only at a host its deployment named (`private_hosts`) | `arrives/dial.go` | `TestAProviderIsAskedInTheClearOnlyWhereTheDeploymentNamedIt` |
 
 ### One tenant is not reached from another
 

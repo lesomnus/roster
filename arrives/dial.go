@@ -25,7 +25,8 @@ import (
 // # Why there is a rule
 //
 // A `Connection` with no secret is its tenant's administrator's to write
-// (`server/core/connection.go`), and nothing holds its `issuer` to anything.
+// (`server/core/connection.go`), and its `issuer` is held to being an address
+// and to nothing about where that address is.
 // A front door then asks that issuer for its document, and asks whatever the
 // document names for the rest: the token endpoint is sent the code, the
 // verifier and the client's secret, the keys are believed, userinfo is handed
@@ -39,6 +40,25 @@ import (
 // the host that was asked; and waited for no longer than this package says
 // ([connectTimeout], [askTimeout]). One client does all of it ([ownClient]), so
 // there is no request to a provider the rule can be left off.
+//
+// # And not in the clear
+//
+// The same row says how its provider is asked, and nothing held that to
+// anything: an issuer written `http://`, or an `https` one whose
+// document names an `http` token endpoint or `http` keys, was asked as
+// written. What goes to a token endpoint is the code, the verifier that makes
+// the code worth something, and the client's secret; what comes back from the
+// keys is what every token of that connection is believed by. In plain `http`
+// anybody on the way reads the first and rewrites the second, and whoever
+// answers for a connection's keys signs in as anybody who arrives through it.
+//
+// So a request written `http` is made only to a host the deployment named
+// ([Providers.inTheClear]), and on the internet a provider is written `https`.
+// It is this package that refuses and not `server/core`, which takes the row:
+// a directory on the premises is often plain `http` over a network its
+// deployment trusts, and which hosts those are is said to a front door and to
+// nothing else -- the same setting, for the same reason, as the exception
+// below.
 //
 // # Why the exception is the deployment's
 //
@@ -70,7 +90,13 @@ import (
 // proxy in charge of which addresses a tenant's issuer may be at, and
 // configures it to refuse its own network. What `NO_PROXY` sends direct is
 // dialled here and held to the rule as before, and that is all `private_hosts`
-// is then about.
+// is then about where a provider is.
+//
+// How a provider is asked is still seen here: a request written `http` is in
+// the clear to the proxy and beyond it. So through a proxy it is made only for
+// a host the deployment named as the URL writes it -- its name, or its address
+// -- since the address a name comes to is the one thing the proxy keeps to
+// itself.
 
 // How long a provider is waited for. `fill.go`'s numbers, which were a
 // picture's alone while everything else a provider was asked had no bound at
@@ -86,7 +112,9 @@ const (
 
 // PrivateHosts is the hosts off the internet a deployment says its tenants'
 // providers may be at: by name, by address, or a network of them by prefix.
-// The zero value names none, which is what a deployment that said nothing has.
+// They are its own, so they are also the only hosts a provider is asked at in
+// plain `http`. The zero value names none, which is what a deployment that
+// said nothing has.
 type PrivateHosts struct {
 	names    map[string]struct{}
 	prefixes []netip.Prefix
@@ -162,14 +190,35 @@ func (p *Providers) reaches(host string, ip netip.Addr) bool {
 	return public(ip) || p.PrivateHosts.holds(host, ip)
 }
 
-// dialTo connects only where `allow` says, asked about what a transport set
-// out to reach -- a host and its port, as a URL named them -- and the address
-// that came to.
+// inTheClear is whether this front door asks a provider there in plain
+// `http`: only at a host its deployment named, by name, by address or by a
+// network it is in -- which is how the deployment says a host is its own. `ip`
+// is the address a connection is being made to, and no address at all for a
+// request that leaves through a proxy, where only the host as it was written
+// is known here.
+func (p *Providers) inTheClear(host string, ip netip.Addr) bool {
+	return p.PrivateHosts.holds(host, ip)
+}
+
+// Why a connection for a provider's sake is not made, each beginning after the
+// address or the host it is about. Both name the setting, since both are a
+// deployment's to answer.
+const (
+	notOutside = "is not an address on the internet, " +
+		"and is not one the deployment said a provider may be at (`private_hosts`)"
+
+	notInTheClear = "would be asked in plain `http`, where what a provider is sent and what it answers are anybody's on the way to read and to rewrite; " +
+		"a front door asks so only at a host the deployment named (`private_hosts`), and a provider anywhere else is written `https`"
+)
+
+// dialTo connects only where `refuses` says nothing, asked about what a
+// transport set out to reach -- a host and its port, as a URL named them --
+// and the address that came to. What it says is why not, after the address.
 //
 // The address is checked where the connection is made, so it is the one
 // actually dialled -- after every redirect, and after whatever DNS answered,
 // including an answer that changed since anybody last looked.
-func dialTo(allow func(to string, ip netip.Addr) bool, refused string) func(ctx context.Context, network, addr string) (net.Conn, error) {
+func dialTo(refuses func(to string, ip netip.Addr) string) func(ctx context.Context, network, addr string) (net.Conn, error) {
 	return func(ctx context.Context, network, addr string) (net.Conn, error) {
 		d := &net.Dialer{
 			Timeout: connectTimeout,
@@ -179,8 +228,11 @@ func dialTo(allow func(to string, ip netip.Addr) bool, refused string) func(ctx 
 					return err
 				}
 				ip, err := netip.ParseAddr(at)
-				if err != nil || !allow(addr, ip) {
-					return fmt.Errorf("%s %s", at, refused)
+				if err != nil {
+					return fmt.Errorf("%s is not an address", at)
+				}
+				if why := refuses(addr, ip); why != "" {
+					return fmt.Errorf("%s %s", at, why)
 				}
 
 				return nil
@@ -194,28 +246,34 @@ func dialTo(allow func(to string, ip netip.Addr) bool, refused string) func(ctx 
 // ownClient is how a provider is asked anything: its document, its token
 // endpoint, its keys, its userinfo, its API, and a picture on that API's host.
 //
-// It connects only where `allow` says a front door may ([Providers.reaches]),
-// or to the proxy the environment names, through which a request goes
-// wherever the proxy lets it; the file comment says why of each. It follows
-// no redirect off the host it asked, since what it carries goes with every
-// hop: the token to the provider's API, and the code and the client's secret
-// to its token endpoint.
-func ownClient(allow func(host string, ip netip.Addr) bool) *http.Client {
+// It connects only where `reaches` says a front door may
+// ([Providers.reaches]), or to the proxy the environment names, through which
+// a request goes wherever the proxy lets it; and for a request written `http`,
+// only where `inTheClear` says it may ([Providers.inTheClear]). The file
+// comment says why of each. It follows no redirect off the host it asked, nor
+// from `https` to `http`, since what it carries goes with every hop: the token
+// to the provider's API, and the code and the client's secret to its token
+// endpoint.
+func ownClient(reaches, inTheClear func(host string, ip netip.Addr) bool) *http.Client {
 	out := fromEnvironment()
 
-	return &http.Client{
-		Timeout: askTimeout,
-		Transport: &http.Transport{
-			Proxy: out.proxy,
-			DialContext: dialTo(func(to string, ip netip.Addr) bool {
+	// way is a transport for one of the two ways a request is written, which
+	// is what its connections are held to: `refuses` is asked of each one made
+	// for a provider, and never of one to the proxy.
+	way := func(proxy func(*http.Request) (*url.URL, error), refuses func(host string, ip netip.Addr) string) *http.Transport {
+		return &http.Transport{
+			Proxy: proxy,
+			DialContext: dialTo(func(to string, ip netip.Addr) string {
 				if out.is(to) {
-					return true
+					return ""
 				}
 				host, _, err := net.SplitHostPort(to)
+				if err != nil {
+					return notOutside
+				}
 
-				return err == nil && allow(host, ip)
-			}, "is not an address on the internet, "+
-				"and is not one the deployment said a provider may be at (`private_hosts`)"),
+				return refuses(host, ip)
+			}),
 			TLSHandshakeTimeout: connectTimeout,
 			ForceAttemptHTTP2:   true,
 
@@ -224,6 +282,47 @@ func ownClient(allow func(host string, ip netip.Addr) bool) *http.Client {
 			// asked a provider for its document until this did.
 			MaxIdleConns:    100,
 			IdleConnTimeout: 90 * time.Second,
+		}
+	}
+
+	return &http.Client{
+		Timeout: askTimeout,
+		Transport: &asks{
+			secure: way(out.proxy, func(host string, ip netip.Addr) string {
+				if !reaches(host, ip) {
+					return notOutside
+				}
+
+				return ""
+			}),
+			plain: way(func(r *http.Request) (*url.URL, error) {
+				u, err := out.proxy(r)
+				if err != nil || u == nil {
+					return u, err
+				}
+				// Through a proxy the provider's address is the proxy's to
+				// see, and to refuse. That it would be asked in the clear is
+				// known here all the same, so the host is held to what the
+				// deployment named as the URL wrote it: by name, or as an
+				// address. A network names addresses, and there is none here
+				// to hold it against.
+				host := r.URL.Hostname()
+				ip, _ := netip.ParseAddr(host)
+				if !inTheClear(host, ip) {
+					return nil, fmt.Errorf("%s %s", host, notInTheClear)
+				}
+
+				return u, nil
+			}, func(host string, ip netip.Addr) string {
+				switch {
+				case !reaches(host, ip):
+					return notOutside
+				case !inTheClear(host, ip):
+					return notInTheClear
+				}
+
+				return ""
+			}),
 		},
 		CheckRedirect: func(r *http.Request, via []*http.Request) error {
 			if len(via) >= 3 || r.URL.Scheme != via[0].URL.Scheme || !strings.EqualFold(r.URL.Host, via[0].URL.Host) {
@@ -233,6 +332,33 @@ func ownClient(allow func(host string, ip netip.Addr) bool) *http.Client {
 			return nil
 		},
 	}
+}
+
+// asks is a provider asked either way a URL is written, each by a transport
+// of its own.
+//
+// Two, because the rule about a request in the clear is held where a
+// connection is made -- the one place the address it came to is known -- and a
+// dial is told a host and a port and nothing of the scheme they were written
+// under. A transport for each is a dial that knows which it is for, and a
+// connection made for one is never handed to the other.
+type asks struct {
+	secure, plain *http.Transport
+}
+
+func (a *asks) RoundTrip(r *http.Request) (*http.Response, error) {
+	if r.URL.Scheme == "http" {
+		return a.plain.RoundTrip(r)
+	}
+
+	return a.secure.RoundTrip(r)
+}
+
+// CloseIdleConnections is both transports', which is what
+// [http.Client.CloseIdleConnections] asks its transport for.
+func (a *asks) CloseIdleConnections() {
+	a.secure.CloseIdleConnections()
+	a.plain.CloseIdleConnections()
 }
 
 // proxies is the way out a deployment's environment names, and where a

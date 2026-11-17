@@ -214,8 +214,9 @@ op host add '{"tenant":{"alias":"tailspin"},"name":"127.0.0.1"}' >/dev/null
 # Two directories, and erin arrived through one of them.
 #
 # Which is the case the *signs in with* section is drawn for: a `Connection` is
-# configuration and roster validates neither the issuer nor the secret, so two
-# of them cost two rows and no provider -- and what the page has to get right is
+# configuration, and roster asks its issuer nothing and never reads its secret
+# -- an issuer is held to being an address, not to answering -- so two of them
+# cost two rows and no provider. And what the page has to get right is
 # that the one she used offers *unlink* and the one she has not offers *connect*.
 # `add entra` used to be drawn beside `add github`, and clicking it was a round
 # trip to a directory that ends in roster refusing a second identity there.
