@@ -760,7 +760,7 @@ roster --as admin holder invalidate @newco/alice  # everything issued before now
 The server stamps the time — there is none to give, so a stale clock cannot
 un-suspend anybody, and a suspension cannot lose a race with somebody editing a
 profile. `roster --as admin holder signs-in @newco/alice` is the read beside them: how
-somebody signs in, keys included, with no verifier anywhere in the answer. And
+somebody signs in, every key of theirs included, with no verifier anywhere in the answer. And
 `roster sync watch` is where a stop can be seen landing — one line per event,
 the same stream every app holds.
 

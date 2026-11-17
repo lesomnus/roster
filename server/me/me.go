@@ -68,6 +68,10 @@ import (
 // Given rather than computed, for the reason `server/core`'s rules are: `cmd`
 // already reads it, and a second implementation of one question is two that
 // drift.
+//
+// The methods are in the order of their spelling. The sites are each said
+// once, in the order of their identifiers, which is the order they were made
+// in.
 type Held func(ctx context.Context, who pdid.Id) (methods []string, sites []pdid.Id, every bool, err error)
 
 // Own is what somebody may call about their own account and nobody else's:
@@ -209,6 +213,8 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 			res.Own = meet(theirs, f.Grant)
 		}
 
+		// Each site once, in the order of their identifiers: [Held] says it
+		// so, for this and for `HolderService.Reaches`.
 		res.EverySite = every
 		for _, k := range sites {
 			res.Sites = append(res.Sites, k.Bytes())
@@ -438,9 +444,16 @@ func (s *Server) groups(ctx context.Context, who pdid.Id) ([]*app.MeGroup, error
 // through it reads their whole tenant's and filters -- the leak D17 named and
 // D23 exists to remove. This one takes no subject, so there is nothing to point
 // at anybody else.
+//
+// In the order they were made, and by identifier where two were made in one
+// instant: the order `HolderService.SignsIn` answers an administrator in,
+// which is every list's. None was asked for, so it was the store's, where
+// [Server.teams] and [Server.emails] each say theirs (#279). The same for
+// [Server.credentials] and [Server.keys].
 func (s *Server) identities(ctx context.Context, who pdid.Id) ([]*app.SignInIdentity, error) {
 	vs, err := s.db.Identity.Query().
 		Where(identity.DateErasedIsNil(), identity.HasHolderWith(holder.IdEQ(who.Uuid()))).
+		Order(identity.ByDateCreated(), identity.ById()).
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -469,6 +482,7 @@ func (s *Server) identities(ctx context.Context, who pdid.Id) ([]*app.SignInIden
 func (s *Server) credentials(ctx context.Context, who pdid.Id) ([]*app.SignInCredential, error) {
 	vs, err := s.db.Credential.Query().
 		Where(credential.DateErasedIsNil(), credential.HasHolderWith(holder.IdEQ(who.Uuid()))).
+		Order(credential.ByDateCreated(), credential.ById()).
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -507,6 +521,7 @@ func (s *Server) credentials(ctx context.Context, who pdid.Id) ([]*app.SignInCre
 func (s *Server) keys(ctx context.Context, who pdid.Id) ([]*app.SignInKey, error) {
 	vs, err := s.db.ApiKey.Query().
 		Where(apikey.DateErasedIsNil(), apikey.HasHolderWith(holder.IdEQ(who.Uuid()))).
+		Order(apikey.ByDateCreated(), apikey.ById()).
 		All(ctx)
 	if err != nil {
 		return nil, err

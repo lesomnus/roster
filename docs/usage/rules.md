@@ -62,6 +62,7 @@ And of all five:
 | a row a read is asked to bring along (`select`) is read by its own rule, and one out of reach comes back as its reference alone | `TestASelectReadsAnEdgeByItsOwnRule` |
 | being on a team with no role, or in a group nothing is bound to, gives nothing; being of a site gives the person nothing, and puts them within a grant made there | `TestAMembershipWithNoRoleIsStillAMembership` |
 | no grant reaches another tenant | `TestARoleDoesNotCrossTheWall` · `TestTheTenantWallStillApplies` |
+| where somebody reaches is said once a site, in the order the sites were made, to them (`MeService/Get`) and of them (`HolderService/Reaches`) | `TestWhereSomebodyReachesIsSaidOnceAndInOrder` |
 
 There is no sixth place. What wants something finer -- *the people of this
 group, and of that one not* -- is what roster leaves.
@@ -152,6 +153,7 @@ person (`server/core/escalate.go`, `mayReach`).
 | What somebody holds, for this rule, is everything that reaches them: through a team and through a group too | `TestARoleHeldThroughATeamIsStillHeld` · `TestAPermissionHeldThroughAGroupIsStillHeld` |
 | What the **writer** holds is counted where they hold it: a role in a site or on a team is not one to reach the tenant's administrator by | `TestARoleOnATeamIsNotOneToBecomeSomebodyBy` |
 | Somebody's keys, and where they are signed in, are read by them, and by whoever holds `HolderService/SignsIn` across the tenant | `TestAKeyIsReadByWhoseItIsAndByWhoeverIsToldTo` · `TestSomebodySeesWhereTheyAreSignedInAndEndsOne` |
+| And `SignsIn` answers all of them -- every account, credential and key somebody has, and not a list's first page -- in the order each was made, which is the order the person reads their own in | `TestHowSomebodySignsInIsAllOfIt` |
 
 ### Nobody is locked out by a write
 

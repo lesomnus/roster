@@ -4073,16 +4073,15 @@ type HolderSignsInResponse_builder struct {
 	// The same shapes `MeService` answers with, deliberately. Two of them saying
 	// one thing would be two that drift, and the drift would be between what a
 	// person sees about themselves and what an operator sees about them.
+	//
+	// Every one they have, of each of the three: this message has no cursor, so
+	// what it says is all there is. Each list is in the order its rows were
+	// made in, as `MeService` answers the person.
 	Identities  []*SignInIdentity
 	Credentials []*SignInCredential
-	// And the keys that act as them, which `MeService` does not answer with.
-	//
-	// That asymmetry is deliberate rather than an omission. A person reading
-	// their own record is looking at what **they** sign in with; a key is
-	// something a machine of theirs holds, and the screen that lists one is the
-	// screen that revokes it -- which is an operator's, on the port with no wall.
-	// If a self-service version is wanted later it is a different decision with a
-	// different reason, and `me.proto` is where it would be argued.
+	// And the keys that act as them, which `MeService` answers the person with
+	// too (`me.proto` says why). This is the screen that ends one of somebody
+	// else's.
 	Keys []*SignInKey
 }
 
@@ -4265,7 +4264,8 @@ type HolderReachesResponse_builder struct {
 	// and `covers()` reads in the browser. Not expanded.
 	Methods []string
 	// The sites their bindings and teams name; empty with `every_site` false is
-	// somebody narrowed to nothing.
+	// somebody narrowed to nothing. Each is said once, in the order of their
+	// identifiers, which is the order they were made in.
 	Sites [][]byte
 	// A binding with no site is the tenant's whole width.
 	EverySite *bool
@@ -4454,16 +4454,24 @@ type HolderSearchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Where to look, the way `List` is told: none is everywhere the caller may
-	// see, and a site or a team narrows to who is in it.
+	// see, and a filter narrows to the people it names, to a tenant's, or to
+	// the ones a label is on. There is none by site or by team: who is of a
+	// site decides what a grant made there reaches, and is not asked for here.
 	Filters []*HolderFilter
 	// A fragment, matched without regard to case against the alias, the name
 	// and the profile's display name. At least one of the three below must be
 	// given: a search for nothing is a `List`.
 	Q *string
-	// Exact, when given.
+	// The whole of it when given, and not a fragment: a department without
+	// regard to case, an employee number exactly as it is written.
 	Department *string
 	EmployeeNo *string
 	// As `List` takes them: how many, and where to carry on from.
+	//
+	// How many is how many are answered, and not how many are read. The match
+	// is made in the server over the people the caller may see, so one call
+	// reads on until its page is full and one more matches, or to the end of
+	// them: a search that finds little reads everybody, whatever `size` says.
 	Size  int32
 	After string
 }
@@ -4551,7 +4559,8 @@ type HolderSearchResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Items []*Holder
-	// What to ask for next, and empty when this was the last of them.
+	// What to ask for next, and empty when this was the last of them -- a page
+	// that came back full included.
 	Next string
 }
 

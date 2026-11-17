@@ -707,7 +707,9 @@ type MeGetResponse_builder struct {
 	// looked.
 	Methods []string
 	// The sites they are narrowed to, and empty means every site of their
-	// tenant. It is `frame.Sets` as an answer; see `cmd.Sets`.
+	// tenant. It is `frame.Sets` as an answer; see `cmd.Sets`. Each is said
+	// once, in the order of their identifiers, which is the order they were
+	// made in.
 	Sites     [][]byte
 	EverySite bool
 	// What they may call about **their own account**, and nobody else's: the
@@ -738,6 +740,10 @@ type MeGetResponse_builder struct {
 	// This message is the one shape narrowed to the person **by construction**:
 	// it takes no subject, so there is nothing to point at somebody else. That is
 	// also why `cmd.Policy` can waive a binding for it and for nothing else.
+	//
+	// Each of these, and `keys` below, is every one they have, in the order
+	// they were made in: what `HolderService.SignsIn` answers an administrator
+	// about them, in the same order.
 	Identities  []*SignInIdentity
 	Credentials []*SignInCredential
 	// And the keys that act as them, which is the third way in and the one that

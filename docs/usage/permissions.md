@@ -619,6 +619,10 @@ and by whoever holds **`HolderService/SignsIn` across the tenant**.
 | `ApiKeyService/List`, however it reaches them | their own keys; a list that names nobody is their own |
 | and `HolderService/SignsIn`, by a binding with no site | everybody's, an administrator's among them |
 
+`SignsIn` answers **all** of somebody's accounts, credentials and keys, and not
+a page of them: it has no cursor, and it is what is read to end the keys of an
+account.
+
 So a role that lets people mint and end their own keys can be bound to everybody
 without showing anybody anybody else's, and an auditor is the reads and
 `SignsIn` and nothing that writes. `DelegationService`'s reads and
@@ -641,6 +645,15 @@ MeService.Get → { alias, tenant, methods: ["/roster.*/*"], own: [...], sites, 
 
 `methods` comes back as the **pattern**, not what it expands to. A page that
 expanded it would show what exists in one binary.
+
+Each list in that answer is in an order a page can rely on. `sites` says each
+site once, in the order of their identifiers, which is the order the sites were
+made in, and `HolderService/Reaches` says the same of somebody else. Teams are
+in the order of their sites' aliases and then their own, groups of their
+aliases; addresses are the proved ones in the order they were proved and then
+the rest; and how somebody signs in -- accounts, credentials, keys -- is in the
+order each was made, which is the order `HolderService/SignsIn` answers an
+administrator in.
 
 ## Next
 
