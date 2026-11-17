@@ -1371,8 +1371,8 @@ func TestSomebodyBackInGoodStandingIsNotSignedOutAgain(t *testing.T) {
 // TestWhatSomebodyMayCallIsNoSignOut: roster's stream also says when what
 // somebody may call may have changed (`SYNC_REASON_REACH`), with their facts as
 // they are -- none of them news. Read as if they were, the first such event
-// about somebody this connection had not heard of would have Hydra forget them
-// for a sign-out acted on long before, once for every person a role edit
+// about somebody this process had not heard of would have Hydra forget them
+// for a sign-out it was not there to hear, once for every person a role edit
 // reaches. So a role bound to somebody signed out everywhere before the stream
 // opened reaches Hydra as nothing.
 func TestWhatSomebodyMayCallIsNoSignOut(t *testing.T) {

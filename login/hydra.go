@@ -42,6 +42,36 @@ type admin struct {
 	base   string
 	header http.Header
 	client *http.Client
+
+	// settle is told the subject of every login before Hydra is told of it,
+	// and answers when Hydra is owed no forgetting about them
+	// ([signOuts.settle]): a sign-in is told to Hydra after the sign-out it
+	// follows. Here, on the one call every accepted login passes, so that no
+	// door has to remember to ask.
+	//
+	// Nil is nothing to wait for, which is `roster login doctor`'s client: it
+	// accepts nobody.
+	settle func(ctx context.Context, subject string)
+}
+
+// adminTimeout is how long one call to Hydra's admin API may take, from the
+// dial to the last byte of its answer.
+//
+// It was Go's default client, which waits for ever. A Hydra that took a
+// connection and said nothing held a browser's request open until the browser
+// gave up, and held the one loop that carries sign-outs across for as long --
+// behind which roster's stream fell far enough to be cut ([App.Watch]).
+//
+// One clock for every call here, because every call here is one question and
+// one answer in JSON on a private network: a challenge read or answered, a
+// client read, a page of clients, a `DELETE`. None of them streams and none
+// waits on a person, and [admin.listClients] is a request a page, each with
+// its own ten seconds.
+const adminTimeout = 10 * time.Second
+
+// hydraAt is a client for the admin API at `base`.
+func hydraAt(base string, header http.Header) admin {
+	return admin{base: base, header: header, client: &http.Client{Timeout: adminTimeout}}
 }
 
 // client is the OAuth client a challenge was raised for.
@@ -136,6 +166,11 @@ func (a admin) login(ctx context.Context, challenge string) (*loginRequest, erro
 }
 
 func (a admin) acceptLogin(ctx context.Context, challenge, subject string, remember time.Duration) (string, error) {
+	// After the forgetting it follows, where there is one on its way.
+	if a.settle != nil {
+		a.settle(ctx, subject)
+	}
+
 	v := &redirect{}
 	body := acceptLogin{
 		Subject:     subject,
@@ -481,10 +516,13 @@ func (a admin) refuseConsent(ctx context.Context, challenge, code, why string) (
 //
 // Both are asked whatever the other answered: a grant left alive behind a
 // forgotten browser is a sign-out that looks done and is not, and a browser
-// left remembered is a sign-in with no form. The grants first, which
-// `docker/flow.sh` leans on -- once Hydra asks that browser for the form, the
-// grants are already gone. What a grant costs is a consent asked again, which
-// under `Ask` is a screen and otherwise nothing.
+// left remembered is a sign-in with no form. The grants first; `docker/flow.sh`
+// leaned on that order, and asks Hydra about each now. What a grant costs is a
+// consent asked again, which under `Ask` is a screen and otherwise nothing.
+//
+// One of the two refused is the whole of it refused, to whoever carries it
+// ([signOuts.carry]): both are asked again until Hydra takes both, and asking
+// a second time for what is already gone is nothing.
 //
 // It does not reach an access token already issued. A JWT verifies until it
 // expires, which is the issuer's lifespan to set (`docs/apps.md`).

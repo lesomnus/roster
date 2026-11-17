@@ -413,6 +413,63 @@ holding a credential, and turning that into a `DELETE` is the Login App's. What
 it also says -- that what somebody may call may have changed, `SYNC_REASON_REACH`
 -- is no sign-out, and tells Hydra nothing (`TestWhatSomebodyMayCallIsNoSignOut`).
 
+**What is promised of it, and what is not.** The stream replays nothing, so the
+promise has two halves: what an instance heard, and what none did.
+
+- **A sign-out an instance heard is carried until Hydra takes it.** What the
+  stream says is written down and a worker tells Hydra, each call given ten
+  seconds; one Hydra refuses or does not answer is tried again -- after a
+  second, doubling to half a minute -- for as long as the process runs
+  (`TestASignOutHydraWouldNotTakeIsTriedUntilItDoes`). What is still owed when
+  the process stops is not handed to the next one: it is then a sign-out nobody
+  heard, below.
+- **Once.** A sign-out carried is not carried again because a stream dropped
+  and came back (`TestAStreamThatCameBackSignsNobodyOutAgain`), and a new
+  process does not act on a stamp from before it could have missed anything
+  (`TestASignOutActedOnLongAgoIsNotActedOnAgain`). It did both, and the first
+  write of any kind to a person's row after a restart -- a profile edit, a
+  directory's sync -- signed them out of every product for a sign-out made
+  months before.
+- **A sign-out nobody heard is carried only if the gap was short.** One made
+  while no instance was listening is known by the stamp on the person's row and
+  nothing else, and an instance is sent that stamp when the row is next
+  written, whenever that is. It acts on a stamp it had not heard when the stamp
+  is no older than **ten minutes before that instance started**
+  (`TestASignOutMadeWhileNobodyListenedIsCarried`) -- long enough for a
+  rollout, and what somebody signed out inside it pays is being signed out once
+  more. **A sign-out made while no instance listened for more than ten minutes
+  is not carried to Hydra.**
+- **A browser Hydra still remembers is asked for the form all the same.** That
+  Hydra knows a browser is believed only where roster still reads the person
+  behind it, which the app asks at every flow
+  (`TestABrowserThisAppForgotIsAskedAgain`), and roster stops reading them the
+  moment they are signed out everywhere, suspended or erased. So a browser
+  Hydra remembers past a sign-out it never heard of is drawn the form.
+- **What it leaves is a refresh token.** A grant Hydra was not told to revoke
+  goes on refreshing until the token's lifetime, which is the issuer's to set
+  -- `ttl.refresh_token`, or a client's own
+  `authorization_code_grant_refresh_token_lifespan` and
+  `refresh_token_grant_refresh_token_lifespan` -- and **no registration this
+  repository ships sets one** (`deploy/clients/product.json`, `compose.yaml`),
+  so it is Hydra's default, which on v26.2.0 is thirty days. A deployment
+  should set it, as short as its products can bear: it is the bound on
+  everything above that is not carried.
+- **A sign-in waits for the sign-out before it.** Hydra forgets by subject, so
+  a forgetting that lands after somebody's next sign-in takes that sign-in with
+  it. While one is on its way, Hydra is told of a sign-in by the same person
+  only after it, for five seconds at most
+  (`TestASignInIsToldToHydraAfterTheForgettingItFollows`). What that does not
+  save is a flow Hydra began while it still remembered the browser -- a page
+  that sent its browser to sign in in the moment between the sign-out and Hydra
+  hearing of it: Hydra v26.2.0 refuses that flow's code (`invalid_grant`), and
+  the flow after it works.
+- **A stream roster refuses is asked for again.** No broker
+  ([operating.md](operating.md) § *Running more than one*), or a key whose list does not
+  name `SyncService/Watch`: the app says so once, as an error, goes on signing
+  people in, asks again every ten minutes, and says when roster serves it
+  (`TestAStreamRosterRefusesIsAskedForAgain`). Until then it hears nothing, and
+  everything it would have heard is a sign-out nobody heard.
+
 ### A page of your own, and the contract it writes against
 
 The page in `ts/login/` is **one implementation** of the surface below, not the
@@ -566,8 +623,11 @@ refresh yet -- so a name taken away reaches the relying party at the next
 sign-in. Dependency-Track re-syncs a person's teams at each
 of theirs, which bounds it; for kube-apiserver, whose clients refresh, give the
 client a short refresh lifetime in its Hydra registration. A suspension is
-not this: it ends the person's sessions and grants at Hydra, refresh included,
-and a token already issued verifies until it expires.
+not this: the Login App hears it and has Hydra end the person's sessions and
+grants, refresh included -- as far as *What is promised of it, and what is
+not* goes, above: a suspension no instance was listening for leaves a refresh
+token to live out its lifetime, which is the other reason to set one. A token
+already issued verifies until it expires.
 
 **kube-apiserver**: map the claim with a prefix
 (`claimMappings.groups.prefix: "roster:"`), so that a group's name can never be
@@ -592,8 +652,12 @@ like from a product is an opaque identifier where a name should be.
 
 What makes the longer session affordable is what is in it. `login.Methods` is
 `Me.Get` and nothing else, so the delegation reads that one person's own profile
-and can do nothing else. It is revoked where every delegation is, by
-`Holder.Invalidate`, which this app already hears through `Sync.Watch`. And it has
+and can do nothing else. It ends where every delegation does, at roster, with
+`Holder.Invalidate` -- whether or not this app hears of it. What the app hears
+through `Sync.Watch` is for Hydra's memory and not for its own: a browser Hydra
+still remembers, after a sign-out that never reached it, is asked for the form
+anyway, because the app asks roster at every flow (*What is promised of it, and
+what is not*, above). And it has
 no idle window, because Hydra's `remember_for` has none -- a second clock under
 Hydra's is what produced the hole in the first place.
 

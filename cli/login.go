@@ -924,10 +924,16 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 
 	// The sign-in and the sign-out, in one errgroup: an app that answers
 	// challenges while roster cannot tell it who has been signed out is an app
-	// serving a token it should not have. Whichever stops first stops the
-	// other. `App.Watch` decides for itself what is worth stopping for --
-	// a dropped stream is a reconnect, and a deployment with no broker is loud
-	// and not fatal.
+	// serving a token it should not have. A listener that fails stops the
+	// watcher, and ctx stops both.
+	//
+	// `App.Watch` stops for nothing else, and returns when ctx is done. A
+	// dropped stream is asked for again; one roster refuses -- a deployment
+	// with no broker, a key whose list does not name it -- is loud, not fatal,
+	// and asked for again every ten minutes; and what Hydra would not take is
+	// tried until it does. It returned on a refusal once, and the listener
+	// went on answering with nothing listening for sign-outs until the next
+	// restart.
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return a.Watch(ctx) })
 	g.Go(func() error {

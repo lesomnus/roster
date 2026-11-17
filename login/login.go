@@ -169,6 +169,11 @@ type Config struct {
 	// is `time.Now`.
 	Now func() time.Time
 
+	// Refused is how long a sync stream roster refused is left before it is
+	// asked for again ([App.Watch]). Zero is ten minutes, which is what every
+	// deployment gets: nothing under `login:` writes this.
+	Refused time.Duration
+
 	// Remember is how long Hydra should skip the form, and the consent screen,
 	// for a browser that has already been through them. Zero asks every time.
 	//
@@ -277,6 +282,11 @@ type App struct {
 	door  *frontdoor.Door
 	admin admin
 
+	// outs is who roster's stream has said stopped being good, and whom Hydra
+	// is still to be told to forget. This process's, from when it starts
+	// (`login/sync.go`).
+	outs *signOuts
+
 	// arrives is the relying-party half, shared with the account app: the
 	// `Connection` rows, the discovery, the exchange and the enrolment.
 	arrives *arrives.Providers
@@ -325,6 +335,10 @@ func New(ctx context.Context, c Config) (*App, error) {
 		return nil, errors.New("login: Sessions: the cookie is the app's, so the app makes it")
 	case c.Key == "":
 		return nil, errors.New("login: Key: the one deployment key this app holds; none is nobody to be")
+	case c.Refused < 0:
+		// Refused rather than read as the default, as `standing.New` does: a
+		// duration whose sign came out wrong is not one to guess at.
+		return nil, errors.New("login: Refused: a wait cannot be over before it begins")
 	}
 
 	// **Not** a check that the key is an `rk_`, which is a real mistake and is
@@ -369,10 +383,15 @@ func New(ctx context.Context, c Config) (*App, error) {
 		me:     rstr.NewMeServiceClient(conn),
 		sync:   rstr.NewSyncServiceClient(conn),
 		front:  rstr.NewFrontServiceClient(conn),
-		admin:  admin{base: c.Hydra, header: c.HydraHeader, client: http.DefaultClient},
+		admin:  hydraAt(c.Hydra, c.HydraHeader),
 		flows:  arrives.Held[flow](),
 		known:  &hosts{at: map[string]*tenant{}},
+
+		// From now: what a sign-out first heard is held against is when this
+		// process started, and this is where it does.
+		outs: newSignOuts(time.Now()),
 	}
+	a.admin.settle = a.outs.settle
 	a.arrives = arrives.New(a.roster, c.Secret)
 	a.arrives.SlackAPI = c.SlackAPI
 	a.arrives.GitHub = c.GitHub
