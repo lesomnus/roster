@@ -1437,7 +1437,9 @@ roster's own front doors -- `login provision` and the in-process account app
 write the front door's holder, role, binding and nomination in every tenant with
 a name, labelled `roster.declared: config: login` / `config: account`. Either
 way the row is read-only to everybody who reaches it through a port: a tenant
-administrator, the user console, the admin console, a deployment key.
+administrator, the user console, the admin console, a deployment key. Not
+edited, not suspended, not erased, and not renamed: what applies the file finds
+a row by the name the file says, and would make a second.
 
 And the label is theirs alone to write. A request that carries
 `roster.declared` is refused at every port, whoever sent it, so a row is

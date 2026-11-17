@@ -288,6 +288,11 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 		return nil, err
 	}
 
+	// And only for somebody a link would be spent for: [coreEmail.provable].
+	if err := s.provable(ctx, whose); err != nil {
+		return nil, err
+	}
+
 	expires := time.Now().Add(vouch.LinkFor)
 	if u := req.GetDateExpires(); u != nil {
 		if at := u.AsTime(); at.After(time.Now()) && at.Before(expires) {
@@ -315,6 +320,43 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 	}
 
 	return app.EmailVerifyResponse_builder{Token: token, DateExpires: timestamppb.New(expires)}.Build(), nil
+}
+
+// provable refuses a link for somebody nothing is proved for: erased or
+// suspended, or of a tenant that is closed.
+//
+// It is what [coreEmail.Confirm] asks before it spends one (#277), asked where
+// the link is minted. `Verify` asked none of it: it minted a link for somebody
+// suspended and answered it, a front door mailed it, and whoever clicked it
+// was told there was no such link -- until they were enabled, when the same
+// link confirmed. A refusal belongs where there is somebody to tell, and a
+// link nobody may spend is not sent.
+//
+// `NotFound`, which is what `Confirm` says. Of whoever the link would be
+// **for**: the row's own holder, or the claimant where it is a claim, as
+// there. Somebody erased is not read by naming them, so they are the read's
+// own `NotFound`.
+func (s coreEmail) provable(ctx context.Context, whose []byte) error {
+	no := status.Error(codes.NotFound,
+		"ref: no link proves an address for somebody who may not sign in: erased or suspended, or of a tenant that is closed")
+
+	h, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{Id: whose}.Build(),
+		Select: app.HolderSelect_builder{
+			Tenant:       app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
+			DateDisabled: z.Ptr(true),
+		}.Build(),
+	}.Build())
+	switch {
+	case status.Code(err) == codes.NotFound:
+		return no
+	case err != nil:
+		return err
+	case h.GetDateDisabled() != nil, h.GetTenant().GetDateClosed() != nil:
+		return no
+	}
+
+	return nil
 }
 
 // Attest writes an address a provider vouched for, and stamps it when that

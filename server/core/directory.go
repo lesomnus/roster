@@ -254,61 +254,147 @@ func (s coreHolder) freeAlias(ctx context.Context, tenant []byte, want string) (
 // same -- the directory will not speak of them again, and that is no power to
 // lift anything (`Activate` refuses the deleted).
 func (s coreHolder) Deactivate(ctx context.Context, req *app.HolderDeactivateRequest) (*app.Holder, error) {
-	v, err := s.directed(ctx, req.GetRef())
-	if err != nil {
-		return nil, err
-	}
+	return s.said(ctx, req.GetRef(), req.GetDateUpdated(), func(v *app.Holder) (*app.HolderPatchRequest_builder, error) {
+		patch := &app.HolderPatchRequest_builder{}
+		switch {
+		case req.GetDeleted():
+			patch.Directory = z.Ptr(directoryDeleted)
+		case v.GetDirectory() == directoryDeleted:
+			return nil, nil
+		case v.GetDateDisabled() != nil && v.GetDirectory() == "":
+			return nil, nil
+		default:
+			patch.Directory = z.Ptr(directoryInactive)
+		}
+		if v.GetDateDisabled() == nil {
+			patch.DateDisabled = timestamppb.Now()
+		}
 
-	patch := app.HolderPatchRequest_builder{
-		Ref: app.HolderRef_builder{Id: v.GetId()}.Build(),
-	}
-	switch {
-	case req.GetDeleted():
-		patch.Directory = z.Ptr(directoryDeleted)
-	case v.GetDirectory() == directoryDeleted:
-		return v, nil
-	case v.GetDateDisabled() != nil && v.GetDirectory() == "":
-		return v, nil
-	default:
-		patch.Directory = z.Ptr(directoryInactive)
-	}
-	if v.GetDateDisabled() == nil {
-		patch.DateDisabled = timestamppb.Now()
-	}
-	lock(&patch, req.GetDateUpdated())
-
-	return s.HolderServiceServer.Patch(ctx, patch.Build())
+		return patch, nil
+	})
 }
 
 // Activate lifts the suspension the directory made, and refuses the rest.
 func (s coreHolder) Activate(ctx context.Context, req *app.HolderActivateRequest) (*app.Holder, error) {
-	v, err := s.directed(ctx, req.GetRef())
+	return s.said(ctx, req.GetRef(), req.GetDateUpdated(), func(v *app.Holder) (*app.HolderPatchRequest_builder, error) {
+		switch v.GetDirectory() {
+		case directoryInactive:
+		case directoryDeleted:
+			return nil, status.Error(codes.FailedPrecondition,
+				"the directory deleted them; bringing them back is an operator's, with `holder enable`")
+		default:
+			if v.GetDateDisabled() != nil {
+				return nil, status.Error(codes.PermissionDenied,
+					"an operator suspended them, and that is not the directory's to lift")
+			}
+
+			return nil, nil
+		}
+
+		return &app.HolderPatchRequest_builder{
+			DateDisabledNull: z.Ptr(true),
+			Directory:        z.Ptr(""),
+		}, nil
+	})
+}
+
+// said is what a directory says of somebody's standing, decided and written
+// as one act: `decide` is handed the row as it is behind a lock on it, and
+// answers the write to make, or none.
+//
+// # Why it is one act
+//
+// Both verbs decide on what the row says -- whose suspension it is -- and
+// they read it, decided, and then wrote, with no version and behind nothing.
+// So what they decided on was a moment old by the time they wrote, and an
+// operator's `Disable` landing in that moment answered OK and was written
+// over: `Activate` lifted a suspension the operator had just made, and
+// `Deactivate` called it the directory's, to be lifted the next time the
+// directory said `active`. Seen on a run, with the operator's call beginning
+// within two milliseconds after the directory's: 111 of 200 people left not
+// suspended, and 119 of 200 suspensions left the directory's.
+//
+// # Why a lock, and not the version that was read
+//
+// A write made on the version read would be refused when anything moved the
+// row in between, and anything includes the person: [lock] says why a
+// suspension takes no version -- editing a profile in a loop would be a way
+// not to be suspended -- and a directory's word that somebody has left is a
+// suspension. So the row is locked first ([Core.only], the write the count of
+// somebody's ways in contends on), read behind the lock, and written in the
+// same transaction. An operator's write is one statement on that row: it
+// lands before the lock, and is what `decide` sees, or it waits for the
+// commit, and is last. Either way it stands.
+//
+// # The caller's version
+//
+// The lock moves the row's version, so a version the caller sent is compared
+// with the row as it was read before the lock, and the decision is made on
+// the row as it is behind it. The directory's endpoint sends none.
+//
+// Who they are and whether the directory speaks for them is asked before the
+// lock ([coreHolder.directed]): none of it is what these two write. And a
+// call that would write nothing, or be refused, by the row as it was read
+// takes no lock at all: the directory says the same thing about everybody
+// whenever it is set going again, and the lock is a write.
+func (s coreHolder) said(ctx context.Context, ref *app.HolderRef, was *timestamppb.Timestamp,
+	decide func(v *app.Holder) (*app.HolderPatchRequest_builder, error),
+) (*app.Holder, error) {
+	v, err := s.directed(ctx, ref)
+	if err != nil {
+		return nil, err
+	}
+	if was != nil && !was.AsTime().Equal(v.GetDateUpdated().AsTime()) {
+		return nil, status.Error(codes.FailedPrecondition,
+			"date_updated: they have changed since the version you sent; read them again")
+	}
+
+	// Nothing to write, or a refusal, by what the row says now: answered as it
+	// is, with no lock taken. Neither writes anything to be wrong about.
+	switch patch, err := decide(v); {
+	case err != nil:
+		return nil, err
+	case patch == nil:
+		return v, nil
+	}
+	who := app.HolderRef_builder{Id: v.GetId()}.Build()
+
+	var out *app.Holder
+	err = s.only(ctx, v.GetId(), func(next app.Server, _ dialect.Driver) error {
+		now, err := next.Holder().Get(ctx, app.HolderGetRequest_builder{
+			Ref: who,
+			Select: app.HolderSelect_builder{
+				Tenant:       app.TenantSelect_builder{}.Build(),
+				DateDisabled: z.Ptr(true),
+				Directory:    z.Ptr(true),
+				DateUpdated:  z.Ptr(true),
+			}.Build(),
+		}.Build())
+		if err != nil {
+			return err
+		}
+
+		patch, err := decide(now)
+		if err != nil {
+			return err
+		}
+		if patch == nil {
+			out = now
+
+			return nil
+		}
+		patch.Ref = who
+		patch.DateUpdatedForce = z.Ptr(true)
+
+		out, err = next.Holder().Patch(ctx, patch.Build())
+
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	switch v.GetDirectory() {
-	case directoryInactive:
-	case directoryDeleted:
-		return nil, status.Error(codes.FailedPrecondition,
-			"the directory deleted them; bringing them back is an operator's, with `holder enable`")
-	default:
-		if v.GetDateDisabled() != nil {
-			return nil, status.Error(codes.PermissionDenied,
-				"an operator suspended them, and that is not the directory's to lift")
-		}
-
-		return v, nil
-	}
-
-	patch := app.HolderPatchRequest_builder{
-		Ref:              app.HolderRef_builder{Id: v.GetId()}.Build(),
-		DateDisabledNull: z.Ptr(true),
-		Directory:        z.Ptr(""),
-	}
-	lock(&patch, req.GetDateUpdated())
-
-	return s.HolderServiceServer.Patch(ctx, patch.Build())
+	return out, nil
 }
 
 // Tell keeps what a directory calls somebody -- its id for them, their address
