@@ -52,6 +52,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -168,6 +169,22 @@ type Config struct {
 	// ([Door.Accept], [Door.Redeem]) is not asked either: the app finishing one
 	// is already where it was for.
 	For func(r *http.Request) string
+
+	// In is the context a call about a session is made in: the one handed
+	// over, narrowed to the tenant the session is of.
+	//
+	// For an app whose one credential is narrowed call by call, to a tenant it
+	// says each time -- the Login App's deployment key, with `roster-at`. What
+	// such an app does while somebody signs in is narrowed by the request they
+	// are signing in at. Ending a session is not always asked from inside one:
+	// a sign-out that arrives through an issuer names a subject and no tenant,
+	// so the revocation went out unnarrowed, was refused, and the delegation
+	// outlived the cookie it had been ended with (#278). A session says which
+	// tenant it is of, so [Door.End] asks this with that, whoever called it.
+	//
+	// Left nil by an app whose requests are already in a tenant -- the account
+	// app, where the host is -- and then the context is used as handed over.
+	In func(ctx context.Context, tenant pdid.Id) context.Context
 }
 
 // HalfLife is how long a half-signed-in browser has, when nothing says
@@ -587,6 +604,10 @@ func (d *Door) SignOut(w http.ResponseWriter, r *http.Request) {
 // flow is over and Hydra holds what the browser came for -- and a handler that
 // wrote 204 on the way there would win the response. Whatever writes the
 // cookie, what happens to the delegation is the same and is here.
+//
+// And whoever calls it, the revocation is made in the tenant the **session**
+// is of, where the app says how ([Config.In]): what the caller's request was
+// about is not asked.
 func (d *Door) End(ctx context.Context, r *http.Request) *http.Cookie {
 	key := d.keyOf(r)
 
@@ -595,10 +616,21 @@ func (d *Door) End(ctx context.Context, r *http.Request) *http.Cookie {
 	// table until its own clock runs out, and the sign-out is the last thing
 	// that will ever hold a reference to it.
 	if v, err := d.c.Sessions.Take(ctx, key); err == nil && v.Held[heldToken] != "" {
+		as := ctx
+		if tenant, err := pdid.Parse(v.TenantId); err == nil && d.c.In != nil {
+			as = d.c.In(ctx, tenant)
+		}
+
 		// Best effort, and after the local drop. A roster that cannot be
 		// reached must not stop somebody signing out of this app; what is lost
 		// is a row that expires on its own.
-		_, _ = d.c.Delegation.Revoke(ctx, rstr.DelegationRevokeRequest_builder{Token: v.Held[heldToken]}.Build())
+		//
+		// Lost, and said. It was dropped without a word, and a revocation that
+		// roster **refused** every time looked exactly like one that worked.
+		if _, err := d.c.Delegation.Revoke(as, rstr.DelegationRevokeRequest_builder{Token: v.Held[heldToken]}.Build()); err != nil {
+			slog.WarnContext(ctx, "frontdoor: a session was ended and its delegation was not revoked; it lives until its own clock runs out",
+				"holder", v.Id, "tenant", v.TenantId, "err", err)
+		}
 	}
 
 	return d.c.Sessions.End(ctx, key)

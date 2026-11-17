@@ -63,8 +63,10 @@ type hydra struct {
 	ungranted []string // the subjects whose every client's grant hydra was told to revoke
 
 	// The third challenge. `rp` is whether a relying party started it, which
-	// is the field the app's one refusal reads.
+	// is the field the app's one refusal reads; `leaving` is whose session at
+	// Hydra it is about, where a test says, and `somebody` otherwise.
 	rp        map[string]bool
+	leaving   map[string]string
 	endedBy   map[string]bool
 	refusedBy map[string]bool
 
@@ -105,6 +107,7 @@ func newHydra(t *testing.T) *hydra {
 	h := &hydra{
 		client:    map[string]string{},
 		rp:        map[string]bool{},
+		leaving:   map[string]string{},
 		endedBy:   map[string]bool{},
 		refusedBy: map[string]bool{},
 		codes:     map[string]string{},
@@ -163,6 +166,7 @@ func newHydra(t *testing.T) *hydra {
 		h.mu.Lock()
 		client, ok := h.client[c]
 		rp := h.rp[c]
+		subject := h.leaving[c]
 		h.mu.Unlock()
 
 		if !ok {
@@ -170,9 +174,12 @@ func newHydra(t *testing.T) *hydra {
 
 			return
 		}
+		if subject == "" {
+			subject = "somebody"
+		}
 		writeJson(w, map[string]any{
 			"challenge":    c,
-			"subject":      "somebody",
+			"subject":      subject,
 			"rp_initiated": rp,
 			"client":       map[string]string{"client_id": client},
 		})
@@ -376,6 +383,16 @@ func (h *hydra) asked(challenge, client string, rp bool) {
 	defer h.mu.Unlock()
 	h.client[challenge] = client
 	h.rp[challenge] = rp
+}
+
+// askedOf is [hydra.asked] for a logout about `subject`: a real Hydra says whose
+// session a logout challenge would end, hint or no hint.
+func (h *hydra) askedOf(challenge, client, subject string, rp bool) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.client[challenge] = client
+	h.rp[challenge] = rp
+	h.leaving[challenge] = subject
 }
 
 // ended is whether that logout challenge was accepted.
