@@ -40,6 +40,8 @@ import (
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 
+	"github.com/protobuf-orm/ent/dialect"
+	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 
 	"github.com/lesomnus/roster/internal/ent"
@@ -768,9 +770,9 @@ func meant(me *ent.Holder, confirm string) error {
 }
 
 // declared refuses a row a file owns: it is removed from the file, which is
-// `HolderService.Erase`'s rule -- asked here first, because leaving writes
-// twice and the second write is where the stack would refuse it, after the
-// first had signed it out.
+// `HolderService.Erase`'s rule -- asked here first, among the rules about the
+// person, so that it is said before a proof is spent on a leaving that will
+// be refused ([Server.Depart], [Server.MayLeave]).
 func declared(me *ent.Holder) error {
 	if by, ok := me.Labels[declaredBy]; ok {
 		return status.Errorf(codes.FailedPrecondition,
@@ -783,28 +785,57 @@ func declared(me *ent.Holder) error {
 // erase is what leaving is, once everything has been asked: signed out
 // everywhere, then erased, through the stack and as whoever `ctx` is -- the
 // person themselves.
+//
+// # Both, or neither
+//
+// The two writes are one transaction. The erase is where the stack asks what
+// it asks of any erase, and one of those is a count nothing here can take
+// first: a tenant keeps somebody administering it
+// (`server/core/administered.go`). Made one after the other, the last
+// administrator who asked to leave was refused there -- *give it to somebody
+// else first* -- after the first write had signed them out of everything, the
+// sign-in the call came with included; and they are who has to give it to
+// somebody else. A refusal at the erase, that one or any other, now leaves
+// them as they were.
 func (s *Server) erase(ctx context.Context, me *ent.Holder) (*app.MeLeaveResponse, error) {
 	ref := app.HolderRef_builder{Id: pdid.Id(me.Id).Bytes()}.Build()
+
+	// The stack again, on a transaction of this call's own, which is what an
+	// RPC that writes several rows as one does (`cmd/init.go`): every rule the
+	// two writes meet is the one they met apart.
+	drv, tx, err := dialect.BeginTx(ctx, s.db.Driver())
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	both, err := enttx.Rebind(s.walled, drv)
+	if err != nil {
+		return nil, err
+	}
 
 	// Void first, so that a restore brings the account back and none of the
 	// sign-ins it had: a delegation lives for minutes, and one an operator's
 	// restore found still alive would be a session the person ended. Keys are
 	// not voided by this and are not meant to be (`date_invalidated`); an
 	// erase stops them, and a restore is the operator's decision to start them.
-	if _, err := s.walled.Holder().Invalidate(ctx, app.HolderInvalidateRequest_builder{Ref: ref}.Build()); err != nil {
+	if _, err := both.Holder().Invalidate(ctx, app.HolderInvalidateRequest_builder{Ref: ref}.Build()); err != nil {
 		return nil, err
 	}
 
 	// Then the erase, through the stack and as them, so it is the same erase
 	// an operator's is: the trail says who, the sync stream carries it, and a
 	// declared holder is refused by the rule that refuses an operator.
-	v, err := s.walled.Holder().Erase(ctx, ref)
+	v, err := both.Holder().Erase(ctx, ref)
 	if err != nil {
 		return nil, err
 	}
 	if !v.GetErased() {
 		// Somebody else erased them between the read above and this.
 		return nil, status.Error(codes.NotFound, "there is no such person any more")
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 
 	at := time.Now()

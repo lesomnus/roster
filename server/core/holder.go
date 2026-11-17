@@ -108,8 +108,8 @@ func (s coreHolder) Update(ctx context.Context, req *app.HolderUpdateRequest) (*
 // may have renamed the same row in between, and two editors reaching two names
 // is exactly what a lost update is.
 //
-// Nothing else is checked here, and that is the point of it being a narrow
-// write: an alias that is not one is refused by the grammar payday already
+// Nothing else is checked of the name here, and that is the point of it being
+// a narrow write: an alias that is not one is refused by the grammar payday already
 // holds every alias to, one written otherwise than it is read by the rule
 // every write of an alias meets ([spelled]), and one somebody in this tenant
 // already has by the unique index that was there before this method was.
@@ -121,7 +121,21 @@ func (s coreHolder) Update(ctx context.Context, req *app.HolderUpdateRequest) (*
 // writes that are: a credential, a way in. If this grew one it would have to
 // grow one on `Disable` first, and that decision is written down over there
 // rather than taken here by a method that arrived later.
+//
+// # And not a row a file declares
+//
+// `Update` and `Disable` of one are refused, and this asked nothing: a declared
+// holder was renamed, OK. What applies the file finds its holder by the name
+// the file says (`cli/provision.go`), so the next start found nobody by it and
+// made a second, and the first kept the role, the binding and the label of a
+// row the configuration no longer knew. Refused as they are
+// ([Core.mayWriteDeclared]). `Invalidate` of one is not: it edits nothing a
+// file wrote.
 func (s coreHolder) Realias(ctx context.Context, req *app.HolderRealiasRequest) (*app.Holder, error) {
+	if err := s.declaredHolder(ctx, req.GetRef()); err != nil {
+		return nil, err
+	}
+
 	return s.HolderServiceServer.Patch(ctx, app.HolderPatchRequest_builder{
 		Ref:         req.GetRef(),
 		Alias:       z.Ptr(req.GetAlias()),
@@ -166,28 +180,66 @@ func (s coreHolder) Realias(ctx context.Context, req *app.HolderRealiasRequest) 
 // already (`coreCredential.Set`, #275). A password the box writes for somebody
 // ends nothing, as before: `reset` is the one that does.
 func (s coreHolder) Disable(ctx context.Context, req *app.HolderDisableRequest) (*app.Holder, error) {
-	if err := s.declaredHolder(ctx, req.GetRef()); err != nil {
-		return nil, err
+	for try := 0; ; try++ {
+		// The row's labels, for [coreHolder.declaredHolder]'s question; and
+		// whether they are suspended already, with the version that says so.
+		got, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
+			Ref: req.GetRef(),
+			Select: app.HolderSelect_builder{
+				Labels: z.Ptr(true), DateDisabled: z.Ptr(true), DateUpdated: z.Ptr(true),
+			}.Build(),
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+		if err := s.mayWriteDeclared(ctx, "ref", got.GetLabels()); err != nil {
+			return nil, err
+		}
+
+		patch := app.HolderPatchRequest_builder{
+			Ref: req.GetRef(),
+
+			// The suspension is the operator's now, whoever made it: a
+			// directory lifts only what it put there (`Holder.directory`).
+			Directory: z.Ptr(""),
+		}
+
+		// Since when is when they were first suspended, so somebody suspended
+		// already keeps the moment they have. Written again each time, it
+		// moved: somebody stopped in March and suspended again in June had
+		// been suspended since June. The moment an address was first proved
+		// stays for the same reason ([coreEmail.Confirm]), and a directory's
+		// `Deactivate` has always left it.
+		//
+		// Leaving the moment out is the one thing here that depends on what
+		// was read, so that write -- and no other -- is made on the version
+		// read: were the suspension lifted in between, by the directory that
+		// made it, a write that only said whose it is would answer OK about
+		// somebody who is not suspended. Refused for that, it is decided
+		// again; and a row that will not hold still three times over is
+		// suspended as it always was, by a write that asks nothing.
+		was, kept := req.GetDateUpdated(), got.GetDateDisabled() != nil && try < 3
+		switch {
+		case !kept:
+			patch.DateDisabled = timestamppb.Now()
+		case was == nil:
+			was = got.GetDateUpdated()
+		}
+		lock(&patch, was)
+
+		var out *app.Holder
+		err = s.keepsTheirs(ctx, req.GetRef(), "suspending them", func(next app.Server) error {
+			var err error
+			out, err = next.Holder().Patch(ctx, patch.Build())
+
+			return err
+		})
+		if kept && req.GetDateUpdated() == nil && status.Code(err) == codes.FailedPrecondition {
+			continue
+		}
+
+		return out, err
 	}
-	patch := app.HolderPatchRequest_builder{
-		Ref:          req.GetRef(),
-		DateDisabled: timestamppb.Now(),
-
-		// The suspension is the operator's now, whoever made it: a directory
-		// lifts only what it put there (`Holder.directory`).
-		Directory: z.Ptr(""),
-	}
-	lock(&patch, req.GetDateUpdated())
-
-	var out *app.Holder
-	err := s.keepsTheirs(ctx, req.GetRef(), "suspending them", func(next app.Server) error {
-		var err error
-		out, err = next.Holder().Patch(ctx, patch.Build())
-
-		return err
-	})
-
-	return out, err
 }
 
 func (s coreHolder) Enable(ctx context.Context, req *app.HolderEnableRequest) (*app.Holder, error) {

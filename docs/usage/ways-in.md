@@ -416,7 +416,9 @@ MeService.Leave {confirm: "alice"}   # your alias, as it is
 
 Where the tenant offers it (`config.leave`, off unless somebody turned it on),
 a person deletes their own account: their holder is erased the way an operator's
-`roster holder erase` erases one, after they are signed out everywhere. Nothing
+`roster holder erase` erases one, after they are signed out everywhere -- both,
+or neither: an erase that is refused, as the last administrator's is, leaves
+them signed in. Nothing
 is destroyed yet -- the operator can `roster restore` them while
 `holder.forget_after` lasts, and they are forgotten when it ends -- and every app
 holding a session for them hears it on the sync stream.
