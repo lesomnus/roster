@@ -450,6 +450,24 @@ func (s coreIdentity) oneAccountPerProvider(ctx context.Context, req *app.Identi
 // is the one sentence both sides of it now ask, and the other side of it is
 // `Verify`, which used to let that same person in.
 //
+// # And a way in is one that works
+//
+// The same mistake a third time, and found the same way: the count was of
+// rows. Any other identity was a way in, whatever its provider -- a connection
+// erased since, a name no front door was ever connected to -- and so was a
+// password row in a tenant that takes no passwords, which `Verify` refuses.
+// Either erase left somebody holding a row and no way to sign in by it.
+//
+// So an identity counts where its provider is a connection the tenant has,
+// which is where a front door of roster's sends somebody to sign in; and a
+// credential counts where the tenant lets its kind be a way in
+// ([vouch.Offers], the sentence `Verify` asks). An address is not counted
+// though a link mailed to it ends in a password: it is a way in only where a
+// front door mails, and that is nothing this layer can see. Each of these errs
+// the one way -- towards refusing an erase that would have been safe -- and an
+// operator who knows better erases the person's row or gives them another way
+// in first.
+//
 // # What it does not stop
 //
 // Erasing the **person**, which is deliberate and is a different act with a
@@ -540,7 +558,8 @@ func (s coreIdentity) on(next app.Server) coreIdentity {
 	return coreIdentity{Core: New(next, s.rules), IdentityServiceServer: next.Identity()}
 }
 
-// notTheirLastWayIn counts what would be left.
+// notTheirLastWayIn counts what would be left, and counts what somebody could
+// sign in by ([coreIdentity.Erase] says which rows those are).
 func (s coreIdentity) notTheirLastWayIn(ctx context.Context, holder, erasing []byte) error {
 	if len(holder) == 0 {
 		return nil
@@ -548,47 +567,113 @@ func (s coreIdentity) notTheirLastWayIn(ctx context.Context, holder, erasing []b
 
 	ref := app.HolderRef_builder{Id: holder}.Build()
 
-	ids, err := s.Next().Identity().List(ctx, app.IdentityListRequest_builder{
-		Filters: []*app.IdentityFilter{
-			app.IdentityFilter_builder{Holder: ref}.Build(),
-		},
+	// Their tenant, for its word on both halves: which providers it has a
+	// connection to, and whether it takes a password.
+	who, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: ref,
+		Select: app.HolderSelect_builder{
+			Tenant: app.TenantSelect_builder{Config: z.Ptr(true)}.Build(),
+		}.Build(),
 	}.Build())
 	if err != nil {
 		return err
 	}
+	tenant := who.GetTenant()
 
-	left := 0
-	for _, v := range ids.GetItems() {
-		if !bytesEq(v.GetId(), erasing) {
-			left++
+	doors, err := s.connected(ctx, tenant.GetId())
+	if err != nil {
+		return err
+	}
+
+	// Every page: one more identity than a page holds is somebody whose way
+	// in was not looked at.
+	after := ""
+	for {
+		ids, err := s.Next().Identity().List(ctx, app.IdentityListRequest_builder{
+			Filters: []*app.IdentityFilter{
+				app.IdentityFilter_builder{Holder: ref}.Build(),
+			},
+			After: after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+		for _, v := range ids.GetItems() {
+			if bytesEq(v.GetId(), erasing) {
+				continue
+			}
+			if _, ok := doors[v.GetProvider()]; ok {
+				return nil
+			}
+		}
+
+		after = ids.GetNext()
+		if after == "" {
+			break
 		}
 	}
-	if left > 0 {
-		return nil
-	}
 
-	// No other identity, so a password is the only thing that could be left.
-	// Read through the unwalled half of nothing -- this layer is on both
-	// stacks, and the credential is the person's own row behind the same wall
-	// the identity was.
-	creds, err := s.Next().Credential().List(ctx, app.CredentialListRequest_builder{
-		Filters: []*app.CredentialFilter{
-			app.CredentialFilter_builder{Holder: ref}.Build(),
-		},
-	}.Build())
-	if err != nil {
-		return err
-	}
-	for _, v := range creds.GetItems() {
-		// The kind decides, not the row: a seed is a credential and is not a
-		// way in. See [vouch.Begins].
-		if vouch.Begins(v.GetKind()) {
-			return nil
+	// No other identity anybody signs in by, so a password is the only thing
+	// that could be left. Read through the unwalled half of nothing -- this
+	// layer is on both stacks, and the credential is the person's own row
+	// behind the same wall the identity was.
+	after = ""
+	for {
+		creds, err := s.Next().Credential().List(ctx, app.CredentialListRequest_builder{
+			Filters: []*app.CredentialFilter{
+				app.CredentialFilter_builder{Holder: ref}.Build(),
+			},
+			After: after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+		for _, v := range creds.GetItems() {
+			// The kind decides, not the row: a seed is a credential and is
+			// not a way in ([vouch.Begins]). And the tenant decides about the
+			// kind: a password it does not take opens nothing
+			// ([vouch.Offers]).
+			if vouch.Begins(v.GetKind()) && vouch.Offers(tenant, v.GetKind()) {
+				return nil
+			}
+		}
+
+		after = creds.GetNext()
+		if after == "" {
+			break
 		}
 	}
 
 	return status.Error(codes.FailedPrecondition,
 		"this is the only way they can sign in; give them another before taking it away")
+}
+
+// connected is the names of a tenant's connections: the providers a front
+// door of roster's signs its people in through, and so the ones an identity
+// at is a way in.
+func (s Core) connected(ctx context.Context, tenant []byte) (map[string]struct{}, error) {
+	out := map[string]struct{}{}
+
+	after := ""
+	for {
+		vs, err := s.Next().Connection().List(ctx, app.ConnectionListRequest_builder{
+			Filters: []*app.ConnectionFilter{app.ConnectionFilter_builder{
+				Tenant: app.TenantRef_builder{Id: tenant}.Build(),
+			}.Build()},
+			After: after,
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range vs.GetItems() {
+			out[v.GetName()] = struct{}{}
+		}
+
+		after = vs.GetNext()
+		if after == "" {
+			return out, nil
+		}
+	}
 }
 
 func bytesEq(a, b []byte) bool {

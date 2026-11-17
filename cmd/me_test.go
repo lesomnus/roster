@@ -240,6 +240,10 @@ func TestAnOperatorSeesHowSomebodyElseSignsIn(t *testing.T) {
 func TestSomebodyRemovesTheirOwnWayInAndNobodyElseS(t *testing.T) {
 	b, ctx := build(t)
 
+	// Two directories the tenant offers, which is what makes an account at
+	// each a way in and one of the two theirs to remove.
+	b.connected(t, ctx, b.Contoso, "github", "entra")
+
 	mine := b.identity(t, ctx, b.ContosoUser, "github", "1078")
 	b.identity(t, ctx, b.ContosoUser, "entra", "8bf1e0a2")
 

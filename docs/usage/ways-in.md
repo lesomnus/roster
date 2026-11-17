@@ -593,6 +593,14 @@ Two things it does not do, each for a reason:
   sign-in matches (`../login.md` § *Putting people in, and letting them arrive*).
   The admin console lists what somebody signs in with and can take one away.
 
+**Unlinking is refused where nothing would be left to sign in by**, whoever
+asks. What is left has to work: an account at a directory the tenant still has
+a `Connection` to, or a password in a tenant that takes passwords
+(`config.password`). An account at a directory the operator has since removed
+is a row and not a way in, and so is a password where passwords are off; a
+second factor never was one. Somebody left with only those is given another way
+in first.
+
 ## A second factor
 
 ```
