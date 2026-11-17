@@ -2090,6 +2090,12 @@ type TenantUpdateRequest_builder struct {
 	// Optimistic locking, as `Patch` takes it: the version this caller read.
 	DateUpdated *timestamppb.Timestamp
 	// Each replaced whole when present, and left as it is when absent.
+	//
+	// A map has no way to be present and empty, so `labels` with nothing in it
+	// is *absent*: this verb replaces a tenant's labels and cannot take away the
+	// last one. That is done at the box (`roster tenant patch`), until a field
+	// that says *none* is worth adding -- which adds to the wire and breaks
+	// nobody.
 	Name   *string
 	Desc   *string
 	Labels map[string]string

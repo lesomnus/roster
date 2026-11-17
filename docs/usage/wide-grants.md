@@ -262,6 +262,13 @@ wider than they are. What is kept is that a tenant is left with somebody
 administering it. `HolderService/Invalidate` -- *sign them out everywhere* --
 is the same.
 
+So is `HolderService/Erase`. It reads as *may delete an account* and is
+anybody's, an administrator's among them: whoever holds it across the tenant
+erases somebody who holds more than they do, and what is kept is the last
+administrator and a row a file declares. An erase destroys nothing and an
+operator brings the person back (`roster restore`) until they are forgotten,
+which is why it asks what suspending does and not what writing a way in does.
+
 ### `VouchService/LeaveLink` with `Leave`
 
 **Reads as** *may mail a link that deletes an account*. **Is** anybody's

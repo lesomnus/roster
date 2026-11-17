@@ -606,6 +606,15 @@ narrowed to where its caller holds the method ([A site](#a-site)), so one held
 in no site and not across the tenant reaches the caller's own rows. Somebody
 else's address is `NotFound` to them.
 
+**`HolderService/Update` is the whole profile.** Somebody who may write their
+own name may write their own department, their employee number and whatever an
+app keeps in `data` beside them: it is one verb, and it replaces all of it. A
+directory that provisions people writes those again the next time it sends
+them, and until then they say what the person said. Nothing roster decides
+reads any of them, and a product that grants on one is trusting whoever may
+write it. A tenant whose people's profiles are an organisation's to say takes
+the verb out, as below.
+
 **It is the tenant's to narrow.** Take a method out and nobody of the tenant
 does that to their own account any more:
 
