@@ -73,7 +73,7 @@ bindings:
 	for _, target := range []string{b.Contoso.String(), b.ContosoUser.String()} {
 		write(fmt.Sprintf("roles:\n  '@%s/reader':\n    methods: [/roster.HolderService/Get]\nbindings:\n - role: '@%s/reader'\n   holder: '@%s/%s'\n", b.Fabrikam, b.Fabrikam, b.Fabrikam, target))
 		_ = b.PolicyFile.Refresh()
-		require.ErrorContains(t, b.PolicyFile.Refresh(), "no live holder")
+		require.ErrorContains(t, b.PolicyFile.Refresh(), "no holder in this tenant has this identifier")
 	}
 	// Unknown aliases fail validation rather than silently granting through a mutable name.
 	write("roles:\n  '@contoso/reader':\n    methods: [/roster.HolderService/Get]\n")
