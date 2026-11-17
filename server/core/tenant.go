@@ -2,6 +2,8 @@ package core
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
@@ -12,6 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/keys"
 )
 
@@ -206,10 +209,15 @@ func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*
 
 	got, err := s.TenantServiceServer.Get(ctx, app.TenantGetRequest_builder{
 		Ref:    req.GetRef(),
-		Select: app.TenantSelect_builder{Labels: z.Ptr(true), Config: z.Ptr(true)}.Build(),
+		Select: app.TenantSelect_builder{Labels: z.Ptr(true), Config: z.Ptr(true), DateDestroyed: z.Ptr(true)}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
+	}
+	// What a tenant says about itself is what destroying it took off the row,
+	// and is not written back ([gone]).
+	if at := got.GetDateDestroyed(); at != nil {
+		return nil, gone("ref", at.AsTime())
 	}
 	if err := s.mayWriteDeclared(ctx, "ref", got.GetLabels()); err != nil {
 		return nil, err
@@ -244,6 +252,226 @@ func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*
 	}
 
 	return s.TenantServiceServer.Patch(ctx, patch.Build())
+}
+
+// Patch is the general write, which no port serves and a command at the box
+// reaches (`roster tenant patch`), with the two things about a tenant's row
+// that hold whoever is writing.
+//
+// # A destroyed row says nothing about itself again
+//
+// Destroying a tenant blanks its name, its note, its labels and its settings
+// (`server/forget`), and they are not written back: [gone]. What is still
+// written on such a row is what a destruction is made of, by the deployment
+// itself -- the alias given back once its hold is over, and an operator's
+// hold, which keeps what the trail has of the tenant and stops a destruction
+// that is under way. Those are the row's other columns, and are let through.
+//
+// # A declared tenant is not renamed
+//
+// A file finds its tenant by alias (`cmd/resources.go`). Every other field of
+// a declared row is the box's to write, because whoever is at a shell has the
+// file too ([Core.mayWriteDeclared]); for the alias that is not enough, since
+// the file would have to be changed in the same moment and nothing makes it
+// so. Renamed here and not there, the next start found nobody of the old
+// alias, made a second tenant, and stopped at the first name both declared
+// (#279). So it is refused while the row is declared, whoever asks. Not of a
+// destroyed row: nothing declares one any more, and its alias is the
+// deployment's to give back.
+func (s coreTenant) Patch(ctx context.Context, req *app.TenantPatchRequest) (*app.Tenant, error) {
+	got, err := s.TenantServiceServer.Get(ctx, app.TenantGetRequest_builder{
+		Ref:    req.GetRef(),
+		Select: app.TenantSelect_builder{Alias: z.Ptr(true), Labels: z.Ptr(true), DateDestroyed: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	if at := got.GetDateDestroyed(); at != nil {
+		for _, v := range []struct {
+			field   string
+			written bool
+		}{
+			{"name", req.HasName()},
+			{"desc", req.HasDesc()},
+			{"labels", len(req.GetLabels()) > 0},
+			{"config", req.HasConfig()},
+		} {
+			if v.written {
+				return nil, gone(v.field, at.AsTime())
+			}
+		}
+
+		return s.TenantServiceServer.Patch(ctx, req)
+	}
+
+	// Folded as the write below folds it, so that the alias it has, spelled
+	// in capitals, is no change.
+	if from, ok := got.GetLabels()[declaredBy]; ok && req.HasAlias() &&
+		strings.ToLower(strings.TrimSpace(req.GetAlias())) != got.GetAlias() {
+		return nil, status.Errorf(codes.FailedPrecondition,
+			"alias: @%s is declared in %s, and a file finds its tenant by this alias: renamed here, the next start "+
+				"makes a second tenant called %s. Take it out of the file and take the label %q off this row first; "+
+				"then rename it, and declare it again by its new alias if a file is to own it",
+			got.GetAlias(), from, got.GetAlias(), declaredBy)
+	}
+
+	return s.TenantServiceServer.Patch(ctx, req)
+}
+
+// gone is the refusal of a write into a tenant that is destroyed.
+//
+// `FailedPrecondition`, as a restore of one is: nothing is wrong with the
+// request, and nothing about who is asking would change the answer.
+func gone(field string, at time.Time) error {
+	return status.Errorf(codes.FailedPrecondition,
+		"%s: this tenant was destroyed on %s, and nothing is written into a tenant that is gone: what it held is not "+
+			"there to add to. A customer that comes back is a new tenant (`roster tenant add`), under its old alias "+
+			"once that is free (`roster forget --reuse`)", field, at.Format(time.RFC3339))
+}
+
+// living is the server this layer is built over, with one question in front of
+// it: whether the tenant a row is being added under is still there.
+//
+// # What was wrong
+//
+// A destroyed tenant is a row that keeps an identifier for the trail and, for
+// a while, an alias so that nobody else is that name (`server/forget`).
+// Nothing asked whether a tenant was one before writing into it. Nobody of a
+// closed tenant gets in, so the callers left were the deployment's own -- an
+// operator at `admin.addr`, a command at the box, a file -- and for them a
+// person, a host, a site and a role were each added to a destroyed tenant, OK.
+// A person added there was forgotten by the next sweep. A host was not: no
+// sweep visits a destroyed tenant again, and the name went on answering for
+// one that is gone (#279).
+//
+// # Why it is here, and not on each verb
+//
+// Because there was no one place. Each kind's `Add` is its own, in its own
+// file, with its own rules, and several of them make a row of another kind on
+// the way -- a tenant's first person, a group's role, a directory's person --
+// so a rule written on the verbs is written a dozen times, and the verb that
+// forgets is the hole. What every such write has in common is where it ends:
+// the `Add` of the server this layer is over. So the question is asked there,
+// once, of every kind whose row names its tenant ([Core] is built over this
+// in [New], and again on a transaction in [Core.over]); and
+// `TestNothingIsWrittenIntoATenantThatIsGone` reads the kinds off the schema,
+// so that the next one is asked too.
+//
+// The rows that name a person, a role or a group and not a tenant are not
+// asked. In a tenant whose destruction is finished there is nobody and
+// nothing left for one to name. In one whose destruction is under way there
+// may be, for as long as the person is, and such a row goes with them.
+//
+// # What it leaves alone
+//
+// A closed tenant. Closing shuts a tenant's people out and destroys nothing,
+// and whoever runs the deployment still writes in one, on purpose: that is
+// how a customer is put right before it is restored. And erasing: taking a
+// row out of a tenant that is going is what destroying it is.
+type living struct{ app.Overlay }
+
+// alive is `next` with [living] in front of it, once.
+func alive(next app.Server) app.Server {
+	if _, ok := next.(living); ok {
+		return next
+	}
+
+	return living{app.NewOverlay(next)}
+}
+
+var (
+	_ app.Server               = living{}
+	_ enttx.Binder[app.Server] = living{}
+)
+
+// WithDriver is what nothing inherits; see `CLAUDE.md`, "Writing a layer".
+func (s living) WithDriver(drv dialect.Driver) (app.Server, error) {
+	next, err := enttx.Rebind(s.Next(), drv)
+	if err != nil {
+		return nil, err
+	}
+
+	return living{app.NewOverlay(next)}, nil
+}
+
+// into refuses a row under a tenant that is destroyed.
+//
+// A tenant that is not there, or that this caller does not see, is not this
+// rule's to say: the write answers that in its own words. Nor is a request
+// that names none, which is filled from the frame below -- the caller's own
+// tenant, and nobody of a destroyed one arrives.
+func (s living) into(ctx context.Context, at *app.TenantRef) error {
+	if at == nil {
+		return nil
+	}
+
+	v, err := s.Next().Tenant().Get(ctx, app.TenantGetRequest_builder{
+		Ref:    at,
+		Select: app.TenantSelect_builder{DateDestroyed: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return nil
+	}
+	if when := v.GetDateDestroyed(); when != nil {
+		return gone("tenant", when.AsTime())
+	}
+
+	return nil
+}
+
+// under is [living.into] as the rule of an `Add`, for every request that
+// names the tenant it writes into. It answers no request of its own, which is
+// the one it was handed.
+func under[R interface{ GetTenant() *app.TenantRef }](s living) func(context.Context, R) (R, error) {
+	return func(ctx context.Context, req R) (R, error) {
+		var same R
+
+		return same, s.into(ctx, req.GetTenant())
+	}
+}
+
+// Every kind whose row names its tenant: the ones `docs/entity.md` lists as
+// walled by a `tenant` edge.
+
+func (s living) Holder() app.HolderServiceServer {
+	return bare.HolderWithAddRule(s.Next().Holder(), under[*app.HolderAddRequest](s))
+}
+
+func (s living) Site() app.SiteServiceServer {
+	return bare.SiteWithAddRule(s.Next().Site(), under[*app.SiteAddRequest](s))
+}
+
+func (s living) Team() app.TeamServiceServer {
+	return bare.TeamWithAddRule(s.Next().Team(), under[*app.TeamAddRequest](s))
+}
+
+func (s living) Role() app.RoleServiceServer {
+	return bare.RoleWithAddRule(s.Next().Role(), under[*app.RoleAddRequest](s))
+}
+
+func (s living) Group() app.GroupServiceServer {
+	return bare.GroupWithAddRule(s.Next().Group(), under[*app.GroupAddRequest](s))
+}
+
+func (s living) Host() app.HostServiceServer {
+	return bare.HostWithAddRule(s.Next().Host(), under[*app.HostAddRequest](s))
+}
+
+func (s living) MailDomain() app.MailDomainServiceServer {
+	return bare.MailDomainWithAddRule(s.Next().MailDomain(), under[*app.MailDomainAddRequest](s))
+}
+
+func (s living) HostProof() app.HostProofServiceServer {
+	return bare.HostProofWithAddRule(s.Next().HostProof(), under[*app.HostProofAddRequest](s))
+}
+
+func (s living) Nomination() app.NominationServiceServer {
+	return bare.NominationWithAddRule(s.Next().Nomination(), under[*app.NominationAddRequest](s))
+}
+
+func (s living) Connection() app.ConnectionServiceServer {
+	return bare.ConnectionWithAddRule(s.Next().Connection(), under[*app.ConnectionAddRequest](s))
 }
 
 // NotErased is what is said to anybody who asks for a tenant to be erased:

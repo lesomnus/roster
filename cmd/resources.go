@@ -5,9 +5,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"maps"
 	"os"
+	"slices"
+	"time"
 
 	"github.com/goccy/go-yaml"
+	"github.com/lesomnus/otx/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -180,6 +185,10 @@ type Applied struct {
 	Added   []string
 	Changed []string
 	Same    []string
+
+	// Left is what a file declares of a tenant that is closed or destroyed,
+	// or under one: not written, and not looked at. See [ApplyResources].
+	Left []string
 }
 
 // ReadResources reads the files named, in order.
@@ -216,6 +225,26 @@ func ReadResources(paths []string) ([]Resource, error) {
 //
 // `dry` answers what it would do and writes nothing, which is what a person
 // wants before a deployment does it for them.
+//
+// # A tenant that is leaving is left as it is
+//
+// A file finds its tenant by alias, and looked at nothing else of it. So a
+// file that still declared a tenant somebody had closed and destroyed wrote it
+// back at the next start -- its name, its settings, a connection and a host,
+// onto a row with nobody in it that no sweep visits again -- and once the
+// alias was given back, made a second tenant of that name and stopped at the
+// host the first one held, which stops `serve` (#279). And a tenant closed at
+// the box went on being edited by its file while everybody of it was shut
+// out.
+//
+// A file does not close a tenant and does not bring one back: those are an
+// operator's acts, at the box. So what a file declares of a tenant that is
+// closed or destroyed -- the tenant, and every row it names that tenant for --
+// is not written and not compared, and is answered as [Applied.Left]. It is
+// said in the log, as a warning, each time the files are applied, with the
+// files to take it out of: a start is not stopped by it, and nobody is left
+// to find out a year on that the file still says so. A closed tenant that is
+// restored is the file's again at the next start.
 func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Applied, error) {
 	out := Applied{}
 	if len(rs) == 0 {
@@ -239,27 +268,42 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 		return out, err
 	}
 
+	// Said however the run ends: a file that stops a start further down is
+	// read by somebody who should be told this as well.
+	leaving := leavers{}
+	defer leaving.said(ctx)
+
 	for i, r := range rs {
-		var (
-			what string
-			was  string
-			err  error
-		)
+		var apply func(context.Context, app.Server, Resource, bool) (string, string, error)
 		switch r.Kind {
 		case "Tenant":
-			what, was, err = applyTenant(as, at, r, dry)
+			apply = applyTenant
 		case "Connection":
-			what, was, err = applyConnection(as, at, r, dry)
+			apply = applyConnection
 		case "Host":
-			what, was, err = applyHost(as, at, r, dry)
+			apply = applyHost
 		case "MailDomain":
-			what, was, err = applyMailDomain(as, at, r, dry)
+			apply = applyMailDomain
 		default:
 			// Named rather than ignored. A `kind` this does not know is a
 			// typo or a thing somebody expected to work, and either way a
 			// silent skip is the worst answer.
 			return out, fmt.Errorf("resources: [%d]: %q is not a kind this applies", i, r.Kind)
 		}
+
+		// Whose it is, before anything of it is read or written: a tenant
+		// that is leaving is not the file's.
+		left, err := leaving.left(as, at, r)
+		if err != nil {
+			return out, fmt.Errorf("resources: [%d] %s: %w", i, r.Kind, err)
+		}
+		if left {
+			out.Left = append(out.Left, named(r))
+
+			continue
+		}
+
+		what, was, err := apply(as, at, r, dry)
 		if err != nil {
 			return out, fmt.Errorf("resources: [%d] %s: %w", i, r.Kind, err)
 		}
@@ -275,6 +319,104 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 	}
 
 	return out, nil
+}
+
+// named is what a resource is called in what a run answers, as each kind's
+// own apply names it: a tenant by its alias, a connection by its tenant's and
+// its own name, and a host or a mail domain by its name.
+func named(r Resource) string {
+	switch r.Kind {
+	case "Tenant":
+		return "@" + r.Alias
+	case "Connection":
+		return "@" + r.Tenant + "/" + r.Name
+	}
+
+	return r.Name
+}
+
+// leavers is the tenants a run found closed or destroyed, by alias, and what
+// the files still declare of each: see [ApplyResources].
+type leavers map[string]*leaver
+
+type leaver struct {
+	// state is `closed` or `destroyed`, and empty for a tenant that is
+	// neither: open, or not there yet.
+	state string
+	since time.Time
+
+	// What of it the files declare, and which files.
+	left  []string
+	files []string
+}
+
+// left is whether `r` is, or is under, a tenant that is closed or destroyed.
+// Asked once of each tenant, through the stack the rest is written through.
+func (l leavers) left(ctx context.Context, s app.Server, r Resource) (bool, error) {
+	alias := r.Tenant
+	if r.Kind == "Tenant" {
+		alias = r.Alias
+	}
+	if alias == "" {
+		// Nothing to ask about: the kind's own refusal says what is missing.
+		return false, nil
+	}
+
+	v, ok := l[alias]
+	if !ok {
+		v = &leaver{}
+		l[alias] = v
+
+		got, err := s.Tenant().Get(ctx, app.TenantGetRequest_builder{
+			Ref:    app.TenantRef_builder{Alias: proto.String(alias)}.Build(),
+			Select: app.TenantSelect_builder{DateClosed: proto.Bool(true), DateDestroyed: proto.Bool(true)}.Build(),
+		}.Build())
+		switch {
+		case status.Code(err) == codes.NotFound:
+			// Nobody of that alias: a tenant the file makes, or a row whose
+			// own kind says its tenant is not there.
+		case err != nil:
+			return false, err
+		case got.GetDateDestroyed() != nil:
+			v.state, v.since = "destroyed", got.GetDateDestroyed().AsTime()
+		case got.GetDateClosed() != nil:
+			v.state, v.since = "closed", got.GetDateClosed().AsTime()
+		}
+	}
+	if v.state == "" {
+		return false, nil
+	}
+
+	v.left = append(v.left, named(r))
+	if from := r.From; from != "" && !slices.Contains(v.files, from) {
+		v.files = append(v.files, from)
+	}
+
+	return true, nil
+}
+
+// said tells the log about each tenant the files still declare and that is
+// leaving, in the order of their aliases: once a run, which for `serve` is
+// once a start.
+func (l leavers) said(ctx context.Context) {
+	for _, alias := range slices.Sorted(maps.Keys(l)) {
+		v := l[alias]
+		if v.state == "" {
+			continue
+		}
+
+		what := "resources: a file still declares a tenant that was destroyed. Nothing of it or under it is written, " +
+			"and nothing brings it back: take it, and what is declared under it, out of the file"
+		if v.state == "closed" {
+			what = "resources: a file declares a tenant that is closed. It and what is declared under it are left as they are " +
+				"until it is restored (`roster restore`); if it is to go, take them out of the file"
+		}
+		log.From(ctx).WarnContext(ctx, what,
+			slog.String("tenant", "@"+alias),
+			slog.String(v.state, v.since.Format(time.RFC3339)),
+			slog.Any("files", v.files),
+			slog.Any("left", v.left))
+	}
 }
 
 // asProvisioner is the context every write goes out on: the control plane's

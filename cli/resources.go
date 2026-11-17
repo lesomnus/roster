@@ -81,6 +81,17 @@ func newCmdResourcesApply(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command
 			for _, w := range v.Same {
 				fmt.Fprintf(cl.Root().Writer, "  %s\n", w)
 			}
+			// What the files declare of a tenant that is closed or destroyed,
+			// which is not written and not compared (`cmd.ApplyResources`).
+			// Said here because nothing installs a logger on a command, and
+			// the warning `serve` logs for it would reach nobody.
+			for _, w := range v.Left {
+				fmt.Fprintf(cl.Root().Writer, "! %s\n", w)
+			}
+			if len(v.Left) > 0 {
+				fmt.Fprintln(cl.Root().Writer, "\n(! is of a tenant that is closed or destroyed: left as it is. "+
+					"Restore the tenant if it is closed, or take these out of the file)")
+			}
 			if dry {
 				fmt.Fprintln(cl.Root().Writer, "\n(dry run; nothing was written)")
 			}

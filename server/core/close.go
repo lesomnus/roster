@@ -36,10 +36,13 @@ import (
 //
 // # Refused twice over
 //
-// A tenant a file declared is the file's to close, as it is to edit
-// (`declared.go`), so this is refused on one exactly as `Update` is. And the
-// control plane's one tenant is the deployment itself: closing it would shut
-// out the deployment's own operators, with nobody left who could restore it.
+// A tenant a file declares is not closed over the wire, as it is not edited
+// there (`declared.go`), so this is refused on one exactly as `Update` is. It
+// is closed at the box, where a command is the deployment's own work: a file
+// has no key that closes a tenant, and from the close on it leaves the tenant
+// as it is (`cmd.ApplyResources`). And the control plane's one tenant is the
+// deployment itself: closing it would shut out the deployment's own
+// operators, with nobody left who could restore it.
 //
 // A tenant closed already is refused rather than stamped again, because the
 // stamp is what the grace runs from: closing twice would quietly restart the

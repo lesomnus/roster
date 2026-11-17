@@ -112,7 +112,8 @@ the tenant usually cannot do itself: nominating the app's holder needs the
 app's methods. `roster app uninstall --tenant acme loft` ends the nomination,
 and the tenant administrator can do the same from the user console's *apps*
 tab. The Login App and the account app do this for themselves at start, in
-every tenant with a name -- so for them ending it lasts until the next start.
+every tenant with a name that is not being destroyed -- so for them ending it
+lasts until the next start.
 
 **Roster's own front doors are declared.** The Login App and the account app
 write their rows in every tenant at start -- the holder, its role, the binding
