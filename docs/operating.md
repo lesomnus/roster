@@ -2236,7 +2236,12 @@ nominations -- and the tenant row blank. What stays is its identifier, which the
 names it by, and the blank holders, for the same reason. The trail keeps its events
 and follows its own windows; its people's contents go as each is forgotten. The first
 write is `date_destroyed`, so a restore cannot get between, and running it again
-finishes one that stopped -- which the sweep does on its own. Each of those writes is
+finishes one that stopped -- which the sweep does on its own, wherever it stopped. It
+finds a stamped tenant by what is left of it: somebody not yet forgotten, a row of
+any of those kinds, or a name on its own row. So one that stopped after its last
+person, with only its rows to go, is finished at the next pass; and so is anything
+written into a tenant after it was destroyed, since a destroyed tenant holds
+nothing. Each of those writes is
 made on what was decided: the stamp only on a tenant still closed and held by nobody,
 and a restore only on one not yet stamped, so the two cannot cross.
 
@@ -2255,7 +2260,9 @@ are gone -- former people typing it into a sign-in form, bookmarks, mail, a QR
 sticker with it printed on -- and a tenant that took it the next day would be that
 name to all of them; the sharp case is somebody doing it on purpose. So the
 destroyed row keeps it for `alias_hold`, and then it becomes `gone-<identifier>` and
-anybody may take it. A restore never meets the hold, because the alias never left.
+anybody may take it. Which aliases were freed is told by that exact name, so one
+somebody chose that begins `gone-` is held and freed like any other. A restore never
+meets the hold, because the alias never left.
 `--reuse` frees one sooner on purpose, and the trail records that it did. A hostname
 is freed at once: taking one again needs proof (#42), which is the rule an alias hold
 only approximates.
