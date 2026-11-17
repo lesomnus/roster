@@ -753,7 +753,8 @@ name at once and whoever's value is published takes it. The token is the only on
 in this schema that is **not** a secret and is stored as it is compared: it goes
 in public DNS, and anybody who can put a record under a name owns the name, which
 is the whole of what is being measured. Spent by an erase the way ⏳
-`Continuation` is, and `prove.Sweep` collects the abandoned.
+`Continuation` is, and `prove.Sweep` collects the abandoned; one that has run out
+is replaced by the tenant's next claim of the same name.
 
 > contoso wants `contoso.example.com`. roster hands them a value, they publish it,
 > and the 🌐 `Host` row is written with `date_proved` on it. fabrikam may claim the

@@ -179,6 +179,7 @@ removed (`TestADirectoryMaySuspendTheLastAdministrator`).
 | A GUID is one spelling where its connection names people by `oid`: kept in small letters, and found in either by a write, a sign-in and a directory | `server/front/front.go` | `TestAGUIDIsOneSpelling` · `TestASignInFindsAnOidInEitherSpelling` · `TestATokensOidIsTheSamePersonInEitherSpelling` · `TestADirectoryFindsSomebodyByEitherSpellingOfTheirId` |
 | A hostname is claimed by a record published for it, and the latest proof takes it -- written down in the trail of the tenant that held it, and never a name a file declares | `server/core/host.go` | `TestTheLatestProofTakesTheName` · `TestANameTakenIsOnTheTrailOfWhoeverHeldIt` |
 | A name is written by its proof alone: its general writes, a claim's and a tenant's are not served, whatever `allow_general_writes` says | `cmd/serve.go` | `TestAGeneralWriteDoesNotWriteANamePastItsProof` |
+| A claim of a name that has run out is replaced by making another, as the refusal of it says to; one still good is not, and another tenant's is not touched | `server/core/hostproof.go` | `TestAnExpiredClaimOfANameIsReplacedByMakingAnother` |
 | The record is asked of the name's own zone, never of where an alias points; a name is one spelling, a hostname, and a lookup that failed says nothing of the resolver | `server/prove/prove.go` | `TestANameIsAskedOfItsOwnZone` · `TestATrailingDotIsTheSameName` · `TestANameThatIsNotAHostnameIsRefused` · `TestALookupThatFailedSaysNothingOfTheResolver` |
 
 ### A connection is one a front door can use
