@@ -33,18 +33,24 @@
 //
 // # Which tenant, and where that comes from
 //
-// Not from the hostname. `account/` resolves the browser's `Host` because it
-// has nothing else; this app has something better, and it arrives with the
-// browser: the challenge names the **OAuth client**, one per tenant, read
-// from Hydra over the admin API. So which tenant a flow belongs to is Hydra's
-// word rather than a header the browser wrote or a mapping this app parsed --
-// and it is re-derived from the challenge on every request, never carried in
-// anything the browser holds.
+// Not from the hostname the browser arrived at. `account/` resolves the
+// browser's `Host` because it has nothing else, and here that host says
+// nothing: Hydra sends every browser to this app under one name. What says it
+// arrives with the browser all the same -- the challenge, which Hydra answers
+// about over the admin API with the authorization request whole, and the
+// **redirect** that request named is at a name a tenant claimed (`at.go`). So
+// which tenant a flow belongs to is Hydra's word and a `Host` row of roster's,
+// rather than a header the browser wrote or a mapping this app was configured
+// with -- and it is re-derived from the challenge on every request, never
+// carried in anything the browser holds.
 //
-// The key follows from it: one `rt_` per tenant, and every call about a flow
-// goes out with the key of the tenant that flow's client resolved to. See
-// `docs/login.md`, § "And what its own credential has to reach", for why that
-// is several narrow credentials rather than one wide one.
+// The key follows from it: **one** deployment key (`rk_`) for every tenant,
+// and every call about a flow goes out with `roster-at` saying the name that
+// flow resolved through, so that roster answers it as the holder that tenant
+// nominated for this app. Two calls name no tenant: the one that asks which
+// tenant a name is, and the stream that hears every tenant's sign-outs. See
+// `docs/login.md`, § *What a front door needs*, for why one key narrowed per
+// request is not the wide credential it looks like.
 package login
 
 import (
@@ -153,8 +159,10 @@ type Config struct {
 	// applied per **request** rather than per process, and that adding a tenant
 	// is a `Host` row rather than a key.
 	//
-	// One call goes out without `roster-at` and it is the one that has to:
-	// [App.Watch] hears every tenant, which is what an `rk_` is for.
+	// Two calls go out without `roster-at`, and they are the two that have to:
+	// the one that asks which tenant a name is, since its answer is what the
+	// rest are narrowed by (`at.go`), and [App.Watch], which hears every tenant
+	// -- which is what an `rk_` is for.
 	Key string
 
 	// Now is the clock what a name resolved to is aged by (`login/at.go`). Nil

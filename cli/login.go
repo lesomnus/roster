@@ -216,11 +216,13 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 				}
 			}
 
-			// What the key is allowed, which is [LoginMethods] plus the one
-			// grant a policy asks for. `enrolling` makes people, and making
-			// people is wider than signing them in -- so it is granted only
-			// where a deployment wrote `login.enrol: enrolling` down, and never
-			// by default.
+			// What the role of the app's holder in each tenant allows, which is
+			// [LoginMethods] plus the one grant a policy asks for -- and not
+			// what the key is allowed as itself, which is [LoginResolving] and
+			// is `provisionKey`'s. `enrolling` makes people, and making people
+			// is wider than signing them in -- so it is granted only where a
+			// deployment wrote `login.enrol: enrolling` down, and never by
+			// default.
 			methods := loginMethodsFor(c.Login.Enrol)
 
 			// The key first, because it is the half that needs no customer.

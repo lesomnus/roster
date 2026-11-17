@@ -63,8 +63,17 @@ service EmailService {
   // spent, one expired, one minted by somebody else, one that is a recovery
   // link, and one for somebody erased or suspended since, or whose tenant
   // closed -- nothing is proved for a person who may not sign in. What a
-  // caller may rely on is that after `OK` the address is `date_verified` at
-  // this moment, and that nothing was signed in.
+  // caller may rely on is that after `OK` the address is proved, and that
+  // nothing was signed in.
+  //
+  // # `date_verified` is the moment it was first proved
+  //
+  // This moment, for an address nobody had proved. For one that was proved
+  // already the link is spent and the stamp is left as it was: of the
+  // addresses somebody has proved, the one proved **first** is the one a front
+  // door says is theirs -- `email` in a token -- and a second proof of it must
+  // not make it the newest. `Attest` is held to the same. An address erased and
+  // written again is another row, and its proof a new one.
   //
   // # And it is where an address changes hands
   //

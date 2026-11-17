@@ -24,6 +24,7 @@ package me
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"slices"
 	"strings"
@@ -257,9 +258,11 @@ func called(v *ent.Holder) string {
 // address never moves it, and it is the next one proved only once the first is
 // erased. Two proved at one instant are in the order of their rows'
 // identifiers, which is the order they were written in, so that there is one
-// answer. What is read is `date_verified`, and `Email.Confirm` writes that
-// anew when a link for an address already proved is spent: an address proved
-// again counts from then.
+// answer. What is read is `date_verified`, and a second proof of an address
+// leaves that as it was -- a link confirmed again, a directory vouching at each
+// sign-in (`server/core`, `Email.Confirm` and `Email.Attest`) -- so proving
+// the first one again does not move it either. An address erased and written
+// again is another row, and its proof a new one.
 //
 // Sorted here rather than by the query, because where a null sorts is the
 // database's to say and SQLite and PostgreSQL say opposite things.
@@ -298,11 +301,18 @@ func (s *Server) emails(ctx context.Context, who pdid.Id) ([]*app.MeEmail, error
 	return out, nil
 }
 
-// teams is the teams they are in, each with the site it is in.
+// teams is the teams they are in, each with the site it is in, in the order of
+// their sites' aliases and then of their own.
 //
 // The site travels with the team because a team's name is unique within one and
 // means nothing without it: a page showing "operators" for somebody in two
 // sites would be showing one word for two different groups of people.
+//
+// And in one order, as `groups` and `emails` are. None was asked for, so each
+// reader got the store's -- the order somebody's places were written in, on
+// SQLite -- and one that wanted the same answer twice sorted for itself, as a
+// front door does for a token. A team of no site comes before the ones that
+// have one, and a team's identifier settles what is left.
 func (s *Server) teams(ctx context.Context, who pdid.Id) ([]*app.MeTeam, error) {
 	vs, err := s.db.TeamMembership.Query().
 		Where(
@@ -342,6 +352,13 @@ func (s *Server) teams(ctx context.Context, who pdid.Id) ([]*app.MeTeam, error) 
 
 		out = append(out, m.Build())
 	}
+	slices.SortFunc(out, func(a, b *app.MeTeam) int {
+		return cmp.Or(
+			strings.Compare(a.GetSiteAlias(), b.GetSiteAlias()),
+			strings.Compare(a.GetAlias(), b.GetAlias()),
+			bytes.Compare(a.GetId(), b.GetId()),
+		)
+	})
 
 	return out, nil
 }
