@@ -149,6 +149,25 @@ type Config struct {
 	// for an app whose session is somebody at its own page, and wrong for one
 	// whose session is read later by a flow nobody is watching.
 	Lifetime time.Duration
+
+	// For is what a sign-in made here is for, read from the request that
+	// finishes it -- the first form, or the second -- and kept with the session
+	// that request mints ([SignIn.For]).
+	//
+	// For an app whose sign-in is a step of something else. The Login App's
+	// answers one of Hydra's challenges, and a session a form minted for one
+	// challenge is not one to answer another with: a sealed cookie opens until
+	// its own clock runs out, so without this the last sign-in a browser made
+	// answered every flow raised after it. This package gives the answer no
+	// meaning and compares it with nothing. It is the app's to read back and to
+	// hold a request to, and the app's to keep small: it rides under the
+	// session, which may be the cookie.
+	//
+	// Left nil by an app whose sign-in is for its own pages, the account app,
+	// and then nothing is kept. A sign-in on a provider's word or a link's
+	// ([Door.Accept], [Door.Redeem]) is not asked either: the app finishing one
+	// is already where it was for.
+	For func(r *http.Request) string
 }
 
 // HalfLife is how long a half-signed-in browser has, when nothing says
@@ -272,6 +291,38 @@ func (d *Door) Who(ctx context.Context, r *http.Request) (pdid.Id, bool) {
 	who, _, ok := d.whole(ctx, r)
 
 	return who, ok
+}
+
+// A SignIn is a finished sign-in this browser still holds, as the app that made
+// it reads it back: who signed in, at which tenant, and what the sign-in was
+// for where the app said ([Config.For]) -- empty where it did not, and for a
+// sign-in on a provider's word or a link's.
+type SignIn struct {
+	Who    pdid.Id
+	Tenant pdid.Id
+	For    string
+}
+
+// SignedIn is [Door.Who] with the rest of what the session says of itself, for
+// an app that answers for a sign-in rather than drawing a name: the Login App
+// tells Hydra who signed in, and has to know the sign-in is the one this
+// request is about.
+//
+// It reads the session and not the delegation, as [Door.Who] does. Whether the
+// sign-in still stands is roster's to say, and an app that is about to act on
+// one asks: a call made with [Door.Acting] is refused for a delegation that has
+// ended, and nothing in a cookie is.
+func (d *Door) SignedIn(ctx context.Context, r *http.Request) (SignIn, bool) {
+	v, who, _, ok := d.held(ctx, r)
+	if !ok {
+		return SignIn{}, false
+	}
+	tenant, err := pdid.Parse(v.TenantId)
+	if err != nil {
+		return SignIn{}, false
+	}
+
+	return SignIn{Who: who, Tenant: tenant, For: v.Held[heldFor]}, true
 }
 
 // whole is the signed-in session this request carries -- who, and the
@@ -631,7 +682,7 @@ func (d *Door) answer(w http.ResponseWriter, r *http.Request, res *rstr.VouchDel
 		// outlived its delegation would be somebody signed in to a page that
 		// cannot be drawn.
 		Expires: res.GetDateExpires().AsTime(),
-		Held:    map[string]string{heldToken: res.GetToken()},
+		Held:    d.holds(r, res.GetToken()),
 	})
 	if err != nil {
 		http.Error(w, "cannot sign in", http.StatusInternalServerError)
@@ -640,6 +691,23 @@ func (d *Door) answer(w http.ResponseWriter, r *http.Request, res *rstr.VouchDel
 
 	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// holds is what a session a form finished keeps beside who it is: the
+// delegation, and what the sign-in was for where the app says ([Config.For]).
+//
+// Asked of the request that finished the sign-in, so of the second form where
+// there is one: that is the request the delegation came back on, and the
+// half-session before it names nobody yet.
+func (d *Door) holds(r *http.Request, token string) map[string]string {
+	held := map[string]string{heldToken: token}
+	if d.c.For != nil {
+		if v := d.c.For(r); v != "" {
+			held[heldFor] = v
+		}
+	}
+
+	return held
 }
 
 // Accept signs somebody in on a claim this app has already checked, and holds
@@ -792,9 +860,14 @@ func (d *Door) accept(ctx context.Context, w http.ResponseWriter, c Claim, at st
 // at all when the store is the cookie (`authsession.Sealed`), which is how the
 // account app runs. What that changes is said where it is paid: the second
 // form and the sign-out.
+//
+// And beside a delegation, where the app said ([Config.For]): what the sign-in
+// that earned it was for. Not about the person either -- it is about the
+// sign-in, and is the app's own word handed back to it.
 const (
 	heldToken        = "token"
 	heldContinuation = "continuation"
+	heldFor          = "for"
 )
 
 func ids(holder, tenant []byte) (pdid.Id, pdid.Id, error) {
