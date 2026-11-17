@@ -37,6 +37,15 @@ const (
 //
 // A team belongs to exactly **one** site, which is the condition. A Holder does
 // not, so a Holder has no site edge.
+//
+// # What is said of one is said when it is made
+//
+// Its site is immutable, and over the wire so is the rest. A team has `Add`
+// and `Erase` and no write between them, and no port serves a general one
+// (`cmd/serve.go`): its alias, its name and its description are what `Add`
+// was told. Changing one is the deployment's, at the box (`roster team
+// patch`); or the team is erased and another made, whose places are added
+// again, since a place is on one team.
 type Team struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
