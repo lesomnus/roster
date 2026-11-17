@@ -18,10 +18,23 @@
 // picture, the crop and the scaling need the pixels anyway, and re-encoding
 // drops whatever else the file carried -- a camera's metadata, which can be
 // where a photograph was taken.
+//
+// # What rendering one costs, and who pays
+//
+// The process, in memory, for as long as the render takes: the image decoded
+// whole, and the scaler's rows beside it. What a file weighs says nothing of
+// that -- a hundred kibibytes of progressive JPEG is every coefficient of
+// every block, kept until the last scan -- and `HolderService/Portray` is
+// something everybody may call about their own row. So the cost is bounded
+// twice, by this file and not by a caller: an image is at most [MaxSide] a
+// side, decided from its header before a pixel is decoded, and at most
+// [AtOnce] are rendered at once in a process. [MaxSide] says what the two
+// come to.
 package portrait
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -54,7 +67,26 @@ const (
 	// MaxSide is the most pixels an image may have on a side. Read from the
 	// header before anything is decoded, because a small file can claim a vast
 	// image and decoding one costs the memory the claim says.
-	MaxSide = 4096
+	//
+	// It was 4096, and one image of that cost what the largest portrait is
+	// sixteen times too small to need: 93 MiB allocated for 57 KiB of PNG,
+	// 157 MiB at sixteen bits a channel, and 269 MiB for 98 KiB of
+	// progressive JPEG (#279). At 2048 those are 30, 46 and 74 MiB, and
+	// `TestTheLargestPictureIsRenderedWithinABound` holds what the wire takes
+	// to under 96. A camera's photograph is larger than this on a side, and is
+	// made smaller by whoever hands it over: a page draws it to a canvas, and
+	// a directory's photograph is a few hundred pixels to begin with.
+	MaxSide = 2048
+
+	// AtOnce is how many images a process renders at once. The rest wait
+	// their turn for as long as their call lasts.
+	//
+	// Two, which is the most memory rendering holds: twice what [MaxSide]
+	// says one costs. A render is a fraction of a second for a photograph
+	// and a second or two for the largest image there is, so a turn comes
+	// round quickly for anybody not handing over the largest image on
+	// purpose -- and those are the calls the wait is for.
+	AtOnce = 2
 
 	// MaxURL is the longest `profile.picture` roster keeps.
 	MaxURL = 2048
@@ -76,12 +108,25 @@ var (
 	ErrURL = errors.New("an https URL, which a page fetches as it is")
 )
 
+// turns is the renders running now: one is taken before an image is decoded
+// and given back when its portrait is made. See [AtOnce].
+var turns = make(chan struct{}, AtOnce)
+
 // Render is the portrait an image makes: the square in its middle, at each of
 // [Sizes] no larger than that square, as JPEG.
 //
 // An image smaller than the largest size is not enlarged. Its own size is the
 // largest rendition instead, which is a smaller portrait and a truthful one.
-func Render(b []byte) (_ *rstr.Portrait, err error) {
+//
+// # In two steps, and only the second waits
+//
+// What an image is, is read from its header first, and one that is too large
+// or no image is refused there: at once, whatever else is being rendered,
+// having cost nothing. One that will be rendered takes a turn ([AtOnce]) and
+// waits for it while `ctx` lasts. A call that ends waiting is answered with
+// why `ctx` ended -- its deadline, or its caller gone -- which is nothing about
+// the image.
+func Render(ctx context.Context, b []byte) (_ *rstr.Portrait, err error) {
 	if len(b) > MaxBytes {
 		return nil, fmt.Errorf("%w: %d bytes, and the most is %d", ErrTooLarge, len(b), MaxBytes)
 	}
@@ -92,6 +137,18 @@ func Render(b []byte) (_ *rstr.Portrait, err error) {
 	}
 	if c.Width > MaxSide || c.Height > MaxSide {
 		return nil, fmt.Errorf("%w: %dx%d pixels, and the most is %d a side", ErrTooLarge, c.Width, c.Height, MaxSide)
+	}
+
+	// Asked first, so that a call already over takes no turn it would have
+	// had by chance.
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("waiting for a turn to render a picture: %w", err)
+	}
+	select {
+	case turns <- struct{}{}:
+		defer func() { <-turns }()
+	case <-ctx.Done():
+		return nil, fmt.Errorf("waiting for a turn to render a picture: %w", ctx.Err())
 	}
 
 	// A decoder that panics on what it was handed has still been handed

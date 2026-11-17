@@ -1336,6 +1336,21 @@ one:
 | GitHub | the account's `avatar_url`, which the sign-in already read | nothing. github.com's is a URL anybody can fetch and is kept as `profile.picture`; GitHub Enterprise Server's is on its own host, so it is fetched with the token and the URL is not kept |
 | anything else | the token's `picture`, else userinfo's | `profile`. A picture on the provider's own API host is fetched with the token, as Entra's is, and from inside the network only where `private_hosts` names that host (§ *Where a provider is asked*); one anywhere else only over https from an address on the internet, whatever was named -- so a directory inside the network that keeps pictures on another inside host gives none |
 
+**What a picture may be, and what one costs.** An image handed to roster -- by a
+front door here, or by a person setting their own (`HolderService.Portray`, which
+needs no role) -- is JPEG, PNG, GIF or WebP, at most 2 MiB and at most 2048 pixels
+a side. Its size is read from its header, and one larger is refused before any of
+it is decoded: a front door then keeps the URL alone, where the directory gave one
+a browser can fetch, and a page that takes a camera's photograph makes it smaller
+before it sends it. Rendering is the serving process's memory for as long as it
+takes -- the image decoded whole -- and what a file weighs says little of that:
+the largest image there is costs up to 74 MiB for a second or two, as twenty-five
+kibibytes of progressive JPEG. So a process renders **two at once**, and a call
+beyond those waits its turn for as long as the call lasts; one that ends waiting
+is answered as a call that ran out of time is, and the next sign-in, or the next
+try, sends the image again. About 150 MiB is the most pictures take of a process,
+whoever sends what.
+
 **Entra: the consent before the scope.** A scope added to a connection is asked
 for at the next sign-in, and Entra asks each person for a permission the
 directory has not consented to as a whole. Where its user consent is off, that

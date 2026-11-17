@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"unicode/utf8"
 
@@ -114,9 +115,9 @@ func (s coreHolder) Fill(ctx context.Context, req *app.HolderFillRequest) (*app.
 			return nil, status.Errorf(codes.InvalidArgument, "picture: %s", err)
 		}
 		if len(req.GetImage()) > 0 {
-			kept, err := portrait.Render(req.GetImage())
+			kept, err := portrait.Render(ctx, req.GetImage())
 			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "image: %s", err)
+				return nil, unrendered(err)
 			}
 			patch.Portrait = kept
 			pictureless = false
@@ -162,9 +163,9 @@ func (s coreHolder) Portray(ctx context.Context, req *app.HolderPortrayRequest) 
 	if len(req.GetImage()) == 0 {
 		patch.Portrait = none()
 	} else {
-		kept, err := portrait.Render(req.GetImage())
+		kept, err := portrait.Render(ctx, req.GetImage())
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "image: %s", err)
+			return nil, unrendered(err)
 		}
 		patch.Portrait = kept
 	}
@@ -175,6 +176,22 @@ func (s coreHolder) Portray(ctx context.Context, req *app.HolderPortrayRequest) 
 	}
 
 	return s.HolderServiceServer.Patch(ctx, patch.Build())
+}
+
+// unrendered is the answer for an image no portrait was made of.
+//
+// Two answers, because there are two reasons. An image roster will not keep --
+// not a picture, or larger than one may be -- is the request's fault, and a
+// front door reads that code to keep the URL alone (`arrives/fill.go`). A call
+// that ended while it waited its turn to be rendered ([portrait.AtOnce]) said
+// nothing wrong: it is answered as any call that ran out of time is, and the
+// same image is taken the next time it is sent.
+func unrendered(err error) error {
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return status.Errorf(status.FromContextError(err).Code(), "image: %s", err)
+	}
+
+	return status.Errorf(codes.InvalidArgument, "image: %s", err)
 }
 
 // none is a portrait taken away: one with no renditions, written as that rather

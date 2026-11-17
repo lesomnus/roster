@@ -192,6 +192,18 @@ in is the same whoever wrote it.
 | It names its people by `oid` only where the provider may issue one: not at GitHub's, and not at Google's | `server/core/connection.go` | `TestAConnectionNamesNoClaimItsProviderIssuesNone` |
 | A front door asks a provider in plain `http` only at a host its deployment named (`private_hosts`) | `arrives/dial.go` | `TestAProviderIsAskedInTheClearOnlyWhereTheDeploymentNamedIt` |
 
+### A picture is one a process can afford to render
+
+Somebody's picture is theirs to set with no role, and a front door hands one
+over at a sign-in. Either is an image roster decodes whole, so what one may be
+is roster's to say and not a caller's (`server/portrait/portrait.go`).
+
+| | written in | held to it by |
+| --- | --- | --- |
+| An image is at most 2 MiB and 2048 pixels a side, read from its header and refused before any of it is decoded, whoever sends it | `server/portrait/portrait.go` | `TestAPictureIsNoLargerThanTheWireSays` · `TestATooLargeImageIsRefusedBeforeItIsDecoded` |
+| The largest image there is costs a process under 96 MiB to render | `server/portrait/portrait.go` | `TestTheLargestPictureIsRenderedWithinABound` |
+| A process renders two images at once. A call beyond those waits its turn for as long as it lasts, and one that ends waiting is answered as out of time, not as an image refused | `server/portrait/portrait.go`, `server/core/portrait.go` | `TestAFewPicturesAreRenderedAtOnceAndTheRestWait` · `TestACallThatEndedWaitingToBeRenderedIsNotAnImageRefused` |
+
 ### One tenant is not reached from another
 
 | | written in | held to it by |
