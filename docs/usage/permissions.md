@@ -93,6 +93,12 @@ so it is worth reading once:
 | **GroupMembership** with a role | a manager's, for one group: its maker's, or somebody appointed | widens, to that group's membership writes and its name |
 | **Binding.site** | the same role, but only within one site | narrows |
 
+**A binding is made once.** One role to one person or one group in one place is
+one row, and adding it again answers `AlreadyExists`, where "in one place" is a
+site or the whole tenant. Two rows of one grant were a grant somebody took away
+and still held: erased from the list, and still answered. One that was erased
+may be made again.
+
 > **A grant is any write that changes what the gate will answer for somebody.**
 
 Which is wider than the writes that name a role. `GroupMembership.Add` names
@@ -321,6 +327,10 @@ echo '{"team":  {"slug": {"alias":"eu-ops","site":{"slug":{"alias":"eu","tenant"
 ```sh
 roster --as admin team list -o name  # and use the identifier
 ```
+
+A team of no site is the tenant's, and its name is unique among the tenant's
+teams of no site: a second `board` there answers `AlreadyExists`, as a second
+`eu-ops` in `eu` does.
 
 The role a team membership names is granted at the team's site — a team with no
 site answers the tenant. Which is why attaching a role to somebody *is* granting

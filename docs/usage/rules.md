@@ -77,6 +77,7 @@ group does not write one, whatever it names (`server/core/tenantwide.go`).
 | `Connection`, `Host`, `HostProof`, `MailDomain`, `Nomination`, `Site`: every write of each | `TestWhatIsTheTenantsAsAWholeIsWrittenAcrossIt` |
 | a person made, and a person erased who is not the caller; who is of which site | `TestAGrantMadeInASiteReachesThePeopleOfThatSite` |
 | a team or a group of no site, made | `TestAPlaceInATeamIsReadWhereTheTeamIs` |
+| and a team of no site is named once in its tenant, as a team of a site is in its site, under two callers at once too | `TestATeamOfNoSiteIsNamedOnceInItsTenant` |
 | which relying party's tokens carry a group (`GroupExposure`) | `TestWhoAGroupIsShownToIsTheTenantsToSay` |
 | the trail, read | `TestTheTrailIsTheTenantsAsAWhole` |
 
@@ -127,6 +128,7 @@ grants has to cover the method **on its own** (`server/core/escalate.go`,
 | A group's manager holds what the group is bound to by being in it, and so may erase it | `TestWhoeverManagesAGroupMayEraseIt` |
 | What a row gave is read from the row: a role of the whole tenant, which somebody who erases in one site does not see, is still what its binding gave there, and what a place on a team or a manager's place in a group carried | `TestWhatARowGaveIsReadFromTheRowAndNotAsItsTakerSeesIt` |
 | A row that gives nothing any more -- its role erased, or the team or the group it is of -- is taken away by whoever may erase where it is, and a site is emptied of one like any other | `TestWhatGrantsNothingAnyMoreIsTakenAway` · `TestAnOperatorTakesAwayWhatGrantsNothingToo` |
+| A grant is made once: one role to one person or one group in one place is one row, under two callers at once too and at the operators' port, so that one taken away is taken away | `TestAGrantIsMadeOnce` · `TestAnOperatorMakesAGrantOnceToo` |
 
 ### Nobody writes a way into an account wider than their own, or takes one away
 

@@ -73,12 +73,12 @@ func TestTheCliMintsACustomersKey(t *testing.T) {
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
 
-	// The customer, the way a terminal makes one: four local writes.
+	// The customer, the way a terminal makes one: one local write.
 	tn, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "newco"}.Build())
 	x.NoError(err)
 
 	// The tenant arrived with them: `Tenant.Add` writes the holder that
-	// administers it (`server/core/tenant.go`).
+	// administers it, the role and the binding (`server/core/tenant.go`).
 	h, err := s.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
 		Ref: app.HolderRef_builder{
 			Slug: app.HolderRefBySlug_builder{
@@ -99,11 +99,14 @@ func TestTheCliMintsACustomersKey(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
+	// This bound the role to them again, from before a tenant arrived with
+	// the binding. A grant is made once (`TestAGrantIsMadeOnce`), so it is
+	// what says the binding is there.
 	_, err = s.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
 		Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
 		Holder: app.HolderRef_builder{Id: h.GetId()}.Build(),
 	}.Build())
-	x.NoError(err)
+	x.Equal(codes.AlreadyExists, status.Code(err), "%v", err)
 
 	token := stdoutOf(t, cli.NewCmdKey(&c), "add",
 		"--tenant", "newco", "--holder", "admin", "--allow", "/roster.*/*")
