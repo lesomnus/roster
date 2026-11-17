@@ -54,6 +54,9 @@ message Team {
   Site site = 3 [(orm.edge) = {immutable: true, nullable: true}];
 
   // Unique within the site, so `operators` may exist in every one of them.
+  // A team of no site is the tenant's, and its name is unique among the
+  // tenant's teams of none: the index below binds nothing where the site is
+  // null, so `server/core` holds it.
   string alias = 4;
 
   string name = 5;

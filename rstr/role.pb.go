@@ -364,6 +364,15 @@ func (b0 Role_builder) Build() *Role {
 // roster's own rule and lives in a layer; docs/position.md, § 'Authorization:
 // what roster does', says why. What carries a role for a team is the
 // `TeamMembership` that already said somebody is in it.
+//
+// # Made once
+//
+// One role to one holder or one group in one place is one row, and adding it
+// again answers `AlreadyExists`: a grant that was two rows is one somebody
+// takes away and still holds. No index says so -- a subject and a site that
+// are not named are values here, and SQL reads two nulls as different -- so
+// it is refused in `server/core` with the rest. One that was erased may be
+// made again.
 type Binding struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`

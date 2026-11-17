@@ -259,6 +259,15 @@ type Rules struct {
 	// that cannot say, and a site is then erased as it always was. See [Sited].
 	Sited Sited
 
+	// Bound is whether a role is already bound to somebody in a place, which
+	// binding it there asks: a grant is made once. Nil is a stack that cannot
+	// say, and a binding is then made as it always was. See [Bound].
+	Bound Bound
+
+	// Unsited is whether a tenant already has a team of a name in no site,
+	// which making one asks. Nil is a stack that cannot say. See [Unsited].
+	Unsited Unsited
+
 	// Named is a tenant's role by its alias, which making a group asks to find
 	// the role its maker manages it by. Nil is a stack that cannot say, and a
 	// group is then made with nobody managing it, as every group was before a
@@ -381,11 +390,11 @@ type Option func(*Core)
 // It exists because two callers have to contend for something and the schema's
 // own version is not reachable as a write: see [Core.only].
 //
-// The row is a person's, a tenant's or a site's, told apart by the
-// identifier. A site's is one that is still there: that the caller who took
-// the lock first erased it is what the second has to be told. And the write
-// changes nothing of the row. What is contended for is the write, and not
-// what it writes.
+// The row is a person's, a tenant's, a site's or a role's, told apart by the
+// identifier. A site's and a role's is one that is still there: that the
+// caller who took the lock first erased it is what the second has to be
+// told. And the write changes nothing of the row. What is contended for is
+// the write, and not what it writes.
 type Lock func(ctx context.Context, drv dialect.Driver, who pdid.Id) error
 
 // On is the driver this stack was built on and the write one rule takes to

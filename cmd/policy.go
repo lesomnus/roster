@@ -753,8 +753,11 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 // # Whose row
 //
 // The person's, for a count of what is theirs; the tenant's, for whether
-// anybody still administers it; and the site's, for whether anything is in it
-// when it is erased. Which of them `who` is, is in the identifier.
+// anybody still administers it, and whether it has a team of a name in no
+// site; the site's, for whether anything is in it when it is erased, and
+// whether a role is bound there already; and the role's, for whether it is
+// bound across the tenant already. Which of them `who` is, is in the
+// identifier.
 func Locking(db *ent.Client) core.Lock {
 	return func(ctx context.Context, drv dialect.Driver, who pdid.Id) error {
 		// On the driver it is handed, which is the transaction `server/core`
@@ -790,9 +793,29 @@ func Locking(db *ent.Client) core.Lock {
 			return nil
 		}
 
+		// A rule about a role's bindings across the tenant -- whether this
+		// one was made already -- contends on the role's row, which two
+		// callers making the same binding both name. On a role that is still
+		// there, as a site's is.
+		if who.Domain() == pd.RoleDomain {
+			n, err := c.Role.Update().
+				Where(entrole.IdEQ(who.Uuid()), entrole.DateErasedIsNil()).
+				Modify(asItIs(entrole.FieldDateUpdated)).
+				Save(ctx)
+			if err != nil {
+				return err
+			}
+			if n == 0 {
+				return status.Error(codes.NotFound, "Role not found")
+			}
+
+			return nil
+		}
+
 		// A rule about a whole tenant -- whether anybody is left administering
-		// it -- contends on the tenant's row, which every narrowing that could
-		// leave it without anybody has to write.
+		// it, whether it has a team of a name already -- contends on the
+		// tenant's row, which every write that could change the answer has to
+		// make.
 		if who.Domain() == pd.TenantDomain {
 			n, err := c.Tenant.Update().
 				Where(enttenant.IdEQ(who.Uuid())).
@@ -909,6 +932,61 @@ func Rules(db *ent.Client, sources ...rbac.Source) core.Rules {
 		Releasing:    Releasing(db, audit.Contents{}),
 		Named:        Named(db),
 		Sited:        Sited(db),
+		Bound:        Bound(db),
+		Unsited:      Unsited(db),
+	}
+}
+
+// Bound is whether a role is already bound to somebody, or to a group, in a
+// place, for [core.Bound]: a live binding of that role to that holder or
+// group, in that site or -- where `site` is the nil identifier -- in none.
+//
+// Written out where an index would say it, because an index cannot: a null
+// site is a value here, and no two nulls are equal to SQL.
+func Bound(db *ent.Client) core.Bound {
+	return func(ctx context.Context, drv dialect.Driver, role, to, site pdid.Id) (bool, error) {
+		// On the driver it is handed, as [Administered] is: the transaction
+		// the binding is written in.
+		c := db
+		if drv != nil {
+			c = ent.NewClient(ent.Driver(drv))
+		}
+
+		ps := []predicate.Binding{binding.DateErasedIsNil(), binding.RoleIdEQ(role.Uuid())}
+		if to.Domain() == pd.GroupDomain {
+			ps = append(ps, binding.GroupIdEQ(to.Uuid()))
+		} else {
+			ps = append(ps, binding.HolderIdEQ(to.Uuid()))
+		}
+		if site == pdid.Nil {
+			ps = append(ps, binding.SiteIdIsNil())
+		} else {
+			ps = append(ps, binding.SiteIdEQ(site.Uuid()))
+		}
+
+		return c.Binding.Query().Where(ps...).Exist(ctx)
+	}
+}
+
+// Unsited is whether a tenant already has a team of a name in no site, for
+// [core.Unsited]: what the index over a team's name and its site would hold
+// if a null site were a value.
+func Unsited(db *ent.Client) core.Unsited {
+	return func(ctx context.Context, drv dialect.Driver, tenant pdid.Id, alias string) (bool, error) {
+		// On the driver it is handed, as [Administered] is.
+		c := db
+		if drv != nil {
+			c = ent.NewClient(ent.Driver(drv))
+		}
+
+		return c.Team.Query().
+			Where(
+				entteam.DateErasedIsNil(),
+				entteam.TenantIdEQ(tenant.Uuid()),
+				entteam.SiteIdIsNil(),
+				entteam.AliasEQ(alias),
+			).
+			Exist(ctx)
 	}
 }
 

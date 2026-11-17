@@ -76,6 +76,9 @@ export type Team = Message<"roster.Team"> & {
 
   /**
    * Unique within the site, so `operators` may exist in every one of them.
+   * A team of no site is the tenant's, and its name is unique among the
+   * tenant's teams of none: the index below binds nothing where the site is
+   * null, so `server/core` holds it.
    *
    * @generated from field: string alias = 4;
    */

@@ -184,6 +184,15 @@ export const RoleSchema: GenMessage<Role> = /*@__PURE__*/
  * what roster does', says why. What carries a role for a team is the
  * `TeamMembership` that already said somebody is in it.
  *
+ * # Made once
+ *
+ * One role to one holder or one group in one place is one row, and adding it
+ * again answers `AlreadyExists`: a grant that was two rows is one somebody
+ * takes away and still holds. No index says so -- a subject and a site that
+ * are not named are values here, and SQL reads two nulls as different -- so
+ * it is refused in `server/core` with the rest. One that was erased may be
+ * made again.
+ *
  * @generated from message roster.Binding
  */
 export type Binding = Message<"roster.Binding"> & {

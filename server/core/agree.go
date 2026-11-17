@@ -4,11 +4,13 @@ import (
 	"context"
 	"slices"
 
+	"github.com/protobuf-orm/ent/dialect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/payday/slug"
 	"github.com/lesomnus/z"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -269,9 +271,32 @@ func (s coreTeam) Add(ctx context.Context, req *app.TeamAddRequest) (*app.Team, 
 		return nil, err
 	}
 
-	// In a site that is still one when the team is written, and not one
-	// being erased at the same moment ([Core.inSite]).
 	var out *app.Team
+	if req.GetSite() == nil && of != pdid.Nil {
+		// A team of no site, named once in its tenant ([Unsited]): looked
+		// for and written in one transaction, after a write on the tenant's
+		// row that two callers making the same team both make first
+		// ([Core.only]).
+		err = s.only(ctx, of.Bytes(), func(next app.Server, tx dialect.Driver) error {
+			if err := s.unsited(ctx, tx, of, req.GetAlias()); err != nil {
+				return err
+			}
+
+			var err error
+			out, err = next.Team().Add(ctx, req)
+
+			return err
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return out, nil
+	}
+
+	// In a site that is still one when the team is written, and not one
+	// being erased at the same moment ([Core.inSite]). Its name is unique
+	// there by the table's own index.
 	err = s.inSite(ctx, req.GetSite(), func(next app.Server) error {
 		var err error
 		out, err = next.Team().Add(ctx, req)
@@ -283,6 +308,49 @@ func (s coreTeam) Add(ctx context.Context, req *app.TeamAddRequest) (*app.Team, 
 	}
 
 	return out, nil
+}
+
+// Unsited is whether a tenant already has a team of this name in no site.
+//
+// # Why the table cannot say it
+//
+// A team's name is unique within its site (`team.proto`), and the index that
+// holds it is over the name and the site. SQL reads two nulls as different, so
+// it binds nothing where the site is null: two teams `board` of no site were
+// both made in one tenant, and a team of no site is named by nothing but its
+// identifier as it is (#279). A team of no site is the tenant's, so its name
+// is held within the tenant, among the teams of no site -- here, where the
+// write is made.
+//
+// On the driver it is handed, as [Administered] is: asked inside the
+// transaction the team is written in. Nil is a stack that cannot say, and a
+// team is then made as it always was.
+type Unsited func(ctx context.Context, drv dialect.Driver, tenant pdid.Id, alias string) (bool, error)
+
+// unsited refuses a team of no site whose name a team of no site already has
+// in this tenant, in the words a name taken in a site is refused in.
+//
+// The name is compared as it is kept: folded, as the write folds it. One that
+// was not given is made up by the server, and one that cannot be a name is
+// the write's to refuse.
+func (s Core) unsited(ctx context.Context, tx dialect.Driver, tenant pdid.Id, alias string) error {
+	if s.rules.Unsited == nil || alias == "" {
+		return nil
+	}
+	name, err := slug.ParseAlias(alias)
+	if err != nil {
+		return nil
+	}
+
+	taken, err := s.rules.Unsited(ctx, tx, tenant, name)
+	if err != nil {
+		return err
+	}
+	if taken {
+		return status.Error(codes.AlreadyExists, "Team already exists")
+	}
+
+	return nil
 }
 
 // Erase takes from each of a team's people the role they hold in it, and is
@@ -785,11 +853,49 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 		return nil, err
 	}
 
-	// In a site that is still one when the binding is written, and not one
+	// And once ([Bound]). Which role and to whom, as identifiers: the request
+	// may have named either by a name.
+	which, err := s.roleOf(ctx, req.GetRole())
+	if err != nil {
+		return nil, err
+	}
+	var to pdid.Id
+	if holder != nil {
+		to, err = s.holderOf(ctx, holder)
+	} else {
+		to, err = s.groupOf(ctx, group)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if which == pdid.Nil {
+		// A binding of no role, which the write refuses.
+		return s.BindingServiceServer.Add(ctx, req)
+	}
+
+	// Looked for and written in one transaction, after a write two callers
+	// making the same binding both make first ([Core.only]). In a site it is
+	// the site's row, which is also what keeps the binding out of a site
 	// being erased at the same moment ([Core.inSite]): a binding that
-	// outlived its site is the row the site's erase is refused for.
+	// outlived its site is the row the site's erase is refused for. Across
+	// the tenant it is the role's.
+	on := at
+	if on == pdid.Nil {
+		on = which
+	}
+
 	var out *app.Binding
-	err = s.inSite(ctx, req.GetSite(), func(next app.Server) error {
+	err = s.only(ctx, on.Bytes(), func(next app.Server, tx dialect.Driver) error {
+		if s.rules.Bound != nil {
+			made, err := s.rules.Bound(ctx, tx, which, to, at)
+			if err != nil {
+				return err
+			}
+			if made {
+				return status.Error(codes.AlreadyExists, "Binding already exists")
+			}
+		}
+
 		var err error
 		out, err = next.Binding().Add(ctx, req)
 
@@ -800,4 +906,48 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 	}
 
 	return out, nil
+}
+
+// Bound is whether a role is already bound to somebody, or to a group, in a
+// place: `to` is the holder or the group, told apart by its identifier, and
+// `site` is [pdid.Nil] for a binding across the tenant.
+//
+// # A grant is made once
+//
+// A binding declared no uniqueness, and an index could not have held it: it
+// names a holder **or** a group and a site **or** none, and SQL reads two
+// nulls as different. So the same binding added twice was two rows, and after
+// one was erased the person was still answered -- somebody who takes a grant
+// away, and sees it gone, has not taken it away (#279). One role to one
+// holder or group in one place is one row, and the second is refused where
+// the write is made.
+//
+// Among the bindings that are there: one erased is one that may be made
+// again. And asked of the rows, not through a server, for [Sited]'s reason:
+// whether a grant was made is the same whoever is making it again.
+//
+// On the driver it is handed, as [Administered] is: asked inside the
+// transaction the binding is written in. Nil is a stack that cannot say, and
+// a binding is then made as it always was.
+type Bound func(ctx context.Context, drv dialect.Driver, role, to, site pdid.Id) (bool, error)
+
+// roleOf is the identifier a `RoleRef` names, read when it named something
+// else -- [Core.groupOf]'s shape, through `Next()`.
+func (s Core) roleOf(ctx context.Context, ref *app.RoleRef) (pdid.Id, error) {
+	if ref == nil {
+		return pdid.Nil, nil
+	}
+	if b := ref.GetId(); len(b) > 0 {
+		return pdid.From(b)
+	}
+
+	v, err := s.Next().Role().Get(ctx, app.RoleGetRequest_builder{
+		Ref:    ref,
+		Select: app.RoleSelect_builder{}.Build(),
+	}.Build())
+	if err != nil {
+		return pdid.Nil, err
+	}
+
+	return pdid.From(v.GetId())
 }

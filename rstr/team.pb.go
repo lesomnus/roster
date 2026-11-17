@@ -258,6 +258,9 @@ type Team_builder struct {
 	// narrows; `server/core/tenant.go` says why nothing else can state it.
 	Site *Site
 	// Unique within the site, so `operators` may exist in every one of them.
+	// A team of no site is the tenant's, and its name is unique among the
+	// tenant's teams of none: the index below binds nothing where the site is
+	// null, so `server/core` holds it.
 	Alias       string
 	Name        string
 	Desc        string

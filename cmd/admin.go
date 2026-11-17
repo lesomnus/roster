@@ -504,6 +504,10 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 // And `Sited`, which is about a customer's site: asked of the control plane,
 // no site of theirs has anything in it, and an operator erased one with a
 // team in it (#279).
+//
+// And `Bound` and `Unsited`, which are whether a customer's binding or team
+// is there already: asked of the control plane neither ever is, and an
+// operator made each twice.
 func adminRules(s *Server) core.Rules {
 	r := Rules(s.Control.Ent)
 	r.Held = core.Held(Everything(s.Ent, s.policySources...))
@@ -511,6 +515,8 @@ func adminRules(s *Server) core.Rules {
 	r.Releasing = Releasing(s.Ent, s.contents)
 	r.Giving = Giving(s.Ent)
 	r.Sited = Sited(s.Ent)
+	r.Bound = Bound(s.Ent)
+	r.Unsited = Unsited(s.Ent)
 
 	return r
 }
