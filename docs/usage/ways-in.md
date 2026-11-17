@@ -587,6 +587,12 @@ Two things it does not do, each for a reason:
   identity at one provider -- *a second one is a link that found the wrong row*
   (`server/core/identity.go`) -- so a button for it would be a trip to a
   directory that ends in a refusal.
+- **It does not link the directory their tenant provisions through.** An
+  account there is who the tenant's directory means by somebody, so it is the
+  directory's to say and not the person's ([scim.md](../scim.md)): *connect*
+  for that connection ends in a refusal, since the write is made as them.
+  Somebody is linked there by signing in through it where the front door
+  matches them by address, or by an operator.
 - **The operator's console has no such button.** A subject is issued at the
   directory and does not exist until somebody signs in there, so an operator
   cannot write one; what they can do instead is write the `Email` row the first

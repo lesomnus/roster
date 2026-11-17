@@ -368,8 +368,11 @@ over what is their own, the moment a method is in it.
 It names only what is somebody's own to do, and a write that would put
 anything else there is refused. Of what it does name, one is worth knowing:
 `IdentityService/Add` writes an account at a provider onto the caller's own
-row with no proof that the account is theirs. A tenant whose people do not
-link a second directory themselves takes it out:
+row with no proof that the account is theirs. Not at the connection the
+tenant's directory provisions through: an account there is who the directory
+means by somebody, so it is the directory's to say, and one's own write is
+refused ([scim.md](../scim.md)). A tenant whose people do not link a second
+directory themselves takes it out:
 
 ```sh
 roster --as admin role narrow @newco/self-service '{"methods":["/roster.IdentityService/Add"]}'
