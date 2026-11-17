@@ -32,14 +32,17 @@
 // holds this* is **removed**: their addresses, their external identities, their
 // verifiers, their keys, their sessions and attempts, and the rows that say
 // what they may do. Those have no meaning without the person, and a destroyed
-// person holding permissions is a row waiting to be a surprise.
+// person holding permissions is a row waiting to be a surprise. So is a link
+// that names an address of theirs, whoever it is for: what it would prove is
+// gone, and [subjects] says what it was read as once it named nothing.
 //
 // The `Holder` row itself **stays, blank**. Its identifier is referenced --
 // `Audit.actor_id` is it, and thirteen foreign keys point at it -- and what makes
 // it personal data is that it resolves to a name. Emptied of the columns that
-// name somebody, it is a stable pseudonym reaching nothing, which is exactly
-// what a trail wants: *the same someone did these fourteen things*, with no way
-// to say who.
+// name somebody -- every one the schema declares personal, their picture and
+// what their directory called them among them -- it is a stable pseudonym
+// reaching nothing, which is exactly what a trail wants: *the same someone did
+// these fourteen things*, with no way to say who.
 //
 // And the trail keeps its events and loses its contents, in the database and in
 // the archive both. `payday/trail` says why at length.
@@ -72,6 +75,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/link"
 	"github.com/lesomnus/roster/internal/ent/nomination"
 	"github.com/lesomnus/roster/internal/ent/phone"
+	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/lesomnus/roster/internal/ent/relation"
 	"github.com/lesomnus/roster/internal/ent/session"
 	"github.com/lesomnus/roster/internal/ent/sitemembership"
@@ -207,6 +211,13 @@ func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 	// other write here: the servers refuse most of this, and the ones that do
 	// not would record it -- and a record of *what was destroyed* is the thing
 	// being destroyed.
+	//
+	// Every column the schema declares personal, in the one update: the six a
+	// holder had when this was written, and their picture and what their
+	// directory called them, which came later and stayed on the row until
+	// somebody read one (#279). `TestSomebodyForgottenIsABlankRow` holds the
+	// list to the schema, so the next column declared personal is cleared here
+	// or fails there.
 	u := tx.Holder.UpdateOneId(who.Uuid()).
 		SetAlias("").
 		SetName("").
@@ -214,6 +225,10 @@ func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 		SetLabels(map[string]string{}).
 		ClearProfile().
 		ClearData().
+		ClearPortrait().
+		ClearDirectorySubject().
+		ClearDirectoryAddress().
+		ClearDirectoryName().
 		SetDateUpdated(time.Now())
 	if v.DateErased == nil {
 		// Asked for by somebody who had not left first. Leaving is implied by
@@ -387,6 +402,29 @@ type subject struct {
 
 func subjects() []subject {
 	return []subject{
+		// The links, before the addresses, and by both of a link's edges: the
+		// ones that act for this person, and the ones that name an address of
+		// theirs whoever they are for.
+		//
+		// A link that proves an address is told from one that signs somebody
+		// in by the address it names (`vouch.Server.link`,
+		// `email_svc.ext.proto`), and `link_email_email` is `ON DELETE SET
+		// NULL`. So a claim of one of their addresses -- somebody else's link,
+		// in a mailbox for a quarter of an hour -- named nothing once the
+		// address below was removed, and read as a way in for whoever claimed
+		// it: `VouchService/Redeem` answered a delegation for a token it had
+		// refused a moment before (#279). What a link proves is gone with the
+		// address, so the link goes with it, and first, while the edge still
+		// says which links those are.
+		{
+			name: "link",
+			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+				return db.Link.Query().Where(linked(k)).Ids(ctx)
+			},
+			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+				return db.Link.Delete().Where(linked(k)).Exec(ctx)
+			},
+		},
 		// The ways in. Each of these exists to say *this person reaches here* or
 		// *signs in there*, and each is worthless without them.
 		{
@@ -483,15 +521,6 @@ func subjects() []subject {
 				return db.Continuation.Delete().Where(continuation.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
-		{
-			name: "link",
-			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
-				return db.Link.Query().Where(link.HasHolderWith(holder.IdEQ(k))).Ids(ctx)
-			},
-			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
-				return db.Link.Delete().Where(link.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
-			},
-		},
 		// And what they may do. A destroyed person holding permissions is a row
 		// waiting to be a surprise.
 		//
@@ -556,6 +585,16 @@ func subjects() []subject {
 			},
 		},
 	}
+}
+
+// linked is the links that go with a person: the ones that are theirs, and
+// the ones that name an address of theirs, which are somebody else's when the
+// address was claimed. See [subjects].
+func linked(k uuid.UUID) predicate.Link {
+	return link.Or(
+		link.HasHolderWith(holder.IdEQ(k)),
+		link.HasEmailWith(email.HasHolderWith(holder.IdEQ(k))),
+	)
 }
 
 // Swept is how often the grace is checked when nothing says otherwise.

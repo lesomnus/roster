@@ -2125,10 +2125,20 @@ answer: a forgotten holder has no alias, so there is no name left to bring back.
 
 What goes: everything that says *this person reaches here, signs in there, holds
 this* -- addresses, identities, verifiers, API keys, sessions, attempts, links, and
-the rows that say what they may do, and any app's nomination to act as them. The `Holder` row **stays, blank**: its
+the rows that say what they may do, and any app's nomination to act as them. A link
+that names an address of theirs goes with the address, whoever it was mailed for:
+somebody else's claim of it has nothing left to prove, and is not left to be read as
+a link that signs its claimant in. The `Holder` row **stays, blank**: its
 identifier is `Audit.actor_id` and thirteen foreign keys point at it, and what makes
 it personal data is that it *resolves*. Emptied, it is a stable pseudonym reaching
 nothing.
+
+**Blank is every column the schema declares personal**: the alias, the name, the
+description, the labels, the profile, `data`, their picture, and what their
+directory called them (`directory_subject`, `directory_address`,
+`directory_name`). What the row still says is its identifier, its tenant, when it
+was made, erased, suspended and signed out everywhere, and which directory
+suspended them if one did (`directory`, a connection's name).
 
 The trail keeps its **events** and loses its **contents**, in the database and in
 the archive both -- the actor, the action, the object and the time stay; `value`
@@ -2139,6 +2149,12 @@ payday#92. Both halves matter and they pull against each other: a version that
 destroyed the rows would let somebody erase the evidence of what was done *to*
 them by asking to be forgotten. The archive is reached only if `audit.archive` is
 set; archives you keep elsewhere are yours to reach.
+
+**The access record is not reached.** A row of it names whose data a call carried
+by identifier, which stays as the trail's actor does. Its `value` holds what a read
+asked for, as it was sent, so a `Get` that named them by alias, a search for their
+name or a lookup by their address keeps that word until the row's own window runs
+out (`audit.by.access`, § *Who read whose data*).
 
 **One transaction, and the archive's half owed in it.** The person's rows, the
 holder blanked and the trail's rows about them in the database are one transaction,
