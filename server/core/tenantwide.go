@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/protobuf-orm/ent/dialect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -169,37 +170,98 @@ func (s coreSite) Add(ctx context.Context, req *app.SiteAddRequest) (*app.Site, 
 // and the refusal says what is left.
 //
 // It is about the site and not about who asks, so a call with no frame is
-// held to it too. Who is recorded as being in a site ([SiteMembership]) is
-// not what is asked: it grants nothing, and is a record of somewhere that
-// was.
+// held to it too, and so is the operators' port. Who is recorded as being in
+// a site ([SiteMembership]) is not what is asked: it grants nothing, and is a
+// record of somewhere that was.
+//
+// # Counted where two writes cannot both count
+//
+// It is a count of other rows, [Core.only]'s case. Counted and then erased
+// with nothing between, a site was erased at the moment something was put in
+// it: both went through, and what the rule refuses was reached by two callers
+// asking at once -- a team in a site that reads `NotFound`, somebody bound in
+// one nobody can see and still answered there (#279). So the count and the
+// erase are one transaction, after a write on the **site's** row ([Lock]),
+// and whatever is put in a site makes the same write first ([Core.inSite]).
+// Whichever comes second finds what the first left: a site with something in
+// it, or no such site.
 func (s coreSite) Erase(ctx context.Context, req *app.SiteRef) (*app.SiteEraseResponse, error) {
 	if err := s.acrossTheTenant(ctx, app.SiteService_Erase_FullMethodName); err != nil {
 		return nil, err
 	}
-	if s.rules.Sited != nil {
-		k, err := s.siteOf(ctx, req)
-		if err != nil {
-			return nil, err
-		}
-		in, err := s.rules.Sited(ctx, k)
-		if err != nil {
-			return nil, err
-		}
-		if left := in.String(); left != "" {
-			return nil, status.Errorf(codes.FailedPrecondition,
-				"ref: this site still has %s in it, each of which means what it means there; take them out first", left)
-		}
+	if s.rules.Sited == nil {
+		return s.SiteServiceServer.Erase(ctx, req)
 	}
 
-	return s.SiteServiceServer.Erase(ctx, req)
+	k, err := s.siteOf(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var out *app.SiteEraseResponse
+	err = s.only(ctx, k.Bytes(), func(next app.Server, tx dialect.Driver) error {
+		in, err := s.rules.Sited(ctx, tx, k)
+		if err != nil {
+			return err
+		}
+		if left := in.String(); left != "" {
+			return status.Errorf(codes.FailedPrecondition,
+				"ref: this site still has %s in it, each of which means what it means there; take them out first", left)
+		}
+
+		out, err = next.Site().Erase(ctx, req)
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+// inSite makes a write of a row that names a site -- a team, a role, a group,
+// a binding -- where it cannot land in a site being erased at the same
+// moment.
+//
+// Each of them read the site and then wrote, and [coreSite.Erase] counted and
+// then erased: two looks, neither of which sees the other's write. What makes
+// them one caller asking twice is a row they both write ([Core.only]), and it
+// is the site's. So the write is made in a transaction that begins with that
+// one, on a site that is still there -- the erase that came first has
+// committed by the time this is let through, and it is answered `NotFound`,
+// as it is for a site erased a minute ago.
+//
+// `write` is handed the server to write through: inside the transaction, the
+// one under this layer bound to it. A row of no site is written as it always
+// was. A group its maker manages is more than one row, and makes the same
+// write in the transaction it has of its own ([coreGroup.made]).
+//
+// It costs the site's row nothing: the write is of a column to what it
+// already is ([Lock]).
+func (s Core) inSite(ctx context.Context, ref *app.SiteRef, write func(next app.Server) error) error {
+	if ref == nil {
+		return write(s.Next())
+	}
+
+	k, err := s.siteOf(ctx, ref)
+	if err != nil {
+		return err
+	}
+
+	return s.only(ctx, k.Bytes(), func(next app.Server, _ dialect.Driver) error {
+		return write(next)
+	})
 }
 
 // Sited is what is still a site's: the live rows that name it, by kind.
 //
 // Asked of the rows and not through a server, for [Administered]'s reason: it
 // answers the same whoever is asking, and somebody erasing a site need not be
-// somebody who may list its bindings.
-type Sited func(ctx context.Context, site pdid.Id) (InSite, error)
+// somebody who may list its bindings. And on the driver it is handed, as
+// [Administered] is: counted inside the transaction the erase is made in, it
+// counts what a write that took the site's lock first has left.
+type Sited func(ctx context.Context, drv dialect.Driver, site pdid.Id) (InSite, error)
 
 // InSite is how many of each kind a site still has.
 type InSite struct {

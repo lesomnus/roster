@@ -380,6 +380,12 @@ type Option func(*Core)
 //
 // It exists because two callers have to contend for something and the schema's
 // own version is not reachable as a write: see [Core.only].
+//
+// The row is a person's, a tenant's or a site's, told apart by the
+// identifier. A site's is one that is still there: that the caller who took
+// the lock first erased it is what the second has to be told. And the write
+// changes nothing of the row. What is contended for is the write, and not
+// what it writes.
 type Lock func(ctx context.Context, drv dialect.Driver, who pdid.Id) error
 
 // On is the driver this stack was built on and the write one rule takes to

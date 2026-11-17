@@ -253,6 +253,7 @@ is roster's to say and not a caller's (`server/portrait/portrait.go`).
 | --- | --- | --- |
 | An erased role, an erased team | `cmd/policy.go` | `TestAnErasedRoleGrantsNothing` · `TestATeamErasedHandsOutNothing` |
 | A site is erased when nothing is in it | `server/core/tenantwide.go` | `TestASiteIsErasedWhenNothingIsInIt` |
+| And when two act at once: of an erase and a team, a role, a group or a binding put in the site in the same moment, one is refused; and what is in a customer's site is counted at the operators' port too | `server/core/tenantwide.go` | `TestASiteIsErasedWithNothingInItByTwoCallersAtOnce` · `TestAnOperatorErasesASiteWhenNothingIsInItToo` |
 | Somebody suspended, somebody erased, a tenant closed: no credential of theirs works, and a stream they left open ends | `cmd/auth.go` | `TestASuspendedHolderReachesNothing` · `TestAnErasedHolderIsStoppedAtTheWire` · `TestAClosedTenantLetsNobodyIn` · `TestAStreamLeftOpenIsAskedAgainWhoOpenedIt` |
 | Somebody suspended has been since they were first suspended: suspending them again moves nothing but whose suspension it is | `server/core/holder.go` | `TestASecondSuspensionKeepsTheFirstMoment` |
 | Nothing is written into a tenant that is destroyed, by anybody: no row of a kind that names its tenant is added under it, and what it says about itself is not written back. Its alias given back and an operator's hold are still written on its row. A closed tenant is still the deployment's to write in | `server/core/tenant.go` | `TestNothingIsWrittenIntoATenantThatIsGone` |
@@ -332,6 +333,7 @@ writes anybody would use.
 | **Whoever makes a group manages it**: somebody of the tenant who makes a group is put in it, holding the tenant's `group-manager` role there. A group the deployment makes has no manager | `server/core/group.go` | `TestWhoeverMakesAGroupManagesIt` |
 | The tenant's `group-manager` role is made the first time a group needs it, and one that is there already is used as it stands -- or refused, where it names what a manager may not hold | `server/core/group.go` | `TestATenantsOwnManagersRoleIsTheOneAMakerHolds` |
 | A directory's `Provision` makes the person, their identity and their address in one write, or none of them | `server/core/directory.go` | `TestADirectoryMakesPeopleAndOnlyNewOnes` |
+| A rule that counts other rows under two callers at once takes a write on a row both of them name -- the person's, the tenant's, the site's -- and that write changes nothing of the row: it is as the trail keeps it, and `roster trail rows` finds nothing in it | `cmd/policy.go` | `TestALockLeavesItsRowAsTheTrailKeepsIt` |
 
 ## What a tenant or a deployment switches
 

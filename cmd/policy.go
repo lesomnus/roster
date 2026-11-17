@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/protobuf-orm/ent/dialect"
+	entsql "github.com/protobuf-orm/ent/dialect/sql"
 	"slices"
 
 	"google.golang.org/grpc/codes"
@@ -737,14 +738,23 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 //
 // # What it writes
 //
-// The version column, to now. It is a concurrency token rather than a fact
-// about the person, so moving it says nothing untrue, and going around the
-// recorder means the trail carries the erase that explains it and no entry for
-// the lock itself.
+// The version column, to what it already is. What two callers contend for is
+// the write and not what it writes: a database holds the row for whoever
+// wrote it first until they are done, whatever they wrote.
 //
-// What it costs is that a console holding a version of that row from before the
-// unlink is told to read again on its next write, which is what a version is
-// for.
+// It moved the column to now, on the reasoning that a version is a token and
+// not a fact about the person. But a deployment that keeps digests checks its
+// rows against its trail (`roster trail rows`), and a row written past the
+// recorder is what that check is for: after an identity was erased it found
+// the person, `differs holder`, for a row nobody had touched (#279). So the
+// row is left as the trail keeps it, and a console holding its version is not
+// told to read again about a change that was none.
+//
+// # Whose row
+//
+// The person's, for a count of what is theirs; the tenant's, for whether
+// anybody still administers it; and the site's, for whether anything is in it
+// when it is erased. Which of them `who` is, is in the identifier.
 func Locking(db *ent.Client) core.Lock {
 	return func(ctx context.Context, drv dialect.Driver, who pdid.Id) error {
 		// On the driver it is handed, which is the transaction `server/core`
@@ -760,13 +770,33 @@ func Locking(db *ent.Client) core.Lock {
 			c = ent.NewClient(ent.Driver(drv))
 		}
 
+		// A rule about a site -- whether anything is in it when it is erased
+		// -- contends on the site's row, which the erase and whatever is put
+		// in a site both write first. On a site that is still there: one
+		// erased by whoever took the lock before is no site to put anything
+		// in, and is answered as it is a moment later.
+		if who.Domain() == pd.SiteDomain {
+			n, err := c.Site.Update().
+				Where(entsite.IdEQ(who.Uuid()), entsite.DateErasedIsNil()).
+				Modify(asItIs(entsite.FieldDateUpdated)).
+				Save(ctx)
+			if err != nil {
+				return err
+			}
+			if n == 0 {
+				return status.Error(codes.NotFound, "Site not found")
+			}
+
+			return nil
+		}
+
 		// A rule about a whole tenant -- whether anybody is left administering
 		// it -- contends on the tenant's row, which every narrowing that could
 		// leave it without anybody has to write.
 		if who.Domain() == pd.TenantDomain {
 			n, err := c.Tenant.Update().
 				Where(enttenant.IdEQ(who.Uuid())).
-				SetDateUpdated(time.Now()).
+				Modify(asItIs(enttenant.FieldDateUpdated)).
 				Save(ctx)
 			if err != nil {
 				return err
@@ -780,7 +810,7 @@ func Locking(db *ent.Client) core.Lock {
 
 		n, err := c.Holder.Update().
 			Where(holder.IdEQ(who.Uuid())).
-			SetDateUpdated(time.Now()).
+			Modify(asItIs(holder.FieldDateUpdated)).
 			Save(ctx)
 		if err != nil {
 			return err
@@ -791,6 +821,12 @@ func Locking(db *ent.Client) core.Lock {
 
 		return nil
 	}
+}
+
+// asItIs is a write of a column to the value it has: what [Locking] writes, so
+// that the row is held and nothing of it is changed.
+func asItIs(column string) func(*entsql.UpdateBuilder) {
+	return func(u *entsql.UpdateBuilder) { u.Set(column, entsql.Expr(column)) }
 }
 
 // Administered is [core.Administered] on this deployment's rows: the tenant's
@@ -879,7 +915,15 @@ func Rules(db *ent.Client, sources ...rbac.Source) core.Rules {
 // Sited is what a site still has in it, for [core.Sited]: the live roles,
 // bindings, teams and groups that name it, counted from the rows.
 func Sited(db *ent.Client) core.Sited {
-	return func(ctx context.Context, site pdid.Id) (core.InSite, error) {
+	return func(ctx context.Context, drv dialect.Driver, site pdid.Id) (core.InSite, error) {
+		// On the driver it is handed, as [Administered] is: the transaction
+		// the erase is made in, so that what it counts is what a write that
+		// took the site's lock before it has left.
+		db := db
+		if drv != nil {
+			db = ent.NewClient(ent.Driver(drv))
+		}
+
 		var (
 			in  core.InSite
 			err error

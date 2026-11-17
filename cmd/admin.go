@@ -500,12 +500,17 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 // So is `Giving`: what a customer's binding hands whoever it names is a
 // data-plane row, and what an operator takes away by erasing one is read
 // there, as it was when the erase read it through the role.
+//
+// And `Sited`, which is about a customer's site: asked of the control plane,
+// no site of theirs has anything in it, and an operator erased one with a
+// team in it (#279).
 func adminRules(s *Server) core.Rules {
 	r := Rules(s.Control.Ent)
 	r.Held = core.Held(Everything(s.Ent, s.policySources...))
 	r.Everywhere = Everywhere(s.Ent, s.policySources...)
 	r.Releasing = Releasing(s.Ent, s.contents)
 	r.Giving = Giving(s.Ent)
+	r.Sited = Sited(s.Ent)
 
 	return r
 }
