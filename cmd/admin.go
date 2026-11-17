@@ -357,7 +357,8 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(shut)).
 		WithStream(grpcx.ClosedStream(shut)).
-		WithUnary(Undeclared())
+		WithUnary(Undeclared()).
+		WithUnary(Undated())
 
 	vs, err := c.Admin.GrpcOptions()
 	if err != nil {

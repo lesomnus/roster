@@ -1005,7 +1005,9 @@ hard (gone).
 
 `id` and `date_created` are on everything and are left out above, and so are
 `date_updated` and `date_erased` wherever an entity has them. Neither is
-everywhere. `date_updated` is the version a `Patch` compares against, which
+everywhere. `date_created` is when the row was made, stamped as it is made: an
+`Add` carries the field, and a request at a port that fills it in is refused
+(`cmd/undated.go`), since a list is in that order and a cursor is a place in it. `date_updated` is the version a `Patch` compares against, which
 📖 `Audit`, 👁️ `Access`, 📤 `Outbox`, 🧾 `Owed` and 🔏 `RowSeal` do not carry -- a
 row written once and never revised, or written over whole, has no version to
 disagree about. And 🏢 `Tenant` joins the six of
