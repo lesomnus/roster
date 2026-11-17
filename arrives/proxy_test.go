@@ -165,7 +165,7 @@ func TestAProviderIsAskedThroughTheProxyTheEnvironmentNames(t *testing.T) {
 	trusting := func(p *Providers) *Providers {
 		pool := x509.NewCertPool()
 		pool.AddCert(secure.Certificate())
-		p.own.Transport.(*http.Transport).TLSClientConfig = &tls.Config{RootCAs: pool}
+		p.own.Transport.(*asks).secure.TLSClientConfig = &tls.Config{RootCAs: pool}
 
 		return p
 	}
@@ -182,16 +182,21 @@ func TestAProviderIsAskedThroughTheProxyTheEnvironmentNames(t *testing.T) {
 		x.Equal([]string{"CONNECT " + secureHost}, tunnels.heard())
 		x.EqualValues(1, secure.documents.Load())
 
-		x.NoError(begin(relying("http://"+plainHost, PrivateHosts{})),
+		// One written `http` is the deployment's own, and named: in the clear
+		// a provider is asked nowhere else, through a proxy or not
+		// ([TestAProviderIsAskedInTheClearOnlyWhereTheDeploymentNamedIt]).
+		own, err := ParsePrivateHosts([]string{plainHost})
+		x.NoError(err)
+		x.NoError(begin(relying("http://"+plainHost, own)),
 			"a provider was not reached through the proxy `HTTP_PROXY` names")
 		x.Equal([]string{"GET http://" + plainHost + "/.well-known/openid-configuration"}, fetches.heard())
 		x.EqualValues(1, plain.documents.Load())
 
 		// And where a provider is, is the proxy's to refuse: an address inside
 		// is asked of it like any other, and it says no.
-		err := begin(relying("http://10.255.255.1:8080", PrivateHosts{}))
-		x.ErrorContains(err, "403")
-		x.Contains(fetches.heard(), "GET http://10.255.255.1:8080/.well-known/openid-configuration")
+		err = begin(trusting(relying("https://10.255.255.1:8443", PrivateHosts{})))
+		x.ErrorContains(err, "Forbidden")
+		x.Contains(tunnels.heard(), "CONNECT 10.255.255.1:8443")
 	})
 
 	t.Run("and with none named, an address on this machine is refused as it was", func(t *testing.T) {

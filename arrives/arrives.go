@@ -452,7 +452,7 @@ type Providers struct {
 	// PrivateHosts is the hosts off the internet a provider may be at,
 	// because the deployment said so: a directory on the premises, a test's
 	// on this machine. None is none, and a provider is then asked only at an
-	// address on the internet (`dial.go`).
+	// address on the internet, and only over `https` (`dial.go`).
 	PrivateHosts PrivateHosts
 
 	// SlackAPI is where Slack's Web API is, for a tenant whose profiles are
@@ -486,7 +486,7 @@ func New(c rstr.Client, secret func(ref string) (string, error)) *Providers {
 
 	// Asked of `p` at each connection, so what a deployment names after this
 	// -- as it names its GitHub or its Slack -- is what is read.
-	p.own = ownClient(p.reaches)
+	p.own = ownClient(p.reaches, p.inTheClear)
 
 	return p
 }

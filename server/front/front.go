@@ -175,6 +175,65 @@ func Domain(v string) string {
 	return v
 }
 
+// ClaimOid is the claim a connection names its people by where their subject
+// is a GUID (`Connection.subject_claim`): Entra's `oid`.
+const ClaimOid = "oid"
+
+// Subject is a subject as this app stores and compares one, at a connection
+// that names its people by `claim`: a GUID in small letters where the claim is
+// `oid`, and what the provider said, untouched, anywhere else.
+//
+// Exported for [Address]'s reason. A GUID is the same one in capitals and in
+// small letters, and nothing made it one spelling: `server/core` kept an `oid`
+// as it was written, and every lookup compared it as written. So the same
+// `oid` in capitals on one person and in small letters on another was two
+// rows, each spelling a different person, and a row typed in the spelling a
+// token does not use was one no sign-in found (#278).
+//
+// Small letters, because that is how Entra writes one in a token and how its
+// directory says an `objectId`.
+//
+// # Only where the connection says so
+//
+// What makes a subject a GUID is its connection's word that it is one. A
+// provider that names people by `sub` may hand out something GUID-shaped whose
+// case it means -- OpenID Connect says a `sub` is compared exactly -- and so
+// may a provider no connection fronts. Theirs are kept as they said them.
+//
+// And only a GUID. A connection that came to name `oid` still has rows keyed by
+// the `sub` people signed in by before, which a sign-in finds once to move
+// (`IdentityService.Resubject`), and that is base64 whose case is the whole of
+// it.
+func Subject(claim, v string) string {
+	if claim == ClaimOid && GUID(v) {
+		return strings.ToLower(v)
+	}
+
+	return v
+}
+
+// GUID is whether a string has the shape `oid` takes: 8-4-4-4-12 hexadecimal
+// digits, in either case.
+func GUID(v string) bool {
+	if len(v) != 36 {
+		return false
+	}
+	for i, r := range v {
+		switch i {
+		case 8, 13, 18, 23:
+			if r != '-' {
+				return false
+			}
+		default:
+			if !('0' <= r && r <= '9' || 'a' <= r && r <= 'f' || 'A' <= r && r <= 'F') {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
 // WhoseHost answers which tenant serves a name.
 func (s *Server) WhoseHost(ctx context.Context, req *app.FrontWhoseHostRequest) (*app.FrontWhoseHostResponse, error) {
 	name := Hostname(req.GetHost())

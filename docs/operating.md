@@ -605,7 +605,7 @@ account:
   base: https://account.contoso.example
   page: { dir: /usr/share/roster/account }
   terminal: true                          # `roster sign-in`; off unless said
-  # private_hosts: [idp.corp.example]     # a provider off the internet; none unless named
+  # private_hosts: [idp.corp.example]     # a provider off the internet, or in plain http; none unless named
   # key: left out -- one rk_ made at start, narrowed per request to the holder
   # each tenant nominated. A process of its own names it: file:… from
   # `roster account provision`. (`keys:` is a tenant running its own copy.)
@@ -998,6 +998,18 @@ says what a file would do before a restart does it. In Kubernetes that is GitOps
 without roster knowing what Kubernetes is: the file is in a ConfigMap, editing it
 changes the hash, the pod is replaced, and the new one applies it.
 
+**A connection is held to a form**, from a file as from a console. Its `name`
+is an alias -- lower-case letters, digits and single hyphens, beginning with a
+letter -- because it is the `provider` of every identity through it and a
+segment of its redirect (§ *Where a provider sends people back*), and `Entra`
+beside `entra` would be one directory twice. Its `issuer` is an address as the
+provider publishes it: written `https://` (or `http://`, § *Where a provider is
+asked*), with a host, and with no query, fragment or password. Its `client_id`
+is not empty. And it names its people by `oid` only where the provider may
+issue one: not at GitHub's, and not at Google's. A row that is none of that is
+refused where it is written, with the field it was, rather than at somebody's
+sign-in.
+
 Three properties, each deliberate:
 
 - **It never erases.** A resource dropped from the file leaves its row where it
@@ -1089,6 +1101,17 @@ working*), and the front door's log says which address, and `private_hosts`.
 What a provider answered instead of what was asked for is in that log too, cut
 to a line.
 
+**And over `https`, anywhere you did not name.** A request to a token endpoint
+carries the code and the client's secret, and the keys that come back are what
+every token of the connection is believed by; in plain `http` both are
+anybody's on the way. So a provider written `http://` -- the issuer, or
+anything its document names -- is asked only at a host `private_hosts` names:
+by its name, by its address, or by a network that address is in, which is how
+a directory on your own network is said to be yours. Anywhere else the
+sign-in answers as above, and the log says *plain `http`* and the setting.
+roster takes the row either way: where a provider is, is said to a front
+door, so it is the front door that refuses.
+
 **Through your proxy, where the environment names one.** `HTTPS_PROXY`,
 `HTTP_PROXY` and `NO_PROXY` are read as Go reads them, when the front door
 starts, and a connection to the proxy is made wherever the proxy is: it is your
@@ -1098,9 +1121,11 @@ door connects to the proxy and never sees the address the proxy then connects
 to, so nothing above is asked of it. A deployment that sends its way out
 through a proxy has put the proxy in charge of which addresses a tenant's
 issuer may be at: configure it to refuse your own network, its own machine and
-the metadata service. `private_hosts` then matters only for what `NO_PROXY`
-sends direct, which the front door still dials itself and holds to the rule
-above.
+the metadata service. `private_hosts` then matters for what `NO_PROXY` sends
+direct, which the front door still dials itself and holds to the rule above --
+and for a provider written `http://`, which is asked through the proxy only
+where its host is named as the address writes it, by name or by address: what
+a name resolves to is the one thing the proxy does not say.
 
 **A connection is the issuer its row names now.** Moved to another issuer -- or
 erased and added again under the same name -- it is the new one from the next
@@ -1146,8 +1171,9 @@ from; the name is still yours:
 - **The person is their account's `id`**, the number GitHub never changes or
   hands to somebody else -- not their username, which they may change and
   somebody else may then take. `subject_claim` names a claim of an ID token, so
-  it says nothing for GitHub, and a sign-in through a GitHub connection that
-  says `oid` is refused.
+  it says nothing for GitHub: a connection at `https://github.com` that says
+  `oid` is refused where it is written, and a sign-in through any GitHub
+  connection that says it is refused.
 - **Their address is the primary one**, from `GET /user/emails`, and verified
   only when GitHub says so. That is the condition `expected` matches an
   invitation under, and the stamp on the address roster keeps. The connection
@@ -1243,7 +1269,9 @@ other:
   authorized redirect URI -- `https://<the Login App>/callback/<tenant>/<connection>`,
   and the account app's when it offers Google too. One client takes several.
 - **The person is their `sub`**, which Google never hands to anybody else, and
-  their address is verified on Google's `email_verified`.
+  their address is verified on Google's `email_verified`. Google's tokens carry
+  no `oid`, so a connection at its issuer that says `subject_claim: oid` is
+  refused where it is written.
 - **When Google asked them** is the one thing to set up beyond the client.
   Somebody deleting their own account (`MeService.Leave`) has to have proved who
   they are a few minutes ago, which through a directory is when the directory

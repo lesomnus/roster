@@ -8,11 +8,13 @@ import (
 	"github.com/protobuf-orm/ent/dialect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/vouch"
 )
 
@@ -32,6 +34,13 @@ func (s Core) Identity() app.IdentityServiceServer {
 // constraint; these are judgements about what a good pair looks like and about
 // what a second one means.
 func (s coreIdentity) Add(ctx context.Context, req *app.IdentityAddRequest) (*app.Identity, error) {
+	// The provider is a connection's name wherever it is one, and is held to
+	// what a connection's name is held to ([named]): `Entra` beside the
+	// connection `entra` was a second account for one person, which nothing
+	// the connection says of its subjects reached.
+	if err := named("provider", req.GetProvider()); err != nil {
+		return nil, err
+	}
 	if err := subjectIsStable(req.GetSubject()); err != nil {
 		return nil, err
 	}
@@ -47,11 +56,81 @@ func (s coreIdentity) Add(ctx context.Context, req *app.IdentityAddRequest) (*ap
 		return nil, err
 	}
 
-	if err := s.subjectFits(ctx, req.GetHolder(), req.GetProvider(), req.GetSubject()); err != nil {
+	subject, err := s.subjectFits(ctx, req.GetHolder(), req.GetProvider(), req.GetSubject())
+	if err != nil {
 		return nil, err
+	}
+	if subject != req.GetSubject() {
+		// Kept in the one spelling it is looked for in ([front.Subject]). The
+		// request is the caller's, so it is a copy that is changed.
+		req = proto.CloneOf(req)
+		req.SetSubject(subject)
 	}
 
 	return s.IdentityServiceServer.Add(ctx, req)
+}
+
+// Get finds an identity, and one named by its subject in the one spelling the
+// row has ([Core.spelled]).
+func (s coreIdentity) Get(ctx context.Context, req *app.IdentityGetRequest) (*app.Identity, error) {
+	ref, err := s.spelled(ctx, req.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	if ref != req.GetRef() {
+		req = proto.CloneOf(req)
+		req.SetRef(ref)
+	}
+
+	return s.IdentityServiceServer.Get(ctx, req)
+}
+
+// spelled is a reference to an identity with its subject as the row holds it:
+// a GUID in small letters, where the connection it names says its people are
+// named by `oid` ([front.Subject]). Any other reference is answered as it is.
+//
+// # Why it is here and not at whoever asks
+//
+// A lookup that spells a subject another way than the row does finds nobody,
+// and what comes of that is not a refusal: a sign-in that is a stranger's, a
+// directory that makes its person a second time. Who asks is a front door with
+// a token, a directory with an `externalId`, an operator at a terminal, and
+// whatever is written against this API next; each would have to know which
+// claim the connection names and fold the same way, and the one that did not
+// would be the one nobody tested. The row's spelling is this layer's doing
+// ([coreIdentity.Add]), so finding it by another is too.
+//
+// The connection is read only for a subject that is a GUID with a capital in
+// it, so a lookup as Entra spells one -- which is nearly every one -- costs
+// nothing it did not cost before.
+func (s Core) spelled(ctx context.Context, ref *app.IdentityRef) (*app.IdentityRef, error) {
+	by := ref.GetSubject()
+	if by == nil {
+		return ref, nil
+	}
+	subject := by.GetSubject()
+	if !front.GUID(subject) || subject == strings.ToLower(subject) {
+		return ref, nil
+	}
+	tenant, err := pdid.From(by.GetTenantId())
+	if err != nil {
+		// Not a tenant, so not a row; what answers that is below this.
+		return ref, nil
+	}
+	claim, err := s.claimOf(ctx, tenant, by.GetProvider())
+	if err != nil {
+		return nil, err
+	}
+	as := front.Subject(claim, subject)
+	if as == subject {
+		return ref, nil
+	}
+
+	return app.IdentityRef_builder{Subject: app.IdentityRefBySubject_builder{
+		TenantId: by.GetTenantId(),
+		Provider: z.Ptr(by.GetProvider()),
+		Subject:  z.Ptr(as),
+	}.Build()}.Build(), nil
 }
 
 // subjectIsStable refuses a subject that is obviously the wrong value.
@@ -70,9 +149,18 @@ func (s coreIdentity) Add(ctx context.Context, req *app.IdentityAddRequest) (*ap
 // It cannot catch everything: a username with no "@" in it looks like anything
 // else. What it catches is the mistake that has an unrecoverable failure at the
 // end of it.
+//
+// And a subject with a space before or after it, which is nobody's identifier
+// and somebody's paste. It is refused and not trimmed: a subject is found by
+// what was written, and a row that holds something else than its writer wrote
+// is one they do not find.
 func subjectIsStable(v string) error {
 	if v == "" {
 		return pderr.Invalidf("subject", "must not be empty")
+	}
+	if v != strings.TrimSpace(v) {
+		return pderr.Invalidf("subject",
+			"has a space before or after it; a subject is compared as it is written, so write it as the provider says it")
 	}
 	if strings.Contains(v, "@") {
 		return pderr.Invalidf("subject",
@@ -91,7 +179,10 @@ func subjectIsStable(v string) error {
 // `sub`, written where the person's own identifier belongs, names them to one
 // front door and to nothing else -- and a directory provisioning them, which
 // says `oid`, would find nobody and make a second person.
-func (s coreIdentity) subjectFits(ctx context.Context, holder *app.HolderRef, provider, subject string) error {
+//
+// What it answers is the subject as it is kept: a GUID in the one spelling it
+// has ([front.Subject]), and anything else as it was written.
+func (s coreIdentity) subjectFits(ctx context.Context, holder *app.HolderRef, provider, subject string) (string, error) {
 	tenant, err := s.tenantOfHolder(ctx, holder)
 	switch status.Code(err) {
 	case codes.OK:
@@ -99,20 +190,20 @@ func (s coreIdentity) subjectFits(ctx context.Context, holder *app.HolderRef, pr
 		// Not a person this caller can see. `Add` refuses that as what it is
 		// -- a reference naming no person is an argument and not a missing
 		// row -- and this has nothing to hold it to.
-		return nil
+		return subject, nil
 	default:
-		return err
+		return "", err
 	}
 	claim, err := s.claimOf(ctx, tenant, provider)
 	if err != nil {
-		return err
+		return "", err
 	}
-	if claim == claimOid && !isGUID(subject) {
-		return pderr.Invalidf("subject",
+	if claim == claimOid && !front.GUID(subject) {
+		return "", pderr.Invalidf("subject",
 			"the %s connection names people by `oid`, which is a GUID, and %q is not one", provider, subject)
 	}
 
-	return nil
+	return front.Subject(claim, subject), nil
 }
 
 // claimOf is the claim a tenant's connection of that name reads as a subject.
@@ -145,27 +236,6 @@ func (s Core) claimOf(ctx context.Context, tenant pdid.Id, provider string) (str
 	return subjectClaimOf(v.GetSubjectClaim()), nil
 }
 
-// isGUID is the shape `oid` takes: 8-4-4-4-12 hexadecimal digits.
-func isGUID(v string) bool {
-	if len(v) != 36 {
-		return false
-	}
-	for i, r := range v {
-		switch i {
-		case 8, 13, 18, 23:
-			if r != '-' {
-				return false
-			}
-		default:
-			if !('0' <= r && r <= '9' || 'a' <= r && r <= 'f' || 'A' <= r && r <= 'F') {
-				return false
-			}
-		}
-	}
-
-	return true
-}
-
 // Resubject moves an identity to the subject its connection now names.
 //
 // `identity_svc.ext.proto` says why this is a verb and not a patch. What it
@@ -187,8 +257,12 @@ func isGUID(v string) bool {
 // counted, as `Erase` does, so a move and an unlink of the same person are one
 // after the other rather than at once.
 func (s coreIdentity) Resubject(ctx context.Context, req *app.IdentityResubjectRequest) (*app.Identity, error) {
+	ref, err := s.spelled(ctx, req.GetRef())
+	if err != nil {
+		return nil, err
+	}
 	v, err := s.IdentityServiceServer.Get(ctx, app.IdentityGetRequest_builder{
-		Ref: req.GetRef(),
+		Ref: ref,
 		Select: app.IdentitySelect_builder{
 			Holder:   app.HolderSelect_builder{}.Build(),
 			Provider: z.Ptr(true),
@@ -216,17 +290,20 @@ func (s coreIdentity) Resubject(ctx context.Context, req *app.IdentityResubjectR
 			"subject: the %s connection names people by `sub`, which is what this identity holds; "+
 				"a connection names its claim before anybody moves to it", v.GetProvider())
 	case claimOid:
-		if isGUID(v.GetSubject()) {
+		if front.GUID(v.GetSubject()) {
 			return nil, status.Error(codes.FailedPrecondition,
 				"subject: this identity already holds an `oid`, and a person's `oid` does not change; another one is another person")
 		}
-		if !isGUID(to) {
+		if !front.GUID(to) {
 			return nil, pderr.Invalidf("subject", "an `oid` is a GUID, and %q is not one", to)
 		}
 	}
 	if err := subjectIsStable(to); err != nil {
 		return nil, err
 	}
+	// Moved to the one spelling an `oid` is kept in, as `Add` keeps one: in
+	// another it would be a second row for whoever already holds it.
+	to = front.Subject(claim, to)
 
 	holder := v.GetHolder().GetId()
 	if err := s.mayWriteAWayIn(ctx, "ref", app.HolderRef_builder{Id: holder}.Build()); err != nil {
@@ -394,6 +471,12 @@ func (s coreIdentity) oneAccountPerProvider(ctx context.Context, req *app.Identi
 // first attempt went wrong -- a version precondition with no write beside it is
 // a read with an opinion.
 func (s coreIdentity) Erase(ctx context.Context, req *app.IdentityRef) (*app.IdentityEraseResponse, error) {
+	// By the spelling the row has, where the reference is a subject.
+	req, err := s.spelled(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
 	// The row first, because the reference may be a subject and the count is
 	// about the person. Through `Next()` rather than a client, so the wall
 	// narrows it exactly as the erase below will: a caller who cannot see it

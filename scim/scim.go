@@ -40,6 +40,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	rstr "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/front"
 )
 
 // Base is where the protocol is served. A deployment exposes this path and
@@ -171,8 +172,24 @@ type tenancy struct {
 	// of every identity this links.
 	provider string
 
+	// claim is the claim that connection names its people by
+	// (`Connection.subject_claim`), which says how an `externalId` is spelled
+	// ([tenancy.subject]).
+	claim string
+
 	until time.Time
 }
+
+// subject is an `externalId` as roster keeps the subject it is
+// (`front.Subject`): a GUID in small letters where the connection names its
+// people by `oid`, and as the directory wrote it anywhere else.
+//
+// Folded where a request comes in, so that what the directory says is
+// compared with what roster holds in the spelling roster holds it in. Said in
+// capitals and compared as said, the id somebody signs in by was another id
+// than theirs: nobody was found by it, and it was kept beside them as though
+// the two differed.
+func (t *tenancy) subject(v string) string { return front.Subject(t.claim, v) }
 
 // New dials roster and answers [Base].
 func New(c Config) (*Server, error) {
@@ -324,7 +341,7 @@ func (s *Server) tenancyOf(ctx context.Context, token string) (*tenancy, error) 
 		}
 		for _, c := range vs.GetItems() {
 			if c.GetProvisions() {
-				t.provider = c.GetName()
+				t.provider, t.claim = c.GetName(), c.GetSubjectClaim()
 			}
 		}
 

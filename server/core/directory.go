@@ -132,7 +132,7 @@ func (s coreHolder) Provision(ctx context.Context, req *app.HolderProvisionReque
 	if err := subjectIsStable(req.GetSubject()); err != nil {
 		return nil, err
 	}
-	if subjectClaimOf(c.GetSubjectClaim()) == claimOid && !isGUID(req.GetSubject()) {
+	if subjectClaimOf(c.GetSubjectClaim()) == claimOid && !front.GUID(req.GetSubject()) {
 		return nil, pderr.Invalidf("subject",
 			"the %s connection names people by `oid`, which is a GUID, and %q is not one", c.GetName(), req.GetSubject())
 	}
@@ -353,15 +353,18 @@ func (s coreHolder) Tell(ctx context.Context, req *app.HolderTellRequest) (*app.
 	}
 	said := false
 
-	if req.HasSubject() && req.GetSubject() != v.GetDirectorySubject() {
-		switch subject := req.GetSubject(); subject {
+	// In the spelling the real thing would be kept in ([front.Subject]), which
+	// is the one it is looked for in: said in another, it is the same word.
+	claim := subjectClaimOf(c.GetSubjectClaim())
+	if subject := front.Subject(claim, req.GetSubject()); req.HasSubject() && subject != v.GetDirectorySubject() {
+		switch subject {
 		case "":
 			patch.DirectorySubjectNull = z.Ptr(true)
 		default:
 			if err := subjectIsStable(subject); err != nil {
 				return nil, err
 			}
-			if subjectClaimOf(c.GetSubjectClaim()) == claimOid && !isGUID(subject) {
+			if claim == claimOid && !front.GUID(subject) {
 				return nil, pderr.Invalidf("subject",
 					"the %s connection names people by `oid`, which is a GUID, and %q is not one", c.GetName(), subject)
 			}

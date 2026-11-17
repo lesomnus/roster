@@ -155,6 +155,10 @@ func (s *Server) lookup(ctx context.Context, t *tenancy, attr, value string) (*p
 		}
 
 	case byExternalId:
+		// In the spelling it is kept in, here and where the directory's word
+		// for somebody is: neither lookup folds what it is asked.
+		value := t.subject(value)
+
 		v, err := s.roster.Identity().Get(ctx, rstr.IdentityGetRequest_builder{
 			Ref: rstr.IdentityRef_builder{Subject: rstr.IdentityRefBySubject_builder{
 				TenantId: t.tenant, Provider: proto.String(t.provider), Subject: proto.String(value),
@@ -243,7 +247,7 @@ func (s *Server) tell(ctx context.Context, r *http.Request, t *tenancy, p *perso
 	said := false
 
 	if c.externalId != nil {
-		want := *c.externalId
+		want := t.subject(*c.externalId)
 		if want == p.linked {
 			want = ""
 		}
