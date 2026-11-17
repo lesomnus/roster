@@ -421,7 +421,11 @@ file the `db` block is in is already the deployment.
 
 **Claiming holds nothing.** Two tenants may be claiming one name at once, each
 with a value of its own, and whoever publishes theirs takes it. A claim is good
-for a day (`prove.For`) and `prove.Sweep` collects the abandoned.
+for a day (`prove.For`) and `prove.Sweep` collects the abandoned. One that has run
+out is refused by `host add`, saying to make another, and `host-proof add` for the
+same name does: it answers a new value to publish, and the old one proves nothing.
+While a claim is still good a second `host-proof add` is refused as it was, since
+its value is the one already published or about to be.
 
 ### A name can move, and the incumbent is not asked
 
