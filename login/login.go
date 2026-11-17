@@ -232,9 +232,16 @@ type Config struct {
 	// at an address on the internet.
 	PrivateHosts arrives.PrivateHosts
 
-	// InsecureCookie drops `Secure` from the session cookie, for a page served
-	// over plain http in development. It is `authsession`'s and is said there;
-	// this app sets no cookie of its own.
+	// InsecureCookie drops `Secure` from the cookies this app sets itself, for
+	// a page served over plain http in development. It is the same setting
+	// `Sessions` is built with and is here because this app sets one cookie of
+	// its own -- the state of a provider's round trip ([App.stateName]) -- and
+	// that one is not `authsession`'s to mark. A deployment fact and not a
+	// guess from the request, for the reason `account.Config.InsecureCookie`
+	// gives.
+	//
+	// The comment here said this app sets no cookie of its own, from before it
+	// had a provider's round trip to bind a browser to.
 	InsecureCookie bool
 
 	// Page is the sign-in page, when a deployment serves its own rather than
@@ -559,7 +566,18 @@ func (a *App) Handler() http.Handler {
 	// The built page, and its assets.
 	m.Handle("/", a.page())
 
-	return m
+	// Whatever changes something is asked by this origin's own page, or by
+	// what is not a browser; and no page here is drawn inside another's.
+	//
+	// Nothing a flow needs is turned away by it. Hydra sends a browser here
+	// with a redirect and a provider sends it back with one, and those are
+	// navigations that land on a `GET`; every `POST` and the one `DELETE` are
+	// the page's own, to the origin it was served from. They were answered
+	// whoever sent them, and most of them need no cookie: a consent, a
+	// sign-out's confirmation and a device's code are bound by a challenge in
+	// the body, and `POST /session` signs a browser in as whoever its body
+	// names (#278).
+	return frontdoor.Guard(m)
 }
 
 // begin is the redirect from Hydra: the start of one browser's flow.
@@ -920,6 +938,9 @@ func (a *App) left(w http.ResponseWriter, r *http.Request, v *logoutRequest) {
 // question was asked. The page says so and stays where it is.
 func (a *App) leave(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	if !answered(w, r) {
+		return
+	}
 	challenge := r.FormValue(logoutChallenge)
 
 	// Asked again rather than trusted from the form: a browser that posts the
@@ -1106,6 +1127,54 @@ func (a *App) flow(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// answerSize is as much of a screen's answer as is read.
+//
+// Each of the three forms is a challenge and a word or two. A challenge is the
+// large part, about two kilobytes of Hydra's choosing, and it reached the page
+// as an address -- so it is no longer than what is in front of this app lets an
+// address be, which is commonly eight kilobytes. Twice that, so that the body
+// limit is never the first thing a long challenge meets.
+const answerSize = 16 << 10
+
+// answered reads what a screen posted, to a size, and has answered the request
+// itself when it says no.
+//
+// `r.FormValue` read it, which is Go's own ten megabytes of a form and a
+// multipart one onto the disk past thirty-two -- for routes anybody may post
+// to with no cookie. After this the form is parsed, so `r.FormValue` reads
+// what is here and nothing more.
+//
+// In either shape, as before. This app's page posts a plain form; a page of a
+// deployment's own may post a `FormData`, which is multipart, and was read. It
+// is read from the same bounded body, so all of one fits in the memory it is
+// allowed and none of it reaches a disk.
+func answered(w http.ResponseWriter, r *http.Request) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, answerSize)
+
+	// `ParseForm` first and by itself: `ParseMultipartForm` calls it, and then
+	// answers *not multipart* over whatever it said, a body past its size
+	// included.
+	err := r.ParseForm()
+	if err == nil {
+		if err = r.ParseMultipartForm(answerSize); errors.Is(err, http.ErrNotMultipart) {
+			err = nil
+		}
+	}
+	if err != nil {
+		var much *http.MaxBytesError
+		if errors.As(err, &much) {
+			http.Error(w, "that is more than an answer", http.StatusRequestEntityTooLarge)
+
+			return false
+		}
+		http.Error(w, "no", http.StatusBadRequest)
+
+		return false
+	}
+
+	return true
+}
+
 // named is what to call a client on a screen.
 func named(c client) string {
 	if c.Name != "" {
@@ -1117,6 +1186,9 @@ func named(c client) string {
 
 // decide is the screen's answer, and the only two there are.
 func (a *App) decide(w http.ResponseWriter, r *http.Request) {
+	if !answered(w, r) {
+		return
+	}
 	challenge := r.FormValue(consentChallenge)
 
 	if r.FormValue("allow") == "" {
