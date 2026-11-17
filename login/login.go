@@ -434,6 +434,17 @@ func New(ctx context.Context, c Config) (*App, error) {
 		For: func(r *http.Request) string {
 			return madeFor(r.URL.Query().Get(Challenge))
 		},
+
+		// And where a call about a session is made: narrowed to the session's
+		// own tenant, named as itself. A sign-out that arrives through Hydra
+		// is in no flow -- a logout challenge names a subject and no redirect
+		// -- so there is no name to narrow by, and `roster-at` takes a tenant
+		// as well as a name ([front.AtTenant]). The nomination that decides
+		// who this key is there is the same either way, so the delegation is
+		// recognised as this app's own.
+		In: func(ctx context.Context, tenant pdid.Id) context.Context {
+			return withAt(ctx, front.AtTenant(tenant.String()))
+		},
 	})
 	if err != nil {
 		conn.Close()
@@ -864,12 +875,41 @@ func (a *App) logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// This app's own session too, for the browser that has one. It lasts as
-	// long as Hydra's memory of the same browser, so a person signing out with
-	// one open is exactly a person who would otherwise sign in again and find
-	// the old one waiting.
-	http.SetCookie(w, a.door.End(ctx, r))
+	// This app's own session too, for the browser that has the one being
+	// signed out of. It lasts as long as Hydra's memory of the same browser, so
+	// a person signing out with one open is exactly a person who would
+	// otherwise sign in again and find the old one waiting.
+	a.left(w, r, v)
 	http.Redirect(w, r, to, http.StatusSeeOther)
+}
+
+// left ends this browser's own session for a logout Hydra was just told yes
+// to, where the logout is about whoever this browser is signed in as.
+//
+// # Only its own subject's
+//
+// A logout challenge is about one subject's session at Hydra, and Hydra says
+// whose (`subject`, with a hint or without one). It is raised for a hint
+// whichever browser presents it, so the browser that arrives here with a
+// challenge is not thereby the one the challenge is about. This ended the
+// arriving browser's session all the same: somebody signed in here who opened
+// a logout about somebody else had their own cookie cleared (#278). What is
+// about somebody else at the issuer is Hydra's to end, and was told so above.
+//
+// # And the delegation with it
+//
+// `Door.End` drops the session and revokes the delegation it held, in the
+// tenant the session is of ([frontdoor.Config.In]) -- which this request
+// could not have said, since a logout is in no flow.
+func (a *App) left(w http.ResponseWriter, r *http.Request, v *logoutRequest) {
+	ctx := r.Context()
+
+	who, ok := a.door.Who(ctx, r)
+	if !ok || who.String() != v.Subject {
+		return
+	}
+
+	http.SetCookie(w, a.door.End(ctx, r))
 }
 
 // leave is the confirmation screen's answer, for the logout nobody proved a
@@ -917,7 +957,7 @@ func (a *App) leave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, a.door.End(ctx, r))
+	a.left(w, r, v)
 	writeJson(w, map[string]any{"signed_out": true, "to": to})
 }
 
@@ -1219,8 +1259,11 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 	// it is still narrow: [Methods] is `Me.Get` alone about one person.
 	//
 	// `Remember` of zero is a deployment that asks every time, so there is no
-	// later flow to hold anything for and the credential goes at the redirect
-	// the way it always did.
+	// later flow to hold anything for and the credential goes at the redirect:
+	// the cookie cleared and the delegation revoked. The second half was said
+	// and not so while the revocation went out in this request's context,
+	// which no flow narrowed (#278); `Door.End` makes it in the session's own
+	// tenant.
 	if a.c.Remember <= 0 {
 		http.SetCookie(w, a.door.End(ctx, r))
 	}

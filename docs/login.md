@@ -318,9 +318,11 @@ sequenceDiagram
 The delegation this app minted is **kept** after the grant, for as long as Hydra
 remembers the browser, because the next flow Hydra answers without a form reads
 the claims with it (§ *The app's own session, and why it is not shorter*). Only
-where `remember` is zero is it spent at the grant and the cookie ended there
-(`Door.End`): no later flow comes back for it, and a credential that outlives its
-use is one somebody has to remember to revoke.
+where `remember` is zero is it spent at the grant: the cookie is ended there and
+the delegation revoked at roster (`Door.End`), since no later flow comes back for
+it, and a credential that outlives its use is one somebody has to remember to
+revoke. A sign-out through the issuer ends both the same way (§ *Signing out
+reaches the issuer*).
 
 #### An account at a provider, with Hydra in front
 
@@ -504,13 +506,13 @@ functions stop agreeing, in either direction.
 | `/session`, `/session/` | mounted so `frontdoor`'s three below see the whole path. One handler, three methods | `TestALoginAppTellsHydraWhoSignedIn` |
 | `POST /session` | *frontdoor.* `{alias\|address, password}` → **204** signed in · **200** `{satisfied, available}` one factor proved and more to prove · **401** everything else | `TestALoginAppTellsHydraWhoSignedIn` · `TestASecondFactorIsAskedForAndTheFlowWaitsForIt` · `TestARosterThatIsDownIsNotAWrongPassword` |
 | `POST /session/continue` | *frontdoor.* `{kind, name, secret}` → **204** · **401**. One attempt per first form: the half-session is spent whether the answer was right or not | `TestAWrongSecondFactorFinishesNothing` · `TestAHalfSessionIsOverWhenTheAppSaidItWas` · `TestASignedInBrowserSurvivesAStraySecondForm` |
-| `DELETE /session` | *frontdoor.* Drops this app's session and revokes the delegation. Not part of the flow -- the flow's own ending is `POST /accept` -- and mounted because it is the same handler | `TestSigningOutRevokesEvenAWindowThatHasPassed` |
+| `DELETE /session` | *frontdoor.* Drops this app's session and revokes the delegation, in the tenant the session is of. Not part of the flow -- the flow's own ending is `POST /accept` -- and mounted because it is the same handler | `TestSigningOutRevokesEvenAWindowThatHasPassed` · `TestASessionIsEndedInItsOwnTenant` · `TestEveryEndingRevokesTheDelegation` |
 | `POST /accept` | `{redirect_to}`, and **the hop no other front door has**: it turns a finished sign-in into `acceptLoginRequest{subject}`. A page that leaves this out signs somebody in and never ends the flow. 401 when nobody is signed in, or is half way; when the sign-in was not made at **this** `login_challenge`; and when roster no longer answers for whoever it was | `TestALoginAppTellsHydraWhoSignedIn` · `TestAFlowReachesOnlyItsOwnOperator` · `TestASignInAnswersOnlyTheChallengeItWasMadeFor` · `TestASessionOfOneTenantDoesNotAnswerAnothersChallenge` · `TestAnAcceptAsksRosterWhoIsThere` |
 | `GET /provider` | 302 to the directory this operator's `Connection` names, with the state in a cookie | `TestSomebodyArrivesThroughAProvider` · `TestAProviderFlowReachesOnlyItsOwnOperator` |
 | `GET /callback/{tenant}/{connection}` | where a directory sends the browser back: one URL per connection, which is what is registered at that provider. **Not** in a flow: which flow it belongs to comes from the state, and the connection the path names has to be the one that flow went to | `TestACallbackWithoutItsOwnStateIsRefused` · `TestAnAnswerIsHeldToTheRoundTripThatAskedForIt` · `TestAStrangerIsRefusedUnlessTheDeploymentEnrols` |
 | `GET /consent` | a screen when `login.consent` is `ask`, a 303 when it is `skip` or Hydra remembered -- to Hydra with the claims, or carrying `login_required` when there is nobody here to read the subject as | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor` · `TestAConsentWhoseSubjectCannotBeReadIsRefused` |
 | `POST /consent` | the screen's answer. A no is `consent/reject` and the browser goes back to the client with a refusal | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `ts/e2e/login.spec.ts` |
-| `GET /logout` | a screen only half the time: drawn when nothing proved a relying party started the sign-out, answered with a 303 when something did | `TestALogoutNobodyProvedAnAppAskedForIsConfirmed` · `TestSigningOutEndsWhatTheIssuerRemembers` · `docker/behind.sh` |
+| `GET /logout` | a screen only half the time: drawn when nothing proved a relying party started the sign-out, answered with a 303 when something did. With that 303 this app's own session is ended and its delegation revoked, when the logout is about whoever this browser is signed in as here | `TestALogoutNobodyProvedAnAppAskedForIsConfirmed` · `TestSigningOutEndsWhatTheIssuerRemembers` · `TestEveryEndingRevokesTheDelegation` · `TestASignOutEndsOnlyItsOwnSubjectsSession` · `docker/behind.sh` |
 | `POST /logout` | `{logout_challenge, allow}` → `{signed_out, to}`, or `{signed_out: false}` and nowhere to go. **400 for a logout an app did prove it started**, because that one is never drawn | `TestTheConfirmedSignOutIsTheOneThatEnds` · `TestTheAnswerIsForTheScreenThatWasDrawn` · `TestALogoutChallengeIsAskedAbout` |
 | `GET /signed-out` | the page a sign-out that asked to come back nowhere ends on. The one screen here with no challenge on it | `docker/behind.sh` · `ts/e2e/login.spec.ts` |
 | `GET /device` | where somebody types the code a device with no browser printed. **The one screen that asks the app nothing** -- Hydra has no getter for a device challenge, so there is no `/flow` for it and no client name to draw | `TestADeviceChallengeIsAnsweredWithWhereToGoNext` · `docker/device.sh` · `ts/e2e/login.spec.ts` |
@@ -796,6 +798,28 @@ cost a cluster run to find:
   *If you are a user, please contact the administrator.* Every word of it is true,
   and it is the last thing a person sees after clicking *sign out*. The Login App
   serves `/signed-out` for it.
+
+**It ends this app's own session too, and the delegation in it.** A yes to
+Hydra -- the silent one, or the confirmed one -- clears this app's cookie in the
+browser that asked and revokes the delegation the session held, so a copy of the
+cookie is nobody at roster from then on. Two things about that were not so, and
+are now:
+
+- The revocation went out **unnarrowed**. A logout challenge names a subject and
+  no redirect, so the request is in no tenant's flow, and this app's one key
+  calls nothing until it is narrowed: roster refused, the refusal was dropped,
+  and the delegation outlived the sign-out by whatever was left of `remember`.
+  The same was true wherever a session is ended outside a flow -- the consent
+  hop of a deployment with `remember: 0`. A session says which tenant it is of,
+  so the revocation is made there whoever asked for it
+  (`frontdoor.Config.In`), and one that fails is logged
+  (`TestEveryEndingRevokesTheDelegation`).
+- It ended **whichever** session the browser held. A logout challenge is about
+  one subject, and Hydra raises one for an `id_token_hint` whichever browser
+  presents it; a browser signed in here as somebody else had its own cookie
+  cleared by it. This app's session is ended only when the challenge's subject
+  is the person the cookie names (`TestASignOutEndsOnlyItsOwnSubjectsSession`).
+  Hydra is told yes either way: what the challenge is about is its own.
 
 **It does not reach the other products.** Somebody signed in to two apps who signs
 out of one ends the issuer's memory and that app's session; the second app's cookie

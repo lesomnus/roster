@@ -33,6 +33,11 @@ type vouch struct {
 	delegates int
 	revokes   int
 
+	// The context the last revocation was made in, and what roster answers
+	// one with where a test says: nothing, which is that it worked.
+	revokedIn context.Context
+	refuses   error
+
 	// The other two ways a sign-in ends in a delegation, for the tests that
 	// are about every way in. Nil everywhere else, which panics if reached.
 	accept func(*rstr.VouchAcceptRequest) (*rstr.VouchDelegateResponse, error)
@@ -54,6 +59,11 @@ func (f *vouch) Redeem(ctx context.Context, in *rstr.VouchRedeemRequest, _ ...gr
 
 func (f *vouch) Revoke(ctx context.Context, in *rstr.DelegationRevokeRequest, _ ...grpc.CallOption) (*rstr.DelegationRevokeResponse, error) {
 	f.revokes++
+	f.revokedIn = ctx
+	if f.refuses != nil {
+		return nil, f.refuses
+	}
+
 	return rstr.DelegationRevokeResponse_builder{}.Build(), nil
 }
 
