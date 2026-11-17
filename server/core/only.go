@@ -29,6 +29,12 @@ import (
 // SQLite, which serialises writers and so only leaves the gap between the count
 // and the write.
 //
+// It is not the only one. *A person has one account at a provider* is the
+// same count asked by a write that adds to it ([coreIdentity.add]): two
+// accounts added at once each counted none, and thirty-eight of forty people
+// held both (#279). And *a tenant keeps somebody administering it* is one over
+// a tenant's rows ([Core.keepsAdministered]).
+//
 // # What they contend for
 //
 // A transaction is necessary and is not enough. Under READ COMMITTED two
@@ -57,12 +63,12 @@ import (
 //
 // # What it costs
 //
-// The person's `date_updated` moves when an identity of theirs is removed. It
-// is a concurrency token rather than a fact about them, so nothing untrue is
-// recorded -- and the write goes around the recorder, so the trail carries the
-// erase that explains it and no entry for the lock. What a console holding an
-// older version of that row is told is to read again before its next write,
-// which is what a version is for.
+// The person's `date_updated` moves when an identity of theirs is removed, or
+// one is added. It is a concurrency token rather than a fact about them, so
+// nothing untrue is recorded -- and the write goes around the recorder, so the
+// trail carries the write that explains it and no entry for the lock. What a
+// console holding an older version of that row is told is to read again
+// before its next write, which is what a version is for.
 //
 // # And when the caller has already arranged one
 //
