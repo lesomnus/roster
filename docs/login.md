@@ -391,7 +391,7 @@ sequenceDiagram
 | the redirect | `login.base` | **one origin for the whole app**, because Hydra sends every browser here under one name, and **one path per connection** under it: `<base>/callback/<tenant>/<connection>`, which is what a deployment registers at that provider. Which flow a callback belongs to comes from the state, a nonce naming a row this app kept; the path has to name the connection that flow went to, so a provider's code can only come back through its own connection's door -- one URL for every connection let a server of one tenant's send a browser on to another's provider and be handed the code that came back (a mix-up, RFC 9700 § 4.4) |
 | the round trip's own checks | `arrives.Trip` | a **PKCE** challenge (S256) on every connection, whose verifier the exchange sends, so a code injected into somebody else's browser is refused by the provider itself; and on an OpenID connection a **nonce**, which the ID token has to carry back. GitHub issues no ID token, so it has the first and not the second |
 | the exchange | the provider's own | the Login App is the relying party, exactly as the account app is. Where the connection's row says the provider is, which is asked only at an address on the internet, and only over `https`, unless the deployment named the host (`login.private_hosts`; [operating.md](operating.md) § *Where a provider is asked*) -- and the issuer the row names now, with no restart when it moves |
-| who may sign in | `login.enrol`, `HolderService.SignsIn` | `invited` admits only somebody already linked; `expected` admits somebody an operator entered, matched by the **address** on their row; `enrolling` admits a stranger too, named by their address where the directory says it is verified and by a name nobody chose where it does not. An address matches only when it is **proved**, or is an **invitation** -- written by somebody other than the person (`Email.entered_by`), vouched for by no directory, about somebody with no identity, credential or key yet, which `SignsIn` says. An address somebody wrote onto their own account, or a directory handed over unchecked, matches nobody: it would hand whoever arrived verified at that mailbox to the account that claimed it first. `enrolling` needs `HolderService.Add`, which `roster login provision` puts on the nominated holder's role and never on the key |
+| who may sign in | `login.enrol`, `HolderService.SignsIn` | `invited` admits only somebody already linked; `expected` admits somebody an operator entered, matched by the **address** on their row; `enrolling` admits a stranger too, named by their address where the directory says it is verified and by a name nobody chose where it does not. An address matches only when it is **proved**, or is an **invitation** -- written by somebody other than the person (`Email.entered_by`), vouched for by no directory, about somebody with no identity, credential or key yet, which `SignsIn` says. An address somebody wrote onto their own account, or a directory handed over unchecked, matches nobody: it would hand whoever arrived verified at that mailbox to the account that claimed it first. **Somebody matched who holds more than this app is not linked by it**: the first link is a way in written by the app, which writes none for anybody who holds what its own role does not -- so somebody entered and given a role is answered `403`, *an administrator of your organisation has to link it for you*, until one does (§ *Putting people in, and letting them arrive*). `enrolling` needs `HolderService.Add`, which `roster login provision` puts on the nominated holder's role and never on the key |
 | what the profile lacks | the tenant's `config.profile` | `fill` gives the profile what its source says where it has **nothing**: a display name, and a picture for somebody with none. The source is the provider -- the token's `name` and `picture`, else userinfo's, the picture fetched with the token from the provider's own API (Entra's needs `User.Read` among the connection's scopes, consented for the directory first) -- or, where the deployment named the tenant's Slack workspace, Slack's real name and the picture the person chose, found by their address where the directory says it is verified. [operating.md](operating.md) § *A picture from the directory*. Only blanks, through `HolderService.Fill`, which writes nothing over a value and reads nothing back. Never a reason to refuse the sign-in |
 | the sign-in | `VouchService.Accept` | the claim this app verified, exchanged for a delegation. Not `Verify`: there is no password here to check |
 | the session | `Door.Accept` | minted here for the same reason the password path has one -- the consent hop reads the person **as them** to fill the claims |
@@ -948,6 +948,35 @@ anybody, and the address follows the proof to them (`Email.Attest`). An operator
 who enters somebody with a password as well, or links them a way in, has given
 them a way in, and the address is no invitation; they prove it, or arrive by the
 way they were given and connect the directory from the account page.
+
+**Somebody entered and given a role is linked by an administrator, not by the
+front door.** The link a first sign-in makes is a way into an account, written
+by the front door itself, and nobody writes a way in for somebody who holds
+more than they do ([usage/rules.md](usage/rules.md)). A front door's role is
+short on purpose, so anybody bound anything it does not name -- an
+administrator invited by address is the ordinary case -- is matched and not
+linked: a front door that linked whoever it matched would be a way to become
+anybody whose address a directory will vouch for. They are answered `403`,
+*this account is known here and is not linked yet; an administrator of your
+organisation has to link it for you*, at the Login App and at the account app
+alike, and the front door says in its log, as a warning and not an error, who
+arrived and what to link -- the subject, which is issued at the directory and
+is not known before this:
+
+```
+arrives: known here and not linked, because this front door may not write their way in; … tenant=contoso holder=… provider=entra subject=<what the directory calls them>
+```
+
+An administrator of the tenant, or an operator at the box, writes that link,
+and the next sign-in is the ordinary lookup:
+
+```sh
+roster --as admin identity add '{"holder":{"slug":{"alias":"dana","tenant":{"alias":"contoso"}}},
+                      "provider":"entra","subject":"<the subject the log said>"}'
+```
+
+Enter somebody first and bind them their role after they have arrived once, and
+the front door links them itself.
 
 What `enrolling` calls somebody is derived from the address and is **not** the
 local part of it: an alias begins with a lowercase letter and holds lowercase

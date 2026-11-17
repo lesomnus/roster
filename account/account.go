@@ -1104,6 +1104,15 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "this account has not been invited", http.StatusForbidden)
 			return
 		}
+		if errors.Is(err, arrives.ErrUnlinked) {
+			// Somebody the tenant has, whose first link is not this app's to
+			// write: they hold more than it does. A refusal like the one
+			// above, and not this app failing -- `arrives` has said in the
+			// log what an administrator links.
+			http.Error(w, "this account is known here and is not linked yet; "+
+				"an administrator of your organisation has to link it for you", http.StatusForbidden)
+			return
+		}
 		fmt.Fprintf(os.Stderr, "account: %s/%s: %v\n", who.Provider, who.Subject, err)
 		http.Error(w, "cannot sign in", http.StatusInternalServerError)
 		return
