@@ -51,12 +51,17 @@ func TestAFewPicturesAreRenderedAtOnceAndTheRestWait(t *testing.T) {
 		ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
 		defer cancel()
 
-		at := time.Now()
+		// Its own deadline, and not fifty milliseconds counted from here: the
+		// call's clock began on the line above, so a stopwatch started after
+		// it read 49.4, 49.9 and 48.5 on three runs of CI and said the render
+		// had not waited, when it had waited the whole of what it was given.
+		until, _ := ctx.Deadline()
+
 		_, err := Render(ctx, picture)
 		x.ErrorIs(err, context.DeadlineExceeded, "a render ran with every turn taken")
 		x.NotErrorIs(err, ErrNotAnImage)
 		x.NotErrorIs(err, ErrTooLarge, "a call that ran out of time waiting is answered as an image refused")
-		x.GreaterOrEqual(time.Since(at), 50*time.Millisecond, "it did not wait")
+		x.False(time.Now().Before(until), "it did not wait for as long as its call lasted")
 	})
 
 	t.Run("and one whose caller went away stops waiting", func(t *testing.T) {
