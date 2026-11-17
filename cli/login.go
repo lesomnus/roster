@@ -831,6 +831,17 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 	// anything, or read anybody else. And it is revoked where every other
 	// delegation is -- `Holder.Invalidate`, which this app already hears
 	// through `Sync.Watch`.
+	//
+	// *Cannot sign in as them* was written before it was so: `POST /accept`
+	// told Hydra whoever the cookie named, for any challenge and with roster
+	// asked nothing, so a copy of the cookie finished a flow that whoever had
+	// the copy began in a browser of their own (#278). It answers one
+	// challenge now -- the one the cookie's form was answered at -- and Hydra
+	// takes the answer to a challenge only in the browser it raised it for
+	// (v26.2.0: *No CSRF value available in the session cookie*, for a
+	// verifier carried anywhere else). And roster is asked who is there first,
+	// so a cookie whose delegation was revoked, or whose person was signed out
+	// everywhere or suspended, names nobody.
 	if lc.Remember > 0 {
 		opts = append(opts, authsession.WithLifetime(lc.Remember), authsession.WithIdle(0))
 	}

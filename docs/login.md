@@ -284,6 +284,7 @@ sequenceDiagram
   end
 
   B->>L: POST /accept?login_challenge=…
+  L->>R: MeService.Get, as the person
   L->>H: PUT …/requests/login/accept {subject: Holder.id}
   H-->>L: {redirect_to}
   L-->>B: {redirect_to}
@@ -310,9 +311,9 @@ sequenceDiagram
 | the page | `GET /flow` | `{brand, client, scope}`. The page may not ask Hydra and this app may, so this is the one endpoint it has |
 | the first form | `VouchService.Delegate` | 204 signed in · 200 one factor proved, another to prove · 401 everything else. `Delegate` and not `Verify` because a yes has to come back with the `rd_` the consent hop reads `Me.Get` with |
 | the second form | `VouchService.Delegate` with the continuation | the app holds no half-signed-in state: the continuation is roster's, short-lived and single-use |
-| the accept | `PUT …/login/accept` | **`subject` is the `Holder.id`.** Nobody is named until every form is answered -- accepting after the first would hand a product a token for somebody who proved half of what the deployment asked for |
+| the accept | `MeService.Get`, as the person; `PUT …/login/accept` | **`subject` is the `Holder.id`.** Nobody is named until every form is answered -- accepting after the first would hand a product a token for somebody who proved half of what the deployment asked for. And nobody is named but **the sign-in made at this challenge, still standing**: the session answers the challenge its form was posted at and no other, in that challenge's tenant, and roster is asked who is there before Hydra is told -- signed out of, signed out everywhere or suspended is a 401 and Hydra hears nothing (§ *The last hop answers the sign-in made for it*) |
 | the claims | `MeService.Get`, as the person | `preferred_username`, `name`, `teams`, a **verified** address, `groups` -- each only if the client asked for the scope that carries it, and each as § *What a token says of somebody* says. Never `methods`. `teams` is the aliases of the person's teams -- an organisation's structure, and nothing a product should grant on. It was `groups`, which relying parties read as permission groups; roster's own `Group`s are in a token only as `groups`, and only the ones a `GroupExposure` shows to the client the token is for (§ *A relying party that grants on groups*) -- what somebody may do is otherwise `HolderService/Reaches` ([apps.md](apps.md)) |
-| the grant | `PUT …/consent/accept` | `consent: skip` grants and draws nothing; `ask` draws the screen and `POST /consent` is its answer. With nobody here to read the subject -- a session that ended between the hops of one flow -- a client that asked for the person is refused with `login_required` (`PUT …/consent/reject`) rather than granted `sub` alone; one that asked for `openid` and nothing more still gets it |
+| the grant | `PUT …/consent/accept` | `consent: skip` grants and draws nothing; `ask` draws the screen and `POST /consent` is its answer. With nobody here to read the subject -- a session that ended between the hops of one flow, or somebody signed out everywhere or suspended between them -- the client is refused with `login_required` (`PUT …/consent/reject`) rather than granted `sub` alone, **whatever it asked for**: the read is also how this hop knows the subject is still somebody |
 
 The delegation this app minted is **kept** after the grant, for as long as Hydra
 remembers the browser, because the next flow Hydra answers without a form reads
@@ -504,10 +505,10 @@ functions stop agreeing, in either direction.
 | `POST /session` | *frontdoor.* `{alias\|address, password}` → **204** signed in · **200** `{satisfied, available}` one factor proved and more to prove · **401** everything else | `TestALoginAppTellsHydraWhoSignedIn` · `TestASecondFactorIsAskedForAndTheFlowWaitsForIt` · `TestARosterThatIsDownIsNotAWrongPassword` |
 | `POST /session/continue` | *frontdoor.* `{kind, name, secret}` → **204** · **401**. One attempt per first form: the half-session is spent whether the answer was right or not | `TestAWrongSecondFactorFinishesNothing` · `TestAHalfSessionIsOverWhenTheAppSaidItWas` · `TestASignedInBrowserSurvivesAStraySecondForm` |
 | `DELETE /session` | *frontdoor.* Drops this app's session and revokes the delegation. Not part of the flow -- the flow's own ending is `POST /accept` -- and mounted because it is the same handler | `TestSigningOutRevokesEvenAWindowThatHasPassed` |
-| `POST /accept` | `{redirect_to}`, and **the hop no other front door has**: it turns a finished sign-in into `acceptLoginRequest{subject}`. A page that leaves this out signs somebody in and never ends the flow. 401 when nobody is signed in, or is half way | `TestALoginAppTellsHydraWhoSignedIn` · `TestAFlowReachesOnlyItsOwnOperator` |
+| `POST /accept` | `{redirect_to}`, and **the hop no other front door has**: it turns a finished sign-in into `acceptLoginRequest{subject}`. A page that leaves this out signs somebody in and never ends the flow. 401 when nobody is signed in, or is half way; when the sign-in was not made at **this** `login_challenge`; and when roster no longer answers for whoever it was | `TestALoginAppTellsHydraWhoSignedIn` · `TestAFlowReachesOnlyItsOwnOperator` · `TestASignInAnswersOnlyTheChallengeItWasMadeFor` · `TestASessionOfOneTenantDoesNotAnswerAnothersChallenge` · `TestAnAcceptAsksRosterWhoIsThere` |
 | `GET /provider` | 302 to the directory this operator's `Connection` names, with the state in a cookie | `TestSomebodyArrivesThroughAProvider` · `TestAProviderFlowReachesOnlyItsOwnOperator` |
 | `GET /callback/{tenant}/{connection}` | where a directory sends the browser back: one URL per connection, which is what is registered at that provider. **Not** in a flow: which flow it belongs to comes from the state, and the connection the path names has to be the one that flow went to | `TestACallbackWithoutItsOwnStateIsRefused` · `TestAnAnswerIsHeldToTheRoundTripThatAskedForIt` · `TestAStrangerIsRefusedUnlessTheDeploymentEnrols` |
-| `GET /consent` | a screen when `login.consent` is `ask`, a 303 when it is `skip` or Hydra remembered -- to Hydra with the claims, or carrying `login_required` when there is nobody here to read them for a client that asked | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor` |
+| `GET /consent` | a screen when `login.consent` is `ask`, a 303 when it is `skip` or Hydra remembered -- to Hydra with the claims, or carrying `login_required` when there is nobody here to read the subject as | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor` · `TestAConsentWhoseSubjectCannotBeReadIsRefused` |
 | `POST /consent` | the screen's answer. A no is `consent/reject` and the browser goes back to the client with a refusal | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `ts/e2e/login.spec.ts` |
 | `GET /logout` | a screen only half the time: drawn when nothing proved a relying party started the sign-out, answered with a 303 when something did | `TestALogoutNobodyProvedAnAppAskedForIsConfirmed` · `TestSigningOutEndsWhatTheIssuerRemembers` · `docker/behind.sh` |
 | `POST /logout` | `{logout_challenge, allow}` → `{signed_out, to}`, or `{signed_out: false}` and nowhere to go. **400 for a logout an app did prove it started**, because that one is never drawn | `TestTheConfirmedSignOutIsTheOneThatEnds` · `TestTheAnswerIsForTheScreenThatWasDrawn` · `TestALogoutChallengeIsAskedAbout` |
@@ -543,6 +544,10 @@ And the rules, which are the part that is easy to get wrong and the reason
 - **`POST /accept` may not be left out.** It is the hop that turns a finished
   sign-in into Hydra's answer; a page without it signs somebody in and leaves the
   flow hanging with nothing on screen to say so.
+- **And it is called with the challenge the forms were posted with.** A sign-in
+  answers the `login_challenge` it was made at and no other, so `/session`,
+  `/session/continue` and `/accept` carry the same one: the one in the page's own
+  URL.
 
 ### What a token says of somebody
 
@@ -695,22 +700,63 @@ reads only its own subject: a session that changed hands between the hops of a
 flow is not read into a token that names somebody else
 (`TestAConsentReadsOnlyItsOwnSubject`).
 
-**And a token is not handed out short.** What is left at the consent hop with nobody
-to read is refused with `login_required` when the client asked for the person
-(`profile`, `email`, `groups`), where it was granted with `sub` alone. A token
-missing the claims its client asked for is not a smaller answer but a wrong one
-that looks right: the client cannot tell it from somebody with no name, and a
-relying party keying its accounts on `email` fails a long way from here. The
-sign-in a client starts on hearing `login_required` is a skipped login this app
-asks again, so it recovers by itself; a silent `sub` never did
-(`TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor`, and
-`TestEveryScopeThatCarriesAClaimIsNamed` for which scopes count).
+**And a token is not handed out short, or for nobody.** What is left at the
+consent hop with nobody to read is refused with `login_required`, where it was
+granted with `sub` alone. A token missing the claims its client asked for is not
+a smaller answer but a wrong one that looks right: the client cannot tell it
+from somebody with no name, and a relying party keying its accounts on `email`
+fails a long way from here. The sign-in a client starts on hearing
+`login_required` is a skipped login this app asks again, so it recovers by
+itself; a silent `sub` never did
+(`TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor`).
+
+It is refused **whatever the client asked for**. A client that asked for `openid`
+and nothing of the person was left granted when the rest was closed, as all it
+was ever going to get. But the read is also the one thing at this hop that says
+the subject is still somebody -- not signed out everywhere, suspended or erased
+since the login was accepted -- and which scope a flow asks for is the
+authorization request's to choose, so any flow could be made one that skips it
+(`TestAConsentWhoseSubjectCannotBeReadIsRefused`).
 
 The alternative was reading the person with the **operator's** key, which needs no
 session at all. It was refused: it would widen this app's role to `Holder.Get`
 across the tenant, and it would give up the property that a token's claims are
 read *as* the person who just authenticated -- which is what makes it structurally
 impossible for one person's claims to end up in another's token.
+
+### The last hop answers the sign-in made for it
+
+A session that lasts hours is a cookie that opens for hours, and nothing on a
+server ends a sealed cookie. So what the cookie is good for is held to two
+things, and `POST /accept` was held to neither: it told Hydra whoever the cookie
+named, for whatever challenge the request named.
+
+- **The challenge its form was answered at.** A session minted by `POST /session`
+  or `POST /session/continue` remembers the `login_challenge` on that request (a
+  digest of it: a challenge is two kilobytes and the session is the cookie), and
+  `POST /accept` answers that challenge and no other, in the tenant it resolves
+  to. A later challenge is the form again. That is what a challenge without
+  `skip` asks for -- a browser Hydra does not know, or a client that wants a
+  sign-in made now (`prompt=login`, `max_age`) -- and it was answered with a
+  sign-in hours old, which Hydra then stamped as `auth_time`; a challenge of
+  another tenant was answered with this one's person
+  (`TestASignInAnswersOnlyTheChallengeItWasMadeFor`,
+  `TestASessionOfOneTenantDoesNotAnswerAnothersChallenge`). The page loses
+  nothing: it calls `/accept` straight after a sign-in at the same challenge, a
+  browser Hydra remembers is answered at `GET /login`, and a provider's round
+  trip where it comes back.
+- **Somebody roster still answers for.** Signed out here, signed out
+  everywhere, suspended, erased: each ends the delegation at roster and none
+  reaches a cookie. `GET /login` asked, on Hydra's `skip`; `POST /accept` did
+  not, so Hydra was told somebody roster had ended, from any copy of their
+  cookie. It asks `Me.Get` as the cookie's person first, in the flow's tenant,
+  and a refusal is a 401 with Hydra told nothing
+  (`TestAnAcceptAsksRosterWhoIsThere`).
+
+So a cookie that leaks reads one person's own profile until its delegation
+ends, and signs nobody in: a challenge its thief raises is not the one it was
+made for, and Hydra takes the answer to a challenge only in the browser it
+raised it for.
 
 ### Signing out reaches the issuer
 

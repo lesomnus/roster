@@ -55,6 +55,8 @@ package login
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -426,6 +428,12 @@ func New(ctx context.Context, c Config) (*App, error) {
 
 			return o.alias, nil
 		},
+
+		// What a sign-in made at this door is for: the login challenge its form
+		// was answered at. `accept` holds a session to it.
+		For: func(r *http.Request) string {
+			return madeFor(r.URL.Query().Get(Challenge))
+		},
 	})
 	if err != nil {
 		conn.Close()
@@ -434,6 +442,24 @@ func New(ctx context.Context, c Config) (*App, error) {
 	}
 
 	return a, nil
+}
+
+// madeFor is the mark a session carries of the login challenge its form was
+// answered at ([frontdoor.Config.For]), and what `accept` compares with the
+// challenge it is asked to answer.
+//
+// The challenge's SHA-256 and not the challenge, for the reason [Challenge]
+// gives for not being a cookie: Hydra's is about two kilobytes, and where the
+// session is sealed into the cookie a second copy of it there is past what a
+// browser keeps. A digest names the challenge as well as the challenge does,
+// and nothing here needs it back.
+func madeFor(challenge string) string {
+	if challenge == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(challenge))
+
+	return base64.RawURLEncoding.EncodeToString(sum[:])
 }
 
 // outlast is how much longer this app's session lives than Hydra remembers the
@@ -698,18 +724,64 @@ func (a *App) offers(ctx context.Context, o *tenant, name string) bool {
 	return false
 }
 
-// accept is the last hop: this app's session becomes Hydra's answer.
+// accept is the last hop: the sign-in just made at this challenge becomes
+// Hydra's answer to it.
+//
+// # The sign-in made for this challenge, and no other
+//
+// It was whoever the cookie named, for whatever challenge the request named. A
+// sealed cookie opens until its own clock runs out -- `remember` and a minute
+// -- so the last sign-in a browser made answered every challenge raised after
+// it with no form drawn: one of another tenant, and one Hydra raised because
+// its client wanted a sign-in made now (`prompt=login`, `max_age`), which was
+// then stamped `auth_time` for a sign-in hours old (#278).
+//
+// What the page does is narrower than that, and is the whole of what is
+// answered. It calls this straight after a form at the same challenge, so a
+// session answers the challenge its form was posted at ([madeFor]) and is of
+// the tenant that challenge resolves to. The other two ways a login is
+// accepted do not come through here: a browser Hydra remembers is answered at
+// `begin`, and a provider's round trip at `callback`.
+//
+// # And roster is asked who is there
+//
+// The cookie says who signed in. Whether that sign-in still stands is
+// roster's: signed out of, signed out everywhere, suspended, erased -- each
+// ends the delegation there and none reaches a cookie. So Hydra was told
+// somebody roster had ended, from any copy of their cookie, and the consent
+// hop granted where the request asked for no claim. `reads` is asked first,
+// as `begin` asks it of a browser Hydra remembers and the account app asks
+// before it writes for somebody (`account.App.present`): `Me.Get` as the
+// cookie's person, in the flow's tenant, answering as that person.
+//
+// Every refusal is one answer and tells Hydra nothing, so the challenge is
+// still there for the form.
 func (a *App) accept(w http.ResponseWriter, r *http.Request) {
-	who, ok := a.door.Who(r.Context(), r)
-	if !ok {
-		// Not signed in, or half way. Either is the same to a caller: there is
-		// nobody here to name.
+	ctx := r.Context()
+	challenge := r.URL.Query().Get(Challenge)
+
+	o, flowing := tenantOf(ctx)
+	s, ok := a.door.SignedIn(ctx, r)
+	if !flowing || !ok || s.For == "" || s.For != madeFor(challenge) || s.Tenant != o.id {
+		// Not signed in, or half way; or signed in for something else. Each
+		// is the same to a caller: there is nobody here to name for this.
 		http.Error(w, "no", http.StatusUnauthorized)
 
 		return
 	}
 
-	to, err := a.admin.acceptLogin(r.Context(), r.URL.Query().Get(Challenge), who.String(), a.c.Remember)
+	if _, err := a.reads(ctx, r, o, s.Who.String()); err != nil {
+		if errors.Is(err, frontdoor.ErrNotSignedIn) {
+			http.Error(w, "no", http.StatusUnauthorized)
+
+			return
+		}
+		a.broken(w, r, err)
+
+		return
+	}
+
+	to, err := a.admin.acceptLogin(ctx, challenge, s.Who.String(), a.c.Remember)
 	if err != nil {
 		a.broken(w, r, err)
 
@@ -1039,9 +1111,11 @@ func (a *App) decide(w http.ResponseWriter, r *http.Request) {
 
 // grant reads the person once, as them, and answers Hydra.
 //
-// The only place this app reads anybody. What it reads is `Me.Get`, which
-// answers everything a claim could come from in one call, and what it puts in
-// the token is decided by the scope the client asked for -- `claimsOf`.
+// The only place this app keeps what it read of anybody. What it reads is
+// `Me.Get`, which answers everything a claim could come from in one call, and
+// what it puts in the token is decided by the scope the client asked for --
+// `claimsOf`. `begin` and `accept` ask the same call and keep none of the
+// answer: what they want of it is that somebody is there to give one.
 //
 // # Only the audiences the client is registered for, by their exact name
 //
@@ -1074,13 +1148,8 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 		return
 	}
 
-	claims := map[string]any{}
 	me, err := a.reads(ctx, r, o, v.Subject)
-	switch {
-	case err == nil:
-		claims = claimsOf(me, v.Scope, v.Client.Id)
-
-	case errors.Is(err, frontdoor.ErrNotSignedIn):
+	if errors.Is(err, frontdoor.ErrNotSignedIn) {
 		// Nobody here to read the subject with, and reading them needs a
 		// credential nobody here holds.
 		//
@@ -1091,7 +1160,8 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 		// login is asked again now when this app cannot read the person
 		// (`begin`), so what is left here is a session that ended between the
 		// hops of one flow: a consent screen left open past it, a cookie cleared
-		// in another tab.
+		// in another tab -- or somebody signed out everywhere, suspended or
+		// erased between them, which is the same answer from roster.
 		//
 		// And it is refused rather than granted with `sub` alone, which it was.
 		// A token missing the claims its client asked for is not a smaller
@@ -1099,28 +1169,33 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 		// from a person who has no name, and a relying party that keys accounts
 		// on `email` fails somewhere far from here. `login_required` says what
 		// happened, and the sign-in a client starts on hearing it is a skipped
-		// login this app asks again. A client that asked for nothing but `sub`
-		// still gets it, which is all it was ever going to get.
-		if asksForClaims(v.Scope) {
-			to, err := a.admin.refuseConsent(ctx, v.Challenge, "login_required",
-				"this browser has to sign in again before its claims can be read")
-			if err != nil {
-				a.broken(w, r, err)
-
-				return
-			}
-			http.Redirect(w, r, to, http.StatusSeeOther)
+		// login this app asks again.
+		//
+		// **Whatever the client asked for.** A client that asked for nothing but
+		// `sub` was still granted, on the reading that `sub` is all it was ever
+		// going to get. But the read is also the one place this hop asks
+		// whether the subject is still somebody, and the scope is the
+		// authorization request's to choose: a flow narrowed to `openid` was a
+		// consent granted, and tokens minted, for a person roster had ended
+		// (#278). Nobody to read is nobody to grant for.
+		to, err := a.admin.refuseConsent(ctx, v.Challenge, "login_required",
+			"this browser has to sign in again before its claims can be read")
+		if err != nil {
+			a.broken(w, r, err)
 
 			return
 		}
+		http.Redirect(w, r, to, http.StatusSeeOther)
 
-	default:
+		return
+	}
+	if err != nil {
 		a.broken(w, r, err)
 
 		return
 	}
 
-	to, err := a.admin.acceptConsent(ctx, v.Challenge, v, claims, a.c.Remember)
+	to, err := a.admin.acceptConsent(ctx, v.Challenge, v, claimsOf(me, v.Scope, v.Client.Id), a.c.Remember)
 	if err != nil {
 		a.broken(w, r, err)
 

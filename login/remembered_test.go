@@ -176,6 +176,11 @@ func TestAConsentReadsOnlyItsOwnSubject(t *testing.T) {
 // far from here -- a relying party keying its accounts on `email` signing
 // nobody in. `login_required` says what happened, and the sign-in a client
 // starts on hearing it is a skipped login this app asks again.
+//
+// A client that asked for `sub` alone was left granted then, as all it was
+// ever going to get. It is refused too: the read is how this hop knows the
+// subject is still somebody, and which scope a flow asks for is the request's
+// to choose (`TestAConsentWhoseSubjectCannotBeReadIsRefused`).
 func TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor(t *testing.T) {
 	refusal := func(d *deployment) (string, map[string]any) {
 		d.hydra.mu.Lock()
@@ -201,7 +206,7 @@ func TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor(t *testing.T) {
 		x.Nil(claims, "a token was handed out with sub alone")
 	})
 
-	t.Run("and one that asked for sub alone gets it", func(t *testing.T) {
+	t.Run("and so is one that asked for sub alone", func(t *testing.T) {
 		x := require.New(t)
 		d := serve(t)
 		b := d.browser(t)
@@ -211,9 +216,9 @@ func TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor(t *testing.T) {
 		x.NoError(err)
 		defer res.Body.Close()
 		x.Equal(http.StatusSeeOther, res.StatusCode)
-		x.Equal("/done", res.Header.Get("Location"), "a client that asked for nobody's claims was refused for not having them")
+		x.Equal("/denied", res.Header.Get("Location"), "a consent was granted with nobody here to say the subject is still somebody")
 
 		why, _ := refusal(d)
-		x.Empty(why)
+		x.Equal("login_required", why)
 	})
 }
