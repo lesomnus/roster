@@ -584,22 +584,6 @@ func (s *Server) Unlink(ctx context.Context, req *app.MeUnlinkRequest) (*app.MeU
 	return app.MeUnlinkResponse_builder{}.Build(), nil
 }
 
-// Link attaches a provider account the caller has just proved they control.
-//
-// The other half of [Server.Unlink], and the half §4 left undrawn. It writes
-// through the **walled** server for `Unlink`'s reason -- so `server/core` runs,
-// and with it the rule that a second identity of one provider for one person is
-// a link that found the wrong row.
-//
-// # It hangs off the frame and never off an argument
-//
-// `f.Actor`, exactly as `SignOutEverywhere` does. There is no field naming
-// whose row this is and there will not be: what makes this method the person's
-// own is the same absence that makes the other three theirs.
-//
-// # And what a refusal must not say
-//
-
 // SignOutEverywhere voids everything issued to the caller before now.
 //
 // The self-service half of D26: `HolderService.Invalidate` takes a subject and

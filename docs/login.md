@@ -929,6 +929,15 @@ optimisation but a **fix**: without it, entering somebody in advance broke their
 sign-in, because the alias an operator chose is the alias `enrolling` derives and
 `Holder.Add` answers AlreadyExists.
 
+**`enrolling` makes a person of whoever a directory says signed in, and some
+directories are everybody's.** `login.enrol` is one setting for the whole app,
+so it is every tenant's and every connection's. A connection at an issuer
+anybody has an account at -- GitHub, Google, Microsoft's `common` or
+`organizations` -- then makes a person of that tenant out of anybody who signs
+in there: nothing holds such a connection to one organisation's accounts, and
+Google's `hd` is not read. It is the setting for a deployment where that is
+meant, or whose tenants connect only directories of their own.
+
 Matching asks two things. The **directory** has to say the address is verified:
 one that let somebody type an address into their own profile would hand out
 whichever account carries it. And the **row** has to be somebody's word that it
