@@ -340,6 +340,7 @@ writes anybody would use.
 | A directory's `Provision` makes the person, their identity and their address in one write, or none of them | `server/core/directory.go` | `TestADirectoryMakesPeopleAndOnlyNewOnes` |
 | A rule that counts other rows under two callers at once takes a write on a row both of them name -- the person's, the tenant's, the site's -- and that write changes nothing of the row: it is as the trail keeps it, and `roster trail rows` finds nothing in it | `cmd/policy.go` | `TestALockLeavesItsRowAsTheTrailKeepsIt` |
 | A session at roster's own door is on the trail of the plane it is a row of: made by a sign-in, its idle clock moved, ended by a sign-out -- each by whoever it is of, under their tenant -- and collected by the sweep. A line says which session and when, and nothing of the cookie; and `roster trail rows` finds nothing in one | `server/session` | `TestASessionMadeAtRostersOwnDoorIsOnTheTrail` · `TestAnOperatorsSessionIsOnTheControlPlanesTrail` |
+| A line of the trail that says a row went -- collected by a sweep, taken with somebody forgotten or with a tenant destroyed, a consent past its keep -- is filed under the tenant the row was of: that tenant reads it, and a hold on the tenant keeps it beside the lines that say the row was there | `server/expire` | `TestWhatASweepCollectsIsSaidUnderTheTenantItWasOf` · `TestWhatGoesWithAPersonOrATenantIsSaidUnderThatTenant` · `TestAHoldKeepsTheLineThatSaysARowWent` |
 
 ## What a tenant or a deployment switches
 
