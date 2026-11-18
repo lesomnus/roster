@@ -142,12 +142,26 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 }
 
 // due is everything a clock has finished waiting for: the people whose grace
-// ran out (`holder.forget_after`), the closed tenants whose grace did
+// ran out (`holder.forget_after`), the consents kept past theirs
+// (`consent.keep`), the closed tenants whose grace did
 // (`tenant.restore_within`) and any whose destruction began and stopped, and
 // the aliases whose hold is over (`tenant.alias_hold`, which has a default).
 //
 // And, first, what forgets already made still owe the trail ([owed]): a hold
 // that lifted is something a clock was waiting for too.
+//
+// # It is what `serve`'s loops do, all of them
+//
+// It was less, in two ways (#280). It stopped at the first person or tenant
+// that failed, where each loop logs the failure and carries on -- so one
+// person who could not be forgotten kept every tenant and every alias after
+// them from being looked at, for as long as they could not. And it destroyed
+// no consents, which only `serve`'s loop did: a deployment that ran this from
+// cron kept them past `consent.keep` for good. So each part is the function
+// its loop calls (`forget.Pass`, `forget.PassConsents`), a failure is said
+// where it happens and does not stop the rest, and what it answers at the end
+// is who failed: somebody running it from cron hears of a failure by the exit,
+// which is the only thing cron reads.
 func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry bool) error {
 	now := time.Now()
 
@@ -156,8 +170,14 @@ func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry 
 		return fmt.Errorf("audit: %w", err)
 	}
 
+	var failed []string
+	fail := func(what string, err error) {
+		fmt.Fprintf(os.Stderr, "%s: %v\n", what, err)
+		failed = append(failed, what)
+	}
+
 	if err := owed(ctx, s, p, dry); err != nil {
-		return err
+		fail("what the trail is owed was not all paid", err)
 	}
 
 	if after := c.Holder.ForgetAfter; after > 0 {
@@ -167,7 +187,7 @@ func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry 
 		if dry {
 			due, err := forget.Due(ctx, s.Ent, before)
 			if err != nil {
-				return err
+				fail("who is due was not read", err)
 			}
 			for _, who := range due {
 				fmt.Fprintf(os.Stdout, "%s\n", who)
@@ -177,12 +197,11 @@ func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry 
 			// The pass the loop makes (`forget.Pass`): each person asked
 			// again, in the transaction that destroys them, whether they are
 			// still due.
-			return err
+			fail("who is due was not read", err)
 		}
-		if len(vs) == 0 {
+		if len(vs) == 0 && len(failed) == 0 {
 			fmt.Fprintf(os.Stderr, "nobody has been erased for longer than %s\n", after)
 		}
-		var failed error
 		for _, v := range vs {
 			switch {
 			case dry:
@@ -193,22 +212,38 @@ func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry 
 				fmt.Fprintf(os.Stderr, "%s is left as they are: %v\n", v.Who, v.Err)
 
 			case v.Err != nil:
-				// The pass went on to the others, and each of them is said
-				// before this is answered.
-				fmt.Fprintf(os.Stderr, "%s was not forgotten: %v\n", v.Who, v.Err)
-				if failed == nil {
-					failed = fmt.Errorf("%s: %w", v.Who, v.Err)
-				}
+				fail(fmt.Sprintf("%s was not forgotten", v.Who), v.Err)
 
 			default:
 				reported(v.Who, v.Result)
 			}
 		}
-		if failed != nil {
-			return failed
-		}
 	} else {
 		fmt.Fprintf(os.Stderr, "nobody is destroyed on a clock: `holder.forget_after` names no window\n")
+	}
+
+	// What they consented to, kept past them as proof for `consent.keep` and
+	// then destroyed. Nothing where no window is named: kept for good.
+	if keep := c.Consent.Keep; keep > 0 {
+		before := now.Add(-keep)
+
+		if dry {
+			ids, err := forget.DueConsents(ctx, s.Ent, before)
+			if err != nil {
+				fail("which consents are due was not read", err)
+			}
+			if len(ids) > 0 {
+				fmt.Fprintf(os.Stderr, "%d consent(s) kept for longer than %s past their account\n", len(ids), keep)
+			}
+		} else {
+			n, err := forget.PassConsents(ctx, s.Ent, before, cs)
+			if n > 0 {
+				fmt.Fprintf(os.Stderr, "%d consent(s) destroyed, kept for longer than %s past their account\n", n, keep)
+			}
+			if err != nil {
+				fail("the consents kept past their account were not all destroyed", err)
+			}
+		}
 	}
 
 	var ts []pdid.Id
@@ -218,7 +253,7 @@ func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry 
 		ts, err = forget.Unfinished(ctx, s.Ent)
 	}
 	if err != nil {
-		return err
+		fail("which tenants are due was not read", err)
 	}
 	for _, t := range ts {
 		if dry {
@@ -227,13 +262,13 @@ func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry 
 			continue
 		}
 		if err := destroyed(ctx, s, t, p, cs, false); err != nil {
-			return err
+			fail(fmt.Sprintf("%s was not destroyed", t), err)
 		}
 	}
 
 	free, err := forget.DueAliases(ctx, s.Ent, now.Add(-c.Tenant.Hold()))
 	if err != nil {
-		return err
+		fail("which aliases are free was not read", err)
 	}
 	for _, t := range free {
 		if dry {
@@ -242,9 +277,16 @@ func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry 
 			continue
 		}
 		if err := forget.FreeAlias(ctx, s.Ungated, t); err != nil {
-			return fmt.Errorf("%s: %w", t, err)
+			fail(fmt.Sprintf("%s: its alias was not freed", t), err)
+
+			continue
 		}
 		fmt.Fprintf(os.Stderr, "%s: its alias is free\n", t)
+	}
+
+	if len(failed) > 0 {
+		return fmt.Errorf("the rest was done, and %d thing(s) failed: %s. Each is said above with why, and is still due: the next run takes it",
+			len(failed), strings.Join(failed, "; "))
 	}
 
 	return nil
@@ -461,8 +503,27 @@ func forgotten(ctx context.Context, s *cmd.Server, who pdid.Id, p trail.Policy, 
 }
 
 // reported is one person forgotten, as the command says it.
+//
+// # And under a hold, what the hold is
+//
+// A hold on a tenant does not stop somebody of it being forgotten by name:
+// their rows are destroyed like anybody's, and what the hold keeps is the
+// trail's lines about them (`server/forget/hold.go`). The command that did
+// that printed a count of trail rows, under a help text that said nothing of
+// a held tenant is destroyed (#280). It says what happened, each time: whose
+// hold and what for, that the rows went all the same, and which lines are
+// kept and until when. No flag asks for it and none turns the forget into a
+// refusal: the request has a clock on it that a hold does not stop.
 func reported(who pdid.Id, res forget.Result) {
 	fmt.Fprintf(os.Stderr, "%s forgotten: %s\n", who, res)
+	if u := res.Under; u != nil {
+		fmt.Fprintf(os.Stderr, "%s: their tenant @%s is held since %s: %s. A hold does not stop somebody being forgotten by name: "+
+			"%d row(s) of theirs are destroyed and their own is blank. What the hold keeps is the trail's lines about them and about what was theirs, "+
+			"%d of them, as they were until it is lifted; the first pass after that erases them, `serve`'s or `roster forget`\n",
+			who, u.Alias, u.Since.UTC().Format(time.RFC3339), u.Why, res.Rows, res.Held.Rows)
+
+		return
+	}
 	if res.Held.Any() {
 		// Not an error: what a hold keeps is not this command's to destroy.
 		// It stays owed (payday#115), and is paid at the first pass after

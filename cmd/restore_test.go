@@ -127,11 +127,18 @@ func TestARestoreGivesBackTheAccountAndNotTheSignIns(t *testing.T) {
 // then met the index that keeps an alias one person's, and `roster restore`
 // printed the store's own words: `ent: constraint failed: ... UNIQUE
 // constraint failed: holder.alias, holder.tenant_id`. Right is a sentence:
-// which name, who has it now, and what an operator does -- and the command it
-// gives is one the binary takes, which this runs as it is told.
+// that it is their alias, who has it now, and what an operator does -- and the
+// command it gives is one the binary takes, which this runs as it is told.
 //
 // Somebody erased is renamed by nothing, since no server reads them, so it is
 // whoever has the name now that makes way.
+//
+// And the sentence names nobody. It said *... was @newco/alice* to whoever
+// had asked by identifier, and `restore` is one of the commands the manual
+// says print no field anybody's row declares personal, which is why it takes
+// no `--as` and leaves no row of the access record. So it says who has the
+// name, by identifier, and the first command it gives is a read with `--as`:
+// the name is read there, by somebody the record names.
 func TestARestoreSaysWhichNameIsTaken(t *testing.T) {
 	x := require.New(t)
 	b := cliUp(t, getMe)
@@ -159,10 +166,11 @@ func TestARestoreSaysWhichNameIsTaken(t *testing.T) {
 	_, err = term(t, cli.NewCmdRestore(&b.Local), was.String())
 	x.Error(err)
 	x.NotContains(err.Error(), "constraint", "the store's own words: %v", err)
-	x.ErrorContains(err, "@newco/alice", "which name is taken is not said")
+	x.NotContains(err.Error(), "alice", "a restore asked by identifier printed the alias, which is declared personal: %v", err)
+	x.ErrorContains(err, "alias", "which of their names is taken is not said")
 	x.ErrorContains(err, now.String(), "who has it now is not said")
-	x.ErrorContains(err, "holder get -o json @newco/alice", "where the version a rename takes is read is not said")
-	x.ErrorContains(err, "holder realias @newco/alice", "what to do is not said")
+	x.ErrorContains(err, "holder get -o json "+now.String(), "where the version a rename takes is read is not said")
+	x.ErrorContains(err, "holder realias "+now.String(), "what to do is not said")
 
 	row, err := b.Server.Ent.Holder.Get(ctx, was.Uuid())
 	x.NoError(err)
@@ -170,13 +178,13 @@ func TestARestoreSaysWhichNameIsTaken(t *testing.T) {
 	x.Nil(row.DateInvalidated, "a restore that was refused wrote")
 
 	// As it says: the version, read whole, and the rename.
-	out, err := cliRun(t, &b.Local, "holder", "get", "-o", "json", "@newco/alice")
+	out, err := cliRun(t, &b.Local, "holder", "get", "-o", "json", now.String())
 	x.NoError(err)
 	var got struct {
 		DateUpdated string `json:"dateUpdated"`
 	}
 	x.NoError(json.Unmarshal([]byte(out), &got))
-	_, err = cliRun(t, &b.Local, "holder", "realias", "@newco/alice",
+	_, err = cliRun(t, &b.Local, "holder", "realias", now.String(),
 		fmt.Sprintf(`{"alias":"alice-2","date_updated":%q}`, got.DateUpdated))
 	x.NoError(err, "the command the refusal gives is not one the binary takes")
 

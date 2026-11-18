@@ -110,6 +110,20 @@ type Result struct {
 	// owed for (payday#115): what a hold keeps part of, or all of it when
 	// paying after the transaction failed. The next pass pays it.
 	Owed int
+
+	// Under is the hold their tenant was under as they were forgotten, and
+	// nil when nobody held it: a forget by name is made under one ([Hold]),
+	// and whoever made it is told what the hold kept and what it did not.
+	Under *Holding
+}
+
+// Holding is an operator's hold on a tenant, as somebody who meets one is
+// told of it: whose, since when, and what for.
+type Holding struct {
+	Tenant pdid.Id
+	Alias  string
+	Since  time.Time
+	Why    string
 }
 
 func (r Result) String() string {
@@ -260,6 +274,9 @@ func forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 	}
 	if err := still(v, in); err != nil {
 		return out, err
+	}
+	if in.DateHeld != nil {
+		out.Under = &Holding{Tenant: pdid.Id(in.Id), Alias: in.Alias, Since: *in.DateHeld, Why: in.Hold}
 	}
 
 	// Every identifier whose trail rows are about this person. Not the holder
@@ -424,12 +441,25 @@ func forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 // restore is (`server/core/close.go`). Then the row is read again and the
 // answer is the one it would have been given a moment later: forgotten, or
 // restored already.
+//
+// # And not into a tenant that is destroyed
+//
+// A tenant's destruction forgets its people one at a time, and a hold placed
+// while it runs stops it with some of them still there. One of those who had
+// been erased was restored: back, in a tenant stamped destroyed, where no
+// door lets anybody in and nothing is written (`core.living`), to be
+// forgotten with the rest the moment the hold lifts (#280). An account is
+// somebody of a tenant, and there is none for them to be of. Refused in
+// words ([standing]), and part of the write's condition.
 func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents, q bare.Recorder) error {
 	v, err := db.Holder.Get(ctx, who.Uuid())
 	if err != nil {
 		return err
 	}
 	if err := restorable(who, v); err != nil {
+		return err
+	}
+	if err := standing(ctx, db, who, v); err != nil {
 		return err
 	}
 	if err := taken(ctx, db, v); err != nil {
@@ -444,7 +474,10 @@ func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents
 
 	now := time.Now()
 	n, err := tx.Holder.Update().
-		Where(holder.IdEQ(who.Uuid()), holder.DateErasedNotNil(), holder.AliasNEQ("")).
+		Where(
+			holder.IdEQ(who.Uuid()), holder.DateErasedNotNil(), holder.AliasNEQ(""),
+			holder.HasTenantWith(tenant.DateDestroyedIsNil()),
+		).
 		ClearDateErased().
 		SetDateInvalidated(now).
 		SetDateUpdated(now).
@@ -471,6 +504,9 @@ func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents
 		if err := restorable(who, v); err != nil {
 			return err
 		}
+		if err := standing(ctx, db, who, v); err != nil {
+			return err
+		}
 
 		return fmt.Errorf("%s changed while this was being decided, and was not brought back; ask again", who)
 	}
@@ -493,6 +529,22 @@ func restorable(who pdid.Id, v *ent.Holder) error {
 		return fmt.Errorf("%s has not been erased, so there is nothing to bring back", who)
 	case v.Alias == "":
 		return fmt.Errorf("%s has been forgotten; what is left is an identifier, and it names nobody", who)
+	}
+
+	return nil
+}
+
+// standing refuses a restore of somebody whose tenant is destroyed; see
+// [Restore].
+func standing(ctx context.Context, db *ent.Client, who pdid.Id, v *ent.Holder) error {
+	in, err := db.Tenant.Get(ctx, v.TenantId)
+	if err != nil {
+		return err
+	}
+	if in.DateDestroyed != nil {
+		return fmt.Errorf("%s is of a tenant that was destroyed on %s, and nobody is brought back into a tenant that is gone: "+
+			"what is left of them there is forgotten with it. A customer that comes back is a new tenant, and its people are new people in it",
+			who, in.DateDestroyed.Format(time.RFC3339))
 	}
 
 	return nil
@@ -551,9 +603,21 @@ func mine(ctx context.Context, tx *ent.Client, who pdid.Id) (*ent.Holder, *ent.T
 // The indexes that keep a name one person's cover the living of a tenant, so
 // each of them is free from the erase: the alias, and the three things a
 // directory calls somebody. The alias is the one an operator can do something
-// about with a command, and the sentence gives it in the spelling the binary
-// takes. Somebody erased is renamed by nothing -- no server reads them -- so it
-// is whoever has the name now that makes way.
+// about with a command, and the sentence gives the command as the binary
+// takes it. Somebody erased is renamed by nothing -- no server reads them --
+// so it is whoever has the name now that makes way.
+//
+// # It names people by identifier, and says no name
+//
+// It said the alias: *... was @contoso/erin*, to whoever had asked by an
+// identifier. A restore is one of the commands that take no `--as` and leave
+// no row of the access record, on the ground that they print no field
+// anybody's row declares personal (`docs/operating.md`, *What it reads and
+// writes of anybody is on the access record*), and an alias is declared so
+// (#280). So the sentence says who has
+// the name and not what it is, and the commands it gives name them by
+// identifier. The first of those is a read with `--as`, which is where the
+// name is read by somebody the record names.
 func taken(ctx context.Context, db *ent.Client, v *ent.Holder) error {
 	who := pdid.Id(v.Id)
 	living := func(p predicate.Holder) (pdid.Id, bool, error) {
@@ -572,17 +636,11 @@ func taken(ctx context.Context, db *ent.Client, v *ent.Holder) error {
 		return err
 	}
 	if ok {
-		in, err := db.Tenant.Get(ctx, v.TenantId)
-		if err != nil {
-			return err
-		}
-		at := "@" + in.Alias + "/" + v.Alias
-
-		return fmt.Errorf("%[1]s was %[2]s, and %[3]s is %[2]s now: an erase frees an alias at once, and it is one person's in a tenant. "+
+		return fmt.Errorf("the alias %[1]s had is %[2]s's now: an erase frees an alias at once, and it is one person's in a tenant. "+
 			"Somebody erased is renamed by nothing, so whoever has the name makes way. Read the version a rename takes with "+
 			"`roster --as <alias> holder get -o json %[2]s`, rename them with "+
 			"`roster --as <alias> holder realias %[2]s '{\"alias\":\"<another>\",\"date_updated\":\"<its dateUpdated>\"}'`, and restore %[1]s again",
-			who, at, has)
+			who, has)
 	}
 
 	for _, d := range []struct {
