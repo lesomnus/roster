@@ -2308,6 +2308,12 @@ is what was **written**; this is who **saw** what -- a row for each call that
 read, wrote or carried somebody's personal data, naming who asked, from where,
 the RPC, whose rows, and how it ended. What an operator reads of a customer's
 people through `admin.addr` is filed under that customer and names the operator.
+A row is under the tenant of whoever was read, whoever read them and however much
+of the row they asked for: an operator's, a deployment key's, a `select` of two
+fields. A call that was refused is under the tenant of the row it asked for by
+identifier -- another tenant's person asked for across the wall is on that
+tenant's record, naming who asked -- and under the caller's own where it named
+nothing that exists.
 A read's row is written a second after it, by a loop every process runs, and the
 loop writes what it holds once more as the process stops; a process killed
 outright loses its last second.
