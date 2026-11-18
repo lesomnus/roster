@@ -152,6 +152,11 @@ a key bind could not. What the tenant key's role names is the directory's
 extent (see [the key](#the-key-this-process-holds)); an operator who wants a
 client to see less mints it a narrower key and runs a second instance.
 
+So it is the process's own holder that roster's access record names for every
+read made here, whoever bound: the record says the directory read somebody, from
+this process's address, and not which client asked it to
+([operating.md](operating.md) § *Who read whose data*).
+
 ## The tree
 
 One naming context per tenant this process holds a key for, and the key's

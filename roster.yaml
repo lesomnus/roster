@@ -212,6 +212,21 @@ spin:
 # say otherwise. How long the evidence lasts is a deployment's to decide, not a
 # default's; `docs/operating.md` § "The audit trail".
 #
+# So does the access record -- who read whose data -- and it costs more to
+# leave. The trail is a row a write; this is a row for every call that shows
+# somebody, so a directory front that polls writes thousands of them a search,
+# and with no window every one stays in the database for good. `serve` says so
+# as it starts for as long as none is named. One of its own, with no archive:
+#
+#   audit:
+#     by:
+#       access:
+#         retain: 2160h     # ninety days in the database,
+#         discard: true     # and then destroyed, with no copy kept
+#
+# `docs/operating.md` § "Who read whose data" says what a row holds and what
+# writes most of them.
+#
 # Which is also why it names no **witness**. A witness hears each checkpoint
 # of the archive's account (payday#115), a database that keeps the whole trail
 # has no archive and takes no checkpoint, and payday refuses witnesses with no

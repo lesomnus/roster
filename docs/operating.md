@@ -1569,8 +1569,9 @@ subscribe to this process's own broker, which nothing the deployment does
 publishes to, and after its first answer hear nothing on a stream that looks
 open. Watch over the wire (`client.addr`), where the serving process answers and
 records it; or name a broker every process hears (`postgres`), under which the
-watch at the box hears the deployment and each message is on the record before
-it is printed. It does not follow the outbox: the serving process deletes what
+watch at the box hears the deployment and whoever it shows is on the record
+before they are printed -- each once, the first time, however often the stream
+shows them after ([below](#who-read-whose-data)). It does not follow the outbox: the serving process deletes what
 it drains, so a command reading it would race the drain, and one draining it
 would take the events from the subscribers they were for.
 
@@ -2337,31 +2338,121 @@ identifier -- another tenant's person asked for across the wall is on that
 tenant's record, naming who asked -- and under the caller's own where it named
 nothing that exists.
 
+**A refusal is on the record only where the request named somebody by
+identifier.** A `Get` by an alias nobody has, a lookup by an address nobody has
+and a search that finds nobody leave no row: they named no row. A refused call
+that sent an identifier is a row naming it, one nobody has included. A refused
+`Watch` is not, whatever it named: a stream is refused before what it asked for
+is read. And a call refused before roster takes it as anybody's -- no
+credential, a key that does not list the method, a rate limit -- leaves none.
+
+**Who a row names is who made the call, which is not always who was looking.**
+Through the LDAP front it is the front's own holder in the tenant, whoever bound:
+every read on a bound connection is made with the key the front holds for that
+tenant ([ldap.md](ldap.md) § *Whose eyes a search uses*), so the record says the
+directory read somebody and not for whom. What a front door reads with a
+deployment key names the key, which is held by no tenant; and at the box it is
+whoever `--as` named. *Whose rows* are the rows that held what was shown: a read
+of an address names the address by its identifier, and not the person.
+
+***From where* is the address at the other end of the connection, and nothing
+else.** No setting names a proxy roster would believe yet, and `X-Forwarded-For`
+is not read. So behind a terminator it is the terminator's address, and a read
+made through a front door -- the account page, the Login App, the SCIM endpoint,
+the LDAP front -- comes from that process's. Over gRPC it is an address, and over
+HTTP an address and a port.
+
+**A watch says each person once, for the life of the stream.** Its row is of the
+first time it showed them: somebody in a stream's first answer and in every
+change it sends for a month is one row, from its first second. A watch names its
+rows by identifier, so the row says who was watched; it does not say how often
+they were shown, nor for how long. A stream its caller hangs up within that
+first second is a row all the same, written as it ends: its `result` is how the
+stream ended, which for a hang-up reads `Unknown`, and it keeps nothing of the
+request.
+
 A read's row is written a second after it, by a loop every process runs, and the
 loop writes what it holds once more as the process stops; a process killed
 outright loses its last second.
+
+**At a listener a read is answered whether or not its row can be written.** The
+rows wait in the process's memory and are tried again each second, and each try
+that fails is a warning with how many wait: `access: the record could not be
+written; it is tried again`. What waits is lost two ways, each an error in the
+log, and both are worth an alert. Past a hundred thousand rows the oldest are
+dropped: `access: the record could not be written, and the oldest reads waiting
+for it were dropped`. And a process that stops with rows it could not write
+loses them: `access: the record waiting to be written was lost as the process
+stopped` (`... as the server stopped`, for what it answered while its listeners
+drained). A write is the other way round -- its row is in its own transaction, so
+a write of somebody's data whose row cannot be written is not made -- and so is
+a read at the box.
 
 A command at a shell on the box is recorded too, naming the operator `--as`
 named and the shell it ran in ([above](#the-cli-on-the-box-is-the-deployment));
 its reads are written before they are printed, since a command's process ends
 before a second is up.
 
+**It grows by the read, and nothing bounds it until you say.** A row for each
+call and each tenant whose people it showed -- a `List` of a hundred people is
+one row naming a hundred -- kept in the database for good, which is the default
+for the trail's reason: roster destroys nothing nobody asked it to. `serve` says
+so as it starts, as a warning, until a window is named or `profile: forever`
+says for good is meant: `access: the access record has no window ...`. What
+writes most of it:
+
+- **A directory front that polls.** An LDAP search of a whole tenant is a row for
+  each page of a hundred people and, where it asks for `mail` or a number, one
+  more for each of them who has an address and each who has a number: for ten
+  thousand people who each have both, twenty thousand rows a search. A SCIM
+  `GET /Users` with no filter reads everybody the directory provisions on every
+  page it is asked for, three calls each, whatever the page's size: thirty
+  thousand rows a request, for ten thousand people. A lookup by filter that
+  finds somebody is three rows, and one that finds nobody is none.
+- **A refused call**, one row, from anybody with a credential: holding nothing
+  is no bar to being refused. `server.limit.rate` is what bounds how fast, and is
+  off until it is set.
+
 It is a kind of the trail's, `access`, so the same passes keep it, on a window of
-its own:
+its own -- with no archive, or with the deployment's:
 
 ```yaml
 audit:
   by:
     access:
-      profile: pipa-sensitive   # two years
+      retain: 2160h      # ninety days in the database,
+      discard: true      # and then destroyed, with no copy kept
 ```
 
+```yaml
+audit:
+  archive: /var/lib/roster/audit
+  checkpoints:
+    key: /run/secrets/roster-checkpoints.pem   # an archive is signed, as the trail's is
+  by:
+    access:
+      profile: pipa-sensitive      # ninety days in the database, two years in the archive
+```
+
+The window is the data plane's. **The control plane's own record is never
+swept**: no pass runs on that plane, whose trail is the deployment's own and is
+on no clock, so what `roster control access list` answers is kept for good. It
+is small -- operators reading operators, and the names `key list` prints.
+
 Nothing serves it over the wire yet: `AccessService` is registered on no port,
-and `roster trail read` passes over its rows. At the box it is the `access`
+and `roster trail read` passes over its rows. **Nor does any command read it once
+it has left the database**: under a window with an archive a row is in the
+`access` table until `retain` and in the archive from then until `destroy`, and
+nothing here reads the archive's half yet -- so `retain` is how far back a review
+can look with a command. At the box it is the `access`
 table of each plane, and the entity commands read it like any other: `actor_id`
 and `actor_tenant_id` say who, `tenant_id` whose record it is, `action` the
 RPC, `kind` `read`, `write` or `download`, `subjects` whose rows, and `value` an
 `AccessDetail` holding where the call came from and how a read was asked.
+There is **no filter by whom was read**: `subjects` is a list with no index, so
+*who read alice* is every row of her tenant read and searched, in SQL or in
+what `access list -o json` prints -- where `subjects` are base64 and not the
+UUIDs the other columns are. Both are left for later.
 
 ```sh
 roster --as admin access list -o json '{"filters":[{"actor_id":"019ff2ab-..."}]}'   # what one operator did

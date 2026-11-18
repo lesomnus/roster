@@ -888,8 +888,9 @@ else writes one -- `AccessService` answers a `Get` and a `List`.
 
 It is kept as the trail is: a kind of the trail's archive, `access`, so the same
 passes archive, checkpoint and destroy it with its tenant, under that kind's own
-window ([operating.md](operating.md) § *Who read whose data*). The wall is the
-OR of `tenant_id` and `actor_tenant_id`.
+window ([operating.md](operating.md) § *Who read whose data*) -- on the data
+plane; no pass runs on the control plane, and its own record is kept for good.
+The wall is the OR of `tenant_id` and `actor_tenant_id`.
 
 > **admin** opens alice's row at the admin console, and a row here says so: who,
 > from where, which RPC, and that the answer carried alice. contoso, asked who

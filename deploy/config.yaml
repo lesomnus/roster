@@ -51,6 +51,18 @@ spin:
 # account is signed and checkpointed, and every checkpoint heard outside both --
 # is the component `trail/`, which the rig includes and a deployment turns on in
 # its own overlay (`deploy/README.md`).
+#
+# The access record -- who read whose data -- is kept the same way, and costs
+# more to leave: a row for every call that shows somebody, where the trail is a
+# row a write, on a volume that also holds the database. `serve` warns as it
+# starts for as long as it has no window. An overlay gives it one of its own,
+# which needs no archive (`docs/operating.md` § "Who read whose data"):
+#
+#   audit:
+#     by:
+#       access:
+#         retain: 2160h     # ninety days in the database,
+#         discard: true     # and then destroyed, with no copy kept
 
 control:
   db:
