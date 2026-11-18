@@ -359,9 +359,14 @@ minted by the app's name*).
 
 ### The wire is ours
 
-There is no server library in this. `ldap/wire` reads and writes the messages
-on `github.com/go-asn1-ber/asn1-ber`, which is the BER codec `go-ldap`
-already brings in, so the dependency graph grows by nothing.
+There is no server library in this. `ldap/wire` writes its answers with
+`github.com/go-asn1-ber/asn1-ber`, which is the BER codec `go-ldap` already
+brings in, so the dependency graph grows by nothing. A request it reads
+itself, into that library's tree (`ldap/wire/read.go`): the library's own
+reader is held to two gigabytes and a thousand levels and keeps a copy of a
+value at every level above it, and what reads a stranger's bytes holds a
+message to a length, a count and a depth before it makes anything of it
+([rules.md](usage/rules.md) § *What a connection to the directory may cost*).
 
 Why not `jimlambrt/gldap`, which does this for you and was the first draft's
 answer: the subset spoken here is five requests -- simple bind, search,
