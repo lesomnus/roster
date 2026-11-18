@@ -294,9 +294,12 @@ mails the link to them. Neither verb is somebody's own to call.
 ### `AuditService`
 
 **Reads as** *may read the audit log*. **Is** what every write said: a line
-of the trail carries the row as the write left it, for rows long since erased
-too. Not what the schema calls personal or secret -- names, addresses and
-verifiers are on the trail as having been set, and never as what to.
+of the trail carries what the write set, for rows long since erased too. It
+carries the row the write left as well only for a kind the deployment keeps at
+`audit.content: value`; at the default that is empty, and a line is what was
+set and by whom. Not what the schema calls personal or secret -- names,
+addresses and verifiers are on the trail as having been set, and never as what
+to.
 
 It is held across the tenant. On a deployment key it is every tenant
 (`TestADeploymentKeyReadsEveryTenantsTrail`), and minting a key says which it
