@@ -145,12 +145,19 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 // ran out (`holder.forget_after`), the closed tenants whose grace did
 // (`tenant.restore_within`) and any whose destruction began and stopped, and
 // the aliases whose hold is over (`tenant.alias_hold`, which has a default).
+//
+// And, first, what forgets already made still owe the trail ([owed]): a hold
+// that lifted is something a clock was waiting for too.
 func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry bool) error {
 	now := time.Now()
 
 	cs, err := c.Audit.Contents()
 	if err != nil {
 		return fmt.Errorf("audit: %w", err)
+	}
+
+	if err := owed(ctx, s, p, dry); err != nil {
+		return err
 	}
 
 	if after := c.Holder.ForgetAfter; after > 0 {
@@ -243,6 +250,50 @@ func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry 
 	return nil
 }
 
+// owed pays what the trail owes of forgets already made, and says what it
+// paid; with `dry` it says what is owed and pays nothing.
+//
+// A forget pays its own debt as soon as it has committed, so what is owed
+// when this runs is what that could not pay: above all the lines a legal hold
+// kept, which wait for the hold to lift. `serve` pays them on its clock --
+// the trail's pass where a retention window is named, and a loop that does
+// only this where none is (`forget.SweepOwed`) -- and this is the same
+// payment for whoever runs the command instead, or does not want to wait a
+// day for it. It printed nothing about them and paid nothing, and nothing
+// else an operator could run paid either (#280).
+//
+// Before the people, as a pass of the trail pays before it moves anything.
+// Somebody forgotten below pays their own; what a hold keeps of them is said
+// with them.
+func owed(ctx context.Context, s *cmd.Server, p trail.Policy, dry bool) error {
+	owing, err := p.Owing(ctx, pd.TrailStore(s.Ent))
+	if err != nil {
+		return err
+	}
+	if owing.Objects == 0 {
+		return nil
+	}
+	if dry {
+		fmt.Fprintf(os.Stderr, "%d erasure(s) owed to the trail by forgets already made, the oldest since %s; `roster trail owed` says what a hold keeps of them\n",
+			owing.Objects, owing.Oldest.UTC().Format(time.RFC3339))
+
+		return nil
+	}
+
+	paid, err := forget.PayOwed(ctx, s.Ent, p)
+	fmt.Fprintf(os.Stderr, "%d erasure(s) owed to the trail by forgets already made were paid: %d trail row(s), %d archived\n",
+		paid.Objects, paid.Rows, paid.Archived)
+	if paid.Owed > 0 {
+		fmt.Fprintf(os.Stderr, "%d more are still owed: %d trail row(s) kept by a legal hold of %v, until it lifts\n",
+			paid.Owed, paid.Held.Rows, append(paid.Held.By, paid.Held.Unanswered...))
+	}
+	if err != nil {
+		return fmt.Errorf("the erasures owed to the trail: %w", err)
+	}
+
+	return nil
+}
+
 // destroyed is one tenant destroyed, and said: what went, what a hold
 // elsewhere kept, and its alias -- freed now with `reuse`, which the trail
 // records, and otherwise held.
@@ -255,7 +306,7 @@ func destroyed(ctx context.Context, s *cmd.Server, t pdid.Id, p trail.Policy, cs
 	fmt.Fprintf(os.Stderr, "%s destroyed: %s\n", t, res)
 	if res.Held.Any() {
 		// What a hold keeps stays owed (payday#115), as for a person.
-		fmt.Fprintf(os.Stderr, "%s: %d trail row(s) kept by a legal hold of %v; the trail's pass erases them once it is lifted\n",
+		fmt.Fprintf(os.Stderr, "%s: %d trail row(s) kept by a legal hold of %v; they are erased at the first pass after it is lifted, `serve`'s or `roster forget`\n",
 			t, res.Held.Rows, append(res.Held.By, res.Held.Unanswered...))
 	}
 
@@ -414,9 +465,10 @@ func reported(who pdid.Id, res forget.Result) {
 	fmt.Fprintf(os.Stderr, "%s forgotten: %s\n", who, res)
 	if res.Held.Any() {
 		// Not an error: what a hold keeps is not this command's to destroy.
-		// It stays owed (payday#115), and the trail's pass erases it once
-		// the hold is lifted.
-		fmt.Fprintf(os.Stderr, "%s: %d trail row(s) kept by a legal hold of %v; the trail's pass erases them once it is lifted\n",
+		// It stays owed (payday#115), and is paid at the first pass after
+		// the hold is lifted: `serve`'s, in every deployment, or this
+		// command's with no name ([owed]).
+		fmt.Fprintf(os.Stderr, "%s: %d trail row(s) kept by a legal hold of %v; they are erased at the first pass after it is lifted, `serve`'s or `roster forget`\n",
 			who, res.Held.Rows, append(res.Held.By, res.Held.Unanswered...))
 	}
 }

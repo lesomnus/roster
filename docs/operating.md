@@ -2531,7 +2531,7 @@ For *destroy what you hold about them* there is a second act:
 
 ```sh
 roster forget @contoso/erin        # now, because they asked
-roster forget                      # everybody whose grace has run out
+roster forget                      # everybody whose grace has run out, and what earlier forgets still owe the trail
 roster forget --dry-run            # who that would be
 roster restore @contoso/erin       # undo the erase, while there is one to undo
 ```
@@ -2700,6 +2700,18 @@ at any moment: how many, since when, and how many each tenant's hold keeps -- or
 kept when it was last paid, where that hold has been lifted since. The rows'
 seals are owed with the archive's half and paid with it (payday#144), so the
 transaction takes no turn with a pass.
+
+**That pass runs in every deployment.** Where `audit:` names a retention window it
+is the trail's own (`roster.trail`). Where it names none -- the default, a trail kept
+for ever -- `serve` spins a loop that does the first thing a pass does and nothing
+else of one (`roster.owed`, on the trail's clock, `audit.every` or a day): it pays
+what forgets already made still owe, and applies no window to anything, so a trail
+kept for ever is still kept for ever. And `roster forget` with no name pays the same
+debts first, for a deployment that runs the command instead or does not want to wait
+for the loop; `--dry-run` says how many are owed and since when, and pays nothing.
+Naming somebody again does not do it: a second `roster forget @contoso/erin` reaches
+their own line and not those of the address and the key that went with them, whose
+identifiers only the debt still has.
 
 **What somebody consented to stays past them.** An app's record of their
 consents (`ConsentService`, [apps.md](apps.md) § *What an app keeps here*) is
@@ -2908,7 +2920,7 @@ without: a command at a shell writes there whatever this file says (§ *The CLI
 on the box is the deployment*).
 
 **The background loops run in one replica only if you say how.** The sweeps,
-the trail's retention, the forget window and the outbox drain are each a loop,
+the trail's retention or what pays its debts, the forget window and the outbox drain are each a loop,
 and `spin.lease` says which process runs it -- named, like the broker, and for the
 same reason: `local` runs every loop in every process, which is right for one and
 silently wrong for two.

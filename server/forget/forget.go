@@ -102,13 +102,13 @@ type Result struct {
 	Archived int
 
 	// Held is the trail rows about them a legal hold kept as they were. What
-	// a hold keeps stays owed, and the trail's pass erases it once the hold
-	// lifts: nobody has to run this again.
+	// a hold keeps stays owed, and the first pass after the hold lifts erases
+	// it ([SweepOwed] says whose pass): nobody has to run this again.
 	Held trail.Held
 
 	// Owed is how many of what was forgotten the archive's half is still
 	// owed for (payday#115): what a hold keeps part of, or all of it when
-	// paying after the transaction failed. The trail's next pass pays it.
+	// paying after the transaction failed. The next pass pays it.
 	Owed int
 }
 
@@ -143,8 +143,9 @@ func (r Result) String() string {
 // transaction, so its half is paid once the transaction has committed,
 // naming what was forgotten (`trail.Policy.Pay`); a payment
 // that fails, or a process that stops before it, leaves the debt to the
-// trail's next pass, which pays what is owed before it moves anything. What
-// is still owed is [Result.Owed]. A commit that never happened forgot
+// next pass: the trail's, which pays what is owed before it moves anything,
+// or in a deployment whose trail has none, the loop that does only that
+// ([SweepOwed]). What is still owed is [Result.Owed]. A commit that never happened forgot
 // nothing anywhere, and one that did owes the rest, so there is nothing left
 // to lose in between, and nothing an operator has to run again.
 //
@@ -351,11 +352,11 @@ func forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 
 	// And the archive's half, paid now that it is owed: this erasure's alone,
 	// so that what it answers is theirs. A payment that fails has destroyed
-	// nothing less -- the debt is written, and the trail's next pass pays it.
+	// nothing less -- the debt is written, and the next pass pays it.
 	paid, err := p.Pay(ctx, pd.TrailStore(db), objects...)
 	out.Archived = paid.Archived
 	if err != nil {
-		log.From(ctx).WarnContext(ctx, "forget: the archive's half is owed, for the trail's next pass to pay", "holder", who.String(), "err", err)
+		log.From(ctx).WarnContext(ctx, "forget: the archive's half is owed, for the next pass to pay", "holder", who.String(), "err", err)
 
 		return out, nil
 	}

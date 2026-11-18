@@ -936,8 +936,9 @@ the two against each other. Served to nobody, and of no tenant.
 Forgetting somebody is one transaction in the database, and the archive takes
 part in no transaction. So the database's half is done in it, and the
 archive's half is written down in it as owed: a rollback takes the row with it,
-a commit keeps it for whatever pays it -- the next pass, or the process straight
-after its commit -- and the row goes once both halves are done. `Outbox`'s
+a commit keeps it for whatever pays it -- the process straight after its commit,
+or the next pass, which `serve` makes in every deployment whether or not its trail
+has a retention window -- and the row goes once both halves are done. `Outbox`'s
 shape, for `Outbox`'s reason. A legal hold that keeps part of an erasure keeps
 the row.
 
