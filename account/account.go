@@ -2016,8 +2016,7 @@ func (a *App) leave(w http.ResponseWriter, r *http.Request) {
 // words only: what is done is `server/forget`'s.
 func leftSaying(forgotten time.Time) string {
 	const kept = "Two things are kept past that. What you agreed to, for as long as it is kept as proof that you did. " +
-		"And the record of what was done and of who read your data: it says an identifier where your account was, " +
-		"and may keep a word somebody looked you up by until that record's own time is up."
+		"And the record of what was done and of who read your data, which says an identifier where your account was and nothing you were called."
 
 	if forgotten.IsZero() {
 		return "Whoever runs it can bring it back if you ask them, until they forget it, which no date here does by itself: " +

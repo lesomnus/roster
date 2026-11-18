@@ -445,5 +445,5 @@ func leftSaying(erased, forgotten time.Time) []string {
 	}
 
 	return append(out, "kept past that: what you consented to, for `consent.keep` (for good unless the deployment says); "+
-		"and the trail and the access record, which say your identifier, and the access record what a read asked for you by, each for its own window.")
+		"and the trail and the access record, which say your identifier and nothing you were called, each for its own window.")
 }
