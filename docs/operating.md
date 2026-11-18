@@ -2361,7 +2361,7 @@ and `roster trail read` passes over its rows. At the box it is the `access`
 table of each plane, and the entity commands read it like any other: `actor_id`
 and `actor_tenant_id` say who, `tenant_id` whose record it is, `action` the
 RPC, `kind` `read`, `write` or `download`, `subjects` whose rows, and `value` an
-`AccessDetail` holding where the call came from and what a read asked for.
+`AccessDetail` holding where the call came from and how a read was asked.
 
 ```sh
 roster --as admin access list -o json '{"filters":[{"actor_id":"019ff2ab-..."}]}'   # what one operator did
@@ -2370,10 +2370,35 @@ roster --as admin control access list -o json                                   
 roster --as admin access get 019ff2ab-...                                         # one row, whole
 ```
 
-Reading it names nobody's personal data -- a row holds identifiers -- so it
-leaves no row of its own. The same columns answer SQL, for a review that wants
-a window of time: `SELECT ... FROM access WHERE actor_id = '019ff2ab-...' AND
-date_created >= ...`.
+**A row keeps how a read was asked, and none of the words it was asked by.** For
+a read that answered, `value` holds the request as the RPC's own message
+(`request`), with every word taken out and the field it was in left to say that
+it was given:
+
+- an identifier stays, and so do a boolean, a number and an enum: which row,
+  what was selected, a page's size, which way round;
+- every string goes, and every run of bytes that is not an identifier: an alias,
+  a name, an address, a subject, a number, a fragment searched for, what a
+  provider is called, a cursor, a secret. A field the schema declares
+  `personal` or `secret` goes whatever it holds.
+
+| a read | what its row keeps of the request |
+| --- | --- |
+| `Get` by identifier | the identifier, and the `select` |
+| `Get` by name | that it was by `slug`, with an alias; the tenant's identifier, or that the tenant was named by alias; the `select` |
+| `HolderService/Search` | that a fragment (`q`), a department or an employee number was given; its filters, as a `List`'s; the page's size |
+| `EmailService/Get` by address | the tenant's identifier, and that an address was given |
+| `IdentityService/Get` by subject | the tenant's identifier, and that a provider and a subject were given |
+| `PhoneService/Get` by number | whose it is, as a reference is kept, and that a number and a kind were given |
+| `List` | each filter -- a row or a tenant by identifier, or that one was named by alias; a filter by labels as a filter with nothing in it -- the size, and `reverse`. Not the cursor, nor that there was one: it is the last row's place in the order, which for an order by name is a name |
+| `Watch` | its filters, which name rows by identifier, and `skip_snapshot` |
+| a key, a delegation, a session, a link or a continuation by its `secret` | that it was read by `secret`, and nothing of it |
+| a write, and a call that was refused | nothing of the request |
+
+So reading the record names nobody's personal data -- a row holds identifiers,
+and how each read was asked -- and it leaves no row of its own. The same columns
+answer SQL, for a review that wants a window of time: `SELECT ... FROM access
+WHERE actor_id = '019ff2ab-...' AND date_created >= ...`.
 
 ### A key that can read the trail can read everything
 
@@ -2544,11 +2569,15 @@ destroyed the rows would let somebody erase the evidence of what was done *to*
 them by asking to be forgotten. The archive is reached only if `audit.archive` is
 set; archives you keep elsewhere are yours to reach.
 
-**The access record is not reached.** A row of it names whose data a call carried
-by identifier, which stays as the trail's actor does. Its `value` holds what a read
-asked for, as it was sent, so a `Get` that named them by alias, a search for their
-name or a lookup by their address keeps that word until the row's own window runs
-out (`audit.by.access`, § *Who read whose data*).
+**The access record is not reached, and holds nothing they were called.** A row
+of it names whose data a call carried by identifier, which stays as the trail's
+actor does: theirs, which is the blank row's, and those of their addresses,
+accounts and numbers, which are rows that are gone and so resolve to nothing. Of
+what a read asked for a row keeps how and not what by (§ *Who read whose data*):
+a `Get` that named them by alias, a search for their name and a lookup by their
+address each say that much and hold no alias, name or address. What is left of
+somebody forgotten is identifiers that resolve to nothing, until the row's own
+window runs out (`audit.by.access`).
 
 **One transaction, and the archive's half owed in it.** The person's rows, the
 holder blanked and the trail's rows about them in the database are one transaction,

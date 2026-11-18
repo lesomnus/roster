@@ -11,13 +11,18 @@ import (
 	"context"
 	"log/slog"
 	"slices"
+	"strings"
+	"sync"
 	"time"
 	"uuid"
 
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 
 	"github.com/lesomnus/payday/access"
 	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/payday/pdpb"
 
 	"github.com/lesomnus/roster/internal/ent"
 	entemail "github.com/lesomnus/roster/internal/ent/email"
@@ -160,3 +165,254 @@ func tenantsOf(ctx context.Context, db *ent.Client, ids []pdid.Id) (map[pdid.Id]
 
 	return out, nil
 }
+
+// wordless is `sink` with what each row keeps of its request kept without the
+// words it was asked by (#280).
+//
+// # What it was
+//
+// For a read that answered, payday keeps the request in the row, whole, up to
+// 8 KiB: "what says how a page of people came to be shown". So a row held the
+// alias a `Get` named somebody by, the fragment a `Search` looked for, the
+// address of an `EmailService/Get`, somebody's subject at a provider -- and,
+// for an `ApiKeyService/Get` by the `secret` arm of its reference, the key's
+// verifier, which no port answers and the trail does not hold. The row is
+// archived with the trail, and it is not reached when somebody is forgotten:
+// their alias, their address and the name they were searched by stayed for
+// the record's window, which is for ever unless a deployment says. The manual
+// said a row holds identifiers.
+//
+// # What a row keeps
+//
+// How it was asked, and not what by. The request as its own message, so that
+// a review reads it as it always did, with each value that is a word taken
+// out and the field it was in left where the message can say a field was
+// given at all:
+//
+//   - an identifier stays: the key of a row, which is not a word and is what
+//     `subjects` holds already;
+//   - a boolean, a number and an enum stay: what was selected, a page's size,
+//     which way round it was read;
+//   - every string goes, and every run of bytes that is no identifier: a
+//     name, an address, a subject, a number, a fragment, a cursor, a secret;
+//   - a map keyed by words goes whole, which is a filter by labels;
+//   - and a field the schema declares `secret` or `personal` goes whatever it
+//     looks like ([wordsDeclared]).
+//
+// By its shape where the schema does not say, because nothing declares that
+// a string is *not* somebody's: `HolderSearchRequest.q` carries no
+// declaration and is a fragment of a name. So a string added to a request
+// tomorrow is out until somebody argues it in.
+//
+// A request this cannot read as the message its method takes is not kept at
+// all.
+func wordless(sink func(context.Context, []access.Record) error) func(context.Context, []access.Record) error {
+	return func(ctx context.Context, rs []access.Record) error {
+		// A call's rows share what they keep, one row a tenant; each is read
+		// once, and none is changed where the writer still holds it to write
+		// again.
+		kept := map[*pdpb.AccessDetail]*pdpb.AccessDetail{}
+
+		out := make([]access.Record, len(rs))
+		for i, r := range rs {
+			out[i] = r
+			if len(r.Detail.GetRequest()) == 0 {
+				continue
+			}
+
+			d, ok := kept[r.Detail]
+			if !ok {
+				d = pdpb.AccessDetail_builder{
+					Address: r.Detail.GetAddress(),
+					Reason:  r.Detail.GetReason(),
+					Request: asked(r.Action, r.Detail.GetRequest()),
+				}.Build()
+				kept[r.Detail] = d
+			}
+			out[i].Detail = d
+		}
+
+		return sink(ctx, out)
+	}
+}
+
+// asked is the request `b` of the RPC `method` without its words, as a row
+// keeps it ([wordless]); nil for one that is not a request of that RPC.
+func asked(method string, b []byte) []byte {
+	name, rpc, ok := strings.Cut(strings.TrimPrefix(method, "/"), "/")
+	if !ok {
+		return nil
+	}
+	d, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(name))
+	if err != nil {
+		return nil
+	}
+	sd, ok := d.(protoreflect.ServiceDescriptor)
+	if !ok {
+		return nil
+	}
+	md := sd.Methods().ByName(protoreflect.Name(rpc))
+	if md == nil {
+		return nil
+	}
+	t, err := protoregistry.GlobalTypes.FindMessageByName(md.Input().FullName())
+	if err != nil {
+		return nil
+	}
+
+	m := t.New()
+	if err := proto.Unmarshal(b, m.Interface()); err != nil {
+		return nil
+	}
+	unword(m)
+
+	out, err := proto.Marshal(m.Interface())
+	if err != nil {
+		return nil
+	}
+
+	return out
+}
+
+// unword takes the words out of `m`, all the way down; see [wordless] for
+// which values those are. A field that had a word keeps that it was given,
+// where its message can say so: an arm of a reference, a field with presence.
+func unword(m protoreflect.Message) {
+	// What this build does not know of a message it cannot tell a word in.
+	m.SetUnknown(nil)
+
+	words := wordsDeclared()
+	m.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		switch {
+		case words[fd.FullName()]:
+			// Empty, and still given: a new value of the field's own kind.
+			m.Set(fd, blank(m, fd))
+
+		case fd.IsMap():
+			if fd.MapKey().Kind() == protoreflect.StringKind {
+				m.Clear(fd)
+				break
+			}
+			v.Map().Range(func(k protoreflect.MapKey, e protoreflect.Value) bool {
+				if w, ok := unworded(fd.MapValue(), e); ok {
+					v.Map().Set(k, w)
+				}
+				return true
+			})
+
+		case fd.IsList():
+			l := v.List()
+			for i := range l.Len() {
+				if w, ok := unworded(fd, l.Get(i)); ok {
+					l.Set(i, w)
+				}
+			}
+
+		default:
+			if w, ok := unworded(fd, v); ok {
+				m.Set(fd, w)
+			}
+		}
+
+		return true
+	})
+}
+
+// unworded is one value of the field `fd` without its words, and whether it
+// is another value than `v`: a message is emptied of them where it is.
+func unworded(fd protoreflect.FieldDescriptor, v protoreflect.Value) (protoreflect.Value, bool) {
+	switch fd.Kind() {
+	case protoreflect.StringKind:
+		return protoreflect.ValueOfString(""), true
+	case protoreflect.BytesKind:
+		if _, err := pdid.From(v.Bytes()); err == nil {
+			return v, false
+		}
+		return protoreflect.ValueOfBytes([]byte{}), true
+	case protoreflect.MessageKind, protoreflect.GroupKind:
+		unword(v.Message())
+	}
+
+	return v, false
+}
+
+// blank is the field `fd` of `m` with nothing in it, for one the schema
+// declares a word whatever it holds.
+func blank(m protoreflect.Message, fd protoreflect.FieldDescriptor) protoreflect.Value {
+	if fd.Kind() == protoreflect.BytesKind && !fd.IsList() {
+		return protoreflect.ValueOfBytes([]byte{})
+	}
+
+	return m.NewField(fd)
+}
+
+// wordsDeclared is every field the schema says is a word, by its full name: one
+// declared `secret` or `personal`, and one that stands for such a field in a
+// message made for its row.
+//
+// The declaration is on the row (`ApiKey.secret`, `Holder.alias`), and a
+// request names a row by the same fields in messages of its own, which the
+// generator writes with the row's name in front and no declaration:
+// `ApiKeyRef.secret`, `HolderRefBySlug.alias`, `HolderFilter.labels`. So a
+// field of a message named after a row that is called what a declared field
+// of that row is called, and holds what it holds, is that field. `ApiKeySelect.secret`
+// is not: it is a boolean that asks for the column.
+var wordsDeclared = sync.OnceValue(func() map[protoreflect.FullName]bool {
+	out := map[protoreflect.FullName]bool{}
+
+	var all []protoreflect.MessageDescriptor
+	rows := map[protoreflect.FullName]map[protoreflect.Name]protoreflect.FieldDescriptor{}
+	protoregistry.GlobalFiles.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
+		ms := fd.Messages()
+		for i := range ms.Len() {
+			md := ms.Get(i)
+			all = append(all, md)
+
+			fs := md.Fields()
+			for j := range fs.Len() {
+				v, _ := proto.GetExtension(fs.Get(j).Options(), pdpb.E_Field).(*pdpb.Field)
+				if !v.GetSecret() && !v.GetPersonal() {
+					continue
+				}
+				if rows[md.FullName()] == nil {
+					rows[md.FullName()] = map[protoreflect.Name]protoreflect.FieldDescriptor{}
+				}
+				rows[md.FullName()][fs.Get(j).Name()] = fs.Get(j)
+				out[fs.Get(j).FullName()] = true
+			}
+		}
+		return true
+	})
+
+	for _, md := range all {
+		// The row a message is made for: the longest name of one that its own
+		// begins with, in its package.
+		var of protoreflect.FullName
+		for row := range rows {
+			if row == md.FullName() || row.Parent() != md.FullName().Parent() {
+				continue
+			}
+			if strings.HasPrefix(string(md.Name()), string(row.Name())) && len(row) > len(of) {
+				of = row
+			}
+		}
+		if of == "" {
+			continue
+		}
+
+		fs := md.Fields()
+		for j := range fs.Len() {
+			f := fs.Get(j)
+			d, ok := rows[of][f.Name()]
+			if !ok || d.Kind() != f.Kind() || d.IsList() != f.IsList() || d.IsMap() != f.IsMap() {
+				continue
+			}
+			if m := d.Message(); m != nil && !d.IsMap() && m.FullName() != f.Message().FullName() {
+				continue
+			}
+			out[f.FullName()] = true
+		}
+	}
+
+	return out
+})
