@@ -335,6 +335,10 @@ commands that move and destroy the trail ([operating.md](../operating.md) §
 | A dry run changes nothing, with a window of the operator's own or with none: `trail prune --dry-run` says what the policy's pass would take, and takes nothing | `cli/trail.go` | `TestADryRunOfThePolicysPassChangesNothing` |
 | A flag the road taken does not read is refused by its name: `--kind`, `--to` and `--discard` with no window. And what is refused of a discard is what was said twice, `--discard` beside `--to`; alone it is taken whatever archive the deployment names, and leaves what a legal hold is on | `cli/trail.go` | `TestAFlagThePolicysPassDoesNotReadIsRefusedByName` · `TestADiscardByHandIsTakenBesideAnArchive` |
 | A window of nothing is everything, and is refused in both spellings: `--older-than 0`, and a `--before` that has not come yet | `cli/trail.go` | `TestAWindowThatEndsInTimeToComeIsRefused` |
+| Work that logs rather than fails is said, on stderr, and what it could not do fails the command: the policy's pass (`trail prune`), and the payment of the archive's half of an erasure (`forget`). The person is still forgotten where the transaction reached, and what is left is owed | `cli/telemetry.go` | `TestAPassAtTheBoxSaysWhatItDidAndFailsWhenItCouldNot` · `TestForgettingAtTheBoxSaysWhenTheArchivesHalfIsStillOwed` |
+| What an act on the archive passed over is said too -- a chunk the account does not have, left alone by a purge or left out of a check of the rows -- and is no failure of that command's: `trail verify` fails for it | `cli/trail.go` | `TestAnActOnTheArchiveSaysWhatItLeftAlone` |
+| An acceptance of rows says who and why: who is the operator `--as` names, checked as it is everywhere, or the shell alone; each line it writes names that operator; the why is said on stderr and is not on the trail | `cli/trail.go` | `TestAnAcceptanceOfRowsSaysWhoAndWhy` |
+| `trail owed` names a hold as keeping an erasure only while the tenant is held | `cli/trail.go` | `TestWhatTheTrailOwesSaysWhetherTheHoldIsStillThere` |
 
 ## What roster does by itself
 

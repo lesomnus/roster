@@ -21,6 +21,7 @@ import (
 	"github.com/lesomnus/xli/flg"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/payday/trail"
@@ -189,6 +190,10 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 				return err
 			}
 			defer s.Close()
+
+			// What the act logs is said, on stderr: the checkpoint it ends in,
+			// a witness that did not hear it. See [aloud].
+			ctx, _ = aloud(ctx)
 
 			store := pd.TrailStore(s.Ent)
 
@@ -411,6 +416,11 @@ func newCmdTrailPurge(c *cmd.Config) *xli.Command {
 			defer s.Close()
 			p = forget.Held(p, s.Ent)
 
+			// The log that says so, which is stderr here ([aloud]): with no
+			// logger a purge said what it destroyed and nothing of what it
+			// passed over.
+			ctx, _ = aloud(ctx)
+
 			store := pd.TrailStore(s.Ent)
 			cut := of.CutFor(before)
 
@@ -469,6 +479,10 @@ func newCmdTrailVerify(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				return err
 			}
 			defer s.Close()
+
+			// A witness that does not answer is said in the log and is in
+			// none of what is printed below; the log is stderr here ([aloud]).
+			ctx, _ = aloud(ctx)
 
 			full, _ := flg.Find[bool](cl, "full")
 			v, err := p.Verify(ctx, pd.TrailStore(s.Ent), full)
@@ -600,10 +614,30 @@ func heard(hs map[string]trail.Heard) []string {
 // the ones that are gone. It is of what was looked at (payday#115): `--of` is
 // the digest the check printed (`audit.Rows.Digest`), and an acceptance is
 // refused when this check found anything else, so a row changed after the
-// operator looked is not recorded beside the ones they did. The digest and the
-// why are logged, and not on the trail, since `pd.Record` keeps no reason. A
-// forged line and a key not given are not accepted here: one is a line to look
-// at, and the other a key to give.
+// operator looked is not recorded beside the ones they did. A forged line and a
+// key not given are not accepted here: one is a line to look at, and the other
+// a key to give.
+//
+// # Who accepted, and why
+//
+// Who is the operator `--as` names, as for every command at the box that
+// names somebody, and the shell they are at; with no `--as`, the shell alone.
+// There is no `--by` as `trail accept` has, since `--as` already says it, and
+// says it of an operator the control plane has rather than of a word.
+//
+// Each line the acceptance writes names that operator as its actor. A line a
+// command at the box writes names nobody, because the box has no caller to
+// frame; here there is somebody, who looked and decided, and an acceptance
+// that names nobody is the one a finding hides behind. Framed for
+// `pd.Record` alone, which writes the trail and asks no rule of anybody, and
+// with no tenant, as `resources apply` frames its provisioner: the line is
+// filed where it was, and only says who.
+//
+// The why is not on the line: `pd.Record` keeps no reason, and a line of the
+// trail has no column for one (payday#115). It is logged with the digest and
+// who, and the log at the box is stderr ([aloud]) -- where for as long as no
+// command built a logger it was said to be logged and went nowhere (#280). So
+// what keeps the why is whatever keeps what the command printed.
 //
 // # What is personal, which the seal covers
 //
@@ -623,7 +657,7 @@ func newCmdTrailRows(c *cmd.Config) *xli.Command {
 		Flags: flg.Flags{
 			&flg.Switch{Name: "accept", Brief: "put what the check found on the trail as accepted, once somebody has looked"},
 			&flg.String{Name: "of", Brief: "with --accept, the digest a check printed of what was looked at"},
-			&flg.String{Name: "why", Brief: "what was looked at and decided, with --accept; it is logged"},
+			&flg.String{Name: "why", Brief: "what was looked at and decided, with --accept; it is said on stderr with who accepts, and is not on the trail"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -655,6 +689,20 @@ func newCmdTrailRows(c *cmd.Config) *xli.Command {
 				return err
 			}
 			defer s.Close()
+
+			// Who accepts, before anything is read: a name that is nobody's
+			// is refused as it is everywhere.
+			by := cmd.Operator{}
+			if accept {
+				if by, err = accepting(ctx, c, s); err != nil {
+					return err
+				}
+			}
+
+			// What the check logs is said, on stderr ([aloud]): the chunks of
+			// the archive it left out of what it read, which a check that
+			// answers *all match* has still not read.
+			ctx, _ = aloud(ctx)
 
 			v, err := pd.Digests(ctx, s.Ent, cs.Digest, p)
 			if err != nil {
@@ -732,11 +780,18 @@ func newCmdTrailRows(c *cmd.Config) *xli.Command {
 					"look at the line, or give the key in audit.digest.previous or retired", n)
 			}
 
-			there, err := pd.Record(ctx, s.Ent, cs, acceptedRows, slices.Concat(v.Differs, v.NoDigest, v.NotOnTrail))
+			// As the operator who accepts, where one was named: each line says
+			// who. See this command's comment.
+			as := ctx
+			if !by.Id.IsZero() {
+				as = frame.Into(ctx, frame.New(by.Id, pdid.Nil, frame.Whole()))
+			}
+
+			there, err := pd.Record(as, s.Ent, cs, acceptedRows, slices.Concat(v.Differs, v.NoDigest, v.NotOnTrail))
 			if err != nil {
 				return fmt.Errorf("accept: %w", err)
 			}
-			gone, err := pd.RecordErased(ctx, s.Ent, cs, acceptedRows, v.Missing)
+			gone, err := pd.RecordErased(as, s.Ent, cs, acceptedRows, v.Missing)
 			if err != nil {
 				return fmt.Errorf("accept: %w", err)
 			}
@@ -744,13 +799,15 @@ func newCmdTrailRows(c *cmd.Config) *xli.Command {
 			// records them: what the operator looked at was the count and the
 			// digest that names each, and what they are now is what the seal
 			// vouches for from here on.
-			sealed, err := pd.Record(ctx, s.Ent, cs, acceptedRows, v.Unsealed)
+			sealed, err := pd.Record(as, s.Ent, cs, acceptedRows, v.Unsealed)
 			if err != nil {
 				return fmt.Errorf("accept: %w", err)
 			}
-			log.From(ctx).InfoContext(ctx, "trail: rows accepted as they are", slog.String("of", digest), slog.String("why", why),
+
+			who := accepter(by)
+			log.From(ctx).InfoContext(ctx, "trail: rows accepted as they are", slog.String("by", who), slog.String("of", digest), slog.String("why", why),
 				slog.Int("rows", there), slog.Int("gone", gone), slog.Int("sealed", sealed))
-			fmt.Fprintf(os.Stderr, "accepted %d row(s) and %d gone, and sealed %d from before seals; the trail says they are what they are now\n", there, gone, sealed)
+			fmt.Fprintf(os.Stderr, "accepted %d row(s) and %d gone, and sealed %d from before seals, by %s; the trail says they are what they are now\n", there, gone, sealed, who)
 
 			return nil
 		}),
@@ -759,6 +816,36 @@ func newCmdTrailRows(c *cmd.Config) *xli.Command {
 
 // acceptedRows is the act `roster trail rows --accept` is on the trail as.
 const acceptedRows = "roster.trail.rows.accept"
+
+// accepting is who accepts what a check of the rows found: the operator
+// `--as` names, checked against the control plane as [atTheBox] checks one,
+// and the shell they are at. With no `--as` it is the shell alone, and with
+// neither it is refused, as `trail accept` refuses an acceptance by nobody.
+func accepting(ctx context.Context, c *cmd.Config, s *cmd.Server) (cmd.Operator, error) {
+	if strings.TrimSpace(c.Client.As) != "" {
+		return atTheBox(ctx, c, s)
+	}
+
+	by := cmd.Operator{Where: thisShell()}
+	if by.Where == "" {
+		return by, errors.New("--as: who accepts, since this shell does not say")
+	}
+
+	return by, nil
+}
+
+// accepter is who accepted, as it is said: the operator and the shell, or the
+// shell alone.
+func accepter(by cmd.Operator) string {
+	switch {
+	case by.Alias == "":
+		return by.Where
+	case by.Where == "":
+		return by.Alias
+	default:
+		return by.Alias + " (" + by.Where + ")"
+	}
+}
 
 // newCmdTrailAccept is an operator who has looked at what `verify` found and
 // decided the archive is right -- a pass a crash stopped, a chunk restored from
@@ -820,6 +907,9 @@ func newCmdTrailAccept(c *cmd.Config) *xli.Command {
 				return err
 			}
 			defer s.Close()
+
+			// What the acceptance logs is said, on stderr ([aloud]).
+			ctx, _ = aloud(ctx)
 
 			v, err := p.Accept(ctx, pd.TrailStore(s.Ent), a)
 			for _, f := range v.Findings {
@@ -915,6 +1005,11 @@ func kindOf(cl *xli.Command) (trail.Kinds, error) {
 // and is said by tenant, or one that cannot be done -- an archive that cannot
 // be written, a chunk whose bytes are not its digest (`roster trail verify`).
 // It reads the database and changes nothing.
+//
+// What an erasure owed keeps is whose holds kept part of it **when it was last
+// paid**, and nothing writes it again until the next payment. So a tenant it
+// names is asked whether it is held now: read as it stood, this went on saying
+// *until it lifts* of a hold that had been lifted (#280).
 func newCmdTrailOwed(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "owed",
@@ -939,12 +1034,25 @@ func newCmdTrailOwed(c *cmd.Config) *xli.Command {
 			}
 
 			fmt.Fprintf(os.Stdout, "%d erasure(s) owed, the oldest since %s\n", o.Objects, o.Oldest.UTC().Format(time.RFC3339))
+			held := forget.Holds(s.Ent)
 			for _, id := range slices.SortedFunc(maps.Keys(o.Held), func(a, b pdid.Id) int { return strings.Compare(a.String(), b.String()) }) {
 				name := id.String()
 				if t, err := s.Ent.Tenant.Get(ctx, id.Uuid()); err == nil && t.Alias != "" {
 					name = "@" + t.Alias + " (" + name + ")"
 				}
-				fmt.Fprintf(os.Stdout, "  %d kept by a legal hold of %s, until it lifts\n", o.Held[id], name)
+
+				// Asked of what a pass asks, so that the two agree on what a
+				// hold is.
+				t, err := held(ctx, id)
+				if err != nil {
+					return err
+				}
+				if t.Hold != nil {
+					fmt.Fprintf(os.Stdout, "  %d kept by a legal hold of %s, until it lifts\n", o.Held[id], name)
+
+					continue
+				}
+				fmt.Fprintf(os.Stdout, "  %d kept by a legal hold of %s when last paid, which has been lifted since: owed until the next payment\n", o.Held[id], name)
 			}
 
 			return nil
@@ -1010,16 +1118,25 @@ func prune(ctx context.Context, c cmd.Config, dry bool) error {
 	p = forget.Held(p, s.Ent)
 	fmt.Fprintf(os.Stderr, "%s\n", p.String())
 
+	// It logs what it did, per kind, exactly as the sweep does -- which is why
+	// nothing is printed here beyond the policy: two accounts of one pass would
+	// be two that disagree.
+	//
+	// And the log is said, which it was not: no command builds a logger, so
+	// the one account of the pass went nowhere, and a pass that could not
+	// write its archive printed the policy and answered exit 0 (#280). The
+	// pass hands back no result -- it is written for a loop, which tries again
+	// a day later -- so what it could not do is read off what it logged: a
+	// line that carries an error. See [aloud].
+	ctx, told := aloud(ctx)
+
 	if dry {
 		return wouldPrune(ctx, p, pd.TrailStore(s.Ent))
 	}
 
-	// It logs what it did, per kind, exactly as the sweep does -- which is why
-	// nothing is printed here beyond the policy: two accounts of one pass would
-	// be two that disagree.
 	p.Pass(ctx, pd.TrailStore(s.Ent))
 
-	return nil
+	return told.failed("the pass")
 }
 
 // wouldPrune says what one pass of the policy would take, and takes nothing:

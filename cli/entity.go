@@ -388,10 +388,11 @@ func (l local) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 	// configuration file that was meant to name a server and did not.
 	//
 	// To stderr and not through `log`, which is the part worth explaining:
-	// nothing installs a logger on a command in this app -- `log.From` on a
-	// bare context discards -- so a warning written that way is one nobody ever
-	// sees, which is worse than none. Stderr also keeps it out of a pipe, so
-	// `roster tenant ls -o json | jq` is unaffected.
+	// nothing installs a logger on an entity command -- `log.From` on a bare
+	// context discards, and the one a command is given where its work logs
+	// ([aloud]) is put there after this -- so a warning written that way is
+	// one nobody ever sees, which is worse than none. Stderr also keeps it out
+	// of a pipe, so `roster tenant ls -o json | jq` is unaffected.
 	why := "set client.addr to go over the wire"
 	if l.c.Client.Addr != "" {
 		// `--HAL` against a deployment that is configured for the wire, which

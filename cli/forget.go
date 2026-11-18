@@ -62,12 +62,25 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 			&flg.Switch{Name: "reuse", Brief: "a tenant's: free its alias now rather than after `tenant.alias_hold`"},
 		},
 
-		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) (err error) {
 			s, err := built(ctx, *c)
 			if err != nil {
 				return err
 			}
 			defer s.Close()
+
+			// What forgetting logs is said, on stderr, and what it logged
+			// that it could not do fails the command ([aloud], #280). The
+			// archive's half of an erasure is paid after its transaction, and
+			// a payment that fails is logged and left owed: with no logger
+			// that was said to nobody, and the command answered exit 0 beside
+			// an archive that still held what its rows said of the person.
+			ctx, told := aloud(ctx)
+			defer func() {
+				if err == nil {
+					err = told.failed("forgetting")
+				}
+			}()
 
 			p, err := c.Holder.Trail(ctx, *c)
 			if err != nil {

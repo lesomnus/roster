@@ -324,7 +324,12 @@ func TestADatabaseRestoredFromABackupIsAcceptedOnce(t *testing.T) {
 
 	x.ErrorContains(run("trail", "verify"), "finding(s)")
 	b.holder(t, ctx, b.Contoso, "meanwhile")
-	x.NoError(run("trail", "prune"))
+
+	// The pass moves what is past its window and cannot take its checkpoint,
+	// which it says, and the command fails for it as every act does while the
+	// database is behind the store (#280). It answered nil here, since the
+	// pass only logged it and no command had a log.
+	x.ErrorContains(run("trail", "prune"), "the checkpoint of a pass")
 	x.Equal(then, latest(), "a checkpoint was taken over a database behind the store")
 
 	out, err := stderrOf(t, cli.Cmd(&c), "trail", "verify")

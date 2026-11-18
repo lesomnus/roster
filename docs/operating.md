@@ -1494,7 +1494,9 @@ new alias if a file is to own it.
 `roster <entity> <verb>` with `--config` opens the databases itself and calls
 the servers in the same process, with no wall and no gate -- there is no caller
 to ask anything of, so there is no frame, and the trail names nobody for what it
-writes (`resources apply` is the exception: it frames itself as `provisioner`).
+writes (two exceptions: `resources apply` frames itself as `provisioner`, and
+the lines `trail rows --accept` writes name the operator `--as` names, since an
+acceptance is somebody's).
 It is what a deployment does before anybody can sign in -- `init`, migrations,
 `login provision` -- and the way out of a broken one.
 
@@ -1768,7 +1770,7 @@ roster trail purge --older-than 61320h --dry-run  # which chunks would go
 roster trail verify --full                        # the archive against the database's account of it, and the digest of what it found
 roster trail accept --of sha256:… --full --why "a pass the 10-21 crash stopped"  # once somebody has looked at that
 roster trail rows                                 # the live rows against what the trail says they were left as, and its digest
-roster trail rows --accept --of sha256:… --why "the 10-20 migration set them"  # once somebody has looked at each
+roster --as admin trail rows --accept --of sha256:… --why "the 10-20 migration set them"  # once somebody has looked at each
 roster trail owed                                 # the erasures owed and not paid yet: how many, since when, and what a legal hold keeps
 ```
 
@@ -1788,6 +1790,31 @@ destroyed; and how many erasures owed it would pay. `--kind`, `--to` and
 `--discard` are read with a window of your own and no other way, so a `prune`
 with no window that is given one is refused by the flag's name, where it used
 to pass it over and apply the policy.
+
+**A command at the box says what it did, on stderr.** The pass is written for
+`serve`'s clock: it logs what it did and what it could not, and goes on, so that
+a database that blinked is tried again a day later. `prune` with no window runs
+the same pass, and prints the policy and then every line the pass logs -- how
+many rows of which kind and tenant moved or were discarded, what the archive
+lost at the end of its window, the checkpoint it ended in:
+
+```
+time=2026-10-22T03:12:09Z level=INFO msg="trail: the retention window" kind=* tenant=019ff2ab-… before=2026-07-24T03:12:09Z moved=1204 discarded=0
+time=2026-10-22T03:12:09Z level=INFO msg="trail: a checkpoint" k=41 blobs=96
+```
+
+A line that carries an `err` is something the pass set out to do and could not
+-- an archive that cannot be written, a witness that did not hear -- and
+`prune` **exits non-zero** when there was one, saying how many and the first.
+It used to print the policy and exit 0 whatever came of the pass, since a
+command builds no logger and the lines went nowhere. Nothing leaves the
+database that was not written first, so a pass that failed is run again once
+what it names is mended. The other `trail`
+commands print what their work logs in the same way -- a chunk the account
+does not have that a `purge` or a check of the rows passed over, a witness
+that did not answer a `verify` -- and fail for what they fail for already.
+These lines are stderr's whatever `otel:` says: a schedule that runs them
+keeps what the job printed.
 
 `prune` writes each chunk whole **before** it
 deletes anything, and deletes the rows that are in the chunk rather than re-running
@@ -1938,9 +1965,26 @@ prints, on stderr, the digest of what it found, and `--accept --of <that digest>
 each -- gone ones as gone -- and is refused when the check now finds anything
 else: a row somebody changed after the check that was looked at is not accepted
 with the ones that were (payday#115). Each row is on the trail as the act it is
-(`roster.trail.rows.accept`), and the digest and the why are logged with it. A
+(`roster.trail.rows.accept`). A
 forged row and a key not given are not accepted: look at the row of the trail,
 or give the key.
+
+**Who accepted, and why.** Who is the operator `--as` names, and the shell they
+are at -- `roster --as admin trail rows --accept …` -- or the shell alone when
+`--as` is not given; there is no `--by` as `trail accept` has. Each line the
+acceptance writes names that operator as its actor, so the trail says who
+accepted each row. The why is **not** on the trail: a line has nowhere to keep
+one. It is said on stderr with who and the digest, in the command's last two
+lines, and nowhere else:
+
+```
+time=2026-10-22T03:12:09Z level=INFO msg="trail: rows accepted as they are" by="admin (ops@bastion)" of=sha256:… why="the 10-20 migration set them" rows=12 gone=0 sealed=0
+accepted 12 row(s) and 0 gone, and sealed 0 from before seals, by admin (ops@bastion); the trail says they are what they are now
+```
+
+Keep what the command printed where an acceptance has to be explained later.
+An acceptance of the archive is different: `trail accept` keeps who and why in
+the checkpoint it ends in.
 
 **A row whose newest write sealed nothing** -- written before its kind
 declared the field personal -- is counted **from before seals**: no finding,
@@ -2357,10 +2401,12 @@ row of payday's `owed` table for each thing forgotten, which a rollback takes wi
 the rest. It is paid as soon as the transaction commits; a payment that fails, or a
 process that stops before it, leaves the debt to the trail's next pass, which pays
 what is owed before it moves anything, and `roster forget` says how much is still
-owed. A trail row a legal hold is on stays as it was, and its debt with it:
+owed -- and, when the payment failed, says why on stderr and exits non-zero, though
+the person is forgotten in the database. A trail row a legal hold is on stays as it was, and its debt with it:
 `roster forget` says how many and whose, and the pass after the hold is lifted erases
 them -- nobody runs anything again. `roster trail owed` says what the deployment owes
-at any moment: how many, since when, and how many each tenant's hold keeps. The rows'
+at any moment: how many, since when, and how many each tenant's hold keeps -- or
+kept when it was last paid, where that hold has been lifted since. The rows'
 seals are owed with the archive's half and paid with it (payday#144), so the
 transaction takes no turn with a pass.
 
@@ -2524,6 +2570,10 @@ was written and by whom, kept; this is what was asked, as it happens. One thing
 in it is the trail's to be watched for, with a deployment that keeps an archive:
 the checkpoints the `log:` witness tells, and the alerts on them in § "Who heard
 the newest checkpoint".
+
+`otel:` is read by the processes that serve. A command at a shell builds none
+of it: what its work logs -- `roster trail prune`'s pass, `roster forget` --
+it prints on stderr, where whoever ran it is looking (§ "The audit trail").
 
 ## Running more than one
 
