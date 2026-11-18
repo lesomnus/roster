@@ -467,6 +467,13 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		rec = append(rec, pd.OutboxRecorder())
 	}
 
+	// And before all of them, the one question asked of a write once it is
+	// made: whether whoever its row names was forgotten while it was being
+	// decided (`forget.Nobody`, #280). First, so that a write refused for it
+	// has been told to nobody -- not the trail, and not what remembers a
+	// write to publish it.
+	rec = append(bare.Recorders{forget.Nobody()}, rec...)
+
 	opts := []bare.Option{bare.WithMinter(pd.Minter()), bare.WithRecorder(rec)}
 
 	sink, err := pd.NewSink(client, opts...)

@@ -155,12 +155,20 @@ func TestWhatASweepCollectsIsSaidUnderTheTenantItWasOf(t *testing.T) {
 	rows := func() error { return cli.Cmd(&c).Run(ctx, []string{"trail", "rows"}) }
 	x.NoError(rows())
 
+	// A consent is destroyed once its account is erased, and that is asked
+	// again where it is destroyed (#280): so the two of them are erased, as
+	// somebody who left is.
+	for _, who := range []pdid.Id{k.account, finn} {
+		_, err := b.Ungated.Holder().Erase(ctx, app.HolderRef_builder{Id: who.Bytes()}.Build())
+		x.NoError(err)
+	}
+
 	for _, collect := range []func() (int, error){
 		func() (int, error) { return keys.Collect(ctx, b.Ent, cs) },
 		func() (int, error) { return vouch.Collect(ctx, b.Ent, cs) },
 		func() (int, error) { return prove.Collect(ctx, b.Ent, cs) },
 		func() (int, error) { return session.Collect(ctx, b.Ent, cs) },
-		func() (int, error) { return forget.DestroyConsents(ctx, b.Ent, kept, cs) },
+		func() (int, error) { return forget.DestroyConsents(ctx, b.Ent, kept, time.Now().Add(time.Hour), cs) },
 	} {
 		n, err := collect()
 		x.NoError(err)
@@ -180,10 +188,12 @@ func TestWhatASweepCollectsIsSaidUnderTheTenantItWasOf(t *testing.T) {
 
 		return len(res.GetItems())
 	}
+	// Read by somebody of each tenant who is still there: the two whose rows
+	// went were erased above.
 	for id, tenant := range gone {
-		ours, theirs := k.account, finn
+		ours, theirs := b.ContosoUser, shop
 		if tenant == b.Fabrikam {
-			ours, theirs = finn, k.account
+			ours, theirs = shop, b.ContosoUser
 		}
 		other := b.Contoso
 		if tenant == b.Contoso {

@@ -50,12 +50,15 @@ package forget
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"uuid"
 
 	"github.com/lesomnus/otx/log"
+	"github.com/protobuf-orm/ent/dialect"
+	"github.com/protobuf-orm/ent/dialect/sql"
 
 	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/pdid"
@@ -168,19 +171,95 @@ func (r Result) String() string {
 // erasure said again about anybody else. A write past the servers is published
 // by nothing else: what publishes a write is the call that made it, and this is
 // none. Nil is a deployment that publishes nowhere; see [heard].
+//
+// # By name, and of the person as they are when it destroys
+//
+// This is the forget somebody asked for: `roster forget @tenant/who`. It is
+// made of anybody, erased or not, in a tenant held or not ([Hold] says what a
+// hold keeps of it). What it decides on is the row as it is inside the
+// transaction that destroys ([forget]), with one refusal: somebody it found
+// erased who has been restored since. A restore and a forget of one person at
+// once were each made on what they had read, and left somebody who was
+// neither -- not erased, with no name and no rows (#280). Whichever of the
+// two comes second is told what the first did: a restore that they are
+// forgotten ([Restore]), and this that they are back. It is not made on what
+// was true a moment ago, because it is the one of the two that cannot be
+// taken back; asked again, of the person as they are, it is made.
 func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs audit.Contents, q bare.Recorder) (Result, error) {
-	var out Result
-
-	v, err := db.Holder.Get(ctx, who.Uuid())
+	was, err := db.Holder.Get(ctx, who.Uuid())
 	if err != nil {
-		return out, err
+		return Result{}, err
 	}
+
+	return forget(ctx, db, who, p, cs, q, func(v *ent.Holder, _ *ent.Tenant) error {
+		if was.DateErased != nil && v.DateErased == nil {
+			return fmt.Errorf("%s was restored while this was being decided, and is left as they are: forgetting somebody is not taken back, "+
+				"so it is not made on what was true a moment ago. Ask again if they are still to be forgotten", who)
+		}
+
+		return nil
+	})
+}
+
+// ErrNotDue is somebody a pass came to who is no longer due: restored, or of
+// a tenant an operator holds, since the pass read who was. They are left as
+// they are, and it is not a failure.
+var ErrNotDue = errors.New("no longer due")
+
+// due is what a forget made on the clock asks again: that the person is what
+// [Due] found them to be. Erased, and since before `before` -- somebody
+// restored and erased again has a grace that began again; not forgotten
+// already, by another pass or by name; and of a tenant nobody holds.
+func due(before time.Time) asked {
+	return func(v *ent.Holder, in *ent.Tenant) error {
+		switch {
+		case v.DateErased == nil:
+			return fmt.Errorf("%w: restored since the pass read who was", ErrNotDue)
+		case !v.DateErased.Before(before):
+			return fmt.Errorf("%w: restored and erased again since the pass read who was, and their grace runs from then", ErrNotDue)
+		case v.Alias == "":
+			return fmt.Errorf("%w: forgotten already", ErrNotDue)
+		case in.DateHeld != nil:
+			return fmt.Errorf("%w: their tenant is held since %s", ErrNotDue, in.DateHeld.Format(time.RFC3339))
+		}
+
+		return nil
+	}
+}
+
+// asked is what a forget asks again of somebody once their row is its own:
+// the row and their tenant's, as they are inside the transaction that
+// destroys. Nil goes on, and anything else leaves the person as they are.
+type asked func(v *ent.Holder, in *ent.Tenant) error
+
+// forget is [Forget] on the condition `still`.
+//
+// # It asks again, inside the transaction that destroys
+//
+// A pass read who was due once and forgot each; a tenant's destruction asked
+// its hold before each person and not in the write; and nothing was asked of
+// the person at all. So somebody restored after a pass began was forgotten by
+// it, having been told they were back, and a hold placed after it began
+// stopped nobody of it (#280). What a forget is made on is asked where it
+// cannot have moved by the time the write lands: of the person's row once the
+// transaction has it for itself ([mine]), and of their tenant's read after
+// that.
+func forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs audit.Contents, q bare.Recorder, still asked) (Result, error) {
+	var out Result
 
 	tx, err := db.Tx(ctx)
 	if err != nil {
 		return out, err
 	}
 	defer tx.Rollback()
+
+	v, in, err := mine(ctx, tx.Client(), who)
+	if err != nil {
+		return out, err
+	}
+	if err := still(v, in); err != nil {
+		return out, err
+	}
 
 	// Every identifier whose trail rows are about this person. Not the holder
 	// alone: `Audit.value` for a write to an `Email` row holds the address, and
@@ -234,6 +313,9 @@ func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 	if v.DateErased == nil {
 		// Asked for by somebody who had not left first. Leaving is implied by
 		// the request, and it is the state everything else already assumes.
+		// Decided on the row as this transaction holds it, and not on a read
+		// before it: a restore in between is somebody live, who is erased here
+		// as anybody live is.
 		u = u.SetDateErased(time.Now())
 	}
 	if err := u.Exec(ctx); err != nil {
@@ -330,16 +412,24 @@ func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 // at once and somebody new may have it by the time this runs. The index
 // refused the write, and what an operator read was the store's own sentence
 // about a constraint. [taken] says it in words, before anything is written.
+//
+// # Written on the condition it was decided on
+//
+// The questions above are a read, and the write cleared `date_erased` with no
+// condition. A forget that committed between the two was undone by half:
+// somebody not erased, with no name and no rows, whom this had just called
+// back (#280). So the write carries what was decided on -- erased, and not
+// forgotten -- and is no write at all when either has moved, as a tenant's
+// restore is (`server/core/close.go`). Then the row is read again and the
+// answer is the one it would have been given a moment later: forgotten, or
+// restored already.
 func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents, q bare.Recorder) error {
 	v, err := db.Holder.Get(ctx, who.Uuid())
 	if err != nil {
 		return err
 	}
-	if v.DateErased == nil {
-		return fmt.Errorf("%s has not been erased, so there is nothing to bring back", who)
-	}
-	if v.Alias == "" {
-		return fmt.Errorf("%s has been forgotten; what is left is an identifier, and it names nobody", who)
+	if err := restorable(who, v); err != nil {
+		return err
 	}
 	if err := taken(ctx, db, v); err != nil {
 		return err
@@ -352,11 +442,13 @@ func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents
 	defer tx.Rollback()
 
 	now := time.Now()
-	if err := tx.Holder.UpdateOneId(who.Uuid()).
+	n, err := tx.Holder.Update().
+		Where(holder.IdEQ(who.Uuid()), holder.DateErasedNotNil(), holder.AliasNEQ("")).
 		ClearDateErased().
 		SetDateInvalidated(now).
 		SetDateUpdated(now).
-		Exec(ctx); err != nil {
+		Save(ctx)
+	if err != nil {
 		if ent.IsConstraintError(err) {
 			// Somebody took a name of theirs between the question and the
 			// write. Asked again outside the transaction, which this ends.
@@ -368,6 +460,19 @@ func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents
 
 		return err
 	}
+	if n == 0 {
+		// Forgotten, or restored by somebody else, between the question and
+		// the write. Asked again outside the transaction, which this ends.
+		tx.Rollback()
+		if v, err = db.Holder.Get(ctx, who.Uuid()); err != nil {
+			return err
+		}
+		if err := restorable(who, v); err != nil {
+			return err
+		}
+
+		return fmt.Errorf("%s changed while this was being decided, and was not brought back; ask again", who)
+	}
 	if _, err := pd.Record(ctx, tx.Client(), cs, RestoredHolder, []pdid.Id{who}); err != nil {
 		return err
 	}
@@ -376,6 +481,67 @@ func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents
 	}
 
 	return tx.Commit()
+}
+
+// restorable is whether somebody as they were read can be brought back:
+// erased, and not forgotten. What answers the second is the row itself; see
+// [Restore].
+func restorable(who pdid.Id, v *ent.Holder) error {
+	switch {
+	case v.DateErased == nil:
+		return fmt.Errorf("%s has not been erased, so there is nothing to bring back", who)
+	case v.Alias == "":
+		return fmt.Errorf("%s has been forgotten; what is left is an identifier, and it names nobody", who)
+	}
+
+	return nil
+}
+
+// mine takes somebody's row for the transaction `tx`, and answers it and
+// their tenant's as they are then.
+//
+// # Why first, and why this lock
+//
+// What a forget decides on, and what it removes, is read after this. So an
+// act that was already writing about the person has committed by then and is
+// seen, and one that comes after waits and finds them forgotten.
+//
+// On PostgreSQL the row is taken `FOR UPDATE`. That is the lock the write
+// `server/core` makes on a person's row waits for (`only.go`), and it is also
+// the one a foreign key waits for: an insert of a row that names somebody
+// holds their row against exactly this until it commits. So a write that has
+// already named them is waited for and then removed with everything else of
+// theirs; and a write that names them afterwards waits for the forget, is
+// made -- the row is still there, blank, so the key is satisfied -- and is
+// then asked whether whoever it names was forgotten ([Nobody]). A plain
+// update of the row would not do: it waits for other updates and not for a
+// key's lock, and a binding written at the same moment would be read by
+// neither.
+//
+// SQLite has one writer at a time, and a transaction is that writer from its
+// first statement (`_txlock=immediate`, which `config.DbConfig.Open` asks
+// for). There is no row to lock and nothing to wait for.
+//
+// The tenant is read after the row is held, in a statement of its own: a
+// hold placed while this waited for the row is one it finds.
+func mine(ctx context.Context, tx *ent.Client, who pdid.Id) (*ent.Holder, *ent.Tenant, error) {
+	q := tx.Holder.Query().Where(holder.IdEQ(who.Uuid()))
+	q.Modify(func(s *sql.Selector) {
+		if tx.Dialect() != dialect.SQLite {
+			s.ForUpdate()
+		}
+	})
+
+	v, err := q.Only(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	in, err := tx.Tenant.Get(ctx, v.TenantId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return v, in, nil
 }
 
 // taken is the refusal a restore answers when a name of somebody erased is
@@ -720,6 +886,47 @@ func linked(k uuid.UUID) predicate.Link {
 // them.
 const Swept = 24 * time.Hour
 
+// Lapsed is what a pass did about one person it found due.
+type Lapsed struct {
+	Who pdid.Id
+
+	// Result is what forgetting them did, when they were forgotten.
+	Result
+
+	// Err is why they were not: [ErrNotDue] for somebody restored, or of a
+	// tenant held, since the pass read who was due -- left as they are, and
+	// no failure -- and anything else for a forget that failed, which the
+	// next pass makes again.
+	Err error
+}
+
+// Pass forgets everybody whose grace ran out before `before`, and answers
+// what it did about each: what a tick of [Sweep] does, and what `roster
+// forget` with no name does about people.
+//
+// It reads who is due once, and that list is a moment that has passed by the
+// time it comes to each of them. So each is asked again, in the transaction
+// that destroys them, whether they are still what [Due] found ([due]): a
+// restore made while the pass ran is somebody the pass leaves, and so is
+// everybody of a tenant held while it ran.
+//
+// A person that fails does not stop it. Each is their own act, and what one
+// of them could not have done to them says nothing of the next.
+func Pass(ctx context.Context, db *ent.Client, before time.Time, p trail.Policy, cs audit.Contents, q bare.Recorder) ([]Lapsed, error) {
+	vs, err := Due(ctx, db, before)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]Lapsed, 0, len(vs))
+	for _, who := range vs {
+		res, err := forget(ctx, db, who, p, cs, q, due(before))
+		out = append(out, Lapsed{Who: who, Result: res, Err: err})
+	}
+
+	return out, nil
+}
+
 // Sweep destroys everybody whose grace has run out, on a clock.
 //
 // It is the same **kind** of loop the trail's retention is and not the kind the
@@ -729,7 +936,8 @@ const Swept = 24 * time.Hour
 //
 // A pass that fails part way has still destroyed whoever it reached, because
 // each person is their own act -- there is no batch here to be half of. Each
-// is put on the stream through `q`, as [Forget] says.
+// is put on the stream through `q`, as [Forget] says. What a pass is, and
+// what it asks again of each person, is [Pass].
 func Sweep(db *ent.Client, after time.Duration, p trail.Policy, cs audit.Contents, q bare.Recorder, every time.Duration) spin.Func {
 	if every <= 0 {
 		every = Swept
@@ -738,27 +946,28 @@ func Sweep(db *ent.Client, after time.Duration, p trail.Policy, cs audit.Content
 	return spin.Every(every, func(ctx context.Context) error {
 		before := time.Now().Add(-after)
 
-		vs, err := Due(ctx, db, before)
+		vs, err := Pass(ctx, db, before, p, cs, q)
 		if err != nil {
 			log.From(ctx).WarnContext(ctx, "forget: who is due", "err", err, "before", before)
 
 			return nil
 		}
-		if len(vs) == 0 {
-			return nil
-		}
+		for _, v := range vs {
+			switch {
+			case errors.Is(v.Err, ErrNotDue):
+				log.From(ctx).InfoContext(ctx, "forget: left, having been due when the pass began", "holder", v.Who.String(), "why", v.Err)
 
-		for _, who := range vs {
-			res, err := Forget(ctx, db, who, p, cs, q)
-			if err != nil {
-				log.From(ctx).WarnContext(ctx, "forget", "holder", who.String(), "err", err)
+				continue
+
+			case v.Err != nil:
+				log.From(ctx).WarnContext(ctx, "forget", "holder", v.Who.String(), "err", v.Err)
 
 				continue
 			}
 
 			log.From(ctx).InfoContext(ctx, "forget",
-				"holder", who.String(), "rows", res.Rows, "trail", res.Trail, "archived", res.Archived,
-				"held", res.Held.Rows, "owed", res.Owed)
+				"holder", v.Who.String(), "rows", v.Rows, "trail", v.Trail, "archived", v.Archived,
+				"held", v.Held.Rows, "owed", v.Owed)
 		}
 
 		return nil

@@ -123,7 +123,8 @@ func (r TenantResult) String() string {
 // people -- one person at a time, through the trail and the archive. So the
 // stamp is written on the condition the read found -- held by nobody, closed,
 // not yet destroyed -- and is no write at all if a hold was placed or a
-// restore made in between; and the hold is asked again before each person.
+// restore made in between; and the hold is asked again of each person, in the
+// transaction that forgets them.
 // What a hold placed half way through stops is the rest of the people: those
 // forgotten before it stay forgotten, and lifting it lets the sweep finish
 // ([Unfinished] finds a destroyed tenant by what is left of it). Once they
@@ -182,10 +183,10 @@ func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Polic
 		return out, err
 	}
 	for _, h := range who {
-		if err := notHeld(ctx, db, t); err != nil {
+		res, err := forget(ctx, db, pdid.Id(h), p, cs, q, func(_ *ent.Holder, in *ent.Tenant) error { return unheld(in) })
+		if errors.Is(err, ErrHeld) {
 			return out, err
 		}
-		res, err := Forget(ctx, db, pdid.Id(h), p, cs, q)
 		if err != nil {
 			return out, fmt.Errorf("holder %s: %w", pdid.Id(h), err)
 		}
@@ -255,23 +256,21 @@ func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Polic
 // destroyable is whether a tenant as it was read may be destroyed: closed, and
 // held by nobody.
 func destroyable(v *ent.Tenant) error {
-	switch {
-	case v.DateHeld != nil:
-		return fmt.Errorf("%w since %s: %s", ErrHeld, v.DateHeld.Format(time.RFC3339), v.Hold)
-	case v.DateClosed == nil:
+	if err := unheld(v); err != nil {
+		return err
+	}
+	if v.DateClosed == nil {
 		return fmt.Errorf("@%s is open; `roster tenant close` it first, which is what shuts its people out", v.Alias)
 	}
 
 	return nil
 }
 
-// notHeld asks again, between the steps of [DestroyTenant], whether an operator
-// has placed a hold since it began.
-func notHeld(ctx context.Context, db *ent.Client, t pdid.Id) error {
-	v, err := db.Tenant.Get(ctx, t.Uuid())
-	if err != nil {
-		return err
-	}
+// unheld is [ErrHeld] for a tenant an operator holds, saying since when and
+// what for. It is what [DestroyTenant] asks again of each of a tenant's
+// people, in the transaction that forgets them ([forget]): a hold placed
+// since it began is found there, and not at a read a moment before it.
+func unheld(v *ent.Tenant) error {
 	if v.DateHeld != nil {
 		return fmt.Errorf("%w since %s: %s", ErrHeld, v.DateHeld.Format(time.RFC3339), v.Hold)
 	}
