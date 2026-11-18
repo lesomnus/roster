@@ -47,6 +47,16 @@ func TestEveryRowThatNamesAPersonIsAskedAboutThem(t *testing.T) {
 	}
 	x.NotEmpty(keyed, "no table is keyed to a holder, so this proves nothing")
 
+	// How many there are is said in words in four places -- this package's
+	// comment, [subjects], `tenant.go` and the manual -- and three of them
+	// said thirteen and twelve while there were seventeen (#280). A key added
+	// or taken away is those four sentences to write again.
+	keys := 0
+	for _, columns := range keyed {
+		keys += len(columns)
+	}
+	x.Equal(17, keys, "the comments in this package and docs/operating.md say seventeen foreign keys point at a holder")
+
 	// What the messages say: every kind with an edge to a holder, and whether
 	// a write can point one of its edges at somebody else.
 	want := map[string][]string{}

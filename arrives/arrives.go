@@ -1374,11 +1374,18 @@ func gone(h *rstr.Holder) bool { return len(h.GetTenant().GetId()) == 0 }
 // warning: who arrived, as whom, and what ends it. The holder is named by
 // identifier because that is all that still names them -- their alias came
 // free when they were erased, and may be somebody else's by now.
+//
+// And by nothing else of theirs. It said their subject at the provider, which
+// is declared personal (`Identity.subject`), in a log nothing of roster's
+// reaches: once they are forgotten, the line was the one place left that
+// tied the identifier their row keeps to who they were at a provider (#280).
+// Whoever reads this needs the holder, to bring them back or to list what
+// they hold and let it go, and both are done by the identifier.
 func erased(ctx context.Context, who Caller, holder pdid.Id, by string) error {
 	slog.WarnContext(ctx, "arrives: somebody erased arrived, and was told their account was deleted; "+
 		"an operator brings them back (`roster restore`), "+
 		"or an administrator of the tenant lets go of what they hold (`roster identity erase`, `roster email erase`)",
-		"tenant", who.TenantAlias, "holder", holder.String(), "provider", who.Provider, "subject", who.Subject, "by", by)
+		"tenant", who.TenantAlias, "holder", holder.String(), "provider", who.Provider, "by", by)
 
 	return ErrErased
 }
