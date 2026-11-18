@@ -333,7 +333,16 @@ func TestASignOutHydraWouldNotTakeIsTriedUntilItDoes(t *testing.T) {
 	h.refuses(erin.String(), false)
 	x.Eventually(func() bool { return d.hydra.times(erin.String()) > 0 },
 		10*time.Second, 20*time.Millisecond, "hydra answered again and was never told to forget her")
-	x.Contains(d.hydra.ungrants(), erin.String(), "her grants outlived the sign-out: a refresh token goes on refreshing")
+
+	// Asked until it is so, and not once the browser is forgotten. A try is
+	// two requests, her grants and then her browser, and Hydra began answering
+	// again wherever the app was in one: where that was between the two, the
+	// browser's went through on a try whose first had been refused, and her
+	// grants went with the try after it. Read at that moment, this said her
+	// grants had outlived the sign-out, five runs in a hundred on a loaded
+	// machine, of an app that was a second from ending them.
+	x.Eventually(func() bool { return slices.Contains(d.hydra.ungrants(), erin.String()) },
+		10*time.Second, 20*time.Millisecond, "her grants outlived the sign-out: a refresh token goes on refreshing")
 }
 
 // wire is the connection between the app and roster, which a test can cut as a
