@@ -2552,6 +2552,21 @@ compromised account deleting things, a billing dispute.
 destruction is a delay. It refuses somebody already forgotten, which is the honest
 answer: a forgotten holder has no alias, so there is no name left to bring back.
 
+**Each is made on what is so when it is made.** A pass reads who is due once, and
+then asks each of them again inside the transaction that destroys them: somebody
+you restored while it ran is left as the restore left them, and so is everybody of
+a tenant you held while it ran. The log says who was left and why (`forget: left,
+having been due when the pass began`), and `roster forget` prints it. A restore and
+a forget of one person at the same moment end one way or the other, and whichever
+came second says what the first did: `restore` that they have been forgotten,
+`forget @contoso/erin` that they were restored while it was being decided, and
+that it destroyed nothing -- run it again if it is still meant. And nothing is
+written for somebody forgotten: a binding, a place in a team, an address or any
+other row that names a person, written at the moment they are forgotten, is either
+taken with them or refused, saying that whoever it names was forgotten while it
+was being written. That refusal is `Internal` over the wire, with the sentence in
+it; asked again, the same write is answered that there is nobody of that name.
+
 **It gives back the account, and not the sign-ins.** A restore stamps the moment
 everything issued before it is void, as `roster holder invalidate` does and in the
 same write: a delegation a front door held, a session at a console, a link mailed
@@ -2701,7 +2716,9 @@ consent:
 
 A tenant an operator holds keeps them as it keeps everything, a restore inside
 the window gives them back with the person, and a tenant destroyed takes them
-with it.
+with it. Both are asked where a consent is destroyed, and not only when the pass
+reads which are due: one of somebody restored, or of a tenant held, while the pass
+ran is kept.
 
 ## A tenant leaving
 
@@ -2803,7 +2820,9 @@ is, and the next start makes a new one of that name.
 is for; while it is there `forget` refuses the tenant, the sweep passes it by, its
 people whose own grace runs out are not forgotten on the clock, and the trail keeps
 what it holds of it. A hold placed while a tenant is being destroyed stops it at the
-next person: those forgotten before it stay forgotten. Lifted, everything carries on
+next person: those forgotten before it stay forgotten. One placed while a pass over
+the people is running stops that pass at the next person in the same way. Lifted,
+everything carries on
 from where it waited. It is a
 command and not an RPC on purpose: a tenant's administrator lifting the hold on
 their own records is what a hold exists to prevent. Placing and lifting are in the

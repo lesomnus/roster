@@ -154,22 +154,51 @@ func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry 
 	}
 
 	if after := c.Holder.ForgetAfter; after > 0 {
-		vs, err := forget.Due(ctx, s.Ent, now.Add(-after))
-		if err != nil {
+		before := now.Add(-after)
+
+		var vs []forget.Lapsed
+		if dry {
+			due, err := forget.Due(ctx, s.Ent, before)
+			if err != nil {
+				return err
+			}
+			for _, who := range due {
+				fmt.Fprintf(os.Stdout, "%s\n", who)
+				vs = append(vs, forget.Lapsed{Who: who})
+			}
+		} else if vs, err = forget.Pass(ctx, s.Ent, before, p, cs, s.Queue); err != nil {
+			// The pass the loop makes (`forget.Pass`): each person asked
+			// again, in the transaction that destroys them, whether they are
+			// still due.
 			return err
 		}
 		if len(vs) == 0 {
 			fmt.Fprintf(os.Stderr, "nobody has been erased for longer than %s\n", after)
 		}
-		for _, who := range vs {
-			if dry {
-				fmt.Fprintf(os.Stdout, "%s\n", who)
+		var failed error
+		for _, v := range vs {
+			switch {
+			case dry:
 
-				continue
+			case errors.Is(v.Err, forget.ErrNotDue):
+				// Restored, or their tenant held, while this ran. Left, and
+				// said: they were due when it began.
+				fmt.Fprintf(os.Stderr, "%s is left as they are: %v\n", v.Who, v.Err)
+
+			case v.Err != nil:
+				// The pass went on to the others, and each of them is said
+				// before this is answered.
+				fmt.Fprintf(os.Stderr, "%s was not forgotten: %v\n", v.Who, v.Err)
+				if failed == nil {
+					failed = fmt.Errorf("%s: %w", v.Who, v.Err)
+				}
+
+			default:
+				reported(v.Who, v.Result)
 			}
-			if err := forgotten(ctx, s, who, p, cs); err != nil {
-				return err
-			}
+		}
+		if failed != nil {
+			return failed
 		}
 	} else {
 		fmt.Fprintf(os.Stderr, "nobody is destroyed on a clock: `holder.forget_after` names no window\n")
@@ -375,6 +404,13 @@ func forgotten(ctx context.Context, s *cmd.Server, who pdid.Id, p trail.Policy, 
 		return fmt.Errorf("%s: %w", who, err)
 	}
 
+	reported(who, res)
+
+	return nil
+}
+
+// reported is one person forgotten, as the command says it.
+func reported(who pdid.Id, res forget.Result) {
 	fmt.Fprintf(os.Stderr, "%s forgotten: %s\n", who, res)
 	if res.Held.Any() {
 		// Not an error: what a hold keeps is not this command's to destroy.
@@ -383,8 +419,6 @@ func forgotten(ctx context.Context, s *cmd.Server, who pdid.Id, p trail.Policy, 
 		fmt.Fprintf(os.Stderr, "%s: %d trail row(s) kept by a legal hold of %v; the trail's pass erases them once it is lifted\n",
 			who, res.Held.Rows, append(res.Held.By, res.Held.Unanswered...))
 	}
-
-	return nil
 }
 
 // whoIs resolves a reference **including the erased**, which is the whole

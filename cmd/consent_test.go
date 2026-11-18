@@ -347,7 +347,7 @@ func TestAConsentOutlivesItsAccountForAsLongAsItIsKept(t *testing.T) {
 		x.NoError(err)
 		x.Len(ids, 1)
 
-		n, err := forget.DestroyConsents(c.ctx, c.Ent, ids, audit.Contents{})
+		n, err := forget.DestroyConsents(c.ctx, c.Ent, ids, time.Now().Add(-time.Hour), audit.Contents{})
 		x.NoError(err)
 		x.Equal(1, n)
 		x.Empty(of(), "a consent past its keep is still there")
