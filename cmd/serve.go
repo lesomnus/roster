@@ -921,6 +921,23 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		log.From(ctx).InfoContext(ctx, "trail: retention", "policy", p.String())
 
 		s.Spin = append(s.Spin, loop(prefix, "trail", trail.Sweep(pd.TrailStore(s.Ent), p)))
+	} else {
+		// And where there is no pass, what a pass does first and nothing
+		// else of one: the erasures the trail owes, paid.
+		//
+		// A forget owes what it could not erase at once -- above all what a
+		// hold kept, until the hold lifts -- and the trail's pass was the only
+		// thing that paid afterwards. A deployment that names no window has
+		// no pass, which is the default, so there a debt was never paid and a
+		// hold that lifted was followed by nothing (#280). This applies no
+		// window: it erases what a forget already decided to, and a trail
+		// kept for ever is still kept for ever (`forget.SweepOwed`).
+		//
+		// In every `Build`, for the reason the expiry sweeps are: nobody of
+		// the control plane is forgotten today, so its loop reads an empty
+		// table once a day, and a plane that comes to owe with no loop behind
+		// it is an erasure that is never made.
+		s.Spin = append(s.Spin, loop(prefix, "owed", forget.SweepOwed(s.Ent, p)))
 	}
 
 	// And the other window, which is about a person rather than about age.
