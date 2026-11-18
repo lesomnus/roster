@@ -572,6 +572,16 @@ holder is an edge. Expired rows are collected hourly by `session.Sweep`, which
 nothing depends on for correctness -- `authsession` checks both clocks when it
 reads one.
 
+**And what is written of a session is on the trail**, of the plane it is a row
+of: an operator's on the control plane's, and a roster user's
+(`sign_in.enabled`) on the data plane's. The sign-in that made it is
+`roster.session.mint`, the sign-out that ended it `roster.session.end`, and its
+idle clock moving `roster.session.use` -- at most once in half an idle window,
+for a session that is being used -- each by whoever the session is of and under
+their tenant; the sweep's collection is `roster.session.expire`. A line says
+which session and when, and nothing of the cookie or of what the row keeps of
+it.
+
 ### `admin.addr` is root, and a role on it is not a fence
 
 Standing here comes from the **port** rather than from a role, which is what
@@ -1735,8 +1745,10 @@ Because that configuration *works*: the sweep runs, the table stops growing, eve
 graph an operator watches improves, and what it is doing is destroying the trail.
 
 Nothing sweeps the **control plane's** trail. It is the record of the deployment's
-own operations, it grows by the key rather than by the request, and it is the last
-thing anybody wants a clock deleting from.
+own operations, it grows by the key and by an operator's session rather than by
+the request -- a line when one signs in and when they sign out, and a few an hour
+while their console is in use -- and it is the last thing anybody wants a clock
+deleting from.
 
 ```sh
 roster trail prune                                # apply the policy now, per kind
@@ -1879,8 +1891,13 @@ It prints the kinds kept off the trail (`not checked:`) with why, every run.
 What roster itself writes or removes past its servers is on the trail as
 that act, so it is no finding: a tenant destroyed and what went with it, a
 person forgotten and their rows, a person brought back, a name taken from the
-tenant that held it, and what the sweeps collect -- a session, an attempt, a link, a delegation or a claim past its
-expiry. Before a pass destroys the newest row of the trail about a row that is
+tenant that held it, a session made, used and ended at roster's own door, and
+what the sweeps collect -- a session, an attempt, a link, a delegation or a
+claim past its expiry. A session made before #280 is the one that is a finding:
+its identifier says no kind, so the check prints `not-on-trail unknown <id>` for
+it and `--accept` accepts no row of it, and there is nothing to do but wait --
+it is gone when its twelve hours are over and the sweep has passed. Before a
+pass destroys the newest row of the trail about a row that is
 still there, it carries that row's digest forward, so a row nobody wrote since
 its window is still checked.
 

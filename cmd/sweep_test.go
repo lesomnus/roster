@@ -39,7 +39,7 @@ func TestExpiredSessionsAreCollected(t *testing.T) {
 	who := addHolder(t, ctx, b.Control, controlTenantOf(t, ctx, b), "ops")
 
 	db := b.Control.Ent
-	store := session.New(db)
+	store := session.New(db, audit.Contents{})
 
 	live := authsession.Session{
 		Key:     "live-one",
@@ -95,7 +95,7 @@ func TestSigningOutLeavesARowUntilItsOwnClockRuns(t *testing.T) {
 	who := addHolder(t, ctx, b.Control, controlTenantOf(t, ctx, b), "ops")
 
 	db := b.Control.Ent
-	store := session.New(db)
+	store := session.New(db, audit.Contents{})
 
 	v := authsession.Session{
 		Key:     "signed-out",

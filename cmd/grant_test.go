@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/pdpb"
 
 	"github.com/lesomnus/roster/cmd"
@@ -83,7 +84,7 @@ func TestAGrantNothingCanReadAllowsNothing(t *testing.T) {
 	x.Error(proto.Unmarshal(bad, &pdpb.Grant{}),
 		"the bytes this test corrupts the column with parse as a grant")
 
-	store := session.New(s.Control.Ent)
+	store := session.New(s.Control.Ent, audit.Contents{})
 
 	// The contrast, from the same store and the same key one moment earlier:
 	// what the admin console mints is whole, so anything short of whole below is this
@@ -171,7 +172,7 @@ func TestAnEmptyGrantColumnIsNotAWholeGrant(t *testing.T) {
 
 	rewriteGrant(t, ctx, s.Control, c.Value, []byte{})
 
-	got, err := session.New(s.Control.Ent).Get(ctx, c.Value)
+	got, err := session.New(s.Control.Ent, audit.Contents{}).Get(ctx, c.Value)
 	x.NoError(err)
 	x.False(got.Grant.IsWhole(), "an empty grant column read as permission for everything")
 	x.False(got.Grant.Allows("/roster.HolderService/List"))
