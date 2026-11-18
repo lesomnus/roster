@@ -40,10 +40,14 @@ message Site {
 
   // Unique within the tenant, which is what makes `@contoso/seoul` a name
   // somebody can type into a configuration file.
-  string alias = 4;
+  //
+  // Not personal, this, the name, the description and the labels: a site is
+  // a place of the tenant's, and nobody is written into them, as into a
+  // tenant's (`tenant.proto`).
+  string alias = 4 [(payday.field) = {personal: false}];
 
-  string name = 5;
-  string desc = 6;
+  string name = 5 [(payday.field) = {personal: false}];
+  string desc = 6 [(payday.field) = {personal: false}];
 
   // Whatever the deployment keeps about a site that the schema does not name.
   //
@@ -51,7 +55,7 @@ message Site {
   // over `{"region": "asia"}`, the design's `admin_scope` -- and no grant
   // does: a binding names one site or none (`role.proto`), and nothing
   // resolves a selector to a set of sites.
-  map<string, string> labels = 7;
+  map<string, string> labels = 7 [(payday.field) = {personal: false}];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];

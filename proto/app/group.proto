@@ -65,9 +65,13 @@ message Group {
   // these are*.
   Site site = 3 [(orm.edge) = {immutable: true, nullable: true}];
 
-  string alias = 4;
-  string name = 5;
-  string desc = 6;
+  // Not personal, these three and the labels: a group is the tenant's own,
+  // and what it is called and said to be is the record of who named it what.
+  // Nobody is written into them, as into a tenant's (`tenant.proto`): a group
+  // named after a person keeps that name on the trail, where no forget reaches.
+  string alias = 4 [(payday.field) = {personal: false}];
+  string name = 5 [(payday.field) = {personal: false}];
+  string desc = 6 [(payday.field) = {personal: false}];
 
   // Whatever is kept about this group that the schema does not name.
   //
@@ -77,7 +81,7 @@ message Group {
   // manages them like anybody who makes one ([GroupMembership]), marks the
   // ones it made with what it calls them (`roster.directory`, `docs/scim.md`),
   // and that mark is how it finds them again -- not what lets it change them.
-  map<string, string> labels = 7;
+  map<string, string> labels = 7 [(payday.field) = {personal: false}];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
@@ -157,7 +161,12 @@ message GroupExposure {
   // The client, as the issuer names it: what a token's `azp` and an ID
   // token's `aud` say. A string because the client is the issuer's row and not
   // roster's.
-  string client = 8 [(orm.field) = {immutable: true}];
+  //
+  // Not personal: an app's name for itself.
+  string client = 8 [
+    (orm.field) = {immutable: true},
+    (payday.field) = {personal: false}
+  ];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];

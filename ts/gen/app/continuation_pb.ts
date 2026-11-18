@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/continuation.proto.
  */
 export const file_app_continuation: GenFile = /*@__PURE__*/
-  fileDesc("ChZhcHAvY29udGludWF0aW9uLnByb3RvEgZyb3N0ZXIimgQKDENvbnRpbnVhdGlvbhIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEhkKCXNhdGlzZmllZBgIIAMoCUIG6oIWAkABEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESFgoGaXNzdWVyGAogASgMQgbqghYCQAESHgoKbWV0ZXJlZF9ieRgMIAEoDEIK6oIWBhBAOAFAARI6CgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgjqghYEOAFAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6aMr8FSYSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7FjoIFjIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZCIPCg1ob2xkZXIudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChZhcHAvY29udGludWF0aW9uLnByb3RvEgZyb3N0ZXIipgQKDENvbnRpbnVhdGlvbhIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEh8KCXNhdGlzZmllZBgIIAMoCUIM6oIWAkABqsEWAhgAEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESHAoGaXNzdWVyGAogASgMQgzqghYCQAGqwRYCGAASHgoKbWV0ZXJlZF9ieRgMIAEoDEIK6oIWBhBAOAFAARI6CgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgjqghYEOAFAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6aMr8FSYSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7FjoIFjIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZCIPCg1ob2xkZXIudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Continuation is what has been proved about somebody, part way through.
@@ -91,6 +91,8 @@ export type Continuation = Message<"roster.Continuation"> & {
    * to draw "step two". What is deliberately not here is how many there are in
    * total: *two is enough* is sufficiency and D20 leaves that to the caller.
    *
+   * Not personal: the kinds of factor, and no one's values of them.
+   *
    * @generated from field: repeated string satisfied = 8;
    */
   satisfied: string[];
@@ -112,6 +114,8 @@ export type Continuation = Message<"roster.Continuation"> & {
    * checkable on a delegation: this is spent through an RPC that runs behind
    * roster's own authentication, so there is a frame naming who is asking.
    * Opaque bytes, and never an edge -- see `delegation.proto`.
+   *
+   * Not personal: a key's identifier, as bytes.
    *
    * @generated from field: bytes issuer = 10;
    */

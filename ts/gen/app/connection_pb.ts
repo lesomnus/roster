@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/connection.proto.
  */
 export const file_app_connection: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvY29ubmVjdGlvbi5wcm90bxIGcm9zdGVyIvoECgpDb25uZWN0aW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEi4KBmxhYmVscxgHIAMoCzIeLnJvc3Rlci5Db25uZWN0aW9uLkxhYmVsc0VudHJ5Eg4KBmlzc3VlchgIIAEoCRIRCgljbGllbnRfaWQYCSABKAkSDgoGc2NvcGVzGAogAygJEhIKCnNlY3JldF9yZWYYCyABKAkSFQoNc3ViamVjdF9jbGFpbRgMIAEoCRISCgpwcm92aXNpb25zGBAgASgIEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOosByvwVUBICEAEaLBIEcGFnZRoKCgZ0ZW5hbnQQAhoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGhwSAmF0GgoKBnRlbmFudBACGggKBG5hbWUQBTABirsWMwgZMi8KEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCAoGdGVuYW50IBQoZEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChRhcHAvY29ubmVjdGlvbi5wcm90bxIGcm9zdGVyIroFCgpDb25uZWN0aW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESFAoEbmFtZRgFIAEoCUIGqsEWAhgAEhQKBGRlc2MYBiABKAlCBqrBFgIYABI2CgZsYWJlbHMYByADKAsyHi5yb3N0ZXIuQ29ubmVjdGlvbi5MYWJlbHNFbnRyeUIGqsEWAhgAEhYKBmlzc3VlchgIIAEoCUIGqsEWAhgAEhkKCWNsaWVudF9pZBgJIAEoCUIGqsEWAhgAEhYKBnNjb3BlcxgKIAMoCUIGqsEWAhgAEhoKCnNlY3JldF9yZWYYCyABKAlCBqrBFgIYABIdCg1zdWJqZWN0X2NsYWltGAwgASgJQgaqwRYCGAASEgoKcHJvdmlzaW9ucxgQIAEoCBI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATqLAcr8FVASAhABGiwSBHBhZ2UaCgoGdGVuYW50EAIaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARocEgJhdBoKCgZ0ZW5hbnQQAhoICgRuYW1lEAUwAYq7FjMIGTIvChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudCAUKGRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Connection is which provider one operator's people arrive through.
@@ -70,6 +70,11 @@ export type Connection = Message<"roster.Connection"> & {
    * One name per tenant. Two operators may both call one "entra" and mean two
    * different directories, which is why the key is the pair -- and the same
    * reason `MailDomain`'s is.
+   *
+   * Not personal, this and what follows it on this row: a connection is the
+   * tenant's own arrangement with a provider -- what it is called, where the
+   * provider is, what it is asked for -- and who changed which is the record.
+   * Nobody is written into them, as into a tenant's (`tenant.proto`).
    *
    * @generated from field: string name = 5;
    */

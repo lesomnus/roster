@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/relation.proto.
  */
 export const file_app_relation: GenFile = /*@__PURE__*/
-  fileDesc("ChJhcHAvcmVsYXRpb24ucHJvdG8SBnJvc3RlciLbBAoIUmVsYXRpb24SFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIsCgZsYWJlbHMYByADKAsyHC5yb3N0ZXIuUmVsYXRpb24uTGFiZWxzRW50cnkSJQoFb3RoZXIYCCABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESGwoJdGVuYW50X2lkGAsgASgMQgjqghYEEEBAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATq6Acr8FVYSAhABGi8SBHBhZ2UaDQoJdGVuYW50X2lkEAsaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARofEgRwYWlyGgoKBmhvbGRlchACGgkKBW90aGVyEAgwAYq7FlwIHzI8ChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZob2xkZXIaBwoFb3RoZXIgFChkIhoKDWhvbGRlci50ZW5hbnQaCXRlbmFudF9pZEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChJhcHAvcmVsYXRpb24ucHJvdG8SBnJvc3RlciLjBAoIUmVsYXRpb24SFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBmhvbGRlchgCIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARI0CgZsYWJlbHMYByADKAsyHC5yb3N0ZXIuUmVsYXRpb24uTGFiZWxzRW50cnlCBqrBFgIYARIlCgVvdGhlchgIIAEoCzIOLnJvc3Rlci5Ib2xkZXJCBvKCFgJAARIbCgl0ZW5hbnRfaWQYCyABKAxCCOqCFgQQQEABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOroByvwVVhICEAEaLxIEcGFnZRoNCgl0ZW5hbnRfaWQQCxoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGh8SBHBhaXIaCgoGaG9sZGVyEAIaCQoFb3RoZXIQCDABirsWXAgfMjwKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBmhvbGRlchoHCgVvdGhlciAUKGQiGgoNaG9sZGVyLnRlbmFudBoJdGVuYW50X2lkQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Relation is one person being something to another, and roster not saying
@@ -75,6 +75,11 @@ export type Relation = Message<"roster.Relation"> & {
    * words as much as a map -- `manager`, with nothing after it -- so that two
    * people who are two things to each other are still one row, which is what
    * the index below makes them.
+   *
+   * Personal (payday#92): the words are about two people, what one is to the
+   * other, and are written by whoever knows. The trail records that a
+   * relation was said and between whom, by identifier, and never what it was
+   * (#280). `Holder.labels` is declared so for the same reason, whole.
    *
    * @generated from field: map<string, string> labels = 7;
    */

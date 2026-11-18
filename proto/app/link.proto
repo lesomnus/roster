@@ -84,7 +84,12 @@ message Link {
   // `Vouch.Redeem` refuses a link that names one, and the user console refuses a
   // link that names none. A discriminator read on one side is not one --
   // `email` above learned that the hard way.
-  string at = 8 [(orm.field) = {immutable: true}];
+  //
+  // Not personal: a tenant's own name, and no one's address.
+  string at = 8 [
+    (orm.field) = {immutable: true},
+    (payday.field) = {personal: false}
+  ];
 
   // Whether this link confirms its holder **leaving**, and nothing else: the
   // fourth kind, `Vouch.LeaveLink`'s, spent by `Vouch.Leave`.
@@ -138,7 +143,12 @@ message Link {
 
   // Which caller was given it, so that one app cannot spend what another was
   // issued. Opaque bytes and never an edge; see `delegation.proto`.
-  bytes issuer = 10 [(orm.field) = {immutable: true}];
+  //
+  // Not personal: a key's identifier, as bytes.
+  bytes issuer = 10 [
+    (orm.field) = {immutable: true},
+    (payday.field) = {personal: false}
+  ];
 
   // When it stops working, and there is no such thing as one that does not.
   //

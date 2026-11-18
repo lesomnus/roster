@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/delegation.proto.
  */
 export const file_app_delegation: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvZGVsZWdhdGlvbi5wcm90bxIGcm9zdGVyIsgECgpEZWxlZ2F0aW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESFwoHbWV0aG9kcxgIIAMoCUIG6oIWAkABEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESFgoGaXNzdWVyGAogASgMQgbqghYCQAESOgoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEII6oIWBDgBQAESRgoSZGF0ZV9hdXRoZW50aWNhdGVkGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIO6oIWBDgBQAGqwRYCEAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOnLK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxZECBMyLwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZob2xkZXIgFChkIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChRhcHAvZGVsZWdhdGlvbi5wcm90bxIGcm9zdGVyItQECgpEZWxlZ2F0aW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESHQoHbWV0aG9kcxgIIAMoCUIM6oIWAkABqsEWAhgAEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESHAoGaXNzdWVyGAogASgMQgzqghYCQAGqwRYCGAASOgoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEII6oIWBDgBQAESRgoSZGF0ZV9hdXRoZW50aWNhdGVkGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIO6oIWBDgBQAGqwRYCEAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOnLK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxZECBMyLwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZob2xkZXIgFChkIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Delegation is a product app calling roster **as** somebody it just signed in.
@@ -105,6 +105,8 @@ export type Delegation = Message<"roster.Delegation"> & {
    * delegation minted with no methods authenticates and is then refused
    * everywhere, which reads as a permissions problem and is a minting one.
    *
+   * Not personal: what the delegation allows, which names no one.
+   *
    * @generated from field: repeated string methods = 8;
    */
   methods: string[];
@@ -139,6 +141,8 @@ export type Delegation = Message<"roster.Delegation"> & {
    * an unresolved caller -- `subtle.ConstantTimeCompare` answers 1 for two
    * empty slices -- so "bound to nobody" and "bound to whoever forgot to say"
    * would be one thing. Whatever mints one refuses an empty issuer instead.
+   *
+   * Not personal: a key's identifier, as bytes.
    *
    * @generated from field: bytes issuer = 10;
    */

@@ -66,10 +66,15 @@ message Team {
   // A team of no site is the tenant's, and its name is unique among the
   // tenant's teams of none: the index below binds nothing where the site is
   // null, so `server/core` holds it.
-  string alias = 4;
+  //
+  // Not personal, this, the name and the description: a team is the
+  // tenant's own. Nobody is written into them, as into a tenant's
+  // (`tenant.proto`): a team named after a person keeps that name on the
+  // trail, where no forget reaches.
+  string alias = 4 [(payday.field) = {personal: false}];
 
-  string name = 5;
-  string desc = 6;
+  string name = 5 [(payday.field) = {personal: false}];
+  string desc = 6 [(payday.field) = {personal: false}];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];

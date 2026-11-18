@@ -296,11 +296,33 @@ func TestEveryReadOfSomebodyAtTheBoxIsRecordedOrSaysWhy(t *testing.T) {
 		"adoptScim":      shown,
 		"matched":        "gathers who a directory matched and roster has not linked, for adoptScim, which says whose it shows; prints nothing itself",
 
+		// The kinds that hold what somebody wrote about a person or about
+		// what is theirs (#280): a key's alias and description, a factor's
+		// name, the labels of a binding, a relation and a nomination, and a
+		// nomination's name. Each of these writes one, or reads one for an
+		// identifier, and shows none of those fields.
+		"boundToOthers":       "whether a role is bound to anybody but one holder, by identifier; prints nothing",
+		"ensureBinding":       "finds or makes the binding a provisioner declares, with the labels the command chose; prints nothing of the row",
+		"ensureNominated":     "finds or makes the nomination a front door declares, with the labels the command chose; prints nothing of the row",
+		"nominationOf":        "the nomination of an app in a tenant, for install and uninstall, which read who it acts as by identifier; prints nothing itself",
+		"installApp":          "makes an app's holder, role, binding and nomination under the name the operator typed, and says which keys borrow through it by identifier; prints nothing of a row",
+		"newCmdAppUninstall":  "erases the nomination found by the app's name, which the operator typed; prints that name and nothing of the row",
+		"eraseKeyNamed":       "finds a key by the alias the command chose, for its identifier, and erases it; prints nothing",
+		"mintNamed":           "mints the key a provisioner writes to a file, under the alias the command chose; prints nothing of the row",
+		"mint":                "mints a key and prints its token and its identifier, for whoever the operator typed: a secret made for the occasion, and nothing of the row",
+		"newCmdKeyRevoke":     "erases the key whose identifier the operator typed; prints nothing",
+		"newCmdOperatorEnrol": "enrols a second factor and prints its seed, once: a secret made for the occasion, under the name the operator typed",
+		"newCmdVouchSet":      "sets a password read from the terminal; prints nothing of the row",
+		"newCmdVouchReset":    "issues a one-time password and prints it, once: a secret made for the occasion",
+		"newCmdVouchUnlock":   "ends a lockout and prints until when it was; nothing else of the row",
+
 		// `cmd`'s, as the commands call them.
 		"cmd.ListKeys":      shown,
 		"cmd.CustomerOf":    "resolves @tenant/alias to an identifier for `key add`; prints nothing of the row",
 		"cmd.ControlHolder": "resolves an operator's alias to an identifier; prints nothing of the row",
 		"cmd.OperatorNamed": "resolves who --as names, which the person typed; the row's alias is what they typed",
+		"cmd.KeyPlane":      "counts the keys of the identifier the operator typed on each plane, to find which holds it; prints nothing of the row",
+		"cmd.Seed":          "binds the role `init` makes to the operator it makes; prints nothing of the row",
 	}
 
 	kinds := personal(t)

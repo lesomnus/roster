@@ -83,7 +83,13 @@ message Session {
   // safe -- *every axis carries a flag beside its list, and an empty list means
   // nothing* -- lives in one encoder, and a second spelling of it here would be
   // a second place to get the empty case backwards.
-  bytes grant = 8 [(orm.field) = {immutable: true}];
+  //
+  // Not personal: what the session allows, encoded, and nothing of whose it
+  // is that its `holder` does not already say by identifier.
+  bytes grant = 8 [
+    (orm.field) = {immutable: true},
+    (payday.field) = {personal: false}
+  ];
 
   // The digest of the cookie value, and how the row is found. Never the value.
   bytes secret = 9 [

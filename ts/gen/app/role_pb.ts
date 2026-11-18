@@ -23,7 +23,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/role.proto.
  */
 export const file_app_role: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvcm9sZS5wcm90bxIGcm9zdGVyItEECgRSb2xlEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESJAoEc2l0ZRgDIAEoCzIMLnJvc3Rlci5TaXRlQgjyghYEOAFAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSKAoGbGFiZWxzGAcgAygLMhgucm9zdGVyLlJvbGUuTGFiZWxzRW50cnkSDwoHbWV0aG9kcxgIIAMoCRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATqaAcr8FVMSAhABGiwSBHBhZ2UaCgoGdGVuYW50EAIaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwAYq7Fj8IDzI7ChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZ0ZW5hbnQaBgoEc2l0ZSAUKGQi3AQKB0JpbmRpbmcSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiIKBHJvbGUYAiABKAsyDC5yb3N0ZXIuUm9sZUIG8oIWAkABEiQKBHNpdGUYAyABKAsyDC5yb3N0ZXIuU2l0ZUII8oIWBDgBQAESKAoGaG9sZGVyGAggASgLMg4ucm9zdGVyLkhvbGRlckII8oIWBDgBQAESJgoFZ3JvdXAYCSABKAsyDS5yb3N0ZXIuR3JvdXBCCPKCFgQ4AUABEisKBmxhYmVscxgHIAMoCzIbLnJvc3Rlci5CaW5kaW5nLkxhYmVsc0VudHJ5EjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOo0ByvwVJhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWXwgSMkwKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGgYKBHJvbGUaCAoGaG9sZGVyGgcKBWdyb3VwGgYKBHNpdGUgFChkIg0KC3JvbGUudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_tenant, file_roster_payday_holder, file_app_site, file_app_group, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvcm9sZS5wcm90bxIGcm9zdGVyIvkECgRSb2xlEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESJAoEc2l0ZRgDIAEoCzIMLnJvc3Rlci5TaXRlQgjyghYEOAFAARIVCgVhbGlhcxgEIAEoCUIGqsEWAhgAEhQKBG5hbWUYBSABKAlCBqrBFgIYABIUCgRkZXNjGAYgASgJQgaqwRYCGAASMAoGbGFiZWxzGAcgAygLMhgucm9zdGVyLlJvbGUuTGFiZWxzRW50cnlCBqrBFgIYABIXCgdtZXRob2RzGAggAygJQgaqwRYCGAASOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6mgHK/BVTEgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxY/CA8yOwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGdGVuYW50GgYKBHNpdGUgFChkIuQECgdCaW5kaW5nEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIiCgRyb2xlGAIgASgLMgwucm9zdGVyLlJvbGVCBvKCFgJAARIkCgRzaXRlGAMgASgLMgwucm9zdGVyLlNpdGVCCPKCFgQ4AUABEigKBmhvbGRlchgIIAEoCzIOLnJvc3Rlci5Ib2xkZXJCCPKCFgQ4AUABEiYKBWdyb3VwGAkgASgLMg0ucm9zdGVyLkdyb3VwQgjyghYEOAFAARIzCgZsYWJlbHMYByADKAsyGy5yb3N0ZXIuQmluZGluZy5MYWJlbHNFbnRyeUIGqsEWAhgBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOo0ByvwVJhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWXwgSMkwKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGgYKBHJvbGUaCAoGaG9sZGVyGgcKBWdyb3VwGgYKBHNpdGUgFChkIg0KC3JvbGUudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_tenant, file_roster_payday_holder, file_app_site, file_app_group, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Role is a named set of RPCs somebody may call.
@@ -77,6 +77,11 @@ export type Role = Message<"roster.Role"> & {
   site?: Site | undefined;
 
   /**
+   * Not personal, these three, the labels and `methods`: a role is the
+   * tenant's own, and what it is called and what it allows is what a trail is
+   * kept to say. Nobody is written into them, as into a tenant's
+   * (`tenant.proto`).
+   *
    * @generated from field: string alias = 4;
    */
   alias: string;
@@ -235,6 +240,13 @@ export type Binding = Message<"roster.Binding"> & {
    * deployment declared -- a roster-hosted front door's role, written from its
    * configuration at every start -- carries `roster.declared`, and
    * `server/core` refuses every write to it from anybody else (`declared.go`).
+   *
+   * Personal (payday#92): a binding is a grant to somebody, and what is
+   * written on one is written about them -- why they were given it, who
+   * asked. The trail records that a grant was made, of which role, to whom
+   * and where, which is the record, and never the words beside it (#280).
+   * What `roster.declared` says is read off the row, which is where it is
+   * kept.
    *
    * @generated from field: map<string, string> labels = 7;
    */

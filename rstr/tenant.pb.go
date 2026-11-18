@@ -324,6 +324,9 @@ type Tenant_builder struct {
 	//
 	// What it buys is that the next setting is a field number in here rather than
 	// one of the nine an app gets on `Tenant` itself.
+	//
+	// Not personal, as nothing a tenant says of itself is: settings, and the
+	// trail saying who changed which to what is what it is kept for.
 	Config *TenantConfig
 	// Since when nobody of this tenant gets in: the customer left, or an
 	// operator shut them out. Nothing is destroyed by it.
@@ -376,6 +379,13 @@ type Tenant_builder struct {
 	// it, like everything about itself, so [Tenant.hold] is written to be read.
 	DateHeld *timestamppb.Timestamp
 	// What the hold is for: a case, a demand. Empty while nothing holds it.
+	//
+	// Not personal, as nothing a tenant says of itself is (`tenant.proto`, its
+	// `alias` and the three after): it is the deployment's note of why, and the
+	// trail saying why a hold was placed, and when, is the point of writing
+	// one. So it is on the trail as a value, where no forget reaches it, and
+	// whoever writes it writes a case and not a person: *Contoso v. Fabrikam,
+	// 2026-123*, and never somebody's name (#280).
 	Hold string
 }
 
@@ -707,7 +717,7 @@ var File_roster_payday_tenant_proto protoreflect.FileDescriptor
 
 const file_roster_payday_tenant_proto_rawDesc = "" +
 	"\n" +
-	"\x1aroster/payday/tenant.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xfe\x05\n" +
+	"\x1aroster/payday/tenant.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x8e\x06\n" +
 	"\x06Tenant\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\"\n" +
 	"\x05alias\x18\x04 \x01(\tB\f\xea\x82\x16\x020\x01\xaa\xc1\x16\x02\x18\x00R\x05alias\x12\x1a\n" +
@@ -715,14 +725,14 @@ const file_roster_payday_tenant_proto_rawDesc = "" +
 	"\x04desc\x18\x06 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04desc\x12:\n" +
 	"\x06labels\x18\a \x03(\v2\x1a.roster.Tenant.LabelsEntryB\x06\xaa\xc1\x16\x02\x18\x00R\x06labels\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x12,\n" +
-	"\x06config\x18\b \x01(\v2\x14.roster.TenantConfigR\x06config\x12C\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated\x124\n" +
+	"\x06config\x18\b \x01(\v2\x14.roster.TenantConfigB\x06\xaa\xc1\x16\x02\x18\x00R\x06config\x12C\n" +
 	"\vdate_closed\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\n" +
 	"dateClosed\x12I\n" +
 	"\x0edate_destroyed\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\rdateDestroyed\x12?\n" +
-	"\tdate_held\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\bdateHeld\x12\x12\n" +
-	"\x04hold\x18\f \x01(\tR\x04hold\x1a9\n" +
+	"\tdate_held\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\bdateHeld\x12\x1a\n" +
+	"\x04hold\x18\f \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04hold\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:_\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +

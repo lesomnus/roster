@@ -236,7 +236,18 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 		if n := len(k.GetMethods()); n > 0 {
 			as = fmt.Sprintf("and %d method(s) across every tenant without roster-at", n)
 		}
-		said = append(said, fmt.Sprintf("key %q on %s is answered through it (%s).", k.GetAlias(), name, as))
+
+		// By its identifier. It was by its alias, which is what somebody
+		// wrote about the key and is declared personal now (`apikey.proto`,
+		// #280); this command names nobody at the shell and leaves no row of
+		// the access record, so it shows no field a row declares so.
+		// `roster --as <alias> control key list` shows the names, to
+		// somebody the record names.
+		id, err := pdid.From(k.GetId())
+		if err != nil {
+			return nil, err
+		}
+		said = append(said, fmt.Sprintf("key %s on %s is answered through it (%s).", id, name, as))
 	}
 	if len(ks.GetItems()) == 0 {
 		said = append(said, fmt.Sprintf("%s has no key yet: roster control key add --narrowed %s.", name, name))
