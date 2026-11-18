@@ -26,10 +26,16 @@ import (
 	"github.com/lesomnus/payday/pdpb"
 
 	"github.com/lesomnus/roster/internal/ent"
+	entapikey "github.com/lesomnus/roster/internal/ent/apikey"
+	entbinding "github.com/lesomnus/roster/internal/ent/binding"
+	entcredential "github.com/lesomnus/roster/internal/ent/credential"
 	entemail "github.com/lesomnus/roster/internal/ent/email"
 	entholder "github.com/lesomnus/roster/internal/ent/holder"
 	entidentity "github.com/lesomnus/roster/internal/ent/identity"
+	entnomination "github.com/lesomnus/roster/internal/ent/nomination"
 	entphone "github.com/lesomnus/roster/internal/ent/phone"
+	entrelation "github.com/lesomnus/roster/internal/ent/relation"
+	entrole "github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/server/pd"
 )
 
@@ -115,8 +121,24 @@ func filed(db *ent.Client, l *slog.Logger, read func(proto.Message) []access.Sub
 
 // tenantsOf is the tenant each of `ids` is in, for those that are the key of
 // a row holding somebody's personal data: a person, an address, an account at
-// a provider, a number. Which it is the identifier says, and one that is none
-// of them, or is nobody's, is left out.
+// a provider, a number -- and what was written *about* somebody, which the
+// schema declares personal too (#280): a key and a credential, a binding, a
+// relation, a nomination. Which it is the identifier says, and one that is
+// none of them, or is nobody's, is left out.
+//
+// The first four, a relation and a nomination say their tenant in a column. A
+// key and a credential say it by whose they are, and a binding by its role,
+// which is of one tenant whether it is bound to a person or to a group: one
+// statement for the rows and one for what they name.
+//
+// # Why the second five are here
+//
+// They were declared in the same part this was written in, by a change that
+// did not know of this one, and so a read of a customer's key by an operator
+// was a row of the record from then on and was filed under the operators' own
+// tenant: the misfiling this ends, back for exactly the kinds that had just
+// begun to be recorded. `TestEveryKindOnTheRecordSaysWhoseTenantItIsIn` holds
+// [whoseTenant] to the schema, so that the next kind declared is asked here.
 //
 // Read past the wall and past an erase, since it is asked for the record and
 // not for a caller: somebody erased is still somebody of their tenant.
@@ -128,43 +150,119 @@ func tenantsOf(ctx context.Context, db *ent.Client, ids []pdid.Id) (map[pdid.Id]
 
 	out := make(map[pdid.Id]pdid.Id, len(ids))
 	for domain, keys := range by {
+		whose, ok := whoseTenant[domain]
+		if !ok {
+			continue
+		}
 		// A statement for every few hundred: a message names at most a page,
 		// and what a refused request names is whatever it was sent.
 		for ks := range slices.Chunk(keys, 500) {
-			var err error
-			switch domain {
-			case pd.HolderDomain:
-				var rs []*ent.Holder
-				rs, err = db.Holder.Query().Where(entholder.IdIn(ks...)).Select(entholder.FieldTenantId).All(ctx)
-				for _, r := range rs {
-					out[pdid.Id(r.Id)] = pdid.Id(r.TenantId)
-				}
-			case pd.EmailDomain:
-				var rs []*ent.Email
-				rs, err = db.Email.Query().Where(entemail.IdIn(ks...)).Select(entemail.FieldTenantId).All(ctx)
-				for _, r := range rs {
-					out[pdid.Id(r.Id)] = pdid.Id(r.TenantId)
-				}
-			case pd.IdentityDomain:
-				var rs []*ent.Identity
-				rs, err = db.Identity.Query().Where(entidentity.IdIn(ks...)).Select(entidentity.FieldTenantId).All(ctx)
-				for _, r := range rs {
-					out[pdid.Id(r.Id)] = pdid.Id(r.TenantId)
-				}
-			case pd.PhoneDomain:
-				var rs []*ent.Phone
-				rs, err = db.Phone.Query().Where(entphone.IdIn(ks...)).Select(entphone.FieldTenantId).All(ctx)
-				for _, r := range rs {
-					out[pdid.Id(r.Id)] = pdid.Id(r.TenantId)
-				}
-			}
+			in, err := whose(ctx, db, ks)
 			if err != nil {
 				return nil, err
+			}
+			for k, t := range in {
+				out[pdid.Id(k)] = pdid.Id(t)
 			}
 		}
 	}
 
 	return out, nil
+}
+
+// whoseTenant is how each kind on the record says which tenant a row of it is
+// in: the list [tenantsOf] reads by, and the one a test holds to the schema.
+var whoseTenant = map[pdid.Domain]func(context.Context, *ent.Client, []uuid.UUID) (map[uuid.UUID]uuid.UUID, error){
+	pd.HolderDomain: func(ctx context.Context, db *ent.Client, ks []uuid.UUID) (map[uuid.UUID]uuid.UUID, error) {
+		rs, err := db.Holder.Query().Where(entholder.IdIn(ks...)).Select(entholder.FieldTenantId).All(ctx)
+		out := make(map[uuid.UUID]uuid.UUID, len(rs))
+		for _, r := range rs {
+			out[r.Id] = r.TenantId
+		}
+
+		return out, err
+	},
+	pd.EmailDomain: func(ctx context.Context, db *ent.Client, ks []uuid.UUID) (map[uuid.UUID]uuid.UUID, error) {
+		rs, err := db.Email.Query().Where(entemail.IdIn(ks...)).Select(entemail.FieldTenantId).All(ctx)
+		out := make(map[uuid.UUID]uuid.UUID, len(rs))
+		for _, r := range rs {
+			out[r.Id] = r.TenantId
+		}
+
+		return out, err
+	},
+	pd.IdentityDomain: func(ctx context.Context, db *ent.Client, ks []uuid.UUID) (map[uuid.UUID]uuid.UUID, error) {
+		rs, err := db.Identity.Query().Where(entidentity.IdIn(ks...)).Select(entidentity.FieldTenantId).All(ctx)
+		out := make(map[uuid.UUID]uuid.UUID, len(rs))
+		for _, r := range rs {
+			out[r.Id] = r.TenantId
+		}
+
+		return out, err
+	},
+	pd.PhoneDomain: func(ctx context.Context, db *ent.Client, ks []uuid.UUID) (map[uuid.UUID]uuid.UUID, error) {
+		rs, err := db.Phone.Query().Where(entphone.IdIn(ks...)).Select(entphone.FieldTenantId).All(ctx)
+		out := make(map[uuid.UUID]uuid.UUID, len(rs))
+		for _, r := range rs {
+			out[r.Id] = r.TenantId
+		}
+
+		return out, err
+	},
+	pd.RelationDomain: func(ctx context.Context, db *ent.Client, ks []uuid.UUID) (map[uuid.UUID]uuid.UUID, error) {
+		rs, err := db.Relation.Query().Where(entrelation.IdIn(ks...)).Select(entrelation.FieldTenantId).All(ctx)
+		out := make(map[uuid.UUID]uuid.UUID, len(rs))
+		for _, r := range rs {
+			out[r.Id] = r.TenantId
+		}
+
+		return out, err
+	},
+	pd.NominationDomain: func(ctx context.Context, db *ent.Client, ks []uuid.UUID) (map[uuid.UUID]uuid.UUID, error) {
+		rs, err := db.Nomination.Query().Where(entnomination.IdIn(ks...)).Select(entnomination.FieldTenantId).All(ctx)
+		out := make(map[uuid.UUID]uuid.UUID, len(rs))
+		for _, r := range rs {
+			out[r.Id] = r.TenantId
+		}
+
+		return out, err
+	},
+	pd.ApiKeyDomain: func(ctx context.Context, db *ent.Client, ks []uuid.UUID) (map[uuid.UUID]uuid.UUID, error) {
+		rs, err := db.ApiKey.Query().Where(entapikey.IdIn(ks...)).
+			WithHolder(func(q *ent.HolderQuery) { q.Select(entholder.FieldTenantId) }).All(ctx)
+		out := make(map[uuid.UUID]uuid.UUID, len(rs))
+		for _, r := range rs {
+			if h := r.Edges.Holder; h != nil {
+				out[r.Id] = h.TenantId
+			}
+		}
+
+		return out, err
+	},
+	pd.CredentialDomain: func(ctx context.Context, db *ent.Client, ks []uuid.UUID) (map[uuid.UUID]uuid.UUID, error) {
+		rs, err := db.Credential.Query().Where(entcredential.IdIn(ks...)).
+			WithHolder(func(q *ent.HolderQuery) { q.Select(entholder.FieldTenantId) }).All(ctx)
+		out := make(map[uuid.UUID]uuid.UUID, len(rs))
+		for _, r := range rs {
+			if h := r.Edges.Holder; h != nil {
+				out[r.Id] = h.TenantId
+			}
+		}
+
+		return out, err
+	},
+	pd.BindingDomain: func(ctx context.Context, db *ent.Client, ks []uuid.UUID) (map[uuid.UUID]uuid.UUID, error) {
+		rs, err := db.Binding.Query().Where(entbinding.IdIn(ks...)).
+			WithRole(func(q *ent.RoleQuery) { q.Select(entrole.FieldTenantId) }).All(ctx)
+		out := make(map[uuid.UUID]uuid.UUID, len(rs))
+		for _, r := range rs {
+			if v := r.Edges.Role; v != nil {
+				out[r.Id] = v.TenantId
+			}
+		}
+
+		return out, err
+	},
 }
 
 // wordless is `sink` with what each row keeps of its request kept without the
