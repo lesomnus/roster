@@ -9,6 +9,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
@@ -416,3 +417,41 @@ var wordsDeclared = sync.OnceValue(func() map[protoreflect.FullName]bool {
 
 	return out
 })
+
+// whole is the access record's sink on `db`, writing what it is handed whole
+// or not at all (#280).
+//
+// # What it was
+//
+// The generated sink writes its rows five hundred a statement, each statement
+// by itself, and mints a row's identifier as it writes it. payday's writer
+// puts every row of a flush that failed back to be tried again. So a flush of
+// more than five hundred rows that failed after its first statement left
+// those rows written, and wrote them again a second later under new
+// identifiers, and again for as long as the failure lasted: 501 reads waiting
+// and two failures were 1,501 rows. It is what the end of a database's outage
+// looks like, when a great many reads have waited.
+//
+// One transaction, so the rows the writer tries again were not written. It is
+// begun here and never joined: the writer calls this once a call has ended,
+// or from its own loop, and neither is inside a transaction of the call's. A
+// write's row, which is, does not come through here at all -- the recorder
+// writes it in the write's own (`pd.AccessRecorder`).
+func whole(db *ent.Client) func(context.Context, []access.Record) error {
+	return func(ctx context.Context, rs []access.Record) error {
+		tx, err := db.Tx(ctx)
+		if err != nil {
+			return fmt.Errorf("write the access record: %w", err)
+		}
+		defer tx.Rollback()
+
+		if err := pd.AccessSink(tx.Client())(ctx, rs); err != nil {
+			return err
+		}
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("write the access record: %w", err)
+		}
+
+		return nil
+	}
+}

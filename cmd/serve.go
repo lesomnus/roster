@@ -216,6 +216,11 @@ type Server struct {
 	// ([filed]): the log a context with nothing in it reaches discards.
 	log *slog.Logger
 
+	// accessKept is how long `audit:` keeps a row of this plane's access
+	// record, for [Server.Serve] to say when that is for good and nobody said
+	// so.
+	accessKept trail.Keep
+
 	// Spin is whatever this deployment has to run besides answering requests.
 	// It is a slice rather than a method because a server with nothing to run
 	// should write nothing at all; see `payday/spin`.
@@ -591,8 +596,9 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// stops; a write's is in its own transaction.
 	//
 	// What a row keeps of the request it is of is how it was asked, and none
-	// of the words it was asked by ([wordless]).
-	s.Access = &access.Writer{Sink: wordless(pd.AccessSink(client))}
+	// of the words it was asked by ([wordless]); and what the writer writes in
+	// one go is written whole or not at all ([whole]).
+	s.Access = &access.Writer{Sink: wordless(whole(client))}
 	s.Spin = append(s.Spin, loop(prefix, "access", s.Access))
 
 	// The door a roster user signs in at, where this deployment serves one.
@@ -880,6 +886,12 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// not exist is a table that grows, and the failure of one that does is
 	// evidence that is gone.
 	//
+	// The access record is a kind of the trail's, so the same holds of it: a
+	// window for it (`audit.by.access`) is this plane's, and the control
+	// plane's own record -- operators reading operators -- is never swept. The
+	// manual says so (#280), and [Server.unbounded] says when this plane's has
+	// no window either.
+	//
 	// With the deployment's lease on it, for the turns the passes take with
 	// what erases from the trail beside them; see [TrailPolicy].
 	p, err := TrailPolicy(ctx, c)
@@ -896,6 +908,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// as one that is on -- and a deployment that named no window must not
 	// start a sweep because roster learnt to hold.
 	retains := p.On()
+	s.accessKept = p.For(pd.AccessDomain)
 	p = forget.Held(p, s.Ent)
 	if retains {
 		log.From(ctx).InfoContext(ctx, "trail: retention", "policy", p.String())
@@ -1493,6 +1506,8 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 		return err
 	}
 
+	s.unbounded(ctx)
+
 	// The stops, collected rather than deferred one at a time.
 	//
 	// A `defer` per listener runs them in series, and each waits up to
@@ -1663,6 +1678,35 @@ func stopping(g *grpc.Server) {
 		g.Stop()
 		<-done
 	}
+}
+
+// unbounded says, where it is so, that nothing bounds this deployment's
+// access record (#280).
+//
+// The record takes a row for every call that shows somebody, writes them or
+// is refused them, and a row stays in the database until a window says
+// otherwise. No window is the default, and stays the default for the trail's
+// reason: roster destroys nothing nobody asked it to, and a version that
+// began to would be found out by somebody looking for a row. But a default
+// nobody was told of is a table somebody finds by its size, so it is said --
+// as a warning, which is the level a deployment watches, and with the key
+// that changes it.
+//
+// By `serve` as it starts and not by [Build], which every command at the box
+// runs too: said there, it would be said to whoever listed a tenant.
+//
+// And not to a deployment that named a profile for it, `forever` among them:
+// that is somebody having said, and a warning nothing answers is one nobody
+// reads by the time it matters.
+func (s *Server) unbounded(ctx context.Context) {
+	if s.accessKept.Retain > 0 || s.accessKept.Note != "" {
+		return
+	}
+
+	log.From(ctx).WarnContext(ctx, "access: the access record has no window, so a row of it stays in the database for good -- "+
+		"one for every call that shows, writes or is refused somebody's data. "+
+		"Say how long they are kept: audit.by.access, with retain, and discard: true to keep no copy or audit.archive to keep one; "+
+		"or profile: forever, to say for good is meant")
 }
 
 // accessed is what the access record's interceptor is told of this plane
