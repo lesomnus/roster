@@ -1545,7 +1545,12 @@ roster --as admin key list
 - It is your word and not a credential. Whoever holds a shell here holds the
   database and could read it with no command at all; the record is for the
   operator who reads through the command, and what it guarantees is that such a
-  read is never left out of it, nor recorded as nobody's.
+  read of somebody's rows is never left out of it, nor recorded as nobody's --
+  how somebody signs in among them (`holder signs-in`), which names the person
+  and each account of theirs it printed. The one read the record leaves out on
+  purpose is not made here: what somebody is told of themselves (`roster me`)
+  is asked over the wire, by them, and leaves no row
+  ([below](#who-read-whose-data)).
 - What the call may do is unchanged: it carries no frame, so it is still the
   deployment's own work, under no rule about callers. `--as` is read by the
   record and by nothing else.
@@ -2308,12 +2313,30 @@ is what was **written**; this is who **saw** what -- a row for each call that
 read, wrote or carried somebody's personal data, naming who asked, from where,
 the RPC, whose rows, and how it ended. What an operator reads of a customer's
 people through `admin.addr` is filed under that customer and names the operator.
+
+**What somebody is told of themselves is the one read that leaves no row**, on
+purpose. `MeService/Get` answers its caller their own alias, name, addresses and
+accounts, and takes no subject, so it cannot be pointed at anybody else: it is
+somebody reading what is theirs, themselves or through an app acting as them --
+a front door, the Login App filling a token's claims, the account page, the SCIM
+endpoint and the LDAP front asking whose key they were handed. That is not
+somebody reading somebody else's data, and a row for every page somebody loads
+would bury the rows a review is for. So **what an app is told of the person who
+is using it is not on the record**: the claims a relying party is handed at a
+sign-in, the second factor a front door is told to ask for, the address a
+leaving link is mailed to. What the same app reads of anybody through the
+directory is -- a `HolderService/Get` is a row whoever it is of, the caller
+included -- and so is how somebody signs in (`HolderService/SignsIn`: their
+subjects at providers, and what their keys and factors are called), which names
+the person and each account it answered.
+
 A row is under the tenant of whoever was read, whoever read them and however much
 of the row they asked for: an operator's, a deployment key's, a `select` of two
 fields. A call that was refused is under the tenant of the row it asked for by
 identifier -- another tenant's person asked for across the wall is on that
 tenant's record, naming who asked -- and under the caller's own where it named
 nothing that exists.
+
 A read's row is written a second after it, by a loop every process runs, and the
 loop writes what it holds once more as the process stops; a process killed
 outright loses its last second.

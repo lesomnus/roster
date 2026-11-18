@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/payday/access"
 	"github.com/lesomnus/payday/pdid"
 	sqlpage "github.com/protobuf-orm/ent/dialect/sql/sqlpage"
 
@@ -320,10 +321,11 @@ func (s coreHolder) Invalidate(ctx context.Context, req *app.HolderInvalidateReq
 func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) (*app.HolderSignsInResponse, error) {
 	// The holder first, so that somebody outside the caller's tenant is
 	// `NotFound` rather than an empty list -- which would say "here, and with
-	// no way in" about a person the caller cannot see.
+	// no way in" about a person the caller cannot see. With the tenant they
+	// are in, which is where the record of this read is filed.
 	v, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
 		Ref:    req.GetRef(),
-		Select: app.HolderSelect_builder{}.Build(),
+		Select: app.HolderSelect_builder{Tenant: app.TenantSelect_builder{}.Build()}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -341,6 +343,20 @@ func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) 
 	}
 
 	who := app.HolderRef_builder{Id: v.GetId()}.Build()
+
+	// On the access record, said here because nothing else can see it (#280).
+	//
+	// The record reads whose data a call carried off the messages that declare
+	// a personal field, and this answers in messages of its own: the subject
+	// `Identity.subject` declares personal comes back in a `SignInIdentity`,
+	// which declares nothing. So the call answered somebody's accounts at
+	// their providers and what their keys and factors are called, to an
+	// administrator or an operator, and left no row. It names the person
+	// asked about, in their tenant, whatever they turn out to have -- and
+	// below, each account whose subject it answers, by the row that holds it,
+	// as a list of them is recorded.
+	in, _ := pdid.From(v.GetTenant().GetId())
+	access.Saw(ctx, access.Subject{Id: whose, Tenant: in})
 
 	// Every page of each. The answer has no cursor, so what it says is all
 	// there is: read once with no size, each was a list's first page --
@@ -367,6 +383,10 @@ func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) 
 				Subject:     i.GetSubject(),
 				DateCreated: i.GetDateCreated(),
 			}.Build())
+
+			if k, err := pdid.From(i.GetId()); err == nil {
+				access.Saw(ctx, access.Subject{Id: k, Tenant: in})
+			}
 		}
 
 		if after = page.GetNext(); after == "" {
