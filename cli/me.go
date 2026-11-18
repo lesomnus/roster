@@ -409,16 +409,41 @@ func newCmdMeLeave(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			cl.Printf("your account is erased (%s): you cannot sign in anywhere it reached.\n",
-				v.GetDateErased().AsTime().Format(time.RFC3339))
+			var forgotten time.Time
 			if f := v.GetDateForgotten(); f != nil {
-				cl.Printf("until %s whoever runs this deployment can restore it; then it is forgotten.\n",
-					f.AsTime().Format(time.RFC3339))
-			} else {
-				cl.Printf("whoever runs this deployment can restore it until they forget it.\n")
+				forgotten = f.AsTime()
+			}
+			for _, line := range leftSaying(v.GetDateErased().AsTime(), forgotten) {
+				cl.Printf("%s\n", line)
 			}
 
 			return nil
 		}),
 	}
+}
+
+// leftSaying is what `roster me leave` prints once the account is erased:
+// that it is, and what happens to it next. `forgotten` is the moment the grace
+// runs out, and the zero time where the deployment names none.
+//
+// It printed *until <time> ... then it is forgotten*, which is the account
+// page's sentence at a shell and wrong the same way (`account.leftSaying`,
+// #280): the moment is when the grace runs out and the forget is the first
+// pass after it, a restore works until that pass, a hold puts it off, and
+// what was consented to and the two records are kept. So it says *from*, and
+// what is kept, in the words whoever runs the deployment configures them by.
+func leftSaying(erased, forgotten time.Time) []string {
+	out := []string{fmt.Sprintf("your account is erased (%s): you cannot sign in anywhere it reached.", erased.Format(time.RFC3339))}
+
+	if !forgotten.IsZero() {
+		out = append(out, fmt.Sprintf("from %s it is forgotten, at the first pass after that (`holder.every`, a day unless the deployment says): "+
+			"until that pass whoever runs this deployment can restore it, and a legal hold on your tenant puts it off for as long as it lasts.",
+			forgotten.Format(time.RFC3339)))
+	} else {
+		out = append(out, "nothing forgets it on a clock here (`holder.forget_after` names no window): "+
+			"whoever runs this deployment can restore it until they forget it, and a legal hold on your tenant puts that off for as long as it lasts.")
+	}
+
+	return append(out, "kept past that: what you consented to, for `consent.keep` (for good unless the deployment says); "+
+		"and the trail and the access record, which say your identifier, and the access record what a read asked for you by, each for its own window.")
 }

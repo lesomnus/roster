@@ -1988,12 +1988,45 @@ func (a *App) leave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	forgotten := "Until it is forgotten, whoever runs it can bring it back if you ask them."
+	var forgotten time.Time
 	if f := res.GetDateForgotten(); f != nil {
-		forgotten = fmt.Sprintf("Until %s, when it is forgotten, whoever runs it can bring it back if you ask them; "+
-			"after that, everything held about you is destroyed.", f.AsTime().UTC().Format("2 January 2006"))
+		forgotten = f.AsTime()
 	}
-	page(w, http.StatusOK, fmt.Sprintf(left, htmlEscape(forgotten)))
+	page(w, http.StatusOK, fmt.Sprintf(left, htmlEscape(leftSaying(forgotten))))
+}
+
+// leftSaying is what somebody who has just deleted their account is told
+// happens to it next. `forgotten` is the moment their grace runs out, and the
+// zero time where the deployment names none.
+//
+// # What is done, and not more
+//
+// It said *Until <date>, when it is forgotten ... after that, everything held
+// about you is destroyed*, and four things about that were not so (#280). The
+// date is when the grace runs out: the forget is made by the first pass after
+// it, up to `holder.every` later, and a restore works until that pass. A
+// legal hold on the tenant stops the clock, and nobody tells the person. What
+// they agreed to is kept past them as proof, for `consent.keep`, which is for
+// good unless the deployment says otherwise. And the trail and the access
+// record keep what was done and who read their data, by identifier -- and the
+// second, a word somebody looked them up by, for its own window.
+//
+// This is said to somebody at the moment they leave, and is what they will
+// hold the deployment to. So it says *from* the date, and what is kept. The
+// words only: what is done is `server/forget`'s.
+func leftSaying(forgotten time.Time) string {
+	const kept = "Two things are kept past that. What you agreed to, for as long as it is kept as proof that you did. " +
+		"And the record of what was done and of who read your data: it says an identifier where your account was, " +
+		"and may keep a word somebody looked you up by until that record's own time is up."
+
+	if forgotten.IsZero() {
+		return "Whoever runs it can bring it back if you ask them, until they forget it, which no date here does by itself: " +
+			"what is held about you is destroyed when they do, and a legal claim on the organisation's records puts that off for as long as it lasts. " + kept
+	}
+
+	return fmt.Sprintf("From %s it is forgotten: what is held about you is destroyed at the first pass after that day, and not before. "+
+		"Until that pass, whoever runs it can bring it back if you ask them; and a legal claim on the organisation's records puts it off for as long as the claim lasts. "+kept,
+		forgotten.UTC().Format("2 January 2006"))
 }
 
 // page answers one of the plain pages a mailed link ends at, which nothing

@@ -161,7 +161,8 @@ type MeServiceClient interface {
 	// An erase and nothing more: the person cannot sign in anywhere and every
 	// app holding a session for them hears it on `SyncService.Watch`; nothing is
 	// destroyed yet. An operator can still `roster restore` them while
-	// `holder.forget_after` lasts, and they are forgotten when it ends.
+	// `holder.forget_after` lasts, and they are forgotten from when it ends: by
+	// the first pass after it, and a restore works until that pass.
 	//
 	// Their sessions and delegations are void first -- `SignOutEverywhere`, as
 	// its own act -- so a restore brings the account back and none of its old
@@ -357,7 +358,8 @@ type MeServiceServer interface {
 	// An erase and nothing more: the person cannot sign in anywhere and every
 	// app holding a session for them hears it on `SyncService.Watch`; nothing is
 	// destroyed yet. An operator can still `roster restore` them while
-	// `holder.forget_after` lasts, and they are forgotten when it ends.
+	// `holder.forget_after` lasts, and they are forgotten from when it ends: by
+	// the first pass after it, and a restore works until that pass.
 	//
 	// Their sessions and delegations are void first -- `SignOutEverywhere`, as
 	// its own act -- so a restore brings the account back and none of its old

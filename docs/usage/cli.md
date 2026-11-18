@@ -113,6 +113,14 @@ written whole, `@owner/admin`. What answers
 across both planes stays outside -- `roster key list` and `roster key revoke`,
 because a key's identifier does not say which database it is in.
 
+**An erase there is where it ends.** `roster restore`, `forget` and `hold` read the
+customers' database and not `control.db`, so somebody of the control plane who is
+erased (`roster --as admin control holder erase @owner/alice`) is not brought back,
+and what was theirs is not destroyed either: their alias, name, verifier and second
+factor stay in that database for good. The command says so on standard error before
+it erases. For an operator who may come back, `control holder disable` is the one
+that is undone.
+
 The same rows are served at `control.addr`, to a key: one hanging off somebody
 bound there, since at that listener a key calls what its holder holds on the
 control plane (`ways-in.md`). A key made for an app is refused there.

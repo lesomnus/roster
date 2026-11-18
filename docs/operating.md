@@ -2542,6 +2542,17 @@ holder:
   every: 24h
 ```
 
+**Nobody of the control plane is forgotten, restored or held.** The three commands
+open the customers' database and no other, and the control plane has no forget
+window: its people are the deployment's own operators and the holders its own
+callers hang off. `roster forget @admin` names a customer's `admin` where there is
+one, and never the operator. So an operator erased with `roster control holder
+erase` cannot be brought back, and their row keeps what it said -- alias, name,
+verifier, second factor -- for as long as `control.db` is kept; the erase says so
+before it is made. Stop an operator who may return with `control holder disable`.
+An operator who asks for what is held about them to be destroyed is answered by
+hand, in `control.db`, until the commands for that plane are made.
+
 **With no name it is every loop `serve` runs for this, once.** What earlier forgets
 still owe the trail is paid; everybody erased for longer than `holder.forget_after`
 is forgotten; the consents kept for longer than `consent.keep` past their account
@@ -2680,8 +2691,10 @@ was made, erased, suspended and signed out everywhere, and which directory
 suspended them if one did (`directory`, a connection's name).
 
 The trail keeps its **events** and loses its **contents**, in the database and in
-the archive both -- the actor, the action, the object and the time stay; `value`
-and `patch` go. Most of what they held of the person was never there: a field
+the archive both -- the actor, the action, the object and the time stay, and so do
+which fields the write touched (`fields`), the line's keyed digest (`digest`) and
+which fields that covers (`digest_fields`): numbers, and a MAC that is of no
+personal field; `value` and `patch` go. Most of what they held of the person was never there: a field
 declared personal is on the trail as a value at no level. What `forget` blanks is
 the rest -- what was written about them in free text, and rows written before
 payday#92. Both halves matter and they pull against each other: a version that
@@ -2773,6 +2786,16 @@ the window gives them back with the person, and a tenant destroyed takes them
 with it. Both are asked where a consent is destroyed, and not only when the pass
 reads which are due: one of somebody restored, or of a tenant held, while the pass
 ran is kept.
+
+**What `consent.keep` destroys is the row, and the trail still says it.** A consent
+declares nothing personal -- it is a document's name, a version, a client and
+identifiers -- so the line of the trail that recorded the agreement says it whole:
+which document, which version, through which client, and whose, by the holder's
+identifier. That line stays for as long as the trail keeps lines (`audit:`), past
+the row, and `roster.consent.destroy` beside it says when the row went. A deployment
+that means an agreement to be gone after `consent.keep` gives the trail a window no
+longer than that; kept for ever, the trail goes on saying that the identifier
+agreed.
 
 ## A tenant leaving
 

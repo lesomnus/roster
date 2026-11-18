@@ -983,6 +983,18 @@ clicks away and carries the argument as well.
 entity streams its changes. **Erase** is soft (stamped, and the row stays) or
 hard (gone).
 
+**A soft erase destroys nothing, and no act destroys one row of somebody's.** What
+somebody takes off their own account -- an address, a number, an account at a
+provider, a second factor, a key -- is stamped `date_erased` and read by nothing
+from then, and the row stays with its value: the address, the subject, the key's
+name. It goes when the whole person is forgotten (`roster forget`, or
+`holder.forget_after` after they leave), and at no moment before; the other hard
+deletes are a tenant's destruction, a consent past `consent.keep`, and the expiry
+sweeps of sessions, delegations, links, sign-ins half made and claims on a
+hostname. So *remove my old address* is answered by an erase and satisfied only by
+the forget of the person, and a deployment that owes somebody the destruction of
+one datum has no verb for it short of that.
+
 | entity | domain | wall | watch | erase | declared in |
 | --- | --- | --- | --- | --- | --- |
 | 🏢 `Tenant` | 1 | the wall itself | -- | hard | `proto/roster/payday/tenant.proto` + overlay |

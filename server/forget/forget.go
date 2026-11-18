@@ -37,7 +37,7 @@
 // gone, and [subjects] says what it was read as once it named nothing.
 //
 // The `Holder` row itself **stays, blank**. Its identifier is referenced --
-// `Audit.actor_id` is it, and thirteen foreign keys point at it -- and what makes
+// `Audit.actor_id` is it, and seventeen foreign keys point at it -- and what makes
 // it personal data is that it resolves to a name. Emptied of the columns that
 // name somebody -- every one the schema declares personal, their picture and
 // what their directory called them among them -- it is a stable pseudonym
@@ -866,12 +866,12 @@ func subjects() []subject {
 		// waiting to be a surprise.
 		//
 		// And there is an asymmetry underneath worth knowing about, which
-		// nothing else states: of the thirteen foreign keys into `holder`,
-		// twelve are `NO ACTION` and `binding_holder_holder` alone is
+		// nothing else states: of the seventeen foreign keys into `holder`,
+		// sixteen are `NO ACTION` and `binding_holder_holder` alone is
 		// `SET NULL` -- see `internal/ent/migrate/schema.go`. Nothing depends
 		// on it today, because an erase is an UPDATE and no `ON DELETE` rule
 		// fires. It would matter the day somebody builds a **hard** erase of a
-		// person: twelve children would block it and `Binding` would quietly
+		// person: sixteen children would block it and `Binding` would quietly
 		// keep a row whose holder is NULL. Removing these here is what makes
 		// that irrelevant either way.
 		{

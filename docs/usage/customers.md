@@ -267,6 +267,13 @@ roster forget @newco            # every person forgotten, every other row of it 
 
 and its alias stays taken for `tenant.alias_hold` -- a year unless the deployment
 says otherwise -- so that nobody can be *newco* to its former people the day after.
+What somebody who deletes their own account is told is what is done: that it is
+forgotten *from* the day `holder.forget_after` runs out, by the first pass after it
+and not before, that it can be brought back until then, that a legal claim puts it
+off, and that two things are kept past it -- what they agreed to, for
+`consent.keep`, and the record of what was done and of who read their data, by
+identifier. The account page and `roster me leave` both say it.
+
 An operator's `roster hold place --why … @newco` stops the tenant being destroyed,
 its people being forgotten on the clock and its alias being given back, and keeps
 what the trail has of it. It does not stop `roster forget @newco/erin`, which

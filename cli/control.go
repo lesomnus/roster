@@ -208,7 +208,39 @@ func newCmdControlEntities(c *cmd.Config) xli.Commands {
 		}
 	}
 
+	erase := t.Command("holder/erase")
+	if erase == nil {
+		panic("cli: the control plane has no `holder erase` to say anything before")
+	}
+	erase.Handler = xli.Chain(xli.OnRun(notBroughtBack), erase.Handler)
+
 	return t.Commands()
+}
+
+// notBroughtBack is what `roster control holder erase` says before it erases
+// somebody of the control plane: that here an erase is where it ends.
+//
+// # Nobody of the control plane is forgotten, restored or held
+//
+// `roster restore`, `forget` and `hold` open the customers' database and no
+// other, and the control plane is built with no forget window (`cmd.Build`).
+// So an erase of a customer's person is undone by a restore and ended by a
+// forget, and an erase of an operator is neither: `restore` answers that
+// nobody is called that, and their alias, their name, their verifier and
+// their second factor stay in `control.db` for good. Nothing said so, and the
+// command read as its namesake one database over does (#280).
+//
+// Commands for the control plane add to the command line and can come later.
+// This is the sentence, where it is of use: before the erase is made, on
+// standard error, with what stops somebody who may come back. No flag asks
+// for it and none is needed to go on -- an operator leaving is still erased
+// with this, since `disable` is undone by anybody who may enable.
+func notBroughtBack(ctx context.Context, _ *xli.Command, next xli.Next) error {
+	fmt.Fprintln(os.Stderr, "roster: somebody of the control plane who is erased is not brought back: `roster restore`, `forget` and `hold` "+
+		"read the customers' database and not this one. What was theirs stays in control.db for good -- their alias, name, verifier and second factor -- "+
+		"and no command destroys it. For somebody who may come back, `roster control holder disable` is the one that is undone.")
+
+	return next(ctx)
 }
 
 // controlConnector is the control plane's `Ungated`, on a pipe with no address
