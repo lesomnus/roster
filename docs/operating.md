@@ -1713,7 +1713,8 @@ person has to stop existing eventually, and an operating record of what a machin
 did usually has the opposite requirement, so one clock over the table forces the
 shorter of the two onto everything. The kinds are the names the schema registered;
 `roster trail prune --kind nonsense --older-than 1h --dry-run` lists them. (With
-no window `prune` is a pass of what `audit:` says, and reads no `--kind`.)
+no window `prune` is a pass of what `audit:` says, of every kind, and refuses a
+`--kind`.)
 
 ```sh
 roster trail profiles
@@ -1760,6 +1761,7 @@ trail read for who called `HolderService/Add` answered keys beside the people.
 
 ```sh
 roster trail prune                                # apply the policy now, per kind
+roster trail prune --dry-run                      # what that pass would take, and nothing is changed
 roster trail prune --older-than 2160h --dry-run   # a window of your own: how many
 roster trail read --in /var/lib/roster/audit      # read an archive back
 roster trail purge --older-than 61320h --dry-run  # which chunks would go
@@ -1773,14 +1775,30 @@ roster trail owed                                 # the erasures owed and not pa
 `prune` with no window applies **the deployment's own policy**, which is what
 somebody putting it in cron means; `--older-than` makes it a manual act instead,
 and a manual window does not consult `by:`, so `--older-than 1ns` with no `--kind`
-reaches the kinds the policy keeps forever. It writes each chunk whole **before** it
+reaches the kinds the policy keeps forever. `--before` is the same window as an
+instant, and one that has not come yet is refused as `--older-than 0` is: a
+window of nothing is everything.
+
+**A dry run changes nothing, on either road.** With a window it counts the rows
+older than it, and says where the same line without `--dry-run` would put them.
+With none it says what the pass would take: for each kind the policy names and
+for everything else, how many rows are past the window and whether they would
+go to the archive or nowhere; each chunk of the archive that would be
+destroyed; and how many erasures owed it would pay. `--kind`, `--to` and
+`--discard` are read with a window of your own and no other way, so a `prune`
+with no window that is given one is refused by the flag's name, where it used
+to pass it over and apply the policy.
+
+`prune` writes each chunk whole **before** it
 deletes anything, and deletes the rows that are in the chunk rather than re-running
 the query -- so the one failure it can leave is rows in both places, which is the
 direction to fail in. Nothing takes a lock, so `read` reads the archive as a whole
 (`--in`, or the files named on the command line) and a row two runs both archived is
 dropped by whichever read sees both. `read` opens no database, which is the point
-of keeping the archive. `purge` destroys by chunk and never by row, and there is
-nothing after it.
+of keeping the archive. Each line it prints is when, what, about which row and by
+whom, and a `-` in the last column is a line by nobody: a sweep's, or a command's
+at the box ([above](#the-cli-on-the-box-is-the-deployment)). `purge` destroys by
+chunk and never by row, and there is nothing after it.
 
 **The database keeps an account of what the archive holds**, written before every
 change to it, and what a pass and `purge` destroy is decided by that account: by
@@ -1997,7 +2015,9 @@ chunk of the first for missing. Each is refused.
 
 A **legal hold** is the one thing a manual window does answer to: what one is on is
 left by `prune --discard` and by `purge`, which say how much they kept and go ahead
-for everything else. A hold is a tenant's: an operator places one with `roster hold
+for everything else. `--discard` writes no row into the archive, whether or not
+`audit.archive` names one; given beside `--to` it is refused, since the two say
+two things about the same rows. A hold is a tenant's: an operator places one with `roster hold
 place --why … @tenant` (§ "A tenant leaving"), and the trail keeps what it holds of
 that tenant from then until it is lifted -- the lines that say a row of the
 tenant's went among them, what a sweep collected and what somebody forgotten

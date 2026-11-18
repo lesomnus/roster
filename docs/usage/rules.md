@@ -324,6 +324,18 @@ written against (`server/core/directory.go`).
 | A session is minted when nothing is left to prove: roster's own sign-in asks somebody's second factor, on both planes | `TestRostersOwnSignInAsksTheSecondFactor` |
 | The two planes are two databases: a deployment that names one for both is refused, so that a customer's session is never an operator's | `TestTwoPlanesAreTwoDatabases` |
 
+### At the box, of the trail
+
+Not a call's: what an operator at a shell on the box may rely on of the
+commands that move and destroy the trail ([operating.md](../operating.md) §
+*The audit trail*).
+
+| | written in | held to it by |
+| --- | --- | --- |
+| A dry run changes nothing, with a window of the operator's own or with none: `trail prune --dry-run` says what the policy's pass would take, and takes nothing | `cli/trail.go` | `TestADryRunOfThePolicysPassChangesNothing` |
+| A flag the road taken does not read is refused by its name: `--kind`, `--to` and `--discard` with no window. And what is refused of a discard is what was said twice, `--discard` beside `--to`; alone it is taken whatever archive the deployment names, and leaves what a legal hold is on | `cli/trail.go` | `TestAFlagThePolicysPassDoesNotReadIsRefusedByName` · `TestADiscardByHandIsTakenBesideAnArchive` |
+| A window of nothing is everything, and is refused in both spellings: `--older-than 0`, and a `--before` that has not come yet | `cli/trail.go` | `TestAWindowThatEndsInTimeToComeIsRefused` |
+
 ## What roster does by itself
 
 Not refusals. These are rows roster writes beside the one a caller asked for,
