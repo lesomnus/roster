@@ -589,7 +589,10 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// read's row is written a second later with the others, by a loop each
 	// process runs for itself and that writes what it holds once more as it
 	// stops; a write's is in its own transaction.
-	s.Access = &access.Writer{Sink: pd.AccessSink(client)}
+	//
+	// What a row keeps of the request it is of is how it was asked, and none
+	// of the words it was asked by ([wordless]).
+	s.Access = &access.Writer{Sink: wordless(pd.AccessSink(client))}
 	s.Spin = append(s.Spin, loop(prefix, "access", s.Access))
 
 	// The door a roster user signs in at, where this deployment serves one.
