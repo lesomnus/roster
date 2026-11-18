@@ -69,6 +69,15 @@ type Idp struct {
 	// not: a code that reached it reached it, whatever it then said.
 	Exchanges atomic.Int32
 
+	// Refuse, when set, is why the token endpoint turns the next code down
+	// (`invalid_grant`) -- a code that expired, or was already redeemed, at a
+	// provider that holds it to that.
+	Refuse string
+
+	// Forge signs the ID token with a key the provider does not publish: a
+	// token that says the right things and that nobody at this issuer signed.
+	Forge bool
+
 	key *rsa.PrivateKey
 
 	mu        sync.Mutex
@@ -228,6 +237,9 @@ func New(t *testing.T, audience string) *Idp {
 		if unissued {
 			why = "no authorization code was issued"
 		}
+		if p.Refuse != "" {
+			why = p.Refuse
+		}
 		if why != "" {
 			w.Header().Set("content-type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
@@ -262,7 +274,7 @@ func New(t *testing.T, audience string) *Idp {
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"access_token": AccessToken,
 			"token_type":   "Bearer",
-			"id_token":     p.Sign(t, claims),
+			"id_token":     p.sign(t, claims),
 		})
 	})
 	m.HandleFunc("/userinfo", func(w http.ResponseWriter, r *http.Request) {
@@ -298,6 +310,18 @@ func New(t *testing.T, audience string) *Idp {
 	t.Cleanup(p.Close)
 
 	return p
+}
+
+// sign is the token endpoint's: [Idp.Sign], or with an unpublished key when
+// [Idp.Forge] says so.
+func (p *Idp) sign(t *testing.T, claims map[string]any) string {
+	if !p.Forge {
+		return p.Sign(t, claims)
+	}
+	k, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	return (&Idp{key: k}).Sign(t, claims)
 }
 
 // Sign is one token, for a test that wants to hand a bad one over.
