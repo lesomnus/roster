@@ -2531,7 +2531,7 @@ For *destroy what you hold about them* there is a second act:
 
 ```sh
 roster forget @contoso/erin        # now, because they asked
-roster forget                      # everybody whose grace has run out, and what earlier forgets still owe the trail
+roster forget                      # everything a clock is done waiting for: what `serve`'s loops do, at once
 roster forget --dry-run            # who that would be
 roster restore @contoso/erin       # undo the erase, while there is one to undo
 ```
@@ -2541,6 +2541,18 @@ holder:
   forget_after: 720h   # 30 days after an erase. empty is never
   every: 24h
 ```
+
+**With no name it is every loop `serve` runs for this, once.** What earlier forgets
+still owe the trail is paid; everybody erased for longer than `holder.forget_after`
+is forgotten; the consents kept for longer than `consent.keep` past their account
+are destroyed; the closed tenants past `tenant.restore_within` are destroyed, and any
+whose destruction stopped is finished; and the aliases held for `tenant.alias_hold`
+are given back. Each part is the function its loop calls, so a deployment that runs
+this from cron and one that leaves it to `serve` end the same. Something that fails
+-- one person, one tenant -- is said where it fails and does not stop the rest; the
+command then exits non-zero, having said at the end what failed, and the next run
+takes it. Under `--dry-run` it prints who and what, and how many consents and debts,
+and changes nothing.
 
 **Two triggers and one act.** A request has no grace -- they asked, and the clock a
 regulator counts is already running (GDPR Article 12(3) gives a month;
@@ -2590,12 +2602,14 @@ roster restore @contoso/erin
 
 **And it says when their name is somebody else's.** An erase frees the alias at
 once, so somebody new may be called it by the time of a restore, which then refuses
-in words: who has the name now, and the rename that makes way. Somebody erased is
-renamed by nothing, so it is the other who is:
+in words: who has the name now, and the rename that makes way. It names them by
+identifier and prints no name -- `restore` takes no `--as`, so it shows nothing
+anybody's row declares personal, and the first command it gives is the read that
+does. Somebody erased is renamed by nothing, so it is the other who is:
 
 ```sh
-roster --as admin holder get -o json @contoso/erin     # their dateUpdated, whole
-roster --as admin holder realias @contoso/erin '{"alias":"erin-2","date_updated":"2026-11-17T03:45:23.443111678Z"}'
+roster --as admin holder get -o json 01a03b71-…        # whoever has the name now: their alias, and their dateUpdated, whole
+roster --as admin holder realias 01a03b71-… '{"alias":"erin-2","date_updated":"2026-11-17T03:45:23.443111678Z"}'
 roster restore 01a0332f-…                              # the one who was erased, by identifier
 ```
 
@@ -2742,7 +2756,7 @@ roster restore @newco                         # while tenant.restore_within last
 roster forget @newco                          # destroy it now; it has to be closed first
 roster forget                                 # and every one whose grace has run out
 roster forget --reuse @newco                  # free its alias now rather than in a year
-roster hold place --why "Contoso v. Fabrikam, 2026-123" @newco   # nothing of it is destroyed
+roster hold place --why "Contoso v. Fabrikam, 2026-123" @newco   # it is not destroyed, and the trail keeps what it has of it
 roster hold lift @newco
 roster hold ls
 ```
@@ -2806,8 +2820,8 @@ its tenant -- a person, a site, a team, a role, a group, a name or a claim on on
 mail domain, a connection, a nomination -- is refused there with `FailedPrecondition`,
 at `admin.addr` and at the box alike, and so is `TenantService.Update`: the row says
 nothing about itself again. What is still written on it is the deployment's own: the
-alias given back, and an operator's hold, which keeps what the trail has of the tenant
-and stops a destruction that is under way. A **closed** tenant is not this. Whoever
+alias given back, and an operator's hold, which keeps what the trail has of the tenant,
+keeps its alias from being given back, and stops a destruction that is under way. A **closed** tenant is not this. Whoever
 runs the deployment still writes in one, at `admin.addr` and at the box, which is how
 a customer is put right before it is restored.
 
@@ -2828,17 +2842,40 @@ leaves in three steps:
 Left in the file past the day its alias is free again, it declares a tenant nobody
 is, and the next start makes a new one of that name.
 
-**A hold stops all of it.** `roster hold place` writes `Tenant.date_held` and what it
-is for; while it is there `forget` refuses the tenant, the sweep passes it by, its
-people whose own grace runs out are not forgotten on the clock, and the trail keeps
+**A hold stops the tenant being destroyed, and keeps what the trail has of it.**
+`roster hold place` writes `Tenant.date_held` and what it is for; while it is there
+`forget` refuses the tenant, the sweep passes it by, its people whose own grace runs
+out are not forgotten on the clock nor their consents destroyed, the alias of one
+already destroyed is not given back by the clock or by `--reuse`, and the trail keeps
 what it holds of it. A hold placed while a tenant is being destroyed stops it at the
 next person: those forgotten before it stay forgotten. One placed while a pass over
-the people is running stops that pass at the next person in the same way. Lifted,
-everything carries on
-from where it waited. It is a
+the people is running stops that pass at the next person in the same way. It is a
 command and not an RPC on purpose: a tenant's administrator lifting the hold on
 their own records is what a hold exists to prevent. Placing and lifting are in the
 trail.
+
+**Two things it does not stop.** *Somebody of the tenant forgotten by name.*
+`roster forget @newco/erin` under a hold destroys their rows and blanks their own, as
+it does anybody's: a request to be forgotten has a regulator's clock on it, and a
+dispute between two companies does not stop that. What the hold keeps of them is the
+trail's lines about them and about what was theirs, as they were, until it lifts,
+and the first pass after that erases them. The command says so each time it happens
+-- whose hold and what for, how many rows went, how many lines are kept -- and no
+flag asks for it: if the claim is about that person's rows, do not run it. *And the
+tenant's own grace.* `restore_within` is counted from the close whatever holds the
+tenant. A tenant closed and then held for longer than the window can be neither
+restored, since its grace ran out, nor destroyed, since it is held; and **lifting the
+hold lets the next pass destroy it**. Nothing waits from where it was when the hold
+was placed: every clock is where it is now. `roster hold place` on a closed tenant
+prints until when it can still be restored, and what lifting the hold does after
+that. If the tenant is to come back, restore it while the grace lasts and hold it
+open.
+
+**Nobody is restored into a tenant that is destroyed.** A destruction a hold stopped
+part way leaves some of the tenant's people there, and `roster restore` of one who
+had been erased is refused, saying when the tenant was destroyed: an account is
+somebody of a tenant, and there is none for them to be of. They are forgotten with
+the rest when the hold lifts.
 
 **The alias is held.** A name that found somebody still finds them after the rows
 are gone -- former people typing it into a sign-in form, bookmarks, mail, a QR

@@ -267,7 +267,12 @@ roster forget @newco            # every person forgotten, every other row of it 
 
 and its alias stays taken for `tenant.alias_hold` -- a year unless the deployment
 says otherwise -- so that nobody can be *newco* to its former people the day after.
-An operator's `roster hold place --why … @newco` stops all of it.
+An operator's `roster hold place --why … @newco` stops the tenant being destroyed,
+its people being forgotten on the clock and its alias being given back, and keeps
+what the trail has of it. It does not stop `roster forget @newco/erin`, which
+destroys that person's rows under a hold as under none and keeps the trail's lines
+about them until it lifts; nor the grace, which runs on, so that a closed tenant held
+past `tenant.restore_within` is destroyed when the hold is lifted.
 [operating.md](../operating.md) § "A tenant leaving" is the long version.
 
 ## Next

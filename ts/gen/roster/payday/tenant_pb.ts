@@ -156,11 +156,19 @@ export type Tenant = Message<"roster.Tenant"> & {
   dateDestroyed?: Timestamp | undefined;
 
   /**
-   * Since when an operator holds this tenant as it is: a legal claim, a
-   * dispute. While it is set nothing of the tenant is destroyed -- closing
-   * still shuts people out, and the grace still runs, but destroying waits
-   * until the hold is lifted and then finishes -- and the trail keeps what it
-   * holds of the tenant as payday's holds do.
+   * Since when an operator holds this tenant: a legal claim, a dispute. While
+   * it is set the tenant is not destroyed, nobody of it is forgotten on a
+   * clock, nor their consents, its alias is not given back if it was
+   * destroyed already, and the trail keeps what it holds of the tenant as
+   * payday's holds do.
+   *
+   * Two things it does not stop. Somebody of the tenant forgotten by name
+   * (`roster forget @tenant/who`) has their rows destroyed as anybody's are;
+   * what the hold keeps of them is the trail's lines, until it lifts. And the
+   * tenant's own grace: closing still shuts people out and
+   * `tenant.restore_within` still runs from the close, so a tenant held past
+   * it can no longer be restored, and is destroyed by the first pass after the
+   * hold is lifted.
    *
    * Written by `roster hold` and by nothing a caller reaches. The tenant reads
    * it, like everything about itself, so [Tenant.hold] is written to be read.

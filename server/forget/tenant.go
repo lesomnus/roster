@@ -413,8 +413,30 @@ func Gone(t pdid.Id) string { return "gone-" + hex.EncodeToString(t.Bytes()) }
 // records it: the sweep doing it when the hold is over, and an operator doing
 // it early on purpose (`roster forget --reuse`), are both acts somebody may
 // later need to have been told about.
+//
+// # Not of a tenant an operator holds
+//
+// With [ErrHeld], whoever asks. An operator who asked by hand was refused
+// already: `roster forget --reuse` destroys first, and [DestroyTenant] refuses
+// a held tenant. The clock asked nothing, so under a hold placed on a
+// destroyed tenant the name was given back by the sweep that an operator was
+// refused giving back (#280). The question is here, where the name goes, so
+// that the two cannot be asked different things again; and [DueAliases]
+// leaves a held tenant out, so that a pass does not come here to be refused
+// every day the hold lasts.
 func FreeAlias(ctx context.Context, at app.Server, t pdid.Id) error {
-	_, err := at.Tenant().Patch(ctx, app.TenantPatchRequest_builder{
+	v, err := at.Tenant().Get(ctx, app.TenantGetRequest_builder{
+		Ref:    app.TenantRef_builder{Id: t.Bytes()}.Build(),
+		Select: app.TenantSelect_builder{DateHeld: z.Ptr(true), Hold: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return err
+	}
+	if held := v.GetDateHeld(); held != nil {
+		return fmt.Errorf("%w since %s: %s", ErrHeld, held.AsTime().Format(time.RFC3339), v.GetHold())
+	}
+
+	_, err = at.Tenant().Patch(ctx, app.TenantPatchRequest_builder{
 		Ref:              app.TenantRef_builder{Id: t.Bytes()}.Build(),
 		Alias:            z.Ptr(Gone(t)),
 		DateUpdatedForce: z.Ptr(true),
@@ -531,7 +553,8 @@ func left() predicate.Tenant {
 	}
 }
 
-// DueAliases is every destroyed tenant whose alias has been held long enough.
+// DueAliases is every destroyed tenant whose alias has been held long enough,
+// and that no operator holds: see [FreeAlias].
 //
 // One already freed is told by the exact name freeing writes ([Gone]), which
 // is that tenant's alone. It was told by the prefix, and an alias is anybody's
@@ -545,6 +568,7 @@ func DueAliases(ctx context.Context, db *ent.Client, before time.Time) ([]pdid.I
 		Where(
 			tenant.DateDestroyedNotNil(),
 			tenant.DateDestroyedLT(before),
+			tenant.DateHeldIsNil(),
 		).
 		Select(tenant.FieldAlias).
 		All(ctx)

@@ -39,14 +39,29 @@ import (
 //
 // Destroying the tenant, entirely: [DestroyTenant] refuses, the sweep passes
 // it by, and both finish once it is lifted. The people of a held tenant whose
-// own grace runs out are not forgotten on a clock either ([Due] leaves them).
-// And the trail keeps what it holds of the tenant, as payday's holds do --
-// which is [Holds], answering `trail.Policy.Tenants`.
+// own grace runs out are not forgotten on a clock either ([Due] leaves them),
+// nor are their consents destroyed ([DueConsents]); and a destroyed tenant's
+// alias is not given back while it is held, by the clock or by hand
+// ([FreeAlias]). And the trail keeps what it holds of the tenant, as payday's
+// holds do -- which is [Holds], answering `trail.Policy.Tenants`.
 //
-// What it does not stop is a person's own request to be forgotten
-// (`roster forget @tenant/who`): that is erased except what the hold keeps in
-// the trail, which is payday's answer to a legal claim against an erasure
-// request (`trail.Hold`).
+// # What it does not stop
+//
+// A person's own request to be forgotten (`roster forget @tenant/who`): their
+// rows are destroyed and their own is blanked, as anybody's are, and what the
+// hold keeps of them is the trail's lines, as they were, until it lifts. That
+// is payday's answer to a legal claim against an erasure request
+// (`trail.Hold`), and it is on purpose: the request has a regulator's clock on
+// it that a dispute between two companies does not stop, and the record of
+// what was done by and to the person is what a claim is about. It is not
+// *nothing of the tenant is destroyed*, which five sentences said (#280); the
+// command says what it is when it happens.
+//
+// Nor the tenant's own grace. `tenant.restore_within` is counted from the
+// close whatever holds the tenant, so one held for longer than the window can
+// no longer be restored, and the pass after the hold lifts destroys it.
+// `roster hold place` says so of a closed tenant, while a restore is still an
+// operator's to make.
 
 // Hold places an operator's hold on a tenant. Holding one already held says
 // what the hold is for again, and does not move when it began.
@@ -79,8 +94,9 @@ func Hold(ctx context.Context, at app.Server, t pdid.Id, why string) error {
 }
 
 // Lift takes an operator's hold off a tenant. What it stopped carries on from
-// there: the sweep destroys a tenant whose grace ran out while it was held, on
-// its next pass.
+// there, and the clocks from where they are now, not from where they were
+// when it was placed: the sweep destroys a tenant whose grace ran out while
+// it was held, on its next pass.
 func Lift(ctx context.Context, at app.Server, t pdid.Id) error {
 	v, err := at.Tenant().Get(ctx, app.TenantGetRequest_builder{
 		Ref:    app.TenantRef_builder{Id: t.Bytes()}.Build(),

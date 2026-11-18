@@ -113,7 +113,10 @@ yes**, so a tenant that has never said keeps what it had.
 And how far it has got in leaving (#98): `date_closed`, after which nobody of it
 gets in; `date_destroyed`, after which nothing of it is left but this row, which
 keeps its alias for a while so that nobody else can be that name; and
-`date_held`, an operator's hold that stops every destruction. Written by
+`date_held`, an operator's hold: the tenant is not destroyed and nobody of it is
+forgotten on a clock while it is there, and the trail keeps what it has of the
+tenant. It does not stop somebody of the tenant being forgotten by name, whose rows
+go and whose trail lines stay, nor the tenant's grace running out. Written by
 `TenantService.Close` and `Restore`, `roster forget` and `roster hold`, and by
 nothing else. [operating.md](operating.md) § "A tenant leaving".
 
