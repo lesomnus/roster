@@ -9,14 +9,13 @@ import (
 	"github.com/lesomnus/otx/log"
 
 	"github.com/lesomnus/payday/audit"
-	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/spin"
 
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/consent"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/tenant"
-	"github.com/lesomnus/roster/server/pd"
+	"github.com/lesomnus/roster/server/expire"
 )
 
 // What a consent is, after its account.
@@ -47,7 +46,8 @@ func DueConsents(ctx context.Context, db *ent.Client, before time.Time) ([]uuid.
 // DestroyConsents removes consents, and puts each on the trail as the act it is
 // in the same transaction: written past the servers, which refuse it, so a
 // check of the rows does not find them things the trail says are rows
-// (`pd.RecordErased`, payday#115). What that writes is which rows and when.
+// (`pd.RecordErased`, payday#115). What that writes is which rows and when,
+// each under the tenant the consent was of (`expire.Gone`).
 func DestroyConsents(ctx context.Context, db *ent.Client, ids []uuid.UUID, cs audit.Contents) (int, error) {
 	if len(ids) == 0 {
 		return 0, nil
@@ -59,15 +59,22 @@ func DestroyConsents(ctx context.Context, db *ent.Client, ids []uuid.UUID, cs au
 	}
 	defer tx.Rollback()
 
+	// Whose each is, read while it is there: a line that says a row went has
+	// no row to read a tenant from.
+	was, err := tx.Consent.Query().Where(consent.IdIn(ids...)).All(ctx)
+	if err != nil {
+		return 0, err
+	}
+	gone := make([]expire.Row, len(was))
+	for i, v := range was {
+		gone[i] = expire.Row{Id: v.Id, Tenant: v.TenantId}
+	}
+
 	n, err := tx.Consent.Delete().Where(consent.IdIn(ids...)).Exec(ctx)
 	if err != nil {
 		return 0, err
 	}
-	gone := make([]pdid.Id, len(ids))
-	for i, v := range ids {
-		gone[i] = pdid.Id(v)
-	}
-	if _, err := pd.RecordErased(ctx, tx.Client(), cs, DestroyedConsent, gone); err != nil {
+	if err := expire.Gone(ctx, tx.Client(), cs, DestroyedConsent, gone); err != nil {
 		return 0, err
 	}
 

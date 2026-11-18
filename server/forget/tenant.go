@@ -39,6 +39,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/bare"
+	"github.com/lesomnus/roster/server/expire"
 	"github.com/lesomnus/roster/server/pd"
 )
 
@@ -224,7 +225,9 @@ func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Polic
 
 		out.Rows += n
 	}
-	if _, err := pd.RecordErased(ctx, tx.Client(), cs, DestroyedTenant, removed); err != nil {
+	// Under the tenant, said by the context: a line that says a row went has
+	// no row to read a tenant from (`expire.Under`).
+	if _, err := pd.RecordErased(expire.Under(ctx, t), tx.Client(), cs, DestroyedTenant, removed); err != nil {
 		return out, err
 	}
 

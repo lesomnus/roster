@@ -1893,13 +1893,18 @@ that act, so it is no finding: a tenant destroyed and what went with it, a
 person forgotten and their rows, a person brought back, a name taken from the
 tenant that held it, a session made, used and ended at roster's own door, and
 what the sweeps collect -- a session, an attempt, a link, a delegation or a
-claim past its expiry. A session made before #280 is the one that is a finding:
-its identifier says no kind, so the check prints `not-on-trail unknown <id>` for
-it and `--accept` accepts no row of it, and there is nothing to do but wait --
-it is gone when its twelve hours are over and the sweep has passed. Before a
-pass destroys the newest row of the trail about a row that is
-still there, it carries that row's digest forward, so a row nobody wrote since
-its window is still checked.
+claim past its expiry, a consent past its keep. A line that says a row went is
+filed under the tenant the row was of, as the lines about the row were: a
+tenant's own reader of its trail is answered what was collected or destroyed of
+theirs, and a hold on that tenant keeps the line. It names nobody where a sweep
+or a command at the box removed the row, since neither is a holder; the act it
+is recorded as says which. A session made before #280 is the one that is a
+finding: its identifier says no kind, so the check prints `not-on-trail unknown
+<id>` for it and `--accept` accepts no row of it, and there is nothing to do
+but wait -- it is gone when its twelve hours are over and the sweep has passed.
+Before a pass destroys the newest row of the trail about a row that is still
+there, it carries that row's digest forward, so a row nobody wrote since its
+window is still checked.
 
 A row a migration rewrote is a finding until somebody has looked. `trail rows`
 prints, on stderr, the digest of what it found, and `--accept --of <that digest>
@@ -1986,7 +1991,10 @@ A **legal hold** is the one thing a manual window does answer to: what one is on
 left by `prune --discard` and by `purge`, which say how much they kept and go ahead
 for everything else. A hold is a tenant's: an operator places one with `roster hold
 place --why … @tenant` (§ "A tenant leaving"), and the trail keeps what it holds of
-that tenant from then until it is lifted.
+that tenant from then until it is lifted -- the lines that say a row of the
+tenant's went among them, what a sweep collected and what somebody forgotten
+took with them, so that a row the hold keeps the making of is not one the check
+then finds `missing`.
 
 ### Who heard the newest checkpoint
 

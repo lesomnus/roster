@@ -216,8 +216,13 @@ func TestASessionMadeAtRostersOwnDoorIsOnTheTrail(t *testing.T) {
 		vs := linesAbout(t, ctx, b.Ent, gone)
 		x.Len(vs, 2, "a session was made and collected, and the trail says each")
 		aSessionsLine(x, vs[0], session.Minted, b.ContosoUser, b.Contoso, ran)
+
+		// Under the tenant of whoever it was of, and by nobody: the sweep
+		// collected it, and a sweep is no holder.
 		x.Equal(session.Expired, vs[1].Action)
 		x.Equal(uint32(pd.SessionDomain), vs[1].Domain)
+		x.Equal(b.Contoso.Uuid(), vs[1].TenantId, "what the sweep collected is not filed under the tenant it was of")
+		x.Equal(uuid.Nil(), vs[1].ActorId)
 
 		x.NoError(rows(), "a session the sweep collected is a finding")
 	})
@@ -314,6 +319,7 @@ func TestAnOperatorsSessionIsOnTheControlPlanesTrail(t *testing.T) {
 	x.Len(vs, 2, "a session was made and collected, and the trail says each")
 	aSessionsLine(x, vs[0], session.Minted, operator, owner, ran)
 	x.Equal(session.Expired, vs[1].Action)
+	x.Equal(owner.Uuid(), vs[1].TenantId, "what the sweep collected is not filed under the tenant it was of")
 
 	// Each plane's sessions are its own rows, and so are the lines about them.
 	about, err := s.Ent.Audit.Query().Where(audit.DomainEQ(uint32(pd.SessionDomain))).Count(ctx)

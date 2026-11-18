@@ -83,6 +83,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/bare"
+	"github.com/lesomnus/roster/server/expire"
 	"github.com/lesomnus/roster/server/pd"
 )
 
@@ -241,7 +242,9 @@ func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 
 	out.Rows++
 
-	if _, err := pd.RecordErased(ctx, tx.Client(), cs, ForgottenHolder, removed); err != nil {
+	// Under their tenant, said by the context: a line that says a row went has
+	// no row to read a tenant from (`expire.Under`).
+	if _, err := pd.RecordErased(expire.Under(ctx, pdid.Id(v.TenantId)), tx.Client(), cs, ForgottenHolder, removed); err != nil {
 		return out, err
 	}
 	if _, err := pd.Record(ctx, tx.Client(), cs, ForgottenHolder, []pdid.Id{who}); err != nil {

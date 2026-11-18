@@ -12,6 +12,7 @@ import (
 
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/delegation"
+	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/server/expire"
 )
 
@@ -89,8 +90,28 @@ func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error
 	now := time.Now()
 
 	return expire.Rows(ctx, db, cs, Expired,
-		func(ctx context.Context, db *ent.Client) ([]uuid.UUID, error) {
-			return db.Delegation.Query().Where(delegation.DateExpiresLT(now)).Limit(audit.RowsPage).Ids(ctx)
+		// Which are due, and whose each is while it can still be asked: the
+		// line that says it went is filed under the tenant of whoever it was
+		// for (`expire.Rows`).
+		func(ctx context.Context, db *ent.Client) ([]expire.Row, error) {
+			vs, err := db.Delegation.Query().
+				Where(delegation.DateExpiresLT(now)).
+				WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldTenantId) }).
+				Limit(audit.RowsPage).
+				All(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			rows := make([]expire.Row, len(vs))
+			for i, v := range vs {
+				rows[i] = expire.Row{Id: v.Id}
+				if h := v.Edges.Holder; h != nil {
+					rows[i].Tenant = h.TenantId
+				}
+			}
+
+			return rows, nil
 		},
 		func(ctx context.Context, db *ent.Client, ids []uuid.UUID) (int, error) {
 			return db.Delegation.Delete().Where(delegation.IdIn(ids...)).Exec(ctx)

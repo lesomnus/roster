@@ -80,8 +80,21 @@ func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error
 	now := time.Now()
 
 	return expire.Rows(ctx, db, cs, Expired,
-		func(ctx context.Context, db *ent.Client) ([]uuid.UUID, error) {
-			return db.HostProof.Query().Where(hostproof.DateExpiresLT(now)).Limit(audit.RowsPage).Ids(ctx)
+		// Which are due, and whose each is while it can still be asked: the
+		// line that says it went is filed under the tenant that made the claim
+		// (`expire.Rows`).
+		func(ctx context.Context, db *ent.Client) ([]expire.Row, error) {
+			vs, err := db.HostProof.Query().Where(hostproof.DateExpiresLT(now)).Limit(audit.RowsPage).All(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			rows := make([]expire.Row, len(vs))
+			for i, v := range vs {
+				rows[i] = expire.Row{Id: v.Id, Tenant: v.TenantId}
+			}
+
+			return rows, nil
 		},
 		func(ctx context.Context, db *ent.Client, ids []uuid.UUID) (int, error) {
 			return db.HostProof.Delete().Where(hostproof.IdIn(ids...)).Exec(ctx)
