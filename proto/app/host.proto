@@ -123,9 +123,15 @@ message Host {
   // -- a wildcard, a path, an underscore -- because no request arrives at it,
   // and refuses a name in other letters with the form to write instead, which
   // is its A-label ("xn--...").
-  string name = 5 [(orm.field) = {unique: true}];
+  //
+  // Not personal, this and the description and labels: a hostname is the
+  // tenant's own, and which was claimed when is the record.
+  string name = 5 [
+    (orm.field) = {unique: true},
+    (payday.field) = {personal: false}
+  ];
 
-  string desc = 6;
+  string desc = 6 [(payday.field) = {personal: false}];
 
   // Whatever the deployment keeps about this row that the schema does not name.
   //
@@ -138,7 +144,7 @@ message Host {
   // everywhere else that has them -- and not a setting roster acts on. A
   // setting goes in a field, so that what is configuration and what is a note
   // stay tellable apart.
-  map<string, string> labels = 7;
+  map<string, string> labels = 7 [(payday.field) = {personal: false}];
 
   // When roster looked up DNS and read back what it had asked for, and **unset
   // is a row nobody proved**.
@@ -263,16 +269,19 @@ message MailDomain {
 
   // The domain, lowercased and without the `@`: "contoso.com". Normalised on
   // the way in for [Host.name]'s reason.
-  string name = 5;
+  //
+  // Not personal, this and what follows it on this row: a mail domain is the
+  // tenant's own, as a hostname is.
+  string name = 5 [(payday.field) = {personal: false}];
 
   // Which provider to send them to, by the name `Identity.provider` uses.
   //
   // Empty is a domain this deployment knows about and has nothing to say about,
   // which is a different fact from not having the row: a front door can hold a
   // list of domains it serves without routing any of them.
-  string provider = 9;
+  string provider = 9 [(payday.field) = {personal: false}];
 
-  string desc = 6;
+  string desc = 6 [(payday.field) = {personal: false}];
 
   // Whatever the deployment keeps about this row that the schema does not name.
   //
@@ -285,7 +294,7 @@ message MailDomain {
   // everywhere else that has them -- and not a setting roster acts on. A
   // setting goes in a field, so that what is configuration and what is a note
   // stay tellable apart.
-  map<string, string> labels = 7;
+  map<string, string> labels = 7 [(payday.field) = {personal: false}];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
@@ -408,7 +417,13 @@ message HostProof {
   // The name being claimed, normalised the way [Host.name] is and for the same
   // reason: this is compared against a `Host` and looked up in DNS, so a value
   // that differs from what those will use is a claim that can never succeed.
-  string name = 5 [(orm.field) = {immutable: true}];
+  //
+  // Not personal, this and the token and description: a claim on a hostname,
+  // and what is published to prove it.
+  string name = 5 [
+    (orm.field) = {immutable: true},
+    (payday.field) = {personal: false}
+  ];
 
   // What to publish, and roster's to generate.
   //
@@ -416,7 +431,10 @@ message HostProof {
   // let somebody claim a name whose TXT record already says something they can
   // predict -- which is a name they do not control, proved by a record they did
   // not write.
-  string token = 9 [(orm.field) = {immutable: true}];
+  string token = 9 [
+    (orm.field) = {immutable: true},
+    (payday.field) = {personal: false}
+  ];
 
   // When this stops being spendable, and roster's to set for `token`'s reason.
   //
@@ -426,7 +444,7 @@ message HostProof {
   // `prove.Sweep`; the expiry is what makes them refused before then.
   google.protobuf.Timestamp date_expires = 10 [(orm.field) = {nullable: true}];
 
-  string desc = 6;
+  string desc = 6 [(payday.field) = {personal: false}];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];

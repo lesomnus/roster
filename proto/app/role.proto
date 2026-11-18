@@ -54,9 +54,13 @@ message Role {
   // by it the way everything else on that axis is.
   Site site = 3 [(orm.edge) = {immutable: true, nullable: true}];
 
-  string alias = 4;
-  string name = 5;
-  string desc = 6;
+  // Not personal, these three, the labels and `methods`: a role is the
+  // tenant's own, and what it is called and what it allows is what a trail is
+  // kept to say. Nobody is written into them, as into a tenant's
+  // (`tenant.proto`).
+  string alias = 4 [(payday.field) = {personal: false}];
+  string name = 5 [(payday.field) = {personal: false}];
+  string desc = 6 [(payday.field) = {personal: false}];
 
   // Whatever the deployment keeps about this row that the schema does not name.
   //
@@ -64,7 +68,7 @@ message Role {
   // deployment declared -- a roster-hosted front door's role, written from its
   // configuration at every start -- carries `roster.declared`, and
   // `server/core` refuses every write to it from anybody else (`declared.go`).
-  map<string, string> labels = 7;
+  map<string, string> labels = 7 [(payday.field) = {personal: false}];
 
   // The RPCs this allows: a whole method name, or a pattern naming a service
   // or a package.
@@ -96,7 +100,7 @@ message Role {
   // `roster init` prints what it made in the words it made it. See
   // `frame.Covers` for what a pattern may and may not say -- a whole part or
   // nothing, never `*Get*`.
-  repeated string methods = 8;
+  repeated string methods = 8 [(payday.field) = {personal: false}];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
@@ -201,7 +205,14 @@ message Binding {
   // deployment declared -- a roster-hosted front door's role, written from its
   // configuration at every start -- carries `roster.declared`, and
   // `server/core` refuses every write to it from anybody else (`declared.go`).
-  map<string, string> labels = 7;
+  //
+  // Personal (payday#92): a binding is a grant to somebody, and what is
+  // written on one is written about them -- why they were given it, who
+  // asked. The trail records that a grant was made, of which role, to whom
+  // and where, which is the record, and never the words beside it (#280).
+  // What `roster.declared` says is read off the row, which is where it is
+  // kept.
+  map<string, string> labels = 7 [(payday.field) = {personal: true}];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];

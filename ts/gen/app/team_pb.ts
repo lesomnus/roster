@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/team.proto.
  */
 export const file_app_team: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvdGVhbS5wcm90bxIGcm9zdGVyIucDCgRUZWFtEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESJAoEc2l0ZRgDIAEoCzIMLnJvc3Rlci5TaXRlQgjyghYEOAFAARINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBGRlc2MYBiABKAkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOpoByvwVURICEAEaLBIEcGFnZRoKCgZ0ZW5hbnQQAhoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGh0SBHNsdWcaCQoFYWxpYXMQBBoICgRzaXRlEAMwAYq7FkEICjI7ChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZ0ZW5hbnQaBgoEc2l0ZSAUKGQ6AEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_tenant, file_app_site, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvdGVhbS5wcm90bxIGcm9zdGVyIv8DCgRUZWFtEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESJAoEc2l0ZRgDIAEoCzIMLnJvc3Rlci5TaXRlQgjyghYEOAFAARIVCgVhbGlhcxgEIAEoCUIGqsEWAhgAEhQKBG5hbWUYBSABKAlCBqrBFgIYABIUCgRkZXNjGAYgASgJQgaqwRYCGAASOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOpoByvwVURICEAEaLBIEcGFnZRoKCgZ0ZW5hbnQQAhoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGh0SBHNsdWcaCQoFYWxpYXMQBBoICgRzaXRlEAMwAYq7FkEICjI7ChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZ0ZW5hbnQaBgoEc2l0ZSAUKGQ6AEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_tenant, file_app_site, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Team is a group of people within one site, and what a role is derived from.
@@ -88,6 +88,11 @@ export type Team = Message<"roster.Team"> & {
    * A team of no site is the tenant's, and its name is unique among the
    * tenant's teams of none: the index below binds nothing where the site is
    * null, so `server/core` holds it.
+   *
+   * Not personal, this, the name and the description: a team is the
+   * tenant's own. Nobody is written into them, as into a tenant's
+   * (`tenant.proto`): a team named after a person keeps that name on the
+   * trail, where no forget reaches.
    *
    * @generated from field: string alias = 4;
    */

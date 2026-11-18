@@ -147,7 +147,10 @@ message Tenant {
   //
   // What it buys is that the next setting is a field number in here rather than
   // one of the nine an app gets on `Tenant` itself.
-  TenantConfig config = 8;
+  //
+  // Not personal, as nothing a tenant says of itself is: settings, and the
+  // trail saying who changed which to what is what it is kept for.
+  TenantConfig config = 8 [(payday.field) = {personal: false}];
   // Since when nobody of this tenant gets in: the customer left, or an
   // operator shut them out. Nothing is destroyed by it.
   //
@@ -199,7 +202,14 @@ message Tenant {
   // it, like everything about itself, so [Tenant.hold] is written to be read.
   google.protobuf.Timestamp date_held = 11 [(orm.field) = {nullable: true}];
   // What the hold is for: a case, a demand. Empty while nothing holds it.
-  string hold = 12;
+  //
+  // Not personal, as nothing a tenant says of itself is (`tenant.proto`, its
+  // `alias` and the three after): it is the deployment's note of why, and the
+  // trail saying why a hold was placed, and when, is the point of writing
+  // one. So it is on the trail as a value, where no forget reaches it, and
+  // whoever writes it writes a case and not a person: *Contoso v. Fabrikam,
+  // 2026-123*, and never somebody's name (#280).
+  string hold = 12 [(payday.field) = {personal: false}];
 }
 
 // TenantConfig is the settings, and each one is a **fact roster enforces**

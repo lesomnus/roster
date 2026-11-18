@@ -270,6 +270,11 @@ type Team_builder struct {
 	// A team of no site is the tenant's, and its name is unique among the
 	// tenant's teams of none: the index below binds nothing where the site is
 	// null, so `server/core` holds it.
+	//
+	// Not personal, this, the name and the description: a team is the
+	// tenant's own. Nobody is written into them, as into a tenant's
+	// (`tenant.proto`): a team named after a person keeps that name on the
+	// trail, where no forget reaches.
 	Alias       string
 	Name        string
 	Desc        string
@@ -298,14 +303,14 @@ var File_app_team_proto protoreflect.FileDescriptor
 
 const file_app_team_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/team.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x0eapp/site.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xb2\x04\n" +
+	"\x0eapp/team.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x0eapp/site.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xca\x04\n" +
 	"\x04Team\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12*\n" +
-	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x12\x14\n" +
-	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x12\n" +
-	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\x12F\n" +
+	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x12\x1c\n" +
+	"\x05alias\x18\x04 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x05alias\x12\x1a\n" +
+	"\x04name\x18\x05 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04name\x12\x1a\n" +
+	"\x04desc\x18\x06 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04desc\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +

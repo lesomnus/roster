@@ -274,6 +274,11 @@ type Nomination_builder struct {
 	// Login App's, the account app's -- are declared by the deployment's
 	// configuration and carry `roster.declared`: a tenant does not end them, and
 	// neither does anybody else but the deployment (`server/core/declared.go`).
+	//
+	// Personal (payday#92), and so is `name`: a nomination says who an app is
+	// answered as, and what is written on one is written about that holder and
+	// the app that borrows them. The trail records that it was made, for which
+	// borrower and as whom, by identifier, and never the words (#280).
 	Labels map[string]string
 	// What a person reading the tenant's nominations calls the app -- `loft`.
 	//
@@ -331,13 +336,13 @@ var File_app_nomination_proto protoreflect.FileDescriptor
 
 const file_app_nomination_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/nomination.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xc9\x05\n" +
+	"\x14app/nomination.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xd9\x05\n" +
 	"\n" +
 	"Nomination\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x126\n" +
-	"\x06labels\x18\a \x03(\v2\x1e.roster.Nomination.LabelsEntryR\x06labels\x12\x12\n" +
-	"\x04name\x18\x05 \x01(\tR\x04name\x12)\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12>\n" +
+	"\x06labels\x18\a \x03(\v2\x1e.roster.Nomination.LabelsEntryB\x06\xaa\xc1\x16\x02\x18\x01R\x06labels\x12\x1a\n" +
+	"\x04name\x18\x05 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x01R\x04name\x12)\n" +
 	"\vborrower_id\x18\b \x01(\fB\b\xea\x82\x16\x04\x10@@\x01R\n" +
 	"borrowerId\x12-\n" +
 	"\aacts_as\x18\t \x01(\v2\x0e.roster.HolderB\x04\xf2\x82\x16\x00R\x06actsAs\x12F\n" +

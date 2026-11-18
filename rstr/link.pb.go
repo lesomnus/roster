@@ -326,6 +326,8 @@ type Link_builder struct {
 	// `Vouch.Redeem` refuses a link that names one, and the user console refuses a
 	// link that names none. A discriminator read on one side is not one --
 	// `email` above learned that the hard way.
+	//
+	// Not personal: a tenant's own name, and no one's address.
 	At string
 	// Whether this link confirms its holder **leaving**, and nothing else: the
 	// fourth kind, `Vouch.LeaveLink`'s, spent by `Vouch.Leave`.
@@ -368,6 +370,8 @@ type Link_builder struct {
 	Secret []byte
 	// Which caller was given it, so that one app cannot spend what another was
 	// issued. Opaque bytes and never an edge; see `delegation.proto`.
+	//
+	// Not personal: a key's identifier, as bytes.
 	Issuer []byte
 	// When it stops working, and there is no such thing as one that does not.
 	//
@@ -419,17 +423,17 @@ var File_app_link_proto protoreflect.FileDescriptor
 
 const file_app_link_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/link.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x0fapp/email.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x93\x05\n" +
+	"\x0eapp/link.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x0fapp/email.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x9f\x05\n" +
 	"\x04Link\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12-\n" +
-	"\x05email\x18\f \x01(\v2\r.roster.EmailB\b\xf2\x82\x16\x048\x01@\x01R\x05email\x12\x16\n" +
-	"\x02at\x18\b \x01(\tB\x06\xea\x82\x16\x02@\x01R\x02at\x12$\n" +
+	"\x05email\x18\f \x01(\v2\r.roster.EmailB\b\xf2\x82\x16\x048\x01@\x01R\x05email\x12\x1c\n" +
+	"\x02at\x18\b \x01(\tB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\x02at\x12$\n" +
 	"\x05leave\x18\x10 \x01(\bB\x0e\xea\x82\x16\n" +
 	"@\x01\x82\x01\x05falseR\x05leave\x12&\n" +
-	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12\x1e\n" +
+	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12$\n" +
 	"\x06issuer\x18\n" +
-	" \x01(\fB\x06\xea\x82\x16\x02@\x01R\x06issuer\x12G\n" +
+	" \x01(\fB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\x06issuer\x12G\n" +
 	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpires\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +

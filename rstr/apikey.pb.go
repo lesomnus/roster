@@ -328,6 +328,14 @@ type ApiKey_builder struct {
 	Holder *Holder
 	// What somebody calls this key when deciding whether to revoke it --
 	// "loft, production". Unique per holder so that a list of them reads.
+	//
+	// Personal (payday#92), and so is `desc`: each is what somebody wrote about
+	// a key of theirs, and what people write there is whose laptop it is on.
+	// The trail records that a key was named and never what; the row is the
+	// one copy, and goes with its holder when they are forgotten. It said
+	// neither, so the trail kept both for as long as it kept the line, and a
+	// forget blanked them only by reaching the line (#280). A key is still
+	// listed, shown and found by its alias: that is the row's to answer.
 	Alias string
 	Desc  string
 	// What this key may be used for: the gRPC methods, in full, as
@@ -339,6 +347,9 @@ type ApiKey_builder struct {
 	//
 	// Empty allows **nothing**, which is `frame.Grant`'s zero value and the right
 	// way round: a key somebody forgot to fill in opens no door.
+	//
+	// Not personal: it is what the key may do, which is what a trail is kept to
+	// say, and names no one.
 	Methods []string
 	// The verifier, never the key: a hash of it, and the key itself is shown once
 	// when it is made and never again. The same rule `Credential` states, and the
@@ -411,13 +422,13 @@ var File_app_apikey_proto protoreflect.FileDescriptor
 
 const file_app_apikey_proto_rawDesc = "" +
 	"\n" +
-	"\x10app/apikey.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x94\x06\n" +
+	"\x10app/apikey.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xac\x06\n" +
 	"\x06ApiKey\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x14\n" +
-	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\x12\x18\n" +
-	"\amethods\x18\b \x03(\tR\amethods\x12$\n" +
+	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x1c\n" +
+	"\x05alias\x18\x04 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x01R\x05alias\x12\x1a\n" +
+	"\x04desc\x18\x06 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x01R\x04desc\x12 \n" +
+	"\amethods\x18\b \x03(\tB\x06\xaa\xc1\x16\x02\x18\x00R\amethods\x12$\n" +
 	"\x06secret\x18\t \x01(\fB\f\xea\x82\x16\x020\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12?\n" +
 	"\tdate_used\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\bdateUsed\x12E\n" +

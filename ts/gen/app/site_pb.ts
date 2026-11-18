@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/site.proto.
  */
 export const file_app_site: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvc2l0ZS5wcm90bxIGcm9zdGVyIpQECgRTaXRlEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEigKBmxhYmVscxgHIAMoCzIYLnJvc3Rlci5TaXRlLkxhYmVsc0VudHJ5EjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOpQByvwVUxICEAEaLBIEcGFnZRoKCgZ0ZW5hbnQQAhoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGh8SBHNsdWcaCQoFYWxpYXMQBBoKCgZ0ZW5hbnQQAjABirsWOQgHMjMKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBnRlbmFudCAUKGQ6AEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvc2l0ZS5wcm90bxIGcm9zdGVyIrQECgRTaXRlEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESFQoFYWxpYXMYBCABKAlCBqrBFgIYABIUCgRuYW1lGAUgASgJQgaqwRYCGAASFAoEZGVzYxgGIAEoCUIGqsEWAhgAEjAKBmxhYmVscxgHIAMoCzIYLnJvc3Rlci5TaXRlLkxhYmVsc0VudHJ5QgaqwRYCGAASOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6lAHK/BVTEgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxY5CAcyMwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGdGVuYW50IBQoZDoAQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Site is where a deployment of the product runs, and the boundary everything
@@ -56,6 +56,10 @@ export type Site = Message<"roster.Site"> & {
   /**
    * Unique within the tenant, which is what makes `@contoso/seoul` a name
    * somebody can type into a configuration file.
+   *
+   * Not personal, this, the name, the description and the labels: a site is
+   * a place of the tenant's, and nobody is written into them, as into a
+   * tenant's (`tenant.proto`).
    *
    * @generated from field: string alias = 4;
    */

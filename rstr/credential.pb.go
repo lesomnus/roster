@@ -335,6 +335,10 @@ type Credential_builder struct {
 	// nobody had asked for.
 	//
 	// `name` carries no such machinery and says the same thing to a person.
+	//
+	// Personal (payday#92): it is what somebody calls a device of theirs, in
+	// their own words -- *Hana's phone* -- so the trail records that a factor
+	// was named and never what (#280).
 	Name string
 	// What kind of secret it is -- "password", "totp". One of each **name** per
 	// person, which the index below is what enforces.
@@ -344,6 +348,8 @@ type Credential_builder struct {
 	// `server/vouch` can later check, and `Vouch.Set` refuses anything else. A
 	// row of a kind nothing checks is offered to every sign-in from then on,
 	// refused when it is answered, and removable by no call on any plane.
+	//
+	// Not personal: it is which kind of secret, and says nothing of whose.
 	Kind string
 	// The verifier, never the secret: an argon2id encoded hash for a password, an
 	// encrypted seed for TOTP. Bytes rather than a string because neither is
@@ -419,13 +425,13 @@ var File_app_credential_proto protoreflect.FileDescriptor
 
 const file_app_credential_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/credential.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x87\x06\n" +
+	"\x14app/credential.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x97\x06\n" +
 	"\n" +
 	"Credential\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x12\n" +
-	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
-	"\x04kind\x18\b \x01(\tR\x04kind\x12\x1e\n" +
+	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x1a\n" +
+	"\x04name\x18\x05 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x01R\x04name\x12\x1a\n" +
+	"\x04kind\x18\b \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04kind\x12\x1e\n" +
 	"\x06secret\x18\t \x01(\fB\x06\xaa\xc1\x16\x02\b\x01R\x06secret\x12\x1a\n" +
 	"\bfailures\x18\n" +
 	" \x01(\x05R\bfailures\x12C\n" +

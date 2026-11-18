@@ -2689,6 +2689,34 @@ destroyed the rows would let somebody erase the evidence of what was done *to*
 them by asking to be forgotten. The archive is reached only if `audit.archive` is
 set; archives you keep elsewhere are yours to reach.
 
+**What is written about somebody is theirs too, and is on the trail at no level.**
+The schema declares personal the fields that hold somebody's own -- an address
+(`Email.address`), a number (`Phone.number`), their subject at a provider
+(`Identity.subject`), and on their row what the paragraph above lists -- and the
+ones that hold what was *written about* them or about what is theirs: a key's
+`alias` and `desc`, a credential's `name`, and the `labels` of a binding, a relation
+and a nomination, with a nomination's `name`. These seven said nothing until #280,
+and the trail's line said them: *Hana Kim's laptop*, *manager*, *asked on 11-02*. A
+line says now that the field was set and never what to; the keyed digest leaves it
+out, and the row's seal covers it; and the row is the one copy, answered to
+whoever may read the row, found by its alias as before, and gone with its person.
+What a field holds that is about no one -- a role's name, what a key may do, a
+hostname -- says that too (`personal: false`), and
+`TestEveryFieldSaysWhetherItIsSomebodys` holds every field of every entity to
+saying one or the other. A deployment that had rows of those five kinds before is
+told so by `roster trail rows`, which counts them **from before seals** until they
+are written again or accepted (§ *The audit trail*, *a row whose newest write sealed
+nothing*); and
+the lines its trail already kept still say what they said, until their own window
+or a forget of the person reaches them.
+
+**Nobody is written into what is about no one.** A tenant, a group, a team, a site
+and a role say what they are called and what is said of them on the trail, as
+values, and no forget reaches that: one named after a person keeps the name. So
+does **why a tenant is held** (`roster hold place --why`): it is the deployment's
+note, and the trail saying why a hold was placed is the point of writing one.
+Write a case there -- *Contoso v. Fabrikam, 2026-123* -- and not somebody's name.
+
 **The access record is not reached, and holds nothing they were called.** A row
 of it names whose data a call carried by identifier, which stays as the trail's
 actor does: theirs, which is the blank row's, and those of their addresses,

@@ -61,9 +61,17 @@ message ApiKey {
 
   // What somebody calls this key when deciding whether to revoke it --
   // "loft, production". Unique per holder so that a list of them reads.
-  string alias = 4;
+  //
+  // Personal (payday#92), and so is `desc`: each is what somebody wrote about
+  // a key of theirs, and what people write there is whose laptop it is on.
+  // The trail records that a key was named and never what; the row is the
+  // one copy, and goes with its holder when they are forgotten. It said
+  // neither, so the trail kept both for as long as it kept the line, and a
+  // forget blanked them only by reaching the line (#280). A key is still
+  // listed, shown and found by its alias: that is the row's to answer.
+  string alias = 4 [(payday.field) = {personal: true}];
 
-  string desc = 6;
+  string desc = 6 [(payday.field) = {personal: true}];
 
   // What this key may be used for: the gRPC methods, in full, as
   // `frame.Grant.To` takes them.
@@ -74,7 +82,10 @@ message ApiKey {
   //
   // Empty allows **nothing**, which is `frame.Grant`'s zero value and the right
   // way round: a key somebody forgot to fill in opens no door.
-  repeated string methods = 8;
+  //
+  // Not personal: it is what the key may do, which is what a trail is kept to
+  // say, and names no one.
+  repeated string methods = 8 [(payday.field) = {personal: false}];
 
   // The verifier, never the key: a hash of it, and the key itself is shown once
   // when it is made and never again. The same rule `Credential` states, and the

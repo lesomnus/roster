@@ -69,7 +69,12 @@ message Nomination {
   // Login App's, the account app's -- are declared by the deployment's
   // configuration and carry `roster.declared`: a tenant does not end them, and
   // neither does anybody else but the deployment (`server/core/declared.go`).
-  map<string, string> labels = 7;
+  //
+  // Personal (payday#92), and so is `name`: a nomination says who an app is
+  // answered as, and what is written on one is written about that holder and
+  // the app that borrows them. The trail records that it was made, for which
+  // borrower and as whom, by identifier, and never the words (#280).
+  map<string, string> labels = 7 [(payday.field) = {personal: true}];
 
   // What a person reading the tenant's nominations calls the app -- `loft`.
   //
@@ -77,7 +82,7 @@ message Nomination {
   // a holder on the control plane, which no tenant can read: without this a
   // tenant administrator looking at who acts in their tenant would see an
   // identifier they cannot look up. `roster app install` writes the app's name.
-  string name = 5;
+  string name = 5 [(payday.field) = {personal: true}];
 
   // The control-plane holder whose deployment keys borrow through this row.
   //

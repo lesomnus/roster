@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/credential.proto.
  */
 export const file_app_credential: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvY3JlZGVudGlhbC5wcm90bxIGcm9zdGVyIooFCgpDcmVkZW50aWFsEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESDAoEbmFtZRgFIAEoCRIMCgRraW5kGAggASgJEhYKBnNlY3JldBgJIAEoDEIGqsEWAggBEhAKCGZhaWx1cmVzGAogASgFEjcKC2RhdGVfbG9ja2VkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEjgKDGRhdGVfcm90YXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIRCglsYXN0X3N0ZXAYECABKAMSGAoIcHJldmlvdXMYESADKAxCBqrBFgIIARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6ogHK/BVQEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaKBIEa2luZBoKCgZob2xkZXIQAhoICgRraW5kEAgaCAoEbmFtZRAFMAGKuxZKCA0yMwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGaG9sZGVyIBQoZDoAIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChRhcHAvY3JlZGVudGlhbC5wcm90bxIGcm9zdGVyIpoFCgpDcmVkZW50aWFsEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESFAoEbmFtZRgFIAEoCUIGqsEWAhgBEhQKBGtpbmQYCCABKAlCBqrBFgIYABIWCgZzZWNyZXQYCSABKAxCBqrBFgIIARIQCghmYWlsdXJlcxgKIAEoBRI3CgtkYXRlX2xvY2tlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI4CgxkYXRlX3JvdGF0ZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESEQoJbGFzdF9zdGVwGBAgASgDEhgKCHByZXZpb3VzGBEgAygMQgaqwRYCCAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOqIByvwVUBICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGigSBGtpbmQaCgoGaG9sZGVyEAIaCAoEa2luZBAIGggKBG5hbWUQBTABirsWSggNMjMKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBmhvbGRlciAUKGQ6ACIPCg1ob2xkZXIudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Credential is a secret somebody proves themselves with here, rather than at a
@@ -84,6 +84,10 @@ export type Credential = Message<"roster.Credential"> & {
    *
    * `name` carries no such machinery and says the same thing to a person.
    *
+   * Personal (payday#92): it is what somebody calls a device of theirs, in
+   * their own words -- *Hana's phone* -- so the trail records that a factor
+   * was named and never what (#280).
+   *
    * @generated from field: string name = 5;
    */
   name: string;
@@ -97,6 +101,8 @@ export type Credential = Message<"roster.Credential"> & {
    * `server/vouch` can later check, and `Vouch.Set` refuses anything else. A
    * row of a kind nothing checks is offered to every sign-in from then on,
    * refused when it is answered, and removable by no call on any plane.
+   *
+   * Not personal: it is which kind of secret, and says nothing of whose.
    *
    * @generated from field: string kind = 8;
    */

@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/link.proto.
  */
 export const file_app_link: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvbGluay5wcm90bxIGcm9zdGVyIrIECgRMaW5rEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESJgoFZW1haWwYDCABKAsyDS5yb3N0ZXIuRW1haWxCCPKCFgQ4AUABEhIKAmF0GAggASgJQgbqghYCQAESHQoFbGVhdmUYECABKAhCDuqCFgpAAYIBBWZhbHNlEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESFgoGaXNzdWVyGAogASgMQgbqghYCQAESOgoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEII6oIWBDgBQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOmjK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxY6CBcyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGQiDwoNaG9sZGVyLnRlbmFudEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_app_email, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvbGluay5wcm90bxIGcm9zdGVyIr4ECgRMaW5rEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESJgoFZW1haWwYDCABKAsyDS5yb3N0ZXIuRW1haWxCCPKCFgQ4AUABEhgKAmF0GAggASgJQgzqghYCQAGqwRYCGAASHQoFbGVhdmUYECABKAhCDuqCFgpAAYIBBWZhbHNlEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESHAoGaXNzdWVyGAogASgMQgzqghYCQAGqwRYCGAASOgoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEII6oIWBDgBQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOmjK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxY6CBcyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGQiDwoNaG9sZGVyLnRlbmFudEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_app_email, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Link is a way in that roster mints and somebody else delivers -- or, for two
@@ -104,6 +104,8 @@ export type Link = Message<"roster.Link"> & {
    * link that names none. A discriminator read on one side is not one --
    * `email` above learned that the hard way.
    *
+   * Not personal: a tenant's own name, and no one's address.
+   *
    * @generated from field: string at = 8;
    */
   at: string;
@@ -160,6 +162,8 @@ export type Link = Message<"roster.Link"> & {
   /**
    * Which caller was given it, so that one app cannot spend what another was
    * issued. Opaque bytes and never an edge; see `delegation.proto`.
+   *
+   * Not personal: a key's identifier, as bytes.
    *
    * @generated from field: bytes issuer = 10;
    */
