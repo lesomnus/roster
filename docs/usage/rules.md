@@ -340,6 +340,16 @@ commands that move and destroy the trail ([operating.md](../operating.md) §
 | An acceptance of rows says who and why: who is the operator `--as` names, checked as it is everywhere, or the shell alone; each line it writes names that operator; the why is said on stderr and is not on the trail | `cli/trail.go` | `TestAnAcceptanceOfRowsSaysWhoAndWhy` |
 | `trail owed` names a hold as keeping an erasure only while the tenant is held | `cli/trail.go` | `TestWhatTheTrailOwesSaysWhetherTheHoldIsStillThere` |
 
+And of the `audit:` block a deployment starts from, which is not a setting a
+call is decided by: what is refused of it, where the process comes up.
+
+| | written in | held to it by |
+| --- | --- | --- |
+| An `audit:` block that cannot be meant is refused at start, in a sentence that names the key. Two things that cannot both be meant: a discard beside a digest key, `destroy` with no `retain`, a `store:` witness inside the archive. And what nothing reads: `discard` with no `retain`, a kind's block that says nothing, `every` with no window, `hear_within` with no witness, a time that is less than none | `cmd/config.go` | `TestAnAuditBlockThatCannotBeMeantIsRefusedAtStart` |
+| Which kinds a block may be written for, and whose discard a digest key refuses, follow from what the trail holds lines about, and not from a list: the trail's own tables take no block, and the access record's discard is taken | `cmd/config.go` | `TestWhatAKindsBlockMaySayFollowsFromWhatTheTrailHoldsOfIt` |
+| A kind's block that says its content and no window keeps the deployment's window, and `profile: forever` is how a block says for ever | `cmd/config.go` | `TestAKindsContentAloneKeepsTheDeploymentsWindow` |
+| What looked as if nothing read it, and is read, still starts: a checkpoints key with no archive, a floor, `every` where a witness waits on it. And every `audit:` block the pages show, and every file and environment this repository ships | `cmd/config.go` | `TestWhatOfAnAuditBlockIsReadAfterAllStillStarts` · `TestEveryAuditBlockThePagesShowStarts` |
+
 ## What roster does by itself
 
 Not refusals. These are rows roster writes beside the one a caller asked for,

@@ -231,7 +231,7 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 			if !discard {
 				ac.Archive = dir
 			}
-			p, err := ac.Policy()
+			p, err := cmd.AuditPolicy(ac)
 			if err != nil {
 				return err
 			}
@@ -679,7 +679,7 @@ func newCmdTrailRows(c *cmd.Config) *xli.Command {
 				return errors.New("audit.digest.key names no key, so the trail keeps no digest to check a row against")
 			}
 
-			p, err := c.Audit.Policy()
+			p, err := cmd.AuditPolicy(c.Audit)
 			if err != nil {
 				return fmt.Errorf("audit: %w", err)
 			}
@@ -961,7 +961,7 @@ func archived(ctx context.Context, c *cmd.Config) (*cmd.Server, trail.Policy, er
 		return nil, trail.Policy{}, errors.New("--in: which directory; or set audit.archive")
 	}
 
-	p, err := c.Audit.Policy()
+	p, err := cmd.AuditPolicy(c.Audit)
 	if err != nil {
 		return nil, trail.Policy{}, err
 	}

@@ -1718,6 +1718,27 @@ shorter of the two onto everything. The kinds are the names the schema registere
 no window `prune` is a pass of what `audit:` says, of every kind, and refuses a
 `--kind`.)
 
+A kind's block is **the whole of that kind's window**: `profile`, `retain`,
+`destroy` and `discard` written there are read in place of the deployment's, and
+nothing of the deployment's is taken for what the block leaves out.
+`profile: forever` is how a block says a kind is kept for good. What a block may
+say besides is not about how long. `content:` is how much of a write to that kind
+a line of the trail keeps -- `fields`, which fields were written; `patch`, what
+each was set to, which is the default; `value`, the row the write left as well --
+over `audit.content`, which says it for every kind. `min:` is that kind's floor.
+A block that says only those keeps the deployment's window:
+
+```yaml
+audit:
+  retain: 2160h
+  archive: /var/lib/roster/audit
+  checkpoints:
+    key: /run/secrets/roster-checkpoints.pem
+  by:
+    host:
+      content: value             # what a hostname's row was left as, on every write; the window is the deployment's
+```
+
 ```sh
 roster trail profiles
 ```
@@ -1746,6 +1767,34 @@ meant to go
 
 Because that configuration *works*: the sweep runs, the table stops growing, every
 graph an operator watches improves, and what it is doing is destroying the trail.
+
+**And so is a block that cannot be meant.** Each of these started, ran, and did
+something other than what its file says, with nothing anywhere to say so:
+
+| what the file says | what came of it | what to write |
+| --- | --- | --- |
+| `discard: true` beside `digest.key` -- the deployment's, or a kind's other than `access` | a pass that discards a line carries its digest nowhere, so `trail rows` found every row nobody had written since its window `not-on-trail` | `archive` and `destroy` in place of `discard`, or no digest key |
+| `destroy` with no `retain`, the deployment's or a kind's | nothing left the database, while the policy read *destroyed after …*; only what was in the archive already was destroyed | `retain` beside it |
+| a `store:` witness in a directory inside `archive` | whoever takes the archive takes its witness with it | a directory of its own, or `log:` |
+| `discard: true` with no `retain`, the deployment's or a kind's | no row ever left | `retain`, or no `discard` |
+| a kind's block with nothing in it | the kind was kept for ever while the rest left | the kind's window, floor or content, or no block |
+| `every` with no window anywhere | no pass ran | a window, or no `every` |
+| `checkpoints.hear_within` with no witness | nothing read it | a witness, or no `hear_within` |
+| a `retain`, `destroy`, `every`, `hear_within` or floor that is less than no time | read as not written: for ever, a day, twice `every`, no floor | how long |
+| a block under `by:` for `audit`, `outbox`, `archived`, `owed` or `row-seal` | nothing: no line of the trail is about a row of the trail's own tables | no block |
+
+The first three are two things that cannot both be meant, and the rest are
+settings nothing reads. `serve` and every command that opens the database
+refuse each, before anything is opened, in a sentence that names the key and
+says what to write.
+
+Three that look the same are read, and are left. `checkpoints.key`, `.dir` and
+`.trust` with no `archive` are what the archive of a `prune --to` is signed and
+checkpointed by, for a deployment that names none. `min` is what the
+deployment's own windows are held to at start -- a window under its floor is
+refused -- though a tenant of roster's answers no window for a floor to raise.
+And `every` with no window is still twice how long a witness may go without
+hearing the newest checkpoint, where one is named and `hear_within` is not.
 
 Nothing sweeps the **control plane's** trail. It is the record of the deployment's
 own operations, it grows by the key and by an operator's session rather than by
@@ -1955,9 +2004,11 @@ is recorded as says which. A session made before #280 is the one that is a
 finding: its identifier says no kind, so the check prints `not-on-trail unknown
 <id>` for it and `--accept` accepts no row of it, and there is nothing to do
 but wait -- it is gone when its twelve hours are over and the sweep has passed.
-Before a pass destroys the newest row of the trail about a row that is still
-there, it carries that row's digest forward, so a row nobody wrote since its
-window is still checked.
+Before a pass destroys, out of the archive, the newest row of the trail
+about a row that is still there, it carries that row's digest forward, so a row
+nobody wrote since its window is still checked. A row of the trail a pass
+*discards* from the database is carried nowhere, which is why a `discard` beside
+`audit.digest.key` is refused at start (above).
 
 A row a migration rewrote is a finding until somebody has looked. `trail rows`
 prints, on stderr, the digest of what it found, and `--accept --of <that digest>

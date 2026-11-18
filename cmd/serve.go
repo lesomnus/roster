@@ -301,6 +301,20 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 					"rules (`Update`, and each entity's own). take the setting out", v.block)
 		}
 	}
+	// And an `audit:` block that cannot be meant: a setting nothing reads, or
+	// two that contradict each other. Each of them started, and did something
+	// other than what its file says -- a kind kept for ever, a trail that
+	// destroys nothing, a check that finds every row -- with nothing anywhere
+	// to say so. Refused here for the reason the blocks above are, and before
+	// anything is opened; see [AuditMeant], which says of each which it is.
+	//
+	// The nested build that raises the control plane is handed what the
+	// trail keeps of each kind and nothing else ([contentOf]), which is a
+	// block this takes: a kind's content alone names no window, and keeps
+	// the deployment's.
+	if err := AuditMeant(c.Audit); err != nil {
+		return nil, err
+	}
 	// A directory's key is a tenant key, and a deployment with no control
 	// plane reads none: its callers are believed by name (`auth.Plain`), so
 	// the endpoint would answer whoever wrote one down.
