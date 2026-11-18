@@ -57,6 +57,7 @@ import (
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/grpcx"
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -336,17 +337,40 @@ func lookup(ctx context.Context, s app.Server, token string) (*app.ApiKey, error
 	return v, nil
 }
 
+// Used is the act a key's last use is on the trail as.
+const Used = "roster.keys.use"
+
 // touch records that the key was used, rarely.
 //
 // Failure is ignored on purpose. A deployment whose control plane refuses a
 // write should still be able to serve the request that was authorised -- what
 // is lost is a timestamp used to find keys nobody needs.
+//
+// # It is on the trail as itself
+//
+// The write goes through the stack, so it is a line of the trail, and a line
+// is filed under the method gRPC says is being served. This runs while a call
+// is being authenticated, so that was the verb the key had been presented
+// for: the trail had lines on a key, by nobody, under `HolderService/Add`,
+// and somebody reading it for who added people found lines that were not that
+// (#280). The context says which act this is, [Used], as a restore at the box
+// says its own verb (`cli/forget.go`).
+//
+// It is still by nobody. Nobody asked for it, and no frame is made yet for
+// whoever presented the key: it is the deployment's own note of a use.
+//
+// And it is still a line, where a lock's write goes around the recorder
+// (`cmd.Locking`). A lock writes its row as it is, and this writes a column
+// the digest of the row covers: written past the recorder, every key that was
+// used would be `differs` to a check of the rows (`roster trail rows`), seen
+// on a run. What it costs is the line there already was, one in [Touched] for
+// a key in use.
 func touch(ctx context.Context, s app.Server, v *app.ApiKey) {
 	if u := v.GetDateUsed(); u != nil && time.Since(u.AsTime()) < Touched {
 		return
 	}
 
-	_, _ = s.ApiKey().Patch(ctx, app.ApiKeyPatchRequest_builder{
+	_, _ = s.ApiKey().Patch(grpcx.AsMethod(ctx, Used), app.ApiKeyPatchRequest_builder{
 		Ref:         app.ApiKeyRef_builder{Id: v.GetId()}.Build(),
 		DateUsed:    timestamppb.Now(),
 		DateUpdated: v.GetDateUpdated(),

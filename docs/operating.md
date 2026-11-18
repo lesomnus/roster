@@ -1750,6 +1750,14 @@ the request -- a line when one signs in and when they sign out, and a few an hou
 while their console is in use -- and it is the last thing anybody wants a clock
 deleting from.
 
+**A line is under the verb its caller asked for, and what the deployment writes
+of itself is under a name of its own.** When a key was last used
+(`ApiKey.date_used`) is written as the key is read, at most once an hour for a
+key, on the trail of the plane the key is a row of -- the control plane's for a
+deployment key. That line is `roster.keys.use`, about the key and by nobody. It
+was filed under the verb of whatever call the key had been presented for, so the
+trail read for who called `HolderService/Add` answered keys beside the people.
+
 ```sh
 roster trail prune                                # apply the policy now, per kind
 roster trail prune --older-than 2160h --dry-run   # a window of your own: how many
