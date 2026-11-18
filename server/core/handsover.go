@@ -261,10 +261,13 @@ var handsOver = []handedOver{
 			app.AuditService_Get_FullMethodName,
 		},
 		readsAs: "may read the audit log",
-		tenant: "what every write in the tenant said: the row as each write left it, of rows long since " +
-			"erased too",
-		deployment: "what every write in every tenant said: the row as each write left it, of rows long " +
-			"since erased too",
+		// What a write set, which is what a line keeps at the default. The row
+		// the write left is on a line only for a kind the deployment keeps at
+		// `audit.content: value`, and this said every line carries it (#280).
+		tenant: "what every write in the tenant said: what each write set, and the row it left where the " +
+			"deployment keeps rows on its trail, of rows long since erased too",
+		deployment: "what every write in every tenant said: what each write set, and the row it left where " +
+			"the deployment keeps rows on its trail, of rows long since erased too",
 	},
 	{
 		// Somebody else's, to whoever holds it across the tenant (`mayReadOf`).

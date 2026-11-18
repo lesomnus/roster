@@ -1710,6 +1710,13 @@ Between them the row lives in `archive`: a store in that directory with a namesp
 per tenant, a gzipped chunk per kind and month, and a namespace of its own for rows two
 tenants may both read.
 
+**A row can outlive `destroy` by up to a month.** Destroying is by chunk, and a
+chunk goes when the newest row in it is past `destroy`. A chunk holds rows of
+one month, and a month that can receive no more is folded into one chunk for
+each kind and tenant -- so a row written on the first is destroyed with the
+rows written on the last. An obligation to have destroyed something by a day
+is met by a `destroy` a month shorter.
+
 `by:` is why it is two clocks *per kind* rather than two clocks: what was done to a
 person has to stop existing eventually, and an operating record of what a machine
 did usually has the opposite requirement, so one clock over the table forces the
@@ -1810,6 +1817,14 @@ deployment key. That line is `roster.keys.use`, about the key and by nobody. It
 was filed under the verb of whatever call the key had been presented for, so the
 trail read for who called `HolderService/Add` answered keys beside the people.
 
+**Nor does anything check it.** The control plane is handed what the trail keeps
+of each kind's writes (`content:`) and nothing else of `audit:`, so its lines keep
+no digest, and `trail rows` and `trail verify` read the data plane's database and
+the data plane's archive. A row changed in the control plane's database by hand
+-- an operator stopped there, say -- with every line of that plane's trail
+removed is found by neither, and `roster control` has no `trail` beneath it.
+What guards those rows is who may write that database.
+
 ```sh
 roster trail prune                                # apply the policy now, per kind
 roster trail prune --dry-run                      # what that pass would take, and nothing is changed
@@ -1858,7 +1873,9 @@ A line that carries an `err` is something the pass set out to do and could not
 It used to print the policy and exit 0 whatever came of the pass, since a
 command builds no logger and the lines went nowhere. Nothing leaves the
 database that was not written first, so a pass that failed is run again once
-what it names is mended. The other `trail`
+what it names is mended -- and see `unkept`, under
+[Who heard the newest checkpoint](#who-heard-the-newest-checkpoint), for what
+one such pass leaves the next verification to find. The other `trail`
 commands print what their work logs in the same way -- a chunk the account
 does not have that a `purge` or a check of the rows passed over, a witness
 that did not answer a `verify` -- and fail for what they fail for already.
@@ -1888,6 +1905,19 @@ something, which makes it the one to schedule. What it finds is a reason to look
 a backup, a pass a crash stopped. Every pass ends with a checkpoint of the
 account: keep them apart from the archive, `audit.checkpoints.dir` on a disk that
 refuses deletion.
+
+**What `verify` proves, and what it cannot.** It proves that the archive holds
+the chunks the database's account says it holds, under the labels the account
+recorded, and with `--full` that each chunk's bytes are the ones it is named by;
+that every row of the account and every checkpoint is signed by a key the
+deployment trusts; and that the checkpoints follow one another up to the newest
+a witness heard. That is the archive and its account, and nothing else. It reads
+no line of the trail that is still in the database, which is all of them until
+a window has moved some, nor a row of the access record there; and it reads no
+live row, which is `trail rows`. A deployment that names no archive has no
+account and no checkpoint -- there is nothing for a witness to hear -- and
+`verify` is refused there (`--in: which directory`): what stands for that
+deployment's trail is `trail rows` alone.
 
 **An acceptance is of what was looked at** (payday#115). `verify` prints, on
 stderr, the digest of what it found and the latest acceptances the checkpoints
@@ -1989,7 +2019,41 @@ from an earlier write is **forged**. A person forgotten leaves a seal that says
 so and nothing of what they were, and the check counts the row as **forgotten**
 and vouches for what its digest covers, until the next write seals it again.
 
-It prints the kinds kept off the trail (`not checked:`) with why, every run.
+**What `rows` proves, and what it cannot.** It proves one thing of each row:
+that the row is as the newest line of the trail about it says the last write
+left it. A digest binds the row to that line's identifier, its moment and its
+action, and to nothing else the line says; and of the lines about a row only
+the newest is read. So *all match* is said of the rows, and not of the trail.
+Each of these was made in a database by hand, and both `rows` and `verify`
+answered that nothing was wrong:
+
+- a line's `actor_id`, `actor_tenant_id`, `tenant_id` or `patch` rewritten --
+  who did it, whose trail it is read in, and what it set -- the newest line's
+  among them;
+- any line but the newest about its row rewritten, or removed;
+- a line added with a moment in the past;
+- the newest lines about a row removed and the row put back as the line before
+  them left it, its seal with it: a write undone with its record. A `store:`
+  witness was named, and hears nothing of this, since what a witness hears is
+  the archive's checkpoints.
+
+What `rows` does find of a line is what the list of findings above says: the
+newest line's action or moment changed, its digest taken off or copied in, or
+the newest line removed while the row stays as it left it. A line that a pass has moved to
+the archive is in a chunk named by its bytes, which `verify --full` reads; a
+line still in the database is as whoever can write the database left it.
+
+Nor does it read everything. The access record is read by neither check: rows
+of it removed, or rewritten, are found by nothing. The control plane's rows
+are not read (above, *Nor does anything check it*). And it has a line, `not checked:`,
+for a kind declared off the trail, which never prints, because roster declares
+none: what is not read is said here and not by the command.
+
+A destruction **by hand** carries nothing forward, where a pass does (below):
+`prune --older-than … --discard` and `purge` take the newest lines about rows
+that are still there, and each such row is `not-on-trail` at the next check
+until it is accepted.
+
 What roster itself writes or removes past its servers is on the trail as
 that act, so it is no finding: a tenant destroyed and what went with it, a
 person forgotten and their rows, a person brought back, a name taken from the
@@ -2182,7 +2246,19 @@ the store is. What a verification can find of them, and what to do about each:
   the chain said, take the credentials that reach the database and the archive
   away from whoever had them, and accept only once it is understood, saying what
   happened in `--why`. An `unkept` below the newest is a checkpoint taken out of
-  the middle, and is the same.
+  the middle, and is the same -- **or it is one pass that could not write.** A
+  pass numbers its checkpoint in the database and then writes it to the store,
+  so one that ran while the store could not be written -- it is the archive's
+  own volume unless `audit.checkpoints.dir` names another, and a volume gone
+  read-only is what this was seen on -- took a number the store never
+  kept, and the next checkpoint that is kept *names none as the one before it,
+  and the store does not keep 1*. No witness is needed to find it and none
+  heard the number. What tells it from an incident is the deployment's own
+  record of that pass: `roster trail prune` exited non-zero with `trail: the
+  checkpoint of a pass` and the disk's error among its lines, and `serve`
+  logged the same. If the record says so, accept it, naming the pass in
+  `--why`; a pass that works afterwards does not clear it, and nothing but an
+  acceptance does.
 - **`rewritten` -- "heard it as …, and again as …: the count was wound back and
   the number taken again"**: a witness heard one number as two statements. Every
   witness was away, or kept from hearing, while the newest checkpoints were
