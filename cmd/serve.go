@@ -211,6 +211,11 @@ type Server struct {
 	// this one's memory.
 	Access *access.Writer
 
+	// log is the process's log as [Build] was handed it, for what the access
+	// record says of itself where payday hands it no context to find one in
+	// ([filed]): the log a context with nothing in it reaches discards.
+	log *slog.Logger
+
 	// Spin is whatever this deployment has to run besides answering requests.
 	// It is a slice rather than a method because a server with nothing to run
 	// should write nothing at all; see `payday/spin`.
@@ -573,6 +578,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		RestoreWithin: c.Tenant.RestoreWithin,
 		recheck:       c.Stream.Recheck,
 		contents:      content,
+		log:           log.From(ctx),
 	}
 
 	if policyFile != nil {
@@ -1661,10 +1667,14 @@ func stopping(g *grpc.Server) {
 // declared `personal`, and where a call came from -- the connection's, since
 // roster is told of no proxy it would believe. Nothing roster serves hands
 // personal data out to be kept elsewhere, so it names no download.
+//
+// Whose data, and in which tenant: where a message does not say which tenant
+// a row is in, the row does ([filed]), so that a row of the record is under
+// the tenant of whoever was read and not of whoever read them.
 func (s *Server) accessed() access.Config {
 	return access.Config{
-		Subjects: pd.Subjects,
-		Refs:     pd.SubjectRefs,
+		Subjects: filed(s.Ent, s.log, pd.Subjects),
+		Refs:     filed(s.Ent, s.log, pd.SubjectRefs),
 		Address:  access.Peer,
 		Writer:   s.Access,
 	}
