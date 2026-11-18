@@ -10,16 +10,22 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"maps"
 	"os"
+	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/config"
+	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/rbac/rbacfile"
 
+	"github.com/lesomnus/roster/server/pd"
 	"github.com/lesomnus/roster/server/prove"
 	// The two engines this app runs on, blank-imported here rather than by
 	// payday so that an app does not carry one it never opens.
@@ -367,7 +373,7 @@ func (c HolderConfig) Trail(ctx context.Context, from Config) (trail.Policy, err
 // moment. A deployment that runs no loops (`spin.lease: none`) has nothing to
 // take turns on, and its policy says so where it is logged.
 func TrailPolicy(ctx context.Context, c Config) (trail.Policy, error) {
-	p, err := c.Audit.Policy()
+	p, err := AuditPolicy(c.Audit)
 	if err != nil {
 		return trail.Policy{}, err
 	}
@@ -378,6 +384,276 @@ func TrailPolicy(ctx context.Context, c Config) (trail.Policy, error) {
 	}
 
 	return p, nil
+}
+
+// AuditPolicy is `audit:` as roster reads it: refused where it cannot be
+// meant ([AuditMeant]), then payday's policy, with one thing a block says
+// read as what it says.
+//
+// # A kind's block that names no window keeps the deployment's
+//
+// payday reads a kind's block as a window of its own unless the block says a
+// floor (`config.AuditKeepConfig.window`), and a window with nothing in it is
+// *for ever*. So `by: {holder: {content: fields}}` beside `retain: 2160h`
+// kept every line about a person for good while the rest left, and the policy
+// said `holder: forever` (#280) -- where the same block with a `min:` beside
+// its content kept the deployment's window. What such a block says is how
+// much of a write a line keeps, which is [config.AuditConfig.Contents]'s to
+// read and payday's own comment calls best said by kind; it says nothing of
+// how long. The kind is left to the deployment's window here, and
+// `profile: forever` is how a block says for ever.
+//
+// Every reading of the policy in this binary goes through this, so that a
+// pass, a check of the rows and a command at the box cannot disagree about
+// one kind's window.
+func AuditPolicy(a config.AuditConfig) (trail.Policy, error) {
+	if err := AuditMeant(a); err != nil {
+		return trail.Policy{}, err
+	}
+
+	p, err := a.Policy()
+	if err != nil {
+		return trail.Policy{}, err
+	}
+	for name, v := range a.By {
+		if windowed(v) {
+			continue
+		}
+		if d, err := trail.DomainOf(name); err == nil {
+			delete(p.By, d)
+		}
+	}
+
+	return p, nil
+}
+
+// windowed answers whether a kind's block says anything of how long: a
+// profile, or either clock, or that no copy is kept.
+func windowed(v config.AuditKeepConfig) bool {
+	return v.Profile != "" || v.Retain != 0 || v.Discard || v.Destroy != 0
+}
+
+// trailsOwn is the kinds the schema registers for the trail's own tables: the
+// trail, the outbox, the archive's account, the erasures owed and a row's
+// seal. No line of the trail is about a row of one -- nothing records a write
+// to them -- so a block under `audit.by` for one is read by nothing.
+//
+// Written down, and held to the generated recorder by
+// `TestWhatAKindsBlockMaySayFollowsFromWhatTheTrailHoldsOfIt`, which fails
+// for a kind the schema adds that the trail holds no lines about.
+var trailsOwn = []pdid.Domain{pd.AuditDomain, pd.OutboxDomain, pd.ArchivedDomain, pd.OwedDomain, pd.RowSealDomain}
+
+// AuditMeant refuses an `audit:` block that cannot be meant.
+//
+// # Why roster refuses what payday reads
+//
+// The block is payday's, and so is what reads it (`config.AuditConfig`,
+// `trail.Policy`): what each of these comes to is decided there, and each is
+// payday's to mend. What is roster's is the file a deployment starts from.
+// Every block refused here started, ran, and did something other than what
+// it says, with nothing anywhere to say so -- the shape a `control:` block
+// with no database had (#334), and a file that said `allow_general_writes`
+// (#351). It is refused for their reason, where they are: before anything is
+// opened, in a sentence that names the key and says what to write instead.
+//
+// # Two sorts
+//
+// **Nothing reads it.** The setting is taken and changes nothing, so the file
+// believes something the deployment does not do: `discard` with no `retain`,
+// a kind's block that says nothing, `every` with no window, `hear_within`
+// with no witness, a time that is less than none, and a block for one of the
+// trail's own tables.
+//
+// **Two things that cannot both be meant.** Each is read, and what comes of
+// the pair is what neither says: `destroy` with no `retain`, which keeps a
+// row in the database for ever; a discard beside a digest key, which makes a
+// finding of every row nobody has written since; and a `store:` witness
+// inside the archive it exists to be out of reach of.
+//
+// # What it leaves, which looked the same and is read
+//
+// `checkpoints.key`, `.dir` and `.trust` with no archive: `trail prune --to`,
+// and `--in` of `purge`, `verify` and `accept`, name the archive of one run
+// for a deployment that names none, and that archive is signed and
+// checkpointed by what these say. `min`: roster's tenants answer holds and
+// no windows, so a floor raises nobody's answer, but it is still what the
+// deployment's own windows are held to where it comes up, and a window under
+// it is refused there. `every` with no window, where a witness is named and
+// `hear_within` is not: twice `every` is how long that witness may go
+// without hearing.
+//
+// What payday refuses already is left to it, and a kind this app does not
+// have is passed over here so that its refusal, which lists the kinds, is the
+// one that is read.
+func AuditMeant(a config.AuditConfig) error {
+	type block struct {
+		config.AuditKeepConfig
+
+		at    string
+		kind  pdid.Domain
+		named bool
+	}
+
+	blocks := []block{{at: "audit", AuditKeepConfig: config.AuditKeepConfig{
+		Profile: a.Profile, Retain: a.Retain, Discard: a.Discard, Destroy: a.Destroy, Min: a.Min, Content: a.Content,
+	}}}
+	for _, name := range slices.Sorted(maps.Keys(a.By)) {
+		d, err := trail.DomainOf(name)
+		if err != nil {
+			continue
+		}
+
+		blocks = append(blocks, block{at: "audit.by." + name, AuditKeepConfig: a.By[name], kind: d, named: true})
+	}
+
+	// A time that is less than none. payday asks each clock whether it is
+	// more than nothing, so a negative one is read as one nobody wrote.
+	negative := func(key string, v time.Duration, read string) error {
+		if v >= 0 {
+			return nil
+		}
+
+		return fmt.Errorf("%s: %s is less than no time, and is read as if nothing were written: %s. "+
+			"write how long, or take it out", key, v, read)
+	}
+	for _, b := range blocks {
+		for _, v := range []struct {
+			key  string
+			v    time.Duration
+			read string
+		}{
+			{b.at + ".retain", b.Retain, "its rows stay in the database for ever"},
+			{b.at + ".destroy", b.Destroy, "its rows are kept for ever"},
+			{b.at + ".min.retain", b.Min.Retain, "there is no floor"},
+			{b.at + ".min.destroy", b.Min.Destroy, "there is no floor"},
+		} {
+			if err := negative(v.key, v.v, v.read); err != nil {
+				return err
+			}
+		}
+	}
+	if err := negative("audit.every", a.Every, "the policy is applied once a day"); err != nil {
+		return err
+	}
+	if err := negative("audit.checkpoints.hear_within", a.Checkpoints.HearWithin,
+		"a checkpoint may go unheard for twice audit.every"); err != nil {
+		return err
+	}
+
+	digests := strings.TrimSpace(a.Digest.Key) != ""
+	on := false
+	for _, b := range blocks {
+		if b.named {
+			if slices.Contains(trailsOwn, b.kind) {
+				return fmt.Errorf("%s: no line of the trail is about a row of this kind, which is one of the trail's own tables, "+
+					"so nothing reads a window, a floor or a content for it. take the block out: what the trail itself keeps is "+
+					"audit.retain and audit.destroy, and the access record is audit.by.access", b.at)
+			}
+			if b.AuditKeepConfig == (config.AuditKeepConfig{}) {
+				// payday reads this as the kind kept for ever.
+				return fmt.Errorf("%s: the block says nothing, and a kind is named to say how its window, its floor or its "+
+					"content differs. write one of them (profile: forever keeps the kind for ever), or take the block out", b.at)
+			}
+		}
+
+		// The two clocks as payday reads them, with what the profile fills
+		// in. A profile it does not have is its own to refuse.
+		k := trail.Keep{Retain: b.Retain, Destroy: b.Destroy}
+		if b.Profile != "" {
+			v, err := trail.NamedProfile(b.Profile)
+			if err != nil {
+				on = true
+
+				continue
+			}
+
+			k = v.Over(k)
+		}
+		on = on || k.Retain > 0
+
+		// A kind's block is the whole of its window, which is the half of
+		// these two that is easy to write by mistake: `by.holder.discard`
+		// under a deployment's `retain` reads as that kind discarded on the
+		// deployment's clock, and is that kind kept for ever.
+		whole := ""
+		if b.named {
+			whole = " A kind's block is the whole of its window, and does not take audit.retain."
+		}
+		if b.Discard && k.Retain <= 0 {
+			return fmt.Errorf("%[1]s.discard: says a row leaves the database with no copy kept, and %[1]s.retain names no "+
+				"window for it to leave after -- so nothing leaves, and nothing reads discard.%[2]s "+
+				"write %[1]s.retain, or take discard out", b.at, whole)
+		}
+		if k.Destroy > 0 && k.Retain <= 0 {
+			return fmt.Errorf("%[1]s.destroy: says a row exists no longer than this, and %[1]s.retain names no window, which "+
+				"keeps a row in the database for ever: the two cannot both be meant. What comes of them is the second -- "+
+				"nothing leaves the database, and only what is in the archive already, moved there by hand or under an "+
+				"earlier window, is destroyed.%[2]s "+
+				"write %[1]s.retain, how long a row stays in the database before the archive has it, or take destroy out", b.at, whole)
+		}
+
+		// A discard beside a digest key. A pass carries a digest forward out
+		// of a chunk of the archive it is about to destroy, and out of
+		// nothing else (`trail.pass.carry`), so a line discarded from the
+		// database takes with it the one thing a check of the rows reads. The
+		// access record's lines keep no digest, and are no part of this.
+		if b.Discard && digests && !(b.named && b.kind == pd.AccessDomain) {
+			return fmt.Errorf("%[1]s.discard with audit.digest.key: a pass that discards a line of the trail carries its digest "+
+				"nowhere, so each row nobody wrote since its window would be found not-on-trail by `roster trail rows` -- "+
+				"what a row added past the servers looks like, and a finding for every row is one nobody reads. "+
+				"keep the lines, with audit.archive and %[1]s.destroy in place of discard, or take audit.digest.key out", b.at)
+		}
+	}
+
+	heard := len(a.Checkpoints.Witnesses) > 0
+	if a.Every > 0 && !on && !(heard && a.Checkpoints.HearWithin == 0) {
+		return errors.New("audit.every: says how often the policy is applied, and nothing names a window -- no audit.retain, " +
+			"no audit.profile that has one, none under audit.by -- so no pass runs and nothing reads every. " +
+			"write a window, or take every out")
+	}
+	if a.Checkpoints.HearWithin > 0 && !heard {
+		return errors.New("audit.checkpoints.hear_within: says how long the newest checkpoint may go unheard, and " +
+			"audit.checkpoints.witnesses names nobody to hear it, so nothing reads it. name a witness, or take hear_within out")
+	}
+
+	// A `store:` witness in the archive's own directory. The manual says a
+	// witness on the archive's disk is none; this is the one case of that a
+	// path can show.
+	if a.Archive != "" {
+		for _, w := range a.Checkpoints.Witnesses {
+			dir, ok := strings.CutPrefix(strings.TrimSpace(w), "store:")
+			if !ok || dir == "" {
+				continue
+			}
+			if within(a.Archive, dir) {
+				return fmt.Errorf("audit.checkpoints.witnesses: %s is inside audit.archive (%s). A witness hears each checkpoint "+
+					"somewhere the archive's credentials do not reach, and this one goes wherever the archive goes: the two "+
+					"cannot both be meant. name a directory of its own, on another volume, or `log:`", strings.TrimSpace(w), a.Archive)
+			}
+		}
+	}
+
+	return nil
+}
+
+// within answers whether `dir` is `root` or under it, as far as their paths
+// say.
+func within(root, dir string) bool {
+	x, err := filepath.Abs(root)
+	if err != nil {
+		return false
+	}
+	y, err := filepath.Abs(dir)
+	if err != nil {
+		return false
+	}
+
+	rel, err := filepath.Rel(x, y)
+	if err != nil {
+		return false
+	}
+
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)))
 }
 
 // VouchConfig is what checking secrets needs beyond the rows.
