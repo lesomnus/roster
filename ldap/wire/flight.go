@@ -3,6 +3,8 @@ package wire
 import (
 	"context"
 	"time"
+
+	ber "github.com/go-asn1-ber/asn1-ber"
 )
 
 // What one connection has going at once, and how long each part of it may
@@ -44,8 +46,9 @@ const (
 // calls it, before the search has a goroutine: what the next message on the
 // connection says of this one -- an abandon, StartTLS -- finds it here.
 //
-// The search runs under the context returned, and calls `done` when it has
-// answered.
+// The search runs under the context returned, and `done` counts it out
+// again: once, however often it is called, since by a second call the
+// identifier may be another search's.
 func (c *Conn) begin(ctx context.Context, id int64) (search context.Context, done func(), ok bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -56,12 +59,46 @@ func (c *Conn) begin(ctx context.Context, id int64) (search context.Context, don
 	search, cancel := context.WithCancel(ctx)
 	c.inflight[id] = cancel
 
+	out := false
+
 	return search, func() {
 		cancel()
 		c.mu.Lock()
-		delete(c.inflight, id)
+		if !out {
+			delete(c.inflight, id)
+			out = true
+		}
 		c.mu.Unlock()
 	}, true
+}
+
+// last writes the message that ends a search and counts the search out, as
+// one step to everything else that writes.
+//
+// Counted out first, so that a client that has its answer finds the
+// identifier free and nothing in flight: counted out after, the next message
+// of a quick client was refused as naming a search still running, and its
+// StartTLS as having one beside it. And under the lock a write takes, so
+// that what the loop does on finding nothing in flight -- StartTLS, whose
+// answer is a write -- comes after this answer on the wire and not into the
+// middle of it.
+func (c *Conn) last(out func(), p *ber.Packet) error {
+	c.writeMu.Lock()
+	defer c.writeMu.Unlock()
+
+	out()
+
+	return c.send(p)
+}
+
+// outstanding is whether a search under this identifier is in flight.
+func (c *Conn) outstanding(id int64) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	_, ok := c.inflight[id]
+
+	return ok
 }
 
 func (c *Conn) abandon(id int64) {

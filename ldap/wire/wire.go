@@ -22,8 +22,9 @@
 // # What the loop gets right, and tests
 //
 // Message identifiers: every answer carries its request's, and a connection
-// may have several searches in flight. Abandon stops a search that is still
-// sending. The StartTLS turn writes its response in the clear and the very
+// may have several searches in flight. A request's is one the protocol lets
+// it have, from one to `maxInt` and not that of a search still running, or
+// the connection is ended. Abandon stops a search that is still sending. The StartTLS turn writes its response in the clear and the very
 // next byte is the handshake, which is why nothing here buffers the reader.
 // A critical control this package does not know refuses the operation rather
 // than ignoring it. The client's size and time limits are handed to the
@@ -337,6 +338,11 @@ func (c *Conn) write(p *ber.Packet) error {
 	c.writeMu.Lock()
 	defer c.writeMu.Unlock()
 
+	return c.send(p)
+}
+
+// send is [Conn.write] for a caller that holds writeMu.
+func (c *Conn) send(p *ber.Packet) error {
 	c.mu.Lock()
 	nc := c.nc
 	c.mu.Unlock()
@@ -425,10 +431,10 @@ func (s *Server) ServeConn(nc net.Conn) {
 			// for a server that is hanging up: it has no identifier yet to be
 			// answered by. Anything else that is not a message has nobody to
 			// tell, as below.
-			var over overBound
+			var over ending
 			if errors.As(err, &over) {
 				if !bound {
-					over += overBound(fmt.Sprintf("; a connection that has bound may send %d", MaxMessage))
+					over += ending(fmt.Sprintf("; a connection that has bound may send %d", MaxMessage))
 				}
 				c.notice(Refuse(ProtocolError, string(over)))
 			}
@@ -440,9 +446,21 @@ func (s *Server) ServeConn(nc net.Conn) {
 		}
 
 		msg, err := decodeMessage(p)
+		if err == nil && c.outstanding(msg.id) {
+			// RFC 4511 § 4.1.1.1: not that of a request in progress. Two
+			// under one identifier were one to an abandon, and an answer
+			// under it would end the wrong one for the client.
+			err = ending(fmt.Sprintf("message id %d is that of a search still running on this connection", msg.id))
+		}
 		if err != nil {
 			// Nothing to answer with: without an identifier the client could
 			// not match a response, and RFC 4511 § 4.1.1 says to disconnect.
+			// An identifier that is there and is not one a request may have
+			// is said first, in the notice that answers no request.
+			var bad ending
+			if errors.As(err, &bad) {
+				c.notice(Refuse(ProtocolError, string(bad)))
+			}
 			s.log().Debug("ldap: not a message", slog.Any("err", err))
 
 			return
@@ -476,14 +494,14 @@ func (s *Server) ServeConn(nc net.Conn) {
 
 				// A filter over its bound is a search, and is answered as one;
 				// and the connection is ended as for any message over a bound.
-				if errors.As(err, new(overBound)) {
+				if errors.As(err, new(ending)) {
 					return
 				}
 
 				continue
 			}
 			if !bound {
-				s.search(ctx, c, msg.id, req)
+				s.search(ctx, c, msg.id, req, func() {})
 
 				continue
 			}
@@ -498,7 +516,7 @@ func (s *Server) ServeConn(nc net.Conn) {
 			go func() {
 				defer wg.Done()
 				defer done()
-				s.search(running, c, msg.id, req)
+				s.search(running, c, msg.id, req, done)
 			}()
 		case tagAbandonRequest:
 			if id, err := ber.ParseInt64(msg.op.Data.Bytes()); err == nil {
@@ -570,8 +588,9 @@ func (s *Server) bind(ctx context.Context, c *Conn, msg *message) {
 }
 
 // search asks the handler and answers. For a search that runs beside the
-// loop, the context is the one it was counted in under ([Conn.begin]).
-func (s *Server) search(ctx context.Context, c *Conn, id int64, req SearchRequest) {
+// loop, the context is the one it was counted in under ([Conn.begin]) and
+// `out` counts it out again, which its answer does ([Conn.last]).
+func (s *Server) search(ctx context.Context, c *Conn, id int64, req SearchRequest, out func()) {
 	if req.TimeLimit > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, req.TimeLimit)
@@ -594,7 +613,7 @@ func (s *Server) search(ctx context.Context, c *Conn, id int64, req SearchReques
 	if req.Paging != nil {
 		controls = append(controls, encodePaging(Paging{Cookie: w.cookie}))
 	}
-	_ = c.write(envelope(id, encodeResult(tagSearchResultDone, res), controls))
+	_ = c.last(out, envelope(id, encodeResult(tagSearchResultDone, res), controls))
 }
 
 // extended answers an extended request, and reports whether the connection

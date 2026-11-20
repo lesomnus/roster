@@ -248,6 +248,10 @@ reason beside it, in `ldap/wire`, and none is a setting.
 | What a connection has in flight ends with it: a client that hangs up, and one that does not read what it asked for within thirty seconds a message, is let go and its searches told to stop | `ldap/wire/wire.go` | `TestAClientThatHangsUpEndsItsSearch` · `TestAClientThatDoesNotReadIsLetGo` |
 | An abandon reaches its search however soon after it is sent, and StartTLS is refused beside one: a search is counted in before it is started | `ldap/wire/flight.go` | `TestAnAbandonSentWithItsSearchReachesIt` · `TestStartTlsIsRefusedBesideASearch` |
 | A bind ends what the connection had in flight before the directory is asked, and the directory has thirty seconds to answer it | `ldap/wire/wire.go` | `TestABindEndsWhatIsInFlight` · `TestABindHasADeadlineOfItsOwn` |
+| A request's identifier is an INTEGER from one to `maxInt`, and not that of a search still running on the connection. One that is not is told so in a notice of disconnection, `protocolError`, and the connection is ended: no answer under it could be told from an answer to another request | `ldap/wire/message.go` | `TestAMessageIdentifierIsOneARequestMayHave` |
+| A search stops being in flight when its answer is written: a client that has the answer finds the identifier free, and StartTLS not refused for it | `ldap/wire/flight.go` | `TestASearchIsCountedOutByItsAnswer` |
+| A search's scope is an ENUMERATED and its size and time limits are INTEGERs of at most `maxInt`; anything else standing where one goes is `protocolError`, and the connection goes on | `ldap/wire/message.go` | `TestAFieldOfASearchIsWhatItsGrammarSays` |
+| A name is read as it was written: of white space, only a space nobody escaped is dropped from around its parts | `ldap/dn.go` | `TestAValueIsReadBackAsItWasWritten` |
 
 ### One tenant is not reached from another
 

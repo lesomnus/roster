@@ -6,7 +6,6 @@ import (
 	"io"
 	"log/slog"
 	"net"
-	"strings"
 	"testing"
 	"time"
 
@@ -24,8 +23,9 @@ import (
 func FuzzParseDN(f *testing.F) {
 	for _, s := range []string{
 		"", "uid=kim,ou=people,o=contoso", `cn=a\,b,o=x`, `cn=\#a\ `, `cn=a\00b`, "cn=a+sn=b", `cn=a\`, "=x", "cn", `cn="a,b"`, "CN = Kim , O = x",
-		// Found by this target (#281): a value that ends in a tab.
-		`0=0\09`,
+		// Found by this target (#281): a value that ends in a tab, which was
+		// read back without it.
+		`0=0\09`, "cn=a ,o=b\t", `cn=a\ `, `cn=\ a\20\ `,
 	} {
 		f.Add(s)
 	}
@@ -33,14 +33,6 @@ func FuzzParseDN(f *testing.F) {
 		d, err := parseDN(s)
 		if err != nil {
 			return
-		}
-		// Left out: a value or a type that begins or ends in white space. It
-		// is known not to come back -- the seed above, and [FuzzEscape]'s --
-		// and a run that stops there each time finds nothing else.
-		for _, r := range d {
-			if strings.TrimSpace(r.value) != r.value || strings.TrimSpace(r.attr) != r.attr {
-				return
-			}
 		}
 		again, err := parseDN(d.String())
 		if err != nil {
@@ -62,17 +54,13 @@ func FuzzParseDN(f *testing.F) {
 func FuzzEscape(f *testing.F) {
 	for _, s := range []string{
 		"kim", "a,b", "#a", " a", "a ", "a\x00b", `a\b`, "a+b", `"`, "<>;", "=", " ",
-		// Found by this target (#281): a value that ends in a form feed.
-		"000\f",
+		// Found by this target (#281): a value that ends in a form feed, and
+		// was read back without it. So was one that ends in a space.
+		"000\f", "a  ", "\ta\t", "a\u00a0", "",
 	} {
 		f.Add(s)
 	}
 	f.Fuzz(func(t *testing.T, v string) {
-		// Left out, as in [FuzzParseDN]: a value that begins or ends in white
-		// space, a space included, is known not to come back.
-		if v == "" || strings.TrimSpace(v) != v {
-			return
-		}
 		name := dn{}.child("cn", v).String()
 		d, err := parseDN(name)
 		if err != nil {

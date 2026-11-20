@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	ber "github.com/go-asn1-ber/asn1-ber"
@@ -77,13 +78,37 @@ func (m *message) paging() (*Paging, error) {
 	return nil, nil
 }
 
+// maxInt is the largest INTEGER the protocol has a use for, RFC 4511 § 4.1.1:
+// a message identifier, a size limit and a time limit are each declared
+// `(0 .. maxInt)`.
+const maxInt = math.MaxInt32
+
+// integer reads a field the grammar declares an INTEGER or an ENUMERATED,
+// and refuses whatever else is standing where one goes: the bytes of a
+// string are a number too, if nobody asks.
+func integer(p *ber.Packet, tag ber.Tag) (int64, error) {
+	if p.ClassType != ber.ClassUniversal || p.TagType != ber.TypePrimitive || p.Tag != tag || p.Data.Len() == 0 {
+		return 0, errors.New("not the integer it is declared to be")
+	}
+
+	return ber.ParseInt64(p.Data.Bytes())
+}
+
 func decodeMessage(p *ber.Packet) (*message, error) {
 	if p.ClassType != ber.ClassUniversal || p.Tag != ber.TagSequence || len(p.Children) < 2 {
 		return nil, errors.New("not an LDAPMessage")
 	}
-	id, err := ber.ParseInt64(p.Children[0].Data.Bytes())
+
+	// RFC 4511 § 4.1.1.1: zero is the identifier of what a server says
+	// unasked, and a request has one from one to maxInt. An answer under
+	// anything else is not one a client can match to what it asked, so the
+	// connection is ended, and told why.
+	id, err := integer(p.Children[0], ber.TagInteger)
 	if err != nil {
-		return nil, fmt.Errorf("message id: %w", err)
+		return nil, ending("message id: " + err.Error())
+	}
+	if id < 1 || id > maxInt {
+		return nil, ending(fmt.Sprintf("message id %d: a request's is from 1 to %d", id, maxInt))
 	}
 	op := p.Children[1]
 	if op.ClassType != ber.ClassApplication {
@@ -147,16 +172,19 @@ func decodeSearch(m *message) (SearchRequest, error) {
 	if len(op.Children) != 8 {
 		return SearchRequest{}, errors.New("search: not the eight fields of a SearchRequest")
 	}
-	scope, err := ber.ParseInt64(op.Children[1].Data.Bytes())
+	// Each the type it is declared, RFC 4511 § 4.5.1, and the two limits no
+	// more than maxInt: a time limit past what a duration holds in
+	// nanoseconds came out as no limit at all.
+	scope, err := integer(op.Children[1], ber.TagEnumerated)
 	if err != nil || scope < 0 || scope > 2 {
 		return SearchRequest{}, errors.New("search: scope")
 	}
-	size, err := ber.ParseInt64(op.Children[3].Data.Bytes())
-	if err != nil || size < 0 {
+	size, err := integer(op.Children[3], ber.TagInteger)
+	if err != nil || size < 0 || size > maxInt {
 		return SearchRequest{}, errors.New("search: size limit")
 	}
-	limit, err := ber.ParseInt64(op.Children[4].Data.Bytes())
-	if err != nil || limit < 0 {
+	limit, err := integer(op.Children[4], ber.TagInteger)
+	if err != nil || limit < 0 || limit > maxInt {
 		return SearchRequest{}, errors.New("search: time limit")
 	}
 	only := op.Children[5].Data.Bytes()
