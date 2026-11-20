@@ -938,8 +938,15 @@ func (s *search) read(ctx context.Context, t *tenant, a arm, after string, size 
 		return []row{r}, "", nil
 
 	case armMembers:
-		ids, name, err := d.membersOf(ctx, t, s.reads, a.value)
-		if err != nil || name == nil {
+		// A page of the group's or the team's own list of members, which is
+		// roster's to page as the people are: it was read whole, and was one
+		// page of the client's however many it held.
+		at, err := s.place(ctx, t, a.value)
+		if err != nil || at == nil {
+			return nil, "", err
+		}
+		ids, next, err := d.members(ctx, t, at, after, size)
+		if err != nil {
 			return nil, "", err
 		}
 		if err := d.holders(ctx, t, s.reads, ids); err != nil {
@@ -948,11 +955,11 @@ func (s *search) read(ctx context.Context, t *tenant, a arm, after string, size 
 		rows := make([]row, 0, len(ids))
 		for _, id := range ids {
 			if h := s.reads.holders[string(id)]; h != nil {
-				rows = append(rows, row{holder: h, known: map[string][]string{attrMemberOf: {name.String()}}})
+				rows = append(rows, row{holder: h, known: map[string][]string{attrMemberOf: {at.name.String()}}})
 			}
 		}
 
-		return rows, "", nil
+		return rows, next, nil
 
 	case armEmployee, armDepartment, armFragment:
 		q := proto.Clone(a.search).(*rstr.HolderSearchRequest)
@@ -997,45 +1004,39 @@ type spot struct {
 	after string
 }
 
-// people sends every person under a suffix the filter keeps, read the way
-// the plan says, from `from`. It answers where it stopped and whether that
-// was the end: a search that is not paged never stops early.
-//
-// A page of roster is a page of the client: a read asks for no more people
-// than the page has room for, so a page is never bigger than was asked, and
-// a page ends where a roster page ends, so that a cookie is always a roster
-// cursor and no row is skipped or repeated. Fewer entries than the page size
-// means the filter dropped some, which RFC 2696 allows; a page that would be
-// empty reads on, so a selective filter over a big tenant does not answer
-// with a run of empty pages.
-func (s *search) people(ctx context.Context, t *tenant, from spot) (spot, bool, wire.Result) {
-	for i := from.arm; i < len(s.plan); i++ {
-		after := ""
-		if i == from.arm {
-			after = from.after
-		}
-		for {
-			if s.full() {
-				return spot{arm: i, after: after}, false, wire.Ok
+// people is the step of every person under a suffix the filter keeps, read
+// the way the plan says: each arm of it in turn, through roster's cursor in
+// that arm ([search.through]).
+func (s *search) people(ctx context.Context, t *tenant) step {
+	return step{stage: stagePeople, run: func(from spot) (spot, bool, wire.Result) {
+		for i := max(0, from.arm); i < len(s.plan); i++ {
+			after := ""
+			if i == from.arm {
+				after = from.after
 			}
-			rows, next, err := s.read(ctx, t, s.plan[i], after, s.room())
-			if err != nil {
-				return spot{}, false, refusal(err)
-			}
-			if res := s.show(ctx, t, s.plan, i, rows); res.Code != wire.Success {
+			after, over, res := s.through(after, func(after string, size int) (string, wire.Result) {
+				rows, next, err := s.read(ctx, t, s.plan[i], after, size)
+				if err != nil {
+					return "", refusal(err)
+				}
+
+				return next, s.show(ctx, t, s.plan, i, rows)
+			})
+			if res.Code != wire.Success {
 				return spot{}, false, res
 			}
-			if next == "" {
-				break
-			}
-			after = next
-			if s.paged() && s.holds() > 0 {
+			if !over {
 				return spot{arm: i, after: after}, false, wire.Ok
 			}
+			// An arm begins on a page as a part of the walk does
+			// ([search.roomy]).
+			if i+1 < len(s.plan) && (s.full() || !s.roomy()) {
+				return spot{arm: i + 1}, false, wire.Ok
+			}
 		}
-	}
 
-	return spot{}, true, wire.Ok
+		return spot{}, true, wire.Ok
+	}}
 }
 
 func siteRef(s *rstr.Site) *rstr.SiteRef {

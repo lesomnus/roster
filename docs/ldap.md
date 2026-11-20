@@ -440,18 +440,57 @@ roster's lists take thirty-two filters a call, so a page of a hundred people is
 four calls of each list it needs and not a hundred. The `member`s of a group
 are read the same way, and only for a group the filter keeps.
 
-The wall is already in every one of those reads,
-so a search under `o=contoso` can never answer a row from `o=newco` -- the two
-suffixes are two keys. Size limits are the client's `sizeLimit`, and the paged
-results control (RFC 2696) carries roster's own cursor as its cookie, so a
-client paging through ten thousand people reads them once each and no page is
-bigger than `SearchPageLimit`. A subtree search from a suffix (or from the
-root, which is the bound tenant's suffix and no other) pages in stages -- the
-fixed nodes and the people on roster's cursor, then the groups, then the sites
-and teams -- and the cookie carries which tenant and which stage beside the
-cursor, so the tenant is read once, entry by entry, with nothing kept on the
-server between pages. A page shorter than asked for means the filter dropped rows,
-which RFC 2696 allows; a page that would be empty reads on.
+The wall is already in every one of those reads, so a search under
+`o=contoso` can never answer a row from `o=newco` -- the two suffixes are two
+keys.
+
+### A size limit, a page and its cookie
+
+**A size limit** is the client's `sizeLimit`, and it is of the whole search: a
+search that would answer more ends with `sizeLimitExceeded` (4) once that many
+entries have been sent, in one answer or over however many pages it is read in.
+
+**A page** is the paged results control's (RFC 2696). It is never bigger than
+the client asked, and never bigger than a hundred, which is the most roster
+reads at once (`SearchPageLimit`). Every part of the tree is read through
+roster's own cursor -- the people, the members of the group a `(memberOf=…)`
+filter names, the groups, the sites, the teams -- so a client paging through
+ten thousand people, or a group of a thousand, reads each once. A subtree
+search from a suffix (or from the root, which is the bound tenant's suffix and
+no other) sends the parts one after another: the fixed nodes, the people, the
+groups, the sites, the `ou=teams` under each site, the teams.
+
+A page ends when it is full, or where a read of roster ended that put something
+in it. So a page can be shorter than was asked -- the filter dropped rows, or
+somebody on roster's page is not in the tree -- and a page with nothing in it
+yet reads on: only the last page can be empty, which it is where the page
+before ended full and nothing after it matched. A page size of zero with the
+cookie of the page before ends the paging, as RFC 2696 has a client say it
+wants no more: it answers nothing, and no cookie. And a page size no smaller
+than the size limit is the search in one, which is RFC 2696 too: the control is
+set aside, and the answer is as many entries as the limit and
+`sizeLimitExceeded` where there were more.
+
+**The cookie** is where the search stopped, and nothing is kept on the server
+for it: another connection and another replica of this process read on from
+one. A client treats it as RFC 2696 says, opaque. It is not secret, and anybody
+who looks can read it -- JSON, unsigned:
+
+| | |
+| --- | --- |
+| `s` | which part of the tree the search was in |
+| `p` | which read of an `\|` it was in, among the people |
+| `a` | where in that part: roster's own cursor, which is the moment the last row read was made and that row's identifier |
+| `n` | how many entries the pages before held, which is what a size limit is counted from |
+| `t` | the tenant's alias, for a search from the root |
+
+The row a page ended at is the last one **read**, shown or not: the identifier
+of somebody suspended, who has no entry, can be in a cookie, with the moment
+their account was made. It names nobody and opens nothing -- each read it
+resumes is made with the key of the tenant the connection is bound in, so a
+cookie presented by somebody bound elsewhere reads their own tenant. One that
+is no cursor is refused `protocolError` (2); one whose `n` a client rewrote
+moves that client's own size limit and nothing else.
 
 The reads of groups, teams, sites and people one search makes are kept for
 that search -- a group of forty and a person in six teams cost a read per
@@ -592,6 +631,11 @@ The promises, in `baseline.md`'s shape, each with its test:
 | an `\|` is each of its arms and answers everybody once, in one search and in pages | `TestAnOrAnswersEverybodyOnce` |
 | a role that names no read of numbers or of relations publishes none of either, asks once a search, and answers everything else | `TestARoleThatNamesNoNumbersPublishesNone` |
 | paging through everybody answers each person once, with a filter that drops rows and with one roster has no index for; the client's size limit is honoured | `TestPagingReadsEverybodyOnce` |
+| no page is bigger than was asked, in any part of the tree -- the suffix, the groups, the sites and teams, the members of a group, an `\|` -- and what a search answers in pages is what it answers in one, each entry once | `TestAPageIsNoBiggerThanWasAsked` |
+| no page is empty but the last: `(uid=kim)` from a suffix is one page | `TestNoPageIsEmptyButTheLast` |
+| a size limit is of the whole search, over however many pages; a page no smaller than the limit is the search in one | `TestASizeLimitIsOfTheWholeSearch` |
+| a page of zero with a cookie ends the paging | `TestAPageOfNothingEndsThePaging` |
+| a cookie holds where roster was read to and how many entries went before, names nobody, is read on from by another connection and another process, and reads only the tenant its presenter is bound in; one that is no cursor is refused | `TestACookieIsWhereRosterWasReadTo` |
 | no entry ever carries `userPassword`, a key, or a credential; the process's own key and every presented password are absent from every response | `TestNothingSecretIsInTheTree` |
 | somebody disabled is not in the tree, from the next search on -- there is no cache | `TestTheDisabledAreNotListed` |
 | every write and every SASL bind is refused with the code above, and the connection stays usable; a critical control the server does not know refuses the operation; two searches share a connection; an abandoned search answers nothing | `ldap/wire`: `TestTheDirectoryIsReadOnlyOnTheWire` · `TestASaslBindIsNotSupported` · `TestAnUnknownCriticalControlRefusesTheOperation` · `TestTwoSearchesShareAConnection` · `TestAnAbandonedSearchAnswersNothing` |
