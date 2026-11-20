@@ -127,6 +127,13 @@ Every other refusal of a bind is that code and what the mode says of the kind
 of secret, or no message at all: an unknown name, somebody else's key, a name
 that is not a person's.
 
+**A roster that cannot be asked is not a refusal.** A bind made while roster is
+unreachable or failing is answered `unavailable` (52), and `busy` (51) where
+roster said to come back later, each with a sentence of this process's own; it
+was 49, which a client shows as a wrong password. A search is answered the
+same two ways, and never with the sentence the transport wrote, which names
+where roster is dialed.
+
 ### Why `password` mode still cannot walk around a second factor
 
 Not by a rule in this process. `Vouch.Verify` answers `ok` **only when the
@@ -140,6 +147,38 @@ refusal is a row that is swept unspent; that is the price and it is small.
 
 Wrong passwords count toward roster's lockout, because roster counted them.
 Nothing here counts anything.
+
+**Which client sent them is in this process's log.** Roster's trail names the
+directory's own holder for a wrong password, from the directory's address, so
+it cannot say which appliance locked somebody out. This process writes one line
+for every bind, at `info`:
+
+```
+ldap: bind from=10.0.4.17:51234 tenant=<the tenant's identifier> kind=password ended=refused
+```
+
+`from` is the client's address as the socket has it, `kind` is `key`,
+`password` or `none`, and `ended` is one of these, the last three with roster's
+`code` beside them:
+
+```
+bound
+refused                            roster said no, or the name is not whose the key is
+not tried                          roster was not asked: no password, the kind this
+                                   directory does not bind, or a password for a name
+                                   under no suffix. It counted toward no lockout
+second factor                      the right password, of somebody who has one enrolled
+locked                             roster says the account is locked, by this bind or before it
+roster away                        unreachable, or failing
+roster busy                        held to a rate
+the directory's key was refused    the tenant closed, its holder there suspended, or a
+                                   role that does not name Vouch.Verify
+```
+
+`tenant` is there when the name was somebody's under a suffix this process
+serves. The name is not in it, nor the password or the key: a name is what a
+stranger typed. A wrong password is found by its time and tenant beside the
+trail's line for it, and the bind that locked somebody out says `locked`.
 
 ### What a bind is not
 
