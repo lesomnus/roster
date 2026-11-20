@@ -205,7 +205,9 @@ func (s *Search) Cookie(cookie []byte) { s.cookie = cookie }
 // Handler is what a directory is to this package.
 type Handler interface {
 	// Bind answers a simple bind. On [Success] the connection is bound as
-	// the request's DN until the next bind or the end of the connection; on
+	// the request's DN -- or as the name the handler kept, with whatever it
+	// kept of whoever bound ([Conn.Keep]) -- until the next bind, the end of
+	// the connection, or the handler dropping what it kept ([Conn.Drop]); on
 	// anything else it is anonymous. The context ends after [BindTimeout]:
 	// nothing else on the connection is read while a bind is answered.
 	Bind(ctx context.Context, c *Conn, req BindRequest) Result
@@ -306,6 +308,7 @@ type Conn struct {
 
 	mu       sync.Mutex
 	bound    string
+	who      any // what the handler kept of whoever bound; nil for anonymous
 	tls      bool
 	inflight map[int64]context.CancelFunc
 	closed   bool
@@ -317,6 +320,40 @@ func (c *Conn) Bound() (string, bool) {
 	defer c.mu.Unlock()
 
 	return c.bound, c.bound != ""
+}
+
+// Keep is the handler's, from inside [Handler.Bind] before it answers
+// [Success]: the name the connection is bound as, where that is not the
+// request's own spelling of it, and whatever the handler wants to know of
+// whoever bound when a later request arrives on the connection. `who` is a
+// pointer, and is compared as one. Both are gone at the next bind.
+func (c *Conn) Keep(dn string, who any) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.bound, c.who = dn, who
+}
+
+// Kept is what [Conn.Keep] was handed, and nil for a connection that is
+// anonymous or whose handler kept nothing.
+func (c *Conn) Kept() any {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.who
+}
+
+// Drop makes the connection anonymous, as a bind that failed leaves it: for a
+// handler that learns whoever bound is not to be served any more. Only while
+// `who` is still what is kept, since the search that learns it runs beside the
+// loop and must not undo a bind made since.
+func (c *Conn) Drop(who any) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.who != nil && c.who == who {
+		c.bound, c.who = "", nil
+	}
 }
 
 // Secure is whether the connection is under TLS -- LDAPS or after StartTLS.
@@ -553,7 +590,7 @@ func (s *Server) bind(ctx context.Context, c *Conn, msg *message) {
 	// A bind resets the authentication state whatever it answers, RFC 4511
 	// § 4.2.1. What was in flight is ended by now: the loop does that.
 	c.mu.Lock()
-	c.bound = ""
+	c.bound, c.who = "", nil
 	c.mu.Unlock()
 
 	req, sasl, err := decodeBind(msg)
@@ -579,11 +616,16 @@ func (s *Server) bind(ctx context.Context, c *Conn, msg *message) {
 	}
 
 	res := s.Handler.Bind(ctx, c, req)
-	if res.Code == Success {
-		c.mu.Lock()
+	c.mu.Lock()
+	switch {
+	case res.Code != Success:
+		// Whatever a handler kept before it refused is not a bind.
+		c.bound, c.who = "", nil
+	case c.bound == "":
+		// A handler that kept no name of its own: the request's.
 		c.bound = req.DN
-		c.mu.Unlock()
 	}
+	c.mu.Unlock()
 	_ = c.write(envelope(msg.id, encodeResult(tagBindResponse, res), nil))
 }
 

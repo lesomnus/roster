@@ -74,7 +74,10 @@ func (d *Directory) Search(ctx context.Context, c *wire.Conn, req wire.SearchReq
 	// context, a search under any other is `noSuchObject` -- the answer for a
 	// name that is not there, since saying it is somebody else's would say it
 	// exists -- and the root walks it alone.
-	bound, isBound := d.boundTenant(c)
+	bound, isBound, stands := d.boundTenant(ctx, c)
+	if stands.Code != wire.Success {
+		return stands
+	}
 
 	// The root DSE is the one thing read before a bind: it says what this
 	// server is, and nothing about anybody -- and since a suffix is a tenant's
