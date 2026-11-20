@@ -363,6 +363,7 @@ written against (`server/core/directory.go`).
 | What needs no credential is named one method at a time, and a password is not checked for nobody | `TestNobodyVerifiesAPasswordAnonymously` · `TestIntrospectIsNotPublic` |
 | A session is minted when nothing is left to prove: roster's own sign-in asks somebody's second factor, on both planes | `TestRostersOwnSignInAsksTheSecondFactor` |
 | The two planes are two databases: a deployment that names one for both is refused, so that a customer's session is never an operator's | `TestTwoPlanesAreTwoDatabases` |
+| The LDAP directory's port, before a bind: the root DSE is read and nothing else is -- a search is *bind first*, WhoAmI names nobody, and the writes, compare and password modify are refused as they are to everybody -- and the root DSE lists StartTLS only where a StartTLS on that connection would be taken | `TestBeforeABindIsWhatTheManualSays` · `TestTheRootDseListsStartTlsOnlyWhereItIsOffered` · `TestLdapServeSaysStartTlsWhereItWasGivenACertificate` |
 
 ### At the box, of the trail
 

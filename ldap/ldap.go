@@ -126,6 +126,12 @@ type Config struct {
 	// one page of a paged search carries. Zero is [DefaultPageSize].
 	PageSize int
 
+	// StartTLS is whether the listener this directory is served on offers
+	// StartTLS, which is what the root DSE then says. The certificate is the
+	// wire's (`wire.Server.TLS`) and never comes here, so whoever builds the
+	// two says it to both.
+	StartTLS bool
+
 	Log *slog.Logger
 
 	// Now is the clock a connection's last asking is aged by ([Recheck]). Nil
@@ -664,7 +670,7 @@ var errStopped = errors.New("whoever bound this connection may not any more")
 //   - they do not, and the connection is nobody's from then on
 //     ([wire.Conn.Drop]): this search and every later one is answered as one
 //     on a connection that never bound is, and WhoAmI says nobody. A client
-//     binds again, and is refused at the bind as anybody stopped is;
+//     binds again, and that bind is answered as any bind is;
 //   - roster could not say -- it is away, or busy, or the search ended first
 //     -- and that is the answer ([refusal]). It is not somebody being
 //     stopped: the connection stays theirs, and the next search asks again.
@@ -836,8 +842,15 @@ const (
 var units = []string{ouPeople, ouGroups, ouSites}
 
 // rootDSE is what this server is, as the connection it answers sees it: the
-// suffix of the tenant it is bound in, or none before a bind.
-func (d *Directory) rootDSE(bound *tenant) *entry {
+// suffix of the tenant it is bound in, or none before a bind, and what it can
+// be asked to do.
+//
+// StartTLS is listed where a StartTLS on this connection would be taken: the
+// listener holds a certificate ([Config.StartTLS]) and the connection is not
+// under TLS already. It was listed always, and with no certificate the request
+// is then refused -- so a client that reads this to decide whether a bind can
+// be protected was told yes and answered no (#281).
+func (d *Directory) rootDSE(c *wire.Conn, bound *tenant) *entry {
 	e := newEntry(dn{})
 	e.add("objectClass", "top")
 	e.add("supportedLDAPVersion", "3")
@@ -845,7 +858,10 @@ func (d *Directory) rootDSE(bound *tenant) *entry {
 		e.add("namingContexts", bound.base.String())
 	}
 	e.add("supportedControl", wire.OidPagedResults)
-	e.add("supportedExtension", wire.OidStartTLS, wire.OidWhoAmI)
+	if d.c.StartTLS && !c.Secure() {
+		e.add("supportedExtension", wire.OidStartTLS)
+	}
+	e.add("supportedExtension", wire.OidWhoAmI)
 	e.add("vendorName", "roster")
 
 	return e

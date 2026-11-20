@@ -1665,6 +1665,11 @@ stream:
 Shorter is a few more reads for each open stream, and nothing else. There is no
 value that leaves a stream unasked.
 
+A connection bound at the LDAP directory is held to the same rule by the
+directory, which asks roster about whoever bound it every five minutes it
+searches in. That number is the directory's own and this setting does not move
+it ([ldap.md](ldap.md) § *How long a bind lasts*).
+
 **A directory that provisions people suspends them too**, through verbs of its
 own -- `HolderService/Deactivate` and `Activate` -- and it is the same suspension:
 one `date_disabled`, refused everywhere `Disable` is. What differs is whose it is

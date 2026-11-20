@@ -176,6 +176,10 @@ func serveLdap(ctx context.Context, lc cmd.LdapConfig) error {
 		Bind:     mode,
 		Insecure: lc.Insecure,
 		Log:      log.From(ctx),
+
+		// What the root DSE says of StartTLS is what the listener below does:
+		// one certificate, said to both.
+		StartTLS: tlsConfig != nil,
 	}
 
 	d, err := ldap.New(ctx, cfg)
