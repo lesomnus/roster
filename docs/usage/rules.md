@@ -206,6 +206,7 @@ held to it too. The numbers are in [customers.md](customers.md#how-much-is-writt
 | An address is one spelling of one mailbox -- the plain form, at a hostname, in small letters, with nothing outside ASCII before the `@` -- by every road that writes one; what somebody types is folded and looked for | `server/front/front.go` | `TestAnAddressIsOneSpelling` · `TestAnAddressIsHeldToItsFormByEveryRoad` |
 | An alias is written as it is read: a write that says one with a capital or a space at either end is refused with the spelling it would have to be, for every row that has one, by `Add`, a rename and a directory alike; a reference is exact, so what is written is what is found | `server/core/form.go` | `TestAnAliasIsWrittenAsItWillBeRead` |
 | What somebody *types* is folded and then looked for: the alias and the tenant at a sign-in -- `Verify`, `Delegate`, a mailed link, roster's own -- as an address is, and a name typed at the command line or for a terminal | `server/vouch/vouch.go` | `TestASignInFoldsWhatSomebodyTyped` · `TestRostersOwnSignInFoldsWhatAnOperatorTyped` · `TestTheCommandLineFoldsANameSomebodyTypes` · `TestATerminalIsCalledWhatItsKeyWillBe` |
+| And the name in a bind at the LDAP directory, for an app password as for a password; the connection is then bound as the name the tree has, which is what WhoAmI answers. What was sent as the password is a password whatever it begins with, and an app password only when it has the whole shape of a key -- which is then tried as a key and never as its owner's wrong password | `ldap/ldap.go` | `TestANameIsReadAsRosterReadsIt` · `TestAPasswordIsTriedAsAPassword` |
 
 ### A connection is one a front door can use
 
@@ -263,6 +264,8 @@ reason beside it, in `ldap/wire`, and none is a setting.
 | No key or way in is minted into another tenant | `server/core/apikey.go` | `TestAKeyIsNotMintedIntoAnotherTenant` · `TestNobodyMintsAWayIntoAnotherTenant` |
 | The Login App's own key, as itself, is told which tenant a name is and hears who was signed out, and reads no tenant's row: what a tenant is called it reads as the holder that tenant nominated | `cli/login.go` | `TestTheProvisionedKeyIsNarrowerThanTheRole` · `TestTheLoginAppsKeyReadsATenantAsWhoThatTenantNominated` |
 | Nobody is told what another customer may call | `server/core/holder.go` | `TestNobodyIsToldWhatAnotherCustomerMayCall` |
+| Nor which tenants the LDAP directory serves, by trying names at it: a bind that does not work is answered by the kind of secret it sent and nothing of the name, under a suffix that is served as under one that is not, and an app password is asked about whatever the name | `ldap/ldap.go` | `TestABindIsAnsweredTheSameWhicheverTenantItGuessed` |
+| A suffix of the directory's is one tenant's: two given one do not start, naming both. A tenant renamed while the directory runs keeps the suffix it had until a restart, and its people bind there by password as by app password | `ldap/ldap.go` | `TestTwoTenantsAreNotGivenOneSuffix` · `TestATenantRenamedUnderTheDirectoryStillBindsByPassword` |
 
 ### What a file declares is the file's
 

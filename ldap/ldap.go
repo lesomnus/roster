@@ -38,6 +38,7 @@ package ldap
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -114,7 +115,8 @@ type Config struct {
 	Key string
 
 	// Bases renames a tenant's suffix, by alias: `dc=contoso,dc=example`
-	// where the default is `o=contoso`.
+	// where the default is `o=contoso`. A suffix is one tenant's, and two
+	// tenants left with the same one are refused.
 	Bases map[string]string
 
 	// Bind is what a password may be. Zero is [BindKey].
@@ -156,8 +158,42 @@ const Recheck = 5 * time.Minute
 const DefaultPageSize = 100
 
 // KeyPrefix is what an app password starts with: an `rt_`, the customer's
-// kind of key. Anything else presented as a password is a password.
+// kind of key.
 const KeyPrefix = "rt_"
+
+// keyShaped is whether what a bind sent as its password is an app password,
+// by its whole shape: the prefix, and after it what roster mints -- thirty-two
+// bytes in unpadded URL-safe base64, forty-three characters
+// (`server/keys.Mint`, which this package may not import). Anything else is a
+// password.
+//
+// # Why the prefix is not enough, and why the shape decides alone
+//
+// The prefix decided, and a person's password may begin with anything. One
+// that begins `rt_` never bound: where only passwords bind it was refused as
+// an app password, and where both do it was sent to roster as a key and never
+// tried as a password (#281).
+//
+// What has the whole shape is tried as a key and as nothing else, where it
+// might have been tried as a password after roster said it is no key. That
+// would send every app password its owner has revoked to `Vouch.Verify` as
+// their wrong password, and a client that goes on trying one would lock its
+// owner out of the password they sign in with everywhere else, ten tries at a
+// time. A person does not type forty-three characters of base64, and one whose
+// password is exactly that binds with an app password instead.
+//
+// Every test that binds with a key roster minted holds this to what roster
+// mints: a key of another length would bind nowhere.
+func keyShaped(s string) bool {
+	rest, ok := strings.CutPrefix(s, KeyPrefix)
+	if !ok || len(rest) != base64.RawURLEncoding.EncodedLen(32) {
+		return false
+	}
+
+	return !strings.ContainsFunc(rest, func(r rune) bool {
+		return !(r == '-' || r == '_' || r >= '0' && r <= '9' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z')
+	})
+}
 
 // tenant is one operator this directory fronts.
 type tenant struct {
@@ -265,6 +301,17 @@ func New(ctx context.Context, c Config) (*Directory, error) {
 				return nil, fmt.Errorf("ldap: Bases[%s]: %q is not a DN", alias, s)
 			}
 		}
+		// A suffix is one tenant's. Two given the same one both started, and
+		// a name under it was always read as the first's: nobody of the other
+		// could bind, and nothing said so (#281).
+		for _, other := range d.tenants {
+			if len(other.base) == len(base) && base.hasSuffix(other.base) {
+				conn.Close()
+
+				return nil, fmt.Errorf("ldap: Bases: %q and %q are both given the suffix %s, and a suffix is one tenant's: "+
+					"a name under it is read as one of them and nobody of the other binds", other.alias, alias, other.base)
+			}
+		}
 		t.base = base
 		d.tenants = append(d.tenants, t)
 	}
@@ -307,39 +354,70 @@ func (d *Directory) Bind(ctx context.Context, c *wire.Conn, req wire.BindRequest
 	// shape of the tree and who is in it are learned by searching -- which
 	// needs a bind -- and never by trying names.
 	refused := wire.Refuse(wire.InvalidCredentials, "")
-
-	t, alias, ok := d.bindDN(req.DN)
-	if !ok || len(req.Password) == 0 {
+	if len(req.Password) == 0 {
 		return refused
 	}
 
+	// # The sentence about the mode is about what was sent, and never the name
+	//
+	// A directory that binds one kind says so to a client that sent the
+	// other, for the person reading that client's log. It was said after the
+	// name had been found under a suffix this process serves, and so for no
+	// other name: an unbound stranger learned which tenants there are by
+	// which refusals carried it (#281). It is decided here, by the
+	// deployment's mode and the shape of the secret and before the name is
+	// read, so every name there could be is answered with it. What it tells
+	// is which kind this directory binds, which is what it is for, and
+	// nothing of who or what is here.
 	pw := string(req.Password)
-	if strings.HasPrefix(pw, KeyPrefix) {
+	asKey := keyShaped(pw)
+	switch {
+	case asKey && !d.c.Bind.keys():
+		refused.Message = "this directory binds with passwords; an app password was given"
+	case !asKey && !d.c.Bind.passwords():
+		refused.Message = "this directory binds with app passwords: a key the person mints for this client"
+	}
+
+	// Which tenant the name is in, and who of it. A name somebody typed, so
+	// it is folded as roster folds one (`front.Alias`): an app password was
+	// refused for `uid=LEE` where a password bound.
+	t, alias, named := d.bindDN(req.DN)
+	alias = front.Alias(alias)
+
+	if asKey {
 		if !d.c.Bind.keys() {
-			return wire.Refuse(wire.InvalidCredentials, "this directory binds with passwords; an app password was given")
+			return refused
 		}
 		// Bearing the key the client presented, not this process's: whose
-		// it is, is the whole question, and roster answers it.
+		// it is, is the whole question, and roster answers it. Asked
+		// whatever the name, since the key says whose it is and the name is
+		// only held to that: a guess under a suffix this process serves
+		// costs what one under any other costs.
 		v, err := d.me.Get(withKey(ctx, pw), rstr.MeGetRequest_builder{}.Build())
 		if err != nil {
 			return refused
 		}
-		if v.GetAlias() != alias || string(v.GetTenant()) != string(t.id.Bytes()) {
+		if !named || v.GetAlias() != alias || !bytes.Equal(v.GetTenant(), t.id.Bytes()) {
 			return refused
 		}
-		c.Keep(req.DN, &binding{tenant: t, holder: v.GetId(), key: pw, asked: d.c.Now()})
+		c.Keep(d.nameOf(t, v.GetAlias()), &binding{tenant: t, holder: v.GetId(), key: pw, asked: d.c.Now()})
 
 		return wire.Ok
 	}
 
-	if !d.c.Bind.passwords() {
-		return wire.Refuse(wire.InvalidCredentials, "this directory binds with app passwords: a key the person mints for this client")
+	if !d.c.Bind.passwords() || !named {
+		return refused
 	}
 	// Read before roster is asked, so that whatever ended their sign-ins
 	// while it answered is after it.
 	began := d.c.Now()
+	// As the directory's holder in the tenant, and naming the person alone:
+	// which tenant is the key's to say, by its identifier, as it is for every
+	// read. The tenant's alias was sent beside the name, as it was read at
+	// start, and a tenant renamed since was one nobody could bind in by
+	// password under either name (#281).
 	v, err := d.vouch.Verify(t.on(ctx), rstr.VouchVerifyRequest_builder{
-		Who:    rstr.VouchWho_builder{Tenant: t.alias, Alias: alias}.Build(),
+		Who:    rstr.VouchWho_builder{Alias: alias}.Build(),
 		Secret: req.Password,
 	}.Build())
 	switch {
@@ -350,7 +428,12 @@ func (d *Directory) Bind(ctx context.Context, c *wire.Conn, req wire.BindRequest
 
 		return refused
 	case v.GetOk():
-		c.Keep(req.DN, &binding{tenant: t, holder: v.GetHolder(), began: began, asked: d.c.Now()})
+		if !bytes.Equal(v.GetTenant(), t.id.Bytes()) {
+			return refused
+		}
+		// A row's alias is in small letters or it was not written, so the
+		// name as it was folded is the name the tree has.
+		c.Keep(d.nameOf(t, alias), &binding{tenant: t, holder: v.GetHolder(), began: began, asked: d.c.Now()})
 
 		return wire.Ok
 	case v.GetContinuation() != "":
@@ -556,6 +639,14 @@ func unsaid(ctx context.Context, err error) bool {
 	default:
 		return false
 	}
+}
+
+// nameOf is the name the tree has for somebody of a tenant, which is what a
+// connection they bound is bound as and what WhoAmI answers: the name of their
+// entry, as a search returns it. It was the client's own spelling of what it
+// sent -- `UID=lee, OU=People, O=Contoso` -- which names no entry.
+func (d *Directory) nameOf(t *tenant, alias string) string {
+	return d.personDN(t, rstr.Holder_builder{Alias: alias}.Build()).String()
 }
 
 // bindDN reads `uid=<alias>,ou=people,<suffix>`: the one shape a bind names.
