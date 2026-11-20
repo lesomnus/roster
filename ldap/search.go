@@ -83,7 +83,7 @@ func (d *Directory) Search(ctx context.Context, c *wire.Conn, req wire.SearchReq
 	// server is, and nothing about anybody -- and since a suffix is a tenant's
 	// name, it names one only to somebody bound in it.
 	if len(name) == 0 && req.Scope == wire.ScopeBase {
-		e := d.rootDSE(bound)
+		e := d.rootDSE(c, bound)
 		if e.matches(req.Filter) {
 			if err := w.Entry(e.project(req.Attributes, req.TypesOnly)); err != nil {
 				return wire.Refuse(wire.OperationsError, err.Error())

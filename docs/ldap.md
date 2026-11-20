@@ -191,11 +191,79 @@ trail's line for it, and the bind that locked somebody out says `locked`.
   plaintext-equivalent roster does not store, and `SCRAM` has no LDAP clients
   to speak of. A SASL bind is answered `authMethodNotSupported` (7). None of
   them would have got a second factor across anyway.
-- **Not anonymous**, except for the root DSE, which a client reads before it
-  can StartTLS and which says nothing about anybody. Every other operation on
-  a connection that has not bound is `insufficientAccessRights` (50).
+- **Not anonymous.** A connection that has not bound reads the root DSE, which
+  a client needs before it can StartTLS and which says nothing about anybody,
+  and reads nothing else: a search of anything but the root DSE is
+  `insufficientAccessRights` (50), *bind first*, whether or not it named a
+  suffix this process serves. The rest is answered before a bind as it is
+  after one. WhoAmI succeeds and names nobody. Compare, the writes and
+  password modify are `unwillingToPerform` (53), which is what they are to
+  everybody ([below](#what-is-refused-and-how)). And a bind with no name and no
+  password succeeds, as the protocol has it, and binds nobody: the connection
+  is what it was. Under `--require-tls` that bind is refused in the clear like
+  any other.
 - **Not a way to reach `Ungated`.** A bind decides whether this connection
   may search. It does not decide what a search sees.
+
+### How long a bind lasts
+
+**For as long as whoever made it would still be let make it.** A bind is asked
+about again: a search on a connection roster has not been asked about for
+**five minutes** asks first, with one call, and then answers.
+
+- A connection bound with an **app password** is asked about by bearing the
+  app password again, which is what the bind asked. The key erased from the
+  account page's list or run out, its holder suspended or erased, their tenant
+  closed: each refuses it.
+- A connection bound with a **password** is asked about by who the password
+  proved, since the password is not kept and trying it again would count toward
+  a lockout: suspended, erased, or signed out of everything since they bound --
+  *sign out everywhere*, or a password changed or issued. Signing out
+  everywhere does not end an app password, here as anywhere else; revoking the
+  key does.
+
+**What a client sees when whoever bound is stopped.** Until the next asking,
+nothing: for at most five minutes a connection they had bound goes on
+searching. From then on the connection is nobody's. The search that asked and
+every later one is `insufficientAccessRights` (50), *bind first*, exactly as on
+a connection that never bound; the root DSE names no suffix; WhoAmI names
+nobody. The connection is not closed, and a bind made on it again is answered
+as any bind is: 49 for somebody suspended or erased or whose key is gone, and
+bound again for somebody who only signed out everywhere. This process's log has
+one line for it, in the form a bind's has: `ldap: a bound connection is
+nobody's now`, with `from`, `tenant` and `kind`.
+
+**A roster that cannot say is not somebody stopped.** The search is answered
+`unavailable` or `busy`, the connection stays whose it was, and the next search
+asks again. So is this process's own key being refused where a password's
+person is asked about, which says nothing of them: nothing is read while that
+lasts.
+
+**Five minutes** is what roster's own streams are held to where a deployment
+says nothing (`stream.recheck`, [operating.md](operating.md)), and it is the
+same promise -- *no credential of theirs works, and a stream they left open
+ends* -- since a connection is a credential shown once and then served until
+somebody hangs up. It is a constant, and `stream.recheck` does not move it:
+this process is as often another process as a block of the server's. It costs
+one call of roster for each five minutes a connection searches in, whichever
+kind of bind, and searches that arrive together share it; a connection that
+does not search is not asked about.
+
+**What this process keeps to ask with**, in memory and for as long as the
+connection is bound: who bound, in which tenant and when; and, for an app
+password, the app password itself, as the client that sent it keeps it. Never a
+password. Asking about an app password with less would need roster to say
+which key bore a call, which `Me.Get` does not, and this process's role to name
+a read of a key, which it does not. It is the one thing here believed for a
+while, and it is not an entry: every search is still a read of roster.
+
+*Since they bound* is this process's clock beside a moment roster stamped, as
+it is for a session an app holds ([relying-app.md](relying-app.md)). Where the
+directory is a process of its own, a clock that runs ahead of roster's misses a
+sign-out made within their difference after the bind.
+
+Held by `TestAConnectionIsWhoeverBoundItForAsLongAsTheyStillStand` and
+`TestAConnectionWhoseBinderStillStandsCostsOneCallAClock`.
 
 ### Whose eyes a search uses
 
@@ -353,7 +421,7 @@ client's problem and not this process's.
 | Compare | 53 | nobody's client does this, and `userPassword` compare is a bind that does not count toward a lockout |
 | Password Modify extended op (RFC 3062) | 53 for now | it could be `Credential.Set` with `current`; the question is whether a client that cannot do a second factor should change a password -- decision 6, below |
 | SASL bind | `authMethodNotSupported` (7) | above |
-| StartTLS | **supported**, and LDAPS beside it | a simple bind over plain TCP is the password in the clear; `--tls cert,key` offers StartTLS on `--listen` and enables `--listen-tls`, and `--require-tls` refuses a bind in the clear with `confidentialityRequired` (13) |
+| StartTLS | **supported**, and LDAPS beside it | a simple bind over plain TCP is the password in the clear; `--tls cert,key` offers StartTLS on `--listen` and enables `--listen-tls`, and `--require-tls` refuses a bind in the clear with `confidentialityRequired` (13). The root DSE lists it where it would be taken -- a certificate was given, and the connection is not under TLS already -- and with no certificate the request is `protocolError` (2) |
 | WhoAmI (RFC 4532) | **supported** | free, and what a client uses to see a bind took; it answers the name of the entry, as the tree spells it, whatever spelling the client bound with |
 | an unknown critical control | `unavailableCriticalExtension` (12) | ignoring one would answer a question the client did not ask |
 
