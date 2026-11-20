@@ -348,14 +348,101 @@ func (d *Directory) tenantOf(name dn) (*tenant, dn, bool) {
 	return nil, nil, false
 }
 
-// Bind is the wire's.
+// Bind is the wire's: the bind is answered, and one line says how it ended.
+//
+// # One line a bind
+//
+// Nothing logged one. Roster's trail has a line for a wrong password and none
+// for where it was typed -- the caller it names is this process's own holder,
+// from this process's address -- so somebody locked out through this port
+// could not be told which client did it (#281).
+//
+// The line holds the client's address as the socket has it; the tenant by its
+// identifier, and only where the name was under a suffix this process serves;
+// which kind of secret was sent; how it ended, in one of the few words below;
+// and roster's code where roster is why. Each is this process's own or
+// roster's, and none is the client's: not the name, which is what a stranger
+// typed and would be a line of the log with a line break in it; not the
+// password, not the key. And one level, whatever was sent and however it
+// ended, so that whoever can make lines cannot make warnings.
 func (d *Directory) Bind(ctx context.Context, c *wire.Conn, req wire.BindRequest) wire.Result {
+	res, how := d.bind(ctx, c, req)
+
+	attrs := []slog.Attr{slog.String("from", c.RemoteAddr().String())}
+	if how.tenant != nil {
+		attrs = append(attrs, slog.String("tenant", how.tenant.id.String()))
+	}
+	attrs = append(attrs, slog.String("kind", how.kind), slog.String("ended", how.ended))
+	if how.code != codes.OK {
+		attrs = append(attrs, slog.String("code", how.code.String()))
+	}
+	d.c.Log.LogAttrs(ctx, slog.LevelInfo, "ldap: bind", attrs...)
+
+	return res
+}
+
+// ended is how a bind ended, for the log: every value a word of this
+// process's.
+type ended struct {
+	// tenant is the tenant the name is in, and nil for a name under no suffix
+	// this process serves.
+	tenant *tenant
+
+	// kind is which kind of secret was sent.
+	kind string
+
+	ended string
+
+	// code is roster's, where roster could not say or refused this process.
+	code codes.Code
+}
+
+// The kinds of secret, and the ways a bind ends.
+const (
+	kindKey      = "key"
+	kindPassword = "password"
+	kindNone     = "none"
+
+	endedBound = "bound"
+
+	// endedRefused is roster saying no, or the name not being whose the key
+	// is: a wrong password, nobody of that name, somebody suspended or
+	// erased. Roster does not say which, and neither does this.
+	endedRefused = "refused"
+
+	// endedUntried is a bind roster was not asked about: no password, the
+	// kind this directory does not bind, or a password for a name under no
+	// suffix. It counted toward nobody's lockout.
+	endedUntried = "not tried"
+
+	endedFactor = "second factor"
+	endedLocked = "locked"
+	endedAway   = "roster away"
+	endedBusy   = "roster busy"
+
+	// endedKeyRefused is roster refusing this process's own key: the tenant
+	// closed, the holder it nominated suspended, or a role that does not name
+	// `Vouch.Verify` where passwords bind. An operator's to mend, and said
+	// here rather than as a warning for each attempt by anybody.
+	endedKeyRefused = "the directory's key was refused"
+)
+
+// bind answers a bind, and says how it ended.
+func (d *Directory) bind(ctx context.Context, c *wire.Conn, req wire.BindRequest) (wire.Result, ended) {
 	// One answer for everything that is not a bind that works, so that the
 	// shape of the tree and who is in it are learned by searching -- which
 	// needs a bind -- and never by trying names.
 	refused := wire.Refuse(wire.InvalidCredentials, "")
+
+	// Which tenant the name is in, and who of it. A name somebody typed, so
+	// it is folded as roster folds one (`front.Alias`): an app password was
+	// refused for `uid=LEE` where a password bound.
+	t, alias, named := d.bindDN(req.DN)
+	alias = front.Alias(alias)
+	how := ended{tenant: t, kind: kindNone, ended: endedUntried}
+
 	if len(req.Password) == 0 {
-		return refused
+		return refused, how
 	}
 
 	// # The sentence about the mode is about what was sent, and never the name
@@ -365,8 +452,8 @@ func (d *Directory) Bind(ctx context.Context, c *wire.Conn, req wire.BindRequest
 	// name had been found under a suffix this process serves, and so for no
 	// other name: an unbound stranger learned which tenants there are by
 	// which refusals carried it (#281). It is decided here, by the
-	// deployment's mode and the shape of the secret and before the name is
-	// read, so every name there could be is answered with it. What it tells
+	// deployment's mode and the shape of the secret and with nothing of the
+	// name, so every name there could be is answered with it. What it tells
 	// is which kind this directory binds, which is what it is for, and
 	// nothing of who or what is here.
 	pw := string(req.Password)
@@ -378,15 +465,10 @@ func (d *Directory) Bind(ctx context.Context, c *wire.Conn, req wire.BindRequest
 		refused.Message = "this directory binds with app passwords: a key the person mints for this client"
 	}
 
-	// Which tenant the name is in, and who of it. A name somebody typed, so
-	// it is folded as roster folds one (`front.Alias`): an app password was
-	// refused for `uid=LEE` where a password bound.
-	t, alias, named := d.bindDN(req.DN)
-	alias = front.Alias(alias)
-
 	if asKey {
+		how.kind = kindKey
 		if !d.c.Bind.keys() {
-			return refused
+			return refused, how
 		}
 		// Bearing the key the client presented, not this process's: whose
 		// it is, is the whole question, and roster answers it. Asked
@@ -394,19 +476,26 @@ func (d *Directory) Bind(ctx context.Context, c *wire.Conn, req wire.BindRequest
 		// only held to that: a guess under a suffix this process serves
 		// costs what one under any other costs.
 		v, err := d.me.Get(withKey(ctx, pw), rstr.MeGetRequest_builder{}.Build())
-		if err != nil {
-			return refused
-		}
-		if !named || v.GetAlias() != alias || !bytes.Equal(v.GetTenant(), t.id.Bytes()) {
-			return refused
-		}
-		c.Keep(d.nameOf(t, v.GetAlias()), &binding{tenant: t, holder: v.GetId(), key: pw, asked: d.c.Now()})
+		switch {
+		case err != nil && unsaid(ctx, err):
+			return away(err, how)
+		case err != nil, !named, v.GetAlias() != alias, !bytes.Equal(v.GetTenant(), t.id.Bytes()):
+			how.ended = endedRefused
 
-		return wire.Ok
+			return refused, how
+		}
+		c.Keep(d.nameOf(t, v.GetAlias()), &binding{
+			tenant: t, holder: v.GetId(), key: pw,
+			from: c.RemoteAddr().String(), asked: d.c.Now(),
+		})
+		how.ended = endedBound
+
+		return wire.Ok, how
 	}
 
+	how.kind = kindPassword
 	if !d.c.Bind.passwords() || !named {
-		return refused
+		return refused, how
 	}
 	// Read before roster is asked, so that whatever ended their sign-ins
 	// while it answered is after it.
@@ -420,33 +509,86 @@ func (d *Directory) Bind(ctx context.Context, c *wire.Conn, req wire.BindRequest
 		Who:    rstr.VouchWho_builder{Alias: alias}.Build(),
 		Secret: req.Password,
 	}.Build())
-	switch {
-	case err != nil:
-		if status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated {
-			d.c.Log.Warn("ldap: the directory's key cannot call Vouch.Verify; --bind password needs it", slog.String("tenant", t.alias))
-		}
+	how.ended = endedRefused
+	switch code := status.Code(err); {
+	case err != nil && unsaid(ctx, err):
+		return away(err, how)
+	case code == codes.PermissionDenied, code == codes.Unauthenticated:
+		// This process's own key, refused. Not a wrong password, and
+		// answered as one all the same: a tenant that closed lets nobody in
+		// and is no different to a client from a suffix that is not served,
+		// which is the one answer a stranger is given. What is so is on the
+		// line. It was a warning that the key cannot call `Vouch.Verify`,
+		// once for each attempt by anybody, and of a closed tenant that is
+		// not so.
+		how.ended, how.code = endedKeyRefused, code
 
-		return refused
+		return refused, how
+	case err != nil:
+		// Roster refusing the request itself: a name it will not read as one.
+		return refused, how
 	case v.GetOk():
 		if !bytes.Equal(v.GetTenant(), t.id.Bytes()) {
-			return refused
+			return refused, how
 		}
 		// A row's alias is in small letters or it was not written, so the
 		// name as it was folded is the name the tree has.
-		c.Keep(d.nameOf(t, alias), &binding{tenant: t, holder: v.GetHolder(), began: began, asked: d.c.Now()})
+		c.Keep(d.nameOf(t, alias), &binding{
+			tenant: t, holder: v.GetHolder(), began: began,
+			from: c.RemoteAddr().String(), asked: d.c.Now(),
+		})
+		how.ended = endedBound
 
-		return wire.Ok
+		return wire.Ok, how
 	case v.GetContinuation() != "":
 		// The password was right and the sign-in is not finished: a second
 		// factor is enrolled, and there is no form here to ask for it. The
 		// diagnostic is for the person reading their client's log, and it
 		// says nothing a wrong password would not have -- the refusal code is
 		// the same, and only somebody holding the right password reaches it.
-		return wire.Refuse(wire.InvalidCredentials, "a second factor is enrolled; use an app password for this client")
+		how.ended = endedFactor
+
+		return wire.Refuse(wire.InvalidCredentials, "a second factor is enrolled; use an app password for this client"), how
+	case v.GetDateLocked() != nil:
+		// Said to the log, where whoever is asked which client locked
+		// somebody out reads it, and not to the client.
+		how.ended = endedLocked
+
+		return refused, how
 	default:
-		return refused
+		return refused, how
 	}
 }
+
+// away answers a bind roster could not say anything about, and says so of how
+// it ended.
+//
+// It was `invalidCredentials`, as every error of roster's was: with roster
+// unreachable, held to a rate or failing, somebody's right password was
+// answered as a wrong one, and nothing was logged (#281). A client shows that
+// as a wrong password, and a person changes one that was never wrong.
+func away(err error, how ended) (wire.Result, ended) {
+	how.code = status.Code(err)
+	if how.code == codes.ResourceExhausted {
+		how.ended = endedBusy
+
+		return wire.Refuse(resultBusy, sayBusy), how
+	}
+	how.ended = endedAway
+
+	return wire.Refuse(resultUnavailable, sayAway), how
+}
+
+// The two result codes of RFC 4511 § 4.1.9 for a server that cannot answer
+// just now, and what this process says with each: a sentence of its own, since
+// the one gRPC writes names where roster is dialed.
+const (
+	resultBusy        = 51
+	resultUnavailable = 52
+
+	sayBusy = "roster is busy; try again in a while"
+	sayAway = "the directory cannot ask roster just now; try again in a while"
+)
 
 // binding is what a bind made of a connection: who bound it, in which tenant,
 // which kind of bind it was, and when roster was last asked about them. The
@@ -483,6 +625,10 @@ type binding struct {
 	// and one that runs ahead of roster's misses a sign-out made within
 	// their difference after the bind.
 	began time.Time
+
+	// from is the client's address as the bind's line said it, for the line
+	// that says the connection ended.
+	from string
 
 	// mu holds one asking at a time, so that searches arriving together when
 	// the clock runs out are one call of roster; the rest wait for its answer
@@ -564,6 +710,16 @@ func (d *Directory) stands(ctx context.Context, b *binding) error {
 		b.asked = d.c.Now()
 	case errors.Is(err, errStopped):
 		b.stopped = true
+
+		// Once, in the form the bind's own line has ([Directory.Bind]): what
+		// a client then sees is *bind first*, and this is where an operator
+		// reads why.
+		kind := kindPassword
+		if b.key != "" {
+			kind = kindKey
+		}
+		d.c.Log.LogAttrs(ctx, slog.LevelInfo, "ldap: a bound connection is nobody's now",
+			slog.String("from", b.from), slog.String("tenant", b.tenant.id.String()), slog.String("kind", kind))
 	}
 
 	return err
@@ -628,13 +784,20 @@ func (d *Directory) ask(ctx context.Context, b *binding) error {
 // unsaid is an error of roster's that says nothing about whoever a call was
 // made as: the call ended first, or roster is in trouble. Everything else it
 // answers a borne credential with is a refusal of it. `cmd.AskedAgain` draws
-// the same line for a stream, in the same codes.
+// the same line for a stream, and three codes are added to its list here
+// because this is asked over a wire: a failure roster's handler did not
+// explain arrives as `Unknown`, where inside roster it is an error to read.
+//
+// Erring this way reads nothing. A connection that could not be asked about
+// is not served until it can be, and a bind that could not be checked does
+// not bind.
 func unsaid(ctx context.Context, err error) bool {
 	if ctx.Err() != nil {
 		return true
 	}
 	switch status.Code(err) {
-	case codes.Unavailable, codes.DeadlineExceeded, codes.Canceled, codes.Internal, codes.ResourceExhausted:
+	case codes.Unavailable, codes.DeadlineExceeded, codes.Canceled, codes.Internal, codes.ResourceExhausted,
+		codes.Unknown, codes.DataLoss, codes.Aborted:
 		return true
 	default:
 		return false
@@ -656,7 +819,7 @@ func (d *Directory) bindDN(s string) (*tenant, string, bool) {
 		return nil, "", false
 	}
 	t, rel, ok := d.tenantOf(name)
-	if !ok || len(rel) != 2 || rel[0].attr != "uid" || rel[1].attr != "ou" || !strings.EqualFold(rel[1].value, ouPeople) {
+	if !ok || len(rel) != 2 || rel[0].attr != "uid" || rel[0].value == "" || rel[1].attr != "ou" || !strings.EqualFold(rel[1].value, ouPeople) {
 		return nil, "", false
 	}
 
@@ -795,8 +958,16 @@ func (d *Directory) fronted(ctx context.Context) (map[string]*tenant, error) {
 // empty answer rather than an error, because a search for nobody found
 // nobody; a key that may not read is said so, because that is the
 // operator's to fix and silence would hide it.
+//
+// A roster that did not answer is said as that, in this process's words. It
+// was `operationsError` with the error's own sentence, and the sentence of a
+// roster that cannot be reached is gRPC's: it names the address this process
+// dials roster at, to whoever is bound (#281). Away or failing is
+// `unavailable`, held to a rate is `busy`, and what is left -- roster
+// answering that it will not, in a code none of the above -- is the code's
+// name and nothing roster or the transport wrote.
 func refusal(err error) wire.Result {
-	switch status.Code(err) {
+	switch code := status.Code(err); code {
 	case codes.NotFound:
 		return wire.Ok
 	case codes.PermissionDenied, codes.Unauthenticated:
@@ -805,7 +976,11 @@ func refusal(err error) wire.Result {
 		return wire.Refuse(wire.ProtocolError, status.Convert(err).Message())
 	case codes.DeadlineExceeded, codes.Canceled:
 		return wire.Refuse(wire.TimeLimitExceeded, "")
+	case codes.ResourceExhausted:
+		return wire.Refuse(resultBusy, sayBusy)
+	case codes.Unavailable, codes.Internal, codes.Unknown, codes.DataLoss, codes.Aborted:
+		return wire.Refuse(resultUnavailable, sayAway)
 	default:
-		return wire.Refuse(wire.OperationsError, status.Convert(err).Message())
+		return wire.Refuse(wire.OperationsError, "roster would not answer this read: "+code.String())
 	}
 }
