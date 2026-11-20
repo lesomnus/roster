@@ -30,6 +30,20 @@ const (
 // forty and a person in six teams cost one read per row and not one per
 // mention. It lives for one search and never longer -- there is no cache
 // across searches, on purpose (`docs/ldap.md` § Search).
+//
+// # What is gone is read once too, and is nothing
+//
+// A row that is not there is kept as nil, and each of the four reads below
+// answers nil for it and no error. An erase stamps the row it names and
+// leaves what hung on it: a place in a group, on a team, a relation
+// (`docs/usage/rules.md`, *What is gone grants nothing*). So a read by an
+// identifier found on such a row is `NotFound` as a matter of course, and
+// that is not the search failing or finding nobody -- it is one mention to
+// leave out. The `NotFound` used to be handed up, and on its way out of a
+// search it is an empty answer ([refusal]): somebody in a group that had been
+// erased was dropped from every search that read `memberOf`, with success
+// (#281). Whoever asks decides what a mention of nothing means; none of them
+// can mistake it for the end of the entry they are making.
 type reads struct {
 	groups  map[string]*rstr.Group
 	teams   map[string]*rstr.Team
@@ -41,12 +55,17 @@ func newReads() *reads {
 	return &reads{groups: map[string]*rstr.Group{}, teams: map[string]*rstr.Team{}, sites: map[string]*rstr.Site{}, holders: map[string]*rstr.Holder{}}
 }
 
+// gone is whether a read by identifier answered that there is no such row:
+// erased, or never there.
+func gone(err error) bool { return status.Code(err) == codes.NotFound }
+
+// group is a group by identifier, or nil for one that is gone.
 func (d *Directory) group(ctx context.Context, t *tenant, r *reads, id []byte) (*rstr.Group, error) {
 	if v, ok := r.groups[string(id)]; ok {
 		return v, nil
 	}
 	v, err := d.roster.Group().Get(t.on(ctx), rstr.GroupGetRequest_builder{Ref: rstr.GroupRef_builder{Id: id}.Build()}.Build())
-	if err != nil {
+	if err != nil && !gone(err) {
 		return nil, err
 	}
 	r.groups[string(id)] = v
@@ -54,12 +73,13 @@ func (d *Directory) group(ctx context.Context, t *tenant, r *reads, id []byte) (
 	return v, nil
 }
 
+// team is a team by identifier, or nil for one that is gone.
 func (d *Directory) team(ctx context.Context, t *tenant, r *reads, id []byte) (*rstr.Team, error) {
 	if v, ok := r.teams[string(id)]; ok {
 		return v, nil
 	}
 	v, err := d.roster.Team().Get(t.on(ctx), rstr.TeamGetRequest_builder{Ref: rstr.TeamRef_builder{Id: id}.Build()}.Build())
-	if err != nil {
+	if err != nil && !gone(err) {
 		return nil, err
 	}
 	r.teams[string(id)] = v
@@ -67,12 +87,13 @@ func (d *Directory) team(ctx context.Context, t *tenant, r *reads, id []byte) (*
 	return v, nil
 }
 
+// site is a site by identifier, or nil for one that is gone.
 func (d *Directory) site(ctx context.Context, t *tenant, r *reads, id []byte) (*rstr.Site, error) {
 	if v, ok := r.sites[string(id)]; ok {
 		return v, nil
 	}
 	v, err := d.roster.Site().Get(t.on(ctx), rstr.SiteGetRequest_builder{Ref: rstr.SiteRef_builder{Id: id}.Build()}.Build())
-	if err != nil {
+	if err != nil && !gone(err) {
 		return nil, err
 	}
 	r.sites[string(id)] = v
@@ -80,12 +101,13 @@ func (d *Directory) site(ctx context.Context, t *tenant, r *reads, id []byte) (*
 	return v, nil
 }
 
+// holder is somebody by identifier, or nil for somebody who is gone.
 func (d *Directory) holder(ctx context.Context, t *tenant, r *reads, id []byte) (*rstr.Holder, error) {
 	if v, ok := r.holders[string(id)]; ok {
 		return v, nil
 	}
 	v, err := d.roster.Holder().Get(t.on(ctx), rstr.HolderGetRequest_builder{Ref: rstr.HolderRef_builder{Id: id}.Build()}.Build())
-	if err != nil {
+	if err != nil && !gone(err) {
 		return nil, err
 	}
 	r.holders[string(id)] = v
@@ -104,13 +126,18 @@ func (d *Directory) siteDN(t *tenant, s *rstr.Site) dn {
 }
 
 // teamDN is `cn=<team>,ou=teams,ou=<site>,ou=sites,<suffix>`, or
-// `cn=<team>,ou=teams,<suffix>` for a team with no site.
+// `cn=<team>,ou=teams,<suffix>` for a team with no site. Nil for a team whose
+// site is gone: it has no name in this tree, so it is not listed and nobody is
+// said to be on it.
 func (d *Directory) teamDN(ctx context.Context, t *tenant, r *reads, team *rstr.Team) (dn, error) {
 	under := t.base
 	if id := team.GetSite().GetId(); len(id) > 0 {
 		s, err := d.site(ctx, t, r, id)
 		if err != nil {
 			return nil, err
+		}
+		if s == nil {
+			return nil, nil
 		}
 		under = d.siteDN(t, s)
 	}
@@ -147,10 +174,14 @@ func (d *Directory) groupEntry(ctx context.Context, t *tenant, r *reads, g *rstr
 	return e, nil
 }
 
+// teamEntry shapes a team. Nil for one that has no name here ([Directory.teamDN]).
 func (d *Directory) teamEntry(ctx context.Context, t *tenant, r *reads, team *rstr.Team, w wants) (*entry, error) {
 	name, err := d.teamDN(ctx, t, r, team)
 	if err != nil {
 		return nil, err
+	}
+	if name == nil {
+		return nil, nil
 	}
 	e := newEntry(name)
 	e.add(attrObjectClass, "top", classGroup)
@@ -220,13 +251,9 @@ func (d *Directory) teamMembers(ctx context.Context, t *tenant, team []byte) ([]
 func (d *Directory) addMember(ctx context.Context, t *tenant, r *reads, e *entry, holder []byte) error {
 	v, err := d.holder(ctx, t, r, holder)
 	if err != nil {
-		if status.Code(err) == codes.NotFound {
-			return nil
-		}
-
 		return err
 	}
-	if v.GetDateDisabled() != nil || v.GetDateErased() != nil {
+	if v == nil || v.GetDateDisabled() != nil || v.GetDateErased() != nil {
 		return nil
 	}
 	e.add(attrMember, d.personDN(t, v).String())
@@ -258,6 +285,10 @@ func (d *Directory) teamsUnit(t *tenant, under dn) *entry {
 // convenience rather than the standard's, and the attribute most clients
 // ask for: a `member` list on every group is the truth and this is the
 // same truth read from the other end.
+//
+// A place in a group or on a team that has been erased is skipped, as a
+// group skips a member who is gone ([Directory.addMember]): the place is
+// still listed, on purpose, and what it points at is not read ([reads]).
 func (d *Directory) memberOf(ctx context.Context, t *tenant, r *reads, holder []byte) ([]string, error) {
 	var out []string
 	var after string
@@ -273,6 +304,9 @@ func (d *Directory) memberOf(ctx context.Context, t *tenant, r *reads, holder []
 			g, err := d.group(ctx, t, r, m.GetGroup().GetId())
 			if err != nil {
 				return nil, err
+			}
+			if g == nil {
+				continue
 			}
 			out = append(out, d.groupDN(t, g).String())
 		}
@@ -294,9 +328,15 @@ func (d *Directory) memberOf(ctx context.Context, t *tenant, r *reads, holder []
 			if err != nil {
 				return nil, err
 			}
+			if team == nil {
+				continue
+			}
 			name, err := d.teamDN(ctx, t, r, team)
 			if err != nil {
 				return nil, err
+			}
+			if name == nil {
+				continue
 			}
 			out = append(out, name.String())
 		}

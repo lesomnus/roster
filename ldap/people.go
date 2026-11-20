@@ -258,13 +258,10 @@ func (d *Directory) managers(ctx context.Context, t *tenant, r *reads, holder []
 				continue
 			}
 			who, err := d.holder(ctx, t, r, v.GetOther().GetId())
-			if status.Code(err) == codes.NotFound {
-				continue
-			}
 			if err != nil {
 				return nil, err
 			}
-			if who.GetDateDisabled() != nil || who.GetDateErased() != nil {
+			if who == nil || who.GetDateDisabled() != nil || who.GetDateErased() != nil {
 				continue
 			}
 			out = append(out, d.personDN(t, who).String())
@@ -453,6 +450,11 @@ func (s *search) people(ctx context.Context, t *tenant, after string) (string, w
 		if err != nil {
 			return "", refusal(err)
 		}
+		if h == nil {
+			// The address is still somebody's who has been erased: nobody's
+			// here, as they are.
+			return "", wire.Ok
+		}
 
 		return "", one(h)
 
@@ -464,11 +466,10 @@ func (s *search) people(ctx context.Context, t *tenant, after string) (string, w
 		for _, id := range ids {
 			h, err := d.holder(ctx, t, s.reads, id)
 			if err != nil {
-				if status.Code(err) == codes.NotFound {
-					continue
-				}
-
 				return "", refusal(err)
+			}
+			if h == nil {
+				continue
 			}
 			if res := one(h); res.Code != wire.Success {
 				return "", res

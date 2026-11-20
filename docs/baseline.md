@@ -178,6 +178,8 @@ the page, one of the two is wrong and both are load-bearing.
 | a suffix is a tenant: a search under one answers none of another's, a renamed suffix is the same tenant, the root DSE names the bound tenant's suffix and none before a bind, and nothing below the root is read unbound | `TestASuffixIsATenant` |
 | every filter shape is the roster read that covers it, evaluated without regard to case; a person's attributes are the table in ldap.md, `mail` the verified addresses only, nothing operational unasked | `TestAFilterIsARosterRead` |
 | groups and teams name their members and nobody disabled, a site holds its teams, `memberOf` agrees with `member`, and the whole suffix in one search and in pages is the same tree | `TestGroupsTeamsAndSitesAreTheTree` |
+| somebody is in the tree whatever became of a group or a team they were in: a place in something erased is not named, and every search that found them finds them | `TestSomebodyIsInTheDirectoryWhateverBecameOfAGroupTheyWereIn` |
+| a name in a filter is compared as a name: `memberOf`, `member` and `manager` match however the name is spaced or capitalised, and a value that is not a name matches nobody, as does its `!` | `TestANameIsComparedAsAName` |
 | paging reads everybody once, with a filter that drops rows and with one roster has no index for; the client's size limit is a bound | `TestPagingReadsEverybodyOnce` |
 | no entry carries `userPassword`, a key, a password or a credential | `TestNothingSecretIsInTheTree` |
 | somebody disabled is not in the tree, from the next search on | `TestTheDisabledAreNotListed` |

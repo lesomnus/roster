@@ -328,7 +328,7 @@ deployments of roster should agree on it.
 | `labeledURI` | `Profile.picture` | |
 | `telephoneNumber`, `mobile`, `facsimileTelephoneNumber`, `homePhone`, `pager` | `Phone.number`, by its `kind` | one of no kind, or of a kind with no attribute of its own, is a `telephoneNumber`, and a number that is two of those is there once; read only when asked for or filtered on, since it costs a list |
 | `manager` | the DN of who they report to | a `Relation` of theirs labelled `manager`, which is what a directory provisioning them writes ([scim.md](scim.md)); read only when asked for or filtered on |
-| `memberOf` | the DNs of their groups and teams | AD's convenience, and the one most clients ask for; read only when asked for or filtered on, since it costs two lists |
+| `memberOf` | the DNs of their groups and teams | AD's convenience, and the one most clients ask for; read only when asked for or filtered on, since it costs two lists. A group or a team that has been erased is not named, and whoever was in it is in the tree as before |
 | `entryUUID` | `Holder.id` | |
 
 Never `userPassword`, never a key, never anything from `Credential`: roster
@@ -373,10 +373,16 @@ Base, one-level and subtree; filters with `&`, `|`, `!`, equality, presence
 and substrings over the attributes above, evaluated straight off the BER
 tree the request arrived as -- a filter on the wire is already a tree, and
 there is no string to parse. Every attribute matches without regard to case,
-which is what the matching rules of every attribute in this tree say;
-ordering, approximate and extensible matches are *undefined* in RFC 4511's
-sense and match nothing, so `(|(uid=kim)(cn~=kim))` still finds kim. What
-decides the cost is which roster read a filter becomes:
+which is what the matching rules of the attributes in this tree say, and one
+that holds a name -- `memberOf`, `member`, `manager` -- is compared as a name:
+`(memberOf=cn=payroll, ou=groups, o=contoso)` and
+`(memberOf=CN=Payroll,OU=Groups,O=Contoso)` are the group
+`cn=payroll,ou=groups,o=contoso`, so a filter that keeps a group out with a
+`!` keeps it out however the name is spelt. Ordering, approximate and
+extensible matches are *undefined* in RFC 4511's sense and match nothing, so
+`(|(uid=kim)(cn~=kim))` still finds kim; so is an equality on one of those
+three whose value is not a name, which matches nobody and whose `!` matches
+nobody either. What decides the cost is which roster read a filter becomes:
 
 | the filter says | this process calls |
 | --- | --- |
@@ -530,6 +536,8 @@ The promises, in `baseline.md`'s shape, each with its test:
 | a search under one tenant's suffix answers none of another's, whatever the filter | `TestASuffixIsATenant` |
 | `(uid=…)`, `(mail=…)`, a substring, a department, an employee number, `memberOf`, and the boolean shapes over them each answer the same people the corresponding roster read does, without regard to case; a person's attributes are the table above and nothing operational unasked | `TestAFilterIsARosterRead` |
 | groups and teams name their members and nobody disabled; a site holds its teams and a team with no site is under the suffix; `memberOf` agrees with `member`; the whole suffix read in one search and in pages is the same tree | `TestGroupsTeamsAndSitesAreTheTree` |
+| somebody who was in a group or on a team that has since been erased is in the tree as before, found by every search that found them, with the groups and teams they are still in; `memberOf` goes on agreeing with `member` | `TestSomebodyIsInTheDirectoryWhateverBecameOfAGroupTheyWereIn` |
+| a filter on `memberOf`, `member` or `manager` compares a name as a name, however it is spaced or capitalised, and so does its `!`; a value that is not a name matches nobody, and neither does its `!` | `TestANameIsComparedAsAName` |
 | paging through everybody answers each person once, with a filter that drops rows and with one roster has no index for; the client's size limit is honoured | `TestPagingReadsEverybodyOnce` |
 | no entry ever carries `userPassword`, a key, or a credential; the process's own key and every presented password are absent from every response | `TestNothingSecretIsInTheTree` |
 | somebody disabled is not in the tree, from the next search on -- there is no cache | `TestTheDisabledAreNotListed` |
