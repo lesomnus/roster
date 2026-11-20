@@ -38,6 +38,10 @@ roster ldap serve --roster roster:50051 \
 ```
 
 The suffixes it serves are the tenants that nominated its key, read at start.
+A tenant renamed while it runs is served under the suffix it had until a
+restart, and under its new one from then: its people go on binding and
+searching under the old one meanwhile, by password as by app password, since
+every call names the tenant by its identifier.
 A tenant running its own copy gives it that tenant's `rt_` instead,
 `--key contoso=rt_…` or `ROSTER_LDAP_KEY_CONTOSO`.
 
@@ -91,25 +95,37 @@ it is where a second factor would be walked around.
 app -- the account page's *mint an app password* button, which is
 `ApiKey.Issue` on their own row with methods `[/roster.MeService/Get]` and the
 app's name as the alias -- and pastes it where the client asks for a password.
-This process notices the `rt_` prefix, dials roster bearing that token, calls
-`Me.Get`, and binds if the answer names the alias and tenant the DN does. Nothing
+This process knows one by its shape -- the `rt_` prefix and the forty-three
+characters roster mints after it, so a password that merely begins `rt_` is a
+password -- dials roster bearing that token, calls `Me.Get`, and binds if the
+answer names the alias and tenant the DN does, the alias read without regard to
+case as roster reads a name somebody typed. Nothing
 else is checked, because nothing else is needed: a key that can read its own
 owner is that owner's, the wall put it in its tenant, and the person revokes
 it from the account app's key list, one app at a time. This is Google's *app
 password* for IMAP, and roster already had the mechanism; the only new thing
 is the button, and the hint beside the token saying where to paste it.
 
-**The person's password.** `Vouch.Verify{who: {tenant, alias}, secret}`.
+**The person's password.** `Vouch.Verify{who: {alias}, secret}`, asked as this
+process's holder in the tenant the DN's suffix names, so the tenant is the
+key's to say and not a name sent beside it.
 This is what every LDAP client expects to work and what most deployments must
 not let work for everybody, so it is a setting: `--bind key` (the default),
 `--bind password`, `--bind either`. A password refused in `key` mode says so
 in its diagnostic, and an app password refused in `password` mode likewise,
 so the person reading their client's log learns which the deployment wanted
 -- and nothing else, because the result code is the same 49 a wrong password
-gets. One more is said, and only to somebody holding the right password: where
+gets. That sentence is decided by the mode and the shape of what was sent, and
+never by the name: a bind as somebody under a suffix this process serves, under
+one it does not, and as a name that is not a person's are answered alike, so
+which tenants are here is not learned by trying names. An app password is
+tried as one and as nothing else, where both kinds bind too: one its owner
+revoked is not their wrong password, and does not count toward a lockout.
+One more is said, and only to somebody holding the right password: where
 a second factor is enrolled, *use an app password for this client* (below).
-Every other refusal of a bind is that code with no message: an unknown name,
-somebody else's key, a name that is not a person's.
+Every other refusal of a bind is that code and what the mode says of the kind
+of secret, or no message at all: an unknown name, somebody else's key, a name
+that is not a person's.
 
 ### Why `password` mode still cannot walk around a second factor
 
@@ -179,7 +195,10 @@ A team with no site is `cn=<team>,ou=teams,o=contoso`, under the suffix's own
 deployment whose clients already expect one -- and ties the directory's start to
 contoso: a `--base` for a tenant this directory does not front is refused, as
 everything it is told and cannot do is, so a tenant that ends the directory's
-nomination stops it starting until the flag goes. A tenant that cannot be read
+nomination stops it starting until the flag goes. So are two tenants given one
+suffix, naming both -- a `--base` that is another tenant's `o=<alias>`, say --
+since a name under it would be read as one of them and nobody of the other
+could bind. A tenant that cannot be read
 for any other reason -- the holder it nominated disabled, its role narrowed --
 is skipped with a warning and the rest are served. Nothing below the suffix is configurable:
 a directory's shape is what clients are configured against once, and two
@@ -296,7 +315,7 @@ client's problem and not this process's.
 | Password Modify extended op (RFC 3062) | 53 for now | it could be `Credential.Set` with `current`; the question is whether a client that cannot do a second factor should change a password -- decision 6, below |
 | SASL bind | `authMethodNotSupported` (7) | above |
 | StartTLS | **supported**, and LDAPS beside it | a simple bind over plain TCP is the password in the clear; `--tls cert,key` offers StartTLS on `--listen` and enables `--listen-tls`, and `--require-tls` refuses a bind in the clear with `confidentialityRequired` (13) |
-| WhoAmI (RFC 4532) | **supported** | free, and what a client uses to see a bind took |
+| WhoAmI (RFC 4532) | **supported** | free, and what a client uses to see a bind took; it answers the name of the entry, as the tree spells it, whatever spelling the client bound with |
 | an unknown critical control | `unavailableCriticalExtension` (12) | ignoring one would answer a question the client did not ask |
 
 ## The key this process holds
