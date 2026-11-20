@@ -325,6 +325,10 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	if err := AuditMeant(c.Audit); err != nil {
 		return nil, err
 	}
+	// A `scim:` block likewise; `roster scim serve` asks the same.
+	if err := c.Scim.Meant(); err != nil {
+		return nil, err
+	}
 	// A directory's key is a tenant key, and a deployment with no control
 	// plane reads none: its callers are believed by name (`auth.Plain`), so
 	// the endpoint would answer whoever wrote one down.

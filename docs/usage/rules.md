@@ -254,6 +254,20 @@ reason beside it, in `ldap/wire`, and none is a setting.
 | A search's scope is an ENUMERATED and its size and time limits are INTEGERs of at most `maxInt`; anything else standing where one goes is `protocolError`, and the connection goes on | `ldap/wire/message.go` | `TestAFieldOfASearchIsWhatItsGrammarSays` |
 | A name is read as it was written: of white space, only a space nobody escaped is dropped from around its parts | `ldap/dn.go` | `TestAValueIsReadBackAsItWasWritten` |
 
+### What a request to the SCIM endpoint may cost
+
+Not a call's: what `roster scim serve` holds for a request, which is anybody's
+until its key is accepted ([scim.md](../scim.md)). The clocks and the body's
+bound are constants with their reason beside them, in `cli/scim.go` and `scim`;
+how many requests are worked on at once is `scim.concurrency`.
+
+| | written in | held to it by |
+| --- | --- | --- |
+| A request's headers have ten seconds to arrive and 64 KiB to be said in, and a connection may sit idle two minutes; nothing bounds the answer | `cli/scim.go` | `TestTheEndpointsListenerHasClocks` |
+| Nothing of a body is read before its key is accepted: under no key, or a key nobody has, the answer is `401` at once and the connection ends with it | `scim/scim.go` | `TestNothingOfABodyIsReadUnderNoKey` |
+| A body is read once its key is accepted and before a turn is taken: it has thirty seconds and a megabyte, `408` and `413` past them, and one that is slow to come holds nothing anybody else waits for | `scim/scim.go` | `TestABodyIsWaitedForOutsideATurn` · `TestABodyPastTheBoundIs413` |
+| A turn is a tenant's: `scim.concurrency` requests of one tenant's directory are worked on at once, four unless it says, and one tenant's requests do not hold another's turns. Asking roster who a key is, for a key not remembered, is held to the same number for the process. A number below nought is refused at start | `scim/scim.go`, `cmd/consumers.go` | `TestOneTenantsRequestsDoNotHoldAnothersTurns` · `TestAConcurrencyBelowNoughtIsRefusedAtStart` |
+
 ### One tenant is not reached from another
 
 | | written in | held to it by |

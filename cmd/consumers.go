@@ -1,6 +1,9 @@
 package cmd
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // The consumers, as configuration.
 //
@@ -280,14 +283,29 @@ type ScimConfig struct {
 	// Insecure dials roster without TLS.
 	Insecure bool `yaml:"insecure"`
 
-	// Concurrency is how many requests are worked on at once: a directory's
-	// cycle is a burst, and the rate a tenant's callers are held to is shared
-	// with its people signing in. Four when unsaid.
+	// Concurrency is how many requests of one tenant's directory are worked
+	// on at once, counted by the tenant the key is of: a directory's cycle is
+	// a burst, and the rate a tenant's callers are held to is shared with its
+	// people signing in. Asking roster who a key is, for a key not
+	// remembered, is held to the same number for the process. Four when
+	// nought or unsaid; below nought is refused ([ScimConfig.Meant]).
 	Concurrency int `yaml:"concurrency"`
 }
 
 // Serves is whether this deployment answers SCIM.
 func (c ScimConfig) Serves() bool { return c.Addr != "" }
+
+// Meant refuses a `scim:` block that cannot be meant, as [AuditMeant] does an
+// `audit:` one: a `concurrency` below nought was read as four with nothing
+// said.
+func (c ScimConfig) Meant() error {
+	if c.Concurrency < 0 {
+		return fmt.Errorf("scim.concurrency: %d requests at once cannot be meant; write how many of one "+
+			"tenant's directory are worked on together, or leave it out for four", c.Concurrency)
+	}
+
+	return nil
+}
 
 // LoginConfig is the Login App: the box Hydra hands a `login_challenge` to.
 //
