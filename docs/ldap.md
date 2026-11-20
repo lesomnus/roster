@@ -318,11 +318,11 @@ deployments of roster should agree on it.
 | attribute | from | |
 | --- | --- | --- |
 | `uid` | `Holder.alias` | the RDN |
-| `cn` | `Holder.name` | |
-| `displayName` | `Profile.display_name` | when set |
-| `sn` | `Holder.name` | `inetOrgPerson` requires one and roster does not split names; the whole name, rather than a guess at half of it |
-| `mail` | `Email.address`, **verified rows only** | an unverified address is somebody's claim, and a directory is what other systems believe |
-| `employeeNumber` | `Profile.employee_no` | |
+| `cn` | what they are called now: `Profile.display_name`, else `Holder.name`, else `Holder.alias` | one value, and never missing. The display name is what every write that renames somebody writes; `Holder.name` is what they were added with, which nothing changes |
+| `sn` | the same string as `cn` | `person` requires one and roster does not split names; the whole name, rather than a guess at half of it. No `givenName` is published, for the same reason |
+| `displayName` | `Profile.display_name`, else `Holder.name` | absent for somebody who has neither, so it is a token's `name` exactly: what `MeService/Get` says they are called |
+| `mail` | `Email.address`, **verified rows only** | an unverified address is somebody's claim, and a directory is what other systems believe. In the order they were proved, so the first value is the address a token's `email` says |
+| `employeeNumber` | `Profile.employee_no` | compared as the characters it is written in: `(employeeNumber=ab07)` does not find `AB07` (§ [Search](#search)) |
 | `departmentNumber` | `Profile.department` | |
 | `preferredLanguage` | `Profile.locale` | |
 | `labeledURI` | `Profile.picture` | |
@@ -336,6 +336,25 @@ does not hand those out over its own wire and this process could not fetch
 one to leak. Somebody disabled (`date_disabled`) or erased is not in the tree
 at all rather than present with a flag, for the reason `Holder.date_disabled`
 gives -- a flag is a thing a client has to know to read.
+
+**A machine is not a person here.** A tenant's holders are not all people: each
+front door is answered as one, and so is this directory. Two kinds are left
+out, by the same test the SCIM endpoint asks ([scim.md](scim.md)): a
+holder a file or a provisioner declared -- the label `roster.declared`, which
+`roster login provision` and `roster account provision` write on theirs and a
+`resources:` file on what it declares -- and the holder this directory's key is
+answered as in the tenant, which `roster app install … directory` nominated.
+Neither has an entry, by listing or by name; neither is a `member` of a group
+it was put in, and neither is anybody's `manager`. A tenant's first
+administrator carries no such label and is a person.
+
+What that test cannot see stays in `ou=people`. An app installed by hand
+(`roster app install`, for a Jenkins, say) is a holder like any other, and so
+is the one `roster scim provision` makes for a tenant's directory. And a
+tenant's own copy (`--key`) does not know which holder its key hangs off -- the
+key names no read that says -- so that holder is listed too. A client that
+imports users filters them out by what the tenant knows of them: a group, or
+`(!(uid=jenkins))`.
 
 ### A group, a team, a site
 
@@ -372,9 +391,12 @@ revisited if a client turns out to have no way to tell the two apart.
 Base, one-level and subtree; filters with `&`, `|`, `!`, equality, presence
 and substrings over the attributes above, evaluated straight off the BER
 tree the request arrived as -- a filter on the wire is already a tree, and
-there is no string to parse. Every attribute matches without regard to case,
-which is what the matching rules of the attributes in this tree say, and one
-that holds a name -- `memberOf`, `member`, `manager` -- is compared as a name:
+there is no string to parse. Every attribute but one matches without regard
+to case, which is what the matching rules of the attributes in this tree say.
+The one is `employeeNumber`, which is compared as the characters it is written
+in, in an equality and in a substring: roster's own `Search` compares an
+employee number exactly, and a filter means the same whether or not it is the
+read. An attribute that holds a name -- `memberOf`, `member`, `manager` -- is compared as a name:
 `(memberOf=cn=payroll, ou=groups, o=contoso)` and
 `(memberOf=CN=Payroll,OU=Groups,O=Contoso)` are the group
 `cn=payroll,ou=groups,o=contoso`, so a filter that keeps a group out with a
@@ -382,14 +404,18 @@ that holds a name -- `memberOf`, `member`, `manager` -- is compared as a name:
 extensible matches are *undefined* in RFC 4511's sense and match nothing, so
 `(|(uid=kim)(cn~=kim))` still finds kim; so is an equality on one of those
 three whose value is not a name, which matches nobody and whose `!` matches
-nobody either. What decides the cost is which roster read a filter becomes:
+nobody either. A value with nothing in it -- `(cn=)`, or a substring whose
+fragments are spaces alone, `(cn=* *)` -- matches nobody, with success: no
+attribute here has an empty value. What decides the cost is which roster read
+a filter becomes:
 
 | the filter says | this process calls |
 | --- | --- |
 | `(uid=kim)` | `Holder.Get` by alias, then `Holder.Search` for the alias spelled with other case |
 | `(mail=kim@contoso.example)` | `Email.Get` by address at the tenant, normalised as `Email.Add` stores it |
-| `(cn=Kim Minji)`, `(displayName=…)` | `Holder.Search{q}`, which is a contains; the filter then keeps the exact ones |
-| a substring on `uid`, `cn`, `displayName` | `Holder.Search{q}` |
+| `(cn=Minji)`, `(sn=…)`, `(displayName=…)` | `Holder.Search{q}`, which is a contains over the alias, the name somebody was added with and the display name -- every string those three attributes can be; the filter then keeps the exact ones |
+| a substring on `uid`, `cn`, `sn`, `displayName` | `Holder.Search{q}`, for its longest fragment |
+| a value with nothing in it | nothing: it matches nobody |
 | `(departmentNumber=…)`, `(employeeNumber=…)` | `Holder.Search{department}`, `{employee_no}` |
 | `(memberOf=cn=payroll,…)` | `GroupMembership.List` or `TeamMembership.List` by the group or team named |
 | anything else, or nothing | `Holder.List`, and the filter is evaluated on what comes back |
@@ -538,6 +564,11 @@ The promises, in `baseline.md`'s shape, each with its test:
 | groups and teams name their members and nobody disabled; a site holds its teams and a team with no site is under the suffix; `memberOf` agrees with `member`; the whole suffix read in one search and in pages is the same tree | `TestGroupsTeamsAndSitesAreTheTree` |
 | somebody who was in a group or on a team that has since been erased is in the tree as before, found by every search that found them, with the groups and teams they are still in; `memberOf` goes on agreeing with `member` | `TestSomebodyIsInTheDirectoryWhateverBecameOfAGroupTheyWereIn` |
 | a filter on `memberOf`, `member` or `manager` compares a name as a name, however it is spaced or capitalised, and so does its `!`; a value that is not a name matches nobody, and neither does its `!` | `TestANameIsComparedAsAName` |
+| `cn` is what somebody is called now -- the display name, else the name they were added with, else the alias -- one value and never missing; `sn` is the same string; `displayName` is a token's `name` exactly, absent where a token says none; somebody renamed is found by the new name and not the old; no `givenName` | `TestSomebodyIsCalledWhatATokenCallsThem` |
+| `mail`'s values are in the order they were proved, the first being the address a token's `email` says; an address nobody proved is not published and not found | `TestTheFirstMailIsTheAddressATokenSays` |
+| a holder a file or a provisioner declared, and the directory's own, are no entry by listing or by name, no `member` and nobody's `manager`; a tenant's first administrator is a person | `TestAMachineIsNotAPersonInTheDirectory` |
+| `employeeNumber` minds case, alone and inside an `or`, in an equality and in a substring | `TestAnEmployeeNumberMindsCase` |
+| an equality or a substring with nothing in it answers nobody, with success | `TestAFilterThatAsksForNothingAnswersNobody` |
 | paging through everybody answers each person once, with a filter that drops rows and with one roster has no index for; the client's size limit is honoured | `TestPagingReadsEverybodyOnce` |
 | no entry ever carries `userPassword`, a key, or a credential; the process's own key and every presented password are absent from every response | `TestNothingSecretIsInTheTree` |
 | somebody disabled is not in the tree, from the next search on -- there is no cache | `TestTheDisabledAreNotListed` |
