@@ -65,23 +65,24 @@ const (
 // what is under that, so nothing is made of it.
 const maxDepth = MaxFilterDepth + 4
 
-// overBound is a message past what this package reads of one. It is said to
-// the client in these words, and the connection is ended: a client that sent
-// one is not going to send a smaller one next.
-type overBound string
+// ending is why a connection is ended, in the words its client is told
+// first: a message past what this package reads of one, or a request no
+// answer to which could be told from an answer to another. A client that sent
+// either is not going to send better next.
+type ending string
 
-func (e overBound) Error() string { return string(e) }
+func (e ending) Error() string { return string(e) }
 
 // readMessage reads one LDAPMessage off a connection.
 //
-// The header first, a byte at a time, and it is refused there: for a first
-// byte that is not a sequence's, which is whatever else was pointed at this
-// port, and for a length over `most` or of the indefinite form, which LDAP
-// does not have (RFC 4511 § 5.1) and which would be a message that does not
-// say how long it is. Then exactly the bytes it claimed, kept as they arrive
-// and so costing what was sent and not what was claimed. Nothing past the
-// message is read, which is what lets the byte after a StartTLS response be
-// the handshake's.
+// The header first, in as many bytes as it has, and it is refused there: for
+// a first byte that is not a sequence's, which is whatever else was pointed
+// at this port, and for a length over `most` or of the indefinite form, which
+// LDAP does not have (RFC 4511 § 5.1) and which would be a message that does
+// not say how long it is. Then exactly the bytes it claimed, kept as they
+// arrive and so costing what was sent and not what was claimed. Nothing past
+// the message is read, which is what lets the byte after a StartTLS response
+// be the handshake's.
 func readMessage(r io.Reader, most int) (*ber.Packet, error) {
 	// A tag, the first octet of a length, and the eight more a length may
 	// take.
@@ -105,9 +106,9 @@ func readMessage(r io.Reader, most int) (*ber.Packet, error) {
 	_, n, _, err := header(head)
 	switch {
 	case err != nil:
-		return nil, overBound("a message whose length is not one: " + err.Error())
+		return nil, ending("a message whose length is not one: " + err.Error())
 	case n > uint64(most):
-		return nil, overBound(fmt.Sprintf("a message of %d bytes, and the longest read here is %d", n, most))
+		return nil, ending(fmt.Sprintf("a message of %d bytes, and the longest read here is %d", n, most))
 	}
 
 	// Room for an ordinary request on the header's word, and for a long one
@@ -150,7 +151,7 @@ func (d *decoder) element(b []byte, depth int) (p *ber.Packet, rest []byte, err 
 		return nil, nil, errors.New("an element longer than what holds it")
 	}
 	if d.left == 0 {
-		return nil, nil, overBound(fmt.Sprintf("a message of more than %d elements", MaxElements))
+		return nil, nil, ending(fmt.Sprintf("a message of more than %d elements", MaxElements))
 	}
 	d.left--
 

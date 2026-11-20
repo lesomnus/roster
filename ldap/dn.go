@@ -18,9 +18,15 @@ type dn []rdn
 // parseDN reads RFC 4514's string form, enough of it for the names this tree
 // has: `type=value` parts separated by commas, with backslash escapes and
 // hex pairs in values. Spaces around the separators are dropped.
+//
+// Spaces, U+0020, and only where they were not escaped: that is the one
+// character [escapeValue] escapes at either end of a value, and what is read
+// here has to be what was written there. Reading once took off every kind of
+// white space from either end of the name, and every space from the end of a
+// value escaped or not, so a value that ended in a tab or in a space did not
+// come back as itself.
 func parseDN(s string) (dn, error) {
-	s = strings.TrimSpace(s)
-	if s == "" {
+	if strings.Trim(s, " ") == "" {
 		return dn{}, nil
 	}
 
@@ -28,14 +34,18 @@ func parseDN(s string) (dn, error) {
 	var cur strings.Builder
 	var attr string
 	inValue := false
+	// kept is how much of the value being read ends in something that was
+	// escaped, and so is the value's whatever it is.
+	kept := 0
 	flush := func() error {
 		if !inValue {
 			return errors.New("an RDN with no '='")
 		}
-		v := strings.TrimRight(cur.String(), " ")
-		out = append(out, rdn{attr: strings.ToLower(strings.TrimSpace(attr)), value: v})
+		v := cur.String()
+		v = v[:kept] + strings.TrimRight(v[kept:], " ")
+		out = append(out, rdn{attr: strings.ToLower(strings.Trim(attr, " ")), value: v})
 		cur.Reset()
-		attr, inValue = "", false
+		attr, inValue, kept = "", false, 0
 
 		return nil
 	}
@@ -55,9 +65,10 @@ func parseDN(s string) (dn, error) {
 				cur.WriteByte(n)
 				i++
 			}
+			kept = cur.Len()
 		case c == '=' && !inValue:
 			attr = cur.String()
-			if strings.TrimSpace(attr) == "" {
+			if strings.Trim(attr, " ") == "" {
 				return nil, errors.New("an RDN with no type")
 			}
 			cur.Reset()

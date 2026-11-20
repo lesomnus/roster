@@ -98,7 +98,7 @@ func (f *Filter) Mentions(attr string) bool {
 // it is handed.
 func decodeFilter(p *ber.Packet, depth int) (*Filter, error) {
 	if depth > MaxFilterDepth {
-		return nil, overBound(fmt.Sprintf("filter: nested deeper than %d", MaxFilterDepth))
+		return nil, ending(fmt.Sprintf("filter: nested deeper than %d", MaxFilterDepth))
 	}
 	if p.ClassType != ber.ClassContext {
 		return nil, errors.New("filter: not a context-tagged choice")
