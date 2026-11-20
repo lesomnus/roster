@@ -339,6 +339,16 @@ written against (`server/core/directory.go`).
 | Nor does anybody take their own away there, or move one, and so leave their directory's hands: an erase, an *unlink* and a move each take their verb held across the tenant, not a grant made in a site | `TestSomebodyDoesNotTakeThemselvesOutOfTheirDirectorysHands` · `TestAnAccountAtTheDirectorysConnectionIsTakenAwayAcrossTheTenant` |
 | It writes the numbers of whoever holds no more than its key does | `TestADirectoryLeavesTheNumbersOfSomebodyWiderThanIt` |
 
+### What a directory over LDAP says
+
+`roster ldap serve` reads with a key and writes nothing. These are what a
+client configured against it relies on ([ldap.md](../ldap.md)).
+
+| | written in | held to it by |
+| --- | --- | --- |
+| Somebody is in the directory whatever became of a group or a team they were in: a place in something erased is not named, and nothing else about them changes | `ldap/groups.go` | `TestSomebodyIsInTheDirectoryWhateverBecameOfAGroupTheyWereIn` |
+| A name in a filter is compared as a name: `memberOf`, `member` and `manager` match however the name is spaced or capitalised, so a filter that keeps a group out keeps it out. A value that is not a name matches nobody, and neither does its `!` | `ldap/entry.go` | `TestANameIsComparedAsAName` |
+
 ### What only the deployment writes
 
 | | written in | held to it by |

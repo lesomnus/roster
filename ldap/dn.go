@@ -121,6 +121,12 @@ func (d dn) hasSuffix(suffix dn) bool {
 	return true
 }
 
+// equal is whether two names are one, by the rule [dn.hasSuffix] compares a
+// base by: a name is the same name however it was spaced or capitalised.
+func (d dn) equal(other dn) bool {
+	return len(d) == len(other) && d.hasSuffix(other)
+}
+
 // child is `r` under `d`.
 func (d dn) child(attr, value string) dn {
 	out := make(dn, 0, len(d)+1)

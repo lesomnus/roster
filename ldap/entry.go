@@ -104,12 +104,37 @@ func (e *entry) project(requested []string, typesOnly bool) wire.Entry {
 	return out
 }
 
+// named is the attributes whose values are names: the DN of a group, a team
+// or a person. Their equality is `distinguishedNameMatch`, which compares a
+// name as a name and not as the text somebody happened to write it in.
+var named = map[string]bool{
+	"memberof": true,
+	"member":   true,
+	"manager":  true,
+}
+
 // matches evaluates the filter over the entry, RFC 4511 § 4.5.1.7, with the
 // three values the specification has: true, false, and undefined -- and an
-// entry is returned only for true. Every attribute here matches without
-// regard to case, which is the rule of every attribute in this tree
-// (`caseIgnoreMatch`, `caseIgnoreIA5Match` for `mail`; `uid` is
-// `caseIgnoreMatch` as well).
+// entry is returned only for true. A value is compared by the rule of its
+// attribute: a name as a name ([named]), and everything else as text without
+// regard to case (`caseIgnoreMatch`, `caseIgnoreIA5Match` for `mail`; `uid`
+// is `caseIgnoreMatch` as well).
+//
+// # A name is compared as a name
+//
+// Every value was compared as text, a name among them, so
+// `(memberOf=cn=payroll, ou=groups, o=contoso)` -- a space after each comma,
+// which is how many clients write one -- matched nobody, and its `not` matched
+// everybody, payroll's own members included: a client that keeps a group out
+// by a filter let it in (#281). A search base in that spelling was always read
+// as a name. So is this: both sides are parsed and compared RDN by RDN, which
+// is what a base is held to ([dn.hasSuffix]).
+//
+// And what was asked for that is not a name at all cannot be compared with
+// one, which the specification calls undefined ("the assertion value is
+// invalid"): it matches nothing, and neither does its `not`. Text said false
+// there, and so true for the `not` -- the same client, let in by a typing
+// mistake.
 func (e *entry) matches(f *wire.Filter) bool {
 	v, ok := e.eval(f)
 
@@ -164,6 +189,21 @@ func (e *entry) eval(f *wire.Filter) (value, defined bool) {
 
 		return len(e.values(f.Attr)) > 0, true
 	case wire.FilterEqual:
+		if named[strings.ToLower(f.Attr)] {
+			asked, err := parseDN(f.Value)
+			if err != nil {
+				return false, false
+			}
+			for _, v := range e.values(f.Attr) {
+				// What is published is this package's own writing of a name,
+				// which parses.
+				if name, err := parseDN(v); err == nil && name.equal(asked) {
+					return true, true
+				}
+			}
+
+			return false, true
+		}
 		for _, v := range e.values(f.Attr) {
 			if strings.EqualFold(v, f.Value) {
 				return true, true
