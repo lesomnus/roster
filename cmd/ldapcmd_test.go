@@ -3,6 +3,8 @@ package cmd_test
 import (
 	"context"
 	"github.com/lesomnus/roster/cli"
+	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -17,14 +19,56 @@ import (
 
 // directoryReads is what a directory's key holds (`docs/ldap.md` § The key
 // this process holds), without `Verify`: this deployment binds with app
-// passwords.
+// passwords. `TestTheDirectorysKeyIsTheManualsList` holds it to that list.
 var directoryReads = []string{
 	"/roster.TenantService/Get",
 	"/roster.HolderService/Get", "/roster.HolderService/List", "/roster.HolderService/Search",
-	"/roster.EmailService/Get", "/roster.EmailService/List",
+	"/roster.EmailService/Get", "/roster.EmailService/List", "/roster.PhoneService/List", "/roster.RelationService/List",
 	"/roster.GroupService/Get", "/roster.GroupService/List", "/roster.GroupMembershipService/List",
 	"/roster.SiteService/Get", "/roster.SiteService/List",
 	"/roster.TeamService/Get", "/roster.TeamService/List", "/roster.TeamMembershipService/List",
+}
+
+// directoryVerify is the one method beside them, for a deployment that binds
+// with passwords.
+const directoryVerify = "/roster.VouchService/Verify"
+
+// TestTheDirectorysKeyIsTheManualsList is the list of what a directory's key
+// holds, which is written wherever a role is: in `docs/ldap.md`, which an
+// operator installs from; in the rig's seed (`docker/customer.sh`); and in the
+// test files that stand a directory up.
+//
+// Nothing held them to each other, and this file's had fallen behind by the
+// two newest methods -- a person's numbers and who they report to -- so the
+// directory `roster ldap serve` was tested with was not the one the manual
+// describes (#281). The manual's is the list, and the others are it.
+func TestTheDirectorysKeyIsTheManualsList(t *testing.T) {
+	x := require.New(t)
+	methods := regexp.MustCompile(`/roster\.[A-Za-z]+/[A-Za-z]+`)
+
+	page, err := os.ReadFile("../docs/ldap.md")
+	x.NoError(err)
+	_, after, ok := strings.Cut(string(page), "\n## The key this process holds\n")
+	x.True(ok, "docs/ldap.md has no section called The key this process holds")
+	_, block, ok := strings.Cut(after, "\n```\n")
+	x.True(ok)
+	block, _, ok = strings.Cut(block, "\n```\n")
+	x.True(ok)
+	manual := methods.FindAllString(block, -1)
+	x.NotEmpty(manual)
+
+	x.ElementsMatch(manual, append([]string{directoryVerify}, directoryReads...),
+		"the role this file gives the directory is not the one the manual tells an operator to install")
+
+	seed, err := os.ReadFile("../docker/customer.sh")
+	x.NoError(err)
+	var installed []string
+	for _, line := range strings.Split(string(seed), "\n") {
+		if strings.Contains(line, "--role") && strings.HasSuffix(strings.TrimSpace(line), "directory >/dev/null") {
+			installed = methods.FindAllString(line, -1)
+		}
+	}
+	x.ElementsMatch(manual, installed, "docker/customer.sh installs the directory with another role than the manual's")
 }
 
 // TestLdapServeIsToldEverything is `roster ldap serve` from a shell: refused

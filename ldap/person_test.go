@@ -352,3 +352,61 @@ func TestAFilterThatAsksForNothingAnswersNobody(t *testing.T) {
 	x.Equal([]string{kimDN}, dns(search(t, c, peopleDN, goldap.ScopeSingleLevel, "(&(uid=kim)(!(cn=)))", "1.1")))
 	x.Equal([]string{leeDN}, dns(search(t, c, peopleDN, goldap.ScopeSingleLevel, "(cn=* *o)", "1.1")), "a fragment beside spaces is still looked for")
 }
+
+// TestAClientKeysOnEntryUUID is what stays the same about somebody, which is
+// what a client that keeps an account for them has to key it on
+// (`docs/ldap.md` § A person).
+//
+// Their `uid` and their DN are what they are called, and move when they are
+// renamed; and a name comes free when somebody is erased, so the next person
+// to have it is the same DN. A client keyed on either hands the newcomer the
+// account of whoever had the name before. `entryUUID` is roster's own
+// identifier for the row: it never changes and is never used again. It is
+// operational, so it is answered only when asked for by name, and it is
+// found by one read.
+func TestAClientKeysOnEntryUUID(t *testing.T) {
+	x := require.New(t)
+	d := stand(t)
+	ctx := t.Context()
+	c := d.serve(t, ldap.BindKey, nil)
+	x.NoError(c.Bind(kimDN, d.kimKey))
+
+	const junhoDN = "uid=junho,ou=people,o=contoso"
+	was := one(t, c, leeDN, "entryUUID", "uid").GetAttributeValue("entryUUID")
+	x.NotEmpty(was)
+	x.Empty(one(t, c, leeDN).GetAttributeValue("entryUUID"), "an operational attribute is answered only when asked for")
+	x.Empty(one(t, c, leeDN, "*").GetAttributeValue("entryUUID"))
+	x.Equal(was, one(t, c, leeDN, "+").GetAttributeValue("entryUUID"))
+
+	// lee is written as junho from now on.
+	lee, err := d.s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{Ref: rstr.HolderRef_builder{Id: d.lee}.Build()}.Build())
+	x.NoError(err)
+	_, err = d.s.Ungated.Holder().Realias(ctx, rstr.HolderRealiasRequest_builder{
+		Ref: rstr.HolderRef_builder{Id: d.lee}.Build(), DateUpdated: lee.GetDateUpdated(), Alias: ptr("junho"),
+	}.Build())
+	x.NoError(err)
+
+	_, err = c.Search(goldap.NewSearchRequest(leeDN, goldap.ScopeBaseObject, goldap.NeverDerefAliases, 0, 0, false, "(objectClass=*)", nil, nil))
+	x.True(goldap.IsErrorWithCode(err, goldap.LDAPResultNoSuchObject), "the name somebody had is no longer theirs: %v", err)
+	renamed := one(t, c, junhoDN, "entryUUID", "uid")
+	x.Equal("junho", renamed.GetAttributeValue("uid"))
+	x.Equal(was, renamed.GetAttributeValue("entryUUID"), "a rename moved the identifier a client keys on")
+	x.Equal([]string{junhoDN}, dns(search(t, c, contosoDN, goldap.ScopeWholeSubtree, "(entryUUID="+was+")", "1.1")),
+		"and they are found by it, whatever they are called")
+
+	// And the name is somebody else's as soon as somebody else has it.
+	d.person(t, d.contoso, "lee", "Lee Another", nil, nil)
+	another := one(t, c, leeDN, "entryUUID").GetAttributeValue("entryUUID")
+	x.NotEmpty(another)
+	x.NotEqual(was, another, "two people who have had one name are one entryUUID")
+
+	// As it is after an erase: the name comes free, and the identifier is
+	// never anybody's again.
+	_, err = d.s.Ungated.Holder().Erase(ctx, rstr.HolderRef_builder{Id: d.lee}.Build())
+	x.NoError(err)
+	x.Empty(search(t, c, contosoDN, goldap.ScopeWholeSubtree, "(entryUUID="+was+")", "1.1"))
+	d.person(t, d.contoso, "junho", "Junho Again", nil, nil)
+	again := one(t, c, junhoDN, "entryUUID").GetAttributeValue("entryUUID")
+	x.NotEqual(was, again)
+	x.NotEqual(another, again)
+}

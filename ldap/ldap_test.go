@@ -637,7 +637,7 @@ func TestAFilterIsARosterRead(t *testing.T) {
 		x.Equal("contoso", org[0].GetAttributeValue("o"))
 
 		units := search(t, c, contosoDN, goldap.ScopeSingleLevel, "(objectClass=organizationalUnit)", "ou")
-		x.ElementsMatch([]string{"ou=people,o=contoso", "ou=groups,o=contoso", "ou=sites,o=contoso"}, dns(units))
+		x.ElementsMatch([]string{"ou=people,o=contoso", "ou=groups,o=contoso", "ou=sites,o=contoso", "ou=teams,o=contoso"}, dns(units))
 
 		people := search(t, c, peopleDN, goldap.ScopeBaseObject, "(objectClass=*)", "ou")
 		x.Equal([]string{peopleDN}, dns(people))
@@ -815,7 +815,7 @@ func TestGroupsTeamsAndSitesAreTheTree(t *testing.T) {
 	t.Run("the whole suffix, in one search and in pages, is the same tree", func(t *testing.T) {
 		x := require.New(t)
 		want := []string{
-			contosoDN, peopleDN, "ou=groups,o=contoso", "ou=sites,o=contoso",
+			contosoDN, peopleDN, "ou=groups,o=contoso", "ou=sites,o=contoso", "ou=teams,o=contoso",
 			kimDN, leeDN, adminDN,
 			payroll, nomads, seoul, "ou=teams," + seoul, platform,
 		}
