@@ -214,6 +214,14 @@ func serveLdap(ctx context.Context, lc cmd.LdapConfig) error {
 		n++
 		go serve(tls.NewListener(l, tlsConfig), "ldaps")
 	}
+	// A listener that ends with an error ends this, and so the process: under
+	// `roster serve` that is roster's own ports too, as it is for the account
+	// app, SCIM and the Login App there, each of which returns what its
+	// listener returned. It is not an accept that failed for a moment -- the
+	// process out of descriptors, which [wire.Server.Serve] waits out and
+	// which used to come back here and stop roster -- but a listener that is
+	// broken, and a process whose directory is gone for good is one to start
+	// again and not one to leave answering everything else.
 	for range n {
 		if err := <-errs; err != nil {
 			return err

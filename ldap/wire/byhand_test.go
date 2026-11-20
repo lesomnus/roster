@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log/slog"
 	"net"
 	"runtime"
 	"testing"
@@ -24,6 +25,10 @@ type byHand struct {
 	t  *testing.T
 	nc net.Conn
 }
+
+// quiet is for a server that is going to say what a test made it say: an
+// accept that failed, connections turned away.
+var quiet = slog.New(slog.NewTextHandler(io.Discard, nil))
 
 // patience is how long a test waits for an answer that is not coming. Nothing
 // that passes waits it out: it is what makes a missing answer a failure with

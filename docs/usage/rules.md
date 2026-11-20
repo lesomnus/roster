@@ -241,6 +241,9 @@ reason beside it, in `ldap/wire`, and none is a setting.
 | A message is at most 64 KiB from a connection that has not bound and 1 MiB from one that has, read off its header and refused there, before a byte of what it claims is read; so is a length of the indefinite form, which LDAP has not. The refusal is a notice of disconnection, `protocolError`, and the connection is ended | `ldap/wire/read.go` | `TestAMessageLongerThanARequestIsRefusedOnItsHeader` · `TestAMessageSaysItsLengthBeforeItsBytes` |
 | Reading a message costs what it is long: its bytes once, however deep it nests, and a node for each of its elements, of which it has at most 16 384 | `ldap/wire/read.go` | `TestAMessageNestedAThousandDeepCostsWhatItIsLong` · `TestAMessageOfMoreElementsThanARequestHasIsRefused` |
 | A filter nests at most a hundred deep. One deeper is answered `protocolError` as the search it is and reaches no directory, and the connection is ended | `ldap/wire/filter.go` | `TestAFilterNestsAsDeepAsOneIsWrittenAndNoDeeper` |
+| A directory has at most 1024 connections open, and 256 from one address, an IPv6 address being counted with the /64 it is in. One more is closed with nothing said, before a TLS handshake where there is one. Clients behind one proxy or one NAT are one address and have the 256 between them | `ldap/wire/listen.go` | `TestAConnectionOverTheBoundIsClosedAtOnce` |
+| A connection that has not bound has thirty seconds for each thing it says, the first included; one that has bound may sit idle five minutes | `ldap/wire/listen.go` | `TestAConnectionThatHasNotBoundHasLessTimeToSpeak` |
+| An accept that fails for a moment -- the process out of descriptors -- is waited out and asked again. A listener that is broken ends the directory, and under `roster serve` ends roster, as a consumer's broken listener does there | `ldap/wire/listen.go`, `cli/ldap.go` | `TestTheListenerGoesOnAfterAnAcceptThatFails` |
 
 ### One tenant is not reached from another
 

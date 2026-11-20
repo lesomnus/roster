@@ -38,6 +38,15 @@
 // library's, whose reader a stranger's bytes do not reach. A message over one
 // is told so and the connection is ended.
 //
+// # What a listener holds
+//
+// At most [MaxConns] connections, and [MaxConnsPerAddr] of them from one
+// address; one more is closed with nothing said. A connection that has not
+// bound has [UnboundReadTimeout] for each thing it says, where one that has
+// may sit idle. And an accept that fails for a moment is waited out and
+// asked again, so that a process briefly out of descriptors is not a
+// directory gone for good.
+//
 // # What it refuses on the handler's behalf
 //
 // Every write -- add, modify, delete, modify DN -- and compare, with
@@ -55,6 +64,7 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"net/netip"
 	"sync"
 	"time"
 
@@ -208,30 +218,22 @@ type Server struct {
 	// and an unbound connection cannot read anything a bind guards.
 	RequireTLS bool
 
-	// ReadTimeout is how long a connection may be idle. Zero is
-	// [DefaultReadTimeout].
+	// ReadTimeout is how long a connection that has bound may be idle. Zero
+	// is [DefaultReadTimeout]. One that has not bound has
+	// [UnboundReadTimeout], or this where this is less.
 	ReadTimeout time.Duration
 
 	Log *slog.Logger
 
 	mu    sync.Mutex
 	conns map[*Conn]struct{}
-}
 
-// Serve accepts on `l` until it is closed.
-func (s *Server) Serve(l net.Listener) error {
-	for {
-		nc, err := l.Accept()
-		if err != nil {
-			if errors.Is(err, net.ErrClosed) {
-				return nil
-			}
-
-			return err
-		}
-
-		go s.ServeConn(nc)
-	}
+	// What [Server.Serve] has let in and not seen leave, in all and by where
+	// from; and how many it has turned away since it last said so.
+	open    int
+	from    map[netip.Addr]int
+	refused int
+	said    time.Time
 }
 
 // Close hangs up every connection. The listener is the caller's to close.
@@ -389,15 +391,16 @@ func (s *Server) ServeConn(nc net.Conn) {
 		c.mu.Lock()
 		rc := c.nc
 		c.mu.Unlock()
-		_ = rc.SetReadDeadline(time.Now().Add(timeout))
 
-		// As long as a search is, from a connection that has bound, and as
-		// long as a bind is from one that has not.
+		// A connection that has bound may be idle, and may send a message as
+		// long as a search is. One that has not is anybody's: it has the time
+		// a client takes to bind, and a message as long as a bind is.
 		_, bound := c.Bound()
-		most := MaxMessageUnbound
+		wait, most := min(timeout, UnboundReadTimeout), MaxMessageUnbound
 		if bound {
-			most = MaxMessage
+			wait, most = timeout, MaxMessage
 		}
+		_ = rc.SetReadDeadline(time.Now().Add(wait))
 		p, err := readMessage(rc, most)
 		if err != nil {
 			// A message over a bound is told so, in the one message there is
