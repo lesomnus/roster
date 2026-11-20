@@ -222,7 +222,7 @@ func (s *search) groupEntry(ctx context.Context, t *tenant, g *rstr.Group) (*ent
 		e.add(attrEntryUUID, id.Uuid().String())
 	}
 
-	return s.withMembers(ctx, t, e, func() ([][]byte, error) { return d.groupMembers(ctx, t, g.GetId()) })
+	return s.withMembers(ctx, t, e, &place{group: g.GetId()})
 }
 
 // teamEntry shapes a team. Nil for one that has no name here
@@ -244,7 +244,7 @@ func (s *search) teamEntry(ctx context.Context, t *tenant, team *rstr.Team) (*en
 		e.add(attrEntryUUID, id.Uuid().String())
 	}
 
-	return s.withMembers(ctx, t, e, func() ([][]byte, error) { return d.teamMembers(ctx, t, team.GetId()) })
+	return s.withMembers(ctx, t, e, &place{team: team.GetId()})
 }
 
 // withMembers adds `member` to the entry of a group or a team, where the
@@ -259,7 +259,7 @@ func (s *search) teamEntry(ctx context.Context, t *tenant, team *rstr.Team) (*en
 //
 // Whoever is not in the tree is not named ([Directory.listed]), and neither
 // is anybody who is gone.
-func (s *search) withMembers(ctx context.Context, t *tenant, e *entry, members func() ([][]byte, error)) (*entry, error) {
+func (s *search) withMembers(ctx context.Context, t *tenant, e *entry, at *place) (*entry, error) {
 	d := s.d
 	e.await(attrMember)
 	switch e.eval(s.req.Filter) {
@@ -271,7 +271,7 @@ func (s *search) withMembers(ctx context.Context, t *tenant, e *entry, members f
 		}
 	}
 
-	ids, err := members()
+	ids, err := d.everyMember(ctx, t, at)
 	if err != nil {
 		return nil, err
 	}
@@ -288,42 +288,18 @@ func (s *search) withMembers(ctx context.Context, t *tenant, e *entry, members f
 	return e, nil
 }
 
-// groupMembers and teamMembers are who is in one, as holder identifiers.
-func (d *Directory) groupMembers(ctx context.Context, t *tenant, group []byte) ([][]byte, error) {
+// everyMember is everybody in a group or on a team, as holder identifiers:
+// the whole of its list, which is what its `member` attribute is.
+func (d *Directory) everyMember(ctx context.Context, t *tenant, at *place) ([][]byte, error) {
 	var out [][]byte
-	var after string
+	after := ""
 	for {
-		vs, err := d.roster.GroupMembership().List(t.on(ctx), rstr.GroupMembershipListRequest_builder{
-			Filters: []*rstr.GroupMembershipFilter{rstr.GroupMembershipFilter_builder{Group: rstr.GroupRef_builder{Id: group}.Build()}.Build()},
-			Size:    DefaultPageSize, After: after,
-		}.Build())
+		ids, next, err := d.members(ctx, t, at, after, DefaultPageSize)
 		if err != nil {
 			return nil, err
 		}
-		for _, m := range vs.GetItems() {
-			out = append(out, m.GetHolder().GetId())
-		}
-		if after = vs.GetNext(); after == "" {
-			return out, nil
-		}
-	}
-}
-
-func (d *Directory) teamMembers(ctx context.Context, t *tenant, team []byte) ([][]byte, error) {
-	var out [][]byte
-	var after string
-	for {
-		vs, err := d.roster.TeamMembership().List(t.on(ctx), rstr.TeamMembershipListRequest_builder{
-			Filters: []*rstr.TeamMembershipFilter{rstr.TeamMembershipFilter_builder{Team: rstr.TeamRef_builder{Id: team}.Build()}.Build()},
-			Size:    DefaultPageSize, After: after,
-		}.Build())
-		if err != nil {
-			return nil, err
-		}
-		for _, m := range vs.GetItems() {
-			out = append(out, m.GetHolder().GetId())
-		}
-		if after = vs.GetNext(); after == "" {
+		out = append(out, ids...)
+		if after = next; after == "" {
 			return out, nil
 		}
 	}
@@ -439,29 +415,32 @@ func (d *Directory) placesOf(ctx context.Context, t *tenant, r *reads, holders [
 
 // Walks.
 
-// groups sends every group under a suffix the filter keeps. Not paged: a
-// tenant's groups are tens, and a page of them is a page of one read.
-func (s *search) groups(ctx context.Context, t *tenant) wire.Result {
+// groups is the step of every group the filter keeps.
+//
+// It was not paged -- "a tenant's groups are tens" -- and so was one page of
+// the client's whatever their number: a client that asked for pages of five
+// was sent fourteen (#281). It is roster's list, read through roster's
+// cursor, as the people are.
+func (s *search) groups(ctx context.Context, t *tenant) step {
 	d := s.d
-	var after string
-	for {
-		vs, err := d.roster.Group().List(t.on(ctx), rstr.GroupListRequest_builder{Size: int32(d.c.PageSize), After: after}.Build())
+
+	return s.listing(stageGroups, func(after string, size int) (string, wire.Result) {
+		vs, err := d.roster.Group().List(t.on(ctx), rstr.GroupListRequest_builder{Size: int32(size), After: after}.Build())
 		if err != nil {
-			return refusal(err)
+			return "", refusal(err)
 		}
 		for _, g := range vs.GetItems() {
 			e, err := s.groupEntry(ctx, t, g)
 			if err != nil {
-				return refusal(err)
+				return "", refusal(err)
 			}
 			if res := s.send(e); res.Code != wire.Success {
-				return res
+				return "", res
 			}
 		}
-		if after = vs.GetNext(); after == "" {
-			return wire.Ok
-		}
-	}
+
+		return vs.GetNext(), wire.Ok
+	})
 }
 
 // findGroup is the group called `alias`, or nil. A list rather than a `Get`
@@ -487,70 +466,59 @@ func (d *Directory) findGroup(ctx context.Context, t *tenant, r *reads, alias st
 	}
 }
 
-// sites sends every site, the `ou=teams` under each, and every team --
-// those with a site under it, those without under the suffix's own
-// `ou=teams`. `deep` is the search's scope: one-level from `ou=sites` is the
-// sites alone.
-func (s *search) sites(ctx context.Context, t *tenant, deep bool) wire.Result {
+// sites is a step of one entry for each site: the site itself, or the
+// `ou=teams` under it, which are two steps of a walk that sends both
+// ([search.suffix]). A site's entry, its `ou=teams` and its teams used to
+// follow one another, which is a place in a walk no cursor of roster's says.
+func (s *search) sites(ctx context.Context, t *tenant, stage string, entry func(*rstr.Site) *entry) step {
 	d := s.d
-	var after string
-	for {
-		vs, err := d.roster.Site().List(t.on(ctx), rstr.SiteListRequest_builder{Size: int32(d.c.PageSize), After: after}.Build())
+
+	return s.listing(stage, func(after string, size int) (string, wire.Result) {
+		vs, err := d.roster.Site().List(t.on(ctx), rstr.SiteListRequest_builder{Size: int32(size), After: after}.Build())
 		if err != nil {
-			return refusal(err)
+			return "", refusal(err)
 		}
 		for _, site := range vs.GetItems() {
 			s.reads.sites[string(site.GetId())] = site
-			if res := s.send(d.siteEntry(t, site)); res.Code != wire.Success {
-				return res
-			}
-			if !deep {
-				continue
-			}
-			if res := s.send(d.teamsUnit(t, d.siteDN(t, site))); res.Code != wire.Success {
-				return res
-			}
-			if res := s.teams(ctx, t, siteRef(site)); res.Code != wire.Success {
-				return res
+			if res := s.send(entry(site)); res.Code != wire.Success {
+				return "", res
 			}
 		}
-		if after = vs.GetNext(); after == "" {
-			return wire.Ok
-		}
-	}
+
+		return vs.GetNext(), wire.Ok
+	})
 }
 
-// teams sends the teams of one site, or, with `site` nil, every team --
-// which the walk from the suffix uses for the teams with no site, keeping
-// those that have one for their site's branch.
-func (s *search) teams(ctx context.Context, t *tenant, site *rstr.SiteRef) wire.Result {
+// teams is the step of the teams `keep` takes: those of one site, or, with
+// `site` nil, of the whole tenant -- which a walk narrows to the teams with
+// no site, under the suffix's own `ou=teams`, or to those with one.
+func (s *search) teams(ctx context.Context, t *tenant, site *rstr.Site, keep func(*rstr.Team) bool) step {
 	d := s.d
-	var after string
-	for {
-		req := rstr.TeamListRequest_builder{Size: int32(d.c.PageSize), After: after}
+
+	return s.listing(stageTeams, func(after string, size int) (string, wire.Result) {
+		req := rstr.TeamListRequest_builder{Size: int32(size), After: after}
 		if site != nil {
-			req.Filters = []*rstr.TeamFilter{rstr.TeamFilter_builder{Site: site}.Build()}
+			req.Filters = []*rstr.TeamFilter{rstr.TeamFilter_builder{Site: siteRef(site)}.Build()}
 		}
 		vs, err := d.roster.Team().List(t.on(ctx), req.Build())
 		if err != nil {
-			return refusal(err)
+			return "", refusal(err)
 		}
 		for _, team := range vs.GetItems() {
-			if site == nil && len(team.GetSite().GetId()) > 0 {
+			if !keep(team) {
 				continue
 			}
 			e, err := s.teamEntry(ctx, t, team)
 			if err != nil {
-				return refusal(err)
+				return "", refusal(err)
 			}
 			if res := s.send(e); res.Code != wire.Success {
-				return res
+				return "", res
 			}
 		}
-		if after = vs.GetNext(); after == "" {
-			return wire.Ok
-		}
-	}
+
+		return vs.GetNext(), wire.Ok
+	})
 }
 
 // findSite is `ou=<alias>,ou=sites,<suffix>`, or nil.
@@ -602,33 +570,51 @@ func (d *Directory) findTeam(ctx context.Context, t *tenant, r *reads, site *rst
 	}
 }
 
-// membersOf is the people a `(memberOf=<dn>)` filter names, by the group's
-// or team's name, so the filter is one membership list and not everybody;
-// and the name as this tree writes it, which is the value of `memberOf` each
-// of them has. A name that is not a group's or a team's in this tenant names
-// nobody, and is answered with no name.
-func (d *Directory) membersOf(ctx context.Context, t *tenant, r *reads, name string) ([][]byte, dn, error) {
+// place is a group or a team a filter names, as roster has it: one of the two
+// identifiers, and its name as this tree writes it, which is the value of
+// `memberOf` each of its members has.
+type place struct {
+	group, team []byte
+	name        dn
+}
+
+// place is the group or the team a `(memberOf=<dn>)` filter names, found once
+// a search however many pages of its members are read. Nil for a name that
+// is not a group's or a team's in this tenant, which names nobody.
+func (s *search) place(ctx context.Context, t *tenant, name string) (*place, error) {
+	if at, ok := s.places[name]; ok {
+		return at, nil
+	}
+	at, err := s.d.placed(ctx, t, s.reads, name)
+	if err != nil {
+		return nil, err
+	}
+	if s.places == nil {
+		s.places = map[string]*place{}
+	}
+	s.places[name] = at
+
+	return at, nil
+}
+
+func (d *Directory) placed(ctx context.Context, t *tenant, r *reads, name string) (*place, error) {
 	parsed, err := parseDN(name)
 	if err != nil {
-		return nil, nil, nil
+		return nil, nil
 	}
 	owner, rel, ok := d.tenantOf(parsed)
 	if !ok || owner != t {
-		return nil, nil, nil
+		return nil, nil
 	}
 
 	switch {
 	case len(rel) == 2 && rel[0].attr == attrCn && rel[1].attr == attrOu && strings.EqualFold(rel[1].value, ouGroups):
 		g, err := d.findGroup(ctx, t, r, rel[0].value)
 		if err != nil || g == nil {
-			return nil, nil, err
-		}
-		ids, err := d.groupMembers(ctx, t, g.GetId())
-		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
-		return ids, d.groupDN(t, g), nil
+		return &place{group: g.GetId(), name: d.groupDN(t, g)}, nil
 
 	case len(rel) >= 2 && rel[0].attr == attrCn && rel[1].attr == attrOu && strings.EqualFold(rel[1].value, ouTeams):
 		var site *rstr.Site
@@ -636,29 +622,59 @@ func (d *Directory) membersOf(ctx context.Context, t *tenant, r *reads, name str
 		case len(rel) == 4 && rel[2].attr == attrOu && rel[3].attr == attrOu && strings.EqualFold(rel[3].value, ouSites):
 			site, err = d.findSite(ctx, t, r, rel[2].value)
 			if err != nil || site == nil {
-				return nil, nil, err
+				return nil, err
 			}
 		case len(rel) != 2:
-			return nil, nil, nil
+			return nil, nil
 		}
 		team, err := d.findTeam(ctx, t, r, site, rel[0].value)
 		if err != nil || team == nil {
-			return nil, nil, err
-		}
-		ids, err := d.teamMembers(ctx, t, team.GetId())
-		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		as, err := d.teamDN(ctx, t, r, team)
-		if err != nil {
-			return nil, nil, err
+		if err != nil || as == nil {
+			return nil, err
 		}
 
-		return ids, as, nil
+		return &place{team: team.GetId(), name: as}, nil
 
 	default:
-		return nil, nil, nil
+		return nil, nil
 	}
+}
+
+// members is a page of who is in a group or on a team, as holder
+// identifiers, from roster's cursor `after`; and the cursor after it, empty
+// at the end.
+func (d *Directory) members(ctx context.Context, t *tenant, at *place, after string, size int) ([][]byte, string, error) {
+	var out [][]byte
+	if at.group != nil {
+		vs, err := d.roster.GroupMembership().List(t.on(ctx), rstr.GroupMembershipListRequest_builder{
+			Filters: []*rstr.GroupMembershipFilter{rstr.GroupMembershipFilter_builder{Group: rstr.GroupRef_builder{Id: at.group}.Build()}.Build()},
+			Size:    int32(size), After: after,
+		}.Build())
+		if err != nil {
+			return nil, "", err
+		}
+		for _, m := range vs.GetItems() {
+			out = append(out, m.GetHolder().GetId())
+		}
+
+		return out, vs.GetNext(), nil
+	}
+
+	vs, err := d.roster.TeamMembership().List(t.on(ctx), rstr.TeamMembershipListRequest_builder{
+		Filters: []*rstr.TeamMembershipFilter{rstr.TeamMembershipFilter_builder{Team: rstr.TeamRef_builder{Id: at.team}.Build()}.Build()},
+		Size:    int32(size), After: after,
+	}.Build())
+	if err != nil {
+		return nil, "", err
+	}
+	for _, m := range vs.GetItems() {
+		out = append(out, m.GetHolder().GetId())
+	}
+
+	return out, vs.GetNext(), nil
 }
 
 func firstOf(vs ...string) string {
