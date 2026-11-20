@@ -393,17 +393,29 @@ func (s *search) listing(stage string, read func(after string, size int) (string
 	}}
 }
 
+// children is the entries directly under a tenant's suffix: its units, and
+// the `ou=teams` that holds the teams with no site.
+//
+// `ou=teams` answered by name and was in no listing, though the teams under
+// it were (#281): a client that walks the tree a level at a time never
+// reached them, and one that read the subtree was handed
+// `cn=nomads,ou=teams,o=contoso` with nothing above it.
+func (d *Directory) children(t *tenant) []*entry {
+	var out []*entry
+	for _, ou := range units {
+		out = append(out, d.unit(t, ou))
+	}
+
+	return append(out, d.teamsUnit(t, t.base))
+}
+
 // suffix is the steps of a subtree search from a tenant's suffix, which is
 // the whole of its tree: `docs/ldap.md` § The tree.
 func (s *search) suffix(ctx context.Context, t *tenant) []step {
 	d := s.d
-	fixed := []*entry{d.organisation(t)}
-	for _, ou := range units {
-		fixed = append(fixed, d.unit(t, ou))
-	}
 
 	return []step{
-		s.nodes(fixed...),
+		s.nodes(append([]*entry{d.organisation(t)}, d.children(t)...)...),
 		s.people(ctx, t),
 		s.groups(ctx, t),
 		s.sites(ctx, t, stageSites, func(site *rstr.Site) *entry { return d.siteEntry(t, site) }),
@@ -416,6 +428,10 @@ func (s *search) suffix(ctx context.Context, t *tenant) []step {
 // The tree is fixed, so this is which node the base names and from there
 // which nodes the scope reaches; a base that names nothing is
 // `noSuchObject`.
+//
+// A subtree is its base and everything under it, RFC 4511 § 4.5.1.2. A
+// subtree search of a unit -- `ou=people`, `ou=groups`, either `ou=teams`,
+// `ou=sites` -- answered what is under it and left the unit out (#281).
 func (s *search) under(ctx context.Context, t *tenant, rel dn) ([]step, wire.Result) {
 	d, scope := s.d, s.req.Scope
 	missing := wire.Refuse(wire.NoSuchObject, "")
@@ -426,6 +442,18 @@ func (s *search) under(ctx context.Context, t *tenant, rel dn) ([]step, wire.Res
 	// Names, so the cases below read.
 	isOu := func(i int, ou string) bool {
 		return i < len(rel) && rel[i].attr == attrOu && strings.EqualFold(rel[i].value, ou)
+	}
+	// within is a unit and the one list under it, as the scope has them: the
+	// unit, what is under it, or both.
+	within := func(unit *entry, below step) []step {
+		switch scope {
+		case wire.ScopeBase:
+			return []step{s.nodes(unit)}
+		case wire.ScopeOne:
+			return []step{below}
+		default:
+			return []step{s.nodes(unit), below}
+		}
 	}
 	sited := func(team *rstr.Team) bool { return len(team.GetSite().GetId()) > 0 }
 	unsited := func(team *rstr.Team) bool { return !sited(team) }
@@ -438,23 +466,14 @@ func (s *search) under(ctx context.Context, t *tenant, rel dn) ([]step, wire.Res
 		case wire.ScopeBase:
 			return []step{s.nodes(d.organisation(t))}, wire.Ok
 		case wire.ScopeOne:
-			var fixed []*entry
-			for _, ou := range units {
-				fixed = append(fixed, d.unit(t, ou))
-			}
-
-			return []step{s.nodes(fixed...)}, wire.Ok
+			return []step{s.nodes(d.children(t)...)}, wire.Ok
 		default:
 			return s.suffix(ctx, t), wire.Ok
 		}
 
 	// ou=people, and a person.
 	case len(rel) == 1 && isOu(0, ouPeople):
-		if scope == wire.ScopeBase {
-			return []step{s.nodes(d.unit(t, ouPeople))}, wire.Ok
-		}
-
-		return []step{s.people(ctx, t)}, wire.Ok
+		return within(d.unit(t, ouPeople), s.people(ctx, t)), wire.Ok
 
 	case len(rel) == 2 && rel[0].attr == attrUid && isOu(1, ouPeople):
 		v, err := d.byAlias(ctx, t, s.reads, rel[0].value)
@@ -474,11 +493,7 @@ func (s *search) under(ctx context.Context, t *tenant, rel dn) ([]step, wire.Res
 
 	// ou=groups, and a group.
 	case len(rel) == 1 && isOu(0, ouGroups):
-		if scope == wire.ScopeBase {
-			return []step{s.nodes(d.unit(t, ouGroups))}, wire.Ok
-		}
-
-		return []step{s.groups(ctx, t)}, wire.Ok
+		return within(d.unit(t, ouGroups), s.groups(ctx, t)), wire.Ok
 
 	case len(rel) == 2 && rel[0].attr == attrCn && isOu(1, ouGroups):
 		g, err := d.findGroup(ctx, t, s.reads, rel[0].value)
@@ -500,11 +515,7 @@ func (s *search) under(ctx context.Context, t *tenant, rel dn) ([]step, wire.Res
 
 	// ou=teams under the suffix: the teams with no site.
 	case len(rel) == 1 && isOu(0, ouTeams):
-		if scope == wire.ScopeBase {
-			return []step{s.nodes(d.teamsUnit(t, t.base))}, wire.Ok
-		}
-
-		return []step{s.teams(ctx, t, nil, unsited)}, wire.Ok
+		return within(d.teamsUnit(t, t.base), s.teams(ctx, t, nil, unsited)), wire.Ok
 
 	case len(rel) == 2 && rel[0].attr == attrCn && isOu(1, ouTeams):
 		team, err := d.findTeam(ctx, t, s.reads, nil, rel[0].value)
@@ -534,6 +545,7 @@ func (s *search) under(ctx context.Context, t *tenant, rel dn) ([]step, wire.Res
 			return []step{sites}, wire.Ok
 		default:
 			return []step{
+				s.nodes(d.unit(t, ouSites)),
 				sites,
 				s.sites(ctx, t, stageUnits, func(site *rstr.Site) *entry { return d.teamsUnit(t, d.siteDN(t, site)) }),
 				s.teams(ctx, t, nil, sited),
@@ -562,11 +574,7 @@ func (s *search) under(ctx context.Context, t *tenant, rel dn) ([]step, wire.Res
 			}
 
 		case len(under) == 1 && under[0].attr == attrOu && strings.EqualFold(under[0].value, ouTeams):
-			if scope == wire.ScopeBase {
-				return []step{s.nodes(unit)}, wire.Ok
-			}
-
-			return []step{s.teams(ctx, t, site, everyTeam)}, wire.Ok
+			return within(unit, s.teams(ctx, t, site, everyTeam)), wire.Ok
 
 		case len(under) == 2 && under[0].attr == attrCn && under[1].attr == attrOu && strings.EqualFold(under[1].value, ouTeams):
 			team, err := d.findTeam(ctx, t, s.reads, site, under[0].value)

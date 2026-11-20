@@ -249,7 +249,7 @@ func TestASizeLimitIsOfTheWholeSearch(t *testing.T) {
 
 	t.Run("and it is of every part of the tree together", func(t *testing.T) {
 		x := require.New(t)
-		// Four fixed nodes, twenty-six people, fourteen groups: a limit of 40
+		// Five fixed nodes, twenty-six people, fourteen groups: a limit of 40
 		// ends among the groups, having counted what came before them.
 		var all []string
 		var cookie []byte

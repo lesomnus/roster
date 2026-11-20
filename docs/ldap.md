@@ -282,8 +282,8 @@ this process's address, and not which client asked it to
 
 ## The tree
 
-One naming context per tenant this process holds a key for, and the key's
-alias is the default suffix:
+One naming context per tenant this process fronts, and the tenant's alias is
+the default suffix:
 
 ```
 o=contoso
@@ -291,6 +291,8 @@ o=contoso
 │   └── uid=kim                      Holder
 ├── ou=groups
 │   └── cn=payroll                   Group, member: the DNs of its people
+├── ou=teams
+│   └── cn=nomads                    Team with no site
 └── ou=sites
     └── ou=seoul                     Site
         └── ou=teams
@@ -298,7 +300,10 @@ o=contoso
 ```
 
 A team with no site is `cn=<team>,ou=teams,o=contoso`, under the suffix's own
-`ou=teams`. `--base contoso=dc=contoso,dc=example` renames the suffix for a
+`ou=teams`. Every node is listed under the one above it: the four units are
+the suffix's children whether or not a tenant has anything in them, and a
+subtree search of any name holds that name and everything under it.
+`--base contoso=dc=contoso,dc=example` renames the suffix for a
 deployment whose clients already expect one -- and ties the directory's start to
 contoso: a `--base` for a tenant this directory does not front is refused, as
 everything it is told and cannot do is, so a tenant that ends the directory's
@@ -307,9 +312,9 @@ suffix, naming both -- a `--base` that is another tenant's `o=<alias>`, say --
 since a name under it would be read as one of them and nobody of the other
 could bind. A tenant that cannot be read
 for any other reason -- the holder it nominated disabled, its role narrowed --
-is skipped with a warning and the rest are served. Nothing below the suffix is configurable:
-a directory's shape is what clients are configured against once, and two
-deployments of roster should agree on it.
+is skipped with a warning and the rest are served. Nothing below the suffix is
+configurable: a directory's shape is what clients are configured against once,
+and two deployments of roster should agree on it.
 
 ### A person
 
@@ -337,6 +342,31 @@ one to leak. Somebody disabled (`date_disabled`) or erased is not in the tree
 at all rather than present with a flag, for the reason `Holder.date_disabled`
 gives -- a flag is a thing a client has to know to read.
 
+**What a client keys on is `entryUUID`.** It is roster's own identifier for
+the person: it never changes, and it is never anybody else's. It is an
+operational attribute, so it is answered only when asked for by name (or with
+`+`), and `(entryUUID=…)` finds its person in one read. Everything else that
+looks like a key is what somebody is called. `uid`, and so the DN, moves when
+they are renamed (`HolderService/Realias`): the old DN is `noSuchObject` from
+the next search. And a name comes free when somebody is erased, so the next
+person to be called `lee` is `uid=lee,ou=people,o=contoso` with another
+`entryUUID`: a client that keys an account on `uid` or on the DN hands the
+newcomer the account of whoever had the name before. `cn` is what somebody is
+called now, for showing, and changes whenever they say.
+
+**Whose word an attribute is.** A tenant lets its people write their own
+profile unless it says otherwise -- the role `self-service` names
+`HolderService/Update`, and a tenant turns that off by taking it out
+([usage/permissions.md](usage/permissions.md)). Where they may, these are what
+the person says of themselves, checked by nobody: `displayName` and so `cn`
+and `sn`, `departmentNumber`, `employeeNumber`, `preferredLanguage` and
+`labeledURI`; and their numbers, which they add the same way
+(`PhoneService/Add`). A filter on a department, or a rule a client keeps
+about an employee number, reads a value its subject can write. `mail` is the
+other kind: an address is published once somebody proved it, and not before.
+`uid`, `manager` and `memberOf` are written by verbs that role may not name,
+and `entryUUID` by nobody.
+
 **A machine is not a person here.** A tenant's holders are not all people: each
 front door is answered as one, and so is this directory. Two kinds are left
 out, by the same test the SCIM endpoint asks ([scim.md](scim.md)): a
@@ -358,12 +388,28 @@ imports users filters them out by what the tenant knows of them: a group, or
 
 ### A group, a team, a site
 
-`groupOfNames`, `cn` the alias, `description` the note, `member` the DNs of
-who is in it -- read from `GroupMembership.List` and `TeamMembership.List`. A
+`groupOfNames`, `cn` the alias, `description` the note or, where there is
+none, the name, `member` the DNs of who is in it -- read from
+`GroupMembership.List` and `TeamMembership.List`. A
 team's DN carries its site, because a team is a group of people **within one
 site** (`entity.md`). A site is an `organizationalUnit`. Nested groups are not
 here because they are not in roster (`position.md` § What we deliberately do
 not have).
+
+**A group with nobody in it has no `member`.** `groupOfNames` requires one
+(RFC 4519), and a group whose every member is suspended, erased or a machine
+is the same case. This tree does not invent a member to satisfy the class: a
+name that is nobody's is a name a client would grant on. A client that checks
+entries against the schema reports such a group; one that reads `member`
+reads none, which is the truth.
+
+**Every group and every membership is published to whoever binds.** A
+`GroupExposure` says which of somebody's groups a token carries to which
+client, and it has no say here: it is about tokens, and a directory is one
+view for everybody who binds
+(§ [Whose eyes a search uses](#whose-eyes-a-search-uses)). A tenant that
+shows a client two groups in a token and points the same client at this
+directory has shown it all of them, with who is in each.
 
 ### What a client grants on, and what roster guards
 
@@ -496,10 +542,14 @@ The reads of groups, teams, sites and people one search makes are kept for
 that search -- a group of forty and a person in six teams cost a read per
 row, not per mention -- and dropped with it.
 
-**No cache.** A search is a read of roster, every time. A cache is exactly
+**No cache of what a search answers.** A search is a read of roster, every
+time: who is in the tree, what they are called and which groups they are in
+are read for each answer and kept only until it is sent. A cache is exactly
 where somebody `Holder.Disable`d stays visible for another hour, and the
 clients that matter (a VPN) ask on every sign-in and can afford the round
-trip. If a deployment's address book hammers it, the answer is `SyncService`
+trip. What this process learned as it started is another matter: which
+tenants it fronts and what each is called are read then
+(§ [Running it](#running-it)). If a deployment's address book hammers it, the answer is `SyncService`
 feeding a cache *in that client*, which is where a stale entry is that
 client's problem and not this process's.
 
@@ -546,6 +596,14 @@ writes the holder, the role, the binding and the nomination:
 included, since `LDAP_BIND` is a switch there), and a role that
 holds less answers `insufficientAccessRights` (50) with roster's message where
 the missing method would have been read, rather than an empty tree.
+
+The list is typed where a role is written, and this is the one the others are
+held to: the rig's seed and the roles the tests give a directory are compared
+with it by `TestTheDirectorysKeyIsTheManualsList` and
+`TestTheKeyOfTheseTestsIsTheManualsList`. The Login App, the account app and
+the SCIM endpoint each have a `provision` command that writes their role from
+a list in the code; the directory has none, so an operator copies this one. A
+command for it adds to the command line and is left for later.
 
 `Me.Get` is not in it: a person's app password is checked bearing **their**
 key, not this one. And `Verify` is left off a `--bind key` deployment on
@@ -618,7 +676,7 @@ The promises, in `baseline.md`'s shape, each with its test:
 | an app password binds its own DN and no other; a wrong `rt_`, somebody else's, the directory's own key, and an empty password are the same `invalidCredentials` | `TestAnAppPasswordBindsItsOwnerAndNobodyElse` |
 | under `--bind key` a real password does not bind; under `password` it does for somebody with no second factor and does **not** for somebody with one | `TestAPasswordBindStopsAtASecondFactor` |
 | a search under one tenant's suffix answers none of another's, whatever the filter | `TestASuffixIsATenant` |
-| `(uid=…)`, `(mail=…)`, a substring, a department, an employee number, `memberOf`, and the boolean shapes over them each answer the same people the corresponding roster read does, without regard to case; a person's attributes are the table above and nothing operational unasked | `TestAFilterIsARosterRead` |
+| `(uid=…)`, `(mail=…)`, a substring, a department, an employee number, `memberOf`, and the boolean shapes over them each answer the same people the corresponding roster read does, without regard to case but for an employee number; a person's attributes are the table above and nothing operational unasked | `TestAFilterIsARosterRead` |
 | groups and teams name their members and nobody disabled; a site holds its teams and a team with no site is under the suffix; `memberOf` agrees with `member`; the whole suffix read in one search and in pages is the same tree | `TestGroupsTeamsAndSitesAreTheTree` |
 | somebody who was in a group or on a team that has since been erased is in the tree as before, found by every search that found them, with the groups and teams they are still in; `memberOf` goes on agreeing with `member` | `TestSomebodyIsInTheDirectoryWhateverBecameOfAGroupTheyWereIn` |
 | a filter on `memberOf`, `member` or `manager` compares a name as a name, however it is spaced or capitalised, and so does its `!`; a value that is not a name matches nobody, and neither does its `!` | `TestANameIsComparedAsAName` |
@@ -635,6 +693,9 @@ The promises, in `baseline.md`'s shape, each with its test:
 | no page is empty but the last: `(uid=kim)` from a suffix is one page | `TestNoPageIsEmptyButTheLast` |
 | a size limit is of the whole search, over however many pages; a page no smaller than the limit is the search in one | `TestASizeLimitIsOfTheWholeSearch` |
 | a page of zero with a cookie ends the paging | `TestAPageOfNothingEndsThePaging` |
+| every entry a search answers has its parent answered beside it and is listed under it, the suffix's own `ou=teams` among them; a subtree search of a name holds the name; a group with nobody in it is a `groupOfNames` with no `member` | `TestTheTreeListsEveryNodeItAnswers` |
+| `entryUUID` is the same through a rename and never anybody else's, where `uid` and the DN move and are used again; it is answered only when asked for, and found by it | `TestAClientKeysOnEntryUUID` |
+| the methods a directory's key holds are this page's list, in the rig's seed and in the tests that stand a directory up | `TestTheDirectorysKeyIsTheManualsList` · `TestTheKeyOfTheseTestsIsTheManualsList` |
 | a cookie holds where roster was read to and how many entries went before, names nobody, is read on from by another connection and another process, and reads only the tenant its presenter is bound in; one that is no cursor is refused | `TestACookieIsWhereRosterWasReadTo` |
 | no entry ever carries `userPassword`, a key, or a credential; the process's own key and every presented password are absent from every response | `TestNothingSecretIsInTheTree` |
 | somebody disabled is not in the tree, from the next search on -- there is no cache | `TestTheDisabledAreNotListed` |
