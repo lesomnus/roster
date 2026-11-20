@@ -244,6 +244,10 @@ reason beside it, in `ldap/wire`, and none is a setting.
 | A directory has at most 1024 connections open, and 256 from one address, an IPv6 address being counted with the /64 it is in. One more is closed with nothing said, before a TLS handshake where there is one. Clients behind one proxy or one NAT are one address and have the 256 between them | `ldap/wire/listen.go` | `TestAConnectionOverTheBoundIsClosedAtOnce` |
 | A connection that has not bound has thirty seconds for each thing it says, the first included; one that has bound may sit idle five minutes | `ldap/wire/listen.go` | `TestAConnectionThatHasNotBoundHasLessTimeToSpeak` |
 | An accept that fails for a moment -- the process out of descriptors -- is waited out and asked again. A listener that is broken ends the directory, and under `roster serve` ends roster, as a consumer's broken listener does there | `ldap/wire/listen.go`, `cli/ldap.go` | `TestTheListenerGoesOnAfterAnAcceptThatFails` |
+| A connection that has bound has at most a hundred searches running at once; one more is answered `busy` (51) and reaches no directory. One that has not bound has one thing going at a time: its search is answered before its next message is read | `ldap/wire/flight.go` | `TestASearchOverWhatAConnectionHasInFlightIsAnsweredBusy` · `TestAConnectionThatHasNotBoundHasOneThingGoingAtOnce` |
+| What a connection has in flight ends with it: a client that hangs up, and one that does not read what it asked for within thirty seconds a message, is let go and its searches told to stop | `ldap/wire/wire.go` | `TestAClientThatHangsUpEndsItsSearch` · `TestAClientThatDoesNotReadIsLetGo` |
+| An abandon reaches its search however soon after it is sent, and StartTLS is refused beside one: a search is counted in before it is started | `ldap/wire/flight.go` | `TestAnAbandonSentWithItsSearchReachesIt` · `TestStartTlsIsRefusedBesideASearch` |
+| A bind ends what the connection had in flight before the directory is asked, and the directory has thirty seconds to answer it | `ldap/wire/wire.go` | `TestABindEndsWhatIsInFlight` · `TestABindHasADeadlineOfItsOwn` |
 
 ### One tenant is not reached from another
 
