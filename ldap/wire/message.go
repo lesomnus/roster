@@ -1,6 +1,7 @@
 package wire
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"time"
@@ -59,7 +60,7 @@ func (m *message) paging() (*Paging, error) {
 		if c.oid != OidPagedResults {
 			continue
 		}
-		v, err := ber.DecodePacketErr(c.value)
+		v, err := decode(c.value)
 		if err != nil || len(v.Children) != 2 {
 			return nil, errors.New("paged results control: not a size and a cookie")
 		}
@@ -68,7 +69,9 @@ func (m *message) paging() (*Paging, error) {
 			return nil, fmt.Errorf("paged results control: %w", err)
 		}
 
-		return &Paging{Size: int(size), Cookie: v.Children[1].Data.Bytes()}, nil
+		// A copy, since a search keeps its cookie for as long as it runs and
+		// the bytes it was read from are the whole message's.
+		return &Paging{Size: int(size), Cookie: bytes.Clone(v.Children[1].Data.Bytes())}, nil
 	}
 
 	return nil, nil
@@ -157,7 +160,7 @@ func decodeSearch(m *message) (SearchRequest, error) {
 		return SearchRequest{}, errors.New("search: time limit")
 	}
 	only := op.Children[5].Data.Bytes()
-	f, err := decodeFilter(op.Children[6])
+	f, err := decodeFilter(op.Children[6], 1)
 	if err != nil {
 		return SearchRequest{}, fmt.Errorf("search: %w", err)
 	}

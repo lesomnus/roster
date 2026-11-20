@@ -230,6 +230,18 @@ is roster's to say and not a caller's (`server/portrait/portrait.go`).
 | The largest image there is costs a process under 96 MiB to render | `server/portrait/portrait.go` | `TestTheLargestPictureIsRenderedWithinABound` |
 | A process renders two images at once. A call beyond those waits its turn for as long as it lasts, and one that ends waiting is answered as out of time, not as an image refused | `server/portrait/portrait.go`, `server/core/portrait.go` | `TestAFewPicturesAreRenderedAtOnceAndTheRestWait` · `TestACallThatEndedWaitingToBeRenderedIsNotAnImageRefused` |
 
+### What a connection to the directory may cost
+
+Not a call's: what `roster ldap serve` holds a connection to, which is anybody's
+until it has bound ([ldap.md](../ldap.md)). Each number is a constant with its
+reason beside it, in `ldap/wire`, and none is a setting.
+
+| | written in | held to it by |
+| --- | --- | --- |
+| A message is at most 64 KiB from a connection that has not bound and 1 MiB from one that has, read off its header and refused there, before a byte of what it claims is read; so is a length of the indefinite form, which LDAP has not. The refusal is a notice of disconnection, `protocolError`, and the connection is ended | `ldap/wire/read.go` | `TestAMessageLongerThanARequestIsRefusedOnItsHeader` · `TestAMessageSaysItsLengthBeforeItsBytes` |
+| Reading a message costs what it is long: its bytes once, however deep it nests, and a node for each of its elements, of which it has at most 16 384 | `ldap/wire/read.go` | `TestAMessageNestedAThousandDeepCostsWhatItIsLong` · `TestAMessageOfMoreElementsThanARequestHasIsRefused` |
+| A filter nests at most a hundred deep. One deeper is answered `protocolError` as the search it is and reaches no directory, and the connection is ended | `ldap/wire/filter.go` | `TestAFilterNestsAsDeepAsOneIsWrittenAndNoDeeper` |
+
 ### One tenant is not reached from another
 
 | | written in | held to it by |

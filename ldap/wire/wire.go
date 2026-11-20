@@ -29,6 +29,15 @@
 // than ignoring it. The client's size and time limits are handed to the
 // handler as a bound and a deadline.
 //
+// # What a message may be
+//
+// As long as a request is and no longer, made of as many elements as a
+// search has, and its filter as deep as one is written: [MaxMessage] and
+// [MaxMessageUnbound], [MaxElements], [MaxFilterDepth], each with its reason
+// beside it. They are this package's, held where it reads, and not the BER
+// library's, whose reader a stranger's bytes do not reach. A message over one
+// is told so and the connection is ended.
+//
 // # What it refuses on the handler's behalf
 //
 // Every write -- add, modify, delete, modify DN -- and compare, with
@@ -381,8 +390,27 @@ func (s *Server) ServeConn(nc net.Conn) {
 		rc := c.nc
 		c.mu.Unlock()
 		_ = rc.SetReadDeadline(time.Now().Add(timeout))
-		p, err := ber.ReadPacket(rc)
+
+		// As long as a search is, from a connection that has bound, and as
+		// long as a bind is from one that has not.
+		_, bound := c.Bound()
+		most := MaxMessageUnbound
+		if bound {
+			most = MaxMessage
+		}
+		p, err := readMessage(rc, most)
 		if err != nil {
+			// A message over a bound is told so, in the one message there is
+			// for a server that is hanging up: it has no identifier yet to be
+			// answered by. Anything else that is not a message has nobody to
+			// tell, as below.
+			var over overBound
+			if errors.As(err, &over) {
+				if !bound {
+					over += overBound(fmt.Sprintf("; a connection that has bound may send %d", MaxMessage))
+				}
+				c.notice(Refuse(ProtocolError, string(over)))
+			}
 			if !errors.Is(err, io.EOF) && !errors.Is(err, net.ErrClosed) {
 				s.log().Debug("ldap: connection ended", slog.String("from", nc.RemoteAddr().String()), slog.Any("err", err))
 			}
@@ -414,6 +442,12 @@ func (s *Server) ServeConn(nc net.Conn) {
 			if err != nil {
 				_ = c.write(envelope(msg.id, encodeResult(tagSearchResultDone, Refuse(ProtocolError, err.Error())), nil))
 
+				// A filter over its bound is a search, and is answered as one;
+				// and the connection is ended as for any message over a bound.
+				if errors.As(err, new(overBound)) {
+					return
+				}
+
 				continue
 			}
 			wg.Add(1)
@@ -435,7 +469,7 @@ func (s *Server) ServeConn(nc net.Conn) {
 		default:
 			// RFC 4511 § 4.1.1: an operation the server does not recognise is
 			// answered with a notice of disconnection, and the connection ends.
-			_ = c.write(envelope(0, encodeExtended(Refuse(ProtocolError, "unknown operation"), OidNoticeOfDisconnection, nil), nil))
+			c.notice(Refuse(ProtocolError, "unknown operation"))
 
 			return
 		}
@@ -445,6 +479,12 @@ func (s *Server) ServeConn(nc net.Conn) {
 // OidNoticeOfDisconnection is the unsolicited notification a server sends
 // before it hangs up on a client it cannot follow.
 const OidNoticeOfDisconnection = "1.3.6.1.4.1.1466.20036"
+
+// notice says why the connection is about to end, RFC 4511 § 4.4.1. Whoever
+// calls it ends the connection next.
+func (c *Conn) notice(why Result) {
+	_ = c.write(envelope(0, encodeExtended(why, OidNoticeOfDisconnection, nil), nil))
+}
 
 func (s *Server) bind(ctx context.Context, c *Conn, msg *message) {
 	// A bind resets the authentication state whatever it answers, and waits
