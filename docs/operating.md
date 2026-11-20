@@ -2407,9 +2407,16 @@ says for good is meant: `access: the access record has no window ...`. What
 writes most of it:
 
 - **A directory front that polls.** An LDAP search of a whole tenant is a row for
-  each page of a hundred people and, where it asks for `mail` or a number, one
-  more for each of them who has an address and each who has a number: for ten
-  thousand people who each have both, twenty thousand rows a search. A SCIM
+  each page of a hundred people and, where it asks for `mail` or a number, four
+  more a page for each of the two, since a list is asked about thirty-two
+  people at once: for ten thousand people who each have both, nine hundred rows
+  a search, naming each of them three times. Asked for `manager` it is up to
+  four more a page, for the calls that found somebody with a relation, and a
+  row for each read of a manager the search had not already read; asked for a
+  group's `member`, a row for every thirty-two members. Its lists of who is in
+  which group write none. A sign-in lookup -- `(uid=…)`, `(mail=…)`, the two
+  in an `|`, `(entryUUID=…)` -- is a row for each read that found somebody,
+  one or two, and none for a name nobody has ([ldap.md](ldap.md) § Search). A SCIM
   `GET /Users` with no filter reads everybody the directory provisions on every
   page it is asked for, three calls each, whatever the page's size: thirty
   thousand rows a request, for ten thousand people. A lookup by filter that

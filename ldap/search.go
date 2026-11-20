@@ -16,9 +16,14 @@ import (
 // people (`stagePeople`, roster-paged), then the groups, then the sites with
 // their teams. Only the people are paged by roster; a tenant's groups and
 // sites are tens, and each of those stages is one client page.
+//
+// Among the people, roster's cursor is in one arm of the search's plan
+// ([planOf]): a filter that is an `or` is several reads, made one after
+// another, and `Arm` is which of them the cursor is in.
 type cursor struct {
 	Tenant string `json:"t,omitempty"`
 	Stage  string `json:"s,omitempty"`
+	Arm    int    `json:"p,omitempty"`
 	After  string `json:"a,omitempty"`
 }
 
@@ -97,8 +102,14 @@ func (d *Directory) Search(ctx context.Context, c *wire.Conn, req wire.SearchReq
 	}
 	tenants := []*tenant{bound}
 
-	s := &search{d: d, req: req, w: w, want: wanted(req), reads: newReads()}
+	s := &search{d: d, req: req, w: w, ask: asked(req), need: mentioned(req.Filter), plan: planOf(req.Filter), reads: newReads()}
 	cur, paged := cursorOf(req)
+	if paged {
+		s.page = d.c.PageSize
+		if req.Paging.Size > 0 && req.Paging.Size < s.page {
+			s.page = req.Paging.Size
+		}
+	}
 
 	// From the empty name downwards is the bound tenant's suffix, the only one
 	// this connection sees. One-level from the root is that suffix itself.
@@ -154,22 +165,59 @@ func (d *Directory) Search(ctx context.Context, c *wire.Conn, req wire.SearchReq
 	return res
 }
 
-// search is one search in flight: what it wants, what it has read, and what
-// it has sent.
+// search is one search in flight: what it has a use for, how it reads the
+// people, what it has read, and what it has sent.
 type search struct {
-	d     *Directory
-	req   wire.SearchRequest
-	w     *wire.Search
-	want  wants
+	d   *Directory
+	req wire.SearchRequest
+	w   *wire.Search
+
+	// ask is the attributes that cost a read which the client asked to be
+	// sent, and need those its filter names. They are read at different
+	// times and for different people ([search.show]).
+	ask, need wants
+
+	// plan is the reads the filter becomes over the people ([planOf]).
+	plan []arm
+
 	reads *reads
 	sent  int
+
+	// page is how many people a page of a paged search holds, and zero for a
+	// search that is not paged. unpaged is how many entries went out before
+	// the people and do not count towards it: the fixed nodes of the tree, on
+	// the first page from a suffix.
+	page, unpaged int
 }
 
-// send evaluates the filter and the size limit and writes the entry.
+func (s *search) paged() bool { return s.page > 0 }
+
+// holds is how many people this page holds so far, and full is whether that
+// is all it may.
+func (s *search) holds() int { return s.sent - s.unpaged }
+func (s *search) full() bool { return s.paged() && s.holds() >= s.page }
+
+// room is how many people the next read of roster may answer: what is left of
+// the page, and never more than one read fetches.
+func (s *search) room() int {
+	if !s.paged() {
+		return s.d.c.PageSize
+	}
+
+	return min(s.d.c.PageSize, s.page-s.holds())
+}
+
+// send asks the filter of an entry and, where it keeps it, writes it.
 func (s *search) send(e *entry) wire.Result {
 	if e == nil || !e.matches(s.req.Filter) {
 		return wire.Ok
 	}
+
+	return s.emit(e)
+}
+
+// emit writes an entry the filter has kept, within the size limit.
+func (s *search) emit(e *entry) wire.Result {
 	if s.req.SizeLimit > 0 && s.w.Sent() >= s.req.SizeLimit {
 		return wire.Refuse(wire.SizeLimitExceeded, "")
 	}
@@ -195,6 +243,16 @@ func (s *search) walk(ctx context.Context, t *tenant, rel dn, cur cursor) (curso
 	isOu := func(i int, ou string) bool {
 		return i < len(rel) && rel[i].attr == attrOu && strings.EqualFold(rel[i].value, ou)
 	}
+	// people sends the people from where the cursor is, and says where it
+	// stopped: `done` at the end of them.
+	people := func() (cursor, wire.Result) {
+		next, over, res := s.people(ctx, t, spot{arm: cur.Arm, after: cur.After})
+		if res.Code != wire.Success || over {
+			return done, res
+		}
+
+		return cursor{Stage: stagePeople, Arm: next.arm, After: next.after}, wire.Ok
+	}
 
 	switch {
 	// The suffix.
@@ -215,7 +273,7 @@ func (s *search) walk(ctx context.Context, t *tenant, rel dn, cur cursor) (curso
 		// the groups, then the sites and teams -- each stage one page.
 		switch cur.Stage {
 		case stagePeople:
-			if cur.After == "" {
+			if cur.After == "" && cur.Arm == 0 {
 				if res := s.send(d.organisation(t)); res.Code != wire.Success {
 					return done, res
 				}
@@ -224,20 +282,18 @@ func (s *search) walk(ctx context.Context, t *tenant, rel dn, cur cursor) (curso
 						return done, res
 					}
 				}
+				s.unpaged = s.sent
 			}
-			next, res := s.people(ctx, t, cur.After)
-			if res.Code != wire.Success {
-				return done, res
-			}
-			if next != "" {
-				return cursor{Stage: stagePeople, After: next}, wire.Ok
+			next, res := people()
+			if res.Code != wire.Success || next != done {
+				return next, res
 			}
 			if paged {
 				return cursor{Stage: stageGroups}, wire.Ok
 			}
 			fallthrough
 		case stageGroups:
-			if res := d.groups(ctx, t, s.reads, s.want, s.send); res.Code != wire.Success {
+			if res := s.groups(ctx, t); res.Code != wire.Success {
 				return done, res
 			}
 			if paged {
@@ -245,11 +301,11 @@ func (s *search) walk(ctx context.Context, t *tenant, rel dn, cur cursor) (curso
 			}
 			fallthrough
 		case stageSites:
-			if res := d.teams(ctx, t, s.reads, s.want, nil, s.send); res.Code != wire.Success {
+			if res := s.teams(ctx, t, nil); res.Code != wire.Success {
 				return done, res
 			}
 
-			return done, d.sites(ctx, t, s.reads, s.want, true, s.send)
+			return done, s.sites(ctx, t, true)
 		default:
 			return done, wire.Ok
 		}
@@ -259,20 +315,16 @@ func (s *search) walk(ctx context.Context, t *tenant, rel dn, cur cursor) (curso
 		if scope == wire.ScopeBase {
 			return done, s.send(d.unit(t, ouPeople))
 		}
-		next, res := s.people(ctx, t, cur.After)
-		if res.Code != wire.Success {
-			return done, res
-		}
-		if next != "" {
-			return cursor{Stage: stagePeople, After: next}, wire.Ok
-		}
 
-		return done, wire.Ok
+		return people()
 
 	case len(rel) == 2 && rel[0].attr == attrUid && isOu(1, ouPeople):
-		e, res := s.person(ctx, t, rel[0].value)
-		if res.Code != wire.Success {
-			return done, res
+		v, err := d.byAlias(ctx, t, s.reads, rel[0].value)
+		if err != nil {
+			return done, refusal(err)
+		}
+		if !d.listed(t, v) {
+			return done, wire.Refuse(wire.NoSuchObject, "")
 		}
 		if scope == wire.ScopeOne {
 			// A person has nothing under them; the base exists, which is
@@ -280,7 +332,7 @@ func (s *search) walk(ctx context.Context, t *tenant, rel dn, cur cursor) (curso
 			return done, wire.Ok
 		}
 
-		return done, s.send(e)
+		return done, s.show(ctx, t, nil, 0, []row{{holder: v}})
 
 	// ou=groups, and a group.
 	case len(rel) == 1 && isOu(0, ouGroups):
@@ -288,17 +340,20 @@ func (s *search) walk(ctx context.Context, t *tenant, rel dn, cur cursor) (curso
 			return done, s.send(d.unit(t, ouGroups))
 		}
 
-		return done, d.groups(ctx, t, s.reads, s.want, s.send)
+		return done, s.groups(ctx, t)
 
 	case len(rel) == 2 && rel[0].attr == attrCn && isOu(1, ouGroups):
-		g, res := d.findGroup(ctx, t, rel[0].value)
-		if res.Code != wire.Success {
-			return done, res
+		g, err := d.findGroup(ctx, t, s.reads, rel[0].value)
+		if err != nil {
+			return done, refusal(err)
+		}
+		if g == nil {
+			return done, wire.Refuse(wire.NoSuchObject, "")
 		}
 		if scope == wire.ScopeOne {
 			return done, wire.Ok
 		}
-		e, err := d.groupEntry(ctx, t, s.reads, g, s.want)
+		e, err := s.groupEntry(ctx, t, g)
 		if err != nil {
 			return done, refusal(err)
 		}
@@ -311,17 +366,20 @@ func (s *search) walk(ctx context.Context, t *tenant, rel dn, cur cursor) (curso
 			return done, s.send(d.teamsUnit(t, t.base))
 		}
 
-		return done, d.teams(ctx, t, s.reads, s.want, nil, s.send)
+		return done, s.teams(ctx, t, nil)
 
 	case len(rel) == 2 && rel[0].attr == attrCn && isOu(1, ouTeams):
-		team, res := d.findTeam(ctx, t, nil, rel[0].value)
-		if res.Code != wire.Success {
-			return done, res
+		team, err := d.findTeam(ctx, t, s.reads, nil, rel[0].value)
+		if err != nil {
+			return done, refusal(err)
+		}
+		if team == nil {
+			return done, wire.Refuse(wire.NoSuchObject, "")
 		}
 		if scope == wire.ScopeOne {
 			return done, wire.Ok
 		}
-		e, err := d.teamEntry(ctx, t, s.reads, team, s.want)
+		e, err := s.teamEntry(ctx, t, team)
 		if err != nil {
 			return done, refusal(err)
 		}
@@ -334,12 +392,15 @@ func (s *search) walk(ctx context.Context, t *tenant, rel dn, cur cursor) (curso
 			return done, s.send(d.unit(t, ouSites))
 		}
 
-		return done, d.sites(ctx, t, s.reads, s.want, scope == wire.ScopeSubtree, s.send)
+		return done, s.sites(ctx, t, scope == wire.ScopeSubtree)
 
 	case len(rel) >= 2 && rel[len(rel)-2].attr == attrOu && isOu(len(rel)-1, ouSites):
-		site, res := d.findSite(ctx, t, s.reads, rel[len(rel)-2].value)
-		if res.Code != wire.Success {
-			return done, res
+		site, err := d.findSite(ctx, t, s.reads, rel[len(rel)-2].value)
+		if err != nil {
+			return done, refusal(err)
+		}
+		if site == nil {
+			return done, wire.Refuse(wire.NoSuchObject, "")
 		}
 		under := rel[:len(rel)-2]
 		switch {
@@ -359,24 +420,27 @@ func (s *search) walk(ctx context.Context, t *tenant, rel dn, cur cursor) (curso
 				return done, wire.Ok
 			}
 
-			return done, d.teams(ctx, t, s.reads, s.want, siteRef(site), s.send)
+			return done, s.teams(ctx, t, siteRef(site))
 
 		case len(under) == 1 && isOu(0, ouTeams):
 			if scope == wire.ScopeBase {
 				return done, s.send(d.teamsUnit(t, d.siteDN(t, site)))
 			}
 
-			return done, d.teams(ctx, t, s.reads, s.want, siteRef(site), s.send)
+			return done, s.teams(ctx, t, siteRef(site))
 
 		case len(under) == 2 && under[0].attr == attrCn && isOu(1, ouTeams):
-			team, res := d.findTeam(ctx, t, site, under[0].value)
-			if res.Code != wire.Success {
-				return done, res
+			team, err := d.findTeam(ctx, t, s.reads, site, under[0].value)
+			if err != nil {
+				return done, refusal(err)
+			}
+			if team == nil {
+				return done, wire.Refuse(wire.NoSuchObject, "")
 			}
 			if scope == wire.ScopeOne {
 				return done, wire.Ok
 			}
-			e, err := d.teamEntry(ctx, t, s.reads, team, s.want)
+			e, err := s.teamEntry(ctx, t, team)
 			if err != nil {
 				return done, refusal(err)
 			}

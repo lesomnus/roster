@@ -396,8 +396,8 @@ to case, which is what the matching rules of the attributes in this tree say.
 The one is `employeeNumber`, which is compared as the characters it is written
 in, in an equality and in a substring: roster's own `Search` compares an
 employee number exactly, and a filter means the same whether or not it is the
-read. An attribute that holds a name -- `memberOf`, `member`, `manager` -- is compared as a name:
-`(memberOf=cn=payroll, ou=groups, o=contoso)` and
+read. An attribute that holds a name -- `memberOf`, `member`, `manager` -- is
+compared as a name: `(memberOf=cn=payroll, ou=groups, o=contoso)` and
 `(memberOf=CN=Payroll,OU=Groups,O=Contoso)` are the group
 `cn=payroll,ou=groups,o=contoso`, so a filter that keeps a group out with a
 `!` keeps it out however the name is spelt. Ordering, approximate and
@@ -411,17 +411,36 @@ a filter becomes:
 
 | the filter says | this process calls |
 | --- | --- |
-| `(uid=kim)` | `Holder.Get` by alias, then `Holder.Search` for the alias spelled with other case |
-| `(mail=kim@contoso.example)` | `Email.Get` by address at the tenant, normalised as `Email.Add` stores it |
+| `(uid=kim)` | `Holder.Get` by alias, once: what was asked is folded to small letters, which is how roster keeps an alias, so `(uid=KIM)` is the same read and a name nobody has is one read of nobody |
+| `(entryUUID=…)` | `Holder.Get` by identifier |
+| `(mail=kim@contoso.example)` | `Email.Get` by address at the tenant, normalised as `Email.Add` stores it, then `Holder.Get` for whose it is |
 | `(cn=Minji)`, `(sn=…)`, `(displayName=…)` | `Holder.Search{q}`, which is a contains over the alias, the name somebody was added with and the display name -- every string those three attributes can be; the filter then keeps the exact ones |
 | a substring on `uid`, `cn`, `sn`, `displayName` | `Holder.Search{q}`, for its longest fragment |
 | a value with nothing in it | nothing: it matches nobody |
 | `(departmentNumber=…)`, `(employeeNumber=…)` | `Holder.Search{department}`, `{employee_no}` |
-| `(memberOf=cn=payroll,…)` | `GroupMembership.List` or `TeamMembership.List` by the group or team named |
+| `(memberOf=cn=payroll,…)` | `GroupMembership.List` or `TeamMembership.List` by the group or team named, and `Holder.List` for its members, thirty-two a call. A member is not asked again which groups they are in |
 | anything else, or nothing | `Holder.List`, and the filter is evaluated on what comes back |
 
 In an `&`, the most selective child is the plan and the whole filter is then
-evaluated over what it read. The wall is already in every one of those reads,
+evaluated over what it read. An `|` whose every arm is a row of the table is
+each of those reads, one after another, and whoever two of them read is
+answered once: `(&(objectClass=inetOrgPerson)(|(uid=kim)(mail=kim@contoso.example)))`,
+the filter many clients ship with for a sign-in, is a `Holder.Get` and an
+`Email.Get`. An `|` with an arm that is none of them -- a `!`, a presence, an
+attribute roster has no index for -- is a `Holder.List`.
+
+**What is read of a person, and when.** Their own row carries most of the
+table in § [A person](#a-person). Five lists do not: their addresses, their
+numbers, the groups and the teams they are in, and who they report to. The
+filter is asked of the row first, and whoever it rules out is read no further,
+so a filter the row alone answers reads no list of anybody it drops. A list the
+filter names is then read for whoever is still undecided, and a list the client
+asked to be sent for whoever the filter kept. Each is read for a page of people at once:
+roster's lists take thirty-two filters a call, so a page of a hundred people is
+four calls of each list it needs and not a hundred. The `member`s of a group
+are read the same way, and only for a group the filter keeps.
+
+The wall is already in every one of those reads,
 so a search under `o=contoso` can never answer a row from `o=newco` -- the two
 suffixes are two keys. Size limits are the client's `sizeLimit`, and the paged
 results control (RFC 2696) carries roster's own cursor as its cookie, so a
@@ -569,6 +588,9 @@ The promises, in `baseline.md`'s shape, each with its test:
 | a holder a file or a provisioner declared, and the directory's own, are no entry by listing or by name, no `member` and nobody's `manager`; a tenant's first administrator is a person | `TestAMachineIsNotAPersonInTheDirectory` |
 | `employeeNumber` minds case, alone and inside an `or`, in an equality and in a substring | `TestAnEmployeeNumberMindsCase` |
 | an equality or a substring with nothing in it answers nobody, with success | `TestAFilterThatAsksForNothingAnswersNobody` |
+| a lookup costs what it reads, whatever the tenant's size: the sign-in filter `(&(objectClass=inetOrgPerson)(\|(uid=…)(mail=…)))` is a `Holder.Get` and an `Email.Get`; a name nobody has is one read; `(entryUUID=…)` is one read by identifier; a filter that keeps nobody reads no list; a page of a hundred people is four calls of each list it needs; a group's members are read thirty-two a call and not asked again which groups they are in | `TestALookupCostsWhatItReads` |
+| an `\|` is each of its arms and answers everybody once, in one search and in pages | `TestAnOrAnswersEverybodyOnce` |
+| a role that names no read of numbers or of relations publishes none of either, asks once a search, and answers everything else | `TestARoleThatNamesNoNumbersPublishesNone` |
 | paging through everybody answers each person once, with a filter that drops rows and with one roster has no index for; the client's size limit is honoured | `TestPagingReadsEverybodyOnce` |
 | no entry ever carries `userPassword`, a key, or a credential; the process's own key and every presented password are absent from every response | `TestNothingSecretIsInTheTree` |
 | somebody disabled is not in the tree, from the next search on -- there is no cache | `TestTheDisabledAreNotListed` |
