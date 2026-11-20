@@ -15,6 +15,12 @@ type entry struct {
 	attrs map[string][]string // by lower-cased name
 	names map[string]string   // lower-cased name -> the name as written
 	order []string            // lower-cased names, in the order added
+
+	// unread is the attributes, by lower-cased name, that have not been read
+	// yet: the values here are what is known of them so far, and are not all
+	// there may be. An entry is made of the row it is and of lists that cost
+	// a read each, and a filter is asked of the row first ([entry.eval]).
+	unread map[string]bool
 }
 
 // Operational attributes: answered only when asked for by name or with `+`,
@@ -59,6 +65,32 @@ func (e *entry) add(name string, values ...string) {
 
 func (e *entry) values(name string) []string {
 	return e.attrs[strings.ToLower(name)]
+}
+
+// await says attributes have not been read yet.
+func (e *entry) await(names ...string) {
+	if e.unread == nil {
+		e.unread = map[string]bool{}
+	}
+	for _, name := range names {
+		e.unread[strings.ToLower(name)] = true
+	}
+}
+
+// read says attributes are about to be added as they were read. What was
+// known of them so far gives way: it was part of what is read, and the order
+// of the whole is the order they are published in.
+func (e *entry) read(names ...string) {
+	for _, name := range names {
+		k := strings.ToLower(name)
+		delete(e.unread, k)
+		if _, ok := e.names[k]; !ok {
+			continue
+		}
+		delete(e.attrs, k)
+		delete(e.names, k)
+		e.order = slices.DeleteFunc(e.order, func(o string) bool { return o == k })
+	}
 }
 
 // project is the entry as sent, holding the attributes the client asked for:
@@ -130,7 +162,7 @@ var exact = map[string]bool{
 //
 // # The entry and the plan say the same
 //
-// A filter is asked twice: of roster, as the read it becomes ([planPeople]),
+// A filter is asked twice: of roster, as the read it becomes ([planOf]),
 // and then of each entry read, here. Where the two disagree one filter means
 // two things, by whether it happened to be the plan. `(employeeNumber=ab07)`
 // alone was a `Search`, which minds case, and found nobody; inside an `or`,
@@ -158,103 +190,147 @@ var exact = map[string]bool{
 // there, and so true for the `not` -- the same client, let in by a typing
 // mistake.
 func (e *entry) matches(f *wire.Filter) bool {
-	v, ok := e.eval(f)
-
-	return ok && v
+	return e.eval(f) == yes
 }
 
-func (e *entry) eval(f *wire.Filter) (value, defined bool) {
+// truth is what a filter says of an entry: the three values of RFC 4511
+// § 4.5.1.7, and a fourth for an entry that is not all read yet.
+type truth int
+
+const (
+	no truth = iota
+	yes
+	// undefined is the specification's third value: the server cannot say,
+	// and neither the filter nor its `not` matches.
+	undefined
+	// unread is that it depends on an attribute not read yet ([entry.unread]):
+	// reading it makes this one of the other three.
+	unread
+)
+
+// eval is the filter asked of what is known of the entry so far.
+//
+// # A filter is asked before the lists are read
+//
+// Every list of a person -- their addresses, their numbers, their places in
+// groups and on teams, who they report to -- was read before the filter was
+// asked, for every person a search passed: five thousand calls to answer
+// `(sn=Smith)` with nobody, among a thousand people (#281). So a node that
+// names an attribute not read yet says so, with what is known of it counted:
+// a value already here that matches is `yes` whatever else there is, and
+// nothing else can be said until it is read. An `and` with a `no` in it is
+// `no` and an `or` with a `yes` is `yes`, whatever is unread beside them, and
+// that is where the saving is: whoever the row alone rules out is read no
+// further.
+//
+// `unread` outranks `undefined` in both, since which of them the node is can
+// still change under a `not`.
+func (e *entry) eval(f *wire.Filter) truth {
 	if f == nil {
-		return true, true
+		return yes
 	}
 	switch f.Op {
 	case wire.FilterAnd:
-		undefined := false
+		out := yes
 		for _, c := range f.Children {
-			v, ok := e.eval(c)
-			switch {
-			case ok && !v:
-				return false, true
-			case !ok:
-				undefined = true
+			switch e.eval(c) {
+			case no:
+				return no
+			case unread:
+				out = unread
+			case undefined:
+				if out == yes {
+					out = undefined
+				}
 			}
 		}
 
-		return !undefined, !undefined
+		return out
 	case wire.FilterOr:
-		undefined := false
+		out := no
 		for _, c := range f.Children {
-			v, ok := e.eval(c)
-			switch {
-			case ok && v:
-				return true, true
-			case !ok:
-				undefined = true
+			switch e.eval(c) {
+			case yes:
+				return yes
+			case unread:
+				out = unread
+			case undefined:
+				if out == no {
+					out = undefined
+				}
 			}
 		}
 
-		return false, !undefined
+		return out
 	case wire.FilterNot:
 		if len(f.Children) != 1 {
-			return false, false
+			return undefined
 		}
-		v, ok := e.eval(f.Children[0])
-		if !ok {
-			return false, false
+		switch v := e.eval(f.Children[0]); v {
+		case yes:
+			return no
+		case no:
+			return yes
+		default:
+			return v
 		}
-
-		return !v, true
 	case wire.FilterPresent:
 		if strings.EqualFold(f.Attr, "objectClass") {
-			return true, true
+			return yes
 		}
 
-		return len(e.values(f.Attr)) > 0, true
+		return e.has(f.Attr, func(string) bool { return true })
 	case wire.FilterEqual:
 		if asksNothing(f) {
-			return false, true
+			return no
 		}
 		if named[strings.ToLower(f.Attr)] {
 			asked, err := parseDN(f.Value)
 			if err != nil {
-				return false, false
+				return undefined
 			}
-			for _, v := range e.values(f.Attr) {
+
+			return e.has(f.Attr, func(v string) bool {
 				// What is published is this package's own writing of a name,
 				// which parses.
-				if name, err := parseDN(v); err == nil && name.equal(asked) {
-					return true, true
-				}
-			}
+				name, err := parseDN(v)
 
-			return false, true
+				return err == nil && name.equal(asked)
+			})
 		}
 		minds := exact[strings.ToLower(f.Attr)]
-		for _, v := range e.values(f.Attr) {
-			if v == f.Value || (!minds && strings.EqualFold(v, f.Value)) {
-				return true, true
-			}
-		}
 
-		return false, true
+		return e.has(f.Attr, func(v string) bool {
+			return v == f.Value || (!minds && strings.EqualFold(v, f.Value))
+		})
 	case wire.FilterSubstrings:
 		if asksNothing(f) {
-			return false, true
+			return no
 		}
 		fold := strings.ToLower
 		if exact[strings.ToLower(f.Attr)] {
 			fold = func(v string) string { return v }
 		}
-		for _, v := range e.values(f.Attr) {
-			if substringMatch(fold(v), f, fold) {
-				return true, true
-			}
-		}
 
-		return false, true
+		return e.has(f.Attr, func(v string) bool { return substringMatch(fold(v), f, fold) })
 	default:
-		return false, false
+		return undefined
 	}
+}
+
+// has is whether a value of the attribute is one `match` takes: `yes` for one
+// that is known, and otherwise `no` or, where the attribute is not read yet,
+// `unread`.
+func (e *entry) has(attr string, match func(string) bool) truth {
+	k := strings.ToLower(attr)
+	if slices.ContainsFunc(e.attrs[k], match) {
+		return yes
+	}
+	if e.unread[k] {
+		return unread
+	}
+
+	return no
 }
 
 // substringMatch is whether `v` holds the filter's fragments in their order.
