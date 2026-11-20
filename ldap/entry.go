@@ -113,12 +113,34 @@ var named = map[string]bool{
 	"manager":  true,
 }
 
+// exact is the attributes whose values are compared as the characters they
+// are written in. One: an employee number, which roster's `Search` compares
+// exactly and promises so (`docs/baseline.md`).
+var exact = map[string]bool{
+	"employeenumber": true,
+}
+
 // matches evaluates the filter over the entry, RFC 4511 § 4.5.1.7, with the
 // three values the specification has: true, false, and undefined -- and an
 // entry is returned only for true. A value is compared by the rule of its
-// attribute: a name as a name ([named]), and everything else as text without
-// regard to case (`caseIgnoreMatch`, `caseIgnoreIA5Match` for `mail`; `uid`
-// is `caseIgnoreMatch` as well).
+// attribute: a name as a name ([named]), an employee number exactly
+// ([exact]), and everything else as text without regard to case
+// (`caseIgnoreMatch`, `caseIgnoreIA5Match` for `mail`; `uid` is
+// `caseIgnoreMatch` as well).
+//
+// # The entry and the plan say the same
+//
+// A filter is asked twice: of roster, as the read it becomes ([planPeople]),
+// and then of each entry read, here. Where the two disagree one filter means
+// two things, by whether it happened to be the plan. `(employeeNumber=ab07)`
+// alone was a `Search`, which minds case, and found nobody; inside an `or`,
+// where everybody is read, this compared without regard to case and found
+// the person whose number is `AB07` (#281). So an employee number minds case
+// here too, in an equality and in a substring.
+//
+// And a value with nothing in it -- empty, or spaces alone -- matches nobody:
+// no attribute here has such a value, and the plan reads nobody for it
+// ([asksNothing]).
 //
 // # A name is compared as a name
 //
@@ -189,6 +211,9 @@ func (e *entry) eval(f *wire.Filter) (value, defined bool) {
 
 		return len(e.values(f.Attr)) > 0, true
 	case wire.FilterEqual:
+		if asksNothing(f) {
+			return false, true
+		}
 		if named[strings.ToLower(f.Attr)] {
 			asked, err := parseDN(f.Value)
 			if err != nil {
@@ -204,16 +229,24 @@ func (e *entry) eval(f *wire.Filter) (value, defined bool) {
 
 			return false, true
 		}
+		minds := exact[strings.ToLower(f.Attr)]
 		for _, v := range e.values(f.Attr) {
-			if strings.EqualFold(v, f.Value) {
+			if v == f.Value || (!minds && strings.EqualFold(v, f.Value)) {
 				return true, true
 			}
 		}
 
 		return false, true
 	case wire.FilterSubstrings:
+		if asksNothing(f) {
+			return false, true
+		}
+		fold := strings.ToLower
+		if exact[strings.ToLower(f.Attr)] {
+			fold = func(v string) string { return v }
+		}
 		for _, v := range e.values(f.Attr) {
-			if substringMatch(strings.ToLower(v), f) {
+			if substringMatch(fold(v), f, fold) {
 				return true, true
 			}
 		}
@@ -224,16 +257,20 @@ func (e *entry) eval(f *wire.Filter) (value, defined bool) {
 	}
 }
 
-func substringMatch(v string, f *wire.Filter) bool {
+// substringMatch is whether `v` holds the filter's fragments in their order.
+// `fold` is what is done to each fragment before it is looked for, and has
+// been done to `v`: lower-casing, for an attribute matched without regard to
+// case.
+func substringMatch(v string, f *wire.Filter, fold func(string) string) bool {
 	if f.Initial != "" {
-		i := strings.ToLower(f.Initial)
+		i := fold(f.Initial)
 		if !strings.HasPrefix(v, i) {
 			return false
 		}
 		v = v[len(i):]
 	}
 	for _, a := range f.Any {
-		a = strings.ToLower(a)
+		a = fold(a)
 		i := strings.Index(v, a)
 		if i < 0 {
 			return false
@@ -241,7 +278,7 @@ func substringMatch(v string, f *wire.Filter) bool {
 		v = v[i+len(a):]
 	}
 	if f.Final != "" {
-		return strings.HasSuffix(v, strings.ToLower(f.Final))
+		return strings.HasSuffix(v, fold(f.Final))
 	}
 
 	return true

@@ -211,6 +211,12 @@ type tenant struct {
 	// at is what every call about this tenant declares with `roster-at`, when
 	// the key is a deployment key narrowed to whoever the tenant nominated.
 	at string
+
+	// self is the holder this directory is answered as in the tenant, which
+	// is not one of its people ([Directory.listed]). Known where the tenant
+	// nominated one for a deployment key; a tenant's own key does not say
+	// whose it is, and names no read that would.
+	self []byte
 }
 
 // Directory is the tree, over roster.
@@ -948,7 +954,7 @@ func (d *Directory) fronted(ctx context.Context) (map[string]*tenant, error) {
 				return nil, err
 			}
 
-			t := &tenant{id: id, key: d.c.Key, at: front.AtTenant(id.String())}
+			t := &tenant{id: id, key: d.c.Key, at: front.AtTenant(id.String()), self: v.GetActsAs().GetId()}
 			tn, err := d.roster.Tenant().Get(t.on(ctx), rstr.TenantGetRequest_builder{
 				Ref:    rstr.TenantRef_builder{Id: id.Bytes()}.Build(),
 				Select: rstr.TenantSelect_builder{Alias: proto.Bool(true)}.Build(),

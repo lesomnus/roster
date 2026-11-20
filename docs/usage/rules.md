@@ -348,6 +348,10 @@ client configured against it relies on ([ldap.md](../ldap.md)).
 | --- | --- | --- |
 | Somebody is in the directory whatever became of a group or a team they were in: a place in something erased is not named, and nothing else about them changes | `ldap/groups.go` | `TestSomebodyIsInTheDirectoryWhateverBecameOfAGroupTheyWereIn` |
 | A name in a filter is compared as a name: `memberOf`, `member` and `manager` match however the name is spaced or capitalised, so a filter that keeps a group out keeps it out. A value that is not a name matches nobody, and neither does its `!` | `ldap/entry.go` | `TestANameIsComparedAsAName` |
+| Somebody is called there what a token calls them: `cn` and `sn` are the display name, else the name they were added with, else the alias, one value and never missing; `displayName` is a token's `name` exactly, and absent where a token says none. Somebody renamed is found by the new name | `ldap/people.go` | `TestSomebodyIsCalledWhatATokenCallsThem` |
+| The first `mail` is the address a token's `email` says: the addresses somebody proved, in the order they proved them, and none that nobody proved | `ldap/people.go` | `TestTheFirstMailIsTheAddressATokenSays` |
+| A machine is not a person there: a holder a file or a provisioner declared, and the holder the directory is answered as, have no entry, are no group's `member` and nobody's `manager`. A tenant's first administrator is a person | `ldap/people.go` | `TestAMachineIsNotAPersonInTheDirectory` |
+| A filter means the same whether or not it is the read roster is asked: an employee number minds case in both, and a value with nothing in it answers nobody, with success | `ldap/entry.go` | `TestAnEmployeeNumberMindsCase` · `TestAFilterThatAsksForNothingAnswersNobody` |
 
 ### What only the deployment writes
 

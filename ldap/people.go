@@ -1,7 +1,9 @@
 package ldap
 
 import (
+	"bytes"
 	"context"
+	"slices"
 	"strings"
 
 	"google.golang.org/grpc/codes"
@@ -16,7 +18,8 @@ import (
 )
 
 // The attributes of a person, `docs/ldap.md` § A person. Names as the
-// schemas spell them; matching is without regard to case everywhere.
+// schemas spell them; how a value is matched is its attribute's to say
+// ([entry.matches]).
 const (
 	attrUid          = "uid"
 	attrCn           = "cn"
@@ -171,27 +174,75 @@ func (d *Directory) byAlias(ctx context.Context, t *tenant, alias string) (*rstr
 	}
 }
 
-// personEntry shapes a holder. Nil for somebody who is not in the tree:
-// disabled, which a directory says by absence rather than by a flag.
+// declared is the label a row a file or a provisioner declared carries
+// (`cmd.Declared`), named here because a consumer does not import `cmd`.
+const declared = "roster.declared"
+
+// listed is whether a holder is one of the tenant's people, as this tree
+// shows them. Not somebody disabled or erased, which a directory says by
+// absence rather than by a flag; and not a machine.
+//
+// # A machine is not a person here
+//
+// Every holder was listed: the one this directory is answered as, the one
+// each front door is, whatever else a file declared -- each an
+// `inetOrgPerson` with a `uid`, imported by a client that imports users and
+// named by a group among its members (#281). The SCIM endpoint is asked the
+// same question, who a tenant's people are, and leaves out a row that is
+// declared and its own (`scim/user.go`). This is that test, and it is asked
+// wherever a person is named: as an entry, as a `member`, as a `manager`.
+//
+// What it does not know is a machine nothing declared: an app installed by
+// hand is a holder like any other, and so is the holder of a tenant's own key
+// for this directory ([tenant.self]). `docs/ldap.md` § A person says so.
+func (d *Directory) listed(t *tenant, v *rstr.Holder) bool {
+	switch {
+	case v == nil, v.GetDateDisabled() != nil, v.GetDateErased() != nil:
+		return false
+	case v.GetLabels()[declared] != "":
+		return false
+	case len(t.self) > 0 && bytes.Equal(v.GetId(), t.self):
+		return false
+	}
+
+	return true
+}
+
+// called is what somebody is called now, as `MeService/Get` and so a token's
+// `name` say it (`server/me`, `called`): the profile's display name, which is
+// what every write that renames somebody writes, and the name they were added
+// with where there is none. Empty for somebody added by their alias alone.
+func called(v *rstr.Holder) string {
+	return firstOf(v.GetProfile().GetDisplayName(), v.GetName())
+}
+
+// personEntry shapes a holder. Nil for somebody who is not in the tree
+// ([Directory.listed]).
 func (s *search) personEntry(ctx context.Context, t *tenant, v *rstr.Holder) (*entry, error) {
-	if v.GetDateDisabled() != nil || v.GetDateErased() != nil {
+	d := s.d
+	if !d.listed(t, v) {
 		return nil, nil
 	}
 	id, err := pdid.From(v.GetId())
 	if err != nil {
 		return nil, err
 	}
-	d := s.d
 
 	e := newEntry(d.personDN(t, v))
 	e.add(attrObjectClass, "top", classPersonPlain, classOrgPerson, classPerson)
 	e.add(attrUid, v.GetAlias())
-	e.add(attrCn, v.GetName())
-	// `inetOrgPerson` requires one and roster does not split names: the
-	// whole name, rather than a guess at half of it.
-	e.add(attrSn, v.GetName())
+	// What somebody is called now, and never missing: `person` requires a
+	// `cn` and an `sn`, and it was `Holder.name`, which no served verb
+	// changes and which somebody added by alias alone does not have (#281).
+	// `sn` is the same string. roster does not split names: the whole name,
+	// rather than a guess at half of it, and no `givenName` for the same
+	// reason.
+	name := firstOf(called(v), v.GetAlias())
+	e.add(attrCn, name)
+	e.add(attrSn, name)
+	// A token's `name` exactly, so absent where a token says none (#353).
+	e.add(attrDisplayName, called(v))
 	p := v.GetProfile()
-	e.add(attrDisplayName, p.GetDisplayName())
 	e.add(attrEmployeeNo, p.GetEmployeeNo())
 	e.add(attrDepartment, p.GetDepartment())
 	e.add(attrLanguage, p.GetLocale())
@@ -233,8 +284,8 @@ func (s *search) personEntry(ctx context.Context, t *tenant, v *rstr.Holder) (*e
 }
 
 // managers is `manager`: the DNs of who somebody reports to, which is a
-// `Relation` of theirs that says so (`managerLabel`). Somebody who is gone or
-// stopped is not named, as they are not listed.
+// `Relation` of theirs that says so (`managerLabel`). Whoever is not in the
+// tree is not named ([Directory.listed]).
 //
 // A role that does not name the read publishes none, for [Directory.numbers]'s
 // reason.
@@ -261,7 +312,7 @@ func (d *Directory) managers(ctx context.Context, t *tenant, r *reads, holder []
 			if err != nil {
 				return nil, err
 			}
-			if who == nil || who.GetDateDisabled() != nil || who.GetDateErased() != nil {
+			if !d.listed(t, who) {
 				continue
 			}
 			out = append(out, d.personDN(t, who).String())
@@ -304,8 +355,15 @@ func (d *Directory) numbers(ctx context.Context, t *tenant, holder []byte) ([]*r
 
 // verifiedAddresses is `mail`: the person's addresses somebody has checked.
 // An unverified one is a claim, and a directory is what other systems believe.
+//
+// In the order a token reads them (`server/me`, `emails`): by when each was
+// proved, and two proved at one instant by their rows' identifiers, which is
+// the order they were written in. The first is the address a front door puts
+// in a token's `email`, and most clients take the first `mail`; it was the
+// first written, which is another address for somebody who proved their second
+// one first (#281).
 func (d *Directory) verifiedAddresses(ctx context.Context, t *tenant, holder []byte) ([]string, error) {
-	var out []string
+	var proved []*rstr.Email
 	after := ""
 	for {
 		vs, err := d.roster.Email().List(t.on(ctx), rstr.EmailListRequest_builder{
@@ -318,19 +376,39 @@ func (d *Directory) verifiedAddresses(ctx context.Context, t *tenant, holder []b
 		}
 		for _, v := range vs.GetItems() {
 			if v.GetDateVerified() != nil {
-				out = append(out, v.GetAddress())
+				proved = append(proved, v)
 			}
 		}
 		if after = vs.GetNext(); after == "" {
-			return out, nil
+			break
 		}
 	}
+
+	return addresses(proved), nil
+}
+
+// addresses is proved addresses in the order a token reads them.
+func addresses(proved []*rstr.Email) []string {
+	slices.SortStableFunc(proved, func(a, b *rstr.Email) int {
+		if c := a.GetDateVerified().AsTime().Compare(b.GetDateVerified().AsTime()); c != 0 {
+			return c
+		}
+
+		return bytes.Compare(a.GetId(), b.GetId())
+	})
+	out := make([]string, len(proved))
+	for i, v := range proved {
+		out[i] = v.GetAddress()
+	}
+
+	return out
 }
 
 // plan is which roster read a filter over people becomes, `docs/ldap.md`
 // § Search. The filter is still evaluated over every entry read; the plan
 // only decides how few entries that is.
 type plan struct {
+	nobody   bool                      // an equality or a substring with nothing in it: no read
 	alias    string                    // `(uid=…)`: Holder.Get
 	address  string                    // `(mail=…)`: Email.Get, then the holder
 	memberOf string                    // `(memberOf=…)`: one membership list
@@ -358,12 +436,54 @@ func planPeople(f *wire.Filter) plan {
 	return p
 }
 
-// candidate ranks one node by how few rows it reads: a name is one row, a
-// mailbox is one, a group's members are a list, an exact profile field is a
-// few, a fragment is some.
+// blank is whether a value has nothing in it: empty, or spaces alone.
+func blank(v string) bool { return strings.TrimSpace(v) == "" }
+
+// asksNothing is whether an equality or a substring node asks for nothing:
+// its value is blank, or every fragment of it is. No attribute here has such
+// a value, so the node matches nobody ([entry.eval]) and reading for it is
+// reading for nothing.
+//
+// It was read for: `(cn=)` became a `Holder.Search` for nothing, which
+// roster refuses, and the refusal went back to the client as `protocolError`
+// with roster's sentence, for a filter that is well formed (#281).
+func asksNothing(f *wire.Filter) bool {
+	switch f.Op {
+	case wire.FilterEqual:
+		return blank(f.Value)
+	case wire.FilterSubstrings:
+		if !blank(f.Initial) || !blank(f.Final) {
+			return false
+		}
+		for _, a := range f.Any {
+			if !blank(a) {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	return false
+}
+
+// isCalled is whether an attribute is one of the three that say what somebody
+// is called, each of which `Holder.Search` finds by a fragment: it looks in
+// the alias, the name somebody was added with and the display name, and `cn`,
+// `sn` and `displayName` are each one of those ([search.personEntry]).
+func isCalled(attr string) bool {
+	return strings.EqualFold(attr, attrCn) || strings.EqualFold(attr, attrSn) || strings.EqualFold(attr, attrDisplayName)
+}
+
+// candidate ranks one node by how few rows it reads: nothing asked for is
+// none, a name is one row, a mailbox is one, a group's members are a list, an
+// exact profile field is a few, a fragment is some.
 func candidate(f *wire.Filter) (int, plan) {
 	if f == nil {
 		return 0, plan{}
+	}
+	if asksNothing(f) {
+		return 7, plan{nobody: true}
 	}
 	switch f.Op {
 	case wire.FilterEqual:
@@ -378,16 +498,18 @@ func candidate(f *wire.Filter) (int, plan) {
 			return 3, plan{search: rstr.HolderSearchRequest_builder{EmployeeNo: proto.String(f.Value)}.Build()}
 		case strings.EqualFold(f.Attr, attrDepartment):
 			return 2, plan{search: rstr.HolderSearchRequest_builder{Department: proto.String(f.Value)}.Build()}
-		case strings.EqualFold(f.Attr, attrCn), strings.EqualFold(f.Attr, attrDisplayName):
+		case isCalled(f.Attr):
 			// `Search` is a contains; the filter then keeps the exact ones.
 			return 1, plan{search: rstr.HolderSearchRequest_builder{Q: proto.String(f.Value)}.Build()}
 		}
 	case wire.FilterSubstrings:
-		if strings.EqualFold(f.Attr, attrUid) || strings.EqualFold(f.Attr, attrCn) || strings.EqualFold(f.Attr, attrDisplayName) {
-			// The longest literal part is the most selective fragment.
-			q := f.Initial
-			for _, a := range append(f.Any, f.Final) {
-				if len(a) > len(q) {
+		if strings.EqualFold(f.Attr, attrUid) || isCalled(f.Attr) {
+			// The longest literal part is the most selective fragment. One
+			// that is spaces alone is no fragment: `Search` trims what it is
+			// asked, and would be asked for nothing.
+			q := ""
+			for _, a := range append([]string{f.Initial, f.Final}, f.Any...) {
+				if !blank(a) && len(a) > len(q) {
 					q = a
 				}
 			}
@@ -426,6 +548,9 @@ func (s *search) people(ctx context.Context, t *tenant, after string) (string, w
 	}
 
 	switch {
+	case p.nobody:
+		return "", wire.Ok
+
 	case p.alias != "":
 		v, err := d.byAlias(ctx, t, p.alias)
 		if err != nil {

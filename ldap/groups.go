@@ -253,7 +253,7 @@ func (d *Directory) addMember(ctx context.Context, t *tenant, r *reads, e *entry
 	if err != nil {
 		return err
 	}
-	if v == nil || v.GetDateDisabled() != nil || v.GetDateErased() != nil {
+	if !d.listed(t, v) {
 		return nil
 	}
 	e.add(attrMember, d.personDN(t, v).String())

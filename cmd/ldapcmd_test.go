@@ -94,8 +94,10 @@ func TestLdapServeIsToldEverything(t *testing.T) {
 		x.True(strings.HasSuffix(e.DN, ",ou=people,dc=newco,dc=example"), e.DN)
 	}
 	// `admin` among them: every tenant is made with the holder that
-	// administers it (`server/core/tenant.go`), and the directory shows
-	// everybody in the tenant.
+	// administers it (`server/core/tenant.go`), who is a person. And alice,
+	// whom this directory's key hangs off: a tenant's own key does not say
+	// whose it is, so its holder is listed like anybody (`docs/ldap.md` § A
+	// person).
 	x.ElementsMatch([]string{"admin", "alice", "bob"}, uids)
 
 	cancel()
