@@ -80,8 +80,9 @@ func NewCmdHold(c *cmd.Config) *xli.Command {
 				}),
 			},
 			{
-				Name:  "ls",
-				Brief: "every tenant held, since when, and what for",
+				Name:    "ls",
+				Aliases: []string{"list"},
+				Brief:   "every tenant held, since when, and what for",
 				Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 					s, err := built(ctx, *c)
 					if err != nil {

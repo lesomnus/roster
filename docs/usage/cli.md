@@ -80,11 +80,12 @@ What a local command shows or writes of anybody is on the access record, and
 the record names a person: `--as`, a holder of the control plane by alias that
 is not stopped -- who `init` made, anybody the admin console signs in, or, where
 the operators are all disabled, a service, which is the way back. The entity
-commands, `key list` and `scim adopt` refuse to start without it on a
-deployment with a control plane. Wherever it is given, every local command
+commands and `key list` refuse to open anything without it on a deployment
+with a control plane, and `scim adopt` refuses without it once it has opened
+both planes, before it reads anybody. Wherever it is given, every local command
 looks it up and refuses a name that matches nobody, or somebody disabled or
-erased, before it writes anything; the commands that write somebody's way in
-(`key add|revoke`, `control key add`, `vouch reset|set|unlock` on either
+erased, before it reads or writes anybody; the commands that write
+somebody's way in (`key add|revoke`, `control key add`, `vouch reset|set|unlock` on either
 plane, `control vouch enrol|prove`, `restore` of a person) and `trail accept` keep it, and the rest only
 check it ([operating.md](../operating.md#the-cli-on-the-box-is-the-deployment)). A row is
 written before the answer is printed, and a read whose row cannot be written is
@@ -168,7 +169,8 @@ nor `protojson`, is refused before anything is opened, so a write is never made
 and then reported as failed.
 
 **A `list` is a page, and not the whole.** It answers twenty rows unless told,
-in the order they were made. `-n` (`--size`) asks for more, up to a hundred,
+in the order they were made -- but for `audit list` and `access list`, which
+answer the newest first; `--reverse` turns either order round. `-n` (`--size`) asks for more, up to a hundred,
 and where there are more than it answered, the answer says where to carry on
 from, which `--next` takes:
 
@@ -245,7 +247,7 @@ is what is so:
   call `Watch` at all has the stream ended, when it is next asked who opened
   it (`stream.recheck`, [operating.md](../operating.md)).
 
-## Every RPC that can have a command has one
+## Which RPCs have no command
 
 Three of roster's own methods are left out on purpose, and each absence is a
 decision rather than a gap:
@@ -259,6 +261,12 @@ decision rather than a gap:
 payday's own framework service gets no `roster` command either:
 `TokenService/Introspect` is what an app calls to check a credential, and it
 is not roster's to wrap.
+
+And nine have none yet, and are reached only by a client of the RPC:
+`HolderService` `Activate`, `Deactivate`, `Provision` and `Tell`;
+`EmailService/Attest`; `DelegationService/Exchange`; and over the wire
+`CredentialService` `Set`, `Unlock` and `Issue` by reference, whose commands
+(`vouch set`, `unlock`, `reset`) are the box's.
 
 ## Next
 

@@ -80,6 +80,13 @@ func Cmd(c *cmd.Config) *xli.Command {
 	// deployment whose configuration is wrong what build it is.
 	version := pdcmd.NewCmdVersion()
 
+	// payday's words for `--short` are *the version and nothing else*, and
+	// what it prints is the commit the binary was built from (#284). Said
+	// here, where roster mounts it, until payday says it.
+	if v, ok := version.Flags.Get("short").(*flg.Switch); ok {
+		v.Brief = "the commit it was built from and nothing else: twelve characters, a + for uncommitted changes, empty where the build has none"
+	}
+
 	return &xli.Command{
 		Name:  cmd.Name,
 		Brief: "roster",

@@ -221,7 +221,14 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 			}
 
 			say("control plane\n")
-			say("  holder %s is %s\n", operator, v.Operator)
+			if v.Found {
+				// Somebody of that name was there before this bound them
+				// anything: a service a key was minted for, or the
+				// provisioner. Said, since `holder … is` reads as made now.
+				say("  holder %s is %s, and was there before init: what follows is bound to them now\n", operator, v.Operator)
+			} else {
+				say("  holder %s is %s\n", operator, v.Operator)
+			}
 			say("  bound to role %q = %s -- every Rpc roster serves, now and after an upgrade\n", cmd.Everyverb, cmd.EveryRosterMethod)
 			// A password this made is printed, once, since here is the only
 			// place it is. One that was **given** is not: `--password-stdin`
