@@ -649,6 +649,7 @@ func (c Config) Meant() error {
 		answersNothing,
 		lessThanNone,
 		formed,
+		noEffect,
 	} {
 		if err := v(c); err != nil {
 			return err
@@ -887,6 +888,73 @@ func formed(c Config) error {
 		if err := v.meant(); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// noEffect refuses a setting that is written down and cannot take effect, for
+// the reason [Build] refuses `control:` with no database and
+// `user_console.dir` with no sign-in: an address written down and not served
+// is worse than one that is refused, because it is a port somebody believes is
+// there. Each names both keys.
+//
+// A consumer's block said with no address is not among them: `roster ldap
+// serve` and the others read the same block.
+func noEffect(c Config) error {
+	if c.Admin.Console.Dir != "" && !c.Control.Serves() {
+		return errors.New("admin.console.dir: the admin console signs an operator in against the control plane, and " +
+			"control.db.driver names no database, so no listener serves it. name a control plane, or take the page out")
+	}
+	if c.Admin.Console.Dir != "" && c.Admin.Http.Addr == "" {
+		return errors.New("admin.console.dir: the page is served by admin.http.addr, which names no listener, so " +
+			"nothing serves it. name admin.http.addr, or take the page out")
+	}
+	if c.UserConsole.Dir != "" && c.SignIn.Enabled && c.Server.Http.Addr == "" {
+		return errors.New("user_console.dir: the page is served by server.http.addr, which names no listener, so " +
+			"nothing serves it. name server.http.addr, or take the page out")
+	}
+	for _, b := range c.listeners() {
+		if b.Http.Addr == "" {
+			if b.Http.AllowWeb {
+				return fmt.Errorf("%[1]s.http.allow_web: says what %[1]s.http.addr answers, and it names no listener. "+
+					"name %[1]s.http.addr, or take allow_web out", b.key)
+			}
+			if len(b.Http.Origins) > 0 {
+				return fmt.Errorf("%[1]s.http.origins: says which pages may call %[1]s.http.addr, and it names no listener. "+
+					"name %[1]s.http.addr, or take origins out", b.key)
+			}
+		}
+		if b.Limit.Burst != 0 && !b.Limit.Limits() {
+			return fmt.Errorf("%[1]s.limit.burst: says how many calls may arrive at once before %[1]s.limit.rate holds them, "+
+				"and no rate is said, so nothing is limited. write %[1]s.limit.rate, or take burst out", b.key)
+		}
+	}
+	if c.Policy.Refresh != 0 && c.Policy.File == "" {
+		return errors.New("policy.refresh: says how often policy.file is read again, and no file is named. " +
+			"name policy.file, or take refresh out")
+	}
+	planes := []struct {
+		key   string
+		watch config.WatchConfig
+	}{{"watch", c.Watch}}
+	if c.Control.Serves() {
+		planes = append(planes, struct {
+			key   string
+			watch config.WatchConfig
+		}{"control.watch", c.Control.watch(c.Watch)})
+	}
+	for _, v := range planes {
+		if v.watch.Dsn == "" || (v.watch.Broker != config.BrokerMemory && v.watch.Broker != config.BrokerNone) {
+			continue
+		}
+		broker := v.key + ".broker"
+		if v.key == "control.watch" && c.Control.Watch.Broker == "" {
+			broker = "watch.broker, which control.watch.broker took as it is empty,"
+		}
+
+		return fmt.Errorf("%[1]s.dsn: says where the broker connects, and %[2]s is %[3]q, which connects nowhere. "+
+			"take %[1]s.dsn out, or name a broker that reads it (postgres)", v.key, broker, v.watch.Broker)
 	}
 
 	return nil
