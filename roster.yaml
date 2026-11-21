@@ -43,9 +43,9 @@ control:
     driver: sqlite3
     dsn: "file:roster-control.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_txlock=immediate"
   addr: "127.0.0.1:50052"
-  # What the admin console talks to. A browser cannot speak gRPC, and this is the
-  # port that has the rows a console is for. `ts/console/main.tsx` looks here by
-  # default.
+  # The control plane's RPCs over HTTP, for a caller that cannot speak gRPC.
+  # Not the admin console's: that page is served by `admin.http` below and calls
+  # the same listener, which is where `ts/console/main.tsx` looks by default.
   http:
     addr: "127.0.0.1:8082"
     allow_web: true

@@ -17,6 +17,15 @@ description says it is. The one left is `server.timeout` (and `control.timeout`,
 `admin.timeout`), how long a call that came with no deadline of its own is
 given: thirty seconds unsaid, and less than none is **no deadline at all**.
 
+**The environment beside the file.** A variable beats the file, and one set
+empty clears what the file says (`ROSTER_SERVER_HTTP_ADDR=` opens no `http`
+listener whatever the file names). A key the file names that nothing reads is
+refused, but a `ROSTER_` variable that names no key is said on standard error --
+*… is set and nothing reads it*, a misspelt one among them -- and the process goes on, so read
+that line where a setting seems not to take. The file may also name a variable
+itself, `${env:NAME}`, in any key. `server.addr` unsaid is `:50051`, on every
+interface; the other listeners open nowhere unless named.
+
 **A list or a map in a variable** is written in YAML's flow form, as the file
 would write it on one line: `ROSTER_VOUCH_KEYS='["one:…", "two:…"]'`,
 `ROSTER_LDAP_BASES='{acme: "dc=acme,dc=example"}'`. A map may also be written as
@@ -204,8 +213,9 @@ control:
   db:
     driver: sqlite3
     dsn: "file:roster-control.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_txlock=immediate"
-  # Where a console reaches it, and empty is nowhere. Bind it somewhere only a
-  # console can reach: it serves `ApiKeyService`, which every other port refuses.
+  # Where a shell reaches it, and empty is nowhere. Bind it somewhere only the
+  # deployment's operators reach: what it answers is who runs this deployment
+  # and the deployment keys of their apps.
   addr: "127.0.0.1:50052"
 ```
 
@@ -689,7 +699,8 @@ login:                                    # only with Hydra in front; see login.
   hydra: { admin: http://hydra:4445 }      # an address and no credential; a proxy's goes in hydra.header,
                                           # whose values are never printed
   # key: left out -- one rk_ made at start, narrowed per request. A process of
-  # its own names it: env:ROSTER_LOGIN_KEY, or file:… from `roster login provision`
+  # its own names it: file:… from `roster login provision`, or the key itself
+  # in ROSTER_LOGIN_KEY, which is this key and not a reference to follow
 
   consent: skip                           # ask draws a screen instead; a device's flow is always drawn one
   base: https://login.contoso.example     # the origin every connection's redirect is under

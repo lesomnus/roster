@@ -19,7 +19,7 @@ import (
 // copy did not.
 //
 // So `login.page.dir` names a build, the way `account.page.dir` and
-// `control.console.dir` do. A deployment that serves the page from somewhere
+// `admin.console.dir` do. A deployment that serves the page from somewhere
 // else leaves it out; what it must keep is the last hop, `POST /accept`,
 // because that is the half no other front door has.
 
