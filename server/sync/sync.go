@@ -143,6 +143,7 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -291,7 +292,25 @@ type stamps struct {
 	closed      time.Time
 }
 
-func (s *server) Watch(_ *app.SyncWatchRequest, out grpc.ServerStreamingServer[app.SyncEvent]) error {
+// errCut is what a stream cut off by the broker ends with, in place of
+// `watch.ErrBehind`: the same code, and what is so of this stream. payday's
+// words are an entity's watch's, which begins again with everything that
+// matches now; this one begins with nothing, and a broker that lost its
+// connection cuts every stream that had nothing to do with falling behind.
+var errCut = status.Error(codes.ResourceExhausted,
+	"this stream was cut, because it fell behind or the deployment's broker lost its connection; "+
+		"changes may have been missed, and nothing is said again: open another, and ask about whoever you hold")
+
+func (s *server) Watch(req *app.SyncWatchRequest, out grpc.ServerStreamingServer[app.SyncEvent]) error {
+	err := s.watch(req, out)
+	if errors.Is(err, watch.ErrBehind) {
+		return errCut
+	}
+
+	return err
+}
+
+func (s *server) watch(_ *app.SyncWatchRequest, out grpc.ServerStreamingServer[app.SyncEvent]) error {
 	ctx := out.Context()
 	was := map[pdid.Id]held{}
 	// And each tenant's closing as this stream last saw it, which is what

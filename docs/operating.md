@@ -3048,8 +3048,10 @@ on another, and nothing reports it: the stream stays open and the client looks
 connected. `none` is honest instead -- it refuses `Watch` outright, so a client is
 told rather than left listening. What no broker promises is that nothing is missed:
 a notification reaches whoever is listening at that moment and is then forgotten,
-so a subscriber that falls behind is cut and re-reads a snapshot when it
-reconnects. An **outbox** answers the other question -- it makes an event survive a
+so a subscriber that falls behind is cut, `ResourceExhausted`, and so is every
+subscriber of a `postgres` broker that lost its connection. An entity's `Watch`
+re-reads a snapshot when it reconnects. The sync stream has none: it says
+nothing again, and a follower opens another and asks about whoever it holds. An **outbox** answers the other question -- it makes an event survive a
 crash between the commit and the publish -- and needs a broker to be worth
 anything. Its drain runs wherever there is a broker, with the setting or
 without: a command at a shell writes there whatever this file says (§ *The CLI
