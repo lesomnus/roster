@@ -380,7 +380,12 @@ type adoption struct {
 // calls them, read past the servers and printed as text -- so it says whose it
 // showed (`access.Saw`) in a call of `HolderService/List` made at the shell by
 // `by`, which is the RPC it stands for, and prints once that row is written
-// (#221, [cmd.ListKeys]).
+// (#221, [cmd.ListKeys]). Each link, and each `Tell` that takes away what was
+// kept, is a call of its own RPC at the shell by `by` too: the write's row
+// `roster --as … identity add` leaves, naming the operator, where the bare
+// context left none. Nothing is said of them with `access.Saw`, since a write
+// shows nothing: the write's own row names what it wrote, and no read's row
+// stands beside it.
 func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant string, of string, out io.Writer) (adoption, error) {
 	at := rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build()
 	t, err := s.Ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{Ref: at}.Build())
@@ -411,6 +416,11 @@ func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant strin
 		return adoption{}, fmt.Errorf("--tenant %s: no connection of it provisions its people, so no directory has matched anybody", tenant)
 	}
 
+	whose, err := pdid.From(t.GetId())
+	if err != nil {
+		return adoption{}, err
+	}
+
 	var found, apps []adopted
 	if err := s.AtTheShell(ctx, by, rstr.HolderService_List_FullMethodName, func(ctx context.Context) error {
 		var err error
@@ -419,10 +429,6 @@ func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant strin
 			return err
 		}
 
-		whose, err := pdid.From(t.GetId())
-		if err != nil {
-			return err
-		}
 		// The holders an app acts as are named below, so they are shown too.
 		for _, v := range slices.Concat(found, apps) {
 			who, err := pdid.From(v.id)
@@ -455,18 +461,28 @@ func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant strin
 			continue
 		}
 
+		// Each write a call of its RPC at the shell by `by`, as `roster --as …
+		// identity add` is: a row of the access record naming who made it.
 		ref := rstr.HolderRef_builder{Id: v.id}.Build()
-		if _, err := s.Ungated.Identity().Add(ctx, rstr.IdentityAddRequest_builder{
-			Holder: ref, Provider: provider, Subject: v.subject,
-		}.Build()); err != nil {
+		if err := s.AtTheShell(ctx, by, rstr.IdentityService_Add_FullMethodName, func(ctx context.Context) error {
+			_, err := s.Ungated.Identity().Add(ctx, rstr.IdentityAddRequest_builder{
+				Holder: ref, Provider: provider, Subject: v.subject,
+			}.Build())
+
+			return err
+		}); err != nil {
 			r.failed++
 			fmt.Fprintf(os.Stderr, "roster: %s was not linked: %v\n", v.alias, err)
 
 			continue
 		}
-		if _, err := s.Ungated.Holder().Tell(ctx, rstr.HolderTellRequest_builder{
-			Ref: ref, Subject: z.Ptr(""),
-		}.Build()); err != nil {
+		if err := s.AtTheShell(ctx, by, rstr.HolderService_Tell_FullMethodName, func(ctx context.Context) error {
+			_, err := s.Ungated.Holder().Tell(ctx, rstr.HolderTellRequest_builder{
+				Ref: ref, Subject: z.Ptr(""),
+			}.Build())
+
+			return err
+		}); err != nil {
 			return r, fmt.Errorf("%s is linked, and what the directory said of them was not taken away: %w", v.alias, err)
 		}
 	}
