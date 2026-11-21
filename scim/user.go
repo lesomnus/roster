@@ -321,36 +321,47 @@ func bare(path, schema string) string {
 // text is a value a directory sent as a string, or as the one thing a string
 // is often sent inside: a number for an employee number, an empty list or a
 // null for nothing.
+//
+// Decoded once and walked, with a number kept as it was written. It
+// marshalled what was inside a list or an object and parsed it again at every
+// level, which a value nested a few thousand deep made seconds of a turn; and
+// read a number through a float, so `9007199254740993` was kept as
+// `9007199254740992`.
 func text(raw json.RawMessage) (string, error) {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
 	var v any
-	if err := json.Unmarshal(raw, &v); err != nil {
+	if err := dec.Decode(&v); err != nil {
 		return "", fmt.Errorf("not a value")
 	}
-	switch v := v.(type) {
-	case nil:
-		return "", nil
-	case string:
-		return strings.TrimSpace(v), nil
-	case float64:
-		return strconv.FormatFloat(v, 'f', -1, 64), nil
-	case bool:
-		return strconv.FormatBool(v), nil
-	case []any:
-		if len(v) == 0 {
+
+	for {
+		switch w := v.(type) {
+		case nil:
 			return "", nil
-		}
-		b, _ := json.Marshal(v[0])
+		case string:
+			return strings.TrimSpace(w), nil
+		case json.Number:
+			return w.String(), nil
+		case bool:
+			return strconv.FormatBool(w), nil
+		case []any:
+			if len(w) == 0 {
+				return "", nil
+			}
+			v = w[0]
 
-		return text(b)
-	case map[string]any:
-		if inner, ok := v["value"]; ok {
-			b, _ := json.Marshal(inner)
+			continue
+		case map[string]any:
+			if inner, ok := w["value"]; ok {
+				v = inner
 
-			return text(b)
+				continue
+			}
 		}
+
+		return "", fmt.Errorf("not a string")
 	}
-
-	return "", fmt.Errorf("not a string")
 }
 
 // primary is the address a list of `emails` puts first: the one marked

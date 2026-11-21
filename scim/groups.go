@@ -471,8 +471,9 @@ func (s *Server) listGroups(ctx context.Context, w http.ResponseWriter, r *http.
 	if err != nil {
 		return err
 	}
-	if f := r.URL.Query().Get("filter"); f != "" {
-		attr, value, err := parseGroupFilter(f)
+	// A `filter` that says nothing is refused, as of people.
+	if q := r.URL.Query(); q.Has("filter") {
+		attr, value, err := parseGroupFilter(q.Get("filter"))
 		if err != nil {
 			return err
 		}
