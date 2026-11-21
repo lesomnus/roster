@@ -64,8 +64,10 @@ func (s *Server) listUsers(ctx context.Context, w http.ResponseWriter, r *http.R
 		return err
 	}
 
-	if f := q.Get("filter"); f != "" {
-		attr, value, err := parseFilter(f)
+	// A `filter` that says nothing is refused as one, where it was the list:
+	// a directory asking after somebody read everybody as somebody else.
+	if q.Has("filter") {
+		attr, value, err := parseFilter(q.Get("filter"))
 		if err != nil {
 			return err
 		}
