@@ -264,8 +264,8 @@ func TestNobodyIsToldWhatAnotherCustomerMayCall(t *testing.T) {
 	x.Empty(caughtUp(t, r.as, r.conn, r.c, r.canary), "an app was told what somebody in a tenant it cannot read may call")
 }
 
-// heardOfTeam is what of `vs` is about `who`.
-func heardOfTeam(vs []*app.SyncEvent, who pdid.Id) []*app.SyncEvent {
+// syncReachOf is what of `vs` is about `who`.
+func syncReachOf(vs []*app.SyncEvent, who pdid.Id) []*app.SyncEvent {
 	var out []*app.SyncEvent
 	for _, v := range vs {
 		if string(v.GetHolder()) == string(who.Bytes()) {
@@ -327,9 +327,98 @@ func TestATeamErasedIsHeardByEverybodyOnIt(t *testing.T) {
 
 	heard := caughtUp(t, r.as, r.conn, r.c, r.canary)
 	for _, who := range []pdid.Id{lead, staff} {
-		vs := heardOfTeam(heard, who)
+		vs := syncReachOf(heard, who)
 		x.Len(vs, 1, "somebody on a team that was erased was not told what they may call changed")
 		x.Equal(app.SyncReason_SYNC_REASON_REACH, vs[0].GetReason())
 	}
-	x.Empty(heardOfTeam(heard, left), "somebody who had left the team was told of it")
+	x.Empty(syncReachOf(heard, left), "somebody who had left the team was told of it")
+}
+
+// TestAFollowerInASiteIsToldOfAGrantMadeAcrossTheTenant: who a written row
+// reaches was read through the follower's whole narrowing, and a binding is in
+// a caller's sight by its own site. So a follower holding `SyncService/Watch`
+// in a site heard nothing of a role bound across the tenant to somebody of
+// that site, while `HolderService/Reaches` answered it with what the role
+// added. The row is read through the tenant's wall alone, and the person it
+// reaches through the follower's whole narrowing: it is told that something
+// changed for somebody it may already ask about, and never of anybody outside
+// its sight or its tenant.
+func TestAFollowerInASiteIsToldOfAGrantMadeAcrossTheTenant(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+	ctx, stop := context.WithCancel(ctx)
+	defer stop()
+
+	conn := served(t, b.Server)
+	b.mayAnything(b.ContosoUser, b.Contoso)
+	admin := asOverTheWire(ctx, b.ContosoUser)
+
+	seoul := app.SiteRef_builder{Id: b.site(t, ctx, b.Contoso, "seoul").Bytes()}.Build()
+	busan := app.SiteRef_builder{Id: b.site(t, ctx, b.Contoso, "busan").Bytes()}.Build()
+	follower := b.holder(t, ctx, b.Contoso, "an-app")
+	dana := b.holder(t, ctx, b.Contoso, "dana")
+	erin := b.holder(t, ctx, b.Contoso, "erin")
+	canary := b.holder(t, ctx, b.Contoso, "canary")
+	for who, site := range map[pdid.Id]*app.SiteRef{dana: seoul, canary: seoul, erin: busan} {
+		_, err := b.Ungated.SiteMembership().Add(ctx, app.SiteMembershipAddRequest_builder{
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(), Site: site,
+		}.Build())
+		x.NoError(err)
+	}
+
+	follows := b.role(t, ctx, "follows",
+		app.SyncService_Watch_FullMethodName, app.HolderService_Reaches_FullMethodName,
+		app.HolderService_Invalidate_FullMethodName, app.HolderService_Get_FullMethodName)
+	_, err := b.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
+		Role: app.RoleRef_builder{Id: follows.Bytes()}.Build(), Site: seoul,
+		Holder: app.HolderRef_builder{Id: follower.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	as := asOverTheWire(ctx, follower)
+	c := syncing(t, as, conn, canary)
+	staff := app.RoleRef_builder{Id: b.role(t, ctx, "staff", "/roster.EmailService/List").Bytes()}.Build()
+	bindings := app.NewBindingServiceClient(conn)
+
+	t.Run("somebody of its site", func(t *testing.T) {
+		x := require.New(t)
+		ref := app.HolderRef_builder{Id: dana.Bytes()}.Build()
+		_, err := bindings.Add(admin, app.BindingAddRequest_builder{Role: staff, Holder: ref}.Build())
+		x.NoError(err)
+
+		got, err := app.NewHolderServiceClient(conn).Reaches(as, app.HolderReachesRequest_builder{Ref: ref}.Build())
+		x.NoError(err)
+		x.Contains(got.GetMethods(), "/roster.EmailService/List", "the follower is answered what the grant added")
+
+		heard := syncReachOf(caughtUp(t, as, conn, c, canary), dana)
+		x.Len(heard, 1, "a follower bound in a site was not told of a grant made across the tenant to somebody it sees")
+		x.Equal(app.SyncReason_SYNC_REASON_REACH, heard[0].GetReason())
+	})
+
+	t.Run("somebody of another site", func(t *testing.T) {
+		_, err := bindings.Add(admin, app.BindingAddRequest_builder{
+			Role: staff, Holder: app.HolderRef_builder{Id: erin.Bytes()}.Build(),
+		}.Build())
+		require.NoError(t, err)
+		require.Empty(t, caughtUp(t, as, conn, c, canary), "a follower was told of somebody outside its sight")
+	})
+
+	t.Run("another tenant's person", func(t *testing.T) {
+		x := require.New(t)
+		other := b.holder(t, ctx, b.Fabrikam, "theirs")
+		b.mayAnything(other, b.Fabrikam)
+		theirs := asOverTheWire(ctx, other)
+		role, err := app.NewRoleServiceClient(conn).Add(theirs, app.RoleAddRequest_builder{
+			Tenant:  app.TenantRef_builder{Id: b.Fabrikam.Bytes()}.Build(),
+			Alias:   "reader",
+			Methods: []string{"/roster.HolderService/Get"},
+		}.Build())
+		x.NoError(err)
+		_, err = bindings.Add(theirs, app.BindingAddRequest_builder{
+			Role:   app.RoleRef_builder{Id: role.GetId()}.Build(),
+			Holder: app.HolderRef_builder{Id: other.Bytes()}.Build(),
+		}.Build())
+		x.NoError(err)
+		x.Empty(caughtUp(t, as, conn, c, canary), "a follower was told of somebody of another tenant")
+	})
 }

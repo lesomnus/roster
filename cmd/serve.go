@@ -1182,12 +1182,15 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// reads and which is the one failure a client cannot tell from a quiet
 	// system.
 	//
-	// And the database beside it, narrowed by the same scope, for the two
-	// things the walled server cannot answer: whether somebody it no longer
-	// shows was erased where this caller may see, and whom a binding or a
-	// membership reached once it is erased (`server/sync`).
+	// And the database beside it, for the two things the walled server cannot
+	// answer: whether somebody it no longer shows was erased where this caller
+	// may see, narrowed by the same scope; and whom a row of the access model
+	// reached, erased or not, which is read through the tenant's wall alone.
+	// The person it reaches is then read through the whole narrowing, so a
+	// follower bound in a site hears of a grant made across the tenant to
+	// somebody it may ask about, and of nobody it may not (`server/sync`).
 	app.RegisterSyncServiceServer(g, rostersync.Service(s.Walled, s.Watch,
-		rostersync.Erased(s.Ent, s.narrow), rostersync.Reaching(s.Ent, s.narrow)))
+		rostersync.Erased(s.Ent, s.narrow), rostersync.Reaching(s.Ent, pd.Wall())))
 
 	// A customer minting a key for themselves, which until now needed a shell
 	// on the box.

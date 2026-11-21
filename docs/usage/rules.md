@@ -63,6 +63,7 @@ And of all five:
 | being on a team with no role, or in a group nothing is bound to, gives nothing; being of a site gives the person nothing, and puts them within a grant made there | `TestAMembershipWithNoRoleIsStillAMembership` |
 | no grant reaches another tenant | `TestARoleDoesNotCrossTheWall` · `TestTheTenantWallStillApplies` |
 | where somebody reaches is said once a site, in the order the sites were made, to them (`MeService/Get`) and of them (`HolderService/Reaches`) | `TestWhereSomebodyReachesIsSaidOnceAndInOrder` |
+| an app that holds the sync stream in a site is told that what somebody it may read may call changed, wherever in the tenant the grant was written, and is told nothing of anybody it may not read (`SYNC_REASON_REACH`) | `TestAFollowerInASiteIsToldOfAGrantMadeAcrossTheTenant` |
 
 There is no sixth place. What wants something finer -- *the people of this
 group, and of that one not* -- is what roster leaves.
