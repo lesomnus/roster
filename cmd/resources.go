@@ -205,6 +205,20 @@ type Applied struct {
 
 	// Nothing is the files that declare no row.
 	Nothing []string
+
+	// Rows is each row the run looked at, in the order of the files: what
+	// `resources apply` prints a line of.
+	Rows []AppliedRow
+}
+
+// AppliedRow is one row a run looked at: what it did with it (`added`,
+// `changed`, `same` or `left`), its kind and name, and for a row changed, the
+// keys that change, by the names the file writes them.
+type AppliedRow struct {
+	Was    string
+	Kind   string
+	Name   string
+	Fields []string
 }
 
 // ReadResources reads the files named, in order, and refuses what nothing
@@ -592,7 +606,7 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 	for _, r := range rs {
 		// Every kind is one of these: [checkResources] refused any other
 		// before anything was written.
-		apply := map[string]func(context.Context, app.Server, Resource, bool) (string, string, error){
+		apply := map[string]func(context.Context, app.Server, Resource, bool) (string, []string, error){
 			"Tenant":     applyTenant,
 			"Connection": applyConnection,
 			"Host":       applyHost,
@@ -607,15 +621,17 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 		}
 		if left {
 			out.Left = append(out.Left, named(r))
+			out.Rows = append(out.Rows, AppliedRow{Was: "left", Kind: r.Kind, Name: named(r)})
 
 			continue
 		}
 
-		what, was, err := apply(as, at, r, dry)
+		was, fields, err := apply(as, at, r, dry)
 		if err != nil {
 			return out, r.refused(err)
 		}
 
+		what := named(r)
 		switch was {
 		case "added":
 			out.Added = append(out.Added, what)
@@ -624,23 +640,22 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 		default:
 			out.Same = append(out.Same, what)
 		}
+		out.Rows = append(out.Rows, AppliedRow{Was: was, Kind: r.Kind, Name: what, Fields: fields})
 	}
 
 	return out, nil
 }
 
-// named is what a resource is called in what a run answers, as each kind's
-// own apply names it: a tenant by its alias, a connection by its tenant's and
-// its own name, and a host or a mail domain by its name.
+// named is what a resource is called in what a run answers: a tenant by its
+// alias, and every other kind by its tenant's and its own name -- a host and a
+// mail domain as well, which were their name alone and so printed alike and
+// said nothing of whose they were.
 func named(r Resource) string {
-	switch r.Kind {
-	case "Tenant":
+	if r.Kind == "Tenant" {
 		return "@" + r.Alias
-	case "Connection":
-		return "@" + r.Tenant + "/" + r.Name
 	}
 
-	return r.Name
+	return "@" + r.Tenant + "/" + r.Name
 }
 
 // leavers is the tenants a run found closed or destroyed, by alias, and what
@@ -816,10 +831,9 @@ func labelsOf(r Resource) map[string]string {
 // reason (`proto/ext/app/host_svc.ext.proto` and its neighbours); this is that
 // rule arrived at from the other side.
 
-func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (string, string, error) {
-	what := "@" + r.Alias
+func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (string, []string, error) {
 	if r.Alias == "" {
-		return what, "", errors.New("alias")
+		return "", nil, errors.New("alias")
 	}
 
 	got, err := s.Tenant().Get(ctx, app.TenantGetRequest_builder{
@@ -828,7 +842,7 @@ func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (strin
 	}.Build())
 	if status.Code(err) == codes.NotFound {
 		if dry {
-			return what, "added", nil
+			return "added", nil, nil
 		}
 		add := app.TenantAddRequest_builder{
 			Alias: r.Alias, Name: r.Name, Desc: r.Desc, Labels: labelsOf(r),
@@ -838,22 +852,26 @@ func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (strin
 		}
 		_, err = s.Tenant().Add(ctx, add.Build())
 
-		return what, "added", err
+		return "added", nil, err
 	}
 	if err != nil {
-		return what, "", err
+		return "", nil, err
 	}
 
 	// The settings as they will be: what the row says, with the fields the
 	// file mentions written over it. Compared against the row's own so that a
 	// file mentioning nothing, or nothing new, is "same".
 	next := settle(got.GetConfig(), r.Config)
-	if got.GetName() == r.Name && got.GetDesc() == r.Desc && declared(got.GetLabels()) &&
-		proto.Equal(next, settle(got.GetConfig(), nil)) {
-		return what, "same", nil
+	fields := differs(
+		"name", got.GetName() != r.Name,
+		"desc", got.GetDesc() != r.Desc,
+	)
+	fields = append(fields, configDiffers(settle(got.GetConfig(), nil), next)...)
+	if len(fields) == 0 && declared(got.GetLabels()) {
+		return "same", nil, nil
 	}
 	if dry {
-		return what, "changed", nil
+		return "changed", fields, nil
 	}
 
 	// `Update` and not `Patch`, which the three below use: it is the verb the
@@ -871,7 +889,7 @@ func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (strin
 	}
 	_, err = s.Tenant().Update(ctx, up.Build())
 
-	return what, "changed", err
+	return "changed", fields, err
 }
 
 // settle is a tenant's settings with what a file said written over them,
@@ -919,11 +937,10 @@ func settle(cur *app.TenantConfig, said *Settings) *app.TenantConfig {
 	return out
 }
 
-func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (string, string, error) {
-	what := "@" + r.Tenant + "/" + r.Name
+func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (string, []string, error) {
 	at, err := tenantRef(ctx, s, r)
 	if err != nil {
-		return what, "", err
+		return "", nil, err
 	}
 
 	got, err := s.Connection().Get(ctx, app.ConnectionGetRequest_builder{
@@ -934,7 +951,7 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 	}.Build())
 	if status.Code(err) == codes.NotFound {
 		if dry {
-			return what, "added", nil
+			return "added", nil, nil
 		}
 		_, err = s.Connection().Add(ctx, app.ConnectionAddRequest_builder{
 			Tenant: at, Name: r.Name, Desc: r.Desc,
@@ -944,19 +961,25 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 			Labels:       labelsOf(r),
 		}.Build())
 
-		return what, "added", err
+		return "added", nil, err
 	}
 	if err != nil {
-		return what, "", err
+		return "", nil, err
 	}
-	if got.GetIssuer() == r.Issuer && got.GetClientId() == r.ClientId &&
-		got.GetSecretRef() == r.SecretRef && got.GetDesc() == r.Desc &&
-		got.GetSubjectClaim() == r.SubjectClaim && got.GetProvisions() == r.Provisions &&
-		same(got.GetScopes(), r.Scopes) && declared(got.GetLabels()) {
-		return what, "same", nil
+	fields := differs(
+		"desc", got.GetDesc() != r.Desc,
+		"issuer", got.GetIssuer() != r.Issuer,
+		"client_id", got.GetClientId() != r.ClientId,
+		"scopes", !same(got.GetScopes(), r.Scopes),
+		"secret_ref", got.GetSecretRef() != r.SecretRef,
+		"subject_claim", got.GetSubjectClaim() != r.SubjectClaim,
+		"provisions", got.GetProvisions() != r.Provisions,
+	)
+	if len(fields) == 0 && declared(got.GetLabels()) {
+		return "same", nil, nil
 	}
 	if dry {
-		return what, "changed", nil
+		return "changed", fields, nil
 	}
 
 	v, err := s.Connection().Patch(ctx, app.ConnectionPatchRequest_builder{
@@ -972,7 +995,7 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 		DateUpdated:  got.GetDateUpdated(),
 	}.Build())
 	if err != nil || len(r.Scopes) > 0 || len(got.GetScopes()) == 0 {
-		return what, "changed", err
+		return "changed", fields, err
 	}
 
 	// Scopes left out are none, as every other key left out is empty. A list
@@ -988,21 +1011,20 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 		patch.Target(patch.Name("scopes")).Assign(patch.List()),
 	)
 	if err != nil {
-		return what, "", err
+		return "", nil, err
 	}
 	_, err = s.Connection().Apply(ctx, app.ConnectionApplyRequest_builder{
 		Ref:   app.ConnectionRef_builder{Id: got.GetId()}.Build(),
 		Patch: doc,
 	}.Build())
 
-	return what, "changed", err
+	return "changed", fields, err
 }
 
-func applyHost(ctx context.Context, s app.Server, r Resource, dry bool) (string, string, error) {
-	what := r.Name
+func applyHost(ctx context.Context, s app.Server, r Resource, dry bool) (string, []string, error) {
 	at, err := tenantRef(ctx, s, r)
 	if err != nil {
-		return what, "", err
+		return "", nil, err
 	}
 
 	got, err := s.Host().Get(ctx, app.HostGetRequest_builder{
@@ -1011,16 +1033,16 @@ func applyHost(ctx context.Context, s app.Server, r Resource, dry bool) (string,
 	}.Build())
 	if status.Code(err) == codes.NotFound {
 		if dry {
-			return what, "added", nil
+			return "added", nil, nil
 		}
 		_, err = s.Host().Add(ctx, app.HostAddRequest_builder{
 			Tenant: at, Name: r.Name, Desc: r.Desc, Labels: labelsOf(r),
 		}.Build())
 
-		return what, "added", err
+		return "added", nil, err
 	}
 	if err != nil {
-		return what, "", err
+		return "", nil, err
 	}
 
 	// Whose row it found, which it did not look at: a name is one row across
@@ -1031,18 +1053,19 @@ func applyHost(ctx context.Context, s app.Server, r Resource, dry bool) (string,
 	// take a name: it is refused, before a dry run says otherwise.
 	theirs, err := s.Tenant().Get(ctx, app.TenantGetRequest_builder{Ref: at, Select: app.TenantSelect_builder{}.Build()}.Build())
 	if err != nil {
-		return what, "", err
+		return "", nil, err
 	}
 	if !bytes.Equal(got.GetTenant().GetId(), theirs.GetId()) {
-		return what, "", fmt.Errorf("%s is held by another tenant, and a file does not take a name: "+
+		return "", nil, fmt.Errorf("%s is held by another tenant, and a file does not take a name: "+
 			"declared for %s here, and their row would have to be erased first", r.Name, r.Tenant)
 	}
 
-	if got.GetDesc() == r.Desc && declared(got.GetLabels()) {
-		return what, "same", nil
+	fields := differs("desc", got.GetDesc() != r.Desc)
+	if len(fields) == 0 && declared(got.GetLabels()) {
+		return "same", nil, nil
 	}
 	if dry {
-		return what, "changed", nil
+		return "changed", fields, nil
 	}
 
 	_, err = s.Host().Patch(ctx, app.HostPatchRequest_builder{
@@ -1052,14 +1075,13 @@ func applyHost(ctx context.Context, s app.Server, r Resource, dry bool) (string,
 		DateUpdated: got.GetDateUpdated(),
 	}.Build())
 
-	return what, "changed", err
+	return "changed", fields, err
 }
 
-func applyMailDomain(ctx context.Context, s app.Server, r Resource, dry bool) (string, string, error) {
-	what := r.Name
+func applyMailDomain(ctx context.Context, s app.Server, r Resource, dry bool) (string, []string, error) {
 	at, err := tenantRef(ctx, s, r)
 	if err != nil {
-		return what, "", err
+		return "", nil, err
 	}
 
 	// Where an address at this domain is routed: one of the tenant's own
@@ -1075,22 +1097,26 @@ func applyMailDomain(ctx context.Context, s app.Server, r Resource, dry bool) (s
 	}.Build())
 	if status.Code(err) == codes.NotFound {
 		if dry {
-			return what, "added", nil
+			return "added", nil, nil
 		}
 		_, err = s.MailDomain().Add(ctx, app.MailDomainAddRequest_builder{
 			Tenant: at, Name: r.Name, Desc: r.Desc, Provider: r.Routes, Labels: labelsOf(r),
 		}.Build())
 
-		return what, "added", err
+		return "added", nil, err
 	}
 	if err != nil {
-		return what, "", err
+		return "", nil, err
 	}
-	if got.GetProvider() == r.Routes && got.GetDesc() == r.Desc && declared(got.GetLabels()) {
-		return what, "same", nil
+	fields := differs(
+		"desc", got.GetDesc() != r.Desc,
+		"routes", got.GetProvider() != r.Routes,
+	)
+	if len(fields) == 0 && declared(got.GetLabels()) {
+		return "same", nil, nil
 	}
 	if dry {
-		return what, "changed", nil
+		return "changed", fields, nil
 	}
 
 	_, err = s.MailDomain().Patch(ctx, app.MailDomainPatchRequest_builder{
@@ -1101,7 +1127,31 @@ func applyMailDomain(ctx context.Context, s app.Server, r Resource, dry bool) (s
 		DateUpdated: got.GetDateUpdated(),
 	}.Build())
 
-	return what, "changed", err
+	return "changed", fields, err
+}
+
+// differs is the names, of pairs of a name and whether it changes, that
+// change: what a `~` says after it, by the names the file writes them.
+func differs(pairs ...any) []string {
+	out := []string{}
+	for i := 0; i+1 < len(pairs); i += 2 {
+		if pairs[i+1].(bool) {
+			out = append(out, pairs[i].(string))
+		}
+	}
+
+	return out
+}
+
+// configDiffers is which of a tenant's settings change, as `config.<key>`.
+func configDiffers(was, next *app.TenantConfig) []string {
+	return differs(
+		"config.password", was.HasPassword() != next.HasPassword() || was.GetPassword() != next.GetPassword(),
+		"config.front_door", was.GetFrontDoor() != next.GetFrontDoor(),
+		"config.profile.fill", was.GetProfile().GetFill() != next.GetProfile().GetFill(),
+		"config.profile.slack", was.GetProfile().GetSlackSecretRef() != next.GetProfile().GetSlackSecretRef(),
+		"config.leave", was.GetLeave() != next.GetLeave(),
+	)
 }
 
 // tenantRef is the customer a resource hangs off, and a refusal when it names

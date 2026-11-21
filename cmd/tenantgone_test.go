@@ -384,7 +384,7 @@ resources:
 
 		return got, said.String(), err
 	}
-	left := []string{"@newco", "@newco/entra", "newco.example", "newco.example"}
+	left := []string{"@newco", "@newco/entra", "@newco/newco.example", "@newco/newco.example"}
 
 	// Closed at the box, as a declared tenant is: no port closes one.
 	closes(t, ctx, b.Ungated, newco)
@@ -456,7 +456,7 @@ resources:
 		got, _, err := applied(false)
 		x.NoError(err)
 		x.Empty(got.Left)
-		x.Equal([]string{"@newco", "@newco/entra", "newco.example", "newco.example"}, got.Added)
+		x.Equal([]string{"@newco", "@newco/entra", "@newco/newco.example", "@newco/newco.example"}, got.Added)
 
 		for kind, n := range under(t, ctx, b.Ent, newco) {
 			x.Zero(n, "a %s was written under the tenant that is gone", kind)

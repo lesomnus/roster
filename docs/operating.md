@@ -1097,11 +1097,27 @@ resources:
 ```
 
 `serve` applies these before it serves, and `roster resources apply --dry-run`
-says what a file would do before a restart does it. A dry run writes no row and
-alters no table: it looks the provisioner up and does not make it, and asks of
-both databases what `serve` asks before it serves, without migrating either. In Kubernetes that is GitOps
+says what a file would do before a restart does it. In Kubernetes that is GitOps
 without roster knowing what Kubernetes is: the file is in a ConfigMap, editing it
 changes the hash, the pod is replaced, and the new one applies it.
+
+```
+$ roster resources apply --dry-run
++ Host @contoso/login.contoso.example
+~ Connection @contoso/entra: issuer, scopes
+  Tenant @contoso
+  MailDomain @contoso/contoso.example
+
+(dry run; nothing was written)
+```
+
+One line a row: `+` for a row it adds, `~` for one it changes, with the keys
+that change as the file writes them, two spaces for one that is as the file
+says, and `!` for one of a tenant that is closed or destroyed, which is left as
+it is. A run that stops at a row prints what it did before it. A dry run writes
+no row and alters no table: it looks the provisioner up and does not make it,
+and asks of both databases what `serve` asks before it serves, without
+migrating either.
 
 **A file is read as the configuration is.** A key its top level does not hold,
 and a key the row's `kind` does not read -- one another kind reads among them --
