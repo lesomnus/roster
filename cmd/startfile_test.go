@@ -7,10 +7,14 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"io"
 	"math/big"
 	"net"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -19,6 +23,7 @@ import (
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/pdtest"
 
+	"github.com/lesomnus/roster/cli"
 	"github.com/lesomnus/roster/cmd"
 )
 
@@ -91,4 +96,121 @@ func listenerBlocks(c *cmd.Config) map[string]*config.ServerConfig {
 		"control": &c.Control.ServerConfig,
 		"admin":   &c.Admin.ServerConfig,
 	}
+}
+
+// loadedFrom is `over` with the file at `path` read over it, as the loader
+// reads one: what `over` holds is the defaults the file is laid on.
+func loadedFrom(t *testing.T, over cmd.Config, path string) cmd.Config {
+	t.Helper()
+
+	k := cli.Cmd(&over)
+	k.Writer = io.Discard
+	require.NoError(t, k.Run(t.Context(), []string{"--config", path, "config"}), "%s was not read", path)
+
+	return over
+}
+
+// startableHere is `c` with what it names on the disk of the machine it was
+// written for -- a page's directory, a certificate -- named by something that
+// is there on this one, so that what is held of it is what the file says.
+func startableHere(t *testing.T, c cmd.Config) cmd.Config {
+	t.Helper()
+
+	dirs := []*string{&c.UserConsole.Dir, &c.Admin.Console.Dir, &c.Account.Page.Dir, &c.Login.Page.Dir}
+	for _, d := range dirs {
+		if *d != "" {
+			*d = t.TempDir()
+		}
+	}
+	for _, b := range listenerBlocks(&c) {
+		if b.Tls.Active() {
+			pair := startCertificateOf(t)
+			b.Tls.CertFile, b.Tls.KeyFile = pair.cert, pair.key
+			if b.Tls.ClientCAFile != "" {
+				b.Tls.ClientCAFile = pair.cert
+			}
+		}
+	}
+
+	return c
+}
+
+// TestTheFilesADeploymentStartsFromAreMeant holds what `cmd.Config.Meant`
+// refuses to the files this repository ships and the blocks its pages show:
+// `roster.yaml`, `deploy/config.yaml`, what `compose.yaml` says to `roster
+// serve` through the environment, and every `yaml` block of the pages, each
+// laid over `roster.yaml` as the page reads it, since most are a part.
+func TestTheFilesADeploymentStartsFromAreMeant(t *testing.T) {
+	root := filepath.Join("..")
+	empty := cmd.Config{}
+
+	for _, f := range []string{"roster.yaml", filepath.Join("deploy", "config.yaml")} {
+		c := loadedFrom(t, empty, filepath.Join(root, f))
+		require.NoError(t, startableHere(t, c).Meant(), f)
+	}
+
+	t.Run("compose.yaml", func(t *testing.T) {
+		src, err := os.ReadFile(filepath.Join(root, "compose.yaml"))
+		require.NoError(t, err)
+
+		// The `roster` service's environment, up to the service after it.
+		body := string(src)
+		body = body[strings.Index(body, "\n  roster:\n"):]
+		body = body[:strings.Index(body[1:], "\n  customer:\n")]
+		said := 0
+		for _, m := range regexp.MustCompile(`(?m)^\s+(ROSTER_[A-Z_]+): (.+)$`).FindAllStringSubmatch(body, -1) {
+			v := strings.Trim(strings.TrimSpace(m[2]), `'"`)
+			if d := regexp.MustCompile(`^\$\{[A-Z_]+:-(.*)\}$`).FindStringSubmatch(v); d != nil {
+				v = d[1]
+			}
+			t.Setenv(m[1], v)
+			said++
+		}
+		require.NotZero(t, said, "compose.yaml says nothing to roster serve any more")
+
+		file := filepath.Join(t.TempDir(), "roster.yaml")
+		require.NoError(t, os.WriteFile(file, nil, 0o600))
+		c := loadedFrom(t, empty, file)
+		require.Equal(t, "pgx", c.Db.Driver, "what compose.yaml says was not read")
+		require.NoError(t, startableHere(t, c).Meant())
+	})
+
+	t.Run("the pages", func(t *testing.T) {
+		x := require.New(t)
+		base := loadedFrom(t, empty, filepath.Join(root, "roster.yaml"))
+
+		pages, err := filepath.Glob(filepath.Join(root, "docs", "*.md"))
+		x.NoError(err)
+		more, err := filepath.Glob(filepath.Join(root, "docs", "*", "*.md"))
+		x.NoError(err)
+		pages = append(pages, more...)
+		pages = append(pages, filepath.Join(root, "README.md"))
+
+		shown := 0
+		for _, page := range pages {
+			src, err := os.ReadFile(page)
+			x.NoError(err)
+
+			for _, m := range regexp.MustCompile("(?s)```yaml\n(.*?)```").FindAllStringSubmatchIndex(string(src), -1) {
+				body := string(src[m[2]:m[3]])
+				if !regexp.MustCompile(`(?m)^(server|control|admin|db|watch|spin|user_console|sign_in|policy|vouch|stream|holder|consent|tenant|host|account|ldap|login|scim):`).MatchString(body) {
+					continue
+				}
+				where := page + ":" + strconv.Itoa(1+strings.Count(string(src[:m[2]]), "\n"))
+
+				file := filepath.Join(t.TempDir(), "roster.yaml")
+				x.NoError(os.WriteFile(file, []byte(body), 0o600))
+				c := base
+				k := cli.Cmd(&c)
+				k.Writer = io.Discard
+				if err := k.Run(t.Context(), []string{"--config", file, "config"}); err != nil {
+					// Not a file of roster's: a resource, a client's own.
+					continue
+				}
+				x.NoError(startableHere(t, c).Meant(), where)
+				shown++
+			}
+		}
+		x.Greater(shown, 10, "the pages show fewer blocks of a deployment's file than they did")
+	})
 }

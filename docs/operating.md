@@ -478,10 +478,10 @@ Five of roster's own at most, and which open is what the configuration named.
 | | who calls it | |
 | --- | --- | --- |
 | `server.addr` | product apps | gRPC, **walled** and gated. Keys, and -- only where `sign_in.enabled` -- the session a roster user signed in for: the sign-in is served here and on the listener below alike, since one is the other transcoded |
-| `server.http.addr` | anything that cannot speak gRPC, and a roster user's browser | the same, transcoded (Connect, gRPC-Web). Serves the **user console** and the sign-in behind it |
+| `server.http.addr` | anything that cannot speak gRPC, and a roster user's browser | the same, transcoded (Connect, gRPC-Web) where `server.http.allow_web` says so. Serves the **user console** and the sign-in behind it; a console with no `allow_web` is refused at start |
 | `control.addr` | the roster operators' shells, and their jobs | who runs this deployment and the deployment keys of the apps they run. Takes an `rk_`, asked what its **holder** is bound on the control plane, and an operator's session from the admin listener |
-| `control.http.addr` | the same, over HTTP | the same RPCs, transcoded. **No page**, and no sign-in |
-| `admin.addr` / `.http.addr` | a roster operator's browser | **customers**: the data plane with no wall, behind an operator's session. Serves the **admin console** and the sign-in behind it |
+| `control.http.addr` | the same, over HTTP | the same RPCs, transcoded where `control.http.allow_web` says so. **No page**, and no sign-in: with neither `allow_web` nor `allow_pprof` it would answer nothing, and is refused at start |
+| `admin.addr` / `.http.addr` | a roster operator's browser | **customers**: the data plane with no wall, behind an operator's session. Serves the **admin console** and the sign-in behind it, the second transcoded where `admin.http.allow_web` says so; a console with no `allow_web` is refused at start |
 
 And one for each consumer `roster serve` is told to run beside them --
 `account.addr`, `ldap.addr` (and `ldap.addr_tls`), `login.addr`, `scim.addr` --
