@@ -164,7 +164,10 @@ func mintingOf(cl *xli.Command, narrows bool) (minting, error) {
 	}
 
 	allow, _ := flg.Find[[]string](cl, "allow")
-	methods := cmd.SplitMethods(allow)
+	methods, err := cmd.MethodsOf("--allow", allow)
+	if err != nil {
+		return minting{}, err
+	}
 	narrowed, _ := flg.Find[bool](cl, "narrowed")
 	if len(methods) == 0 && !narrowed {
 		// Refused rather than defaulted, in either direction. Defaulting

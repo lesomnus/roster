@@ -429,6 +429,7 @@ commands themselves ([cli.md](cli.md)).
 | | written in | held to it by |
 | --- | --- | --- |
 | What a command mints is the one thing on standard output, and what is said of it is on standard error: a key, a password `init` or `vouch reset` made, the key `sign-in` was handed. A password given with `--password-stdin` is printed nowhere | `cli/init.go` · `cli/signin.go` · `cli/key.go` · `cli/vouch.go` | `TestAMintedSecretIsAloneOnStandardOutput` |
+| Where a command reads a list of methods -- `--allow`, `--role`, `--administer` -- each is a method or a pattern in the form the gate matches by, `/<package>.<Service>/<Method>` with `*` for a whole part, and a word that could match nothing is refused before anything is opened, naming the flag and the word | `cmd/holder.go` | `TestAWordThatIsNoMethodIsRefused` |
 
 ### At the box, of the trail
 

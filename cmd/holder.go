@@ -230,6 +230,61 @@ func SplitMethods(vs []string) []string {
 	return out
 }
 
+// MethodsOf is a list of methods read from the command line, by
+// [SplitMethods], each held to the form the gate matches a caller's methods
+// by (`frame.Covers`): `/<package>.<Service>/<Method>`, any of the three a
+// whole `*`, or a service with no package written as it is. `flag` is how the
+// list was typed, for the refusal to name.
+//
+// A word in no such form matches nothing, and was taken: `roster key add …
+// --allow HolderService/Get` printed a key *allowing 1 method(s)* that calls
+// nothing (#284). The gate compares a word it cannot read as a method with
+// `==`, so a part that holds a `*` beside other letters, a missing slash, a
+// part left empty or a space inside are all words no call is ever named, and
+// a key that silently does not work is worse to debug than being told now.
+func MethodsOf(flag string, vs []string) ([]string, error) {
+	out := SplitMethods(vs)
+	for _, v := range out {
+		if !methodForm(v) {
+			return nil, fmt.Errorf("%s %s: not a method, which is written in full -- /<package>.<Service>/<Method>, as /roster.HolderService/Get -- with * for a whole part, as /roster.HolderService/*", flag, v)
+		}
+	}
+
+	return out, nil
+}
+
+// methodForm is whether `v` is a method or a pattern some method could be:
+// what `frame.Covers` reads, and the literal it falls back on.
+func methodForm(v string) bool {
+	if strings.ContainsAny(v, " \t\r\n") {
+		return false
+	}
+
+	rest, ok := strings.CutPrefix(v, "/")
+	if !ok {
+		return false
+	}
+	full, method, ok := strings.Cut(rest, "/")
+	if !ok || !wholePart(method) || strings.Contains(method, "/") {
+		return false
+	}
+
+	i := strings.LastIndex(full, ".")
+	if i < 0 {
+		// A service with no package: no pattern names one, and it matches
+		// as the literal it is, so it holds no `*`.
+		return full != "" && !strings.Contains(full, "*")
+	}
+
+	return wholePart(full[:i]) && wholePart(full[i+1:])
+}
+
+// wholePart is a part of a method that is a name or `*`, and not empty or a
+// name with a `*` in it, which `frame.Covers` takes as letters.
+func wholePart(v string) bool {
+	return v == "*" || (v != "" && !strings.Contains(v, "*"))
+}
+
 // Widest says so when what was just minted reaches further than its methods
 // read: the trail, a credential for anybody, a link to anybody's account.
 //
