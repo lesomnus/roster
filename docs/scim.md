@@ -61,7 +61,8 @@ roster scim provision --tenant contoso --connection entra
 
 marks `entra` as the connection contoso's directory provisions through
 (`Connection.provisions`; one a tenant), makes the directory's holder (`scim`), a
-role holding exactly what the endpoint calls, its binding, and a tenant key --
+role holding what the endpoint calls but the four writes that change a group
+(§ *What its key may do*), its binding, and a tenant key listing all of it --
 printed once. Running it again is a rotation: the key is replaced, not added to. A
 connection a file declares is the file's to mark, `provisions: true` beside it in
 `resources.yaml`, or the next start takes it back.
@@ -655,8 +656,12 @@ rotation.
 **So a build that has the endpoint call something more needs `provision`
 again**, and the new key pasted where the directory keeps the old. Only
 `provision` writes the role and the key; `serve` opens the listener and writes
-neither. Until then the endpoint does what the key it has allows, and says in
-its log what it could not.
+neither. Until then, a request that needs a method the key lacks is answered
+`403` with roster's sentence naming the method -- never `404` and never an
+empty list, so a directory does not read it as somebody gone. Three are passed
+over instead, and said in the log: a number, who somebody reports to, and a
+group's erase (above). And a create whose `userName` is not the person's
+address, by a key without `Tell`, makes the person and is answered `403`.
 
 ## Where each fact is
 
@@ -685,6 +690,7 @@ its log what it could not.
 | a number is written and replaced, one a kind and one number as many kinds as it is said for; and is left where it is somebody's who holds more than the directory | `TestADirectoryKeepsSomebodysNumbers` · `TestADirectoryLeavesTheNumbersOfSomebodyWiderThanIt` · `TestANumberIsSomebodysAsAnAddressIs` |
 | who somebody reports to is one relation, and one word in it | `TestADirectorySaysWhoSomebodyReportsTo` · `TestWhatSomebodyIsToSomebodyIsARecordNothingReads` |
 | a key minted before a method was added goes on provisioning without it | `TestAKeyMintedBeforeNumbersWereKeptStillProvisions` |
+| and a request that needs a method the key lacks is `403` naming it, and nobody is said gone; the table above is what the key lists and the role holds | `TestAKeyThatLacksAMethodIsRefusedAndNobodyIsSaidGone` · `TestTheEndpointsKeyIsTheManualsList` |
 | the directory lifts only its own suspensions | `TestADirectoryLiftsOnlyItsOwnSuspension` · `TestTheDirectoryDoesNotLiftAnOperatorsSuspension` |
 | its key reaches only the people it makes | `TestADirectoryMakesPeopleAndOnlyNewOnes` · `TestTheEndpointTakesATenantKeyAndNothingElse` |
 | and makes them only at the organisation's own door | `TestADirectoryProvisionsThroughItsOrganisationsOwnDoor` |
