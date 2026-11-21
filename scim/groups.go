@@ -296,9 +296,42 @@ func (s *Server) readGroup(ctx context.Context, id []byte) (*rstr.Group, error) 
 }
 
 // membersOf is who is in a group as far as the directory is told: everybody in
-// it who holds no role there, by their id.
-func (s *Server) membersOf(ctx context.Context, group []byte) ([][]byte, error) {
+// it who holds no role there and whom the endpoint speaks of, by their id.
+//
+// Somebody erased since, or deleted by the directory, still has their place in
+// roster -- an erase and a delete leave it -- and is not named: a directory
+// that follows a member to `GET /Users/{id}` would find nobody there.
+func (s *Server) membersOf(ctx context.Context, t *tenancy, group []byte) ([][]byte, error) {
+	ps, err := s.places(ctx, group)
+	if err != nil {
+		return nil, err
+	}
+
 	var out [][]byte
+	for _, p := range ps {
+		ok, err := s.answers(ctx, t, p.holder)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			out = append(out, p.holder)
+		}
+	}
+
+	return out, nil
+}
+
+// place is somebody's plain membership of a group: its own id, and whose it is.
+type place struct {
+	id     []byte
+	holder []byte
+}
+
+// places is a group's plain memberships, whether or not their holders can
+// still be read. One that carries a role is never the directory's: its own
+// holder's, which manages the group, and anybody's an administrator appointed.
+func (s *Server) places(ctx context.Context, group []byte) ([]place, error) {
+	var out []place
 
 	after := ""
 	for {
@@ -315,7 +348,7 @@ func (s *Server) membersOf(ctx context.Context, group []byte) ([][]byte, error) 
 			if len(v.GetRole().GetId()) > 0 {
 				continue
 			}
-			out = append(out, v.GetHolder().GetId())
+			out = append(out, place{id: v.GetId(), holder: v.GetHolder().GetId()})
 		}
 
 		after = vs.GetNext()
@@ -372,11 +405,11 @@ func withMembers(r *http.Request) bool {
 }
 
 // shown is a group for an answer, with its members when they were asked for.
-func (s *Server) shown(ctx context.Context, r *http.Request, v *rstr.Group) (map[string]any, error) {
+func (s *Server) shown(ctx context.Context, r *http.Request, t *tenancy, v *rstr.Group) (map[string]any, error) {
 	if !withMembers(r) {
 		return groupOf(v, nil), nil
 	}
-	ms, err := s.membersOf(ctx, v.GetId())
+	ms, err := s.membersOf(ctx, t, v.GetId())
 	if err != nil {
 		return nil, err
 	}
@@ -416,7 +449,7 @@ func (s *Server) listGroups(ctx context.Context, w http.ResponseWriter, r *http.
 
 	items := []any{}
 	for i := start - 1; i < len(all) && len(items) < count; i++ {
-		g, err := s.shown(ctx, r, all[i])
+		g, err := s.shown(ctx, r, t, all[i])
 		if err != nil {
 			return err
 		}
@@ -445,7 +478,7 @@ func groupIs(v *rstr.Group, attr, value string) bool {
 	return false
 }
 
-func (s *Server) getGroup(ctx context.Context, w http.ResponseWriter, r *http.Request, _ *tenancy) error {
+func (s *Server) getGroup(ctx context.Context, w http.ResponseWriter, r *http.Request, t *tenancy) error {
 	id, ok := parseId(r.PathValue("id"))
 	if !ok {
 		return notFound("no group here by that id")
@@ -454,7 +487,7 @@ func (s *Server) getGroup(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if err != nil {
 		return err
 	}
-	g, err := s.shown(ctx, r, v)
+	g, err := s.shown(ctx, r, t, v)
 	if err != nil {
 		return err
 	}
@@ -517,7 +550,7 @@ func (s *Server) createGroup(ctx context.Context, w http.ResponseWriter, r *http
 		}
 	}
 
-	out, err := s.shown(ctx, r, v)
+	out, err := s.shown(ctx, r, t, v)
 	if err != nil {
 		return err
 	}
@@ -609,7 +642,7 @@ func (s *Server) replaceGroup(ctx context.Context, w http.ResponseWriter, r *htt
 	if err != nil {
 		return err
 	}
-	out, err := s.shown(ctx, r, v)
+	out, err := s.shown(ctx, r, t, v)
 	if err != nil {
 		return err
 	}
@@ -635,9 +668,9 @@ func (s *Server) replaceGroup(ctx context.Context, w http.ResponseWriter, r *htt
 // A tenant says what its managers do by the role they hold (`core.Manages`),
 // and one whose managers do not erase groups keeps them so; a key minted
 // before a manager could names no such method either. There the directory
-// does the most a manager of that tenant may: everybody it says is in the
-// group is taken out, the row is kept and still answered, and the log says
-// which of the two it was.
+// does the most a manager of that tenant may: every plain place in the group
+// is taken away, the places of people it no longer speaks of among them, the
+// row is kept and still answered, and the log says which of the two it was.
 func (s *Server) deleteGroup(ctx context.Context, w http.ResponseWriter, r *http.Request, t *tenancy) error {
 	id, ok := parseId(r.PathValue("id"))
 	if !ok {
@@ -681,33 +714,57 @@ func (s *Server) rename(ctx context.Context, v *rstr.Group, name string) error {
 }
 
 // member is a person a directory names as in a group: one this endpoint
-// speaks of, which the directory's own holder is not.
+// speaks of ([speaksOf]), which the directory's own holder is not.
 func (s *Server) member(ctx context.Context, t *tenancy, v string) ([]byte, error) {
 	id, ok := parseId(v)
 	if !ok {
 		return nil, badRequest("invalidValue", "members: "+v+" is nobody here")
 	}
-	if _, err := s.read(ctx, t, id); err != nil {
-		var nf *problem
-		if asProblem(err, &nf) && nf.status == http.StatusNotFound {
-			return nil, badRequest("invalidValue", "members: "+v+" is nobody here")
-		}
-
+	ok, err := s.answers(ctx, t, id)
+	if err != nil {
 		return nil, err
+	}
+	if !ok {
+		return nil, badRequest("invalidValue", "members: "+v+" is nobody here")
 	}
 
 	return id, nil
 }
 
-// join puts people into a group. Somebody already in it is left as they are.
-func (s *Server) join(ctx context.Context, t *tenancy, group []byte, ids []string) error {
+// resolve is the people a list of members names, every one of them, before
+// anything is written: an id that is nobody the endpoint speaks of refuses the
+// whole list, and the group is as it was.
+//
+// A list was read and written a member at a time, so one refused halfway was
+// half written, and was again each time the directory sent it.
+func (s *Server) resolve(ctx context.Context, t *tenancy, ids []string) ([][]byte, error) {
+	out := make([][]byte, 0, len(ids))
 	for _, v := range ids {
 		who, err := s.member(ctx, t, v)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		_, err = s.roster.GroupMembership().Add(ctx, rstr.GroupMembershipAddRequest_builder{
-			Holder: rstr.HolderRef_builder{Id: who}.Build(),
+		out = append(out, who)
+	}
+
+	return out, nil
+}
+
+// join puts people into a group. Somebody already in it is left as they are.
+func (s *Server) join(ctx context.Context, t *tenancy, group []byte, ids []string) error {
+	who, err := s.resolve(ctx, t, ids)
+	if err != nil {
+		return err
+	}
+
+	return s.in(ctx, group, who)
+}
+
+// in puts people already resolved into a group.
+func (s *Server) in(ctx context.Context, group []byte, who [][]byte) error {
+	for _, h := range who {
+		_, err := s.roster.GroupMembership().Add(ctx, rstr.GroupMembershipAddRequest_builder{
+			Holder: rstr.HolderRef_builder{Id: h}.Build(),
 			Group:  rstr.GroupRef_builder{Id: group}.Build(),
 		}.Build())
 		if err != nil && status.Code(err) != codes.AlreadyExists {
@@ -718,15 +775,31 @@ func (s *Server) join(ctx context.Context, t *tenancy, group []byte, ids []strin
 	return nil
 }
 
-// leave takes people out of a group. Somebody not in it is nobody to take
-// out, and the directory's own holder is not the directory's to name.
+// leave takes people out of a group, by their places in it ([Server.out]).
+// Somebody not in it is nobody to take out, and the directory's own holder is
+// not the directory's to name.
 func (s *Server) leave(ctx context.Context, t *tenancy, group []byte, ids []string) error {
+	named := map[string]bool{}
 	for _, v := range ids {
 		who, ok := parseId(v)
 		if !ok || bytes.Equal(who, t.self) {
 			continue
 		}
-		if err := s.out(ctx, group, who); err != nil {
+		named[string(who)] = true
+	}
+	if len(named) == 0 {
+		return nil
+	}
+
+	ps, err := s.places(ctx, group)
+	if err != nil {
+		return err
+	}
+	for _, p := range ps {
+		if !named[string(p.holder)] {
+			continue
+		}
+		if err := s.out(ctx, p); err != nil {
 			return err
 		}
 	}
@@ -734,13 +807,12 @@ func (s *Server) leave(ctx context.Context, t *tenancy, group []byte, ids []stri
 	return nil
 }
 
-func (s *Server) out(ctx context.Context, group, who []byte) error {
-	_, err := s.roster.GroupMembership().Erase(ctx, rstr.GroupMembershipRef_builder{
-		Member: rstr.GroupMembershipRefByMember_builder{
-			Holder: rstr.HolderRef_builder{Id: who}.Build(),
-			Group:  rstr.GroupRef_builder{Id: group}.Build(),
-		}.Build(),
-	}.Build())
+// out erases a place in a group by its own id, and not by the person: somebody
+// erased since cannot be read, and their place is the directory's to take all
+// the same. Went by the person, it read *nobody by that id* as nobody to take
+// out, and a restore gave them back a place the directory had taken away.
+func (s *Server) out(ctx context.Context, p place) error {
+	_, err := s.roster.GroupMembership().Erase(ctx, rstr.GroupMembershipRef_builder{Id: p.id}.Build())
 	if status.Code(err) == codes.NotFound {
 		return nil
 	}
@@ -748,28 +820,32 @@ func (s *Server) out(ctx context.Context, group, who []byte) error {
 	return err
 }
 
-// put makes who is in a group exactly `ids`: those not named are taken out,
-// and those not in it are put in.
+// put makes who is in a group exactly `ids`: every one of them resolved first
+// ([Server.resolve]); then every plain place whose holder is not named is
+// taken out, the places of people erased since among them; then those not in
+// it are put in.
 func (s *Server) put(ctx context.Context, t *tenancy, group []byte, ids []string) error {
-	want := map[string]bool{}
-	for _, v := range ids {
-		if id, ok := parseId(v); ok {
-			want[string(id)] = true
-		}
-	}
-
-	was, err := s.membersOf(ctx, group)
+	who, err := s.resolve(ctx, t, ids)
 	if err != nil {
 		return err
 	}
-	for _, who := range was {
-		if want[string(who)] {
+	want := map[string]bool{}
+	for _, h := range who {
+		want[string(h)] = true
+	}
+
+	ps, err := s.places(ctx, group)
+	if err != nil {
+		return err
+	}
+	for _, p := range ps {
+		if want[string(p.holder)] {
 			continue
 		}
-		if err := s.out(ctx, group, who); err != nil {
+		if err := s.out(ctx, p); err != nil {
 			return err
 		}
 	}
 
-	return s.join(ctx, t, group, ids)
+	return s.in(ctx, group, who)
 }

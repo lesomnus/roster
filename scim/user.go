@@ -488,9 +488,36 @@ func (p *person) externalId() string {
 	return p.holder.GetDirectorySubject()
 }
 
-// read is a person this endpoint speaks of: never a row a file declared,
-// never the directory's own holder, never somebody it deleted. Any of those is
-// "not here", which is what it is to the directory.
+// speaksOf is whether this endpoint speaks of somebody, by their row: never a
+// row a file declared, never the directory's own holder, never somebody it
+// deleted. Somebody erased has no row to ask, and is not spoken of either.
+//
+// The one question, which [Server.read] and [Server.answers] each ask, so that
+// who is in a group and who is there to read are the same people.
+func speaksOf(t *tenancy, h *rstr.Holder) bool {
+	return h.GetLabels()[declared] == "" && !bytes.Equal(h.GetId(), t.self) && h.GetDirectory() != directoryDeleted
+}
+
+// answers is whether the endpoint speaks of somebody, asked with no more of
+// them than [speaksOf] reads: one call, and no address and no account, since
+// it is asked of every member of a group.
+func (s *Server) answers(ctx context.Context, t *tenancy, id []byte) (bool, error) {
+	h, err := s.roster.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+		Ref:    rstr.HolderRef_builder{Id: id}.Build(),
+		Select: rstr.HolderSelect_builder{Labels: proto.Bool(true), Directory: proto.Bool(true)}.Build(),
+	}.Build())
+	switch status.Code(err) {
+	case codes.OK:
+		return speaksOf(t, h), nil
+	case codes.NotFound, codes.InvalidArgument:
+		return false, nil
+	default:
+		return false, err
+	}
+}
+
+// read is a person this endpoint speaks of ([speaksOf]). Anybody else is "not
+// here", which is what they are to the directory.
 func (s *Server) read(ctx context.Context, t *tenancy, id []byte) (*person, error) {
 	h, err := s.roster.Holder().Get(ctx, rstr.HolderGetRequest_builder{
 		Ref: rstr.HolderRef_builder{Id: id}.Build(),
@@ -515,7 +542,7 @@ func (s *Server) read(ctx context.Context, t *tenancy, id []byte) (*person, erro
 	default:
 		return nil, err
 	}
-	if h.GetLabels()[declared] != "" || bytes.Equal(h.GetId(), t.self) || h.GetDirectory() == directoryDeleted {
+	if !speaksOf(t, h) {
 		return nil, notFound("nobody here by that id")
 	}
 

@@ -459,8 +459,19 @@ a rename in the directory never changes what a relying party grants on.
 **Who is in it, as far as the directory is told, is the plain members.** Its
 own holder is in every group it made and is no member to it; somebody an
 administrator appointed to manage one beside it is theirs to take out. A member
-is a person the endpoint speaks of -- a group inside a group is not followed,
-and roster has none.
+is a person the endpoint speaks of, which is who `GET /Users/{id}` answers --
+a group inside a group is not followed, and roster has none. Somebody erased
+since, or deleted by the directory, keeps their place in roster as an erase
+leaves it, and is not among `members`.
+
+**A list of members is written whole or not at all.** Every id an `add` or a
+whole list names is looked up before anything is written, and one that is
+nobody the endpoint speaks of refuses the request, `400 invalidValue`, with the
+group as it was. **Somebody is taken out by their place**, whether or not they
+can still be read: a `remove` of somebody erased since takes their place away,
+and a whole list takes away every plain place whose holder it does not name,
+those of people erased or deleted since among them -- so a restore does not
+put back in a group somebody the directory took out of it.
 
 **`DELETE` erases the group.** Whoever manages a group may erase it
 ([entity.md](entity.md) § *GroupMembership*), and the directory's holder
@@ -477,9 +488,9 @@ being in it gives, and not the group the tenant is administered through.
 A tenant says what its managers do by its `group-manager` role, and one whose
 managers do not erase groups keeps the directory from it too; a key minted
 before this lists no such method. There a `DELETE` does the most a manager of
-that tenant may -- nobody it says is in the group is left in it, the group is
-still answered, and the log says so -- and what becomes of the row is an
-administrator's.
+that tenant may -- every plain place in the group is taken away, the places of
+people it no longer speaks of among them, the group is still answered, and the
+log says so -- and what becomes of the row is an administrator's.
 
 ## Turning it off
 
