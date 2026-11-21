@@ -46,7 +46,8 @@ const (
 // What changed while it was open, and nothing else: it replays nothing, and an
 // event carries no position to begin again from. So a stream that ended is one
 // that missed things, and opening it again forgets what was known of everybody
-// rather than trusting answers that may have changed unheard -- and what the
+// rather than trusting answers that may have changed unheard -- forgotten when
+// roster says the stream listens, which is from when a write is heard -- and what the
 // app marked from what it heard is put right by [Accounts.Reconcile], which is
 // how a restart is met too. It is opened again until ctx ends, waiting longer
 // each time it will not open.
@@ -125,7 +126,18 @@ func (a *Accounts) follow(ctx context.Context, on func(ctx context.Context, v St
 	if err != nil {
 		return fmt.Errorf("roster: %w", err)
 	}
-	// Whatever was known before this opened may have changed unheard.
+	// roster sends the stream's header once it has subscribed it, and nothing
+	// with it: a write made from then on is heard here. So whatever was known
+	// is forgotten then, and not when Watch returned, which is before roster
+	// has subscribed anything -- an answer asked for in between was believed
+	// for HeldTtl over a write made in between, which nothing heard. A stream
+	// whose header does not come is one that failed, and Recv says how.
+	if md, err := stream.Header(); err != nil || md == nil {
+		if err == nil {
+			_, err = stream.Recv()
+		}
+		return fmt.Errorf("roster: %w", err)
+	}
 	a.mu.Lock()
 	clear(a.held)
 	a.dropped++
@@ -135,6 +147,12 @@ func (a *Accounts) follow(ctx context.Context, on func(ctx context.Context, v St
 		ev, err := stream.Recv()
 		if err != nil {
 			return fmt.Errorf("roster: %w", err)
+		}
+		if len(ev.GetHolder()) == 0 {
+			// About nobody, which roster sends none of: it is kept for a sign
+			// of life on a stream that is quiet, and a follower of this
+			// release does not complain of one.
+			continue
 		}
 		if ev.GetReason() == rstr.SyncReason_SYNC_REASON_REACH {
 			// About what they may call, which `reach` keeps and this does

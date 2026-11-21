@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/pdid"
@@ -38,20 +39,24 @@ import (
 
 // syncing opens the stream and waits until it is really subscribed.
 //
-// There is no snapshot -- `sync.proto` argues that at length -- so nothing
-// arrives to say the server has got as far as subscribing, and a write made
-// before it does is a write nobody hears. So this pokes somebody nobody else in
-// the test cares about until something about them comes back.
-//
-// `Invalidate` as the poke, because it moves a stamp **forward every time**: a
-// poke that set a flag would be a no-op on the second attempt and this would
-// hang waiting for an event its own idempotence had suppressed.
-func syncing(t *testing.T, ctx context.Context, conn *grpc.ClientConn, canary pdid.Id) <-chan *app.SyncEvent {
+// There is no snapshot -- `sync.proto` argues that at length -- and the stream
+// says when roster has got as far as subscribing by its response header, sent
+// then and with nothing else (`TestAStreamSaysWhenItListens`). A write made
+// before it is a write nobody hears, so this waits for the header. The canary
+// is not written to any more: it is still named by the callers, which share
+// it with [caughtUp].
+func syncing(t *testing.T, ctx context.Context, conn *grpc.ClientConn, _ pdid.Id) <-chan *app.SyncEvent {
 	t.Helper()
 	x := require.New(t)
 
 	out, err := app.NewSyncServiceClient(conn).Watch(ctx, app.SyncWatchRequest_builder{}.Build())
 	x.NoError(err)
+	md, err := out.Header()
+	x.NoError(err)
+	if md == nil {
+		_, err := out.Recv()
+		t.Fatalf("the stream ended before it listened: %v", err)
+	}
 
 	c := make(chan *app.SyncEvent, 32)
 	go func() {
@@ -66,30 +71,7 @@ func syncing(t *testing.T, ctx context.Context, conn *grpc.ClientConn, canary pd
 		}
 	}()
 
-	h := app.NewHolderServiceClient(conn)
-	ref := app.HolderRef_builder{Id: canary.Bytes()}.Build()
-
-	for range 100 {
-		_, err := h.Invalidate(ctx, app.HolderInvalidateRequest_builder{Ref: ref}.Build())
-		x.NoError(err)
-
-		select {
-		case v, ok := <-c:
-			if !ok {
-				t.Fatal("the stream ended before it began")
-			}
-
-			x.Equal(canary.Bytes(), v.GetHolder(), "somebody else's event arrived first")
-
-			return c
-
-		case <-time.After(50 * time.Millisecond):
-		}
-	}
-
-	t.Fatal("the stream never subscribed")
-
-	return nil
+	return c
 }
 
 // about reads until something about this person arrives, or fails rather than
@@ -140,8 +122,8 @@ func about(t *testing.T, c <-chan *app.SyncEvent, who pdid.Id) *app.SyncEvent {
 // So this makes writes that are heard -- the canary invalidated, each waited
 // for by the stamp it wrote -- and three of them, because an event after a
 // write is not the stream having read past it. The first can come of a poke
-// [syncing] left behind, taken before anything here was written and read late
-// enough to see the new stamp. The second comes of what the stream took after
+// an earlier call of this one left behind, taken before anything here was
+// written and read late enough to see the new stamp. The second comes of what the stream took after
 // that read, which is with every write this waits for or after it -- and
 // among what it took with them, the canary may have been read first. The
 // third comes of what it took once that was done.
@@ -468,6 +450,9 @@ type collector struct {
 
 func (c *collector) Context() context.Context { return c.ctx }
 
+// SendHeader is the stream saying it listens, which goes nowhere here.
+func (c *collector) SendHeader(metadata.MD) error { return nil }
+
 func (c *collector) Send(v *app.SyncEvent) error {
 	c.vs = append(c.vs, v)
 
@@ -669,6 +654,9 @@ type streaming struct {
 }
 
 func (s *streaming) Context() context.Context { return s.ctx }
+
+// SendHeader is the stream saying it listens, which goes nowhere here.
+func (s *streaming) SendHeader(metadata.MD) error { return nil }
 
 func (s *streaming) Send(v *app.SyncEvent) error {
 	s.c <- v
