@@ -2,10 +2,15 @@ package reach_test
 
 import (
 	"context"
+	"errors"
+	"net"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/lesomnus/payday/pdid"
 
@@ -182,4 +187,95 @@ func TestAReachIsNoReadOfSomebodysData(t *testing.T) {
 	_, err := h.ReachOf(t.Context(), e.kim)
 	x.NoError(err)
 	x.Zero(e.s.Access.Pending(), "a reach read as a read of the person")
+}
+
+// silentRoster is a listener that takes every connection and says nothing on
+// it: a roster frozen, or a path that drops what it carries without closing.
+func silentRoster(t *testing.T) string {
+	t.Helper()
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	var mu sync.Mutex
+	var conns []net.Conn
+	t.Cleanup(func() {
+		l.Close()
+		mu.Lock()
+		defer mu.Unlock()
+		for _, c := range conns {
+			c.Close()
+		}
+	})
+	go func() {
+		for {
+			c, err := l.Accept()
+			if err != nil {
+				return
+			}
+			mu.Lock()
+			conns = append(conns, c)
+			mu.Unlock()
+		}
+	}()
+
+	return l.Addr().String()
+}
+
+// TestARosterThatDoesNotAnswerCouldNotBeAsked: a roster that takes the call
+// and never answers is one that could not be asked, within standing's
+// HeldWait of each asking, and is kept as one for HeldRetry. Asked with
+// nothing of the package's own to end it, every call waited out its caller's
+// whole deadline and answered that the call ended before roster answered,
+// and kept nothing, so the next call waited again; right is ErrUnreachable,
+// and no asking.
+func TestARosterThatDoesNotAnswerCouldNotBeAsked(t *testing.T) {
+	x := require.New(t)
+	reach.ShortenHeldWait(t, 200*time.Millisecond)
+	a := &asking{}
+	conn, err := grpc.NewClient(silentRoster(t), grpc.WithTransportCredentials(insecure.NewCredentials()), a.option())
+	x.NoError(err)
+	t.Cleanup(func() { conn.Close() })
+	c := &clock{now: time.Now()}
+	h := holders(t, reach.Config{Conn: conn, As: func(ctx context.Context) (context.Context, error) { return ctx, nil }, Now: c.Now})
+	kim := pdid.New(pdid.Domain(2))
+
+	// The caller's own deadline is long, and is a bound on a test that fails.
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	x.ErrorIs(h.May(ctx, kim, get), reach.ErrUnreachable)
+	x.NoError(ctx.Err(), "the caller's own time was not what ended it")
+	asked := a.asked.Load()
+	x.ErrorIs(h.May(ctx, kim, get), reach.ErrUnreachable)
+	x.Equal(asked, a.asked.Load(), "asked again within HeldRetry")
+
+	_, err = h.ReachOf(ctx, kim)
+	x.ErrorIs(err, reach.ErrUnreachable)
+}
+
+// TestEveryRoadSaysTheSameOfRosterBeingAway: a roster that could not be asked
+// is ErrUnreachable on every road that asks it, and the app's own error from
+// As is found beside it. ReachOf answered roster's error and no value an app
+// compares.
+func TestEveryRoadSaysTheSameOfRosterBeingAway(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+	em := newEmbedded(t)
+	a := &asking{}
+	h := holders(t, reach.Config{Conn: em.dial(t, a.option()), As: em.as})
+
+	a.down.Store(true)
+	_, err := h.ReachOf(ctx, em.kim)
+	x.ErrorIs(err, reach.ErrUnreachable, "ReachOf")
+	_, err = h.Reach(ctx, em.kim)
+	x.ErrorIs(err, reach.ErrUnreachable, "Reach")
+	h.Recheck(em.kim)
+	x.ErrorIs(h.May(ctx, em.kim, get), reach.ErrUnreachable, "May")
+
+	mine := errors.New("no tenant yet")
+	failing := holders(t, reach.Config{Conn: em.dial(t), As: func(context.Context) (context.Context, error) { return nil, mine }})
+	_, err = failing.ReachOf(ctx, em.kim)
+	x.ErrorIs(err, reach.ErrUnreachable, "As failing")
+	x.ErrorIs(err, mine, "and the app's own error beside it")
+	err = failing.May(ctx, em.kim, get)
+	x.ErrorIs(err, reach.ErrUnreachable)
+	x.ErrorIs(err, mine)
 }

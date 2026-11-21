@@ -2,6 +2,9 @@ package standing_test
 
 import (
 	"context"
+	"errors"
+	"net"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -9,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -317,4 +321,115 @@ func TestOnlyAnAddressSomebodyCheckedIsAnAccounts(t *testing.T) {
 		x.NoError(err)
 		x.Equal([]string{"kim@home.example"}, got)
 	})
+}
+
+// silentRoster is a listener that takes every connection and says nothing on
+// it: a roster frozen, or a path that drops what it carries without closing.
+func silentRoster(t *testing.T) string {
+	t.Helper()
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	var mu sync.Mutex
+	var conns []net.Conn
+	t.Cleanup(func() {
+		l.Close()
+		mu.Lock()
+		defer mu.Unlock()
+		for _, c := range conns {
+			c.Close()
+		}
+	})
+	go func() {
+		for {
+			c, err := l.Accept()
+			if err != nil {
+				return
+			}
+			mu.Lock()
+			conns = append(conns, c)
+			mu.Unlock()
+		}
+	}()
+
+	return l.Addr().String()
+}
+
+// TestARosterThatDoesNotAnswerCouldNotBeAsked: a roster that takes the call
+// and never answers is one that could not be asked, within HeldWait of each
+// asking, and is kept as one for HeldRetry. Asked with nothing of the
+// package's own to end it, every call waited out its caller's whole deadline
+// and answered that the call ended before roster answered, and kept nothing,
+// so the next call waited again; right is ErrUnreachable, and no asking.
+func TestARosterThatDoesNotAnswerCouldNotBeAsked(t *testing.T) {
+	x := require.New(t)
+	standing.ShortenHeldWait(t, 200*time.Millisecond)
+	c := &cutting{}
+	conn, err := grpc.NewClient(silentRoster(t), grpc.WithTransportCredentials(insecure.NewCredentials()), c.option())
+	x.NoError(err)
+	t.Cleanup(func() { conn.Close() })
+	clk := &clock{now: time.Now()}
+	a := accounts(t, standing.Config{Conn: conn, As: bearer("rk_x"), Now: clk.Now})
+	kim := pdid.New(pdid.Domain(2))
+
+	// The caller's own deadline is long, and is a bound on a test that fails.
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	x.ErrorIs(a.Held(ctx, kim, time.Now()), standing.ErrUnreachable)
+	x.NoError(ctx.Err(), "the caller's own time was not what ended it")
+	asked := c.asked.Load()
+	x.ErrorIs(a.Held(ctx, kim, time.Now()), standing.ErrUnreachable)
+	x.Equal(asked, c.asked.Load(), "asked again within HeldRetry")
+
+	_, err = a.StandingOf(ctx, kim)
+	x.ErrorIs(err, standing.ErrUnreachable)
+	_, err = a.Addresses(ctx, kim)
+	x.ErrorIs(err, standing.ErrUnreachable)
+}
+
+// TestEveryRoadSaysTheSameOfRosterBeingAway: a roster that could not be asked
+// is ErrUnreachable on every road that asks it, and the app's own error from
+// As is found beside it. It was so on Held alone: StandingOf, Addresses and
+// Reconcile answered roster's error and no value an app compares, and Settle
+// answered nil.
+func TestEveryRoadSaysTheSameOfRosterBeingAway(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+	em := newEmbedded(t)
+	c := &cutting{}
+	a := accounts(t, standing.Config{Conn: em.dial(t, c.option()), As: em.as})
+
+	c.down.Store(true)
+	_, err := a.StandingOf(ctx, em.kim)
+	x.ErrorIs(err, standing.ErrUnreachable, "StandingOf")
+	_, err = a.Addresses(ctx, em.kim)
+	x.ErrorIs(err, standing.ErrUnreachable, "Addresses")
+	_, err = a.Reconcile(ctx, []pdid.Id{em.kim}, nil)
+	x.ErrorIs(err, standing.ErrUnreachable, "Reconcile")
+	x.ErrorIs(a.Settle(ctx, []pdid.Id{em.kim}, nil, nil), standing.ErrUnreachable, "Settle")
+	x.ErrorIs(a.Held(ctx, em.kim, time.Now()), standing.ErrUnreachable, "Held")
+
+	mine := errors.New("no directory yet")
+	failing := accounts(t, standing.Config{Conn: em.dial(t), As: func(context.Context) (context.Context, error) { return nil, mine }})
+	_, err = failing.StandingOf(ctx, em.kim)
+	x.ErrorIs(err, standing.ErrUnreachable, "As failing")
+	x.ErrorIs(err, mine, "and the app's own error beside it")
+	_, err = failing.Addresses(ctx, em.kim)
+	x.ErrorIs(err, standing.ErrUnreachable)
+	x.ErrorIs(err, mine)
+	err = failing.Held(ctx, em.kim, time.Now())
+	x.ErrorIs(err, standing.ErrUnreachable)
+	x.ErrorIs(err, mine)
+}
+
+// TestHeldOfNobodyIsNoPersonToo: a session of somebody roster has nobody by
+// is refused, and says why as reach's May of nobody does: ErrRefused, and
+// ErrNoPerson beside it, which it was not.
+func TestHeldOfNobodyIsNoPersonToo(t *testing.T) {
+	x := require.New(t)
+	em := newEmbedded(t)
+	a := accounts(t, standing.Config{Conn: em.dial(t), As: em.as})
+
+	err := a.Held(t.Context(), pdid.New(pdid.Domain(2)), time.Now())
+	x.ErrorIs(err, standing.ErrRefused)
+	x.ErrorIs(err, standing.ErrNoPerson)
 }

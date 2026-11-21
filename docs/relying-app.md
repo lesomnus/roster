@@ -70,9 +70,10 @@ as := func(ctx context.Context) (context.Context, error) {
 }
 ```
 
-An error from `As` is a roster that could not be asked, as far as `Held` goes,
-and passes through as it is -- so an app whose `As` looks its directory up can
-still tell *no directory yet* from *roster is down*.
+An error from `As` is a roster that could not be asked, `standing.ErrUnreachable`,
+on every call that asks roster, and passes through beside it -- so an app whose
+`As` looks its directory up can still tell *no directory yet* from *roster is
+down*.
 
 ### The role
 
@@ -112,7 +113,17 @@ again*.
 - **What roster said is believed for `standing.HeldTtl`**, thirty seconds, and
   that it could not be asked for `standing.HeldRetry`, five: a roster that is
   down is not asked once per call. Nobody there is an answer, and kept as long
-  as one.
+  as one, and `Held` of nobody is `ErrRefused` with `ErrNoPerson` beside it
+  (`TestHeldOfNobodyIsNoPersonToo`).
+- **roster has `standing.HeldWait` to answer**, five seconds, within whatever
+  time the caller has. A roster that takes the call and says nothing -- a
+  process frozen, a path that drops what it carries -- is one that could not
+  be asked, and kept as one for `HeldRetry`, rather than every call waiting out
+  its caller's whole deadline, or for ever where it has none
+  (`TestARosterThatDoesNotAnswerCouldNotBeAsked`). Every call that asks roster
+  -- `StandingOf`, `Held`, `Addresses`, `Reconcile`, `Settle` -- says
+  `ErrUnreachable` of a roster that could not be asked, and none says it where
+  the caller's own context ended first (`TestEveryRoadSaysTheSameOfRosterBeingAway`).
 - **A call that ends while roster is asked has asked nothing.** A page left
   half loaded, a call that ran out of its own time: the caller's doing, so
   nothing is kept of it, and the account's next call asks. Kept as roster's

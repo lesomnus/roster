@@ -103,12 +103,19 @@ var (
 
 	// ErrRefused is something issued that roster's word does not hold any
 	// more: suspended, erased, signed out everywhere since, a directory closed,
-	// or nobody there at all.
+	// or nobody there at all -- which is [ErrNoPerson] beside it. It is
+	// [Accounts.Held]'s.
 	ErrRefused = errors.New("refused")
 
-	// ErrUnreachable is a roster that could not be asked. [Accounts.Held]
-	// refuses while it lasts -- what roster would have said is not known --
-	// and an app that tells its caller so tells them it is not their doing.
+	// ErrUnreachable is a roster that could not be asked: it refused the app,
+	// it was not there, it did not answer within [HeldWait], or the app's own
+	// [Config.As] failed, whose error is found beside it. Every call here that
+	// asks roster answers with it then -- [Accounts.StandingOf],
+	// [Accounts.Held], [Accounts.Addresses], [Accounts.Reconcile],
+	// [Accounts.Settle] -- and none does where the caller's own context ended
+	// first, which is the caller's doing. [Accounts.Held] refuses while it
+	// lasts -- what roster would have said is not known -- and an app that
+	// tells its caller so tells them it is not their doing.
 	ErrUnreachable = errors.New("roster cannot be asked just now")
 )
 
@@ -118,8 +125,20 @@ var (
 const HeldTtl = 30 * time.Second
 
 // HeldRetry is how long a roster that could not be asked is not asked again,
-// so that one that is down is not asked once per call.
+// so that one that is down, or one that takes calls and says nothing, is not
+// asked once per call.
 const HeldRetry = 5 * time.Second
+
+// HeldWait is how long roster has to answer one asking, within whatever time
+// the caller has: a roster that takes the call and says nothing -- a process
+// frozen, a path that drops what it carries -- is one that could not be asked
+// ([ErrUnreachable]) once it is over, rather than every call waiting out its
+// caller's whole deadline, or for ever where the caller has none. `reach`
+// uses it as it uses the other clocks here.
+const HeldWait = 5 * time.Second
+
+// heldWait is [HeldWait], which a test makes short.
+var heldWait = HeldWait
 
 // RefusedRetry is how long a stream roster refused is left before it is asked
 // for again ([Config.Refused]): long enough not to fill a log, short enough
@@ -155,9 +174,9 @@ type Config struct {
 	// directory, a tenant key alone, or -- on a roster in the app's own process
 	// -- payday's Plain naming the app's holder there. Nothing here holds a key.
 	//
-	// What it cannot answer is roster not answering: [Accounts.Held] refuses
-	// with [ErrUnreachable] beside its error, which passes through as it is, so
-	// an app's own kinds of error still read as themselves.
+	// What it cannot answer is roster not answering: every call here answers
+	// [ErrUnreachable] beside its error, which passes through as it is, so an
+	// app's own kinds of error still read as themselves.
 	As func(ctx context.Context) (context.Context, error)
 
 	// Log is where the stream says what became of it. Nil is the logger the
@@ -181,6 +200,7 @@ type Accounts struct {
 	logger  *slog.Logger
 	now     func() time.Time
 	refused time.Duration
+	wait    time.Duration
 
 	// What roster said of each account [Accounts.Held] was asked about, and
 	// when; and how many times anything known was dropped, which is what
@@ -215,6 +235,7 @@ func New(c Config) (*Accounts, error) {
 		logger:  c.Log,
 		now:     c.Now,
 		refused: c.Refused,
+		wait:    heldWait,
 		held:    map[pdid.Id]held{},
 	}
 	if a.now == nil {
@@ -235,9 +256,21 @@ func (a *Accounts) log(ctx context.Context) *slog.Logger {
 	return log.From(ctx)
 }
 
+// failed is what an asking of roster that failed answers: the caller's doing
+// where the caller's own context ended, and a roster that could not be asked
+// otherwise -- whatever ended it, [HeldWait] among them.
+func failed(ctx context.Context, err error) error {
+	if ctx.Err() != nil {
+		return fmt.Errorf("the call ended before roster answered: %w", ctx.Err())
+	}
+
+	return fmt.Errorf("%w: %w", ErrUnreachable, err)
+}
+
 // StandingOf is what roster says of an account now, asked every time and kept
 // nowhere -- which is what [Accounts.Held] is for. [ErrNoPerson] is somebody
-// roster does not have; anything else is a roster that could not be asked.
+// roster does not have; [ErrUnreachable] a roster that could not be asked; and
+// a caller whose own context ended is told that, and neither.
 //
 // It reads the four facts and nothing else. Not the person's name or anything
 // else declared personal, because none of it is used, and a read that carries
@@ -252,8 +285,10 @@ func (a *Accounts) log(ctx context.Context) *slog.Logger {
 func (a *Accounts) StandingOf(ctx context.Context, account pdid.Id) (Standing, error) {
 	as, err := a.as(ctx)
 	if err != nil {
-		return Standing{}, err
+		return Standing{}, failed(ctx, err)
 	}
+	as, cancel := context.WithTimeout(as, a.wait)
+	defer cancel()
 	v, err := rstr.NewHolderServiceClient(a.conn).Get(as, rstr.HolderGetRequest_builder{
 		Ref: rstr.HolderRef_builder{Id: account.Bytes()}.Build(),
 		Select: rstr.HolderSelect_builder{
@@ -268,7 +303,7 @@ func (a *Accounts) StandingOf(ctx context.Context, account pdid.Id) (Standing, e
 			return Standing{}, ErrNoPerson
 		}
 
-		return Standing{}, fmt.Errorf("roster: %w", err)
+		return Standing{}, failed(ctx, err)
 	}
 	// Whose they are is on the event and not what decides anything, so a
 	// tenant the answer did not carry is left zero rather than refused.
@@ -287,8 +322,9 @@ func (a *Accounts) StandingOf(ctx context.Context, account pdid.Id) (Standing, e
 // Held says whether something issued to an account at `began` -- a session
 // that began then -- is still good, by what roster says of the account:
 // [ErrRefused] when they were suspended, erased or signed out everywhere since,
-// their directory closed, or nobody is there at all; [ErrUnreachable] when
-// roster could not be asked, which is a refusal too.
+// their directory closed, or nobody is there at all, with [ErrNoPerson]
+// beside it then; [ErrUnreachable] when roster could not be asked, which is a
+// refusal too.
 //
 // What roster said is believed for [HeldTtl], and that it could not be asked
 // for [HeldRetry]; nobody there is an answer, and kept as long as one.
@@ -309,8 +345,9 @@ func (a *Accounts) Held(ctx context.Context, account pdid.Id, began time.Time) e
 	fresh := ok && (known && now.Sub(v.at) < HeldTtl || !known && now.Sub(v.at) < HeldRetry)
 	if !fresh {
 		st, err := a.StandingOf(ctx, account)
-		if err != nil && ctx.Err() != nil {
-			return fmt.Errorf("the call ended before roster answered: %w", ctx.Err())
+		if err != nil && !errors.Is(err, ErrNoPerson) && !errors.Is(err, ErrUnreachable) {
+			// The caller's doing, and nothing is kept of it.
+			return err
 		}
 		v = held{st: st, err: err, at: now}
 		a.mu.Lock()
@@ -326,9 +363,9 @@ func (a *Accounts) Held(ctx context.Context, account pdid.Id, began time.Time) e
 
 	switch {
 	case errors.Is(v.err, ErrNoPerson):
-		return fmt.Errorf("%w: roster has no such person", ErrRefused)
+		return fmt.Errorf("%w: roster has %w", ErrRefused, v.err)
 	case v.err != nil:
-		return fmt.Errorf("%w: %w", ErrUnreachable, v.err)
+		return v.err
 	case !v.st.Good(began):
 		return fmt.Errorf("%w: suspended, erased, signed out everywhere or their directory closed since", ErrRefused)
 	}
@@ -360,14 +397,25 @@ func (a *Accounts) Recheck(account pdid.Id) {
 func (a *Accounts) Addresses(ctx context.Context, account pdid.Id) ([]string, error) {
 	as, err := a.as(ctx)
 	if err != nil {
-		return nil, err
+		return nil, failed(ctx, err)
 	}
 	c := rstr.NewEmailServiceClient(a.conn)
+	// Each asking has HeldWait of its own.
+	list := func(req *rstr.EmailListRequest) (*rstr.EmailListResponse, error) {
+		ctx, cancel := context.WithTimeout(as, a.wait)
+		defer cancel()
+		return c.List(ctx, req)
+	}
+	get := func(req *rstr.EmailGetRequest) (*rstr.Email, error) {
+		ctx, cancel := context.WithTimeout(as, a.wait)
+		defer cancel()
+		return c.Get(ctx, req)
+	}
 
 	var out []string
 	after := ""
 	for {
-		vs, err := c.List(as, rstr.EmailListRequest_builder{
+		vs, err := list(rstr.EmailListRequest_builder{
 			Filters: []*rstr.EmailFilter{rstr.EmailFilter_builder{
 				Holder: rstr.HolderRef_builder{Id: account.Bytes()}.Build(),
 			}.Build()},
@@ -378,12 +426,12 @@ func (a *Accounts) Addresses(ctx context.Context, account pdid.Id) ([]string, er
 				return nil, ErrNoPerson
 			}
 
-			return nil, fmt.Errorf("roster: %w", err)
+			return nil, failed(ctx, err)
 		}
 		for _, v := range vs.GetItems() {
 			// Listed narrow and read whole, as Loft read them: the stamp is
 			// read off the row by itself.
-			e, err := c.Get(as, rstr.EmailGetRequest_builder{
+			e, err := get(rstr.EmailGetRequest_builder{
 				Ref:    rstr.EmailRef_builder{Id: v.GetId()}.Build(),
 				Select: rstr.EmailSelect_builder{Address: proto.Bool(true), DateVerified: proto.Bool(true)}.Build(),
 			}.Build())
@@ -392,7 +440,7 @@ func (a *Accounts) Addresses(ctx context.Context, account pdid.Id) ([]string, er
 				continue
 			}
 			if err != nil {
-				return nil, fmt.Errorf("roster: %w", err)
+				return nil, failed(ctx, err)
 			}
 			if e.HasDateVerified() {
 				out = append(out, strings.ToLower(strings.TrimSpace(e.GetAddress())))
