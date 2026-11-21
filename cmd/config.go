@@ -645,6 +645,7 @@ func AuditMeant(a config.AuditConfig) error {
 func (c Config) Meant() error {
 	for _, v := range []func(Config) error{
 		plainBesideCertificate,
+		answersNothing,
 	} {
 		if err := v(c); err != nil {
 			return err
@@ -688,6 +689,41 @@ func plainBesideCertificate(c Config) error {
 		return fmt.Errorf("%[1]s.tls.client_ca_file: asks every caller of %[1]s.addr for a certificate, and %[1]s.http.addr "+
 			"beside it is plain -- tls: is the gRPC listener's alone -- so it would answer whoever the first keeps out. "+
 			"take %[1]s.http.addr out, or put a proxy that asks for the certificate in front of it and take client_ca_file out", b.key)
+	}
+
+	return nil
+}
+
+// answersNothing refuses an `http.addr` that would answer nothing it is there
+// for.
+//
+// The transcoder is mounted only where `http.allow_web` says so, and payday
+// cannot refuse an address without it, since it does not know an app's
+// routes. roster knows its own. `control.http` has no page and no route of
+// its own, so with neither `allow_web` nor `allow_pprof` it answered `404` to
+// everything while the log said it was up; an `admin.http` or a `server.http`
+// that serves a console without `allow_web` served the page and none of the
+// calls the page makes.
+func answersNothing(c Config) error {
+	if c.Control.Serves() && c.Control.Http.Addr != "" && !c.Control.Http.AllowWeb && !c.Control.Http.AllowPprof {
+		return errors.New("control.http.addr: the listener has no page and no route of its own, and with neither " +
+			"control.http.allow_web nor control.http.allow_pprof it answers 404 to everything. turn allow_web on for " +
+			"the control plane's calls over HTTP, or take control.http.addr out: a shell asks control.addr")
+	}
+	for _, v := range []struct {
+		key, page string
+		http      config.HttpConfig
+		dir       string
+	}{
+		{"admin", "admin.console.dir", c.Admin.Http, c.Admin.Console.Dir},
+		{"server", "user_console.dir", c.Server.Http, c.UserConsole.Dir},
+	} {
+		if v.http.Addr == "" || v.dir == "" || v.http.AllowWeb {
+			continue
+		}
+
+		return fmt.Errorf("%[1]s.http.addr: serves the page %[2]s names, and %[1]s.http.allow_web is off, so none of "+
+			"the calls the page makes is answered. turn %[1]s.http.allow_web on, or take %[2]s out", v.key, v.page)
 	}
 
 	return nil

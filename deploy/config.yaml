@@ -71,19 +71,17 @@ control:
     migrate: true
   watch:
     broker: memory
+  # gRPC, which is what a shell asks, carrying an `rk_`. Anything pointed at it
+  # over HTTP gets an HTTP/2 SETTINGS frame and reads it as a malformed
+  # response, which is a probe that never passes and says nothing about why;
+  # the probes connect to the data plane's gRPC port instead, which every
+  # deployment opens -- see `deploy/roster.yaml`.
+  #
+  # No `http:` here. It had one, with no `allow_web`, which answered 404 to
+  # everything; `serve` refuses that now. The admin console is served by
+  # `admin.http` below, which is also the listener it calls -- a `__Host-`
+  # session cookie is host-only, so the two have to be one host (#27).
   addr: 0.0.0.0:8060
-  # The control plane's HTTP listener, for a caller that cannot speak gRPC.
-  # `control.addr` above is **gRPC** -- anything pointed at it gets an HTTP/2
-  # SETTINGS frame and reads it as a malformed response, which is a probe that
-  # never passes and says nothing about why. The probes connect to the data
-  # plane's gRPC port instead, which every deployment opens -- see
-  # `deploy/roster.yaml`.
-  http:
-    addr: 0.0.0.0:8061
-  # No page here. The admin console is served by `admin.http` below, which is
-  # also the listener it calls -- a `__Host-` session cookie is host-only, so
-  # the two have to be one host (#27). What this listener answers is what a
-  # shell asks, carrying an `rk_`.
 
 # The data plane with **no wall**, which is what the admin console's customers screen
 # reads: creating a customer happens before there is a tenant to be narrowed to,
