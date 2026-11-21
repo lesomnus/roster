@@ -1097,7 +1097,9 @@ resources:
 ```
 
 `serve` applies these before it serves, and `roster resources apply --dry-run`
-says what a file would do before a restart does it. In Kubernetes that is GitOps
+says what a file would do before a restart does it. A dry run writes no row and
+alters no table: it looks the provisioner up and does not make it, and asks of
+both databases what `serve` asks before it serves, without migrating either. In Kubernetes that is GitOps
 without roster knowing what Kubernetes is: the file is in a ConfigMap, editing it
 changes the hash, the pod is replaced, and the new one applies it.
 

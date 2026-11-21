@@ -61,8 +61,20 @@ func newCmdResourcesApply(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command
 			}
 			defer s.Close()
 
+			// A dry run alters no table: it asks of both planes what `serve`
+			// asks before it serves, without migrating either, and is refused
+			// in those words where a table is missing. It migrated the data
+			// plane where `db.migrate` was on and never looked at the control
+			// plane, so on a deployment nothing had started it made one plane's
+			// tables and then failed on the other's.
 			dry, _ := flg.Find[bool](cl, "dry-run")
-			if err := ready(ctx, s, c.Db); err != nil {
+			if dry {
+				asked := *c
+				asked.Db.Migrate, asked.Control.Db.Migrate = false, false
+				if err := Ready(ctx, s, asked); err != nil {
+					return err
+				}
+			} else if err := ready(ctx, s, c.Db); err != nil {
 				return err
 			}
 

@@ -567,7 +567,7 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 		return out, nil
 	}
 
-	as, err := asProvisioner(ctx, s)
+	as, err := asProvisioner(ctx, s, dry)
 	if err != nil {
 		return out, err
 	}
@@ -737,9 +737,27 @@ func (l leavers) said(ctx context.Context) {
 // `frame.Everything` because this writes across every tenant and the wall is
 // what it would otherwise be narrowed by. It is `Ungated` either way; what the
 // frame buys is the **trail**, which now says which rows a file wrote.
-func asProvisioner(ctx context.Context, s *Server) (context.Context, error) {
+//
+// A dry run looks them up and never makes them, nor binds them: it was made
+// before `dry` was looked at, so a dry run on a deployment never served with a
+// file added the holder and its binding, two lines on the control plane's
+// trail, under *nothing was written*. Where they are not there yet the reads
+// are framed as nobody, which is what the trail would have named had a dry run
+// written anything: the provisioner, made by the run that does.
+func asProvisioner(ctx context.Context, s *Server, dry bool) (context.Context, error) {
 	if s.Control == nil {
 		return nil, errors.New("resources: no control plane, and the provisioner is a holder in it")
+	}
+	if dry {
+		who, err := ControlHolder(ctx, s.Control, Provisioner)
+		if status.Code(err) == codes.NotFound {
+			who, err = pdid.Nil, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		return frame.Into(ctx, frame.New(who, pdid.Nil, frame.Whole()).WithScope(frame.Everything)), nil
 	}
 
 	// The same call `roster key add` makes for a service, which is what this
