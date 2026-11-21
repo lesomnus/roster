@@ -367,7 +367,9 @@ write its key is not given. So it is kept and believed by nothing, and they are
 somebody the directory does **not** speak for -- its `active: false` and its
 `DELETE` are refused, `403`, on the day they leave. They are linked by signing
 in through the connection, where `login.enrol` matches by address (`expected`,
-`enrolling`), or by an operator at the box:
+`enrolling`) -- unless they hold more than the front door does, which every
+administrator does, and whom the door may not link -- or by an operator at the
+box, which is how those are linked, with `adopt` or `roster identity add`:
 
 ```sh
 roster --as admin scim adopt --tenant contoso                                  # who, their address, what the directory calls them; and the list's digest
@@ -562,11 +564,18 @@ Nobody it suspended comes back and nobody it made goes: they are the tenant's pe
 mints another key -- which is also all a rotation is, the key before it ended
 by the same command.
 
-**The mark on the connection**, which says the tenant has no directory: for a
-connection a file declares, `provisions: true` taken out of `resources.yaml`
-and a restart. The endpoint then answers `409`, *no connection of this tenant
-provisions its people* -- every write at once, since a write asks again, and a
-read within the minute it keeps a key's tenant for.
+**The mark on the connection**, which says the tenant has no directory. On one
+`provision` marked, `provisions: false` under the version read:
+
+```sh
+roster --as admin connection get -o json <its identifier>    # `dateUpdated` is the version
+roster --as admin connection update <its identifier> '{"date_updated":"…","provisions":false}'
+```
+
+For a connection a file declares, `provisions: true` taken out of
+`resources.yaml` and a restart. The endpoint then answers `409`, *no connection
+of this tenant provisions its people* -- every write at once, since a write
+asks again, and a read within the minute it keeps a key's tenant for.
 
 **The listener**: the `scim` component out of the overlay, or `scim.addr` out
 of the configuration.
@@ -622,11 +631,11 @@ it.
 | --- | --- |
 | `HolderService/Provision` | somebody new: the person, their identity, their address, in one write |
 | `HolderService/Deactivate`, `Activate` | a suspension of the directory's, for people who sign in through the connection |
-| `HolderService/Update`, `Get` | what it owns of a profile, and reading it back |
+| `HolderService/Update`, `Get` | a profile, and reading it back: anybody's of the tenant no file declares, an administrator's among them |
 | `HolderService/Tell` | what it calls somebody, kept beside them: reaches anybody but its own holder, and is believed by nothing |
 | `PhoneService/Add`, `Erase`, `List` | where somebody is reached: written onto whoever holds no more than this key does, which is everybody it provisions |
 | `RelationService/Add`, `Erase`, `List` | who somebody reports to: a record no rule reads |
-| `EmailService/Get`, `List`, `IdentityService/Get`, `List` | finding somebody by an address or an `externalId` |
+| `EmailService/Get`, `List`, `IdentityService/Get`, `List` | finding somebody by an address or an `externalId`; asked of roster itself, every person's addresses and accounts at providers |
 | `MeService/Get`, `ConnectionService/List` | which tenant the key is, and its provisioning connection |
 | `GroupService/Add`, `Get`, `List`, `GroupMembershipService/List` | making a group, which makes its holder the group's manager, and reading the tenant's |
 | `GroupService/Update`, `Erase`, `GroupMembershipService/Add`, `Erase` | what a group is called, who is in it and whether there is one -- on the key, and **not bound**: held in each group it made, and so for that group alone |
@@ -635,12 +644,23 @@ it.
 `Holder.Erase`.** Each of those reaches people who already exist, and `Core.mayReach`
 answers yes for everybody who holds nothing -- which is most people. A key a
 directory's cloud presents from the internet would then be a way into all of them.
-`Provision` writes ways in only into the person it makes in the same breath, so a
-key holding it reaches the people it makes and no one else -- and only at the
-organisation's own door, where the account it names is one the organisation made
+`Provision` writes ways in only into the person it makes in the same breath, so
+the ways in a key holding it writes are into the people it makes and no one
+else -- and only at the organisation's own door, where the account it names is one the organisation made
 (§ *Setting a tenant up*). `Deactivate` reaches
 the people who sign in through the provisioning connection -- not an app's holder,
 not a front door's.
+
+**What it reaches besides is decided, and is more than the people it makes.**
+`Update` asks no reach ([rules.md](usage/rules.md) § *What is not a rule*), so
+the key writes the profile of anybody of the tenant no file declares, an
+administrator's among them, and who they report to. It makes groups, manages
+the ones its holder made, puts anybody of the tenant in them, and erases them
+with what was bound to them. It reads every person's addresses, accounts at
+providers and numbers. And the directory is whoever holds these verbs: nothing
+ties them to the key `provision` minted, except that only the holder who made a
+group manages it. The rules page says each where a tenant reads it
+([rules.md](usage/rules.md) § *What a directory may do*).
 
 **Not `GroupMembership.Add` through a binding, nor `Group.Erase`.** Bound, each
 reaches every group of the tenant: putting somebody into a group nothing is
@@ -692,10 +712,12 @@ address, by a key without `Tell`, makes the person and is answered `403`.
 | a key minted before a method was added goes on provisioning without it | `TestAKeyMintedBeforeNumbersWereKeptStillProvisions` |
 | and a request that needs a method the key lacks is `403` naming it, and nobody is said gone; the table above is what the key lists and the role holds | `TestAKeyThatLacksAMethodIsRefusedAndNobodyIsSaidGone` · `TestTheEndpointsKeyIsTheManualsList` |
 | the directory lifts only its own suspensions | `TestADirectoryLiftsOnlyItsOwnSuspension` · `TestTheDirectoryDoesNotLiftAnOperatorsSuspension` |
-| its key reaches only the people it makes | `TestADirectoryMakesPeopleAndOnlyNewOnes` · `TestTheEndpointTakesATenantKeyAndNothingElse` |
+| its key writes a way in only into the people it makes | `TestADirectoryMakesPeopleAndOnlyNewOnes` · `TestTheEndpointTakesATenantKeyAndNothingElse` |
+| and what else it reaches: anybody's profile no file declares, anybody into a group it made, everybody's addresses, accounts and numbers; and the directory is whoever holds the verbs | `TestADirectorysKeyWritesTheProfileOfAnybodyNoFileDeclares` · `TestADirectorysKeyPutsAnybodyOfTheTenantInTheGroupsItMakes` · `TestADirectorysKeyReadsEveryPersonsAddressesAccountsAndNumbers` · `TestTheDirectoryIsWhoeverHoldsItsVerbs` |
 | and makes them only at the organisation's own door | `TestADirectoryProvisionsThroughItsOrganisationsOwnDoor` |
 | somebody erased is neither found nor made again until forgotten, or until an administrator erases the identity and the address they left, and its people do not leave on their own | `TestSomebodyErasedHereIsNeitherFoundNorMadeUntilForgotten` · `TestSomebodyTheirDirectoryProvisionsDoesNotLeaveOnTheirOwn` |
 | a group's whole life at the endpoint, in Entra's order and dialect | `TestADirectoryProvisionsAGroupTheWayEntraDoes` · `TestAGroupsMembersAreSaidTheRFCsWayToo` |
 | its key changes the groups it made and no other | `TestADirectoryChangesTheGroupsItMadeAndNoOther` · `TestADirectorysKeyIsMintedForOneTenantAndOneConnection` |
 | a group it deletes is erased, as its manager may, and where its role does not go that far is emptied and kept | `TestADirectoryDeletesAGroupAsFarAsItsRoleGoes` · `TestWhoeverManagesAGroupMayEraseIt` |
+| the mark `provision` wrote comes off with `connection update` | `TestTheMarkProvisionWroteComesOffByConnectionUpdate` |
 | where a deployment turns it on, the endpoint reaches roster | `scripts/cluster.sh` and `scripts/hydra.sh`, *the directory's endpoint, asked by a key nobody minted* |

@@ -741,9 +741,11 @@ comment beside what it decides.
 - **SCIM**, the write side, is [scim.md](scim.md) now: a directory
   provisioning people *into* roster, a second consumer beside this one. It
   turned out not to be `Holder.Add` and `Email.Add` behind a JSON schema --
-  those reach people who already exist, and a directory's key should reach only
-  the people it makes -- so it is `HolderService.Provision` and the verbs beside
-  it, and the groups it keeps them in.
+  those write ways into people who already exist, and a directory's key writes
+  ways in only into the people it makes -- so it is `HolderService.Provision`
+  and the verbs beside it, and the groups it keeps them in. What else the key
+  reaches, which is more than the people it makes, is decided and said there
+  ([scim.md](scim.md) § *What its key may do, and why not more*).
 - **Kerberos, certificates, nested groups**: `position.md` says why, and
   this process does not change the answer.
 - **More profile fields**: the conversation that produced `Holder.Search` said

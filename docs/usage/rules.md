@@ -343,14 +343,16 @@ how many requests are worked on at once is `scim.concurrency`.
 ### What a directory may do
 
 A tenant's directory holds a key, and a key on the internet is what these are
-written against (`server/core/directory.go`).
+written against (`server/core/directory.go`). The last four are not limits:
+they are what the key reaches past the people it makes and signs in, which is
+decided, and which a tenant gives whoever holds it.
 
 | | held to it by |
 | --- | --- |
 | It makes people, and only new ones; somebody already here is matched and not made again, and a create that meets the person it was making finishes them rather than make a second | `TestADirectoryMakesPeopleAndOnlyNewOnes` · `TestSomebodyAlreadyHereIsMatchedAndNotMadeAgain` · `TestACreateThatMeetsThePersonItWasMakingFinishesThem` |
 | It suspends who signs in through its connection, and lifts only a suspension it made. Its word that somebody left is written before anything said beside it, and stands though the rest is refused; its word that they are back is written after | `TestADirectoryLiftsOnlyItsOwnSuspension` · `TestTheDirectoryDoesNotLiftAnOperatorsSuspension` · `TestSomebodyMatchedIsNotSuspendedByTheirDirectoryUntilTheyAreLinked` · `TestADirectorysWordThatSomebodyLeftIsWrittenFirst` |
 | An operator's suspension that answered OK stands, whatever the directory says at the same moment: what the directory says of somebody's standing is read, decided and written as one act, behind a lock on their row | `TestADirectorysWordAndAnOperatorsSuspensionAtOnce` |
-| What it says of somebody already here is kept and believed by nothing | `TestWhatADirectorySaysIsKeptAndBelievedByNothing` |
+| What it says it calls somebody already here -- its id for them, their address -- is kept beside them and believed by nothing: no rule reads it and nobody signs in by it | `TestWhatADirectorySaysIsKeptAndBelievedByNothing` |
 | It says nothing of itself: what it calls somebody is refused of the caller's own row, whoever holds the verb. And what an operator links from what it said is people: `roster scim adopt` leaves out a holder an app acts as, says so, and never links it | `TestADirectorySaysNothingOfItself` · `TestAdoptListsPeopleAndNotWhatAnAppActsAs` |
 | It provisions through one connection a tenant, when two are marked at once too, and through its organisation's own door | `TestATenantProvisionsThroughOneConnection` · `TestTwoConnectionsAreNotMarkedAtOnce` · `TestADirectoryProvisionsThroughItsOrganisationsOwnDoor` |
 | Who has an account at that connection is its to say: nobody writes themselves one there, and one for somebody already here takes `IdentityService/Add` held across the tenant, which a front door that saw them sign in holds | `TestADirectoryFindsNobodyByAnAccountTheyWroteThemselves` · `TestAFrontDoorLinksSomebodyAtTheConnectionTheirDirectoryProvisionsThrough` |
@@ -360,6 +362,10 @@ written against (`server/core/directory.go`).
 | Of a group it made, `members` names only people it answers; a list of members it sends is written whole or not at all; and it takes somebody out by their place, so a restore does not put back who it took out | `TestMembersNamesWhomTheEndpointAnswers` · `TestARefusedListOfMembersChangesNothing` · `TestSomebodyErasedIsTakenOutOfAGroup` |
 | Of a group it made, `members` names only people it answers; a list of members it sends is written whole or not at all; and it takes somebody out by their place, so a restore does not put back who it took out. A `remove` takes out who it names, and everybody only where it names no list at all | `TestMembersNamesWhomTheEndpointAnswers` · `TestARefusedListOfMembersChangesNothing` · `TestSomebodyErasedIsTakenOutOfAGroup` · `TestARemoveOfMembersTakesOutWhoItNames` |
 | It takes over no group an operator made: a group it names alike is another, under the alias and a suffix where the alias is taken. A name one of its own groups has is refused to a create and to a rename alike | `TestADirectoryChangesTheGroupsItMadeAndNoOther` · `TestTwoOfADirectorysGroupsWhoseNamesMakeOneAliasAreTwoGroups` · `TestAGroupIsNotRenamedToWhatAnotherIsCalled` |
+| It writes the profile of anybody of the tenant no file declares, an administrator's among them, and who they report to | `TestADirectorysKeyWritesTheProfileOfAnybodyNoFileDeclares` |
+| It makes groups, manages the ones its holder made, puts anybody of the tenant in them, and erases them with what was bound to them | `TestADirectorysKeyPutsAnybodyOfTheTenantInTheGroupsItMakes` |
+| It reads every person's addresses, accounts at providers and numbers | `TestADirectorysKeyReadsEveryPersonsAddressesAccountsAndNumbers` |
+| The directory is whoever holds these verbs: nothing ties them to the key `roster scim provision` minted, except that only the holder who made a group manages it | `TestTheDirectoryIsWhoeverHoldsItsVerbs` |
 
 ### What a directory over LDAP says
 
