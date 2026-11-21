@@ -57,18 +57,19 @@ func adminDeployment(t *testing.T, with func(c *cmd.Config)) (*cmd.Server, cmd.C
 		with(&c)
 	}
 
-	out := &strings.Builder{}
+	// What was said and then what was printed, the password last ([initRun]).
+	out, said := &strings.Builder{}, &strings.Builder{}
 	k := cli.NewCmdInit(&c)
-	k.Writer = out
+	k.Writer, k.ErrWriter = out, said
 
-	x.NoError(k.Run(ctx, nil), "init: %s", out)
+	x.NoError(k.Run(ctx, nil), "init: %s", said)
 
 	// A second server on the same databases, since the command closed its own.
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
 
-	return s, c, out.String()
+	return s, c, said.String() + out.String()
 }
 
 // leakedCorpus is a file of leaked hashes in the shape the well-known one is

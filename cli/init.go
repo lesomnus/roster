@@ -116,6 +116,12 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			// Everything this says on standard error, and a password it made
+			// alone on standard output: the shape every command that mints
+			// answers in, so that `$(roster init)` is the password. It was
+			// line four of ten, all on standard output (#284).
+			say := func(format string, vs ...any) { fmt.Fprintf(cl.ErrWriter, format, vs...) }
+
 			operator, ok := flg.Find[string](cl, "operator")
 			if !ok || operator == "" {
 				operator = "admin"
@@ -160,8 +166,8 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 				}
 
 				c.Audit.Checkpoints.Key = path
-				cl.Printf("the trail's archive is signed with a key of this deployment's own, written to %s\n", path)
-				cl.Printf("name it as audit.checkpoints.key, or ROSTER_AUDIT_CHECKPOINTS_KEY, before serving\n\n")
+				say("the trail's archive is signed with a key of this deployment's own, written to %s\n", path)
+				say("name it as audit.checkpoints.key, or ROSTER_AUDIT_CHECKPOINTS_KEY, before serving\n\n")
 			}
 
 			// Built with nobody named, since the tables a name is looked up in
@@ -219,9 +225,9 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			cl.Printf("control plane\n")
-			cl.Printf("  holder %s is %s\n", operator, v.Operator)
-			cl.Printf("  bound to role %q = %s -- every Rpc roster serves, now and after an upgrade\n", cmd.Everyverb, cmd.EveryRosterMethod)
+			say("control plane\n")
+			say("  holder %s is %s\n", operator, v.Operator)
+			say("  bound to role %q = %s -- every Rpc roster serves, now and after an upgrade\n", cmd.Everyverb, cmd.EveryRosterMethod)
 			// A password this made is printed, once, since here is the only
 			// place it is. One that was **given** is not: `--password-stdin`
 			// exists so that a secret is in no argument and no process list,
@@ -229,11 +235,12 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 			// generated -- into the log of the container whose entrypoint had
 			// piped it in (#275).
 			if given != "" {
-				cl.Printf("  password  the one given on stdin\n")
-				cl.Printf("\nsign in to the console as %s, with the password you gave.\n", operator)
+				say("  password  the one given on stdin\n")
+				say("\nsign in to the console as %s, with the password you gave.\n", operator)
 			} else {
-				cl.Printf("  password  %s\n", v.Password)
-				cl.Printf("\nsign in to the console as %s. that password is shown once and is not stored -- write it down now.\n", operator)
+				say("  password  on standard output, alone\n")
+				say("\nsign in to the console as %s. that password is shown once and is not stored -- write it down now.\n", operator)
+				cl.Printf("%s\n", v.Password)
 			}
 
 			// And the next thing to do, because there is one and it is no
@@ -243,9 +250,9 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 			// in: a tenant is a customer, and one written by `init` was a
 			// customer nobody asked for. What replaces it is the admin console, where
 			// the first one is made the same way the hundredth is.
-			cl.Printf("\nthere are no customers yet, which is the right state to start in.\n")
-			cl.Printf("the console makes the first one -- a tenant, somebody in it, and the role\n")
-			cl.Printf("that lets them administer it. see docs/operating.md.\n")
+			say("\nthere are no customers yet, which is the right state to start in.\n")
+			say("the console makes the first one -- a tenant, somebody in it, and the role\n")
+			say("that lets them administer it. see docs/operating.md.\n")
 
 			return nil
 		}),

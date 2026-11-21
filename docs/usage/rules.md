@@ -421,6 +421,15 @@ client configured against it relies on ([ldap.md](../ldap.md)).
 | The two planes are two databases: a deployment that names one for both is refused, so that a customer's session is never an operator's | `TestTwoPlanesAreTwoDatabases` |
 | The LDAP directory's port, before a bind: the root DSE is read and nothing else is -- a search is *bind first*, WhoAmI names nobody, and the writes, compare and password modify are refused as they are to everybody -- and the root DSE lists StartTLS only where a StartTLS on that connection would be taken | `TestBeforeABindIsWhatTheManualSays` · `TestTheRootDseListsStartTlsOnlyWhereItIsOffered` · `TestLdapServeSaysStartTlsWhereItWasGivenACertificate` |
 
+### At the box
+
+Not a call's: what an operator at a shell on the box may rely on of the
+commands themselves ([cli.md](cli.md)).
+
+| | written in | held to it by |
+| --- | --- | --- |
+| What a command mints is the one thing on standard output, and what is said of it is on standard error: a key, a password `init` or `vouch reset` made, the key `sign-in` was handed. A password given with `--password-stdin` is printed nowhere | `cli/init.go` · `cli/signin.go` · `cli/key.go` · `cli/vouch.go` | `TestAMintedSecretIsAloneOnStandardOutput` |
+
 ### At the box, of the trail
 
 Not a call's: what an operator at a shell on the box may rely on of the
