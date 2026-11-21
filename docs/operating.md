@@ -3165,6 +3165,14 @@ is what `deploy/` assumes and what `scripts/cluster.sh` exercises. The account
 app, the Login App and the SCIM endpoint speak plain HTTP and have no `tls:` of
 their own: each is always behind one.
 
+**A block's `tls:` is its gRPC listener's alone.** The `http.addr` beside it
+-- `server.http`, `control.http`, `admin.http` -- is plain whatever the block
+says, and is for a terminator in front that holds the certificate; `serve`
+says so once as it starts, for each block that says both. A block whose
+`tls.client_ca_file` asks every caller for a certificate and that names an
+`http.addr` is refused at start: the plain port would answer whoever the
+certificate keeps out.
+
 ## Locally, in one command
 
 ```sh

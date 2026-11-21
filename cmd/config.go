@@ -636,6 +636,63 @@ func AuditMeant(a config.AuditConfig) error {
 	return nil
 }
 
+// Meant refuses a file a deployment starts from whose settings cannot be
+// meant, as [AuditMeant] does an `audit:` block and for its reason: each of
+// these started, and did something other than what the file says, with
+// nothing to say so. Asked by [Build] before anything is opened, so a command
+// at the box is refused the same file `serve` is; each refusal names the key
+// as the file writes it, and says what would be right.
+func (c Config) Meant() error {
+	for _, v := range []func(Config) error{
+		plainBesideCertificate,
+	} {
+		if err := v(c); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// listeners is the three listener blocks a file may say, by the name it
+// writes each with: the data plane's, the control plane's and the admin
+// listener.
+func (c Config) listeners() []listenerBlock {
+	return []listenerBlock{
+		{"server", c.Server},
+		{"control", c.Control.ServerConfig},
+		{"admin", c.Admin.ServerConfig},
+	}
+}
+
+type listenerBlock struct {
+	key string
+	config.ServerConfig
+}
+
+// plainBesideCertificate refuses a block whose `tls:` asks every caller for a
+// certificate and that opens an `http.addr` beside it.
+//
+// A block's `tls:` is its gRPC listener's alone: the `http` listener beside it
+// is a plain socket and reads nothing of the block (`Server.http`). So the
+// second listener answers, transcoded, the calls of whoever the first refuses
+// at the handshake. Where the certificate is not asked of the caller the
+// `http` listener is plain on purpose, for a proxy in front that holds one,
+// and `serve` says so ([Server.plain]).
+func plainBesideCertificate(c Config) error {
+	for _, b := range c.listeners() {
+		if b.Tls.ClientCAFile == "" || b.Http.Addr == "" {
+			continue
+		}
+
+		return fmt.Errorf("%[1]s.tls.client_ca_file: asks every caller of %[1]s.addr for a certificate, and %[1]s.http.addr "+
+			"beside it is plain -- tls: is the gRPC listener's alone -- so it would answer whoever the first keeps out. "+
+			"take %[1]s.http.addr out, or put a proxy that asks for the certificate in front of it and take client_ca_file out", b.key)
+	}
+
+	return nil
+}
+
 // within answers whether `dir` is `root` or under it, as far as their paths
 // say.
 func within(root, dir string) bool {
