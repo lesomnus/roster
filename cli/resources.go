@@ -3,7 +3,9 @@ package cli
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
+	"strings"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/cfg"
@@ -78,7 +80,11 @@ func newCmdResourcesApply(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command
 				return err
 			}
 
+			// What was done before an error is printed before it. The command
+			// returned before it printed, so a tenant made ahead of a row that
+			// failed was made with no line saying so.
 			v, err := cmd.ApplyResources(ctx, s, rs, dry)
+			printApplied(cl.Root().Writer, v)
 			if err != nil {
 				return err
 			}
@@ -90,24 +96,6 @@ func newCmdResourcesApply(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command
 				fmt.Fprintf(os.Stderr, "roster: resources: %s declares nothing.\n", f)
 			}
 
-			// Said one per line and not counted, because what somebody running
-			// this wants is **which**. The counts are what a log line is for.
-			for _, w := range v.Added {
-				fmt.Fprintf(cl.Root().Writer, "+ %s\n", w)
-			}
-			for _, w := range v.Changed {
-				fmt.Fprintf(cl.Root().Writer, "~ %s\n", w)
-			}
-			for _, w := range v.Same {
-				fmt.Fprintf(cl.Root().Writer, "  %s\n", w)
-			}
-			// What the files declare of a tenant that is closed or destroyed,
-			// which is not written and not compared (`cmd.ApplyResources`).
-			// Said here because nothing installs a logger on a command, and
-			// the warning `serve` logs for it would reach nobody.
-			for _, w := range v.Left {
-				fmt.Fprintf(cl.Root().Writer, "! %s\n", w)
-			}
 			if len(v.Left) > 0 {
 				fmt.Fprintln(cl.Root().Writer, "\n(! is of a tenant that is closed or destroyed: left as it is. "+
 					"Restore the tenant if it is closed, or take these out of the file)")
@@ -118,5 +106,35 @@ func newCmdResourcesApply(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command
 
 			return nil
 		}),
+	}
+}
+
+// printApplied is one line a row, `<sign> <Kind> <name>`, and after a `~` the
+// keys that change: `~ Connection @contoso/entra: issuer, scopes`. The line is
+// this command's output, and a script may read it.
+//
+// Said one per line and not counted, because what somebody running this wants
+// is **which**; the counts are what a log line is for. The keys, because a
+// `~` alone did not say what this command is for: that a `Connection`'s issuer
+// is about to change. The kind and the tenant, because a `Host` and a
+// `MailDomain` of one name printed alike and said nothing of whose they were.
+//
+// By what was done, as it always was: what is added, then what is changed,
+// then what is the same; and last, `!`, what the files declare of a tenant
+// that is closed or destroyed, which is not written and not compared
+// (`cmd.ApplyResources`) -- said here because nothing installs a logger on a
+// command, and the warning `serve` logs for it would reach nobody.
+func printApplied(w io.Writer, v cmd.Applied) {
+	for _, was := range []struct{ was, sign string }{{"added", "+"}, {"changed", "~"}, {"same", " "}, {"left", "!"}} {
+		for _, r := range v.Rows {
+			if r.Was != was.was {
+				continue
+			}
+			line := fmt.Sprintf("%s %s %s", was.sign, r.Kind, r.Name)
+			if was.was == "changed" && len(r.Fields) > 0 {
+				line += ": " + strings.Join(r.Fields, ", ")
+			}
+			fmt.Fprintln(w, line)
+		}
 	}
 }
