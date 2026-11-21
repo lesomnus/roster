@@ -11,6 +11,12 @@ this page names the ones a decision hangs on, not all of them:
 (`audit.checkpoints.key` is `ROSTER_AUDIT_CHECKPOINTS_KEY`), and a key the file
 names that nothing reads is refused at start, by name.
 
+A duration or a count less than none is refused at start too, by its key: each
+would be read as if it were not written. Nought is what each key's own
+description says it is. The one left is `server.timeout` (and `control.timeout`,
+`admin.timeout`), how long a call that came with no deadline of its own is
+given: thirty seconds unsaid, and less than none is **no deadline at all**.
+
 ## Which database
 
 Either, and the trade is size rather than capability. Everything roster generates
