@@ -267,6 +267,7 @@ how many requests are worked on at once is `scim.concurrency`.
 | Nothing of a body is read before its key is accepted: under no key, or a key nobody has, the answer is `401` at once and the connection ends with it | `scim/scim.go` | `TestNothingOfABodyIsReadUnderNoKey` |
 | A body is read once its key is accepted and before a turn is taken: it has thirty seconds and a megabyte, `408` and `413` past them, and one that is slow to come holds nothing anybody else waits for | `scim/scim.go` | `TestABodyIsWaitedForOutsideATurn` · `TestABodyPastTheBoundIs413` |
 | A turn is a tenant's: `scim.concurrency` requests of one tenant's directory are worked on at once, four unless it says, and one tenant's requests do not hold another's turns. Asking roster who a key is, for a key not remembered, is held to the same number for the process. A number below nought is refused at start | `scim/scim.go`, `cmd/consumers.go` | `TestOneTenantsRequestsDoNotHoldAnothersTurns` · `TestAConcurrencyBelowNoughtIsRefusedAtStart` |
+| Reading a filter, or the filter in a PATCH path, costs what it is long: it is read in one pass, whatever it says, and takes and refuses what it did | `scim/filter.go` | `TestAFilterIsReadInOnePass` · `TestWhatAFilterTakesIsWhatItTook` |
 
 ### One tenant is not reached from another
 
