@@ -516,6 +516,19 @@ func (s *Server) patchUser(ctx context.Context, w http.ResponseWriter, r *http.R
 // untouched, since a different one would take their portrait away. A version
 // that moved in between is read again, a few times, rather than handed to the
 // directory as a failure it would retry anyway.
+//
+// # The word that somebody left goes first
+//
+// `active: false` is written before anything else the request says, and
+// `active: true` after it all. RFC 7644 §3.5.2 asks that a PATCH be all or
+// nothing; this endpoint is a consumer of roster's API, with no transaction of
+// its own across the calls a request is written in, so a request refused
+// halfway leaves half of it written. Of the two halves, the one that keeps a
+// leaver signed in is the wrong one: a suspension that lands stands though
+// what was said beside it is refused, and the refusal is answered as it would
+// be anyway, so a directory that sends it again finds them suspended already.
+// What lets somebody back in is not written ahead of a refusal. Nothing is
+// checked ahead and nothing is rolled back.
 func (s *Server) change(ctx context.Context, w http.ResponseWriter, r *http.Request, t *tenancy, c *changes) error {
 	id, ok := parseId(r.PathValue("id"))
 	if !ok {
@@ -525,10 +538,16 @@ func (s *Server) change(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		return err
 	}
+	ref := rstr.HolderRef_builder{Id: id}.Build()
+
+	if c.active != nil && !*c.active {
+		if _, err := s.roster.Holder().Deactivate(ctx, rstr.HolderDeactivateRequest_builder{Ref: ref}.Build()); err != nil {
+			return err
+		}
+	}
 	if err := s.tell(ctx, r, t, was, c); err != nil {
 		return err
 	}
-	ref := rstr.HolderRef_builder{Id: id}.Build()
 
 	if c.profiled() {
 		for try := 0; ; try++ {
@@ -545,14 +564,8 @@ func (s *Server) change(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	if c.active != nil {
-		var err error
-		if *c.active {
-			_, err = s.roster.Holder().Activate(ctx, rstr.HolderActivateRequest_builder{Ref: ref}.Build())
-		} else {
-			_, err = s.roster.Holder().Deactivate(ctx, rstr.HolderDeactivateRequest_builder{Ref: ref}.Build())
-		}
-		if err != nil {
+	if c.active != nil && *c.active {
+		if _, err := s.roster.Holder().Activate(ctx, rstr.HolderActivateRequest_builder{Ref: ref}.Build()); err != nil {
 			return err
 		}
 	}
