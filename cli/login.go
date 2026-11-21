@@ -652,7 +652,7 @@ func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []stri
 		if err != nil {
 			return n, fmt.Errorf("%s: %w", name, err)
 		}
-		why, err := somebodys(ctx, s, name, alias, found, existing)
+		why, err := somebodys(ctx, s, name, alias, found, existing, labels)
 		if err != nil {
 			return n, fmt.Errorf("%s: %w", name, err)
 		}
