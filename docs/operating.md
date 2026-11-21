@@ -1128,12 +1128,22 @@ at Google's. A row that is none of that is
 refused where it is written, with the field it was, rather than at somebody's
 sign-in.
 
-Three properties, each deliberate:
+Four properties, each deliberate:
 
 - **It never erases.** A resource dropped from the file leaves its row where it
   is, because erase-and-add on a provider is a gap in service and, under a
   mistyped name, every identity through it orphaned silently. Removing a row is a
   person's act.
+- **A declared row is what the file says.** A key left out of an entry is
+  empty -- a `desc`, a `secret_ref`, a `subject_claim`, `routes`, and `scopes`,
+  which a file that once asked for some takes back by not saying them -- with one
+  exception: a tenant's `config`, whose keys left out leave the setting as it is
+  (below). So a row made by hand and then declared becomes the file's: its name,
+  description and labels are what the file says, which for a tenant declared by
+  its alias alone is no name, no description, and the one label that says it is
+  declared. Two entries that declare one row, in one file or two, are refused,
+  naming both, before anything is written; and a file applied twice writes
+  nothing the second time.
 - **It writes as somebody.** A `provisioner` holder in the control plane, framed
   as the actor of every write, so the trail names which rows a file wrote. It has
   no password and no key.
