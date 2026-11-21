@@ -132,3 +132,79 @@ func TestAnEndpointWithNoControlPlaneIsRefused(t *testing.T) {
 	})
 	require.ErrorContains(t, err, "scim:")
 }
+
+// TestProvisionAfterTheDirectorysHolderWasErased: once the directory's holder
+// is erased, `roster scim provision` goes on as it does the first time -- a
+// holder under the name the erase freed, the role, a binding, a key.
+//
+// It refused, for good: *the tenant's role "scim" is bound to others*. That was
+// not so. An erase leaves a binding hanging, on purpose (#279), and the count
+// of who else the role is bound to counted the erased holder's.
+func TestProvisionAfterTheDirectorysHolderWasErased(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	c := seedbed(t)
+	out, err := initRun(t, c)
+	x.NoError(err, "init: %s", out)
+
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	acme, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "acme"}.Build())
+	x.NoError(err)
+	at := app.TenantRef_builder{Id: acme.GetId()}.Build()
+	_, err = s.Ungated.Connection().Add(ctx, app.ConnectionAddRequest_builder{
+		Tenant: at, Name: "entra", Issuer: "https://login.microsoftonline.com/acme/v2.0", ClientId: "the-app",
+		SubjectClaim: "oid",
+	}.Build())
+	x.NoError(err)
+	x.NoError(s.Close())
+
+	// The key it prints is the test's to throw away, and its error to read.
+	provision := func() error {
+		var err error
+		captured(t, func() error {
+			err = cli.NewCmdScim(cfg.New(cmd.Name, &c), &c).Run(ctx, []string{"provision", "--tenant", "acme", "--connection", "entra"})
+
+			return nil
+		})
+
+		return err
+	}
+	directorys := func(s *cmd.Server) *app.Holder {
+		t.Helper()
+		h, err := s.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+			Ref: app.HolderRef_builder{Slug: app.HolderRefBySlug_builder{Alias: proto.String(cli.ScimHolder), Tenant: at}.Build()}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		return h
+	}
+
+	x.NoError(provision())
+
+	s, err = cmd.Build(ctx, c)
+	x.NoError(err)
+	was := directorys(s)
+	_, err = s.Ungated.Holder().Erase(ctx, app.HolderRef_builder{Id: was.GetId()}.Build())
+	x.NoError(err)
+	x.NoError(s.Close())
+
+	x.NoError(provision(), "the role's binding to the erased holder was counted as somebody else's")
+
+	s, err = cmd.Build(ctx, c)
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+	now := directorys(s)
+	x.NotEqual(was.GetId(), now.GetId(), "a new holder, under the name the erase freed")
+	ks, err := s.Ungated.ApiKey().List(ctx, app.ApiKeyListRequest_builder{
+		Filters: []*app.ApiKeyFilter{app.ApiKeyFilter_builder{Holder: app.HolderRef_builder{Id: now.GetId()}.Build()}.Build()},
+	}.Build())
+	x.NoError(err)
+	x.Len(ks.GetItems(), 1)
+	bs, err := s.Ungated.Binding().List(ctx, app.BindingListRequest_builder{
+		Filters: []*app.BindingFilter{app.BindingFilter_builder{Holder: app.HolderRef_builder{Id: now.GetId()}.Build()}.Build()},
+	}.Build())
+	x.NoError(err)
+	x.Len(bs.GetItems(), 1, "bound the directory's role")
+}
