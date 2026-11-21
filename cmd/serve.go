@@ -329,6 +329,25 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 					"rules (`Update`, and each entity's own). take the setting out", v.block)
 		}
 	}
+	// And payday's keys that nothing of roster's reads, for the same reason:
+	// the manual promises that a key nothing reads is refused by name, and
+	// these were taken and changed nothing. No port registers reflection, and
+	// roster has no `migrate plan` for a dev database to be worked with.
+	for _, v := range []struct {
+		key  string
+		said bool
+		why  string
+	}{
+		{"server.allow_reflection", c.Server.AllowReflection, "roster serves no reflection on any port"},
+		{"control.allow_reflection", c.Control.AllowReflection, "roster serves no reflection on any port"},
+		{"admin.allow_reflection", c.Admin.AllowReflection, "roster serves no reflection on any port"},
+		{"db.dev_dsn", c.Db.DevDsn != "", "roster plans no migration, and db.migrate is how its tables are made"},
+		{"control.db.dev_dsn", c.Control.Db.DevDsn != "", "roster plans no migration, and control.db.migrate is how its tables are made"},
+	} {
+		if v.said && prefix == keys.PrefixTenant {
+			return nil, fmt.Errorf("%s: nothing reads it -- %s. take the setting out", v.key, v.why)
+		}
+	}
 	// And the rest of the file, once, where it is the deployment's
 	// ([Config.Meant]): the nested build that raises the control plane is
 	// handed a config this one made.

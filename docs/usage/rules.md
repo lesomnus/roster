@@ -448,6 +448,7 @@ that names the key as the file writes it (`cmd.Config.Meant`).
 | | written in | held to it by |
 | --- | --- | --- |
 | A listener block's `tls:` is its gRPC listener's alone, and the `http.addr` beside it is plain: a block whose certificate is asked of every caller has no plain port beside it, and one whose certificate is not is said at start | `cmd/config.go` | `TestABlockThatAsksForACertificateHasNoPlainPortBesideIt` · `TestTlsBesideAnHttpPortIsSaidAtStart` |
+| A key nothing reads is refused by name, payday's among them: `allow_reflection` on any of the three listeners, since no port serves reflection, and `db.dev_dsn` or `control.db.dev_dsn`, since roster plans no migration | `cmd/serve.go` | `TestAKeyNothingReadsIsRefusedByName` |
 
 ## What roster does by itself
 
