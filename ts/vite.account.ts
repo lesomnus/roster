@@ -3,8 +3,8 @@ import react from '@vitejs/plugin-react'
 
 // The account app's page: what `roster account serve --static ts/dist/account`
 // serves. It speaks Connect to its own origin and the app hands the calls on
-// to roster as the person, so in development it is proxied to a running
-// `roster account serve` -- there is no sandbox for it yet.
+// to roster as the person. Ordinary development proxies to `roster account
+// serve`; `dev:account:sandbox` supplies the API inside the browser instead.
 export default defineConfig({
 	root: 'account',
 	// Its own optimizer cache, for the reason `vite.console.ts` gives: the
@@ -17,7 +17,7 @@ export default defineConfig({
 	server: {
 		// Every interface, for `vite.console.ts`'s reason: a container.
 		host: true,
-		proxy: {
+		proxy: process.env['VITE_ACCOUNT_SANDBOX'] === '1' ? {} : {
 			'/session': 'http://localhost:8090',
 			'/providers': 'http://localhost:8090',
 			'/login': 'http://localhost:8090',

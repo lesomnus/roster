@@ -11,6 +11,8 @@
 		"gen": "cd .. && go tool pd gen --ts .",
 		"dev": "vite --config vite.console.ts",
 		"dev:account": "vite --config vite.account.ts --port 5174",
+		"dev:account:sandbox": "VITE_ACCOUNT_SANDBOX=1 vite --config vite.account.ts --port 5174",
+		"test:account:sandbox": "playwright test --config playwright.account-sandbox.config.ts",
 		"build": "tsc -p tsconfig.json && tsc -p tsconfig.e2e.json && vite build --config vite.console.ts && vite build --config vite.user.ts && vite build --config vite.account.ts && vite build --config vite.login.ts",
 		"preview": "vite preview --config vite.console.ts",
 		"check": "node imports.mjs && tsc -p tsconfig.json && tsc -p tsconfig.e2e.json",
@@ -26,10 +28,12 @@
 		"@connectrpc/connect": "^2.1.2",
 		"@connectrpc/connect-web": "^2.1.2",
 		"@lesomnus/grpc-dgram": "^0.1.0",
+		"@lesomnus/nox": "file:vendor/lesomnus-nox-0.1.0-5965091.tgz",
 		"@lesomnus/payday": "^0.1.3",
 		"monaco-editor": "^0.57.0",
 		"react": "^19.2.0",
-		"react-dom": "^19.2.0"
+		"react-dom": "^19.2.0",
+		"three": "^0.187.0"
 	},
 	"devDependencies": {
 		"@bufbuild/protoc-gen-es": "^2.13.0",
@@ -37,6 +41,7 @@
 		"@types/node": "^26.0.0",
 		"@types/react": "^19.2.2",
 		"@types/react-dom": "^19.2.2",
+		"@types/three": "^0.187.0",
 		"@vitejs/plugin-react": "^6.0.0",
 		"sqlite3-wasm-go": "^0.0.1",
 		"typescript": "~7.0.0",
@@ -45,6 +50,9 @@
 	"overrides": {
 		"monaco-editor": {
 			"dompurify": "^3.4.17"
+		},
+		"@lesomnus/nox": {
+			"monaco-editor": "$monaco-editor"
 		}
 	}
 }

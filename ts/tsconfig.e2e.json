@@ -13,7 +13,10 @@
 	// without anybody being told.
 	"extends": "./tsconfig.json",
 	"compilerOptions": {
-		"types": ["node"]
+		"types": ["node"],
+		// Node executes the pure ribbon model directly, without a Vite bundle
+		// mapping a .js package import back to its .ts source.
+		"allowImportingTsExtensions": true
 	},
 	"include": ["e2e"]
 }

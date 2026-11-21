@@ -107,6 +107,7 @@ npm run dev              # the admin console, against a running roster
 npm run dev:sandbox      # the admin console with the whole server compiled into the page
 npm run dev:user         # the user console, against a running roster
 npm run dev:user:sandbox # the user console with the same server compiled into the page
+npm run dev:account:sandbox # the account UI with sample APIs in browser memory
 npm run dev:login        # the sign-in pages, with a made-up server behind them
 ```
 
@@ -174,6 +175,174 @@ React is a **peer** dependency of payday and an optional one. `payday/store` and
 `useSyncExternalStore` over them.
 
 ### The sandbox
+
+The account page uses `@lesomnus/nox` for Section surfaces, forms, tables and
+buttons. Layout lives in `ts/account/style.css`; it does not load
+the consoles' global control styles. Shared sign-in and picture behavior accepts
+the account page's controls while the other pages keep their existing controls.
+Settings start directly with the profile section, without introductory copy.
+Each panel is a Nox `Section` within `SectionLayout`, using its native surface,
+padding and content gaps rather than the Card wrapper and shadow.
+Settings share a 600px maximum width with the account toolbar. It contains only
+the company mark and a labelled sign-out icon; appearance follows the system.
+Its padding is 8px and outer radius is 20px. Including the 1px border gives a 9px
+button inset, so the button's 11px radius has the same corner centres. The Nox
+default button stays transparent until hover. The toolbar floats
+16px below the viewport edge as a rounded translucent island, with a blurred
+backdrop over the full-width badge scene. Its sticky track ends with the opening,
+so the rising settings push the toolbar out rather than leaving it over the forms.
+Both use 16px side gutters on narrow
+screens. The opening scene has no corner headings, footer copy or action button;
+scrolling continues to the settings below it over a fixed scene background.
+Nox is not published to npm yet, so `ts/vendor/README.md` records the upstream
+commit and the unmodified `npm pack` archive installed by `npm ci`. The Docker
+page stage copies that archive before installing dependencies too.
+
+The account opens with `ts/account/badge.tsx`. Its plate, clasp and
+necklace are Three.js/WebGL meshes built by `ts/account/badge-model.ts`: a
+bevelled extruded plate with a real slot, a flat metal crimp over two overlapping
+strap ends, and a
+long ribbon with two broad faces and thin edges. The ribbon has a rectangular
+cross-section, a woven bump texture, and the existing company mark and name
+repeated along both faces. It deforms and twists in three dimensions; it is not
+a tube or a stroked SVG path. `ts/lib/badge-ribbon.ts` simulates its centreline
+with pinned ends, fixed link lengths, uniform flexural stiffness, air drag and
+weak buoyancy acting on the centre of mass. A seeded random stream gives each
+mount different, smoothly changing gusts. The strip is 21.30 world units long,
+twice the accepted initial length, with the same simulation and mesh resolution.
+A heading lasts 14–24 seconds and
+transitions with a 4-second response, giving the longer strip time to travel before
+turning. Long-span bending stiffness and a single broad torsional mode suppress
+small wrinkles without pinning creases at fixed material indices.
+A weak, damped torsional spring gradually favours a broad face over an edge-on
+fold. It treats both faces equally, so it relaxes lingering twists without
+snapping sections over or holding the ribbon rigidly flat. Weaker centre-of-mass
+confinement permits a wider drifting range while depth contact is retained.
+There are no per-particle rest positions, remembered creases or fixed twist
+patterns. A rounded starting curve avoids the old initial cusp. Minimum-twist
+cross-section transport, temporal director smoothing and damped torsional motion let
+the folds move along the material. There is no scripted fall, upward kick or
+repeating wave cycle. Its material
+coordinates are fixed too, so the printed marks do not stretch or slide.
+This constrains a ribbon centreline rather than simulating a full cloth surface.
+
+The scene builds its lighting environment locally and fetches no model or HDR
+assets. The background and WebGL canvas stay fixed in the viewport. Scrolling
+raises the badge within that view in world space; only its clamp pulls the free
+ribbon, which retains its inertia. The scroll lift is eased and speed-limited
+on the same clock as the physics, and reverses on scroll-back. After two viewport
+heights the entire loop is above the view, so drawing pauses until scroll-back.
+The settings scroll in front of the fixed scene in a separate document layer.
+The card itself rises
+from below the viewport over 2.4 seconds, using a monotone curve with zero speed
+and acceleration at both ends. The initial loose loop hangs below the card;
+moving clamp points pull it upward through the physics. A damped momentum pickup
+during ascent lets the free ribbon coast upward after the card stops, with no
+impulse at the stop and no repeated rise of the card. The motion and simulation
+share a bounded clock so slow frames do not make the mount jump ahead of the
+cloth. Reduced motion starts in the final pose; the HTML fallback keeps its CSS
+entrance. The card gently
+rocks forward/back around the portrait. Raycast hover settles the
+badge exactly front-facing and still, while the cloth keeps moving; stable hit
+bounds prevent hover flicker. Animation pauses outside the viewport and in
+background tabs, reduced motion is still, and GPU draws are capped at 30fps
+with a rounding tolerance so a 60Hz refresh does not accidentally drop to 20fps.
+The default pose is front-facing; pointer coordinates use the viewport centre
+with no constant yaw/pitch/roll offset. The card rotates around its portrait,
+whose centre is placed at the viewport centre, accounting for the preview bar above
+the canvas. Pointer translation follows a radial cubic ease-out: with
+`s = min(distance / (0.45 * min(viewportWidth, viewportHeight)), 1)`, its radius
+is `0.48 * (1 - (1 - s)^3)` world units. The incremental response falls to zero
+at the cutoff and stays capped beyond it. Translation is eased over time,
+settles back to centre on hover and is still for reduced motion. Tracking uses
+the entire viewport, including the toolbar above the hero. Only the attachment
+points move with the card; the free ribbon retains its world-space inertia.
+The card is scaled to 84% to give the moving fold more room.
+The original physical materials (plastic clearcoat, fabric sheen) and
+up-to-1.5x pixel density are retained; there is no total pixel cap. There is no
+floor or floor shadow. The crimp flexes slightly with the ribbon's drift, and
+both overlapping pinned ends and their short clamped exit tangents follow its
+rear plates. There is no hook or split
+ring. The ribbon's particles,
+velocity history and mesh remain in world space. Only the two attachment points
+follow the clasp, interpolated across 120Hz simulation steps, so mouse-driven
+turns pull the ribbon through its constraints rather than rotating it as a child
+of the badge. Contact over the card's footprint keeps the whole cross-section
+behind the card. Free sections are not swept along by an infinite rotating plane.
+Adaptive forward/backward length projection handles abrupt attachment changes
+without letting transient stretch persist.
+A short return section inside the crimp joins the strip into a closed
+band. Its fixed length counts toward the same total material length; the mesh is
+watertight across both this connection and the texture seam. Position constraints
+and velocity constraints are solved separately so length/bend/contact corrections
+do not inject artificial spin. Bulk angular drag preserves local bending and
+translation inertia; a weak depth envelope keeps the floating band from rolling
+edge-on. Idle geometry tests measure the actual band plane for fast rotation and
+flips, alongside the length, attachment and closed-surface checks.
+The 96-link physical centreline drives a separate display surface: 576 free
+curve intervals and 48 intervals through the held return. Smooth fairing blends
+in gradually after the clamped necks, then a closed centripetal spline is sampled
+by arc length. Length corrections preserve both ends and their endpoint slopes,
+so smoothing neither stretches the strip nor breaks its joins. Physical bend
+constraints prevent one-link corners; a coherent parallel-transport frame with
+unwrapped roll replaces independent per-section orientation choices. This keeps
+the broad faces from flipping or pinching on tight turns. The compressed ends
+blend smoothly into the full strap width. Geometry tests check both triangles
+of each broad-face quad and adjacent surface directions under rapid clasp turns.
+The renderer disposes its owned
+GPU resources on unmount. The settings and other pages do not load the Three.js
+chunk until the scene mounts.
+
+The front is real HTML in `ts/account/badge-front.tsx`, backed by the settings
+editor's same holder query. A 1024×1448 CSS surface is projected through the
+badge and camera matrices, preserving perspective while it rotates and scrolls.
+The physical front plate stays in WebGL; the HTML leaves the slot and crimp
+unpainted. The face has a round portrait slightly above centre, the existing name
+and alias treatment, a five-digit Nox `CompactNumber` at the lower left, and only
+the company mark at the lower right. It has no department or other printed copy.
+Prefixed employee IDs retain their stored value; their numeric part is displayed
+in five slots (for example `E-1042` becomes `01042`).
+Clicking the name or employee number edits it in place with only a background
+change, retaining the text's type and position and the alias. There are no field
+borders, underlines, hints or action buttons. Enter or blur saves, Escape cancels,
+and IME composition does not submit. An eager completion guard prevents a blur
+from repeating an Enter save or committing a cancelled draft. Success is announced
+only to assistive technology; failures remain visible. Focus and active editing hold the card
+front-facing even when the pointer leaves. A one-field save clones the current
+profile and retains its other values, with `dateUpdated` for optimistic locking.
+Settings inputs track fresh server values until edited locally; unsaved local
+fields survive card writes rather than being reset by the shared query update.
+The photo area uploads the original file through `Holder.Portray`, using the
+same 2 MiB limit as the settings picker; it also offers removal. Native HTML
+images can display remote URLs without drawing them into a canvas texture.
+Write controls follow the corresponding Update/Portray permissions, and edits
+to a directory-managed profile retain the ownership rule in the input's accessible
+description and the settings' visible notice.
+Offscreen card controls are inert, so tabbing through settings cannot focus a
+hidden card. The same face becomes a static usable card if WebGL is unavailable
+or its context is lost. The account settings follow the scene in normal document
+order.
+
+For account UI work, `npm run dev:account:sandbox` opens the real page at
+`http://localhost:5174` with its API responses made up **inside the browser**
+(`ts/account/sandbox.tsx`). No roster process, Docker, Wasm build or API server
+is needed. The preview bar switches between an account, the sign-in, an empty
+account, a second-factor sign-in, a directory-managed account and limited
+permissions. It starts signed in as `erin`; the sign-in fixture uses
+`erin` / `correct horse battery staple`, and the MFA fixture uses `frank` with
+the same password and code `123456`. The preview bar says which to use.
+
+Profile, addresses, passwords, factors, sessions and keys can be changed in
+memory. Resetting or reloading restores the fixture, and no store mirror is
+written to IndexedDB. Provider round trips and security keys are simulated;
+mail endpoints show the sent state without sending mail or delivering a link.
+The terminal preview recognises `DEMO-CODE`. This is for drawing and interacting
+with the UI, not checking authentication or authorization. Only a development
+build with `VITE_ACCOUNT_SANDBOX=1` imports it; ordinary `dev:account` still
+uses the real account backend.
+
+`npm run test:account:sandbox` drives this preview with Playwright and no backend.
+`./scripts/e2e.sh` includes it alongside the four pages against their own servers.
 
 `npm run dev:sandbox` compiles the server into the page -- `GOOS=js GOARCH=wasm`,
 SQLite in a Worker, a message port instead of HTTP/2. A reload is a fresh

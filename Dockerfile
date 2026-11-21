@@ -22,6 +22,7 @@ FROM --platform=$BUILDPLATFORM node:26 AS page
 WORKDIR /src/ts
 
 COPY ts/package.json ts/package-lock.json ./
+COPY ts/vendor/ ./vendor/
 RUN npm ci --no-audit --no-fund
 
 COPY ts/ ./

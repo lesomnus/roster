@@ -63,10 +63,10 @@ function b64urlDecode(v: string): Uint8Array<ArrayBuffer> {
  * offered, and what comes back is wrapped in the envelope `server/vouch`
  * checks -- relying party, origin, challenge, and the authenticator's answer.
  */
-async function assertKey(f: Factor): Promise<string> {
+async function assertKey(f: Factor, credentials: Pick<CredentialsContainer, 'get'>): Promise<string> {
 	if (f.id === undefined) throw new Error('roster did not say which key')
 	const challenge = crypto.getRandomValues(new Uint8Array(32))
-	const cred = (await navigator.credentials.get({
+	const cred = (await credentials.get({
 		publicKey: {
 			challenge,
 			rpId: location.hostname,
@@ -196,7 +196,25 @@ function mark(issuer: string | undefined): React.ReactNode {
 }
 
 /** What a page has to say to draw a sign-in. */
+export interface SignInControls {
+	Button: React.ComponentType<React.ButtonHTMLAttributes<HTMLButtonElement>>
+	Anchor: React.ComponentType<React.ComponentProps<'a'>>
+	Form: React.ComponentType<React.ComponentProps<'form'>>
+	Field: React.ComponentType<React.ComponentProps<'input'> & { label: string }>
+}
+
+function NativeField({ label, ...props }: React.ComponentProps<'input'> & { label: string }): React.ReactNode {
+	return <label>{label}<input {...props} /></label>
+}
+
 export interface SignInProps {
+	/** A page supplies presentation without copying the sign-in flow. */
+	controls?: SignInControls
+	/** A browser-only preview can supply the front door and authenticator locally. */
+	request?: typeof fetch
+	credentials?: Pick<CredentialsContainer, 'get'>
+	onProvider?: (name: string) => void
+
 	/** What to call the operator being signed in to. */
 	brand: string
 
@@ -230,18 +248,23 @@ export interface SignInProps {
 }
 
 export function SignIn(props: SignInProps): React.ReactNode {
+	const Button = props.controls?.Button ?? 'button'
+	const Anchor = props.controls?.Anchor ?? 'a'
+	const Form = props.controls?.Form ?? 'form'
+	const Field = props.controls?.Field ?? NativeField
 	const [step, setStep] = useState<{ factors: Factor[] } | null>(null)
 	const [mode, setMode] = useState<'in' | 'recover'>('in')
 	const [bad, setBad] = useState(false)
 	const [note, setNote] = useState<string | null>(null)
 	const brand = props.brand
 	const at = props.at ?? ((p: string) => p)
+	const request = props.request ?? fetch
 
 	const first = (e: React.FormEvent<HTMLFormElement>): void => {
 		e.preventDefault()
 		const f = new FormData(e.currentTarget)
 		setBad(false)
-		void fetch(at('/session'), json({ alias: String(f.get('alias') ?? ''), password: String(f.get('password') ?? '') })).then(
+		void request(at('/session'), json({ alias: String(f.get('alias') ?? ''), password: String(f.get('password') ?? '') })).then(
 			async (res) => {
 				if (res.status === 204) return props.onDone()
 				if (res.status === 200) {
@@ -263,7 +286,7 @@ export function SignIn(props: SignInProps): React.ReactNode {
 	// would be refused with nothing to say why.
 	const proceed = (f: Factor, secret: string): void => {
 		setBad(false)
-		void fetch(at('/session/continue'), json({ kind: f.kind, name: f.name, secret })).then((res) => {
+		void request(at('/session/continue'), json({ kind: f.kind, name: f.name, secret })).then((res) => {
 			if (res.status === 204) return props.onDone()
 			setBad(true)
 			setStep(null)
@@ -279,7 +302,7 @@ export function SignIn(props: SignInProps): React.ReactNode {
 	}
 
 	const withKey = (f: Factor): void => {
-		void assertKey(f)
+		void assertKey(f, props.credentials ?? navigator.credentials)
 			.then((secret) => proceed(f, secret))
 			.catch(() => setBad(true))
 	}
@@ -288,7 +311,7 @@ export function SignIn(props: SignInProps): React.ReactNode {
 		e.preventDefault()
 		const f = new FormData(e.currentTarget)
 		setNote(null)
-		void fetch(props.recover ?? '/recover', json({ address: String(f.get('address') ?? '') })).then((res) => {
+		void request(props.recover ?? '/recover', json({ address: String(f.get('address') ?? '') })).then((res) => {
 			// 202 whatever was typed: the page cannot know, and must not say,
 			// whether an address is here.
 			setNote(
@@ -312,22 +335,16 @@ export function SignIn(props: SignInProps): React.ReactNode {
 			)}
 
 			{mode === 'in' && props.password && step === null && (
-				<form onSubmit={first}>
-					<label>
-						who
-						<input name="alias" autoFocus autoComplete="username" />
-					</label>
-					<label>
-						password
-						<input name="password" type="password" autoComplete="current-password" />
-					</label>
-					<button type="submit">sign in</button>
+				<Form onSubmit={first}>
+					<Field label="who" name="alias" autoFocus autoComplete="username" />
+					<Field label="password" name="password" type="password" autoComplete="current-password" />
+					<Button type="submit">sign in</Button>
 					{props.recover !== undefined && (
-						<button type="button" className="link" onClick={() => setMode('recover')}>
+						<Button type="button" className="link" onClick={() => setMode('recover')}>
 							forgot?
-						</button>
+						</Button>
 					)}
-				</form>
+				</Form>
 			)}
 
 			{/*
@@ -346,7 +363,15 @@ export function SignIn(props: SignInProps): React.ReactNode {
 					{props.password && <p className="or">or</p>}
 					<section className="providers">
 						{props.providers.map((p) => (
-							<a key={p.name} className="button" href={props.providerHref?.(p.name) ?? '#'}>
+							<Anchor
+								key={p.name}
+								className="button"
+								href={props.providerHref?.(p.name) ?? '#'}
+								onClick={props.onProvider === undefined ? undefined : (e) => {
+									e.preventDefault()
+									props.onProvider?.(p.name)
+								}}
+							>
 								{/*
 									Three parts and not one sentence, so that
 									the three line up **down** the list: the
@@ -360,7 +385,7 @@ export function SignIn(props: SignInProps): React.ReactNode {
 								<span className="mark">{mark(p.issuer)}</span>
 								<span className="with">sign in with</span>
 								<span className="who">{p.name}</span>
-							</a>
+							</Anchor>
 						))}
 					</section>
 				</>
@@ -373,41 +398,35 @@ export function SignIn(props: SignInProps): React.ReactNode {
 							{step.factors
 								.filter((f) => f.kind === 'webauthn')
 								.map((f) => (
-									<button key={`${f.kind}:${f.name}`} type="button" onClick={() => withKey(f)}>
+									<Button key={`${f.kind}:${f.name}`} type="button" onClick={() => withKey(f)}>
 										use your security key{f.name !== '' ? ` (${f.name})` : ''}
-									</button>
+									</Button>
 								))}
 						</section>
 					)}
 					{step.factors.some((f) => f.kind === 'totp') && (
-						<form onSubmit={second}>
+						<Form onSubmit={second}>
 							<p className="note">one more: a code from your authenticator app</p>
-							<label>
-								code
-								<input name="code" inputMode="numeric" autoComplete="one-time-code" autoFocus />
-							</label>
-							<button type="submit">continue</button>
-						</form>
+							<Field label="code" name="code" inputMode="numeric" autoComplete="one-time-code" autoFocus />
+							<Button type="submit">continue</Button>
+						</Form>
 					)}
 					{step.factors.length === 0 && <p className="bad">a second factor is required and none can be offered here</p>}
 				</>
 			)}
 
 			{mode === 'recover' && (
-				<form onSubmit={recover}>
+				<Form onSubmit={recover}>
 					<p className="note">
 						A link goes to the address on your account. It hands you a new password, once,
 						and signs you out of everything else.
 					</p>
-					<label>
-						address
-						<input name="address" type="email" autoFocus autoComplete="email" />
-					</label>
-					<button type="submit">send a link</button>
-					<button type="button" className="link" onClick={() => setMode('in')}>
+					<Field label="address" name="address" type="email" autoFocus autoComplete="email" />
+					<Button type="submit">send a link</Button>
+					<Button type="button" className="link" onClick={() => setMode('in')}>
 						back
-					</button>
-				</form>
+					</Button>
+				</Form>
 			)}
 
 			{bad && <p className="bad">{step === null ? 'no' : 'no; start again from your password'}</p>}

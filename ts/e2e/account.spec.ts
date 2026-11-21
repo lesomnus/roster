@@ -25,7 +25,7 @@ async function signedIn(page: Page): Promise<void> {
 }
 
 async function signOut(page: Page): Promise<void> {
-	await page.locator('button', { hasText: 'sign out' }).first().click()
+	await page.getByRole('button', { name: 'sign out', exact: true }).click()
 	await expect(page.locator('input[name=password]')).toBeVisible()
 }
 
@@ -36,6 +36,40 @@ test('a password signs her in, and a wrong one does not', async ({ page }) => {
 
 	await signIn(page)
 	await signedIn(page)
+	await signOut(page)
+})
+
+test('the HTML employee ID saves a name and photo against the deployment', async ({ page }) => {
+	test.setTimeout(60_000)
+	await signIn(page)
+	await signedIn(page)
+	const scene = page.getByRole('region', { name: 'Your employee ID', exact: true })
+	await expect(scene).toHaveAttribute('data-badge-arrived', 'true', { timeout: 30_000 })
+	const badge = page.locator('.employee-badge')
+	const original = await page.locator('.profile input[name=display_name]').inputValue()
+	const locale = await page.locator('.profile input[name=locale]').inputValue()
+	await page.mouse.move(page.viewportSize()!.width / 2, page.viewportSize()!.height / 2)
+	await expect.poll(async () => JSON.parse(await scene.getAttribute('data-badge-pose') ?? '[]') as number[]).toEqual([0, 0, 0, 0])
+	await badge.getByRole('button', { name: 'Edit employee ID display name', exact: true }).click()
+	await badge.getByRole('textbox', { name: 'Employee ID display name', exact: true }).fill('Erin on the card')
+	await badge.getByRole('textbox', { name: 'Employee ID display name', exact: true }).press('Enter')
+	await expect(badge.getByRole('status')).toHaveText('Saved')
+	await expect(page.locator('.profile input[name=display_name]')).toHaveValue('Erin on the card')
+	await expect(page.locator('.profile input[name=locale]')).toHaveValue(locale)
+	const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==', 'base64')
+	await badge.getByLabel('Employee ID photo', { exact: true }).setInputFiles({ name: 'badge.png', mimeType: 'image/png', buffer: pixel })
+	await expect(badge.locator('.badge-photo img')).toHaveAttribute('src', /^data:image\/jpeg;base64,/)
+	await expect(page.locator('.picture img')).toHaveAttribute('src', /^data:image\/jpeg;base64,/)
+	await page.mouse.move(page.viewportSize()!.width / 2, page.viewportSize()!.height / 2)
+	await badge.locator('.badge-portrait').hover()
+	await badge.getByRole('button', { name: 'Remove employee ID photo', exact: true }).click()
+	await expect(badge.locator('.badge-photo img')).toHaveCount(0)
+	await expect(page.locator('.picture .none')).toHaveText('no picture')
+	await badge.getByRole('button', { name: 'Edit employee ID display name', exact: true }).click()
+	await badge.getByRole('textbox', { name: 'Employee ID display name', exact: true }).fill(original)
+	await badge.getByRole('textbox', { name: 'Employee ID display name', exact: true }).press('Enter')
+	await expect(badge.getByRole('status')).toHaveText('Saved')
+	await expect(page.locator('.profile input[name=display_name]')).toHaveValue(original)
 	await signOut(page)
 })
 
@@ -240,7 +274,7 @@ test('a sign-out that leaves what was seen on this browser says so', async ({ pa
 	await expect.poll(() => kept(page, theirs)).toBeGreaterThan(0)
 
 	await movedOn(page, theirs)
-	await page.locator('button', { hasText: 'sign out' }).first().click()
+	await page.getByRole('button', { name: 'sign out', exact: true }).click()
 
 	await expect(page.getByRole('alert')).toContainText('this browser still holds what you saw here')
 	await expect(page.locator('input[name=password]')).toBeVisible()

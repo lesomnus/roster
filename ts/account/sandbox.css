@@ -1,0 +1,9 @@
+.account-sandbox {
+	position: relative;
+	z-index: 3;
+	border-bottom: 1px dashed var(--ui-shade-60);
+	font: 13px/1.5 system-ui, sans-serif;
+}
+
+.account-sandbox header > div:first-child { flex-wrap: wrap; gap: 12px; }
+.account-sandbox small { display: block; padding: 8px 12px; color: var(--ui-muted); }

@@ -55,7 +55,7 @@ fi
 # server left over from a `--hold` the day before answered for the sandbox,
 # serving the modules it had cached, and a change to the library it served
 # was invisible for an afternoon.
-for port in 18025 18026 18051 18052 18061 18062 18071 18072 18090 18100 18101 18102; do
+for port in 18025 18026 18051 18052 18061 18062 18071 18072 18090 18100 18101 18102 18103; do
 	if (exec 3<>"/dev/tcp/127.0.0.1/${port}") 2>/dev/null; then
 		echo "something is already listening on 127.0.0.1:${port}; stop it first (a --hold left running?)" >&2
 		exit 1
@@ -273,8 +273,16 @@ if [ "${E2E_SANDBOX:-1}" != "0" ]; then
 	(cd ts && exec env VITE_SANDBOX=1 ./node_modules/.bin/vite --config vite.user.ts --port 18102 --strictPort >"${work}/usersandbox.log" 2>&1) &
 	pids+=($!)
 	up "${E2E_USER_SANDBOX}"
+
+	# The account UI's preview keeps both API surfaces in browser memory.
+	# It needs neither this rig's backend nor the consoles' Wasm build.
+	export E2E_ACCOUNT_SANDBOX="http://localhost:18103"
+	(cd ts && exec env VITE_ACCOUNT_SANDBOX=1 ./node_modules/.bin/vite --config vite.account.ts --port 18103 --strictPort >"${work}/accountsandbox.log" 2>&1) &
+	pids+=($!)
+	up "${E2E_ACCOUNT_SANDBOX}"
 else
 	unset E2E_SANDBOX
+	unset E2E_ACCOUNT_SANDBOX
 fi
 
 # The Login App's page, against **nothing**: `vite.login.ts` is the app made up,

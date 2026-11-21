@@ -1,0 +1,84 @@
+/* Account layout and copy only; Nox owns controls, sections, tables and surfaces. */
+:root {
+	font: 14px/1.6 system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+	color: var(--ui-shade-237);
+	background: var(--ui-shade-16);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+h1, h2, p { margin: 0; }
+h1 { font-size: 16px; font-weight: 650; }
+h2 { font-size: 18px; font-weight: 600; letter-spacing: -.02em; margin-bottom: 12px; }
+code, .mono { font-family: var(--ui-font-mono); font-size: .9em; overflow-wrap: anywhere; }
+a { color: inherit; }
+
+.account { --account-content-width: 600px; position: relative; isolation: isolate; }
+.account-opening { display: grid; grid-template-columns: minmax(0, 1fr); }
+/* The opening bounds sticky positioning, so the following content pushes it out. */
+.account-header-track { grid-area: 1 / 1; z-index: 2; pointer-events: none; }
+.account-header {
+	--account-header-radius: 20px;
+	--account-header-padding: 8px;
+	--account-header-inset: calc(var(--account-header-padding) + 1px);
+	position: sticky;
+	top: 16px;
+	z-index: 2;
+	width: min(var(--account-content-width), calc(100% - 32px));
+	margin: 16px auto 0;
+	pointer-events: auto;
+	padding: var(--account-header-padding);
+	border: 1px solid color-mix(in srgb, var(--ui-shade-237) 12%, transparent);
+	border-radius: var(--account-header-radius);
+	background: color-mix(in srgb, var(--ui-shade-24) 68%, transparent);
+	-webkit-backdrop-filter: blur(20px) saturate(1.2);
+	backdrop-filter: blur(20px) saturate(1.2);
+	box-shadow: 0 8px 28px #0002;
+}
+.account-brand { display: flex; align-items: center; padding: 12px 16px; }
+.account-brand svg { display: block; width: 24px; height: 24px; }
+.account-header .account-sign-out { width: 48px; height: 48px; min-height: 48px; padding: 12px; border-radius: calc(var(--account-header-radius) - var(--account-header-inset)); }
+.account-sign-out svg { display: block; width: 24px; height: 24px; }
+.account > main { min-width: 0; padding: 0; }
+.account-settings { position: relative; z-index: 1; padding: 32px 16px 64px; }
+.account-section { overflow-x: auto; }
+.account-section > h2 { margin-bottom: 0; }
+.account-section > form + form { padding-top: 16px; border-top: 1px solid var(--ui-shade-36); }
+form > button { justify-self: start; align-self: end; margin-top: 8px; }
+form > :is(.hint, .note, .bad) { grid-column: 1 / -1; }
+.note, .none, .hint, .dim { color: var(--ui-muted); font-size: 12px; }
+.note, .bad { margin-top: 12px; }
+.bad { color: var(--ui-action-error-color); font-size: 12px; }
+.acts { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.acts > div { flex: 1 1 180px; }
+.secret { margin-top: 16px; padding: 16px; border: 1px solid var(--ui-shade-48); border-radius: 10px; }
+.secret > p { margin-bottom: 12px; color: var(--ui-muted); font-size: 12px; }
+.copyable { display: flex; gap: 12px; align-items: center; }
+.copyable > code { flex: 1; min-width: 0; }
+.picture { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+.picture img { object-fit: cover; border-radius: 12px; }
+.picture .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.picture label { display: grid; gap: 4px; color: var(--ui-muted); font-size: 12px; }
+.picture input { max-width: 220px; }
+#leave h2 { color: var(--ui-action-error-color); }
+
+.sign-in { width: min(100% - 40px, 380px); margin: 10vh auto 48px; }
+.sign-in h1 { font-size: 26px; margin-bottom: 28px; }
+.sign-in form { row-gap: 12px; }
+.sign-in form > button { width: 100%; }
+.sign-in .providers { display: grid; gap: 8px; }
+.sign-in .providers .button { width: 100%; }
+.sign-in .providers .button-content { display: grid; grid-template-columns: 20px auto 1fr; align-items: center; gap: 12px; text-align: left; }
+.mark { display: flex; align-items: center; }
+.mark svg { width: 18px; height: 18px; }
+.or { display: flex; align-items: center; gap: 12px; margin: 24px 0; color: var(--ui-muted); font-size: 12px; }
+.or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--ui-shade-48); }
+.loading, .error, .left { max-width: 600px; margin: 40px auto; padding: 20px; }
+.left h1 { font-size: 24px; margin-bottom: 16px; }
+.left p { margin-top: 12px; }
+
+@media (max-width: 560px) {
+	.account-settings { padding: 24px 16px 48px; }
+	.profile { grid-template-columns: minmax(0, 1fr); }
+	.picture { align-items: start; }
+}

@@ -51,9 +51,20 @@ import { b64url, SignIn, vendor, type Vendor } from '#lib/signin.js'
 import { Picture } from '#lib/picture.js'
 import { caller } from '#lib/caller.js'
 import { letGo, open, stillHere } from '#lib/store.js'
-import '#lib/style.css'
+import { Button, Section, CopyButton, Form, PageToolbar, SectionLayout, Skeleton, Table, TableBody, TableRow, TableCell } from '@lesomnus/nox'
+import { AccountUI, ChoiceField, Field, signInControls } from './ui.js'
+import { EmployeeBadge } from './badge.js'
+import '@lesomnus/nox/styles.css'
+import './style.css'
 
+// The preview owns its API responses in browser memory; a shipped build never
+// imports it. Its store has no disk mirror, so a reset also forgets every edit.
+const sandbox = import.meta.env.DEV && import.meta.env['VITE_ACCOUNT_SANDBOX'] === '1'
+	? (await import('./sandbox.js')).start()
+	: null
+const request = sandbox?.request ?? fetch
 const root = createRoot(document.getElementById('root') as HTMLElement)
+const draw = (children: React.ReactNode): void => root.render(<AccountUI>{sandbox?.panel}{children}</AccountUI>)
 
 /** Providers is what `/providers` says: who this front door is for, and how they arrive. */
 interface Providers {
@@ -70,7 +81,7 @@ interface Providers {
 }
 
 async function providers(): Promise<Providers | null> {
-	const res = await fetch('/providers')
+	const res = await request('/providers')
 	if (!res.ok) return null
 
 	return (await res.json()) as Providers
@@ -117,12 +128,12 @@ function brandOf(of: Providers): string {
 function Account(props: { of: Providers; onSignOut: () => void; onLeft: (forgotten: string) => void }): React.ReactNode {
 	const me = useQuery(MeService.method.get, {})
 
-	if (me.state === 'pending') return <main className="loading">…</main>
+	if (me.state === 'pending') return <main className="loading" aria-label="Loading your account"><Skeleton width="100%" height={120} /></main>
 	if (me.state === 'error' || me.data === undefined) {
 		return (
 			<main className="error">
 				<p>cannot read your record</p>
-				<button onClick={props.onSignOut}>sign out</button>
+				<Button onClick={props.onSignOut}>sign out</Button>
 			</main>
 		)
 	}
@@ -137,12 +148,21 @@ function Account(props: { of: Providers; onSignOut: () => void; onLeft: (forgott
 
 	return (
 		<div className="account">
-			<nav>
-				<h1>{props.of.tenant.name || props.of.tenant.alias}</h1>
-				<span className="who">{v.alias}</span>
-				<button onClick={props.onSignOut}>sign out</button>
-			</nav>
+			<div className="account-backdrop" aria-hidden="true" />
 			<main>
+				<div className="account-opening">
+					<div className="account-header-track">
+						<PageToolbar className="account-header" actions={<Button className="account-sign-out" effect="none" aria-label="sign out" title="Sign out" onClick={props.onSignOut}>
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4M9 12h12m-5-5 5 5-5 5" /></svg>
+						</Button>}>
+							<h1 className="account-brand" aria-label={brandOf(props.of)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z" fill="currentColor" /></svg></h1>
+						</PageToolbar>
+					</div>
+					<EmployeeBadge own={own} alias={v.alias} brand={brandOf(props.of)} mayRead={may('/roster.HolderService/Get')}
+						mayUpdate={may('/roster.HolderService/Update')} mayPortray={may('/roster.HolderService/Portray')} provisioned={v.provisionedThrough} />
+				</div>
+				<div className="account-settings" id="account-details">
+				<SectionLayout maxWidth="var(--account-content-width)">
 				<Profile own={own} alias={v.alias} provisioned={v.provisionedThrough} may={may} />
 				<Ways of={props.of} own={own} identities={v.identities} credentials={v.credentials} may={may} />
 				<Addresses own={own} may={may} />
@@ -163,6 +183,8 @@ function Account(props: { of: Providers; onSignOut: () => void; onLeft: (forgott
 						onLeft={props.onLeft}
 					/>
 				)}
+				</SectionLayout>
+				</div>
 			</main>
 		</div>
 	)
@@ -239,17 +261,29 @@ function Profile(props: {
 	const row = useQuery(HolderService.method.get, allowed ? { ref: ref(props.own) } : {})
 	const update = useCall(HolderService.method.update)
 	const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
+	const [draft, setDraft] = useState<Partial<Record<'display_name' | 'picture' | 'department' | 'employee_no' | 'locale', string>>>({})
+	// Untouched fields follow card edits; locally edited fields keep their
+	// unsaved values when another view refreshes the same holder query.
+	const input = (name: keyof typeof draft, value: string | undefined) => ({
+		value: draft[name] ?? value ?? '',
+		disabled: update.state === 'pending',
+		onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+			const next = event.currentTarget.value
+			setDraft(current => ({ ...current, [name]: next }))
+			setNote(null)
+		},
+	})
 
 	return (
-		<section>
+		<Section className="account-section">
 			<h2>you</h2>
 			<p>
 				<code>{props.alias}</code>
 			</p>
 			{!allowed && <Needs method="/roster.HolderService/Update" />}
-			{allowed && row.state === 'ok' && row.data !== undefined && <Picture holder={row.data} may={props.may} />}
+			{allowed && row.state === 'ok' && row.data !== undefined && <Picture Button={Button} holder={row.data} may={props.may} />}
 			{allowed && row.state === 'ok' && row.data !== undefined && (
-				<form
+				<Form columns={2}
 					className="profile"
 					onSubmit={(e) => {
 						e.preventDefault()
@@ -268,19 +302,19 @@ function Profile(props: {
 									locale: s('locale'),
 								},
 							})
-							.then(() => setNote({ ok: true, text: 'saved' }))
+							.then(() => { setDraft({}); setNote({ ok: true, text: 'saved' }) })
 							.catch((e: unknown) => setNote({ ok: false, text: said(e) }))
 					}}
 				>
-					<input name="display_name" placeholder="display name" defaultValue={row.data.profile?.displayName ?? ''} />
-					<input name="department" placeholder="department" defaultValue={row.data.profile?.department ?? ''} />
-					<input name="employee_no" placeholder="employee no" defaultValue={row.data.profile?.employeeNo ?? ''} />
-					<input name="locale" placeholder="locale" defaultValue={row.data.profile?.locale ?? ''} />
-					<input name="picture" placeholder="picture url" defaultValue={row.data.profile?.picture ?? ''} />
-					<button type="submit" disabled={update.state === 'pending'}>
+					<Field label="Display name" name="display_name" placeholder="display name" {...input('display_name', row.data.profile?.displayName)} />
+					<Field label="Department" name="department" placeholder="department" {...input('department', row.data.profile?.department)} />
+					<Field label="Employee number" name="employee_no" placeholder="employee no" {...input('employee_no', row.data.profile?.employeeNo)} />
+					<Field label="Language" name="locale" placeholder="locale" {...input('locale', row.data.profile?.locale)} />
+					<Field label="Picture URL" name="picture" placeholder="picture url" {...input('picture', row.data.profile?.picture)} />
+					<Button type="submit" disabled={update.state === 'pending'}>
 						save
-					</button>
-				</form>
+					</Button>
+				</Form>
 			)}
 			{allowed && props.provisioned !== '' && (
 				<p className="note directory">
@@ -289,7 +323,7 @@ function Profile(props: {
 				</p>
 			)}
 			{note !== null && <p className={note.ok ? 'note' : 'bad'}>{note.text}</p>}
-		</section>
+		</Section>
 	)
 }
 
@@ -329,8 +363,16 @@ function Ways(props: {
 	const [gone, setGone] = useState<string[]>([])
 	const [bad, setBad] = useState<string | null>(null)
 	const [note, setNote] = useState(landed === null ? null : how(landed))
+	const app = useApp()
 
 	const link = (name: string): void => {
+		if (sandbox !== null) {
+			void sandbox.provider(name).then(() => {
+				app.queries.forget(MeService.method.get)
+				setNote({ ok: true, text: `${name} is a way in now` })
+			})
+			return
+		}
 		const f = document.createElement('form')
 		f.method = 'POST'
 		f.action = `/ways?connection=${encodeURIComponent(name)}`
@@ -362,44 +404,44 @@ function Ways(props: {
 	}
 
 	return (
-		<section>
+		<Section className="account-section">
 			<h2>signs in with</h2>
-			<table>
-				<tbody>
+			<Table>
+				<TableBody>
 					{passwords.map((c) => (
-						<tr key="password">
-							<td>password</td>
-							<td className="dim">{c.name === '' ? '' : c.name}</td>
-							<td />
-						</tr>
+						<TableRow key="password">
+							<TableCell>password</TableCell>
+							<TableCell className="dim">{c.name === '' ? '' : c.name}</TableCell>
+							<TableCell />
+						</TableRow>
 					))}
 					{rows.map((r) => {
 						const has = at(r.provider)
 
 						return (
-							<tr key={r.provider}>
-								<td className={r.offered ? undefined : 'dim'}>{r.provider}</td>
-								<td className={has === undefined ? 'dim' : 'mono'}>
+							<TableRow key={r.provider}>
+								<TableCell className={r.offered ? undefined : 'dim'}>{r.provider}</TableCell>
+								<TableCell className={has === undefined ? 'dim' : 'mono'}>
 									{has === undefined ? 'not connected' : has.subject}
-								</td>
-								<td>
+								</TableCell>
+								<TableCell>
 									{has !== undefined ? (
 										/* `Me.Unlink` is waived: taking back a way in needs no
 										   role. roster refuses the last one. */
-										<button onClick={() => off(has)}>unlink</button>
+										<Button onClick={() => off(has)}>unlink</Button>
 									) : (
 										r.offered && (
-											<button disabled={!may} onClick={() => link(r.provider)}>
+											<Button disabled={!may} onClick={() => link(r.provider)}>
 												connect
-											</button>
+											</Button>
 										)
 									)}
-								</td>
-							</tr>
+								</TableCell>
+							</TableRow>
 						)
 					})}
-				</tbody>
-			</table>
+				</TableBody>
+			</Table>
 			{!may && rows.some((r) => r.offered && at(r.provider) === undefined) && (
 				<Needs method="/roster.IdentityService/Add" />
 			)}
@@ -409,7 +451,7 @@ function Ways(props: {
 				</p>
 			)}
 			{bad !== null && <p className="bad">{bad}</p>}
-		</section>
+		</Section>
 	)
 }
 
@@ -424,35 +466,35 @@ function Addresses(props: { own: Uint8Array; may: (m: string) => boolean }): Rea
 
 	if (!allowed) {
 		return (
-			<section>
+			<Section className="account-section">
 				<h2>addresses</h2>
 				<Needs method="/roster.EmailService/List" />
-			</section>
+			</Section>
 		)
 	}
 
 	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
 
 	return (
-		<section>
+		<Section className="account-section">
 			<h2>addresses</h2>
 			<p className="note">
 				where a link that recovers or deletes your account goes. An address counts once it is confirmed from your mailbox.
 			</p>
 			{items.length === 0 && <p className="none">none — a link has nowhere to go</p>}
 			{items.length > 0 && (
-				<table>
-					<tbody>
+				<Table>
+					<TableBody>
 						{items.map((v) => (
-							<tr key={uuid(v.id)}>
-								<td className="mono">{v.address}</td>
-								<td>
+							<TableRow key={uuid(v.id)}>
+								<TableCell className="mono">{v.address}</TableCell>
+								<TableCell>
 									{v.dateVerified === undefined ? (
-										<button
+										<Button
 											disabled={!props.may('/roster.EmailService/Get')}
 											onClick={() => {
 												setNote(null)
-												void fetch('/verify', json({ id: b64url(v.id) })).then(async (res) => {
+												void request('/verify', json({ id: b64url(v.id) })).then(async (res) => {
 													if (res.status === 202) {
 														setNote({ ok: true, text: `a link is on its way to ${v.address}` })
 
@@ -470,13 +512,13 @@ function Addresses(props: { own: Uint8Array; may: (m: string) => boolean }): Rea
 											}}
 										>
 											confirm
-										</button>
+										</Button>
 									) : (
 										<span className="dim">confirmed {when(v.dateVerified)}</span>
 									)}
-								</td>
-								<td>
-									<button
+								</TableCell>
+								<TableCell>
+									<Button
 										disabled={!props.may('/roster.EmailService/Erase')}
 										onClick={() => {
 											setNote(null)
@@ -487,14 +529,14 @@ function Addresses(props: { own: Uint8Array; may: (m: string) => boolean }): Rea
 										}}
 									>
 										remove
-									</button>
-								</td>
-							</tr>
+									</Button>
+								</TableCell>
+							</TableRow>
 						))}
-					</tbody>
-				</table>
+					</TableBody>
+				</Table>
 			)}
-			<form
+			<Form
 				onSubmit={(e) => {
 					e.preventDefault()
 					const form = e.currentTarget
@@ -517,7 +559,7 @@ function Addresses(props: { own: Uint8Array; may: (m: string) => boolean }): Rea
 								return
 							}
 
-							void fetch('/claim', json({ address })).then(async (res) => {
+							void request('/claim', json({ address })).then(async (res) => {
 								if (res.status === 202) {
 									form.reset()
 									setNote({
@@ -537,13 +579,13 @@ function Addresses(props: { own: Uint8Array; may: (m: string) => boolean }): Rea
 						})
 				}}
 			>
-				<input name="address" type="email" placeholder="you@example.com" required />
-				<button type="submit" disabled={add.state === 'pending' || !props.may('/roster.EmailService/Add')}>
+				<Field label="Email address" name="address" type="email" placeholder="you@example.com" required />
+				<Button type="submit" disabled={add.state === 'pending' || !props.may('/roster.EmailService/Add')}>
 					add address
-				</button>
-			</form>
+				</Button>
+			</Form>
 			{note !== null && <p className={note.ok ? 'note' : 'bad'}>{note.text}</p>}
-		</section>
+		</Section>
 	)
 }
 
@@ -569,11 +611,11 @@ function Password(props: { own: Uint8Array; has: boolean; offered: boolean; may:
 	if (!props.has && !props.offered) return null
 
 	return (
-		<section>
+		<Section className="account-section">
 			<h2>password</h2>
 			{!allowed && <Needs method="/roster.CredentialService/Set" />}
 			{allowed && (
-				<form
+				<Form
 					onSubmit={(e) => {
 						e.preventDefault()
 						const form = e.currentTarget
@@ -594,12 +636,12 @@ function Password(props: { own: Uint8Array; has: boolean; offered: boolean; may:
 							.catch((e: unknown) => setNote({ ok: false, text: said(e) }))
 					}}
 				>
-					{props.has && <input name="current" type="password" placeholder="current" autoComplete="current-password" required />}
-					<input name="next" type="password" placeholder="new" autoComplete="new-password" required />
-					<button type="submit" disabled={set.state === 'pending'}>
+					{props.has && <Field label="Current password" name="current" type="password" placeholder="current" autoComplete="current-password" required />}
+					<Field label="New password" name="next" type="password" placeholder="new" autoComplete="new-password" required />
+					<Button type="submit" disabled={set.state === 'pending'}>
 						{props.has ? 'change' : 'set'}
-					</button>
-				</form>
+					</Button>
+				</Form>
 			)}
 			{props.has ? (
 				<p className="note">
@@ -614,7 +656,7 @@ function Password(props: { own: Uint8Array; has: boolean; offered: boolean; may:
 				</p>
 			)}
 			{note !== null && <p className={note.ok ? 'note' : 'bad'}>{note.text}</p>}
-		</section>
+		</Section>
 	)
 }
 
@@ -654,7 +696,7 @@ function Factors(props: { own: Uint8Array; alias: string; brand: string; may: (m
 		if (seed === null) return
 		const code = String(new FormData(e.currentTarget).get('code') ?? '')
 		setNote(null)
-		void fetch('/prove', json({ kind: 'totp', name: seed.name, secret: code })).then((res) => {
+		void request('/prove', json({ kind: 'totp', name: seed.name, secret: code })).then((res) => {
 			if (res.status === 204) {
 				setSeed(null)
 				setNote({ ok: true, text: 'proved; it counts from now on' })
@@ -681,7 +723,7 @@ function Factors(props: { own: Uint8Array; alias: string; brand: string; may: (m
 		setNote(null)
 		try {
 			const challenge = crypto.getRandomValues(new Uint8Array(32))
-			const cred = (await navigator.credentials.create({
+			const cred = (await (sandbox?.credentials ?? navigator.credentials).create({
 				publicKey: {
 					challenge,
 					rp: { id: location.hostname, name: props.brand },
@@ -721,18 +763,18 @@ function Factors(props: { own: Uint8Array; alias: string; brand: string; may: (m
 	}
 
 	return (
-		<section>
+		<Section className="account-section">
 			<h2>second factors</h2>
 			{factors.length === 0 && <p className="none">none — a password alone signs you in</p>}
 			{factors.length > 0 && (
-				<table>
-					<tbody>
+				<Table>
+					<TableBody>
 						{factors.map((c) => (
-							<tr key={`${c.kind}:${c.name}`}>
-								<td>{c.kind === 'totp' ? 'authenticator app' : c.kind === 'webauthn' ? 'security key' : c.kind}</td>
-								<td>{c.name === '' ? <span className="dim">the only one</span> : c.name}</td>
-								<td>
-									<button
+							<TableRow key={`${c.kind}:${c.name}`}>
+								<TableCell>{c.kind === 'totp' ? 'authenticator app' : c.kind === 'webauthn' ? 'security key' : c.kind}</TableCell>
+								<TableCell>{c.name === '' ? <span className="dim">the only one</span> : c.name}</TableCell>
+								<TableCell>
+									<Button
 										disabled={!props.may('/roster.CredentialService/Erase')}
 										onClick={() => {
 											setNote(null)
@@ -746,16 +788,16 @@ function Factors(props: { own: Uint8Array; alias: string; brand: string; may: (m
 										}}
 									>
 										remove
-									</button>
-								</td>
-							</tr>
+									</Button>
+								</TableCell>
+							</TableRow>
 						))}
-					</tbody>
-				</table>
+					</TableBody>
+				</Table>
 			)}
 			{!props.may('/roster.CredentialService/Enrol') && <Needs method="/roster.CredentialService/Enrol" />}
 			{props.may('/roster.CredentialService/Enrol') && (
-				<form
+				<Form
 					onSubmit={(e) => {
 						e.preventDefault()
 						const f = new FormData(e.currentTarget)
@@ -765,15 +807,15 @@ function Factors(props: { own: Uint8Array; alias: string; brand: string; may: (m
 						else totp(name)
 					}}
 				>
-					<select name="kind" defaultValue="totp">
+					<ChoiceField label="Factor type" name="kind" defaultValue="totp">
 						<option value="totp">authenticator app</option>
 						<option value="webauthn">security key</option>
-					</select>
-					<input name="name" placeholder="name it, e.g. phone" />
-					<button type="submit" disabled={enrol.state === 'pending'}>
+					</ChoiceField>
+					<Field label="Factor name" name="name" placeholder="name it, e.g. phone" />
+					<Button type="submit" disabled={enrol.state === 'pending'}>
 						enrol
-					</button>
-				</form>
+					</Button>
+				</Form>
 			)}
 			{seed !== null && (
 				<div className="secret">
@@ -785,14 +827,14 @@ function Factors(props: { own: Uint8Array; alias: string; brand: string; may: (m
 					<p className="note">
 						or type the seed: <code>{seed.seed}</code>
 					</p>
-					<form onSubmit={prove}>
-						<input name="code" inputMode="numeric" autoComplete="one-time-code" placeholder="the code it shows" required />
-						<button type="submit">prove</button>
-					</form>
+					<Form onSubmit={prove}>
+						<Field label="Verification code" name="code" inputMode="numeric" autoComplete="one-time-code" placeholder="the code it shows" required />
+						<Button type="submit">prove</Button>
+					</Form>
 				</div>
 			)}
 			{note !== null && <p className={note.ok ? 'note' : 'bad'}>{note.text}</p>}
-		</section>
+		</Section>
 	)
 }
 
@@ -808,20 +850,20 @@ function Sessions(props: { own: Uint8Array; may: (m: string) => boolean }): Reac
 	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
 
 	return (
-		<section>
+		<Section className="account-section">
 			<h2>where you are signed in</h2>
 			{!allowed && <Needs method="/roster.DelegationService/List" />}
 			{allowed && items.length === 0 && <p className="none">nowhere but here</p>}
 			{allowed && items.length > 0 && (
-				<table>
-					<tbody>
+				<Table>
+					<TableBody>
 						{items.map((v) => (
-							<tr key={uuid(v.id)}>
-								<td className="dim">since {when(v.dateCreated)}</td>
-								<td className="dim">until {when(v.dateExpires)}</td>
-								<td className="mono">{v.methods.length} method(s)</td>
-								<td>
-									<button
+							<TableRow key={uuid(v.id)}>
+								<TableCell className="dim">since {when(v.dateCreated)}</TableCell>
+								<TableCell className="dim">until {when(v.dateExpires)}</TableCell>
+								<TableCell className="mono">{v.methods.length} method(s)</TableCell>
+								<TableCell>
+									<Button
 										disabled={!props.may('/roster.DelegationService/Erase')}
 										onClick={() => {
 											setNote(null)
@@ -832,18 +874,18 @@ function Sessions(props: { own: Uint8Array; may: (m: string) => boolean }): Reac
 										}}
 									>
 										end
-									</button>
-								</td>
-							</tr>
+									</Button>
+								</TableCell>
+							</TableRow>
 						))}
-					</tbody>
-				</table>
+					</TableBody>
+				</Table>
 			)}
 			<p className="acts">
 				{/* Waived: nobody may be refused this for want of a role. It voids
 				    everything issued before now, including this session's
 				    delegation -- the page reloads into the sign-in form. */}
-				<button
+				<Button
 					onClick={() => {
 						setNote(null)
 						void everywhere
@@ -853,10 +895,10 @@ function Sessions(props: { own: Uint8Array; may: (m: string) => boolean }): Reac
 					}}
 				>
 					sign out everywhere
-				</button>
+				</Button>
 			</p>
 			{note !== null && <p className={note.ok ? 'note' : 'bad'}>{note.text}</p>}
-		</section>
+		</Section>
 	)
 }
 
@@ -894,7 +936,7 @@ function Terminal(props: { may: (m: string) => boolean }): React.ReactNode {
 	const look = (v: string): void => {
 		setNote(null)
 		setAsked(null)
-		void fetch(`/device/pending?user_code=${encodeURIComponent(v)}`)
+		void request(`/device/pending?user_code=${encodeURIComponent(v)}`)
 			.then(async (res) =>
 				res.ok
 					? setAsked((await res.json()) as { name: string; methods: string[] })
@@ -905,7 +947,7 @@ function Terminal(props: { may: (m: string) => boolean }): React.ReactNode {
 
 	const answer = (deny: boolean): void => {
 		setNote(null)
-		void fetch('/device/approve', json({ user_code: code, deny }))
+		void request('/device/approve', json({ user_code: code, deny }))
 			.then(async (res) => {
 				if (!res.ok) {
 					setNote({ ok: false, text: await why(res) })
@@ -920,48 +962,48 @@ function Terminal(props: { may: (m: string) => boolean }): React.ReactNode {
 	}
 
 	return (
-		<section>
+		<Section className="account-section">
 			<h2>a terminal</h2>
 			<p className="note">
 				Running <code>roster sign-in</code> somewhere prints a code. Type it here to give that
 				machine a key of its own.
 			</p>
-			<p className="acts">
-				<input
+			<div className="acts">
+				<Field label="Terminal code"
 					name="user_code"
 					value={code}
 					placeholder="XXXX-XXXX"
 					onChange={(e) => setCode(e.target.value.toUpperCase())}
 				/>
-				<button disabled={code.trim() === ''} onClick={() => look(code)}>
+				<Button disabled={code.trim() === ''} onClick={() => look(code)}>
 					look it up
-				</button>
-			</p>
+				</Button>
+			</div>
 			{asked !== null && (
 				<>
-					<table>
-						<tbody>
-							<tr>
-								<td>the machine</td>
-								<td className="mono">{asked.name}</td>
-							</tr>
-							<tr>
-								<td>it may call</td>
-								<td className="mono">{asked.methods.join(', ')}</td>
-							</tr>
-						</tbody>
-					</table>
+					<Table>
+						<TableBody>
+							<TableRow>
+								<TableCell>the machine</TableCell>
+								<TableCell className="mono">{asked.name}</TableCell>
+							</TableRow>
+							<TableRow>
+								<TableCell>it may call</TableCell>
+								<TableCell className="mono">{asked.methods.join(', ')}</TableCell>
+							</TableRow>
+						</TableBody>
+					</Table>
 					<p className="acts">
-						<button disabled={!props.may('/roster.ApiKeyService/Issue')} onClick={() => answer(false)}>
+						<Button disabled={!props.may('/roster.ApiKeyService/Issue')} onClick={() => answer(false)}>
 							sign it in
-						</button>
-						<button onClick={() => answer(true)}>no</button>
+						</Button>
+						<Button onClick={() => answer(true)}>no</Button>
 					</p>
 					{!props.may('/roster.ApiKeyService/Issue') && <Needs method="/roster.ApiKeyService/Issue" />}
 				</>
 			)}
 			{note !== null && <p className={note.ok ? 'note' : 'bad'}>{note.text}</p>}
-		</section>
+		</Section>
 	)
 }
 
@@ -1007,19 +1049,19 @@ function Keys(props: {
 	}
 
 	return (
-		<section>
+		<Section className="account-section">
 			<h2>keys</h2>
 			{keys.length === 0 && <p className="none">none — nothing of yours calls this deployment</p>}
 			{keys.length > 0 && (
-				<table>
-					<tbody>
+				<Table>
+					<TableBody>
 						{keys.map((k) => (
-							<tr key={uuid(k.id)}>
-								<td>{k.alias}</td>
-								<td className="mono">{k.methods.join(', ')}</td>
-								<td className={k.dateExpires === undefined ? 'none' : ''}>{until(k.dateExpires)}</td>
-								<td>
-									<button
+							<TableRow key={uuid(k.id)}>
+								<TableCell>{k.alias}</TableCell>
+								<TableCell className="mono">{k.methods.join(', ')}</TableCell>
+								<TableCell className={k.dateExpires === undefined ? 'none' : ''}>{until(k.dateExpires)}</TableCell>
+								<TableCell>
+									<Button
 										disabled={!props.may('/roster.ApiKeyService/Erase')}
 										onClick={() => {
 											setNote(null)
@@ -1030,17 +1072,17 @@ function Keys(props: {
 										}}
 									>
 										revoke
-									</button>
-								</td>
-							</tr>
+									</Button>
+								</TableCell>
+							</TableRow>
 						))}
-					</tbody>
-				</table>
+					</TableBody>
+				</Table>
 			)}
 			{!props.may('/roster.ApiKeyService/Issue') && <Needs method="/roster.ApiKeyService/Issue" />}
 			{props.may('/roster.ApiKeyService/Issue') && (
 				<>
-					<form
+					<Form
 						className="app-password"
 						onSubmit={(e) => {
 							e.preventDefault()
@@ -1048,17 +1090,17 @@ function Keys(props: {
 							mint(e.currentTarget, String(f.get('app') ?? '').trim(), appPasswordMethods, String(f.get('expires') ?? 'never'))
 						}}
 					>
-						<input name="app" placeholder="the app's name: nas, jenkins, …" required />
+						<Field label="App name" name="app" placeholder="the app's name: nas, jenkins, …" required />
 						<Expires />
-						<button type="submit" disabled={issue.state === 'pending'}>
+						<Button type="submit" disabled={issue.state === 'pending'}>
 							mint an app password
-						</button>
+						</Button>
 						<p className="hint">
 							for a client with a password field and nothing else (LDAP, IMAP): a key that can only say who it is,
 							revoked here when that app goes
 						</p>
-					</form>
-					<form
+					</Form>
+					<Form
 						onSubmit={(e) => {
 							e.preventDefault()
 							const f = new FormData(e.currentTarget)
@@ -1073,13 +1115,13 @@ function Keys(props: {
 							)
 						}}
 					>
-						<input name="alias" placeholder="what to call it" required />
-						<input name="methods" placeholder="/roster.MeService/Get, …" className="wide" required />
+						<Field label="Key name" name="alias" placeholder="what to call it" required />
+						<Field label="Allowed methods" name="methods" placeholder="/roster.MeService/Get, …" className="wide" required />
 						<Expires />
-						<button type="submit" disabled={issue.state === 'pending'}>
+						<Button type="submit" disabled={issue.state === 'pending'}>
 							mint a key
-						</button>
-					</form>
+						</Button>
+					</Form>
 				</>
 			)}
 			{token !== null && (
@@ -1088,24 +1130,24 @@ function Keys(props: {
 						The key, shown <strong>once</strong>. It acts as you, and never wider than you. Where a client asks for
 						a password, this is what to paste.
 					</p>
-					<code>{token}</code>
+					<div className="copyable"><code>{token}</code><CopyButton value={token} label="Copy key" /></div>
 				</div>
 			)}
 			{note !== null && <p className={note.ok ? 'note' : 'bad'}>{note.text}</p>}
-		</section>
+		</Section>
 	)
 }
 
 /** Expires is the one choice both key forms share. */
 function Expires(): React.ReactNode {
 	return (
-		<select name="expires" defaultValue="never">
+		<ChoiceField label="Expires" name="expires" defaultValue="never">
 			{expiries.map((v) => (
 				<option key={v.value} value={v.value}>
 					{v.name}
 				</option>
 			))}
-		</select>
+		</ChoiceField>
 	)
 }
 
@@ -1161,7 +1203,7 @@ function Leave(props: {
 	}, [])
 
 	return (
-		<section id="leave">
+		<Section className="account-section" id="leave">
 			<h2>delete your account</h2>
 			<p className="note">
 				You will not be able to sign in to {brand} again, nor to anything that signs you in through
@@ -1169,7 +1211,7 @@ function Leave(props: {
 				account is forgotten, whoever runs {brand} can bring it back if you ask them. After that,
 				everything held about you is destroyed.
 			</p>
-			<form
+			<Form
 				onSubmit={(e) => {
 					e.preventDefault()
 					const f = new FormData(e.currentTarget)
@@ -1187,23 +1229,23 @@ function Leave(props: {
 						})
 				}}
 			>
-				<input name="confirm" placeholder={`type ${props.alias} to confirm`} autoComplete="off" required />
-				<button type="submit" disabled={leave.state === 'pending'}>
+				<Field label="Confirm account alias" name="confirm" placeholder={`type ${props.alias} to confirm`} autoComplete="off" required />
+				<Button type="submit" disabled={leave.state === 'pending'}>
 					delete my account
-				</button>
-			</form>
+				</Button>
+			</Form>
 			{stale && (
 				<>
 					<p className="bad">
 						Deleting an account takes a sign-in made a few minutes ago, at which you were asked who you are.{' '}
-						<button
+						<Button
 							onClick={() => {
 								location.hash = 'leave'
 								props.onSignOut()
 							}}
 						>
 							sign in again
-						</button>
+						</Button>
 					</p>
 					{github && <p className="note">A sign-in through GitHub never is one: GitHub does not say when it asked you.</p>}
 					{google && (
@@ -1229,7 +1271,7 @@ function Leave(props: {
 				</>
 			)}
 			{note !== null && <p className="bad">{note}</p>}
-		</section>
+		</Section>
 	)
 }
 
@@ -1252,12 +1294,12 @@ function ByMail(props: { alias: string; proved: string[] }): React.ReactNode {
 				Or have a link mailed to you instead. It deletes your account once you type <strong>{props.alias}</strong>{' '}
 				on the page it opens, and it signs nobody in.
 			</p>
-			<form
+			<Form
 				onSubmit={(e) => {
 					e.preventDefault()
 					setBad(null)
 					setBusy(true)
-					void fetch('/leave/link', json({ address: to }))
+					void request('/leave/link', json({ address: to }))
 						.then(async (res) => {
 							if (res.status === 202) {
 								setSent((await res.json()) as { address: string; date_expires: string })
@@ -1270,18 +1312,18 @@ function ByMail(props: { alias: string; proved: string[] }): React.ReactNode {
 				}}
 			>
 				{props.proved.length > 1 && (
-					<select value={to} onChange={(e) => setTo(e.currentTarget.value)} aria-label="the address to send it to">
+					<ChoiceField label="Send to" value={to} onChange={(e) => setTo(e.currentTarget.value)} aria-label="the address to send it to">
 						{props.proved.map((a) => (
 							<option key={a} value={a}>
 								{a}
 							</option>
 						))}
-					</select>
+					</ChoiceField>
 				)}
-				<button type="submit" disabled={busy}>
+				<Button type="submit" disabled={busy}>
 					mail a link to {props.proved.length > 1 ? 'this address' : to}
-				</button>
-			</form>
+				</Button>
+			</Form>
 			{sent !== null && (
 				<p className="note">
 					A link is on its way to {sent.address}. Open it before{' '}
@@ -1320,7 +1362,7 @@ function Left(props: { brand: string; forgotten: string; said?: string | undefin
  * for none.
  */
 async function which(): Promise<string | null> {
-	const res = await fetch('/session', { credentials: 'include' })
+	const res = await request('/session', { credentials: 'include' })
 	if (res.status === 401) return null
 	if (!res.ok) throw new Error(`cannot tell who is signed in (${res.status})`)
 
@@ -1332,11 +1374,11 @@ async function which(): Promise<string | null> {
  * call through the proxy says the store's name, and the app hands on only a
  * call whose name is the browser's session's (`frontdoor.Door.Proxy`).
  */
-const calls = caller('account', which)
+const calls = caller(sandbox === null ? 'account' : 'account-sandbox', which)
 
-const transport = createConnectTransport({
+const transport = sandbox?.transport(calls.interceptor) ?? createConnectTransport({
 	baseUrl: location.origin,
-	fetch: (input, init) => fetch(input, { ...init, credentials: 'include' }),
+	fetch: (input, init) => request(input, { ...init, credentials: 'include' }),
 	// What an event's `Any` holds, which Connect's JSON reads only with its type
 	// registered (`ts/gen/events.ts`): empty while roster keeps no past.
 	jsonOptions: { registry: events },
@@ -1358,7 +1400,7 @@ const transport = createConnectTransport({
 async function boot(said?: string): Promise<void> {
 	const of = await providers()
 	if (of === null) {
-		root.render(
+		draw(
 			<StrictMode>
 				<main className="error">no operator here serves this name</main>
 			</StrictMode>,
@@ -1380,9 +1422,15 @@ async function boot(said?: string): Promise<void> {
 		// directory last authenticated them, and a sign-in it remembered is not
 		// a moment ago.
 		const again = location.hash === '#leave' ? '&again=1' : ''
-		root.render(
+		draw(
 			<StrictMode>
 				<SignIn
+					controls={signInControls}
+					request={request}
+					{...(sandbox === null ? {} : {
+						credentials: sandbox.credentials,
+						onProvider: (name: string) => void sandbox.provider(name).then(() => boot()),
+					})}
 					brand={brandOf(of)}
 					password={of.password}
 					providers={of.providers}
@@ -1396,7 +1444,7 @@ async function boot(said?: string): Promise<void> {
 		return
 	}
 
-	const app = await open(transport, { name: 'roster', identity })
+	const app = sandbox?.app(transport) ?? await open(transport, { name: 'roster', identity })
 
 	// What the page does once it has let go of the store: ask again whom to
 	// draw for, unless the account is gone and there is something to say --
@@ -1414,15 +1462,15 @@ async function boot(said?: string): Promise<void> {
 	// roster -- and every other tab is told, and forgets what it held for this
 	// person, as this one does.
 	const out = (): void => {
-		void fetch('/session', { method: 'DELETE' }).finally(() => held.out())
+		void request('/session', { method: 'DELETE' }).finally(() => held.out())
 	}
 
 	// Gone, and the session with it: what this page held for the person is
 	// forgotten here, and in every tab, as it is at roster.
 	const gone = (forgotten: string): void => {
-		void fetch('/session', { method: 'DELETE' }).finally(() => {
+		void request('/session', { method: 'DELETE' }).finally(() => {
 			then = (said) =>
-				root.render(
+				draw(
 					<StrictMode>
 						<Left brand={brandOf(of)} forgotten={forgotten} said={said} />
 					</StrictMode>,
@@ -1431,7 +1479,7 @@ async function boot(said?: string): Promise<void> {
 		})
 	}
 
-	root.render(
+	draw(
 		<StrictMode>
 			<Provider app={app}>
 				<Account of={of} onSignOut={out} onLeft={gone} />
@@ -1440,7 +1488,7 @@ async function boot(said?: string): Promise<void> {
 	)
 }
 
-root.render(
+draw(
 	<StrictMode>
 		<main className="loading">…</main>
 	</StrictMode>,

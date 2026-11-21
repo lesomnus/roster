@@ -25,13 +25,13 @@
  * @module
  */
 import { useCall } from '@lesomnus/payday/react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import type { Holder } from '#gen/roster/payday/holder_pb.js'
 import { HolderService } from '#gen/roster/payday/holder_svc_pb.js'
 
 /** The most `Portray` takes, which is roster's limit and said before sending. */
-const MAX_BYTES = 2 << 20
+export const MAX_PORTRAIT_BYTES = 2 << 20
 
 /**
  * pick is the smallest rendition sharp at `px` CSS pixels, at two device pixels
@@ -44,7 +44,14 @@ export function pick(h: Holder, px: number): string | undefined {
 }
 
 /** Picture draws somebody's picture `px` CSS pixels square; 64 unless said. */
-export function Picture(props: { holder: Holder; may: (method: string) => boolean; px?: number }): React.ReactNode {
+export function Picture(props: {
+	holder: Holder
+	may: (method: string) => boolean
+	px?: number
+	Button?: React.ComponentType<React.ButtonHTMLAttributes<HTMLButtonElement>>
+}): React.ReactNode {
+	const Button = props.Button ?? 'button'
+	const file = useRef<HTMLInputElement>(null)
 	const portray = useCall(HolderService.method.portray)
 	const [bad, setBad] = useState<string | null>(null)
 	const h = props.holder
@@ -65,8 +72,13 @@ export function Picture(props: { holder: Holder; may: (method: string) => boolea
 			{may && (
 				<span className="actions">
 					<label>
-						another
+						{props.Button === undefined ? 'another' : <Button type="button" onClick={(e) => {
+							e.preventDefault()
+							file.current?.click()
+						}}>another</Button>}
 						<input
+							ref={file}
+							hidden={props.Button !== undefined}
 							type="file"
 							accept="image/jpeg,image/png,image/gif,image/webp"
 							disabled={portray.state === 'pending'}
@@ -76,7 +88,7 @@ export function Picture(props: { holder: Holder; may: (method: string) => boolea
 								if (f === undefined) {
 									return
 								}
-								if (f.size > MAX_BYTES) {
+								if (f.size > MAX_PORTRAIT_BYTES) {
 									setBad(`${f.name} is larger than 2 MiB`)
 
 									return
@@ -86,9 +98,9 @@ export function Picture(props: { holder: Holder; may: (method: string) => boolea
 						/>
 					</label>
 					{src !== undefined && (
-						<button disabled={portray.state === 'pending'} onClick={() => keep(new Uint8Array())}>
+						<Button disabled={portray.state === 'pending'} onClick={() => keep(new Uint8Array())}>
 							take it away
-						</button>
+						</Button>
 					)}
 				</span>
 			)}
