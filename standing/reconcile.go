@@ -90,7 +90,7 @@ func (a *Accounts) Reconcile(ctx context.Context, accounts []pdid.Id, marked fun
 				out.Gone = append(out.Gone, v)
 			}
 		case err != nil:
-			return nil, fmt.Errorf("roster could not be asked about %s, so nothing was decided: %w", v, err)
+			return nil, worded(err, fmt.Errorf("roster could not be asked about %s, so nothing was decided: %w", v, err))
 		default:
 			out.Found++
 			if st.Erased.IsZero() && marked(v) {

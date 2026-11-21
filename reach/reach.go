@@ -77,11 +77,16 @@ var Methods = []string{
 var (
 	// ErrDenied is a method roster does not say somebody may call -- across
 	// the whole tenant, which is what [Holders.May] asks -- including anybody
-	// roster has nobody by, and anybody suspended, who reaches nothing.
+	// roster has nobody by, and anybody suspended, who reaches nothing. A
+	// caller handed it is answered `PermissionDenied` with this sentence
+	// alone, and not the method.
 	ErrDenied = errors.New("roster does not say they may call that")
 
 	// ErrNoPerson is somebody roster does not have, or does not show the
 	// app: [standing]'s, so that one answer reads as itself from both.
+	// [Holders.ReachOf] answers it as a status of `NotFound`; [Holders.Reach]
+	// and [Holders.May], to whom it is a refusal, as `PermissionDenied` in
+	// [ErrDenied]'s words.
 	ErrNoPerson = standing.ErrNoPerson
 
 	// ErrUnreachable is a roster that could not be asked, which is a refusal
@@ -91,9 +96,40 @@ var (
 	// [standing.HeldWait], or [Config.As] failed, whose error is beside it --
 	// and none does where the caller's own context ended first.
 	// [standing]'s, so that an app tells its caller the same thing -- this is
-	// not your doing -- whichever of the two asked.
+	// not your doing -- whichever of the two asked: `Unavailable`, with this
+	// sentence alone.
 	ErrUnreachable = standing.ErrUnreachable
 )
+
+// answer is an error this package returns: a gRPC status of the package's
+// choosing, whose message is the sentence of the package's value `says` and
+// nothing else, around `err`, which says everything -- roster's words and the
+// transport's among them -- for the app's log, and holds the package's values,
+// roster's error and the app's own for [errors.Is] and [errors.As].
+//
+// The returned error is itself the status, so that gRPC reads the package's
+// and not the one roster answered with, which it would find through wrapping:
+// an app may put [Holders.May] in payday's gate with nothing between, where an
+// error is the caller's answer, and the caller reads neither roster's refusal
+// nor where roster is dialed. An app that wraps it before it returns it has
+// chosen its own words, and gRPC then reads those. [standing]'s own, written
+// twice since neither package exports it.
+type answer struct {
+	code codes.Code
+	says error
+	err  error
+}
+
+func (e *answer) Error() string { return e.err.Error() }
+func (e *answer) Unwrap() error { return e.err }
+
+func (e *answer) GRPCStatus() *status.Status { return status.New(e.code, e.says.Error()) }
+
+// nobody is roster saying it has nobody by that identifier.
+var nobody error = &answer{codes.NotFound, ErrNoPerson, ErrNoPerson}
+
+// denied is a refusal of `err`'s, in [ErrDenied]'s words.
+func denied(err error) error { return &answer{codes.PermissionDenied, ErrDenied, err} }
 
 // heldWait is [standing.HeldWait], which a test makes short.
 var heldWait = standing.HeldWait
@@ -236,10 +272,10 @@ func (h *Holders) log(ctx context.Context) *slog.Logger {
 // otherwise -- whatever ended it, standing.HeldWait among them.
 func failed(ctx context.Context, err error) error {
 	if ctx.Err() != nil {
-		return fmt.Errorf("the call ended before roster answered: %w", ctx.Err())
+		return &answer{status.FromContextError(ctx.Err()).Code(), ctx.Err(), fmt.Errorf("the call ended before roster answered: %w", ctx.Err())}
 	}
 
-	return fmt.Errorf("%w: %w", ErrUnreachable, err)
+	return &answer{codes.Unavailable, ErrUnreachable, fmt.Errorf("%w: %w", ErrUnreachable, err)}
 }
 
 // ReachOf is what roster says somebody may call now, asked every time and
@@ -262,7 +298,7 @@ func (h *Holders) ReachOf(ctx context.Context, holder pdid.Id) (Reach, error) {
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			return Reach{}, ErrNoPerson
+			return Reach{}, nobody
 		}
 
 		return Reach{}, failed(ctx, err)
@@ -288,7 +324,8 @@ func (h *Holders) ReachOf(ctx context.Context, holder pdid.Id) (Reach, error) {
 // that an app has one answer to *how late does a change at roster land here*
 // -- and that roster could not be asked for [standing.HeldRetry]. Nobody
 // there ([ErrNoPerson]) is an answer, and kept as long as one; a roster that
-// could not be asked is [ErrUnreachable].
+// could not be asked is [ErrUnreachable]. Handed to a caller, nobody there is
+// `PermissionDenied` in [ErrDenied]'s words, as [Holders.May] answers it.
 //
 // A call that ends while roster is being asked has asked nothing, and nothing
 // is kept of it: that is the caller's doing and not roster's ([standing]
@@ -325,6 +362,9 @@ func (h *Holders) reach(ctx context.Context, holder pdid.Id) (Reach, error) {
 	}
 
 	switch {
+	case errors.Is(v.err, ErrNoPerson):
+		// A refusal, in ErrDenied's words, as May's of nobody is.
+		return Reach{}, denied(v.err)
 	case v.err != nil:
 		return Reach{}, v.err
 	}
@@ -343,15 +383,22 @@ func (h *Holders) reach(ctx context.Context, holder pdid.Id) (Reach, error) {
 // beside it), and so is anybody suspended: roster answers that they reach
 // nothing. It is asked about the holder and never the role, so a tenant may
 // split or rename its roles without the app noticing.
+//
+// What it answers may be handed to the caller as it is -- payday's gate takes
+// an error for the caller's answer: [ErrDenied] is `PermissionDenied`,
+// [ErrUnreachable] `Unavailable`, and a call that ended what gRPC says of its
+// context, each with the package's sentence and nothing else, while `Error`
+// says everything for the app's log. An app that wraps it first has chosen its
+// own words.
 func (h *Holders) May(ctx context.Context, holder pdid.Id, method string) error {
 	r, err := h.reach(ctx, holder)
 	switch {
 	case errors.Is(err, ErrNoPerson):
-		return fmt.Errorf("%w: %w", ErrDenied, err)
+		return denied(fmt.Errorf("%w: %w", ErrDenied, ErrNoPerson))
 	case err != nil:
 		return err
 	case !r.Covers(method):
-		return fmt.Errorf("%w: %s", ErrDenied, method)
+		return denied(fmt.Errorf("%w: %s", ErrDenied, method))
 	}
 
 	return nil

@@ -223,7 +223,9 @@ connection, and the same `As` saying who the app is in the tenant:
 ```go
 reaches, err := reach.New(reach.Config{Conn: conn, As: as})
 
-// In the app's gate -- payday's gate.Policy.May -- for every call:
+// In the app's gate -- payday's gate.Policy.May -- for every call, where an
+// error is the caller's answer: PermissionDenied for a method denied,
+// Unavailable for a roster that could not be asked, in the package's words.
 err = reaches.May(ctx, call.Actor, call.Action)
 
 // And inside a method, for a permission finer than it:
@@ -255,7 +257,16 @@ s.Spin = append(s.Spin, spin.InEveryProcess(reaches.Follower("loft.roster-reach"
   which is `standing`'s own, so an app tells its caller *this is not your
   doing* the same way whichever asked. So is one that does not answer within
   `standing.HeldWait`, five seconds, and an `As` that failed, whose error is
-  beside it; `ReachOf`, `Reach` and `May` all say it. A method roster does not say they may
+  beside it; `ReachOf`, `Reach` and `May` all say it.
+- **What it answers may be handed to the caller as it is.** Each error is
+  itself a gRPC status of the package's: `ErrDenied`, and nobody there, is
+  `PermissionDenied`; `ErrUnreachable` is `Unavailable`; a call that ended is
+  what gRPC says of its context; `ReachOf` of nobody is `NotFound`. Its message
+  is the package's sentence and nothing else -- not roster's refusal, not the
+  method, not where roster is dialed -- while `err.Error()` says everything for
+  the app's log, and `errors.Is` still finds the values and the app's own error
+  from `As` (`TestWhatIsAnsweredCanBeHandedToACaller`). An app that wraps the
+  error before it returns it has chosen its own words. A method roster does not say they may
   call is `reach.ErrDenied`; so is anybody roster has nobody by, and anybody
   suspended, who reaches nothing.
 - **What its role holds**: `reach.Methods`, which is `HolderService/Reaches`

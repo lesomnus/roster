@@ -110,6 +110,16 @@ said is not known and a session is not served on a guess. The difference is what
 the app tells its caller -- *you are signed out*, or *this is not your doing, try
 again*.
 
+Either may be handed to the app's own caller as it is: each error the package
+returns is itself a gRPC status of its own, `Unauthenticated` for
+`ErrRefused` and `Unavailable` for `ErrUnreachable` -- `NotFound` for
+`StandingOf` of nobody, and what gRPC says of the context for a call that
+ended -- whose message is the package's sentence and nothing else. roster's
+refusal and the transport's words, which name where roster is dialed, are in
+`err.Error()` for the app's log, and `errors.Is` finds the values and the app's
+own error from `As` (`TestWhatIsAnsweredCanBeHandedToACaller`). An app that
+wraps the error before it returns it has chosen its own words.
+
 - **What roster said is believed for `standing.HeldTtl`**, thirty seconds, and
   that it could not be asked for `standing.HeldRetry`, five: a roster that is
   down is not asked once per call. Nobody there is an answer, and kept as long

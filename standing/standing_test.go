@@ -433,3 +433,114 @@ func TestHeldOfNobodyIsNoPersonToo(t *testing.T) {
 	x.ErrorIs(err, standing.ErrRefused)
 	x.ErrorIs(err, standing.ErrNoPerson)
 }
+
+// handedOn says that what was answered is the status a caller handed it would
+// be answered -- `code`, with the sentence of `says` and nothing else -- and
+// that `hidden`, which is roster's or the transport's, is in what the app logs
+// and not in what its caller reads.
+func handedOn(t *testing.T, err error, code codes.Code, says error, hidden ...string) {
+	t.Helper()
+	x := require.New(t)
+	x.Error(err)
+	x.Equal(code, status.Code(err), "%v", err)
+	x.Equal(says.Error(), status.Convert(err).Message())
+	for _, v := range hidden {
+		x.NotContains(status.Convert(err).Message(), v)
+		x.Contains(err.Error(), v, "what the app logs says everything")
+	}
+}
+
+// TestWhatIsAnsweredCanBeHandedToACaller: every error the package returns is,
+// as it is returned, a gRPC status of the package's choosing in the package's
+// own words, so that an app may hand it to its own caller as it is, as payday's
+// gate takes an error for the caller's answer. The errors wrapped roster's
+// with `%w`, and gRPC reads a status through wrapping: a session refused was
+// answered Unknown, and a roster that could not be asked roster's own code,
+// or Unavailable with the transport's words, which name where roster is
+// dialed. What the app logs still says everything, and the package's values,
+// roster's error and the app's own are still in the chain.
+func TestWhatIsAnsweredCanBeHandedToACaller(t *testing.T) {
+	ctx := t.Context()
+	em := newEmbedded(t)
+	a := accounts(t, standing.Config{Conn: em.dial(t), As: em.as})
+
+	t.Run("refused", func(t *testing.T) {
+		x := require.New(t)
+		_, err := em.s.Ungated.Holder().Disable(ctx, rstr.HolderDisableRequest_builder{Ref: rstr.HolderRef_builder{Id: em.kim.Bytes()}.Build()}.Build())
+		x.NoError(err)
+		defer func() {
+			_, err := em.s.Ungated.Holder().Enable(ctx, rstr.HolderEnableRequest_builder{Ref: rstr.HolderRef_builder{Id: em.kim.Bytes()}.Build()}.Build())
+			x.NoError(err)
+			a.Recheck(em.kim)
+		}()
+		err = a.Held(ctx, em.kim, time.Now())
+		handedOn(t, err, codes.Unauthenticated, standing.ErrRefused, "suspended")
+		x.ErrorIs(err, standing.ErrRefused)
+	})
+
+	t.Run("nobody", func(t *testing.T) {
+		x := require.New(t)
+		nobody := pdid.New(pdid.Domain(2))
+		err := a.Held(ctx, nobody, time.Now())
+		handedOn(t, err, codes.Unauthenticated, standing.ErrRefused)
+		x.ErrorIs(err, standing.ErrNoPerson)
+		_, err = a.StandingOf(ctx, nobody)
+		handedOn(t, err, codes.NotFound, standing.ErrNoPerson)
+		x.ErrorIs(err, standing.ErrNoPerson)
+	})
+
+	t.Run("the caller left", func(t *testing.T) {
+		x := require.New(t)
+		a.Recheck(em.kim)
+		cctx, cancel := context.WithCancel(ctx)
+		cancel()
+		err := a.Held(cctx, em.kim, time.Now())
+		handedOn(t, err, codes.Canceled, context.Canceled)
+		x.ErrorIs(err, context.Canceled)
+	})
+
+	t.Run("roster away", func(t *testing.T) {
+		x := require.New(t)
+		l, err := net.Listen("tcp", "127.0.0.1:0")
+		x.NoError(err)
+		addr := l.Addr().String()
+		x.NoError(l.Close())
+		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		x.NoError(err)
+		t.Cleanup(func() { conn.Close() })
+		away := accounts(t, standing.Config{Conn: conn, As: em.as})
+
+		err = away.Held(ctx, em.kim, time.Now())
+		handedOn(t, err, codes.Unavailable, standing.ErrUnreachable, addr)
+		x.ErrorIs(err, standing.ErrUnreachable)
+		var st interface{ GRPCStatus() *status.Status }
+		x.ErrorAs(errors.Unwrap(err), &st, "roster's own error, in the chain")
+		_, err = away.StandingOf(ctx, em.kim)
+		handedOn(t, err, codes.Unavailable, standing.ErrUnreachable, addr)
+		_, err = away.Addresses(ctx, em.kim)
+		handedOn(t, err, codes.Unavailable, standing.ErrUnreachable, addr)
+		_, err = away.Reconcile(ctx, []pdid.Id{em.kim}, nil)
+		handedOn(t, err, codes.Unavailable, standing.ErrUnreachable, addr)
+		x.ErrorIs(err, standing.ErrUnreachable)
+	})
+
+	t.Run("roster refusing the app", func(t *testing.T) {
+		x := require.New(t)
+		e := newExternal(t)
+		stranger := accounts(t, standing.Config{Conn: e.dial(t), As: bearer("rk_nobody")})
+		as, _ := bearer("rk_nobody")(ctx)
+		_, raw := rstr.NewHolderServiceClient(e.dial(t)).Get(as, rstr.HolderGetRequest_builder{Ref: rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build()}.Build())
+		x.Error(raw)
+		err := stranger.Held(ctx, e.kim, time.Now())
+		handedOn(t, err, codes.Unavailable, standing.ErrUnreachable, status.Convert(raw).Message())
+	})
+
+	t.Run("the app's own error", func(t *testing.T) {
+		x := require.New(t)
+		mine := errors.New("no directory yet")
+		failing := accounts(t, standing.Config{Conn: em.dial(t), As: func(context.Context) (context.Context, error) { return nil, mine }})
+		err := failing.Held(ctx, em.kim, time.Now())
+		handedOn(t, err, codes.Unavailable, standing.ErrUnreachable, mine.Error())
+		x.ErrorIs(err, mine)
+	})
+}
