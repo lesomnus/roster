@@ -1101,6 +1101,13 @@ says what a file would do before a restart does it. In Kubernetes that is GitOps
 without roster knowing what Kubernetes is: the file is in a ConfigMap, editing it
 changes the hash, the pod is replaced, and the new one applies it.
 
+**A file is read as the configuration is.** A key its top level does not hold,
+and a key the row's `kind` does not read -- one another kind reads among them --
+is refused, by the file, where the key is in it and its name; so is a `kind`
+this does not apply, before anything is written. A file that declares nothing
+is not refused, and is said: `serve` logs it as it starts, and `resources apply`
+says it on standard error.
+
 **A connection is held to a form**, from a file as from a console. Its `name`
 is an alias -- lower-case letters, digits and single hyphens, beginning with a
 letter -- because it is the `provider` of every identity through it and a

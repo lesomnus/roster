@@ -345,12 +345,10 @@ resources:
 
 	// A kind nobody implemented is named rather than skipped: it is a typo or a
 	// thing somebody expected to work, and a silent skip is the worst answer.
+	// Refused as the file is read, before anything is opened.
 	t.Run("an unknown kind is refused by name", func(t *testing.T) {
 		x := require.New(t)
-		rs, err := cmd.ReadResources(declare(t, "resources:\n  - kind: Holder\n    tenant: newco\n    alias: erin\n"))
-		x.NoError(err)
-
-		_, err = cmd.ApplyResources(ctx, b.Server, rs, false)
+		_, err := cmd.ReadResources(declare(t, "resources:\n  - kind: Holder\n    tenant: newco\n    alias: erin\n"))
 		x.ErrorContains(err, "Holder")
 	})
 }

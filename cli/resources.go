@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/cfg"
@@ -68,6 +69,13 @@ func newCmdResourcesApply(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command
 			v, err := cmd.ApplyResources(ctx, s, rs, dry)
 			if err != nil {
 				return err
+			}
+
+			// What `serve` logs, said here because nothing installs a logger
+			// on a command: a file that declares nothing is no row, so it is
+			// said beside them and not among them.
+			for _, f := range v.Nothing {
+				fmt.Fprintf(os.Stderr, "roster: resources: %s declares nothing.\n", f)
 			}
 
 			// Said one per line and not counted, because what somebody running

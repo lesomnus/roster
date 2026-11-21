@@ -9,9 +9,13 @@ import (
 	"maps"
 	"os"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml/ast"
+	"github.com/goccy/go-yaml/parser"
+	"github.com/goccy/go-yaml/token"
 	"github.com/lesomnus/otx/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -136,6 +140,13 @@ type Resource struct {
 	// From is the file this came out of, which is what the row's label says
 	// so that a refusal can name it.
 	From string `yaml:"-"`
+
+	// Where in From it is, for a refusal to name.
+	line, col int
+
+	// nothing is a file that declares no row, handed on as one so that
+	// [ApplyResources] says so: it is no row.
+	nothing bool
 }
 
 // Settings is `Tenant.config` as a file declares it, and every field is a
@@ -189,31 +200,269 @@ type Applied struct {
 	// Left is what a file declares of a tenant that is closed or destroyed,
 	// or under one: not written, and not looked at. See [ApplyResources].
 	Left []string
+
+	// Nothing is the files that declare no row.
+	Nothing []string
 }
 
-// ReadResources reads the files named, in order.
+// ReadResources reads the files named, in order, and refuses what nothing
+// reads.
+//
+// **Strictly, as the configuration file is read**: a key the file's top level
+// does not hold, and a key the entry's kind does not read -- one another kind
+// reads among them -- is refused by the file, where it is in it and its name.
+// It was a plain `yaml.Unmarshal` into one struct for every kind, so a file
+// whose one key was `resource:` declared nothing and said nothing, `clientId`
+// was passed over and `client_id` then refused as empty, and `routes` on a
+// `Host` was taken and dropped. A file is what a deployment is stood up from,
+// and a word in it that is read as nothing is a row somebody will look for.
+//
+// And what a run would stop at half way is refused here, before anything is
+// opened: a `kind` this does not apply ([checkResources]).
+//
+// A file that declares nothing is not refused -- one may be emptied on
+// purpose -- and is handed on as one, for [ApplyResources] to say.
 func ReadResources(paths []string) ([]Resource, error) {
 	out := []Resource{}
 	for _, p := range paths {
-		b, err := os.ReadFile(p)
+		rs, err := readResourceFile(p)
 		if err != nil {
-			return nil, fmt.Errorf("resources: %s: %w", p, err)
+			return nil, fmt.Errorf("resources: %w", err)
 		}
-
-		var v Resources
-		if err := yaml.Unmarshal(b, &v); err != nil {
-			return nil, fmt.Errorf("resources: %s: %w", p, err)
+		if len(rs) == 0 {
+			out = append(out, Resource{From: p, nothing: true})
 		}
-		for i, r := range v.Resources {
-			if r.Kind == "" {
-				return nil, fmt.Errorf("resources: %s: [%d]: kind", p, i)
-			}
-			r.From = p
-			out = append(out, r)
-		}
+		out = append(out, rs...)
+	}
+	if err := checkResources(out); err != nil {
+		return nil, err
 	}
 
 	return out, nil
+}
+
+// kindsRead is the keys each kind reads, as the file writes them; a key whose
+// value is not nil is a block, and these are the keys it reads.
+//
+// [Resource] is one struct for the four, so what decodes into it cannot say
+// which kind a key is of. This does, and is the one list of it: a key a kind
+// is given here and not read by its apply would be one more word taken and
+// dropped.
+var kindsRead = map[string]keysRead{
+	"Tenant": {
+		"kind": nil, "alias": nil, "name": nil, "desc": nil,
+		"config": {
+			"password": nil, "front_door": nil, "leave": nil,
+			"profile": {"fill": nil, "slack": nil},
+		},
+	},
+	"Connection": {
+		"kind": nil, "tenant": nil, "name": nil, "desc": nil,
+		"issuer": nil, "client_id": nil, "scopes": nil, "secret_ref": nil, "subject_claim": nil, "provisions": nil,
+	},
+	"Host": {
+		"kind": nil, "tenant": nil, "name": nil, "desc": nil,
+	},
+	"MailDomain": {
+		"kind": nil, "tenant": nil, "name": nil, "desc": nil, "routes": nil,
+	},
+}
+
+// kindsApplied is the kinds in the order a refusal lists them.
+var kindsApplied = []string{"Tenant", "Connection", "Host", "MailDomain"}
+
+type keysRead map[string]keysRead
+
+func (k keysRead) String() string {
+	return strings.Join(slices.Sorted(maps.Keys(k)), ", ")
+}
+
+// readResourceFile is one file's rows, each knowing where in the file it is.
+func readResourceFile(p string) ([]Resource, error) {
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", p, err)
+	}
+	f, err := parser.ParseBytes(b, 0)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", p, err)
+	}
+
+	at := func(n ast.Node, key string, why string, args ...any) error {
+		pos := posOf(n)
+		return fmt.Errorf("%s:%d:%d: %s: %s", p, pos.Line, pos.Column, key, fmt.Sprintf(why, args...))
+	}
+
+	var body ast.Node
+	for i, d := range f.Docs {
+		if d.Body == nil || isComment(d.Body) {
+			continue
+		}
+		if body != nil {
+			return nil, at(d.Body, fmt.Sprintf("document %d", i+1), "a resources file is one document; put its rows under the first one's resources")
+		}
+		body = d.Body
+	}
+	if body == nil {
+		return nil, nil
+	}
+
+	top, ok := pairsOf(body)
+	if !ok {
+		return nil, at(body, "resources", "want a block whose one key is resources, not %s", body.Type())
+	}
+	var list ast.Node
+	for _, kv := range top {
+		k := keyOf(kv)
+		if k != "resources" {
+			return nil, at(kv.Key, k, "nothing reads this key; a resources file holds one, resources")
+		}
+		list = kv.Value
+	}
+	if list == nil || list.Type() == ast.NullType || isComment(list) {
+		return nil, nil
+	}
+	seq, ok := list.(*ast.SequenceNode)
+	if !ok {
+		return nil, at(list, "resources", "want a list of rows, not %s", list.Type())
+	}
+
+	out := make([]Resource, 0, len(seq.Values))
+	for i, n := range seq.Values {
+		entry := fmt.Sprintf("resources[%d]", i)
+		kvs, ok := pairsOf(n)
+		if !ok {
+			return nil, at(n, entry, "want a row -- kind and its keys -- not %s", n.Type())
+		}
+
+		kind := ""
+		var kindAt ast.Node
+		for _, kv := range kvs {
+			if keyOf(kv) == "kind" {
+				kind, kindAt = strings.TrimSpace(kv.Value.String()), kv.Value
+			}
+		}
+		if kindAt == nil || kind == "" {
+			return nil, at(n, entry, "says no kind; one of %s", strings.Join(kindsApplied, ", "))
+		}
+		read, ok := kindsRead[kind]
+		if !ok {
+			// Named rather than ignored. A `kind` this does not know is a typo
+			// or a thing somebody expected to work, and either way a silent
+			// skip is the worst answer -- and refused here, it is refused
+			// before anything is written.
+			return nil, at(kindAt, entry+".kind", "%q is not a kind this applies; one of %s", kind, strings.Join(kindsApplied, ", "))
+		}
+		if err := readOnly(at, kvs, entry, "a "+kind, read); err != nil {
+			return nil, err
+		}
+
+		r := Resource{}
+		if err := yaml.NodeToValue(n, &r); err != nil {
+			return nil, at(n, entry, "%s", yaml.FormatError(err, false, false))
+		}
+		pos := posOf(n)
+		r.From, r.line, r.col = p, pos.Line, pos.Column
+		out = append(out, r)
+	}
+
+	return out, nil
+}
+
+// readOnly refuses a key `read` does not hold, under `key`, and looks into each
+// block it does.
+func readOnly(at func(ast.Node, string, string, ...any) error, kvs []*ast.MappingValueNode, key, whose string, read keysRead) error {
+	for _, kv := range kvs {
+		k := keyOf(kv)
+		sub, ok := read[k]
+		if !ok {
+			return at(kv.Key, key+"."+k, "%s does not read this key; it reads %s", whose, read)
+		}
+		if sub == nil || kv.Value == nil || kv.Value.Type() == ast.NullType {
+			continue
+		}
+		inner, ok := pairsOf(kv.Value)
+		if !ok {
+			return at(kv.Value, key+"."+k, "want a block of %s, not %s", sub, kv.Value.Type())
+		}
+		if err := readOnly(at, inner, key+"."+k, whose+"'s "+k, sub); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// pairsOf is a mapping's keys and values, whether it holds one or several: the
+// parser hands a mapping of one key over as that one pair.
+func pairsOf(n ast.Node) ([]*ast.MappingValueNode, bool) {
+	switch v := n.(type) {
+	case *ast.MappingNode:
+		return v.Values, true
+	case *ast.MappingValueNode:
+		return []*ast.MappingValueNode{v}, true
+	}
+
+	return nil, false
+}
+
+// posOf is where a node begins as somebody reading the file sees it: a
+// mapping at its first key, where the parser's own token is the colon after it.
+func posOf(n ast.Node) *token.Position {
+	if kvs, ok := pairsOf(n); ok && len(kvs) > 0 {
+		return kvs[0].Key.GetToken().Position
+	}
+
+	return n.GetToken().Position
+}
+
+func keyOf(kv *ast.MappingValueNode) string {
+	if v, ok := kv.Key.(*ast.StringNode); ok {
+		return v.Value
+	}
+
+	return strings.TrimSpace(kv.Key.String())
+}
+
+func isComment(n ast.Node) bool {
+	_, ok := n.(*ast.CommentGroupNode)
+	return ok || n.Type() == ast.CommentType
+}
+
+// checkResources refuses, before anything is written, what a run would stop
+// at half way: a kind this does not apply. A file has been refused it already
+// as it was read, with the line; this is for a caller that hands rows in.
+func checkResources(rs []Resource) error {
+	for _, r := range rs {
+		if r.nothing {
+			continue
+		}
+		if _, ok := kindsRead[r.Kind]; !ok {
+			return fmt.Errorf("resources: %s: %q is not a kind this applies; one of %s",
+				r.where(), r.Kind, strings.Join(kindsApplied, ", "))
+		}
+	}
+
+	return nil
+}
+
+// refused is a refusal of `r`, by where it is declared and what it is called
+// -- not by an index across every file read, which is no line of any of them.
+func (r Resource) refused(err error) error {
+	return fmt.Errorf("resources: %s: %s %s: %w", r.where(), r.Kind, named(r), err)
+}
+
+// where is where a row is declared, for a refusal to name: its file and line,
+// or its kind where a caller handed it in without a file.
+func (r Resource) where() string {
+	switch {
+	case r.From == "":
+		return r.Kind
+	case r.line == 0:
+		return r.From
+	}
+
+	return fmt.Sprintf("%s:%d:%d", r.From, r.line, r.col)
 }
 
 // ApplyResources writes what the files declared, as the provisioner.
@@ -247,6 +496,25 @@ func ReadResources(paths []string) ([]Resource, error) {
 // restored is the file's again at the next start.
 func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Applied, error) {
 	out := Applied{}
+	if err := checkResources(rs); err != nil {
+		return out, err
+	}
+
+	// A file that declares nothing is said, once a run, which for `serve` is
+	// once a start: it is not wrong -- a file may be emptied on purpose --
+	// but one somebody expected a customer of is otherwise found out when the
+	// customer is not there. It was said by nothing: `serve` logged its counts
+	// only where a file declared something.
+	declared := []Resource{}
+	for _, r := range rs {
+		if !r.nothing {
+			declared = append(declared, r)
+			continue
+		}
+		out.Nothing = append(out.Nothing, r.From)
+		log.From(ctx).InfoContext(ctx, "resources: a file declares nothing", slog.String("file", r.From))
+	}
+	rs = declared
 	if len(rs) == 0 {
 		return out, nil
 	}
@@ -273,29 +541,21 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 	leaving := leavers{}
 	defer leaving.said(ctx)
 
-	for i, r := range rs {
-		var apply func(context.Context, app.Server, Resource, bool) (string, string, error)
-		switch r.Kind {
-		case "Tenant":
-			apply = applyTenant
-		case "Connection":
-			apply = applyConnection
-		case "Host":
-			apply = applyHost
-		case "MailDomain":
-			apply = applyMailDomain
-		default:
-			// Named rather than ignored. A `kind` this does not know is a
-			// typo or a thing somebody expected to work, and either way a
-			// silent skip is the worst answer.
-			return out, fmt.Errorf("resources: [%d]: %q is not a kind this applies", i, r.Kind)
-		}
+	for _, r := range rs {
+		// Every kind is one of these: [checkResources] refused any other
+		// before anything was written.
+		apply := map[string]func(context.Context, app.Server, Resource, bool) (string, string, error){
+			"Tenant":     applyTenant,
+			"Connection": applyConnection,
+			"Host":       applyHost,
+			"MailDomain": applyMailDomain,
+		}[r.Kind]
 
 		// Whose it is, before anything of it is read or written: a tenant
 		// that is leaving is not the file's.
 		left, err := leaving.left(as, at, r)
 		if err != nil {
-			return out, fmt.Errorf("resources: [%d] %s: %w", i, r.Kind, err)
+			return out, r.refused(err)
 		}
 		if left {
 			out.Left = append(out.Left, named(r))
@@ -305,7 +565,7 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 
 		what, was, err := apply(as, at, r, dry)
 		if err != nil {
-			return out, fmt.Errorf("resources: [%d] %s: %w", i, r.Kind, err)
+			return out, r.refused(err)
 		}
 
 		switch was {
