@@ -2418,10 +2418,14 @@ writes most of it:
   which group write none. A sign-in lookup -- `(uid=…)`, `(mail=…)`, the two
   in an `|`, `(entryUUID=…)` -- is a row for each read that found somebody,
   one or two, and none for a name nobody has ([ldap.md](ldap.md) § Search). A SCIM
-  `GET /Users` with no filter reads everybody the directory provisions on every
-  page it is asked for, three calls each, whatever the page's size: thirty
-  thousand rows a request, for ten thousand people. A lookup by filter that
-  finds somebody is three rows, and one that finds nobody is none.
+  `GET /Users` with no filter counts everybody the directory provisions on
+  every page it is asked for, by one call each that reads nothing personal and
+  leaves no row; what the count leaves is a row for each page of their
+  accounts at the connection that roster lists, ten for two hundred people. The
+  people the page shows are three rows each, and a fourth where they have a
+  number. A lookup by filter that finds somebody is three rows, or four, and
+  one that finds nobody is none. A group's `members` are read with nothing
+  personal, and leave no row.
 - **A refused call**, one row, from anybody with a credential: holding nothing
   is no bar to being refused. `server.limit.rate` is what bounds how fast, and is
   off until it is set.

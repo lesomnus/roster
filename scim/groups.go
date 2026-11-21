@@ -336,7 +336,10 @@ func (s *Server) readGroup(ctx context.Context, id []byte) (*rstr.Group, error) 
 //
 // Somebody erased since, or deleted by the directory, still has their place in
 // roster -- an erase and a delete leave it -- and is not named: a directory
-// that follows a member to `GET /Users/{id}` would find nobody there.
+// that follows a member to `GET /Users/{id}` would find nobody there. Asked by
+// [Server.present], which reads nothing personal, so that a read of a group
+// leaves no row of the access record for each member; and so a row a file
+// declares, put in the group by somebody else, would be named.
 func (s *Server) membersOf(ctx context.Context, t *tenancy, group []byte) ([][]byte, error) {
 	ps, err := s.places(ctx, group)
 	if err != nil {
@@ -345,7 +348,7 @@ func (s *Server) membersOf(ctx context.Context, t *tenancy, group []byte) ([][]b
 
 	var out [][]byte
 	for _, p := range ps {
-		ok, err := s.answers(ctx, t, p.holder)
+		ok, err := s.present(ctx, t, p.holder)
 		if err != nil {
 			return nil, err
 		}
@@ -830,9 +833,16 @@ func (s *Server) member(ctx context.Context, t *tenancy, v string) ([]byte, erro
 //
 // A list was read and written a member at a time, so one refused halfway was
 // half written, and was again each time the directory sent it.
+//
+// Each id is asked about once, however often it is named.
 func (s *Server) resolve(ctx context.Context, t *tenancy, ids []string) ([][]byte, error) {
 	out := make([][]byte, 0, len(ids))
+	asked := map[string]bool{}
 	for _, v := range ids {
+		if asked[v] {
+			continue
+		}
+		asked[v] = true
 		who, err := s.member(ctx, t, v)
 		if err != nil {
 			return nil, err
@@ -849,13 +859,26 @@ func (s *Server) join(ctx context.Context, t *tenancy, group []byte, ids []strin
 	if err != nil {
 		return err
 	}
+	ps, err := s.places(ctx, group)
+	if err != nil {
+		return err
+	}
 
-	return s.in(ctx, group, who)
+	return s.in(ctx, group, who, ps)
 }
 
-// in puts people already resolved into a group.
-func (s *Server) in(ctx context.Context, group []byte, who [][]byte) error {
+// in puts people already resolved into a group, but for whoever has a place
+// in it already, which is not written again.
+func (s *Server) in(ctx context.Context, group []byte, who [][]byte, ps []place) error {
+	there := map[string]bool{}
+	for _, p := range ps {
+		there[string(p.holder)] = true
+	}
 	for _, h := range who {
+		if there[string(h)] {
+			continue
+		}
+		there[string(h)] = true
 		_, err := s.roster.GroupMembership().Add(ctx, rstr.GroupMembershipAddRequest_builder{
 			Holder: rstr.HolderRef_builder{Id: h}.Build(),
 			Group:  rstr.GroupRef_builder{Id: group}.Build(),
@@ -940,5 +963,5 @@ func (s *Server) put(ctx context.Context, t *tenancy, group []byte, ids []string
 		}
 	}
 
-	return s.in(ctx, group, who)
+	return s.in(ctx, group, who, ps)
 }

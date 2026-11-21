@@ -523,24 +523,51 @@ func (p *person) externalId() string {
 // speaksOf is whether this endpoint speaks of somebody, by their row: never a
 // row a file declared, never the directory's own holder, never somebody it
 // deleted. Somebody erased has no row to ask, and is not spoken of either.
-//
-// The one question, which [Server.read] and [Server.answers] each ask, so that
-// who is in a group and who is there to read are the same people.
+// [Server.read] asks it, and so does [Server.answers] of somebody a write
+// names as a member.
 func speaksOf(t *tenancy, h *rstr.Holder) bool {
-	return h.GetLabels()[declared] == "" && !bytes.Equal(h.GetId(), t.self) && h.GetDirectory() != directoryDeleted
+	return h.GetLabels()[declared] == "" && standing(t, h)
+}
+
+// standing is [speaksOf] without the question of who declared them, which is
+// all a count, or a list of who is in a group, asks ([Server.present]).
+func standing(t *tenancy, h *rstr.Holder) bool {
+	return !bytes.Equal(h.GetId(), t.self) && h.GetDirectory() != directoryDeleted
 }
 
 // answers is whether the endpoint speaks of somebody, asked with no more of
-// them than [speaksOf] reads: one call, and no address and no account, since
-// it is asked of every member of a group.
+// them than [speaksOf] reads: one call, and no address and no account. Asked
+// of each person a write names as a member, and its `labels` are personal, so
+// it may be a row of the access record each: somebody is being written about.
 func (s *Server) answers(ctx context.Context, t *tenancy, id []byte) (bool, error) {
+	return s.ask(ctx, t, id, rstr.HolderSelect_builder{Labels: proto.Bool(true), Directory: proto.Bool(true)}.Build(), speaksOf)
+}
+
+// present is the question a read that only counts or names somebody asks:
+// that they are there, which somebody erased is not, and [standing]. It reads
+// nothing personal -- `directory` is not -- so it is one call a person and no
+// row of the access record, where a count of ten thousand people on every page
+// would otherwise be ten thousand rows.
+//
+// # What it does not ask
+//
+// Whether a file declared them, which only `labels` says. A row a file
+// declares has an account at the connection, or a place in a group, only where
+// an operator wrote one, which nothing the endpoint does makes; so it is
+// counted, or named among `members`, while `GET /Users/{id}` of it is `404`.
+// That is said here and not mended by reading `labels` for everybody.
+func (s *Server) present(ctx context.Context, t *tenancy, id []byte) (bool, error) {
+	return s.ask(ctx, t, id, rstr.HolderSelect_builder{Directory: proto.Bool(true)}.Build(), standing)
+}
+
+func (s *Server) ask(ctx context.Context, t *tenancy, id []byte, sel *rstr.HolderSelect, is func(*tenancy, *rstr.Holder) bool) (bool, error) {
 	h, err := s.roster.Holder().Get(ctx, rstr.HolderGetRequest_builder{
 		Ref:    rstr.HolderRef_builder{Id: id}.Build(),
-		Select: rstr.HolderSelect_builder{Labels: proto.Bool(true), Directory: proto.Bool(true)}.Build(),
+		Select: sel,
 	}.Build())
 	switch status.Code(err) {
 	case codes.OK:
-		return speaksOf(t, h), nil
+		return is(t, h), nil
 	case codes.NotFound, codes.InvalidArgument:
 		return false, nil
 	default:
