@@ -382,6 +382,29 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 			"scim: a directory signs in with a tenant key, and control.db.driver names no database, so " +
 				"no key is read and every caller would be believed by name. name a control plane, or take the block out")
 	}
+	// A plane whose database is named by nothing. SQLite reads an empty name
+	// as a private temporary database, a new one for each connection of the
+	// pool: under `migrate: true` the tables were made on one connection, the
+	// loops found none on the others, and whatever was written was thrown
+	// away -- which is what a variable spelt wrong left, with one line on
+	// standard error to say so.
+	if prefix == keys.PrefixTenant {
+		for _, v := range []struct {
+			key string
+			db  config.DbConfig
+		}{
+			{"db", c.Db},
+			{"control.db", c.Control.Db},
+		} {
+			if v.db.Driver != "" && v.db.Dsn == "" {
+				return nil, fmt.Errorf("%[1]s.dsn: names no database, and %[1]s.driver is %[2]q -- a driver "+
+					"handed no name opens whatever it opens by default, and SQLite's is a database of its own for each "+
+					"connection that keeps nothing. name the database (a variable that says it is ROSTER_%[3]s_DSN)",
+					v.key, v.db.Driver, strings.ToUpper(strings.ReplaceAll(v.key, ".", "_")))
+			}
+		}
+	}
+
 	// And the two planes are two databases.
 	//
 	// Somebody who runs this deployment and somebody who is a customer of it

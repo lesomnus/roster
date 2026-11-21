@@ -29,6 +29,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/cfg"
@@ -139,7 +140,17 @@ func Cmd(c *cmd.Config) *xli.Command {
 // when it next asked. Every command but `serve` builds through this, and
 // `TestEveryCommandBuildsWhatItWritesQueued` holds them to it: one that called
 // `cmd.Build` itself would be back to writing rows the stream never carries.
+//
+// A configuration that names no database is refused here in roster's words: a
+// file with only `client:` in it is what a customer's person is shown, and
+// payday's sentence for it is about a driver nobody wrote.
 func built(ctx context.Context, c cmd.Config) (*cmd.Server, error) {
+	if c.Db.Driver == "" {
+		return nil, errors.New("db.driver: this command reads the deployment's database, and this configuration " +
+			"names none. Run it where the deployment's file is; the commands that ask a running roster instead " +
+			"are me, front, sync, issue and the entity commands, with client.addr")
+	}
+
 	return cmd.Build(ctx, c.Queued())
 }
 
