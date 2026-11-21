@@ -472,18 +472,27 @@ const signsInPage = 100
 
 func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) (*app.HolderReachesResponse, error) {
 	v, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
-		Ref:    req.GetRef(),
-		Select: app.HolderSelect_builder{DateDisabled: z.Ptr(true)}.Build(),
+		Ref: req.GetRef(),
+		Select: app.HolderSelect_builder{
+			DateDisabled: z.Ptr(true),
+			Tenant:       app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
+		}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
 	}
-	if v.GetDateDisabled() != nil {
-		// Suspended: every credential of theirs is refused before the gate is
-		// asked, so the gate's answer is nothing. Answering their bindings
-		// instead told an app checking an SSO token roster cannot see -- one
-		// minted before the suspension, good for its hour -- that they still
-		// held everything they held.
+	if v.GetDateDisabled() != nil || v.GetTenant().GetDateClosed() != nil {
+		// Suspended, or in a tenant that is closed: every credential of
+		// theirs is refused before the gate is asked, so the gate's answer is
+		// nothing. Answering their bindings instead told an app checking an
+		// SSO token roster cannot see -- one minted before the suspension,
+		// good for its hour -- that they still held everything they held.
+		//
+		// The tenant's closing is read here and not left to whoever asks: a
+		// caller inside the tenant is refused already, and one outside it --
+		// a deployment key as itself -- was answered their bindings for as
+		// long as the tenant was closed, while `standing` asked by the same
+		// key refused them.
 		return app.HolderReachesResponse_builder{EverySite: z.Ptr(false)}.Build(), nil
 	}
 	if s.rules.Held == nil {
