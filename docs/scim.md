@@ -380,10 +380,15 @@ that was read: the first run says its digest on standard error, and the second
 links that list or nothing. Where the directory said anything in between --
 somebody new on it, an address or an id that moved -- it writes nothing,
 prints the list as it is now with its digest, and fails, for it to be read
-again. It is the whole list or none of it. The endpoint says so in its
-log the first time a directory names somebody it matched, and the admin console
-says it on the person. Run it after a directory's first cycle, and again when
-the log says so.
+again. It is the whole list or none of it. The endpoint says so in its log the
+first time a directory names somebody it matched, and the admin console says it
+on the person. Run it after a directory's first cycle, and again when the log
+says so.
+
+The list is of people. A holder an app acts as (`roster app install`) is nobody
+who signs in, so one the directory said an id for is left off it and never
+linked, and a sentence after the list names it. Nor does a directory say
+anything of its own holder: `Tell` of the caller's own row is refused.
 
 **An account at the connection is not somebody's own to write.** Anywhere else
 a person may write an account at a provider onto their own row, and roster
@@ -617,7 +622,7 @@ it.
 | `HolderService/Provision` | somebody new: the person, their identity, their address, in one write |
 | `HolderService/Deactivate`, `Activate` | a suspension of the directory's, for people who sign in through the connection |
 | `HolderService/Update`, `Get` | what it owns of a profile, and reading it back |
-| `HolderService/Tell` | what it calls somebody, kept beside them: reaches anybody, and is believed by nothing |
+| `HolderService/Tell` | what it calls somebody, kept beside them: reaches anybody but its own holder, and is believed by nothing |
 | `PhoneService/Add`, `Erase`, `List` | where somebody is reached: written onto whoever holds no more than this key does, which is everybody it provisions |
 | `RelationService/Add`, `Erase`, `List` | who somebody reports to: a record no rule reads |
 | `EmailService/Get`, `List`, `IdentityService/Get`, `List` | finding somebody by an address or an `externalId` |
