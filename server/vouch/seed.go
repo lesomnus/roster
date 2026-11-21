@@ -76,7 +76,10 @@ func NewKeyring(vs []string) (Keyring, error) {
 	for _, v := range vs {
 		name, raw, ok := strings.Cut(v, ":")
 		if !ok || name == "" {
-			return Keyring{}, fmt.Errorf("vouch: a key is `name:base64`, and %q is not", v)
+			// Not said back: what is written where a key belongs is a key,
+			// and this sentence is the process's log.
+			return Keyring{}, errors.New("vouch.keys: a key is written `name:base64`, and one has no name before its colon. " +
+				"it is not said back, since what is written there is the key")
 		}
 
 		b, err := base64.StdEncoding.DecodeString(raw)

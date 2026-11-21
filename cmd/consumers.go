@@ -452,8 +452,10 @@ type HydraConfig struct {
 	Admin string `yaml:"admin"`
 
 	// Header is sent with every admin call, as `Name: value`, for that proxy.
-	// The deployment's arrangement and not this app's.
-	Header map[string]string `yaml:"header"`
+	// The deployment's arrangement and not this app's. A secret to the loader,
+	// since a header for a proxy is a credential: `roster config` prints none
+	// of its values.
+	Header map[string]string `yaml:"header" cfg:",secret"`
 }
 
 // Serves is whether this deployment answers a login flow.
