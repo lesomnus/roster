@@ -250,7 +250,8 @@ func TestAStreamRosterRefusesIsSaid(t *testing.T) {
 }
 
 // TestTheFollowerIsALoopEveryProcessRuns: the follower is a named loop, and
-// marked to run in every process it runs in one that holds no lease.
+// marked to run in every process -- again, as the manual's line marks it --
+// it runs in one that holds no lease: marking it twice changes nothing.
 func TestTheFollowerIsALoopEveryProcessRuns(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
@@ -514,4 +515,46 @@ func TestAnEventAboutNobodyIsPassedBy(t *testing.T) {
 	x.Eventually(func() bool { return h.May(ctx, someone, get) == nil && r.asked.Load() >= 2 }, 10*time.Second, 10*time.Millisecond,
 		"the event about somebody was not heard")
 	x.Equal(1, strings.Count(l.String(), "level=WARN"), "a line for the one that names somebody unreadable, and none for nobody:\n%s", l.String())
+}
+
+// everyProcess says whether a loop, or one it wraps, is marked to run in every
+// process, as payday asks it.
+func everyProcess(s spin.Spinner) bool {
+	for s != nil {
+		if _, ok := s.(spin.Everywhere); ok {
+			return true
+		}
+		u, ok := s.(interface{ Unwrap() spin.Spinner })
+		if !ok {
+			return false
+		}
+		s = u.Unwrap()
+	}
+	return false
+}
+
+// TestFollowerIsForEveryProcess: the follower comes marked to run in every
+// process, and runs in one that holds no lease as it is handed back. It came
+// unmarked, for the app to mark: left so under a lease, one process heard and
+// every other kept what it was told for HeldTtl, which no use of it wants.
+func TestFollowerIsForEveryProcess(t *testing.T) {
+	x := require.New(t)
+	e := newExternal(t)
+	d := e.door(t)
+	h := holders(t, reach.Config{Conn: e.dial(t), As: e.as, Now: (&clock{now: time.Now()}).Now})
+	loop := h.Follower("test.roster-reach")
+
+	ctx, stop := context.WithCancel(t.Context())
+	done := make(chan error, 1)
+	go func() { done <- spin.Run(ctx, slices.Values([]spin.Spinner{loop}), spin.WithLease(spin.Nowhere())) }()
+	t.Cleanup(func() {
+		stop()
+		x.NoError(<-done, "the loop stopped as asked")
+	})
+
+	opened(t, e, h, d).flip(t)
+	x.True(everyProcess(loop))
+	n, ok := loop.(spin.Named)
+	x.True(ok, "and named, as it was")
+	x.Equal("test.roster-reach", n.SpinName())
 }

@@ -343,8 +343,9 @@ func TestAStreamOpenedAgainForgetsWhatWasKnown(t *testing.T) {
 }
 
 // TestTheFollowerIsALoopEveryProcessRuns: the follower is a named loop, and
-// marked to run in every process it runs in one that holds no lease -- which
-// is each process but one, under `spin.lease`.
+// marked to run in every process -- again, as the manual's line marks it --
+// it runs in one that holds no lease, which is each process but one, under
+// `spin.lease`: marking it twice changes nothing.
 func TestTheFollowerIsALoopEveryProcessRuns(t *testing.T) {
 	x := require.New(t)
 	e := newExternal(t)
@@ -876,4 +877,54 @@ func TestOnIsHandedTheLatestOfEachAccount(t *testing.T) {
 	x.True(suspended.Equal(v.Disabled), "the latest of what was said of them, and not the first")
 	x.True(signedOut.Equal(v.Invalidated))
 	x.Equal(last, o.next(t).Holder, "and kim once")
+}
+
+// everyProcess says whether a loop, or one it wraps, is marked to run in every
+// process, as payday asks it.
+func everyProcess(s spin.Spinner) bool {
+	for s != nil {
+		if _, ok := s.(spin.Everywhere); ok {
+			return true
+		}
+		u, ok := s.(interface{ Unwrap() spin.Spinner })
+		if !ok {
+			return false
+		}
+		s = u.Unwrap()
+	}
+	return false
+}
+
+// TestFollowerIsForEveryProcess: the follower comes marked to run in every
+// process, and runs in one that holds no lease as it is handed back. It came
+// unmarked, for the app to mark: left so under a lease, one process heard and
+// every other believed what it was told for HeldTtl, which no use of it wants.
+func TestFollowerIsForEveryProcess(t *testing.T) {
+	x := require.New(t)
+	e := newExternal(t)
+	a := accounts(t, standing.Config{Conn: e.dial(t), As: at(e.key, "acme")})
+	got := make(chan standing.Standing, 64)
+	loop := a.Follower("test.roster-stream", func(_ context.Context, v standing.Standing) error {
+		got <- v
+		return nil
+	})
+
+	ctx, stop := context.WithCancel(t.Context())
+	done := make(chan error, 1)
+	go func() { done <- spin.Run(ctx, slices.Values([]spin.Spinner{loop}), spin.WithLease(spin.Nowhere())) }()
+	t.Cleanup(func() {
+		stop()
+		x.NoError(<-done, "the loop stopped as asked")
+	})
+
+	e.listening(t)
+	op, as := e.asOperator(t)
+	heard(t, got, e.kim, func() error {
+		_, err := op.Invalidate(as, rstr.HolderInvalidateRequest_builder{Ref: rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build()}.Build())
+		return err
+	}, func(v standing.Standing) bool { return !v.Invalidated.IsZero() })
+	x.True(everyProcess(loop))
+	n, ok := loop.(spin.Named)
+	x.True(ok, "and named, as it was")
+	x.Equal("test.roster-stream", n.SpinName())
 }

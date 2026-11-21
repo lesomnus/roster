@@ -182,19 +182,22 @@ which would otherwise be a standing asked again, and `on` run, for everybody a
 role edit reaches (`TestWhatSomebodyMayCallIsNoNewsOfTheirStanding`).
 
 `Accounts.Follower(name, on)` is the same as a loop for payday's `spin.Run`,
-named, and an app marks it to run in **every process**:
+named, and it comes marked to run in **every process**:
 
 ```go
-s.Spin = append(s.Spin, spin.InEveryProcess(accounts.Follower("levyan.roster-stream", payers.Apply)))
+s.Spin = append(s.Spin, accounts.Follower("levyan.roster-stream", payers.Apply))
 ```
 
 Every process, because what the stream drops is that process's own knowledge.
 Under `spin.lease` an unmarked loop runs in the one process that holds the
-lease, and every other replica goes on believing what it was told for
+lease, and every other replica would go on believing what it was told for
 `HeldTtl` -- a session that outlives a suspension in all but one of them, with
-nothing to say so. The price is that `on` runs once per process for every
-account the stream speaks of, so what it does has to be safe to do twice, as writing down state is: a
-session ended twice is ended (`TestTheFollowerIsALoopEveryProcessRuns`).
+nothing to say so -- which no use of it wants, so it is not left to the app to
+mark (`TestFollowerIsForEveryProcess`). An app that marks it again with
+`spin.InEveryProcess`, as this page used to say to, changes nothing. The price
+is that `on` runs once per process for every account the stream speaks of, so
+what it does has to be safe to do twice, as writing down state is: a session
+ended twice is ended (`TestTheFollowerIsALoopEveryProcessRuns`).
 
 What it promises:
 
