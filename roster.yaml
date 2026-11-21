@@ -165,7 +165,9 @@ watch:
   # writing a row in the same transaction, and the drainer then publishes into
   # whatever broker is named here. So with `memory` it is durability and not
   # fan-out; with `postgres` it is both, which is what a deployment that can
-  # lose neither wants.
+  # lose neither wants. Under it a write over the wire is published twice, by
+  # its call and by the drainer: a fact is compared and said once, and that
+  # what somebody may call changed is said twice (`sync.proto`).
   #
   # The drainer runs wherever a broker is named, outbox or not: every command
   # run beside this deployment -- `roster holder disable` at a shell on the box
