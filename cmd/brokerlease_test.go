@@ -33,9 +33,7 @@ func TestABrokerOfOneProcessBesideALeaseOfSeveralIsSaidAtStart(t *testing.T) {
 
 	t.Run("memory beside a lease of several", func(t *testing.T) {
 		x := require.New(t)
-		said := servedSaying(t, func(c *cmd.Config) {
-			c.Spin.Lease = severalLease
-		}).lines(t, what)
+		said := servedLeasedSaying(t, severalLease, nil).lines(t, what)
 		x.Len(said, 1, "said once, as serve starts")
 		x.Equal("WARN", said[0]["level"])
 		x.Contains(said[0]["msg"], "watch.broker")

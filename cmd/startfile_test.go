@@ -179,6 +179,12 @@ func TestTheFilesADeploymentStartsFromAreMeant(t *testing.T) {
 		x := require.New(t)
 		base := loadedFrom(t, empty, filepath.Join(root, "roster.yaml"))
 
+		// A block that names a broker or a lease of PostgreSQL's is read on
+		// the database the page says it needs.
+		pg := base
+		pg.Db = config.DbConfig{Driver: "pgx", Dsn: "postgres://roster@db/roster"}
+		pg.Control.Db = config.DbConfig{Driver: "pgx", Dsn: "postgres://roster@db/control"}
+
 		pages, err := filepath.Glob(filepath.Join(root, "docs", "*.md"))
 		x.NoError(err)
 		more, err := filepath.Glob(filepath.Join(root, "docs", "*", "*.md"))
@@ -201,6 +207,9 @@ func TestTheFilesADeploymentStartsFromAreMeant(t *testing.T) {
 				file := filepath.Join(t.TempDir(), "roster.yaml")
 				x.NoError(os.WriteFile(file, []byte(body), 0o600))
 				c := base
+				if strings.Contains(body, "postgres") {
+					c = pg
+				}
 				k := cli.Cmd(&c)
 				k.Writer = io.Discard
 				if err := k.Run(t.Context(), []string{"--config", file, "config"}); err != nil {

@@ -650,6 +650,7 @@ func (c Config) Meant() error {
 		lessThanNone,
 		formed,
 		noEffect,
+		severalOverSqlite,
 	} {
 		if err := v(c); err != nil {
 			return err
@@ -955,6 +956,40 @@ func noEffect(c Config) error {
 
 		return fmt.Errorf("%[1]s.dsn: says where the broker connects, and %[2]s is %[3]q, which connects nowhere. "+
 			"take %[1]s.dsn out, or name a broker that reads it (postgres)", v.key, broker, v.watch.Broker)
+	}
+
+	return nil
+}
+
+// severalOverSqlite refuses a lease of several processes over a plane whose
+// database is SQLite.
+//
+// SQLite is a file on one machine, so several processes on it are several
+// deployments, each with operators, keys and sessions of its own. payday asks
+// the data plane's database of a lease only where `spin.dsn` names none, and
+// never asks the control plane's, so a lease of several stood over a SQLite
+// control plane always and over a SQLite data plane whose lease was kept
+// elsewhere.
+func severalOverSqlite(c Config) error {
+	switch c.Spin.Lease {
+	case "", config.LeaseLocal, config.LeaseNone:
+		return nil
+	}
+
+	for _, v := range []struct {
+		key string
+		db  config.DbConfig
+	}{
+		{"db", c.Db},
+		{"control.db", c.Control.Db},
+	} {
+		if v.db.Dialect != config.DialectSQLite && !strings.HasPrefix(v.db.Driver, "sqlite") {
+			continue
+		}
+
+		return fmt.Errorf("%[1]s.driver: %[2]q is a database on one machine, and spin.lease is %[3]q, which shares the "+
+			"loops among several processes: each would be a deployment of its own, with its own operators, keys and "+
+			"sessions. run one process (spin.lease: local), or put %[1]s on a database every process reaches", v.key, v.db.Driver, c.Spin.Lease)
 	}
 
 	return nil
