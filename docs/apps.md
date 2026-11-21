@@ -204,6 +204,11 @@ noticing. Nor about which group or team somebody is in: a membership nothing is
 bound to is guarded by nothing ([usage/permissions.md](usage/permissions.md) §
 *Membership is not a permission*).
 
+A key's own `methods` are not part of that: `Reaches` answers for the person,
+so a call that came with a key whose list is narrower than its holder's is the
+app's to hold to that list, as `Introspect` answers it, and `reach` says yes
+wherever the holder may.
+
 **Somebody has to hold an app's methods before they can grant them.** A tenant's
 first administrator is bound `/roster.*/*`, which covers none of an app's own
 methods, and nobody hands out what they do not hold. So a roster operator, on the

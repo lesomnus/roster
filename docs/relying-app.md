@@ -52,7 +52,11 @@ accounts, err := standing.New(standing.Config{
 ```
 
 `Conn` is a `grpc.ClientConnInterface` and nothing more, so an external roster
-and one in the app's process are the same calls. `As` is the app's because who
+and one in the app's process are the same calls. A connection held open for
+the stream is dialed with a keepalive -- `grpc.WithKeepaliveParams`, a ping
+every thirty seconds and ten seconds' wait -- since without one a path that goes
+dark is not noticed and the follower hears nothing more, with nothing to say
+so; [operating.md](operating.md) says what roster allows a client that pings. `As` is the app's because who
 an app is at roster is its shape ([apps.md](apps.md)), and the package holds no
 key:
 
@@ -150,7 +154,15 @@ wraps the error before it returns it has chosen its own words.
 and nothing else -- no name, nothing declared personal -- because a read that
 carries a person's data is a row of roster's access record, and a session held
 to roster is asked about every thirty seconds; Loft's read of the whole row was
-that row, every time (`TestAStandingIsNoReadOfSomebodysData`). And it reads the directory's
+that row, every time (`TestAStandingIsNoReadOfSomebodysData`). That is so of
+somebody who is there: 300 sessions in good standing held over four `HeldTtl`
+were 1,200 askings and no row. It is not so of somebody roster has not got,
+since roster's refusal of a read is a row: ten sessions of people erased since
+were 40 askings and 40 rows, and a `Reconcile` of 300 with ten gone was 300
+askings and 10 rows at every pass -- a row for each account gone, marked or
+not -- as `Settle` is a row for each mark still gone at each look. So an app
+ends a session `Held` refused rather than holding it to roster again, and
+looks again at everybody on a clock of hours rather than seconds. And it reads the directory's
 closing with them: asked from inside a closed directory roster answers nothing
 at all, which is a roster that will not answer; asked from outside it, as a
 deployment key on its own may be, the closing is the fourth fact
@@ -313,7 +325,9 @@ in through -- as roster stores them, folded. An address nobody checked is not
 one of them, and that is the whole of the method: any directory's administrator
 may put any address on a person of their own, and a provider passes it on, so an
 invitation found by an unchecked address goes to whoever typed it
-(`TestOnlyAnAddressSomebodyCheckedIsAnAccounts`).
+(`TestOnlyAnAddressSomebodyCheckedIsAnAccounts`). Of somebody erased it answers
+the addresses they checked, and no error, since roster lists what outlived
+somebody on purpose; of an identifier nobody has, nothing and no error.
 
 ## What stays the app's
 

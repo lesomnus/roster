@@ -284,8 +284,13 @@ func failed(ctx context.Context, err error) error {
 // asked, the app's own role not naming `HolderService/Reaches` among them; and
 // a caller whose own context ended is told that, and neither.
 //
-// It reads nothing declared personal, so asking it at every call is no row of
-// roster's access record (`TestAReachIsNoReadOfSomebodysData`).
+// It reads nothing declared personal, so asking it about somebody who is
+// there is no row of roster's access record, however often
+// (`TestAReachIsNoReadOfSomebodysData`). Asking it about somebody roster has
+// not got is one every time, since roster's refusal of a read is a row: five
+// askings of somebody erased were five rows. [Holders.Reach] keeps that answer
+// for [standing.HeldTtl] like any other, so it is one a HeldTtl for as long as
+// an app asks about them.
 func (h *Holders) ReachOf(ctx context.Context, holder pdid.Id) (Reach, error) {
 	as, err := h.as(ctx)
 	if err != nil {
@@ -383,6 +388,11 @@ func (h *Holders) reach(ctx context.Context, holder pdid.Id) (Reach, error) {
 // beside it), and so is anybody suspended: roster answers that they reach
 // nothing. It is asked about the holder and never the role, so a tenant may
 // split or rename its roles without the app noticing.
+//
+// It answers for the person and not for the credential they came with: a call
+// that arrived with a key whose own list of methods is narrower than its
+// holder's is the app's to hold to that list (`TokenService/Introspect`
+// answers it), and May says yes where the holder may.
 //
 // What it answers may be handed to the caller as it is -- payday's gate takes
 // an error for the caller's answer: [ErrDenied] is `PermissionDenied`,
