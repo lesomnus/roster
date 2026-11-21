@@ -25,6 +25,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/core"
 )
 
 // Declaring a deployment's rows in a file, and applying them at start.
@@ -360,6 +361,16 @@ func readResourceFile(p string) ([]Resource, error) {
 		r := Resource{}
 		if err := yaml.NodeToValue(n, &r); err != nil {
 			return nil, at(n, entry, "%s", yaml.FormatError(err, false, false))
+		}
+
+		// Where the file is read, with its name, before anything is opened:
+		// the server refuses it too, without the file.
+		if err := core.Referenced(r.SecretRef); err != nil {
+			for _, kv := range kvs {
+				if keyOf(kv) == "secret_ref" {
+					return nil, at(kv.Key, entry+".secret_ref", "%s", err.Error())
+				}
+			}
 		}
 		pos := posOf(n)
 		r.From, r.line, r.col = p, pos.Line, pos.Column

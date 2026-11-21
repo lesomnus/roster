@@ -152,6 +152,66 @@ func addressed(field, v string) error {
 	return nil
 }
 
+// Referenced holds a connection's `secret_ref` to being a reference:
+// `<scheme>:<rest>`, a scheme of small letters (a letter first, then letters,
+// digits, `+`, `.` or `-`), a colon, and something after it -- or empty, which
+// is a provider that needs no secret.
+//
+// It was any string. #276 stopped a front door repeating in its log what it
+// could not read as a reference; the row and the trail's patch still took it,
+// from a file, from the box and over the wire -- and what is written where a
+// reference belongs and is not one is, more often than anything else, the
+// secret itself. So the refusal says the form and **does not repeat the
+// value**.
+//
+// That is all this holds it to. What a reference means is the front door's
+// that reads it (`connection.proto`): roster's own read `env:NAME`, and a
+// deployment's own may read `file:` or a word of its own, which this does not
+// know and does not pretend to. A secret that happens to be written `abc:def`
+// passes; the rule is for the mistake people make, a bare secret where a
+// reference belongs.
+//
+// Exported because a resources file is held to it as it is read, with its name
+// and line, before anything is opened.
+func Referenced(v string) error {
+	if v == "" {
+		return nil
+	}
+	scheme, rest, ok := strings.Cut(v, ":")
+	if ok && rest != "" && schemed(scheme) {
+		return nil
+	}
+
+	return errors.New("is not a reference: write where the deployment keeps the secret, as a scheme, a colon and the rest " +
+		"-- env:NAME is what roster's own front doors read -- and never the secret itself. " +
+		"what is written is not repeated, since it usually is the secret")
+}
+
+// schemed is whether `v` is a scheme as a URI's is spelled, in small letters.
+func schemed(v string) bool {
+	if v == "" || v[0] < 'a' || v[0] > 'z' {
+		return false
+	}
+	for _, c := range v[1:] {
+		switch {
+		case c >= 'a' && c <= 'z', c >= '0' && c <= '9', c == '+', c == '.', c == '-':
+		default:
+			return false
+		}
+	}
+
+	return true
+}
+
+// referenced is [Referenced] as a refusal of the field.
+func referenced(field, v string) error {
+	if err := Referenced(v); err != nil {
+		return pderr.Invalidf(field, "%s", err.Error())
+	}
+
+	return nil
+}
+
 // called holds a connection to naming this app as its provider knows it. A
 // connection with no `client_id` is a round trip the provider refuses.
 func called(field, v string) error {
@@ -427,6 +487,9 @@ func (s coreConnection) Add(ctx context.Context, req *app.ConnectionAddRequest) 
 	if err := called("client_id", req.GetClientId()); err != nil {
 		return nil, err
 	}
+	if err := referenced("secret_ref", req.GetSecretRef()); err != nil {
+		return nil, err
+	}
 	if err := s.maySend(ctx, nil, req.GetSecretRef(), req.GetIssuer()); err != nil {
 		return nil, err
 	}
@@ -485,6 +548,11 @@ func (s coreConnection) Patch(ctx context.Context, req *app.ConnectionPatchReque
 	}
 	if req.HasClientId() {
 		if err := called("client_id", req.GetClientId()); err != nil {
+			return nil, err
+		}
+	}
+	if req.HasSecretRef() {
+		if err := referenced("secret_ref", req.GetSecretRef()); err != nil {
 			return nil, err
 		}
 	}
@@ -582,6 +650,11 @@ func (s coreConnection) Update(ctx context.Context, req *app.ConnectionUpdateReq
 	}
 	if req.HasClientId() {
 		if err := called("client_id", req.GetClientId()); err != nil {
+			return nil, err
+		}
+	}
+	if req.HasSecretRef() {
+		if err := referenced("secret_ref", req.GetSecretRef()); err != nil {
 			return nil, err
 		}
 	}

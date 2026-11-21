@@ -120,6 +120,10 @@ message Connection {
   // (`account.EnvSecret`): a `file:` reference is one a front door of a
   // deployment's own would have to read.
   //
+  // Whatever the words, a reference is a scheme, a colon and the rest
+  // (`server/core/connection.go`); one with no scheme is refused, since it is
+  // most often the secret itself, written where its reference belongs.
+  //
   // Empty is a provider that needs none -- a public client with PKCE, which is
   // what a front door with no back end has.
   //

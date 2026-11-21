@@ -1117,8 +1117,14 @@ provider publishes it: written `https://` (or `http://`, § *Where a provider is
 asked*), with a host in small letters, and with no query, fragment or password
 -- `https://GitHub.com` is refused, since a front door reads an issuer as it is
 written and would not know it for GitHub's. Its `client_id`
-is not empty. And it names its people by `oid` only where the provider may
-issue one: not at GitHub's, and not at Google's. A row that is none of that is
+is not empty. Its `secret_ref`, where it has one, is a reference: a scheme of
+small letters, a colon and the rest -- `env:NAME` is what roster's own front
+doors read, and a front door of your own may read `file:` or a word of its own.
+One with no scheme is refused without being said back, since it is most often
+the secret itself; roster does not know which schemes a front door reads, so a
+secret that happens to look like `abc:def` is not caught. And it names its
+people by `oid` only where the provider may issue one: not at GitHub's, and not
+at Google's. A row that is none of that is
 refused where it is written, with the field it was, rather than at somebody's
 sign-in.
 
