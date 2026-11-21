@@ -63,18 +63,19 @@ func initedWith(t *testing.T, with func(*cmd.Config), args ...string) (*cmd.Serv
 		with(&c)
 	}
 
-	out := &bytes.Buffer{}
+	// What was said and then what was printed, the password last ([initRun]).
+	out, said := &bytes.Buffer{}, &bytes.Buffer{}
 	k := cli.NewCmdInit(&c)
-	k.Writer = out
+	k.Writer, k.ErrWriter = out, said
 
-	x.NoError(k.Run(ctx, args), "init: %s", out)
+	x.NoError(k.Run(ctx, args), "init: %s", said)
 
 	// A second server on the same database, since the command closed its own.
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
 	t.Cleanup(func() { s.Close() })
 
-	return s, out.String()
+	return s, said.String() + out.String()
 }
 
 // TestInitLeavesADeploymentThatWorks is the thing that was missing, and it is
@@ -378,21 +379,19 @@ const everythingAlias = "everything-as-well"
 
 func strPtr(s string) *string { return &s }
 
-// passwordFrom picks the secret out of what init printed, which is also a check
-// that it is printed in a shape somebody can copy.
+// passwordFrom picks the secret out of what init said and printed, which is
+// also a check that it is printed in a shape somebody can copy: alone, on the
+// last line, which is standard output's ([initRun]).
 func passwordFrom(t *testing.T, out string) string {
 	t.Helper()
 
-	for _, line := range strings.Split(out, "\n") {
-		line = strings.TrimSpace(line)
-		if v, ok := strings.CutPrefix(line, "password "); ok {
-			return strings.TrimSpace(v)
-		}
+	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
+	v := lines[len(lines)-1]
+	if v == "" || strings.ContainsAny(v, " \t") {
+		t.Fatalf("no password alone on the last line of:\n%s", out)
 	}
 
-	t.Fatalf("no password line in:\n%s", out)
-
-	return ""
+	return v
 }
 
 // framed is a call made straight at a stack, with the frame `gate.Decide`

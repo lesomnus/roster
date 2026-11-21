@@ -41,16 +41,20 @@ func seedbed(t *testing.T) cmd.Config {
 //
 // A fresh command each time rather than one reused, because that is what a
 // second `docker run` is: a process that parsed its flags from nothing.
+//
+// What it answers is what was said on standard error and then what was printed
+// on standard output, which is a password it made and nothing else: so
+// [passwordFrom] finds it last.
 func initRun(t *testing.T, c cmd.Config, args ...string) (string, error) {
 	t.Helper()
 
-	out := &bytes.Buffer{}
+	out, said := &bytes.Buffer{}, &bytes.Buffer{}
 	k := cli.NewCmdInit(&c)
-	k.Writer = out
+	k.Writer, k.ErrWriter = out, said
 
 	err := k.Run(t.Context(), args)
 
-	return out.String(), err
+	return said.String() + out.String(), err
 }
 
 // TestInitRefusesToRunTwice is an operational contract with a shell script
@@ -407,13 +411,14 @@ func TestInitDoesNotPrintAPasswordItWasGiven(t *testing.T) {
 	const given = "a password somebody chose"
 
 	c := seedbed(t)
-	out := &bytes.Buffer{}
+	out, said := &bytes.Buffer{}, &bytes.Buffer{}
 	k := cli.NewCmdInit(&c)
-	k.Writer = out
+	k.Writer, k.ErrWriter = out, said
 
 	x.NoError(piped(t, given, k, "--password-stdin"))
-	x.NotContains(out.String(), given, "a password given on stdin was printed back")
-	x.Contains(out.String(), "the one given on stdin")
+	x.Empty(out.String(), "a password given on stdin was printed back")
+	x.NotContains(said.String(), given, "a password given on stdin was printed back")
+	x.Contains(said.String(), "the one given on stdin")
 
 	// And it is the one that signs them in.
 	s, err := cmd.Build(t.Context(), c)

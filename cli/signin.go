@@ -96,7 +96,14 @@ func NewCmdSignIn(c *cmd.Config) *xli.Command {
 			// A client that gives up on one request, which the default never
 			// does: a front door that took a connection and said nothing held
 			// this command for as long as it liked.
-			key, err := SignIn(ctx, cl.Printf, &http.Client{Timeout: 30 * time.Second}, strings.TrimSuffix(at, "/"), name, allow)
+			//
+			// What is said to the person -- where to go, what to type, that it
+			// is waiting -- on standard error, and the key alone on standard
+			// output. All of it was on standard output, so `roster sign-in …
+			// > key` put the code to type in the file and nothing on the
+			// terminal, and nobody could approve it (#284).
+			say := func(format string, vs ...any) (int, error) { return fmt.Fprintf(cl.ErrWriter, format, vs...) }
+			key, err := SignIn(ctx, say, &http.Client{Timeout: 30 * time.Second}, strings.TrimSuffix(at, "/"), name, allow)
 			if err != nil {
 				return err
 			}
@@ -106,7 +113,7 @@ func NewCmdSignIn(c *cmd.Config) *xli.Command {
 				// stdout, so `$(roster sign-in …)` is the key and nothing else --
 				// the shape `roster key add` answers in, and for its reason.
 				fmt.Fprintf(os.Stdout, "%s\n", key)
-				cl.Printf("this is the only time it is shown. `client.auth.credential_file` is where a configuration reads one.\n")
+				say("this is the only time it is shown. `client.auth.credential_file` is where a configuration reads one.\n")
 
 				return nil
 			}
@@ -114,7 +121,7 @@ func NewCmdSignIn(c *cmd.Config) *xli.Command {
 			if err := keep(out, key); err != nil {
 				return err
 			}
-			cl.Printf("written to %s. point `client.auth.credential_file` at it.\n", out)
+			say("written to %s. point `client.auth.credential_file` at it.\n", out)
 
 			return nil
 		}),

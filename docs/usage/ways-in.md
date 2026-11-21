@@ -300,6 +300,10 @@ any code of theirs being answered for a quarter of an hour; one code is one key,
 whoever says yes how many times; and a front door holds a thousand terminals
 waiting and tells the next to come back.
 
+What it says to you is on standard error; without `--out`, the key is the one
+line on standard output, so `roster sign-in … > key` keeps the key and the
+terminal still shows what to type.
+
 What comes out is an ordinary `rt_`: it belongs to the person who approved it, is
 **never wider than they are**, appears in their keys beside the app passwords, and
 is revoked from the same list. Two consequences of that worth knowing before the
