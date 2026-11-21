@@ -1532,12 +1532,14 @@ func Public(method string) bool {
 
 // Serve answers on `l` until the context is done.
 func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
+	c.Server.Keepalive = c.ServerKeepalive()
 	g, err := s.Grpc(ctx, c)
 	if err != nil {
 		return err
 	}
 
 	s.unbounded(ctx)
+	s.aged(ctx, c)
 
 	// The stops, collected rather than deferred one at a time.
 	//
@@ -1678,12 +1680,85 @@ func (v *shutdown) run() {
 // Five seconds, and a constant rather than a setting because the number that
 // decides this is somebody else's: `docker stop` waits ten and then sends
 // SIGKILL, so a longer grace is one nothing lives to use. A deployment that
-// wants its streams cut sooner has `keepalive.max_connection_age`, which says
-// something truer about a long-lived stream than a shutdown timeout does.
+// wants its streams cut sooner has `keepalive.max_connection_age` with
+// `keepalive.max_connection_age_grace` beside it, which says something truer
+// about a long-lived stream than a shutdown timeout does. The age alone ends no
+// stream that is open: gRPC waits for one as long as the grace says, which is
+// for ever where nothing does ([Server.aged]).
 //
 // Exported so that a test can say *bounded by what this app chose* rather than
 // by a number copied beside it, which is the whole claim.
 const ShutdownGrace = 5 * time.Second
+
+// What the data plane's listener asks of an idle connection, and lets a
+// client ask, where `server.keepalive` says nothing of it: see
+// [Config.ServerKeepalive].
+const (
+	KeepaliveTime    = time.Minute
+	KeepaliveTimeout = 20 * time.Second
+	KeepaliveMinTime = 20 * time.Second
+)
+
+// ServerKeepalive is what the data plane's listener is built with of
+// `server.keepalive`: what the file says, and where it leaves the server's
+// own ping, its wait or the least interval a client is allowed unsaid,
+// [KeepaliveTime], [KeepaliveTimeout] and [KeepaliveMinTime].
+//
+// gRPC's own are a ping after two hours and a client allowed one every five
+// minutes, and roster sends nothing on a sync stream nothing happens on. So a
+// follower could not tell a connection that died from a quiet tenant within
+// any number worth having, and one that asked more often than every five
+// minutes was hung up on, `too_many_pings`. These let a follower ask every
+// thirty seconds, which is what `docs/operating.md` tells it to dial with, and
+// have the server find a dead one within a minute and twenty seconds.
+//
+// Nothing is defaulted for an age or its grace, which are a deployment's to
+// choose ([Server.aged]). The control plane and the admin listener are left as
+// their files say: no follower holds a sync stream there.
+func (c Config) ServerKeepalive() config.KeepaliveConfig {
+	k := c.Server.Keepalive
+	if k.Time == 0 {
+		k.Time = KeepaliveTime
+	}
+	if k.Timeout == 0 {
+		k.Timeout = KeepaliveTimeout
+	}
+	if k.MinTime == 0 {
+		k.MinTime = KeepaliveMinTime
+	}
+
+	return k
+}
+
+// aged says, where it is so, that a listener's `keepalive.max_connection_age`
+// has no `max_connection_age_grace` beside it, and so ends no stream that is
+// open: gRPC asks the client to move and waits for what is in flight as long
+// as the grace says, which is for ever where nothing does. A sync stream is in
+// flight for as long as its follower holds it, so an age alone moves no
+// follower to a new replica.
+//
+// Said rather than defaulted: how long a stream may be cut short for a
+// connection's age is the deployment's to choose. By `serve` as it starts, as
+// [Server.unbounded] is.
+func (s *Server) aged(ctx context.Context, c Config) {
+	for _, v := range []struct {
+		key string
+		k   config.KeepaliveConfig
+	}{
+		{"server", c.Server.Keepalive},
+		{"control", c.Control.Keepalive},
+		{"admin", c.Admin.Keepalive},
+	} {
+		if v.k.MaxConnectionAge <= 0 || v.k.MaxConnectionAgeGrace > 0 {
+			continue
+		}
+
+		log.From(ctx).WarnContext(ctx, fmt.Sprintf("%s.keepalive.max_connection_age is said and "+
+			"%s.keepalive.max_connection_age_grace is not, so a connection that reaches its age ends no stream that is open on it: "+
+			"gRPC waits for one for ever, and a follower of the sync stream is never moved. "+
+			"Say how long a stream is given once its connection is that old", v.key, v.key))
+	}
+}
 
 // stopping takes a server down, and does not wait forever to.
 //
