@@ -1548,7 +1548,9 @@ instead leaves every write in the outbox, in that write's own transaction. The
 `watch.drain_every` (a second) -- and with no `serve` running, when one next
 starts. `forget` and `restore`, which write past the servers, put the person
 there themselves. With `watch.broker: none` there is no stream, and nothing is
-queued.
+queued. A row of the queue says which row was written, by what and by whom,
+and nothing of what was written: a name written at the box waits there as an
+identifier until a `serve` drains it.
 
 **What it reads and writes of anybody is on the access record, naming you**
 ([below](#who-read-whose-data)). Say who you are with `--as`, an operator of the

@@ -231,6 +231,24 @@ type Server struct {
 	Spin []any
 }
 
+// queued is the recorder that writes each write to the outbox, as
+// `pd.OutboxRecorder` does, told which row was written and not what was
+// written of it: the method, by what, and the key.
+//
+// payday's keeps the write's patch document in the row. Nothing that reads
+// the queue reads it -- the drain hands on keys, and a stream reads the row
+// again to say what it is now -- and a row waits until a `serve` drains it,
+// with no window, while forgetting somebody takes nothing out of the queue.
+// So a display name written at the box where no `serve` drains was at rest in
+// a row of `outbox` until one did. This is what `forget` queues already.
+func queued() bare.Recorder { return keysOnly{pd.OutboxRecorder()} }
+
+type keysOnly struct{ next bare.Recorder }
+
+func (r keysOnly) Record(ctx context.Context, s bare.Server, c bare.Change) error {
+	return r.next.Record(ctx, s, bare.Change{Method: c.Method, By: c.By, Key: c.Key})
+}
+
 // ErrOutboxHasNowhereToGo is `watch.outbox` on with no broker to publish into.
 //
 // A sentinel because the caller that builds the **control** plane has one thing
@@ -438,7 +456,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// anything to publish it to; see [Server.Queue].
 	var queue bare.Recorder
 	if b != nil {
-		queue = pd.OutboxRecorder()
+		queue = queued()
 	}
 
 	// The recorders, in the order they are told. The trail is required -- a
@@ -468,7 +486,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		// rather than the other way round. It makes no difference to what is
 		// committed -- either way nothing is -- and it makes the log read in
 		// the order things were tried.
-		rec = append(rec, pd.OutboxRecorder())
+		rec = append(rec, queued())
 	}
 
 	// And before all of them, the one question asked of a write once it is
