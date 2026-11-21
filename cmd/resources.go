@@ -529,10 +529,11 @@ func (r Resource) where() string {
 
 // ApplyResources writes what the files declared, as the provisioner.
 //
-// Idempotent by construction rather than by checking: each kind is `Add`, and
-// on `AlreadyExists` a read for the version and a `Patch` over it. So a first
-// run creates, a second with the same file changes nothing anybody can see, and
-// one with a field edited writes that field.
+// Idempotent by checking: each kind is read, added where it is not there, and
+// written over where what the file says differs from the row -- every key the
+// file writes, a key left out being empty. So a first run creates, a second
+// with the same file writes nothing, and one with a field edited writes that
+// row.
 //
 // `dry` answers what it would do and writes nothing, which is what a person
 // wants before a deployment does it for them.
@@ -818,10 +819,11 @@ func labelsOf(r Resource) map[string]string {
 	return map[string]string{Declared: r.From}
 }
 
-// The four kinds. Each is the same shape and the shape is the point: `Add`,
-// and on `AlreadyExists` a read for the version and a `Patch` over it. So the
-// first run creates, the second changes nothing, and one with a field edited
-// writes that field.
+// The four kinds. Each is the same shape and the shape is the point: a read,
+// `Add` where there is nothing, and where the row differs from the file a
+// write over it, against the version the read found. So the first run
+// creates, the second writes nothing, and one with a field edited writes that
+// row, saying which keys change.
 //
 // What none of them writes twice is the **name**. A `Connection.name` is what
 // `Identity.provider` points at, a `Host.name` is what a tenant is resolved

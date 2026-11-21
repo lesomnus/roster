@@ -1585,6 +1585,16 @@ And the label is theirs alone to write. A request that carries
 `roster.declared` is refused at every port, whoever sent it, so a row is
 read-only because a file says it is and never because a caller said a file did.
 
+**What the provisioners write that is not declared.** The rest of what they
+write carries no label and is an operator's like any row: the control plane's
+`provisioner` and its binding to `everything`, which applying a file makes; each
+front door's holder on the control plane and the key minted on it, which a
+restart replaces; and every row `roster scim provision` and `roster app install`
+write, which are a command's, run once, and not a file's. A provisioner that labels what it makes takes, of a
+holder or a role of its name, only one carrying its label, and says a tenant it
+skips; `scim provision`, which labels nothing, refuses a holder that holds
+something or a role bound to others, and takes one that does not.
+
 Turning one off is two steps, and neither is at a console:
 
 1. Take it out of where it is declared -- the resource out of the file; the front
