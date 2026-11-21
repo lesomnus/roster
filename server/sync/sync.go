@@ -36,9 +36,9 @@
 // shipped.
 //
 // Beside that, and smaller: the generated `Watch` carries the whole row and
-// every change to it, because that is what a watch is; this carries three
-// columns and only when one of them moved, with a rename or a re-label
-// swallowed.
+// every change to it, because that is what a watch is; this carries four
+// columns -- three of the person's and their tenant's closing -- and only when
+// one of them moved, with a rename or a re-label swallowed.
 //
 // # How it knows what changed, without being told
 //
@@ -49,11 +49,11 @@
 // holder that comes with a new tenant -- under a third. A table of those names
 // is a table that is wrong the day somebody adds an RPC, and wrong silently.
 //
-// So it compares state. The three facts are columns; the stream keeps what it
+// So it compares state. The four facts are columns; the stream keeps what it
 // last sent for each person and can then say which of them moved. That is the
 // model the watch machinery is built on -- *a stream of state gets cheaper when
 // it falls behind, which a stream of deltas cannot* -- applied one level up:
-// what is kept is not the row but the three stamps on it.
+// what is kept is not the row but the four stamps.
 //
 // # And the first time it hears about somebody
 //
@@ -70,7 +70,7 @@
 // nicety: a suspension landing just after an app connects is the first thing
 // this stream hears about that person, and so was the one event it swallowed.
 //
-// What replaces it is narrower than "always send": somebody with all three
+// What replaces it is narrower than "always send": somebody with all four
 // stamps unset has had nothing happen to them, so no copy anybody holds can be
 // wrong, and there is nothing to say. That keeps a rename silent -- which is
 // the sentence the whole service is argued from -- and still carries the write
@@ -165,10 +165,12 @@ import (
 // Service is `SyncService` over the server it is handed.
 //
 // The **walled** one, so what an app hears is narrowed exactly as a read is: a
-// deployment key hears every tenant and a credential resolving to a person
-// hears theirs. That is the whole of the narrowing and there is no field beside
-// it -- two answers to *what may this caller see* is the shape of the bug
-// rather than a convenience.
+// tenant's key hears its tenant; a deployment key hears every tenant, or the
+// one it names with `roster-at`; a grant made in a site hears the site's
+// people, and what reaches them from anywhere in the tenant ([Reaching]).
+// That is the whole of the narrowing and there is no field beside it -- two
+// answers to *what may this caller see* is the shape of the bug rather than a
+// convenience.
 //
 // `gone` is how somebody the wall hides is told apart from somebody erased
 // ([Erased]); nil hears no erasure of anybody this stream had not read before.
@@ -248,7 +250,7 @@ func deref(v *time.Time) time.Time {
 	return *v
 }
 
-// held is the three stamps, as this stream last sent them.
+// held is the four stamps, as this stream last sent them.
 //
 // `time.Time` and not the message, because what is compared is the instant and
 // keeping the message would keep a row this stream deliberately does not send.
@@ -388,7 +390,7 @@ func (s sending) Send(v *app.SyncEvent) error {
 	return s.ServerStreamingServer.Send(v)
 }
 
-// one reads a person and sends the three facts, if any of them moved.
+// one reads a person and sends the four facts, if any of them moved.
 //
 // A read that answers `NotFound` is not an error here and is not silence
 // either: the wall narrows this exactly as it narrows any read, so a person in

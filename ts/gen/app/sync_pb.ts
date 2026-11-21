@@ -18,12 +18,19 @@ export const file_app_sync: GenFile = /*@__PURE__*/
 /**
  * Nothing, and that is the shape rather than a first version.
  *
- * What an app hears is narrowed by the **wall**, exactly as a read is: a key
- * belongs to the deployment and hears every tenant, and a credential
- * resolving to a person hears their tenant. A field naming whose events to
+ * What an app hears is narrowed exactly as a read is. A tenant's key hears
+ * its tenant; a deployment key hears every tenant, or the one it names with
+ * `roster-at`; a grant made in a site hears the site's people, and what
+ * reaches them from anywhere in the tenant. A field naming whose events to
  * send would be a second narrowing beside the one that already decides, and
  * two answers to *what may this caller see* is the shape of the bug rather
  * than a convenience.
+ *
+ * What it answers is a header and then events, each about somebody. **An
+ * event with no `holder` is about nobody, and is passed by without a
+ * line.** roster sends none today. It is reserved so that a sign of life on
+ * an idle stream can be sent later without a follower written against this
+ * release complaining of it.
  *
  * @generated from message roster.SyncWatchRequest
  */
@@ -44,13 +51,14 @@ export const SyncWatchRequestSchema: GenMessage<SyncWatchRequest> = /*@__PURE__*
  * # It carries state and not a delta
  *
  * Which is the rule the whole watch machinery is built on, and the reason a
- * stream that missed something is still correct: what arrives is the three
- * facts as they are, so a duplicate is a no-op, an out-of-order pair converges,
- * and an app that reconnects is told the truth rather than a history. An event
- * saying only *invalidated* would be a delta, and a delta that did not arrive
- * is a lie that never gets corrected.
+ * stream that missed something is still correct: what arrives is the four
+ * facts as they are, so a duplicate is a no-op and an out-of-order pair
+ * converges. An app that reconnects is told nothing of anybody until they are
+ * next written, and forgets what it held. An event saying only *invalidated*
+ * would be a delta, and a delta that did not arrive is a lie that never gets
+ * corrected.
  *
- * So the three timestamps below are the message, and [SyncEvent.reason] is
+ * So the four timestamps below are the message, and [SyncEvent.reason] is
  * commentary on them.
  *
  * @generated from message roster.SyncEvent
@@ -83,7 +91,7 @@ export type SyncEvent = Message<"roster.SyncEvent"> & {
    * about somebody it has the facts and not the movement -- which is exactly
    * what every event is immediately after a reconnect, and is why the facts are
    * here beside it. An app that switches on this field alone will be told
-   * nothing on that first event; an app that compares the three timestamps
+   * nothing on that first event; an app that compares the four timestamps
    * against its own session is right every time.
    *
    * `SYNC_REASON_REACH` is the one answer that is not about the timestamps,
@@ -99,7 +107,7 @@ export type SyncEvent = Message<"roster.SyncEvent"> & {
 
   /**
    * When this was sent, which is worth having for a log and for nothing else.
-   * What decides anything is the three fields below.
+   * What decides anything is the four fields below.
    *
    * @generated from field: google.protobuf.Timestamp date_sent = 9;
    */
@@ -119,8 +127,9 @@ export type SyncEvent = Message<"roster.SyncEvent"> & {
   /**
    * They may not sign in, and everything they already held stopped working.
    * Unset is somebody in good standing -- including somebody who **was**
-   * suspended and is not any more, which is a fact an app has no other way to
-   * learn.
+   * suspended and is not any more. That is said, `SYNC_REASON_REINSTATED`, on
+   * a stream that said the suspension; a stream that began after it says
+   * nothing of its lifting.
    *
    * @generated from field: google.protobuf.Timestamp date_disabled = 12;
    */
@@ -198,8 +207,11 @@ export enum SyncReason {
   SUSPENDED = 2,
 
   /**
-   * And cleared, which is here because an app that dropped their sessions has
-   * no other way to learn it may stop refusing them.
+   * And cleared. Heard only on a stream that said the suspension: a stream
+   * that began after it has nothing to compare against, and says nothing of
+   * the lifting. A follower forgets what it held when a stream begins, and so
+   * what it then believed of anybody it asked; an app that keeps a mark of a
+   * suspension of its own asks roster before it acts on it.
    *
    * @generated from enum value: SYNC_REASON_REINSTATED = 3;
    */
@@ -220,8 +232,9 @@ export enum SyncReason {
   CLOSED = 5,
 
   /**
-   * And cleared: their tenant was restored. Here for the reason
-   * `SYNC_REASON_REINSTATED` is.
+   * And cleared: their tenant was restored. Heard, as
+   * `SYNC_REASON_REINSTATED` is, only on a stream that said the closing; an
+   * app that keeps a mark of a closing of its own asks before it acts on it.
    *
    * @generated from enum value: SYNC_REASON_REOPENED = 6;
    */
@@ -278,7 +291,7 @@ export const SyncReasonSchema: GenEnum<SyncReason> = /*@__PURE__*/
  * being good, and -- once per person per connection, the first time it hears of
  * them with anything at all set -- when one may already have.
  *
- * It is also **less** than a watch on purpose: no row travels, only the three
+ * It is also **less** than a watch on purpose: no row travels, only the four
  * facts. And the generated `Watch` refuses a subscription with no filters --
  * *the whole table, forever* -- which is exactly the subscription an app wants
  * here and cannot narrow, because it does not know in advance who will sign in
@@ -318,12 +331,21 @@ export const SyncReasonSchema: GenEnum<SyncReason> = /*@__PURE__*/
  * hand `Reaches` to whoever holds this stream and not that method. A person
  * told about who reaches what they did is asked about once more, which costs
  * one call; a person not told keeps a stale answer until the app's own copy
- * runs out.
+ * runs out. Once, or twice: where the deployment keeps a queue of its writes
+ * (`watch.outbox`), a write over the wire is published by its call and again
+ * by the queue, and an event about what somebody may call is compared with
+ * nothing, so it is said twice and they are asked about twice.
  *
  * @generated from service roster.SyncService
  */
 export const SyncService: GenService<{
   /**
+   * Watch is the stream. Its response header is the stream saying it
+   * listens: a write committed after the header is heard, and one committed
+   * before it may not be. So a follower forgets what it held when the header
+   * arrives, and not when the call returns, which may be before roster
+   * listens.
+   *
    * @generated from rpc roster.SyncService.Watch
    */
   watch: {

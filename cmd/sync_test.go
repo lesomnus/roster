@@ -199,7 +199,7 @@ func TestAnAppHearsThatADecisionStoppedBeingGood(t *testing.T) {
 
 		v := about(t, c, who)
 		x.Equal(app.SyncReason_SYNC_REASON_REINSTATED, v.GetReason(),
-			"an app that dropped their sessions has no other way to learn this")
+			"a stream that said the suspension did not say its lifting")
 		x.Nil(v.GetDateDisabled())
 	})
 
@@ -556,9 +556,10 @@ func TestTheSyncStreamAnswersToRealKeys(t *testing.T) {
 // that moment, whatever the reason the read came back empty -- so somebody the
 // caller merely stopped seeing had every session an app held for them ended.
 //
-// Holders are narrowed by tenant alone today, so this stands up the stream
-// over a walled server that stops showing one person: the shape any narrowing
-// that hides somebody alive has to it.
+// A person leaves a caller's sight by moving out of the site a grant was made
+// in, as well as by being erased; this stands up the stream over a walled
+// server that stops showing one person, which is the shape any narrowing that
+// hides somebody alive has to it.
 func TestSomebodyOutOfSightIsNotSaidToBeGone(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
