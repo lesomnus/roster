@@ -101,11 +101,16 @@ func parseGroup(body []byte) (*incomingGroup, error) {
 
 // memberIds is the ids a list of members names: `[{"value": "…"}]`, or a null
 // or an empty list for none.
+//
+// A member is named by its `value`, and an element that has none -- `$ref`
+// alone, `display` alone, an empty `value` -- refuses the request. It was
+// dropped, and a `remove` whose list came out empty was everybody: a member
+// named some other way emptied the group.
 func memberIds(raw json.RawMessage) ([]string, error) {
 	var vs []struct {
 		Value string `json:"value"`
 	}
-	if len(bytes.TrimSpace(raw)) == 0 || string(bytes.TrimSpace(raw)) == "null" {
+	if absent(raw) {
 		return []string{}, nil
 	}
 	if err := json.Unmarshal(raw, &vs); err != nil {
@@ -114,12 +119,20 @@ func memberIds(raw json.RawMessage) ([]string, error) {
 
 	out := make([]string, 0, len(vs))
 	for _, v := range vs {
-		if v.Value != "" {
-			out = append(out, v.Value)
+		if strings.TrimSpace(v.Value) == "" {
+			return nil, badRequest("invalidValue", "members: a member is named by its value, the id it is read by")
 		}
+		out = append(out, v.Value)
 	}
 
 	return out, nil
+}
+
+// absent is whether an operation said no value: none at all, or a null.
+func absent(raw json.RawMessage) bool {
+	v := bytes.TrimSpace(raw)
+
+	return len(v) == 0 || string(v) == "null"
 }
 
 // groupChanges is what a PATCH says about a group, in the order it said it.
@@ -137,7 +150,8 @@ type memberChange struct {
 	op  string
 	ids []string
 
-	// everybody is a remove that names nobody, which is all of them.
+	// everybody is a remove of `members` with no value at all, which is all
+	// of them (RFC 7644 §3.5.2.2). One whose list is empty takes nobody out.
 	everybody bool
 }
 
@@ -208,11 +222,16 @@ func parseGroupPatch(body []byte) (*groupChanges, error) {
 			lower := strings.ToLower(path)
 			switch {
 			case lower == "members":
+				if absent(op.Value) {
+					c.members = append(c.members, memberChange{op: "remove", everybody: true})
+
+					break
+				}
 				ids, err := memberIds(op.Value)
 				if err != nil {
 					return nil, err
 				}
-				c.members = append(c.members, memberChange{op: "remove", ids: ids, everybody: len(ids) == 0})
+				c.members = append(c.members, memberChange{op: "remove", ids: ids})
 			case strings.HasPrefix(lower, "members["):
 				id, ok := memberInPath(path)
 				if !ok {

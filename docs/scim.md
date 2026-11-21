@@ -480,7 +480,11 @@ leaves it, and is not among `members`.
 **A list of members is written whole or not at all.** Every id an `add` or a
 whole list names is looked up before anything is written, and one that is
 nobody the endpoint speaks of refuses the request, `400 invalidValue`, with the
-group as it was. **Somebody is taken out by their place**, whether or not they
+group as it was. A member is named by its `value`, and one named only by
+`$ref` or `display`, or by an empty `value`, refuses it the same way. A
+`remove` of `members` with no `value` at all, or a `null`, takes everybody out,
+as RFC 7644 §3.5.2.2 says; one with an empty list takes nobody out, and a
+`replace` with an empty list empties the group. **Somebody is taken out by their place**, whether or not they
 can still be read: a `remove` of somebody erased since takes their place away,
 and a whole list takes away every plain place whose holder it does not name,
 those of people erased or deleted since among them -- so a restore does not
