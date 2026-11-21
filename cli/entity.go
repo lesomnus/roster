@@ -469,6 +469,40 @@ func atTheBox(ctx context.Context, c *cmd.Config, s *cmd.Server) (cmd.Operator, 
 	return by, nil
 }
 
+// namedAt is who `--as` named at this shell, looked up as [atTheBox] looks
+// them up, or nil where it named nobody: what a command that writes somebody's
+// way in keeps, and what [built] asks of every command before it opens
+// anything else.
+func namedAt(ctx context.Context, c *cmd.Config, s *cmd.Server) (*cmd.Operator, error) {
+	if strings.TrimSpace(c.Client.As) == "" {
+		return nil, nil
+	}
+
+	by, err := atTheBox(ctx, c, s)
+	if err != nil {
+		return nil, err
+	}
+
+	return &by, nil
+}
+
+// keptBy runs `write` on the plane `at`, as a call of `method` made at the
+// shell by `by` where a name was given ([cmd.Server.AtTheShell]): what a
+// command writing somebody's way in or their standing does, so that the write
+// is a row of the access record naming who made it, as the same write through
+// the entity tree is (#284). Where no name was given it is the write alone, as
+// it was: whether these commands require one is the owner's to decide.
+//
+// `method` is the RPC the act is over the wire, which is what a reviewer reads
+// the row by.
+func keptBy(ctx context.Context, at *cmd.Server, by *cmd.Operator, method string, write func(ctx context.Context) error) error {
+	if by == nil {
+		return write(ctx)
+	}
+
+	return at.AtTheShell(ctx, *by, method, write)
+}
+
 // piped is [pipe] on `at`, a plane of `s`, and closes `s` with it: what a
 // connector hands `pdcmd`, which calls the close once the command is done.
 func piped(s *cmd.Server, at *cmd.Server, by cmd.Operator) (pdcmd.Conn, func(), error) {

@@ -858,9 +858,15 @@ func accepter(by cmd.Operator) string {
 // was -- and refused when it finds anything else (payday#115). A database
 // restored from a backup is accepted as the restore it is, `--restored`
 // naming the checkpoint the backup holds. Who accepts and why are kept, in the
-// checkpoint it ends in and in a receipt: `--by`, which is the operator's user
-// and host when it is not given, and `--why`, which is required, because an
-// acceptance nobody can explain later is a finding hidden.
+// checkpoint it ends in and in a receipt: the operator `--as` names and the
+// shell they are at, as `trail rows --accept` keeps them; where `--as` names
+// nobody, `--by`, which is the operator's user and host when it is not given;
+// and `--why`, which is required, because an acceptance nobody can explain
+// later is a finding hidden.
+//
+// `--as` was read by nothing here, so an operator who named themselves was
+// kept as the shell's user (#284). Given beside `--by`, the two would be two
+// answers to one question, and it is refused before anything is opened.
 func newCmdTrailAccept(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "accept",
@@ -869,7 +875,7 @@ func newCmdTrailAccept(c *cmd.Config) *xli.Command {
 		Flags: flg.Flags{
 			&flg.String{Name: "in", Brief: "the archive's directory, which is audit.archive when that is set"},
 			&flg.String{Name: "of", Brief: "the digest `roster trail verify` printed of the findings looked at"},
-			&flg.String{Name: "by", Brief: "who accepts; the operator's user and host by default"},
+			&flg.String{Name: "by", Brief: "who accepts, where --as names nobody; the shell's user and host by default"},
 			&flg.String{Name: "why", Brief: "what was looked at and decided; it is kept"},
 			&flg.Switch{Name: "full", Brief: "the verification looked at was --full"},
 			&flg.Int{Name: "restored", Brief: "for a database restored from a backup, the checkpoint the backup holds (0 for one from before the first)"},
@@ -885,10 +891,14 @@ func newCmdTrailAccept(c *cmd.Config) *xli.Command {
 				return errors.New("--why: what was looked at and decided")
 			}
 			by, _ := flg.Find[string](cl, "by")
-			if strings.TrimSpace(by) == "" {
+			named := strings.TrimSpace(c.Client.As) != ""
+			if named && strings.TrimSpace(by) != "" {
+				return errors.New("--by: --as says who accepts; drop one of them")
+			}
+			if !named && strings.TrimSpace(by) == "" {
 				by = thisShell()
 			}
-			if strings.TrimSpace(by) == "" {
+			if !named && strings.TrimSpace(by) == "" {
 				return errors.New("--by: who accepts, since this shell does not say")
 			}
 
@@ -907,6 +917,15 @@ func newCmdTrailAccept(c *cmd.Config) *xli.Command {
 				return err
 			}
 			defer s.Close()
+
+			if named {
+				who, err := accepting(ctx, c, s)
+				if err != nil {
+					return err
+				}
+				by = accepter(who)
+				a.By = by
+			}
 
 			// What the acceptance logs is said, on stderr ([aloud]).
 			ctx, _ = aloud(ctx)

@@ -11,8 +11,10 @@ import (
 	"github.com/lesomnus/xli/flg"
 
 	"github.com/lesomnus/payday/pdcmd"
+	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/roster/cmd"
+	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
 )
 
@@ -111,12 +113,25 @@ func newCmdControlKeyAdd(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			who, err := cmd.HolderNamed(ctx, s.Control, alias)
+			by, err := namedAt(ctx, c, s)
 			if err != nil {
 				return err
 			}
 
-			return m.mint(ctx, s.Control.Ungated, who, keys.PrefixDeployment, "@"+alias)
+			// Made where it is new, which is a holder of the control plane
+			// written: a call at the shell of its own, as `roster --as …
+			// control holder add` is.
+			var who pdid.Id
+			if err := keptBy(ctx, s.Control, by, app.HolderService_Add_FullMethodName, func(ctx context.Context) error {
+				var err error
+				who, err = cmd.HolderNamed(ctx, s.Control, alias)
+
+				return err
+			}); err != nil {
+				return err
+			}
+
+			return m.mint(ctx, s.Control, by, who, keys.PrefixDeployment, "@"+alias)
 		}),
 	}
 }

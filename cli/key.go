@@ -127,7 +127,12 @@ func newCmdKeyAdd(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			return m.mint(ctx, s.Ungated, who, keys.PrefixTenant, "@"+tenant+"/"+holder)
+			by, err := namedAt(ctx, c, s)
+			if err != nil {
+				return err
+			}
+
+			return m.mint(ctx, s, by, who, keys.PrefixTenant, "@"+tenant+"/"+holder)
 		}),
 	}
 }
@@ -190,25 +195,33 @@ func mintingOf(cl *xli.Command, narrows bool) (minting, error) {
 	return minting{name: name, methods: methods, expires: expires}, nil
 }
 
-// mint writes the row on `at`, hung off `who`, and prints the token once.
+// mint writes the row on the plane `at`, hung off `who`, and prints the token
+// once. Where `--as` named somebody, the write is a call at the shell by them,
+// on that plane's access record ([keptBy]).
 //
 // The plane is the caller's to have decided, and the prefix travels with it:
 // it is never something anybody names -- `apikey_svc.ext.proto` is explicit that a
 // caller who could name one could ask the customer-facing door for the
 // deployment's own kind.
-func (m minting) mint(ctx context.Context, at app.Server, who pdid.Id, prefix string, whose string) error {
+func (m minting) mint(ctx context.Context, at *cmd.Server, by *cmd.Operator, who pdid.Id, prefix string, whose string) error {
 	token, sum, err := keys.Mint(prefix)
 	if err != nil {
 		return err
 	}
 
-	v, err := at.ApiKey().Add(ctx, app.ApiKeyAddRequest_builder{
-		Holder:      app.HolderRef_builder{Id: who.Bytes()}.Build(),
-		Alias:       m.name,
-		Secret:      sum,
-		Methods:     m.methods,
-		DateExpires: m.expires,
-	}.Build())
+	var v *app.ApiKey
+	err = keptBy(ctx, at, by, app.ApiKeyService_Issue_FullMethodName, func(ctx context.Context) error {
+		var err error
+		v, err = at.Ungated.ApiKey().Add(ctx, app.ApiKeyAddRequest_builder{
+			Holder:      app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Alias:       m.name,
+			Secret:      sum,
+			Methods:     m.methods,
+			DateExpires: m.expires,
+		}.Build())
+
+		return err
+	})
 	if status.Code(err) == codes.AlreadyExists {
 		return fmt.Errorf("%s already has a key called %q; revoke it, or name this one with --name", whose, m.name)
 	}
@@ -337,10 +350,17 @@ func newCmdKeyRevoke(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			_, err = at.Ungated.ApiKey().Erase(ctx,
-				app.ApiKeyRef_builder{Id: k.Bytes()}.Build())
+			by, err := namedAt(ctx, c, s)
+			if err != nil {
+				return err
+			}
 
-			return err
+			return keptBy(ctx, at, by, app.ApiKeyService_Erase_FullMethodName, func(ctx context.Context) error {
+				_, err := at.Ungated.ApiKey().Erase(ctx,
+					app.ApiKeyRef_builder{Id: k.Bytes()}.Build())
+
+				return err
+			})
 		}),
 	}
 }

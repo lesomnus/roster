@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
 
+	"github.com/lesomnus/payday/access"
 	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/grpcx"
 	"github.com/lesomnus/payday/pdcmd"
@@ -480,7 +481,17 @@ func NewCmdRestore(c *cmd.Config) *xli.Command {
 			if err != nil {
 				return fmt.Errorf("audit: %w", err)
 			}
-			if err := forget.Restore(ctx, s.Ent, who, cs, s.Queue); err != nil {
+			// Their standing written back, which is a call at the shell by
+			// whoever `--as` named, on the access record ([keptBy], #284),
+			// as `holder erase` of them was. It has no RPC, and is filed
+			// under the name the trail gives it.
+			by, err := namedAt(ctx, c, s)
+			if err != nil {
+				return err
+			}
+			if err := keptBy(ctx, s, by, forget.RestoredHolder, func(ctx context.Context) error {
+				return restoredOne(ctx, s, who, cs)
+			}); err != nil {
 				return err
 			}
 
@@ -489,6 +500,26 @@ func NewCmdRestore(c *cmd.Config) *xli.Command {
 			return nil
 		}),
 	}
+}
+
+// restoredOne brings back one person erased, and says the call wrote their
+// row: `forget.Restore` writes past every server, so the recorder a server's
+// write tells is not told, and a call at the shell that made it would be no
+// row of the access record at all. Filed under their tenant, as a write of
+// their row through a server is.
+func restoredOne(ctx context.Context, s *cmd.Server, who pdid.Id, cs audit.Contents) error {
+	v, err := s.Ent.Holder.Get(ctx, who.Uuid())
+	if err != nil {
+		return err
+	}
+	if err := forget.Restore(ctx, s.Ent, who, cs, s.Queue); err != nil {
+		return err
+	}
+	if call, ok := access.Of(ctx); ok {
+		call.Wrote(access.Subject{Id: who, Tenant: pdid.Id(v.TenantId)})
+	}
+
+	return nil
 }
 
 func forgotten(ctx context.Context, s *cmd.Server, who pdid.Id, p trail.Policy, cs audit.Contents) error {

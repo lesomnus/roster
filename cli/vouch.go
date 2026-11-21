@@ -132,10 +132,26 @@ func vouching(ctx context.Context, c *cmd.Config) (*cmd.Server, *vouch.Server, e
 // recovery. So the person is found here first, by lookup only, and `Issue` is
 // handed the alias of a row that already exists. `alias` is that name, and
 // empty on the data plane, where `Issue` takes a `ref`.
+//
+// # And who named them
+//
+// `by` is who `--as` named at this shell, or nil where it named nobody: a
+// reset, a set and an unlock are each a call of their RPC at the shell by
+// them, on the plane's access record, as the same write through the entity
+// tree is (#284). `plane` is the deployment the stack is of.
 type whomed struct {
 	at    app.Server
 	who   *app.VouchWho
 	alias string
+
+	plane *cmd.Server
+	by    *cmd.Operator
+}
+
+// kept is `write` as a call of `method` at the shell by whoever `--as` named
+// ([keptBy]).
+func (w whomed) kept(ctx context.Context, method string, write func(ctx context.Context) error) error {
+	return keptBy(ctx, w.plane, w.by, method, write)
 }
 
 // issuing is the request `reset` makes about this person.
@@ -150,12 +166,17 @@ func (w whomed) issuing(kind string) *app.CredentialIssueRequest {
 	return req.Build()
 }
 
-func whom(ctx context.Context, s *cmd.Server, cl *xli.Command, control bool) (whomed, error) {
+func whom(ctx context.Context, c *cmd.Config, s *cmd.Server, cl *xli.Command, control bool) (whomed, error) {
 	ref, named := arg.Get[pdcmd.Ref](cl, "REF")
 	if !named {
 		return whomed{}, errors.New("REF: who, as @tenant/alias or an identifier")
 	}
 	if err := ref.Expect(pd.HolderDomain); err != nil {
+		return whomed{}, err
+	}
+
+	by, err := namedAt(ctx, c, s)
+	if err != nil {
 		return whomed{}, err
 	}
 
@@ -165,7 +186,7 @@ func whom(ctx context.Context, s *cmd.Server, cl *xli.Command, control bool) (wh
 			return whomed{}, err
 		}
 
-		return whomed{at: s.Ungated, who: app.VouchWho_builder{Id: who.Bytes()}.Build()}, nil
+		return whomed{at: s.Ungated, who: app.VouchWho_builder{Id: who.Bytes()}.Build(), plane: s, by: by}, nil
 	}
 
 	if s.Control == nil {
@@ -188,6 +209,8 @@ func whom(ctx context.Context, s *cmd.Server, cl *xli.Command, control bool) (wh
 		at:    s.Control.Ungated,
 		who:   app.VouchWho_builder{Id: who.Bytes()}.Build(),
 		alias: h.GetAlias(),
+		plane: s.Control,
+		by:    by,
 	}, nil
 }
 
@@ -227,15 +250,20 @@ func newCmdVouchReset(c *cmd.Config, control bool) *xli.Command {
 			}
 			defer s.Close()
 
-			w, err := whom(ctx, s, cl, control)
+			w, err := whom(ctx, c, s, cl, control)
 			if err != nil {
 				return err
 			}
 
 			kind, _ := flg.Find[string](cl, "kind")
 
-			res, err := w.at.Credential().Issue(ctx, w.issuing(kind))
-			if err != nil {
+			var res *app.CredentialIssueResponse
+			if err := w.kept(ctx, app.CredentialService_Issue_FullMethodName, func(ctx context.Context) error {
+				var err error
+				res, err = w.at.Credential().Issue(ctx, w.issuing(kind))
+
+				return err
+			}); err != nil {
 				return err
 			}
 
@@ -292,7 +320,7 @@ func newCmdVouchSet(c *cmd.Config, control bool) *xli.Command {
 			}
 			defer s.Close()
 
-			w, err := whom(ctx, s, cl, control)
+			w, err := whom(ctx, c, s, cl, control)
 			if err != nil {
 				return err
 			}
@@ -301,11 +329,15 @@ func newCmdVouchSet(c *cmd.Config, control bool) *xli.Command {
 
 			// Set is a `Credential` write now, named by reference. Locally,
 			// through `Ungated`, where a frameless caller waives the reach rule.
-			if _, err := w.at.Credential().Set(ctx, app.CredentialSetRequest_builder{
-				Ref:    app.HolderRef_builder{Id: w.who.GetId()}.Build(),
-				Kind:   kind,
-				Secret: []byte(secret),
-			}.Build()); err != nil {
+			if err := w.kept(ctx, app.CredentialService_Set_FullMethodName, func(ctx context.Context) error {
+				_, err := w.at.Credential().Set(ctx, app.CredentialSetRequest_builder{
+					Ref:    app.HolderRef_builder{Id: w.who.GetId()}.Build(),
+					Kind:   kind,
+					Secret: []byte(secret),
+				}.Build())
+
+				return err
+			}); err != nil {
 				return err
 			}
 
@@ -340,7 +372,7 @@ func newCmdVouchUnlock(c *cmd.Config, control bool) *xli.Command {
 			}
 			defer s.Close()
 
-			w, err := whom(ctx, s, cl, control)
+			w, err := whom(ctx, c, s, cl, control)
 			if err != nil {
 				return err
 			}
@@ -350,11 +382,16 @@ func newCmdVouchUnlock(c *cmd.Config, control bool) *xli.Command {
 			// Unlock is a `Credential` write now (`Vouch.Unlock` moved onto the
 			// entity), named by reference. Locally, through `Ungated`, so the
 			// escalation rule waives itself for a frameless caller.
-			res, err := w.at.Credential().Unlock(ctx, app.CredentialUnlockRequest_builder{
-				Ref:  app.HolderRef_builder{Id: w.who.GetId()}.Build(),
-				Kind: kind,
-			}.Build())
-			if err != nil {
+			var res *app.CredentialUnlockResponse
+			if err := w.kept(ctx, app.CredentialService_Unlock_FullMethodName, func(ctx context.Context) error {
+				var err error
+				res, err = w.at.Credential().Unlock(ctx, app.CredentialUnlockRequest_builder{
+					Ref:  app.HolderRef_builder{Id: w.who.GetId()}.Build(),
+					Kind: kind,
+				}.Build())
+
+				return err
+			}); err != nil {
 				return err
 			}
 
@@ -402,7 +439,7 @@ func newCmdOperatorEnrol(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
-			w, err := whom(ctx, s, cl, true)
+			w, err := whom(ctx, c, s, cl, true)
 			if err != nil {
 				return err
 			}
@@ -410,13 +447,20 @@ func newCmdOperatorEnrol(c *cmd.Config) *xli.Command {
 			name, _ := flg.Find[string](cl, "name")
 			issuer, _ := flg.Find[string](cl, "issuer")
 
-			v, err := w.at.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
-				Ref:    app.HolderRef_builder{Id: w.who.GetId()}.Build(),
-				Kind:   vouch.KindTotp,
-				Name:   name,
-				Issuer: issuer,
-			}.Build())
-			if err != nil {
+			// An operator's way in, written: a call at the shell by whoever
+			// `--as` named, as a reset is (#284).
+			var v *app.CredentialEnrolResponse
+			if err := w.kept(ctx, app.CredentialService_Enrol_FullMethodName, func(ctx context.Context) error {
+				var err error
+				v, err = w.at.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
+					Ref:    app.HolderRef_builder{Id: w.who.GetId()}.Build(),
+					Kind:   vouch.KindTotp,
+					Name:   name,
+					Issuer: issuer,
+				}.Build())
+
+				return err
+			}); err != nil {
 				return err
 			}
 
@@ -475,7 +519,7 @@ func newCmdOperatorProve(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
-			w, err := whom(ctx, s, cl, true)
+			w, err := whom(ctx, c, s, cl, true)
 			if err != nil {
 				return err
 			}
@@ -486,13 +530,21 @@ func newCmdOperatorProve(c *cmd.Config) *xli.Command {
 			// sealed under it.
 			v := vouch.New(w.at, w.at, vouch.WithKeys(s.Control.Keyring), vouch.WithLockout(s.Control.Lockout))
 
-			res, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
-				Who:    w.who,
-				Kind:   vouch.KindTotp,
-				Name:   name,
-				Secret: []byte(code),
-			}.Build())
-			if err != nil {
+			// What proving writes -- the factor marked proved, a lockout
+			// counted -- is a call at the shell by whoever `--as` named, as a
+			// reset is (#284).
+			var res *app.VouchVerifyResponse
+			if err := w.kept(ctx, app.VouchService_Verify_FullMethodName, func(ctx context.Context) error {
+				var err error
+				res, err = v.Verify(ctx, app.VouchVerifyRequest_builder{
+					Who:    w.who,
+					Kind:   vouch.KindTotp,
+					Name:   name,
+					Secret: []byte(code),
+				}.Build())
+
+				return err
+			}); err != nil {
 				return err
 			}
 			if !slices.Contains(res.GetSatisfied(), vouch.KindTotp) {

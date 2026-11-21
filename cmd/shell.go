@@ -103,6 +103,10 @@ var ErrUnnamed = errors.New(
 // Never made, unlike [HolderNamed] beside it: a name that matches nobody is a
 // typo or a guess, and a row made for it would be an operator nobody is,
 // recorded as having read whatever this command read.
+//
+// Any holder of the control plane who is not stopped, and not only one who
+// signs in: a deployment whose operators are all disabled has nobody else to
+// name, and a service's name is its way back (#284).
 func OperatorNamed(ctx context.Context, s *Server, as string) (Operator, error) {
 	if s.Control == nil {
 		return Operator{}, errors.New(
@@ -113,6 +117,19 @@ func OperatorNamed(ctx context.Context, s *Server, as string) (Operator, error) 
 	as = strings.TrimPrefix(strings.TrimSpace(as), "@")
 	if as == "" {
 		return Operator{}, ErrUnnamed
+	}
+
+	// A control plane whose tables are not made yet has nobody in it to name,
+	// and asking it answered the database's own words, `no such table`: a
+	// command that makes its tables when the switch says it may (`resources
+	// apply`, `login provision`, `control key add`) is told who is at the shell
+	// before it makes them (#284). Said in roster's words, and nothing is made
+	// earlier than it was.
+	if made, err := hasTables(ctx, s.Control); err != nil {
+		return Operator{}, fmt.Errorf("--as %s: %w", as, err)
+	} else if !made {
+		return Operator{}, fmt.Errorf("--as %s: nobody can be named at this shell before `roster init` has made the first operator, "+
+			"and this deployment's control plane has no tables yet; run `roster init` first, or leave --as out for this command", as)
 	}
 
 	ts, err := s.Control.Ungated.Tenant().List(ctx, app.TenantListRequest_builder{Size: 1}.Build())
@@ -155,6 +172,22 @@ func OperatorNamed(ctx context.Context, s *Server, as string) (Operator, error) 
 	}
 
 	return Operator{Id: who, Tenant: tenant, Alias: v.GetAlias()}, nil
+}
+
+// hasTables is whether the plane's database has its tables made: the tenant's,
+// which is the first an operator is looked up in.
+func hasTables(ctx context.Context, s *Server) (bool, error) {
+	q := `SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'tenant'`
+	if s.Dialect == config.DialectPostgres {
+		q = `SELECT count(*) FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = 'tenant'`
+	}
+
+	var n int
+	if err := s.Db.QueryRowContext(ctx, q).Scan(&n); err != nil {
+		return false, err
+	}
+
+	return n > 0, nil
 }
 
 // Shell is what the access record is told of a call made at a shell on the
