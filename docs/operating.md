@@ -3047,7 +3047,14 @@ through a pooler, which `LISTEN` cannot cross.
 
 With `memory`, a client watching one replica never hears about a write that landed
 on another, and nothing reports it: the stream stays open and the client looks
-connected. `none` is honest instead -- it refuses `Watch` outright, so a client is
+connected. `serve` says so once as it starts, at `WARN`, where `memory` is beside a
+`spin.lease` of several processes (`postgres`), and refuses nothing: one process
+may hold such a lease.
+
+What a file declares (`resources`) is applied by `serve` as it starts, before it
+serves and past what publishes a write: a declared role whose methods changed is
+said to no follower, so a follower of another replica keeps what it had until its
+own copy runs out, thirty seconds in `reach`. `none` is honest instead -- it refuses `Watch` outright, so a client is
 told rather than left listening. What no broker promises is that nothing is missed:
 a notification reaches whoever is listening at that moment and is then forgotten,
 so a subscriber that falls behind is cut, `ResourceExhausted`, and so is every

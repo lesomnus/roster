@@ -482,6 +482,7 @@ configuration.
 | How long a stream left open goes before whoever opened it is asked again | the deployment | `stream.recheck` | `TestAStreamLeftOpenIsAskedAgainWhoOpenedIt` |
 | How long a row of the access record is kept: for good until a window is named, which `serve` says as it starts for as long as none is and nobody said for good is meant. A window of its own needs no archive | the deployment | `audit.by.access` | `TestServeSaysWhenTheAccessRecordHasNoWindow` · `TestAWindowOfItsOwnBoundsTheAccessRecordWithNoArchive` |
 | How often the data plane asks an idle connection whether it is there, how long it waits, and how often a client may ask: every minute, twenty seconds and every twenty seconds where nothing is said, so a follower that asks every thirty is not hung up on. A connection's age ends no stream that is open unless its grace is said beside it, which `serve` says as it starts | the deployment | `server.keepalive` | `TestWhereNothingIsSaidOfKeepaliveAFollowerMayAsk` · `TestAnAgeWithNoGraceIsSaidAtStart` |
+| Whether a follower hears every process or only the one it is connected to: `memory` beside a lease of several processes is said once as `serve` starts, and refused nowhere | the deployment | `watch.broker` · `spin.lease` | `TestABrokerOfOneProcessBesideALeaseOfSeveralIsSaidAtStart` |
 | What somebody holds beyond their rows | the deployment | a file ([file-policy.md](file-policy.md)) | `TestFilePolicyJoinsEveryPermissionReader` |
 
 ## What is not a rule, on purpose
