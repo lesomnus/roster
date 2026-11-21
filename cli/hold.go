@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
 
+	"github.com/lesomnus/payday/grpcx"
 	"github.com/lesomnus/payday/pdcmd"
 	"github.com/lesomnus/payday/pdid"
 
@@ -54,7 +55,7 @@ func NewCmdHold(c *cmd.Config) *xli.Command {
 					why, _ := flg.Find[string](cl, "why")
 
 					return onHeld(ctx, c, cl, func(s *cmd.Server, t pdid.Id) error {
-						if err := forget.Hold(ctx, s.Ungated, t, why); err != nil {
+						if err := forget.Hold(grpcx.AsMethod(ctx, holdPlaced), s.Ungated, t, why); err != nil {
 							return err
 						}
 						fmt.Fprintf(os.Stderr, "%s is held: %s\n", t, why)
@@ -69,7 +70,7 @@ func NewCmdHold(c *cmd.Config) *xli.Command {
 				Args:  tenantArg(),
 				Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 					return onHeld(ctx, c, cl, func(s *cmd.Server, t pdid.Id) error {
-						if err := forget.Lift(ctx, s.Ungated, t); err != nil {
+						if err := forget.Lift(grpcx.AsMethod(ctx, holdLifted), s.Ungated, t); err != nil {
 							return err
 						}
 						fmt.Fprintf(os.Stderr, "%s is no longer held\n", t)
@@ -104,6 +105,16 @@ func NewCmdHold(c *cmd.Config) *xli.Command {
 		Handler: xli.RequireSubcommand(),
 	}
 }
+
+// What a hold placed and a hold lifted are called on the trail. Each is a
+// patch of the tenant, and was filed under the generated method that wrote it,
+// `/roster.TenantService/Patch`, the same for both and for any change of a
+// tenant's note (#284). They have no RPC, so they are named as
+// `roster.holder.restore` and `roster.keys.use` are.
+const (
+	holdPlaced = "roster.hold.place"
+	holdLifted = "roster.hold.lift"
+)
 
 // leaving says, of a tenant just held that is on its way out, what the hold
 // does not do for it.

@@ -2237,11 +2237,23 @@ is recorded as says which. A session made before #280 is the one that is a
 finding: its identifier says no kind, so the check prints `not-on-trail unknown
 <id>` for it and `--accept` accepts no row of it, and there is nothing to do
 but wait -- it is gone when its twelve hours are over and the sweep has passed.
+
 Before a pass destroys, out of the archive, the newest row of the trail
 about a row that is still there, it carries that row's digest forward, so a row
 nobody wrote since its window is still checked. A row of the trail a pass
 *discards* from the database is carried nowhere, which is why a `discard` beside
 `audit.digest.key` is refused at start (above).
+
+What a command at the box writes is called on the trail what the same act is
+called over the wire, on every line of it, so one name finds every reset
+however it was made: `vouch reset` and `control vouch reset` are
+`/roster.CredentialService/Issue`, `vouch set` `/Set` and `vouch unlock`
+`/Unlock`; `key add` and `control key add` mint as
+`/roster.ApiKeyService/Issue` (and a holder `control key add` makes is a
+`/roster.HolderService/Add`); `key revoke` is `/roster.ApiKeyService/Erase`.
+What has no RPC has a name of roster's own: `roster.hold.place`,
+`roster.hold.lift`, `roster.alias.free` for a tenant's alias freed, and
+`roster.holder.restore` for somebody brought back.
 
 A row a migration rewrote is a finding until somebody has looked. `trail rows`
 prints, on stderr, the digest of what it found, and `--accept --of <that digest>
