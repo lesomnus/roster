@@ -392,7 +392,12 @@ directory's own word that somebody has left removes no account, and is heard
 as before.
 
 **Leaving.** `active: false` suspends them -- the same suspension `Disable`
-writes, refused everywhere -- and `active: true` lifts it. `DELETE` suspends them
+writes, refused everywhere -- and `active: true` lifts it. A request is not
+all or nothing, as RFC 7644 §3.5.2 would have a PATCH: the endpoint writes it
+through roster in several calls and nothing takes back the ones before a
+refusal, so `active: false` is written first and stands though what was said
+beside it is refused, and `active: true` is written after the rest, so a
+request that is refused lets nobody back in. `DELETE` suspends them
 and keeps the row: what becomes of it is an operator's decision, and the endpoint
 speaks of them no more. A re-hire with the same address is refused as taken until
 an operator brings them back -- `roster --as admin holder enable @contoso/dave`
