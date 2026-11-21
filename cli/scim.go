@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -410,10 +411,10 @@ func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant strin
 		return adoption{}, fmt.Errorf("--tenant %s: no connection of it provisions its people, so no directory has matched anybody", tenant)
 	}
 
-	var found []adopted
+	var found, apps []adopted
 	if err := s.AtTheShell(ctx, by, rstr.HolderService_List_FullMethodName, func(ctx context.Context) error {
 		var err error
-		found, err = matched(ctx, s, at, provider)
+		found, apps, err = matched(ctx, s, at, provider)
 		if err != nil {
 			return err
 		}
@@ -422,7 +423,8 @@ func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant strin
 		if err != nil {
 			return err
 		}
-		for _, v := range found {
+		// The holders an app acts as are named below, so they are shown too.
+		for _, v := range slices.Concat(found, apps) {
 			who, err := pdid.From(v.id)
 			if err != nil {
 				return err
@@ -440,6 +442,7 @@ func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant strin
 		for _, v := range found {
 			fmt.Fprintf(out, "%s\t%s\t%s\n", v.alias, v.address, v.subject)
 		}
+		notPeople(apps)
 		fmt.Fprintf(os.Stderr, "digest %s\n", r.digest)
 
 		return r, fmt.Errorf("--of: the list read was %s, and it is now %s; nothing was written. "+
@@ -467,8 +470,26 @@ func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant strin
 			return r, fmt.Errorf("%s is linked, and what the directory said of them was not taken away: %w", v.alias, err)
 		}
 	}
+	notPeople(apps)
 
 	return r, nil
+}
+
+// notPeople says, after the list, the holders an app acts as that a directory
+// said an id for: left off it, since nobody signs in as them, and never
+// linked. Said rather than dropped, since a directory that speaks of them has
+// been told something an operator should know.
+func notPeople(apps []adopted) {
+	if len(apps) == 0 {
+		return
+	}
+
+	aliases := make([]string, 0, len(apps))
+	for _, v := range apps {
+		aliases = append(aliases, v.alias)
+	}
+	fmt.Fprintf(os.Stderr, "roster: the directory said an id for %d holder(s) an app acts as, and nobody signs in as them, "+
+		"so they are not on the list and are not linked: %s.\n", len(apps), strings.Join(aliases, ", "))
 }
 
 // listDigest is what names the list `adopt` printed of a tenant and the
@@ -498,19 +519,46 @@ func listDigest(tenant []byte, provider string, found []adopted) string {
 
 // matched is everybody of the tenant `at` whose directory said what it calls
 // them and who has no identity at `provider`, the connection it provisions
-// through.
-func matched(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, provider string) ([]adopted, error) {
-	var found []adopted
+// through: the people, and apart from them the holders an app acts as.
+//
+// A holder a `Nomination` of the tenant names as the one an app acts as
+// (`roster app install` writes it) is nobody who signs in, and an account at
+// the connection would be a way in as the app. So it is not on the list,
+// whatever the directory said of it, and is answered apart, to be said.
+func matched(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, provider string) ([]adopted, []adopted, error) {
+	acts := map[string]bool{}
+	for after := ""; ; {
+		vs, err := s.Ungated.Nomination().List(ctx, rstr.NominationListRequest_builder{
+			Filters: []*rstr.NominationFilter{rstr.NominationFilter_builder{Tenant: at}.Build()},
+			After:   after,
+		}.Build())
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, v := range vs.GetItems() {
+			acts[string(v.GetActsAs().GetId())] = true
+		}
+		if after = vs.GetNext(); after == "" {
+			break
+		}
+	}
+
+	var found, apps []adopted
 	for after := ""; ; {
 		vs, err := s.Ungated.Holder().List(ctx, rstr.HolderListRequest_builder{
 			Filters: []*rstr.HolderFilter{rstr.HolderFilter_builder{Tenant: at}.Build()},
 			After:   after,
 		}.Build())
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		for _, h := range vs.GetItems() {
 			if h.GetDirectorySubject() == "" {
+				continue
+			}
+			if acts[string(h.GetId())] {
+				apps = append(apps, adopted{id: h.GetId(), alias: h.GetAlias(), subject: h.GetDirectorySubject()})
+
 				continue
 			}
 			ref := rstr.HolderRef_builder{Id: h.GetId()}.Build()
@@ -519,7 +567,7 @@ func matched(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, provider st
 				Filters: []*rstr.IdentityFilter{rstr.IdentityFilter_builder{Holder: ref}.Build()},
 			}.Build())
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			linked := false
 			for _, v := range ids.GetItems() {
@@ -537,7 +585,7 @@ func matched(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, provider st
 				Filters: []*rstr.EmailFilter{rstr.EmailFilter_builder{Holder: ref}.Build()},
 			}.Build())
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			if len(es.GetItems()) > 0 {
 				v.address = es.GetItems()[0].GetAddress()
@@ -545,7 +593,7 @@ func matched(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, provider st
 			found = append(found, v)
 		}
 		if after = vs.GetNext(); after == "" {
-			return found, nil
+			return found, apps, nil
 		}
 	}
 }

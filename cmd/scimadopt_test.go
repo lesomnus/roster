@@ -287,3 +287,61 @@ func TestAdoptsConfirmAndItsDigestGoTogether(t *testing.T) {
 	ids, _ := b.subjectsOf(fred)
 	x.Empty(ids)
 }
+
+// TestAdoptListsPeopleAndNotWhatAnAppActsAs: `adopt` lists people, and a
+// holder an app acts as is none.
+//
+// The list was every holder the directory said an id for and no account at
+// the connection, whoever they were: a directory's key could say an id for an
+// app's holder (`Tell` refuses only a declared row), and `adopt` listed it,
+// with no address, and linked it -- an account at the connection for a holder
+// nobody signs in as. Answered: listed and linked; right is neither. They are
+// not dropped without a word: one sentence after the list names them, and
+// they are on the access record with the people the list shows. They are not
+// part of the list's digest, and are never linked.
+func TestAdoptListsPeopleAndNotWhatAnAppActsAs(t *testing.T) {
+	x := require.New(t)
+	b := newAdoptBed(t)
+	ctx := t.Context()
+
+	var fred, billing *app.HolderRef
+	b.with(func(s *cmd.Server) {
+		fred = b.person(s, "fred")
+		b.tell(s, fred, fredOid)
+
+		// What `roster app install` writes: a holder of the tenant, and a
+		// nomination naming it as the one the app acts as.
+		h, err := s.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{Tenant: b.at, Alias: "billing"}.Build())
+		x.NoError(err)
+		billing = app.HolderRef_builder{Id: h.GetId()}.Build()
+		borrower, err := cmd.HolderNamed(ctx, s.Control, "billing")
+		x.NoError(err)
+		_, err = s.Ungated.Nomination().Add(ctx, app.NominationAddRequest_builder{
+			Tenant: b.at, BorrowerId: borrower.Bytes(), ActsAs: billing, Name: "billing",
+		}.Build())
+		x.NoError(err)
+		b.tell(s, billing, ginaOid)
+	})
+
+	out, said, err := b.adopt()
+	x.NoError(err)
+	x.Contains(out, "fred\tfred@acme.example\t"+fredOid)
+	x.NotContains(out, "billing")
+	x.Contains(said, "billing", "said, after the list")
+	x.Contains(said, "nobody signs in as")
+
+	// Whose the list showed is on the record, the app's holder among them,
+	// since the sentence names it.
+	rs := accessed(t, b.c, false, app.HolderService_List_FullMethodName)
+	x.Len(rs, 1)
+	x.Contains(rs[0].Subjects, fred.GetId())
+	x.Contains(rs[0].Subjects, billing.GetId())
+
+	_, _, err = b.adopt("--confirm", "acme", "--of", listDigest(t, said))
+	x.NoError(err)
+	ids, _ := b.subjectsOf(fred)
+	x.Equal([]string{fredOid}, ids)
+	ids, kept := b.subjectsOf(billing)
+	x.Empty(ids, "nobody signs in as what an app acts as")
+	x.Equal(ginaOid, kept)
+}

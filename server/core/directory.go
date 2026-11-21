@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/slug"
@@ -411,6 +412,12 @@ func (s coreHolder) said(ctx context.Context, ref *app.HolderRef, was *timestamp
 // the connection's claim, an address to its normal form -- so that an operator
 // who believes it can write it as it stands. Saying what is already kept
 // writes nothing.
+//
+// Never of the caller's own row, which is refused as `Deactivate` of it is. A
+// directory says what it calls the people it speaks of, and it is not one of
+// them: what its key said of its own holder, `roster scim adopt` listed and
+// linked, and the directory's holder then had an account at the connection.
+// It is whoever holds the verb, and not the endpoint's key alone.
 func (s coreHolder) Tell(ctx context.Context, req *app.HolderTellRequest) (*app.Holder, error) {
 	if err := s.declaredHolder(ctx, req.GetRef()); err != nil {
 		return nil, err
@@ -428,6 +435,10 @@ func (s coreHolder) Tell(ctx context.Context, req *app.HolderTellRequest) (*app.
 	}.Build())
 	if err != nil {
 		return nil, err
+	}
+	if f, ok := frame.From(ctx); ok && bytesEq(v.GetId(), f.Actor.Bytes()) {
+		return nil, status.Error(codes.PermissionDenied,
+			"a directory says what it calls the people it speaks of, and it is not one of them: this is the caller's own row")
 	}
 	tenant, err := pdid.From(v.GetTenant().GetId())
 	if err != nil {
