@@ -406,6 +406,16 @@ the tenant**: a front door, which links somebody it saw the provider sign in;
 an administrator; `adopt` above. A person's own is refused, and so is the
 account page's *connect* for that connection, which is made as them.
 
+**From when the connection provisions, and not before.** A row somebody wrote
+on their own account while the connection did not provision is not refused
+after the fact, and nothing on an identity says who wrote it: it is who the
+directory means from its first request. `roster scim provision` lists nothing
+of them. So before a tenant's connection is marked, whoever turns provisioning
+on reads the tenant's accounts at providers (`roster identity list`; each says
+its provider) for the ones at that connection, beside what the directory calls
+each of those people, and a tenant that does not want one written in the
+meantime takes `IdentityService/Add` out of its `self-service` role first.
+
 **Nor theirs to take away.** The same row is what makes somebody one the
 directory speaks for. Somebody it made, who also has a password, could
 *unlink* the account it made them by, and from then on its `active: false`
