@@ -2012,9 +2012,9 @@ func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerO
 // them is any customer's business.
 //
 // It is roster again, so it is the same `Grpc` with the same chain: the wall,
-// the gate, the trail. What differs is which database is behind it and one
-// registration, since `ApiKeyService` is the whole point of the port and is
-// closed on the other one.
+// the gate, the trail. What differs is which database is behind it: the
+// `ApiKeyService` here, as on every server (`Register`), mints and reads the
+// deployment's own keys, an `rk_`, where the data plane's are a tenant's.
 func (s *Server) serveControl(ctx context.Context, c Config, g *grpc.Server) (func(), error) {
 	if !c.Control.Answers() || g == nil {
 		return func() {}, nil

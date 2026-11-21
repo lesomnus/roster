@@ -71,7 +71,7 @@ type AccountConfig struct {
 	// page somewhere else.
 	//
 	// A block of one field rather than `static:` beside the rest, because
-	// `control.console.dir` is already the name for "the built UI directory
+	// `admin.console.dir` is already the name for "the built UI directory
 	// for this listener" and a reader who has seen one should be able to guess
 	// the other. The flag is still `--static`, which is what it was.
 	Page PageConfig `yaml:"page"`
@@ -440,13 +440,12 @@ type LoginConfig struct {
 	// Consent is what happens at the consent hop: `skip`, which grants what the
 	// client asked for and draws nothing, or `ask`, which draws a screen.
 	//
-	// Empty is `skip`, and that is a decision rather than an omission. Every
-	// client in [Clients] was registered by this deployment for one of its own
-	// tenants -- a third party cannot be in that map -- so every one of them
-	// is first-party, and a consent screen for an app the tenant wrote is a
-	// dialog people learn to click through. `ask` is for a deployment that
-	// registers clients somebody else wrote, where the screen is the whole
-	// point.
+	// Empty is `skip`, and that is a decision rather than an omission. A
+	// client is registered with Hydra by whoever runs this deployment, for its
+	// own tenants' apps, so the ordinary one is first-party, and a consent
+	// screen for an app the tenant wrote is a dialog people learn to click
+	// through. `ask` is for a deployment that registers clients somebody else
+	// wrote, where the screen is the whole point.
 	//
 	// A device's flow (RFC 8628) is drawn the screen whichever this says: the
 	// screen its code is typed at cannot name the client, so the consent is

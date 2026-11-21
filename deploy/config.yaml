@@ -87,10 +87,11 @@ control:
 # reads: creating a customer happens before there is a tenant to be narrowed to,
 # so it cannot be done through the walled plane at all.
 #
-# Up, and offered to nobody. There is no Service for it here and `origins` is
-# empty, because the caller is a browser on the admin console's own origin and that
-# origin is a deployment's to know. Both lines are filled in together or neither
-# is; `cmd/serve.go` is why this is a third listener rather than a flag.
+# This is the listener the manual calls root (`docs/operating.md`, "`admin.addr`
+# is root"). `deploy/roster.yaml` has a Service for its `http`, named `roster`,
+# which a deployment routes a host to: it is the one a person opens. `origins`
+# is empty, because the caller is a browser on the admin console's own origin.
+# `cmd/serve.go` is why this is a third listener rather than a flag.
 admin:
   addr: 0.0.0.0:8070
   http:
