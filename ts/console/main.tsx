@@ -24,6 +24,7 @@ import { events } from '#gen/events.js'
 import { caller, type Caller } from '#lib/caller.js'
 import { writes, type Writes } from '#lib/client.js'
 import { letGo, nobody, open, stillHere } from '#lib/store.js'
+import { left, Second, type Left } from '#lib/second.js'
 import { Page } from './page.js'
 import type { Progress, Sandbox } from '#lib/sandbox.js'
 import { go, useRoute } from '#lib/route.js'
@@ -201,6 +202,41 @@ let auth: Client<typeof AuthService>
 function SignIn(props: { onDone: () => void; said?: string | undefined }): React.ReactNode {
 	const [bad, setBad] = useState(false)
 
+	// What a right password left to prove, for somebody who has more than one:
+	// the second form is drawn from it, and a wrong answer there is this form
+	// again (`#lib/second.tsx`).
+	const [more, setMore] = useState<Left | null>(null)
+
+	const refused = (e: unknown): void => {
+		// The form says "no" and nothing else, on purpose; the reason goes
+		// where somebody developing this looks.
+		console.error('sign-in refused:', e)
+		setMore(null)
+		setBad(true)
+	}
+	const answered = (v: Parameters<typeof left>[0]): void => {
+		const m = left(v)
+		if (m === null) return props.onDone()
+
+		setBad(false)
+		setMore(m)
+	}
+
+	if (more !== null) {
+		return (
+			<main className="sign-in">
+				<h1>roster</h1>
+				<Second
+					left={more}
+					proceed={(kind, name, secret) =>
+						void auth.signIn({ continuation: more.continuation, kind, name, secret }).then(answered).catch(refused)
+					}
+					back={() => setMore(null)}
+				/>
+			</main>
+		)
+	}
+
 	return (
 		<form
 			className="sign-in"
@@ -213,13 +249,8 @@ function SignIn(props: { onDone: () => void; said?: string | undefined }): React
 						alias: String(f.get('alias') ?? ''),
 						password: String(f.get('password') ?? ''),
 					})
-					.then(() => props.onDone())
-					.catch((e: unknown) => {
-						// The form says "no" and nothing else, on purpose; the
-						// reason goes where somebody developing this looks.
-						console.error('sign-in refused:', e)
-						setBad(true)
-					})
+					.then(answered)
+					.catch(refused)
 			}}
 		>
 			<h1>roster</h1>

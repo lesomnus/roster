@@ -14,6 +14,8 @@ import (
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
+	"github.com/lesomnus/roster/cmd"
+	entcredential "github.com/lesomnus/roster/internal/ent/credential"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/vouch"
 	"github.com/lesomnus/roster/server/vouch/vouchtest"
@@ -52,7 +54,11 @@ func enrolled(t *testing.T, ctx context.Context, cred app.CredentialServiceServe
 		Secret: []byte(vouchtest.CodeBefore(seed)),
 	}.Build())
 	x.NoError(err)
-	x.True(got.GetOk())
+
+	// Proved, and not a sign-in: asked by nobody, the verifier says what was
+	// proved and what is left, and `ok` is for when nothing is.
+	x.False(got.GetOk())
+	x.Equal([]string{vouch.KindTotp}, got.GetSatisfied(), "the code that confirms a seed was not taken")
 
 	return seed
 }
@@ -234,6 +240,131 @@ func TestTheCountIsOneCountAcrossTheSteps(t *testing.T) {
 		"guessing the second factor did not cost the first anything")
 }
 
+// TestAnAttemptDoesNotOutliveTheLockItRanUp: once wrong second answers have
+// closed the row the first step used, an attempt opened before that is closed
+// with it.
+//
+// # What it was
+//
+// The test above opens an attempt for each guess, and so sees the lock where
+// it looks: at the next first step. What it cannot see is an attempt that was
+// already open. A right password with a factor outstanding counts nothing and
+// nothing caps how many attempts are open at once, and `step` read the lock of
+// the row being proved -- the factor's own, which is never the one a wrong
+// code is counted on. So whoever had kim's password opened as many attempts as
+// five minutes allow, before guessing at all, and went on trying a code on
+// each: the eleventh wrong one closed the password, and the twelfth attempt
+// still finished on a right code. The lockout bounded nothing at the second
+// step but new attempts (#275).
+func TestAnAttemptDoesNotOutliveTheLockItRanUp(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	v := b.keyedLocal(t)
+	seed := enrolled(t, ctx, b.Ungated.Credential(), v, b.ContosoUser)
+
+	as := frame.Into(ctx, frame.New(b.ContosoUser, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
+
+	open := func() string {
+		t.Helper()
+
+		first, err := v.Verify(as, app.VouchVerifyRequest_builder{
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Secret: []byte("correct horse battery staple"),
+		}.Build())
+		require.NoError(t, err)
+		require.NotEmpty(t, first.GetContinuation())
+
+		return first.GetContinuation()
+	}
+	answer := func(attempt, code string) *app.VouchVerifyResponse {
+		t.Helper()
+
+		res, err := v.Continue(as, app.VouchContinueRequest_builder{
+			Continuation: attempt, Kind: vouch.KindTotp, Secret: []byte(code),
+		}.Build())
+		require.NoError(t, err)
+
+		return res.GetVerified()
+	}
+
+	// Every attempt opened first, while nothing has been counted.
+	attempts := make([]string, vouch.MaxFailures+2)
+	for i := range attempts {
+		attempts[i] = open()
+	}
+
+	// As many wrong codes as close an account, one on each.
+	var last *app.VouchVerifyResponse
+	for _, attempt := range attempts[:vouch.MaxFailures] {
+		last = answer(attempt, "000000")
+		x.False(last.GetOk())
+	}
+	x.NotNil(last.GetDateLocked(), "the wrong answer that closes the account did not say so")
+
+	// One left open from before, and the right code.
+	res := answer(attempts[vouch.MaxFailures], vouch.CodeAt(seed, time.Now().Unix()/30))
+	x.False(res.GetOk(), "an attempt opened before the lock finished a sign-in after it")
+	x.NotNil(res.GetDateLocked(), "and it was not told the account is closed, as a first step is")
+
+	// Spent, like every attempt that is answered: the same handle is nothing.
+	x.Nil(answer(attempts[vouch.MaxFailures], vouch.CodeAt(seed, time.Now().Unix()/30)).GetDateLocked())
+}
+
+// TestASignInThatFinishesPaysOffWhatItsWrongAnswersRanUp: the count a wrong
+// second answer adds to is cleared when a sign-in finishes, as a wrong
+// password's is.
+//
+// # What it was
+//
+// A wrong code is counted on the row the first step used. A sign-in that
+// finished cleared the count of the row the **last** step used, which is the
+// factor's own and was never counted on. So for somebody with a second factor
+// the count only went up: ten wrong codes ever closed the account, however
+// many times they had signed in between -- *in a row* was true of a password
+// and of nobody with an authenticator app (#275).
+func TestASignInThatFinishesPaysOffWhatItsWrongAnswersRanUp(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	v := b.keyedLocal(t)
+	seed := enrolled(t, ctx, b.Ungated.Credential(), v, b.ContosoUser)
+
+	as := frame.Into(ctx, frame.New(b.ContosoUser, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
+
+	second := func(code string) *app.VouchVerifyResponse {
+		t.Helper()
+
+		first, err := v.Verify(as, app.VouchVerifyRequest_builder{
+			Who:    app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Secret: []byte("correct horse battery staple"),
+		}.Build())
+		require.NoError(t, err)
+
+		res, err := v.Continue(as, app.VouchContinueRequest_builder{
+			Continuation: first.GetContinuation(), Kind: vouch.KindTotp, Secret: []byte(code),
+		}.Build())
+		require.NoError(t, err)
+
+		return res.GetVerified()
+	}
+	counted := func() int {
+		t.Helper()
+
+		row, err := b.Ent.Credential.Query().Where(entcredential.KindEQ(vouch.KindPassword)).Only(ctx)
+		require.NoError(t, err)
+
+		return int(row.Failures)
+	}
+
+	x.False(second("000000").GetOk())
+	x.False(second("000000").GetOk())
+	x.Equal(2, counted())
+
+	x.True(second(vouch.CodeAt(seed, time.Now().Unix()/30)).GetOk())
+	x.Zero(counted(), "a sign-in finished, and what its wrong answers ran up is still owed")
+}
+
 // TestAnAttemptBelongsToWhoeverOpenedIt is D21's third condition, on the object
 // it was written about.
 func TestAnAttemptBelongsToWhoeverOpenedIt(t *testing.T) {
@@ -291,7 +422,7 @@ func (b *keyedBuilt) keyed(t *testing.T) *vouch.Server {
 	// process is a deployment that cannot read what it wrote, and finding that
 	// out took a morning: the row was right, the key name was right, and the
 	// bytes were not.
-	return vouch.New(b.Ungated, b.Ungated, vouch.WithKeys(b.Keyring))
+	return vouch.New(b.Ungated, b.Ungated, vouch.WithKeys(b.Keyring), vouch.WithGate(cmd.Policy(b.Ent)))
 }
 
 // keyedLocal is the same on the plain harness -- the deployment's keyring, which
@@ -299,7 +430,7 @@ func (b *keyedBuilt) keyed(t *testing.T) *vouch.Server {
 func (b *built) keyedLocal(t *testing.T) *vouch.Server {
 	t.Helper()
 
-	return vouch.New(b.Ungated, b.Ungated, vouch.WithKeys(b.Keyring))
+	return vouch.New(b.Ungated, b.Ungated, vouch.WithKeys(b.Keyring), vouch.WithGate(cmd.Policy(b.Ent)))
 }
 
 func newKeyring(t *testing.T) vouch.Keyring {
@@ -312,4 +443,6 @@ func newKeyring(t *testing.T) vouch.Keyring {
 }
 
 // vouchedLocal is the plain service on a keyed harness.
-func (b *keyedBuilt) vouchedLocal() *vouch.Server { return vouch.New(b.Ungated, b.Ungated) }
+func (b *keyedBuilt) vouchedLocal() *vouch.Server {
+	return vouch.New(b.Ungated, b.Ungated, vouch.WithGate(cmd.Policy(b.Ent)))
+}

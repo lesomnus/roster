@@ -21,12 +21,15 @@
 package scim
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"slices"
 	"strings"
 	"sync"
@@ -40,6 +43,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	rstr "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/front"
 )
 
 // Base is where the protocol is served. A deployment exposes this path and
@@ -52,10 +56,17 @@ const Base = "/scim/v2"
 //
 // What is **not** here is the point of it. No `Identity.Add`, no address
 // written or attested, no `Holder.Add`, no `Holder.Erase`: each of those
-// reaches people who already exist, and a key a directory's cloud presents
-// from the internet should reach only the people it makes (`Provision`) and
-// the people it signs in (`Deactivate`, `Activate`, a profile it owns). `Tell`
-// reaches anybody and is no exception: what it writes is believed by nothing.
+// would give somebody who already exists a way in, or take them away, from a
+// key a directory's cloud presents from the internet.
+//
+// What is here reaches more than the people the directory makes and signs
+// in, and is meant to. It writes the profile of anybody of the tenant no file
+// declares (`Holder.Update`), and who they report to; it reads every
+// person's addresses, accounts and numbers. Only making (`Provision`),
+// suspending (`Deactivate`, `Activate`) and telling (`Tell`) are held to the
+// connection the tenant provisions through: none is made where there is no
+// such connection, a suspension reaches only who signs in through it, and
+// what `Tell` writes is believed by nothing.
 var Methods = []string{
 	rstr.MeService_Get_FullMethodName,
 	rstr.ConnectionService_List_FullMethodName,
@@ -122,11 +133,24 @@ func Bound() []string {
 	return out
 }
 
-// DefaultConcurrency is how many requests are worked on at once when nothing
-// says otherwise. Low on purpose: a directory's provisioning cycle is a burst,
-// and the rate a tenant's callers are held to is shared with the people of
-// that tenant signing in.
+// DefaultConcurrency is how many requests of one tenant's directory are worked
+// on at once when nothing says otherwise. Low on purpose: a directory's
+// provisioning cycle is a burst, and the rate a tenant's callers are held to
+// is shared with the people of that tenant signing in. That is a reason about
+// one tenant, so the turns are counted for each: one tenant's directory in
+// the middle of a burst holds no other tenant's back.
+//
+// Asking roster who a key is, for a key not remembered, is held to the same
+// number for the whole process, since no tenant is known until it is asked.
 const DefaultConcurrency = 4
+
+// BodyTimeout is how long a request's body has to arrive once its key is
+// accepted. A directory sends a body of a few hundred bytes with its headers;
+// a body still on its way after this is a connection being held open, and it
+// is answered `408` where it can still be answered. The body is read outside
+// any turn, so what this bounds is a connection and a goroutine, not anybody
+// else's request.
+const BodyTimeout = 30 * time.Second
 
 // Config is what the endpoint is built from.
 type Config struct {
@@ -136,8 +160,10 @@ type Config struct {
 	// Insecure dials roster without TLS.
 	Insecure bool
 
-	// Concurrency bounds the requests in flight; [DefaultConcurrency] when
-	// zero.
+	// Concurrency is how many requests of one tenant's directory are worked
+	// on at once, and how many keys not remembered are asked about at once;
+	// [DefaultConcurrency] when nought or less. A negative number is refused
+	// where a deployment's file is read, not here.
 	Concurrency int
 
 	// Log is where what was refused or ignored is said.
@@ -152,11 +178,18 @@ type Server struct {
 	roster rstr.Client
 	me     rstr.MeServiceClient
 
-	mux   *http.ServeMux
-	slots chan struct{}
+	mux *http.ServeMux
 
-	// known is what a token's tenant is, kept for a minute: every request
-	// would otherwise ask twice before it asked anything it came for.
+	// asks is the turns of asking roster who a key is: one for each request
+	// whose key is not remembered, for the process.
+	asks chan struct{}
+
+	// turns is each tenant's turns of work, made the first time a key of that
+	// tenant is accepted.
+	turns sync.Map // string(tenant) -> chan struct{}
+
+	// known is what a token's tenant is, kept for a minute for reads: every
+	// read would otherwise ask twice before it asked anything it came for.
 	known sync.Map // [32]byte -> *tenancy
 }
 
@@ -171,8 +204,24 @@ type tenancy struct {
 	// of every identity this links.
 	provider string
 
+	// claim is the claim that connection names its people by
+	// (`Connection.subject_claim`), which says how an `externalId` is spelled
+	// ([tenancy.subject]).
+	claim string
+
 	until time.Time
 }
+
+// subject is an `externalId` as roster keeps the subject it is
+// (`front.Subject`): a GUID in small letters where the connection names its
+// people by `oid`, and as the directory wrote it anywhere else.
+//
+// Folded where a request comes in, so that what the directory says is
+// compared with what roster holds in the spelling roster holds it in. Said in
+// capitals and compared as said, the id somebody signs in by was another id
+// than theirs: nobody was found by it, and it was kept beside them as though
+// the two differed.
+func (t *tenancy) subject(v string) string { return front.Subject(t.claim, v) }
 
 // New dials roster and answers [Base].
 func New(c Config) (*Server, error) {
@@ -200,7 +249,7 @@ func New(c Config) (*Server, error) {
 		conn:   conn,
 		roster: rstr.NewClient(conn),
 		me:     rstr.NewMeServiceClient(conn),
-		slots:  make(chan struct{}, c.Concurrency),
+		asks:   make(chan struct{}, c.Concurrency),
 	}
 	s.routes()
 
@@ -218,25 +267,42 @@ type handler func(ctx context.Context, w http.ResponseWriter, r *http.Request, t
 func (s *Server) routes() {
 	m := http.NewServeMux()
 
-	m.Handle("GET "+Base+"/ServiceProviderConfig", s.authed(serviceProviderConfig))
-	m.Handle("GET "+Base+"/ResourceTypes", s.authed(resourceTypes))
-	m.Handle("GET "+Base+"/ResourceTypes/{name}", s.authed(resourceType))
-	m.Handle("GET "+Base+"/Schemas", s.authed(schemas))
-	m.Handle("GET "+Base+"/Schemas/{urn}", s.authed(schema))
-
-	m.Handle("GET "+Base+"/Users", s.authed(s.listUsers))
-	m.Handle("POST "+Base+"/Users", s.authed(s.createUser))
-	m.Handle("GET "+Base+"/Users/{id}", s.authed(s.getUser))
-	m.Handle("PUT "+Base+"/Users/{id}", s.authed(s.replaceUser))
-	m.Handle("PATCH "+Base+"/Users/{id}", s.authed(s.patchUser))
-	m.Handle("DELETE "+Base+"/Users/{id}", s.authed(s.deleteUser))
-
-	m.Handle("GET "+Base+"/Groups", s.authed(s.listGroups))
-	m.Handle("POST "+Base+"/Groups", s.authed(s.createGroup))
-	m.Handle("GET "+Base+"/Groups/{id}", s.authed(s.getGroup))
-	m.Handle("PUT "+Base+"/Groups/{id}", s.authed(s.replaceGroup))
-	m.Handle("PATCH "+Base+"/Groups/{id}", s.authed(s.patchGroup))
-	m.Handle("DELETE "+Base+"/Groups/{id}", s.authed(s.deleteGroup))
+	// Each path, and what it takes. A path asked by a method it does not
+	// take is `405` with `Allow`, answered here and not by the catch-all
+	// below, which would say nothing is served at a path that is.
+	for _, p := range []struct {
+		path string
+		by   map[string]handler
+	}{
+		{"/ServiceProviderConfig", map[string]handler{http.MethodGet: serviceProviderConfig}},
+		{"/ResourceTypes", map[string]handler{http.MethodGet: resourceTypes}},
+		{"/ResourceTypes/{name}", map[string]handler{http.MethodGet: resourceType}},
+		{"/Schemas", map[string]handler{http.MethodGet: schemas}},
+		{"/Schemas/{urn}", map[string]handler{http.MethodGet: schema}},
+		{"/Users", map[string]handler{http.MethodGet: s.listUsers, http.MethodPost: s.createUser}},
+		{"/Users/{id}", map[string]handler{
+			http.MethodGet: s.getUser, http.MethodPut: s.replaceUser, http.MethodPatch: s.patchUser, http.MethodDelete: s.deleteUser,
+		}},
+		{"/Groups", map[string]handler{http.MethodGet: s.listGroups, http.MethodPost: s.createGroup}},
+		{"/Groups/{id}", map[string]handler{
+			http.MethodGet: s.getGroup, http.MethodPut: s.replaceGroup, http.MethodPatch: s.patchGroup, http.MethodDelete: s.deleteGroup,
+		}},
+	} {
+		var allow []string
+		for _, method := range []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete} {
+			h, ok := p.by[method]
+			if !ok {
+				continue
+			}
+			m.Handle(method+" "+Base+p.path, s.authed(h))
+			allow = append(allow, method)
+			if method == http.MethodGet {
+				// `net/http` serves a HEAD by the GET's handler.
+				allow = append(allow, http.MethodHead)
+			}
+		}
+		m.Handle(Base+p.path, notAllowed(strings.Join(allow, ", ")))
+	}
 
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusNotFound, "", "nothing is served here but "+Base)
@@ -245,21 +311,31 @@ func (s *Server) routes() {
 	s.mux = m
 }
 
+// notAllowed answers a path asked by a method it does not take.
+func notAllowed(allow string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		unread(w, r)
+		w.Header().Set("Allow", allow)
+		fail(w, http.StatusMethodNotAllowed, "", "this path takes "+allow)
+	})
+}
+
 // authed is a route behind the bearer: a tenant key, or nothing.
+//
+// In this order, so that a turn is held only for work. The bearer's shape;
+// who the key is, which asks roster -- in one of the process's turns of
+// asking -- only for a key not remembered; then the body, to its bound and
+// its clock and in no turn at all, since a body is the asker's to send as
+// slowly as it likes; and then one of the tenant's turns, for the work.
+// Nothing of a body is read before the key is accepted.
 func (s *Server) authed(h handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, ok := bearer(r)
 		if !ok {
+			unread(w, r)
 			w.Header().Set("WWW-Authenticate", `Bearer realm="roster"`)
 			fail(w, http.StatusUnauthorized, "", "a tenant key, as `Authorization: Bearer rt_…`")
 
-			return
-		}
-
-		select {
-		case s.slots <- struct{}{}:
-			defer func() { <-s.slots }()
-		case <-r.Context().Done():
 			return
 		}
 
@@ -267,20 +343,118 @@ func (s *Server) authed(h handler) http.Handler {
 		// not carried over from the request.
 		ctx := metadata.AppendToOutgoingContext(r.Context(), "authorization", "Bearer "+token)
 
-		t, err := s.tenancyOf(ctx, token)
+		t, err := s.tenancyOf(ctx, token, !reads(r))
 		if err != nil {
+			unread(w, r)
 			s.failed(w, r, err)
 
 			return
 		}
+		if err := read(w, r); err != nil {
+			s.failed(w, r, err)
+
+			return
+		}
+
+		turns := s.turnsOf(t.tenant)
+		if !take(r.Context(), turns) {
+			return
+		}
+		defer func() { <-turns }()
+
 		if err := h(ctx, w, r, t); err != nil {
 			s.failed(w, r, err)
 		}
 	})
 }
 
+// take is a turn of ch, or false where the asker went first.
+func take(ctx context.Context, ch chan struct{}) bool {
+	select {
+	case ch <- struct{}{}:
+		return true
+	case <-ctx.Done():
+		return false
+	}
+}
+
+// turnsOf is a tenant's turns of work.
+func (s *Server) turnsOf(tenant []byte) chan struct{} {
+	if v, ok := s.turns.Load(string(tenant)); ok {
+		return v.(chan struct{})
+	}
+	v, _ := s.turns.LoadOrStore(string(tenant), make(chan struct{}, s.c.Concurrency))
+
+	return v.(chan struct{})
+}
+
+// read is the request's body, read whole before the work: to [maxBody] and
+// within [BodyTimeout], the connection's own read deadline. The handlers read
+// it from the request as they did.
+//
+// Only a method that carries something is waited for. A body sent with any
+// other is not read, and the connection ends with the answer.
+func read(w http.ResponseWriter, r *http.Request) error {
+	if !hasBody(r) {
+		return nil
+	}
+	switch r.Method {
+	case http.MethodPost, http.MethodPut, http.MethodPatch:
+	default:
+		unread(w, r)
+
+		return nil
+	}
+
+	rc := http.NewResponseController(w)
+	_ = rc.SetReadDeadline(time.Now().Add(BodyTimeout))
+	b, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxBody))
+	if err != nil {
+		unread(w, r)
+
+		var large *http.MaxBytesError
+		switch {
+		case errors.As(err, &large):
+			return &problem{status: http.StatusRequestEntityTooLarge, detail: "a body of at most a megabyte"}
+		case errors.Is(err, os.ErrDeadlineExceeded):
+			return &problem{status: http.StatusRequestTimeout, detail: "a body has thirty seconds to arrive"}
+		default:
+			return badRequest("invalidSyntax", "a body of at most a megabyte")
+		}
+	}
+	// What is read is read: the connection is the asker's again, until its
+	// next request's clocks.
+	_ = rc.SetReadDeadline(time.Time{})
+	r.Body = io.NopCloser(bytes.NewReader(b))
+
+	return nil
+}
+
+func hasBody(r *http.Request) bool { return r.Body != nil && r.Body != http.NoBody }
+
+// unread answers a request whose body will not be read, and ends its
+// connection with the answer. `net/http` reads what is left of a declared
+// body before it writes an answer, and after, to keep the connection; so a
+// request refused before its key was accepted, that declared a body and sent
+// a byte of it, was held for as long as its asker liked. The read deadline,
+// passed, is what stops that reading; `Connection: close` is the answer
+// saying so.
+func unread(w http.ResponseWriter, r *http.Request) {
+	if !hasBody(r) {
+		return
+	}
+	w.Header().Set("Connection", "close")
+	_ = http.NewResponseController(w).SetReadDeadline(time.Now())
+}
+
 // bearer is the request's tenant key. A deployment key is refused here: it is
 // no tenant until a call names one, which is what this endpoint never does.
+//
+// A key is `rt_` and then RFC 6750's `b64token`, and anything else is no key:
+// refused here, in the words any bearer that is no tenant key gets, with
+// roster not asked. It took any bytes after `rt_`, and gRPC sends no header
+// that holds some of them, so a bearer anybody could write was a `500` and a
+// line of the log at `ERROR`.
 func bearer(r *http.Request) (string, bool) {
 	v := r.Header.Get("Authorization")
 	scheme, token, ok := strings.Cut(v, " ")
@@ -288,22 +462,58 @@ func bearer(r *http.Request) (string, bool) {
 		return "", false
 	}
 	token = strings.TrimSpace(token)
-	if !strings.HasPrefix(token, "rt_") {
+	rest, ok := strings.CutPrefix(token, "rt_")
+	if !ok || !b64token(rest) {
 		return "", false
 	}
 
 	return token, true
 }
 
+// b64token is whether v is RFC 6750's `b64token`: one or more of its letters,
+// then any number of `=`.
+func b64token(v string) bool {
+	v = strings.TrimRight(v, "=")
+	if v == "" {
+		return false
+	}
+	for _, c := range []byte(v) {
+		switch {
+		case 'a' <= c && c <= 'z', 'A' <= c && c <= 'Z', '0' <= c && c <= '9':
+		case c == '-', c == '.', c == '_', c == '~', c == '+', c == '/':
+		default:
+			return false
+		}
+	}
+
+	return true
+}
+
+// reads is whether a request only reads, and so may be answered from what is
+// remembered of its key.
+func reads(r *http.Request) bool { return r.Method == http.MethodGet || r.Method == http.MethodHead }
+
 // tenancyOf is which tenant a key is, and which connection that tenant's
 // directory provisions through.
-func (s *Server) tenancyOf(ctx context.Context, token string) (*tenancy, error) {
+//
+// Remembered for a minute, for reads. A write asks again (fresh) and what it
+// learns is remembered for the reads after it: with `provisions` taken off a
+// connection, a rename, a number and every write of a group landed for that
+// minute, since only making, suspending and telling ask roster about the
+// mark themselves. A write that is refused leaves what was remembered as it
+// was, so a read within the minute is still answered.
+func (s *Server) tenancyOf(ctx context.Context, token string, fresh bool) (*tenancy, error) {
 	k := sha256.Sum256([]byte(token))
-	if v, ok := s.known.Load(k); ok {
+	if v, ok := s.known.Load(k); ok && !fresh {
 		if t := v.(*tenancy); time.Now().Before(t.until) {
 			return t, nil
 		}
 	}
+
+	if !take(ctx, s.asks) {
+		return nil, ctx.Err()
+	}
+	defer func() { <-s.asks }()
 
 	me, err := s.me.Get(ctx, rstr.MeGetRequest_builder{}.Build())
 	if err != nil {
@@ -324,7 +534,7 @@ func (s *Server) tenancyOf(ctx context.Context, token string) (*tenancy, error) 
 		}
 		for _, c := range vs.GetItems() {
 			if c.GetProvisions() {
-				t.provider = c.GetName()
+				t.provider, t.claim = c.GetName(), c.GetSubjectClaim()
 			}
 		}
 

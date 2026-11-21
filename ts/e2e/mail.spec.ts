@@ -72,7 +72,11 @@ test('a link confirms an address of his', async ({ page, request }) => {
 
 	const link = await linkIn(request, address, 'Confirm your address')
 	expect(link).toContain('/confirm?')
+	// The link opens a page that asks, and the answer is what confirms: a
+	// link is fetched by more than the person it was sent to.
 	await page.goto(link)
+	await expect(page.getByRole('heading', { name: 'Confirm your address' })).toBeVisible()
+	await page.locator('button', { hasText: 'this address is mine' }).click()
 	await expect(page.getByRole('heading', { name: 'Address confirmed' })).toBeVisible()
 
 	await page.goto(base)
@@ -91,6 +95,8 @@ test('a link recovers his account, with a password shown once', async ({ page, r
 	const link = await linkIn(request, address, 'Recover your account')
 	expect(link).toContain('/redeem?')
 	await page.goto(link)
+	await expect(page.getByRole('heading', { name: 'Recover your account' })).toBeVisible()
+	await page.locator('button', { hasText: 'make me a new password' }).click()
 	await expect(page.getByRole('heading', { name: 'Your new password' })).toBeVisible()
 	password = (await page.locator('code').first().textContent()) ?? ''
 	expect(password).not.toBe('')

@@ -7,6 +7,7 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/lesomnus/xli"
@@ -84,6 +85,8 @@ func NewCmdVouch(c *cmd.Config) *xli.Command {
 			newCmdVouchEnrol(c),
 			newCmdVouchAccept(c),
 		},
+
+		Handler: xli.RequireSubcommand(),
 	}
 }
 
@@ -131,10 +134,26 @@ func vouching(ctx context.Context, c *cmd.Config) (*cmd.Server, *vouch.Server, e
 // recovery. So the person is found here first, by lookup only, and `Issue` is
 // handed the alias of a row that already exists. `alias` is that name, and
 // empty on the data plane, where `Issue` takes a `ref`.
+//
+// # And who named them
+//
+// `by` is who `--as` named at this shell, or nil where it named nobody: a
+// reset, a set and an unlock are each a call of their RPC at the shell by
+// them, on the plane's access record, as the same write through the entity
+// tree is (#284). `plane` is the deployment the stack is of.
 type whomed struct {
 	at    app.Server
 	who   *app.VouchWho
 	alias string
+
+	plane *cmd.Server
+	by    *cmd.Operator
+}
+
+// kept is `write` as a call of `method` at the shell by whoever `--as` named
+// ([keptBy]).
+func (w whomed) kept(ctx context.Context, method string, write func(ctx context.Context) error) error {
+	return keptBy(ctx, w.plane, w.by, method, write)
 }
 
 // issuing is the request `reset` makes about this person.
@@ -149,12 +168,17 @@ func (w whomed) issuing(kind string) *app.CredentialIssueRequest {
 	return req.Build()
 }
 
-func whom(ctx context.Context, s *cmd.Server, cl *xli.Command, control bool) (whomed, error) {
+func whom(ctx context.Context, c *cmd.Config, s *cmd.Server, cl *xli.Command, control bool) (whomed, error) {
 	ref, named := arg.Get[pdcmd.Ref](cl, "REF")
 	if !named {
 		return whomed{}, errors.New("REF: who, as @tenant/alias or an identifier")
 	}
 	if err := ref.Expect(pd.HolderDomain); err != nil {
+		return whomed{}, err
+	}
+
+	by, err := namedAt(ctx, c, s)
+	if err != nil {
 		return whomed{}, err
 	}
 
@@ -164,7 +188,7 @@ func whom(ctx context.Context, s *cmd.Server, cl *xli.Command, control bool) (wh
 			return whomed{}, err
 		}
 
-		return whomed{at: s.Ungated, who: app.VouchWho_builder{Id: who.Bytes()}.Build()}, nil
+		return whomed{at: s.Ungated, who: app.VouchWho_builder{Id: who.Bytes()}.Build(), plane: s, by: by}, nil
 	}
 
 	if s.Control == nil {
@@ -187,6 +211,8 @@ func whom(ctx context.Context, s *cmd.Server, cl *xli.Command, control bool) (wh
 		at:    s.Control.Ungated,
 		who:   app.VouchWho_builder{Id: who.Bytes()}.Build(),
 		alias: h.GetAlias(),
+		plane: s.Control,
+		by:    by,
 	}, nil
 }
 
@@ -226,15 +252,20 @@ func newCmdVouchReset(c *cmd.Config, control bool) *xli.Command {
 			}
 			defer s.Close()
 
-			w, err := whom(ctx, s, cl, control)
+			w, err := whom(ctx, c, s, cl, control)
 			if err != nil {
 				return err
 			}
 
 			kind, _ := flg.Find[string](cl, "kind")
 
-			res, err := w.at.Credential().Issue(ctx, w.issuing(kind))
-			if err != nil {
+			var res *app.CredentialIssueResponse
+			if err := w.kept(ctx, app.CredentialService_Issue_FullMethodName, func(ctx context.Context) error {
+				var err error
+				res, err = w.at.Credential().Issue(ctx, w.issuing(kind))
+
+				return err
+			}); err != nil {
 				return err
 			}
 
@@ -291,7 +322,7 @@ func newCmdVouchSet(c *cmd.Config, control bool) *xli.Command {
 			}
 			defer s.Close()
 
-			w, err := whom(ctx, s, cl, control)
+			w, err := whom(ctx, c, s, cl, control)
 			if err != nil {
 				return err
 			}
@@ -300,11 +331,15 @@ func newCmdVouchSet(c *cmd.Config, control bool) *xli.Command {
 
 			// Set is a `Credential` write now, named by reference. Locally,
 			// through `Ungated`, where a frameless caller waives the reach rule.
-			if _, err := w.at.Credential().Set(ctx, app.CredentialSetRequest_builder{
-				Ref:    app.HolderRef_builder{Id: w.who.GetId()}.Build(),
-				Kind:   kind,
-				Secret: []byte(secret),
-			}.Build()); err != nil {
+			if err := w.kept(ctx, app.CredentialService_Set_FullMethodName, func(ctx context.Context) error {
+				_, err := w.at.Credential().Set(ctx, app.CredentialSetRequest_builder{
+					Ref:    app.HolderRef_builder{Id: w.who.GetId()}.Build(),
+					Kind:   kind,
+					Secret: []byte(secret),
+				}.Build())
+
+				return err
+			}); err != nil {
 				return err
 			}
 
@@ -339,7 +374,7 @@ func newCmdVouchUnlock(c *cmd.Config, control bool) *xli.Command {
 			}
 			defer s.Close()
 
-			w, err := whom(ctx, s, cl, control)
+			w, err := whom(ctx, c, s, cl, control)
 			if err != nil {
 				return err
 			}
@@ -349,11 +384,16 @@ func newCmdVouchUnlock(c *cmd.Config, control bool) *xli.Command {
 			// Unlock is a `Credential` write now (`Vouch.Unlock` moved onto the
 			// entity), named by reference. Locally, through `Ungated`, so the
 			// escalation rule waives itself for a frameless caller.
-			res, err := w.at.Credential().Unlock(ctx, app.CredentialUnlockRequest_builder{
-				Ref:  app.HolderRef_builder{Id: w.who.GetId()}.Build(),
-				Kind: kind,
-			}.Build())
-			if err != nil {
+			var res *app.CredentialUnlockResponse
+			if err := w.kept(ctx, app.CredentialService_Unlock_FullMethodName, func(ctx context.Context) error {
+				var err error
+				res, err = w.at.Credential().Unlock(ctx, app.CredentialUnlockRequest_builder{
+					Ref:  app.HolderRef_builder{Id: w.who.GetId()}.Build(),
+					Kind: kind,
+				}.Build())
+
+				return err
+			}); err != nil {
 				return err
 			}
 
@@ -368,6 +408,154 @@ func newCmdVouchUnlock(c *cmd.Config, control bool) *xli.Command {
 			}
 
 			return nil
+		}),
+	}
+}
+
+// newCmdOperatorEnrol makes a second factor for an operator, at the box.
+//
+// `roster vouch enrol` is the same act for a customer's person and goes over
+// the wire, as a caller holding a key. Whoever runs a deployment is enrolled
+// here instead, by a shell that is already trusted with their password
+// (`reset`, `set`): the control listener has no page, and its callers are
+// jobs.
+//
+// An authenticator app only. A security key is registered by a browser, at the
+// name it will be asked for at, and there is none of either here.
+func newCmdOperatorEnrol(c *cmd.Config) *xli.Command {
+	return &xli.Command{
+		Name:  "enrol",
+		Brief: "make an authenticator app's seed for an operator, printed once as an otpauth:// Uri",
+
+		Args: refArg(),
+
+		Flags: flg.Flags{
+			&flg.String{Name: "name", Brief: "what they call it, when there is more than one to tell apart"},
+			&flg.String{Name: "issuer", Brief: "what their authenticator app lists it under; empty is \"roster\""},
+		},
+
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			s, _, err := vouching(ctx, c)
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+
+			w, err := whom(ctx, c, s, cl, true)
+			if err != nil {
+				return err
+			}
+
+			name, _ := flg.Find[string](cl, "name")
+			issuer, _ := flg.Find[string](cl, "issuer")
+
+			// An operator's way in, written: a call at the shell by whoever
+			// `--as` named, as a reset is (#284).
+			var v *app.CredentialEnrolResponse
+			if err := w.kept(ctx, app.CredentialService_Enrol_FullMethodName, func(ctx context.Context) error {
+				var err error
+				v, err = w.at.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
+					Ref:    app.HolderRef_builder{Id: w.who.GetId()}.Build(),
+					Kind:   vouch.KindTotp,
+					Name:   name,
+					Issuer: issuer,
+				}.Build())
+
+				return err
+			}); err != nil {
+				return err
+			}
+
+			fmt.Fprintf(os.Stdout, "%s\n", v.GetUri())
+			fmt.Fprintf(os.Stderr,
+				"the seed is the `secret` parameter of the Uri, and this is the only time it is "+
+					"shown. It does not count until it is proved: one code, via\n  roster control vouch "+
+					"prove --code-stdin%s @%s\n",
+				nameFlag(name), w.alias)
+
+			return next(ctx)
+		}),
+	}
+}
+
+// newCmdOperatorProve proves an operator's second factor with one code, which
+// is what makes it count.
+//
+// A seed nobody has proved is a QR somebody may have mis-scanned, so it is
+// not asked for at a sign-in until a code has verified against it once
+// (`vouch.Server.factors`). For a customer's person that code is typed into
+// their account page. This is that, for whoever runs the deployment.
+//
+// It signs nobody in and mints nothing: a code beside nothing else is no
+// sign-in, here or anywhere.
+func newCmdOperatorProve(c *cmd.Config) *xli.Command {
+	return &xli.Command{
+		Name:  "prove",
+		Brief: "prove an operator's authenticator app with one code from it, so that it counts",
+
+		Args: refArg(),
+
+		Flags: flg.Flags{
+			&flg.Switch{Name: "code-stdin", Brief: "read the code from stdin; required"},
+			&flg.String{Name: "name", Brief: "which, when they have more than one"},
+		},
+
+		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			if v, _ := flg.Find[bool](cl, "code-stdin"); !v {
+				return errors.New("--code-stdin: the code is read from stdin, as every secret here is")
+			}
+
+			b, err := io.ReadAll(io.LimitReader(os.Stdin, 4<<10))
+			if err != nil {
+				return fmt.Errorf("the code on stdin: %w", err)
+			}
+
+			code := strings.TrimSpace(string(b))
+			if code == "" {
+				return errors.New("--code-stdin was given and stdin was empty")
+			}
+
+			s, _, err := vouching(ctx, c)
+			if err != nil {
+				return err
+			}
+			defer s.Close()
+
+			w, err := whom(ctx, c, s, cl, true)
+			if err != nil {
+				return err
+			}
+
+			name, _ := flg.Find[string](cl, "name")
+
+			// The control plane's own verifier, with its keyring: the seed was
+			// sealed under it.
+			v := vouch.New(w.at, w.at, vouch.WithKeys(s.Control.Keyring), vouch.WithLockout(s.Control.Lockout))
+
+			// What proving writes -- the factor marked proved, a lockout
+			// counted -- is a call at the shell by whoever `--as` named, as a
+			// reset is (#284).
+			var res *app.VouchVerifyResponse
+			if err := w.kept(ctx, app.VouchService_Verify_FullMethodName, func(ctx context.Context) error {
+				var err error
+				res, err = v.Verify(ctx, app.VouchVerifyRequest_builder{
+					Who:    w.who,
+					Kind:   vouch.KindTotp,
+					Name:   name,
+					Secret: []byte(code),
+				}.Build())
+
+				return err
+			}); err != nil {
+				return err
+			}
+			if !slices.Contains(res.GetSatisfied(), vouch.KindTotp) {
+				return errors.New("no: that is not a code this seed makes now. Nothing is proved")
+			}
+
+			fmt.Fprintln(os.Stderr, "proved; it counts from now on.")
+
+			return next(ctx)
 		}),
 	}
 }

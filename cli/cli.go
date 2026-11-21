@@ -29,6 +29,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/cfg"
@@ -79,6 +80,13 @@ func Cmd(c *cmd.Config) *xli.Command {
 	// deployment whose configuration is wrong what build it is.
 	version := pdcmd.NewCmdVersion()
 
+	// payday's words for `--short` are *the version and nothing else*, and
+	// what it prints is the commit the binary was built from (#284). Said
+	// here, where roster mounts it, until payday says it.
+	if v, ok := version.Flags.Get("short").(*flg.Switch); ok {
+		v.Brief = "the commit it was built from and nothing else: twelve characters, a + for uncommitted changes, empty where the build has none"
+	}
+
 	return &xli.Command{
 		Name:  cmd.Name,
 		Brief: "roster",
@@ -100,7 +108,12 @@ func Cmd(c *cmd.Config) *xli.Command {
 			// command that reads the database directly needs it said once.
 			// And a flag only, never the file or the environment, which are
 			// everybody's who opens a shell here; see `cmd.ClientConfig.As`.
-			&flg.String{Name: "as", Brief: "who is at this shell: an operator of the control plane, by alias; what a command here shows or writes of anybody names them"},
+			//
+			// Looked up wherever it is given ([built]), and kept by the
+			// commands that show somebody's rows or write somebody's way in;
+			// the help says which, since a name a command only checks is not
+			// one the record says (#284).
+			&flg.String{Name: "as", Brief: "who is at this shell: a holder of the control plane that is not stopped, by alias; looked up by every command here, and named on the access record by the entity commands, key list|add|revoke, control key add, vouch reset|set|unlock and their control forms, control vouch enrol|prove, restore of a person, and scim adopt"},
 		},
 
 		Commands: append([]*xli.Command{
@@ -139,8 +152,40 @@ func Cmd(c *cmd.Config) *xli.Command {
 // when it next asked. Every command but `serve` builds through this, and
 // `TestEveryCommandBuildsWhatItWritesQueued` holds them to it: one that called
 // `cmd.Build` itself would be back to writing rows the stream never carries.
+//
+// A configuration that names no database is refused here in roster's words: a
+// file with only `client:` in it is what a customer's person is shown, and
+// payday's sentence for it is about a driver nobody wrote.
+//
+// # And a name given with `--as` is looked up here, whatever the command
+//
+// `--as` was read by the entity commands, `key list`, `scim adopt` and `trail
+// rows --accept`, and by nothing else: `roster --as nobody vouch reset …`
+// printed a password, and the name was never looked up (#284). Somebody who
+// gave it believes the record says it, which is the reason the wire refuses
+// it ([connector]). So wherever it is given to a command that opens the
+// deployment, it is looked up as the entity commands look it up -- nobody,
+// somebody stopped and somebody erased are refused -- before anything is
+// read or written. Which commands go on to keep the name is theirs to say
+// ([keptBy]); the others check it and keep nothing.
 func built(ctx context.Context, c cmd.Config) (*cmd.Server, error) {
-	return cmd.Build(ctx, c.Queued())
+	if c.Db.Driver == "" {
+		return nil, errors.New("db.driver: this command reads the deployment's database, and this configuration " +
+			"names none. Run it where the deployment's file is; the commands that ask a running roster instead " +
+			"are me, front, sync, issue and the entity commands, with client.addr")
+	}
+
+	s, err := cmd.Build(ctx, c.Queued())
+	if err != nil {
+		return nil, err
+	}
+	if _, err := namedAt(ctx, &c, s); err != nil {
+		s.Close()
+
+		return nil, err
+	}
+
+	return s, nil
 }
 
 // hal is `--HAL` and `--as`, read on the way down.

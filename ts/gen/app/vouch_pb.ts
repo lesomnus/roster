@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/vouch.proto.
  */
 export const file_app_vouch: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJ3CgpWb3VjaENsYWltEg4KBnRlbmFudBgBIAEoDBIQCghwcm92aWRlchgCIAEoCRIPCgdzdWJqZWN0GAMgASgJEjYKEmRhdGVfYXV0aGVudGljYXRlZBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiXwoSVm91Y2hWZXJpZnlSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIMCgRuYW1lGAUgASgJInEKC1ZvdWNoRmFjdG9yEgwKBGtpbmQYCCABKAkSDAoEbmFtZRgFIAEoCRIvCgtkYXRlX2xvY2tlZBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASFQoNY3JlZGVudGlhbF9pZBgJIAEoCSLDAQoTVm91Y2hWZXJpZnlSZXNwb25zZRIKCgJvaxgBIAEoCBIOCgZob2xkZXIYAiABKAwSDgoGdGVuYW50GAMgASgMEi8KC2RhdGVfbG9ja2VkGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCglzYXRpc2ZpZWQYCiADKAkSJgoJYXZhaWxhYmxlGAsgAygLMhMucm9zdGVyLlZvdWNoRmFjdG9yEhQKDGNvbnRpbnVhdGlvbhgMIAEoCSJYChRWb3VjaENvbnRpbnVlUmVxdWVzdBIUCgxjb250aW51YXRpb24YASABKAkSDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSDAoEbmFtZRgFIAEoCSJGChVWb3VjaENvbnRpbnVlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZSK6AQoUVm91Y2hEZWxlZ2F0ZVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEhQKDGNvbnRpbnVhdGlvbhgMIAEoCRIMCgRuYW1lGAUgASgJEg8KB21ldGhvZHMYCiADKAkSMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKGAQoSVm91Y2hBY2NlcHRSZXF1ZXN0EiEKBWNsYWltGAEgASgLMhIucm9zdGVyLlZvdWNoQ2xhaW0SDwoHbWV0aG9kcxgCIAMoCRIwCgxkYXRlX2V4cGlyZXMYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEgoKAmF0GAQgASgJIswBChVWb3VjaERlbGVnYXRlUmVzcG9uc2USLQoIdmVyaWZpZWQYASABKAsyGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRINCgV0b2tlbhgKIAEoCRIwCgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEgwKBGxpbmsYDCABKAkSNQoRZGF0ZV9saW5rX2V4cGlyZXMYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImMKEFZvdWNoTGlua1JlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEjAKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiVAoRVm91Y2hMaW5rUmVzcG9uc2USDQoFdG9rZW4YASABKAkSMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJHChVWb3VjaExlYXZlTGlua1JlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEg8KB2FkZHJlc3MYAiABKAkiagoWVm91Y2hMZWF2ZUxpbmtSZXNwb25zZRINCgV0b2tlbhgBIAEoCRIPCgdhZGRyZXNzGAIgASgJEjAKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiMwoRVm91Y2hMZWF2ZVJlcXVlc3QSDQoFdG9rZW4YASABKAkSDwoHY29uZmlybRgCIAEoCSJmChJWb3VjaFJlZGVlbVJlcXVlc3QSDQoFdG9rZW4YASABKAkSDwoHbWV0aG9kcxgKIAMoCRIwCgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wMrMECgxWb3VjaFNlcnZpY2USQQoGVmVyaWZ5Ehoucm9zdGVyLlZvdWNoVmVyaWZ5UmVxdWVzdBobLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEkcKCERlbGVnYXRlEhwucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZRI7CgRMaW5rEhgucm9zdGVyLlZvdWNoTGlua1JlcXVlc3QaGS5yb3N0ZXIuVm91Y2hMaW5rUmVzcG9uc2USQwoGUmVkZWVtEhoucm9zdGVyLlZvdWNoUmVkZWVtUmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2USSgoJTGVhdmVMaW5rEh0ucm9zdGVyLlZvdWNoTGVhdmVMaW5rUmVxdWVzdBoeLnJvc3Rlci5Wb3VjaExlYXZlTGlua1Jlc3BvbnNlEjsKBUxlYXZlEhkucm9zdGVyLlZvdWNoTGVhdmVSZXF1ZXN0Ghcucm9zdGVyLk1lTGVhdmVSZXNwb25zZRJHCghDb250aW51ZRIcLnJvc3Rlci5Wb3VjaENvbnRpbnVlUmVxdWVzdBodLnJvc3Rlci5Wb3VjaENvbnRpbnVlUmVzcG9uc2USQwoGQWNjZXB0Ehoucm9zdGVyLlZvdWNoQWNjZXB0UmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2VCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_app_me, file_google_protobuf_timestamp]);
+  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJ3CgpWb3VjaENsYWltEg4KBnRlbmFudBgBIAEoDBIQCghwcm92aWRlchgCIAEoCRIPCgdzdWJqZWN0GAMgASgJEjYKEmRhdGVfYXV0aGVudGljYXRlZBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiXwoSVm91Y2hWZXJpZnlSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIMCgRuYW1lGAUgASgJIoQBCgtWb3VjaEZhY3RvchIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSLwoLZGF0ZV9sb2NrZWQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhUKDWNyZWRlbnRpYWxfaWQYCSABKAkSEQoJY2hhbGxlbmdlGAogASgJIsMBChNWb3VjaFZlcmlmeVJlc3BvbnNlEgoKAm9rGAEgASgIEg4KBmhvbGRlchgCIAEoDBIOCgZ0ZW5hbnQYAyABKAwSLwoLZGF0ZV9sb2NrZWQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhEKCXNhdGlzZmllZBgKIAMoCRImCglhdmFpbGFibGUYCyADKAsyEy5yb3N0ZXIuVm91Y2hGYWN0b3ISFAoMY29udGludWF0aW9uGAwgASgJIlgKFFZvdWNoQ29udGludWVSZXF1ZXN0EhQKDGNvbnRpbnVhdGlvbhgBIAEoCRIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIMCgRuYW1lGAUgASgJIkYKFVZvdWNoQ29udGludWVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlIroBChRWb3VjaERlbGVnYXRlUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSFAoMY29udGludWF0aW9uGAwgASgJEgwKBG5hbWUYBSABKAkSDwoHbWV0aG9kcxgKIAMoCRIwCgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIoYBChJWb3VjaEFjY2VwdFJlcXVlc3QSIQoFY2xhaW0YASABKAsyEi5yb3N0ZXIuVm91Y2hDbGFpbRIPCgdtZXRob2RzGAIgAygJEjAKDGRhdGVfZXhwaXJlcxgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASCgoCYXQYBCABKAkizAEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEjAKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDAoEbGluaxgMIAEoCRI1ChFkYXRlX2xpbmtfZXhwaXJlcxgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYwoQVm91Y2hMaW5rUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJUChFWb3VjaExpbmtSZXNwb25zZRINCgV0b2tlbhgBIAEoCRIwCgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIkcKFVZvdWNoTGVhdmVMaW5rUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDwoHYWRkcmVzcxgCIAEoCSJqChZWb3VjaExlYXZlTGlua1Jlc3BvbnNlEg0KBXRva2VuGAEgASgJEg8KB2FkZHJlc3MYAiABKAkSMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIzChFWb3VjaExlYXZlUmVxdWVzdBINCgV0b2tlbhgBIAEoCRIPCgdjb25maXJtGAIgASgJImYKElZvdWNoUmVkZWVtUmVxdWVzdBINCgV0b2tlbhgBIAEoCRIPCgdtZXRob2RzGAogAygJEjAKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAyswQKDFZvdWNoU2VydmljZRJBCgZWZXJpZnkSGi5yb3N0ZXIuVm91Y2hWZXJpZnlSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2USRwoIRGVsZWdhdGUSHC5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEjsKBExpbmsSGC5yb3N0ZXIuVm91Y2hMaW5rUmVxdWVzdBoZLnJvc3Rlci5Wb3VjaExpbmtSZXNwb25zZRJDCgZSZWRlZW0SGi5yb3N0ZXIuVm91Y2hSZWRlZW1SZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZRJKCglMZWF2ZUxpbmsSHS5yb3N0ZXIuVm91Y2hMZWF2ZUxpbmtSZXF1ZXN0Gh4ucm9zdGVyLlZvdWNoTGVhdmVMaW5rUmVzcG9uc2USOwoFTGVhdmUSGS5yb3N0ZXIuVm91Y2hMZWF2ZVJlcXVlc3QaFy5yb3N0ZXIuTWVMZWF2ZVJlc3BvbnNlEkcKCENvbnRpbnVlEhwucm9zdGVyLlZvdWNoQ29udGludWVSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoQ29udGludWVSZXNwb25zZRJDCgZBY2NlcHQSGi5yb3N0ZXIuVm91Y2hBY2NlcHRSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_app_me, file_google_protobuf_timestamp]);
 
 /**
  * VouchWho names somebody in the words a sign-in form collects.
@@ -281,6 +281,24 @@ export type VouchFactor = Message<"roster.VouchFactor"> & {
    * @generated from field: string credential_id = 9;
    */
   credentialId: string;
+
+  /**
+   * For `webauthn`: what the key is to sign, base64url -- the `challenge` a
+   * page hands `navigator.credentials.get`. It is this attempt's, derived from
+   * the continuation it is answered with, and an assertion over anything else
+   * is refused: so one that was seen once is good for the attempt it was made
+   * for, which is spent, and for no other.
+   *
+   * The challenge was the presenter's, written beside the assertion it was
+   * checked against, and in the front door roster ships the browser made it
+   * up; a key that reports no counter then signed one thing once and passed
+   * for good (#275). Not a secret, and says nothing of the continuation: it is
+   * a digest of it. Empty for every other kind, and where there is no
+   * continuation.
+   *
+   * @generated from field: string challenge = 10;
+   */
+  challenge: string;
 };
 
 /**
@@ -490,13 +508,17 @@ export type VouchDelegateRequest = Message<"roster.VouchDelegateRequest"> & {
    * out more than was asked for, and nothing mints a credential that silently
    * does not work.
    *
-   * **No wider than the caller.** Each of these has to be covered by what the
-   * calling key itself may do -- otherwise an app allowed only to check
-   * passwords could mint a token that erases holders and use it through
-   * somebody who may. The check bites exactly as hard as the caller's own
-   * credential is narrow: under `auth.Plain` or mTLS a caller carries
-   * `frame.Whole`, so it refuses nothing, because there is nothing there to be
-   * wider than.
+   * **No wider than the caller.** Each of these has to be a method the caller
+   * may itself call -- otherwise an app allowed only to check passwords could
+   * mint a token that erases holders and use it through somebody who may.
+   * *May call* is both things a call is asked: the list on the credential it
+   * arrived with, and what whoever that credential is has been bound. So a
+   * deployment key calling as itself hands out what its list names; one
+   * narrowed to a tenant (`roster-at`), what the holder that tenant nominated
+   * is bound; a tenant's own key, what its holder is bound of what its list
+   * names. Under `auth.Plain` or mTLS a caller carries no list, and what they
+   * are bound is the whole of it. What nobody needs a role for
+   * (`MeService.Get`) is handed on with none.
    *
    * It is checked **before the secret is compared**, which is not a detail. Run
    * after, a caller that over-asks would get one answer for a wrong password
@@ -995,6 +1017,17 @@ export const VouchService: GenService<{
    * password, because a link that skipped one would be a way to turn a mailbox
    * into an account.
    *
+   * # A link ends with what ends a sign-in
+   *
+   * One minted at or before its holder's epoch (`Holder.date_invalidated`) is
+   * refused as one that expired is, and in the same words: a password issued
+   * for them, a password they changed and *sign out everywhere* each end the
+   * links already out with the sign-ins already made (`Link.date_created`).
+   * Redeeming stamps nothing itself. A recovery is this and then
+   * `Credential.Issue`, and it is the password issued that ends the other
+   * links somebody asked for -- and the attempt one of them left open, where
+   * somebody with a second factor had spent it (`Continuation.date_created`).
+   *
    * @generated from rpc roster.VouchService.Redeem
    */
   redeem: {
@@ -1064,9 +1097,10 @@ export const VouchService: GenService<{
    * # In this order
    *
    *   - the link: one this caller was issued, still open, of this kind, for
-   *     somebody who may still sign in, and mailed to an address that is still
-   *     theirs and still proved -- `NotFound` for every way of being wrong,
-   *     one answer, as every link's;
+   *     somebody who may still sign in and whose sign-ins nothing has ended
+   *     since it was minted (`Link.date_created`), and mailed to an address
+   *     that is still theirs and still proved -- `NotFound` for every way of
+   *     being wrong, one answer, as every link's;
    *   - `Leave`'s rules but the one this replaces: that their tenant offers
    *     it, that its directory does not provision them, and that `confirm` is
    *     their alias as it is -- each refusal says which, and **none spends the
@@ -1104,6 +1138,13 @@ export const VouchService: GenService<{
    * continuation in place of a `who` and a secret. So a two-step sign-in is
    * `Delegate` -> `Continue` -> `Delegate`, and the last call spends what the
    * first two proved.
+   *
+   * # An attempt ends with what ends a sign-in
+   *
+   * One begun at or before its holder's epoch (`Holder.date_invalidated`) is
+   * refused as one that expired is, here and where `Delegate` takes one: a
+   * first factor proved before a password was replaced, or before *sign out
+   * everywhere*, is not proved after it (`Continuation.date_created`).
    *
    * @generated from rpc roster.VouchService.Continue
    */

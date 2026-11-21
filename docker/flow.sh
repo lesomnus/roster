@@ -244,8 +244,14 @@ sign_in() {
 		printf '%s' "${asking}" | grep -q "${OAUTH_CLIENT}" || die "the screen has nothing to say which app is asking: ${asking}"
 		step "consent, drawn and not yet granted" "a screen"
 
-		l=$(c -o /dev/null -D - -X POST "${LOGIN}/consent" \
-			-d "consent_challenge=${consent}" -d "allow=1" | loc | fix)
+		# Told where to go, as `/accept` tells it, and not redirected: the
+		# screen is a page that asks with `fetch`, and where this leads is the
+		# issuer, another origin, which a `fetch` cannot be redirected to. It
+		# was a 303, which this walk followed and a browser could not.
+		l=$(c -X POST "${LOGIN}/consent" \
+			-d "consent_challenge=${consent}" -d "allow=1" \
+			| sed 's/.*"redirect_to":"//; s/".*//; s|\\u0026|\&|g' | fix)
+		case "${l}" in http*) ;; *) die "the consent's answer named nowhere to go: ${l}";; esac
 		step "somebody says allow" "$(printf '%s' "${l}" | cut -c1-40)…"
 	else
 		l=$(c -o /dev/null -D - "${l}" | loc | fix)
@@ -408,27 +414,62 @@ spend
 [ -n "${refresh}" ] || die "a refresh token did not refresh before anybody signed out: ${refreshed}"
 step "a refresh token refreshes" "ok"
 
+# What Hydra itself holds for her, asked of Hydra's admin API and of nothing
+# else: the two things the Login App tells it to forget.
+#
+# granted is what she has granted its clients, as Hydra lists it -- `[]` is
+# nothing. remembered is whether Hydra would skip the form for this browser: a
+# challenge raised and read back over the admin API, and never answered, so the
+# Login App is not asked.
+granted() {
+	curl -sS ${DIAL} "${ADMIN}/admin/oauth2/auth/sessions/consent?subject=${sub}" | tr -d ' \t\r\n'
+}
+remembered() {
+	raised=$(c -o /dev/null -D - "${authorize}" | loc | sed 's/.*login_challenge=//')
+	[ -n "${raised}" ] || die "hydra raised no login challenge"
+	curl -sS ${DIAL} "${ADMIN}/admin/oauth2/auth/requests/login?login_challenge=${raised}" \
+		| tr -d ' \t\r\n' | grep -q '"skip":true'
+}
+
+# Both are so before anybody signs out, or the wait below waits for nothing: a
+# list that never named her is one that says she is forgotten from the start.
+case "$(granted)" in
+*"\"${sub}\""*) ;;
+*) die "hydra lists no grant of hers before anybody signed out: $(granted)" ;;
+esac
+remembered || die "hydra does not remember her browser before anybody signed out"
+
 rpc HolderService/Invalidate \
 	"$(printf '{"ref":{"slug":{"alias":"%s","tenant":{"alias":"%s"}}}}' "${SEED_USER}" "${SEED_CUSTOMER}")" \
 	| grep -q 'dateInvalidated' || die "roster refused the sign-out"
 step "roster signs ${SEED_USER} out everywhere" "ok"
 
 # And the Login App carries it across. `SyncService` is a stream, so this is the
-# one place a moment has to pass -- and what it is waiting for is a fact about
-# Hydra rather than about roster, which is why it is asked of Hydra.
+# one place a moment has to pass -- and what it waits for is Hydra's own state,
+# asked of Hydra.
+#
+# It asked the Login App for the form, and the form is that app's own answer
+# as well: it asks roster about a browser Hydra remembers, and draws the form
+# when roster no longer reads the person, whatever Hydra has been told. So the
+# wait was over before Hydra had heard anything: the refresh below could be
+# spent against grants not yet revoked, and the sign-in further down made
+# before a forgetting that then takes it, since Hydra forgets by subject.
 i=0
-until begin; [ "${began}" = "200" ]; do
+until [ "$(granted)" = "[]" ] && ! remembered; do
 	i=$((i + 1))
-	[ "${i}" -lt 30 ] || die "hydra still remembers her; the sync stream did not reach it"
+	[ "${i}" -lt 30 ] || die "hydra still holds her grants or remembers her browser; the sign-out did not reach it"
 	sleep 1
 done
-step "and hydra asks for the form again" "${began}"
+step "and hydra has forgotten her" "no grant, no browser"
+
+begin
+[ "${began}" = "200" ] || die "the form was not asked for after signing out everywhere (${began})"
+step "  so the next flow asks for the form" "${began}"
 
 # And a product holding a refresh token is refused another one. The grant hangs
 # off the consent and not the browser, so forgetting the browser alone left it
 # refreshing for somebody signed out everywhere (`login/hydra.go`,
-# `revokeSessions`). The Login App forgets the grants first, so by the step
-# above they are gone.
+# `revokeSessions`). Hydra said above that it holds none.
 spend
 case "${refreshed}" in
 *invalid_grant*) step "  and a refresh token is refused" "invalid_grant" ;;
@@ -458,7 +499,9 @@ if [ "${FACTOR:-}" = "totp" ]; then
 fi
 
 # A session to sign out **of**: the half above ended the one the walk started
-# with, and Hydra forgetting a browser is the thing this is about.
+# with, and Hydra forgetting a browser is the thing this is about. Hydra was
+# waited for there, so nothing it was told then is still on its way to this
+# sign-in.
 begin
 [ "${began}" = "200" ] || die "the form was not asked for before the sign-out walk (${began})"
 sign_in

@@ -21,12 +21,16 @@ const (
 )
 
 type AuthSignInRequest struct {
-	state               protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Alias    string                 `protobuf:"bytes,1,opt,name=alias"`
-	xxx_hidden_Password string                 `protobuf:"bytes,2,opt,name=password"`
-	xxx_hidden_Link     string                 `protobuf:"bytes,3,opt,name=link"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Alias        string                 `protobuf:"bytes,1,opt,name=alias"`
+	xxx_hidden_Password     string                 `protobuf:"bytes,2,opt,name=password"`
+	xxx_hidden_Link         string                 `protobuf:"bytes,3,opt,name=link"`
+	xxx_hidden_Continuation string                 `protobuf:"bytes,12,opt,name=continuation"`
+	xxx_hidden_Kind         string                 `protobuf:"bytes,8,opt,name=kind"`
+	xxx_hidden_Name         string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Secret       []byte                 `protobuf:"bytes,9,opt,name=secret"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *AuthSignInRequest) Reset() {
@@ -75,6 +79,34 @@ func (x *AuthSignInRequest) GetLink() string {
 	return ""
 }
 
+func (x *AuthSignInRequest) GetContinuation() string {
+	if x != nil {
+		return x.xxx_hidden_Continuation
+	}
+	return ""
+}
+
+func (x *AuthSignInRequest) GetKind() string {
+	if x != nil {
+		return x.xxx_hidden_Kind
+	}
+	return ""
+}
+
+func (x *AuthSignInRequest) GetName() string {
+	if x != nil {
+		return x.xxx_hidden_Name
+	}
+	return ""
+}
+
+func (x *AuthSignInRequest) GetSecret() []byte {
+	if x != nil {
+		return x.xxx_hidden_Secret
+	}
+	return nil
+}
+
 func (x *AuthSignInRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = v
 }
@@ -85,6 +117,25 @@ func (x *AuthSignInRequest) SetPassword(v string) {
 
 func (x *AuthSignInRequest) SetLink(v string) {
 	x.xxx_hidden_Link = v
+}
+
+func (x *AuthSignInRequest) SetContinuation(v string) {
+	x.xxx_hidden_Continuation = v
+}
+
+func (x *AuthSignInRequest) SetKind(v string) {
+	x.xxx_hidden_Kind = v
+}
+
+func (x *AuthSignInRequest) SetName(v string) {
+	x.xxx_hidden_Name = v
+}
+
+func (x *AuthSignInRequest) SetSecret(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_Secret = v
 }
 
 type AuthSignInRequest_builder struct {
@@ -132,6 +183,21 @@ type AuthSignInRequest_builder struct {
 	// control plane nothing arrives at a name, so there is nowhere for a link to
 	// have been minted for, and one presented there is refused.
 	Link string
+	// The second call: the attempt a first answer left open, and the next proof.
+	//
+	// `continuation` is what `AuthSignInResponse` answered, and `kind`, `name`
+	// and `secret` are what `Vouch.Continue` takes by the same names -- a code
+	// from an authenticator app, or a security key's assertion. It is a third
+	// way of asking and is refused beside either of the other two.
+	//
+	// An attempt is spent by its first answer, right or wrong, and lasts
+	// minutes: a wrong code is the first form again, where the lockout counts.
+	// It is spent at the tenant it was begun at and by nothing else -- not a
+	// key, and not this method at another tenant's name.
+	Continuation string
+	Kind         string
+	Name         string
+	Secret       []byte
 }
 
 func (b0 AuthSignInRequest_builder) Build() *AuthSignInRequest {
@@ -141,10 +207,15 @@ func (b0 AuthSignInRequest_builder) Build() *AuthSignInRequest {
 	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Password = b.Password
 	x.xxx_hidden_Link = b.Link
+	x.xxx_hidden_Continuation = b.Continuation
+	x.xxx_hidden_Kind = b.Kind
+	x.xxx_hidden_Name = b.Name
+	x.xxx_hidden_Secret = b.Secret
 	return m0
 }
 
-// AuthSignInResponse is empty, and that is the answer.
+// AuthSignInResponse is empty for somebody who is signed in, and that is the
+// answer.
 //
 // What a page needs about the person is a request it should make, against the
 // same server, behind the same rules -- `MeService`. An answer composed here
@@ -154,9 +225,11 @@ func (b0 AuthSignInRequest_builder) Build() *AuthSignInRequest {
 // And the credential is not in it. It is in the cookie, which this page never
 // sees.
 type AuthSignInResponse struct {
-	state         protoimpl.MessageState `protogen:"opaque.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Available    *[]*VouchFactor        `protobuf:"bytes,11,rep,name=available"`
+	xxx_hidden_Continuation string                 `protobuf:"bytes,12,opt,name=continuation"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *AuthSignInResponse) Reset() {
@@ -184,15 +257,50 @@ func (x *AuthSignInResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
+func (x *AuthSignInResponse) GetAvailable() []*VouchFactor {
+	if x != nil {
+		if x.xxx_hidden_Available != nil {
+			return *x.xxx_hidden_Available
+		}
+	}
+	return nil
+}
+
+func (x *AuthSignInResponse) GetContinuation() string {
+	if x != nil {
+		return x.xxx_hidden_Continuation
+	}
+	return ""
+}
+
+func (x *AuthSignInResponse) SetAvailable(v []*VouchFactor) {
+	x.xxx_hidden_Available = &v
+}
+
+func (x *AuthSignInResponse) SetContinuation(v string) {
+	x.xxx_hidden_Continuation = v
+}
+
 type AuthSignInResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
+	// What is left to prove, for somebody whose first proof was right and was
+	// not the whole of it. Set with `continuation`, and with no cookie.
+	//
+	// `Vouch.Verify`'s two fields by their own names and numbers, and for its
+	// reason: what somebody has is answered only once something of theirs has
+	// been proved, or anybody could ask which factors a stranger registered.
+	Available []*VouchFactor
+	// What the second call carries. Empty is signed in.
+	Continuation string
 }
 
 func (b0 AuthSignInResponse_builder) Build() *AuthSignInResponse {
 	m0 := &AuthSignInResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
+	x.xxx_hidden_Available = &b.Available
+	x.xxx_hidden_Continuation = b.Continuation
 	return m0
 }
 
@@ -620,12 +728,18 @@ var File_app_auth_proto protoreflect.FileDescriptor
 
 const file_app_auth_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/auth.proto\x12\x06roster\"Y\n" +
+	"\x0eapp/auth.proto\x12\x06roster\x1a\x0fapp/vouch.proto\"\xbd\x01\n" +
 	"\x11AuthSignInRequest\x12\x14\n" +
 	"\x05alias\x18\x01 \x01(\tR\x05alias\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x12\n" +
-	"\x04link\x18\x03 \x01(\tR\x04link\"\x14\n" +
-	"\x12AuthSignInResponse\"\x14\n" +
+	"\x04link\x18\x03 \x01(\tR\x04link\x12\"\n" +
+	"\fcontinuation\x18\f \x01(\tR\fcontinuation\x12\x12\n" +
+	"\x04kind\x18\b \x01(\tR\x04kind\x12\x12\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\x12\x16\n" +
+	"\x06secret\x18\t \x01(\fR\x06secret\"k\n" +
+	"\x12AuthSignInResponse\x121\n" +
+	"\tavailable\x18\v \x03(\v2\x13.roster.VouchFactorR\tavailable\x12\"\n" +
+	"\fcontinuation\x18\f \x01(\tR\fcontinuation\"\x14\n" +
 	"\x12AuthSignOutRequest\"\x15\n" +
 	"\x13AuthSignOutResponse\"\x12\n" +
 	"\x10AuthWhichRequest\"/\n" +
@@ -657,22 +771,24 @@ var file_app_auth_proto_goTypes = []any{
 	(*AuthOffersRequest)(nil),   // 6: roster.AuthOffersRequest
 	(*AuthOffersResponse)(nil),  // 7: roster.AuthOffersResponse
 	(*AuthOffersProvider)(nil),  // 8: roster.AuthOffersProvider
+	(*VouchFactor)(nil),         // 9: roster.VouchFactor
 }
 var file_app_auth_proto_depIdxs = []int32{
-	8, // 0: roster.AuthOffersResponse.providers:type_name -> roster.AuthOffersProvider
-	0, // 1: roster.AuthService.SignIn:input_type -> roster.AuthSignInRequest
-	2, // 2: roster.AuthService.SignOut:input_type -> roster.AuthSignOutRequest
-	6, // 3: roster.AuthService.Offers:input_type -> roster.AuthOffersRequest
-	4, // 4: roster.AuthService.Which:input_type -> roster.AuthWhichRequest
-	1, // 5: roster.AuthService.SignIn:output_type -> roster.AuthSignInResponse
-	3, // 6: roster.AuthService.SignOut:output_type -> roster.AuthSignOutResponse
-	7, // 7: roster.AuthService.Offers:output_type -> roster.AuthOffersResponse
-	5, // 8: roster.AuthService.Which:output_type -> roster.AuthWhichResponse
-	5, // [5:9] is the sub-list for method output_type
-	1, // [1:5] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	9, // 0: roster.AuthSignInResponse.available:type_name -> roster.VouchFactor
+	8, // 1: roster.AuthOffersResponse.providers:type_name -> roster.AuthOffersProvider
+	0, // 2: roster.AuthService.SignIn:input_type -> roster.AuthSignInRequest
+	2, // 3: roster.AuthService.SignOut:input_type -> roster.AuthSignOutRequest
+	6, // 4: roster.AuthService.Offers:input_type -> roster.AuthOffersRequest
+	4, // 5: roster.AuthService.Which:input_type -> roster.AuthWhichRequest
+	1, // 6: roster.AuthService.SignIn:output_type -> roster.AuthSignInResponse
+	3, // 7: roster.AuthService.SignOut:output_type -> roster.AuthSignOutResponse
+	7, // 8: roster.AuthService.Offers:output_type -> roster.AuthOffersResponse
+	5, // 9: roster.AuthService.Which:output_type -> roster.AuthWhichResponse
+	6, // [6:10] is the sub-list for method output_type
+	2, // [2:6] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_app_auth_proto_init() }
@@ -680,6 +796,7 @@ func file_app_auth_proto_init() {
 	if File_app_auth_proto != nil {
 		return
 	}
+	file_app_vouch_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

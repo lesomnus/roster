@@ -61,7 +61,8 @@ roster scim provision --tenant contoso --connection entra
 
 marks `entra` as the connection contoso's directory provisions through
 (`Connection.provisions`; one a tenant), makes the directory's holder (`scim`), a
-role holding exactly what the endpoint calls, its binding, and a tenant key --
+role holding what the endpoint calls but the four writes that change a group
+(§ *What its key may do*), its binding, and a tenant key listing all of it --
 printed once. Running it again is a rotation: the key is replaced, not added to. A
 connection a file declares is the file's to mark, `provisions: true` beside it in
 `resources.yaml`, or the next start takes it back.
@@ -76,9 +77,23 @@ an open door, a key that leaked would name its holder's own account and sign the
 in. A door of the organisation's own that lets anybody sign up is the same, and
 roster cannot tell it apart -- do not mark one.
 
-The endpoint works on a few requests at once and has the rest wait -- four,
-unless `scim.concurrency` says another number -- which is what a directory that
-sends a dozen at a time meets, and nothing it has to be told.
+The endpoint works on a few requests of a tenant's directory at once and has
+the rest wait -- four, unless `scim.concurrency` says another number -- which is
+what a directory that sends a dozen at a time meets, and nothing it has to be
+told. They are counted for each tenant, by the tenant the key is of, since the
+reason they are few is that the rate a tenant's callers are held to is shared
+with that tenant's people signing in: one tenant's directory in the middle of a
+burst holds no other tenant's back. Asking roster who a key is, for a key not
+remembered, is held to the same number for the whole process, since no tenant
+is known until it is asked. A number below nought is refused at start.
+
+A request's headers have ten seconds to arrive and 64 KiB to be said in, and a
+connection may sit idle two minutes, as at the account app and the Login App. A
+body is read once the key is accepted and before a turn is taken, so one that is
+slow to come holds nothing anybody else waits for: it has thirty seconds and a
+megabyte, and is answered `408` or `413` past them. Nothing of a body is read
+under no key or a key nobody has: that is `401`, at once, and the connection
+ends with it.
 
 ### Entra
 
@@ -114,12 +129,20 @@ tutorial does not say -- once, against a deployment. Two things to give it:
 
 - **By *Discover schema*.** `/Schemas` lists the attributes this keeps a value
   of its own for and no other, which is what the validator takes it to mean.
+  All five discovery routes -- `/ServiceProviderConfig`, `/ResourceTypes`,
+  `/Schemas` and one of each -- take the key as every other route does: `401`
+  without one, and `409` where the key's tenant has no connection that
+  provisions.
 - **A GUID for `externalId`**, where the connection names people by `oid`: the
   value it makes up is not one, and a person made under an `externalId` no
   sign-in could carry is refused.
 
 A `userName` is answered lowered, as an address is kept. Whether the validator
-compares one without regard to case is one of the things its page is for.
+compares one without regard to case is one of the things its page is for. An
+`externalId` that is a GUID is answered in small letters too, where the
+connection names people by `oid`: it is kept and found in the one spelling a
+sign-in says, so one sent in capitals is the same person, read back as Entra
+writes an `objectId`.
 
 **What the page sent is kept, and asked again on every change.** Each time it
 is run against this endpoint, the requests it made become a file under
@@ -250,6 +273,11 @@ account page says, on the form somebody a directory provisions edits their
 profile in, that what the directory says of them is written over what is there.
 What it sends that is not kept here --
 a title, a postal address -- is answered as accepted and written to the log.
+An attribute written behind its schema's URN, as RFC 7644 §3.10 allows --
+`urn:ietf:params:scim:schemas:core:2.0:User:active`, in a path or as a key of
+an operation with no path -- is the attribute it names, and so for a group's
+`displayName` and `members`; one behind a URN nothing here is kept of is not
+kept, and said.
 
 **A number is written, and replaced when it changes.** The people a directory
 provisions hold nothing, and a number is written onto somebody by whoever holds
@@ -304,14 +332,23 @@ first of theirs, nothing is kept beside it.
 up before it creates them, and the people a tenant had -- signed in already, or
 entered by an operator -- are found by their address. A create for an address or
 an `externalId` somebody has is refused as `uniqueness`, which is what tells a
-directory to match instead.
+directory to match instead. **But a create that meets the person it was
+making finishes them.** A create is `Provision` and then the name the directory
+looks them up by, where that is not their address; one cut between the two
+leaves somebody the lookup by that name does not find. So where the
+`externalId` and the address find the same person and the `userName` finds
+nobody, they are told the name -- after an `active: false` the create says --
+and the answer is `201` with them as they are, nothing else of the body
+written. Anything else that finds somebody is `409`, a second create of the
+same User among them.
 
 **Found by the address roster has, which is not always what the directory calls
 them.** The lookup is by `userName`, and a directory whose `userName` is a
 sign-in name (`kim.lee@corp.contoso.example`) while its mail is the address
 kept here (`kim@contoso.example`) finds nobody, then creates, and is refused
 for the address: `409`, every cycle, with nobody matched and so nobody for
-`adopt` to list. Either end mends it -- the directory maps `userName` from the
+`adopt` to list -- unless they sign in through the connection already, as its
+`externalId`, which is a create finished as above. Either end mends it -- the directory maps `userName` from the
 attribute that is the address here, or an operator gives the person the other
 address (`roster email add`), after which the lookup finds them.
 
@@ -330,22 +367,74 @@ write its key is not given. So it is kept and believed by nothing, and they are
 somebody the directory does **not** speak for -- its `active: false` and its
 `DELETE` are refused, `403`, on the day they leave. They are linked by signing
 in through the connection, where `login.enrol` matches by address (`expected`,
-`enrolling`), or by an operator at the box:
+`enrolling`) -- unless they hold more than the front door does, which every
+administrator does, and whom the door may not link -- or by an operator at the
+box, which is how those are linked, with `adopt` or `roster identity add`:
 
 ```sh
-roster --as admin scim adopt --tenant contoso                     # who, their address, what the directory calls them
-roster --as admin scim adopt --tenant contoso --confirm contoso   # and link them, the list believed
+roster --as admin scim adopt --tenant contoso                                  # who, their address, what the directory calls them; and the list's digest
+roster --as admin scim adopt --tenant contoso --confirm contoso --of <digest>  # and link them, the list believed
 ```
 
 The list is where a pair that does not belong together is seen before it is
 written -- believing it is a decision about a way into somebody's account, which
-is why it is made there and not by the directory. The endpoint says so in its
-log the first time a directory names somebody it matched, and the admin console
-says it on the person. Run it after a directory's first cycle, and again when
-the log says so.
+is why it is made there and not by the directory. So what is linked is the list
+that was read: the first run says its digest on standard error, and the second
+links that list or nothing. Where the directory said anything in between --
+somebody new on it, an address or an id that moved -- it writes nothing,
+prints the list as it is now with its digest, and fails, for it to be read
+again. It is the whole list or none of it. The endpoint says so in its log the
+first time a directory names somebody it matched, and the admin console says it
+on the person. Run it after a directory's first cycle, and again when the log
+says so.
+
+The list is of people. A holder an app acts as (`roster app install`) is nobody
+who signs in, so one the directory said an id for is left off it and never
+linked, and a sentence after the list names it. Nor does a directory say
+anything of its own holder: `Tell` of the caller's own row is refused.
+
+**An account at the connection is not somebody's own to write.** Anywhere else
+a person may write an account at a provider onto their own row, and roster
+checks nothing about it (`IdentityService/Add`, in the tenant's `self-service`
+role). At the connection a directory provisions through, that row is who the
+directory means: it finds its user by `externalId` through it and speaks for
+whoever has one. Somebody who wrote a colleague's id onto their own row would
+be that colleague to the directory -- found by its lookup, the reason creating
+the colleague is refused as taken, and the row its `active: false` and its
+groups land on. So there the write takes `IdentityService/Add` held **across
+the tenant**: a front door, which links somebody it saw the provider sign in;
+an administrator; `adopt` above. A person's own is refused, and so is the
+account page's *connect* for that connection, which is made as them.
+
+**From when the connection provisions, and not before.** A row somebody wrote
+on their own account while the connection did not provision is not refused
+after the fact, and nothing on an identity says who wrote it: it is who the
+directory means from its first request. `roster scim provision` lists nothing
+of them. So before a tenant's connection is marked, whoever turns provisioning
+on reads the tenant's accounts at providers (`roster identity list`; each says
+its provider) for the ones at that connection, beside what the directory calls
+each of those people, and a tenant that does not want one written in the
+meantime takes `IdentityService/Add` out of its `self-service` role first.
+
+**Nor theirs to take away.** The same row is what makes somebody one the
+directory speaks for. Somebody it made, who also has a password, could
+*unlink* the account it made them by, and from then on its `active: false`
+was refused, `403`, and its lookup found nobody: they had taken themselves out
+of its hands, and went on signing in after it said they had left. So an erase
+there, the account page's *unlink*, and a move to another subject
+(`IdentityService/Resubject`) each take their verb held **across the
+tenant** by a binding -- an administrator; for the move, a front door at their
+sign-in -- and not the person's own doing, nor a grant made in a site. The
+directory's own word that somebody has left removes no account, and is heard
+as before.
 
 **Leaving.** `active: false` suspends them -- the same suspension `Disable`
-writes, refused everywhere -- and `active: true` lifts it. `DELETE` suspends them
+writes, refused everywhere -- and `active: true` lifts it. A request is not
+all or nothing, as RFC 7644 §3.5.2 would have a PATCH: the endpoint writes it
+through roster in several calls and nothing takes back the ones before a
+refusal, so `active: false` is written first and stands though what was said
+beside it is refused, and `active: true` is written after the rest, so a
+request that is refused lets nobody back in. `DELETE` suspends them
 and keeps the row: what becomes of it is an operator's decision, and the endpoint
 speaks of them no more. A re-hire with the same address is refused as taken until
 an operator brings them back -- `roster --as admin holder enable @contoso/dave`
@@ -354,10 +443,19 @@ an operator brings them back -- `roster --as admin holder enable @contoso/dave`
 **An erase is not something the directory hears.** Somebody erased here -- by an
 operator, or by themselves -- is somebody it no longer finds, and making them
 again is refused as taken, since an erase leaves their identity and their address
-where they were. It fails for them every cycle until they are forgotten, and
-then makes them again, as somebody new. So an operator unassigns a person in the
-directory before erasing them here, and the people a directory provisions do not
-delete their own account, whatever their tenant offers (`MeService.Leave`).
+where they were. It fails for them every cycle until they are forgotten -- or
+until an administrator erases the identity and the address they left
+([operating.md](operating.md) § "Destroying somebody, which an erase does not")
+-- and then makes them again, as somebody new. So an operator unassigns a person
+in the directory before erasing them here, and the people a directory provisions
+do not delete their own account, whatever their tenant offers
+(`MeService.Leave`).
+
+**A list with no filter is the people who sign in through its connection.**
+Its `totalResults` is counted by asking after each of them what reads nothing
+personal, so it may count somebody no page shows -- a row a file declares that
+has an account at the connection, which only an operator writing one makes, or
+somebody erased between the count and the page -- and a page skips them.
 
 **The directory lifts its own suspensions and no other.** It is one way: it never
 hears that an operator suspended somebody, and restarting its provisioning says
@@ -371,7 +469,7 @@ back ([operating.md](operating.md) § *Stopping somebody*).
 | SCIM | roster |
 | --- | --- |
 | `id` | `Group.id` |
-| `displayName` | `Group.name`; the alias is made from it once, and stays |
+| `displayName` | `Group.name`; the alias is made from it once, with a suffix where another group has it, and stays |
 | `externalId` | the label `roster.directory` on the group |
 | `members` | a `GroupMembership` each, for the people the endpoint speaks of |
 
@@ -386,9 +484,12 @@ rule every manager is held to and none of the directory's own.
 **The label is how it finds them, and no rule reads it.** A group it made
 carries `roster.directory`, holding what the directory calls it. The endpoint
 speaks of the groups that carry it and of no other: one an operator made is not
-found, not changed, and **not taken over** by a directory naming a group alike
--- that create is refused as `uniqueness`, since handing a group to a directory
-is deciding who says what its bindings reach.
+found, not changed, and **not taken over** by a directory naming a group alike,
+since handing a group to a directory is deciding who says what its bindings
+reach. A create, or a rename, under a name one of the directory's own groups
+has already -- or a create under an `externalId` one has -- is refused as
+`uniqueness`, *a group here is already called that*; an operator's group is not
+among those, and the directory's is made beside it.
 
 **A role may be bound to such a group, or a client shown it, as to any other.**
 Nothing is refused a directory's group that is not refused every group. What
@@ -401,11 +502,40 @@ writes `Group.name` (`Group.Update`). The alias was made from the first name and
 is what a token carries for a client the group is shown to (`GroupExposure`), so
 a rename in the directory never changes what a relying party grants on.
 
+**The alias is made by the rule for an address, and may carry a suffix.** It
+stops at an `@`, drops the digits it begins with and folds punctuation into a
+hyphen, so names a directory keeps apart can make one alias -- `R&D` and `R/D`
+are both `r-d`, `Sales@EU` and `Sales@US` both `sales`, `2024 Interns` and
+`2025 Interns` both `interns` -- and a group an operator made may have it
+already. Where it is taken, the directory's group is made under it with a
+hyphen and four letters after (`r-d-k3mq`), as a person whose alias is taken
+is. So an operator reads a group's alias in roster -- `roster group list` --
+before a relying party grants on it, rather than guessing it from the name.
+
 **Who is in it, as far as the directory is told, is the plain members.** Its
 own holder is in every group it made and is no member to it; somebody an
 administrator appointed to manage one beside it is theirs to take out. A member
-is a person the endpoint speaks of -- a group inside a group is not followed,
-and roster has none.
+is a person the endpoint speaks of, which is who `GET /Users/{id}` answers --
+a group inside a group is not followed, and roster has none. Somebody erased
+since, or deleted by the directory, keeps their place in roster as an erase
+leaves it, and is not among `members`. Who is listed is asked with nothing
+personal, so a read of a group leaves no row of the access record for its
+members; what that does not ask is whether a file declared somebody, so a row
+a file declares that somebody else put in the group would be listed, though a
+read of it is `404`. Nothing the endpoint does puts one there.
+
+**A list of members is written whole or not at all.** Every id an `add` or a
+whole list names is looked up before anything is written, and one that is
+nobody the endpoint speaks of refuses the request, `400 invalidValue`, with the
+group as it was. A member is named by its `value`, and one named only by
+`$ref` or `display`, or by an empty `value`, refuses it the same way. A
+`remove` of `members` with no `value` at all, or a `null`, takes everybody out,
+as RFC 7644 §3.5.2.2 says; one with an empty list takes nobody out, and a
+`replace` with an empty list empties the group. **Somebody is taken out by their place**, whether or not they
+can still be read: a `remove` of somebody erased since takes their place away,
+and a whole list takes away every plain place whose holder it does not name,
+those of people erased or deleted since among them -- so a restore does not
+put back in a group somebody the directory took out of it.
 
 **`DELETE` erases the group.** Whoever manages a group may erase it
 ([entity.md](entity.md) § *GroupMembership*), and the directory's holder
@@ -422,9 +552,9 @@ being in it gives, and not the group the tenant is administered through.
 A tenant says what its managers do by its `group-manager` role, and one whose
 managers do not erase groups keeps the directory from it too; a key minted
 before this lists no such method. There a `DELETE` does the most a manager of
-that tenant may -- nobody it says is in the group is left in it, the group is
-still answered, and the log says so -- and what becomes of the row is an
-administrator's.
+that tenant may -- every plain place in the group is taken away, the places of
+people it no longer speaks of among them, the group is still answered, and the
+log says so -- and what becomes of the row is an administrator's.
 
 ## Turning it off
 
@@ -437,16 +567,25 @@ roster --as admin key list                  # the directory's is @contoso/scim/s
 roster key revoke --id <its identifier>
 ```
 
-Every call after is `401`. Nobody it suspended comes back and nobody it made
-goes: they are the tenant's people, as they were. `roster scim provision` again
+Every request after that asks roster is `401`, and every write asks it. What
+asks roster nothing -- the discovery routes, and an id that is no id -- is
+answered from what the endpoint remembers of the key for up to a minute.
+Nobody it suspended comes back and nobody it made goes: they are the tenant's people, as they were. `roster scim provision` again
 mints another key -- which is also all a rotation is, the key before it ended
 by the same command.
 
-**The mark on the connection**, which says the tenant has no directory: for a
-connection a file declares, `provisions: true` taken out of `resources.yaml`
-and a restart. The endpoint then answers `409`, *no connection of this tenant
-provisions its people* -- a write at once, and a read within the minute it
-keeps a key's tenant for.
+**The mark on the connection**, which says the tenant has no directory. On one
+`provision` marked, `provisions: false` under the version read:
+
+```sh
+roster --as admin connection get -o json <its identifier>    # `dateUpdated` is the version
+roster --as admin connection update <its identifier> '{"date_updated":"…","provisions":false}'
+```
+
+For a connection a file declares, `provisions: true` taken out of
+`resources.yaml` and a restart. The endpoint then answers `409`, *no connection
+of this tenant provisions its people* -- every write at once, since a write
+asks again, and a read within the minute it keeps a key's tenant for.
 
 **The listener**: the `scim` component out of the overlay, or `scim.addr` out
 of the configuration.
@@ -461,7 +600,8 @@ person. Whoever runs the deployment has this one, and three kinds of thing are
 in it.
 
 **What was not kept**, at `INFO`: `scim: not kept here` with the attributes a
-write named and roster has nowhere for, `a number was not kept`, `a manager who
+write named and roster has nowhere for, by name and never by what a path said
+of one, `a number was not kept`, `a manager who
 is nobody here, so not kept`. The write went on without them.
 
 **What was refused**, at `INFO`, a line a refusal:
@@ -487,10 +627,13 @@ The directory is answered `503` and tries again on its next cycle, so this is
 the only place the reason is. That one is `scim.insecure` left out in front of
 a listener with no TLS ([operating.md](operating.md) § *One process, or five*).
 
-Two answers leave no line: `404`, which a directory is told as a matter of
-course -- it looks before every create, and after every delete -- and `401`,
-which anybody who reaches the listener can cause. A key roster did not accept
-is in roster's own log, as the call that was denied.
+Three answers leave no line: `404`, which a directory is told as a matter of
+course -- it looks before every create, and after every delete -- `405`, a path
+asked by a method it does not take, and `401`, which anybody who reaches the
+listener can cause, a bearer that cannot be a key among them. A key roster did
+not accept is in roster's own log, as the call that was denied. Nor does a
+request whose asker hung up before it was answered, and nothing is written to
+it.
 
 ## What its key may do, and why not more
 
@@ -498,11 +641,11 @@ is in roster's own log, as the call that was denied.
 | --- | --- |
 | `HolderService/Provision` | somebody new: the person, their identity, their address, in one write |
 | `HolderService/Deactivate`, `Activate` | a suspension of the directory's, for people who sign in through the connection |
-| `HolderService/Update`, `Get` | what it owns of a profile, and reading it back |
-| `HolderService/Tell` | what it calls somebody, kept beside them: reaches anybody, and is believed by nothing |
+| `HolderService/Update`, `Get` | a profile, and reading it back: anybody's of the tenant no file declares, an administrator's among them |
+| `HolderService/Tell` | what it calls somebody, kept beside them: reaches anybody but its own holder, and is believed by nothing |
 | `PhoneService/Add`, `Erase`, `List` | where somebody is reached: written onto whoever holds no more than this key does, which is everybody it provisions |
 | `RelationService/Add`, `Erase`, `List` | who somebody reports to: a record no rule reads |
-| `EmailService/Get`, `List`, `IdentityService/Get`, `List` | finding somebody by an address or an `externalId` |
+| `EmailService/Get`, `List`, `IdentityService/Get`, `List` | finding somebody by an address or an `externalId`; asked of roster itself, every person's addresses and accounts at providers |
 | `MeService/Get`, `ConnectionService/List` | which tenant the key is, and its provisioning connection |
 | `GroupService/Add`, `Get`, `List`, `GroupMembershipService/List` | making a group, which makes its holder the group's manager, and reading the tenant's |
 | `GroupService/Update`, `Erase`, `GroupMembershipService/Add`, `Erase` | what a group is called, who is in it and whether there is one -- on the key, and **not bound**: held in each group it made, and so for that group alone |
@@ -511,12 +654,23 @@ is in roster's own log, as the call that was denied.
 `Holder.Erase`.** Each of those reaches people who already exist, and `Core.mayReach`
 answers yes for everybody who holds nothing -- which is most people. A key a
 directory's cloud presents from the internet would then be a way into all of them.
-`Provision` writes ways in only into the person it makes in the same breath, so a
-key holding it reaches the people it makes and no one else -- and only at the
-organisation's own door, where the account it names is one the organisation made
+`Provision` writes ways in only into the person it makes in the same breath, so
+the ways in a key holding it writes are into the people it makes and no one
+else -- and only at the organisation's own door, where the account it names is one the organisation made
 (§ *Setting a tenant up*). `Deactivate` reaches
 the people who sign in through the provisioning connection -- not an app's holder,
 not a front door's.
+
+**What it reaches besides is decided, and is more than the people it makes.**
+`Update` asks no reach ([rules.md](usage/rules.md) § *What is not a rule*), so
+the key writes the profile of anybody of the tenant no file declares, an
+administrator's among them, and who they report to. It makes groups, manages
+the ones its holder made, puts anybody of the tenant in them, and erases them
+with what was bound to them. It reads every person's addresses, accounts at
+providers and numbers. And the directory is whoever holds these verbs: nothing
+ties them to the key `provision` minted, except that only the holder who made a
+group manages it. The rules page says each where a tenant reads it
+([rules.md](usage/rules.md) § *What a directory may do*).
 
 **Not `GroupMembership.Add` through a binding, nor `Group.Erase`.** Bound, each
 reaches every group of the tenant: putting somebody into a group nothing is
@@ -532,8 +686,12 @@ rotation.
 **So a build that has the endpoint call something more needs `provision`
 again**, and the new key pasted where the directory keeps the old. Only
 `provision` writes the role and the key; `serve` opens the listener and writes
-neither. Until then the endpoint does what the key it has allows, and says in
-its log what it could not.
+neither. Until then, a request that needs a method the key lacks is answered
+`403` with roster's sentence naming the method -- never `404` and never an
+empty list, so a directory does not read it as somebody gone. Three are passed
+over instead, and said in the log: a number, who somebody reports to, and a
+group's erase (above). And a create whose `userName` is not the person's
+address, by a key without `Tell`, makes the person and is answered `403`.
 
 ## Where each fact is
 
@@ -553,7 +711,7 @@ its log what it could not.
 | a person's whole life at the endpoint, in Entra's order and dialect | `TestADirectoryProvisionsSomebodyTheWayEntraDoes` |
 | somebody already here is matched and not made again | `TestSomebodyAlreadyHereIsMatchedAndNotMadeAgain` |
 | and is not suspended by their directory until they are linked; what it calls them is kept and believed by nothing | `TestSomebodyMatchedIsNotSuspendedByTheirDirectoryUntilTheyAreLinked` · `TestWhatADirectorySaysIsKeptAndBelievedByNothing` |
-| an operator links who the directory matched, from a list | `TestAnOperatorLinksWhoTheDirectoryMatched` |
+| an operator links who the directory matched, from the list they read, or nothing | `TestAnOperatorLinksWhoTheDirectoryMatched` · `TestAdoptLinksTheListThatWasReadOrNothing` · `TestAdoptsConfirmAndItsDigestGoTogether` |
 | a changed `userName` is kept and answered, and the address stays | `TestAChangedUserNameIsKeptAndAnsweredAndTheAddressStays` |
 | what Microsoft's validator asks, request by request; and `/Schemas` lists what is kept | `TestWhatMicrosoftsValidatorAsks` · `TestTheSchemaListsWhatIsKept` |
 | the page itself, run by a person against a roster stood up for it | `scripts/scim-check.sh`, by the workflow `scim-check` |
@@ -562,11 +720,14 @@ its log what it could not.
 | a number is written and replaced, one a kind and one number as many kinds as it is said for; and is left where it is somebody's who holds more than the directory | `TestADirectoryKeepsSomebodysNumbers` · `TestADirectoryLeavesTheNumbersOfSomebodyWiderThanIt` · `TestANumberIsSomebodysAsAnAddressIs` |
 | who somebody reports to is one relation, and one word in it | `TestADirectorySaysWhoSomebodyReportsTo` · `TestWhatSomebodyIsToSomebodyIsARecordNothingReads` |
 | a key minted before a method was added goes on provisioning without it | `TestAKeyMintedBeforeNumbersWereKeptStillProvisions` |
+| and a request that needs a method the key lacks is `403` naming it, and nobody is said gone; the table above is what the key lists and the role holds | `TestAKeyThatLacksAMethodIsRefusedAndNobodyIsSaidGone` · `TestTheEndpointsKeyIsTheManualsList` |
 | the directory lifts only its own suspensions | `TestADirectoryLiftsOnlyItsOwnSuspension` · `TestTheDirectoryDoesNotLiftAnOperatorsSuspension` |
-| its key reaches only the people it makes | `TestADirectoryMakesPeopleAndOnlyNewOnes` · `TestTheEndpointTakesATenantKeyAndNothingElse` |
+| its key writes a way in only into the people it makes | `TestADirectoryMakesPeopleAndOnlyNewOnes` · `TestTheEndpointTakesATenantKeyAndNothingElse` |
+| and what else it reaches: anybody's profile no file declares, anybody into a group it made, everybody's addresses, accounts and numbers; and the directory is whoever holds the verbs | `TestADirectorysKeyWritesTheProfileOfAnybodyNoFileDeclares` · `TestADirectorysKeyPutsAnybodyOfTheTenantInTheGroupsItMakes` · `TestADirectorysKeyReadsEveryPersonsAddressesAccountsAndNumbers` · `TestTheDirectoryIsWhoeverHoldsItsVerbs` |
 | and makes them only at the organisation's own door | `TestADirectoryProvisionsThroughItsOrganisationsOwnDoor` |
-| somebody erased is neither found nor made again until forgotten, and its people do not leave on their own | `TestSomebodyErasedHereIsNeitherFoundNorMadeUntilForgotten` · `TestSomebodyTheirDirectoryProvisionsDoesNotLeaveOnTheirOwn` |
+| somebody erased is neither found nor made again until forgotten, or until an administrator erases the identity and the address they left, and its people do not leave on their own | `TestSomebodyErasedHereIsNeitherFoundNorMadeUntilForgotten` · `TestSomebodyTheirDirectoryProvisionsDoesNotLeaveOnTheirOwn` |
 | a group's whole life at the endpoint, in Entra's order and dialect | `TestADirectoryProvisionsAGroupTheWayEntraDoes` · `TestAGroupsMembersAreSaidTheRFCsWayToo` |
 | its key changes the groups it made and no other | `TestADirectoryChangesTheGroupsItMadeAndNoOther` · `TestADirectorysKeyIsMintedForOneTenantAndOneConnection` |
 | a group it deletes is erased, as its manager may, and where its role does not go that far is emptied and kept | `TestADirectoryDeletesAGroupAsFarAsItsRoleGoes` · `TestWhoeverManagesAGroupMayEraseIt` |
+| the mark `provision` wrote comes off with `connection update` | `TestTheMarkProvisionWroteComesOffByConnectionUpdate` |
 | where a deployment turns it on, the endpoint reaches roster | `scripts/cluster.sh` and `scripts/hydra.sh`, *the directory's endpoint, asked by a key nobody minted* |

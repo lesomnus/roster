@@ -21,7 +21,10 @@ message Tenant {
   //
   // What it buys is that the next setting is a field number in here rather than
   // one of the nine an app gets on `Tenant` itself.
-  TenantConfig config = 8;
+  //
+  // Not personal, as nothing a tenant says of itself is: settings, and the
+  // trail saying who changed which to what is what it is kept for.
+  TenantConfig config = 8 [(payday.field) = {personal: false}];
 
   // Since when nobody of this tenant gets in: the customer left, or an
   // operator shut them out. Nothing is destroyed by it.
@@ -58,18 +61,33 @@ message Tenant {
   // free it sooner on purpose, and the trail records that they did.
   google.protobuf.Timestamp date_destroyed = 10 [(orm.field) = {nullable: true}];
 
-  // Since when an operator holds this tenant as it is: a legal claim, a
-  // dispute. While it is set nothing of the tenant is destroyed -- closing
-  // still shuts people out, and the grace still runs, but destroying waits
-  // until the hold is lifted and then finishes -- and the trail keeps what it
-  // holds of the tenant as payday's holds do.
+  // Since when an operator holds this tenant: a legal claim, a dispute. While
+  // it is set the tenant is not destroyed, nobody of it is forgotten on a
+  // clock, nor their consents, its alias is not given back if it was
+  // destroyed already, and the trail keeps what it holds of the tenant as
+  // payday's holds do.
+  //
+  // Two things it does not stop. Somebody of the tenant forgotten by name
+  // (`roster forget @tenant/who`) has their rows destroyed as anybody's are;
+  // what the hold keeps of them is the trail's lines, until it lifts. And the
+  // tenant's own grace: closing still shuts people out and
+  // `tenant.restore_within` still runs from the close, so a tenant held past
+  // it can no longer be restored, and is destroyed by the first pass after the
+  // hold is lifted.
   //
   // Written by `roster hold` and by nothing a caller reaches. The tenant reads
   // it, like everything about itself, so [Tenant.hold] is written to be read.
   google.protobuf.Timestamp date_held = 11 [(orm.field) = {nullable: true}];
 
   // What the hold is for: a case, a demand. Empty while nothing holds it.
-  string hold = 12;
+  //
+  // Not personal, as nothing a tenant says of itself is (`tenant.proto`, its
+  // `alias` and the three after): it is the deployment's note of why, and the
+  // trail saying why a hold was placed, and when, is the point of writing
+  // one. So it is on the trail as a value, where no forget reaches it, and
+  // whoever writes it writes a case and not a person: *Contoso v. Fabrikam,
+  // 2026-123*, and never somebody's name (#280).
+  string hold = 12 [(payday.field) = {personal: false}];
 }
 
 // TenantConfig is the settings, and each one is a **fact roster enforces**

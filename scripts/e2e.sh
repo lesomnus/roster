@@ -86,6 +86,10 @@ export E2E_TENANT_ADMIN_PASSWORD="contoso-$(head -c 12 /dev/urandom | base64 | t
 # page signed in as one person and then as another, on one browser, keeps
 # nothing of the first (`user.spec.ts`). Nobody else signs in as her.
 export E2E_GRACE_PASSWORD="grace-$(head -c 12 /dev/urandom | base64 | tr -d '/+=')"
+# heidi, who enrols an authenticator app at the account page and is then asked
+# for its code at the user console. Somebody of her own, since a second factor
+# changes what signs a person in for every spec after it.
+export E2E_HEIDI_PASSWORD="heidi-$(head -c 12 /dev/urandom | base64 | tr -d '/+=')"
 admin_http="http://127.0.0.1:18072"
 # tailspin, whose person the mail spec walks through what the account app
 # mails: a link that confirms an address, one that recovers the account, one
@@ -185,6 +189,8 @@ echo "${E2E_ERIN_PASSWORD}" | r vouch set --password-stdin @contoso/erin >/dev/n
 echo "${E2E_TENANT_ADMIN_PASSWORD}" | r vouch set --password-stdin @contoso/admin >/dev/null
 op holder add @contoso/grace >/dev/null
 echo "${E2E_GRACE_PASSWORD}" | r vouch set --password-stdin @contoso/grace >/dev/null
+op holder add @contoso/heidi >/dev/null
+echo "${E2E_HEIDI_PASSWORD}" | r vouch set --password-stdin @contoso/heidi >/dev/null
 op host add '{"tenant":{"alias":"contoso"},"name":"localhost"}' >/dev/null
 
 # tailspin: frank, with a password and an address nobody has confirmed yet --
@@ -208,8 +214,9 @@ op host add '{"tenant":{"alias":"tailspin"},"name":"127.0.0.1"}' >/dev/null
 # Two directories, and erin arrived through one of them.
 #
 # Which is the case the *signs in with* section is drawn for: a `Connection` is
-# configuration and roster validates neither the issuer nor the secret, so two
-# of them cost two rows and no provider -- and what the page has to get right is
+# configuration, and roster asks its issuer nothing and never reads its secret
+# -- an issuer is held to being an address, not to answering -- so two of them
+# cost two rows and no provider. And what the page has to get right is
 # that the one she used offers *unlink* and the one she has not offers *connect*.
 # `add entra` used to be drawn beside `add github`, and clicking it was a round
 # trip to a directory that ends in roster refusing a second identity there.

@@ -61,7 +61,12 @@ message Relation {
   // words as much as a map -- `manager`, with nothing after it -- so that two
   // people who are two things to each other are still one row, which is what
   // the index below makes them.
-  map<string, string> labels = 7;
+  //
+  // Personal (payday#92): the words are about two people, what one is to the
+  // other, and are written by whoever knows. The trail records that a
+  // relation was said and between whom, by identifier, and never what it was
+  // (#280). `Holder.labels` is declared so for the same reason, whole.
+  map<string, string> labels = 7 [(payday.field) = {personal: true}];
 
   // Who they are that to. Of the same tenant, and never themselves:
   // `server/core` refuses both.

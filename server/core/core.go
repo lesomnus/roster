@@ -227,6 +227,12 @@ type Rules struct {
 	// [Core.mayReach] compares. See [Holding].
 	Holding Holding
 
+	// Giving is what one row hands whoever it names -- a binding, a place on
+	// a team, a manager's place in a group -- which is what erasing it takes
+	// away. Nil is a stack that cannot say, and such an erase is refused
+	// rather than made. See [Giving].
+	Giving Giving
+
 	// Releasing lets go of the `Host` row holding a name, whoever's it is. Nil
 	// is a stack that cannot, and taking a name is refused rather than
 	// attempted. See [Releasing].
@@ -252,6 +258,15 @@ type Rules struct {
 	// Sited is what is still a site's, which erasing one asks. Nil is a stack
 	// that cannot say, and a site is then erased as it always was. See [Sited].
 	Sited Sited
+
+	// Bound is whether a role is already bound to somebody in a place, which
+	// binding it there asks: a grant is made once. Nil is a stack that cannot
+	// say, and a binding is then made as it always was. See [Bound].
+	Bound Bound
+
+	// Unsited is whether a tenant already has a team of a name in no site,
+	// which making one asks. Nil is a stack that cannot say. See [Unsited].
+	Unsited Unsited
 
 	// Named is a tenant's role by its alias, which making a group asks to find
 	// the role its maker manages it by. Nil is a stack that cannot say, and a
@@ -350,8 +365,13 @@ func (r Rules) holding() Holding {
 	return Holding(r.Granted)
 }
 
+// New puts this layer in front of `next`, over [form]: what is written is held
+// to its lengths and its spelling between this layer and the store, so that
+// it is asked of every write this layer makes or passes on, and of no read.
 func New(next app.Server, rules Rules, opts ...Option) Core {
-	s := Core{Overlay: app.NewOverlay(next), rules: rules}
+	// Over `next` with two things in front of it that are asked of the writes
+	// themselves, and not of any one verb ([fronted]).
+	s := Core{Overlay: app.NewOverlay(fronted(next)), rules: rules}
 	for _, opt := range opts {
 		opt(&s)
 	}
@@ -369,6 +389,12 @@ type Option func(*Core)
 //
 // It exists because two callers have to contend for something and the schema's
 // own version is not reachable as a write: see [Core.only].
+//
+// The row is a person's, a tenant's, a site's or a role's, told apart by the
+// identifier. A site's and a role's is one that is still there: that the
+// caller who took the lock first erased it is what the second has to be
+// told. And the write changes nothing of the row. What is contended for is
+// the write, and not what it writes.
 type Lock func(ctx context.Context, drv dialect.Driver, who pdid.Id) error
 
 // On is the driver this stack was built on and the write one rule takes to
@@ -421,6 +447,23 @@ func (s Core) WithDriver(drv dialect.Driver) (app.Server, error) {
 	return s.over(next, drv), nil
 }
 
+// fronted is `next` with what is asked of every write in front of it, once
+// each: what is written has a length and a form ([form]), and nothing is
+// added under a tenant that is destroyed ([living]). The second is asked
+// last, so that a write refused for its form is told so whichever tenant it
+// names.
+//
+// Once, because both rebind themselves onto a transaction (`WithDriver`): a
+// server that was rebound arrives here carrying them already, and putting
+// them on again would ask each question twice of every write inside one.
+func fronted(next app.Server) app.Server {
+	if _, ok := next.(form); ok {
+		return next
+	}
+
+	return formed(alive(next))
+}
+
 // over is this layer again, over a server rebound onto the transaction `tx`.
 //
 // A copy of this one with the server and the driver swapped, and not a list of
@@ -434,7 +477,7 @@ func (s Core) WithDriver(drv dialect.Driver) (app.Server, error) {
 // particular inside a transaction. A copy carries what is added next.
 func (s Core) over(next app.Server, tx dialect.Driver) Core {
 	in := s
-	in.Overlay = app.NewOverlay(next)
+	in.Overlay = app.NewOverlay(fronted(next))
 	in.drv = nil
 	in.tx = tx
 

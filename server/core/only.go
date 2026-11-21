@@ -29,6 +29,14 @@ import (
 // SQLite, which serialises writers and so only leaves the gap between the count
 // and the write.
 //
+// It is not the only one. *A person has one account at a provider* is the
+// same count asked by a write that adds to it ([coreIdentity.add]): two
+// accounts added at once each counted none, and thirty-eight of forty people
+// held both (#279). And *a tenant keeps somebody administering it* is one over
+// a tenant's rows ([Core.keepsAdministered]), and so is *a tenant's directory
+// provisions through one connection*, asked where a connection is marked to
+// provision ([Core.oneMarked]): both lock the tenant's row.
+//
 // # What they contend for
 //
 // A transaction is necessary and is not enough. Under READ COMMITTED two
@@ -57,12 +65,15 @@ import (
 //
 // # What it costs
 //
-// The person's `date_updated` moves when an identity of theirs is removed. It
-// is a concurrency token rather than a fact about them, so nothing untrue is
-// recorded -- and the write goes around the recorder, so the trail carries the
-// erase that explains it and no entry for the lock. What a console holding an
-// older version of that row is told is to read again before its next write,
-// which is what a version is for.
+// Nothing of the row. The write is of the person's `date_updated` to what it
+// already is ([Lock]), and goes around the recorder, so the trail carries the
+// write that explains it and no entry for the lock.
+//
+// It moved the column to now, which was said to cost a console holding the
+// row a second read. It cost more: a deployment that checks its rows against
+// its trail found a row written past the servers, for a person nobody had
+// touched (#279). What two callers contend for is the write, and not what it
+// writes.
 //
 // # And when the caller has already arranged one
 //
@@ -135,8 +146,8 @@ func (s Core) locked(ctx context.Context, drv dialect.Driver, next app.Server, h
 
 	// The write both callers make, first, so that whoever is going to lose
 	// blocks here rather than after counting a set that is about to change
-	// underneath them. What it writes is the version column, which is a token
-	// rather than a fact about the person -- so it moves and the trail says
+	// underneath them. What it writes is the version column, to what it
+	// already is -- so the row is as the trail keeps it, the trail says
 	// nothing, and what a reader finds there is the erase that explains it.
 	if err := s.lock(ctx, drv, k); err != nil {
 		return err

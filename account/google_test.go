@@ -1,7 +1,6 @@
 package account_test
 
 import (
-	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -137,12 +136,9 @@ func TestSomebodyWhoArrivesThroughGoogleDeletesTheirAccount(t *testing.T) {
 		x.Eventually(func() bool { link = d.sent("erin@contoso.com"); return link != "" }, 2*time.Second, 20*time.Millisecond,
 			"no link was mailed to the address Google vouched for")
 
-		res, err := b.Get(link)
-		x.NoError(err)
-		page, _ := io.ReadAll(res.Body)
-		res.Body.Close()
-		x.Equal(http.StatusOK, res.StatusCode, string(page))
-		password := between(string(page), `user-select:all">`, `</code>`)
+		code, page := b.spend(t, link)
+		x.Equal(http.StatusOK, code, page)
+		password := between(page, `user-select:all">`, `</code>`)
 		x.NotEmpty(password, "the link handed over no password: %s", page)
 
 		// A sign-in with it is a moment ago, so it deletes.

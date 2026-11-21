@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/payday/access"
 	"github.com/lesomnus/payday/pdid"
 	sqlpage "github.com/protobuf-orm/ent/dialect/sql/sqlpage"
 
@@ -108,10 +109,11 @@ func (s coreHolder) Update(ctx context.Context, req *app.HolderUpdateRequest) (*
 // may have renamed the same row in between, and two editors reaching two names
 // is exactly what a lost update is.
 //
-// Nothing else is checked here, and that is the point of it being a narrow
-// write: an alias that is not one is refused by the grammar payday already
-// holds every alias to, and one somebody in this tenant already has is refused
-// by the unique index that was there before this method was.
+// Nothing else is checked of the name here, and that is the point of it being
+// a narrow write: an alias that is not one is refused by the grammar payday already
+// holds every alias to, one written otherwise than it is read by the rule
+// every write of an alias meets ([spelled]), and one somebody in this tenant
+// already has by the unique index that was there before this method was.
 //
 // **No `mayReach`, and that is the same answer `Disable` gives.** Renaming an
 // administrator does not let anybody become them; it only makes them harder to
@@ -120,7 +122,21 @@ func (s coreHolder) Update(ctx context.Context, req *app.HolderUpdateRequest) (*
 // writes that are: a credential, a way in. If this grew one it would have to
 // grow one on `Disable` first, and that decision is written down over there
 // rather than taken here by a method that arrived later.
+//
+// # And not a row a file declares
+//
+// `Update` and `Disable` of one are refused, and this asked nothing: a declared
+// holder was renamed, OK. What applies the file finds its holder by the name
+// the file says (`cli/provision.go`), so the next start found nobody by it and
+// made a second, and the first kept the role, the binding and the label of a
+// row the configuration no longer knew. Refused as they are
+// ([Core.mayWriteDeclared]). `Invalidate` of one is not: it edits nothing a
+// file wrote.
 func (s coreHolder) Realias(ctx context.Context, req *app.HolderRealiasRequest) (*app.Holder, error) {
+	if err := s.declaredHolder(ctx, req.GetRef()); err != nil {
+		return nil, err
+	}
+
 	return s.HolderServiceServer.Patch(ctx, app.HolderPatchRequest_builder{
 		Ref:         req.GetRef(),
 		Alias:       z.Ptr(req.GetAlias()),
@@ -157,34 +173,74 @@ func (s coreHolder) Realias(ctx context.Context, req *app.HolderRealiasRequest) 
 // the tenant with nobody administering it is refused (`administered.go`),
 // since nobody in the tenant could undo it.
 //
-// **A password change does not invalidate.** *A password reset that leaves old
-// sessions alive is not a reset* is true, and it belongs with the recovery
-// work that has the reset in it: coupling it here would make somebody changing
-// their own password sign themselves out of everything with nothing having said
-// so.
+// **A password change invalidates, where it is somebody's own.** *A password
+// reset that leaves old sessions alive is not a reset* was held to be true of a
+// reset alone, and somebody changing their own was left signed in everywhere,
+// so as not to sign them out with nothing having said so. But a password is
+// changed because somebody else may have it, and that somebody was signed in
+// already (`coreCredential.Set`, #275). A password the box writes for somebody
+// ends nothing, as before: `reset` is the one that does.
 func (s coreHolder) Disable(ctx context.Context, req *app.HolderDisableRequest) (*app.Holder, error) {
-	if err := s.declaredHolder(ctx, req.GetRef()); err != nil {
-		return nil, err
+	for try := 0; ; try++ {
+		// The row's labels, for [coreHolder.declaredHolder]'s question; and
+		// whether they are suspended already, with the version that says so.
+		got, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
+			Ref: req.GetRef(),
+			Select: app.HolderSelect_builder{
+				Labels: z.Ptr(true), DateDisabled: z.Ptr(true), DateUpdated: z.Ptr(true),
+			}.Build(),
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+		if err := s.mayWriteDeclared(ctx, "ref", got.GetLabels()); err != nil {
+			return nil, err
+		}
+
+		patch := app.HolderPatchRequest_builder{
+			Ref: req.GetRef(),
+
+			// The suspension is the operator's now, whoever made it: a
+			// directory lifts only what it put there (`Holder.directory`).
+			Directory: z.Ptr(""),
+		}
+
+		// Since when is when they were first suspended, so somebody suspended
+		// already keeps the moment they have. Written again each time, it
+		// moved: somebody stopped in March and suspended again in June had
+		// been suspended since June. The moment an address was first proved
+		// stays for the same reason ([coreEmail.Confirm]), and a directory's
+		// `Deactivate` has always left it.
+		//
+		// Leaving the moment out is the one thing here that depends on what
+		// was read, so that write -- and no other -- is made on the version
+		// read: were the suspension lifted in between, by the directory that
+		// made it, a write that only said whose it is would answer OK about
+		// somebody who is not suspended. Refused for that, it is decided
+		// again; and a row that will not hold still three times over is
+		// suspended as it always was, by a write that asks nothing.
+		was, kept := req.GetDateUpdated(), got.GetDateDisabled() != nil && try < 3
+		switch {
+		case !kept:
+			patch.DateDisabled = timestamppb.Now()
+		case was == nil:
+			was = got.GetDateUpdated()
+		}
+		lock(&patch, was)
+
+		var out *app.Holder
+		err = s.keepsTheirs(ctx, req.GetRef(), "suspending them", func(next app.Server) error {
+			var err error
+			out, err = next.Holder().Patch(ctx, patch.Build())
+
+			return err
+		})
+		if kept && req.GetDateUpdated() == nil && status.Code(err) == codes.FailedPrecondition {
+			continue
+		}
+
+		return out, err
 	}
-	patch := app.HolderPatchRequest_builder{
-		Ref:          req.GetRef(),
-		DateDisabled: timestamppb.Now(),
-
-		// The suspension is the operator's now, whoever made it: a directory
-		// lifts only what it put there (`Holder.directory`).
-		Directory: z.Ptr(""),
-	}
-	lock(&patch, req.GetDateUpdated())
-
-	var out *app.Holder
-	err := s.keepsTheirs(ctx, req.GetRef(), "suspending them", func(next app.Server) error {
-		var err error
-		out, err = next.Holder().Patch(ctx, patch.Build())
-
-		return err
-	})
-
-	return out, err
 }
 
 func (s coreHolder) Enable(ctx context.Context, req *app.HolderEnableRequest) (*app.Holder, error) {
@@ -265,10 +321,11 @@ func (s coreHolder) Invalidate(ctx context.Context, req *app.HolderInvalidateReq
 func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) (*app.HolderSignsInResponse, error) {
 	// The holder first, so that somebody outside the caller's tenant is
 	// `NotFound` rather than an empty list -- which would say "here, and with
-	// no way in" about a person the caller cannot see.
+	// no way in" about a person the caller cannot see. With the tenant they
+	// are in, which is where the record of this read is filed.
 	v, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
 		Ref:    req.GetRef(),
-		Select: app.HolderSelect_builder{}.Build(),
+		Select: app.HolderSelect_builder{Tenant: app.TenantSelect_builder{}.Build()}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -287,92 +344,155 @@ func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) 
 
 	who := app.HolderRef_builder{Id: v.GetId()}.Build()
 
-	ids, err := s.Next().Identity().List(ctx, app.IdentityListRequest_builder{
-		Filters: []*app.IdentityFilter{
-			app.IdentityFilter_builder{Holder: who}.Build(),
-		},
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
+	// On the access record, said here because nothing else can see it (#280).
+	//
+	// The record reads whose data a call carried off the messages that declare
+	// a personal field, and this answers in messages of its own: the subject
+	// `Identity.subject` declares personal comes back in a `SignInIdentity`,
+	// which declares nothing. So the call answered somebody's accounts at
+	// their providers and what their keys and factors are called, to an
+	// administrator or an operator, and left no row. It names the person
+	// asked about, in their tenant, whatever they turn out to have -- and
+	// below, each account whose subject it answers, by the row that holds it,
+	// as a list of them is recorded.
+	in, _ := pdid.From(v.GetTenant().GetId())
+	access.Saw(ctx, access.Subject{Id: whose, Tenant: in})
 
-	creds, err := s.Next().Credential().List(ctx, app.CredentialListRequest_builder{
-		Filters: []*app.CredentialFilter{
-			app.CredentialFilter_builder{Holder: who}.Build(),
-		},
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
-
+	// Every page of each. The answer has no cursor, so what it says is all
+	// there is: read once with no size, each was a list's first page --
+	// twenty -- and somebody with twenty-five keys was answered twenty, with
+	// nothing saying there were more, to whoever reads this to end the keys
+	// of an account (#279). In the order a list is in, which is the order
+	// they were made in.
 	res := app.HolderSignsInResponse_builder{}
-	for _, i := range ids.GetItems() {
-		res.Identities = append(res.Identities, app.SignInIdentity_builder{
-			Id:          i.GetId(),
-			Provider:    i.GetProvider(),
-			Subject:     i.GetSubject(),
-			DateCreated: i.GetDateCreated(),
+	for after := ""; ; {
+		page, err := s.Next().Identity().List(ctx, app.IdentityListRequest_builder{
+			Filters: []*app.IdentityFilter{
+				app.IdentityFilter_builder{Holder: who}.Build(),
+			},
+			Size:  signsInPage,
+			After: after,
 		}.Build())
-	}
-	for _, c := range creds.GetItems() {
-		// The fields are written out, so the verifier is absent rather than
-		// deselected -- there is no `Select` here to get wrong, and the shape
-		// itself is the statement D13 makes by not registering the service.
-		f := app.SignInCredential_builder{Kind: c.GetKind(), Name: c.GetName()}
-		if u := c.GetDateRotated(); u != nil {
-			f.DateRotated = u
+		if err != nil {
+			return nil, err
 		}
-		if u := c.GetDateLocked(); u != nil && u.AsTime().After(time.Now()) {
-			f.DateLocked = u
+		for _, i := range page.GetItems() {
+			res.Identities = append(res.Identities, app.SignInIdentity_builder{
+				Id:          i.GetId(),
+				Provider:    i.GetProvider(),
+				Subject:     i.GetSubject(),
+				DateCreated: i.GetDateCreated(),
+			}.Build())
+
+			if k, err := pdid.From(i.GetId()); err == nil {
+				access.Saw(ctx, access.Subject{Id: k, Tenant: in})
+			}
 		}
 
-		res.Credentials = append(res.Credentials, f.Build())
+		if after = page.GetNext(); after == "" {
+			break
+		}
 	}
 
-	keys, err := s.Next().ApiKey().List(ctx, app.ApiKeyListRequest_builder{
-		Filters: []*app.ApiKeyFilter{
-			app.ApiKeyFilter_builder{Holder: who}.Build(),
-		},
-	}.Build())
-	if err != nil {
-		return nil, err
-	}
-	for _, k := range keys.GetItems() {
-		// Written out like the credentials above, and for the identical
-		// reason: the verifier is **absent** rather than deselected. There is
-		// no `Select` here to get wrong, and the shape is the statement.
-		f := app.SignInKey_builder{
-			Id:      k.GetId(),
-			Alias:   k.GetAlias(),
-			Methods: k.GetMethods(),
+	for after := ""; ; {
+		page, err := s.Next().Credential().List(ctx, app.CredentialListRequest_builder{
+			Filters: []*app.CredentialFilter{
+				app.CredentialFilter_builder{Holder: who}.Build(),
+			},
+			Size:  signsInPage,
+			After: after,
+		}.Build())
+		if err != nil {
+			return nil, err
 		}
-		if u := k.GetDateExpires(); u != nil {
-			f.DateExpires = u
-		}
-		if u := k.GetDateUsed(); u != nil {
-			f.DateUsed = u
+		for _, c := range page.GetItems() {
+			// The fields are written out, so the verifier is absent rather
+			// than deselected -- there is no `Select` here to get wrong, and
+			// the shape itself is the statement D13 makes by not registering
+			// the service.
+			f := app.SignInCredential_builder{Kind: c.GetKind(), Name: c.GetName()}
+			if u := c.GetDateRotated(); u != nil {
+				f.DateRotated = u
+			}
+			if u := c.GetDateLocked(); u != nil && u.AsTime().After(time.Now()) {
+				f.DateLocked = u
+			}
+
+			res.Credentials = append(res.Credentials, f.Build())
 		}
 
-		res.Keys = append(res.Keys, f.Build())
+		if after = page.GetNext(); after == "" {
+			break
+		}
+	}
+
+	for after := ""; ; {
+		page, err := s.Next().ApiKey().List(ctx, app.ApiKeyListRequest_builder{
+			Filters: []*app.ApiKeyFilter{
+				app.ApiKeyFilter_builder{Holder: who}.Build(),
+			},
+			Size:  signsInPage,
+			After: after,
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+		for _, k := range page.GetItems() {
+			// Written out like the credentials above, and for the identical
+			// reason: the verifier is **absent** rather than deselected.
+			// There is no `Select` here to get wrong, and the shape is the
+			// statement.
+			f := app.SignInKey_builder{
+				Id:      k.GetId(),
+				Alias:   k.GetAlias(),
+				Methods: k.GetMethods(),
+			}
+			if u := k.GetDateExpires(); u != nil {
+				f.DateExpires = u
+			}
+			if u := k.GetDateUsed(); u != nil {
+				f.DateUsed = u
+			}
+
+			res.Keys = append(res.Keys, f.Build())
+		}
+
+		if after = page.GetNext(); after == "" {
+			break
+		}
 	}
 
 	return res.Build(), nil
 }
 
+// signsInPage is how many rows [coreHolder.SignsIn] asks a list for at a
+// time: the most one answers with, so that somebody's ways in are a read or
+// two of each.
+const signsInPage = 100
+
 func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) (*app.HolderReachesResponse, error) {
 	v, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
-		Ref:    req.GetRef(),
-		Select: app.HolderSelect_builder{DateDisabled: z.Ptr(true)}.Build(),
+		Ref: req.GetRef(),
+		Select: app.HolderSelect_builder{
+			DateDisabled: z.Ptr(true),
+			Tenant:       app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
+		}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
 	}
-	if v.GetDateDisabled() != nil {
-		// Suspended: every credential of theirs is refused before the gate is
-		// asked, so the gate's answer is nothing. Answering their bindings
-		// instead told an app checking an SSO token roster cannot see -- one
-		// minted before the suspension, good for its hour -- that they still
-		// held everything they held.
+	if v.GetDateDisabled() != nil || v.GetTenant().GetDateClosed() != nil {
+		// Suspended, or in a tenant that is closed: every credential of
+		// theirs is refused before the gate is asked, so the gate's answer is
+		// nothing. Answering their bindings instead told an app checking an
+		// SSO token roster cannot see -- one minted before the suspension,
+		// good for its hour -- that they still held everything they held.
+		//
+		// The tenant's closing is read here and not left to whoever asks: a
+		// caller inside the tenant is refused already, and one outside it --
+		// a deployment key as itself -- was answered their bindings for as
+		// long as the tenant was closed, while `standing` asked by the same
+		// key refused them.
 		return app.HolderReachesResponse_builder{EverySite: z.Ptr(false)}.Build(), nil
 	}
 	if s.rules.Held == nil {
@@ -417,9 +537,20 @@ const (
 // costs less than the round trip. `holder_svc.ext.proto` says what is matched
 // and why an address is not.
 //
-// The cursor is `List`'s: the row this stopped at, encoded the way `List`
-// encodes the last row of a page, so the next call carries on after it and no
+// The cursor is `List`'s: the last row of the page, encoded the way `List`
+// encodes the last row of one, so the next call carries on after it and no
 // row is answered twice or skipped.
+//
+// # And it is empty when the page was the last
+//
+// It stopped at the row that filled the page and answered that row as where
+// to carry on from, whether or not anything after it matched: ten matches
+// asked for ten at a time were a full page and a cursor, and the page after
+// was empty (#279). A full page is not the end of the reading. It goes on
+// until one more row matches, which is what there being more means, or until
+// there are no more rows -- so the call that answers the last page has read
+// to the end of the people its caller may see, as a call that finds nothing
+// always did.
 func (s coreHolder) Search(ctx context.Context, req *app.HolderSearchRequest) (*app.HolderSearchResponse, error) {
 	q := strings.ToLower(strings.TrimSpace(req.GetQ()))
 	department := strings.TrimSpace(req.GetDepartment())
@@ -458,6 +589,10 @@ func (s coreHolder) Search(ctx context.Context, req *app.HolderSearchRequest) (*
 
 	res := app.HolderSearchResponse_builder{Items: make([]*app.Holder, 0, size)}
 	after := req.GetAfter()
+
+	// Where the page ends, once it is full: said only when a row after it
+	// matches.
+	last := ""
 	for {
 		page, err := s.Next().Holder().List(ctx, app.HolderListRequest_builder{
 			Filters: req.GetFilters(),
@@ -472,6 +607,12 @@ func (s coreHolder) Search(ctx context.Context, req *app.HolderSearchRequest) (*
 			if !matches(v) {
 				continue
 			}
+			if len(res.Items) == size {
+				// One more than the page holds: there is more.
+				res.Next = last
+
+				return res.Build(), nil
+			}
 
 			// Read through `Next()`, so the page arrives as it is stored;
 			// what this answers is a page, and carries what `List` does.
@@ -484,13 +625,9 @@ func (s coreHolder) Search(ctx context.Context, req *app.HolderSearchRequest) (*
 			if err != nil {
 				return nil, err
 			}
-			next, err := sqlpage.Encode(v.GetDateCreated().AsTime(), id.Uuid())
-			if err != nil {
+			if last, err = sqlpage.Encode(v.GetDateCreated().AsTime(), id.Uuid()); err != nil {
 				return nil, status.Errorf(codes.Internal, "next: %s", err)
 			}
-			res.Next = next
-
-			return res.Build(), nil
 		}
 
 		if page.GetNext() == "" {

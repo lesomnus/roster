@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
@@ -49,6 +50,8 @@ func NewCmdLogin(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 		Brief: "the Login App, for a deployment with Hydra in front",
 
 		Commands: xli.Commands{newCmdLoginServe(l, c), newCmdLoginProvision(c), newCmdLoginDoctor(l, c)},
+
+		Handler: xli.RequireSubcommand(),
 	}
 }
 
@@ -216,11 +219,13 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 				}
 			}
 
-			// What the key is allowed, which is [LoginMethods] plus the one
-			// grant a policy asks for. `enrolling` makes people, and making
-			// people is wider than signing them in -- so it is granted only
-			// where a deployment wrote `login.enrol: enrolling` down, and never
-			// by default.
+			// What the role of the app's holder in each tenant allows, which is
+			// [LoginMethods] plus the one grant a policy asks for -- and not
+			// what the key is allowed as itself, which is [LoginResolving] and
+			// is `provisionKey`'s. `enrolling` makes people, and making people
+			// is wider than signing them in -- so it is granted only where a
+			// deployment wrote `login.enrol: enrolling` down, and never by
+			// default.
 			methods := loginMethodsFor(c.Login.Enrol)
 
 			// The key first, because it is the half that needs no customer.
@@ -361,15 +366,24 @@ func newCmdLoginDoctor(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	}
 }
 
-// LoginMethods is what the Login App calls as itself, and the whole of it.
+// LoginMethods is what the Login App calls as itself in a tenant, and the whole
+// of it.
 //
-// The password half is the flow: resolve the tenant, check a secret, mint the
-// delegation, end it. The provider half is the other way in -- read the
+// The password half is the flow: read what the tenant is called and whether it
+// takes passwords, check a secret and mint the delegation in one call
+// (`Delegate`), end it. The provider half is the other way in -- read the
 // tenant's `Connection` rows to draw the buttons and to be the relying party,
 // find the `Identity` a directory's answer names, link one for somebody the
-// policy enrolled, and hand the claim over. `Sync.Watch` is how it hears that
-// somebody has been signed out everywhere so that Hydra can be told to forget
-// them. `login.Methods` is `Me.Get`, which is the claims that go in the token.
+// policy enrolled, and hand the claim over. `login.Methods` is `Me.Get`, which
+// is the claims that go in the token.
+//
+// **In a tenant**, because this is the role of the holder a tenant nominated:
+// it lists what the app calls narrowed to that tenant, and nothing it calls
+// otherwise. Two were here that it never calls so. `VouchService/Verify` checks
+// a password and hands nothing back to act with, and a front door needs the
+// delegation, so it calls `Delegate` and never this. `SyncService/Watch` is one
+// stream that hears every tenant, opened by the key as itself, and is
+// [LoginResolving]'s.
 //
 // `Email.Get` is the invitation: an tenant who entered somebody in advance
 // knows their address and not the subject a directory will assert, so the first
@@ -393,12 +407,13 @@ func newCmdLoginDoctor(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 // signing in, which is why this list is short and why it is written here rather
 // than left to whoever runs the command.
 var LoginMethods = append([]string{
+	// What the tenant a name resolved to is called, and its alias, which a
+	// sign-in is addressed by (`login/at.go`); and whether it takes passwords
+	// and fills profiles. Its own row, as the holder it nominated.
 	rstr.TenantService_Get_FullMethodName,
-	rstr.VouchService_Verify_FullMethodName,
 	rstr.VouchService_Delegate_FullMethodName,
 	rstr.VouchService_Accept_FullMethodName,
 	rstr.DelegationService_Revoke_FullMethodName,
-	rstr.SyncService_Watch_FullMethodName,
 	rstr.ConnectionService_Get_FullMethodName,
 	rstr.ConnectionService_List_FullMethodName,
 	rstr.IdentityService_Get_FullMethodName,
@@ -432,20 +447,28 @@ var LoginMethods = append([]string{
 	rstr.HolderService_Fill_FullMethodName,
 }, login.Methods...)
 
-// LoginResolving is what this app calls **before** it knows whose flow it is,
-// and the whole of what its key allows.
+// LoginResolving is what this app calls naming no tenant -- **before** it knows
+// whose flow it is, or about every tenant at once -- and the whole of what its
+// key allows.
 //
-// Three reads, and the list is short because of where the other bound is.
+// Two calls, and the list is short because of where the other bound is.
 // `keys.At` answers a request carrying `roster-at` as the nominated holder with
 // `frame.Whole()` -- the key's own method list is **not** carried through -- so
 // what bounds every call inside a flow is that holder's role, which `nominate`
 // writes with [LoginMethods]. What this list bounds is the calls that cannot be
-// narrowed that way, because they are the calls that work out what the
-// narrowing is:
+// narrowed that way: the one that works out what the narrowing is, and the one
+// that is about every tenant at once.
 //
 //	FrontService.WhoseHost   which tenant claims the name a flow named
-//	TenantService.Get        what that tenant is called, for the screen
-//	SyncService.Watch        every tenant's sign-outs, on one stream
+//	SyncService.Watch        every tenant's sign-outs, on one stream, so that
+//	                         Hydra can be told to forget somebody
+//
+// `TenantService.Get` was a third, for what the tenant a name resolved to is
+// called. It does not come before the narrowing: by then the name has answered
+// with a tenant, and the name is what narrows. Held here it was the key reading
+// **any** tenant's whole row as itself -- by identifier or by alias, fronted or
+// not -- where the app needs one tenant's alias and name. It is asked as the
+// holder that tenant nominated now, and is the role's.
 //
 // A key with no methods at all was the first draft, on the reading that the
 // policy hands an `rk_` `frame.Everything` and a list would be a narrowing
@@ -455,7 +478,6 @@ var LoginMethods = append([]string{
 // tests said in as many words.
 var LoginResolving = []string{
 	rstr.FrontService_WhoseHost_FullMethodName,
-	rstr.TenantService_Get_FullMethodName,
 	rstr.SyncService_Watch_FullMethodName,
 }
 
@@ -495,7 +517,7 @@ func provisionDeploymentKey(ctx context.Context, s *cmd.Server, alias string, me
 
 	// [LoginResolving] and not [LoginMethods], which is the split that matters:
 	// what a call inside a flow may do is the nominated holder's role, and what
-	// this key may do is the three reads that decide which holder that is.
+	// this key may do is what it calls before a request names a tenant.
 	token, err := mintNamed(ctx, s.Control.Ungated, who.Bytes(), alias, methods, keys.PrefixDeployment)
 	if err != nil {
 		return "", pdid.Nil, err
@@ -595,7 +617,7 @@ func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []stri
 
 		tn, err := s.Ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
 			Ref:    at,
-			Select: rstr.TenantSelect_builder{Alias: z.Ptr(true)}.Build(),
+			Select: rstr.TenantSelect_builder{Alias: z.Ptr(true), DateDestroyed: z.Ptr(true)}.Build(),
 		}.Build())
 		if err != nil {
 			return n, err
@@ -610,7 +632,21 @@ func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []stri
 			fmt.Fprintf(os.Stderr, "roster: %s: not answering @%s's key as @%s/%s: %s.\n", name, alias, name, alias, why)
 		}
 
-		who, made, err := holderNamed(ctx, s, at, alias, labels)
+		// And a tenant that is being destroyed, for the same reason. Its
+		// names are the last of it to go, so one whose destruction is under
+		// way -- or that an operator holds half way -- is still walked here,
+		// and nothing is written into a tenant that is gone: this made a
+		// person there at every start, and refused, it would stop the run
+		// (#279). A closed tenant is not this, and is provisioned as it was:
+		// restored, its people sign in at once.
+		if tn.GetDateDestroyed() != nil {
+			skip("the tenant is destroyed, and nothing is written into one that is gone")
+			continue
+		}
+
+		// Whose the rows of this name are, asked before anything is written:
+		// the holder is looked at and not yet made or marked ([holderFound]).
+		found, err := holderFound(ctx, s, at, alias)
 		if err != nil {
 			return n, fmt.Errorf("%s: %w", name, err)
 		}
@@ -618,25 +654,18 @@ func nominateAs(ctx context.Context, s *cmd.Server, alias string, methods []stri
 		if err != nil {
 			return n, fmt.Errorf("%s: %w", name, err)
 		}
-		if !made {
-			h, err := holdingOf(ctx, s, who, existing)
-			if err != nil {
-				return n, fmt.Errorf("%s: %w", name, err)
-			}
-			if h.wayIn() || len(h.roles) > 0 {
-				skip(fmt.Sprintf("@%s/%s is already somebody's -- it holds %s -- and this would answer the app as them", name, alias, h))
-				continue
-			}
+		why, err := somebodys(ctx, s, name, alias, found, existing, labels)
+		if err != nil {
+			return n, fmt.Errorf("%s: %w", name, err)
 		}
-		if existing != nil {
-			others, err := boundToOthers(ctx, s, existing, who)
-			if err != nil {
-				return n, fmt.Errorf("%s: %w", name, err)
-			}
-			if others {
-				skip(fmt.Sprintf("the tenant's role %q is bound to others, and rewriting it would hand them the app's methods", alias))
-				continue
-			}
+		if why != "" {
+			skip(why)
+			continue
+		}
+
+		who, _, err := holderNamed(ctx, s, at, alias, labels)
+		if err != nil {
+			return n, fmt.Errorf("%s: %w", name, err)
 		}
 		role, err := ensureRoleNamed(ctx, s, at, alias, methods, labels)
 		if err != nil {
@@ -771,6 +800,11 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 	if lc.Hydra.Admin == "" {
 		return errors.New("login.hydra.admin (--hydra): where Hydra's admin API answers")
 	}
+	// What has a form, held to it before anything is dialled; `roster serve`
+	// asks the same in `cmd.Build`.
+	if err := lc.Meant(); err != nil {
+		return err
+	}
 
 	sealed, err := sealOf("login", lc.Seal)
 	if err != nil {
@@ -817,6 +851,17 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 	// anything, or read anybody else. And it is revoked where every other
 	// delegation is -- `Holder.Invalidate`, which this app already hears
 	// through `Sync.Watch`.
+	//
+	// *Cannot sign in as them* was written before it was so: `POST /accept`
+	// told Hydra whoever the cookie named, for any challenge and with roster
+	// asked nothing, so a copy of the cookie finished a flow that whoever had
+	// the copy began in a browser of their own (#278). It answers one
+	// challenge now -- the one the cookie's form was answered at -- and Hydra
+	// takes the answer to a challenge only in the browser it raised it for
+	// (v26.2.0: *No CSRF value available in the session cookie*, for a
+	// verifier carried anywhere else). And roster is asked who is there first,
+	// so a cookie whose delegation was revoked, or whose person was signed out
+	// everywhere or suspended, names nobody.
 	if lc.Remember > 0 {
 		opts = append(opts, authsession.WithLifetime(lc.Remember), authsession.WithIdle(0))
 	}
@@ -851,6 +896,12 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		return fmt.Errorf("login.enrol (--enrol): %q is not one of invited, expected, enrolling", lc.Enrol)
 	}
 
+	// Read at start, as the account app's is and for its reason.
+	private, err := arrives.ParsePrivateHosts(lc.PrivateHosts)
+	if err != nil {
+		return fmt.Errorf("login.private_hosts: %w", err)
+	}
+
 	cfg := login.Config{
 		Consent:        how,
 		Roster:         lc.Roster,
@@ -861,6 +912,7 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		InsecureCookie: lc.InsecureCookie,
 		Base:           base,
 		Enrol:          enrol,
+		PrivateHosts:   private,
 
 		// `env:NAME`, roster's one vocabulary for a reference to a secret. The
 		// same function the account app and the directory resolve theirs with,
@@ -895,7 +947,19 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 	log.From(ctx).InfoContext(ctx, "login", slog.String("addr", l.Addr().String()),
 		slog.String("hydra", cfg.Hydra))
 
-	srv := &http.Server{Handler: a.Handler()}
+	// With clocks on what a stranger controls, as the account app's listener
+	// has (`serveAccount`) and for its reason: how long a request's headers may
+	// take to arrive, how long a connection may sit idle, and how much header
+	// is read. This listener had none, and it is the one Hydra sends every
+	// browser to -- a connection opened and left half way through a header was
+	// kept for ever. Nothing bounds a body here, which each route does for
+	// itself, or an answer.
+	srv := &http.Server{
+		Handler:           a.Handler(),
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       2 * time.Minute,
+		MaxHeaderBytes:    64 << 10,
+	}
 	go func() {
 		<-ctx.Done()
 		_ = srv.Close()
@@ -903,10 +967,16 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 
 	// The sign-in and the sign-out, in one errgroup: an app that answers
 	// challenges while roster cannot tell it who has been signed out is an app
-	// serving a token it should not have. Whichever stops first stops the
-	// other. `App.Watch` decides for itself what is worth stopping for --
-	// a dropped stream is a reconnect, and a deployment with no broker is loud
-	// and not fatal.
+	// serving a token it should not have. A listener that fails stops the
+	// watcher, and ctx stops both.
+	//
+	// `App.Watch` stops for nothing else, and returns when ctx is done. A
+	// dropped stream is asked for again; one roster refuses -- a deployment
+	// with no broker, a key whose list does not name it -- is loud, not fatal,
+	// and asked for again every ten minutes; and what Hydra would not take is
+	// tried until it does. It returned on a refusal once, and the listener
+	// went on answering with nothing listening for sign-outs until the next
+	// restart.
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return a.Watch(ctx) })
 	g.Go(func() error {

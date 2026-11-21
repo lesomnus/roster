@@ -100,11 +100,18 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 			if tenant == "" {
 				return errors.New("--tenant: which tenant to install it into")
 			}
-			methods := cmd.SplitMethods(role)
+			methods, err := cmd.MethodsOf("--role", role)
+			if err != nil {
+				return err
+			}
 			if len(methods) == 0 {
 				// An app with nothing bound acts as a holder that may do nothing,
 				// which is an installation that silently does not work.
 				return errors.New("--role: what the app may do in the tenant; a role that allows nothing installs nothing")
+			}
+			handed, err := cmd.MethodsOf("--administer", administer)
+			if err != nil {
+				return err
 			}
 
 			s, err := controlled(ctx, c)
@@ -113,7 +120,7 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
-			got, err := installApp(ctx, s, name, tenant, methods, cmd.SplitMethods(administer), adopt)
+			got, err := installApp(ctx, s, name, tenant, methods, handed, adopt)
 			if err != nil {
 				return err
 			}
@@ -133,8 +140,12 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 // # What it looks at before it writes
 //
 // The tenant, and the role its administrators hold when `--administer` names
-// one, are read first: an install that failed half way left a holder, a role
-// and a nomination behind for a command that said it failed.
+// one, are read first, and so is whether a holder of the app's name is
+// somebody's: an install that failed half way on one of those left a holder, a
+// role and a nomination behind for a command that said it failed. What is
+// refused by a write itself is not read first: the holder is made before the
+// role, so a role the server refused leaves the holder, which a second run
+// finds holding nothing and takes.
 //
 // A holder of the app's name that is already there is somebody's, and is used
 // only if it holds nothing but the app's own role -- which is what a second run
@@ -236,7 +247,18 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 		if n := len(k.GetMethods()); n > 0 {
 			as = fmt.Sprintf("and %d method(s) across every tenant without roster-at", n)
 		}
-		said = append(said, fmt.Sprintf("key %q on %s is answered through it (%s).", k.GetAlias(), name, as))
+
+		// By its identifier. It was by its alias, which is what somebody
+		// wrote about the key and is declared personal now (`apikey.proto`,
+		// #280); this command names nobody at the shell and leaves no row of
+		// the access record, so it shows no field a row declares so.
+		// `roster --as <alias> control key list` shows the names, to
+		// somebody the record names.
+		id, err := pdid.From(k.GetId())
+		if err != nil {
+			return nil, err
+		}
+		said = append(said, fmt.Sprintf("key %s on %s is answered through it (%s).", id, name, as))
 	}
 	if len(ks.GetItems()) == 0 {
 		said = append(said, fmt.Sprintf("%s has no key yet: roster control key add --narrowed %s.", name, name))
@@ -356,7 +378,9 @@ func administered(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, method
 }
 
 // newCmdAppUninstall ends an app's nomination in a tenant, which is the whole of
-// taking it out: its key is refused there from the next request.
+// taking it out: its narrowed key is answered as nobody there from the next
+// request. A key of the app's that lists methods of its own is the
+// deployment's in every tenant, asks no nomination, and is ended by name.
 //
 // The holder, its role and its binding stay. The trail names the holder, so it
 // stays as every holder does, and a role the tenant may have shaped is theirs to
@@ -365,7 +389,7 @@ func administered(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, method
 func newCmdAppUninstall(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "uninstall",
-		Brief: "end an app's nomination in a tenant; its key is refused there from then on",
+		Brief: "end an app's nomination in a tenant; its narrowed key is refused there from then on",
 
 		Args: arg.Args{
 			&arg.String{Name: "APP", Brief: "the app, as the control-plane holder its deployment key hangs off"},
@@ -415,7 +439,13 @@ func newCmdAppUninstall(c *cmd.Config) *xli.Command {
 			if _, err := s.Ungated.Nomination().Erase(ctx, rstr.NominationRef_builder{Id: n.GetId()}.Build()); err != nil {
 				return err
 			}
-			fmt.Fprintf(os.Stderr, "roster: %s's key is refused in %s from now on.\n", name, tenant)
+			// Said of what a nomination is: who a key is answered as when a
+			// request names the tenant. A key of this app's that lists methods
+			// of its own never asked one, and is answered as itself in every
+			// tenant as before -- the line said *refused* of that key too.
+			fmt.Fprintf(os.Stderr, "roster: %s's key is answered as nobody in %s from now on: a request that names %s with it is refused. "+
+				"A key of %s's that allows methods of its own was never narrowed, and this does not change it.\n",
+				name, tenant, tenant, name)
 
 			return nil
 		}),

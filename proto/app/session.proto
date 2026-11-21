@@ -44,7 +44,10 @@ option go_package = "github.com/lesomnus/roster/rstr";
 // A session names an operator, and an operator is a `Holder` of the control
 // plane -- which is where the people who run this deployment live. The data
 // plane has this table too, because the two planes are one schema run twice,
-// and nothing there ever writes a row.
+// and writes a row there only where `sign_in.enabled`: a roster user signed in
+// at their tenant's name, who is a holder of that plane and whose session is
+// a row of it. The two tables are in two databases, and no cookie is found in
+// both.
 //
 // # The key is hashed, unlike the one it replaces
 //
@@ -80,7 +83,13 @@ message Session {
   // safe -- *every axis carries a flag beside its list, and an empty list means
   // nothing* -- lives in one encoder, and a second spelling of it here would be
   // a second place to get the empty case backwards.
-  bytes grant = 8 [(orm.field) = {immutable: true}];
+  //
+  // Not personal: what the session allows, encoded, and nothing of whose it
+  // is that its `holder` does not already say by identifier.
+  bytes grant = 8 [
+    (orm.field) = {immutable: true},
+    (payday.field) = {personal: false}
+  ];
 
   // The digest of the cookie value, and how the row is found. Never the value.
   bytes secret = 9 [

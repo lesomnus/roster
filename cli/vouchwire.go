@@ -86,17 +86,12 @@ func dialed(ctx context.Context, c *cmd.Config) (pdcmd.Conn, func(), error) {
 }
 
 // refFrom is [whoSaid]'s answer as a `HolderRef`, for the writes that name a
-// holder rather than a sign-in form. An address is refused here rather than at
-// the server: `Credential.Enrol` names a holder, and an email is a sign-in
-// form's way of finding one -- which recovery does and this does not.
+// holder rather than a sign-in form: `@tenant/alias` or an identifier. Such a
+// command takes no `--address`, which is a sign-in form's way of finding
+// somebody -- recovery's, and not a write's.
 func refFrom(who *app.VouchWho) (*app.HolderRef, error) {
 	if id := who.GetId(); len(id) > 0 {
 		return app.HolderRef_builder{Id: id}.Build(), nil
-	}
-	if who.GetAddress() != "" {
-		return nil, errors.New(
-			"enrol names a holder by @tenant/alias or an identifier, not an address -- " +
-				"an email is how recovery finds somebody, not how a factor is added")
 	}
 	if who.GetTenant() != "" && who.GetAlias() != "" {
 		return app.HolderRef_builder{
@@ -150,12 +145,10 @@ func whoSaid(cl *xli.Command) (*app.VouchWho, error) {
 
 // whoTyped is the WHO a command was given, back in the words it was given in,
 // so a hint that echoes it names the same person the command just did.
+//
+// Its one caller is `vouch enrol`, which takes WHO alone: it read `--tenant`
+// and `--address` too, which that command no longer has.
 func whoTyped(cl *xli.Command) string {
-	if tenant, _ := flg.Find[string](cl, "tenant"); tenant != "" {
-		if address, _ := flg.Find[string](cl, "address"); address != "" {
-			return fmt.Sprintf("--tenant %s --address %s", tenant, address)
-		}
-	}
 	if ref, named := arg.Get[pdcmd.Ref](cl, "WHO"); named {
 		return pdcmd.RefParser{}.ToString(ref)
 	}
@@ -211,7 +204,10 @@ func secretFrom(cl *xli.Command, name string) ([]byte, error) {
 // is empty in the server's own words.
 func allowed(cl *xli.Command) ([]string, error) {
 	vs, _ := flg.Find[[]string](cl, "allow")
-	methods := cmd.SplitMethods(vs)
+	methods, err := cmd.MethodsOf("--allow", vs)
+	if err != nil {
+		return nil, err
+	}
 	if len(methods) == 0 {
 		return nil, errors.New("--allow: a delegation that allows nothing opens no door; name the methods")
 	}
@@ -229,6 +225,13 @@ func expiresOf(cl *xli.Command) (*timestamppb.Timestamp, error) {
 	d, err := time.ParseDuration(v)
 	if err != nil {
 		return nil, fmt.Errorf("--expires: %w", err)
+	}
+	if d <= 0 {
+		// A sign the wrong way round, or a zero that was meant as forever
+		// (which is the flag left out). Minted, it was a credential that had
+		// already stopped working, printed under *this is the only time it is
+		// shown* (#276).
+		return nil, fmt.Errorf("--expires %s: how long it lasts from now, so more than nothing; leave it out for one that does not expire", v)
 	}
 
 	return timestamppb.New(time.Now().Add(d)), nil
@@ -441,7 +444,7 @@ func newCmdVouchDelegate(c *cmd.Config) *xli.Command {
 			if err := answered(v.GetVerified(), v.GetToken(), v.GetDateExpires()); err != nil {
 				return err
 			}
-			if w := cmd.Widest(methods); w != "" && v.GetToken() != "" {
+			if w := cmd.Widest(v.GetToken(), methods); w != "" && v.GetToken() != "" {
 				fmt.Fprintf(os.Stderr, "\n%s\n", w)
 			}
 
@@ -769,20 +772,27 @@ func newCmdVouchRevoke(c *cmd.Config) *xli.Command {
 // Remote, because this is the write a customer makes for their own account: a
 // person with a key adds a factor to it, the way `set` and `unlock` are the
 // operator's local writes. `Vouch.Enrol` moved onto `Credential`, so it names a
-// holder by reference now -- `refFrom` turns the sign-in form the shell collects
-// into one, and refuses an address, which is recovery's way of naming somebody
-// and not this.
+// holder by reference now -- `refFrom` turns WHO into one.
+//
+// # WHO, and no address
+//
+// It took `--tenant` and `--address`, the sign-in form the commands beside it
+// take, and refused them whenever they were given: an address is recovery's
+// way of naming somebody, and not this (#284). A flag that is always refused
+// is not one to offer, so WHO is all it takes.
 func newCmdVouchEnrol(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "enrol",
 		Brief: "make a second factor for somebody, printed once as an otpauth:// Uri",
 
-		Args: whoArg(),
-		Flags: append(whoFlags(),
+		Args: arg.Args{
+			&pdcmd.ArgRef{Name: "WHO", Brief: "who, as @tenant/alias or an identifier"},
+		},
+		Flags: flg.Flags{
 			&flg.String{Name: "kind", Brief: "the kind of factor; empty is totp, and webauthn needs a browser"},
 			&flg.String{Name: "name", Brief: "what they call it, when there is more than one to tell apart"},
 			&flg.String{Name: "issuer", Brief: "what their authenticator app lists it under; empty is \"roster\""},
-		),
+		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			kind, _ := flg.Find[string](cl, "kind")

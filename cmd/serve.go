@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/lesomnus/payday/access"
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/config"
@@ -34,6 +35,7 @@ import (
 	"github.com/lesomnus/payday/web"
 
 	"github.com/lesomnus/roster/internal/ent"
+	enttenant "github.com/lesomnus/roster/internal/ent/tenant"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/console"
@@ -133,23 +135,18 @@ type Server struct {
 	// Keys is whether this instance is the one that holds them, which is the
 	// control plane and nothing else.
 	//
-	// It exists because `closed` cannot work it out. Both planes are the same
+	// It exists because nothing can work it out. Both planes are the same
 	// `Build` and the same `Grpc`, and `Control == nil` is true of the control
 	// plane *and* of a deployment that has none -- so the one place they differ
 	// has to be said rather than inferred.
 	//
-	// What it changes is two services. `ApiKeyService` is closed everywhere by
-	// default because its generated `Get` answers with the verifier column; on
-	// the port where the deployment's own operator manages keys, that is the
-	// point. `CredentialService` stays closed on both, because a password hash
-	// is nobody's to read.
+	// What it changes is who a key is at this listener: on the plane keys are
+	// rows of, one is asked what its holder was bound ([Server.policy]), and
+	// the trail names them.
 	//
-	// And `IssueService`, which both planes serve and which mints a different
-	// **kind** on each -- `rk_` there and `rt_` here. `Grpc` registers the
-	// customer's one unless this flag says otherwise, and `GrpcControl` adds
-	// the deployment's own after; without the flag they would both land on the
-	// control plane's server, and gRPC refuses a service registered twice. It
-	// did, loudly, which is the good direction for that mistake to fail in.
+	// It used to open a key's general writes here as well, where a deployment
+	// said `allow_general_writes`. No port serves a general write now
+	// (`closed`).
 	Keys bool
 
 	// Keyring is what this deployment can wrap a seed with, from `vouch.keys`.
@@ -189,7 +186,7 @@ type Server struct {
 	// handler that reads it back. Nil where there is no control plane, since
 	// the people who sign in are its holders and there would be nobody to be.
 	//
-	// **A table**, not a map: `authsession.New(session.New(control.Ent))`
+	// **A table**, not a map: `authsession.New(session.New(control.Ent, ...))`
 	// below, over `server/session`. So a cookie minted by one replica resolves
 	// on another, which is what it has to do -- payday's `MemStore` is right
 	// for one replica and silently wrong for two, a browser signed in or out
@@ -203,11 +200,26 @@ type Server struct {
 	// secret to keep in step either.
 	Sessions *authsession.Sessions
 
+	// contents is what the trail keeps of each kind's rows, `audit.content`,
+	// for what is written on the trail by something other than the recorder:
+	// a name taken at the admin listener ([Releasing]).
+	contents audit.Contents
+
 	// Access is this plane's access record writer (payday#111): what a read's
 	// row waits in to be written with the others of its second. Its loop is in
 	// [Server.Spin], and each process runs its own, since what it holds is in
 	// this one's memory.
 	Access *access.Writer
+
+	// log is the process's log as [Build] was handed it, for what the access
+	// record says of itself where payday hands it no context to find one in
+	// ([filed]): the log a context with nothing in it reaches discards.
+	log *slog.Logger
+
+	// accessKept is how long `audit:` keeps a row of this plane's access
+	// record, for [Server.Serve] to say when that is for good and nobody said
+	// so.
+	accessKept trail.Keep
 
 	// Spin is whatever this deployment has to run besides answering requests.
 	// It is a slice rather than a method because a server with nothing to run
@@ -218,6 +230,31 @@ type Server struct {
 	// runs it, and `spin.Run` refuses a loop with none (payday#54).
 	Spin []any
 }
+
+// queued is the recorder that writes each write to the outbox, as
+// `pd.OutboxRecorder` does, told which row was written and not what was
+// written of it: the method, by what, and the key.
+//
+// payday's keeps the write's patch document in the row. Nothing that reads
+// the queue reads it -- the drain hands on keys, and a stream reads the row
+// again to say what it is now -- and a row waits until a `serve` drains it,
+// with no window, while forgetting somebody takes nothing out of the queue.
+// So a display name written at the box where no `serve` drains was at rest in
+// a row of `outbox` until one did. This is what `forget` queues already.
+func queued() bare.Recorder { return keysOnly{pd.OutboxRecorder()} }
+
+type keysOnly struct{ next bare.Recorder }
+
+func (r keysOnly) Record(ctx context.Context, s bare.Server, c bare.Change) error {
+	return r.next.Record(ctx, s, bare.Change{Method: c.Method, By: c.By, Key: c.Key})
+}
+
+// brokerRefused is a plane's broker refusing to be built, which the caller
+// that builds the control plane names the setting of when it was taken from
+// the data plane; see where it is answered.
+type brokerRefused struct{ error }
+
+func (e brokerRefused) Unwrap() error { return e.error }
 
 // ErrOutboxHasNowhereToGo is `watch.outbox` on with no broker to publish into.
 //
@@ -279,6 +316,71 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 				"holders, and control.db.driver names no database, so there is nobody to be and no " +
 				"listener is opened. name a control plane, or take the block out")
 	}
+	// A file that opens general writes, on whichever listener. No port serves
+	// one whatever it is told (`closed`), so this is not what keeps them shut:
+	// it is that a file which says the setting believes something this server
+	// will not do, and a server that starts anyway leaves that for somebody to
+	// find the day they lean on it.
+	for _, v := range []struct {
+		block string
+		said  bool
+	}{
+		{"server", c.Server.AllowGeneralWrites},
+		{"control", c.Control.AllowGeneralWrites},
+		{"admin", c.Admin.AllowGeneralWrites},
+	} {
+		if v.said {
+			return nil, fmt.Errorf(
+				"%s.allow_general_writes: roster serves no general write -- `Patch` and `Apply` are how "+
+					"its servers write, and a row is written over the wire by the verbs that carry its "+
+					"rules (`Update`, and each entity's own). take the setting out", v.block)
+		}
+	}
+	// And payday's keys that nothing of roster's reads, for the same reason:
+	// the manual promises that a key nothing reads is refused by name, and
+	// these were taken and changed nothing. No port registers reflection, and
+	// roster has no `migrate plan` for a dev database to be worked with.
+	for _, v := range []struct {
+		key  string
+		said bool
+		why  string
+	}{
+		{"server.allow_reflection", c.Server.AllowReflection, "roster serves no reflection on any port"},
+		{"control.allow_reflection", c.Control.AllowReflection, "roster serves no reflection on any port"},
+		{"admin.allow_reflection", c.Admin.AllowReflection, "roster serves no reflection on any port"},
+		{"db.dev_dsn", c.Db.DevDsn != "", "roster plans no migration, and db.migrate is how its tables are made"},
+		{"control.db.dev_dsn", c.Control.Db.DevDsn != "", "roster plans no migration, and control.db.migrate is how its tables are made"},
+	} {
+		if v.said && prefix == keys.PrefixTenant {
+			return nil, fmt.Errorf("%s: nothing reads it -- %s. take the setting out", v.key, v.why)
+		}
+	}
+	// And an `audit:` block that cannot be meant: a setting nothing reads, or
+	// two that contradict each other. Each of them started, and did something
+	// other than what its file says -- a kind kept for ever, a trail that
+	// destroys nothing, a check that finds every row -- with nothing anywhere
+	// to say so. Refused here for the reason the blocks above are, and before
+	// anything is opened; see [AuditMeant], which says of each which it is.
+	//
+	// The nested build that raises the control plane is handed what the
+	// trail keeps of each kind and nothing else ([contentOf]), which is a
+	// block this takes: a kind's content alone names no window, and keeps
+	// the deployment's.
+	if err := AuditMeant(c.Audit); err != nil {
+		return nil, err
+	}
+	// A `scim:` block likewise; `roster scim serve` asks the same.
+	if err := c.Scim.Meant(); err != nil {
+		return nil, err
+	}
+	// And the rest of the file ([Config.Meant]), after those two, whose words
+	// are their own. Once, where it is the deployment's: the nested build that
+	// raises the control plane is handed a config this one made.
+	if prefix == keys.PrefixTenant {
+		if err := c.Meant(); err != nil {
+			return nil, err
+		}
+	}
 	// A directory's key is a tenant key, and a deployment with no control
 	// plane reads none: its callers are believed by name (`auth.Plain`), so
 	// the endpoint would answer whoever wrote one down.
@@ -287,6 +389,51 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 			"scim: a directory signs in with a tenant key, and control.db.driver names no database, so " +
 				"no key is read and every caller would be believed by name. name a control plane, or take the block out")
 	}
+	// A plane whose database is named by nothing. SQLite reads an empty name
+	// as a private temporary database, a new one for each connection of the
+	// pool: under `migrate: true` the tables were made on one connection, the
+	// loops found none on the others, and whatever was written was thrown
+	// away -- which is what a variable spelt wrong left, with one line on
+	// standard error to say so.
+	if prefix == keys.PrefixTenant {
+		for _, v := range []struct {
+			key string
+			db  config.DbConfig
+		}{
+			{"db", c.Db},
+			{"control.db", c.Control.Db},
+		} {
+			if v.db.Driver != "" && v.db.Dsn == "" {
+				return nil, fmt.Errorf("%[1]s.dsn: names no database, and %[1]s.driver is %[2]q -- a driver "+
+					"handed no name opens whatever it opens by default, and SQLite's is a database of its own for each "+
+					"connection that keeps nothing. name the database (a variable that says it is ROSTER_%[3]s_DSN)",
+					v.key, v.db.Driver, strings.ToUpper(strings.ReplaceAll(v.key, ".", "_")))
+			}
+		}
+	}
+
+	// And the two planes are two databases.
+	//
+	// Somebody who runs this deployment and somebody who is a customer of it
+	// are told apart by nothing but which database their row is in: the
+	// sessions of each plane are a table of its own, and so are the holders
+	// and what they are bound. A file that names one database twice --
+	// `control.db` pasted from `db`, which two blocks of one shape invite --
+	// made a deployment that started and served like any other, in which a
+	// customer's administrator sent the cookie the data plane gave them to
+	// `admin.addr` and was an operator: their binding in their own tenant,
+	// read where an operator's is, on the stack with no wall (#275).
+	//
+	// Here for the file that says so outright, before anything is opened or
+	// written. [Apart] is the same refusal for one that says it by another
+	// spelling, asked of the rows once there are any.
+	if c.Control.Serves() && sameDatabase(c.Db, c.Control.Db) {
+		return nil, errors.New(
+			"control.db: the same database as db. The two planes are two databases -- who runs this " +
+				"deployment and who is a customer of it are told apart by which one their row is in, " +
+				"and in one a customer's session is an operator's at admin.addr. name another database for control.db")
+	}
+
 	// And the same shape once more, for the page a roster user opens.
 	//
 	// `sign_in.enabled` is what registers `AuthService` on this listener, so
@@ -316,7 +463,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	var policySources []rbac.Source
 	if c.Policy.File != "" {
 		var err error
-		policyFile, err = rbacfile.Open(c.Policy, policySubjects(client))
+		policyFile, err = rbacfile.Open(c.Policy, policySubjects(ctx, client, c.Policy.File))
 		if err != nil {
 			db.Close()
 			return nil, fmt.Errorf("policy: %w", err)
@@ -335,7 +482,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	b, err := c.Watch.Build(ctx, c.Db)
 	if err != nil {
 		db.Close()
-		return nil, err
+		return nil, brokerRefused{err}
 	}
 	if c.Watch.Outbox && b == nil {
 		// A queue with nothing at the other end of it.
@@ -366,7 +513,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// anything to publish it to; see [Server.Queue].
 	var queue bare.Recorder
 	if b != nil {
-		queue = pd.OutboxRecorder()
+		queue = queued()
 	}
 
 	// The recorders, in the order they are told. The trail is required -- a
@@ -396,8 +543,15 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		// rather than the other way round. It makes no difference to what is
 		// committed -- either way nothing is -- and it makes the log read in
 		// the order things were tried.
-		rec = append(rec, pd.OutboxRecorder())
+		rec = append(rec, queued())
 	}
+
+	// And before all of them, the one question asked of a write once it is
+	// made: whether whoever its row names was forgotten while it was being
+	// decided (`forget.Nobody`, #280). First, so that a write refused for it
+	// has been told to nobody -- not the trail, and not what remembers a
+	// write to publish it.
+	rec = append(bare.Recorders{forget.Nobody()}, rec...)
 
 	opts := []bare.Option{bare.WithMinter(pd.Minter()), bare.WithRecorder(rec)}
 
@@ -483,6 +637,9 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	owners := &keyOwners{}
 	rules := Rules(client, policySources...)
 	rules.Borrower = owners.of
+	// With what this deployment's trail keeps of a row, which `Rules` is not
+	// handed: a name taken is on the trail of whoever held it.
+	rules.Releasing = Releasing(client, content)
 
 	stacked, err := app.Build(walled.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin)), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
 	if err != nil {
@@ -511,6 +668,8 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password,
 		RestoreWithin: c.Tenant.RestoreWithin,
 		recheck:       c.Stream.Recheck,
+		contents:      content,
+		log:           log.From(ctx),
 	}
 
 	if policyFile != nil {
@@ -521,7 +680,11 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// read's row is written a second later with the others, by a loop each
 	// process runs for itself and that writes what it holds once more as it
 	// stops; a write's is in its own transaction.
-	s.Access = &access.Writer{Sink: pd.AccessSink(client)}
+	//
+	// What a row keeps of the request it is of is how it was asked, and none
+	// of the words it was asked by ([wordless]); and what the writer writes in
+	// one go is written whole or not at all ([whole]).
+	s.Access = &access.Writer{Sink: wordless(whole(client))}
 	s.Spin = append(s.Spin, loop(prefix, "access", s.Access))
 
 	// The door a roster user signs in at, where this deployment serves one.
@@ -534,8 +697,11 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// Built before the branch below because it is this plane's and not the
 	// control plane's: a deployment with no `control` still has tenants, and
 	// the people in them are who this is for.
+	//
+	// Handed what this plane's recorder is, since a session made, used and
+	// ended is on this plane's trail as each (`server/session`).
 	if c.SignIn.Enabled {
-		s.People = authsession.New(session.New(client))
+		s.People = authsession.New(session.New(client, content))
 		s.Spin = append(s.Spin, loop(prefix, "sessions", session.Sweep(client, content, session.Swept)))
 
 		// And with no control plane there is no chain below to join, so this
@@ -582,9 +748,15 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 			// The same numbers for an operator's password as for anybody's:
 			// `vouch.lockout` and `vouch.password` are one block in the file,
 			// and a floor that held for a customer's people and not for the
-			// person who runs the deployment would be backwards. The keyring
-			// is not carried over -- the control plane holds no second factors.
-			Vouch: VouchConfig{Lockout: c.Vouch.Lockout, Password: c.Vouch.Password},
+			// person who runs the deployment would be backwards.
+			//
+			// And the same keyring, for that reason. It was left out -- *the
+			// control plane holds no second factors* -- so whoever runs a
+			// deployment, who is every customer's root at `admin.addr`, was
+			// the one account in it that could not ask for a second proof:
+			// enrolling answered that the deployment held no key to wrap a
+			// seed with, whatever `vouch.keys` said (#275).
+			Vouch: VouchConfig{Lockout: c.Vouch.Lockout, Password: c.Vouch.Password, Keys: c.Vouch.Keys},
 
 			// What the trail keeps of a write, and nothing else of `audit`
 			// (payday#92). It is one decision for the deployment's trail,
@@ -618,6 +790,14 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 				// sentence about brokers on a database that would not answer.
 				return nil, fmt.Errorf(
 					"control: %w (control.watch.broker is empty, so it took watch.broker)", err)
+			}
+
+			// And the broker the control plane took refusing its database --
+			// `postgres` over a SQLite `control.db` -- for the same reason.
+			if errors.As(err, new(brokerRefused)) && c.Control.Watch.Broker == "" {
+				return nil, fmt.Errorf(
+					"control: %w (control.watch.broker is empty, so it took watch.broker; the control plane takes "+
+						"the data plane's broker unless control.watch.broker names its own)", err)
 			}
 
 			return nil, fmt.Errorf("control: %w", err)
@@ -664,7 +844,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 			auth.Bearer(keys.Store(control.Ungated, s.Ungated)),
 		}
 
-		// And a roster user's own cookie in front of both, where this
+		// And a roster user's own cookie after all three, where this
 		// deployment serves the door that mints one.
 		//
 		// **This** plane's rows: the same table on the other database, so a
@@ -672,12 +852,17 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		// difference from the operator's below, and the reason that one is not
 		// on this chain.
 		//
-		// First for the reason the two below are ordered: a cookie and an
-		// `authorization` header are read from different places, so a request
-		// carries at most one and the order decides nothing but which answers a
-		// request carrying both.
+		// **Last**, and it was first. A cookie and a header are read from
+		// different places, so the order decides only which answers a request
+		// carrying both -- and that was said to decide nothing. It decides
+		// what was checked. Answered by the cookie, a request's `roster-as`
+		// and its key were looked at by no handler, and `keys.Authenticated`
+		// reads those headers for when somebody signed in: a session, which
+		// says nothing of when, was fresh by a delegation nothing had checked
+		// (#276). A header is a caller saying who is asking, so it is what
+		// answers, and a wrong one refuses; a browser sends neither.
 		if s.People != nil {
-			chain = append([]auth.Handler{s.People.Handler()}, chain...)
+			chain = append(chain, s.People.Handler())
 		}
 
 		s.Auth = auth.Seq(chain...)
@@ -712,7 +897,16 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		// cookie minted on one is unknown to the other -- intermittently, per
 		// request, with nothing in any log saying why. `session.proto` carries
 		// the rest, including why the table is roster's and not payday's.
-		s.Sessions = authsession.New(session.New(control.Ent))
+		//
+		// What it records of a session -- made, used, ended, and collected by
+		// the sweep below -- is what the control plane's own recorder is
+		// handed: `contentOf`, which keeps no digest.
+		controlContent, err := contentOf(c.Audit).Contents()
+		if err != nil {
+			db.Close()
+			return nil, err
+		}
+		s.Sessions = authsession.New(session.New(control.Ent, controlContent))
 
 		// And somebody to collect them, because nobody else will. A store
 		// behind `authsession.Store` has `Put`, `Get` and `Del` and no pass
@@ -726,14 +920,6 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		//
 		// Named as the control plane's, whose rows it collects, though it is
 		// appended by this one.
-		//
-		// What it records of a session it collects is what the control plane's
-		// own recorder is handed: `contentOf`, which keeps no digest.
-		controlContent, err := contentOf(c.Audit).Contents()
-		if err != nil {
-			db.Close()
-			return nil, err
-		}
 		s.Spin = append(s.Spin, loop(keys.PrefixDeployment, "sessions", session.Sweep(control.Ent, controlContent, session.Swept)))
 
 		// A console's cookie in front of a service's key, and **on this plane
@@ -794,6 +980,12 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// not exist is a table that grows, and the failure of one that does is
 	// evidence that is gone.
 	//
+	// The access record is a kind of the trail's, so the same holds of it: a
+	// window for it (`audit.by.access`) is this plane's, and the control
+	// plane's own record -- operators reading operators -- is never swept. The
+	// manual says so (#280), and [Server.unbounded] says when this plane's has
+	// no window either.
+	//
 	// With the deployment's lease on it, for the turns the passes take with
 	// what erases from the trail beside them; see [TrailPolicy].
 	p, err := TrailPolicy(ctx, c)
@@ -810,11 +1002,29 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// as one that is on -- and a deployment that named no window must not
 	// start a sweep because roster learnt to hold.
 	retains := p.On()
+	s.accessKept = p.For(pd.AccessDomain)
 	p = forget.Held(p, s.Ent)
 	if retains {
 		log.From(ctx).InfoContext(ctx, "trail: retention", "policy", p.String())
 
 		s.Spin = append(s.Spin, loop(prefix, "trail", trail.Sweep(pd.TrailStore(s.Ent), p)))
+	} else {
+		// And where there is no pass, what a pass does first and nothing
+		// else of one: the erasures the trail owes, paid.
+		//
+		// A forget owes what it could not erase at once -- above all what a
+		// hold kept, until the hold lifts -- and the trail's pass was the only
+		// thing that paid afterwards. A deployment that names no window has
+		// no pass, which is the default, so there a debt was never paid and a
+		// hold that lifted was followed by nothing (#280). This applies no
+		// window: it erases what a forget already decided to, and a trail
+		// kept for ever is still kept for ever (`forget.SweepOwed`).
+		//
+		// In every `Build`, for the reason the expiry sweeps are: nobody of
+		// the control plane is forgotten today, so its loop reads an empty
+		// table once a day, and a plane that comes to owe with no loop behind
+		// it is an erasure that is never made.
+		s.Spin = append(s.Spin, loop(prefix, "owed", forget.SweepOwed(s.Ent, p)))
 	}
 
 	// And the other window, which is about a person rather than about age.
@@ -997,7 +1207,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// One function, installed twice, because a stream and a unary call are two
 	// interceptors and `closed` is one answer. Built here rather than called
 	// twice below so that the two cannot come to disagree.
-	shut := s.closed(c)
+	shut := s.closed()
 
 	// One limiter, handed to both halves.
 	//
@@ -1026,7 +1236,8 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(shut)).
 		WithStream(grpcx.ClosedStream(shut)).
-		WithUnary(Undeclared())
+		WithUnary(Undeclared()).
+		WithUnary(Undated())
 
 	// A certificate that cannot be read is a server that must not start, which
 	// is why this answers with an error: `GrpcOptions` reads the files
@@ -1054,12 +1265,15 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// reads and which is the one failure a client cannot tell from a quiet
 	// system.
 	//
-	// And the database beside it, narrowed by the same scope, for the two
-	// things the walled server cannot answer: whether somebody it no longer
-	// shows was erased where this caller may see, and whom a binding or a
-	// membership reached once it is erased (`server/sync`).
+	// And the database beside it, for the two things the walled server cannot
+	// answer: whether somebody it no longer shows was erased where this caller
+	// may see, narrowed by the same scope; and whom a row of the access model
+	// reached, erased or not, which is read through the tenant's wall alone.
+	// The person it reaches is then read through the whole narrowing, so a
+	// follower bound in a site hears of a grant made across the tenant to
+	// somebody it may ask about, and of nobody it may not (`server/sync`).
 	app.RegisterSyncServiceServer(g, rostersync.Service(s.Walled, s.Watch,
-		rostersync.Erased(s.Ent, s.narrow), rostersync.Reaching(s.Ent, s.narrow)))
+		rostersync.Erased(s.Ent, s.narrow), rostersync.Reaching(s.Ent, pd.Wall())))
 
 	// A customer minting a key for themselves, which until now needed a shell
 	// on the box.
@@ -1093,8 +1307,12 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// The rule about who may write whose credential travels with the service,
 	// because `VouchService` is hand-written and no layer wraps it. Same rules
 	// the gate reads, handed over rather than asked for a second time.
+	//
+	// And the gate's own policy, for the one rule that asks what a caller may
+	// call rather than whose row it is: a delegation is within that
+	// (`vouch.WithGate`).
 	app.RegisterVouchServiceServer(g, vouch.New(s.Ungated, s.Walled, vouch.WithLockout(s.Lockout),
-		vouch.WithKeys(s.Keyring), vouch.WithLeaving(mine)))
+		vouch.WithKeys(s.Keyring), vouch.WithLeaving(mine), vouch.WithGate(s.policy())))
 
 	// What a front door asks before it knows anything, and therefore through
 	// the server the wall was never installed on. Neither RPC answers with a
@@ -1114,7 +1332,8 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// nothing claims is a refusal.
 	if s.People != nil {
 		app.RegisterAuthServiceServer(g, console.Auth(s.Ungated, s.Ent, s.People,
-			console.WithTenant(Hosted(s.Ent)), console.WithArrival(ArrivedAt)))
+			console.WithTenant(Hosted(s.Ent)), console.WithArrival(ArrivedAt),
+			console.WithVouch(vouch.WithLockout(s.Lockout), vouch.WithKeys(s.Keyring))))
 	}
 
 	// And what a caller is, in one round trip. None of its methods takes a
@@ -1184,9 +1403,9 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 	// the wire answers with the token column.
 	app.RegisterDelegationServiceServer(g, s.Delegation())
 	// `ApiKeyService` for its `Issue` overlay -- the mint `IssueService.IssueKey`
-	// was. Its reads and raw `Add`/`Erase` are shut by method in `closed` (and
-	// the management verbs everywhere but the keys port), so only `Issue`
-	// answers here and the prefix it stamps is the stack's, not the caller's.
+	// was. Its raw `Add` and its general writes are shut by method in `closed`,
+	// on every port, so a key is made by `Issue` alone and the prefix it stamps
+	// is the stack's, not the caller's.
 	app.RegisterApiKeyServiceServer(g, s.ApiKey())
 	app.RegisterTenantServiceServer(g, s.Tenant())
 	app.RegisterHostServiceServer(g, s.Host())
@@ -1232,10 +1451,42 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 
 // closed is what this server does not answer at all.
 //
-// Whatever the configuration closed, and the methods below that are shut one
-// at a time on a service that is registered for its others: a service that is
-// not registered at all needs nothing here, since gRPC dispatches by name and
-// has nothing to dispatch to.
+// No general write, and the methods below that are shut one at a time on a
+// service that is registered for its others: a service that is not registered
+// at all needs nothing here, since gRPC dispatches by name and has nothing to
+// dispatch to.
+//
+// # No general write is served, on any port, whatever a file says
+//
+// `Patch` takes a field per property and `Apply` a patch document, and between
+// them they write anything the schema has. They are how the servers write.
+// What a caller may change, and under what conditions, is on a verb of its
+// own -- `Update`, `Set`, `Issue`, `Resubject`, `Narrow` -- and that is where
+// every rule about a row was put.
+//
+// payday closes both unless a deployment says `allow_general_writes`, and
+// calls saying it *a decision about the API rather than about a deployment*.
+// This is roster's: it is not a setting here. It was read, and each time this
+// repository was read for what the setting opened, it had gone round a rule
+// that lives on a verb: a credential's row written past the reach rule and the
+// corpus (#275); a key's verifier chosen by its caller (#276); a name renamed
+// past its proof (#277); and then a connection's secret and issuer, somebody
+// else's account at a provider, a proved address, a role widened to
+// everything through `Apply`, and the name a relying party grants on (#278).
+// Each of the first three was shut by name as it was found. The fourth time is
+// the rule: an entity nobody had read yet was open by default, and a rule
+// written tomorrow would have had to be written three times -- on the verb, on
+// `Patch`, and on a document `Apply` would have to be read to refuse.
+//
+// So the setting is refused at start ([Build]) rather than ignored, because a
+// file that says it believes something this server will not do; and this
+// closes both whatever configuration it is handed, so a server built by a
+// test, or by a caller of this package, is not a second answer.
+// `TestNoGeneralWriteIsServed` asks every service that is registered.
+//
+// The shell at the box is not this: it reaches the servers with no transport
+// in between, and `roster holder patch` there is somebody who already holds
+// the database (`cli/entity.go`).
 //
 // It is installed as **both** interceptors, in the pair `auth` is installed as
 // two lines above. Only the unary one was here, which was F10: a deployment that
@@ -1243,27 +1494,15 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 // and left its stream open, and a `WatchItem` carries the whole message with no
 // `select` to narrow it. Nothing said so, in the one word whose whole job is to
 // mean *not served*.
-func (s *Server) closed(c Config) func(method string) bool {
-	was := c.Server.Closed()
-
-	// `DelegationService` is registered now for its `Revoke` overlay, so it too
-	// is shut a method at a time rather than whole: the reads answer the token
-	// column and the raw writes take a caller-chosen one, and only `Revoke` --
-	// which answers nothing -- is meant to reach the wire.
-	shut := []string{}
-
+func (s *Server) closed() func(method string) bool {
 	// `ApiKey.Add` takes a verifier from the caller, so serving it beside
 	// `IssueService` would be offering the thing `Issue` exists to stop: a key
 	// whose secret somebody else chose, in a prefix they picked.
 	//
-	// It stays what the servers write through, which is the convention `Patch`
-	// and `Apply` already have. One more method of one entity joining them is
-	// not a new rule.
-	// `CredentialService` is registered now, so its verbs are shut one at a
-	// time rather than the whole name: the reads answer the `secret` column and
-	// the raw writes take a caller-chosen verifier, and only the overlays
-	// (`Set`, `Unlock`, `Enrol`) are meant to be reachable.
-	// `Patch`/`Apply` are already off by `GeneralWrite`.
+	// `CredentialService` is registered for its verbs (`Set`, `Issue`,
+	// `Unlock`, `Enrol`, `Erase`), so the rest of it is shut one method at a
+	// time rather than the whole name: the reads answer the `secret` column
+	// and `Add` takes a caller-chosen verifier.
 	byMethod := []string{
 		app.ApiKeyService_Add_FullMethodName,
 		app.CredentialService_Get_FullMethodName,
@@ -1276,47 +1515,29 @@ func (s *Server) closed(c Config) func(method string) bool {
 		// `Delegation.Get`/`List`/`Erase` are served too: the token in `secret`
 		// is stripped on the way out like every other secret, and the layer
 		// holds them to `mayReach` on the row's holder. What stays closed is
-		// `Add` -- a caller-chosen token -- and the general writes.
+		// `Add` -- a caller-chosen token. `DelegationService` is registered
+		// for its `Revoke` overlay.
 		app.DelegationService_Add_FullMethodName,
-		app.DelegationService_Patch_FullMethodName,
-		app.DelegationService_Apply_FullMethodName,
 		// `Consent` is a ledger: `Agree` and `Withdraw` add to it, stamping
 		// what a request must not say, and nothing changes or removes a row of
 		// it -- the deployment destroys them once their account is gone.
-		// `Patch`/`Apply` are off by `GeneralWrite` beside these.
 		app.ConsentService_Add_FullMethodName,
 		app.ConsentService_Erase_FullMethodName,
 	}
-	if !s.Keys {
-		// Everywhere but the one port whose reason for existing is managing
-		// the deployment's own keys (see [Server.Keys]), the general writes are
-		// shut **by name**, whatever the configuration says of general writes.
-		// On that port they are not named here and are still not served: no
-		// `Patch` or `Apply` is, anywhere, unless a deployment says
-		// `allow_general_writes`, and only then are these two open there and
-		// nowhere else. `Get`, `List` and `Erase` are served: the verifier is stripped on
-		// the way out like every other secret, `server/core` holds the rows to
-		// `mayReach`, and a person listing and ending their own keys is what the
-		// account screen is -- which is why `Holder.RevokeKey` is gone.
-		byMethod = append(byMethod,
-			app.ApiKeyService_Patch_FullMethodName,
-			app.ApiKeyService_Apply_FullMethodName,
-		)
-	}
+
+	// `ApiKey.Get`, `List` and `Erase` are served: the verifier is stripped on
+	// the way out like every other secret, `server/core` holds the rows to
+	// `mayReach`, and a person listing and ending their own keys is what the
+	// account screen is -- which is why `Holder.RevokeKey` is gone.
 
 	return func(method string) bool {
-		for _, v := range shut {
-			if strings.HasPrefix(method, "/"+v+"/") {
-				return true
-			}
-		}
 		for _, v := range byMethod {
 			if method == v {
 				return true
 			}
 		}
 
-		return was != nil && was(method)
+		return grpcx.GeneralWrite(method)
 	}
 }
 
@@ -1394,10 +1615,16 @@ func Public(method string) bool {
 
 // Serve answers on `l` until the context is done.
 func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
+	c.Server.Keepalive = c.ServerKeepalive()
 	g, err := s.Grpc(ctx, c)
 	if err != nil {
 		return err
 	}
+
+	s.unbounded(ctx)
+	s.aged(ctx, c)
+	s.alone(ctx, c)
+	s.plain(ctx, c)
 
 	// The stops, collected rather than deferred one at a time.
 	//
@@ -1538,12 +1765,140 @@ func (v *shutdown) run() {
 // Five seconds, and a constant rather than a setting because the number that
 // decides this is somebody else's: `docker stop` waits ten and then sends
 // SIGKILL, so a longer grace is one nothing lives to use. A deployment that
-// wants its streams cut sooner has `keepalive.max_connection_age`, which says
-// something truer about a long-lived stream than a shutdown timeout does.
+// wants its streams cut sooner has `keepalive.max_connection_age` with
+// `keepalive.max_connection_age_grace` beside it, which says something truer
+// about a long-lived stream than a shutdown timeout does. The age alone ends no
+// stream that is open: gRPC waits for one as long as the grace says, which is
+// for ever where nothing does ([Server.aged]).
 //
 // Exported so that a test can say *bounded by what this app chose* rather than
 // by a number copied beside it, which is the whole claim.
 const ShutdownGrace = 5 * time.Second
+
+// What the data plane's listener asks of an idle connection, and lets a
+// client ask, where `server.keepalive` says nothing of it: see
+// [Config.ServerKeepalive].
+const (
+	KeepaliveTime    = time.Minute
+	KeepaliveTimeout = 20 * time.Second
+	KeepaliveMinTime = 20 * time.Second
+)
+
+// ServerKeepalive is what the data plane's listener is built with of
+// `server.keepalive`: what the file says, and where it leaves the server's
+// own ping, its wait or the least interval a client is allowed unsaid,
+// [KeepaliveTime], [KeepaliveTimeout] and [KeepaliveMinTime].
+//
+// gRPC's own are a ping after two hours and a client allowed one every five
+// minutes, and roster sends nothing on a sync stream nothing happens on. So a
+// follower could not tell a connection that died from a quiet tenant within
+// any number worth having, and one that asked more often than every five
+// minutes was hung up on, `too_many_pings`. These let a follower ask every
+// thirty seconds, which is what `docs/operating.md` tells it to dial with, and
+// have the server find a dead one within a minute and twenty seconds.
+//
+// Nothing is defaulted for an age or its grace, which are a deployment's to
+// choose ([Server.aged]). The control plane and the admin listener are left as
+// their files say: no follower holds a sync stream there.
+func (c Config) ServerKeepalive() config.KeepaliveConfig {
+	k := c.Server.Keepalive
+	if k.Time == 0 {
+		k.Time = KeepaliveTime
+	}
+	if k.Timeout == 0 {
+		k.Timeout = KeepaliveTimeout
+	}
+	if k.MinTime == 0 {
+		k.MinTime = KeepaliveMinTime
+	}
+
+	return k
+}
+
+// aged says, where it is so, that a listener's `keepalive.max_connection_age`
+// has no `max_connection_age_grace` beside it, and so ends no stream that is
+// open: gRPC asks the client to move and waits for what is in flight as long
+// as the grace says, which is for ever where nothing does. A sync stream is in
+// flight for as long as its follower holds it, so an age alone moves no
+// follower to a new replica.
+//
+// Said rather than defaulted: how long a stream may be cut short for a
+// connection's age is the deployment's to choose. By `serve` as it starts, as
+// [Server.unbounded] is.
+func (s *Server) aged(ctx context.Context, c Config) {
+	for _, v := range []struct {
+		key string
+		k   config.KeepaliveConfig
+	}{
+		{"server", c.Server.Keepalive},
+		{"control", c.Control.Keepalive},
+		{"admin", c.Admin.Keepalive},
+	} {
+		if v.k.MaxConnectionAge <= 0 || v.k.MaxConnectionAgeGrace > 0 {
+			continue
+		}
+
+		log.From(ctx).WarnContext(ctx, fmt.Sprintf("%s.keepalive.max_connection_age is said and "+
+			"%s.keepalive.max_connection_age_grace is not, so a connection that reaches its age ends no stream that is open on it: "+
+			"gRPC waits for one for ever, and a follower of the sync stream is never moved. "+
+			"Say how long a stream is given once its connection is that old", v.key, v.key))
+	}
+}
+
+// plain says, where it is so, that a listener block says `tls:` and an
+// `http.addr`, and the second is plain: `tls:` is the block's gRPC listener's
+// alone. Right for a proxy in front that holds the certificate, so said and
+// not refused; a block whose certificate is asked of every caller is refused
+// ([Config.Meant]). By `serve` as it starts, as [Server.unbounded] is.
+func (s *Server) plain(ctx context.Context, c Config) {
+	for _, b := range c.listeners() {
+		if !b.Tls.Active() || b.Http.Addr == "" {
+			continue
+		}
+		if b.key != "server" && !c.Control.Serves() {
+			continue
+		}
+
+		log.From(ctx).WarnContext(ctx, fmt.Sprintf("%[1]s.tls is %[1]s.addr's alone, and %[1]s.http.addr is plain: "+
+			"what it answers travels in the clear unless a proxy in front of it holds a certificate", b.key))
+	}
+}
+
+// alone says, where it is so, that a plane's broker publishes inside the
+// process while the lease shares the loops among several: `watch.broker:
+// memory` beside `spin.lease: postgres`, or any lease but `local` and `none`.
+// The file says one process and several at once, and under it a follower of
+// one replica hears nothing written at another, on a stream that looks open.
+//
+// Both planes, in one line: the control plane's broker is a setting of its own
+// (`control.watch.broker`), named where it is the one, and a control plane
+// that left it unsaid took the data plane's, which `watch.broker` names.
+//
+// Said and not refused: one process may hold a lease of several, and is right
+// to while it is one. By `serve` as it starts, as [Server.unbounded] is; the
+// box asks [Server.HearsOnlyItself] of its own.
+func (s *Server) alone(ctx context.Context, c Config) {
+	switch c.Spin.Lease {
+	case "", config.LeaseLocal, config.LeaseNone:
+		return
+	}
+
+	said := []string{}
+	if s.HearsOnlyItself() {
+		said = append(said, "watch.broker")
+	}
+	if s.Control != nil && s.Control.HearsOnlyItself() && c.Control.Watch.Broker != "" {
+		said = append(said, "control.watch.broker")
+	}
+	if len(said) == 0 {
+		return
+	}
+
+	log.From(ctx).WarnContext(ctx, fmt.Sprintf("%s %q and spin.lease is %q, which shares the loops among several processes: "+
+		"a follower of the sync stream, and of any Watch, hears only the process it is connected to. "+
+		"Name a broker every process hears (postgres), or run one process",
+		strings.Join(said, " and ")+map[bool]string{true: " are", false: " is"}[len(said) > 1], config.BrokerMemory, c.Spin.Lease))
+}
 
 // stopping takes a server down, and does not wait forever to.
 //
@@ -1571,15 +1926,48 @@ func stopping(g *grpc.Server) {
 	}
 }
 
+// unbounded says, where it is so, that nothing bounds this deployment's
+// access record (#280).
+//
+// The record takes a row for every call that shows somebody, writes them or
+// is refused them, and a row stays in the database until a window says
+// otherwise. No window is the default, and stays the default for the trail's
+// reason: roster destroys nothing nobody asked it to, and a version that
+// began to would be found out by somebody looking for a row. But a default
+// nobody was told of is a table somebody finds by its size, so it is said --
+// as a warning, which is the level a deployment watches, and with the key
+// that changes it.
+//
+// By `serve` as it starts and not by [Build], which every command at the box
+// runs too: said there, it would be said to whoever listed a tenant.
+//
+// And not to a deployment that named a profile for it, `forever` among them:
+// that is somebody having said, and a warning nothing answers is one nobody
+// reads by the time it matters.
+func (s *Server) unbounded(ctx context.Context) {
+	if s.accessKept.Retain > 0 || s.accessKept.Note != "" {
+		return
+	}
+
+	log.From(ctx).WarnContext(ctx, "access: the access record has no window, so a row of it stays in the database for good -- "+
+		"one for every call that shows, writes or is refused somebody's data. "+
+		"Say how long they are kept: audit.by.access, with retain, and discard: true to keep no copy or audit.archive to keep one; "+
+		"or profile: forever, to say for good is meant")
+}
+
 // accessed is what the access record's interceptor is told of this plane
 // (payday#111): whose data a message carries, read off what the schema
 // declared `personal`, and where a call came from -- the connection's, since
 // roster is told of no proxy it would believe. Nothing roster serves hands
 // personal data out to be kept elsewhere, so it names no download.
+//
+// Whose data, and in which tenant: where a message does not say which tenant
+// a row is in, the row does ([filed]), so that a row of the record is under
+// the tenant of whoever was read and not of whoever read them.
 func (s *Server) accessed() access.Config {
 	return access.Config{
-		Subjects: pd.Subjects,
-		Refs:     pd.SubjectRefs,
+		Subjects: filed(s.Ent, s.log, pd.Subjects),
+		Refs:     filed(s.Ent, s.log, pd.SubjectRefs),
 		Address:  access.Peer,
 		Writer:   s.Access,
 	}
@@ -1597,13 +1985,13 @@ func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerO
 		return nil, err
 	}
 
-	// The keys themselves, which the data plane refuses to serve and this port
-	// exists to serve. It takes no registration: `Register` puts
-	// `ApiKeyService` on every server for its `Issue` overlay, and what differs
-	// here is `closed()` -- the general writes that manage a key stay open when
-	// [Server.Keys] is set, and are shut everywhere else. So this port must not
-	// be reachable by anybody who is not administering the deployment. Nothing
-	// in this process can enforce that; the address is what enforces it.
+	// The keys themselves, which are the deployment's own on this plane. It
+	// takes no registration: `Register` puts `ApiKeyService` on every server
+	// for its `Issue` overlay, and what differs here is the kind it mints
+	// ([Server.Keys]) and whose rows it reads. A key's general writes are shut
+	// here as everywhere (`closed`). This port must still not be reachable by
+	// anybody who is not administering the deployment. Nothing in this process
+	// can enforce that; the address is what enforces it.
 
 	// No `AuthService` here, and no page either. Both moved to `admin.http`,
 	// which is where a roster operator opens a browser: a session cookie is
@@ -1624,9 +2012,9 @@ func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerO
 // them is any customer's business.
 //
 // It is roster again, so it is the same `Grpc` with the same chain: the wall,
-// the gate, the trail. What differs is which database is behind it and one
-// registration, since `ApiKeyService` is the whole point of the port and is
-// closed on the other one.
+// the gate, the trail. What differs is which database is behind it: the
+// `ApiKeyService` here, as on every server (`Register`), mints and reads the
+// deployment's own keys, an `rk_`, where the data plane's are a tenant's.
 func (s *Server) serveControl(ctx context.Context, c Config, g *grpc.Server) (func(), error) {
 	if !c.Control.Answers() || g == nil {
 		return func() {}, nil
@@ -1836,6 +2224,61 @@ func Arrived(h http.Handler) http.Handler {
 
 		h.ServeHTTP(w, r)
 	})
+}
+
+// sameDatabase is whether two `db` blocks name one database in the same words.
+//
+// A database kept in memory and named by nothing is a new one each time it is
+// opened, so two blocks that say `:memory:` are two databases and are not
+// refused; a test and the sandbox say that.
+func sameDatabase(a, b config.DbConfig) bool {
+	if a.Driver != b.Driver || a.Dsn != b.Dsn {
+		return false
+	}
+
+	return a.Dsn != "" && !strings.Contains(a.Dsn, ":memory:") && !strings.Contains(a.Dsn, "mode=memory")
+}
+
+// Apart refuses a deployment whose two planes are one database, by the row
+// that says who runs it: the control plane's tenant, which no customer is.
+//
+// [Build] refuses a file that names one database twice in the same words. Two
+// spellings of one -- a relative path and an absolute one, a parameter more --
+// are the same mistake and are not seen there, and nothing about a connection
+// says which database it reached in a way two engines agree on. A row does:
+// the tenant `init` wrote on the control plane is found on the data plane only
+// if they are one.
+//
+// Asked when a deployment is about to serve, since before `init` there is no
+// such row and before the schema is there no table to ask.
+func Apart(ctx context.Context, s *Server) error {
+	if s.Control == nil {
+		return nil
+	}
+
+	owner, err := s.Control.Ent.Tenant.Query().First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			// Nobody has run `init`, so there is nobody to be taken for.
+			return nil
+		}
+
+		return err
+	}
+
+	here, err := s.Ent.Tenant.Query().Where(enttenant.IdEQ(owner.Id)).Exist(ctx)
+	if err != nil {
+		return err
+	}
+	if here {
+		return fmt.Errorf(
+			"control.db: the same database as db, by another spelling -- the tenant %q that runs this "+
+				"deployment is a row of the data plane too. The two planes are two databases: in one, a "+
+				"customer's session is an operator's at admin.addr. name another database for control.db, "+
+				"run `roster init` on it, and erase %q from the data plane", owner.Alias, owner.Alias)
+	}
+
+	return nil
 }
 
 func (s *Server) policyInterceptors() grpcx.Chain {

@@ -2,8 +2,8 @@
 // @generated from file app/role_svc.g.proto (package roster, edition 2023)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
 import type { GroupRef, GroupSelect } from "./group_svc_pb.js";
 import { file_app_group_svc_g } from "./group_svc_pb.js";
 import type { Binding, BindingSchema, Role, RoleSchema } from "./role_pb.js";
@@ -24,7 +24,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/role_svc.g.proto.
  */
 export const file_app_role_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvcm9sZV9zdmMuZy5wcm90bxIGcm9zdGVyIsQCCg5Sb2xlQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEh0KBHNpdGUYAyABKAsyDy5yb3N0ZXIuU2l0ZVJlZhIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISMgoGbGFiZWxzGAcgAygLMiIucm9zdGVyLlJvbGVBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5Eg8KB21ldGhvZHMYCCADKAkSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlIKDlJvbGVHZXRSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLnJvc3Rlci5Sb2xlUmVmEiIKBnNlbGVjdBgCIAEoCzISLnJvc3Rlci5Sb2xlU2VsZWN0IkUKB1JvbGVSZWYSDAoCaWQYASABKAxIABIlCgRzbHVnGAQgASgLMhUucm9zdGVyLlJvbGVSZWZCeVNsdWdIAEIFCgNrZXkiQQoNUm9sZVJlZkJ5U2x1ZxINCgVhbGlhcxgEIAEoCRIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmIu4BCgpSb2xlU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZ0ZW5hbnQYAiABKAsyFC5yb3N0ZXIuVGVuYW50U2VsZWN0EiAKBHNpdGUYAyABKAsyEi5yb3N0ZXIuU2l0ZVNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEg8KB21ldGhvZHMYCCABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKfAgoQUm9sZVBhdGNoUmVxdWVzdBIcCgNyZWYYASABKAsyDy5yb3N0ZXIuUm9sZVJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSNAoGbGFiZWxzGA4gAygLMiQucm9zdGVyLlJvbGVQYXRjaFJlcXVlc3QuTGFiZWxzRW50cnkSDwoHbWV0aG9kcxgQIAMoCRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIk0KEFJvbGVBcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLlJvbGVSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIjChFSb2xlRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgieQoPUm9sZUxpc3RSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5yb3N0ZXIuUm9sZUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiRAoQUm9sZUxpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLnJvc3Rlci5Sb2xlEhMKBG5leHQYAiABKAlCBaoBAggCImwKClJvbGVGaWx0ZXISHAoDcmVmGAEgASgLMg8ucm9zdGVyLlJvbGVSZWYSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhIdCgRzaXRlGAMgASgLMg8ucm9zdGVyLlNpdGVSZWYiQQoQUm9sZVdpZGVuUmVxdWVzdBIcCgNyZWYYASABKAsyDy5yb3N0ZXIuUm9sZVJlZhIPCgdtZXRob2RzGAggAygJIkIKEVJvbGVOYXJyb3dSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLnJvc3Rlci5Sb2xlUmVmEg8KB21ldGhvZHMYCCADKAkiuQIKEUJpbmRpbmdBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEh0KBHJvbGUYAiABKAsyDy5yb3N0ZXIuUm9sZVJlZhIdCgRzaXRlGAMgASgLMg8ucm9zdGVyLlNpdGVSZWYSIQoGaG9sZGVyGAggASgLMhEucm9zdGVyLkhvbGRlclJlZhIfCgVncm91cBgJIAEoCzIQLnJvc3Rlci5Hcm91cFJlZhI1CgZsYWJlbHMYByADKAsyJS5yb3N0ZXIuQmluZGluZ0FkZFJlcXVlc3QuTGFiZWxzRW50cnkSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlsKEUJpbmRpbmdHZXRSZXF1ZXN0Eh8KA3JlZhgBIAEoCzISLnJvc3Rlci5CaW5kaW5nUmVmEiUKBnNlbGVjdBgCIAEoCzIVLnJvc3Rlci5CaW5kaW5nU2VsZWN0IiEKCkJpbmRpbmdSZWYSDAoCaWQYASABKAxIAEIFCgNrZXki+wEKDUJpbmRpbmdTZWxlY3QSCwoDYWxsGAEgASgIEiAKBHJvbGUYAiABKAsyEi5yb3N0ZXIuUm9sZVNlbGVjdBIgCgRzaXRlGAMgASgLMhIucm9zdGVyLlNpdGVTZWxlY3QSJAoGaG9sZGVyGAggASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBIiCgVncm91cBgJIAEoCzITLnJvc3Rlci5Hcm91cFNlbGVjdBIOCgZsYWJlbHMYByABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCLsAQoTQmluZGluZ1BhdGNoUmVxdWVzdBIfCgNyZWYYASABKAsyEi5yb3N0ZXIuQmluZGluZ1JlZhI3CgZsYWJlbHMYDiADKAsyJy5yb3N0ZXIuQmluZGluZ1BhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlMKE0JpbmRpbmdBcHBseVJlcXVlc3QSHwoDcmVmGAEgASgLMhIucm9zdGVyLkJpbmRpbmdSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCImChRCaW5kaW5nRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgifwoSQmluZGluZ0xpc3RSZXF1ZXN0EiYKB2ZpbHRlcnMYASADKAsyFS5yb3N0ZXIuQmluZGluZ0ZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiSgoTQmluZGluZ0xpc3RSZXNwb25zZRIeCgVpdGVtcxgBIAMoCzIPLnJvc3Rlci5CaW5kaW5nEhMKBG5leHQYAiABKAlCBaoBAggCIrIBCg1CaW5kaW5nRmlsdGVyEh8KA3JlZhgBIAEoCzISLnJvc3Rlci5CaW5kaW5nUmVmEh0KBHJvbGUYAiABKAsyDy5yb3N0ZXIuUm9sZVJlZhIhCgZob2xkZXIYAyABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEh8KBWdyb3VwGAQgASgLMhAucm9zdGVyLkdyb3VwUmVmEh0KBHNpdGUYBSABKAsyDy5yb3N0ZXIuU2l0ZVJlZjKdAwoLUm9sZVNlcnZpY2USKwoDQWRkEhYucm9zdGVyLlJvbGVBZGRSZXF1ZXN0Ggwucm9zdGVyLlJvbGUSKwoDR2V0EhYucm9zdGVyLlJvbGVHZXRSZXF1ZXN0Ggwucm9zdGVyLlJvbGUSLwoFUGF0Y2gSGC5yb3N0ZXIuUm9sZVBhdGNoUmVxdWVzdBoMLnJvc3Rlci5Sb2xlEi8KBUFwcGx5Ehgucm9zdGVyLlJvbGVBcHBseVJlcXVlc3QaDC5yb3N0ZXIuUm9sZRIzCgVFcmFzZRIPLnJvc3Rlci5Sb2xlUmVmGhkucm9zdGVyLlJvbGVFcmFzZVJlc3BvbnNlEjkKBExpc3QSFy5yb3N0ZXIuUm9sZUxpc3RSZXF1ZXN0Ghgucm9zdGVyLlJvbGVMaXN0UmVzcG9uc2USLwoFV2lkZW4SGC5yb3N0ZXIuUm9sZVdpZGVuUmVxdWVzdBoMLnJvc3Rlci5Sb2xlEjEKBk5hcnJvdxIZLnJvc3Rlci5Sb2xlTmFycm93UmVxdWVzdBoMLnJvc3Rlci5Sb2xlMuACCg5CaW5kaW5nU2VydmljZRIxCgNBZGQSGS5yb3N0ZXIuQmluZGluZ0FkZFJlcXVlc3QaDy5yb3N0ZXIuQmluZGluZxIxCgNHZXQSGS5yb3N0ZXIuQmluZGluZ0dldFJlcXVlc3QaDy5yb3N0ZXIuQmluZGluZxI1CgVQYXRjaBIbLnJvc3Rlci5CaW5kaW5nUGF0Y2hSZXF1ZXN0Gg8ucm9zdGVyLkJpbmRpbmcSNQoFQXBwbHkSGy5yb3N0ZXIuQmluZGluZ0FwcGx5UmVxdWVzdBoPLnJvc3Rlci5CaW5kaW5nEjkKBUVyYXNlEhIucm9zdGVyLkJpbmRpbmdSZWYaHC5yb3N0ZXIuQmluZGluZ0VyYXNlUmVzcG9uc2USPwoETGlzdBIaLnJvc3Rlci5CaW5kaW5nTGlzdFJlcXVlc3QaGy5yb3N0ZXIuQmluZGluZ0xpc3RSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_group_svc_g, file_app_role, file_app_site_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g, file_roster_payday_tenant_svc_g]);
+  fileDesc("ChRhcHAvcm9sZV9zdmMuZy5wcm90bxIGcm9zdGVyIsQCCg5Sb2xlQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEh0KBHNpdGUYAyABKAsyDy5yb3N0ZXIuU2l0ZVJlZhIUCgVhbGlhcxgEIAEoCUIFqgECCAISEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISMgoGbGFiZWxzGAcgAygLMiIucm9zdGVyLlJvbGVBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5Eg8KB21ldGhvZHMYCCADKAkSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlIKDlJvbGVHZXRSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLnJvc3Rlci5Sb2xlUmVmEiIKBnNlbGVjdBgCIAEoCzISLnJvc3Rlci5Sb2xlU2VsZWN0IkUKB1JvbGVSZWYSDAoCaWQYASABKAxIABIlCgRzbHVnGAQgASgLMhUucm9zdGVyLlJvbGVSZWZCeVNsdWdIAEIFCgNrZXkiQQoNUm9sZVJlZkJ5U2x1ZxINCgVhbGlhcxgEIAEoCRIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmIu4BCgpSb2xlU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZ0ZW5hbnQYAiABKAsyFC5yb3N0ZXIuVGVuYW50U2VsZWN0EiAKBHNpdGUYAyABKAsyEi5yb3N0ZXIuU2l0ZVNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEg8KB21ldGhvZHMYCCABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKfAgoQUm9sZVBhdGNoUmVxdWVzdBIcCgNyZWYYASABKAsyDy5yb3N0ZXIuUm9sZVJlZhINCgVhbGlhcxgIIAEoCRIMCgRuYW1lGAogASgJEgwKBGRlc2MYDCABKAkSNAoGbGFiZWxzGA4gAygLMiQucm9zdGVyLlJvbGVQYXRjaFJlcXVlc3QuTGFiZWxzRW50cnkSDwoHbWV0aG9kcxgQIAMoCRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIk0KEFJvbGVBcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLlJvbGVSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIjChFSb2xlRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgieQoPUm9sZUxpc3RSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5yb3N0ZXIuUm9sZUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiRAoQUm9sZUxpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLnJvc3Rlci5Sb2xlEhMKBG5leHQYAiABKAlCBaoBAggCImwKClJvbGVGaWx0ZXISHAoDcmVmGAEgASgLMg8ucm9zdGVyLlJvbGVSZWYSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhIdCgRzaXRlGAMgASgLMg8ucm9zdGVyLlNpdGVSZWYiQQoQUm9sZVdpZGVuUmVxdWVzdBIcCgNyZWYYASABKAsyDy5yb3N0ZXIuUm9sZVJlZhIPCgdtZXRob2RzGAggAygJIkIKEVJvbGVOYXJyb3dSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLnJvc3Rlci5Sb2xlUmVmEg8KB21ldGhvZHMYCCADKAkiTgoUUm9sZUhhbmRzT3ZlclJlcXVlc3QSDwoHbWV0aG9kcxgIIAMoCRIlCgRoZWxkGAkgASgOMhAucm9zdGVyLlJvbGVIZWxkQgWqAQIIAiI/ChVSb2xlSGFuZHNPdmVyUmVzcG9uc2USJgoGZ3JhbnRzGAggAygLMhYucm9zdGVyLlJvbGVIYW5kZWRPdmVyImsKDlJvbGVIYW5kZWRPdmVyEhQKBWdyYW50GAQgASgJQgWqAQIIAhIPCgdtZXRob2RzGAggAygJEhcKCHJlYWRzX2FzGAkgASgJQgWqAQIIAhIZCgpoYW5kc19vdmVyGAogASgJQgWqAQIIAiK5AgoRQmluZGluZ0FkZFJlcXVlc3QSCgoCaWQYASABKAwSHQoEcm9sZRgCIAEoCzIPLnJvc3Rlci5Sb2xlUmVmEh0KBHNpdGUYAyABKAsyDy5yb3N0ZXIuU2l0ZVJlZhIhCgZob2xkZXIYCCABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEh8KBWdyb3VwGAkgASgLMhAucm9zdGVyLkdyb3VwUmVmEjUKBmxhYmVscxgHIAMoCzIlLnJvc3Rlci5CaW5kaW5nQWRkUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiWwoRQmluZGluZ0dldFJlcXVlc3QSHwoDcmVmGAEgASgLMhIucm9zdGVyLkJpbmRpbmdSZWYSJQoGc2VsZWN0GAIgASgLMhUucm9zdGVyLkJpbmRpbmdTZWxlY3QiIQoKQmluZGluZ1JlZhIMCgJpZBgBIAEoDEgAQgUKA2tleSL7AQoNQmluZGluZ1NlbGVjdBILCgNhbGwYASABKAgSIAoEcm9sZRgCIAEoCzISLnJvc3Rlci5Sb2xlU2VsZWN0EiAKBHNpdGUYAyABKAsyEi5yb3N0ZXIuU2l0ZVNlbGVjdBIkCgZob2xkZXIYCCABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EiIKBWdyb3VwGAkgASgLMhMucm9zdGVyLkdyb3VwU2VsZWN0Eg4KBmxhYmVscxgHIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIuwBChNCaW5kaW5nUGF0Y2hSZXF1ZXN0Eh8KA3JlZhgBIAEoCzISLnJvc3Rlci5CaW5kaW5nUmVmEjcKBmxhYmVscxgOIAMoCzInLnJvc3Rlci5CaW5kaW5nUGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiUwoTQmluZGluZ0FwcGx5UmVxdWVzdBIfCgNyZWYYASABKAsyEi5yb3N0ZXIuQmluZGluZ1JlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiYKFEJpbmRpbmdFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCJ/ChJCaW5kaW5nTGlzdFJlcXVlc3QSJgoHZmlsdGVycxgBIAMoCzIVLnJvc3Rlci5CaW5kaW5nRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJKChNCaW5kaW5nTGlzdFJlc3BvbnNlEh4KBWl0ZW1zGAEgAygLMg8ucm9zdGVyLkJpbmRpbmcSEwoEbmV4dBgCIAEoCUIFqgECCAIisgEKDUJpbmRpbmdGaWx0ZXISHwoDcmVmGAEgASgLMhIucm9zdGVyLkJpbmRpbmdSZWYSHQoEcm9sZRgCIAEoCzIPLnJvc3Rlci5Sb2xlUmVmEiEKBmhvbGRlchgDIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSHwoFZ3JvdXAYBCABKAsyEC5yb3N0ZXIuR3JvdXBSZWYSHQoEc2l0ZRgFIAEoCzIPLnJvc3Rlci5TaXRlUmVmKnYKCFJvbGVIZWxkEhkKFVJPTEVfSEVMRF9VTlNQRUNJRklFRBAAEh8KG1JPTEVfSEVMRF9BQ1JPU1NfVEhFX1RFTkFOVBABEhcKE1JPTEVfSEVMRF9JTl9BX1NJVEUQAhIVChFST0xFX0hFTERfTk9XSEVSRRADMucDCgtSb2xlU2VydmljZRIrCgNBZGQSFi5yb3N0ZXIuUm9sZUFkZFJlcXVlc3QaDC5yb3N0ZXIuUm9sZRIrCgNHZXQSFi5yb3N0ZXIuUm9sZUdldFJlcXVlc3QaDC5yb3N0ZXIuUm9sZRIvCgVQYXRjaBIYLnJvc3Rlci5Sb2xlUGF0Y2hSZXF1ZXN0Ggwucm9zdGVyLlJvbGUSLwoFQXBwbHkSGC5yb3N0ZXIuUm9sZUFwcGx5UmVxdWVzdBoMLnJvc3Rlci5Sb2xlEjMKBUVyYXNlEg8ucm9zdGVyLlJvbGVSZWYaGS5yb3N0ZXIuUm9sZUVyYXNlUmVzcG9uc2USOQoETGlzdBIXLnJvc3Rlci5Sb2xlTGlzdFJlcXVlc3QaGC5yb3N0ZXIuUm9sZUxpc3RSZXNwb25zZRIvCgVXaWRlbhIYLnJvc3Rlci5Sb2xlV2lkZW5SZXF1ZXN0Ggwucm9zdGVyLlJvbGUSMQoGTmFycm93Ehkucm9zdGVyLlJvbGVOYXJyb3dSZXF1ZXN0Ggwucm9zdGVyLlJvbGUSSAoJSGFuZHNPdmVyEhwucm9zdGVyLlJvbGVIYW5kc092ZXJSZXF1ZXN0Gh0ucm9zdGVyLlJvbGVIYW5kc092ZXJSZXNwb25zZTLgAgoOQmluZGluZ1NlcnZpY2USMQoDQWRkEhkucm9zdGVyLkJpbmRpbmdBZGRSZXF1ZXN0Gg8ucm9zdGVyLkJpbmRpbmcSMQoDR2V0Ehkucm9zdGVyLkJpbmRpbmdHZXRSZXF1ZXN0Gg8ucm9zdGVyLkJpbmRpbmcSNQoFUGF0Y2gSGy5yb3N0ZXIuQmluZGluZ1BhdGNoUmVxdWVzdBoPLnJvc3Rlci5CaW5kaW5nEjUKBUFwcGx5Ehsucm9zdGVyLkJpbmRpbmdBcHBseVJlcXVlc3QaDy5yb3N0ZXIuQmluZGluZxI5CgVFcmFzZRISLnJvc3Rlci5CaW5kaW5nUmVmGhwucm9zdGVyLkJpbmRpbmdFcmFzZVJlc3BvbnNlEj8KBExpc3QSGi5yb3N0ZXIuQmluZGluZ0xpc3RSZXF1ZXN0Ghsucm9zdGVyLkJpbmRpbmdMaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_group_svc_g, file_app_role, file_app_site_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g, file_roster_payday_tenant_svc_g]);
 
 /**
  * @generated from message roster.RoleAddRequest
@@ -491,6 +491,98 @@ export const RoleNarrowRequestSchema: GenMessage<RoleNarrowRequest> = /*@__PURE_
   messageDesc(file_app_role_svc_g, 12);
 
 /**
+ * @generated from message roster.RoleHandsOverRequest
+ */
+export type RoleHandsOverRequest = Message<"roster.RoleHandsOverRequest"> & {
+  /**
+   * The methods, whole names or patterns, as `Role.methods` takes them: a
+   * role's as it is or as it would be, or a key's. At least one.
+   *
+   * @generated from field: repeated string methods = 8;
+   */
+  methods: string[];
+
+  /**
+   * Where they would be held.
+   *
+   * @generated from field: roster.RoleHeld held = 9 [features.field_presence = IMPLICIT];
+   */
+  held: RoleHeld;
+};
+
+/**
+ * Describes the message roster.RoleHandsOverRequest.
+ * Use `create(RoleHandsOverRequestSchema)` to create a new message.
+ */
+export const RoleHandsOverRequestSchema: GenMessage<RoleHandsOverRequest> = /*@__PURE__*/
+  messageDesc(file_app_role_svc_g, 13);
+
+/**
+ * @generated from message roster.RoleHandsOverResponse
+ */
+export type RoleHandsOverResponse = Message<"roster.RoleHandsOverResponse"> & {
+  /**
+   * One for each grant the methods reach, in the order of the page. Empty is
+   * a list that means what it says.
+   *
+   * @generated from field: repeated roster.RoleHandedOver grants = 8;
+   */
+  grants: RoleHandedOver[];
+};
+
+/**
+ * Describes the message roster.RoleHandsOverResponse.
+ * Use `create(RoleHandsOverResponseSchema)` to create a new message.
+ */
+export const RoleHandsOverResponseSchema: GenMessage<RoleHandsOverResponse> = /*@__PURE__*/
+  messageDesc(file_app_role_svc_g, 14);
+
+/**
+ * RoleHandedOver is one grant that hands over more than it reads as.
+ *
+ * @generated from message roster.RoleHandedOver
+ */
+export type RoleHandedOver = Message<"roster.RoleHandedOver"> & {
+  /**
+   * Which one: the anchor of its heading in `docs/usage/wide-grants.md`, which
+   * does not change when its sentences do. What a page links to, and what it
+   * keys a sentence of its own by.
+   *
+   * @generated from field: string grant = 4 [features.field_presence = IMPLICIT];
+   */
+  grant: string;
+
+  /**
+   * Which of the methods asked about reach it, as they were written -- so
+   * `/roster.*\/*` is answered here for every grant it covers.
+   *
+   * @generated from field: repeated string methods = 8;
+   */
+  methods: string[];
+
+  /**
+   * What it reads as: *may send recovery links*.
+   *
+   * @generated from field: string reads_as = 9 [features.field_presence = IMPLICIT];
+   */
+  readsAs: string;
+
+  /**
+   * What it is, where it would be held: *every account of the tenant*.
+   *
+   * @generated from field: string hands_over = 10 [features.field_presence = IMPLICIT];
+   */
+  handsOver: string;
+};
+
+/**
+ * Describes the message roster.RoleHandedOver.
+ * Use `create(RoleHandedOverSchema)` to create a new message.
+ */
+export const RoleHandedOverSchema: GenMessage<RoleHandedOver> = /*@__PURE__*/
+  messageDesc(file_app_role_svc_g, 15);
+
+/**
  * @generated from message roster.BindingAddRequest
  */
 export type BindingAddRequest = Message<"roster.BindingAddRequest"> & {
@@ -535,7 +627,7 @@ export type BindingAddRequest = Message<"roster.BindingAddRequest"> & {
  * Use `create(BindingAddRequestSchema)` to create a new message.
  */
 export const BindingAddRequestSchema: GenMessage<BindingAddRequest> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 13);
+  messageDesc(file_app_role_svc_g, 16);
 
 /**
  * @generated from message roster.BindingGetRequest
@@ -557,7 +649,7 @@ export type BindingGetRequest = Message<"roster.BindingGetRequest"> & {
  * Use `create(BindingGetRequestSchema)` to create a new message.
  */
 export const BindingGetRequestSchema: GenMessage<BindingGetRequest> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 14);
+  messageDesc(file_app_role_svc_g, 17);
 
 /**
  * @generated from message roster.BindingRef
@@ -580,7 +672,7 @@ export type BindingRef = Message<"roster.BindingRef"> & {
  * Use `create(BindingRefSchema)` to create a new message.
  */
 export const BindingRefSchema: GenMessage<BindingRef> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 15);
+  messageDesc(file_app_role_svc_g, 18);
 
 /**
  * @generated from message roster.BindingSelect
@@ -637,7 +729,7 @@ export type BindingSelect = Message<"roster.BindingSelect"> & {
  * Use `create(BindingSelectSchema)` to create a new message.
  */
 export const BindingSelectSchema: GenMessage<BindingSelect> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 16);
+  messageDesc(file_app_role_svc_g, 19);
 
 /**
  * @generated from message roster.BindingPatchRequest
@@ -683,7 +775,7 @@ export type BindingPatchRequest = Message<"roster.BindingPatchRequest"> & {
  * Use `create(BindingPatchRequestSchema)` to create a new message.
  */
 export const BindingPatchRequestSchema: GenMessage<BindingPatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 17);
+  messageDesc(file_app_role_svc_g, 20);
 
 /**
  * @generated from message roster.BindingApplyRequest
@@ -705,7 +797,7 @@ export type BindingApplyRequest = Message<"roster.BindingApplyRequest"> & {
  * Use `create(BindingApplyRequestSchema)` to create a new message.
  */
 export const BindingApplyRequestSchema: GenMessage<BindingApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 18);
+  messageDesc(file_app_role_svc_g, 21);
 
 /**
  * @generated from message roster.BindingEraseResponse
@@ -728,7 +820,7 @@ export type BindingEraseResponse = Message<"roster.BindingEraseResponse"> & {
  * Use `create(BindingEraseResponseSchema)` to create a new message.
  */
 export const BindingEraseResponseSchema: GenMessage<BindingEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 19);
+  messageDesc(file_app_role_svc_g, 22);
 
 /**
  * @generated from message roster.BindingListRequest
@@ -777,7 +869,7 @@ export type BindingListRequest = Message<"roster.BindingListRequest"> & {
  * Use `create(BindingListRequestSchema)` to create a new message.
  */
 export const BindingListRequestSchema: GenMessage<BindingListRequest> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 20);
+  messageDesc(file_app_role_svc_g, 23);
 
 /**
  * @generated from message roster.BindingListResponse
@@ -807,7 +899,7 @@ export type BindingListResponse = Message<"roster.BindingListResponse"> & {
  * Use `create(BindingListResponseSchema)` to create a new message.
  */
 export const BindingListResponseSchema: GenMessage<BindingListResponse> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 21);
+  messageDesc(file_app_role_svc_g, 24);
 
 /**
  * @generated from message roster.BindingFilter
@@ -844,7 +936,52 @@ export type BindingFilter = Message<"roster.BindingFilter"> & {
  * Use `create(BindingFilterSchema)` to create a new message.
  */
 export const BindingFilterSchema: GenMessage<BindingFilter> = /*@__PURE__*/
-  messageDesc(file_app_role_svc_g, 22);
+  messageDesc(file_app_role_svc_g, 25);
+
+/**
+ * RoleHeld is where a role's methods are held, which is what decides who a
+ * grant reaches (`docs/usage/rules.md`, *Where a grant reaches*).
+ *
+ * @generated from enum roster.RoleHeld
+ */
+export enum RoleHeld {
+  /**
+   * Not said, and read as across the tenant: the widest, so that what was not
+   * said is never under-told.
+   *
+   * @generated from enum value: ROLE_HELD_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * A binding that names no site.
+   *
+   * @generated from enum value: ROLE_HELD_ACROSS_THE_TENANT = 1;
+   */
+  ACROSS_THE_TENANT = 1,
+
+  /**
+   * A binding that names a site, or a role held in a team, which reaches the
+   * people of the team's site.
+   *
+   * @generated from enum value: ROLE_HELD_IN_A_SITE = 2;
+   */
+  IN_A_SITE = 2,
+
+  /**
+   * The tenant's `self-service` role: bound to nobody, and held by everybody
+   * over what is their own.
+   *
+   * @generated from enum value: ROLE_HELD_NOWHERE = 3;
+   */
+  NOWHERE = 3,
+}
+
+/**
+ * Describes the enum roster.RoleHeld.
+ */
+export const RoleHeldSchema: GenEnum<RoleHeld> = /*@__PURE__*/
+  enumDesc(file_app_role_svc_g, 0);
 
 /**
  * @generated from service roster.RoleService
@@ -962,6 +1099,52 @@ export const RoleService: GenService<{
     methodKind: "unary";
     input: typeof RoleNarrowRequestSchema;
     output: typeof RoleSchema;
+  },
+  /**
+   * HandsOver says which of a list of methods hand over more than they read
+   * as, where they would be held: what a page says beside a role before it is
+   * bound, widened, or put on a key.
+   *
+   * A role is a list of method names, and most of them mean what they say.
+   * `docs/usage/wide-grants.md` is the ones that do not -- *may send recovery
+   * links* is every account of the tenant -- and this is that page asked of
+   * one list, in its words. Nothing in a role's row says which of its methods
+   * are these, and a page that wanted to say so had the list to copy: a second
+   * one, in every product's own administration, a release behind the first.
+   *
+   * # Why it is `RoleService`'s, and reads no row
+   *
+   * What it is asked about is what `Role.methods` holds, written as `Widen`
+   * and `Narrow` take it. It takes the list and not a `RoleRef` because the
+   * moment worth saying it at is before the write: a role being drafted has no
+   * row, a role about to be widened is not yet what it would be, and a key's
+   * list is no role's at all. Whoever asks holds the row they are asking about
+   * or is about to write it, so they send its methods.
+   *
+   * # What it answers by
+   *
+   * The methods, where they would be held (`held`), and which plane was asked:
+   * a role of this deployment's own is exercised in every tenant, at
+   * `admin.addr` and by a deployment's key, and is told so. Never by who is
+   * asking -- it reads nothing of anybody, and answers every caller alike.
+   *
+   * It says and does not refuse. Each of these is a grant somebody has a
+   * reason to make; a write that would not go through until it was said to be
+   * meant is another decision (#310).
+   *
+   * # What it does not answer
+   *
+   * Three entries of that page are not about a method, and whoever is making
+   * one of them knows it without asking: a role bound to a **group** is its
+   * manager's to give out whatever it names, and a deployment's key and a
+   * directory's are kinds of key.
+   *
+   * @generated from rpc roster.RoleService.HandsOver
+   */
+  handsOver: {
+    methodKind: "unary";
+    input: typeof RoleHandsOverRequestSchema;
+    output: typeof RoleHandsOverResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_role_svc_g, 0);

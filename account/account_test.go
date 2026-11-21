@@ -289,6 +289,9 @@ func serve(t *testing.T, enrol account.Enrol, with ...func(*account.Config)) *de
 		Base:     base,
 		Enrol:    enrol,
 		Sessions: sessions(),
+		// The fake provider is on this machine, and a deployment whose
+		// provider is says so.
+		PrivateHosts: onThisMachine(t),
 		// Over plain http, like `sessions()` above says: a `Secure` cookie is
 		// one this browser would not send back, and a test that lied about the
 		// scheme would pass while a deployment over http did not.
@@ -548,11 +551,14 @@ func TestTheAccountAppFrontsTwoOperators(t *testing.T) {
 }
 
 // TestAStrangerIsEnrolledWhereTheDeploymentSaysSo is the other policy.
+//
+// The address is one the provider says it checked, which is what makes it a
+// name: `arrives`'s `TestAnAddressNobodyCheckedNamesNobody` is the other half.
 func TestAStrangerIsEnrolledWhereTheDeploymentSaysSo(t *testing.T) {
 	x := require.New(t)
 	d := serve(t, account.Enrolling())
 	d.idp.Subject = "7777"
-	d.idp.Claims = map[string]any{"email": "newcomer@contoso.com", "name": "New Comer"}
+	d.idp.Claims = map[string]any{"email": "newcomer@contoso.com", "email_verified": true, "name": "New Comer"}
 
 	b := d.browser(t, "contoso.test")
 	code, body := b.do(t, http.MethodGet, "/login?connection=example", "", nil)
@@ -671,29 +677,23 @@ func TestSomebodyRecoversTheirAccountByMail(t *testing.T) {
 	q := other.Query()
 	q.Set("at", d.contoso.String())
 	other.RawQuery = q.Encode()
-	res, err := b.Get(other.String())
-	x.NoError(err)
-	res.Body.Close()
-	x.Equal(http.StatusNotFound, res.StatusCode, "a link was redeemed under another tenant's key")
+	code, _ = b.spend(t, other.String())
+	x.Equal(http.StatusNotFound, code, "a link was redeemed under another tenant's key")
 
-	// The link, clicked: a page with a new password on it and no session.
-	res, err = b.Get(link)
-	x.NoError(err)
-	page, _ := io.ReadAll(res.Body)
-	res.Body.Close()
-	x.Equal(http.StatusOK, res.StatusCode, string(page))
-	x.Contains(string(page), "Your new password")
-	password := between(string(page), `user-select:all">`, `</code>`)
+	// The link, opened and its page answered (`TestAMailedLinkAsksBeforeItIsSpent`):
+	// a new password and no session.
+	code, page := b.spend(t, link)
+	x.Equal(http.StatusOK, code, page)
+	x.Contains(page, "Your new password")
+	password := between(page, `user-select:all">`, `</code>`)
 	x.NotEmpty(password, "the page shows no password: %s", page)
 
 	code, _ = b.rpc(t, "/roster.MeService/Get", `{}`)
 	x.Equal(http.StatusUnauthorized, code, "a recovery link signed somebody in")
 
 	// Twice is nothing: the link was spent.
-	res, err = b.Get(link)
-	x.NoError(err)
-	res.Body.Close()
-	x.Equal(http.StatusNotFound, res.StatusCode, "a recovery link was redeemed twice")
+	code, _ = b.spend(t, link)
+	x.Equal(http.StatusNotFound, code, "a recovery link was redeemed twice")
 
 	// The new password signs bob in; the old one does not.
 	code, _ = b.do(t, http.MethodPost, "/session", `{"alias":"bob","password":"`+password+`"}`,
@@ -743,13 +743,10 @@ func TestSomebodyVerifiesAnAddressOfTheirOwn(t *testing.T) {
 	x.Contains(link, "/confirm?", "no link was mailed to the address on the row")
 	x.Contains(link, "token=rl_")
 
-	// Clicked from a browser with no session at all: the mailbox is the proof.
-	res, err := d.browser(t, "contoso.test").Get(link)
-	x.NoError(err)
-	page, _ := io.ReadAll(res.Body)
-	res.Body.Close()
-	x.Equal(http.StatusOK, res.StatusCode, string(page))
-	x.Contains(string(page), "Address confirmed")
+	// Answered from a browser with no session at all: the mailbox is the proof.
+	code, page := d.browser(t, "contoso.test").spend(t, link)
+	x.Equal(http.StatusOK, code, page)
+	x.Contains(page, "Address confirmed")
 
 	code, body = b.rpc(t, "/roster.EmailService/List", `{"filters":[{"holder":{"id":"`+std(d.erin)+`"}}]}`)
 	x.Equal(http.StatusOK, code, body)
@@ -982,10 +979,8 @@ func TestSomebodyClaimsAnAddressNobodyConfirmed(t *testing.T) {
 
 	// Clicking it is the ordinary confirm route: the key that minted it confirms
 	// it, and nobody is signed in by it.
-	res, err := b.Get(link)
-	x.NoError(err)
-	res.Body.Close()
-	x.Equal(http.StatusOK, res.StatusCode)
+	code, _ = b.spend(t, link)
+	x.Equal(http.StatusOK, code)
 
 	// And the address is bob's now, proved. Alice's row is gone rather than
 	// unproved, because two rows cannot hold one address.
@@ -1432,20 +1427,18 @@ func TestSomebodyDeletesTheirAccountByMail(t *testing.T) {
 		x := require.New(t)
 
 		// At the door a recovery link is redeemed at, which hands over a password.
-		res, err := d.browser(t, "contoso.test").Get(strings.Replace(link, "/leave?", "/redeem?", 1))
-		x.NoError(err)
-		res.Body.Close()
-		x.Equal(http.StatusNotFound, res.StatusCode, "a link that deletes an account handed over a password")
+		code, _ := d.browser(t, "contoso.test").spend(t, strings.Replace(link, "/leave?", "/redeem?", 1))
+		x.Equal(http.StatusNotFound, code, "a link that deletes an account handed over a password")
 
 		// And following it is a page, and no session.
 		other := d.browser(t, "contoso.test")
-		res, err = other.Get(link)
+		res, err := other.Get(link)
 		x.NoError(err)
 		page, _ := io.ReadAll(res.Body)
 		res.Body.Close()
 		x.Equal(http.StatusOK, res.StatusCode, string(page))
 		x.Contains(string(page), "Delete your account")
-		code, _ := other.rpc(t, "/roster.MeService/Get", `{}`)
+		code, _ = other.rpc(t, "/roster.MeService/Get", `{}`)
 		x.Equal(http.StatusUnauthorized, code, "a link that deletes an account signed somebody in")
 	})
 

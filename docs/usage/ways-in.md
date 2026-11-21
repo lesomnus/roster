@@ -100,6 +100,12 @@ VouchService.Verify { who: {tenant: "newco", alias: "alice"}, secret: … }
 and then mints whatever **it** uses for a session. roster does not mint that,
 which is the rule at the top of this page.
 
+The tenant and the alias are what somebody typed into a form, and roster folds
+them to small letters before it looks: `Alice` at `Newco` is `alice` at
+`newco`, as `Alice@Newco.Example` has always been `alice@newco.example`. It is
+the same at `Delegate`, at a mailed link, and at roster's own sign-in. Nowhere
+else: a reference in any other call is exact.
+
 If your front door would rather be handed something it can call roster with,
 `VouchService.Delegate` is `Verify` plus an `rd_` — see § a delegation.
 
@@ -112,8 +118,8 @@ hangs off a row of the control plane, which is why the command says `control`:
 it writes to the other database.
 
 It answers two ways. **Unnarrowed**, as itself, across every tenant, allowed
-exactly its `--allow` -- the job reading the trail, or the Login App's three reads
-before it knows whose flow a challenge is. **Narrowed**, with `roster-at: <a name
+exactly its `--allow` -- the job reading the trail, or the Login App asking which
+tenant a name is before it knows whose flow a challenge is. **Narrowed**, with `roster-at: <a name
 a tenant answers at>`, as the holder that tenant nominated for this key, with
 that holder's bindings: everything a product does for one of your customers.
 [apps.md](../apps.md) is which of those an app needs, and the shapes it can take.
@@ -216,6 +222,17 @@ Naming a holder who is not there is a **refusal**, unlike `roster control key
 add`. A customer's people are the customer's, and a command that made one by
 mentioning them would write rows into somebody else's tenant by typo.
 
+**It is told what it reaches, which is its tenant's.** A method wider than it
+reads is said when the key is minted, as it is of a deployment key, and what
+is said is this kind's: the trail a tenant key reads is its own tenant's, where
+whoever it is for is allowed the read across the tenant.
+
+```
+NOTE: `/roster.AuditService/List` reaches the audit trail of its tenant, which holds the
+contents of every write there, of rows long since erased too, for as long as
+the retention policy keeps them.
+```
+
 Three other ways to get one, all the same row:
 
 | | |
@@ -277,7 +294,15 @@ eight characters, sees what the terminal asked to be allowed, and says yes; the
 command writes the key and stops. That is RFC 8628, the device grant -- the same
 flow every CLI with a *go here and type this* screen uses -- and it is polling
 rather than anything cleverer, because a machine in that position has nothing that
-can be called back.
+can be called back. A poll is posted, with the terminal's own code in its body
+and in no address; a wrong code typed costs whoever typed it, ten of them stop
+any code of theirs being answered for a quarter of an hour; one code is one key,
+whoever says yes how many times; and a front door holds a thousand terminals
+waiting and tells the next to come back.
+
+What it says to you is on standard error; without `--out`, the key is the one
+line on standard output, so `roster sign-in … > key` keeps the key and the
+terminal still shows what to type.
 
 What comes out is an ordinary `rt_`: it belongs to the person who approved it, is
 **never wider than they are**, appears in their keys beside the app passwords, and
@@ -370,6 +395,23 @@ where a new account cannot be told what it is for. `MeService/Unlink` and
 `MeService/SignOutEverywhere` are waived for the same reason -- neither can be
 pointed at anybody else, and only a subject-less method can be waived at all.
 
+### Changing your own password
+
+```
+CredentialService.Set { ref: <you>, current: …, secret: … }
+```
+
+It asks for the password you hold, and **signs you out everywhere**: every
+session and delegation the old one opened, the one that made the change among
+them. A password is changed because somebody else may have it, and whoever
+that is was signed in already. So the next thing a page does after *changed*
+is sign in again, with the new one. It is the stamp `HolderService/Invalidate`
+leaves, so a key is not touched: a key is revoked by name. A link already out
+for you goes with the sessions -- a recovery link, one that deletes the
+account, one a front door handed a browser -- and so does a sign-in that was
+waiting for its second factor. A link that confirms an address does not, since
+it signs nobody in.
+
 ### Deleting your own account
 
 ```
@@ -378,14 +420,29 @@ MeService.Leave {confirm: "alice"}   # your alias, as it is
 
 Where the tenant offers it (`config.leave`, off unless somebody turned it on),
 a person deletes their own account: their holder is erased the way an operator's
-`roster holder erase` erases one, after they are signed out everywhere. Nothing
+`roster holder erase` erases one, after they are signed out everywhere -- both,
+or neither: an erase that is refused, as the last administrator's is, leaves
+them signed in. Nothing
 is destroyed yet -- the operator can `roster restore` them while
-`holder.forget_after` lasts, and they are forgotten when it ends -- and every app
-holding a session for them hears it on the sync stream. Not somebody their
-tenant's directory provisions, though: whoever signs in through the connection it
-provisions through is the directory's to remove ([scim.md](../scim.md)), and
-`MeService.Get` names that connection as `provisioned_through`, so the account
-page offers them no such section.
+`holder.forget_after` lasts, and they are forgotten from when it ends, by the first
+pass after it -- and every app
+holding a session for them hears it on the sync stream.
+
+**Until they are forgotten, they cannot simply come back.** Their alias is free
+at once, and their addresses and their accounts at providers are still theirs,
+for a restore to give back. So signing in again through the provider they used,
+or through one that vouches for an address they proved, makes them no new
+account, whatever the front door's `enrol`: they are answered *this account was
+deleted here; an administrator of your organisation can bring it back, or let it
+go*. And `holder.forget_after` is **never** unless the deployment set it, which
+makes that for good. A product that lets its people leave and come back sets it
+([operating.md](../operating.md) § "Destroying somebody, which an erase does
+not"); otherwise each of them waits for an operator to forget them.
+
+Leaving is not for somebody their tenant's directory provisions, though: whoever
+signs in through the connection it provisions through is the directory's to
+remove ([scim.md](../scim.md)), and `MeService.Get` names that connection as
+`provisioned_through`, so the account page offers them no such section.
 
 It is waived like the two above, and asks for one more thing they do not: that
 the person **proved who they are a few minutes ago** (`server/me.LeaveWithin`,
@@ -426,12 +483,14 @@ not provision them, no file declares them. Those are asked when the link is
 minted, so that nothing is mailed that could not be spent, and again when it is
 spent, since anything may have changed in between; a mistyped alias, or any
 other refusal, leaves the link unspent. The address has to still be theirs and
-still proved when it is spent. And it signs nobody in: it mints no delegation,
-no session and no password, and the doors the other links are spent at --
-`Vouch.Redeem`, the user console, `Email.Confirm` -- each refuse it. A caller
-allowed both methods can delete anybody it can see, which is why they are a
-front door's grant and nobody's own; from a shell, as the front door's key,
-they are `roster vouch leave-link` and `roster vouch leave`.
+still proved when it is spent, and nothing may have ended their sign-ins since
+it was minted: a password changed or issued, or *sign out everywhere*, ends a
+link already out as it ends a session. And it signs nobody in: it mints no
+delegation, no session and no password, and the doors the other links are
+spent at -- `Vouch.Redeem`, the user console, `Email.Confirm` -- each refuse
+it. A caller allowed both methods can delete anybody it can see, which is why
+they are a front door's grant and nobody's own; from a shell, as the front
+door's key, they are `roster vouch leave-link` and `roster vouch leave`.
 
 A **recovery link**, where the tenant offers passwords, is the longer way round:
 it hands them a password, and a sign-in with it is a moment ago. It is a way in,
@@ -540,7 +599,12 @@ arrived through one of them and may want both. That is the account page's *signs
 in with* section: a row per directory the operator offers, where the one they
 arrived through says who they are there and offers to unlink, and the one they
 have not used offers **connect**. Pressing it is a round trip to that directory
-and back, and what lands on their row is `Identity.Add` with their own reference.
+and back, and what lands on their row is `Identity.Add` with their own
+reference, **made as them**: the provider proves the account, which is the
+front door's part, and roster is asked what it is asked of any call of theirs --
+that their session still stands when the round trip ends, and that their tenant
+lets them (`IdentityService/Add` in its `self-service` role, or a role of their
+own).
 
 Two things it does not do, each for a reason:
 
@@ -548,11 +612,30 @@ Two things it does not do, each for a reason:
   identity at one provider -- *a second one is a link that found the wrong row*
   (`server/core/identity.go`) -- so a button for it would be a trip to a
   directory that ends in a refusal.
+- **It does not link the directory their tenant provisions through.** An
+  account there is who the tenant's directory means by somebody, so it is the
+  directory's to say and not the person's ([scim.md](../scim.md)): *connect*
+  for that connection ends in a refusal, since the write is made as them.
+  Somebody is linked there by signing in through it where the front door
+  matches them by address, or by an operator.
 - **The operator's console has no such button.** A subject is issued at the
   directory and does not exist until somebody signs in there, so an operator
   cannot write one; what they can do instead is write the `Email` row the first
   sign-in matches (`../login.md` § *Putting people in, and letting them arrive*).
   The admin console lists what somebody signs in with and can take one away.
+
+**Unlinking is refused where nothing would be left to sign in by**, whoever
+asks. What is left has to work: an account at a directory the tenant still has
+a `Connection` to, or a password in a tenant that takes passwords
+(`config.password`). An account at a directory the operator has since removed
+is a row and not a way in, and so is a password where passwords are off; a
+second factor never was one. Somebody left with only those is given another way
+in first.
+
+**And the account a directory provisions them through is not theirs to
+unlink.** It is what their tenant's directory finds them by, and what lets it
+suspend them when they leave; unlinked, they would be out of its hands. Taking
+one away there is an administrator's ([scim.md](../scim.md)).
 
 ## A second factor
 
@@ -577,6 +660,50 @@ rather than storing a seed in the clear.
 not a sign-in on its own, and somebody whose only credential is a seed cannot
 sign in with it.
 
+**Taking your own off takes having just signed in.** Within five minutes of
+proving who you are, by the credential the call came with -- so at your account
+page, a moment after signing in there with the factor itself. A key of yours
+and a page left open are refused: what is left when a second factor goes is
+the password alone, and a credential that merely acts as you must not be what
+decides that. Somebody who has lost the phone asks whoever administers them,
+who takes it off as they would reset a password.
+
+**It is asked for wherever a password is taken**, roster's own sign-in
+included. Somebody who has proved one -- a factor counts from the first code
+that verifies -- is not signed in by their password at the user console or the
+admin console: `AuthService.SignIn` answers what is left and a `continuation`
+with no cookie, and a second call carries that and the code.
+
+```
+AuthService.SignIn { alias: …, password: … }                        -> { available: [{kind: "totp"}], continuation: "vc_…" }
+AuthService.SignIn { continuation: "vc_…", kind: "totp", secret: "123456" }  -> a cookie
+```
+
+One attempt per password: a wrong code spends the continuation, and is counted
+where a wrong password is. A link a front door hands a browser is the one
+sign-in there that asks no second factor, since the directory that checked the
+person is what the link stands for.
+
+**And nowhere else.** Somebody who arrives through a provider is signed in on
+the directory's word, at the account app and at the Login App alike:
+`VouchService.Accept` answers at once, whatever factor of roster's they have
+proved. What stood between them and that sign-in was the directory's to ask.
+
+**Whoever runs the deployment has one too**, enrolled from a shell on the box,
+since that is where an operator is managed and the admin console's work is
+customers. An authenticator app; a security key is registered by a browser at
+the name it will be asked for at.
+
+```sh
+roster --as admin control vouch enrol @admin        # an otpauth:// Uri, once, on stdout
+roster --as admin control vouch prove --code-stdin @admin
+```
+
+It counts from the code that proves it, and the admin console asks for it from
+then on. An operator who has lost the app is somebody at the box again:
+`roster --as admin control credential list` names the row, and `control
+credential erase` takes it away.
+
 ## Stopping one
 
 ```sh
@@ -598,13 +725,33 @@ is a list of methods, and what you can grant is exactly what you can name:
 
 `Invalidate` is *sign out everywhere* as a **fact** rather than as a list: one
 timestamp, which roster answers and each app compares its own sessions against.
-There is no registry of live sessions here and there will not be.
+There is no registry of live sessions here and there will not be. A link roster
+minted for the person before it is void with them -- a recovery link, one that
+deletes the account, one a front door handed a browser -- so a recovery
+followed, which ends in a password issued, ends every link asked for before it.
+So is a sign-in begun before it and waiting for its second factor. A link that
+confirms an address is not, since it signs nobody in; what stops that one is
+what stops every link -- the person suspended or erased, or their tenant closed.
+
+**`Enable` brings back what `Disable` stopped, as it was.** A suspension refuses
+a session and ends none: one still inside its life when the person is enabled
+answers again, on whichever browser holds its cookie. So an account stopped
+because somebody else was in it is `Invalidate`d before it is enabled, or the
+session that was the reason comes back with the person.
+
+**`roster restore` does not bring them back.** Somebody erased cannot be
+`Invalidate`d first -- no verb reads them -- so a restore does it itself: it
+stamps the same moment in the write that brings the person back, and nothing
+issued before it answers again
+([operating.md](../operating.md) § "Destroying somebody, which an erase does not").
 
 It **deliberately does not touch an API key**. A key is named, listed and
 revoked one at a time; killing somebody's scripts silently under "sign out
 everywhere" is an outage with nothing anywhere saying why. That is a second act
 and it has a second name — `roster key revoke`, or `roster me revoke-key` for
-your own.
+your own. A restore is no different: a key of somebody erased answers again
+with them, unless it was revoked while they were gone, which `roster key list`
+and `roster key revoke` do for somebody erased as for anybody.
 
 Each is a verb of its own on the CLI, and they are ordinary RPCs — remote with
 a role that names them, local through `Ungated` like everything else:
@@ -618,7 +765,7 @@ roster --as admin holder invalidate @newco/alice  # everything issued before now
 The server stamps the time — there is none to give, so a stale clock cannot
 un-suspend anybody, and a suspension cannot lose a race with somebody editing a
 profile. `roster --as admin holder signs-in @newco/alice` is the read beside them: how
-somebody signs in, keys included, with no verifier anywhere in the answer. And
+somebody signs in, every key of theirs included, with no verifier anywhere in the answer. And
 `roster sync watch` is where a stop can be seen landing — one line per event,
 the same stream every app holds.
 

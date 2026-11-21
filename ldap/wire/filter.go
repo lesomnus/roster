@@ -89,7 +89,17 @@ func (f *Filter) Mentions(attr string) bool {
 	return false
 }
 
-func decodeFilter(p *ber.Packet) (*Filter, error) {
+// decodeFilter reads the filter at p, which is `depth` deep in the filter it
+// is part of: the whole filter is one deep.
+//
+// The depth is checked here, by the code that first calls itself once a
+// level, so that this and everything that walks what it returns is bounded by
+// a number this package wrote down ([MaxFilterDepth]) whoever built the tree
+// it is handed.
+func decodeFilter(p *ber.Packet, depth int) (*Filter, error) {
+	if depth > MaxFilterDepth {
+		return nil, ending(fmt.Sprintf("filter: nested deeper than %d", MaxFilterDepth))
+	}
 	if p.ClassType != ber.ClassContext {
 		return nil, errors.New("filter: not a context-tagged choice")
 	}
@@ -100,7 +110,7 @@ func decodeFilter(p *ber.Packet) (*Filter, error) {
 			f.Op = FilterOr
 		}
 		for _, c := range p.Children {
-			child, err := decodeFilter(c)
+			child, err := decodeFilter(c, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -112,7 +122,7 @@ func decodeFilter(p *ber.Packet) (*Filter, error) {
 		if len(p.Children) != 1 {
 			return nil, errors.New("filter: a not of several")
 		}
-		child, err := decodeFilter(p.Children[0])
+		child, err := decodeFilter(p.Children[0], depth+1)
 		if err != nil {
 			return nil, err
 		}

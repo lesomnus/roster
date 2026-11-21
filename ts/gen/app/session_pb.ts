@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/session.proto.
  */
 export const file_app_session: GenFile = /*@__PURE__*/
-  fileDesc("ChFhcHAvc2Vzc2lvbi5wcm90bxIGcm9zdGVyIpAECgdTZXNzaW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESFQoFZ3JhbnQYCCABKAxCBuqCFgJAARIeCgZzZWNyZXQYCSABKAxCDuqCFgQwAUABqsEWAggBEjoKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCOqCFgQ4AUABEjUKCWRhdGVfaWRsZRgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6aMr8FSYSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7FjoIGDIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZCIPCg1ob2xkZXIudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChFhcHAvc2Vzc2lvbi5wcm90bxIGcm9zdGVyIpYECgdTZXNzaW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESGwoFZ3JhbnQYCCABKAxCDOqCFgJAAarBFgIYABIeCgZzZWNyZXQYCSABKAxCDuqCFgQwAUABqsEWAggBEjoKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCOqCFgQ4AUABEjUKCWRhdGVfaWRsZRgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6aMr8FSYSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7FjoIGDIlChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmIBQoZCIPCg1ob2xkZXIudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Session is a console's cookie, in a table.
@@ -54,7 +54,10 @@ export const file_app_session: GenFile = /*@__PURE__*/
  * A session names an operator, and an operator is a `Holder` of the control
  * plane -- which is where the people who run this deployment live. The data
  * plane has this table too, because the two planes are one schema run twice,
- * and nothing there ever writes a row.
+ * and writes a row there only where `sign_in.enabled`: a roster user signed in
+ * at their tenant's name, who is a holder of that plane and whose session is
+ * a row of it. The two tables are in two databases, and no cookie is found in
+ * both.
  *
  * # The key is hashed, unlike the one it replaces
  *
@@ -94,6 +97,9 @@ export type Session = Message<"roster.Session"> & {
    * safe -- *every axis carries a flag beside its list, and an empty list means
    * nothing* -- lives in one encoder, and a second spelling of it here would be
    * a second place to get the empty case backwards.
+   *
+   * Not personal: what the session allows, encoded, and nothing of whose it
+   * is that its `holder` does not already say by identifier.
    *
    * @generated from field: bytes grant = 8;
    */

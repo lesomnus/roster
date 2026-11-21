@@ -169,9 +169,12 @@ func TestNobodyWritesAWayInForSomebodyWiderThanThey(t *testing.T) {
 		}.Build())
 		x.NoError(err)
 
+		// For a method the desk may itself call, which is the only kind it is
+		// handed (`vouch`, `mayDelegate`): what is asked here is whose the
+		// link is, and a list it could not ask for would be refused before that.
 		res, err := v.Redeem(asDesk, app.VouchRedeemRequest_builder{
 			Token:   made.GetToken(),
-			Methods: []string{listHolders},
+			Methods: []string{"/roster.MeService/Get"},
 		}.Build())
 		x.NoError(err)
 		x.False(res.GetVerified().GetOk(),

@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"maps"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/lesomnus/z"
@@ -97,6 +99,13 @@ func provisionAccount(ctx context.Context, s *cmd.Server, enrol string, out stri
 // `labels` are written on a holder it makes, and added to one it finds; nil
 // writes none. A front door's own holder is declared by the configuration that
 // turns the front door on, and carries [cmd.Declared] to say so.
+//
+// **So it is not how a holder is looked at**, and it was: finding one and
+// labelling it were this one call, made before anything had decided whose the
+// holder was. A person a provisioner then declined to use had been marked as
+// the configuration's all the same -- read-only at every port, their own
+// administrator refused erasing them (#276). [holderFound] looks; this writes,
+// once the holder is the app's to write.
 func holderNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string, labels map[string]string) ([]byte, bool, error) {
 	v, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: alias, Labels: labels}.Build())
 	if err == nil {
@@ -124,6 +133,117 @@ func holderNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias s
 	}
 
 	return got.GetId(), false, nil
+}
+
+// holderFound is the holder called `alias` in the tenant, or nil where there is
+// none. It makes nobody and writes nothing: what a provisioner asks before it
+// decides whether a holder of its app's name is its own to use
+// ([holderNamed]).
+func holderFound(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string) ([]byte, error) {
+	v, err := s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+		Ref: rstr.HolderRef_builder{
+			Slug: rstr.HolderRefBySlug_builder{Alias: z.Ptr(alias), Tenant: at}.Build(),
+		}.Build(),
+		Select: rstr.HolderSelect_builder{}.Build(),
+	}.Build())
+	if status.Code(err) == codes.NotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return v.GetId(), nil
+}
+
+// somebodys is why a holder and a role found by an app's name are not the
+// app's to take, or "" where they are: the holder holds something of its own
+// -- a role, a way in -- so the app would be answered as them; or the role is
+// bound to others, who would be handed the app's methods by its rewriting.
+//
+// And, for a provisioner that labels what it makes (`mine`), a holder or a
+// role that does not carry that label is the tenant's, bound or not. Whether
+// a role is bound today is not whose it is: a tenant's own role `account`,
+// described and bound to nobody yet, was patched to the account app's forty
+// methods and labelled declared, read-only at every port from then on. The
+// label is what the provisioner writes on what it makes, so it is what says a
+// row is the provisioner's. `roster scim provision` labels nothing (its rows
+// are a command's and not a file's), so it passes nil and keeps the rule
+// above alone.
+//
+// `who` nil is nobody of that name yet, and `role` nil no such role. Asked
+// before anything is written, by every provisioner that finds its rows by
+// name.
+func somebodys(ctx context.Context, s *cmd.Server, tenant, alias string, who, role []byte, mine map[string]string) (string, error) {
+	if mine != nil {
+		if who != nil {
+			got, err := s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+				Ref:    rstr.HolderRef_builder{Id: who}.Build(),
+				Select: rstr.HolderSelect_builder{Labels: z.Ptr(true)}.Build(),
+			}.Build())
+			if err != nil {
+				return "", err
+			}
+			if !carries(got.GetLabels(), mine) {
+				return fmt.Sprintf("@%s/%s was not made by this provisioner -- it carries no %s -- and is the tenant's",
+					tenant, alias, labelsSaid(mine)), nil
+			}
+		}
+		if role != nil {
+			got, err := s.Ungated.Role().Get(ctx, rstr.RoleGetRequest_builder{
+				Ref:    rstr.RoleRef_builder{Id: role}.Build(),
+				Select: rstr.RoleSelect_builder{Labels: z.Ptr(true)}.Build(),
+			}.Build())
+			if err != nil {
+				return "", err
+			}
+			if !carries(got.GetLabels(), mine) {
+				return fmt.Sprintf("the tenant's role %q was not made by this provisioner -- it carries no %s -- and is the tenant's",
+					alias, labelsSaid(mine)), nil
+			}
+		}
+	}
+	if who != nil {
+		h, err := holdingOf(ctx, s, who, role)
+		if err != nil {
+			return "", err
+		}
+		if h.wayIn() || len(h.roles) > 0 {
+			return fmt.Sprintf("@%s/%s is already somebody's -- it holds %s -- and this would answer the app as them", tenant, alias, h), nil
+		}
+	}
+	if role != nil {
+		others, err := boundToOthers(ctx, s, role, who)
+		if err != nil {
+			return "", err
+		}
+		if others {
+			return fmt.Sprintf("the tenant's role %q is bound to others, and rewriting it would hand them the app's methods", alias), nil
+		}
+	}
+
+	return "", nil
+}
+
+// carries is whether `have` holds every label of `want`, as `want` says it.
+func carries(have, want map[string]string) bool {
+	for k, v := range want {
+		if w, ok := have[k]; !ok || w != v {
+			return false
+		}
+	}
+
+	return true
+}
+
+// labelsSaid is labels as a sentence says them: `roster.declared: config: login`.
+func labelsSaid(labels map[string]string) string {
+	out := []string{}
+	for _, k := range slices.Sorted(maps.Keys(labels)) {
+		out = append(out, k+": "+labels[k])
+	}
+
+	return strings.Join(out, ", ")
 }
 
 // withLabels is `have` with `want` over it, and whether that differs from
@@ -278,6 +398,11 @@ func roleNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias str
 // The question [ensureRoleNamed] has to ask before it rewrites a role it finds
 // by name: a tenant's own role of the same name, bound to its people, would be
 // rewritten to an app's methods -- and every one of them would hold those.
+//
+// A binding whose holder is erased is nobody's: an erase leaves it hanging, on
+// purpose (#279), and whoever reads one reads past it. Counted, it held the
+// name of a provisioner's holder that was erased, and the command refused for
+// good with a role bound to others that was bound to nobody.
 func boundToOthers(ctx context.Context, s *cmd.Server, role, who []byte) (bool, error) {
 	after := ""
 	for {
@@ -290,7 +415,23 @@ func boundToOthers(ctx context.Context, s *cmd.Server, role, who []byte) (bool, 
 			return false, err
 		}
 		for _, v := range vs.GetItems() {
-			if !bytes.Equal(v.GetHolder().GetId(), who) || len(v.GetGroup().GetId()) > 0 {
+			if len(v.GetGroup().GetId()) > 0 {
+				return true, nil
+			}
+			if bytes.Equal(v.GetHolder().GetId(), who) {
+				continue
+			}
+			h, err := s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+				Ref:    rstr.HolderRef_builder{Id: v.GetHolder().GetId()}.Build(),
+				Select: rstr.HolderSelect_builder{DateErased: z.Ptr(true)}.Build(),
+			}.Build())
+			if status.Code(err) == codes.NotFound {
+				continue
+			}
+			if err != nil {
+				return false, err
+			}
+			if h.GetDateErased() == nil {
 				return true, nil
 			}
 		}
@@ -303,9 +444,14 @@ func boundToOthers(ctx context.Context, s *cmd.Server, role, who []byte) (bool, 
 // ensureRoleNamed is a role called `alias` holding exactly `methods`.
 //
 // An ensure, run at every provision: made when there is none, and patched to
-// `methods` when it is there rather than left alone. The role is what this
-// binary calls as the app, so it is written from what the binary says and not
-// from whatever the row says.
+// `methods` when it is there and holds other methods or lacks a label, rather
+// than left alone. The role is what this binary calls as the app, so it is
+// written from what the binary says and not from whatever the row says.
+//
+// And not written when it is as it should be: it was patched at every run, a
+// `/roster.RoleService/Patch` in every tenant fronted at every start, where
+// the rest of what a provisioner ensures is kept from being a row changed in
+// every tenant at a restart.
 func ensureRoleNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string, methods []string, labels map[string]string) ([]byte, error) {
 	v, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
 		Tenant: at, Alias: alias, Methods: methods, Labels: labels,
@@ -324,12 +470,15 @@ func ensureRoleNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, ali
 		// `date_updated` because a patch is refused without the version it is
 		// against -- which is the rule keeping two writers from each thinking
 		// they wrote last.
-		Select: rstr.RoleSelect_builder{DateUpdated: z.Ptr(true), Labels: z.Ptr(true)}.Build(),
+		Select: rstr.RoleSelect_builder{DateUpdated: z.Ptr(true), Labels: z.Ptr(true), Methods: z.Ptr(true)}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
 	}
-	next, _ := withLabels(got.GetLabels(), labels)
+	next, relabel := withLabels(got.GetLabels(), labels)
+	if !relabel && slices.Equal(got.GetMethods(), methods) {
+		return got.GetId(), nil
+	}
 	if _, err := s.Ungated.Role().Patch(ctx, rstr.RolePatchRequest_builder{
 		Ref:         rstr.RoleRef_builder{Id: got.GetId()}.Build(),
 		Methods:     methods,

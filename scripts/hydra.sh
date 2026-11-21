@@ -60,6 +60,15 @@ trap down EXIT
 # been granting for an hour.
 echo "== from nothing"
 docker compose down -v >/dev/null 2>&1 || true
+# And the project's volumes by name, which `down -v` does not take when compose
+# did not label them. Two runs started in the same minute -- `compose.yaml`
+# fixes the project's name, so two checkouts are one project -- left three such
+# volumes behind, one of them carrying the file `customer.sh` reads as *already
+# seeded*: the next run skipped the seed and stopped at a person who was never
+# made. Nothing is said when there are none to remove.
+for v in postgres state witness account; do
+	docker volume rm "roster_${v}" >/dev/null 2>&1 || true
+done
 
 echo "== up"
 # `login` rather than the default set, because its dependencies are everything
@@ -96,9 +105,12 @@ docker compose up -d ${build} login >/dev/null
 echo "== who erin is, to roster"
 # As the operator `init` made, which a read at the box names on the access
 # record (#221).
+# `|| true`: a person who is not there is the command failing, and with
+# `errexit` and `pipefail` that ended the script on this line, before the
+# sentence below that says what is wrong.
 ids="$(docker compose exec -T -e "OPERATOR=${ROSTER_ROOT_USER:-admin}" roster sh -lc \
 	'roster --as "${OPERATOR}" holder get -o json "@${SEED_CUSTOMER:-contoso}/${SEED_USER:-erin}" 2>/dev/null' \
-	| sed -n 's/.*"id": "\([^"]*\)".*/\1/p')"
+	| sed -n 's/.*"id": "\([^"]*\)".*/\1/p' || true)"
 sub="${ids%%$'\n'*}"
 if [ -z "${sub}" ]; then
 	echo "the seeded person is not there; 'docker compose logs customer'" >&2

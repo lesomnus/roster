@@ -36,9 +36,9 @@
 // shipped.
 //
 // Beside that, and smaller: the generated `Watch` carries the whole row and
-// every change to it, because that is what a watch is; this carries three
-// columns and only when one of them moved, with a rename or a re-label
-// swallowed.
+// every change to it, because that is what a watch is; this carries four
+// columns -- three of the person's and their tenant's closing -- and only when
+// one of them moved, with a rename or a re-label swallowed.
 //
 // # How it knows what changed, without being told
 //
@@ -49,11 +49,11 @@
 // holder that comes with a new tenant -- under a third. A table of those names
 // is a table that is wrong the day somebody adds an RPC, and wrong silently.
 //
-// So it compares state. The three facts are columns; the stream keeps what it
+// So it compares state. The four facts are columns; the stream keeps what it
 // last sent for each person and can then say which of them moved. That is the
 // model the watch machinery is built on -- *a stream of state gets cheaper when
 // it falls behind, which a stream of deltas cannot* -- applied one level up:
-// what is kept is not the row but the three stamps on it.
+// what is kept is not the row but the four stamps.
 //
 // # And the first time it hears about somebody
 //
@@ -70,7 +70,7 @@
 // nicety: a suspension landing just after an app connects is the first thing
 // this stream hears about that person, and so was the one event it swallowed.
 //
-// What replaces it is narrower than "always send": somebody with all three
+// What replaces it is narrower than "always send": somebody with all four
 // stamps unset has had nothing happen to them, so no copy anybody holds can be
 // wrong, and there is nothing to say. That keeps a rename silent -- which is
 // the sentence the whole service is argued from -- and still carries the write
@@ -116,11 +116,11 @@
 // and a role, a binding or a membership changes -- none of them a column on the
 // person. So a write to one of those is read for who it reaches ([Reached]):
 // the person a binding or a membership names, everybody in the group a binding
-// names, everybody a role reaches by any of those, everybody in a group that
-// was erased. Each of them the caller may see is told, with their four facts as
-// they are and `SYNC_REASON_REACH`, once per batch and not at all when a fact
-// of theirs moved in it -- an event about them is already on its way, and an
-// app drops what it knew of somebody on any event.
+// names, everybody a role reaches by any of those, everybody in a group or on a
+// team that was erased. Each of them the caller may see is told, with their
+// four facts as they are and `SYNC_REASON_REACH`, once per batch and not at all
+// when a fact of theirs moved in it -- an event about them is already on its
+// way, and an app drops what it knew of somebody on any event.
 //
 // It compares nothing, unlike the four facts. Whether what a person reaches
 // really moved is the policy asked about everybody a role is bound to, at every
@@ -143,6 +143,7 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -164,10 +165,12 @@ import (
 // Service is `SyncService` over the server it is handed.
 //
 // The **walled** one, so what an app hears is narrowed exactly as a read is: a
-// deployment key hears every tenant and a credential resolving to a person
-// hears theirs. That is the whole of the narrowing and there is no field beside
-// it -- two answers to *what may this caller see* is the shape of the bug
-// rather than a convenience.
+// tenant's key hears its tenant; a deployment key hears every tenant, or the
+// one it names with `roster-at`; a grant made in a site hears the site's
+// people, and what reaches them from anywhere in the tenant ([Reaching]).
+// That is the whole of the narrowing and there is no field beside it -- two
+// answers to *what may this caller see* is the shape of the bug rather than a
+// convenience.
 //
 // `gone` is how somebody the wall hides is told apart from somebody erased
 // ([Erased]); nil hears no erasure of anybody this stream had not read before.
@@ -247,7 +250,7 @@ func deref(v *time.Time) time.Time {
 	return *v
 }
 
-// held is the three stamps, as this stream last sent them.
+// held is the four stamps, as this stream last sent them.
 //
 // `time.Time` and not the message, because what is compared is the instant and
 // keeping the message would keep a row this stream deliberately does not send.
@@ -291,7 +294,25 @@ type stamps struct {
 	closed      time.Time
 }
 
-func (s *server) Watch(_ *app.SyncWatchRequest, out grpc.ServerStreamingServer[app.SyncEvent]) error {
+// errCut is what a stream cut off by the broker ends with, in place of
+// `watch.ErrBehind`: the same code, and what is so of this stream. payday's
+// words are an entity's watch's, which begins again with everything that
+// matches now; this one begins with nothing, and a broker that lost its
+// connection cuts every stream that had nothing to do with falling behind.
+var errCut = status.Error(codes.ResourceExhausted,
+	"this stream was cut, because it fell behind or the deployment's broker lost its connection; "+
+		"changes may have been missed, and nothing is said again: open another, and ask about whoever you hold")
+
+func (s *server) Watch(req *app.SyncWatchRequest, out grpc.ServerStreamingServer[app.SyncEvent]) error {
+	err := s.watch(req, out)
+	if errors.Is(err, watch.ErrBehind) {
+		return errCut
+	}
+
+	return err
+}
+
+func (s *server) watch(_ *app.SyncWatchRequest, out grpc.ServerStreamingServer[app.SyncEvent]) error {
 	ctx := out.Context()
 	was := map[pdid.Id]held{}
 	// And each tenant's closing as this stream last saw it, which is what
@@ -308,7 +329,7 @@ func (s *server) Watch(_ *app.SyncWatchRequest, out grpc.ServerStreamingServer[a
 	// every holder this caller can see -- for a deployment key, every holder of
 	// every tenant -- which is the read the generated `Watch` refuses to do
 	// without filters, and this has none to give it.
-	return watch.Stream(ctx, s.w, written, nil,
+	return watch.Stream(ctx, s.w, written, func(watch.Seen) error { return out.SendHeader(nil) },
 		func(ks map[pdid.Id]string, _ watch.Seen) error {
 			// Whom this batch told anything, so that a person whose facts
 			// moved is not told a second time that what they may call might
@@ -326,7 +347,7 @@ func (s *server) Watch(_ *app.SyncWatchRequest, out grpc.ServerStreamingServer[a
 					err = s.one(ctx, told, was, k)
 				case pd.TenantDomain:
 					err = s.people(ctx, told, was, tenants, k)
-				case pd.BindingDomain, pd.RoleDomain, pd.GroupDomain, pd.GroupMembershipDomain, pd.TeamMembershipDomain:
+				case pd.BindingDomain, pd.RoleDomain, pd.GroupDomain, pd.TeamDomain, pd.GroupMembershipDomain, pd.TeamMembershipDomain:
 					if s.reached == nil {
 						continue
 					}
@@ -369,7 +390,7 @@ func (s sending) Send(v *app.SyncEvent) error {
 	return s.ServerStreamingServer.Send(v)
 }
 
-// one reads a person and sends the three facts, if any of them moved.
+// one reads a person and sends the four facts, if any of them moved.
 //
 // A read that answers `NotFound` is not an error here and is not silence
 // either: the wall narrows this exactly as it narrows any read, so a person in
@@ -666,15 +687,19 @@ func why(prior, now stamps, told bool) app.SyncReason {
 		return app.SyncReason_SYNC_REASON_SUSPENDED
 
 	case now.invalidated.After(prior.invalidated):
+		// A restore is heard here too. `forget.Restore` clears `date_erased`
+		// and stamps this in the one write, and puts the person on the
+		// stream as it does (#214, #279): what an app hears is that
+		// everything it holds for them from before is void, on an event with
+		// no erasure on it, which says they are back.
 		return app.SyncReason_SYNC_REASON_INVALIDATED
 
 	default:
 		// Something moved -- the caller checked -- and it was none of the
-		// three going forward. A stamp cleared or wound back is the only way
-		// here, which is a restore -- `forget.Restore` clearing `date_erased`,
-		// and putting the person on the stream as it does (#214) -- and no
-		// RPC. There is no word for it; the facts are on the event regardless,
-		// and say they are back.
+		// three going forward. A stamp cleared or wound back, and nothing
+		// else, is the only way here, which no RPC does and a restore no
+		// longer does. There is no word for it; the facts are on the event
+		// regardless.
 		return app.SyncReason_SYNC_REASON_UNSPECIFIED
 	}
 }

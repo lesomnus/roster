@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/payday/spin"
 
 	"github.com/lesomnus/roster/internal/ent"
+	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/session"
 	"github.com/lesomnus/roster/server/expire"
 )
@@ -47,14 +48,15 @@ const Swept = time.Hour
 // Not `date_idle`, and the difference is worth writing down because it looks
 // arbitrary.
 //
-// `Store.Put` resurrects on a miss: it looks for a live row with this secret,
-// and creates one when it finds none. That is right for what it is for -- the
-// idle clock being bumped -- and it means a row this sweep deletes can come
-// back if a request carrying that cookie is in flight. A row past
-// `date_expires` comes back **already expired**, so the next read refuses it
-// and the next pass collects it; a row past `date_idle` would come back with a
-// fresh half-window, which turns "collected" into "live" and is a thing not
-// worth having to reason about.
+// `Store.Put` makes a row for a secret that has never been one, which is a
+// cookie being minted -- and a row this sweep **deleted** has never been one
+// as far as the table can say. So a request in flight with that cookie, whose
+// idle clock is due, writes it back. A row past `date_expires` comes back
+// **already expired**, so the next read refuses it and the next pass collects
+// it; a row past `date_idle` would come back with a fresh half-window, which
+// turns "collected" into "live" and is a thing not worth having to reason
+// about. (A session that was *ended* is an erased row and is not written
+// again: `Put` says why.)
 //
 // A revoked session is left until its own clock runs out, exactly as
 // `keys.Sweep` leaves a revoked delegation, and for the reason written there.
@@ -95,13 +97,34 @@ func Sweep(db *ent.Client, cs audit.Contents, every time.Duration) spin.Func {
 }
 
 // Collect is one pass of [Sweep], and answers with how many it removed. Each
-// is on the trail as [Expired], with `cs` what the recorder is handed.
+// is on the trail as [Expired], under the tenant of whoever it was of, with
+// `cs` what the recorder is handed.
 func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error) {
 	now := time.Now()
 
 	return expire.Rows(ctx, db, cs, Expired,
-		func(ctx context.Context, db *ent.Client) ([]uuid.UUID, error) {
-			return db.Session.Query().Where(session.DateExpiresLT(now)).Limit(audit.RowsPage).Ids(ctx)
+		// Which are due, and whose each is while it can still be asked: the
+		// line that says it went is filed under the tenant of whoever it was
+		// of (`expire.Rows`).
+		func(ctx context.Context, db *ent.Client) ([]expire.Row, error) {
+			vs, err := db.Session.Query().
+				Where(session.DateExpiresLT(now)).
+				WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldTenantId) }).
+				Limit(audit.RowsPage).
+				All(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			rows := make([]expire.Row, len(vs))
+			for i, v := range vs {
+				rows[i] = expire.Row{Id: v.Id}
+				if h := v.Edges.Holder; h != nil {
+					rows[i].Tenant = h.TenantId
+				}
+			}
+
+			return rows, nil
 		},
 		func(ctx context.Context, db *ent.Client, ids []uuid.UUID) (int, error) {
 			return db.Session.Delete().Where(session.IdIn(ids...)).Exec(ctx)

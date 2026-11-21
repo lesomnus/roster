@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -52,6 +53,16 @@ const HeaderAt = front.HeaderAt
 // which holder a name borrows.
 //
 // The tenant comes back on the holder, selected, because both callers need it.
+//
+// # Nobody, for a holder who may not call
+//
+// Suspended, erased, or of a tenant that is closed: [signable], which is what a
+// key's own holder is asked. A tenant that suspends who an app is has turned
+// the app off there, and the resolver said so for the key as itself. [Acting]
+// does not resolve to this holder -- it answers as the person a delegation
+// names -- so nothing on that path asked, and an app turned off in a tenant
+// went on acting as everybody whose delegation it held (#276). Asked here, it
+// is asked for both readers.
 func Nominated(ctx context.Context, tenant app.Server, at string, borrower []byte) (*app.Holder, error) {
 	if tenant == nil || at == "" || len(borrower) == 0 {
 		return nil, nil
@@ -71,7 +82,8 @@ func Nominated(ctx context.Context, tenant app.Server, at string, borrower []byt
 		}.Build(),
 		Select: app.NominationSelect_builder{
 			ActsAs: app.HolderSelect_builder{
-				Tenant: app.TenantSelect_builder{}.Build(),
+				Tenant:       app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
+				DateDisabled: z.Ptr(true),
 			}.Build(),
 		}.Build(),
 	}.Build())
@@ -86,7 +98,7 @@ func Nominated(ctx context.Context, tenant app.Server, at string, borrower []byt
 	}
 
 	h := n.GetActsAs()
-	if h == nil || len(h.GetId()) == 0 {
+	if h == nil || len(h.GetId()) == 0 || signable(h) != nil {
 		return nil, nil
 	}
 
@@ -128,6 +140,46 @@ func tenantAt(ctx context.Context, tenant app.Server, at string) ([]byte, error)
 	}
 
 	return v.GetTenant().GetId(), nil
+}
+
+// one is what a header says when it says one thing: its value, and false for a
+// header with two values or with one that is blank.
+func one(vs []string) (string, bool) {
+	if len(vs) != 1 {
+		return "", false
+	}
+
+	v := strings.TrimSpace(vs[0])
+
+	return v, v != ""
+}
+
+// bearerOf is the key a request carries in `authorization`, and whether it
+// carries at most one. None is `("", true)`.
+//
+// # Why two is refused rather than one of them chosen
+//
+// Three things read this header -- `auth.Bearer`, which takes the first value;
+// [At] and [Acting], which took the last; and [Authenticated], which took the
+// first that was a tenant's. A request with two keys in it was therefore two
+// callers at once: authenticated as one and, where a rule asks when somebody
+// signed in, vouched for by the other (#276). Nothing sends two, so nothing is
+// lost by reading a request that does as carrying neither.
+func bearerOf(md metadata.MD) (string, bool) {
+	token, n := "", 0
+	for _, v := range md.Get(auth.Header) {
+		rest, ok := strings.CutPrefix(v, auth.BearerScheme+" ")
+		if !ok {
+			continue
+		}
+
+		token, n = strings.TrimSpace(rest), n+1
+	}
+	if n > 1 || (n == 1 && token == "") {
+		return "", false
+	}
+
+	return token, true
 }
 
 // ArrivedAt is the name a request declares, normalised, and whether what it
@@ -228,13 +280,8 @@ func At(deployment app.Server, tenant app.Server) auth.Handler {
 			return no()
 		}
 
-		token := ""
-		for _, v := range md.Get(auth.Header) {
-			if rest, ok := strings.CutPrefix(v, auth.BearerScheme+" "); ok && rest != "" {
-				token = rest
-			}
-		}
-		if !strings.HasPrefix(token, PrefixDeployment) {
+		token, ok := bearerOf(md)
+		if !ok || !strings.HasPrefix(token, PrefixDeployment) {
 			return no()
 		}
 		k, err := findKey(ctx, deployment, token)

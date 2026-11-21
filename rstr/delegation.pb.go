@@ -322,6 +322,8 @@ type Delegation_builder struct {
 	// Empty allows **nothing**, which is `frame.Grant`'s zero for actions. A
 	// delegation minted with no methods authenticates and is then refused
 	// everywhere, which reads as a permissions problem and is a minting one.
+	//
+	// Not personal: what the delegation allows, which names no one.
 	Methods []string
 	// The verifier, never the token, and also how the row is found -- the same
 	// pair of jobs `ApiKey.secret` does, for the same reasons: 256 bits from
@@ -347,6 +349,8 @@ type Delegation_builder struct {
 	// an unresolved caller -- `subtle.ConstantTimeCompare` answers 1 for two
 	// empty slices -- so "bound to nobody" and "bound to whoever forgot to say"
 	// would be one thing. Whatever mints one refuses an empty issuer instead.
+	//
+	// Not personal: a key's identifier, as bytes.
 	Issuer []byte
 	// When it stops working, and there is no such thing as one that does not.
 	//
@@ -411,15 +415,15 @@ var File_app_delegation_proto protoreflect.FileDescriptor
 
 const file_app_delegation_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/delegation.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xb3\x05\n" +
+	"\x14app/delegation.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xbf\x05\n" +
 	"\n" +
 	"Delegation\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12 \n" +
-	"\amethods\x18\b \x03(\tB\x06\xea\x82\x16\x02@\x01R\amethods\x12&\n" +
-	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12\x1e\n" +
+	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12&\n" +
+	"\amethods\x18\b \x03(\tB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\amethods\x12&\n" +
+	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12$\n" +
 	"\x06issuer\x18\n" +
-	" \x01(\fB\x06\xea\x82\x16\x02@\x01R\x06issuer\x12G\n" +
+	" \x01(\fB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\x06issuer\x12G\n" +
 	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpires\x12Y\n" +
 	"\x12date_authenticated\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x0e\xea\x82\x16\x048\x01@\x01\xaa\xc1\x16\x02\x10\x01R\x11dateAuthenticated\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +

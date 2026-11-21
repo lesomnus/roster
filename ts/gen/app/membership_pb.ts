@@ -116,9 +116,14 @@ export const SiteMembershipSchema: GenMessage<SiteMembership> = /*@__PURE__*/
  * The gate is outermost and never sees which team a call is about, so
  * `policy.of` unions the methods of a role held in a team into what somebody
  * may **ever** call, and `server/core` refuses the wrong team per call. Which
- * means attaching a role here hands out its methods, and `Add` and `Patch` are
- * both refused when they name one the caller does not hold -- at the team's
- * site, which is the scope a team sits in. `server/core/escalate.go`.
+ * means attaching a role here hands out its methods, and `Add` is refused when
+ * it names one the caller does not hold -- at the team's site, which is the
+ * scope a team sits in. `server/core/escalate.go`.
+ *
+ * `Patch` is held to the same, and no port serves it (`cmd/serve.go`): it is
+ * how the servers write and what a shell at the box reaches. So over the wire
+ * the role on a place that is there is not changed. The place is taken away
+ * and added again, carrying the other role or none.
  *
  * The design derives roles from team membership **within a site**: the same
  * person is an operator in Seoul and a reader in Frankfurt, and a role that
@@ -148,14 +153,15 @@ export type TeamMembership = Message<"roster.TeamMembership"> & {
   team?: Team | undefined;
 
   /**
-   * What being on it means. A string rather than an enum for the reason
-   * `Identity.provider` is one: the set is a deployment's to choose.
    * What they may do in it, and empty is a plain member.
    *
    * An edge and not the string it used to be. A string is a role nothing reads
    * -- which is what it was -- and the thing that reads one has to know what it
    * allows. Where the reference sits is the scope: on this row it is that team,
    * and on a [Binding] it is a site or the whole tenant.
+   *
+   * Said when the place is made, and not changed over the wire on a place
+   * that is there: see the message's own comment.
    *
    * @generated from field: roster.Role role = 9;
    */
@@ -239,6 +245,10 @@ export type GroupMembership = Message<"roster.GroupMembership"> & {
    * Attaching one is appointing a manager, and is held to what the appointer
    * holds through a binding: a manager may put people in and may not make
    * another manager.
+   *
+   * Said when the place is made. Over the wire it is not changed on a place
+   * that is there, since no port serves a general write: a manager is
+   * appointed, or stood down, by taking their place away and adding it again.
    *
    * @generated from field: roster.Role role = 9;
    */

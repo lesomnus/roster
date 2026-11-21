@@ -52,6 +52,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -149,6 +150,41 @@ type Config struct {
 	// for an app whose session is somebody at its own page, and wrong for one
 	// whose session is read later by a flow nobody is watching.
 	Lifetime time.Duration
+
+	// For is what a sign-in made here is for, read from the request that
+	// finishes it -- the first form, or the second -- and kept with the session
+	// that request mints ([SignIn.For]).
+	//
+	// For an app whose sign-in is a step of something else. The Login App's
+	// answers one of Hydra's challenges, and a session a form minted for one
+	// challenge is not one to answer another with: a sealed cookie opens until
+	// its own clock runs out, so without this the last sign-in a browser made
+	// answered every flow raised after it. This package gives the answer no
+	// meaning and compares it with nothing. It is the app's to read back and to
+	// hold a request to, and the app's to keep small: it rides under the
+	// session, which may be the cookie.
+	//
+	// Left nil by an app whose sign-in is for its own pages, the account app,
+	// and then nothing is kept. A sign-in on a provider's word or a link's
+	// ([Door.Accept], [Door.Redeem]) is not asked either: the app finishing one
+	// is already where it was for.
+	For func(r *http.Request) string
+
+	// In is the context a call about a session is made in: the one handed
+	// over, narrowed to the tenant the session is of.
+	//
+	// For an app whose one credential is narrowed call by call, to a tenant it
+	// says each time -- the Login App's deployment key, with `roster-at`. What
+	// such an app does while somebody signs in is narrowed by the request they
+	// are signing in at. Ending a session is not always asked from inside one:
+	// a sign-out that arrives through an issuer names a subject and no tenant,
+	// so the revocation went out unnarrowed, was refused, and the delegation
+	// outlived the cookie it had been ended with (#278). A session says which
+	// tenant it is of, so [Door.End] asks this with that, whoever called it.
+	//
+	// Left nil by an app whose requests are already in a tenant -- the account
+	// app, where the host is -- and then the context is used as handed over.
+	In func(ctx context.Context, tenant pdid.Id) context.Context
 }
 
 // HalfLife is how long a half-signed-in browser has, when nothing says
@@ -193,6 +229,46 @@ func New(c Config) (*Door, error) {
 	return &Door{c: c}, nil
 }
 
+// Guard holds a front door's own routes to two things a browser says of a
+// request, and is what an app wraps its whole mux in.
+//
+// # No request from another origin changes anything
+//
+// [Door.Proxy] asks for a header a form cannot set, and that is what stops
+// another site there. The routes an app writes by hand asked for nothing, and
+// `SameSite=Lax` on the cookie was the whole of it -- which is about another
+// **site**. Another host of the same registrable domain is the same site: the
+// organisation's blog, a second app of the tenant's. Its form's POST carries
+// the cookie, and a body is read here whatever its content type. So a form
+// there approved a terminal's code as whoever was signed in, and the terminal
+// was handed their key; and `POST /session`, which needs no cookie, signed a
+// browser in as somebody of any site's choosing (#277).
+//
+// What a browser says is `Sec-Fetch-Site`, and before 2023 `Origin`; a method
+// that only reads is not asked, and a request that says neither is not a
+// browser's -- a terminal, an app -- and is let through, as it has no cookie
+// to be carried along with (`net/http.CrossOriginProtection`, which is all of
+// that rule).
+//
+// # And no page of it is drawn inside another's
+//
+// A page with one button on it -- *approve*, *delete my account* -- drawn
+// invisibly inside somebody else's is that button pressed by a click meant for
+// something else.
+func Guard(next http.Handler) http.Handler {
+	origin := http.NewCrossOriginProtection()
+	origin.SetDenyHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "this is asked by this site's own page, and by no other", http.StatusForbidden)
+	}))
+
+	return origin.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Content-Security-Policy", "frame-ancestors 'none'")
+
+		next.ServeHTTP(w, r)
+	}))
+}
+
 // Handler is `POST /session`, `POST /session/continue` and `DELETE /session`.
 //
 // Mounted on the app's mux, beside the app's own pages. It is a handler and not
@@ -232,6 +308,38 @@ func (d *Door) Who(ctx context.Context, r *http.Request) (pdid.Id, bool) {
 	who, _, ok := d.whole(ctx, r)
 
 	return who, ok
+}
+
+// A SignIn is a finished sign-in this browser still holds, as the app that made
+// it reads it back: who signed in, at which tenant, and what the sign-in was
+// for where the app said ([Config.For]) -- empty where it did not, and for a
+// sign-in on a provider's word or a link's.
+type SignIn struct {
+	Who    pdid.Id
+	Tenant pdid.Id
+	For    string
+}
+
+// SignedIn is [Door.Who] with the rest of what the session says of itself, for
+// an app that answers for a sign-in rather than drawing a name: the Login App
+// tells Hydra who signed in, and has to know the sign-in is the one this
+// request is about.
+//
+// It reads the session and not the delegation, as [Door.Who] does. Whether the
+// sign-in still stands is roster's to say, and an app that is about to act on
+// one asks: a call made with [Door.Acting] is refused for a delegation that has
+// ended, and nothing in a cookie is.
+func (d *Door) SignedIn(ctx context.Context, r *http.Request) (SignIn, bool) {
+	v, who, _, ok := d.held(ctx, r)
+	if !ok {
+		return SignIn{}, false
+	}
+	tenant, err := pdid.Parse(v.TenantId)
+	if err != nil {
+		return SignIn{}, false
+	}
+
+	return SignIn{Who: who, Tenant: tenant, For: v.Held[heldFor]}, true
 }
 
 // whole is the signed-in session this request carries -- who, and the
@@ -496,6 +604,10 @@ func (d *Door) SignOut(w http.ResponseWriter, r *http.Request) {
 // flow is over and Hydra holds what the browser came for -- and a handler that
 // wrote 204 on the way there would win the response. Whatever writes the
 // cookie, what happens to the delegation is the same and is here.
+//
+// And whoever calls it, the revocation is made in the tenant the **session**
+// is of, where the app says how ([Config.In]): what the caller's request was
+// about is not asked.
 func (d *Door) End(ctx context.Context, r *http.Request) *http.Cookie {
 	key := d.keyOf(r)
 
@@ -504,10 +616,21 @@ func (d *Door) End(ctx context.Context, r *http.Request) *http.Cookie {
 	// table until its own clock runs out, and the sign-out is the last thing
 	// that will ever hold a reference to it.
 	if v, err := d.c.Sessions.Take(ctx, key); err == nil && v.Held[heldToken] != "" {
+		as := ctx
+		if tenant, err := pdid.Parse(v.TenantId); err == nil && d.c.In != nil {
+			as = d.c.In(ctx, tenant)
+		}
+
 		// Best effort, and after the local drop. A roster that cannot be
 		// reached must not stop somebody signing out of this app; what is lost
 		// is a row that expires on its own.
-		_, _ = d.c.Delegation.Revoke(ctx, rstr.DelegationRevokeRequest_builder{Token: v.Held[heldToken]}.Build())
+		//
+		// Lost, and said. It was dropped without a word, and a revocation that
+		// roster **refused** every time looked exactly like one that worked.
+		if _, err := d.c.Delegation.Revoke(as, rstr.DelegationRevokeRequest_builder{Token: v.Held[heldToken]}.Build()); err != nil {
+			slog.WarnContext(ctx, "frontdoor: a session was ended and its delegation was not revoked; it lives until its own clock runs out",
+				"holder", v.Id, "tenant", v.TenantId, "err", err)
+		}
 	}
 
 	return d.c.Sessions.End(ctx, key)
@@ -591,7 +714,7 @@ func (d *Door) answer(w http.ResponseWriter, r *http.Request, res *rstr.VouchDel
 		// outlived its delegation would be somebody signed in to a page that
 		// cannot be drawn.
 		Expires: res.GetDateExpires().AsTime(),
-		Held:    map[string]string{heldToken: res.GetToken()},
+		Held:    d.holds(r, res.GetToken()),
 	})
 	if err != nil {
 		http.Error(w, "cannot sign in", http.StatusInternalServerError)
@@ -600,6 +723,23 @@ func (d *Door) answer(w http.ResponseWriter, r *http.Request, res *rstr.VouchDel
 
 	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// holds is what a session a form finished keeps beside who it is: the
+// delegation, and what the sign-in was for where the app says ([Config.For]).
+//
+// Asked of the request that finished the sign-in, so of the second form where
+// there is one: that is the request the delegation came back on, and the
+// half-session before it names nobody yet.
+func (d *Door) holds(r *http.Request, token string) map[string]string {
+	held := map[string]string{heldToken: token}
+	if d.c.For != nil {
+		if v := d.c.For(r); v != "" {
+			held[heldFor] = v
+		}
+	}
+
+	return held
 }
 
 // Accept signs somebody in on a claim this app has already checked, and holds
@@ -752,9 +892,14 @@ func (d *Door) accept(ctx context.Context, w http.ResponseWriter, c Claim, at st
 // at all when the store is the cookie (`authsession.Sealed`), which is how the
 // account app runs. What that changes is said where it is paid: the second
 // form and the sign-out.
+//
+// And beside a delegation, where the app said ([Config.For]): what the sign-in
+// that earned it was for. Not about the person either -- it is about the
+// sign-in, and is the app's own word handed back to it.
 const (
 	heldToken        = "token"
 	heldContinuation = "continuation"
+	heldFor          = "for"
 )
 
 func ids(holder, tenant []byte) (pdid.Id, pdid.Id, error) {
@@ -773,18 +918,25 @@ func ids(holder, tenant []byte) (pdid.Id, pdid.Id, error) {
 
 // factor is one second factor a page may offer, with what the page needs to
 // offer it: for a security key, the credential identifier the browser has to
-// be told to look for. `available` keeps the kinds alone, for the pages that
-// read only that.
+// be told to look for, and the challenge the key is to sign. `available` keeps
+// the kinds alone, for the pages that read only that.
+//
+// The challenge is roster's, and is this attempt's (`vouch.ChallengeOf`). A
+// page made one up, and this passed on whatever came back: an assertion was
+// checked against the challenge written beside it, so one that had been seen
+// once answered again (#275). It is handed to the page and is not the
+// continuation, which stays here.
 type factor struct {
-	Kind string `json:"kind"`
-	Name string `json:"name"`
-	Id   string `json:"id,omitempty"`
+	Kind      string `json:"kind"`
+	Name      string `json:"name"`
+	Id        string `json:"id,omitempty"`
+	Challenge string `json:"challenge,omitempty"`
 }
 
 func factorsOf(vs []*rstr.VouchFactor) []factor {
 	out := make([]factor, 0, len(vs))
 	for _, v := range vs {
-		out = append(out, factor{Kind: v.GetKind(), Name: v.GetName(), Id: v.GetCredentialId()})
+		out = append(out, factor{Kind: v.GetKind(), Name: v.GetName(), Id: v.GetCredentialId(), Challenge: v.GetChallenge()})
 	}
 
 	return out

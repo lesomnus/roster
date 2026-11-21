@@ -64,10 +64,11 @@ narrowing every read (`server/keys/at.go`). Nothing about the frame is the
 key's own -- its `methods` are not consulted on a narrowed call.
 
 What the key's `methods` are for is the call that **does not** name a tenant,
-across all of them, as the key. The Login App has three (`WhoseHost`,
-`TenantService/Get`, `SyncService/Watch`), because it has to work out whose
-flow a challenge is before it can narrow. A product that always knows which
-tenant a request is about has none, and is minted with nothing on it:
+across all of them, as the key. The Login App has two: `WhoseHost`, because it
+has to work out whose flow a challenge is before it can narrow, and
+`SyncService/Watch`, one stream that hears every tenant's sign-outs. A product
+that always knows which tenant a request is about has none, and is minted with
+nothing on it:
 
 ```sh
 roster control key add --narrowed loft
@@ -111,7 +112,8 @@ the tenant usually cannot do itself: nominating the app's holder needs the
 app's methods. `roster app uninstall --tenant acme loft` ends the nomination,
 and the tenant administrator can do the same from the user console's *apps*
 tab. The Login App and the account app do this for themselves at start, in
-every tenant with a name -- so for them ending it lasts until the next start.
+every tenant with a name that is not being destroyed -- so for them ending it
+lasts until the next start.
 
 **Roster's own front doors are declared.** The Login App and the account app
 write their rows in every tenant at start -- the holder, its role, the binding
@@ -202,6 +204,11 @@ noticing. Nor about which group or team somebody is in: a membership nothing is
 bound to is guarded by nothing ([usage/permissions.md](usage/permissions.md) §
 *Membership is not a permission*).
 
+A key's own `methods` are not part of that: `Reaches` answers for the person,
+so a call that came with a key whose list is narrower than its holder's is the
+app's to hold to that list, as `Introspect` answers it, and `reach` says yes
+wherever the holder may.
+
 **Somebody has to hold an app's methods before they can grant them.** A tenant's
 first administrator is bound `/roster.*/*`, which covers none of an app's own
 methods, and nobody hands out what they do not hold. So a roster operator, on the
@@ -221,14 +228,16 @@ connection, and the same `As` saying who the app is in the tenant:
 ```go
 reaches, err := reach.New(reach.Config{Conn: conn, As: as})
 
-// In the app's gate -- payday's gate.Policy.May -- for every call:
+// In the app's gate -- payday's gate.Policy.May -- for every call, where an
+// error is the caller's answer: PermissionDenied for a method denied,
+// Unavailable for a roster that could not be asked, in the package's words.
 err = reaches.May(ctx, call.Actor, call.Action)
 
 // And inside a method, for a permission finer than it:
 err = reaches.May(ctx, call.Actor, "/loft.Permission/BookForOthers")
 
-// In every process, as standing's follower is:
-s.Spin = append(s.Spin, spin.InEveryProcess(reaches.Follower("loft.roster-reach")))
+// Marked to run in every process, as standing's follower is:
+s.Spin = append(s.Spin, reaches.Follower("loft.roster-reach"))
 ```
 
 - **`Holders.May` is `Reaches` and `frame.Covers`**, read from `everywhere`:
@@ -244,13 +253,25 @@ s.Spin = append(s.Spin, spin.InEveryProcess(reaches.Follower("loft.roster-reach"
   which has no stream.
 - **Dropped when roster says so.** roster's stream says when what somebody may
   call may have changed -- a role, a binding or a membership that reaches them
-  was written, `SYNC_REASON_REACH` (`proto/app/sync.proto`) -- and the follower
+  was written, or a group or a team they are in was erased,
+  `SYNC_REASON_REACH` (`proto/app/sync.proto`) -- and the follower
   drops what is kept of anybody it hears of, a suspension or an erasure as
   much as a role. `standing`'s follower passes those events by, so an app
   running both holds two streams, one each.
 - **A roster that cannot be asked is a refusal**: `reach.ErrUnreachable`,
   which is `standing`'s own, so an app tells its caller *this is not your
-  doing* the same way whichever asked. A method roster does not say they may
+  doing* the same way whichever asked. So is one that does not answer within
+  `standing.HeldWait`, five seconds, and an `As` that failed, whose error is
+  beside it; `ReachOf`, `Reach` and `May` all say it.
+- **What it answers may be handed to the caller as it is.** Each error is
+  itself a gRPC status of the package's: `ErrDenied`, and nobody there, is
+  `PermissionDenied`; `ErrUnreachable` is `Unavailable`; a call that ended is
+  what gRPC says of its context; `ReachOf` of nobody is `NotFound`. Its message
+  is the package's sentence and nothing else -- not roster's refusal, not the
+  method, not where roster is dialed -- while `err.Error()` says everything for
+  the app's log, and `errors.Is` still finds the values and the app's own error
+  from `As` (`TestWhatIsAnsweredCanBeHandedToACaller`). An app that wraps the
+  error before it returns it has chosen its own words. A method roster does not say they may
   call is `reach.ErrDenied`; so is anybody roster has nobody by, and anybody
   suspended, who reaches nothing.
 - **What its role holds**: `reach.Methods`, which is `HolderService/Reaches`
@@ -552,6 +573,7 @@ no app sweeps a ledger it shares.
 | `server/sync/reach.go` | who a write to a role, a binding or a membership reaches, for the stream |
 | `proto/ext/app/role_svc.ext.proto`, `server/core/widen.go` | `Role.Widen`: what an app adds to the roles it ships, and the rule it is held to |
 | `server/core/narrow.go` | `Role.Narrow`: what a tenant takes out of a role, what it may take, and the administrator it may not |
+| `server/core/handsover.go` | `Role.HandsOver`: which of a list of methods hand over more than they read as, for an app's own page that binds a role |
 | `proto/app/consent.proto`, `server/core/consent.go` | an app's ledger of consent, and why every act is a row |
 | `account/account.go`, `ldap/ldap.go` | two consumers in the A shape |
 | `ts/lib/tenant/apps.tsx` | the *apps* tab, in both consoles |

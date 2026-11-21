@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -103,8 +104,10 @@ func mayList(t *testing.T, ctx context.Context, b *keyedBuilt, who pdid.Id, meth
 	x := require.New(t)
 
 	role, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
-		Alias:   "reader-" + method[len(method)-4:],
+		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+		// In small letters, as an alias is written: the end of a method's name
+		// has a capital in it.
+		Alias:   "reader-" + strings.ToLower(method[len(method)-4:]),
 		Methods: []string{method},
 	}.Build())
 	x.NoError(err)

@@ -12,7 +12,6 @@ import (
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/pdcmd"
 	"github.com/lesomnus/payday/pdid"
@@ -174,7 +173,10 @@ func newCmdMeIssueKey(c *cmd.Config) *xli.Command {
 			}
 
 			allow, _ := flg.Find[[]string](cl, "allow")
-			methods := cmd.SplitMethods(allow)
+			methods, err := cmd.MethodsOf("--allow", allow)
+			if err != nil {
+				return err
+			}
 			if len(methods) == 0 {
 				return errors.New("--allow: a key that allows nothing is not a key; name the methods")
 			}
@@ -185,13 +187,12 @@ func newCmdMeIssueKey(c *cmd.Config) *xli.Command {
 			}
 
 			req := app.ApiKeyIssueRequest_builder{Holder: own, Alias: name, Methods: methods}
-			if v, _ := flg.Find[string](cl, "expires"); v != "" {
-				d, err := time.ParseDuration(v)
-				if err != nil {
-					return fmt.Errorf("--expires: %w", err)
-				}
-
-				req.DateExpires = timestamppb.New(time.Now().Add(d))
+			expires, err := expiresOf(cl)
+			if err != nil {
+				return err
+			}
+			if expires != nil {
+				req.DateExpires = expires
 			}
 
 			v, err := app.NewApiKeyServiceClient(conn).Issue(ctx, req.Build())
@@ -205,7 +206,7 @@ func newCmdMeIssueKey(c *cmd.Config) *xli.Command {
 				"key %q, allowing %d method(s). This is the only time it is shown.\n",
 				name, len(methods))
 
-			if w := cmd.Widest(methods); w != "" {
+			if w := cmd.Widest(v.GetToken(), methods); w != "" {
 				fmt.Fprintf(os.Stderr, "\n%s\n", w)
 			}
 
@@ -220,7 +221,7 @@ func newCmdMeRevokeKey(c *cmd.Config) *xli.Command {
 		Brief: "stop one of your keys, now",
 
 		Args: arg.Args{
-			&arg.String{Name: "Id", Brief: "the key, as `me get` prints it"},
+			&arg.String{Name: "KEY", Brief: "the key, as `me get` prints it"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -229,14 +230,14 @@ func newCmdMeRevokeKey(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			v, ok := arg.Get[string](cl, "Id")
+			v, ok := arg.Get[string](cl, "KEY")
 			if !ok || v == "" {
-				return errors.New("Id: which key")
+				return errors.New("KEY: which key")
 			}
 
 			k, err := pdid.Parse(v)
 			if err != nil {
-				return fmt.Errorf("Id: %w", err)
+				return fmt.Errorf("KEY: %w", err)
 			}
 
 			// `ApiKey.Erase` by identifier: the layer reads the row through the
@@ -304,7 +305,7 @@ func newCmdMeUnlink(c *cmd.Config) *xli.Command {
 		Brief: "take back a provider account of yours",
 
 		Args: arg.Args{
-			&arg.String{Name: "Id", Brief: "the identity, as `me get` prints it"},
+			&arg.String{Name: "IDENTITY", Brief: "the identity, as `me get` prints it"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -313,14 +314,14 @@ func newCmdMeUnlink(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			v, ok := arg.Get[string](cl, "Id")
+			v, ok := arg.Get[string](cl, "IDENTITY")
 			if !ok || v == "" {
-				return errors.New("Id: which identity")
+				return errors.New("IDENTITY: which identity")
 			}
 
 			k, err := pdid.Parse(v)
 			if err != nil {
-				return fmt.Errorf("Id: %w", err)
+				return fmt.Errorf("IDENTITY: %w", err)
 			}
 
 			_, err = app.NewMeServiceClient(conn).Unlink(ctx,
@@ -411,16 +412,41 @@ func newCmdMeLeave(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			cl.Printf("your account is erased (%s): you cannot sign in anywhere it reached.\n",
-				v.GetDateErased().AsTime().Format(time.RFC3339))
+			var forgotten time.Time
 			if f := v.GetDateForgotten(); f != nil {
-				cl.Printf("until %s whoever runs this deployment can restore it; then it is forgotten.\n",
-					f.AsTime().Format(time.RFC3339))
-			} else {
-				cl.Printf("whoever runs this deployment can restore it until they forget it.\n")
+				forgotten = f.AsTime()
+			}
+			for _, line := range leftSaying(v.GetDateErased().AsTime(), forgotten) {
+				cl.Printf("%s\n", line)
 			}
 
 			return nil
 		}),
 	}
+}
+
+// leftSaying is what `roster me leave` prints once the account is erased:
+// that it is, and what happens to it next. `forgotten` is the moment the grace
+// runs out, and the zero time where the deployment names none.
+//
+// It printed *until <time> ... then it is forgotten*, which is the account
+// page's sentence at a shell and wrong the same way (`account.leftSaying`,
+// #280): the moment is when the grace runs out and the forget is the first
+// pass after it, a restore works until that pass, a hold puts it off, and
+// what was consented to and the two records are kept. So it says *from*, and
+// what is kept, in the words whoever runs the deployment configures them by.
+func leftSaying(erased, forgotten time.Time) []string {
+	out := []string{fmt.Sprintf("your account is erased (%s): you cannot sign in anywhere it reached.", erased.Format(time.RFC3339))}
+
+	if !forgotten.IsZero() {
+		out = append(out, fmt.Sprintf("from %s it is forgotten, at the first pass after that (`holder.every`, a day unless the deployment says): "+
+			"until that pass whoever runs this deployment can restore it, and a legal hold on your tenant puts it off for as long as it lasts.",
+			forgotten.Format(time.RFC3339)))
+	} else {
+		out = append(out, "nothing forgets it on a clock here (`holder.forget_after` names no window): "+
+			"whoever runs this deployment can restore it until they forget it, and a legal hold on your tenant puts that off for as long as it lasts.")
+	}
+
+	return append(out, "kept past that: what you consented to, for `consent.keep` (for good unless the deployment says); "+
+		"and the trail and the access record, which say your identifier and nothing you were called, each for its own window.")
 }

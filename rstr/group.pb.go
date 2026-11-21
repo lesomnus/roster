@@ -280,7 +280,11 @@ type Group_builder struct {
 	//
 	// Read *a group in a site* as **whose group this is**, never as *whose people
 	// these are*.
-	Site  *Site
+	Site *Site
+	// Not personal, these three and the labels: a group is the tenant's own,
+	// and what it is called and said to be is the record of who named it what.
+	// Nobody is written into them, as into a tenant's (`tenant.proto`): a group
+	// named after a person keeps that name on the trail, where no forget reaches.
 	Alias string
 	Name  string
 	Desc  string
@@ -496,6 +500,8 @@ type GroupExposure_builder struct {
 	// The client, as the issuer names it: what a token's `azp` and an ID
 	// token's `aud` say. A string because the client is the issuer's row and not
 	// roster's.
+	//
+	// Not personal: an app's name for itself.
 	Client      string
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
@@ -519,15 +525,15 @@ var File_app_group_proto protoreflect.FileDescriptor
 
 const file_app_group_proto_rawDesc = "" +
 	"\n" +
-	"\x0fapp/group.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x0eapp/site.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xa1\x05\n" +
+	"\x0fapp/group.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x0eapp/site.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xc1\x05\n" +
 	"\x05Group\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12*\n" +
-	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x12\x14\n" +
-	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x12\n" +
-	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\x121\n" +
-	"\x06labels\x18\a \x03(\v2\x19.roster.Group.LabelsEntryR\x06labels\x12F\n" +
+	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x12\x1c\n" +
+	"\x05alias\x18\x04 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x05alias\x12\x1a\n" +
+	"\x04name\x18\x05 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04name\x12\x1a\n" +
+	"\x04desc\x18\x06 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04desc\x129\n" +
+	"\x06labels\x18\a \x03(\v2\x19.roster.Group.LabelsEntryB\x06\xaa\xc1\x16\x02\x18\x00R\x06labels\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -550,11 +556,11 @@ const file_app_group_proto_rawDesc = "" +
 	"\x02id\x10\x01\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
 	"\x06tenant\x1a\x06\n" +
-	"\x04site \x14(d\"\xec\x03\n" +
+	"\x04site \x14(d\"\xf2\x03\n" +
 	"\rGroupExposure\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12+\n" +
-	"\x05group\x18\x02 \x01(\v2\r.roster.GroupB\x06\xf2\x82\x16\x02@\x01R\x05group\x12\x1e\n" +
-	"\x06client\x18\b \x01(\tB\x06\xea\x82\x16\x02@\x01R\x06client\x12F\n" +
+	"\x05group\x18\x02 \x01(\v2\r.roster.GroupB\x06\xf2\x82\x16\x02@\x01R\x05group\x12$\n" +
+	"\x06client\x18\b \x01(\tB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\x06client\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +

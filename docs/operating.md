@@ -11,6 +11,29 @@ this page names the ones a decision hangs on, not all of them:
 (`audit.checkpoints.key` is `ROSTER_AUDIT_CHECKPOINTS_KEY`), and a key the file
 names that nothing reads is refused at start, by name.
 
+A duration or a count less than none is refused at start too, by its key: each
+would be read as if it were not written. Nought is what each key's own
+description says it is. The one left is `server.timeout` (and `control.timeout`,
+`admin.timeout`), how long a call that came with no deadline of its own is
+given: thirty seconds unsaid, and less than none is **no deadline at all**.
+
+**The environment beside the file.** A variable beats the file, and one set
+empty clears what the file says (`ROSTER_SERVER_HTTP_ADDR=` opens no `http`
+listener whatever the file names). A key the file names that nothing reads is
+refused, but a `ROSTER_` variable that names no key is said on standard error --
+*… is set and nothing reads it*, a misspelt one among them -- and the process goes on, so read
+that line where a setting seems not to take. The file may also name a variable
+itself, `${env:NAME}`, in any key. `server.addr` unsaid is `:50051`, on every
+interface; the other listeners open nowhere unless named.
+
+**A list or a map in a variable** is written in YAML's flow form, as the file
+would write it on one line: `ROSTER_VOUCH_KEYS='["one:…", "two:…"]'`,
+`ROSTER_LDAP_BASES='{acme: "dc=acme,dc=example"}'`. A map may also be written as
+pairs parted by commas, `acme=o=acme,newco=o=newco`, which cuts a value that holds
+commas of its own: an LDAP suffix of more than one part is written in the flow
+form, and a value that is no suffix -- what the pairs would make of one -- is
+refused at start.
+
 ## Which database
 
 Either, and the trade is size rather than capability. Everything roster generates
@@ -27,8 +50,15 @@ db:
   dsn: "file:roster.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_txlock=immediate"
 ```
 
-Four things in that DSN, and each is there because leaving it out fails quietly.
-`foreign_keys` is off in SQLite unless asked and the schema relies on it.
+Four things in that DSN. `foreign_keys` is what the schema relies on: a row is
+not written naming one that is not there, and none is deleted from under the
+rows that name it. The SQLite roster is built with has it on whether a DSN asks
+or not -- SQLite as it is distributed leaves it off unless asked, and this
+build's default is the other way -- so it is written out to be read rather than
+to switch anything. The spelling that does switch something is
+`foreign_keys(0)`, which turns it off, and nothing else in roster refuses what
+that lets through. The other three are there because leaving them out fails
+quietly.
 `busy_timeout` is how long a connection waits for a lock before failing the
 statement -- the driver's own default is a **minute**, so a lock held by a shell
 command reads as a request that hangs rather than an error naming the statement.
@@ -41,9 +71,11 @@ transaction, and the one of the four an operator has no way to reason about from
 the database's own documentation. Two overlapping write RPCs, each reading the row
 it is about before changing it, are the one case SQLite refuses to *wait* for, so
 the second is refused at once and `busy_timeout` is never consulted. payday adds
-it to any SQLite DSN that does not say it (`config.DbConfig.Open`, which carries
-the measurements); it is written out here because a DSN is the one place an
-operator can see what their database was asked for.
+it to a SQLite DSN written as a `file:` name that does not say it
+(`config.DbConfig.Open`, which carries the measurements); a bare path is a
+filename to SQLite and is left as it is, so it goes without. It is written out
+here because a DSN is the one place an operator can see what their database was
+asked for.
 
 The driver is named by whatever registers it, so Postgres is `pgx` and not
 `postgres`, and a name nothing registered is refused at startup rather than
@@ -53,7 +85,12 @@ falling back.
 it answers anything and refuses one that is not the shape `internal/ent`
 describes, printing the SQL that is missing. That is what you want N replicas of;
 run the migration as its own step. `control.db.migrate` is the same switch for the
-other plane, and both are read.
+other plane, and both are read. `roster init` is that step for a new deployment:
+it makes both planes' tables whatever the switches say, since no other command
+is. The others that make tables ask them first -- `serve`, `login provision`,
+`resources apply` and `control key add` make a plane's only where its switch
+is on, and otherwise refuse a database without them -- and every other command
+alters none.
 
 **In `deploy/` the migration is the init container's.** `roster login provision`
 runs in the pod before `serve` and brings both planes to this build's shape
@@ -181,8 +218,9 @@ control:
   db:
     driver: sqlite3
     dsn: "file:roster-control.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_txlock=immediate"
-  # Where a console reaches it, and empty is nowhere. Bind it somewhere only a
-  # console can reach: it serves `ApiKeyService`, which every other port refuses.
+  # Where a shell reaches it, and empty is nowhere. Bind it somewhere only the
+  # deployment's operators reach: what it answers is who runs this deployment
+  # and the deployment keys of their apps.
   addr: "127.0.0.1:50052"
 ```
 
@@ -203,6 +241,16 @@ decides whether the plane exists is `control.db.driver` and nothing else, so an
 address alone built a server that read no key, honoured no delegation and opened
 no port, while the only line in the log was the `Plain` warning.
 
+**`control.db` is another database than `db`, and one named twice is refused.**
+Who runs the deployment and who is a customer of it are told apart by which
+database their row is in -- the sessions of each plane are a table of its own,
+and so are the holders and what they are bound. In one database a customer's
+administrator, signed in on the data plane, is an operator at `admin.addr` with
+the cookie they were given. So a file that names the same database in both
+blocks is refused when it is read, and one that names it by two spellings when
+it is served: the tenant `roster init` wrote for whoever runs the deployment is
+looked for on the data plane, and found there only if the two are one.
+
 ## The first operator
 
 ```sh
@@ -213,12 +261,16 @@ roster init
 control plane
   holder admin is 019ff2...
   bound to role "everything" = /roster.*/* -- every RPC roster serves, now and after an upgrade
-  password  kQ9x...
+  password  on standard output, alone
 
 sign in to the admin console as admin. that password is shown once and is not stored -- write it down now.
 
 there are no customers yet, which is the right state to start in.
 ```
+
+That is standard error. The password it made is the one line on standard
+output, `kQ9x...`, so `roster init > password` keeps it and nothing else;
+one given with `--password-stdin` is printed nowhere.
 
 One person -- the operator who runs this deployment, in the control plane -- and
 the role and binding that let them. Nothing in the data plane at all. `--operator`
@@ -241,7 +293,8 @@ The password is shown once and stored as an argon2id hash. There is no
 `--password` flag on purpose -- an argument is in the shell history and the
 process list, which is the same rule `roster key add` is on -- and
 `--password-stdin` reads one from a pipe, which is what a container entrypoint
-uses. **Running `init` twice is an error** rather than a no-op: one that quietly
+uses. One that was given is not printed back, since what a container prints is
+its log; only one `init` made is shown. **Running `init` twice is an error** rather than a no-op: one that quietly
 did nothing is one somebody runs against the wrong deployment and believes. What
 makes a run the second is an operator -- somebody on the control plane who signs
 in -- and the refusal names them.
@@ -273,6 +326,10 @@ answers from. On, a **roster user** signs in to roster itself, and the cookie
 they get names a holder of that plane, so every read it makes is narrowed by the
 wall to their own tenant.
 
+A request that carries a key as well is answered as the key, and refused if the
+key is wrong: a header is a caller saying who is asking, and a cookie is what a
+browser sends whether or not anybody meant it.
+
 **Which tenant is the name they arrived at.** A `Host` row says which tenant
 answers at which name, and a name nothing claims is a refusal that says so. That
 is the only place the answer could come from: this request has no tenant field,
@@ -284,6 +341,13 @@ the internal Service is called, so roster reads the first and falls back to the
 second. A deployment whose proxy does not set it will resolve to the internal
 name, and no `Host` row will claim that -- which fails loudly rather than
 signing somebody in to the wrong tenant.
+
+**So the name is whatever the request says it is.** A caller that reaches the
+listener with nothing in front sends `X-Forwarded-Host` itself, and is asking
+at whichever tenant's name it wrote. That hands over nothing a tenant's own
+name in DNS does not -- the same form, the same lockout -- unless the
+deployment was counting on a name being reachable from only some networks. One
+that is puts a proxy in front that sets the header rather than passing it on.
 
 What it costs is what any public sign-in costs: whoever reaches the port may
 guess passwords. The lockout in `vouch.lockout` is what makes that expensive,
@@ -377,6 +441,13 @@ The second call is where the lookup happens -- **there is no third verb**. A
 tenant who has not published yet is refused, saying which record is missing and
 what it should say, so pressing the button again is the whole of what a retry is.
 
+A lookup that could not be made is refused apart from that, as `Unavailable`,
+and in one sentence whatever failed. What the resolver said -- its address, the
+server it was sent to, whether that server's name exists -- is in the log
+instead, under `host: could not ask DNS whether a claim's record is there`:
+which servers are asked is what the claimed name's zone lists, and a tenant
+writes its own zone.
+
 The operator's road is the same second call and nothing before it:
 
 ```sh
@@ -392,7 +463,11 @@ file the `db` block is in is already the deployment.
 
 **Claiming holds nothing.** Two tenants may be claiming one name at once, each
 with a value of its own, and whoever publishes theirs takes it. A claim is good
-for a day (`prove.For`) and `prove.Sweep` collects the abandoned.
+for a day (`prove.For`) and `prove.Sweep` collects the abandoned. One that has run
+out is refused by `host add`, saying to make another, and `host-proof add` for the
+same name does: it answers a new value to publish, and the old one proves nothing.
+While a claim is still good a second `host-proof add` is refused as it was, since
+its value is the one already published or about to be.
 
 ### A name can move, and the incumbent is not asked
 
@@ -400,7 +475,10 @@ Proving requires present control of DNS, and whoever has that has the name
 whatever a row here says. So the latest proof wins: the incumbent's row is erased
 and the new one written in one transaction. What that costs is worth knowing --
 **their people stop being able to sign in at that name**, with no warning, and
-where it is written down is the erase in the trail.
+where it is written down is their own trail: the row that held the name, as
+`roster.host.release`, by whoever took it. A name a file declares
+(`resources:`) is not taken this way: the file is where it is written from, and
+a proof of it is refused until whoever runs the deployment takes it out.
 
 ### Why roster resolves DNS at all, having said it should not
 
@@ -419,10 +497,14 @@ so somebody who publishes a record and presses the button is otherwise refused b
 an `NXDOMAIN` their resolver remembered thirty seconds ago, twice, and concludes
 roster is broken. ACME does it the same way for the same reason.
 
-**Finding** those servers is an ordinary `NS` lookup, so a deployment whose
-resolver answers for its customers' domains out of an internal zone names one
-that does not: that is what `host.resolver` is for, and it is the only thing it is
-for.
+**Finding** those servers is ordinary lookups -- which servers hold the zone,
+and where each of them is -- so a deployment whose resolver answers for its
+customers' domains out of an internal zone names one that does not: that is what
+`host.resolver` is for, and it is the only thing it is for. Every one of those
+lookups goes to it, so nothing about a zone is asked of the system's resolver
+once another is named. A name that is an alias (`CNAME`) is not taken for a
+zone, whatever name servers a resolver answers with for it: the record is
+looked for in the zone the alias is written in.
 
 ## The listeners
 
@@ -430,11 +512,11 @@ Five of roster's own at most, and which open is what the configuration named.
 
 | | who calls it | |
 | --- | --- | --- |
-| `server.addr` | product apps | gRPC, **walled** and gated. Keys only -- a cookie names nobody here |
-| `server.http.addr` | anything that cannot speak gRPC, and a roster user's browser | the same, transcoded (Connect, gRPC-Web). Serves the **user console** and the sign-in behind it |
+| `server.addr` | product apps | gRPC, **walled** and gated. Keys, and -- only where `sign_in.enabled` -- the session a roster user signed in for: the sign-in is served here and on the listener below alike, since one is the other transcoded |
+| `server.http.addr` | anything that cannot speak gRPC, and a roster user's browser | the same, transcoded (Connect, gRPC-Web) where `server.http.allow_web` says so. Serves the **user console** and the sign-in behind it; a console with no `allow_web` is refused at start |
 | `control.addr` | the roster operators' shells, and their jobs | who runs this deployment and the deployment keys of the apps they run. Takes an `rk_`, asked what its **holder** is bound on the control plane, and an operator's session from the admin listener |
-| `control.http.addr` | the same, over HTTP | the same RPCs, transcoded. **No page**, and no sign-in |
-| `admin.addr` / `.http.addr` | a roster operator's browser | **customers**: the data plane with no wall, behind an operator's session. Serves the **admin console** and the sign-in behind it |
+| `control.http.addr` | the same, over HTTP | the same RPCs, transcoded where `control.http.allow_web` says so. **No page**, and no sign-in: with neither `allow_web` nor `allow_pprof` it would answer nothing, and is refused at start |
+| `admin.addr` / `.http.addr` | a roster operator's browser | **customers**: the data plane with no wall, behind an operator's session. Serves the **admin console** and the sign-in behind it, the second transcoded where `admin.http.allow_web` says so; a console with no `allow_web` is refused at start |
 
 And one for each consumer `roster serve` is told to run beside them --
 `account.addr`, `ldap.addr` (and `ldap.addr_tls`), `login.addr`, `scim.addr` --
@@ -467,6 +549,37 @@ can reach. `server.http` is the wrong one for the **admin** console: it fronts
 the walled data plane, where an operator's session names nobody. It is the only
 right one for the **user** console, for the same reason read the other way --
 that is where a roster user's session names somebody.
+
+### A stream held open
+
+roster sends nothing on a sync stream nothing happens on, so a connection that
+died without a word looks like a quiet tenant to whoever holds it. What tells
+the two apart is gRPC's keepalive, a ping each side may send. Where
+`server.keepalive` leaves a key unsaid, roster's own are:
+
+| key | unsaid is | what it is |
+| --- | --- | --- |
+| `server.keepalive.time` | a minute | how long the server waits before asking an idle connection whether it is there |
+| `server.keepalive.timeout` | twenty seconds | how long it waits for the answer before hanging up |
+| `server.keepalive.min_time` | twenty seconds | how often a client may ask the same of the server |
+
+A value the file says is kept as it says it. `control` and `admin` are left to
+gRPC's, a ping after two hours and a client allowed one every five minutes.
+
+**A follower dials with a ping every thirty seconds and ten seconds' wait**
+(`keepalive.ClientParameters{Time: 30 * time.Second, Timeout: 10 * time.Second}`
+in Go), and so learns of a connection that died within forty seconds. A client
+that asks more often than `min_time` is hung up on, `ENHANCE_YOUR_CALM` and
+`too_many_pings`: a deployment that raises `min_time` raises what its followers
+dial with first.
+
+**An age with no grace ends no stream.** `max_connection_age` asks a client to
+move once its connection is that old, and gRPC then waits for every stream open
+on it for as long as `max_connection_age_grace` says, which is for ever where
+nothing does. A sync stream is open for as long as its follower holds it, so an
+age alone moves no follower. `serve` says so as it starts, at `WARN`, where a
+listener's file says the first and not the second; nothing is defaulted for the
+grace.
 
 ## The admin console
 
@@ -525,6 +638,16 @@ holder is an edge. Expired rows are collected hourly by `session.Sweep`, which
 nothing depends on for correctness -- `authsession` checks both clocks when it
 reads one.
 
+**And what is written of a session is on the trail**, of the plane it is a row
+of: an operator's on the control plane's, and a roster user's
+(`sign_in.enabled`) on the data plane's. The sign-in that made it is
+`roster.session.mint`, the sign-out that ended it `roster.session.end`, and its
+idle clock moving `roster.session.use` -- at most once in half an idle window,
+for a session that is being used -- each by whoever the session is of and under
+their tenant; the sweep's collection is `roster.session.expire`. A line says
+which session and when, and nothing of the cookie or of what the row keeps of
+it.
+
 ### `admin.addr` is root, and a role on it is not a fence
 
 Standing here comes from the **port** rather than from a role, which is what
@@ -569,6 +692,7 @@ account:
   base: https://account.contoso.example
   page: { dir: /usr/share/roster/account }
   terminal: true                          # `roster sign-in`; off unless said
+  # private_hosts: [idp.corp.example]     # a provider off the internet, or in plain http; none unless named
   # key: left out -- one rk_ made at start, narrowed per request to the holder
   # each tenant nominated. A process of its own names it: file:… from
   # `roster account provision`. (`keys:` is a tenant running its own copy.)
@@ -581,20 +705,31 @@ ldap:
 
 login:                                    # only with Hydra in front; see login.md
   addr: :8091
-  hydra: { admin: http://hydra:4445 }
+  hydra: { admin: http://hydra:4445 }      # an address and no credential; a proxy's goes in hydra.header,
+                                          # whose values are never printed
   # key: left out -- one rk_ made at start, narrowed per request. A process of
-  # its own names it: env:ROSTER_LOGIN_KEY, or file:… from `roster login provision`
+  # its own names it: file:… from `roster login provision`, or the key itself
+  # in ROSTER_LOGIN_KEY, which is this key and not a reference to follow
 
-  consent: skip                           # ask draws a screen instead
+  consent: skip                           # ask draws a screen instead; a device's flow is always drawn one
   base: https://login.contoso.example     # the origin every connection's redirect is under
   enrol: invited                          # invited | expected | enrolling
+  # private_hosts: [idp.corp.example]     # as account's: where a provider may be asked
   page: { dir: /usr/share/roster/login }
   remember: 1h
   seal: [env:LOGIN_SEAL]
 
 scim:                                     # where a directory provisions people; see scim.md
   addr: :8092                             # a listener of its own, and /scim/v2 is all it serves
+  # concurrency: 4                        # requests of one tenant's directory worked on at once; below nought is refused
 ```
+
+**An address carries no credential.** `login.hydra.admin`, `login.base` and
+`account.base` are printed by `roster config` as the file writes them and logged
+where the app starts, so one written with anything between `://` and `@` is
+refused at start, by its key and without the address. A proxy in front of
+Hydra's admin API that wants a credential is given it in `login.hydra.header`,
+`Name: value`, whose values `roster config` never prints.
 
 `account.terminal` is **off unless a deployment says so**, and it is the one
 setting in that block that opens a door into an account: it lets a machine with no
@@ -606,6 +741,39 @@ of the tenant's `self-service` role and **no** self-service key can be minted,
 the page's own app passwords included
 ([usage/permissions.md](usage/permissions.md) § *What somebody does to their
 own account*).
+
+**The account app says `https` of itself.** `account.base` is its origin where
+it has one. A deployment that fronts several tenants' names has none to name,
+and what the app then hands out -- a mailed link, the address a provider sends a
+browser back to, where a terminal is told to go -- is the name the request
+arrived at, under `https`: its cookies are `Secure`, so it works over nothing
+else, and what a request says of its own scheme is the sender's to write. For
+the same reason a sign-in begun at a tenant's console (`next`) goes back to an
+`https` origin of that tenant's or is refused. A development rig that said its
+cookies are not `Secure` (`--insecure-cookie`) is read as it says.
+
+**What is in front of the account app passes three headers as the browser wrote
+them.** `Host`, because which tenant a request is about is the name it arrived
+at. And `Origin` and `Sec-Fetch-Site`, because whatever changes something there
+-- a sign-in, a terminal approved, a link asked for -- is taken from the app's
+own page and from no other origin: another site's form is refused, and so is a
+form on another host of the same domain, which a cookie's `SameSite` does not
+stop. A request that carries neither header is not a browser's and is let
+through, since it has no cookie that came along by itself: that is a terminal
+running `roster sign-in`. No page of the app is drawn inside another site's
+(`frame-ancestors 'none'`).
+
+**And so does what is in front of the Login App**, for the second reason: a
+sign-in, the last hop, a consent answered, a sign-out confirmed and a device's
+code typed are taken from its own page and from no other origin, and most of
+them need no cookie, so nothing else stood in the way. What Hydra and a
+provider send a browser there with are redirects, which only read and are not
+asked where they are from. `Host` it reads for nothing about a tenant -- which
+tenant a flow is about is Hydra's word -- but a browser that says no
+`Sec-Fetch-Site`, which is one reaching it over plain http at a name that is not
+`localhost`, is believed by its `Origin` against the `Host` the request arrived
+with: a development rig behind something that rewrites `Host` answers that
+browser 403.
 
 ### The front door's mail
 
@@ -646,7 +814,12 @@ page says to ask whoever runs the tenant. Nothing else changes.
 
 **What goes out** is plain text in the account app's language: what the link is
 for, the link on a line of its own, and what to do with a message nobody asked
-for -- the link is the one thing in it to follow. A recovery link goes only where
+for -- the link is the one thing in it to follow. **Following it does nothing.**
+Each of the three opens a page that says what the link does and asks, and the
+page's answer is what spends it: a link is fetched by more than the person it
+was sent to -- a mail client previewing it, a gateway following every link in a
+message -- and a link that acted on the fetch would have replaced a password, or
+proved an address, for them. A recovery link goes only where
 it would work: to an address somebody proved, of somebody not suspended, in a
 tenant that is open and offers passwords -- exactly what roster mints a working
 link for, asked by the front door before it asks roster for one. The recovery
@@ -656,6 +829,14 @@ password, the form answers 403 instead, as `/providers` has already told the pag
 with `recover: false`: that is the tenant's configuration and says nothing about
 anybody. The confirmation and deletion links are asked for by somebody signed
 in, and a failure is said to them as *cannot send*.
+
+**A recovery followed ends the links before it.** Somebody who asked three
+times has three links, and each works until one is followed: that one hands
+over a password, a password issued signs them out everywhere, and a link roster
+minted before that moment is no link -- the other two, and a deletion link
+already out, are refused as an expired one is. So is every such link once the
+person changes their password or signs out everywhere. A confirmation is not
+ended, since it signs nobody in.
 
 **What the log carries** is the address cut to its domain and the server's code:
 never the link, its token, or a whole address. A server that refuses a recipient
@@ -685,8 +866,9 @@ would keep its owner from ever being sent the confirmation that claims it back.
 What one person has sent an address spends nothing of what another may send it,
 and the person's own allowance is what bounds them. The recovery form has nobody
 to count by, so a stranger there can spend an address's allowance -- with links
-sent to its owner, which work for them. What is counted is a message that went,
-never a request refused before one would, and the recovery form counts only what
+sent to its owner, which work for them. What is counted is a message this set
+out to send, whether or not the mail server took it -- never a request refused
+before one would, and the recovery form counts only what
 it sends, so a stranger typing addresses adds nothing. It answers 202 whatever
 the limits did, so a message held back there is the log's
 (`not sent, its recovery messages are spent`). Confirming, claiming and the
@@ -748,6 +930,21 @@ it was missing -- is a restart in one process and `provision` run again in four.
 The directory's key is still yours to write either way:
 `roster control key add --allow /roster.NominationService/List directory`, and
 `roster app install --tenant … --role … directory` in each tenant it serves.
+
+**A sign-in through a provider is finished by the process that began it.** The
+Login App and the account app keep a round trip to a provider in memory for its
+ten minutes, so with two replicas a browser that comes back to the other one is
+answered `400` and starts again, and a restart ends the round trips under way.
+Run one replica of each, or keep a browser at the replica it began at. A
+sign-in by password has no such state.
+
+One replica is also what makes a first sign-in one person. Under `enrolling` a
+front door looks for an account, and where there is none makes the person and
+links them; arrivals of one account take turns inside a process, and nothing
+orders them across two. Somebody new who arrives at two replicas in one moment
+is signed in at both as one person, and may leave a second, with a name nobody
+chose and no way in, which the log names as a warning and an administrator
+erases ([login.md](login.md) § *Putting people in, and letting them arrive*).
 
 **A seal unsaid is one too**, and costs the same kind of thing. `account.seal` and
 `login.seal` left out are a key made at start, so a second replica opens none of
@@ -824,8 +1021,10 @@ Two halves, and neither takes a list of tenants.
 
 **Once:** one deployment key (`rk_`), on a control-plane holder, written to
 `<out>/login-app.key` -- so `login.key` is `file:/run/roster-login/login-app.key`
-and there is no Secret at all. What it allows is the three reads that work out
-whose flow this is and nothing else.
+and there is no Secret at all. What it allows is what the app calls before a
+flow names a tenant, and nothing else: which tenant a name is
+(`FrontService/WhoseHost`), and the one stream that hears every tenant's
+sign-outs (`SyncService/Watch`). As itself it reads no tenant's row.
 
 **Per tenant that registered a name:** this deployment's own front door inside
 that tenant -- a `login-app` holder, a role holding what the app calls as itself,
@@ -839,15 +1038,25 @@ fight over (#73).
 
 A deployment with no names yet is **said and not refused**, because this runs on
 every start and a fresh volume has nothing to nominate. It replaces rather than
-adds -- a key cannot be read back, so a restart is a rotation.
+adds -- a key cannot be read back, so a restart is a rotation -- and it writes
+a tenant's role again where it holds another list than this build's app calls,
+so both lists are this build's from its first start; a role already as it should
+be is not written.
+
+**What it did not make is the tenant's.** A holder or a role called `login-app`
+that does not carry the label it writes on what it makes
+(`roster.declared: config: login`) is the tenant's own, bound to somebody or
+not: that tenant is skipped and said on stderr, and nothing of it is written.
+The account app's provisioning is the same under `account`.
 
 **A tenant's first name declared in `resources:` is nominated in on the next
 start, not this one.** This runs *before* the server, and the server is what
 applies `resources:` -- so the pass that would nominate in a tenant that has just
 got its first `Host` row happens before the row exists, and the tenant has no
 `Nomination` for the key. A flow for it then resolves to a tenant and is refused
-at `Vouch.Delegate`, because `keys.At` will not answer as the key for a tenant
-that nominated nobody for it. One restart fixes it. A further name for a tenant
+at the next read, of what that tenant is called -- before a form is drawn, as
+*this login is not working* -- because `keys.At` will not answer as the key for
+a tenant that nominated nobody for it. One restart fixes it. A further name for a tenant
 already nominated in works on the start that applies it, and a deployment that
 adds names by hand rather than by file does not have it at all: write the row,
 and the next start nominates.
@@ -908,12 +1117,67 @@ says what a file would do before a restart does it. In Kubernetes that is GitOps
 without roster knowing what Kubernetes is: the file is in a ConfigMap, editing it
 changes the hash, the pod is replaced, and the new one applies it.
 
-Three properties, each deliberate:
+```
+$ roster resources apply --dry-run
++ Host @contoso/login.contoso.example
+~ Connection @contoso/entra: issuer, scopes
+  Tenant @contoso
+  MailDomain @contoso/contoso.example
+
+(dry run; nothing was written)
+```
+
+One line a row: `+` for a row it adds, `~` for one it changes, with the keys
+that change as the file writes them, two spaces for one that is as the file
+says, and `!` for one of a tenant that is closed or destroyed, which is left as
+it is. A run that stops at a row prints what it did before it. A dry run writes
+no row and alters no table: it looks the provisioner up and does not make it,
+and asks of both databases what `serve` asks before it serves, without
+migrating either.
+
+**A file is read as the configuration is.** A key its top level does not hold,
+and a key the row's `kind` does not read -- one another kind reads among them --
+is refused, by the file, where the key is in it and its name; so is a `kind`
+this does not apply, before anything is written. A file that declares nothing
+is not refused, and is said: `serve` logs it as it starts, and `resources apply`
+says it on standard error.
+
+**A connection is held to a form**, from a file as from a console. Its `name`
+is an alias -- lower-case letters, digits and single hyphens, beginning with a
+letter -- because it is the `provider` of every identity through it and a
+segment of its redirect (§ *Where a provider sends people back*), and `Entra`
+beside `entra` would be one directory twice. Its `issuer` is an address as the
+provider publishes it: written `https://` (or `http://`, § *Where a provider is
+asked*), with a host in small letters, and with no query, fragment or password
+-- `https://GitHub.com` is refused, since a front door reads an issuer as it is
+written and would not know it for GitHub's. Its `client_id`
+is not empty. Its `secret_ref`, where it has one, is a reference: a scheme of
+small letters, a colon and the rest -- `env:NAME` is what roster's own front
+doors read, and a front door of your own may read `file:` or a word of its own.
+One with no scheme is refused without being said back, since it is most often
+the secret itself; roster does not know which schemes a front door reads, so a
+secret that happens to look like `abc:def` is not caught. And it names its
+people by `oid` only where the provider may issue one: not at GitHub's, and not
+at Google's. A row that is none of that is
+refused where it is written, with the field it was, rather than at somebody's
+sign-in.
+
+Four properties, each deliberate:
 
 - **It never erases.** A resource dropped from the file leaves its row where it
   is, because erase-and-add on a provider is a gap in service and, under a
   mistyped name, every identity through it orphaned silently. Removing a row is a
   person's act.
+- **A declared row is what the file says.** A key left out of an entry is
+  empty -- a `desc`, a `secret_ref`, a `subject_claim`, `routes`, and `scopes`,
+  which a file that once asked for some takes back by not saying them -- with one
+  exception: a tenant's `config`, whose keys left out leave the setting as it is
+  (below). So a row made by hand and then declared becomes the file's: its name,
+  description and labels are what the file says, which for a tenant declared by
+  its alias alone is no name, no description, and the one label that says it is
+  declared. Two entries that declare one row, in one file or two, are refused,
+  naming both, before anything is written; and a file applied twice writes
+  nothing the second time.
 - **It writes as somebody.** A `provisioner` holder in the control plane, framed
   as the actor of every write, so the trail names which rows a file wrote. It has
   no password and no key.
@@ -922,6 +1186,12 @@ Three properties, each deliberate:
   pass and came back at the next start. The cost is real -- fixing a declared row
   during an outage becomes a git round trip -- so a deployment that would rather
   have the text field declares fewer things.
+
+**And it leaves a tenant that is leaving alone.** What a file declares of a tenant
+that is closed or destroyed -- the tenant, and every row declared under it -- is
+not written and not compared; `serve` starts, and says at each start which files
+still declare it. Closing and destroying are an operator's acts and a file does
+neither, nor undoes either: [A tenant leaving](#a-tenant-leaving).
 
 **A tenant's settings are applied field by field.** `config.password` and
 `config.front_door` are how a tenant signs in -- the switch `Vouch.Verify`
@@ -965,6 +1235,80 @@ Beside it, every round trip carries a **PKCE** challenge (S256), so a code is
 worth nothing without the verifier only the front door that asked holds, and an
 OpenID one a **nonce** the ID token has to carry back.
 
+### Where a provider is asked
+
+A `Connection` says where its provider is, and one with no secret is its
+tenant's administrator's to write, issuer and all. So a front door asks a
+provider only at **an address on the internet**: for its document -- which is
+at the sign-in link, before anybody has signed in -- at the token endpoint and
+for the keys that document names, at its userinfo, and for a picture on that
+host. This machine, a private network, a link's own addresses and with them the
+cloud's metadata service are refused where the connection is made, whatever the
+name resolved to and whenever it last did. No redirect is followed off the host
+that was asked, and each request is given five seconds to connect and ten in
+all.
+
+A directory on the premises is at one of those addresses, and saying so is the
+**deployment's**, for each front door that offers the connection:
+
+```yaml
+login:
+  private_hosts: [idp.corp.example, 10.20.0.0/16]   # a name, an address or a network
+account:
+  private_hosts: [idp.corp.example, 10.20.0.0/16]
+```
+
+A name is that host and no other, on any port, and whatever it resolves to is
+your word about a name of your own; an address or a network is held against the
+address actually connected to. None unless said, and what is written is checked
+at start. Nothing a tenant writes says it. Nor does declaring the row in
+`resources.yaml`: the rule is about the address, so a declared connection to a
+host inside is named here as well. A sign-in through a provider at an address
+nobody named answers *cannot start* (the Login App: *this login is not
+working*), and the front door's log says which address, and `private_hosts`.
+What a provider answered instead of what was asked for is in that log too, cut
+to a line.
+
+**And over `https`, anywhere you did not name.** A request to a token endpoint
+carries the code and the client's secret, and the keys that come back are what
+every token of the connection is believed by; in plain `http` both are
+anybody's on the way. So a provider written `http://` -- the issuer, or
+anything its document names -- is asked only at a host `private_hosts` names:
+by its name, by its address, or by a network that address is in, which is how
+a directory on your own network is said to be yours. Anywhere else the
+sign-in answers as above, and the log says *plain `http`* and the setting.
+roster takes the row either way: where a provider is, is said to a front
+door, so it is the front door that refuses.
+
+**Through your proxy, where the environment names one.** `HTTPS_PROXY`,
+`HTTP_PROXY` and `NO_PROXY` are read as Go reads them, when the front door
+starts, and a connection to the proxy is made wherever the proxy is: it is your
+own host, named by you, as a `private_hosts` entry is. For a request that goes
+out through it, **where the provider is, is the proxy's to refuse** -- the front
+door connects to the proxy and never sees the address the proxy then connects
+to, so nothing above is asked of it. A deployment that sends its way out
+through a proxy has put the proxy in charge of which addresses a tenant's
+issuer may be at: configure it to refuse your own network, its own machine and
+the metadata service. `private_hosts` then matters for what `NO_PROXY` sends
+direct, which the front door still dials itself and holds to the rule above --
+and for a provider written `http://`, which is asked through the proxy only
+where its host is named as the address writes it, by name or by address: what
+a name resolves to is the one thing the proxy does not say.
+
+**A connection is the issuer its row names now.** Moved to another issuer -- or
+erased and added again under the same name -- it is the new one from the next
+sign-in on, with no restart. A round trip already on its way to the first
+issuer is not finished at the second, and the person starts again.
+
+**And its people come with it.** Somebody's account at a provider is kept by
+the connection's name and the subject it called them by, so everybody who
+signed in through the connection before is asked at the new issuer now, and is
+whoever it says they are. Moving a connection is therefore deciding who its
+people are, which is why writing one is on the page of grants that are wider
+than they read ([usage/wide-grants.md](usage/wide-grants.md#connectionserviceadd-and-update)).
+A tenant cannot move a connection that carries one of the deployment's
+secrets; one that carries none, it can.
+
 ### GitHub
 
 GitHub signs people in with OAuth 2.0 and no OpenID Connect -- there is no
@@ -995,8 +1339,9 @@ from; the name is still yours:
 - **The person is their account's `id`**, the number GitHub never changes or
   hands to somebody else -- not their username, which they may change and
   somebody else may then take. `subject_claim` names a claim of an ID token, so
-  it says nothing for GitHub, and a sign-in through a GitHub connection that
-  says `oid` is refused.
+  it says nothing for GitHub: a connection at `https://github.com` that says
+  `oid` is refused where it is written, and a sign-in through any GitHub
+  connection that says it is refused.
 - **Their address is the primary one**, from `GET /user/emails`, and verified
   only when GitHub says so. That is the condition `expected` matches an
   invitation under, and the stamp on the address roster keeps. The connection
@@ -1043,8 +1388,9 @@ in, so the connection names that directory's issuer, which is the third row.
 
 - **Who somebody is**: `sub` by default, one per app registration, or
   `subject_claim: oid`, the same for every app and needing the `profile` scope.
-  Microsoft issues both as GUIDs that are unique on their own, so either names
-  one person whichever directory they came from.
+  `oid` is a GUID; `sub` is a string of the app registration's own and is not
+  one. Each is unique on its own, so either names one person whichever
+  directory they came from.
 - **What their address is worth.** Microsoft sends no `email_verified`. What it
   sends instead is `xms_edov`, *the address's domain is one the person's
   directory has proved it owns* -- an optional claim the registration has to ask
@@ -1057,7 +1403,8 @@ in, so the connection names that directory's issuer, which is the third row.
   that matched an invitation by the bare `email` of a token from any directory
   would hand that user whichever account carries it -- the mistake known as
   nOAuth. So with no `xms_edov` every address from Microsoft is kept
-  unverified, and `expected` finds nobody through it by address. Microsoft's
+  unverified: `expected` finds nobody through it by address, `enrolling` names
+  nobody by it, and a tenant's Slack is asked about nobody by it. Microsoft's
   manifest reference says a registration for personal accounts as well as
   directories cannot use optional claims; where that holds, nothing a `common`
   connection hands over is verified, and people are found by their subject.
@@ -1090,7 +1437,9 @@ other:
   authorized redirect URI -- `https://<the Login App>/callback/<tenant>/<connection>`,
   and the account app's when it offers Google too. One client takes several.
 - **The person is their `sub`**, which Google never hands to anybody else, and
-  their address is verified on Google's `email_verified`.
+  their address is verified on Google's `email_verified`. Google's tokens carry
+  no `oid`, so a connection at its issuer that says `subject_claim: oid` is
+  refused where it is written.
 - **When Google asked them** is the one thing to set up beyond the client.
   Somebody deleting their own account (`MeService.Leave`) has to have proved who
   they are a few minutes ago, which through a directory is when the directory
@@ -1144,7 +1493,22 @@ one:
 | Google | the token's `picture`, a URL anybody can fetch | `profile` among its scopes, which a Google sign-in asks for anyway. Nothing to consent to beyond the sign-in. The URL is kept as `profile.picture`, beside roster's copy |
 | Entra | behind Microsoft Graph, where userinfo points | `User.Read` among its scopes, **consented for the whole directory first** (below). The URL is not kept, since no browser holds the token it needs |
 | GitHub | the account's `avatar_url`, which the sign-in already read | nothing. github.com's is a URL anybody can fetch and is kept as `profile.picture`; GitHub Enterprise Server's is on its own host, so it is fetched with the token and the URL is not kept |
-| anything else | the token's `picture`, else userinfo's | `profile`. A picture on the provider's own API host is fetched with the token, as Entra's is; one anywhere else only over https from an address on the internet -- so a directory inside the network that keeps pictures on another inside host gives none |
+| anything else | the token's `picture`, else userinfo's | `profile`. A picture on the provider's own API host is fetched with the token, as Entra's is, and from inside the network only where `private_hosts` names that host (§ *Where a provider is asked*); one anywhere else only over https from an address on the internet, whatever was named -- so a directory inside the network that keeps pictures on another inside host gives none |
+
+**What a picture may be, and what one costs.** An image handed to roster -- by a
+front door here, or by a person setting their own (`HolderService.Portray`, which
+needs no role) -- is JPEG, PNG, GIF or WebP, at most 2 MiB and at most 2048 pixels
+a side. Its size is read from its header, and one larger is refused before any of
+it is decoded: a front door then keeps the URL alone, where the directory gave one
+a browser can fetch, and a page that takes a camera's photograph makes it smaller
+before it sends it. Rendering is the serving process's memory for as long as it
+takes -- the image decoded whole -- and what a file weighs says little of that:
+the largest image there is costs up to 74 MiB for a second or two, as twenty-five
+kibibytes of progressive JPEG. So a process renders **two at once**, and a call
+beyond those waits its turn for as long as the call lasts; one that ends waiting
+is answered as a call that ran out of time is, and the next sign-in, or the next
+try, sends the image again. About 150 MiB is the most pictures take of a process,
+whoever sends what.
 
 **Entra: the consent before the scope.** A scope added to a connection is asked
 for at the next sign-in, and Entra asks each person for a permission the
@@ -1176,6 +1540,14 @@ fills the blank with their **real name** and the **picture they chose** --
 Slack's placeholder is nobody's picture and is left out. A person with nothing
 blank costs Slack nothing; somebody Slack does not have, or has deactivated, is
 left as they were.
+
+**Only by an address the directory says is verified** -- `email_verified`, or
+Microsoft's `xms_edov` (§ *Any Microsoft account*). One it does not vouch for
+is one the person typed, and looking them up by it would give them the name
+and the photograph of whoever that address belongs to; such a sign-in is
+filled with nothing, and the blanks wait for one that carries a checked
+address. A tenant that signs in through Entra and fills from Slack therefore
+needs `xms_edov` in its tokens.
 
 `slack` is a reference, in a `Connection.secret_ref`'s words: where the
 deployment keeps the token -- `env:NAME`, in the front door's environment --
@@ -1210,13 +1582,27 @@ one it lacks.
 Two things declare rows: this file, and the configuration that turns on one of
 roster's own front doors -- `login provision` and the in-process account app
 write the front door's holder, role, binding and nomination in every tenant with
-a name, labelled `roster.declared: config: login` / `config: account`. Either
+a name, labelled `roster.declared: config: login` / `config: account`. A tenant
+that is being destroyed is passed by, and said on stderr: nothing is written
+into one that is gone. Either
 way the row is read-only to everybody who reaches it through a port: a tenant
-administrator, the user console, the admin console, a deployment key.
+administrator, the user console, the admin console, a deployment key. Not
+edited, not suspended, not erased, and not renamed: what applies the file finds
+a row by the name the file says, and would make a second.
 
 And the label is theirs alone to write. A request that carries
 `roster.declared` is refused at every port, whoever sent it, so a row is
 read-only because a file says it is and never because a caller said a file did.
+
+**What the provisioners write that is not declared.** The rest of what they
+write carries no label and is an operator's like any row: the control plane's
+`provisioner` and its binding to `everything`, which applying a file makes; each
+front door's holder on the control plane and the key minted on it, which a
+restart replaces; and every row `roster scim provision` and `roster app install`
+write, which are a command's, run once, and not a file's. A provisioner that labels what it makes takes, of a
+holder or a role of its name, only one carrying its label, and says a tenant it
+skips; `scim provision`, which labels nothing, refuses a holder that holds
+something or a role bound to others, and takes one that does not.
 
 Turning one off is two steps, and neither is at a console:
 
@@ -1226,12 +1612,25 @@ Turning one off is two steps, and neither is at a console:
 2. Erase what is left, from a shell on the box: `roster ... erase` reading the
    database directly is the deployment's own work, which a declared row allows.
 
+A declared **tenant** is the one that is not erased, since no tenant is: it is
+closed at the box and then destroyed, and its file leaves it alone from the
+close on -- [A tenant leaving](#a-tenant-leaving) has the steps.
+
+And one field of a declared row is not the box's either: a declared tenant's
+`alias`, which is what its file finds it by. `roster tenant patch` refuses to
+change it while the row carries the label, because the next start would find
+nobody of the old alias and make a second tenant. Take the tenant out of the
+file and the label off the row first, rename it, and declare it again by the
+new alias if a file is to own it.
+
 ### The CLI on the box is the deployment
 
 `roster <entity> <verb>` with `--config` opens the databases itself and calls
 the servers in the same process, with no wall and no gate -- there is no caller
 to ask anything of, so there is no frame, and the trail names nobody for what it
-writes (`resources apply` is the exception: it frames itself as `provisioner`).
+writes (two exceptions: `resources apply` frames itself as `provisioner`, and
+the lines `trail rows --accept` writes name the operator `--as` names, since an
+acceptance is somebody's).
 It is what a deployment does before anybody can sign in -- `init`, migrations,
 `login provision` -- and the way out of a broken one.
 
@@ -1251,12 +1650,16 @@ instead leaves every write in the outbox, in that write's own transaction. The
 `watch.drain_every` (a second) -- and with no `serve` running, when one next
 starts. `forget` and `restore`, which write past the servers, put the person
 there themselves. With `watch.broker: none` there is no stream, and nothing is
-queued.
+queued. A row of the queue says which row was written, by what and by whom,
+and nothing of what was written: a name written at the box waits there as an
+identifier until a `serve` drains it.
 
 **What it reads and writes of anybody is on the access record, naming you**
 ([below](#who-read-whose-data)). Say who you are with `--as`, an operator of the
 control plane by alias -- the same person the admin console signs in, so a
-reviewer finds your reads at the admin console and at the shell under one name:
+reviewer finds your reads at the admin console and at the shell under one name.
+It takes any holder of the control plane that is not stopped, an operator or
+not (below):
 
 ```sh
 roster --as admin holder get @newco/alice
@@ -1280,27 +1683,55 @@ roster --as admin key list
 - It is your word and not a credential. Whoever holds a shell here holds the
   database and could read it with no command at all; the record is for the
   operator who reads through the command, and what it guarantees is that such a
-  read is never left out of it, nor recorded as nobody's.
+  read of somebody's rows is never left out of it, nor recorded as nobody's --
+  how somebody signs in among them (`holder signs-in`), which names the person
+  and each account of theirs it printed. The one read the record leaves out on
+  purpose is not made here: what somebody is told of themselves (`roster me`)
+  is asked over the wire, by them, and leaves no row
+  ([below](#who-read-whose-data)).
 - What the call may do is unchanged: it carries no frame, so it is still the
   deployment's own work, under no rule about callers. `--as` is read by the
   record and by nothing else.
+- It takes any holder of the control plane that is not stopped: an operator,
+  and also a service `control key add` made, the provisioner or the Login App's
+  holder. A deployment whose operators are all disabled has nobody else to
+  name, and naming a service is its way back:
+  `roster --as provisioner control holder enable @owner/admin`.
 - A deployment with no control plane has no operators to name: its rows name
   nobody, from this shell, and `--as` is refused there.
 
 `roster scim adopt` is asked too: it lists people, by address. The other
-commands -- `init`, `key add`, `vouch`, `forget`, `restore`, `hold`, `trail`,
-`login provision`, `scim provision` -- print no field anybody's row declares personal:
-identifiers, keys, secrets made for the occasion. They need no `--as`, and
-leave no row; `cli/recorded_test.go` holds every read of a person's rows a
-command makes to one or the other.
+commands print no field anybody's row declares personal -- identifiers, keys,
+secrets made for the occasion -- and need no `--as`. Given, it is looked up by
+every command that opens the database, and a name that is nobody's, or
+somebody's who is stopped, is refused before anything is written; so is any
+name before `roster init` has made the control plane's tables, since nobody
+can be named there yet. Then:
+
+- **Kept**, by the commands that write somebody's way in or their standing:
+  `key add`, `key revoke`, `control key add`, `vouch reset|set|unlock` and
+  `control vouch reset|set|unlock|enrol|prove`, and `restore` of a person. Each write is
+  a call at the shell by who `--as` names, and leaves the row of the access
+  record that `roster --as … <entity> <verb>` of the same write leaves. With
+  no `--as` they leave none, as before.
+- **Kept** by `trail accept`, as who accepted, where `--by` would have said it;
+  `--by` stays for where `--as` is not given, and the two together are refused.
+- **Checked, and kept nowhere**, by the rest: `init`, `hold`, `forget`,
+  `restore` of a tenant, `trail`'s other commands, `app install|uninstall`,
+  `resources apply` and the `provision` commands.
+  None of them writes anybody's way in, or a row a person is named in.
+
+`cli/recorded_test.go` holds every command that opens the database to one or
+the other, and every read of a person's rows to a record or a reason.
 
 **A watch at the box is refused under `watch.broker: memory`.** It would
 subscribe to this process's own broker, which nothing the deployment does
 publishes to, and after its first answer hear nothing on a stream that looks
 open. Watch over the wire (`client.addr`), where the serving process answers and
 records it; or name a broker every process hears (`postgres`), under which the
-watch at the box hears the deployment and each message is on the record before
-it is printed. It does not follow the outbox: the serving process deletes what
+watch at the box hears the deployment and whoever it shows is on the record
+before they are printed -- each once, the first time, however often the stream
+shows them after ([below](#who-read-whose-data)). It does not follow the outbox: the serving process deletes what
 it drains, so a command reading it would race the drain, and one draining it
 would take the events from the subscribers they were for.
 
@@ -1340,7 +1771,9 @@ rather than trusted, because an unsorted file answers *no* to things that are in
 it -- the quiet direction in the one feature whose whole job is to say yes.
 
 **`vouch.keys`** is what a second factor's seed is sealed under, and a deployment
-with no key refuses to enrol rather than storing one in the clear. Every replica
+with no key refuses to enrol rather than storing one in the clear. Each is
+`name:base64`, a name given once (two of one name are refused at start), and in
+`ROSTER_VOUCH_KEYS` the list is written in the flow form, `'["one:…"]'`. Every replica
 holds the whole set, so order only decides which key new seeds are sealed with:
 rotate in two phases, giving every replica the new key *second* first, and only
 then moving it to the front.
@@ -1394,6 +1827,11 @@ stream:
 Shorter is a few more reads for each open stream, and nothing else. There is no
 value that leaves a stream unasked.
 
+A connection bound at the LDAP directory is held to the same rule by the
+directory, which asks roster about whoever bound it every five minutes it
+searches in. That number is the directory's own and this setting does not move
+it ([ldap.md](ldap.md) § *How long a bind lasts*).
+
 **A directory that provisions people suspends them too**, through verbs of its
 own -- `HolderService/Deactivate` and `Activate` -- and it is the same suspension:
 one `date_disabled`, refused everywhere `Disable` is. What differs is whose it is
@@ -1402,7 +1840,8 @@ restarting its provisioning says `active` for everybody in scope; an operator's
 `Disable` or `Enable` makes a suspension theirs, and somebody the directory deleted
 is an operator's to bring back ([scim.md](scim.md)). An erase it does not hear at
 all: unassign somebody in the directory before erasing them here, or it can
-neither find nor make them until they are forgotten, and makes them again after.
+neither find nor make them until they are forgotten -- or an administrator
+erases the identity and the address they left -- and makes them again after.
 
 **And it suspends only the people it speaks for**: those who sign in through the
 connection it provisions through. Somebody who was here before it -- entered by
@@ -1444,12 +1883,41 @@ Between them the row lives in `archive`: a store in that directory with a namesp
 per tenant, a gzipped chunk per kind and month, and a namespace of its own for rows two
 tenants may both read.
 
+**A row can outlive `destroy` by up to a month.** Destroying is by chunk, and a
+chunk goes when the newest row in it is past `destroy`. A chunk holds rows of
+one month, and a month that can receive no more is folded into one chunk for
+each kind and tenant -- so a row written on the first is destroyed with the
+rows written on the last. An obligation to have destroyed something by a day
+is met by a `destroy` a month shorter.
+
 `by:` is why it is two clocks *per kind* rather than two clocks: what was done to a
 person has to stop existing eventually, and an operating record of what a machine
 did usually has the opposite requirement, so one clock over the table forces the
 shorter of the two onto everything. The kinds are the names the schema registered;
 `roster trail prune --kind nonsense --older-than 1h --dry-run` lists them. (With
-no window `prune` is a pass of what `audit:` says, and reads no `--kind`.)
+no window `prune` is a pass of what `audit:` says, of every kind, and refuses a
+`--kind`.)
+
+A kind's block is **the whole of that kind's window**: `profile`, `retain`,
+`destroy` and `discard` written there are read in place of the deployment's, and
+nothing of the deployment's is taken for what the block leaves out.
+`profile: forever` is how a block says a kind is kept for good. What a block may
+say besides is not about how long. `content:` is how much of a write to that kind
+a line of the trail keeps -- `fields`, which fields were written; `patch`, what
+each was set to, which is the default; `value`, the row the write left as well --
+over `audit.content`, which says it for every kind. `min:` is that kind's floor.
+A block that says only those keeps the deployment's window:
+
+```yaml
+audit:
+  retain: 2160h
+  archive: /var/lib/roster/audit
+  checkpoints:
+    key: /run/secrets/roster-checkpoints.pem
+  by:
+    host:
+      content: value             # what a hostname's row was left as, on every write; the window is the deployment's
+```
 
 ```sh
 roster trail profiles
@@ -1480,33 +1948,123 @@ meant to go
 Because that configuration *works*: the sweep runs, the table stops growing, every
 graph an operator watches improves, and what it is doing is destroying the trail.
 
+**And so is a block that cannot be meant.** Each of these started, ran, and did
+something other than what its file says, with nothing anywhere to say so:
+
+| what the file says | what came of it | what to write |
+| --- | --- | --- |
+| `discard: true` beside `digest.key` -- the deployment's, or a kind's other than `access` | a pass that discards a line carries its digest nowhere, so `trail rows` found every row nobody had written since its window `not-on-trail` | `archive` and `destroy` in place of `discard`, or no digest key |
+| `destroy` with no `retain`, the deployment's or a kind's | nothing left the database, while the policy read *destroyed after …*; only what was in the archive already was destroyed | `retain` beside it |
+| a `store:` witness in a directory inside `archive` | whoever takes the archive takes its witness with it | a directory of its own, or `log:` |
+| `discard: true` with no `retain`, the deployment's or a kind's | no row ever left | `retain`, or no `discard` |
+| a kind's block with nothing in it | the kind was kept for ever while the rest left | the kind's window, floor or content, or no block |
+| `every` with no window anywhere | no pass ran | a window, or no `every` |
+| `checkpoints.hear_within` with no witness | nothing read it | a witness, or no `hear_within` |
+| a `retain`, `destroy`, `every`, `hear_within` or floor that is less than no time | read as not written: for ever, a day, twice `every`, no floor | how long |
+| a block under `by:` for `audit`, `outbox`, `archived`, `owed` or `row-seal` | nothing: no line of the trail is about a row of the trail's own tables | no block |
+
+The first three are two things that cannot both be meant, and the rest are
+settings nothing reads. `serve` and every command that opens the database
+refuse each, before anything is opened, in a sentence that names the key and
+says what to write.
+
+Three that look the same are read, and are left. `checkpoints.key`, `.dir` and
+`.trust` with no `archive` are what the archive of a `prune --to` is signed and
+checkpointed by, for a deployment that names none. `min` is what the
+deployment's own windows are held to at start -- a window under its floor is
+refused -- though a tenant of roster's answers no window for a floor to raise.
+And `every` with no window is still twice how long a witness may go without
+hearing the newest checkpoint, where one is named and `hear_within` is not.
+
 Nothing sweeps the **control plane's** trail. It is the record of the deployment's
-own operations, it grows by the key rather than by the request, and it is the last
-thing anybody wants a clock deleting from.
+own operations, it grows by the key and by an operator's session rather than by
+the request -- a line when one signs in and when they sign out, and a few an hour
+while their console is in use -- and it is the last thing anybody wants a clock
+deleting from.
+
+**A line is under the verb its caller asked for, and what the deployment writes
+of itself is under a name of its own.** When a key was last used
+(`ApiKey.date_used`) is written as the key is read, at most once an hour for a
+key, on the trail of the plane the key is a row of -- the control plane's for a
+deployment key. That line is `roster.keys.use`, about the key and by nobody. It
+was filed under the verb of whatever call the key had been presented for, so the
+trail read for who called `HolderService/Add` answered keys beside the people.
+
+**Nor does anything check it.** The control plane is handed what the trail keeps
+of each kind's writes (`content:`) and nothing else of `audit:`, so its lines keep
+no digest, and `trail rows` and `trail verify` read the data plane's database and
+the data plane's archive. A row changed in the control plane's database by hand
+-- an operator stopped there, say -- with every line of that plane's trail
+removed is found by neither, and `roster control` has no `trail` beneath it.
+What guards those rows is who may write that database.
 
 ```sh
 roster trail prune                                # apply the policy now, per kind
+roster trail prune --dry-run                      # what that pass would take, and nothing is changed
 roster trail prune --older-than 2160h --dry-run   # a window of your own: how many
 roster trail read --in /var/lib/roster/audit      # read an archive back
 roster trail purge --older-than 61320h --dry-run  # which chunks would go
 roster trail verify --full                        # the archive against the database's account of it, and the digest of what it found
 roster trail accept --of sha256:… --full --why "a pass the 10-21 crash stopped"  # once somebody has looked at that
 roster trail rows                                 # the live rows against what the trail says they were left as, and its digest
-roster trail rows --accept --of sha256:… --why "the 10-20 migration set them"  # once somebody has looked at each
+roster --as admin trail rows --accept --of sha256:… --why "the 10-20 migration set them"  # once somebody has looked at each
 roster trail owed                                 # the erasures owed and not paid yet: how many, since when, and what a legal hold keeps
 ```
 
 `prune` with no window applies **the deployment's own policy**, which is what
 somebody putting it in cron means; `--older-than` makes it a manual act instead,
 and a manual window does not consult `by:`, so `--older-than 1ns` with no `--kind`
-reaches the kinds the policy keeps forever. It writes each chunk whole **before** it
+reaches the kinds the policy keeps forever. `--before` is the same window as an
+instant, and one that has not come yet is refused as `--older-than 0` is: a
+window of nothing is everything.
+
+**A dry run changes nothing, on either road.** With a window it counts the rows
+older than it, and says where the same line without `--dry-run` would put them.
+With none it says what the pass would take: for each kind the policy names and
+for everything else, how many rows are past the window and whether they would
+go to the archive or nowhere; each chunk of the archive that would be
+destroyed; and how many erasures owed it would pay. `--kind`, `--to` and
+`--discard` are read with a window of your own and no other way, so a `prune`
+with no window that is given one is refused by the flag's name, where it used
+to pass it over and apply the policy.
+
+**A command at the box says what it did, on stderr.** The pass is written for
+`serve`'s clock: it logs what it did and what it could not, and goes on, so that
+a database that blinked is tried again a day later. `prune` with no window runs
+the same pass, and prints the policy and then every line the pass logs -- how
+many rows of which kind and tenant moved or were discarded, what the archive
+lost at the end of its window, the checkpoint it ended in:
+
+```
+time=2026-10-22T03:12:09Z level=INFO msg="trail: the retention window" kind=* tenant=019ff2ab-… before=2026-07-24T03:12:09Z moved=1204 discarded=0
+time=2026-10-22T03:12:09Z level=INFO msg="trail: a checkpoint" k=41 blobs=96
+```
+
+A line that carries an `err` is something the pass set out to do and could not
+-- an archive that cannot be written, a witness that did not hear -- and
+`prune` **exits non-zero** when there was one, saying how many and the first.
+It used to print the policy and exit 0 whatever came of the pass, since a
+command builds no logger and the lines went nowhere. Nothing leaves the
+database that was not written first, so a pass that failed is run again once
+what it names is mended -- and see `unkept`, under
+[Who heard the newest checkpoint](#who-heard-the-newest-checkpoint), for what
+one such pass leaves the next verification to find. The other `trail`
+commands print what their work logs in the same way -- a chunk the account
+does not have that a `purge` or a check of the rows passed over, a witness
+that did not answer a `verify` -- and fail for what they fail for already.
+These lines are stderr's whatever `otel:` says: a schedule that runs them
+keeps what the job printed.
+
+`prune` writes each chunk whole **before** it
 deletes anything, and deletes the rows that are in the chunk rather than re-running
 the query -- so the one failure it can leave is rows in both places, which is the
 direction to fail in. Nothing takes a lock, so `read` reads the archive as a whole
 (`--in`, or the files named on the command line) and a row two runs both archived is
 dropped by whichever read sees both. `read` opens no database, which is the point
-of keeping the archive. `purge` destroys by chunk and never by row, and there is
-nothing after it.
+of keeping the archive. Each line it prints is when, what, about which row and by
+whom, and a `-` in the last column is a line by nobody: a sweep's, or a command's
+at the box ([above](#the-cli-on-the-box-is-the-deployment)). `purge` destroys by
+chunk and never by row, and there is nothing after it.
 
 **The database keeps an account of what the archive holds**, written before every
 change to it, and what a pass and `purge` destroy is decided by that account: by
@@ -1521,6 +2079,19 @@ a backup, a pass a crash stopped. Every pass ends with a checkpoint of the
 account: keep them apart from the archive, `audit.checkpoints.dir` on a disk that
 refuses deletion.
 
+**What `verify` proves, and what it cannot.** It proves that the archive holds
+the chunks the database's account says it holds, under the labels the account
+recorded, and with `--full` that each chunk's bytes are the ones it is named by;
+that every row of the account and every checkpoint is signed by a key the
+deployment trusts; and that the checkpoints follow one another up to the newest
+a witness heard. That is the archive and its account, and nothing else. It reads
+no line of the trail that is still in the database, which is all of them until
+a window has moved some, nor a row of the access record there; and it reads no
+live row, which is `trail rows`. A deployment that names no archive has no
+account and no checkpoint -- there is nothing for a witness to hear -- and
+`verify` is refused there (`--in: which directory`): what stands for that
+deployment's trail is `trail rows` alone.
+
 **An acceptance is of what was looked at** (payday#115). `verify` prints, on
 stderr, the digest of what it found and the latest acceptances the checkpoints
 keep, newest first:
@@ -1534,7 +2105,9 @@ accepted at checkpoint 41, 2026-10-21T03:12:09Z, by ops@bastion: a pass the 10-2
 one looked at was -- and is refused when that finds anything else: a finding
 that turned up after somebody looked is not taken in beside the ones they
 did. Run `verify` again, look at what it finds now, and accept its digest. Who
-accepts is `--by`, the user and host of the shell when it does not say, and
+accepts is the operator `--as` names and the shell they are at, as `trail rows
+--accept` says it; where `--as` is not given it is `--by`, the user and host of
+the shell when that does not say either, and the two together are refused.
 `--why` is required. Both are kept where the archive's own word is: in the
 checkpoint the acceptance ends in, which every checkpoint after it names, so
 that what was accepted is held to the key as the archive is, and in a receipt
@@ -1570,6 +2143,9 @@ row of the trail keeps a keyed digest of the row its write left, bound to the
 row of the trail that keeps it (payday#115). The key is a file of `openssl rand
 -base64 32` mounted as a secret, or `base64:` and the key in
 `ROSTER_AUDIT_DIGEST_KEY`, and keys rotated out go in `audit.digest.previous`.
+Give an old key there as a **file**, wherever the configuration may be printed:
+`roster config` redacts `audit.digest.key` and prints `audit.digest.previous` as
+written, so one written `base64:` is the key in clear.
 
 `trail rows` digests every row again -- live, or erased and not yet forgotten --
 and compares it with the newest row of the trail about it: in the database, or
@@ -1621,14 +2197,72 @@ from an earlier write is **forged**. A person forgotten leaves a seal that says
 so and nothing of what they were, and the check counts the row as **forgotten**
 and vouches for what its digest covers, until the next write seals it again.
 
-It prints the kinds kept off the trail (`not checked:`) with why, every run.
+**What `rows` proves, and what it cannot.** It proves one thing of each row:
+that the row is as the newest line of the trail about it says the last write
+left it. A digest binds the row to that line's identifier, its moment and its
+action, and to nothing else the line says; and of the lines about a row only
+the newest is read. So *all match* is said of the rows, and not of the trail.
+Each of these was made in a database by hand, and both `rows` and `verify`
+answered that nothing was wrong:
+
+- a line's `actor_id`, `actor_tenant_id`, `tenant_id` or `patch` rewritten --
+  who did it, whose trail it is read in, and what it set -- the newest line's
+  among them;
+- any line but the newest about its row rewritten, or removed;
+- a line added with a moment in the past;
+- the newest lines about a row removed and the row put back as the line before
+  them left it, its seal with it: a write undone with its record. A `store:`
+  witness was named, and hears nothing of this, since what a witness hears is
+  the archive's checkpoints.
+
+What `rows` does find of a line is what the list of findings above says: the
+newest line's action or moment changed, its digest taken off or copied in, or
+the newest line removed while the row stays as it left it. A line that a pass has moved to
+the archive is in a chunk named by its bytes, which `verify --full` reads; a
+line still in the database is as whoever can write the database left it.
+
+Nor does it read everything. The access record is read by neither check: rows
+of it removed, or rewritten, are found by nothing. The control plane's rows
+are not read (above, *Nor does anything check it*). And it has a line, `not checked:`,
+for a kind declared off the trail, which never prints, because roster declares
+none: what is not read is said here and not by the command.
+
+A destruction **by hand** carries nothing forward, where a pass does (below):
+`prune --older-than … --discard` and `purge` take the newest lines about rows
+that are still there, and each such row is `not-on-trail` at the next check
+until it is accepted.
+
 What roster itself writes or removes past its servers is on the trail as
 that act, so it is no finding: a tenant destroyed and what went with it, a
-person forgotten and their rows, a person brought back, and what the sweeps
-collect -- a session, an attempt, a link, a delegation or a claim past its
-expiry. Before a pass destroys the newest row of the trail about a row that is
-still there, it carries that row's digest forward, so a row nobody wrote since
-its window is still checked.
+person forgotten and their rows, a person brought back, a name taken from the
+tenant that held it, a session made, used and ended at roster's own door, and
+what the sweeps collect -- a session, an attempt, a link, a delegation or a
+claim past its expiry, a consent past its keep. A line that says a row went is
+filed under the tenant the row was of, as the lines about the row were: a
+tenant's own reader of its trail is answered what was collected or destroyed of
+theirs, and a hold on that tenant keeps the line. It names nobody where a sweep
+or a command at the box removed the row, since neither is a holder; the act it
+is recorded as says which. A session made before #280 is the one that is a
+finding: its identifier says no kind, so the check prints `not-on-trail unknown
+<id>` for it and `--accept` accepts no row of it, and there is nothing to do
+but wait -- it is gone when its twelve hours are over and the sweep has passed.
+
+Before a pass destroys, out of the archive, the newest row of the trail
+about a row that is still there, it carries that row's digest forward, so a row
+nobody wrote since its window is still checked. A row of the trail a pass
+*discards* from the database is carried nowhere, which is why a `discard` beside
+`audit.digest.key` is refused at start (above).
+
+What a command at the box writes is called on the trail what the same act is
+called over the wire, on every line of it, so one name finds every reset
+however it was made: `vouch reset` and `control vouch reset` are
+`/roster.CredentialService/Issue`, `vouch set` `/Set` and `vouch unlock`
+`/Unlock`; `key add` and `control key add` mint as
+`/roster.ApiKeyService/Issue` (and a holder `control key add` makes is a
+`/roster.HolderService/Add`); `key revoke` is `/roster.ApiKeyService/Erase`.
+What has no RPC has a name of roster's own: `roster.hold.place`,
+`roster.hold.lift`, `roster.alias.free` for a tenant's alias freed, and
+`roster.holder.restore` for somebody brought back.
 
 A row a migration rewrote is a finding until somebody has looked. `trail rows`
 prints, on stderr, the digest of what it found, and `--accept --of <that digest>
@@ -1636,9 +2270,26 @@ prints, on stderr, the digest of what it found, and `--accept --of <that digest>
 each -- gone ones as gone -- and is refused when the check now finds anything
 else: a row somebody changed after the check that was looked at is not accepted
 with the ones that were (payday#115). Each row is on the trail as the act it is
-(`roster.trail.rows.accept`), and the digest and the why are logged with it. A
+(`roster.trail.rows.accept`). A
 forged row and a key not given are not accepted: look at the row of the trail,
 or give the key.
+
+**Who accepted, and why.** Who is the operator `--as` names, and the shell they
+are at -- `roster --as admin trail rows --accept …` -- or the shell alone when
+`--as` is not given; there is no `--by` as `trail accept` has. Each line the
+acceptance writes names that operator as its actor, so the trail says who
+accepted each row. The why is **not** on the trail: a line has nowhere to keep
+one. It is said on stderr with who and the digest, in the command's last two
+lines, and nowhere else:
+
+```
+time=2026-10-22T03:12:09Z level=INFO msg="trail: rows accepted as they are" by="admin (ops@bastion)" of=sha256:… why="the 10-20 migration set them" rows=12 gone=0 sealed=0
+accepted 12 row(s) and 0 gone, and sealed 0 from before seals, by admin (ops@bastion); the trail says they are what they are now
+```
+
+Keep what the command printed where an acceptance has to be explained later.
+An acceptance of the archive is different: `trail accept` keeps who and why in
+the checkpoint it ends in.
 
 **A row whose newest write sealed nothing** -- written before its kind
 declared the field personal -- is counted **from before seals**: no finding,
@@ -1713,9 +2364,14 @@ chunk of the first for missing. Each is refused.
 
 A **legal hold** is the one thing a manual window does answer to: what one is on is
 left by `prune --discard` and by `purge`, which say how much they kept and go ahead
-for everything else. A hold is a tenant's: an operator places one with `roster hold
+for everything else. `--discard` writes no row into the archive, whether or not
+`audit.archive` names one; given beside `--to` it is refused, since the two say
+two things about the same rows. A hold is a tenant's: an operator places one with `roster hold
 place --why … @tenant` (§ "A tenant leaving"), and the trail keeps what it holds of
-that tenant from then until it is lifted.
+that tenant from then until it is lifted -- the lines that say a row of the
+tenant's went among them, what a sweep collected and what somebody forgotten
+took with them, so that a row the hold keeps the making of is not one the check
+then finds `missing`.
 
 ### Who heard the newest checkpoint
 
@@ -1780,7 +2436,19 @@ the store is. What a verification can find of them, and what to do about each:
   the chain said, take the credentials that reach the database and the archive
   away from whoever had them, and accept only once it is understood, saying what
   happened in `--why`. An `unkept` below the newest is a checkpoint taken out of
-  the middle, and is the same.
+  the middle, and is the same -- **or it is one pass that could not write.** A
+  pass numbers its checkpoint in the database and then writes it to the store,
+  so one that ran while the store could not be written -- it is the archive's
+  own volume unless `audit.checkpoints.dir` names another, and a volume gone
+  read-only is what this was seen on -- took a number the store never
+  kept, and the next checkpoint that is kept *names none as the one before it,
+  and the store does not keep 1*. No witness is needed to find it and none
+  heard the number. What tells it from an incident is the deployment's own
+  record of that pass: `roster trail prune` exited non-zero with `trail: the
+  checkpoint of a pass` and the disk's error among its lines, and `serve`
+  logged the same. If the record says so, accept it, naming the pass in
+  `--why`; a pass that works afterwards does not clear it, and nothing but an
+  acceptance does.
 - **`rewritten` -- "heard it as …, and again as …: the count was wound back and
   the number taken again"**: a witness heard one number as two statements. Every
   witness was away, or kept from hearing, while the newest checkpoints were
@@ -1830,31 +2498,156 @@ is what was **written**; this is who **saw** what -- a row for each call that
 read, wrote or carried somebody's personal data, naming who asked, from where,
 the RPC, whose rows, and how it ended. What an operator reads of a customer's
 people through `admin.addr` is filed under that customer and names the operator.
+
+**What somebody is told of themselves is the one read that leaves no row**, on
+purpose. `MeService/Get` answers its caller their own alias, name, addresses and
+accounts, and takes no subject, so it cannot be pointed at anybody else: it is
+somebody reading what is theirs, themselves or through an app acting as them --
+a front door, the Login App filling a token's claims, the account page, the SCIM
+endpoint and the LDAP front asking whose key they were handed. That is not
+somebody reading somebody else's data, and a row for every page somebody loads
+would bury the rows a review is for. So **what an app is told of the person who
+is using it is not on the record**: the claims a relying party is handed at a
+sign-in, the second factor a front door is told to ask for, the address a
+leaving link is mailed to. What the same app reads of anybody through the
+directory is -- a `HolderService/Get` is a row whoever it is of, the caller
+included -- and so is how somebody signs in (`HolderService/SignsIn`: their
+subjects at providers, and what their keys and factors are called), which names
+the person and each account it answered.
+
+A row is under the tenant of whoever was read, whoever read them and however much
+of the row they asked for: an operator's, a deployment key's, a `select` of two
+fields. A call that was refused is under the tenant of the row it asked for by
+identifier -- another tenant's person asked for across the wall is on that
+tenant's record, naming who asked -- and under the caller's own where it named
+nothing that exists.
+
+**A refusal is on the record only where the request named somebody by
+identifier.** A `Get` by an alias nobody has, a lookup by an address nobody has
+and a search that finds nobody leave no row: they named no row. A refused call
+that sent an identifier is a row naming it, one nobody has included. A refused
+`Watch` is not, whatever it named: a stream is refused before what it asked for
+is read. And a call refused before roster takes it as anybody's -- no
+credential, a key that does not list the method, a rate limit -- leaves none.
+
+**Who a row names is who made the call, which is not always who was looking.**
+Through the LDAP front it is the front's own holder in the tenant, whoever bound:
+every read on a bound connection is made with the key the front holds for that
+tenant ([ldap.md](ldap.md) § *Whose eyes a search uses*), so the record says the
+directory read somebody and not for whom. What a front door reads with a
+deployment key names the key, which is held by no tenant; and at the box it is
+whoever `--as` named. *Whose rows* are the rows that held what was shown: a read
+of an address names the address by its identifier, and not the person.
+
+***From where* is the address at the other end of the connection, and nothing
+else.** No setting names a proxy roster would believe yet, and `X-Forwarded-For`
+is not read. So behind a terminator it is the terminator's address, and a read
+made through a front door -- the account page, the Login App, the SCIM endpoint,
+the LDAP front -- comes from that process's. Over gRPC it is an address, and over
+HTTP an address and a port.
+
+**A watch says each person once, for the life of the stream.** Its row is of the
+first time it showed them: somebody in a stream's first answer and in every
+change it sends for a month is one row, from its first second. A watch names its
+rows by identifier, so the row says who was watched; it does not say how often
+they were shown, nor for how long. A stream its caller hangs up within that
+first second is a row all the same, written as it ends: its `result` is how the
+stream ended, which for a hang-up reads `Unknown`, and it keeps nothing of the
+request.
+
 A read's row is written a second after it, by a loop every process runs, and the
 loop writes what it holds once more as the process stops; a process killed
 outright loses its last second.
+
+**At a listener a read is answered whether or not its row can be written.** The
+rows wait in the process's memory and are tried again each second, and each try
+that fails is a warning with how many wait: `access: the record could not be
+written; it is tried again`. What waits is lost two ways, each an error in the
+log, and both are worth an alert. Past a hundred thousand rows the oldest are
+dropped: `access: the record could not be written, and the oldest reads waiting
+for it were dropped`. And a process that stops with rows it could not write
+loses them: `access: the record waiting to be written was lost as the process
+stopped` (`... as the server stopped`, for what it answered while its listeners
+drained). A write is the other way round -- its row is in its own transaction, so
+a write of somebody's data whose row cannot be written is not made -- and so is
+a read at the box.
 
 A command at a shell on the box is recorded too, naming the operator `--as`
 named and the shell it ran in ([above](#the-cli-on-the-box-is-the-deployment));
 its reads are written before they are printed, since a command's process ends
 before a second is up.
 
+**It grows by the read, and nothing bounds it until you say.** A row for each
+call and each tenant whose people it showed -- a `List` of a hundred people is
+one row naming a hundred -- kept in the database for good, which is the default
+for the trail's reason: roster destroys nothing nobody asked it to. `serve` says
+so as it starts, as a warning, until a window is named or `profile: forever`
+says for good is meant: `access: the access record has no window ...`. What
+writes most of it:
+
+- **A directory front that polls.** An LDAP search of a whole tenant is a row for
+  each page of a hundred people and, where it asks for `mail` or a number, four
+  more a page for each of the two, since a list is asked about thirty-two
+  people at once: for ten thousand people who each have both, nine hundred rows
+  a search, naming each of them three times. Asked for `manager` it is up to
+  four more a page, for the calls that found somebody with a relation, and a
+  row for each read of a manager the search had not already read; asked for a
+  group's `member`, a row for every thirty-two members. Its lists of who is in
+  which group write none. A sign-in lookup -- `(uid=…)`, `(mail=…)`, the two
+  in an `|`, `(entryUUID=…)` -- is a row for each read that found somebody,
+  one or two, and none for a name nobody has ([ldap.md](ldap.md) § Search). A SCIM
+  `GET /Users` with no filter counts everybody the directory provisions on
+  every page it is asked for, by one call each that reads nothing personal and
+  leaves no row; what the count leaves is a row for each page of their
+  accounts at the connection that roster lists, ten for two hundred people. The
+  people the page shows are three rows each, and a fourth where they have a
+  number. A lookup by filter that finds somebody is three rows, or four, and
+  one that finds nobody is none. A group's `members` are read with nothing
+  personal, and leave no row.
+- **A refused call**, one row, from anybody with a credential: holding nothing
+  is no bar to being refused. `server.limit.rate` is what bounds how fast, and is
+  off until it is set.
+
 It is a kind of the trail's, `access`, so the same passes keep it, on a window of
-its own:
+its own -- with no archive, or with the deployment's:
 
 ```yaml
 audit:
   by:
     access:
-      profile: pipa-sensitive   # two years
+      retain: 2160h      # ninety days in the database,
+      discard: true      # and then destroyed, with no copy kept
 ```
 
+```yaml
+audit:
+  archive: /var/lib/roster/audit
+  checkpoints:
+    key: /run/secrets/roster-checkpoints.pem   # an archive is signed, as the trail's is
+  by:
+    access:
+      profile: pipa-sensitive      # ninety days in the database, two years in the archive
+```
+
+The window is the data plane's. **The control plane's own record is never
+swept**: no pass runs on that plane, whose trail is the deployment's own and is
+on no clock, so what `roster control access list` answers is kept for good. It
+is small -- operators reading operators, and the names `key list` prints.
+
 Nothing serves it over the wire yet: `AccessService` is registered on no port,
-and `roster trail read` passes over its rows. At the box it is the `access`
+and `roster trail read` passes over its rows. **Nor does any command read it once
+it has left the database**: under a window with an archive a row is in the
+`access` table until `retain` and in the archive from then until `destroy`, and
+nothing here reads the archive's half yet -- so `retain` is how far back a review
+can look with a command. At the box it is the `access`
 table of each plane, and the entity commands read it like any other: `actor_id`
 and `actor_tenant_id` say who, `tenant_id` whose record it is, `action` the
 RPC, `kind` `read`, `write` or `download`, `subjects` whose rows, and `value` an
-`AccessDetail` holding where the call came from and what a read asked for.
+`AccessDetail` holding where the call came from and how a read was asked.
+There is **no filter by whom was read**: `subjects` is a list with no index, so
+*who read alice* is every row of her tenant read and searched, in SQL or in
+what `access list -o json` prints -- where `subjects` are base64 and not the
+UUIDs the other columns are. Both are left for later.
 
 ```sh
 roster --as admin access list -o json '{"filters":[{"actor_id":"019ff2ab-..."}]}'   # what one operator did
@@ -1863,10 +2656,35 @@ roster --as admin control access list -o json                                   
 roster --as admin access get 019ff2ab-...                                         # one row, whole
 ```
 
-Reading it names nobody's personal data -- a row holds identifiers -- so it
-leaves no row of its own. The same columns answer SQL, for a review that wants
-a window of time: `SELECT ... FROM access WHERE actor_id = '019ff2ab-...' AND
-date_created >= ...`.
+**A row keeps how a read was asked, and none of the words it was asked by.** For
+a read that answered, `value` holds the request as the RPC's own message
+(`request`), with every word taken out and the field it was in left to say that
+it was given:
+
+- an identifier stays, and so do a boolean, a number and an enum: which row,
+  what was selected, a page's size, which way round;
+- every string goes, and every run of bytes that is not an identifier: an alias,
+  a name, an address, a subject, a number, a fragment searched for, what a
+  provider is called, a cursor, a secret. A field the schema declares
+  `personal` or `secret` goes whatever it holds.
+
+| a read | what its row keeps of the request |
+| --- | --- |
+| `Get` by identifier | the identifier, and the `select` |
+| `Get` by name | that it was by `slug`, with an alias; the tenant's identifier, or that the tenant was named by alias; the `select` |
+| `HolderService/Search` | that a fragment (`q`), a department or an employee number was given; its filters, as a `List`'s; the page's size |
+| `EmailService/Get` by address | the tenant's identifier, and that an address was given |
+| `IdentityService/Get` by subject | the tenant's identifier, and that a provider and a subject were given |
+| `PhoneService/Get` by number | whose it is, as a reference is kept, and that a number and a kind were given |
+| `List` | each filter -- a row or a tenant by identifier, or that one was named by alias; a filter by labels as a filter with nothing in it -- the size, and `reverse`. Not the cursor, nor that there was one: it is the last row's place in the order, which for an order by name is a name |
+| `Watch` | its filters, which name rows by identifier, and `skip_snapshot` |
+| a key, a delegation, a session, a link or a continuation by its `secret` | that it was read by `secret`, and nothing of it |
+| a write, and a call that was refused | nothing of the request |
+
+So reading the record names nobody's personal data -- a row holds identifiers,
+and how each read was asked -- and it leaves no row of its own. The same columns
+answer SQL, for a review that wants a window of time: `SELECT ... FROM access
+WHERE actor_id = '019ff2ab-...' AND date_created >= ...`.
 
 ### A key that can read the trail can read everything
 
@@ -1899,12 +2717,16 @@ box, or `serve` applying the policy on its own clock.
 keeps their alias, name and profile, and their addresses and identities keep
 theirs. The trail holds that each was set and when, and not what to -- they are
 declared personal (payday#92), so the row is the only copy. That is right for
-*this person has left*.
+*this person has left*. Nor does it erase what hung on them: their places in
+sites, teams and groups and the relations others have to them are still
+listed, each naming somebody `get` answers `NotFound` for
+([customers.md](usage/customers.md#removing-somebody) says what a reader does
+about it).
 For *destroy what you hold about them* there is a second act:
 
 ```sh
 roster forget @contoso/erin        # now, because they asked
-roster forget                      # everybody whose grace has run out
+roster forget                      # everything a clock is done waiting for: what `serve`'s loops do, at once
 roster forget --dry-run            # who that would be
 roster restore @contoso/erin       # undo the erase, while there is one to undo
 ```
@@ -1914,6 +2736,29 @@ holder:
   forget_after: 720h   # 30 days after an erase. empty is never
   every: 24h
 ```
+
+**Nobody of the control plane is forgotten, restored or held.** The three commands
+open the customers' database and no other, and the control plane has no forget
+window: its people are the deployment's own operators and the holders its own
+callers hang off. `roster forget @admin` names a customer's `admin` where there is
+one, and never the operator. So an operator erased with `roster control holder
+erase` cannot be brought back, and their row keeps what it said -- alias, name,
+verifier, second factor -- for as long as `control.db` is kept; the erase says so
+before it is made. Stop an operator who may return with `control holder disable`.
+An operator who asks for what is held about them to be destroyed is answered by
+hand, in `control.db`, until the commands for that plane are made.
+
+**With no name it is every loop `serve` runs for this, once.** What earlier forgets
+still owe the trail is paid; everybody erased for longer than `holder.forget_after`
+is forgotten; the consents kept for longer than `consent.keep` past their account
+are destroyed; the closed tenants past `tenant.restore_within` are destroyed, and any
+whose destruction stopped is finished; and the aliases held for `tenant.alias_hold`
+are given back. Each part is the function its loop calls, so a deployment that runs
+this from cron and one that leaves it to `serve` end the same. Something that fails
+-- one person, one tenant -- is said where it fails and does not stop the rest; the
+command then exits non-zero, having said at the end what failed, and the next run
+takes it. Under `--dry-run` it prints who and what, and how many consents and debts,
+and changes nothing.
 
 **Two triggers and one act.** A request has no grace -- they asked, and the clock a
 regulator counts is already running (GDPR Article 12(3) gives a month;
@@ -1925,22 +2770,170 @@ compromised account deleting things, a billing dispute.
 destruction is a delay. It refuses somebody already forgotten, which is the honest
 answer: a forgotten holder has no alias, so there is no name left to bring back.
 
+**Each is made on what is so when it is made.** A pass reads who is due once, and
+then asks each of them again inside the transaction that destroys them: somebody
+you restored while it ran is left as the restore left them, and so is everybody of
+a tenant you held while it ran. The log says who was left and why (`forget: left,
+having been due when the pass began`), and `roster forget` prints it. A restore and
+a forget of one person at the same moment end one way or the other, and whichever
+came second says what the first did: `restore` that they have been forgotten,
+`forget @contoso/erin` that they were restored while it was being decided, and
+that it destroyed nothing -- run it again if it is still meant. And nothing is
+written for somebody forgotten: a binding, a place in a team, an address or any
+other row that names a person, written at the moment they are forgotten, is either
+taken with them or refused, saying that whoever it names was forgotten while it
+was being written. That refusal is `Internal` over the wire, with the sentence in
+it; asked again, the same write is answered that there is nobody of that name.
+
+**It gives back the account, and not the sign-ins.** A restore stamps the moment
+everything issued before it is void, as `roster holder invalidate` does and in the
+same write: a delegation a front door held, a session at a console, a link mailed
+before the erase and a sign-in half made do not answer again, and an app holding a
+session for them hears so on the sync stream. They sign in again. Somebody erased
+cannot be signed out everywhere first -- no verb reads them -- so the restore is
+where it is done, and one who left by themselves was signed out before the erase
+already.
+
+**A key is not ended by it.** Signing somebody out everywhere ends no key, on
+purpose ([usage/ways-in.md](usage/ways-in.md) § *Stopping one*), and a restore
+is the same: a key that was theirs answers again the moment they are back. Where an
+account was erased because somebody else was in it, revoke its keys **while it is
+erased**, and then restore:
+
+```sh
+roster --as admin key list                 # an erased person's keys are listed with everybody's
+roster key revoke --id 01a03322-…          # now, and for good
+roster restore @contoso/erin
+```
+
+**And it says when their name is somebody else's.** An erase frees the alias at
+once, so somebody new may be called it by the time of a restore, which then refuses
+in words: who has the name now, and the rename that makes way. It names them by
+identifier and prints no name -- `restore` needs no `--as`, and shows nothing
+anybody's row declares personal; the first command it gives is the read that
+does. Somebody erased is renamed by nothing, so it is the other who is:
+
+```sh
+roster --as admin holder get -o json 01a03b71-…        # whoever has the name now: their alias, and their dateUpdated, whole
+roster --as admin holder realias 01a03b71-… '{"alias":"erin-2","date_updated":"2026-11-17T03:45:23.443111678Z"}'
+roster restore 01a0332f-…                              # the one who was erased, by identifier
+```
+
+`@contoso/erin` names two people then, and `restore` and `forget` refuse to choose:
+each says who they are, by identifier, and which was erased and when. The same
+refusal is made where it is what their directory called them that somebody else is
+called now (`directory_name`, `directory_subject`, `directory_address`), and which
+of the two the directory means is yours to say.
+
+**Until they are forgotten, what they held is still held.** An erase stamps the
+person and nothing else. Their alias is anybody's to take at once. Their
+addresses and their accounts at providers stay theirs, because a restore gives
+back who they were -- and so, for as long as they are neither restored nor
+forgotten:
+
+- nobody else is written that address or that account (`AlreadyExists`). An
+  address they never proved is the exception it is everywhere: it names nobody,
+  and goes to whoever proves it;
+- somebody arriving at a front door by that account, or verified at an address
+  they proved, is refused under every `enrol` -- `403`, *this account was deleted
+  here; an administrator of your organisation can bring it back, or let it go*
+  -- and nobody is made in their place ([login.md](login.md) § *Putting people
+  in, and letting them arrive*);
+- a directory that provisions them is refused as taken, every cycle
+  ([scim.md](scim.md)).
+
+It ends one of three ways. `roster restore` brings them back. `roster forget`
+destroys everything. Or one thing they hold is let go and the rest kept -- by
+an administrator of the tenant, or an operator at the box -- having found it by
+a list filtered to them:
+
+```sh
+roster --as admin identity list '{"filters":[{"holder":{"id":"<their identifier>"}}]}'
+roster --as admin identity erase <the id of the account>
+roster --as admin email erase <the id of the address>
+roster --as admin phone erase <the id of the number>
+```
+
+Each is held to the rule a way in is taken away by -- whoever holds everything
+the person held ([usage/rules.md](usage/rules.md)) -- and an account is not held
+to *nobody removes their last way in*: they are erased, and nothing signs them
+in. Restored afterwards, they are who they were without it.
+
+**And `forget_after` is never unless you set it.** Left empty, an erase holds an
+address and an account for good, and somebody who comes back is refused at the
+door until an operator runs `roster forget` for them. That is right where an
+operator erases people and means it. It is wrong for **a product whose people
+delete their own account and come back** (`config.leave`,
+[usage/customers.md](usage/customers.md)): set the window to as long as a
+mistaken deletion should be undoable, and they are refused within it and arrive
+as somebody new after it.
+
 What goes: everything that says *this person reaches here, signs in there, holds
 this* -- addresses, identities, verifiers, API keys, sessions, attempts, links, and
-the rows that say what they may do, and any app's nomination to act as them. The `Holder` row **stays, blank**: its
-identifier is `Audit.actor_id` and thirteen foreign keys point at it, and what makes
+the rows that say what they may do, and any app's nomination to act as them. A link
+that names an address of theirs goes with the address, whoever it was mailed for:
+somebody else's claim of it has nothing left to prove, and is not left to be read as
+a link that signs its claimant in. The `Holder` row **stays, blank**: its
+identifier is `Audit.actor_id` and seventeen foreign keys point at it, and what makes
 it personal data is that it *resolves*. Emptied, it is a stable pseudonym reaching
 nothing.
 
+**Blank is every column the schema declares personal**: the alias, the name, the
+description, the labels, the profile, `data`, their picture, and what their
+directory called them (`directory_subject`, `directory_address`,
+`directory_name`). What the row still says is its identifier, its tenant, when it
+was made, erased, suspended and signed out everywhere, and which directory
+suspended them if one did (`directory`, a connection's name).
+
 The trail keeps its **events** and loses its **contents**, in the database and in
-the archive both -- the actor, the action, the object and the time stay; `value`
-and `patch` go. Most of what they held of the person was never there: a field
+the archive both -- the actor, the action, the object and the time stay, and so do
+which fields the write touched (`fields`), the line's keyed digest (`digest`) and
+which fields that covers (`digest_fields`): numbers, and a MAC that is of no
+personal field; `value` and `patch` go. Most of what they held of the person was never there: a field
 declared personal is on the trail as a value at no level. What `forget` blanks is
 the rest -- what was written about them in free text, and rows written before
 payday#92. Both halves matter and they pull against each other: a version that
 destroyed the rows would let somebody erase the evidence of what was done *to*
 them by asking to be forgotten. The archive is reached only if `audit.archive` is
 set; archives you keep elsewhere are yours to reach.
+
+**What is written about somebody is theirs too, and is on the trail at no level.**
+The schema declares personal the fields that hold somebody's own -- an address
+(`Email.address`), a number (`Phone.number`), their subject at a provider
+(`Identity.subject`), and on their row what the paragraph above lists -- and the
+ones that hold what was *written about* them or about what is theirs: a key's
+`alias` and `desc`, a credential's `name`, and the `labels` of a binding, a relation
+and a nomination, with a nomination's `name`. These seven said nothing until #280,
+and the trail's line said them: *Hana Kim's laptop*, *manager*, *asked on 11-02*. A
+line says now that the field was set and never what to; the keyed digest leaves it
+out, and the row's seal covers it; and the row is the one copy, answered to
+whoever may read the row, found by its alias as before, and gone with its person.
+What a field holds that is about no one -- a role's name, what a key may do, a
+hostname -- says that too (`personal: false`), and
+`TestEveryFieldSaysWhetherItIsSomebodys` holds every field of every entity to
+saying one or the other. A deployment that had rows of those five kinds before is
+told so by `roster trail rows`, which counts them **from before seals** until they
+are written again or accepted (§ *The audit trail*, *a row whose newest write sealed
+nothing*); and
+the lines its trail already kept still say what they said, until their own window
+or a forget of the person reaches them.
+
+**Nobody is written into what is about no one.** A tenant, a group, a team, a site
+and a role say what they are called and what is said of them on the trail, as
+values, and no forget reaches that: one named after a person keeps the name. So
+does **why a tenant is held** (`roster hold place --why`): it is the deployment's
+note, and the trail saying why a hold was placed is the point of writing one.
+Write a case there -- *Contoso v. Fabrikam, 2026-123* -- and not somebody's name.
+
+**The access record is not reached, and holds nothing they were called.** A row
+of it names whose data a call carried by identifier, which stays as the trail's
+actor does: theirs, which is the blank row's, and those of their addresses,
+accounts and numbers, which are rows that are gone and so resolve to nothing. Of
+what a read asked for a row keeps how and not what by (§ *Who read whose data*):
+a `Get` that named them by alias, a search for their name and a lookup by their
+address each say that much and hold no alias, name or address. What is left of
+somebody forgotten is identifiers that resolve to nothing, until the row's own
+window runs out (`audit.by.access`).
 
 **One transaction, and the archive's half owed in it.** The person's rows, the
 holder blanked and the trail's rows about them in the database are one transaction,
@@ -1949,12 +2942,26 @@ row of payday's `owed` table for each thing forgotten, which a rollback takes wi
 the rest. It is paid as soon as the transaction commits; a payment that fails, or a
 process that stops before it, leaves the debt to the trail's next pass, which pays
 what is owed before it moves anything, and `roster forget` says how much is still
-owed. A trail row a legal hold is on stays as it was, and its debt with it:
+owed -- and, when the payment failed, says why on stderr and exits non-zero, though
+the person is forgotten in the database. A trail row a legal hold is on stays as it was, and its debt with it:
 `roster forget` says how many and whose, and the pass after the hold is lifted erases
 them -- nobody runs anything again. `roster trail owed` says what the deployment owes
-at any moment: how many, since when, and how many each tenant's hold keeps. The rows'
+at any moment: how many, since when, and how many each tenant's hold keeps -- or
+kept when it was last paid, where that hold has been lifted since. The rows'
 seals are owed with the archive's half and paid with it (payday#144), so the
 transaction takes no turn with a pass.
+
+**That pass runs in every deployment.** Where `audit:` names a retention window it
+is the trail's own (`roster.trail`). Where it names none -- the default, a trail kept
+for ever -- `serve` spins a loop that does the first thing a pass does and nothing
+else of one (`roster.owed`, on the trail's clock, `audit.every` or a day): it pays
+what forgets already made still owe, and applies no window to anything, so a trail
+kept for ever is still kept for ever. And `roster forget` with no name pays the same
+debts first, for a deployment that runs the command instead or does not want to wait
+for the loop; `--dry-run` says how many are owed and since when, and pays nothing.
+Naming somebody again does not do it: a second `roster forget @contoso/erin` reaches
+their own line and not those of the address and the key that went with them, whose
+identifiers only the debt still has.
 
 **What somebody consented to stays past them.** An app's record of their
 consents (`ConsentService`, [apps.md](apps.md) § *What an app keeps here*) is
@@ -1971,7 +2978,19 @@ consent:
 
 A tenant an operator holds keeps them as it keeps everything, a restore inside
 the window gives them back with the person, and a tenant destroyed takes them
-with it.
+with it. Both are asked where a consent is destroyed, and not only when the pass
+reads which are due: one of somebody restored, or of a tenant held, while the pass
+ran is kept.
+
+**What `consent.keep` destroys is the row, and the trail still says it.** A consent
+declares nothing personal -- it is a document's name, a version, a client and
+identifiers -- so the line of the trail that recorded the agreement says it whole:
+which document, which version, through which client, and whose, by the holder's
+identifier. That line stays for as long as the trail keeps lines (`audit:`), past
+the row, and `roster.consent.destroy` beside it says when the row went. A deployment
+that means an agreement to be gone after `consent.keep` gives the trail a window no
+longer than that; kept for ever, the trail goes on saying that the identifier
+agreed.
 
 ## A tenant leaving
 
@@ -1983,7 +3002,7 @@ roster restore @newco                         # while tenant.restore_within last
 roster forget @newco                          # destroy it now; it has to be closed first
 roster forget                                 # and every one whose grace has run out
 roster forget --reuse @newco                  # free its alias now rather than in a year
-roster hold place --why "Contoso v. Fabrikam, 2026-123" @newco   # nothing of it is destroyed
+roster hold place --why "Contoso v. Fabrikam, 2026-123" @newco   # it is not destroyed, and the trail keeps what it has of it
 roster hold lift @newco
 roster hold ls
 ```
@@ -1994,6 +3013,14 @@ tenant:
   alias_hold: 8760h      # its alias stays taken a year after. empty is a year
   every: 24h
 ```
+
+**There is no erase.** These steps are the whole of how a tenant ends.
+`TenantService/Erase` is in the schema and is served at no port: it answers
+`Unimplemented` (`501`), at `admin.addr` in a sentence that names the two steps
+above. `roster tenant --help` offers no `erase`, and `roster tenant erase` typed
+all the same prints that sentence and exits non-zero, having opened nothing.
+Every row of a tenant is keyed to its row, so the row does not go: destroyed, it
+stays, blank.
 
 **Close** stamps `Tenant.date_closed` and destroys nothing. From then nobody of the
 tenant gets in, on every door at once: `Vouch.Verify` and every other sign-in say
@@ -2007,13 +3034,16 @@ key that names it **through a binding across the tenant** may close a tenant ove
 wire, including the tenant's own administrator, who is then locked out with everybody
 else; one that names it only in a site or a team is refused, since a close reaches
 everybody ([usage/permissions.md](usage/permissions.md) § *A site*). A tenant a file
-declared is the file's to close, and the control plane's one tenant cannot be.
+declares is not closed over the wire, as it is not edited there; it is closed at the
+box, with the command above, since a file has no key that closes one. And the control
+plane's one tenant cannot be closed at all.
 
 **Restore** is what makes the window a grace, as for a person: the tenant comes back
 exactly as it was, keys and all, until `restore_within` has run out -- and refused
 after it even if the sweep has not got there yet, because what decides is the window
 and not when something ran. With no window, a close can be restored until somebody
-destroys the tenant.
+destroys the tenant. On the trail it is `TenantService/Restore`, whether it was made
+over the wire or by `roster restore @newco` at the box.
 
 **Destroy** takes what is left: every person forgotten as `roster forget` forgets
 anybody, every other row of the tenant removed -- roles, bindings, groups, sites and
@@ -2022,26 +3052,85 @@ nominations -- and the tenant row blank. What stays is its identifier, which the
 names it by, and the blank holders, for the same reason. The trail keeps its events
 and follows its own windows; its people's contents go as each is forgotten. The first
 write is `date_destroyed`, so a restore cannot get between, and running it again
-finishes one that stopped -- which the sweep does on its own. Each of those writes is
+finishes one that stopped -- which the sweep does on its own, wherever it stopped. It
+finds a stamped tenant by what is left of it: somebody not yet forgotten, a row of
+any of those kinds, or a name on its own row. So one that stopped after its last
+person, with only its rows to go, is finished at the next pass; and so is anything
+written into a tenant after it was destroyed, since a destroyed tenant holds
+nothing. Each of those writes is
 made on what was decided: the stamp only on a tenant still closed and held by nobody,
 and a restore only on one not yet stamped, so the two cannot cross.
 
-**A hold stops all of it.** `roster hold place` writes `Tenant.date_held` and what it
-is for; while it is there `forget` refuses the tenant, the sweep passes it by, its
-people whose own grace runs out are not forgotten on the clock, and the trail keeps
+**Nothing is written into a tenant that is destroyed.** A row of any kind that names
+its tenant -- a person, a site, a team, a role, a group, a name or a claim on one, a
+mail domain, a connection, a nomination -- is refused there with `FailedPrecondition`,
+at `admin.addr` and at the box alike, and so is `TenantService.Update`: the row says
+nothing about itself again. What is still written on it is the deployment's own: the
+alias given back, and an operator's hold, which keeps what the trail has of the tenant,
+keeps its alias from being given back, and stops a destruction that is under way. A **closed** tenant is not this. Whoever
+runs the deployment still writes in one, at `admin.addr` and at the box, which is how
+a customer is put right before it is restored.
+
+**A file does not close a tenant, and does not bring one back.** From the close on,
+what a `resources:` file declares of the tenant -- the tenant itself, and every
+connection, name and mail domain declared under it -- is left exactly as it is:
+nothing is written and nothing is compared, while the tenant is closed and after it
+is destroyed. `serve` starts all the same, and says at every start, as a warning,
+which tenant and which files (`resources: a file declares a tenant that is closed`,
+`… that was destroyed`); `roster resources apply --dry-run` marks each such row `!`.
+Restored, the tenant is the file's again at the next start. So a declared tenant
+leaves in three steps:
+
+1. Close it, at the box.
+2. Take it, and what is declared under it, out of the file, and deploy.
+3. Let `restore_within` run out, or `roster forget @tenant`.
+
+Left in the file past the day its alias is free again, it declares a tenant nobody
+is, and the next start makes a new one of that name.
+
+**A hold stops the tenant being destroyed, and keeps what the trail has of it.**
+`roster hold place` writes `Tenant.date_held` and what it is for; while it is there
+`forget` refuses the tenant, the sweep passes it by, its people whose own grace runs
+out are not forgotten on the clock nor their consents destroyed, the alias of one
+already destroyed is not given back by the clock or by `--reuse`, and the trail keeps
 what it holds of it. A hold placed while a tenant is being destroyed stops it at the
-next person: those forgotten before it stay forgotten. Lifted, everything carries on
-from where it waited. It is a
+next person: those forgotten before it stay forgotten. One placed while a pass over
+the people is running stops that pass at the next person in the same way. It is a
 command and not an RPC on purpose: a tenant's administrator lifting the hold on
 their own records is what a hold exists to prevent. Placing and lifting are in the
 trail.
+
+**Two things it does not stop.** *Somebody of the tenant forgotten by name.*
+`roster forget @newco/erin` under a hold destroys their rows and blanks their own, as
+it does anybody's: a request to be forgotten has a regulator's clock on it, and a
+dispute between two companies does not stop that. What the hold keeps of them is the
+trail's lines about them and about what was theirs, as they were, until it lifts,
+and the first pass after that erases them. The command says so each time it happens
+-- whose hold and what for, how many rows went, how many lines are kept -- and no
+flag asks for it: if the claim is about that person's rows, do not run it. *And the
+tenant's own grace.* `restore_within` is counted from the close whatever holds the
+tenant. A tenant closed and then held for longer than the window can be neither
+restored, since its grace ran out, nor destroyed, since it is held; and **lifting the
+hold lets the next pass destroy it**. Nothing waits from where it was when the hold
+was placed: every clock is where it is now. `roster hold place` on a closed tenant
+prints until when it can still be restored, and what lifting the hold does after
+that. If the tenant is to come back, restore it while the grace lasts and hold it
+open.
+
+**Nobody is restored into a tenant that is destroyed.** A destruction a hold stopped
+part way leaves some of the tenant's people there, and `roster restore` of one who
+had been erased is refused, saying when the tenant was destroyed: an account is
+somebody of a tenant, and there is none for them to be of. They are forgotten with
+the rest when the hold lifts.
 
 **The alias is held.** A name that found somebody still finds them after the rows
 are gone -- former people typing it into a sign-in form, bookmarks, mail, a QR
 sticker with it printed on -- and a tenant that took it the next day would be that
 name to all of them; the sharp case is somebody doing it on purpose. So the
 destroyed row keeps it for `alias_hold`, and then it becomes `gone-<identifier>` and
-anybody may take it. A restore never meets the hold, because the alias never left.
+anybody may take it. Which aliases were freed is told by that exact name, so one
+somebody chose that begins `gone-` is held and freed like any other. A restore never
+meets the hold, because the alias never left.
 `--reuse` frees one sooner on purpose, and the trail records that it did. A hostname
 is freed at once: taking one again needs proof (#42), which is the rule an alias hold
 only approximates.
@@ -2072,6 +3161,10 @@ in it is the trail's to be watched for, with a deployment that keeps an archive:
 the checkpoints the `log:` witness tells, and the alerts on them in § "Who heard
 the newest checkpoint".
 
+`otel:` is read by the processes that serve. A command at a shell builds none
+of it: what its work logs -- `roster trail prune`'s pass, `roster forget` --
+it prints on stderr, where whoever ran it is looking (§ "The audit trail").
+
 ## Running more than one
 
 Everything durable is in the database and nothing in `cmd/` or `server/` writes to
@@ -2099,18 +3192,28 @@ through a pooler, which `LISTEN` cannot cross.
 
 With `memory`, a client watching one replica never hears about a write that landed
 on another, and nothing reports it: the stream stays open and the client looks
-connected. `none` is honest instead -- it refuses `Watch` outright, so a client is
+connected. `serve` says so once as it starts, at `WARN`, where `memory` is beside a
+`spin.lease` of several processes (`postgres`) on either plane -- naming
+`control.watch.broker` where the control plane's is the one -- and refuses
+nothing: one process may hold such a lease.
+
+What a file declares (`resources`) is applied by `serve` as it starts, before it
+serves and past what publishes a write: a declared role whose methods changed is
+said to no follower, so a follower of another replica keeps what it had until its
+own copy runs out, thirty seconds in `reach`. `none` is honest instead -- it refuses `Watch` outright, so a client is
 told rather than left listening. What no broker promises is that nothing is missed:
 a notification reaches whoever is listening at that moment and is then forgotten,
-so a subscriber that falls behind is cut and re-reads a snapshot when it
-reconnects. An **outbox** answers the other question -- it makes an event survive a
+so a subscriber that falls behind is cut, `ResourceExhausted`, and so is every
+subscriber of a `postgres` broker that lost its connection. An entity's `Watch`
+re-reads a snapshot when it reconnects. The sync stream has none: it says
+nothing again, and a follower opens another and asks about whoever it holds. An **outbox** answers the other question -- it makes an event survive a
 crash between the commit and the publish -- and needs a broker to be worth
 anything. Its drain runs wherever there is a broker, with the setting or
 without: a command at a shell writes there whatever this file says (§ *The CLI
 on the box is the deployment*).
 
 **The background loops run in one replica only if you say how.** The sweeps,
-the trail's retention, the forget window and the outbox drain are each a loop,
+the trail's retention or what pays its debts, the forget window and the outbox drain are each a loop,
 and `spin.lease` says which process runs it -- named, like the broker, and for the
 same reason: `local` runs every loop in every process, which is right for one and
 silently wrong for two.
@@ -2125,7 +3228,9 @@ in, and runs in whichever replica holds it; when that replica goes, its locks go
 with its connection and another takes each loop within a few seconds. A host
 that vanishes rather than exits is noticed by TCP keepalives the lease asks for,
 within about a minute. Both planes' loops are under the one lease, named
-`roster.*` and `roster.control.*`; who holds what is the database's to say:
+`roster.*` and `roster.control.*`; a lease of several over a plane whose
+database is SQLite is refused at start, since each process would be a
+deployment of its own; who holds what is the database's to say:
 
 ```sql
 SELECT a.pid, a.client_addr, a.backend_start, l.objid
@@ -2145,10 +3250,13 @@ added here has to be too.
 
 The rest of the checklist:
 
-- **Set a maximum connection age.** `server.keepalive.max_connection_age`, and the
-  same under `control` and `admin`. Unset means a gRPC client holds its connection
-  forever, so a replica added to the pool gets no traffic until something else
-  disconnects. The HTTP transcoders balance per request and are unaffected.
+- **Set a maximum connection age, and its grace.** `server.keepalive.max_connection_age`
+  and `max_connection_age_grace`, and the same under `control` and `admin`. Unset
+  means a gRPC client holds its connection forever, so a replica added to the
+  pool gets no traffic until something else disconnects. An age with no grace
+  ends no stream that is open (§ *A stream held open*), so a follower of the
+  sync stream stays where it is. The HTTP transcoders balance per request and
+  are unaffected.
 - **The same `vouch.keys`, in the same order, everywhere** -- see above for why the
   rotation is two phases.
 - **The same breached-password corpus, or none.** It gates setting a password and
@@ -2204,6 +3312,14 @@ deployment's: either roster's own listeners (`tls:` beside `server.addr`,
 is what `deploy/` assumes and what `scripts/cluster.sh` exercises. The account
 app, the Login App and the SCIM endpoint speak plain HTTP and have no `tls:` of
 their own: each is always behind one.
+
+**A block's `tls:` is its gRPC listener's alone.** The `http.addr` beside it
+-- `server.http`, `control.http`, `admin.http` -- is plain whatever the block
+says, and is for a terminator in front that holds the certificate; `serve`
+says so once as it starts, for each block that says both. A block whose
+`tls.client_ca_file` asks every caller for a certificate and that names an
+`http.addr` is refused at start: the plain port would answer whoever the
+certificate keeps out.
 
 ## Locally, in one command
 

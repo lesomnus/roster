@@ -86,6 +86,12 @@ type Caller struct {
 	// Core 5.3.2). Empty when Subject is the `sub`.
 	sub string
 
+	// claim is the claim the connection names its people by
+	// (`Connection.subject_claim`), which is what gives Subject a shape where
+	// it has one: an `oid` is a GUID ([unkept]). Empty is a connection that
+	// names none, and so `sub`.
+	claim string
+
 	// What else the token carried, for a policy that names people by it.
 	Email    string
 	Verified bool
@@ -110,6 +116,11 @@ type Caller struct {
 	// the provider with and for nothing else. Unexported, so it is never in
 	// anything an app logs or passes on by accident.
 	token *oauth2.Token
+
+	// issuer is the one the connection named when they signed in, which is
+	// whose token that is: a row moved since is another provider, and is asked
+	// nothing with it.
+	issuer string
 }
 
 // tokenSub is the ID token's `sub`, whichever claim Subject is.
@@ -135,6 +146,91 @@ type Enrol func(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, error)
 
 // ErrUninvited is what an [Enrol] answers when this person gets no account.
 var ErrUninvited = errors.New("arrives: nobody here")
+
+// ErrUnlinked is what [Providers.Known] answers for somebody the policy found
+// here whose account this front door may not link: they are who the claim
+// says, and writing them this way in is not the front door's.
+//
+// # Why it is an answer of its own
+//
+// A first sign-in is linked by the front door's own `IdentityService/Add`,
+// and that write is held to what every way in is held to: nobody writes one
+// for somebody who holds more than they do (`server/core/escalate.go`). A
+// front door holds little, on purpose, so anybody an operator entered **and
+// gave a role** -- every administrator invited by address -- is refused it.
+//
+// That is the rule working. A front door that linked whoever it matched would
+// be a way to become anybody whose address a directory will vouch for, and
+// the people it is refused are the ones worth becoming. But the refusal came
+// back as an error like any other, and an app answered it as its own
+// failure: *this login is not working*, at every try, with nothing to say what
+// would end it.
+//
+// So it is told apart, as [ErrUninvited] is: a refusal about this person,
+// which an app answers them with, and which an administrator of their tenant
+// ends by linking the account. What to link is in the log [Providers.Known]
+// writes, since a subject is issued at the directory and nobody knows it
+// before the first sign-in.
+var ErrUnlinked = errors.New("arrives: known here, and not this front door's to link")
+
+// ErrAnotherAccount is what [Providers.Known] answers for somebody whose
+// address the policy matched to a person who already signs in through this
+// provider, by another account.
+//
+// A proved address names its holder to whoever arrives verified at it
+// ([invitation]), and that holder may have an identity at this provider
+// already: their account at the directory was made again, or the address is
+// somebody else's there now. roster refuses the link -- a second account at
+// one provider is a link that found the wrong row
+// (`server/core/identity.go`) -- and which of the two it is, is not a front
+// door's to guess.
+//
+// It is a refusal about this arrival, like [ErrUnlinked], and came back the
+// same way: as an error an app answered as its own failure. An administrator
+// of the tenant ends it, by saying which account is the person's -- the one
+// they have taken away and this one linked, or this arrival given a row of its
+// own.
+var ErrAnotherAccount = errors.New("arrives: the address is somebody's who signs in here by another account at this provider")
+
+// ErrErased is what [Providers.Known] answers for somebody who was erased:
+// found by the account they had at this provider, or by an address they
+// proved.
+//
+// # Why they are found at all
+//
+// An erase stamps the person and nothing else. Their alias comes free at once;
+// their accounts at providers and their addresses stay theirs, because
+// somebody erased can be brought back until they are forgotten (`roster
+// restore`), and a restore gives back who they were. So the row a sign-in is
+// resolved by is still there, and names somebody who is not.
+//
+// Nothing here knew that. Arriving by the account they had, they were found
+// and handed to `VouchService/Accept`, which refused them as a fault; arriving
+// verified at an address they proved, they were matched to it ([invitation])
+// and the link to a person who is not there failed. Each came back as an
+// error like any other, which an app answered as its own failure, at every
+// try -- for as long as nobody forgot them, which is for good where the
+// deployment set no `holder.forget_after`.
+//
+// # What it is instead
+//
+// A refusal about this arrival, like [ErrUnlinked]: the account was deleted,
+// and whoever administers their tenant ends it -- by bringing them back, or
+// by letting go of what they hold, so that the next arrival is a stranger's
+// and the policy decides. Nobody is made in their place under any policy: the
+// account and the address are still theirs to come back to, and a second
+// person holding neither would be who they are from then on.
+//
+// # And who is told
+//
+// Whoever the provider says holds that account, or holds a mailbox somebody
+// here **proved**: the two an arrival is matched by, and what
+// [ErrAnotherAccount] and [ErrUnlinked] already answer about. Not an address
+// the provider did not check, which is matched to nobody; and not an address
+// the erased person never proved, which names nobody and keeps nobody out
+// (`server/core/email.go`), so whoever arrives verified at it is a stranger
+// and takes it.
+var ErrErased = errors.New("arrives: somebody erased, who is their tenant's to bring back or let go")
 
 // Invited refuses everybody roster has not been told about, where *told about*
 // means an `Identity` row: this is only reached when there is none, so it is
@@ -190,6 +286,31 @@ func Expected() Enrol {
 // The lookup is not an optimisation. Without it, entering somebody in advance
 // **breaks** their sign-in: the alias an operator chose is the alias this
 // derives, and `Holder.Add` answers AlreadyExists.
+//
+// # Only an address the provider checked is a name
+//
+// The alias is read off the address when the provider says the address is
+// verified, which is the condition an invitation is found under ([invitation])
+// and for the same reason: an address a provider did not check is one the
+// person typed. Named by it, the first stranger to type `ceo@` at a directory
+// that asks no proof is `ceo` here, in every list an administrator reads and
+// every token a product is handed, and whoever that address belongs to is
+// `ceo-x7kq` when they arrive. So somebody whose address nobody checked is
+// named as somebody with no address is: a name nobody chose ([aliasOf]),
+// which is theirs to change. They are enrolled all the same -- who may arrive
+// is the policy's, and this is only what they are called.
+//
+// # And nobody is made whose account roster would not keep
+//
+// Making somebody and linking their account are two calls: this is the first,
+// and [Providers.Known] makes the second. A subject roster keeps none of -- an
+// address, where a connection names the wrong claim -- was refused at the
+// second, after the first: the person stayed, with the plain alias and no way
+// in, and since nothing of theirs was found at the next try, that one made
+// another, with a suffix. Three tries left three people (#279). So what the
+// link is refused for on its form is asked here, before anybody is made
+// ([unkept]). It is the connection's failure, as it was, and the app's to
+// answer as its own.
 func Enrolling() Enrol {
 	return func(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, error) {
 		id, ok, err := invitation(ctx, c, who)
@@ -200,7 +321,16 @@ func Enrolling() Enrol {
 			return id, nil
 		}
 
-		alias := aliasOf(who.Email)
+		if why := unkept(who); why != "" {
+			return pdid.Nil, fmt.Errorf("enrol %s/%s: nobody is made, because roster would keep no account for them: the subject %s",
+				who.Provider, who.Subject, why)
+		}
+
+		named := ""
+		if who.Verified {
+			named = who.Email
+		}
+		alias := aliasOf(named)
 
 		v, err := c.Holder().Add(ctx, rstr.HolderAddRequest_builder{
 			Tenant: rstr.TenantRef_builder{Alias: proto.String(who.TenantAlias)}.Build(),
@@ -226,6 +356,27 @@ func Enrolling() Enrol {
 
 		return pdid.From(v.GetId())
 	}
+}
+
+// unkept is why roster would keep no account for this arrival, whoever it were
+// linked to, and empty where it would: what `IdentityService/Add` refuses a
+// subject for on its form.
+//
+// The rule is roster's and is asked of roster's own functions, since a copy of
+// it here would be the one that fell behind: [front.Unstable] for what no
+// subject is, and [front.GUID] where the connection names its people by `oid`.
+// What else that write refuses is about a row -- who the person is, what they
+// hold, whether the account is somebody's already -- and cannot be asked
+// before there is one.
+func unkept(who Caller) string {
+	if why := front.Unstable(who.Subject); why != "" {
+		return why
+	}
+	if who.claim == front.ClaimOid && !front.GUID(who.Subject) {
+		return "is not a GUID, and this connection names its people by `oid`, which is one"
+	}
+
+	return ""
 }
 
 // AliasOf is what to call somebody a directory sent, from their address: the
@@ -342,6 +493,13 @@ func aliasOf(address string) string {
 // as about anybody. The address then follows the proof the way it does
 // everywhere: [Providers.attest] hands it to `Email.Attest`, which takes an
 // address nobody proved from whoever held it.
+//
+// # And the somebody may have been erased
+//
+// An address outlives its person until they are forgotten. A proved one is
+// still theirs, and what it names is somebody who is not here: the answer is
+// [ErrErased], and not a holder to link. One nobody proved is a stranger's to
+// this lookup like any other.
 func invitation(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, bool, error) {
 	if who.Email == "" || !who.Verified {
 		return pdid.Nil, false, nil
@@ -361,7 +519,8 @@ func invitation(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, bool, 
 			DateVerified: proto.Bool(true),
 			EnteredBy:    proto.Bool(true),
 			VouchedBy:    rstr.IdentitySelect_builder{}.Build(),
-			Holder:       rstr.HolderSelect_builder{}.Build(),
+			// With their tenant, which is how somebody erased is told ([gone]).
+			Holder: rstr.HolderSelect_builder{Tenant: rstr.TenantSelect_builder{}.Build()}.Build(),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -379,6 +538,21 @@ func invitation(ctx context.Context, c rstr.Client, who Caller) (pdid.Id, bool, 
 	id, err := pdid.From(h.GetId())
 	if err != nil {
 		return pdid.Nil, false, err
+	}
+
+	if gone(h) {
+		// The address outlived its person. One they proved is still theirs,
+		// and whoever arrives verified at it is refused as them
+		// ([ErrErased]). One nobody proved names nobody, an invitation
+		// included -- it was read as one, and asking how somebody who is not
+		// there signs in failed the sign-in of whoever holds the mailbox --
+		// so they are a stranger, and the address goes to them with the
+		// proof ([Providers.attest]).
+		if v.GetDateVerified() == nil {
+			return pdid.Nil, false, nil
+		}
+
+		return pdid.Nil, false, erased(ctx, who, id, "an address they proved")
 	}
 
 	switch {
@@ -416,13 +590,26 @@ type Providers struct {
 	roster rstr.Client
 	secret func(ref string) (string, error)
 
-	// discovery is the document per (tenant, connection), fetched once.
-	discovery sync.Map // tenantId + "\x00" + name -> *oidc.Provider
+	// discovery is what a connection's issuer publishes, fetched once for as
+	// long as the connection names that issuer ([discovered]).
+	discovery sync.Map // tenantId + "\x00" + name -> *discovered
 
-	// own and anywhere fetch a picture: from the provider's own API, with
-	// the token it handed over, and from anywhere else, without it and only
-	// on the internet. `fill.go` says why there are two.
+	// arriving is the sign-ins under way here, one at a time for one account
+	// ([turns]).
+	arriving turns // tenantId + "\x00" + provider + "\x00" + subject
+
+	// own is how a provider is asked anything -- its document, its token
+	// endpoint, its keys, its userinfo, its API, a picture on that API's
+	// host -- and `dial.go` says what it is held to. anywhere fetches a
+	// picture from wherever else a claim pointed, without the token and only
+	// on the internet; `fill.go` says why there are two.
 	own, anywhere *http.Client
+
+	// PrivateHosts is the hosts off the internet a provider may be at,
+	// because the deployment said so: a directory on the premises, a test's
+	// on this machine. None is none, and a provider is then asked only at an
+	// address on the internet, and only over `https` (`dial.go`).
+	PrivateHosts PrivateHosts
 
 	// SlackAPI is where Slack's Web API is, for a tenant whose profiles are
 	// filled from Slack (`TenantProfile.slack_secret_ref`). Empty is Slack's
@@ -451,7 +638,13 @@ type Providers struct {
 // see. `secret` turns a `Connection.secret_ref` into the client secret it
 // names; roster stores that reference and never reads it.
 func New(c rstr.Client, secret func(ref string) (string, error)) *Providers {
-	return &Providers{roster: c, secret: secret, own: ownClient(), anywhere: publicClient(public)}
+	p := &Providers{roster: c, secret: secret, anywhere: publicClient(public)}
+
+	// Asked of `p` at each connection, so what a deployment names after this
+	// -- as it names its GitHub or its Slack -- is what is read.
+	p.own = ownClient(p.reaches, p.inTheClear)
+
+	return p
 }
 
 // Connections is one tenant's providers, in the order roster lists them.
@@ -498,6 +691,12 @@ func (p *Providers) Connections(ctx context.Context, tenant pdid.Id) ([]*rstr.Co
 //     provider that does not ignores it (RFC 7636 § 5).
 //   - **The nonce**, on an OpenID connection, held against the ID token's own.
 //     GitHub issues no ID token, so there is nothing for one to be in.
+//   - **The issuer.** A connection is read again at the callback, and the row
+//     may have moved to another issuer since the browser left. The code is the
+//     first issuer's, and the exchange would send it -- with the verifier that
+//     makes it worth something -- to the second one's token endpoint. So an
+//     answer is finished only while the connection still names the issuer the
+//     trip went to, and the person starts again otherwise.
 type Trip struct {
 	// URL is where to send the browser.
 	URL string
@@ -505,6 +704,7 @@ type Trip struct {
 	tenant     pdid.Id
 	alias      string
 	connection string
+	issuer     string
 	redirect   string
 	verifier   string
 	nonce      string
@@ -540,6 +740,7 @@ func (p *Providers) Begin(ctx context.Context, tenant pdid.Id, alias, connection
 		return nil, err
 	}
 
+	t.issuer = v.issuer
 	t.verifier = oauth2.GenerateVerifier()
 	opts := []oauth2.AuthCodeOption{oauth2.S256ChallengeOption(t.verifier)}
 	if v.gitHub == "" {
@@ -614,6 +815,10 @@ func asking(v *verifier, again bool) []oauth2.AuthCodeOption {
 type verifier struct {
 	id *oidc.IDTokenVerifier
 
+	// issuer is the one the connection named when this was made, which is
+	// whose check this is ([Trip]).
+	issuer string
+
 	subject     string
 	gitHub      string
 	directories string
@@ -652,7 +857,7 @@ func (p *Providers) relying(ctx context.Context, t *Trip) (*oauth2.Config, *veri
 			return nil, nil, fmt.Errorf("connection %s: GitHub names its people by their account's id, and %q is a claim of an ID token, which GitHub does not issue", t.connection, named)
 		}
 
-		return gitHubRelying(c.GetIssuer(), c.GetClientId(), secret, t.redirect, c.GetScopes()), &verifier{gitHub: api}, nil
+		return gitHubRelying(c.GetIssuer(), c.GetClientId(), secret, t.redirect, c.GetScopes()), &verifier{issuer: c.GetIssuer(), gitHub: api}, nil
 	}
 
 	// The issuer is checked here, against the token's own directory, for an
@@ -668,6 +873,7 @@ func (p *Providers) relying(ctx context.Context, t *Trip) (*oauth2.Config, *veri
 		Scopes:       append([]string{oidc.ScopeOpenID}, c.GetScopes()...),
 	}, &verifier{
 		id:          v.Verifier(&oidc.Config{ClientID: c.GetClientId(), SkipIssuerCheck: every != ""}),
+		issuer:      c.GetIssuer(),
 		subject:     c.GetSubjectClaim(),
 		directories: every,
 		microsoft:   p.microsoft(c.GetIssuer()),
@@ -675,8 +881,30 @@ func (p *Providers) relying(ctx context.Context, t *Trip) (*oauth2.Config, *veri
 	}, nil
 }
 
+// discovered is what one issuer publishes, kept for the connection that named
+// it.
+//
+// # Why the issuer is kept beside it
+//
+// What is fetched once is a fact about an **issuer**: where it signs people
+// in, where its token endpoint is, which keys it signs with. It was kept by
+// the connection's name alone and never held against the row again, while the
+// row is read at every request -- so a connection moved to another issuer, or
+// erased and added again under the same name, went on being the first one
+// until the process restarted: browsers were sent to the first issuer, its
+// keys were believed, and the client's secret, which is read fresh, was posted
+// to its token endpoint. A row that names another issuer is another provider
+// from the next request on, so the entry is good for the issuer it was
+// fetched from and is replaced when the row names another. One entry for a
+// connection, as before.
+type discovered struct {
+	issuer string
+	v      *oidc.Provider
+}
+
 // discover is one connection of one tenant and what its issuer publishes, the
-// second fetched once -- and nil for GitHub's, which publishes nothing.
+// second fetched once for that issuer ([discovered]) -- and nil for GitHub's,
+// which publishes nothing.
 func (p *Providers) discover(ctx context.Context, tenant pdid.Id, name string) (*rstr.Connection, *oidc.Provider, error) {
 	c, err := p.roster.Connection().Get(ctx, rstr.ConnectionGetRequest_builder{
 		Ref: rstr.ConnectionRef_builder{
@@ -696,13 +924,15 @@ func (p *Providers) discover(ctx context.Context, tenant pdid.Id, name string) (
 
 	k := tenant.String() + "\x00" + name
 	if had, ok := p.discovery.Load(k); ok {
-		return c, had.(*oidc.Provider), nil
+		if had := had.(*discovered); had.issuer == c.GetIssuer() {
+			return c, had.v, nil
+		}
 	}
-	v, err := discoverAt(ctx, c.GetIssuer())
+	v, err := p.discoverAt(ctx, c.GetIssuer())
 	if err != nil {
-		return nil, nil, fmt.Errorf("discovery at %s: %w", c.GetIssuer(), err)
+		return nil, nil, fmt.Errorf("discovery at %s: %w", c.GetIssuer(), said(err))
 	}
-	p.discovery.Store(k, v)
+	p.discovery.Store(k, &discovered{issuer: c.GetIssuer(), v: v})
 
 	return c, v, nil
 }
@@ -740,11 +970,16 @@ func (p *Providers) Claim(ctx context.Context, t *Trip, back *http.Request) (Cal
 	if err != nil {
 		return Caller{}, fmt.Errorf("%w: %w", ErrUnfinished, err)
 	}
+	if v.issuer != t.issuer {
+		return Caller{}, fmt.Errorf("%w: connection %s was moved to another issuer after this round trip began, and the first one's code is not sent to the second",
+			ErrUnfinished, t.connection)
+	}
 	who, err := p.exchange(ctx, cfg, v, t, back.URL.Query().Get("code"))
 	if err != nil {
 		return Caller{}, err
 	}
 	who.Tenant, who.TenantAlias, who.Provider = t.tenant, t.alias, t.connection
+	who.issuer = t.issuer
 
 	return who, nil
 }
@@ -755,9 +990,9 @@ func (p *Providers) exchange(ctx context.Context, cfg *oauth2.Config, v *verifie
 	if code == "" {
 		return Caller{}, errors.New("no code")
 	}
-	tok, err := cfg.Exchange(ctx, code, oauth2.VerifierOption(t.verifier))
+	tok, err := cfg.Exchange(p.through(ctx), code, oauth2.VerifierOption(t.verifier))
 	if err != nil {
-		return Caller{}, err
+		return Caller{}, said(err)
 	}
 	if v.gitHub != "" {
 		return p.fromGitHub(ctx, v.gitHub, tok)
@@ -768,7 +1003,10 @@ func (p *Providers) exchange(ctx context.Context, cfg *oauth2.Config, v *verifie
 	}
 	id, err := v.id.Verify(ctx, raw)
 	if err != nil {
-		return Caller{}, err
+		// The keys are fetched here, by the client the document was fetched
+		// with ([Providers.through]), and an answer that is not a set of keys
+		// is in the error.
+		return Caller{}, said(err)
 	}
 	if v.directories != "" {
 		if err := inDirectory(id, v.directories); err != nil {
@@ -809,6 +1047,7 @@ func (p *Providers) exchange(ctx context.Context, cfg *oauth2.Config, v *verifie
 		Name:     claims.Name,
 		Picture:  claims.Picture,
 		token:    tok,
+		claim:    v.subject,
 	}
 	who.Authenticated = authTime(claims.AuthTime)
 	if named := v.subject; named != "" && named != "sub" {
@@ -867,6 +1106,30 @@ func authTime(v any) time.Time {
 // moved, and an operator moves them. `who.Subject` is then that row's subject,
 // because it is what `Door.Accept` resolves them by next.
 //
+// # And a first link it may not write is a refusal, not a failure
+//
+// The same rule refuses the first link of somebody the policy found who holds
+// more than this front door. There is no row they had to sign in by, so they
+// are not signed in, and what is answered is [ErrUnlinked]: an app tells them
+// an administrator links the account, as it tells a stranger they were not
+// invited. So is the link of somebody found by their address who already
+// signs in through this provider by another account, which roster refuses as
+// a second account at one provider: [ErrAnotherAccount].
+//
+// # And so is somebody who was erased
+//
+// Their account here and the address they proved outlive them until they are
+// forgotten, so either may be what this arrival is found by. Nobody is signed
+// in, linked or made, under any policy, and what is answered is [ErrErased].
+//
+// # And one account arrives one at a time
+//
+// A first sign-in looks, finds nobody, and may then make somebody and link
+// them. Arrivals of one account take turns at this front door ([turns]), so
+// the second finds what the first made. One finished first at another front
+// door is found when the link is refused as taken, and whoever it names is
+// who this is.
+//
 // # And it attests on every sign-in, not only the first
 //
 // Somebody already linked used to be answered before [Providers.attest] was
@@ -877,19 +1140,13 @@ func authTime(v any) time.Time {
 // unproved for good. `Email.Attest` is idempotent for exactly this, so the
 // returning half calls it too.
 func (p *Providers) Known(ctx context.Context, enrol Enrol, who *Caller) (pdid.Id, error) {
-	v, err := p.identity(ctx, who, who.Subject)
-	switch status.Code(err) {
-	case codes.OK:
-		id, err := pdid.From(v.GetHolder().GetId())
-		if err != nil {
-			return pdid.Nil, err
-		}
-		p.attest(ctx, id, v, *who)
+	// One arrival at a time for one account ([turns]): what follows looks,
+	// and then may make somebody and link them, and two arrivals of one new
+	// person that both looked first are two people.
+	defer p.arriving.take(who.Tenant.String() + "\x00" + who.Provider + "\x00" + who.Subject)()
 
-		return id, nil
-	case codes.NotFound:
-	default:
-		return pdid.Nil, err
+	if id, ok, err := p.linked(ctx, who); err != nil || ok {
+		return id, err
 	}
 
 	if who.sub != "" && who.sub != who.Subject {
@@ -914,6 +1171,54 @@ func (p *Providers) Known(ctx context.Context, enrol Enrol, who *Caller) (pdid.I
 		Provider: who.Provider,
 		Subject:  who.Subject,
 	}.Build())
+	if status.Code(err) == codes.PermissionDenied {
+		// roster's answer about this write and this person, and not a fault
+		// of anybody's ([ErrUnlinked]). Said here once, for both front doors,
+		// with the one thing whoever links them cannot know otherwise: the
+		// subject the provider just said.
+		slog.WarnContext(ctx, "arrives: known here and not linked, because this front door may not write their way in; "+
+			"an administrator of the tenant links them (`roster identity add`)",
+			"tenant", who.TenantAlias, "holder", id.String(), "provider", who.Provider, "subject", who.Subject, "err", err)
+
+		return pdid.Nil, ErrUnlinked
+	}
+	if status.Code(err) == codes.InvalidArgument {
+		// Refused as a row roster would not keep. One reason is about this
+		// arrival and nobody's fault: the person the policy found already
+		// signs in through this provider, by another account
+		// ([ErrAnotherAccount]). Any other is the connection's -- a subject
+		// that is an address, or not of the claim's shape -- and is everybody's
+		// who arrives through it, so it stays the error it was.
+		if has, ok := p.accountAt(ctx, id, who.Provider); ok {
+			slog.WarnContext(ctx, "arrives: matched by an address of somebody who already signs in through this provider by another account, and not linked; "+
+				"an administrator of the tenant says which account is theirs",
+				"tenant", who.TenantAlias, "holder", id.String(), "provider", who.Provider, "subject", who.Subject, "has", has, "err", err)
+
+			return pdid.Nil, ErrAnotherAccount
+		}
+	}
+	if status.Code(err) == codes.AlreadyExists {
+		// Taken since this arrival looked, which is another arrival of the
+		// same account, finished first at another front door: the account is
+		// there now, and whoever it names is who this is. It was an error like
+		// any other, about an account that had just been made for the very
+		// person arriving.
+		//
+		// Whoever the policy made for this arrival is then left, with no way
+		// in. That is said, with who: a front door erases nobody -- erasing a
+		// person is not held to what they hold, so a role that could take
+		// this one back could erase anybody in the tenant -- and an
+		// administrator does (`roster holder erase`).
+		if has, ok, again := p.linked(ctx, who); again == nil && ok {
+			if has != id {
+				slog.WarnContext(ctx, "arrives: one new person arrived at two front doors at once, and the other linked their account first; "+
+					"whoever was made for them here is left with no way in, for an administrator of the tenant to erase (`roster holder erase`)",
+					"tenant", who.TenantAlias, "left", id.String(), "holder", has.String(), "provider", who.Provider, "subject", who.Subject)
+			}
+
+			return has, nil
+		}
+	}
 	if err != nil {
 		return pdid.Nil, fmt.Errorf("link %s/%s: %w", who.Provider, who.Subject, err)
 	}
@@ -921,6 +1226,119 @@ func (p *Providers) Known(ctx context.Context, enrol Enrol, who *Caller) (pdid.I
 	p.attest(ctx, id, link, *who)
 
 	return id, nil
+}
+
+// linked is who the claim already names here, if it names anybody: the
+// ordinary lookup, which every sign-in after the first is.
+//
+// Somebody erased is still named by the account they had, and is refused
+// ([ErrErased]). Anybody else is attested, at every sign-in ([Providers.Known]).
+func (p *Providers) linked(ctx context.Context, who *Caller) (pdid.Id, bool, error) {
+	v, err := p.identity(ctx, who, who.Subject)
+	switch status.Code(err) {
+	case codes.OK:
+	case codes.NotFound:
+		return pdid.Nil, false, nil
+	default:
+		return pdid.Nil, false, err
+	}
+
+	id, err := pdid.From(v.GetHolder().GetId())
+	if err != nil {
+		return pdid.Nil, false, err
+	}
+	if gone(v.GetHolder()) {
+		return pdid.Nil, false, erased(ctx, *who, id, "the account they had")
+	}
+	p.attest(ctx, id, v, *who)
+
+	return id, true, nil
+}
+
+// turns is one arrival at a time under a name, at this front door: a lock by
+// key, kept for as long as somebody holds it or waits for it.
+//
+// # What it is for
+//
+// A first sign-in is a lookup that finds nobody, and then -- where the policy
+// enrols -- two writes: the person, and their account. Nothing makes the three
+// one. Four arrivals of one new person at once each found nobody and each
+// made somebody; one link landed and three were refused as taken, so three
+// tabs were answered *cannot sign in* and three people were left with a name
+// nobody chose and no way in (#279).
+//
+// Roster has no one write for a person and their account that a front door
+// may call, and a verb is not added for it; and a front door does not take
+// back what it made ([Providers.Known] says why). So the arrivals of one
+// account take turns here, and the second finds what the first made.
+//
+// # What it is not
+//
+// More than this process. Two front doors -- the Login App and the account
+// app, or two replicas of one -- are two of these, and a person arriving at
+// both in one moment is still looked for twice before either writes. Each is
+// then answered as the one person the account was linked to
+// ([Providers.Known]), and whoever the other made is left, and said in the
+// log. A round trip is finished by the process that began it, so one of each
+// is how a deployment runs them (`docs/operating.md`).
+type turns struct {
+	mu   sync.Mutex
+	held map[string]*turn
+}
+
+type turn struct {
+	sync.Mutex
+
+	// wanted is how many arrivals hold this turn or wait for it: at none, it
+	// is forgotten, so that what is kept is the sign-ins under way and not
+	// everybody who ever arrived.
+	wanted int
+}
+
+// take waits for the turn under `key`, and answers what gives it back.
+func (t *turns) take(key string) func() {
+	t.mu.Lock()
+	if t.held == nil {
+		t.held = map[string]*turn{}
+	}
+	v := t.held[key]
+	if v == nil {
+		v = &turn{}
+		t.held[key] = v
+	}
+	v.wanted++
+	t.mu.Unlock()
+
+	v.Lock()
+
+	return func() {
+		v.Unlock()
+
+		t.mu.Lock()
+		defer t.mu.Unlock()
+		if v.wanted--; v.wanted == 0 {
+			delete(t.held, key)
+		}
+	}
+}
+
+// accountAt is the subject somebody already signs in by at a provider, and
+// whether they have one. Asked only after a link was refused, to say why; a
+// front door that may not ask is one that cannot say, and answers as it did.
+func (p *Providers) accountAt(ctx context.Context, holder pdid.Id, provider string) (string, bool) {
+	ways, err := p.roster.Holder().SignsIn(ctx, rstr.HolderSignsInRequest_builder{
+		Ref: rstr.HolderRef_builder{Id: holder.Bytes()}.Build(),
+	}.Build())
+	if err != nil {
+		return "", false
+	}
+	for _, v := range ways.GetIdentities() {
+		if v.GetProvider() == provider {
+			return v.GetSubject(), true
+		}
+	}
+
+	return "", false
 }
 
 // identity is the row a subject at this provider names in this tenant.
@@ -934,9 +1352,42 @@ func (p *Providers) identity(ctx context.Context, who *Caller, subject string) (
 			}.Build(),
 		}.Build(),
 		Select: rstr.IdentitySelect_builder{
-			Holder: rstr.HolderSelect_builder{}.Build(),
+			// With their tenant, which is how somebody erased is told ([gone]).
+			Holder: rstr.HolderSelect_builder{Tenant: rstr.TenantSelect_builder{}.Build()}.Build(),
 		}.Build(),
 	}.Build())
+}
+
+// gone is whether a holder read through a row of theirs -- an identity, an
+// address -- has been erased.
+//
+// An erase stamps the holder and leaves those rows, and an edge is loaded
+// through the rows still there: somebody erased comes back as a bare
+// reference, the identifier and nothing of them. Every holder has a tenant,
+// so one read with its tenant selected that comes back with none was not
+// found -- which is how roster reads it of a key's holder and a link's
+// (`server/keys`, `server/vouch`). A read that did not select the tenant says
+// nothing, and every read this is asked of does.
+func gone(h *rstr.Holder) bool { return len(h.GetTenant().GetId()) == 0 }
+
+// erased is [ErrErased], said once in the log for both front doors, as a
+// warning: who arrived, as whom, and what ends it. The holder is named by
+// identifier because that is all that still names them -- their alias came
+// free when they were erased, and may be somebody else's by now.
+//
+// And by nothing else of theirs. It said their subject at the provider, which
+// is declared personal (`Identity.subject`), in a log nothing of roster's
+// reaches: once they are forgotten, the line was the one place left that
+// tied the identifier their row keeps to who they were at a provider (#280).
+// Whoever reads this needs the holder, to bring them back or to list what
+// they hold and let it go, and both are done by the identifier.
+func erased(ctx context.Context, who Caller, holder pdid.Id, by string) error {
+	slog.WarnContext(ctx, "arrives: somebody erased arrived, and was told their account was deleted; "+
+		"an operator brings them back (`roster restore`), "+
+		"or an administrator of the tenant lets go of what they hold (`roster identity erase`, `roster email erase`)",
+		"tenant", who.TenantAlias, "holder", holder.String(), "provider", who.Provider, "by", by)
+
+	return ErrErased
 }
 
 // moved finds somebody by the `sub` their identity was keyed by before the
@@ -945,7 +1396,8 @@ func (p *Providers) identity(ctx context.Context, who *Caller, subject string) (
 // Answers false when there is no such row: they are new under either claim,
 // and enrolment decides. A refused move is said and not refused -- they signed
 // in by a row the token's own `sub` names, exactly as they did before the
-// connection moved -- and `who.Subject` goes back to that row's subject.
+// connection moved -- and `who.Subject` goes back to that row's subject. A row
+// whose person was erased is neither: [ErrErased].
 func (p *Providers) moved(ctx context.Context, who *Caller) (pdid.Id, bool, error) {
 	v, err := p.identity(ctx, who, who.sub)
 	switch status.Code(err) {
@@ -959,6 +1411,11 @@ func (p *Providers) moved(ctx context.Context, who *Caller) (pdid.Id, bool, erro
 	id, err := pdid.From(v.GetHolder().GetId())
 	if err != nil {
 		return pdid.Nil, false, err
+	}
+	if gone(v.GetHolder()) {
+		// Not moved, and not signed in by the row they had: nobody is there
+		// to be either.
+		return pdid.Nil, false, erased(ctx, *who, id, "the account they had, by the `sub` it was keyed by")
 	}
 
 	if _, err := p.roster.Identity().Resubject(ctx, rstr.IdentityResubjectRequest_builder{
@@ -1052,8 +1509,19 @@ type held[T any] struct {
 // Held is an empty store.
 func Held[T any]() *States[T] { return &States[T]{by: map[string]held[T]{}} }
 
+// StatesHeld is how many round trips a front door holds unfinished at once.
+//
+// A round trip is begun by a `GET` that asks for no session, so it is
+// anybody's to begin, and what it began was held for its ten minutes without
+// number -- each insert sweeping everything held, under the lock a callback
+// takes too (#277). A sign-in is seconds between its two ends, so this is
+// thousands of people signing in at one moment; past it the next is told to
+// come back.
+const StatesHeld = 4096
+
 // Put remembers one flow, and sweeps whatever has run out while it is here.
-func (s *States[T]) Put(state string, v T, ttl time.Duration) {
+// It answers whether it did: not past [StatesHeld].
+func (s *States[T]) Put(state string, v T, ttl time.Duration) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	now := time.Now()
@@ -1062,7 +1530,12 @@ func (s *States[T]) Put(state string, v T, ttl time.Duration) {
 			delete(s.by, k)
 		}
 	}
+	if len(s.by) >= StatesHeld {
+		return false
+	}
 	s.by[state] = held[T]{v: v, expires: now.Add(ttl)}
+
+	return true
 }
 
 // Take answers one flow once. A state that names none, or one that has run out,

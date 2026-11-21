@@ -2,11 +2,14 @@ package cmd_test
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/lesomnus/payday/config"
+	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdtest"
 	"github.com/lesomnus/xli/cfg"
 	"github.com/stretchr/testify/require"
@@ -20,8 +23,10 @@ import (
 
 // TestADirectorysKeyIsMintedForOneTenantAndOneConnection: `roster scim
 // provision` marks the connection the tenant's directory provisions through,
-// makes the directory's holder with a role holding exactly what it calls, and
-// mints a tenant key -- replaced on every run, so a second run is a rotation.
+// makes the directory's holder with a role holding what it calls but the
+// writes that change a group (`scim.Bound()`), and mints a tenant key listing
+// all of it (`scim.Methods`) -- replaced on every run, so a second run is a
+// rotation.
 // A connection a file declares is the file's to mark.
 func TestADirectorysKeyIsMintedForOneTenantAndOneConnection(t *testing.T) {
 	x := require.New(t)
@@ -131,4 +136,132 @@ func TestAnEndpointWithNoControlPlaneIsRefused(t *testing.T) {
 		Scim:  cmd.ScimConfig{Addr: "127.0.0.1:0"},
 	})
 	require.ErrorContains(t, err, "scim:")
+}
+
+// TestProvisionAfterTheDirectorysHolderWasErased: once the directory's holder
+// is erased, `roster scim provision` goes on as it does the first time -- a
+// holder under the name the erase freed, the role, a binding, a key.
+//
+// It refused, for good: *the tenant's role "scim" is bound to others*. That was
+// not so. An erase leaves a binding hanging, on purpose (#279), and the count
+// of who else the role is bound to counted the erased holder's.
+func TestProvisionAfterTheDirectorysHolderWasErased(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	c := seedbed(t)
+	out, err := initRun(t, c)
+	x.NoError(err, "init: %s", out)
+
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	acme, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "acme"}.Build())
+	x.NoError(err)
+	at := app.TenantRef_builder{Id: acme.GetId()}.Build()
+	_, err = s.Ungated.Connection().Add(ctx, app.ConnectionAddRequest_builder{
+		Tenant: at, Name: "entra", Issuer: "https://login.microsoftonline.com/acme/v2.0", ClientId: "the-app",
+		SubjectClaim: "oid",
+	}.Build())
+	x.NoError(err)
+	x.NoError(s.Close())
+
+	// The key it prints is the test's to throw away, and its error to read.
+	provision := func() error {
+		var err error
+		captured(t, func() error {
+			err = cli.NewCmdScim(cfg.New(cmd.Name, &c), &c).Run(ctx, []string{"provision", "--tenant", "acme", "--connection", "entra"})
+
+			return nil
+		})
+
+		return err
+	}
+	directorys := func(s *cmd.Server) *app.Holder {
+		t.Helper()
+		h, err := s.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+			Ref: app.HolderRef_builder{Slug: app.HolderRefBySlug_builder{Alias: proto.String(cli.ScimHolder), Tenant: at}.Build()}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		return h
+	}
+
+	x.NoError(provision())
+
+	s, err = cmd.Build(ctx, c)
+	x.NoError(err)
+	was := directorys(s)
+	_, err = s.Ungated.Holder().Erase(ctx, app.HolderRef_builder{Id: was.GetId()}.Build())
+	x.NoError(err)
+	x.NoError(s.Close())
+
+	x.NoError(provision(), "the role's binding to the erased holder was counted as somebody else's")
+
+	s, err = cmd.Build(ctx, c)
+	x.NoError(err)
+	t.Cleanup(func() { s.Close() })
+	now := directorys(s)
+	x.NotEqual(was.GetId(), now.GetId(), "a new holder, under the name the erase freed")
+	ks, err := s.Ungated.ApiKey().List(ctx, app.ApiKeyListRequest_builder{
+		Filters: []*app.ApiKeyFilter{app.ApiKeyFilter_builder{Holder: app.HolderRef_builder{Id: now.GetId()}.Build()}.Build()},
+	}.Build())
+	x.NoError(err)
+	x.Len(ks.GetItems(), 1)
+	bs, err := s.Ungated.Binding().List(ctx, app.BindingListRequest_builder{
+		Filters: []*app.BindingFilter{app.BindingFilter_builder{Holder: app.HolderRef_builder{Id: now.GetId()}.Build()}.Build()},
+	}.Build())
+	x.NoError(err)
+	x.Len(bs.GetItems(), 1, "bound the directory's role")
+}
+
+// TestTheMarkProvisionWroteComesOffByConnectionUpdate: the mark `roster scim
+// provision` puts on a connection comes off with `roster connection update`,
+// `provisions: false` under the version read, which is what the manual tells
+// an operator turning a tenant's directory off. The manual said how the mark
+// comes off a connection a file declares, and nothing of this one.
+func TestTheMarkProvisionWroteComesOffByConnectionUpdate(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	c := seedbed(t)
+	out, err := initRun(t, c)
+	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin"
+
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	acme, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "acme"}.Build())
+	x.NoError(err)
+	at := app.TenantRef_builder{Id: acme.GetId()}.Build()
+	_, err = s.Ungated.Connection().Add(ctx, app.ConnectionAddRequest_builder{
+		Tenant: at, Name: "entra", Issuer: "https://login.microsoftonline.com/acme/v2.0", ClientId: "the-app",
+		SubjectClaim: "oid",
+	}.Build())
+	x.NoError(err)
+	x.NoError(s.Close())
+
+	stdoutOf(t, cli.NewCmdScim(cfg.New(cmd.Name, &c), &c), "provision", "--tenant", "acme", "--connection", "entra")
+
+	connection := func() *app.Connection {
+		t.Helper()
+		s, err := cmd.Build(ctx, c)
+		x.NoError(err)
+		defer s.Close()
+		v, err := s.Ungated.Connection().Get(ctx, app.ConnectionGetRequest_builder{
+			Ref:    app.ConnectionRef_builder{At: app.ConnectionRefByAt_builder{Tenant: at, Name: proto.String("entra")}.Build()}.Build(),
+			Select: app.ConnectionSelect_builder{All: proto.Bool(true)}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		return v
+	}
+	v := connection()
+	x.True(v.GetProvisions())
+	k, err := pdid.From(v.GetId())
+	x.NoError(err)
+
+	out, err = entities(t, &c, "connection", "update", k.String(),
+		fmt.Sprintf(`{"date_updated":%q,"provisions":false}`, v.GetDateUpdated().AsTime().Format(time.RFC3339Nano)))
+	x.NoError(err, out)
+	x.False(connection().GetProvisions())
 }

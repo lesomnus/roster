@@ -39,6 +39,12 @@ import (
 // Slack's, about one company's people in one company's workspace -- the
 // workspace a tenant names is its own -- and what it decides is a name and a
 // picture, not a way in.
+//
+// The directory's word, so only where it gave it: an address it does not say
+// is verified is one the person typed, and looking somebody up by it puts the
+// name and the photograph of whoever that address belongs to on the account
+// of whoever typed it. Such a sign-in is filled with nothing, as one with no
+// address is, and the blanks stay for a sign-in that carries a checked one.
 
 // slackAPI is where Slack's Web API is when [Providers.SlackAPI] says nothing.
 const slackAPI = "https://slack.com/api"
@@ -59,9 +65,10 @@ type slackPerson struct {
 //
 // One call to roster first, which fills nothing and answers what is blank, so
 // a person with a name and a picture costs Slack nothing -- most sign-ins.
+// And Slack is asked about nobody by an address the directory did not check.
 func (p *Providers) fillFromSlack(ctx context.Context, ref *rstr.HolderRef, token string, who Caller) error {
 	res, err := p.roster.Holder().Fill(ctx, rstr.HolderFillRequest_builder{Ref: ref}.Build())
-	if err != nil || (!res.GetNameless() && !res.GetPictureless()) || who.Email == "" {
+	if err != nil || (!res.GetNameless() && !res.GetPictureless()) || who.Email == "" || !who.Verified {
 		return err
 	}
 
@@ -105,8 +112,8 @@ func (p *Providers) slackUser(ctx context.Context, token, email string) (*slackP
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 
-	// The workspace's API is somewhere the deployment named, as a provider's
-	// is, so it is asked the way a provider's own API is.
+	// The workspace's API is asked the way a provider's own API is, by the
+	// same client and held to what that is (`dial.go`).
 	res, err := p.own.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("slack: %w", err)

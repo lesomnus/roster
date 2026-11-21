@@ -44,6 +44,71 @@ import (
 // not held to the first rule: a person suspended keeps their bindings, so
 // `mayReach` still sees everything they hold, and somebody on call must be able
 // to suspend a compromised account wider than they are (D26).
+//
+// # What a row gave is read from the row
+//
+// A binding's erase, and a place's on a team or in a group, read what the row
+// gave through the role it names, as their caller reads it. That had two
+// wrong answers, and they looked the same: a role that did not come back.
+//
+// One erased since is not read, so the erase of a binding of one failed on an
+// identifier with no bytes -- `Unknown`, to the tenant's administrator and at
+// the box -- as a place's in a group erased since did, and a team somebody
+// held one in answered `NotFound` for a role. A site counts every binding that
+// names it ([Sited]), so one whose last binding was of an erased role could
+// not be erased by anybody (#279).
+//
+// And a role of the whole tenant is in no site, so somebody who sees one site
+// does not see it ([Named] says the same of making a group). For them a
+// binding made in their own site of such a role was the `Unknown` above, and
+// a place on a team or a manager's place in a group that carried one was taken
+// away with nothing asked: read as an erased role is, which gives nothing.
+// Whether a role is there is not what its taker sees of it.
+//
+// So it is asked of the rows ([Giving]), as what a group hands out already
+// was ([Joining]): what the gate counts for the row today. A row that gives
+// nothing -- its role erased, or the team or the group it is of -- takes
+// nothing from anybody by going, and is erased by whoever may erase where it
+// is, which the gate and the wall answered before this layer was reached.
+
+// Giving is what one row hands whoever it names, each grant at the scope it
+// is held at: a binding's role where it was bound, the role a place on a team
+// carries at the team's site, and the role a manager's place in a group
+// carries across the tenant, where whoever appointed them was asked about it
+// ([coreGroupMembership.mayAppoint]). Which of the three `row` is, is in its
+// identifier.
+//
+// And nothing where the gate counts nothing for it: the role it names was
+// erased, the team or the group it is a place in was, or the group it binds
+// was.
+//
+// Asked of the rows and not through a server, for [Sited]'s reason: it answers
+// the same whoever is asking, and somebody erasing a row need not be somebody
+// who can read the role it names.
+type Giving func(ctx context.Context, row pdid.Id) ([]Grant, error)
+
+// given is [Rules.Giving] for the row of an identifier: what taking it away
+// takes from whoever it names.
+//
+// The deployment's own work, with no frame, is not asked what it holds
+// ([Core.mayTakeAway]), so what the row gave is not read for it. A stack that
+// cannot say refuses, rather than take away what it has not weighed.
+func (s Core) given(ctx context.Context, row []byte) ([]Grant, error) {
+	if _, ok := frame.From(ctx); !ok {
+		return nil, nil
+	}
+	if s.rules.Giving == nil {
+		return nil, status.Error(codes.PermissionDenied,
+			"this server cannot say what a row gives, so it will not take one away")
+	}
+
+	k, err := pdid.From(row)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.rules.Giving(ctx, k)
+}
 
 func (s coreBinding) Erase(ctx context.Context, req *app.BindingRef) (*app.BindingEraseResponse, error) {
 	v, err := s.BindingServiceServer.Get(ctx, app.BindingGetRequest_builder{
@@ -51,11 +116,9 @@ func (s coreBinding) Erase(ctx context.Context, req *app.BindingRef) (*app.Bindi
 		Select: app.BindingSelect_builder{
 			Labels: z.Ptr(true),
 			Role: app.RoleSelect_builder{
-				Alias:   z.Ptr(true),
-				Methods: z.Ptr(true),
-				Tenant:  app.TenantSelect_builder{}.Build(),
+				Alias:  z.Ptr(true),
+				Tenant: app.TenantSelect_builder{}.Build(),
 			}.Build(),
-			Site: app.SiteSelect_builder{}.Build(),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -65,21 +128,29 @@ func (s coreBinding) Erase(ctx context.Context, req *app.BindingRef) (*app.Bindi
 		return nil, err
 	}
 
-	at, err := idOr(v.GetSite().GetId())
+	gs, err := s.given(ctx, v.GetId())
 	if err != nil {
 		return nil, err
 	}
-	if err := s.mayTakeAway(ctx, "ref", v.GetRole().GetMethods(), at); err != nil {
+	if err := s.mayTakeAll(ctx, "ref", gs); err != nil {
 		return nil, err
 	}
+	if !grantsAdministration(gs) {
+		// Nothing a tenant is administered through, and so nothing to count:
+		// a binding made in a site, one of a role that names less, and one
+		// that gives nothing any more.
+		return s.BindingServiceServer.Erase(ctx, req)
+	}
+
+	// A binding across the tenant of a role that is there, which whoever reads
+	// a binding of no site reads with it.
 	tenant, err := pdid.From(v.GetRole().GetTenant().GetId())
 	if err != nil {
 		return nil, err
 	}
 
 	var out *app.BindingEraseResponse
-	could := at == pdid.Nil && administers(v.GetRole().GetMethods())
-	err = s.keepsAdministered(ctx, tenant, could, "unbinding role "+v.GetRole().GetAlias(), func(next app.Server) error {
+	err = s.keepsAdministered(ctx, tenant, true, "unbinding role "+v.GetRole().GetAlias(), func(next app.Server) error {
 		var err error
 		out, err = next.Binding().Erase(ctx, req)
 

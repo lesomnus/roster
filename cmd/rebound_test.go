@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/frame"
 
 	"github.com/lesomnus/roster/cmd"
@@ -186,7 +187,7 @@ func TestALockIsTakenOnTheTransactionItIsHanded(t *testing.T) {
 	b, ctx := build(t)
 	who := b.holder(t, ctx, b.Contoso, "person")
 
-	lock, release := cmd.Locking(b.Ent), cmd.Releasing(b.Ent)
+	lock, release := cmd.Locking(b.Ent), cmd.Releasing(b.Ent, audit.Contents{})
 	drv, tx, err := dialect.BeginTx(ctx, b.Drv)
 	x.NoError(err)
 	x.NoError(lock(ctx, drv, who))

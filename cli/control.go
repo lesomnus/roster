@@ -11,8 +11,10 @@ import (
 	"github.com/lesomnus/xli/flg"
 
 	"github.com/lesomnus/payday/pdcmd"
+	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/roster/cmd"
+	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
 )
 
@@ -106,17 +108,33 @@ func newCmdControlKeyAdd(c *cmd.Config) *xli.Command {
 			defer s.Close()
 
 			// The control database may be new: this is often the first thing
-			// that writes to it.
-			if err := migrate(ctx, s.Control); err != nil {
+			// that writes to it. Its tables are made where `control.db.migrate`
+			// says this process may alter them, and otherwise a database
+			// without them is refused, as `login provision` asks: this
+			// migrated whatever the switch said (#284).
+			if err := ready(ctx, s.Control, c.Control.Db); err != nil {
 				return err
 			}
 
-			who, err := cmd.HolderNamed(ctx, s.Control, alias)
+			by, err := namedAt(ctx, c, s)
 			if err != nil {
 				return err
 			}
 
-			return m.mint(ctx, s.Control.Ungated, who, keys.PrefixDeployment, "@"+alias)
+			// Made where it is new, which is a holder of the control plane
+			// written: a call at the shell of its own, as `roster --as …
+			// control holder add` is.
+			var who pdid.Id
+			if err := keptBy(ctx, s.Control, by, app.HolderService_Add_FullMethodName, func(ctx context.Context) error {
+				var err error
+				who, err = cmd.HolderNamed(ctx, s.Control, alias)
+
+				return err
+			}); err != nil {
+				return err
+			}
+
+			return m.mint(ctx, s.Control, by, who, keys.PrefixDeployment, "@"+alias)
 		}),
 	}
 }
@@ -129,9 +147,8 @@ func newCmdControlKeyAdd(c *cmd.Config) *xli.Command {
 // tenant, as itself. A request carrying `roster-at` is answered instead as the
 // holder a tenant nominated for it, with that holder's bindings, and the key's
 // own list is not consulted (`server/keys/at.go`). So the list is the width of
-// the calls an app makes before it knows the tenant: three reads for the Login
-// App, and none at all for a product that always knows which tenant a request is
-// about.
+// the calls an app makes before it knows the tenant: two for the Login App, and
+// none at all for a product that always knows which tenant a request is about.
 //
 // That product could not be minted a key. `--allow` refuses empty, because an
 // empty list on any other key is one that silently opens nothing -- and on this
@@ -153,15 +170,22 @@ func narrowedFlag() flg.Flag {
 // `reset @admin` here is how a deployment of one operator who lost their
 // password gets back in (#16); `whom` says why it looks the person up rather
 // than letting `Credential.Issue` make one.
+//
+// And two that are only here: an operator's second factor, enrolled and
+// proved. A customer's person does both at their account page or with a key;
+// whoever runs a deployment has neither, and a shell on the box is where they
+// are managed.
 func newCmdControlVouch(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "vouch",
-		Brief: "an operator's way in: reset it, set it, unlock it",
+		Brief: "an operator's way in: reset it, set it, unlock it, and a second factor beside it",
 
 		Commands: xli.Commands{
 			newCmdVouchReset(c, true),
 			newCmdVouchSet(c, true),
 			newCmdVouchUnlock(c, true),
+			newCmdOperatorEnrol(c),
+			newCmdOperatorProve(c),
 		},
 
 		Handler: xli.RequireSubcommand(),
@@ -184,17 +208,65 @@ func newCmdControlVouch(c *cmd.Config) *xli.Command {
 // where there is one tenant. A second tenant would make both answer about
 // whichever row a query happened to return first -- so the command that could
 // make one is not here. The tenant itself is made by whatever writes first.
+//
+// # Nor `tenant erase`, `close` or `restore`
+//
+// No tenant is erased (`core.NotErased`), and this one is the deployment
+// itself: it is not closed either, so there is nothing to say a command there
+// would mean instead, as the data plane's says (`newCmdTenantNotErased`).
 func newCmdControlEntities(c *cmd.Config) xli.Commands {
 	t := pdcmd.NewIn(controlConnector{c}, "roster")
 	overlays(t)
+	nowhere(t)
 
-	if err := t.Drop("tenant/add"); err != nil {
-		// A path the schema no longer has, which is a mistake in this file
-		// rather than something a deployment can cause.
-		panic(err)
+	// `tenant close` and `tenant restore` too, which the overlays mount on
+	// both trees: the control plane's one tenant is this deployment, and
+	// closing it would leave nobody to restore it, so the server refuses the
+	// first and has nothing to undo for the second (#284).
+	for _, path := range []string{"tenant/add", "tenant/erase", "tenant/close", "tenant/restore"} {
+		if err := t.Drop(path); err != nil {
+			// A path the schema no longer has, which is a mistake in this file
+			// rather than something a deployment can cause.
+			panic(err)
+		}
 	}
 
-	return t.Commands()
+	erase := t.Command("holder/erase")
+	if erase == nil {
+		panic("cli: the control plane has no `holder erase` to say anything before")
+	}
+	erase.Handler = xli.Chain(xli.OnRun(notBroughtBack), erase.Handler)
+
+	cs := t.Commands()
+	formatsFirst(cs)
+
+	return cs
+}
+
+// notBroughtBack is what `roster control holder erase` says before it erases
+// somebody of the control plane: that here an erase is where it ends.
+//
+// # Nobody of the control plane is forgotten, restored or held
+//
+// `roster restore`, `forget` and `hold` open the customers' database and no
+// other, and the control plane is built with no forget window (`cmd.Build`).
+// So an erase of a customer's person is undone by a restore and ended by a
+// forget, and an erase of an operator is neither: `restore` answers that
+// nobody is called that, and their alias, their name, their verifier and
+// their second factor stay in `control.db` for good. Nothing said so, and the
+// command read as its namesake one database over does (#280).
+//
+// Commands for the control plane add to the command line and can come later.
+// This is the sentence, where it is of use: before the erase is made, on
+// standard error, with what stops somebody who may come back. No flag asks
+// for it and none is needed to go on -- an operator leaving is still erased
+// with this, since `disable` is undone by anybody who may enable.
+func notBroughtBack(ctx context.Context, _ *xli.Command, next xli.Next) error {
+	fmt.Fprintln(os.Stderr, "roster: somebody of the control plane who is erased is not brought back: `roster restore`, `forget` and `hold` "+
+		"read the customers' database and not this one. What was theirs stays in control.db for good -- their alias, name, verifier and second factor -- "+
+		"and no command destroys it. For somebody who may come back, `roster control holder disable` is the one that is undone.")
+
+	return next(ctx)
 }
 
 // controlConnector is the control plane's `Ungated`, on a pipe with no address

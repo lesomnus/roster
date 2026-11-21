@@ -4,12 +4,16 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/lesomnus/roster/cmd"
+	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/core"
+	"github.com/lesomnus/roster/server/keys"
 )
 
 // TestBaselineNamesRealTests keeps docs/baseline.md honest the mechanical way.
@@ -35,7 +39,7 @@ func testsThatExist(t *testing.T) map[string]bool {
 
 	have := map[string]bool{}
 	var files []string
-	for _, dir := range []string{".", filepath.Join("..", "account"), filepath.Join("..", "arrives"), filepath.Join("..", "examples", "product"), filepath.Join("..", "frontdoor"), filepath.Join("..", "wasm", "sandbox"), filepath.Join("..", "ldap"), filepath.Join("..", "ldap", "wire"), filepath.Join("..", "login"), filepath.Join("..", "scim"), filepath.Join("..", "cli"), filepath.Join("..", "standing")} {
+	for _, dir := range []string{".", filepath.Join("..", "account"), filepath.Join("..", "arrives"), filepath.Join("..", "examples", "product"), filepath.Join("..", "frontdoor"), filepath.Join("..", "wasm", "sandbox"), filepath.Join("..", "ldap"), filepath.Join("..", "ldap", "wire"), filepath.Join("..", "login"), filepath.Join("..", "scim"), filepath.Join("..", "cli"), filepath.Join("..", "standing"), filepath.Join("..", "server", "prove"), filepath.Join("..", "server", "portrait"), filepath.Join("..", "server", "core")} {
 		vs, err := filepath.Glob(filepath.Join(dir, "*_test.go"))
 		x.NoError(err)
 		files = append(files, vs...)
@@ -107,7 +111,10 @@ func TestTheWideGrantsPageSaysWhatAKeyIsWarnedOf(t *testing.T) {
 	for svc, info := range b.grpc(t).GetServiceInfo() {
 		for _, m := range info.Methods {
 			method := "/" + svc + "/" + m.Name
-			if cmd.Widest([]string{method}) == "" {
+			// Of either kind of key: the page is read before a role is bound,
+			// and a role is a customer's.
+			if cmd.Widest(keys.PrefixDeployment, []string{method}) == "" &&
+				cmd.Widest(keys.PrefixTenant, []string{method}) == "" {
 				continue
 			}
 			warned++
@@ -124,5 +131,82 @@ func TestTheWideGrantsPageSaysWhatAKeyIsWarnedOf(t *testing.T) {
 	have := testsThatExist(t)
 	for _, m := range regexp.MustCompile("`(Test\\w+)`").FindAllStringSubmatch(string(doc), -1) {
 		x.True(have[m[1]], "docs/usage/wide-grants.md names %s, and no such test exists", m[1])
+	}
+}
+
+// TestTheWideGrantsPageIsWhatTheWireAnswers holds `RoleService/HandsOver` and
+// `docs/usage/wide-grants.md` to each other, in both directions.
+//
+// The method exists so that a page says what the document says, and that is a
+// promise about two lists: a grant the wire answers is a heading somebody can
+// read the example under, and a heading there is one a page is told of. Three
+// are not about a method -- a role bound to a group, and the two kinds of key
+// -- and are named here, so that a fourth is a decision and not an omission.
+//
+// And what a terminal says of a key (`cmd.Widest`) is among what the wire
+// says, for that kind: a note with no entry is a grant the page was not told.
+func TestTheWideGrantsPageIsWhatTheWireAnswers(t *testing.T) {
+	x := require.New(t)
+	b, _ := build(t)
+
+	doc, err := os.ReadFile(filepath.Join("..", "docs", "usage", "wide-grants.md"))
+	x.NoError(err)
+
+	// A heading's anchor, as the page's own table of them links it: lower
+	// case, what is not a letter, a digit, a space or a hyphen dropped, spaces
+	// to hyphens.
+	drop := regexp.MustCompile(`[^a-z0-9 -]`)
+	headings := map[string]bool{}
+	for _, m := range regexp.MustCompile(`(?m)^### (.+)$`).FindAllStringSubmatch(string(doc), -1) {
+		anchor := strings.ReplaceAll(drop.ReplaceAllString(strings.ToLower(m[1]), ""), " ", "-")
+		headings[anchor] = true
+		x.Contains(string(doc), "(#"+anchor+")", "the page's table does not link %q as this reads its anchor", m[1])
+	}
+	x.NotEmpty(headings)
+
+	// Everything asked of every plane and place: each method there is, and
+	// the pattern over all of them.
+	asked := []string{"/roster.*/*"}
+	for svc, info := range b.grpc(t).GetServiceInfo() {
+		for _, m := range info.Methods {
+			asked = append(asked, "/"+svc+"/"+m.Name)
+		}
+	}
+
+	answered := map[string]bool{}
+	for _, kind := range []string{keys.PrefixTenant, keys.PrefixDeployment} {
+		for _, held := range []app.RoleHeld{
+			app.RoleHeld_ROLE_HELD_ACROSS_THE_TENANT,
+			app.RoleHeld_ROLE_HELD_IN_A_SITE,
+			app.RoleHeld_ROLE_HELD_NOWHERE,
+		} {
+			for _, g := range core.HandedOver(kind, held, asked) {
+				answered[g.GetGrant()] = true
+				x.True(headings[g.GetGrant()],
+					"the wire answers %q, and docs/usage/wide-grants.md has no such heading", g.GetGrant())
+			}
+		}
+	}
+
+	notAMethod := []string{"a-role-bound-to-a-group", "a-deployment-key", "a-directorys-key"}
+	for _, anchor := range notAMethod {
+		x.True(headings[anchor], "%q is named here as a heading of the page, and is not one", anchor)
+		x.False(answered[anchor], "%q is answered now, and is still named here as what is not", anchor)
+	}
+	for anchor := range headings {
+		x.True(answered[anchor] || slices.Contains(notAMethod, anchor),
+			"docs/usage/wide-grants.md has %q, and no list of methods is told of it", anchor)
+	}
+
+	// And the terminal's notes.
+	for _, kind := range []string{keys.PrefixTenant, keys.PrefixDeployment} {
+		for _, method := range asked {
+			if cmd.Widest(kind, []string{method}) == "" {
+				continue
+			}
+
+			x.NotEmpty(core.HandedOver(kind, app.RoleHeld_ROLE_HELD_ACROSS_THE_TENANT, []string{method}),
+				"a key naming %s is warned of at a terminal, and a page asking about it is told nothing", method)
+		}
 	}
 }

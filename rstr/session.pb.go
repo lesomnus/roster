@@ -57,7 +57,10 @@ const (
 // A session names an operator, and an operator is a `Holder` of the control
 // plane -- which is where the people who run this deployment live. The data
 // plane has this table too, because the two planes are one schema run twice,
-// and nothing there ever writes a row.
+// and writes a row there only where `sign_in.enabled`: a roster user signed in
+// at their tenant's name, who is a holder of that plane and whose session is
+// a row of it. The two tables are in two databases, and no cookie is found in
+// both.
 //
 // # The key is hashed, unlike the one it replaces
 //
@@ -300,6 +303,9 @@ type Session_builder struct {
 	// safe -- *every axis carries a flag beside its list, and an empty list means
 	// nothing* -- lives in one encoder, and a second spelling of it here would be
 	// a second place to get the empty case backwards.
+	//
+	// Not personal: what the session allows, encoded, and nothing of whose it
+	// is that its `holder` does not already say by identifier.
 	Grant []byte
 	// The digest of the cookie value, and how the row is found. Never the value.
 	Secret []byte
@@ -339,11 +345,11 @@ var File_app_session_proto protoreflect.FileDescriptor
 
 const file_app_session_proto_rawDesc = "" +
 	"\n" +
-	"\x11app/session.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe8\x04\n" +
+	"\x11app/session.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xee\x04\n" +
 	"\aSession\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x1c\n" +
-	"\x05grant\x18\b \x01(\fB\x06\xea\x82\x16\x02@\x01R\x05grant\x12&\n" +
+	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\"\n" +
+	"\x05grant\x18\b \x01(\fB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\x05grant\x12&\n" +
 	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12G\n" +
 	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpires\x12?\n" +
 	"\tdate_idle\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\bdateIdle\x12F\n" +

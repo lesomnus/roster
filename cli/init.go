@@ -116,6 +116,12 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
+			// Everything this says on standard error, and a password it made
+			// alone on standard output: the shape every command that mints
+			// answers in, so that `$(roster init)` is the password. It was
+			// line four of ten, all on standard output (#284).
+			say := func(format string, vs ...any) { fmt.Fprintf(cl.ErrWriter, format, vs...) }
+
 			operator, ok := flg.Find[string](cl, "operator")
 			if !ok || operator == "" {
 				operator = "admin"
@@ -142,12 +148,7 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 			// Go call, which is exactly where `Plain` belongs -- and this is
 			// the only command anybody types to create one.
 			if !c.Control.Serves() {
-				return errors.New(
-					"control.db.driver: init needs a control plane and this names no database for one. " +
-						"a deployment that adds one later serves auth.Plain until it does -- every caller is " +
-						"whoever they type, and an rt_ key minted by any of them sits inert in the data plane " +
-						"until the day a control plane reads it, when all of them work at once. " +
-						"name control.db, then run this again")
+				return needsControl("init")
 			}
 
 			// The archive's key, before anything is built that reads it: this
@@ -160,11 +161,19 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 				}
 
 				c.Audit.Checkpoints.Key = path
-				cl.Printf("the trail's archive is signed with a key of this deployment's own, written to %s\n", path)
-				cl.Printf("name it as audit.checkpoints.key, or ROSTER_AUDIT_CHECKPOINTS_KEY, before serving\n\n")
+				say("the trail's archive is signed with a key of this deployment's own, written to %s\n", path)
+				say("name it as audit.checkpoints.key, or ROSTER_AUDIT_CHECKPOINTS_KEY, before serving\n\n")
 			}
 
-			s, err := built(ctx, *c)
+			// Built with nobody named, since the tables a name is looked up in
+			// may not be there yet; a name given is looked up once they are,
+			// below, and kept nowhere (#284). What this writes is the first
+			// operator's way in, made by the deployment: a name given beside it
+			// is somebody already on the control plane -- the provisioner, a
+			// service -- and not who the first operator was made by.
+			unnamed := *c
+			unnamed.Client.As = ""
+			s, err := built(ctx, unnamed)
 			if err != nil {
 				return err
 			}
@@ -202,17 +211,39 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 			if err := Migrate(ctx, s); err != nil {
 				return err
 			}
+			if _, err := namedAt(ctx, c, s); err != nil {
+				return err
+			}
 
 			v, err := cmd.Seed(ctx, s, cmd.Seeding{Operator: operator, Password: given})
 			if err != nil {
 				return err
 			}
 
-			cl.Printf("control plane\n")
-			cl.Printf("  holder %s is %s\n", operator, v.Operator)
-			cl.Printf("  bound to role %q = %s -- every Rpc roster serves, now and after an upgrade\n", cmd.Everyverb, cmd.EveryRosterMethod)
-			cl.Printf("  password  %s\n", v.Password)
-			cl.Printf("\nsign in to the console as %s. that password is shown once and is not stored -- write it down now.\n", operator)
+			say("control plane\n")
+			if v.Found {
+				// Somebody of that name was there before this bound them
+				// anything: a service a key was minted for, or the
+				// provisioner. Said, since `holder … is` reads as made now.
+				say("  holder %s is %s, and was there before init: what follows is bound to them now\n", operator, v.Operator)
+			} else {
+				say("  holder %s is %s\n", operator, v.Operator)
+			}
+			say("  bound to role %q = %s -- every Rpc roster serves, now and after an upgrade\n", cmd.Everyverb, cmd.EveryRosterMethod)
+			// A password this made is printed, once, since here is the only
+			// place it is. One that was **given** is not: `--password-stdin`
+			// exists so that a secret is in no argument and no process list,
+			// and this printed it back on the lines written for one it had
+			// generated -- into the log of the container whose entrypoint had
+			// piped it in (#275).
+			if given != "" {
+				say("  password  the one given on stdin\n")
+				say("\nsign in to the console as %s, with the password you gave.\n", operator)
+			} else {
+				say("  password  on standard output, alone\n")
+				say("\nsign in to the console as %s. that password is shown once and is not stored -- write it down now.\n", operator)
+				cl.Printf("%s\n", v.Password)
+			}
 
 			// And the next thing to do, because there is one and it is no
 			// longer this command's.
@@ -221,13 +252,25 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 			// in: a tenant is a customer, and one written by `init` was a
 			// customer nobody asked for. What replaces it is the admin console, where
 			// the first one is made the same way the hundredth is.
-			cl.Printf("\nthere are no customers yet, which is the right state to start in.\n")
-			cl.Printf("the console makes the first one -- a tenant, somebody in it, and the role\n")
-			cl.Printf("that lets them administer it. see docs/operating.md.\n")
+			say("\nthere are no customers yet, which is the right state to start in.\n")
+			say("the console makes the first one -- a tenant, somebody in it, and the role\n")
+			say("that lets them administer it. see docs/operating.md.\n")
 
 			return nil
 		}),
 	}
+}
+
+// needsControl is the refusal of a command that would leave a deployment with
+// no control plane holding a key nothing reads: `init`, which would make one
+// serve `auth.Plain`, and `key add`, which would mint the key (#284).
+func needsControl(what string) error {
+	return fmt.Errorf(
+		"control.db.driver: %s needs a control plane and this names no database for one. "+
+			"a deployment that adds one later serves auth.Plain until it does -- every caller is "+
+			"whoever they type, and an rt_ key minted by any of them sits inert in the data plane "+
+			"until the day a control plane reads it, when all of them work at once. "+
+			"name control.db, then run this again", what)
 }
 
 // keyFor writes a key for the trail's archive to sign its account with, made

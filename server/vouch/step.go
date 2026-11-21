@@ -62,6 +62,13 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 		return nil, nil, err
 	}
 
+	if w, ok := by.(WebAuthn); ok {
+		// A security key signs **this** attempt, and an assertion over
+		// anything else is not one: [ChallengeOf].
+		w.Challenge = ChallengeOf(handle)
+		by = w
+	}
+
 	issuer, err := issuerOf(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -74,9 +81,10 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 		}
 
 		// A handle that was never here, one that has been spent, one that
-		// expired, one somebody else was issued: one answer, and it costs what
-		// a real comparison costs. Told apart, this says whether a string was
-		// ever a real attempt.
+		// expired, one somebody else was issued, one begun before everything
+		// of its holder's was ended: one answer, and it costs what a real
+		// comparison costs. Told apart, this says whether a string was ever a
+		// real attempt.
 		by.Burn(secret)
 
 		return no(), nil, nil
@@ -108,6 +116,26 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 	}
 
 	if until := v.GetDateLocked(); until != nil && until.AsTime().After(time.Now()) {
+		_, _ = s.spend(ctx, c)
+
+		return app.VouchVerifyResponse_builder{DateLocked: until}.Build(), nil, nil
+	}
+
+	// And the row this attempt is **metered on**, which is the one a wrong
+	// answer here is counted against and so the one a lock is written on.
+	//
+	// The check above reads the factor's own row, where nothing is ever
+	// counted when there was a first step. So a lock run up by wrong codes
+	// closed the first step and nothing else: an attempt opened before it was
+	// still compared, and a right password with a factor outstanding counts
+	// nothing and opens as many attempts as five minutes allow. Whoever had
+	// the password opened them all first and tried a code on each, and the
+	// lockout bounded only attempts they had not thought to open (#275).
+	until, err := s.lockedAt(ctx, c.GetMeteredBy())
+	if err != nil {
+		return nil, nil, err
+	}
+	if until != nil {
 		_, _ = s.spend(ctx, c)
 
 		return app.VouchVerifyResponse_builder{DateLocked: until}.Build(), nil, nil
@@ -163,6 +191,16 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 		return no(), nil, nil
 	}
 
+	// And the step, by the same rule one row over: many attempts may hold the
+	// same right code, and only the one that spends it goes on.
+	v, mine, err := s.claim(ctx, v, at)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !mine {
+		return no(), nil, nil
+	}
+
 	done := append(slices.Clone(c.GetSatisfied()), kindOf(kind))
 
 	res, err := s.answer(ctx, v.GetHolder(), done, c.GetMeteredBy(), issuer)
@@ -178,6 +216,16 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 		return nil, nil, err
 	}
 	if res.GetOk() {
+		// And what the wrong answers of this sign-in ran up is paid off, on
+		// the row they were counted on. `passed` above clears the row it was
+		// handed, which is this step's own -- where, after a first step,
+		// nothing is counted. So for somebody with a second factor the count
+		// only went up, and ten wrong codes **ever** closed the account,
+		// however many times they had signed in between (#275).
+		if err := s.settle(ctx, c.GetMeteredBy(), v.GetId()); err != nil {
+			return nil, nil, err
+		}
+
 		// Nothing left to prove, so the attempt is finished and the credential
 		// travels back for a caller that wants to mint from it.
 		return res, v, nil
@@ -186,11 +234,83 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 	return res, nil, nil
 }
 
+// lockedAt is until when the credential named by id is closed, or nil for one
+// that is open, or gone, or was never named.
+func (s *Server) lockedAt(ctx context.Context, id []byte) (*timestamppb.Timestamp, error) {
+	if len(id) == 0 {
+		// An attempt begun by a link, where the first factor is no row.
+		return nil, nil
+	}
+
+	v, err := s.open.Credential().Get(ctx, app.CredentialGetRequest_builder{
+		Ref:    app.CredentialRef_builder{Id: id}.Build(),
+		Select: app.CredentialSelect_builder{DateLocked: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			// Gone between the two forms. Not closed, and [Server.failedAt]
+			// is what finishes nothing for it.
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	if until := v.GetDateLocked(); until != nil && until.AsTime().After(time.Now()) {
+		return until, nil
+	}
+
+	return nil, nil
+}
+
+// settle clears the count on the row a finished attempt was metered on, where
+// that is not the row `passed` has already cleared.
+func (s *Server) settle(ctx context.Context, metered, last []byte) error {
+	if len(metered) == 0 || slices.Equal(metered, last) {
+		return nil
+	}
+
+	v, err := s.open.Credential().Get(ctx, app.CredentialGetRequest_builder{
+		Ref: app.CredentialRef_builder{Id: metered}.Build(),
+		Select: app.CredentialSelect_builder{
+			Failures:    z.Ptr(true),
+			DateLocked:  z.Ptr(true),
+			DateUpdated: z.Ptr(true),
+		}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil
+		}
+
+		return err
+	}
+	if v.GetFailures() == 0 && v.GetDateLocked() == nil {
+		return nil
+	}
+
+	_, err = s.open.Credential().Patch(ctx, app.CredentialPatchRequest_builder{
+		Ref:            app.CredentialRef_builder{Id: metered}.Build(),
+		Failures:       z.Ptr(int32(0)),
+		DateLockedNull: z.Ptr(true),
+		DateUpdated:    v.GetDateUpdated(),
+	}.Build())
+	if raced(err) {
+		// Somebody counted, or cleared, this instant: theirs stands.
+		return nil
+	}
+
+	return err
+}
+
 // answer is the shape every step of an attempt answers with.
 //
 // `ok` and a continuation are mutually exclusive, and that is the whole of what
 // keeps an app that has not heard of second factors failing **closed**: it goes
 // on gating on `ok`, and `ok` is set only when there is nothing left.
+//
+// `issuer` is who an attempt is minted for, and [pdid.Nil] is nobody: the
+// answer is the same less the handle.
 func (s *Server) answer(ctx context.Context, h *app.Holder, satisfied []string, metered []byte, issuer pdid.Id) (*app.VouchVerifyResponse, error) {
 	holder, err := pdid.From(h.GetId())
 	if err != nil {
@@ -218,6 +338,19 @@ func (s *Server) answer(ctx context.Context, h *app.Holder, satisfied []string, 
 		// second factors fail closed -- so the emptier somebody's account, the
 		// more finished their sign-in looked.
 		if !begun(satisfied) {
+			if issuer == pdid.Nil {
+				// Asked by nobody, which is a seed being confirmed at the box
+				// or by a test: what was proved, and no `ok`, since it is no
+				// more a sign-in here than anywhere. Said rather than refused,
+				// so that the step is recorded and the factor counts as
+				// confirmed -- which is what the asking was for.
+				return app.VouchVerifyResponse_builder{
+					Holder:    holder.Bytes(),
+					Tenant:    tenant.Bytes(),
+					Satisfied: satisfied,
+				}.Build(), nil
+			}
+
 			return nil, errAlone
 		}
 
@@ -228,9 +361,29 @@ func (s *Server) answer(ctx context.Context, h *app.Holder, satisfied []string, 
 		}.Build(), nil
 	}
 
+	if issuer == pdid.Nil {
+		// Nobody asked, so there is nobody an attempt could be minted for and
+		// spent by: what is proved and what is left, and no handle. `ok` is
+		// unset, which is the whole of what a caller gating on it needs.
+		return app.VouchVerifyResponse_builder{
+			Holder:    holder.Bytes(),
+			Tenant:    tenant.Bytes(),
+			Satisfied: satisfied,
+			Available: left,
+		}.Build(), nil
+	}
+
 	handle, err := s.begin(ctx, holder, satisfied, metered, issuer)
 	if err != nil {
 		return nil, err
+	}
+
+	// What a security key is to sign, which is this attempt and so could not
+	// be said until there was one.
+	for _, f := range left {
+		if f.GetKind() == KindWebAuthn {
+			f.SetChallenge(ChallengeOf(handle))
+		}
 	}
 
 	return app.VouchVerifyResponse_builder{
@@ -313,7 +466,13 @@ func (s *Server) begin(ctx context.Context, who pdid.Id, satisfied []string, met
 	return handle, nil
 }
 
-// continuation finds the attempt a handle names, if it is the caller's.
+// continuation finds the attempt a handle names, if it is the caller's, still
+// open, for somebody who may still sign in, and begun since everything of
+// theirs was last ended.
+//
+// The one read of an attempt: [Server.step] is all that calls it, and every
+// door that finishes a sign-in is a step -- `Continue`, `Delegate` with a
+// continuation, and roster's own ([Server.ContinueAt]).
 func (s *Server) continuation(ctx context.Context, handle string, by pdid.Id) (*app.Continuation, error) {
 	if len(handle) == 0 || handle[:min(len(handle), len(PrefixContinuation))] != PrefixContinuation {
 		return nil, status.Error(codes.NotFound, "no such continuation")
@@ -330,11 +489,16 @@ func (s *Server) continuation(ctx context.Context, handle string, by pdid.Id) (*
 			MeteredBy:   z.Ptr(true),
 			DateExpires: z.Ptr(true),
 			DateUpdated: z.Ptr(true),
+			// When it was begun, to read against when everything of its
+			// holder's was last ended (`date_invalidated`, below).
+			DateCreated: z.Ptr(true),
 
+			// With their tenant, which is also how somebody erased is read:
+			// see below.
 			Holder: app.HolderSelect_builder{
-				Tenant:       app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
-				DateErased:   z.Ptr(true),
-				DateDisabled: z.Ptr(true),
+				Tenant:          app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
+				DateDisabled:    z.Ptr(true),
+				DateInvalidated: z.Ptr(true),
 			}.Build(),
 		}.Build(),
 	}.Build())
@@ -356,7 +520,38 @@ func (s *Server) continuation(ctx context.Context, handle string, by pdid.Id) (*
 	// Somebody who has been erased or suspended since the first form -- or
 	// whose tenant has closed -- is somebody the second form must not finish
 	// for.
-	if h := v.GetHolder(); h.GetDateErased() != nil || h.GetDateDisabled() != nil || h.GetTenant().GetDateClosed() != nil {
+	//
+	// Erased is read as a holder that did not come back, as [Server.row] reads
+	// a link's and for its reason: the edge is loaded through the rows still
+	// there, so somebody erased is a bare reference with no tenant on it, and
+	// the `date_erased` this selected was a column of a row that was not
+	// loaded. They were refused all the same, further on, by a credential that
+	// was not found -- and the attempt was spent to say so (#277). Refused
+	// here, nothing is.
+	h := v.GetHolder()
+	if gone := len(h.GetTenant().GetId()) == 0; gone || h.GetDateDisabled() != nil || h.GetTenant().GetDateClosed() != nil {
+		return nil, status.Error(codes.NotFound, "no such continuation")
+	}
+
+	// And an attempt begun at or before the holder's epoch is void: the
+	// reading [Server.row] gives a link, which is `keys.findDelegation`'s of a
+	// delegation, a tie included.
+	//
+	// A first factor proved before everything was ended is not proved after
+	// it. The password it was proved with may be the one a reset has just
+	// replaced, and what finishing mints is dated after the stamp, so nothing
+	// further on would read it as old: a sign-in begun with the old password
+	// finished with the code, for as long as the attempt had left. A recovery
+	// link spent before the stamp by somebody with a second factor was the
+	// same sign-in, which the link's own read cannot refuse (#277).
+	//
+	// Nothing in a sign-in stamps the epoch between its steps -- this package
+	// never writes it -- so one begun after the stamp finishes. A further step
+	// is a new row, minted in the call that read this one as begun since.
+	//
+	// The same `NotFound` as every dead attempt, which [Server.step] burns
+	// for and answers as it answers a handle that was never one.
+	if w := h.GetDateInvalidated(); w != nil && !v.GetDateCreated().AsTime().After(w.AsTime()) {
 		return nil, status.Error(codes.NotFound, "no such continuation")
 	}
 

@@ -46,6 +46,56 @@ Neither is written for you, deliberately. A command that created a person with a
 password would put a secret on the screen before there was anybody to give it to,
 and one that created them with permissions would decide something only you know.
 
+### How much is written of anybody
+
+Everything a caller writes onto a row has a length. A write past it is refused
+-- `InvalidArgument`, naming the field and the bound -- and nothing is cut to
+fit. Each number is past anything the thing it bounds is, and together they are
+small enough that a full page of any list is one answer: nobody makes their
+organisation's list of people unreadable by what they write about themselves.
+
+| what | at most | counted in |
+| --- | --- | --- |
+| an `alias`, of anything | 63 | bytes: small letters, digits and single hyphens |
+| a `name`, of anything -- a person, a team, a site, a group, a role, a tenant | 256 | characters |
+| a `desc`, of anything | 1,024 | characters |
+| `labels` | 32 on one row; a key 128, a value 256 | bytes |
+| a profile's `display_name` and `department` | 256 each | characters |
+| a profile's `employee_no` | 64 | characters |
+| a profile's `locale` | 35 | characters |
+| a profile's `picture` | 2,048 | bytes; an `https` address |
+| `data` | 4,096 | bytes, its type's name and its value together |
+| an address | 254, and 64 before the `@` | bytes |
+| a number | 64 | characters |
+| what a directory calls somebody: its id for them, its name for them | 255, 256 | bytes, characters |
+| a `subject` at a provider | 255 | bytes |
+| a list of `methods`, on a role, a key or a delegation | 1,024 entries; an entry 255; 16,384 in all | bytes |
+| a connection's `issuer` | 2,048 | bytes |
+| a connection's `scopes` | 32 of them; each 255 | bytes |
+| an identifier: a connection's `client_id` and `secret_ref`, the `provider` a mail domain names, the `client` a group is shown to, each of the words a consent is said in | 255 | bytes |
+
+A name and a note are counted in characters, so a name is as long in Hangul as
+in Latin; what is compared and not read -- a subject, a method, an identifier
+-- in bytes. A list of methods has a length in all as well as a count: roster
+serves some two hundred methods, which named one by one are six thousand
+bytes, and a list that means all of them is one pattern (`/roster.*/*`).
+`data` is one slot for a few facts an app keeps beside a person; what
+is large, or has to be looked up, the app keeps itself, by the person's
+identifier.
+
+An **address** is also held to being one, in one spelling: the plain mailbox,
+`someone@example.com`. Small letters; before the `@`, letters, digits and the
+marks an address is written with (``!#$%&'*+-/=?^_`{|}~``), with single dots
+between; after it a hostname, with no dot at its end. A name beside the
+address, brackets round it, a quoted or a commented mailbox and a line break
+are each refused, and so is a letter outside ASCII before the `@` -- for now:
+the same letter has more than one encoding, and taking them later breaks
+nobody, where refusing them later would. A name after the `@` in its own
+script is written as its A-label (`xn--…`), as a hostname is. Whoever writes
+an address is held to this -- a person, an administrator, a directory, a
+provider's word at a sign-in -- and what somebody *types* to sign in or to
+recover an account is folded to small letters and looked for, as before.
+
 ## Standing a customer up
 
 One write, and then a way in:
@@ -155,7 +205,26 @@ roster forget @newco/alice           # destroys, including the trail's copy
 `erase` is *this person has left*: two columns written, and the alias, addresses,
 identities and the whole trail still there. `forget` is *destroy what you hold
 about them*, which is a different request with a legal clock on it, and
-`holder.forget_after` is the window between them.
+`holder.forget_after` is the window between them. `restore` gives back the
+account and not how they were signed in: everything issued to them before it is
+void, and they sign in again. Their keys are the exception, and their alias may
+have been taken meanwhile; [operating.md](../operating.md) § "Destroying
+somebody, which an erase does not" says what to do about each.
+
+**What hung on something erased is still listed.** An erase writes the row it
+names and no other -- of a person, a team, a group, a role or a site alike. So
+somebody's places in sites, teams and groups, the bindings to them and the
+relations other people have to them stay where they were, and so do the places
+in a team or a group that was erased, the bindings to that group and of an
+erased role, and the clients an erased group was shown to. A `list` goes on
+answering each, pointing at something `get` answers `NotFound` for. None of
+them gives anybody anything: an erased role, team or group grants nothing, and
+somebody erased signs in nowhere. A reader that draws such a list reads what
+each row names and leaves out the rows whose thing is not there. Somebody who
+wants one gone erases it like any other row of its kind; one that gives
+nothing because its role, its team or its group is gone is erased by whoever
+may erase where it is
+([permissions.md](permissions.md#taking-away-is-held-the-other-way-round)).
 
 **Or they leave by themselves**, where the tenant offers it: `config.leave` on
 the tenant (the admin console's *people here may delete their own account*, or a
@@ -165,12 +234,23 @@ erases them exactly as the first line above does, signed out everywhere first.
 sign-ins. It is off unless a tenant turns it on, because a directory a company
 provisions is the company's to empty -- a person deleting themselves out of it is
 somebody the directory can neither find nor make again until they are forgotten,
-and then makes again with nothing of theirs -- and where a tenant with a directory
+or an administrator erases the identity and the address they left, and then makes
+again with nothing of theirs -- and where a tenant with a directory
 does turn it on, the people that directory provisions are refused all the same
 ([scim.md](../scim.md)). A consumer product's
 directory, where an account is the person's own, is the case it is for: Loft's
 SaaS turns it on for the one tenant every account is in, and links to the account
 page's `/#leave` from its own.
+
+**Such a product sets `holder.forget_after` as well.** It is never unless set,
+and until somebody is forgotten their addresses and their accounts at providers
+are still theirs, for a restore to give back. So one who deletes their account
+and signs up again is not made again: at the front door they are answered *this
+account was deleted here; an administrator of your organisation can bring it
+back, or let it go*, at every try, until an operator restores or forgets them.
+With the window set they are refused inside it, where `roster restore` gives
+them back what they had, and arrive as somebody new once it has run out.
+
 [ways-in.md](ways-in.md) § *Deleting your own account* is what it asks first.
 [operating.md](../operating.md) § "Destroying somebody, which an erase does not"
 is what each one leaves behind.
@@ -187,7 +267,19 @@ roster forget @newco            # every person forgotten, every other row of it 
 
 and its alias stays taken for `tenant.alias_hold` -- a year unless the deployment
 says otherwise -- so that nobody can be *newco* to its former people the day after.
-An operator's `roster hold place --why … @newco` stops all of it.
+What somebody who deletes their own account is told is what is done: that it is
+forgotten *from* the day `holder.forget_after` runs out, by the first pass after it
+and not before, that it can be brought back until then, that a legal claim puts it
+off, and that two things are kept past it -- what they agreed to, for
+`consent.keep`, and the record of what was done and of who read their data, by
+identifier. The account page and `roster me leave` both say it.
+
+An operator's `roster hold place --why … @newco` stops the tenant being destroyed,
+its people being forgotten on the clock and its alias being given back, and keeps
+what the trail has of it. It does not stop `roster forget @newco/erin`, which
+destroys that person's rows under a hold as under none and keeps the trail's lines
+about them until it lifts; nor the grace, which runs on, so that a closed tenant held
+past `tenant.restore_within` is destroyed when the hold is lifted.
 [operating.md](../operating.md) § "A tenant leaving" is the long version.
 
 ## Next

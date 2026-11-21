@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/link.proto.
  */
 export const file_app_link: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvbGluay5wcm90bxIGcm9zdGVyIrIECgRMaW5rEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESJgoFZW1haWwYDCABKAsyDS5yb3N0ZXIuRW1haWxCCPKCFgQ4AUABEhIKAmF0GAggASgJQgbqghYCQAESHQoFbGVhdmUYECABKAhCDuqCFgpAAYIBBWZhbHNlEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESFgoGaXNzdWVyGAogASgMQgbqghYCQAESOgoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEII6oIWBDgBQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOmjK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxY6CBcyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGQiDwoNaG9sZGVyLnRlbmFudEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_app_email, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvbGluay5wcm90bxIGcm9zdGVyIr4ECgRMaW5rEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESJgoFZW1haWwYDCABKAsyDS5yb3N0ZXIuRW1haWxCCPKCFgQ4AUABEhgKAmF0GAggASgJQgzqghYCQAGqwRYCGAASHQoFbGVhdmUYECABKAhCDuqCFgpAAYIBBWZhbHNlEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESHAoGaXNzdWVyGAogASgMQgzqghYCQAGqwRYCGAASOgoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEII6oIWBDgBQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOmjK/BUmEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxY6CBcyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGQiDwoNaG9sZGVyLnRlbmFudEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_app_email, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Link is a way in that roster mints and somebody else delivers -- or, for two
@@ -49,9 +49,11 @@ export const file_app_link: GenFile = /*@__PURE__*/
  * # Where account takeover lives
  *
  * So the rules are beside the row rather than in each app that sends one:
- * single use, minutes, and bound to the caller it was issued to. The first two
- * are what stop a link found in a mailbox six months later; the third is what
- * stops one app spending what another was given.
+ * single use, minutes, bound to the caller it was issued to, and ended by what
+ * ends a sign-in. The first two are what stop a link found in a mailbox six
+ * months later; the third is what stops one app spending what another was
+ * given; and the fourth is what makes a recovery the end of the links asked
+ * for before it (`date_created`).
  *
  * @generated from message roster.Link
  */
@@ -101,6 +103,8 @@ export type Link = Message<"roster.Link"> & {
    * `Vouch.Redeem` refuses a link that names one, and the user console refuses a
    * link that names none. A discriminator read on one side is not one --
    * `email` above learned that the hard way.
+   *
+   * Not personal: a tenant's own name, and no one's address.
    *
    * @generated from field: string at = 8;
    */
@@ -159,6 +163,8 @@ export type Link = Message<"roster.Link"> & {
    * Which caller was given it, so that one app cannot spend what another was
    * issued. Opaque bytes and never an edge; see `delegation.proto`.
    *
+   * Not personal: a key's identifier, as bytes.
+   *
    * @generated from field: bytes issuer = 10;
    */
   issuer: Uint8Array;
@@ -187,6 +193,23 @@ export type Link = Message<"roster.Link"> & {
   dateErased?: Timestamp | undefined;
 
   /**
+   * When it was minted, which is what its holder's epoch is read against: a
+   * link minted at or before `Holder.date_invalidated` is no link, as a
+   * delegation minted then is no delegation, and a tie is too old for both.
+   *
+   * A password issued for somebody stamps that epoch, a password they change
+   * does, and so does *sign out everywhere*. Each says that what was out
+   * before is not to be trusted, and a link in a mailbox is out: until this
+   * was read, the first of two recovery links asked for outlived the second
+   * being followed, and replaced the password it had handed over.
+   *
+   * It ends the three kinds that act for the person: a recovery, a hand into
+   * the user console (`at`) and a departure (`leave`). Not a verification
+   * (`email`), which signs nobody in and hands nothing over: somebody who
+   * changed their password a minute ago still reads their mailbox. What ends
+   * that one is what ends every kind -- whoever it is for erased or
+   * suspended, or their tenant closed.
+   *
    * @generated from field: google.protobuf.Timestamp date_created = 15;
    */
   dateCreated?: Timestamp | undefined;

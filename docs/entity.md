@@ -98,8 +98,11 @@ payday's rather than each app's, because everything that reads a request reads
 it: the wall narrows every query by it, the trail stamps it, a rate limit counts
 against it. Its `alias` is unique across the whole deployment, so
 `@contoso/arm-01` says which tenant before it says which row. Unlike 👤 `Holder`
-it is erased **hard** -- nothing names a tenant the way every trail row names
-the holder that acted, so there is nothing for its row to outlive.
+its erase is declared **hard**, with no `date_erased` to stamp -- and it is
+served by nothing. Every row of a tenant is keyed to it, so the row cannot go
+while anything of it is there, and `TenantService/Erase` answers `Unimplemented`
+at every port. A tenant leaves by being closed and then destroyed, and the row
+stays (below).
 
 It carries one thing an operator decides about itself: `config.password`, which
 is whether a password is a way in here. A fact rather than a screen setting --
@@ -110,7 +113,10 @@ yes**, so a tenant that has never said keeps what it had.
 And how far it has got in leaving (#98): `date_closed`, after which nobody of it
 gets in; `date_destroyed`, after which nothing of it is left but this row, which
 keeps its alias for a while so that nobody else can be that name; and
-`date_held`, an operator's hold that stops every destruction. Written by
+`date_held`, an operator's hold: the tenant is not destroyed and nobody of it is
+forgotten on a clock while it is there, and the trail keeps what it has of the
+tenant. It does not stop somebody of the tenant being forgotten by name, whose rows
+go and whose trail lines stay, nor the tenant's grace running out. Written by
 `TenantService.Close` and `Restore`, `roster forget` and `roster hold`, and by
 nothing else. [operating.md](operating.md) § "A tenant leaving".
 
@@ -164,6 +170,12 @@ pixels, JPEG, inline -- rendered by roster from whatever image `Portray` or
 `Fill` is handed, so what a row carries is bounded by roster and not by a
 caller. A page of people carries one size of it, and `Get` all of them.
 
+What an image may be is bounded the same way, since rendering one is the serving
+process's memory: JPEG, PNG, GIF or WebP, at most 2 MiB and 2048 pixels a side,
+which is read from its header before any of it is decoded. A process renders two
+at once, and a call beyond those waits its turn for as long as it lasts
+([operating.md](operating.md) § *A picture from the directory*).
+
 > **alice** is a `Holder` in contoso. Whatever signs her in -- a password here,
 > an account at Entra, a key in a script -- resolves to this one row, and the
 > identifier of it is the `sub` every product knows her by. Suspend her and the
@@ -176,8 +188,12 @@ payday's **second axis**: a caller who may see a tenant does not thereby see
 every site in it. A row rather than a label because things point at it and
 because it has a name people say -- `alias` is unique within the tenant, which
 is what makes `@contoso/seoul` something somebody types into a configuration
-file. `labels` is what an administrative grant matches on: *every site in Asia*
-is a selector over these, resolved to a set of sites by roster.
+file. `labels` are the deployment's to keep and nothing reads them: they were
+to be what an administrative grant matches on -- *every site in Asia* -- and no
+grant does, since a 🔗 `Binding` names one site or none. What is said of a site
+is said when it is made: it has `Add` and `Erase`, and no port serves a general
+write, so its alias, name, description and labels are changed at the box or by
+erasing it and making it again.
 
 > contoso runs the product in **seoul** and in **frankfurt**, so those are two
 > `Site` rows in contoso's tenant. fabrikam's own seoul is a different row and
@@ -329,7 +345,10 @@ union, so read order cannot matter. On the wire a role is added, erased,
 widened or narrowed -- `Role.Widen` adds methods and takes none away, which is
 what an app does to the roles it shipped ([apps.md](apps.md)), and
 `Role.Narrow` takes them out and adds none, which is what a tenant does in its
-console -- and `Patch` is the box's.
+console -- and `Patch` is the box's. `Role.HandsOver` reads no row: it says
+which of a list of methods hand over more than they read as
+([usage/wide-grants.md](usage/wide-grants.md)), which is what a page says
+beside a role before binding it.
 
 > contoso writes a role **operator** naming `/roster.HolderService/*`. It says
 > nothing about seoul or frankfurt -- a role is what may be done and never
@@ -456,7 +475,8 @@ thing everywhere could not say that. The site sits at field 3 -- payday's number
 for a set smaller than a tenant -- and a read narrowed to the sites a caller may
 see is generated from that one number. `site` is nullable, and a team with no
 site is seen by a read of the whole tenant rather than turning up in every
-scoped one.
+scoped one. Like a 📍 `Site`, a team has `Add` and `Erase` and no write between
+them on the wire: its alias, name and description are what `Add` was told.
 
 > seoul has a team **line-1**. It belongs to that site and its alias is unique
 > there, so frankfurt may have a `line-1` of its own and they are two teams.
@@ -466,9 +486,12 @@ scoped one.
 The gate is outermost and never sees which team a call is about, so `policy.of`
 unions the methods of a role held in a team into what somebody may **ever**
 call, and `server/core` refuses the wrong team per call. Attaching a role here
-therefore hands out its methods, and `Add` and `Patch` are both refused when
-they name one the caller does not hold. `role` is a nullable edge and empty is a
-plain member -- it used to be a string, and a string is a role nothing reads.
+therefore hands out its methods, and `Add` is refused when it names one the
+caller does not hold. `Patch` is held to the same and is not served on any
+port, so over the wire the role on a place that is there is changed by taking
+the place away and adding it again -- as a manager's is in a 🫂
+`GroupMembership`. `role` is a nullable edge and empty is a plain member -- it
+used to be a string, and a string is a role nothing reads.
 
 > erin is on **line-1** carrying the role **reader**. The same erin on
 > frankfurt's `line-1` could carry **operator** instead, which is the thing a
@@ -695,7 +718,7 @@ there is a tenant to read it for.
 ### 🌐 `Host` — a name a front door answers at
 
 Turns the name a browser arrived at -- `contoso.example.com`, lowercased and
-without a port -- into a tenant. A row rather than a repeated field on
+without a port or a last dot -- into a tenant. A row rather than a repeated field on
 🏢 `Tenant` because it has to be looked up, and a repeated field is one value to
 the database with no index. `name` is unique **across the deployment**, one of
 the few constraints that crosses the wall: two operators cannot both own the
@@ -744,7 +767,8 @@ name at once and whoever's value is published takes it. The token is the only on
 in this schema that is **not** a secret and is stored as it is compared: it goes
 in public DNS, and anybody who can put a record under a name owns the name, which
 is the whole of what is being measured. Spent by an erase the way ⏳
-`Continuation` is, and `prove.Sweep` collects the abandoned.
+`Continuation` is, and `prove.Sweep` collects the abandoned; one that has run out
+is replaced by the tenant's next claim of the same name.
 
 > contoso wants `contoso.example.com`. roster hands them a value, they publish it,
 > and the 🌐 `Host` row is written with `date_proved` on it. fabrikam may claim the
@@ -867,8 +891,9 @@ else writes one -- `AccessService` answers a `Get` and a `List`.
 
 It is kept as the trail is: a kind of the trail's archive, `access`, so the same
 passes archive, checkpoint and destroy it with its tenant, under that kind's own
-window ([operating.md](operating.md) § *Who read whose data*). The wall is the
-OR of `tenant_id` and `actor_tenant_id`.
+window ([operating.md](operating.md) § *Who read whose data*) -- on the data
+plane; no pass runs on the control plane, and its own record is kept for good.
+The wall is the OR of `tenant_id` and `actor_tenant_id`.
 
 > **admin** opens alice's row at the admin console, and a row here says so: who,
 > from where, which RPC, and that the answer carried alice. contoso, asked who
@@ -914,8 +939,9 @@ the two against each other. Served to nobody, and of no tenant.
 Forgetting somebody is one transaction in the database, and the archive takes
 part in no transaction. So the database's half is done in it, and the
 archive's half is written down in it as owed: a rollback takes the row with it,
-a commit keeps it for whatever pays it -- the next pass, or the process straight
-after its commit -- and the row goes once both halves are done. `Outbox`'s
+a commit keeps it for whatever pays it -- the process straight after its commit,
+or the next pass, which `serve` makes in every deployment whether or not its trail
+has a retention window -- and the row goes once both halves are done. `Outbox`'s
 shape, for `Outbox`'s reason. A legal hold that keeps part of an erasure keeps
 the row.
 
@@ -957,6 +983,18 @@ clicks away and carries the argument as well.
 entity streams its changes. **Erase** is soft (stamped, and the row stays) or
 hard (gone).
 
+**A soft erase destroys nothing, and no act destroys one row of somebody's.** What
+somebody takes off their own account -- an address, a number, an account at a
+provider, a second factor, a key -- is stamped `date_erased` and read by nothing
+from then, and the row stays with its value: the address, the subject, the key's
+name. It goes when the whole person is forgotten (`roster forget`, or
+`holder.forget_after` after they leave), and at no moment before; the other hard
+deletes are a tenant's destruction, a consent past `consent.keep`, and the expiry
+sweeps of sessions, delegations, links, sign-ins half made and claims on a
+hostname. So *remove my old address* is answered by an erase and satisfied only by
+the forget of the person, and a deployment that owes somebody the destruction of
+one datum has no verb for it short of that.
+
 | entity | domain | wall | watch | erase | declared in |
 | --- | --- | --- | --- | --- | --- |
 | 🏢 `Tenant` | 1 | the wall itself | -- | hard | `proto/roster/payday/tenant.proto` + overlay |
@@ -995,7 +1033,9 @@ hard (gone).
 
 `id` and `date_created` are on everything and are left out above, and so are
 `date_updated` and `date_erased` wherever an entity has them. Neither is
-everywhere. `date_updated` is the version a `Patch` compares against, which
+everywhere. `date_created` is when the row was made, stamped as it is made: an
+`Add` carries the field, and a request at a port that fills it in is refused
+(`cmd/undated.go`), since a list is in that order and a cursor is a place in it. `date_updated` is the version a `Patch` compares against, which
 📖 `Audit`, 👁️ `Access`, 📤 `Outbox`, 🧾 `Owed` and 🔏 `RowSeal` do not carry -- a
 row written once and never revised, or written over whole, has no version to
 disagree about. And 🏢 `Tenant` joins the six of

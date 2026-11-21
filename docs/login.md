@@ -192,6 +192,17 @@ through that tenant's own `Host` row. Not the hostname the browser arrived at:
 Hydra has one `urls.login` for the whole issuer, so every flow lands here under
 one name and the arrival host says nothing about anybody.
 
+What a name resolved to is **remembered a minute**, as the account app
+remembers one, and then asked about again: which tenant it is, and that
+tenant's alias and what it is called. So a name that moved to another tenant
+signs that tenant's people in within a minute, and a tenant whose alias or name
+changed is addressed and drawn by the new one, with no restart. It was kept for
+the life of the process, and a changed alias was every password of that tenant
+refused until one (`TestATenantsNewAliasSignsItsPeopleInOnceAMinuteHasPassed`,
+`TestANameThatMovedSignsInTheTenantItMovedTo`). A round trip to a provider that
+was already under way is finished as the tenant it began with, which is ten
+minutes at most.
+
 It was the OAuth **client**, through a map this app was configured with
 (`login.clients`), and that had to go: one product serving a hundred tenants is
 one client, so a discriminator that is the client forces a Hydra registration per
@@ -203,9 +214,15 @@ a list.
 A browser picks its `redirect_uri` from the set its client registered, and Hydra
 refuses anything else -- so what picking another tenant's buys is nothing: the
 password is then checked against that tenant's holders, at a front door that is
-public anyway. What a client whose redirects span two tenants *is* is a flow that
-resolves differently depending on what the browser sent, and
-`roster login doctor` says so.
+public anyway. A client whose redirects are several tenants' is the product the
+paragraph above is about, and each of its flows is about the tenant whose
+redirect it named. `roster login doctor` says so and fails no run for it; it
+used to report that client as broken, which was the check saying the opposite
+of this page. What it leaves to the product is telling its tenants apart, by
+the redirect, because a token says nothing of the tenant (§ *What a token says
+of somebody*). The one such client that is broken is one that can do the device
+grant: a device flow names no redirect, so of two tenants' it is about neither
+(§ *A device with no browser*).
 
 The consent hop **grants what the client asked for and draws nothing**, which is
 `consent: skip`, the default and a decision: every client this app can have was
@@ -213,7 +230,10 @@ registered by the deployment for one of its own operators, and a screen for an a
 the operator wrote is a dialog people learn to click through. `consent: ask` draws
 one. Neither mode lets a person grant *less* than was asked -- an app that asked
 for a scope generally stops working without it, so the choice would be between
-*allow* and *allow, then find out something is broken*.
+*allow* and *allow, then find out something is broken*. And a **device's** flow
+is drawn the screen under either: what brings a browser to it is a code, not a
+client's redirect, and the consent is the first screen that can say whose device
+it is (§ *A device with no browser*).
 
 How a deployment turns it on is [operating.md](operating.md) § "One process, or
 five"; `compose.yaml` runs the whole of it, Hydra included.
@@ -267,6 +287,7 @@ sequenceDiagram
   end
 
   B->>L: POST /accept?login_challenge=…
+  L->>R: MeService.Get, as the person
   L->>H: PUT …/requests/login/accept {subject: Holder.id}
   H-->>L: {redirect_to}
   L-->>B: {redirect_to}
@@ -293,16 +314,18 @@ sequenceDiagram
 | the page | `GET /flow` | `{brand, client, scope}`. The page may not ask Hydra and this app may, so this is the one endpoint it has |
 | the first form | `VouchService.Delegate` | 204 signed in · 200 one factor proved, another to prove · 401 everything else. `Delegate` and not `Verify` because a yes has to come back with the `rd_` the consent hop reads `Me.Get` with |
 | the second form | `VouchService.Delegate` with the continuation | the app holds no half-signed-in state: the continuation is roster's, short-lived and single-use |
-| the accept | `PUT …/login/accept` | **`subject` is the `Holder.id`.** Nobody is named until every form is answered -- accepting after the first would hand a product a token for somebody who proved half of what the deployment asked for |
-| the claims | `MeService.Get`, as the person | `preferred_username`, `name`, `teams`, a **verified** address, `groups` -- each only if the client asked for the scope that carries it. Never `methods`. `teams` is the aliases of the person's teams -- an organisation's structure, and nothing a product should grant on. It was `groups`, which relying parties read as permission groups; roster's own `Group`s are in a token only as `groups`, and only the ones a `GroupExposure` shows to the client the token is for (§ *A relying party that grants on groups*) -- what somebody may do is otherwise `HolderService/Reaches` ([apps.md](apps.md)) |
-| the grant | `PUT …/consent/accept` | `consent: skip` grants and draws nothing; `ask` draws the screen and `POST /consent` is its answer. With nobody here to read the subject -- a session that ended between the hops of one flow -- a client that asked for the person is refused with `login_required` (`PUT …/consent/reject`) rather than granted `sub` alone; one that asked for `openid` and nothing more still gets it |
+| the accept | `MeService.Get`, as the person; `PUT …/login/accept` | **`subject` is the `Holder.id`.** Nobody is named until every form is answered -- accepting after the first would hand a product a token for somebody who proved half of what the deployment asked for. And nobody is named but **the sign-in made at this challenge, still standing**: the session answers the challenge its form was posted at and no other, in that challenge's tenant, and roster is asked who is there before Hydra is told -- signed out of, signed out everywhere or suspended is a 401 and Hydra hears nothing (§ *The last hop answers the sign-in made for it*) |
+| the claims | `MeService.Get`, as the person | `preferred_username`, `name`, `teams`, a **verified** address, `groups` -- each only if the client asked for the scope that carries it, and each as § *What a token says of somebody* says. Never `methods`. `teams` is the aliases of the person's teams -- an organisation's structure, and nothing a product should grant on. It was `groups`, which relying parties read as permission groups; roster's own `Group`s are in a token only as `groups`, and only the ones a `GroupExposure` shows to the client the token is for (§ *A relying party that grants on groups*) -- what somebody may do is otherwise `HolderService/Reaches` ([apps.md](apps.md)) |
+| the grant | `PUT …/consent/accept` | `consent: skip` grants and draws nothing; `ask` draws the screen and `POST /consent` is its answer, told `{redirect_to}` as the accept is. A device's flow is drawn the screen either way. With nobody here to read the subject -- a session that ended between the hops of one flow, or somebody signed out everywhere or suspended between them -- the client is refused with `login_required` (`PUT …/consent/reject`) rather than granted `sub` alone, **whatever it asked for**: the read is also how this hop knows the subject is still somebody |
 
 The delegation this app minted is **kept** after the grant, for as long as Hydra
 remembers the browser, because the next flow Hydra answers without a form reads
 the claims with it (§ *The app's own session, and why it is not shorter*). Only
-where `remember` is zero is it spent at the grant and the cookie ended there
-(`Door.End`): no later flow comes back for it, and a credential that outlives its
-use is one somebody has to remember to revoke.
+where `remember` is zero is it spent at the grant: the cookie is ended there and
+the delegation revoked at roster (`Door.End`), since no later flow comes back for
+it, and a credential that outlives its use is one somebody has to remember to
+revoke. A sign-out through the issuer ends both the same way (§ *Signing out
+reaches the issuer*).
 
 #### An account at a provider, with Hydra in front
 
@@ -367,9 +390,9 @@ sequenceDiagram
 | which operator | the challenge, again | `/provider` is in a flow, so the `Connection` rows read are the ones the tenant behind the redirect can see -- the call is narrowed to the holder that tenant nominated. fabrikam's challenge cannot reach contoso's directory |
 | the redirect | `login.base` | **one origin for the whole app**, because Hydra sends every browser here under one name, and **one path per connection** under it: `<base>/callback/<tenant>/<connection>`, which is what a deployment registers at that provider. Which flow a callback belongs to comes from the state, a nonce naming a row this app kept; the path has to name the connection that flow went to, so a provider's code can only come back through its own connection's door -- one URL for every connection let a server of one tenant's send a browser on to another's provider and be handed the code that came back (a mix-up, RFC 9700 § 4.4) |
 | the round trip's own checks | `arrives.Trip` | a **PKCE** challenge (S256) on every connection, whose verifier the exchange sends, so a code injected into somebody else's browser is refused by the provider itself; and on an OpenID connection a **nonce**, which the ID token has to carry back. GitHub issues no ID token, so it has the first and not the second |
-| the exchange | the provider's own | the Login App is the relying party, exactly as the account app is |
-| who may sign in | `login.enrol`, `HolderService.SignsIn` | `invited` admits only somebody already linked; `expected` admits somebody an operator entered, matched by the **address** on their row; `enrolling` admits a stranger too. An address matches only when it is **proved**, or is an **invitation** -- written by somebody other than the person (`Email.entered_by`), vouched for by no directory, about somebody with no identity, credential or key yet, which `SignsIn` says. An address somebody wrote onto their own account, or a directory handed over unchecked, matches nobody: it would hand whoever arrived verified at that mailbox to the account that claimed it first. `enrolling` needs `HolderService.Add`, which `roster login provision` puts on the nominated holder's role and never on the key |
-| what the profile lacks | the tenant's `config.profile` | `fill` gives the profile what its source says where it has **nothing**: a display name, and a picture for somebody with none. The source is the provider -- the token's `name` and `picture`, else userinfo's, the picture fetched with the token from the provider's own API (Entra's needs `User.Read` among the connection's scopes, consented for the directory first) -- or, where the deployment named the tenant's Slack workspace, Slack's real name and the picture the person chose, found by their address. [operating.md](operating.md) § *A picture from the directory*. Only blanks, through `HolderService.Fill`, which writes nothing over a value and reads nothing back. Never a reason to refuse the sign-in |
+| the exchange | the provider's own | the Login App is the relying party, exactly as the account app is. Where the connection's row says the provider is, which is asked only at an address on the internet, and only over `https`, unless the deployment named the host (`login.private_hosts`; [operating.md](operating.md) § *Where a provider is asked*) -- and the issuer the row names now, with no restart when it moves |
+| who may sign in | `login.enrol`, `HolderService.SignsIn` | `invited` admits only somebody already linked; `expected` admits somebody an operator entered, matched by the **address** on their row; `enrolling` admits a stranger too, named by their address where the directory says it is verified and by a name nobody chose where it does not. An address matches only when it is **proved**, or is an **invitation** -- written by somebody other than the person (`Email.entered_by`), vouched for by no directory, about somebody with no identity, credential or key yet, which `SignsIn` says. An address somebody wrote onto their own account, or a directory handed over unchecked, matches nobody: it would hand whoever arrived verified at that mailbox to the account that claimed it first. **Somebody matched who holds more than this app is not linked by it**: the first link is a way in written by the app, which writes none for anybody who holds what its own role does not -- so somebody entered and given a role is answered `403`, *an administrator of your organisation has to link it for you*, until one does (§ *Putting people in, and letting them arrive*). **Somebody erased is neither signed in nor made again**, under any of the three: their account and the address they proved are theirs until they are forgotten, and arriving by either they are answered `403`, *this account was deleted here*, until they are brought back or let go (the same section). `enrolling` needs `HolderService.Add`, which `roster login provision` puts on the nominated holder's role and never on the key |
+| what the profile lacks | the tenant's `config.profile` | `fill` gives the profile what its source says where it has **nothing**: a display name, and a picture for somebody with none. The source is the provider -- the token's `name` and `picture`, else userinfo's, the picture fetched with the token from the provider's own API (Entra's needs `User.Read` among the connection's scopes, consented for the directory first) -- or, where the deployment named the tenant's Slack workspace, Slack's real name and the picture the person chose, found by their address where the directory says it is verified. [operating.md](operating.md) § *A picture from the directory*. Only blanks, through `HolderService.Fill`, which writes nothing over a value and reads nothing back. Never a reason to refuse the sign-in |
 | the sign-in | `VouchService.Accept` | the claim this app verified, exchanged for a delegation. Not `Verify`: there is no password here to check |
 | the session | `Door.Accept` | minted here for the same reason the password path has one -- the consent hop reads the person **as them** to fill the claims |
 | the accept | `PUT …/login/accept` | the `Holder.id`. The same string a password would have produced for the same person, which is what makes Monday-Entra and Saturday-password one `sub` |
@@ -396,6 +419,63 @@ holding a credential, and turning that into a `DELETE` is the Login App's. What
 it also says -- that what somebody may call may have changed, `SYNC_REASON_REACH`
 -- is no sign-out, and tells Hydra nothing (`TestWhatSomebodyMayCallIsNoSignOut`).
 
+**What is promised of it, and what is not.** The stream replays nothing, so the
+promise has two halves: what an instance heard, and what none did.
+
+- **A sign-out an instance heard is carried until Hydra takes it.** What the
+  stream says is written down and a worker tells Hydra, each call given ten
+  seconds; one Hydra refuses or does not answer is tried again -- after a
+  second, doubling to half a minute -- for as long as the process runs
+  (`TestASignOutHydraWouldNotTakeIsTriedUntilItDoes`). What is still owed when
+  the process stops is not handed to the next one: it is then a sign-out nobody
+  heard, below.
+- **Once.** A sign-out carried is not carried again because a stream dropped
+  and came back (`TestAStreamThatCameBackSignsNobodyOutAgain`), and a new
+  process does not act on a stamp from before it could have missed anything
+  (`TestASignOutActedOnLongAgoIsNotActedOnAgain`). It did both, and the first
+  write of any kind to a person's row after a restart -- a profile edit, a
+  directory's sync -- signed them out of every product for a sign-out made
+  months before.
+- **A sign-out nobody heard is carried only if the gap was short.** One made
+  while no instance was listening is known by the stamp on the person's row and
+  nothing else, and an instance is sent that stamp when the row is next
+  written, whenever that is. It acts on a stamp it had not heard when the stamp
+  is no older than **ten minutes before that instance started**
+  (`TestASignOutMadeWhileNobodyListenedIsCarried`) -- long enough for a
+  rollout, and what somebody signed out inside it pays is being signed out once
+  more. **A sign-out made while no instance listened for more than ten minutes
+  is not carried to Hydra.**
+- **A browser Hydra still remembers is asked for the form all the same.** That
+  Hydra knows a browser is believed only where roster still reads the person
+  behind it, which the app asks at every flow
+  (`TestABrowserThisAppForgotIsAskedAgain`), and roster stops reading them the
+  moment they are signed out everywhere, suspended or erased. So a browser
+  Hydra remembers past a sign-out it never heard of is drawn the form.
+- **What it leaves is a refresh token.** A grant Hydra was not told to revoke
+  goes on refreshing until the token's lifetime, which is the issuer's to set
+  -- `ttl.refresh_token`, or a client's own
+  `authorization_code_grant_refresh_token_lifespan` and
+  `refresh_token_grant_refresh_token_lifespan` -- and **no registration this
+  repository ships sets one** (`deploy/clients/product.json`, `compose.yaml`),
+  so it is Hydra's default, which on v26.2.0 is thirty days. A deployment
+  should set it, as short as its products can bear: it is the bound on
+  everything above that is not carried.
+- **A sign-in waits for the sign-out before it.** Hydra forgets by subject, so
+  a forgetting that lands after somebody's next sign-in takes that sign-in with
+  it. While one is on its way, Hydra is told of a sign-in by the same person
+  only after it, for five seconds at most
+  (`TestASignInIsToldToHydraAfterTheForgettingItFollows`). What that does not
+  save is a flow Hydra began while it still remembered the browser -- a page
+  that sent its browser to sign in in the moment between the sign-out and Hydra
+  hearing of it: Hydra v26.2.0 refuses that flow's code (`invalid_grant`), and
+  the flow after it works.
+- **A stream roster refuses is asked for again.** No broker
+  ([operating.md](operating.md) § *Running more than one*), or a key whose list does not
+  name `SyncService/Watch`: the app says so once, as an error, goes on signing
+  people in, asks again every ten minutes, and says when roster serves it
+  (`TestAStreamRosterRefusesIsAskedForAgain`). Until then it hears nothing, and
+  everything it would have heard is a sign-out nobody heard.
+
 ### A page of your own, and the contract it writes against
 
 The page in `ts/login/` is **one implementation** of the surface below, not the
@@ -405,6 +485,17 @@ leaves the setting out and keeps the endpoints. Under one constraint that is not
 negotiable: **this app sends no CORS headers**, so the page has to reach
 `POST /session` and `POST /accept` as **same origin** -- in practice a proxy
 putting the page and this listener under one name.
+
+**And it takes nothing that changes something from any other origin.** Every
+`POST` below, and the `DELETE`, is answered 403 when the browser says the request
+is another origin's -- `Sec-Fetch-Site`, or `Origin` against `Host` for a browser
+that does not say -- so that proxy passes those three headers as the browser
+wrote them. Another host of the same domain is another origin, which a cookie's
+`SameSite` does not stop; and most of these routes need no cookie at all. A
+request that says neither header is not a browser's and is let through. No
+screen is drawn inside another site's (`frame-ancestors 'none'`). It is the
+account app's rule and the same wrapper, `frontdoor.Guard`
+(`TestTheLoginAppsOwnRoutesTakeNoRequestFromAnotherOrigin`).
 
 ⚠️ **Empty means this binary serves no page at all**, and what a browser gets at
 `/login` is a **404** with *this deployment serves no sign-in page*. It looks
@@ -429,13 +520,13 @@ functions stop agreeing, in either direction.
 | `/session`, `/session/` | mounted so `frontdoor`'s three below see the whole path. One handler, three methods | `TestALoginAppTellsHydraWhoSignedIn` |
 | `POST /session` | *frontdoor.* `{alias\|address, password}` → **204** signed in · **200** `{satisfied, available}` one factor proved and more to prove · **401** everything else | `TestALoginAppTellsHydraWhoSignedIn` · `TestASecondFactorIsAskedForAndTheFlowWaitsForIt` · `TestARosterThatIsDownIsNotAWrongPassword` |
 | `POST /session/continue` | *frontdoor.* `{kind, name, secret}` → **204** · **401**. One attempt per first form: the half-session is spent whether the answer was right or not | `TestAWrongSecondFactorFinishesNothing` · `TestAHalfSessionIsOverWhenTheAppSaidItWas` · `TestASignedInBrowserSurvivesAStraySecondForm` |
-| `DELETE /session` | *frontdoor.* Drops this app's session and revokes the delegation. Not part of the flow -- the flow's own ending is `POST /accept` -- and mounted because it is the same handler | `TestSigningOutRevokesEvenAWindowThatHasPassed` |
-| `POST /accept` | `{redirect_to}`, and **the hop no other front door has**: it turns a finished sign-in into `acceptLoginRequest{subject}`. A page that leaves this out signs somebody in and never ends the flow. 401 when nobody is signed in, or is half way | `TestALoginAppTellsHydraWhoSignedIn` · `TestAFlowReachesOnlyItsOwnOperator` |
-| `GET /provider` | 302 to the directory this operator's `Connection` names, with the state in a cookie | `TestSomebodyArrivesThroughAProvider` · `TestAProviderFlowReachesOnlyItsOwnOperator` |
+| `DELETE /session` | *frontdoor.* Drops this app's session and revokes the delegation, in the tenant the session is of. Not part of the flow -- the flow's own ending is `POST /accept` -- and mounted because it is the same handler | `TestSigningOutRevokesEvenAWindowThatHasPassed` · `TestASessionIsEndedInItsOwnTenant` · `TestEveryEndingRevokesTheDelegation` |
+| `POST /accept` | `{redirect_to}`, and **the hop no other front door has**: it turns a finished sign-in into `acceptLoginRequest{subject}`. A page that leaves this out signs somebody in and never ends the flow. 401 when nobody is signed in, or is half way; when the sign-in was not made at **this** `login_challenge`; and when roster no longer answers for whoever it was | `TestALoginAppTellsHydraWhoSignedIn` · `TestAFlowReachesOnlyItsOwnOperator` · `TestASignInAnswersOnlyTheChallengeItWasMadeFor` · `TestASessionOfOneTenantDoesNotAnswerAnothersChallenge` · `TestAnAcceptAsksRosterWhoIsThere` |
+| `GET /provider` | 302 to the directory this operator's `Connection` names, with the state in a cookie that is this host's alone (`__Host-login_state`; bare under `--insecure-cookie`) | `TestSomebodyArrivesThroughAProvider` · `TestAProviderFlowReachesOnlyItsOwnOperator` · `TestTheRoundTripsCookieIsThisHostsAlone` |
 | `GET /callback/{tenant}/{connection}` | where a directory sends the browser back: one URL per connection, which is what is registered at that provider. **Not** in a flow: which flow it belongs to comes from the state, and the connection the path names has to be the one that flow went to | `TestACallbackWithoutItsOwnStateIsRefused` · `TestAnAnswerIsHeldToTheRoundTripThatAskedForIt` · `TestAStrangerIsRefusedUnlessTheDeploymentEnrols` |
-| `GET /consent` | a screen when `login.consent` is `ask`, a 303 when it is `skip` or Hydra remembered -- to Hydra with the claims, or carrying `login_required` when there is nobody here to read them for a client that asked | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor` |
-| `POST /consent` | the screen's answer. A no is `consent/reject` and the browser goes back to the client with a refusal | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `ts/e2e/login.spec.ts` |
-| `GET /logout` | a screen only half the time: drawn when nothing proved a relying party started the sign-out, answered with a 303 when something did | `TestALogoutNobodyProvedAnAppAskedForIsConfirmed` · `TestSigningOutEndsWhatTheIssuerRemembers` · `docker/behind.sh` |
+| `GET /consent` | a screen when `login.consent` is `ask`, a 303 when it is `skip` or Hydra remembered -- to Hydra with the claims, or carrying `login_required` when there is nobody here to read the subject as. **Always a screen for a consent that belongs to a device's flow**, which nothing before it could name the client of | `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor` · `TestAConsentWhoseSubjectCannotBeReadIsRefused` · `TestADeviceIsGrantedOnAScreen` · `docker/device.sh` |
+| `POST /consent` | the screen's answer: `{consent_challenge, allow}` → `{redirect_to}`, which is Hydra -- with the grant, or with a refusal for the client where the answer was a no (`consent/reject`) or this app refused. **Told, not redirected**, as `POST /accept` is: the issuer is another origin and a page's `fetch` cannot follow a redirect to one | `TestAConsentIsAnsweredWhereThePageCanFollowIt` · `TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne` · `ts/e2e/login.spec.ts` · `docker/flow.sh` |
+| `GET /logout` | a screen only half the time: drawn when nothing proved a relying party started the sign-out, answered with a 303 when something did. With that 303 this app's own session is ended and its delegation revoked, when the logout is about whoever this browser is signed in as here | `TestALogoutNobodyProvedAnAppAskedForIsConfirmed` · `TestSigningOutEndsWhatTheIssuerRemembers` · `TestEveryEndingRevokesTheDelegation` · `TestASignOutEndsOnlyItsOwnSubjectsSession` · `docker/behind.sh` |
 | `POST /logout` | `{logout_challenge, allow}` → `{signed_out, to}`, or `{signed_out: false}` and nowhere to go. **400 for a logout an app did prove it started**, because that one is never drawn | `TestTheConfirmedSignOutIsTheOneThatEnds` · `TestTheAnswerIsForTheScreenThatWasDrawn` · `TestALogoutChallengeIsAskedAbout` |
 | `GET /signed-out` | the page a sign-out that asked to come back nowhere ends on. The one screen here with no challenge on it | `docker/behind.sh` · `ts/e2e/login.spec.ts` |
 | `GET /device` | where somebody types the code a device with no browser printed. **The one screen that asks the app nothing** -- Hydra has no getter for a device challenge, so there is no `/flow` for it and no client name to draw | `TestADeviceChallengeIsAnsweredWithWhereToGoNext` · `docker/device.sh` · `ts/e2e/login.spec.ts` |
@@ -462,6 +553,10 @@ And the rules, which are the part that is easy to get wrong and the reason
   every screen; a stale copy is a browser posting to a challenge that has been
   spent. What the screen loads is another matter: the bundles beside it are
   named by their content and served `immutable`, like every other page's.
+- **A screen's answer is a form of a few kilobytes.** `POST /consent`,
+  `POST /logout` and `POST /device` read a form -- urlencoded, or the multipart
+  a `FormData` is -- to sixteen kilobytes, which is a challenge and a word or
+  two, and answer 413 to more (`TestAScreensAnswerIsReadToASize`).
 - **An answer you do not recognise is a refusal, not a crash.** Two rows above
   gained a state after they were first written, and a page that draws *this did not
   work* for an unknown answer survives that. It is the one thing asked of a page in
@@ -469,6 +564,59 @@ And the rules, which are the part that is easy to get wrong and the reason
 - **`POST /accept` may not be left out.** It is the hop that turns a finished
   sign-in into Hydra's answer; a page without it signs somebody in and leaves the
   flow hanging with nothing on screen to say so.
+- **And it is called with the challenge the forms were posted with.** A sign-in
+  answers the `login_challenge` it was made at and no other, so `/session`,
+  `/session/continue` and `/accept` carry the same one: the one in the page's own
+  URL.
+
+### What a token says of somebody
+
+One answer for each claim, which is what a product writes against. All of it is
+in the `id_token`, each claim only for a client that asked the scope that
+carries it; the access token carries nothing of roster's.
+
+| claim | scope | what it is |
+| --- | --- | --- |
+| `sub` | `openid` | the `Holder.id`: one person of one tenant, and nobody else in the deployment. It does not change when they are renamed, when their alias changes, or with the way they signed in |
+| `preferred_username` | `profile` | their alias, as it is now. One person's within their tenant, and somebody else's to take once it is changed or its holder erased |
+| `name` | `profile` | what they are called now: their profile's display name, and where that is blank the name they were added with. Absent for somebody with neither |
+| `teams` | `profile` | the aliases of the teams they are in, each once and in order. The site is not said, so a team of one name at two sites is one word. Absent for somebody in none |
+| `email`, `email_verified` | `email` | the address they **proved first**, of the ones they still have: the earliest `Email.date_verified`, and of two stamped at one instant the row written first. Proving another address does not change it, and nor does proving it again -- a link confirmed a second time, a directory vouching for it at each sign-in -- since a proof of an address already proved leaves the moment it was first proved; erasing it makes the next one proved the answer, and an address erased and written again is proved anew. An address nobody proved is never said, so `email_verified` is never false, and somebody with none proved has neither claim |
+| `groups` | `groups` | the aliases of their groups that are shown to this client, in order; present and empty when none is (§ *A relying party that grants on groups*) |
+
+**Every claim is a copy, made when consent is answered.** The person is read
+once, at the consent hop -- of every authorization flow, the ones Hydra answers
+with no form and no screen included -- and Hydra keeps what it was handed beside
+the grant. A refresh mints from that copy and reads nothing of roster's again.
+So a change to somebody reaches a product at their next flow through the
+authorization endpoint, and what it does to a refresh token already issued is:
+
+| what changed | a refresh token already issued |
+| --- | --- |
+| they were suspended or erased, signed out everywhere, or their tenant closed | **ended**. The Login App hears it and has Hydra revoke every client's grant for them -- *signing somebody out in roster reaches Hydra*, above |
+| a group or a team was taken from them, or given; a group of theirs was erased | mints on, with the `groups` and `teams` of the last consent. roster says only that what they may call may have changed (`SYNC_REASON_REACH`), which is no sign-out and tells Hydra nothing |
+| a group stopped being shown to the client; an address was proved, erased or moved; their alias or their name changed | mints on, with the old claims. Nothing tells the Login App |
+
+An access token already issued verifies until it expires, in every row. And no
+registration this repository ships sets a refresh lifetime
+(`deploy/clients/`), so how long a copy can go on being minted is the issuer's
+own default: a relying party that grants on a claim has its client registered
+with a short one.
+
+**Every claim but `sub` is the tenant's own word.** One issuer signs for every
+tenant, and nothing in a token says which tenant its person is of.
+`preferred_username` is one person's within a tenant and so is an address:
+contoso and fabrikam can each have an `erin`, and each somebody at
+`erin@example.com` with `email_verified: true`, because an address is proved
+to its tenant -- by a link a front door mailed for it, on the word of a
+directory it connected, or by a key it lets mint such a link and spend it --
+and is held against no other tenant's. `groups` and `teams` are names a
+tenant's administrator chose. So a product that serves several tenants **keys
+its accounts on `sub`**, and never on an address or a username read across
+tenants. It tells its tenants apart by the **redirect**: it registers one
+`redirect_uri` for each, at a name that tenant claimed, a flow is about the
+tenant whose redirect it named, and the code comes back to that redirect and no
+other.
 
 ### A relying party that grants on groups
 
@@ -494,13 +642,17 @@ group's alias, which nothing over the wire renames -- a group's `Update` writes
 its name and its note and never its alias, and `Patch` is closed -- so a
 mapping written against it stays true.
 
-**It is a copy, read at consent.** A refresh reuses it -- nothing recomputes a
-token's claims at a refresh yet -- so a name taken away reaches the relying
-party at the next sign-in. Dependency-Track re-syncs a person's teams at each
+**It is a copy, read at consent, as every claim is** (§ *What a token says of
+somebody*). A refresh reuses it -- nothing recomputes a token's claims at a
+refresh yet -- so a name taken away reaches the relying party at the next
+sign-in. Dependency-Track re-syncs a person's teams at each
 of theirs, which bounds it; for kube-apiserver, whose clients refresh, give the
 client a short refresh lifetime in its Hydra registration. A suspension is
-not this: it ends the person's sessions and grants at Hydra, refresh included,
-and a token already issued verifies until it expires.
+not this: the Login App hears it and has Hydra end the person's sessions and
+grants, refresh included -- as far as *What is promised of it, and what is
+not* goes, above: a suspension no instance was listening for leaves a refresh
+token to live out its lifetime, which is the other reason to set one. A token
+already issued verifies until it expires.
 
 **kube-apiserver**: map the claim with a prefix
 (`claimMappings.groups.prefix: "roster:"`), so that a group's name can never be
@@ -525,8 +677,12 @@ like from a product is an opaque identifier where a name should be.
 
 What makes the longer session affordable is what is in it. `login.Methods` is
 `Me.Get` and nothing else, so the delegation reads that one person's own profile
-and can do nothing else. It is revoked where every delegation is, by
-`Holder.Invalidate`, which this app already hears through `Sync.Watch`. And it has
+and can do nothing else. It ends where every delegation does, at roster, with
+`Holder.Invalidate` -- whether or not this app hears of it. What the app hears
+through `Sync.Watch` is for Hydra's memory and not for its own: a browser Hydra
+still remembers, after a sign-out that never reached it, is asked for the form
+anyway, because the app asks roster at every flow (*What is promised of it, and
+what is not*, above). And it has
 no idle window, because Hydra's `remember_for` has none -- a second clock under
 Hydra's is what produced the hole in the first place.
 
@@ -564,22 +720,63 @@ reads only its own subject: a session that changed hands between the hops of a
 flow is not read into a token that names somebody else
 (`TestAConsentReadsOnlyItsOwnSubject`).
 
-**And a token is not handed out short.** What is left at the consent hop with nobody
-to read is refused with `login_required` when the client asked for the person
-(`profile`, `email`, `groups`), where it was granted with `sub` alone. A token
-missing the claims its client asked for is not a smaller answer but a wrong one
-that looks right: the client cannot tell it from somebody with no name, and a
-relying party keying its accounts on `email` fails a long way from here. The
-sign-in a client starts on hearing `login_required` is a skipped login this app
-asks again, so it recovers by itself; a silent `sub` never did
-(`TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor`, and
-`TestEveryScopeThatCarriesAClaimIsNamed` for which scopes count).
+**And a token is not handed out short, or for nobody.** What is left at the
+consent hop with nobody to read is refused with `login_required`, where it was
+granted with `sub` alone. A token missing the claims its client asked for is not
+a smaller answer but a wrong one that looks right: the client cannot tell it
+from somebody with no name, and a relying party keying its accounts on `email`
+fails a long way from here. The sign-in a client starts on hearing
+`login_required` is a skipped login this app asks again, so it recovers by
+itself; a silent `sub` never did
+(`TestATokenIsNotHandedOutWithoutTheClaimsItAskedFor`).
+
+It is refused **whatever the client asked for**. A client that asked for `openid`
+and nothing of the person was left granted when the rest was closed, as all it
+was ever going to get. But the read is also the one thing at this hop that says
+the subject is still somebody -- not signed out everywhere, suspended or erased
+since the login was accepted -- and which scope a flow asks for is the
+authorization request's to choose, so any flow could be made one that skips it
+(`TestAConsentWhoseSubjectCannotBeReadIsRefused`).
 
 The alternative was reading the person with the **operator's** key, which needs no
 session at all. It was refused: it would widen this app's role to `Holder.Get`
 across the tenant, and it would give up the property that a token's claims are
 read *as* the person who just authenticated -- which is what makes it structurally
 impossible for one person's claims to end up in another's token.
+
+### The last hop answers the sign-in made for it
+
+A session that lasts hours is a cookie that opens for hours, and nothing on a
+server ends a sealed cookie. So what the cookie is good for is held to two
+things, and `POST /accept` was held to neither: it told Hydra whoever the cookie
+named, for whatever challenge the request named.
+
+- **The challenge its form was answered at.** A session minted by `POST /session`
+  or `POST /session/continue` remembers the `login_challenge` on that request (a
+  digest of it: a challenge is two kilobytes and the session is the cookie), and
+  `POST /accept` answers that challenge and no other, in the tenant it resolves
+  to. A later challenge is the form again. That is what a challenge without
+  `skip` asks for -- a browser Hydra does not know, or a client that wants a
+  sign-in made now (`prompt=login`, `max_age`) -- and it was answered with a
+  sign-in hours old, which Hydra then stamped as `auth_time`; a challenge of
+  another tenant was answered with this one's person
+  (`TestASignInAnswersOnlyTheChallengeItWasMadeFor`,
+  `TestASessionOfOneTenantDoesNotAnswerAnothersChallenge`). The page loses
+  nothing: it calls `/accept` straight after a sign-in at the same challenge, a
+  browser Hydra remembers is answered at `GET /login`, and a provider's round
+  trip where it comes back.
+- **Somebody roster still answers for.** Signed out here, signed out
+  everywhere, suspended, erased: each ends the delegation at roster and none
+  reaches a cookie. `GET /login` asked, on Hydra's `skip`; `POST /accept` did
+  not, so Hydra was told somebody roster had ended, from any copy of their
+  cookie. It asks `Me.Get` as the cookie's person first, in the flow's tenant,
+  and a refusal is a 401 with Hydra told nothing
+  (`TestAnAcceptAsksRosterWhoIsThere`).
+
+So a cookie that leaks reads one person's own profile until its delegation
+ends, and signs nobody in: a challenge its thief raises is not the one it was
+made for, and Hydra takes the answer to a challenge only in the browser it
+raised it for.
 
 ### Signing out reaches the issuer
 
@@ -619,6 +816,28 @@ cost a cluster run to find:
   *If you are a user, please contact the administrator.* Every word of it is true,
   and it is the last thing a person sees after clicking *sign out*. The Login App
   serves `/signed-out` for it.
+
+**It ends this app's own session too, and the delegation in it.** A yes to
+Hydra -- the silent one, or the confirmed one -- clears this app's cookie in the
+browser that asked and revokes the delegation the session held, so a copy of the
+cookie is nobody at roster from then on. Two things about that were not so, and
+are now:
+
+- The revocation went out **unnarrowed**. A logout challenge names a subject and
+  no redirect, so the request is in no tenant's flow, and this app's one key
+  calls nothing until it is narrowed: roster refused, the refusal was dropped,
+  and the delegation outlived the sign-out by whatever was left of `remember`.
+  The same was true wherever a session is ended outside a flow -- the consent
+  hop of a deployment with `remember: 0`. A session says which tenant it is of,
+  so the revocation is made there whoever asked for it
+  (`frontdoor.Config.In`), and one that fails is logged
+  (`TestEveryEndingRevokesTheDelegation`).
+- It ended **whichever** session the browser held. A logout challenge is about
+  one subject, and Hydra raises one for an `id_token_hint` whichever browser
+  presents it; a browser signed in here as somebody else had its own cookie
+  cleared by it. This app's session is ended only when the challenge's subject
+  is the person the cookie names (`TestASignOutEndsOnlyItsOwnSubjectsSession`).
+  Hydra is told yes either way: what the challenge is about is its own.
 
 **It does not reach the other products.** Somebody signed in to two apps who signs
 out of one ends the issuer's memory and that app's session; the second app's cookie
@@ -667,12 +886,27 @@ Three things to know before deploying it:
   flow has no redirect -- so what answers is the one the client registered, and a
   device client with none resolves to nobody. What that looks like is **the right
   password being refused**, which is why `roster login doctor` reports it as broken
-  and says why. Register the tenant's own host; nothing will redirect to it.
+  and says why. Register the tenant's own host; nothing will redirect to it. And
+  one tenant's: with redirects at two tenants' names a device flow is about
+  neither and is refused, which `doctor` reports as broken too.
 - **The screen cannot say what is being authorised.** Hydra offers no way to read a
   device challenge -- there is `.../requests/device/accept` and no getter beside it
   -- so there is no `/flow` for this screen, no client name and no brand on it. What
   the device is asking for is named on the **consent** screen, one hop after the
   code is accepted, so a person still sees it before anything is granted.
+- **So a device's consent is always drawn**, whatever `login.consent` says and
+  whatever Hydra remembers. The sentence above was true of `consent: ask` only:
+  under `skip`, the default, there was no consent screen, and somebody who typed
+  a code and signed in -- or only typed it, in a browser Hydra remembers -- had
+  let a device in with nothing having named it. `skip` rests on a client of the
+  deployment's having sent the browser here; a code is typed by somebody who was
+  shown one, or sent one. Hydra's consent request has no field that says a device
+  began the flow (v26.2.0), so it is told by the request Hydra recorded:
+  `…/oauth2/auth?…` for a client's redirect, `…/oauth2/device/verify?client_id=…`
+  for a device's code. Anything that is not the first is drawn, so that what this
+  app cannot place costs a click and not a grant
+  (`TestADeviceIsGrantedOnAScreen`; `docker/device.sh` walks it against the real
+  Hydra under `consent: skip`).
 
 A code Hydra refuses is answered **400 with no detail**, one answer for one never
 issued, one already spent and one expired. Telling them apart would answer *is this
@@ -695,6 +929,45 @@ optimisation but a **fix**: without it, entering somebody in advance broke their
 sign-in, because the alias an operator chose is the alias `enrolling` derives and
 `Holder.Add` answers AlreadyExists.
 
+**`enrolling` makes a person of whoever a directory says signed in, and some
+directories are everybody's.** `login.enrol` is one setting for the whole app,
+so it is every tenant's and every connection's. A connection at an issuer
+anybody has an account at -- GitHub, Google, Microsoft's `common` or
+`organizations` -- then makes a person of that tenant out of anybody who signs
+in there: nothing holds such a connection to one organisation's accounts, and
+Google's `hd` is not read. It is the setting for a deployment where that is
+meant, or whose tenants connect only directories of their own.
+
+**A first sign-in under `enrolling` is two writes, the person and then their
+account, and the front door keeps them together as far as it can.** Roster has
+no one write for both that a front door may call
+(`HolderService.Provision` is a directory's). So:
+
+- What the account would be refused for on its form is asked **before anybody
+  is made**: a subject that is an address or has a space at an end, and one
+  that is no GUID where the connection names people by `oid`. That is a
+  connection naming the wrong claim, and everybody who arrives through it is
+  answered that this login is not working, as before -- and no longer leaves a
+  person behind at every try, with the plain name and no way in.
+- Arrivals of one account **take turns** at a front door, so two tabs of one
+  new person are one person: the second finds what the first made.
+- Two front doors are not one. A person arriving at both in the same moment --
+  the Login App and the account app, or two replicas of one -- is looked for
+  twice before either writes. Each is signed in as the one person the account
+  was linked to; whoever the other made is left with a name nobody chose and no
+  way in, and the log says who, as a warning, for an administrator to erase
+  (`roster --as admin holder erase`). A front door does not take them back
+  itself: erasing a person is not held to what they hold, so a role that
+  could would reach everybody in the tenant.
+
+What cannot be asked beforehand is what is about a row. For somebody an
+operator entered, a link refused because they hold more than the front door is
+the refusal below. For somebody `enrolling` has just made, who holds nothing,
+it is a front door whose role lets it make people and not link them, which is
+not the role `roster login provision` or `roster account provision` writes; a
+front door given such a role still leaves a person at each try, and its log
+names each.
+
 Matching asks two things. The **directory** has to say the address is verified:
 one that let somebody type an address into their own profile would hand out
 whichever account carries it. And the **row** has to be somebody's word that it
@@ -715,6 +988,95 @@ who enters somebody with a password as well, or links them a way in, has given
 them a way in, and the address is no invitation; they prove it, or arrive by the
 way they were given and connect the directory from the account page.
 
+**Somebody entered and given a role is linked by an administrator, not by the
+front door.** The link a first sign-in makes is a way into an account, written
+by the front door itself, and nobody writes a way in for somebody who holds
+more than they do ([usage/rules.md](usage/rules.md)). A front door's role is
+short on purpose, so anybody bound anything it does not name -- an
+administrator invited by address is the ordinary case -- is matched and not
+linked: a front door that linked whoever it matched would be a way to become
+anybody whose address a directory will vouch for. They are answered `403`,
+*this account is known here and is not linked yet; an administrator of your
+organisation has to link it for you*, at the Login App and at the account app
+alike, and the front door says in its log, as a warning and not an error, who
+arrived and what to link -- the subject, which is issued at the directory and
+is not known before this:
+
+```
+arrives: known here and not linked, because this front door may not write their way in; … tenant=contoso holder=… provider=entra subject=<what the directory calls them>
+```
+
+An administrator of the tenant, or an operator at the box, writes that link,
+and the next sign-in is the ordinary lookup:
+
+```sh
+roster --as admin identity add '{"holder":{"slug":{"alias":"dana","tenant":{"alias":"contoso"}}},
+                      "provider":"entra","subject":"<the subject the log said>"}'
+```
+
+Enter somebody first and bind them their role after they have arrived once, and
+the front door links them itself.
+
+**Nor is somebody linked who already signs in through that provider by another
+account.** A proved address names its holder to whoever arrives verified at
+it, and that holder may have an account at the same provider already: theirs
+at the directory was made again, or the address is somebody else's there now.
+roster refuses a second account at one provider, and which of the two it is,
+is not a front door's to guess. They are answered `403` too -- *somebody here
+already signs in with another account at this provider, under the address
+this one carries; an administrator of your organisation has to say which
+account is theirs* -- and the log says, as a warning, the subject that arrived
+and the one they have. Where it is the same person, an administrator takes the
+old account away and links the new one; an account that is somebody's only way
+in is not taken away, so they are given another first:
+
+```sh
+roster --as admin vouch reset @contoso/dana          # or any other way in; printed once
+roster --as admin identity erase <the id of the account they had>
+roster --as admin identity add '{"holder":{"slug":{"alias":"dana","tenant":{"alias":"contoso"}}},
+                      "provider":"entra","subject":"<the subject the log said>"}'
+```
+
+Where it is another person, an administrator enters them on a row of their own
+and says whose the address is: a proved address does not change hands by
+itself.
+
+**Nor is somebody who was erased signed in, or made again.** An erase stamps
+the person and leaves their account at the provider and their addresses theirs,
+so that `roster restore` gives back who they were
+([operating.md](operating.md) § "Destroying somebody, which an erase does
+not"). So somebody arriving by that account, or verified at an address they
+proved, is found to be a person who is not here -- under every policy, and
+`enrolling` makes nobody in their place. They are answered `403`, *this account
+was deleted here; an administrator of your organisation can bring it back, or
+let it go*, at the Login App and at the account app alike. It is one sentence
+whichever of the two they were found by, and it is said only to whoever the
+provider says holds the account or the mailbox: an address the provider did not
+check is told nothing. The log says, as a warning, who they were, by identifier
+-- their alias came free when they were erased -- and what they were found by:
+
+```
+arrives: somebody erased arrived, and was told their account was deleted; … tenant=contoso holder=<their identifier> provider=entra subject=… by="the account they had"
+```
+
+An operator brings them back, at the box; or an administrator of the tenant
+lets go of what they still hold, after which the next arrival is a stranger's
+and the policy decides:
+
+```sh
+roster restore <the holder the log said>                # they are who they were
+roster --as admin identity list '{"filters":[{"holder":{"id":"<the holder the log said>"}}]}'
+roster --as admin identity erase <the id of the account>    # or: the account is nobody's
+roster --as admin email list '{"filters":[{"holder":{"id":"<the holder the log said>"}}]}'
+roster --as admin email erase <the id of the address>       # and the address
+```
+
+An address they never proved needs none of it: it names nobody, so whoever
+arrives verified at it is a stranger, and takes it. And **`holder.forget_after`
+is never unless the deployment set it**: where people delete their own account
+and come back, set it, or each of them is refused here until an operator forgets
+them.
+
 What `enrolling` calls somebody is derived from the address and is **not** the
 local part of it: an alias begins with a lowercase letter and holds lowercase
 letters, digits and single hyphens, so `first.last` -- which is what a corporate
@@ -722,6 +1084,15 @@ directory hands out -- is not one. Every run of anything else becomes a hyphen, 
 `Erin.Hart@contoso.example` is `erin-hart`; two addresses that fold to the
 same word both get in, and the second is the word plus four characters. An alias is
 changed afterwards; a refused sign-in is not.
+
+And only from an address the directory says is **verified**, which is the
+condition matching asks. An address it does not vouch for is one the person
+typed, and somebody who typed `ceo@contoso.example` is not `ceo` here: they are
+enrolled -- who arrives is the policy's -- under a name nobody chose, as
+somebody with no address at all is, and change it afterwards. Entra says an
+address is verified with `xms_edov` and not otherwise
+([operating.md](operating.md) § *Any Microsoft account*), so a directory of
+people enrolled through Entra without it is a directory of such names.
 
 ### Somebody with no account at the directory
 
@@ -763,7 +1134,9 @@ roster --as admin email add '{"holder":{"slug":{"alias":"intern-kim","tenant":{"
 The first sign-in through the directory then finds that row, links the identity to
 it, and every sign-in after that is the ordinary lookup. The other way round works
 too and is the person's own: signed in with their password, they attach the
-provider account from the account page (`Identity.Add` with their own reference).
+provider account from the account page (`Identity.Add` with their own reference)
+-- except at the connection the tenant's directory provisions through, where an
+account is the directory's to say and not the person's ([scim.md](scim.md)).
 
 ### Which claim is the person
 
@@ -774,6 +1147,15 @@ door alone, while `oid` is the same everywhere: what the portal shows, what anot
 app sees, and what a directory provisioning people sends as their `externalId`.
 `oid` comes only with the `profile` scope, and a token without it is refused rather
 than read by `sub`, because under the other claim it is somebody else.
+
+An `oid` is a GUID, and a GUID is one spelling here: kept in small letters, as
+Entra writes it, and looked for in small letters however it was asked for. A
+token, a directory's `externalId` or an operator's `roster identity add` that
+says one in capitals names the same person, and not a second. Only where the
+connection says `oid`: a `sub` is whatever its provider says, capitals and all.
+And only where a provider may issue one: a connection at GitHub's or Google's
+issuer that says `oid` is refused where it is written, since nobody would sign
+in through it and going back is not the tenant's.
 
 Moving a connection people already sign in through is one line, and nobody is
 lost. The front door finds each person by the `sub` their identity was keyed by and
@@ -825,7 +1207,7 @@ Three things it deliberately does not reach:
 | | |
 | --- | --- |
 | `Credential.Set` | a tenant that turns it back on should find its people's passwords where they left them |
-| a second factor | not a way in, so a tenant's answer about ways in does not touch it -- somebody who arrived through a directory still proves a TOTP step |
+| a second factor | not a way in, so a tenant's answer about ways in does not touch it: the row stays as it was. It is asked for where a password is taken and nowhere else -- somebody who arrives through a directory is signed in on the directory's word, and is asked no factor of roster's (`Vouch.Accept`; [usage/ways-in.md](usage/ways-in.md) § *A second factor*) |
 | another tenant | it is one row's setting, read through the wall on a call that was reading that row anyway |
 
 **Unset is yes.** The field carries presence where everything around it does not,
@@ -852,7 +1234,7 @@ sequenceDiagram
   C->>R: AuthService.Offers
   R-->>C: {password: false, providers: [entra], front_door}
   B->>F: /login?connection=entra&next=https://contoso.example
-  Note over F: next is a name this tenant answers at, or 400, before anything else
+  Note over F: next is an https origin this tenant answers at, or 400, before anything else
   F->>E: the flow it runs
   E-->>F: (provider, subject)
   F->>R: Vouch.Accept {claim, methods, at: contoso.example}
@@ -1032,8 +1414,9 @@ the mechanism, `proto/app/nomination.proto` the row and why it is not a field on
 **And the key's own method list is not carried through.** `keys.At` answers as the
 nominated holder with `frame.Whole()`, so what bounds a call inside a flow is that
 holder's role -- which is why `roster login provision` writes two different lists:
-the key may make only the reads that work out *whose* flow this is, and everything
-a flow does is the role's. A key as wide as the role would be one that could do
+the key may make only the calls that name no tenant -- *whose* name a flow named,
+and the stream of every tenant's sign-outs -- and everything a flow does is the
+role's. A key as wide as the role would be one that could do
 all of it without naming a tenant, which is the frame this exists to take away.
 
 `roster key add --tenant contoso --holder account --allow …` mints an `rt_`;
@@ -1049,10 +1432,16 @@ browser -- and the key is the only thing that assertion is held against.
 This is what a front door calls, in general. A **self-hosted** one holds it all on
 its one `rt_` -- the holder's bindings narrowed by the key's own methods. A
 **roster-hosted** one splits it: the key holds only what it calls without naming
-a tenant -- for the Login App, `WhoseHost` and `TenantService/Get` before a flow's
-tenant is known, and the one `SyncService/Watch` stream that hears every tenant --
-and the rest is the role of the holder each tenant nominated. `cli.LoginResolving`
-and `cli.LoginMethods` are the Login App's two lists exactly.
+a tenant -- for the Login App, `WhoseHost` before a flow's tenant is known, and
+the one `SyncService/Watch` stream that hears every tenant -- and the rest is the
+role of the holder each tenant nominated. `cli.LoginResolving` and
+`cli.LoginMethods` are the Login App's two lists exactly, and each is what it
+calls there and no more: what the tenant a name resolved to is called
+(`TenantService/Get`) is read as that tenant's nominee and is the role's, so the
+key reads no tenant's row as itself; and the role holds neither `Verify`, since
+the app checks a password with `Delegate`, nor `Watch`, which is the key's
+(`TestTheProvisionedKeyIsNarrowerThanTheRole`,
+`TestTheLoginAppsKeyReadsATenantAsWhoThatTenantNominated`).
 
 | | |
 | --- | --- |
@@ -1129,7 +1518,7 @@ off a control-plane row, because it is answered across tenants when it is not
 narrowed -- so a roster-hosted app has one row there, owning its key, and that
 row is never who a narrowed call is answered as. The control plane's other rows
 are the roster operators themselves. What an unnarrowed `rk_` may do is exactly
-its `methods`: three reads for the Login App, none for an app minted
+its `methods`: two calls for the Login App, none for an app minted
 `--narrowed`, and for a job whose work really is every tenant's -- reading the
 trail -- whatever that work names.
 

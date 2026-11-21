@@ -125,6 +125,17 @@ service VouchService {
   // second factor it is asked for exactly as it would have been after a
   // password, because a link that skipped one would be a way to turn a mailbox
   // into an account.
+  //
+  // # A link ends with what ends a sign-in
+  //
+  // One minted at or before its holder's epoch (`Holder.date_invalidated`) is
+  // refused as one that expired is, and in the same words: a password issued
+  // for them, a password they changed and *sign out everywhere* each end the
+  // links already out with the sign-ins already made (`Link.date_created`).
+  // Redeeming stamps nothing itself. A recovery is this and then
+  // `Credential.Issue`, and it is the password issued that ends the other
+  // links somebody asked for -- and the attempt one of them left open, where
+  // somebody with a second factor had spent it (`Continuation.date_created`).
   rpc Redeem(VouchRedeemRequest) returns (VouchDelegateResponse);
 
   // LeaveLink mints a link that confirms one person **leaving**, and answers
@@ -181,9 +192,10 @@ service VouchService {
   // # In this order
   //
   //   - the link: one this caller was issued, still open, of this kind, for
-  //     somebody who may still sign in, and mailed to an address that is still
-  //     theirs and still proved -- `NotFound` for every way of being wrong,
-  //     one answer, as every link's;
+  //     somebody who may still sign in and whose sign-ins nothing has ended
+  //     since it was minted (`Link.date_created`), and mailed to an address
+  //     that is still theirs and still proved -- `NotFound` for every way of
+  //     being wrong, one answer, as every link's;
   //   - `Leave`'s rules but the one this replaces: that their tenant offers
   //     it, that its directory does not provision them, and that `confirm` is
   //     their alias as it is -- each refusal says which, and **none spends the
@@ -214,6 +226,13 @@ service VouchService {
   // continuation in place of a `who` and a secret. So a two-step sign-in is
   // `Delegate` -> `Continue` -> `Delegate`, and the last call spends what the
   // first two proved.
+  //
+  // # An attempt ends with what ends a sign-in
+  //
+  // One begun at or before its holder's epoch (`Holder.date_invalidated`) is
+  // refused as one that expired is, here and where `Delegate` takes one: a
+  // first factor proved before a password was replaced, or before *sign out
+  // everywhere*, is not proved after it (`Continuation.date_created`).
   rpc Continue(VouchContinueRequest) returns (VouchContinueResponse);
 
   // Accept mints for somebody a front door has **already** checked, and it is
@@ -428,6 +447,20 @@ message VouchFactor {
   // and nothing a caller could use -- it is the public half of a public key.
   // Empty for every other kind.
   string credential_id = 9;
+
+  // For `webauthn`: what the key is to sign, base64url -- the `challenge` a
+  // page hands `navigator.credentials.get`. It is this attempt's, derived from
+  // the continuation it is answered with, and an assertion over anything else
+  // is refused: so one that was seen once is good for the attempt it was made
+  // for, which is spent, and for no other.
+  //
+  // The challenge was the presenter's, written beside the assertion it was
+  // checked against, and in the front door roster ships the browser made it
+  // up; a key that reports no counter then signed one thing once and passed
+  // for good (#275). Not a secret, and says nothing of the continuation: it is
+  // a digest of it. Empty for every other kind, and where there is no
+  // continuation.
+  string challenge = 10;
 }
 
 message VouchVerifyResponse {
@@ -531,13 +564,17 @@ message VouchDelegateRequest {
   // out more than was asked for, and nothing mints a credential that silently
   // does not work.
   //
-  // **No wider than the caller.** Each of these has to be covered by what the
-  // calling key itself may do -- otherwise an app allowed only to check
-  // passwords could mint a token that erases holders and use it through
-  // somebody who may. The check bites exactly as hard as the caller's own
-  // credential is narrow: under `auth.Plain` or mTLS a caller carries
-  // `frame.Whole`, so it refuses nothing, because there is nothing there to be
-  // wider than.
+  // **No wider than the caller.** Each of these has to be a method the caller
+  // may itself call -- otherwise an app allowed only to check passwords could
+  // mint a token that erases holders and use it through somebody who may.
+  // *May call* is both things a call is asked: the list on the credential it
+  // arrived with, and what whoever that credential is has been bound. So a
+  // deployment key calling as itself hands out what its list names; one
+  // narrowed to a tenant (`roster-at`), what the holder that tenant nominated
+  // is bound; a tenant's own key, what its holder is bound of what its list
+  // names. Under `auth.Plain` or mTLS a caller carries no list, and what they
+  // are bound is the whole of it. What nobody needs a role for
+  // (`MeService.Get`) is handed on with none.
   //
   // It is checked **before the secret is compared**, which is not a detail. Run
   // after, a caller that over-asks would get one answer for a wrong password

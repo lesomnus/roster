@@ -4,17 +4,23 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net"
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/test/bufconn"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/pdid"
@@ -25,19 +31,20 @@ import (
 	"github.com/lesomnus/roster/standing"
 )
 
-// heard writes until the stream says what was written: there is nothing to say
-// it has subscribed, and a write made before it has is heard by nobody.
+// heard makes a write once and returns when the stream has said what was
+// written of `who`. It is made once the follower listens
+// ([external.listening]): a write made before roster has subscribed the stream
+// is heard by nobody.
 func heard(t *testing.T, got <-chan standing.Standing, who pdid.Id, write func() error, ok func(standing.Standing) bool) standing.Standing {
 	t.Helper()
+	require.NoError(t, write())
 	deadline := time.After(10 * time.Second)
 	for {
-		require.NoError(t, write())
 		select {
 		case v := <-got:
 			if v.Holder == who && ok(v) {
 				return v
 			}
-		case <-time.After(100 * time.Millisecond):
 		case <-deadline:
 			t.Fatal("nothing about them came down the stream")
 		}
@@ -79,6 +86,7 @@ func TestWhatRosterSaysArrivesAsItIsSaid(t *testing.T) {
 	c := &clock{now: time.Now()}
 	a := accounts(t, standing.Config{Conn: e.dial(t), As: at(e.key, "acme"), Now: c.Now})
 	got := follow(t, a)
+	e.listening(t)
 	op, as := e.asOperator(t)
 	ref := rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build()
 
@@ -95,10 +103,6 @@ func TestWhatRosterSaysArrivesAsItIsSaid(t *testing.T) {
 	x.NoError(a.Held(ctx, e.kim, after))
 	v = heard(t, got, e.kim, func() error {
 		_, err := op.Disable(as, rstr.HolderDisableRequest_builder{Ref: ref}.Build())
-		if status.Code(err) == codes.FailedPrecondition {
-			// Suspended already: once it has been heard, once is enough.
-			return nil
-		}
 		return err
 	}, func(v standing.Standing) bool { return !v.Disabled.IsZero() })
 	x.False(v.Good(time.Now()))
@@ -106,9 +110,6 @@ func TestWhatRosterSaysArrivesAsItIsSaid(t *testing.T) {
 
 	v = heard(t, got, e.kim, func() error {
 		_, err := op.Erase(as, ref)
-		if status.Code(err) == codes.NotFound {
-			return nil
-		}
 		return err
 	}, func(v standing.Standing) bool { return !v.Erased.IsZero() })
 	x.Equal(e.acme, v.Tenant)
@@ -129,14 +130,8 @@ func TestAnErasureIsHeardOfSomebodyNothingElseHappenedTo(t *testing.T) {
 	elsewhere := addPerson(t, e.s, e.beta, "elsewhere")
 
 	got := follow(t, accounts(t, standing.Config{Conn: e.dial(t), As: at(e.key, "acme")}))
+	e.listening(t)
 	op, as := e.asOperator(t)
-
-	// kim first, for the stream to be known to be open: a write before it is
-	// heard by nobody, and an erasure is not made twice.
-	heard(t, got, e.kim, func() error {
-		_, err := op.Invalidate(as, rstr.HolderInvalidateRequest_builder{Ref: rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build()}.Build())
-		return err
-	}, func(v standing.Standing) bool { return !v.Invalidated.IsZero() })
 
 	// The one the app may not hear of first, so that the other arriving makes
 	// its absence a fact rather than a race.
@@ -181,8 +176,7 @@ func TestADirectoryClosedShutsOutEveryoneInIt(t *testing.T) {
 		return err
 	}
 
-	// kim first, for the stream to be known to be open.
-	heard(t, got, e.kim, invalidate, func(v standing.Standing) bool { return !v.Invalidated.IsZero() })
+	e.listening(t)
 	began := time.Now()
 	x.NoError(a.Held(ctx, e.kim, began))
 
@@ -192,13 +186,8 @@ func TestADirectoryClosedShutsOutEveryoneInIt(t *testing.T) {
 	x.NoError(err)
 	_, err = tenants.Update(as, rstr.TenantUpdateRequest_builder{Ref: ref, DateUpdated: was.GetDateUpdated(), Desc: proto.String("seen")}.Build())
 	x.NoError(err)
-	closed := false
 	v := heard(t, got, e.kim, func() error {
-		if closed {
-			return nil
-		}
 		_, err := tenants.Close(as, rstr.TenantCloseRequest_builder{Ref: ref}.Build())
-		closed = err == nil
 		return err
 	}, func(v standing.Standing) bool { return !v.Closed.IsZero() })
 	x.Equal(e.acme, v.Tenant)
@@ -263,6 +252,7 @@ func TestAStreamRosterRefusesIsSaidAndThenHeld(t *testing.T) {
 	x.NotContains(l.String(), "level=WARN", "a refusal is not a stream that dropped")
 
 	e.role(t, methods)
+	e.listening(t)
 	op, as := e.asOperator(t)
 	heard(t, got, e.kim, func() error {
 		_, err := op.Invalidate(as, rstr.HolderInvalidateRequest_builder{Ref: rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build()}.Build())
@@ -331,6 +321,7 @@ func TestAStreamOpenedAgainForgetsWhatWasKnown(t *testing.T) {
 	c := &clock{now: time.Now()}
 	a := accounts(t, standing.Config{Conn: e.dial(t, d.option()), As: at(e.key, "acme"), Now: c.Now})
 	got := follow(t, a)
+	e.listening(t)
 	op, as := e.asOperator(t)
 
 	heard(t, got, e.kim, func() error {
@@ -352,8 +343,9 @@ func TestAStreamOpenedAgainForgetsWhatWasKnown(t *testing.T) {
 }
 
 // TestTheFollowerIsALoopEveryProcessRuns: the follower is a named loop, and
-// marked to run in every process it runs in one that holds no lease -- which
-// is each process but one, under `spin.lease`.
+// marked to run in every process -- again, as the manual's line marks it --
+// it runs in one that holds no lease, which is each process but one, under
+// `spin.lease`: marking it twice changes nothing.
 func TestTheFollowerIsALoopEveryProcessRuns(t *testing.T) {
 	x := require.New(t)
 	e := newExternal(t)
@@ -381,6 +373,7 @@ func TestTheFollowerIsALoopEveryProcessRuns(t *testing.T) {
 		x.NoError(<-done, "the loop stopped as asked")
 	})
 
+	e.listening(t)
 	op, as := e.asOperator(t)
 	heard(t, got, e.kim, func() error {
 		_, err := op.Invalidate(as, rstr.HolderInvalidateRequest_builder{Ref: rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build()}.Build())
@@ -412,6 +405,7 @@ func TestWhatSomebodyMayCallIsNoNewsOfTheirStanding(t *testing.T) {
 	}
 
 	// The stream is open, and kim's standing is known.
+	e.listening(t)
 	heard(t, got, e.kim, poke(e.kim), func(v standing.Standing) bool { return !v.Invalidated.IsZero() })
 	x.NoError(a.Held(ctx, e.kim, time.Now().Add(time.Second)))
 	asked := c.asked.Load()
@@ -420,6 +414,9 @@ func TestWhatSomebodyMayCallIsNoNewsOfTheirStanding(t *testing.T) {
 	// acme's administrator over the wire.
 	raw, err := rstr.NewSyncServiceClient(e.dial(t)).Watch(func() context.Context { v, _ := as(ctx); return v }(), rstr.SyncWatchRequest_builder{}.Build())
 	x.NoError(err)
+	md, err := raw.Header()
+	x.NoError(err)
+	x.NotNil(md, "the second stream never listened")
 	events := make(chan *rstr.SyncEvent, 64)
 	go func() {
 		for {
@@ -431,15 +428,6 @@ func TestWhatSomebodyMayCallIsNoNewsOfTheirStanding(t *testing.T) {
 		}
 	}()
 	admin := auth.BearerProvider(e.admin).Provide(ctx)
-	x.Eventually(func() bool {
-		x.NoError(poke(canary)())
-		select {
-		case <-events:
-			return true
-		case <-time.After(50 * time.Millisecond):
-			return false
-		}
-	}, 10*time.Second, 10*time.Millisecond, "the second stream never opened")
 	role, err := rstr.NewRoleServiceClient(e.dial(t)).Add(admin, rstr.RoleAddRequest_builder{
 		Tenant: rstr.TenantRef_builder{Id: e.acme.Bytes()}.Build(), Alias: "reader", Methods: []string{rstr.HolderService_Get_FullMethodName},
 	}.Build())
@@ -473,4 +461,544 @@ func TestWhatSomebodyMayCallIsNoNewsOfTheirStanding(t *testing.T) {
 	}
 	x.NoError(a.Held(ctx, e.kim, time.Now().Add(time.Second)))
 	x.Equal(asked, c.asked.Load(), "kim's standing was dropped, and asked again, for a role")
+}
+
+// lateRoad is a TCP path in front of roster that holds everything the client
+// sends until `open` is closed: a stream's opening that is slow to reach
+// roster, as it is where the stream and the calls reach different replicas.
+type lateRoad struct {
+	addr string
+	open chan struct{}
+}
+
+func newLateRoad(t *testing.T, to string) *lateRoad {
+	t.Helper()
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	r := &lateRoad{addr: l.Addr().String(), open: make(chan struct{})}
+
+	var mu sync.Mutex
+	var conns []net.Conn
+	keep := func(c net.Conn) {
+		mu.Lock()
+		defer mu.Unlock()
+		conns = append(conns, c)
+	}
+	t.Cleanup(func() {
+		l.Close()
+		mu.Lock()
+		defer mu.Unlock()
+		for _, c := range conns {
+			c.Close()
+		}
+	})
+	pipe := func(dst, src net.Conn, held bool) {
+		buf := make([]byte, 32<<10)
+		for {
+			n, err := src.Read(buf)
+			if err != nil {
+				return
+			}
+			if held {
+				<-r.open
+			}
+			if _, err := dst.Write(buf[:n]); err != nil {
+				return
+			}
+		}
+	}
+	go func() {
+		for {
+			c, err := l.Accept()
+			if err != nil {
+				return
+			}
+			keep(c)
+			d, err := net.Dial("tcp", to)
+			if err != nil {
+				c.Close()
+				continue
+			}
+			keep(d)
+			go pipe(d, c, true)
+			go pipe(c, d, false)
+		}
+	}()
+
+	return r
+}
+
+// streamsApart sends the stream one way and the calls another, as a channel
+// balanced over two replicas of roster does.
+type streamsApart struct{ calls, streams grpc.ClientConnInterface }
+
+func (s streamsApart) Invoke(ctx context.Context, method string, args, reply any, opts ...grpc.CallOption) error {
+	return s.calls.Invoke(ctx, method, args, reply, opts...)
+}
+
+func (s streamsApart) NewStream(ctx context.Context, desc *grpc.StreamDesc, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+	return s.streams.NewStream(ctx, desc, method, opts...)
+}
+
+// waiting is a connection that says when the follower first waits on a stream
+// it opened: for its header, or for its first event.
+func waiting(began chan<- struct{}) grpc.DialOption {
+	var once sync.Once
+	return grpc.WithStreamInterceptor(func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+		s, err := streamer(ctx, desc, cc, method, opts...)
+		if err != nil {
+			return nil, err
+		}
+		return &waited{ClientStream: s, began: func() { once.Do(func() { close(began) }) }}, nil
+	})
+}
+
+type waited struct {
+	grpc.ClientStream
+	began func()
+}
+
+func (s *waited) Header() (metadata.MD, error) {
+	s.began()
+	return s.ClientStream.Header()
+}
+
+func (s *waited) RecvMsg(m any) error {
+	s.began()
+	return s.ClientStream.RecvMsg(m)
+}
+
+// TestTheFollowerForgetsWhenTheStreamListens: what was known is forgotten
+// when roster says the stream listens, and not when `Watch` returns, which is
+// before roster has subscribed anything. Forgotten then, an answer asked for
+// and kept in between was believed for HeldTtl over a suspension written in
+// between, which no stream heard: Held answered nil with roster saying
+// suspended; right is ErrRefused.
+func TestTheFollowerForgetsWhenTheStreamListens(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+	e := newExternal(t)
+	road := newLateRoad(t, e.addr)
+	waits := make(chan struct{})
+	slow, err := grpc.NewClient(road.addr, grpc.WithTransportCredentials(insecure.NewCredentials()), waiting(waits))
+	x.NoError(err)
+	t.Cleanup(func() { slow.Close() })
+
+	clk := &clock{now: time.Now()}
+	a := accounts(t, standing.Config{Conn: streamsApart{calls: e.dial(t), streams: slow}, As: at(e.key, "acme"), Now: clk.Now})
+	follow(t, a)
+	select {
+	case <-waits:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the follower never opened its stream")
+	}
+
+	// Asked, and kept, while the stream's opening is on its way.
+	began := time.Now()
+	x.NoError(a.Held(ctx, e.kim, began))
+	op, as := e.asOperator(t)
+	_, err = op.Disable(as, rstr.HolderDisableRequest_builder{Ref: rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build()}.Build())
+	x.NoError(err)
+
+	close(road.open)
+	x.Eventually(func() bool { return errors.Is(a.Held(ctx, e.kim, began), standing.ErrRefused) }, 10*time.Second, 20*time.Millisecond,
+		"what was kept before the stream listened")
+}
+
+// scripted is a roster whose stream sends what the test hands it, once it has
+// said it listens.
+type scripted struct {
+	rstr.UnimplementedSyncServiceServer
+	events  chan *rstr.SyncEvent
+	streams *listens
+}
+
+func (s *scripted) Watch(_ *rstr.SyncWatchRequest, out grpc.ServerStreamingServer[rstr.SyncEvent]) error {
+	if err := out.SendHeader(nil); err != nil {
+		return err
+	}
+	for {
+		select {
+		case <-out.Context().Done():
+			return nil
+		case v := <-s.events:
+			if err := out.Send(v); err != nil {
+				return err
+			}
+		}
+	}
+}
+
+// newScripted serves a [scripted] roster on a listener in memory, and dials it.
+func newScripted(t *testing.T, more ...func(grpc.ServiceRegistrar)) (*scripted, *grpc.ClientConn) {
+	t.Helper()
+	s := &scripted{events: make(chan *rstr.SyncEvent), streams: newListens()}
+	g := grpc.NewServer()
+	rstr.RegisterSyncServiceServer(g, s)
+	for _, f := range more {
+		f(g)
+	}
+	lis := bufconn.Listen(1 << 20)
+	go func() { _ = g.Serve(lis) }()
+	t.Cleanup(g.Stop)
+	conn, err := grpc.NewClient("passthrough:///scripted",
+		grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) { return lis.DialContext(ctx) }),
+		grpc.WithTransportCredentials(insecure.NewCredentials()), s.streams.option())
+	require.NoError(t, err)
+	t.Cleanup(func() { conn.Close() })
+
+	return s, conn
+}
+
+// send hands the stream an event, and returns once it is sent.
+func (s *scripted) send(t *testing.T, v *rstr.SyncEvent) {
+	t.Helper()
+	select {
+	case s.events <- v:
+	case <-time.After(10 * time.Second):
+		t.Fatal("nobody is listening to the stream")
+	}
+}
+
+// TestAnEventAboutNobodyIsPassedBy: an event with no holder is about nobody,
+// and is passed by without a line, so that roster may one day send one as a
+// sign of life on an idle stream and no follower built on this release
+// complains of it; it was a warning. An event that names somebody this does
+// not read as an identifier is still one.
+func TestAnEventAboutNobodyIsPassedBy(t *testing.T) {
+	x := require.New(t)
+	s, conn := newScripted(t)
+	l := &logs{}
+	a := accounts(t, standing.Config{Conn: conn, As: func(ctx context.Context) (context.Context, error) { return ctx, nil },
+		Log: slog.New(slog.NewTextHandler(l, nil))})
+	got := follow(t, a)
+
+	someone := pdid.New(pdid.Domain(2))
+	s.send(t, rstr.SyncEvent_builder{}.Build())
+	s.send(t, rstr.SyncEvent_builder{Holder: []byte("not an identifier")}.Build())
+	s.send(t, rstr.SyncEvent_builder{Holder: someone.Bytes()}.Build())
+	select {
+	case v := <-got:
+		x.Equal(someone, v.Holder, "the first event handed on")
+	case <-time.After(10 * time.Second):
+		t.Fatal("nothing was handed on")
+	}
+	x.Equal(1, strings.Count(l.String(), "level=WARN"), "a line for the one that names somebody unreadable, and none for nobody:\n%s", l.String())
+}
+
+// standings is what a scripted roster answers of an account: suspended where
+// the test says so, and good otherwise.
+type standings struct {
+	rstr.UnimplementedHolderServiceServer
+	mu        sync.Mutex
+	suspended map[pdid.Id]time.Time
+	asked     map[pdid.Id]int
+}
+
+func newStandings() *standings {
+	return &standings{suspended: map[pdid.Id]time.Time{}, asked: map[pdid.Id]int{}}
+}
+
+// askedOf is how many times roster was asked about somebody.
+func (s *standings) askedOf(who pdid.Id) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.asked[who]
+}
+
+func (s *standings) Get(_ context.Context, req *rstr.HolderGetRequest) (*rstr.Holder, error) {
+	k, err := pdid.From(req.GetRef().GetId())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "no identifier")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.asked[k]++
+	v := &rstr.Holder{}
+	if at, ok := s.suspended[k]; ok {
+		v.SetDateDisabled(timestamppb.New(at))
+	}
+	return v, nil
+}
+
+func (s *standings) suspend(who pdid.Id) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.suspended[who] = time.Now()
+}
+
+// busyOn is an `on` that is slow with one account -- a database that is, a
+// lock -- until the test lets it go, and hands on everything it is handed.
+type busyOn struct {
+	slow    pdid.Id
+	entered chan struct{}
+	busy    chan struct{}
+	release func()
+	got     chan standing.Standing
+}
+
+func newBusyOn(t *testing.T, slow pdid.Id) *busyOn {
+	o := &busyOn{slow: slow, entered: make(chan struct{}, 1), busy: make(chan struct{}), got: make(chan standing.Standing, 64)}
+	var once sync.Once
+	o.release = func() { once.Do(func() { close(o.busy) }) }
+	t.Cleanup(o.release)
+
+	return o
+}
+
+func (o *busyOn) on(ctx context.Context, v standing.Standing) error {
+	if v.Holder == o.slow {
+		select {
+		case o.entered <- struct{}{}:
+		default:
+		}
+		// Or the follower stopping, so that a test that failed ends.
+		select {
+		case <-o.busy:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	o.got <- v
+	return nil
+}
+
+// busied returns once `on` is busy with the slow account.
+func (o *busyOn) busied(t *testing.T) {
+	t.Helper()
+	select {
+	case <-o.entered:
+	case <-time.After(10 * time.Second):
+		t.Fatal("on was never handed the slow account")
+	}
+}
+
+// next is what `on` was handed next.
+func (o *busyOn) next(t *testing.T) standing.Standing {
+	t.Helper()
+	select {
+	case v := <-o.got:
+		return v
+	case <-time.After(10 * time.Second):
+		t.Fatal("on was handed nothing more")
+		return standing.Standing{}
+	}
+}
+
+// followScripted runs the follower on a scripted roster until the test ends,
+// with roster's answers about an account in `s`.
+func followScripted(t *testing.T, s *standings, on func(context.Context, standing.Standing) error) (*scripted, *standing.Accounts) {
+	t.Helper()
+	sc, conn := newScripted(t, func(g grpc.ServiceRegistrar) { rstr.RegisterHolderServiceServer(g, s) })
+	a := accounts(t, standing.Config{
+		Conn: conn, As: func(ctx context.Context) (context.Context, error) { return ctx, nil },
+		Now: (&clock{now: time.Now()}).Now,
+	})
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan struct{})
+	t.Cleanup(func() { cancel(); <-done })
+	go func() {
+		defer close(done)
+		_ = a.Follow(ctx, on)
+	}()
+	sc.streams.wait(t)
+
+	return sc, a
+}
+
+// TestABusyOnHoldsNoLaterDrop: while `on` is busy with one account, what the
+// stream says of another is dropped from what this process knows as it is
+// read. `on` ran in the loop that reads, so nothing later was read while it
+// was busy: Held answered nil for somebody roster had suspended, until `on`
+// returned; right is ErrRefused at once. Sixty-four events behind, roster cuts
+// the stream.
+func TestABusyOnHoldsNoLaterDrop(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+	lee, kim := pdid.New(pdid.Domain(2)), pdid.New(pdid.Domain(2))
+	s := newStandings()
+	o := newBusyOn(t, lee)
+	sc, a := followScripted(t, s, o.on)
+
+	began := time.Now().Add(-time.Second)
+	x.NoError(a.Held(ctx, kim, began))
+	s.suspend(lee)
+	sc.send(t, rstr.SyncEvent_builder{Holder: lee.Bytes(), DateDisabled: timestamppb.Now()}.Build())
+	o.busied(t)
+
+	s.suspend(kim)
+	sc.send(t, rstr.SyncEvent_builder{Holder: kim.Bytes(), DateDisabled: timestamppb.Now()}.Build())
+	x.Eventually(func() bool { return errors.Is(a.Held(ctx, kim, began), standing.ErrRefused) }, 10*time.Second, 10*time.Millisecond,
+		"suspended, and heard while on was busy with somebody else")
+
+	o.release()
+	x.Equal(lee, o.next(t).Holder)
+	v := o.next(t)
+	x.Equal(kim, v.Holder, "and handed on once on was free")
+	x.False(v.Disabled.IsZero())
+}
+
+// TestOnIsHandedTheLatestOfEachAccount: what the stream says of an account
+// while `on` is busy waits for it, and what it says of the same account again
+// replaces what waited, since it is state and not a history: `on` is handed
+// the latest, once, and never two accounts at once.
+func TestOnIsHandedTheLatestOfEachAccount(t *testing.T) {
+	x := require.New(t)
+	lee, kim, last := pdid.New(pdid.Domain(2)), pdid.New(pdid.Domain(2)), pdid.New(pdid.Domain(2))
+	s := newStandings()
+	o := newBusyOn(t, lee)
+	var at atomic.Int32
+	sc, a := followScripted(t, s, func(ctx context.Context, v standing.Standing) error {
+		defer at.Add(-1)
+		x.Equal(int32(1), at.Add(1), "on was called for two accounts at once")
+		return o.on(ctx, v)
+	})
+
+	x.NoError(a.Held(t.Context(), last, time.Now()))
+	sc.send(t, rstr.SyncEvent_builder{Holder: lee.Bytes(), DateDisabled: timestamppb.Now()}.Build())
+	o.busied(t)
+
+	signedOut := time.Now().Add(-time.Minute).Truncate(time.Microsecond)
+	suspended := time.Now().Truncate(time.Microsecond)
+	sc.send(t, rstr.SyncEvent_builder{Holder: kim.Bytes(), DateInvalidated: timestamppb.New(signedOut)}.Build())
+	sc.send(t, rstr.SyncEvent_builder{Holder: kim.Bytes(), DateInvalidated: timestamppb.New(signedOut), DateDisabled: timestamppb.New(suspended)}.Build())
+	sc.send(t, rstr.SyncEvent_builder{Holder: last.Bytes()}.Build())
+	// All three read while on is still busy: the last is dropped, so asked
+	// about again, once the two before it were read.
+	x.Eventually(func() bool {
+		_ = a.Held(t.Context(), last, time.Now())
+		return s.askedOf(last) == 2
+	}, 10*time.Second, 10*time.Millisecond, "the stream was not read while on was busy")
+	o.release()
+
+	x.Equal(lee, o.next(t).Holder)
+	v := o.next(t)
+	x.Equal(kim, v.Holder)
+	x.True(suspended.Equal(v.Disabled), "the latest of what was said of them, and not the first")
+	x.True(signedOut.Equal(v.Invalidated))
+	x.Equal(last, o.next(t).Holder, "and kim once")
+}
+
+// everyProcess says whether a loop, or one it wraps, is marked to run in every
+// process, as payday asks it.
+func everyProcess(s spin.Spinner) bool {
+	for s != nil {
+		if _, ok := s.(spin.Everywhere); ok {
+			return true
+		}
+		u, ok := s.(interface{ Unwrap() spin.Spinner })
+		if !ok {
+			return false
+		}
+		s = u.Unwrap()
+	}
+	return false
+}
+
+// TestFollowerIsForEveryProcess: the follower comes marked to run in every
+// process, and runs in one that holds no lease as it is handed back. It came
+// unmarked, for the app to mark: left so under a lease, one process heard and
+// every other believed what it was told for HeldTtl, which no use of it wants.
+func TestFollowerIsForEveryProcess(t *testing.T) {
+	x := require.New(t)
+	e := newExternal(t)
+	a := accounts(t, standing.Config{Conn: e.dial(t), As: at(e.key, "acme")})
+	got := make(chan standing.Standing, 64)
+	loop := a.Follower("test.roster-stream", func(_ context.Context, v standing.Standing) error {
+		got <- v
+		return nil
+	})
+
+	ctx, stop := context.WithCancel(t.Context())
+	done := make(chan error, 1)
+	go func() { done <- spin.Run(ctx, slices.Values([]spin.Spinner{loop}), spin.WithLease(spin.Nowhere())) }()
+	t.Cleanup(func() {
+		stop()
+		x.NoError(<-done, "the loop stopped as asked")
+	})
+
+	e.listening(t)
+	op, as := e.asOperator(t)
+	heard(t, got, e.kim, func() error {
+		_, err := op.Invalidate(as, rstr.HolderInvalidateRequest_builder{Ref: rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build()}.Build())
+		return err
+	}, func(v standing.Standing) bool { return !v.Invalidated.IsZero() })
+	x.True(everyProcess(loop))
+	n, ok := loop.(spin.Named)
+	x.True(ok, "and named, as it was")
+	x.Equal("test.roster-stream", n.SpinName())
+}
+
+// TestAStreamListeningIsSaid: a stream that listens is a line of the log at
+// the level of information, the first time and each time one listens again
+// after one ended. Nothing was said of a stream opening, so a log said a
+// stream ended and never that it was back.
+func TestAStreamListeningIsSaid(t *testing.T) {
+	x := require.New(t)
+	e := newExternal(t)
+	d := &dropping{}
+	l := &logs{}
+	follow(t, accounts(t, standing.Config{Conn: e.dial(t, d.option()), As: at(e.key, "acme"), Log: slog.New(slog.NewTextHandler(l, nil))}))
+	listening := func() int {
+		return strings.Count(l.String(), `level=INFO msg="standing: listening to roster's sync stream`)
+	}
+
+	e.listening(t)
+	x.Eventually(func() bool { return listening() == 1 }, 10*time.Second, 10*time.Millisecond, "the first time:\n%s", l.String())
+	d.cut()
+	e.listening(t)
+	x.Eventually(func() bool { return listening() == 2 }, 10*time.Second, 10*time.Millisecond, "and again:\n%s", l.String())
+	x.Contains(l.String(), "again")
+}
+
+// TestTheSameEndingIsSaidOnce: a stream that ended, or that roster refused,
+// is said once, with roster's own words beside the package's, and not again
+// until a stream has listened in between. A refusal was said at every
+// asking, and a stream refused with Unauthenticated was a warning every
+// thirty seconds for as long as it lasted. The sentence for PermissionDenied
+// says both things it can be, and an `As` that failed is said as that.
+func TestTheSameEndingIsSaidOnce(t *testing.T) {
+	t.Run("refused", func(t *testing.T) {
+		x := require.New(t)
+		e := newExternal(t)
+		without := slices.DeleteFunc(slices.Clone(methods), func(m string) bool { return m == rstr.SyncService_Watch_FullMethodName })
+		e.role(t, without)
+		d := &dropping{}
+		l := &logs{}
+		follow(t, accounts(t, standing.Config{
+			Conn: e.dial(t, d.option()), As: at(e.key, "acme"),
+			Log: slog.New(slog.NewTextHandler(l, nil)), Refused: 50 * time.Millisecond,
+		}))
+		refusals := func() int { return strings.Count(l.String(), "level=ERROR") }
+
+		x.Eventually(func() bool { return d.opens() >= 4 }, 10*time.Second, 10*time.Millisecond)
+		x.Equal(1, refusals(), "said once:\n%s", l.String())
+		x.Contains(l.String(), "roster role patch")
+		x.Contains(l.String(), "key's own list")
+		x.Contains(l.String(), "PermissionDenied", "roster's own words beside")
+
+		// Listening in between, and then the same refusal is said again.
+		e.role(t, methods)
+		e.listening(t)
+		e.role(t, without)
+		d.cut()
+		opens := d.opens()
+		x.Eventually(func() bool { return d.opens() >= opens+3 }, 10*time.Second, 10*time.Millisecond)
+		x.Equal(2, refusals(), "said again, once, after a stream listened:\n%s", l.String())
+	})
+
+	t.Run("an As that fails", func(t *testing.T) {
+		x := require.New(t)
+		em := newEmbedded(t)
+		l := &logs{}
+		var asked atomic.Int32
+		mine := errors.New("no directory yet")
+		follow(t, accounts(t, standing.Config{Conn: em.dial(t), Log: slog.New(slog.NewTextHandler(l, nil)),
+			As: func(context.Context) (context.Context, error) { asked.Add(1); return nil, mine }}))
+
+		x.Eventually(func() bool { return asked.Load() >= 2 }, 10*time.Second, 10*time.Millisecond)
+		x.Equal(1, strings.Count(l.String(), "level=WARN"), "said once:\n%s", l.String())
+		x.Contains(l.String(), "could not be somebody at roster")
+		x.Contains(l.String(), mine.Error())
+	})
 }

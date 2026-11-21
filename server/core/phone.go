@@ -59,6 +59,21 @@ func (s corePhone) Add(ctx context.Context, req *app.PhoneAddRequest) (*app.Phon
 	return s.PhoneServiceServer.Add(ctx, req)
 }
 
+// Patch is what a number is, and not whose row it is: [coreEmail.Patch], of a
+// number. No port serves it, and the servers' own writes are values too.
+func (s corePhone) Patch(ctx context.Context, req *app.PhonePatchRequest) (*app.Phone, error) {
+	if req.HasNumber() {
+		if err := isPhone(req.GetNumber()); err != nil {
+			return nil, err
+		}
+	}
+	if k := req.GetKind(); k != "" && !slices.Contains(PhoneKinds, k) {
+		return nil, pderr.Invalidf("kind", "%q: one of %s, or nothing", k, strings.Join(PhoneKinds, ", "))
+	}
+
+	return s.PhoneServiceServer.Patch(ctx, req)
+}
+
 // Erase takes a number away from somebody: [coreEmail.Erase], of a number.
 func (s corePhone) Erase(ctx context.Context, req *app.PhoneRef) (*app.PhoneEraseResponse, error) {
 	v, err := s.PhoneServiceServer.Get(ctx, app.PhoneGetRequest_builder{

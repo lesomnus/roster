@@ -5,8 +5,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/subtle"
+	"fmt"
+	"strconv"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/roster/server/vouch"
 	"github.com/lesomnus/z"
@@ -57,6 +60,15 @@ import (
 // `coreHost` gives -- a caller whose row comes back different from what it
 // wrote is a console that cannot find the address somebody just typed --
 // and `front.Address` is exported so there is nothing to reimplement.
+//
+// # And it is an address
+//
+// The spelling was the whole of what was asked, as it was of a hostname
+// before `hostnamed`, and it passes whatever lowering and trimming leave
+// alone: two words with no `@`, a megabyte, a name and an address in one
+// string, the same mailbox in brackets or with a dot after it. So an address
+// is held to being one, in the one form [front.NotAddress] says, by every
+// road that writes one ([mailboxed]).
 type coreEmail struct {
 	Core
 	app.EmailServiceServer
@@ -65,7 +77,7 @@ type coreEmail struct {
 func (s Core) Email() app.EmailServiceServer { return coreEmail{s, s.Next().Email()} }
 
 func (s coreEmail) Add(ctx context.Context, req *app.EmailAddRequest) (*app.Email, error) {
-	if err := normalised("address", req.GetAddress(), front.Address); err != nil {
+	if err := mailboxed("address", req.GetAddress()); err != nil {
 		return nil, err
 	}
 	if err := s.mayWriteAWayIn(ctx, "holder", req.GetHolder()); err != nil {
@@ -99,13 +111,14 @@ func entered(ctx context.Context, req *app.EmailAddRequest) *app.EmailAddRequest
 // Patch is the normalisation, and **not** the rule about whose row it is.
 //
 // Which is a gap on purpose rather than the other rule being forgotten, and it
-// is only safe because of something one file away: `/Patch` is closed at the
-// transport by `grpcx.GeneralWrite` and roster sets no `AllowGeneralWrites`, so
-// nothing a caller reaches gets here. What does is the servers' own writes,
-// which are not somebody naming a row.
+// is only safe because of something one file away: no port serves `/Patch`,
+// whatever a configuration says (`closed`, `cmd/serve.go`), so nothing a
+// caller reaches gets here. What does is the servers' own writes, which are
+// not somebody naming a row.
 //
-// If that changes -- a deployment with a reason to open general writes -- this
-// wants [Core.mayWriteAWayIn] beside the normalisation, because the holder
+// If that ever changes this wants [Core.mayWriteAWayIn] beside the
+// normalisation -- with general writes opened, a proved address was changed
+// to another and stayed proved (#278), which is why they are not -- because the holder
 // being immutable is not the protection it looks like: a patch cannot move an
 // address onto somebody else's row and it can change what the address on
 // **their** row is, which reaches the same place. The address is theirs; the
@@ -115,12 +128,39 @@ func entered(ctx context.Context, req *app.EmailAddRequest) *app.EmailAddRequest
 // about the caller and those other roads write values too.
 func (s coreEmail) Patch(ctx context.Context, req *app.EmailPatchRequest) (*app.Email, error) {
 	if req.HasAddress() {
-		if err := normalised("address", req.GetAddress(), front.Address); err != nil {
+		if err := mailboxed("address", req.GetAddress()); err != nil {
 			return nil, err
 		}
 	}
 
 	return s.EmailServiceServer.Patch(ctx, req)
+}
+
+// mailboxed is [normalised] for an address, which is also held to being one:
+// [hostnamed], of a mailbox.
+//
+// The form is asked of what the address would be stored as, and before the
+// spelling speaks, for the reason given there: a refusal that says *write it
+// this way* names a form the next write would be refused for otherwise.
+func mailboxed(field, v string) error {
+	if w := front.Address(v); w != "" {
+		if why := front.NotAddress(w); why != "" {
+			return pderr.Invalidf(field, "%s is not an address: %s", quoted(v), why)
+		}
+	}
+
+	return normalised(field, v, front.Address)
+}
+
+// quoted is a value said back in a refusal, cut where it is long: what was
+// refused may be a megabyte, and a refusal is not where it is kept.
+func quoted(v string) string {
+	const most = 80
+	if len(v) <= most {
+		return strconv.Quote(v)
+	}
+
+	return strconv.Quote(strings.ToValidUTF8(v[:most], "")) + fmt.Sprintf("... (%d bytes)", len(v))
 }
 
 // Erase takes an address away from somebody, and is held to what writing one
@@ -188,6 +228,8 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 			// The stamp, which decides which of the two shapes below this is.
 			DateVerified: z.Ptr(true),
 			Holder:       app.HolderSelect_builder{}.Build(),
+			// And the address's tenant, which a claimant has to be of.
+			TenantId: z.Ptr(true),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -217,7 +259,13 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 		// and a message sent to the address -- for somebody the address's
 		// tenant never had. The agreement every row naming two holders is
 		// held to (`agree.go`).
-		row, err := s.tenantOfHolder(ctx, app.HolderRef_builder{Id: v.GetHolder().GetId()}.Build())
+		//
+		// The address's tenant is the row's own (`Email.tenant_id`), and was
+		// read off its holder: who, erased, is not there to be read, so a
+		// claim of an address they never proved was `NotFound: Holder not
+		// found`, and the address was kept from whoever reads its mailbox by
+		// a person who had left (#279).
+		row, err := pdid.From(v.GetTenantId())
 		if err != nil {
 			return nil, err
 		}
@@ -237,6 +285,11 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 	} else if holder, err := pdid.From(v.GetHolder().GetId()); err != nil {
 		return nil, err
 	} else if err := s.mayReach(ctx, "ref", holder); err != nil {
+		return nil, err
+	}
+
+	// And only for somebody a link would be spent for: [coreEmail.provable].
+	if err := s.provable(ctx, whose); err != nil {
 		return nil, err
 	}
 
@@ -267,6 +320,43 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 	}
 
 	return app.EmailVerifyResponse_builder{Token: token, DateExpires: timestamppb.New(expires)}.Build(), nil
+}
+
+// provable refuses a link for somebody nothing is proved for: erased or
+// suspended, or of a tenant that is closed.
+//
+// It is what [coreEmail.Confirm] asks before it spends one (#277), asked where
+// the link is minted. `Verify` asked none of it: it minted a link for somebody
+// suspended and answered it, a front door mailed it, and whoever clicked it
+// was told there was no such link -- until they were enabled, when the same
+// link confirmed. A refusal belongs where there is somebody to tell, and a
+// link nobody may spend is not sent.
+//
+// `NotFound`, which is what `Confirm` says. Of whoever the link would be
+// **for**: the row's own holder, or the claimant where it is a claim, as
+// there. Somebody erased is not read by naming them, so they are the read's
+// own `NotFound`.
+func (s coreEmail) provable(ctx context.Context, whose []byte) error {
+	no := status.Error(codes.NotFound,
+		"ref: no link proves an address for somebody who may not sign in: erased or suspended, or of a tenant that is closed")
+
+	h, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{Id: whose}.Build(),
+		Select: app.HolderSelect_builder{
+			Tenant:       app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
+			DateDisabled: z.Ptr(true),
+		}.Build(),
+	}.Build())
+	switch {
+	case status.Code(err) == codes.NotFound:
+		return no
+	case err != nil:
+		return err
+	case h.GetDateDisabled() != nil, h.GetTenant().GetDateClosed() != nil:
+		return no
+	}
+
+	return nil
 }
 
 // Attest writes an address a provider vouched for, and stamps it when that
@@ -302,7 +392,7 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 // first, by address within the holder's tenant, and the one write that follows
 // is the one that answer calls for.
 func (s coreEmail) Attest(ctx context.Context, req *app.EmailAttestRequest) (*app.Email, error) {
-	if err := normalised("address", req.GetAddress(), front.Address); err != nil {
+	if err := mailboxed("address", req.GetAddress()); err != nil {
 		return nil, err
 	}
 	if req.GetVouchedBy() == nil {
@@ -381,7 +471,10 @@ func (s coreEmail) Attest(ctx context.Context, req *app.EmailAttestRequest) (*ap
 	}
 
 	if !req.GetVerified() || held.GetDateVerified() != nil {
-		// Nothing the provider said to write down, or it is already written.
+		// Nothing the provider said to write down, or it is already written --
+		// and stays the moment it was first written. A front door attests at
+		// every sign-in, and a stamp that moved with each would move which
+		// address a token says is theirs ([coreEmail.Confirm]).
 		return held, nil
 	}
 
@@ -434,11 +527,12 @@ func (s coreEmail) vouching(ctx context.Context, ref *app.IdentityRef, whose []b
 // Confirm spends a verification link and stamps its address.
 //
 // Every refusal is one `NotFound`, for `Vouch.Redeem`'s reason: a token never
-// minted, one spent, one expired, one another caller minted, and one that is a
-// recovery link (no `email`) must be told apart by nobody holding a found
-// string. What is different from `Redeem` is the whole point -- nothing is
-// minted. `date_verified` is written here, through the generated `Patch`, which
-// is the one road to it: the gate refuses a request that asserts it.
+// minted, one spent, one expired, one another caller minted, one that is a
+// recovery link (no `email`), and one for somebody who may no longer sign in
+// must be told apart by nobody holding a found string. What is different from
+// `Redeem` is the whole point -- nothing is minted. `date_verified` is written
+// here, through the generated `Patch`, which is the one road to it: the gate
+// refuses a request that asserts it.
 //
 // # And it is where an address changes hands
 //
@@ -455,6 +549,20 @@ func (s coreEmail) vouching(ctx context.Context, ref *app.IdentityRef, whose []b
 // again here rather than trusted, for the reason every hop in this app rechecks:
 // minutes pass between the two, and what the row said then is not what it says
 // now. Somebody who proved the address in the meantime keeps it.
+//
+// # A proof of an address already proved moves nothing
+//
+// The link is spent and the row is answered as it stands, with the moment it
+// was first proved. It was stamped again, and `date_verified` is what orders
+// somebody's proved addresses: the one proved first is the one a token says is
+// theirs (`server/me`), so that proving another never changes what a relying
+// party keys an account on. Stamped again, the first address confirmed a
+// second time was the newest, and the claim was another address -- changed by
+// proving nothing new. [coreEmail.Attest] has always left a proved row as it
+// was, which it has to: a directory says the same thing at every sign-in.
+//
+// An address erased and written again is another row, and its proof is a new
+// one, as an address that changed hands is.
 func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*app.EmailConfirmResponse, error) {
 	f, ok := frame.From(ctx)
 	if !ok || f.Actor.IsZero() {
@@ -479,8 +587,12 @@ func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*
 			// Whose claim it is, which for an ordinary verification is the row's
 			// own holder and for a claim is somebody else. Read here rather than
 			// assumed, which is the difference between stamping a row and moving
-			// an address.
-			Holder: app.HolderSelect_builder{}.Build(),
+			// an address -- and with whether they may still sign in, which is
+			// asked below.
+			Holder: app.HolderSelect_builder{
+				Tenant:       app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
+				DateDisabled: z.Ptr(true),
+			}.Build(),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -500,6 +612,31 @@ func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*
 		// would be a departure somebody confirmed and nobody made (`link.proto`
 		// § `leave`).
 		l.GetLeave():
+		return nil, no
+	}
+
+	// Somebody erased or suspended between the sending and the clicking, or
+	// whose tenant closed, is somebody nothing is proved for -- what
+	// `vouch.Server.row` asks of the other three kinds of link, and this door
+	// did not ask. An address proved is a name that resolves somebody and a
+	// mailbox a recovery link goes to: it was stamped for a person who had
+	// been stopped, and was theirs, proved, the moment they were enabled or
+	// restored (#277).
+	//
+	// Whoever the link is **for**, which for a claim is the claimant. The
+	// row's holder is who loses an address nobody proved, and their standing
+	// was never what kept it.
+	//
+	// Erased is read as a holder that did not come back, as `vouch.Server.row`
+	// and `keys.signable` read it: an edge is loaded through the rows still
+	// there, so somebody erased is a bare reference with no `date_erased` to
+	// read and no tenant, and every holder has a tenant.
+	//
+	// The epoch is not read, on purpose (`Link.date_created`): proving a
+	// mailbox signs nobody in. And before the spend, like every refusal above,
+	// so that what is refused is not also used up.
+	h := l.GetHolder()
+	if gone := len(h.GetTenant().GetId()) == 0; gone || h.GetDateDisabled() != nil || h.GetTenant().GetDateClosed() != nil {
 		return nil, no
 	}
 
@@ -530,6 +667,17 @@ func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*
 	// A claim, which is a link for somebody who does not hold the row.
 	if !bytes.Equal(l.GetHolder().GetId(), e.GetHolder().GetId()) {
 		return s.moved(ctx, l, e)
+	}
+
+	// Proved already: the proof stands as it was made, and the answer is the
+	// row -- read whole, which is what the stamp below answers with.
+	if e.GetDateVerified() != nil {
+		out, err := s.Next().Email().Get(ctx, app.EmailGetRequest_builder{Ref: ref}.Build())
+		if err != nil {
+			return nil, err
+		}
+
+		return app.EmailConfirmResponse_builder{Email: out}.Build(), nil
 	}
 
 	out, err := s.Next().Email().Patch(ctx, app.EmailPatchRequest_builder{

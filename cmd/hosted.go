@@ -37,6 +37,12 @@ var arrivedAt = []string{"x-forwarded-host", "host", ":authority"}
 // minted for (`Link.at`), so the user console compares the name and not only
 // the tenant: two of a tenant's names are two doors, and a link for one is not
 // a link for the other. `console.WithArrival` is where it goes.
+//
+// One name, or none. The first header that says anything is the one read, and
+// where it says two different names the request is about neither: it took the
+// first, where `roster-at` carrying two is refused (`keys.ArrivedAt`), so the
+// two readers of the same question guessed differently (#277). One name said
+// twice, in two spellings of it, is one name.
 func ArrivedAt(ctx context.Context) string {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -44,10 +50,19 @@ func ArrivedAt(ctx context.Context) string {
 	}
 
 	for _, k := range arrivedAt {
+		name := ""
 		for _, v := range md.Get(k) {
-			if name := front.Hostname(v); name != "" {
-				return name
+			at := front.Hostname(v)
+			if at == "" {
+				continue
 			}
+			if name != "" && at != name {
+				return ""
+			}
+			name = at
+		}
+		if name != "" {
+			return name
 		}
 	}
 
@@ -88,6 +103,15 @@ func Hosted(db *ent.Client) func(ctx context.Context) (string, error) {
 			}
 
 			return "", err
+		}
+
+		// And one that is open, as `FrontService.WhoseHost` answers of the same
+		// name and in its words. This did not look: a closed tenant's name went
+		// on saying, to anybody, whether it takes passwords and through which
+		// providers its people arrive (#277). Nobody of it signs in either
+		// way; what differs is that the door says why.
+		if v.DateClosed != nil {
+			return "", status.Error(codes.FailedPrecondition, "this tenant is closed")
 		}
 
 		return v.Alias, nil

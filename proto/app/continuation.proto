@@ -76,7 +76,12 @@ message Continuation {
   // Its **length** is how far along somebody is, and that is all a page needs
   // to draw "step two". What is deliberately not here is how many there are in
   // total: *two is enough* is sufficiency and D20 leaves that to the caller.
-  repeated string satisfied = 8 [(orm.field) = {immutable: true}];
+  //
+  // Not personal: the kinds of factor, and no one's values of them.
+  repeated string satisfied = 8 [
+    (orm.field) = {immutable: true},
+    (payday.field) = {personal: false}
+  ];
 
   // The verifier, never the handle -- the shape `ApiKey` argued and
   // `Delegation` repeated: 256 bits from `crypto/rand` have no dictionary, so
@@ -96,7 +101,12 @@ message Continuation {
   // checkable on a delegation: this is spent through an RPC that runs behind
   // roster's own authentication, so there is a frame naming who is asking.
   // Opaque bytes, and never an edge -- see `delegation.proto`.
-  bytes issuer = 10 [(orm.field) = {immutable: true}];
+  //
+  // Not personal: a key's identifier, as bytes.
+  bytes issuer = 10 [
+    (orm.field) = {immutable: true},
+    (payday.field) = {personal: false}
+  ];
 
   // Which credential row the attempt is **metered on**.
   //
@@ -134,6 +144,17 @@ message Continuation {
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+
+  // When the attempt was begun, which is what its holder's epoch is read
+  // against: one begun at or before `Holder.date_invalidated` is no attempt,
+  // as a link minted then is no link (`Link.date_created`), and a tie is too
+  // old.
+  //
+  // A first factor proved before everything was ended is not proved after it.
+  // The password it was proved with may be the one a reset has just replaced,
+  // and what finishing mints is dated after the stamp, so nothing further on
+  // would read it as old: until this was read, a sign-in begun with the old
+  // password finished with the code for as long as the attempt had left.
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {
     immutable: true
     default: ""

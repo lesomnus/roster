@@ -49,8 +49,9 @@ const (
 	kimDN    = "uid=kim,ou=people,o=contoso"
 	leeDN    = "uid=lee,ou=people,o=contoso"
 	peopleDN = "ou=people,o=contoso"
-	// The seeded administrator and the directory\'s own holder are people in
-	// the tree too: a directory lists whoever roster has, machines included.
+	// The seeded administrator is a person in the tree too. The directory's
+	// own holder is not: it would be this name, and no entry has it
+	// (`TestAMachineIsNotAPersonInTheDirectory`).
 	adminDN     = "uid=admin,ou=people,o=contoso"
 	directoryDN = "uid=directory,ou=people,o=contoso"
 	contosoDN   = "o=contoso"
@@ -523,7 +524,7 @@ func TestASuffixIsATenant(t *testing.T) {
 	_, err := c.Search(goldap.NewSearchRequest("o=fabrikam", goldap.ScopeWholeSubtree, goldap.NeverDerefAliases, 0, 0, false, "(uid=kim)", []string{"entryUUID"}, nil))
 	x.True(goldap.IsErrorWithCode(err, goldap.LDAPResultNoSuchObject), "contoso's kim read fabrikam: %v", err)
 	all := search(t, c, "", goldap.ScopeWholeSubtree, "(objectClass=inetOrgPerson)", "uid")
-	x.ElementsMatch([]string{kimDN, leeDN, adminDN, directoryDN}, dns(all))
+	x.ElementsMatch([]string{kimDN, leeDN, adminDN}, dns(all))
 
 	// And the same process serves fabrikam, each under its own name, to
 	// somebody bound there.
@@ -565,8 +566,9 @@ func TestAFilterIsARosterRead(t *testing.T) {
 	for filter, want := range map[string][]string{
 		"(uid=kim)":                                    {kimDN},
 		"(uid=KIM)":                                    {kimDN},
-		"(cn=*min*)":                                   {kimDN},
-		"(cn=Kim*)":                                    {kimDN},
+		"(cn=*inj*)":                                   {kimDN},
+		"(cn=Min*)":                                    {kimDN},
+		"(cn=Lee*)":                                    {leeDN},
 		"(displayName=minji)":                          {kimDN},
 		"(departmentNumber=Payroll)":                   {leeDN},
 		"(employeeNumber=1001)":                        {kimDN},
@@ -577,14 +579,14 @@ func TestAFilterIsARosterRead(t *testing.T) {
 		"(mail=KIM@contoso.example)":                   {kimDN},
 		"(mail=kim.old@contoso.example)":               {},
 		"(mail=*)":                                     {kimDN},
-		"(&(objectClass=inetOrgPerson)(!(mail=*)))":    {leeDN, adminDN, directoryDN},
+		"(&(objectClass=inetOrgPerson)(!(mail=*)))":    {leeDN, adminDN},
 		"(|(uid=lee)(cn~=nobody))":                     {leeDN},
 		"(cn~=kim)":                                    {},
 		"(&(uid=kim)(departmentNumber=Payroll))":       {},
-		"(objectClass=inetOrgPerson)":                  {kimDN, leeDN, adminDN, directoryDN},
+		"(objectClass=inetOrgPerson)":                  {kimDN, leeDN, adminDN},
 		"(uid=park)":                                   {},
 		"(&(objectClass=person)(|(uid=kim)(uid=lee)))": {kimDN, leeDN},
-		"(sn=Kim Minji)":                               {kimDN},
+		"(sn=Minji)":                                   {kimDN},
 		"(preferredLanguage=ko)":                       {kimDN},
 		"(memberOf=cn=payroll,ou=groups,o=contoso)":    {leeDN},
 		"(memberOf=CN=Payroll,OU=Groups,O=Contoso)":    {leeDN},
@@ -607,8 +609,8 @@ func TestAFilterIsARosterRead(t *testing.T) {
 		e := got[0]
 		x.ElementsMatch([]string{"top", "person", "organizationalPerson", "inetOrgPerson"}, e.GetAttributeValues("objectClass"))
 		x.Equal("kim", e.GetAttributeValue("uid"))
-		x.Equal("Kim Minji", e.GetAttributeValue("cn"))
-		x.Equal("Kim Minji", e.GetAttributeValue("sn"))
+		x.Equal("Minji", e.GetAttributeValue("cn"), "what she is called now, which is not the name she was added with")
+		x.Equal("Minji", e.GetAttributeValue("sn"))
 		x.Equal("Minji", e.GetAttributeValue("displayName"))
 		x.Equal([]string{"kim@contoso.example"}, e.GetAttributeValues("mail"), "an unverified address was published")
 		x.Equal("1001", e.GetAttributeValue("employeeNumber"))
@@ -635,7 +637,7 @@ func TestAFilterIsARosterRead(t *testing.T) {
 		x.Equal("contoso", org[0].GetAttributeValue("o"))
 
 		units := search(t, c, contosoDN, goldap.ScopeSingleLevel, "(objectClass=organizationalUnit)", "ou")
-		x.ElementsMatch([]string{"ou=people,o=contoso", "ou=groups,o=contoso", "ou=sites,o=contoso"}, dns(units))
+		x.ElementsMatch([]string{"ou=people,o=contoso", "ou=groups,o=contoso", "ou=sites,o=contoso", "ou=teams,o=contoso"}, dns(units))
 
 		people := search(t, c, peopleDN, goldap.ScopeBaseObject, "(objectClass=*)", "ou")
 		x.Equal([]string{peopleDN}, dns(people))
@@ -673,9 +675,9 @@ func TestPagingReadsEverybodyOnce(t *testing.T) {
 		require.Len(t, res.Entries, want)
 	}
 
-	// 23 numbered, kim, lee, the seeded admin and the directory's own holder;
-	// park is disabled and not counted.
-	once(t, "(objectClass=inetOrgPerson)", 27)
+	// 23 numbered, kim, lee and the seeded admin; park is disabled and the
+	// directory's own holder is no person, and neither is counted.
+	once(t, "(objectClass=inetOrgPerson)", 26)
 	// A filter that drops every other row: pages are short, none is missed.
 	once(t, "(departmentNumber=Even)", 12)
 	// And one the filter alone can drop, since roster has no index for it.
@@ -717,14 +719,14 @@ func TestTheDisabledAreNotListed(t *testing.T) {
 	x.NoError(c.Bind(kimDN, d.kimKey))
 
 	got := search(t, c, peopleDN, goldap.ScopeSingleLevel, "(objectClass=*)", "uid")
-	x.ElementsMatch([]string{kimDN, leeDN, adminDN, directoryDN}, dns(got))
+	x.ElementsMatch([]string{kimDN, leeDN, adminDN}, dns(got))
 
 	// And disabling somebody is seen on the very next search: there is no
 	// cache to wait out.
 	_, err := d.s.Ungated.Holder().Disable(t.Context(), rstr.HolderDisableRequest_builder{Ref: rstr.HolderRef_builder{Id: d.lee}.Build()}.Build())
 	x.NoError(err)
 	got = search(t, c, peopleDN, goldap.ScopeSingleLevel, "(objectClass=*)", "uid")
-	x.ElementsMatch([]string{kimDN, adminDN, directoryDN}, dns(got))
+	x.ElementsMatch([]string{kimDN, adminDN}, dns(got))
 }
 
 func TestLdapIsToldEverything(t *testing.T) {
@@ -813,8 +815,8 @@ func TestGroupsTeamsAndSitesAreTheTree(t *testing.T) {
 	t.Run("the whole suffix, in one search and in pages, is the same tree", func(t *testing.T) {
 		x := require.New(t)
 		want := []string{
-			contosoDN, peopleDN, "ou=groups,o=contoso", "ou=sites,o=contoso",
-			kimDN, leeDN, adminDN, directoryDN,
+			contosoDN, peopleDN, "ou=groups,o=contoso", "ou=sites,o=contoso", "ou=teams,o=contoso",
+			kimDN, leeDN, adminDN,
 			payroll, nomads, seoul, "ou=teams," + seoul, platform,
 		}
 		whole := search(t, c, contosoDN, goldap.ScopeWholeSubtree, "(objectClass=*)", "1.1")

@@ -2,6 +2,7 @@ package forget
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"uuid"
@@ -9,14 +10,14 @@ import (
 	"github.com/lesomnus/otx/log"
 
 	"github.com/lesomnus/payday/audit"
-	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/spin"
 
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/consent"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/lesomnus/roster/internal/ent/tenant"
-	"github.com/lesomnus/roster/server/pd"
+	"github.com/lesomnus/roster/server/expire"
 )
 
 // What a consent is, after its account.
@@ -35,20 +36,39 @@ const DestroyedConsent = "roster.consent.destroy"
 // DueConsents is every consent whose account was erased before `before`, of a
 // tenant nobody holds.
 func DueConsents(ctx context.Context, db *ent.Client, before time.Time) ([]uuid.UUID, error) {
-	return db.Consent.Query().
-		Where(consent.HasHolderWith(
-			holder.DateErasedNotNil(),
-			holder.DateErasedLT(before),
-			holder.HasTenantWith(tenant.DateHeldIsNil()),
-		)).
-		Ids(ctx)
+	return db.Consent.Query().Where(dueConsent(before)).Ids(ctx)
 }
 
-// DestroyConsents removes consents, and puts each on the trail as the act it is
-// in the same transaction: written past the servers, which refuse it, so a
-// check of the rows does not find them things the trail says are rows
-// (`pd.RecordErased`, payday#115). What that writes is which rows and when.
-func DestroyConsents(ctx context.Context, db *ent.Client, ids []uuid.UUID, cs audit.Contents) (int, error) {
+// dueConsent is what makes a consent due: its account erased before `before`,
+// in a tenant nobody holds. Asked when a pass reads which are, and again of
+// each where it is destroyed ([DestroyConsents]).
+func dueConsent(before time.Time) predicate.Consent {
+	return consent.HasHolderWith(
+		holder.DateErasedNotNil(),
+		holder.DateErasedLT(before),
+		holder.HasTenantWith(tenant.DateHeldIsNil()),
+	)
+}
+
+// DestroyConsents removes those of `ids` that are still due, and puts each on
+// the trail as the act it is in the same transaction: written past the
+// servers, which refuse it, so a check of the rows does not find them things
+// the trail says are rows (`pd.RecordErased`, payday#115). What that writes is
+// which rows and when, each under the tenant the consent was of
+// (`expire.Gone`).
+//
+// # Those still due, asked where they are destroyed
+//
+// `ids` is what a pass read, and a moment that has passed. It removed every
+// one of them, so the consent of somebody restored since was destroyed with
+// the rest, and so was one of a tenant an operator had held since (#280) --
+// the two things the comment at the top of this file says keep a consent. So
+// what is removed is asked again inside the transaction, in the statement
+// that removes it; and if that takes fewer than were read as due a statement
+// before, somebody moved between the two, and the transaction is left
+// unmade for the next pass rather than putting on the trail a row that is
+// still there.
+func DestroyConsents(ctx context.Context, db *ent.Client, ids []uuid.UUID, before time.Time, cs audit.Contents) (int, error) {
 	if len(ids) == 0 {
 		return 0, nil
 	}
@@ -59,15 +79,29 @@ func DestroyConsents(ctx context.Context, db *ent.Client, ids []uuid.UUID, cs au
 	}
 	defer tx.Rollback()
 
-	n, err := tx.Consent.Delete().Where(consent.IdIn(ids...)).Exec(ctx)
+	// Those still due, and whose each is, read while it is there: a line that
+	// says a row went has no row to read a tenant from.
+	was, err := tx.Consent.Query().Where(consent.IdIn(ids...), dueConsent(before)).All(ctx)
+	if err != nil || len(was) == 0 {
+		return 0, err
+	}
+	still := make([]uuid.UUID, len(was))
+	gone := make([]expire.Row, len(was))
+	for i, v := range was {
+		still[i] = v.Id
+		gone[i] = expire.Row{Id: v.Id, Tenant: v.TenantId}
+	}
+
+	n, err := tx.Consent.Delete().Where(consent.IdIn(still...), dueConsent(before)).Exec(ctx)
 	if err != nil {
 		return 0, err
 	}
-	gone := make([]pdid.Id, len(ids))
-	for i, v := range ids {
-		gone[i] = pdid.Id(v)
+	if n != len(still) {
+		return 0, fmt.Errorf("%d of %d consents stopped being due while they were being destroyed -- an account restored, a tenant held -- "+
+			"and none of them was; the next pass reads again", len(still)-n, len(still))
 	}
-	if _, err := pd.RecordErased(ctx, tx.Client(), cs, DestroyedConsent, gone); err != nil {
+
+	if err := expire.Gone(ctx, tx.Client(), cs, DestroyedConsent, gone); err != nil {
 		return 0, err
 	}
 
@@ -78,6 +112,30 @@ func DestroyConsents(ctx context.Context, db *ent.Client, ids []uuid.UUID, cs au
 // first pass over years of departures is many short transactions and not one
 // long one.
 const consentsAtOnce = 500
+
+// PassConsents destroys every consent kept past `before`, a transaction's
+// worth at a time, and answers how many: what a tick of [SweepConsents] does,
+// and what `roster forget` with no name does about consents. Each is asked
+// again where it is destroyed ([DestroyConsents]).
+func PassConsents(ctx context.Context, db *ent.Client, before time.Time, cs audit.Contents) (int, error) {
+	ids, err := DueConsents(ctx, db, before)
+	if err != nil {
+		return 0, err
+	}
+
+	destroyed := 0
+	for len(ids) > 0 {
+		k := min(len(ids), consentsAtOnce)
+		n, err := DestroyConsents(ctx, db, ids[:k], before, cs)
+		if err != nil {
+			return destroyed, err
+		}
+		destroyed += n
+		ids = ids[k:]
+	}
+
+	return destroyed, nil
+}
 
 // SweepConsents destroys, on a clock, every consent kept `keep` past its
 // account's erase. A pass that fails says so and the next one carries on: what
@@ -90,24 +148,9 @@ func SweepConsents(db *ent.Client, keep time.Duration, cs audit.Contents, every 
 	return spin.Every(every, func(ctx context.Context) error {
 		before := time.Now().Add(-keep)
 
-		ids, err := DueConsents(ctx, db, before)
+		destroyed, err := PassConsents(ctx, db, before, cs)
 		if err != nil {
-			log.From(ctx).WarnContext(ctx, "consent: which are due", "err", err, "before", before)
-
-			return nil
-		}
-
-		destroyed := 0
-		for len(ids) > 0 {
-			k := min(len(ids), consentsAtOnce)
-			n, err := DestroyConsents(ctx, db, ids[:k], cs)
-			if err != nil {
-				log.From(ctx).WarnContext(ctx, "consent: destroy", "err", err, "destroyed", destroyed)
-
-				return nil
-			}
-			destroyed += n
-			ids = ids[k:]
+			log.From(ctx).WarnContext(ctx, "consent: destroy", "err", err, "destroyed", destroyed, "before", before)
 		}
 		if destroyed > 0 {
 			log.From(ctx).InfoContext(ctx, "consent: destroyed", "rows", destroyed, "before", before)

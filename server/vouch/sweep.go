@@ -12,6 +12,7 @@ import (
 
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/continuation"
+	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/link"
 	"github.com/lesomnus/roster/server/expire"
 )
@@ -67,9 +68,29 @@ func Sweep(db *ent.Client, cs audit.Contents, every time.Duration) spin.Func {
 func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error) {
 	now := time.Now()
 
+	// Which are due, and whose each is while it can still be asked: the line
+	// that says it went is filed under the tenant of whoever it was for
+	// (`expire.Rows`).
 	n, err := expire.Rows(ctx, db, cs, Expired,
-		func(ctx context.Context, db *ent.Client) ([]uuid.UUID, error) {
-			return db.Continuation.Query().Where(continuation.DateExpiresLT(now)).Limit(audit.RowsPage).Ids(ctx)
+		func(ctx context.Context, db *ent.Client) ([]expire.Row, error) {
+			vs, err := db.Continuation.Query().
+				Where(continuation.DateExpiresLT(now)).
+				WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldTenantId) }).
+				Limit(audit.RowsPage).
+				All(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			rows := make([]expire.Row, len(vs))
+			for i, v := range vs {
+				rows[i] = expire.Row{Id: v.Id}
+				if h := v.Edges.Holder; h != nil {
+					rows[i].Tenant = h.TenantId
+				}
+			}
+
+			return rows, nil
 		},
 		func(ctx context.Context, db *ent.Client, ids []uuid.UUID) (int, error) {
 			return db.Continuation.Delete().Where(continuation.IdIn(ids...)).Exec(ctx)
@@ -80,8 +101,25 @@ func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error
 	}
 
 	m, err := expire.Rows(ctx, db, cs, Expired,
-		func(ctx context.Context, db *ent.Client) ([]uuid.UUID, error) {
-			return db.Link.Query().Where(link.DateExpiresLT(now)).Limit(audit.RowsPage).Ids(ctx)
+		func(ctx context.Context, db *ent.Client) ([]expire.Row, error) {
+			vs, err := db.Link.Query().
+				Where(link.DateExpiresLT(now)).
+				WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldTenantId) }).
+				Limit(audit.RowsPage).
+				All(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			rows := make([]expire.Row, len(vs))
+			for i, v := range vs {
+				rows[i] = expire.Row{Id: v.Id}
+				if h := v.Edges.Holder; h != nil {
+					rows[i].Tenant = h.TenantId
+				}
+			}
+
+			return rows, nil
 		},
 		func(ctx context.Context, db *ent.Client, ids []uuid.UUID) (int, error) {
 			return db.Link.Delete().Where(link.IdIn(ids...)).Exec(ctx)

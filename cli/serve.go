@@ -69,7 +69,8 @@ func Ready(ctx context.Context, s *cmd.Server, c cmd.Config) error {
 		return fmt.Errorf("control: %w", err)
 	}
 
-	return nil
+	// And that the two are two, now that both have their tables: `cmd.Apart`.
+	return cmd.Apart(ctx, s)
 }
 
 // ready is [Server.Ready] for one plane, told what that plane's `db` block
@@ -192,14 +193,14 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 					return err
 				}
 
-				// **Nobody to front, so it stays off and the rest serves**, for
-				// the reason the Login App below gives: with `account.keys`
-				// unsaid the keys are made here, one per tenant with a name,
-				// and a fresh deployment has no names yet. The next start
-				// finds them. `roster account serve` still refuses with none.
+				// **No key, so it stays off and the rest serves**, for the
+				// reason the Login App below gives. With none named a key is
+				// made here, on the control plane, and a deployment with no
+				// control plane has nowhere to make one (`frontDoor`); no start
+				// will. `roster account serve` still refuses with none.
 				if len(ac.Keys) == 0 && ac.Key == "" {
-					slog.Warn("account: no tenant has a `Host` row yet, so there is nobody to front and the app is not serving; " +
-						"a tenant registers a name and the next start fronts it")
+					slog.Warn("account: no key is named -- account.key, account.keys or ROSTER_ACCOUNT_KEY_<ALIAS> -- and there is " +
+						"no control plane to make one on, so the app is not serving; name a tenant key, or a control plane")
 				} else {
 					g.Go(func() error { return serveAccount(ctx, ac) })
 				}

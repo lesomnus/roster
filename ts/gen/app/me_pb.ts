@@ -130,10 +130,17 @@ export type MeLeaveResponse = Message<"roster.MeLeaveResponse"> & {
   dateErased?: Timestamp | undefined;
 
   /**
-   * When it will be forgotten -- the erase plus `holder.forget_after` -- and
-   * unset where the deployment forgets nobody on a clock, which is a
-   * deployment where an operator's `roster forget` is the only way, or while
-   * a hold on the tenant stops that clock (`roster hold`).
+   * From when it is forgotten -- the erase plus `holder.forget_after`, which
+   * is when its grace runs out, and not the moment of the forget: that is the
+   * first pass after it, up to `holder.every` later. Unset where the
+   * deployment forgets nobody on a clock, which is a deployment where an
+   * operator's `roster forget` is the only way, or while a hold on the tenant
+   * stops that clock (`roster hold`). A hold placed after this was answered
+   * stops it too, and nobody is told.
+   *
+   * What a page says of it is *from* this date, and what is kept past it:
+   * what they consented to, for `consent.keep`, and the trail and the access
+   * record, by identifier (`account.leftSaying`).
    *
    * @generated from field: google.protobuf.Timestamp date_forgotten = 15;
    */
@@ -216,7 +223,9 @@ export type MeGetResponse = Message<"roster.MeGetResponse"> & {
 
   /**
    * The sites they are narrowed to, and empty means every site of their
-   * tenant. It is `frame.Sets` as an answer; see `cmd.Sets`.
+   * tenant. It is `frame.Sets` as an answer; see `cmd.Sets`. Each is said
+   * once, in the order of their identifiers, which is the order they were
+   * made in.
    *
    * @generated from field: repeated bytes sites = 11;
    */
@@ -261,6 +270,10 @@ export type MeGetResponse = Message<"roster.MeGetResponse"> & {
    * This message is the one shape narrowed to the person **by construction**:
    * it takes no subject, so there is nothing to point at somebody else. That is
    * also why `cmd.Policy` can waive a binding for it and for nothing else.
+   *
+   * Each of these, and `keys` below, is every one they have, in the order
+   * they were made in: what `HolderService.SignsIn` answers an administrator
+   * about them, in the same order.
    *
    * @generated from field: repeated roster.SignInIdentity identities = 13;
    */
@@ -752,7 +765,8 @@ export const MeService: GenService<{
    * An erase and nothing more: the person cannot sign in anywhere and every
    * app holding a session for them hears it on `SyncService.Watch`; nothing is
    * destroyed yet. An operator can still `roster restore` them while
-   * `holder.forget_after` lasts, and they are forgotten when it ends.
+   * `holder.forget_after` lasts, and they are forgotten from when it ends: by
+   * the first pass after it, and a restore works until that pass.
    *
    * Their sessions and delegations are void first -- `SignOutEverywhere`, as
    * its own act -- so a restore brings the account back and none of its old

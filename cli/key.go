@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/lesomnus/roster/cmd"
 	"os"
-	"time"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/flg"
@@ -68,6 +67,8 @@ func NewCmdKey(c *cmd.Config) *xli.Command {
 			newCmdKeyList(c),
 			newCmdKeyRevoke(c),
 		},
+
+		Handler: xli.RequireSubcommand(),
 	}
 }
 
@@ -112,6 +113,14 @@ func newCmdKeyAdd(c *cmd.Config) *xli.Command {
 				return err
 			}
 
+			// Where nothing reads keys, refused as `init` is refused there:
+			// this minted a key, said it was shown once, and left `key list`
+			// and `key revoke` beside it refusing it, while the day a control
+			// plane is named it would work with every other such key (#284).
+			if !c.Control.Serves() {
+				return needsControl("key add")
+			}
+
 			s, err := built(ctx, *c)
 			if err != nil {
 				return err
@@ -128,7 +137,12 @@ func newCmdKeyAdd(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			return m.mint(ctx, s.Ungated, who, keys.PrefixTenant, "@"+tenant+"/"+holder)
+			by, err := namedAt(ctx, c, s)
+			if err != nil {
+				return err
+			}
+
+			return m.mint(ctx, s, by, who, keys.PrefixTenant, "@"+tenant+"/"+holder)
 		}),
 	}
 }
@@ -160,7 +174,10 @@ func mintingOf(cl *xli.Command, narrows bool) (minting, error) {
 	}
 
 	allow, _ := flg.Find[[]string](cl, "allow")
-	methods := cmd.SplitMethods(allow)
+	methods, err := cmd.MethodsOf("--allow", allow)
+	if err != nil {
+		return minting{}, err
+	}
 	narrowed, _ := flg.Find[bool](cl, "narrowed")
 	if len(methods) == 0 && !narrowed {
 		// Refused rather than defaulted, in either direction. Defaulting
@@ -183,38 +200,41 @@ func mintingOf(cl *xli.Command, narrows bool) (minting, error) {
 		return minting{}, errors.New("--narrowed: a narrowed key allows nothing as itself; drop --allow, or drop --narrowed")
 	}
 
-	m := minting{name: name, methods: methods}
-	if v, _ := flg.Find[string](cl, "expires"); v != "" {
-		d, err := time.ParseDuration(v)
-		if err != nil {
-			return minting{}, fmt.Errorf("--expires: %w", err)
-		}
-
-		m.expires = timestamppb.New(time.Now().Add(d))
+	expires, err := expiresOf(cl)
+	if err != nil {
+		return minting{}, err
 	}
 
-	return m, nil
+	return minting{name: name, methods: methods, expires: expires}, nil
 }
 
-// mint writes the row on `at`, hung off `who`, and prints the token once.
+// mint writes the row on the plane `at`, hung off `who`, and prints the token
+// once. Where `--as` named somebody, the write is a call at the shell by them,
+// on that plane's access record ([keptBy]).
 //
 // The plane is the caller's to have decided, and the prefix travels with it:
 // it is never something anybody names -- `apikey_svc.ext.proto` is explicit that a
 // caller who could name one could ask the customer-facing door for the
 // deployment's own kind.
-func (m minting) mint(ctx context.Context, at app.Server, who pdid.Id, prefix string, whose string) error {
+func (m minting) mint(ctx context.Context, at *cmd.Server, by *cmd.Operator, who pdid.Id, prefix string, whose string) error {
 	token, sum, err := keys.Mint(prefix)
 	if err != nil {
 		return err
 	}
 
-	v, err := at.ApiKey().Add(ctx, app.ApiKeyAddRequest_builder{
-		Holder:      app.HolderRef_builder{Id: who.Bytes()}.Build(),
-		Alias:       m.name,
-		Secret:      sum,
-		Methods:     m.methods,
-		DateExpires: m.expires,
-	}.Build())
+	var v *app.ApiKey
+	err = keptBy(ctx, at, by, app.ApiKeyService_Issue_FullMethodName, func(ctx context.Context) error {
+		var err error
+		v, err = at.Ungated.ApiKey().Add(ctx, app.ApiKeyAddRequest_builder{
+			Holder:      app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Alias:       m.name,
+			Secret:      sum,
+			Methods:     m.methods,
+			DateExpires: m.expires,
+		}.Build())
+
+		return err
+	})
 	if status.Code(err) == codes.AlreadyExists {
 		return fmt.Errorf("%s already has a key called %q; revoke it, or name this one with --name", whose, m.name)
 	}
@@ -240,7 +260,7 @@ func (m minting) mint(ctx context.Context, at app.Server, who pdid.Id, prefix st
 			k, whose, len(m.methods))
 	}
 
-	if v := cmd.Widest(m.methods); v != "" {
+	if v := cmd.Widest(prefix, m.methods); v != "" {
 		fmt.Fprintf(os.Stderr, "\n%s\n", v)
 	}
 
@@ -254,8 +274,9 @@ func (m minting) mint(ctx context.Context, at app.Server, who pdid.Id, prefix st
 // a line is printed (#221).
 func newCmdKeyList(c *cmd.Config) *xli.Command {
 	return &xli.Command{
-		Name:  "list",
-		Brief: "what keys exist, and what each may call",
+		Name:    "list",
+		Aliases: []string{"ls"},
+		Brief:   "what keys exist, and what each may call",
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			if err := saidWho(c); err != nil {
@@ -277,11 +298,12 @@ func newCmdKeyList(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			// Both planes, because `add` writes to both. This listed the
-			// control plane's alone, so a customer's `rt_` -- which the command
-			// beside it mints -- appeared nowhere, and the only way to see one
-			// was `roster apikey ls`, which is a different command answering a
-			// different question.
+			// Both planes, because a key is minted on either: `key add` a
+			// customer's, on the data plane, and `control key add` the
+			// deployment's. This listed the control plane's alone, so a
+			// customer's `rt_` -- which the command beside it mints -- appeared
+			// nowhere, and the only way to see one was `roster apikey ls`,
+			// which is a different command answering a different question.
 			if err := cmd.ListKeys(ctx, os.Stdout, s.Control, by); err != nil {
 				return err
 			}
@@ -343,10 +365,17 @@ func newCmdKeyRevoke(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			_, err = at.Ungated.ApiKey().Erase(ctx,
-				app.ApiKeyRef_builder{Id: k.Bytes()}.Build())
+			by, err := namedAt(ctx, c, s)
+			if err != nil {
+				return err
+			}
 
-			return err
+			return keptBy(ctx, at, by, app.ApiKeyService_Erase_FullMethodName, func(ctx context.Context) error {
+				_, err := at.Ungated.ApiKey().Erase(ctx,
+					app.ApiKeyRef_builder{Id: k.Bytes()}.Build())
+
+				return err
+			})
 		}),
 	}
 }

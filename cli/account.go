@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/cfg"
@@ -20,6 +21,7 @@ import (
 	"github.com/lesomnus/payday/auth/authsession"
 
 	"github.com/lesomnus/roster/account"
+	"github.com/lesomnus/roster/arrives"
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/mail"
 )
@@ -81,6 +83,8 @@ func NewCmdAccount(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 		Brief: "the front door a customer's people sign in at",
 
 		Commands: xli.Commands{newCmdAccountServe(l, c), newCmdAccountProvision(c)},
+
+		Handler: xli.RequireSubcommand(),
 	}
 }
 
@@ -222,6 +226,12 @@ const AccountKeyPrefix = "ROSTER_ACCOUNT_KEY_"
 // It does not build telemetry. Both callers already have; there is one process
 // either way and two would be two providers.
 func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
+	// What has a form, held to it before anything is dialled; `roster
+	// serve` asks the same in `cmd.Build`.
+	if err := ac.Meant(); err != nil {
+		return err
+	}
+
 	// Both names in every refusal below, for the reason `serveLdap` gives: the
 	// value reached here from a block or from a flag and this cannot tell which.
 	target, err := url.Parse(ac.Connect)
@@ -264,6 +274,13 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 		return err
 	}
 
+	// Which hosts off the internet a provider may be at, read at start: a
+	// name that is not one is this file's mistake, and somebody's sign-in is
+	// a poor place to learn of it.
+	if cfg.PrivateHosts, err = arrives.ParsePrivateHosts(ac.PrivateHosts); err != nil {
+		return fmt.Errorf("account.private_hosts: %w", err)
+	}
+
 	// The cookie is this app's, and the session is **in** it: sealed under a
 	// key every replica holds, so there is no store and no replica a browser is
 	// anonymous on. What the session carries is roster's delegation for that
@@ -297,7 +314,18 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 	log.From(ctx).InfoContext(ctx, "account", slog.String("addr", l.Addr().String()),
 		slog.Int("tenants", a.Fronts()))
 
-	srv := &http.Server{Handler: a.Handler()}
+	// With clocks on what a stranger controls: how long a request's headers
+	// may take to arrive, and how long a connection may sit idle. The server
+	// had none, and this is the listener that faces the internet -- a
+	// connection opened and left half way through a header was kept for ever.
+	// Nothing bounds the answer, which for the page's road to roster may be a
+	// stream.
+	srv := &http.Server{
+		Handler:           a.Handler(),
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       2 * time.Minute,
+		MaxHeaderBytes:    64 << 10,
+	}
 	go func() {
 		<-ctx.Done()
 		_ = srv.Close()
@@ -516,7 +544,9 @@ func keysOf(refs map[string]string, prefix string, given []string) (map[string]s
 	for _, v := range given {
 		alias, token, ok := strings.Cut(v, "=")
 		if !ok || alias == "" || token == "" {
-			return nil, fmt.Errorf("--key %q: alias=token", v)
+			// Not said back: what is given here is a token.
+			return nil, errors.New("--key: a key is given as alias=token, and one is not; it is not said back, " +
+				"since what is given there is the token")
 		}
 		out[strings.ToLower(alias)] = token
 	}

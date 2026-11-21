@@ -87,8 +87,24 @@ func Admin(s *Server) (app.Server, error) {
 	// this layer now and the admin port is the one door such a password could
 	// otherwise still come through -- the reasoning the vouch registration below
 	// gives at length, arriving here because the write moved onto the entity.
+	//
+	// `core.On`, with the **data** plane's driver and its lock, as the data
+	// plane's two stacks are built (`serve.go`): what this stack writes is that
+	// plane's rows, so a rule that makes several writes one begins its
+	// transaction there, and the row two callers contend on is a customer's
+	// person. It was left out, and every such rule read the missing driver as
+	// *the caller has arranged the transaction*, which nobody at a port has.
+	// So a tenant made here was five writes one after another -- refused at
+	// the role, it left a tenant with an `admin` and nothing else, whose alias
+	// no second `Add` could use -- and a file's tenant the same, since
+	// `ApplyResources` writes through this stack; a directory's person was
+	// three; two operators at once took somebody's last two ways in; and an
+	// address was not moved at all, *this server cannot open a transaction*
+	// (#279). What reads the control plane here is still only what is asked
+	// about the caller ([adminRules]).
 	return app.Build(s.sink.WithWatch(s.Watch),
 		core.Build(adminRules(s),
+			core.On(s.Drv, Locking(s.Ent)),
 			core.WithBreached(core.Breached(s.Breached)),
 			core.WithKeyring(s.Keyring),
 			core.WithLockout(s.Lockout),
@@ -308,7 +324,7 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 		return nil, nil
 	}
 
-	shut := s.closed(Config{Server: c.Admin.ServerConfig})
+	shut := s.closed()
 
 	// One limiter, handed to both halves -- see the same line in
 	// [Server.Grpc]. `Limiter()` builds a bucket, so calling it twice is two
@@ -357,7 +373,8 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(shut)).
 		WithStream(grpcx.ClosedStream(shut)).
-		WithUnary(Undeclared())
+		WithUnary(Undeclared()).
+		WithUnary(Undated())
 
 	vs, err := c.Admin.GrpcOptions()
 	if err != nil {
@@ -389,7 +406,11 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 	// things. `MeService` is the one to watch -- the data plane's is on
 	// `server.addr` and answers about a customer's person, and this one
 	// answers about the operator.
-	app.RegisterAuthServiceServer(g, console.Auth(s.Control.Ungated, s.Control.Ent, s.Sessions))
+	// Counting wrong answers by the deployment's numbers, and reading a second
+	// factor's seed with its keyring: the control plane is built with both
+	// (`serve.go`, where its config is made).
+	app.RegisterAuthServiceServer(g, console.Auth(s.Control.Ungated, s.Control.Ent, s.Sessions,
+		console.WithVouch(vouch.WithLockout(s.Control.Lockout), vouch.WithKeys(s.Control.Keyring))))
 	app.RegisterMeServiceServer(g, me.New(s.Control.Ent, Everything(s.Control.Ent),
 		me.WithWrites(s.Control.Walled)))
 
@@ -451,8 +472,11 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 	// `Reset` hands its write to `Credential.Set`, where the check lives now. So
 	// the vouch server below carries only the keyring, and the corpus is
 	// `core`'s on both planes -- one wire rather than three.
+	//
+	// And this port's own policy, which is an operator's roles: a delegation
+	// asked here is within what the operator asking may call (`vouch.WithGate`).
 	app.RegisterVouchServiceServer(g, vouch.New(admin, admin,
-		vouch.WithKeys(s.Keyring), vouch.WithLockout(s.Lockout)))
+		vouch.WithKeys(s.Keyring), vouch.WithLockout(s.Lockout), vouch.WithGate(policy)))
 
 	// Minting a key for one of a customer's people is `ApiKey.Issue` now, and
 	// `register` above already served it on this port -- the same `rt_`, on the
@@ -472,11 +496,27 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 // control plane it would answer that everybody holds nothing. So it is the
 // data plane's, from the same function `MeService` and the data plane's own
 // stack use, which is what keeps three readers of one set from disagreeing.
+//
+// So is `Giving`: what a customer's binding hands whoever it names is a
+// data-plane row, and what an operator takes away by erasing one is read
+// there, as it was when the erase read it through the role.
+//
+// And `Sited`, which is about a customer's site: asked of the control plane,
+// no site of theirs has anything in it, and an operator erased one with a
+// team in it (#279).
+//
+// And `Bound` and `Unsited`, which are whether a customer's binding or team
+// is there already: asked of the control plane neither ever is, and an
+// operator made each twice.
 func adminRules(s *Server) core.Rules {
 	r := Rules(s.Control.Ent)
 	r.Held = core.Held(Everything(s.Ent, s.policySources...))
 	r.Everywhere = Everywhere(s.Ent, s.policySources...)
-	r.Releasing = Releasing(s.Ent)
+	r.Releasing = Releasing(s.Ent, s.contents)
+	r.Giving = Giving(s.Ent)
+	r.Sited = Sited(s.Ent)
+	r.Bound = Bound(s.Ent)
+	r.Unsited = Unsited(s.Ent)
 
 	return r
 }

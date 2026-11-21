@@ -39,6 +39,15 @@ It is what an app gives the roles it shipped at an upgrade, over the wire
 ([apps.md](../apps.md) § *The roles an app ships*), and it is a grant like any
 other write here: every method the role would hold has to be yours to hand out.
 
+Some methods hand over more than they read as -- *may send recovery links* is
+every account of the tenant -- and `role hands-over` says which of a list are
+those, before it is written into a role or bound
+([wide-grants.md](wide-grants.md) § *What says so when one is granted*):
+
+```sh
+roster --as admin role hands-over '{"methods":["/roster.VouchService/Link"]}'
+```
+
 And fewer with `role narrow`, which takes out every entry a method you name
 covers -- so a pattern takes everything under it -- and adds none:
 
@@ -83,6 +92,12 @@ so it is worth reading once:
 | **TeamMembership** | a role held inside one team | widens, at the team's site |
 | **GroupMembership** with a role | a manager's, for one group: its maker's, or somebody appointed | widens, to that group's membership writes and its name |
 | **Binding.site** | the same role, but only within one site | narrows |
+
+**A binding is made once.** One role to one person or one group in one place is
+one row, and adding it again answers `AlreadyExists`, where "in one place" is a
+site or the whole tenant. Two rows of one grant were a grant somebody took away
+and still held: erased from the list, and still answered. One that was erased
+may be made again.
 
 > **A grant is any write that changes what the gate will answer for somebody.**
 
@@ -146,6 +161,11 @@ is not managing it.
   and one naming anything else is refused where a group is made.
 - **Appointing a manager is held to what the appointer holds through a
   binding**, so a manager does not make another. A tenant's administrator does.
+- **A place's role is said when the place is made.** Over the wire it is not
+  changed on a place that is there: a member is made a manager, or a manager
+  stood down, by taking their place away and adding it again with the role or
+  without. A group's own name and note are changed (`group update`); its alias
+  is not.
 - **A manager is a member.** Kept out of the group they would protect nothing,
   since they could put an accomplice in.
 - **It does not replace the rule below.** A group bound to a role still asks
@@ -175,6 +195,14 @@ echo '{"role":  {"slug":{"alias":"eu-support","tenant":{"alias":"newco"}}},
 A binding with no site reaches the whole tenant. One made in a site reaches that
 site alone — and that is also the scope the escalation rule compares, so a site
 administrator can grant inside their site and not across the tenant.
+
+**What is said of a site is said when it is made.** A site has `add` and `erase`
+and nothing between: its alias, its name, its description and its labels are
+not changed over the wire, since no port serves a general write
+([cli.md](cli.md)). At the box `roster site patch` changes them; otherwise a
+site is erased and made again, which takes what is in it out first (below).
+And **nothing reads a site's labels**: a binding names one site or none, and no
+grant selects sites by a label.
 
 **Each thing somebody holds reaches where it was given, whatever else they
 hold.** A call is narrowed to where its caller holds *the method it is*.
@@ -247,7 +275,11 @@ each other, whichever site they are of.
 **A site is erased when nothing is in it.** A role, a binding, a team and a
 group may each be a site's, and one still there refuses the erase, which says
 what is left: a binding that outlived its site would go on counting for a place
-nobody can see any more. Take them out, and then the site.
+nobody can see any more. Take them out, and then the site. A binding of a role
+that was erased since is still one of them: it gives nobody anything, and is
+erased like any other. It holds when two act at once: of an erase and something
+put in the site in the same moment, one is refused -- the erase because the
+site has something in it, or the other because there is no such site.
 
 **A row a read is asked to bring along is read by its own rule.** A `Get` may
 ask for the rows its row points at (`select`: a membership's team, the team's
@@ -307,6 +339,25 @@ echo '{"team":  {"slug": {"alias":"eu-ops","site":{"slug":{"alias":"eu","tenant"
 
 ```sh
 roster --as admin team list -o name  # and use the identifier
+```
+
+A team of no site is the tenant's, and its name is unique among the tenant's
+teams of no site: a second `board` there answers `AlreadyExists`, as a second
+`eu-ops` in `eu` does.
+
+**What is said of a team is said when it is made**, as of a site: its site
+never changes, and over the wire neither do its alias, its name and its
+description. `roster team patch` at the box changes those; otherwise the team
+is erased and another made, and its people added to that one. **Nor is the role
+on somebody's place in it changed over the wire**: take the place away and add
+it again, carrying the other role.
+
+```sh
+roster --as admin team-membership erase 01a1e7f0-…
+echo '{"team":  {"id":"01a1e7ef-…"},
+       "holder":{"slug": {"alias":"alice", "tenant":{"alias":"newco"}}},
+       "role":  {"slug":{"alias":"eu-lead","tenant":{"alias":"newco"}}}}' \
+  | roster --as admin team-membership add -
 ```
 
 The role a team membership names is granted at the team's site — a team with no
@@ -428,6 +479,18 @@ Taking only what you hold leaves everybody holding at least what you do not. A
 tenant's administrator holds what the tenant was given, and a group's manager
 holds what their group is bound to by being in it, so it asks nothing of either.
 
+What a row gave is read from the row, and not as whoever erases it sees its
+role. A role of the whole tenant is in no site, so somebody who holds the erase
+in one site does not read it -- and a binding made there of such a role, or a
+place on a team or a manager's place in a group that carries one, is still
+taken away only by somebody who holds what it names.
+
+And **a row that gives nothing any more is taken away by whoever may erase
+where it is**: a binding of a role that was erased, or to a group that was; a
+place on a team that was erased, or in a group that was. Nothing is taken from
+anybody, so nothing is asked about what you hold. That is how a site is emptied
+after a role bound in it was erased.
+
 Suspending somebody is not a taking away: their bindings stay, so everything
 above still sees what they hold, and somebody on call has to be able to suspend
 a compromised account wider than they are.
@@ -543,6 +606,15 @@ narrowed to where its caller holds the method ([A site](#a-site)), so one held
 in no site and not across the tenant reaches the caller's own rows. Somebody
 else's address is `NotFound` to them.
 
+**`HolderService/Update` is the whole profile.** Somebody who may write their
+own name may write their own department, their employee number and whatever an
+app keeps in `data` beside them: it is one verb, and it replaces all of it. A
+directory that provisions people writes those again the next time it sends
+them, and until then they say what the person said. Nothing roster decides
+reads any of them, and a product that grants on one is trusting whoever may
+write it. A tenant whose people's profiles are an organisation's to say takes
+the verb out, as below.
+
 **It is the tenant's to narrow.** Take a method out and nobody of the tenant
 does that to their own account any more:
 
@@ -584,6 +656,10 @@ and by whoever holds **`HolderService/SignsIn` across the tenant**.
 | `ApiKeyService/List`, however it reaches them | their own keys; a list that names nobody is their own |
 | and `HolderService/SignsIn`, by a binding with no site | everybody's, an administrator's among them |
 
+`SignsIn` answers **all** of somebody's accounts, credentials and keys, and not
+a page of them: it has no cursor, and it is what is read to end the keys of an
+account.
+
 So a role that lets people mint and end their own keys can be bound to everybody
 without showing anybody anybody else's, and an auditor is the reads and
 `SignsIn` and nothing that writes. `DelegationService`'s reads and
@@ -598,6 +674,9 @@ roster --as admin role get @newco/support
 roster --as admin role list -o wide
 ```
 
+Each `list` is a page of twenty, and `-o wide` does not say when there are
+more: `-n` and `--next` ask for the rest ([cli.md](cli.md#how-anything-is-named)).
+
 and, as the person themselves, over the wire:
 
 ```
@@ -606,6 +685,15 @@ MeService.Get → { alias, tenant, methods: ["/roster.*/*"], own: [...], sites, 
 
 `methods` comes back as the **pattern**, not what it expands to. A page that
 expanded it would show what exists in one binary.
+
+Each list in that answer is in an order a page can rely on. `sites` says each
+site once, in the order of their identifiers, which is the order the sites were
+made in, and `HolderService/Reaches` says the same of somebody else. Teams are
+in the order of their sites' aliases and then their own, groups of their
+aliases; addresses are the proved ones in the order they were proved and then
+the rest; and how somebody signs in -- accounts, credentials, keys -- is in the
+order each was made, which is the order `HolderService/SignsIn` answers an
+administrator in.
 
 ## Next
 

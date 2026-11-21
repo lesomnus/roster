@@ -172,9 +172,10 @@ func (s *Server) Leave(ctx context.Context, req *app.VouchLeaveRequest) (*app.Me
 	}
 
 	// A link that was never here, spent, expired, somebody else's, of another
-	// kind, for somebody who may no longer sign in, or mailed to an address that
-	// is no longer theirs or no longer proved: one answer, as every link's --
-	// told apart, it says whether a string was ever a real link.
+	// kind, for somebody who may no longer sign in or who has ended every
+	// sign-in of theirs since it was minted, or mailed to an address that is no
+	// longer theirs or no longer proved: one answer, as every link's -- told
+	// apart, it says whether a string was ever a real link.
 	no := status.Error(codes.NotFound, "no such link")
 	v, err := s.row(ctx, req.GetToken())
 	if err != nil {

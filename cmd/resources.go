@@ -1,12 +1,23 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"maps"
 	"os"
+	"slices"
+	"strings"
+	"time"
 
 	"github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml/ast"
+	"github.com/goccy/go-yaml/parser"
+	"github.com/goccy/go-yaml/token"
+	"github.com/lesomnus/otx/log"
+	"github.com/lesomnus/protobuf-patch/patch"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -15,6 +26,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/core"
 )
 
 // Declaring a deployment's rows in a file, and applying them at start.
@@ -130,6 +142,13 @@ type Resource struct {
 	// From is the file this came out of, which is what the row's label says
 	// so that a refusal can name it.
 	From string `yaml:"-"`
+
+	// Where in From it is, for a refusal to name.
+	line, col int
+
+	// nothing is a file that declares no row, handed on as one so that
+	// [ApplyResources] says so: it is no row.
+	nothing bool
 }
 
 // Settings is `Tenant.config` as a file declares it, and every field is a
@@ -179,49 +198,391 @@ type Applied struct {
 	Added   []string
 	Changed []string
 	Same    []string
+
+	// Left is what a file declares of a tenant that is closed or destroyed,
+	// or under one: not written, and not looked at. See [ApplyResources].
+	Left []string
+
+	// Nothing is the files that declare no row.
+	Nothing []string
+
+	// Rows is each row the run looked at, in the order of the files: what
+	// `resources apply` prints a line of.
+	Rows []AppliedRow
 }
 
-// ReadResources reads the files named, in order.
+// AppliedRow is one row a run looked at: what it did with it (`added`,
+// `changed`, `same` or `left`), its kind and name, and for a row changed, the
+// keys that change, by the names the file writes them.
+type AppliedRow struct {
+	Was    string
+	Kind   string
+	Name   string
+	Fields []string
+}
+
+// ReadResources reads the files named, in order, and refuses what nothing
+// reads.
+//
+// **Strictly, as the configuration file is read**: a key the file's top level
+// does not hold, and a key the entry's kind does not read -- one another kind
+// reads among them -- is refused by the file, where it is in it and its name.
+// It was a plain `yaml.Unmarshal` into one struct for every kind, so a file
+// whose one key was `resource:` declared nothing and said nothing, `clientId`
+// was passed over and `client_id` then refused as empty, and `routes` on a
+// `Host` was taken and dropped. A file is what a deployment is stood up from,
+// and a word in it that is read as nothing is a row somebody will look for.
+//
+// And what a run would stop at half way is refused here, before anything is
+// opened: a `kind` this does not apply ([checkResources]).
+//
+// A file that declares nothing is not refused -- one may be emptied on
+// purpose -- and is handed on as one, for [ApplyResources] to say.
 func ReadResources(paths []string) ([]Resource, error) {
 	out := []Resource{}
 	for _, p := range paths {
-		b, err := os.ReadFile(p)
+		rs, err := readResourceFile(p)
 		if err != nil {
-			return nil, fmt.Errorf("resources: %s: %w", p, err)
+			return nil, fmt.Errorf("resources: %w", err)
 		}
-
-		var v Resources
-		if err := yaml.Unmarshal(b, &v); err != nil {
-			return nil, fmt.Errorf("resources: %s: %w", p, err)
+		if len(rs) == 0 {
+			out = append(out, Resource{From: p, nothing: true})
 		}
-		for i, r := range v.Resources {
-			if r.Kind == "" {
-				return nil, fmt.Errorf("resources: %s: [%d]: kind", p, i)
-			}
-			r.From = p
-			out = append(out, r)
-		}
+		out = append(out, rs...)
+	}
+	if err := checkResources(out); err != nil {
+		return nil, err
 	}
 
 	return out, nil
 }
 
+// kindsRead is the keys each kind reads, as the file writes them; a key whose
+// value is not nil is a block, and these are the keys it reads.
+//
+// [Resource] is one struct for the four, so what decodes into it cannot say
+// which kind a key is of. This does, and is the one list of it: a key a kind
+// is given here and not read by its apply would be one more word taken and
+// dropped.
+var kindsRead = map[string]keysRead{
+	"Tenant": {
+		"kind": nil, "alias": nil, "name": nil, "desc": nil,
+		"config": {
+			"password": nil, "front_door": nil, "leave": nil,
+			"profile": {"fill": nil, "slack": nil},
+		},
+	},
+	"Connection": {
+		"kind": nil, "tenant": nil, "name": nil, "desc": nil,
+		"issuer": nil, "client_id": nil, "scopes": nil, "secret_ref": nil, "subject_claim": nil, "provisions": nil,
+	},
+	"Host": {
+		"kind": nil, "tenant": nil, "name": nil, "desc": nil,
+	},
+	"MailDomain": {
+		"kind": nil, "tenant": nil, "name": nil, "desc": nil, "routes": nil,
+	},
+}
+
+// kindsApplied is the kinds in the order a refusal lists them.
+var kindsApplied = []string{"Tenant", "Connection", "Host", "MailDomain"}
+
+type keysRead map[string]keysRead
+
+func (k keysRead) String() string {
+	return strings.Join(slices.Sorted(maps.Keys(k)), ", ")
+}
+
+// readResourceFile is one file's rows, each knowing where in the file it is.
+func readResourceFile(p string) ([]Resource, error) {
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", p, err)
+	}
+	f, err := parser.ParseBytes(b, 0)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", p, err)
+	}
+
+	at := func(n ast.Node, key string, why string, args ...any) error {
+		pos := posOf(n)
+		return fmt.Errorf("%s:%d:%d: %s: %s", p, pos.Line, pos.Column, key, fmt.Sprintf(why, args...))
+	}
+
+	var body ast.Node
+	for i, d := range f.Docs {
+		if d.Body == nil || isComment(d.Body) {
+			continue
+		}
+		if body != nil {
+			return nil, at(d.Body, fmt.Sprintf("document %d", i+1), "a resources file is one document; put its rows under the first one's resources")
+		}
+		body = d.Body
+	}
+	if body == nil {
+		return nil, nil
+	}
+
+	top, ok := pairsOf(body)
+	if !ok {
+		return nil, at(body, "resources", "want a block whose one key is resources, not %s", body.Type())
+	}
+	var list ast.Node
+	for _, kv := range top {
+		k := keyOf(kv)
+		if k != "resources" {
+			return nil, at(kv.Key, k, "nothing reads this key; a resources file holds one, resources")
+		}
+		list = kv.Value
+	}
+	if list == nil || list.Type() == ast.NullType || isComment(list) {
+		return nil, nil
+	}
+	seq, ok := list.(*ast.SequenceNode)
+	if !ok {
+		return nil, at(list, "resources", "want a list of rows, not %s", list.Type())
+	}
+
+	out := make([]Resource, 0, len(seq.Values))
+	for i, n := range seq.Values {
+		entry := fmt.Sprintf("resources[%d]", i)
+		kvs, ok := pairsOf(n)
+		if !ok {
+			return nil, at(n, entry, "want a row -- kind and its keys -- not %s", n.Type())
+		}
+
+		kind := ""
+		var kindAt ast.Node
+		for _, kv := range kvs {
+			if keyOf(kv) == "kind" {
+				kind, kindAt = strings.TrimSpace(kv.Value.String()), kv.Value
+			}
+		}
+		if kindAt == nil || kind == "" {
+			return nil, at(n, entry, "says no kind; one of %s", strings.Join(kindsApplied, ", "))
+		}
+		read, ok := kindsRead[kind]
+		if !ok {
+			// Named rather than ignored. A `kind` this does not know is a typo
+			// or a thing somebody expected to work, and either way a silent
+			// skip is the worst answer -- and refused here, it is refused
+			// before anything is written.
+			return nil, at(kindAt, entry+".kind", "%q is not a kind this applies; one of %s", kind, strings.Join(kindsApplied, ", "))
+		}
+		if err := readOnly(at, kvs, entry, "a "+kind, read); err != nil {
+			return nil, err
+		}
+
+		r := Resource{}
+		if err := yaml.NodeToValue(n, &r); err != nil {
+			return nil, at(n, entry, "%s", yaml.FormatError(err, false, false))
+		}
+
+		// Where the file is read, with its name, before anything is opened:
+		// the server refuses it too, without the file.
+		if err := core.Referenced(r.SecretRef); err != nil {
+			for _, kv := range kvs {
+				if keyOf(kv) == "secret_ref" {
+					return nil, at(kv.Key, entry+".secret_ref", "%s", err.Error())
+				}
+			}
+		}
+		pos := posOf(n)
+		r.From, r.line, r.col = p, pos.Line, pos.Column
+		out = append(out, r)
+	}
+
+	return out, nil
+}
+
+// readOnly refuses a key `read` does not hold, under `key`, and looks into each
+// block it does.
+func readOnly(at func(ast.Node, string, string, ...any) error, kvs []*ast.MappingValueNode, key, whose string, read keysRead) error {
+	for _, kv := range kvs {
+		k := keyOf(kv)
+		sub, ok := read[k]
+		if !ok {
+			return at(kv.Key, key+"."+k, "%s does not read this key; it reads %s", whose, read)
+		}
+		if sub == nil || kv.Value == nil || kv.Value.Type() == ast.NullType {
+			continue
+		}
+		inner, ok := pairsOf(kv.Value)
+		if !ok {
+			return at(kv.Value, key+"."+k, "want a block of %s, not %s", sub, kv.Value.Type())
+		}
+		if err := readOnly(at, inner, key+"."+k, whose+"'s "+k, sub); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// pairsOf is a mapping's keys and values, whether it holds one or several: the
+// parser hands a mapping of one key over as that one pair.
+func pairsOf(n ast.Node) ([]*ast.MappingValueNode, bool) {
+	switch v := n.(type) {
+	case *ast.MappingNode:
+		return v.Values, true
+	case *ast.MappingValueNode:
+		return []*ast.MappingValueNode{v}, true
+	}
+
+	return nil, false
+}
+
+// posOf is where a node begins as somebody reading the file sees it: a
+// mapping at its first key, where the parser's own token is the colon after it.
+func posOf(n ast.Node) *token.Position {
+	if kvs, ok := pairsOf(n); ok && len(kvs) > 0 {
+		return kvs[0].Key.GetToken().Position
+	}
+
+	return n.GetToken().Position
+}
+
+func keyOf(kv *ast.MappingValueNode) string {
+	if v, ok := kv.Key.(*ast.StringNode); ok {
+		return v.Value
+	}
+
+	return strings.TrimSpace(kv.Key.String())
+}
+
+func isComment(n ast.Node) bool {
+	_, ok := n.(*ast.CommentGroupNode)
+	return ok || n.Type() == ast.CommentType
+}
+
+// checkResources refuses, before anything is written, what a run would stop
+// at half way or apply twice: a kind this does not apply, and two entries
+// that declare one row. A file has been refused a kind already as it was
+// read, with the line; this is for a caller that hands rows in too.
+//
+// Two entries of one row were applied in turn, the second over the first: `+`
+// and then `~`, and `~` twice at every start after, with a row that is
+// whichever came last. Refused naming both, since which is meant is the
+// person's to say.
+func checkResources(rs []Resource) error {
+	seen := map[string]Resource{}
+	for _, r := range rs {
+		if r.nothing {
+			continue
+		}
+		if _, ok := kindsRead[r.Kind]; !ok {
+			return fmt.Errorf("resources: %s: %q is not a kind this applies; one of %s",
+				r.where(), r.Kind, strings.Join(kindsApplied, ", "))
+		}
+
+		id := r.Kind + " " + rowOf(r)
+		if rowOf(r) == "" {
+			// No row to be the same as: the kind's own refusal says what
+			// is missing.
+			continue
+		}
+		if was, ok := seen[id]; ok {
+			return fmt.Errorf("resources: %s: %s %s: %s declares it too, and two entries declare one row; "+
+				"take one of them out", r.where(), r.Kind, named(r), was.where())
+		}
+		seen[id] = r
+	}
+
+	return nil
+}
+
+// rowOf is what makes a row one row, by kind: the key its apply finds it by.
+// A `Host`'s name is one row across the deployment, and every other kind but
+// a `Tenant` is one within its tenant.
+func rowOf(r Resource) string {
+	switch r.Kind {
+	case "Tenant":
+		return r.Alias
+	case "Host":
+		return r.Name
+	}
+	if r.Tenant == "" || r.Name == "" {
+		return ""
+	}
+
+	return r.Tenant + "/" + r.Name
+}
+
+// refused is a refusal of `r`, by where it is declared and what it is called
+// -- not by an index across every file read, which is no line of any of them.
+func (r Resource) refused(err error) error {
+	return fmt.Errorf("resources: %s: %s %s: %w", r.where(), r.Kind, named(r), err)
+}
+
+// where is where a row is declared, for a refusal to name: its file and line,
+// or its kind where a caller handed it in without a file.
+func (r Resource) where() string {
+	switch {
+	case r.From == "":
+		return r.Kind
+	case r.line == 0:
+		return r.From
+	}
+
+	return fmt.Sprintf("%s:%d:%d", r.From, r.line, r.col)
+}
+
 // ApplyResources writes what the files declared, as the provisioner.
 //
-// Idempotent by construction rather than by checking: each kind is `Add`, and
-// on `AlreadyExists` a read for the version and a `Patch` over it. So a first
-// run creates, a second with the same file changes nothing anybody can see, and
-// one with a field edited writes that field.
+// Idempotent by checking: each kind is read, added where it is not there, and
+// written over where what the file says differs from the row -- every key the
+// file writes, a key left out being empty. So a first run creates, a second
+// with the same file writes nothing, and one with a field edited writes that
+// row.
 //
 // `dry` answers what it would do and writes nothing, which is what a person
 // wants before a deployment does it for them.
+//
+// # A tenant that is leaving is left as it is
+//
+// A file finds its tenant by alias, and looked at nothing else of it. So a
+// file that still declared a tenant somebody had closed and destroyed wrote it
+// back at the next start -- its name, its settings, a connection and a host,
+// onto a row with nobody in it that no sweep visits again -- and once the
+// alias was given back, made a second tenant of that name and stopped at the
+// host the first one held, which stops `serve` (#279). And a tenant closed at
+// the box went on being edited by its file while everybody of it was shut
+// out.
+//
+// A file does not close a tenant and does not bring one back: those are an
+// operator's acts, at the box. So what a file declares of a tenant that is
+// closed or destroyed -- the tenant, and every row it names that tenant for --
+// is not written and not compared, and is answered as [Applied.Left]. It is
+// said in the log, as a warning, each time the files are applied, with the
+// files to take it out of: a start is not stopped by it, and nobody is left
+// to find out a year on that the file still says so. A closed tenant that is
+// restored is the file's again at the next start.
 func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Applied, error) {
 	out := Applied{}
+	if err := checkResources(rs); err != nil {
+		return out, err
+	}
+
+	// A file that declares nothing is said, once a run, which for `serve` is
+	// once a start: it is not wrong -- a file may be emptied on purpose --
+	// but one somebody expected a customer of is otherwise found out when the
+	// customer is not there. It was said by nothing: `serve` logged its counts
+	// only where a file declared something.
+	declared := []Resource{}
+	for _, r := range rs {
+		if !r.nothing {
+			declared = append(declared, r)
+			continue
+		}
+		out.Nothing = append(out.Nothing, r.From)
+		log.From(ctx).InfoContext(ctx, "resources: a file declares nothing", slog.String("file", r.From))
+	}
+	rs = declared
 	if len(rs) == 0 {
 		return out, nil
 	}
 
-	as, err := asProvisioner(ctx, s)
+	as, err := asProvisioner(ctx, s, dry)
 	if err != nil {
 		return out, err
 	}
@@ -238,31 +599,40 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 		return out, err
 	}
 
-	for i, r := range rs {
-		var (
-			what string
-			was  string
-			err  error
-		)
-		switch r.Kind {
-		case "Tenant":
-			what, was, err = applyTenant(as, at, r, dry)
-		case "Connection":
-			what, was, err = applyConnection(as, at, r, dry)
-		case "Host":
-			what, was, err = applyHost(as, at, r, dry)
-		case "MailDomain":
-			what, was, err = applyMailDomain(as, at, r, dry)
-		default:
-			// Named rather than ignored. A `kind` this does not know is a
-			// typo or a thing somebody expected to work, and either way a
-			// silent skip is the worst answer.
-			return out, fmt.Errorf("resources: [%d]: %q is not a kind this applies", i, r.Kind)
-		}
+	// Said however the run ends: a file that stops a start further down is
+	// read by somebody who should be told this as well.
+	leaving := leavers{}
+	defer leaving.said(ctx)
+
+	for _, r := range rs {
+		// Every kind is one of these: [checkResources] refused any other
+		// before anything was written.
+		apply := map[string]func(context.Context, app.Server, Resource, bool) (string, []string, error){
+			"Tenant":     applyTenant,
+			"Connection": applyConnection,
+			"Host":       applyHost,
+			"MailDomain": applyMailDomain,
+		}[r.Kind]
+
+		// Whose it is, before anything of it is read or written: a tenant
+		// that is leaving is not the file's.
+		left, err := leaving.left(as, at, r)
 		if err != nil {
-			return out, fmt.Errorf("resources: [%d] %s: %w", i, r.Kind, err)
+			return out, r.refused(err)
+		}
+		if left {
+			out.Left = append(out.Left, named(r))
+			out.Rows = append(out.Rows, AppliedRow{Was: "left", Kind: r.Kind, Name: named(r)})
+
+			continue
 		}
 
+		was, fields, err := apply(as, at, r, dry)
+		if err != nil {
+			return out, r.refused(err)
+		}
+
+		what := named(r)
 		switch was {
 		case "added":
 			out.Added = append(out.Added, what)
@@ -271,9 +641,106 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 		default:
 			out.Same = append(out.Same, what)
 		}
+		out.Rows = append(out.Rows, AppliedRow{Was: was, Kind: r.Kind, Name: what, Fields: fields})
 	}
 
 	return out, nil
+}
+
+// named is what a resource is called in what a run answers: a tenant by its
+// alias, and every other kind by its tenant's and its own name -- a host and a
+// mail domain as well, which were their name alone and so printed alike and
+// said nothing of whose they were.
+func named(r Resource) string {
+	if r.Kind == "Tenant" {
+		return "@" + r.Alias
+	}
+
+	return "@" + r.Tenant + "/" + r.Name
+}
+
+// leavers is the tenants a run found closed or destroyed, by alias, and what
+// the files still declare of each: see [ApplyResources].
+type leavers map[string]*leaver
+
+type leaver struct {
+	// state is `closed` or `destroyed`, and empty for a tenant that is
+	// neither: open, or not there yet.
+	state string
+	since time.Time
+
+	// What of it the files declare, and which files.
+	left  []string
+	files []string
+}
+
+// left is whether `r` is, or is under, a tenant that is closed or destroyed.
+// Asked once of each tenant, through the stack the rest is written through.
+func (l leavers) left(ctx context.Context, s app.Server, r Resource) (bool, error) {
+	alias := r.Tenant
+	if r.Kind == "Tenant" {
+		alias = r.Alias
+	}
+	if alias == "" {
+		// Nothing to ask about: the kind's own refusal says what is missing.
+		return false, nil
+	}
+
+	v, ok := l[alias]
+	if !ok {
+		v = &leaver{}
+		l[alias] = v
+
+		got, err := s.Tenant().Get(ctx, app.TenantGetRequest_builder{
+			Ref:    app.TenantRef_builder{Alias: proto.String(alias)}.Build(),
+			Select: app.TenantSelect_builder{DateClosed: proto.Bool(true), DateDestroyed: proto.Bool(true)}.Build(),
+		}.Build())
+		switch {
+		case status.Code(err) == codes.NotFound:
+			// Nobody of that alias: a tenant the file makes, or a row whose
+			// own kind says its tenant is not there.
+		case err != nil:
+			return false, err
+		case got.GetDateDestroyed() != nil:
+			v.state, v.since = "destroyed", got.GetDateDestroyed().AsTime()
+		case got.GetDateClosed() != nil:
+			v.state, v.since = "closed", got.GetDateClosed().AsTime()
+		}
+	}
+	if v.state == "" {
+		return false, nil
+	}
+
+	v.left = append(v.left, named(r))
+	if from := r.From; from != "" && !slices.Contains(v.files, from) {
+		v.files = append(v.files, from)
+	}
+
+	return true, nil
+}
+
+// said tells the log about each tenant the files still declare and that is
+// leaving, in the order of their aliases: once a run, which for `serve` is
+// once a start.
+func (l leavers) said(ctx context.Context) {
+	for _, alias := range slices.Sorted(maps.Keys(l)) {
+		v := l[alias]
+		if v.state == "" {
+			continue
+		}
+
+		what := "resources: a file still declares a tenant that was destroyed. Nothing of it or under it is written, " +
+			"and nothing brings it back: take it, and what is declared under it, out of the file"
+		if v.state == "closed" {
+			what = "resources: a file declares a tenant that is closed. It and what is declared under it are left as they are " +
+				"until it is restored (`roster restore`); if it is to go, take them out of the file"
+		}
+		log.From(ctx).WarnContext(ctx, what,
+			slog.String("tenant", "@"+alias),
+			slog.String(v.state, v.since.Format(time.RFC3339)),
+			slog.Any("files", v.files),
+			slog.Any("left", v.left))
+	}
 }
 
 // asProvisioner is the context every write goes out on: the control plane's
@@ -286,9 +753,27 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 // `frame.Everything` because this writes across every tenant and the wall is
 // what it would otherwise be narrowed by. It is `Ungated` either way; what the
 // frame buys is the **trail**, which now says which rows a file wrote.
-func asProvisioner(ctx context.Context, s *Server) (context.Context, error) {
+//
+// A dry run looks them up and never makes them, nor binds them: it was made
+// before `dry` was looked at, so a dry run on a deployment never served with a
+// file added the holder and its binding, two lines on the control plane's
+// trail, under *nothing was written*. Where they are not there yet the reads
+// are framed as nobody, which is what the trail would have named had a dry run
+// written anything: the provisioner, made by the run that does.
+func asProvisioner(ctx context.Context, s *Server, dry bool) (context.Context, error) {
 	if s.Control == nil {
 		return nil, errors.New("resources: no control plane, and the provisioner is a holder in it")
+	}
+	if dry {
+		who, err := ControlHolder(ctx, s.Control, Provisioner)
+		if status.Code(err) == codes.NotFound {
+			who, err = pdid.Nil, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		return frame.Into(ctx, frame.New(who, pdid.Nil, frame.Whole()).WithScope(frame.Everything)), nil
 	}
 
 	// The same call `roster key add` makes for a service, which is what this
@@ -334,10 +819,11 @@ func labelsOf(r Resource) map[string]string {
 	return map[string]string{Declared: r.From}
 }
 
-// The four kinds. Each is the same shape and the shape is the point: `Add`,
-// and on `AlreadyExists` a read for the version and a `Patch` over it. So the
-// first run creates, the second changes nothing, and one with a field edited
-// writes that field.
+// The four kinds. Each is the same shape and the shape is the point: a read,
+// `Add` where there is nothing, and where the row differs from the file a
+// write over it, against the version the read found. So the first run
+// creates, the second writes nothing, and one with a field edited writes that
+// row, saying which keys change.
 //
 // What none of them writes twice is the **name**. A `Connection.name` is what
 // `Identity.provider` points at, a `Host.name` is what a tenant is resolved
@@ -347,10 +833,9 @@ func labelsOf(r Resource) map[string]string {
 // reason (`proto/ext/app/host_svc.ext.proto` and its neighbours); this is that
 // rule arrived at from the other side.
 
-func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (string, string, error) {
-	what := "@" + r.Alias
+func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (string, []string, error) {
 	if r.Alias == "" {
-		return what, "", errors.New("alias")
+		return "", nil, errors.New("alias")
 	}
 
 	got, err := s.Tenant().Get(ctx, app.TenantGetRequest_builder{
@@ -359,7 +844,7 @@ func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (strin
 	}.Build())
 	if status.Code(err) == codes.NotFound {
 		if dry {
-			return what, "added", nil
+			return "added", nil, nil
 		}
 		add := app.TenantAddRequest_builder{
 			Alias: r.Alias, Name: r.Name, Desc: r.Desc, Labels: labelsOf(r),
@@ -369,22 +854,26 @@ func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (strin
 		}
 		_, err = s.Tenant().Add(ctx, add.Build())
 
-		return what, "added", err
+		return "added", nil, err
 	}
 	if err != nil {
-		return what, "", err
+		return "", nil, err
 	}
 
 	// The settings as they will be: what the row says, with the fields the
 	// file mentions written over it. Compared against the row's own so that a
 	// file mentioning nothing, or nothing new, is "same".
 	next := settle(got.GetConfig(), r.Config)
-	if got.GetName() == r.Name && got.GetDesc() == r.Desc && declared(got.GetLabels()) &&
-		proto.Equal(next, settle(got.GetConfig(), nil)) {
-		return what, "same", nil
+	fields := differs(
+		"name", got.GetName() != r.Name,
+		"desc", got.GetDesc() != r.Desc,
+	)
+	fields = append(fields, configDiffers(settle(got.GetConfig(), nil), next)...)
+	if len(fields) == 0 && declared(got.GetLabels()) {
+		return "same", nil, nil
 	}
 	if dry {
-		return what, "changed", nil
+		return "changed", fields, nil
 	}
 
 	// `Update` and not `Patch`, which the three below use: it is the verb the
@@ -402,7 +891,7 @@ func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (strin
 	}
 	_, err = s.Tenant().Update(ctx, up.Build())
 
-	return what, "changed", err
+	return "changed", fields, err
 }
 
 // settle is a tenant's settings with what a file said written over them,
@@ -450,11 +939,10 @@ func settle(cur *app.TenantConfig, said *Settings) *app.TenantConfig {
 	return out
 }
 
-func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (string, string, error) {
-	what := "@" + r.Tenant + "/" + r.Name
+func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (string, []string, error) {
 	at, err := tenantRef(ctx, s, r)
 	if err != nil {
-		return what, "", err
+		return "", nil, err
 	}
 
 	got, err := s.Connection().Get(ctx, app.ConnectionGetRequest_builder{
@@ -465,7 +953,7 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 	}.Build())
 	if status.Code(err) == codes.NotFound {
 		if dry {
-			return what, "added", nil
+			return "added", nil, nil
 		}
 		_, err = s.Connection().Add(ctx, app.ConnectionAddRequest_builder{
 			Tenant: at, Name: r.Name, Desc: r.Desc,
@@ -475,22 +963,28 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 			Labels:       labelsOf(r),
 		}.Build())
 
-		return what, "added", err
+		return "added", nil, err
 	}
 	if err != nil {
-		return what, "", err
+		return "", nil, err
 	}
-	if got.GetIssuer() == r.Issuer && got.GetClientId() == r.ClientId &&
-		got.GetSecretRef() == r.SecretRef && got.GetDesc() == r.Desc &&
-		got.GetSubjectClaim() == r.SubjectClaim && got.GetProvisions() == r.Provisions &&
-		same(got.GetScopes(), r.Scopes) && declared(got.GetLabels()) {
-		return what, "same", nil
+	fields := differs(
+		"desc", got.GetDesc() != r.Desc,
+		"issuer", got.GetIssuer() != r.Issuer,
+		"client_id", got.GetClientId() != r.ClientId,
+		"scopes", !same(got.GetScopes(), r.Scopes),
+		"secret_ref", got.GetSecretRef() != r.SecretRef,
+		"subject_claim", got.GetSubjectClaim() != r.SubjectClaim,
+		"provisions", got.GetProvisions() != r.Provisions,
+	)
+	if len(fields) == 0 && declared(got.GetLabels()) {
+		return "same", nil, nil
 	}
 	if dry {
-		return what, "changed", nil
+		return "changed", fields, nil
 	}
 
-	_, err = s.Connection().Patch(ctx, app.ConnectionPatchRequest_builder{
+	v, err := s.Connection().Patch(ctx, app.ConnectionPatchRequest_builder{
 		Ref:          app.ConnectionRef_builder{Id: got.GetId()}.Build(),
 		Desc:         proto.String(r.Desc),
 		Issuer:       proto.String(r.Issuer),
@@ -502,15 +996,37 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 		Labels:       labelsOf(r),
 		DateUpdated:  got.GetDateUpdated(),
 	}.Build())
+	if err != nil || len(r.Scopes) > 0 || len(got.GetScopes()) == 0 {
+		return "changed", fields, err
+	}
 
-	return what, "changed", err
+	// Scopes left out are none, as every other key left out is empty. A list
+	// has no presence in `Patch` -- empty there is *not said* -- so the row
+	// kept the scopes a file once asked for, was found changed, and was
+	// written again at every start. Emptied here, against the version the
+	// patch left.
+	doc, err := patch.New(string((&app.Connection{}).ProtoReflect().Descriptor().FullName()),
+		patch.Target(patch.Name("date_updated")).Test(patch.Msg(
+			patch.F(patch.Name("seconds"), patch.Int64(v.GetDateUpdated().GetSeconds())),
+			patch.F(patch.Name("nanos"), patch.Int32(v.GetDateUpdated().GetNanos())),
+		)),
+		patch.Target(patch.Name("scopes")).Assign(patch.List()),
+	)
+	if err != nil {
+		return "", nil, err
+	}
+	_, err = s.Connection().Apply(ctx, app.ConnectionApplyRequest_builder{
+		Ref:   app.ConnectionRef_builder{Id: got.GetId()}.Build(),
+		Patch: doc,
+	}.Build())
+
+	return "changed", fields, err
 }
 
-func applyHost(ctx context.Context, s app.Server, r Resource, dry bool) (string, string, error) {
-	what := r.Name
+func applyHost(ctx context.Context, s app.Server, r Resource, dry bool) (string, []string, error) {
 	at, err := tenantRef(ctx, s, r)
 	if err != nil {
-		return what, "", err
+		return "", nil, err
 	}
 
 	got, err := s.Host().Get(ctx, app.HostGetRequest_builder{
@@ -519,22 +1035,39 @@ func applyHost(ctx context.Context, s app.Server, r Resource, dry bool) (string,
 	}.Build())
 	if status.Code(err) == codes.NotFound {
 		if dry {
-			return what, "added", nil
+			return "added", nil, nil
 		}
 		_, err = s.Host().Add(ctx, app.HostAddRequest_builder{
 			Tenant: at, Name: r.Name, Desc: r.Desc, Labels: labelsOf(r),
 		}.Build())
 
-		return what, "added", err
+		return "added", nil, err
 	}
 	if err != nil {
-		return what, "", err
+		return "", nil, err
 	}
-	if got.GetDesc() == r.Desc && declared(got.GetLabels()) {
-		return what, "same", nil
+
+	// Whose row it found, which it did not look at: a name is one row across
+	// the deployment, so the row of that name may be another tenant's. A file
+	// that said a name is contoso's, where it was fabrikam's, applied *changed*
+	// with the name still fabrikam's -- and marked fabrikam's row as the
+	// file's, which its own tenant then could not erase (#277). A file does not
+	// take a name: it is refused, before a dry run says otherwise.
+	theirs, err := s.Tenant().Get(ctx, app.TenantGetRequest_builder{Ref: at, Select: app.TenantSelect_builder{}.Build()}.Build())
+	if err != nil {
+		return "", nil, err
+	}
+	if !bytes.Equal(got.GetTenant().GetId(), theirs.GetId()) {
+		return "", nil, fmt.Errorf("%s is held by another tenant, and a file does not take a name: "+
+			"declared for %s here, and their row would have to be erased first", r.Name, r.Tenant)
+	}
+
+	fields := differs("desc", got.GetDesc() != r.Desc)
+	if len(fields) == 0 && declared(got.GetLabels()) {
+		return "same", nil, nil
 	}
 	if dry {
-		return what, "changed", nil
+		return "changed", fields, nil
 	}
 
 	_, err = s.Host().Patch(ctx, app.HostPatchRequest_builder{
@@ -544,14 +1077,13 @@ func applyHost(ctx context.Context, s app.Server, r Resource, dry bool) (string,
 		DateUpdated: got.GetDateUpdated(),
 	}.Build())
 
-	return what, "changed", err
+	return "changed", fields, err
 }
 
-func applyMailDomain(ctx context.Context, s app.Server, r Resource, dry bool) (string, string, error) {
-	what := r.Name
+func applyMailDomain(ctx context.Context, s app.Server, r Resource, dry bool) (string, []string, error) {
 	at, err := tenantRef(ctx, s, r)
 	if err != nil {
-		return what, "", err
+		return "", nil, err
 	}
 
 	// Where an address at this domain is routed: one of the tenant's own
@@ -567,22 +1099,26 @@ func applyMailDomain(ctx context.Context, s app.Server, r Resource, dry bool) (s
 	}.Build())
 	if status.Code(err) == codes.NotFound {
 		if dry {
-			return what, "added", nil
+			return "added", nil, nil
 		}
 		_, err = s.MailDomain().Add(ctx, app.MailDomainAddRequest_builder{
 			Tenant: at, Name: r.Name, Desc: r.Desc, Provider: r.Routes, Labels: labelsOf(r),
 		}.Build())
 
-		return what, "added", err
+		return "added", nil, err
 	}
 	if err != nil {
-		return what, "", err
+		return "", nil, err
 	}
-	if got.GetProvider() == r.Routes && got.GetDesc() == r.Desc && declared(got.GetLabels()) {
-		return what, "same", nil
+	fields := differs(
+		"desc", got.GetDesc() != r.Desc,
+		"routes", got.GetProvider() != r.Routes,
+	)
+	if len(fields) == 0 && declared(got.GetLabels()) {
+		return "same", nil, nil
 	}
 	if dry {
-		return what, "changed", nil
+		return "changed", fields, nil
 	}
 
 	_, err = s.MailDomain().Patch(ctx, app.MailDomainPatchRequest_builder{
@@ -593,7 +1129,31 @@ func applyMailDomain(ctx context.Context, s app.Server, r Resource, dry bool) (s
 		DateUpdated: got.GetDateUpdated(),
 	}.Build())
 
-	return what, "changed", err
+	return "changed", fields, err
+}
+
+// differs is the names, of pairs of a name and whether it changes, that
+// change: what a `~` says after it, by the names the file writes them.
+func differs(pairs ...any) []string {
+	out := []string{}
+	for i := 0; i+1 < len(pairs); i += 2 {
+		if pairs[i+1].(bool) {
+			out = append(out, pairs[i].(string))
+		}
+	}
+
+	return out
+}
+
+// configDiffers is which of a tenant's settings change, as `config.<key>`.
+func configDiffers(was, next *app.TenantConfig) []string {
+	return differs(
+		"config.password", was.HasPassword() != next.HasPassword() || was.GetPassword() != next.GetPassword(),
+		"config.front_door", was.GetFrontDoor() != next.GetFrontDoor(),
+		"config.profile.fill", was.GetProfile().GetFill() != next.GetProfile().GetFill(),
+		"config.profile.slack", was.GetProfile().GetSlackSecretRef() != next.GetProfile().GetSlackSecretRef(),
+		"config.leave", was.GetLeave() != next.GetLeave(),
+	)
 }
 
 // tenantRef is the customer a resource hangs off, and a refusal when it names

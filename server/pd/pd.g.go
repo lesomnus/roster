@@ -12543,7 +12543,7 @@ var (
 		[]protoreflect.FieldNumber{})
 	describedApiKey = describe((*rstr.ApiKey)(nil),
 		[]protoreflect.FieldNumber{9},
-		[]protoreflect.FieldNumber{})
+		[]protoreflect.FieldNumber{4, 6})
 	describedArchived = describe((*rstr.Archived)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
@@ -12552,7 +12552,7 @@ var (
 		[]protoreflect.FieldNumber{})
 	describedBinding = describe((*rstr.Binding)(nil),
 		[]protoreflect.FieldNumber{},
-		[]protoreflect.FieldNumber{})
+		[]protoreflect.FieldNumber{7})
 	describedConnection = describe((*rstr.Connection)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
@@ -12564,7 +12564,7 @@ var (
 		[]protoreflect.FieldNumber{})
 	describedCredential = describe((*rstr.Credential)(nil),
 		[]protoreflect.FieldNumber{9, 17},
-		[]protoreflect.FieldNumber{})
+		[]protoreflect.FieldNumber{5})
 	describedDelegation = describe((*rstr.Delegation)(nil),
 		[]protoreflect.FieldNumber{9},
 		[]protoreflect.FieldNumber{})
@@ -12600,7 +12600,7 @@ var (
 		[]protoreflect.FieldNumber{})
 	describedNomination = describe((*rstr.Nomination)(nil),
 		[]protoreflect.FieldNumber{},
-		[]protoreflect.FieldNumber{})
+		[]protoreflect.FieldNumber{7, 5})
 	describedOutbox = describe((*rstr.Outbox)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
@@ -12612,7 +12612,7 @@ var (
 		[]protoreflect.FieldNumber{8})
 	describedRelation = describe((*rstr.Relation)(nil),
 		[]protoreflect.FieldNumber{},
-		[]protoreflect.FieldNumber{})
+		[]protoreflect.FieldNumber{7})
 	describedRole = describe((*rstr.Role)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
@@ -12800,6 +12800,11 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id, image proto.Messag
 		b := []byte{}
 		if keep {
 			kept := row
+			kept = proto.Clone(row).(*rstr.Binding)
+			_, secret, personal := described(key)
+			audit.Clear(kept, secret)
+			audit.Clear(kept, personal)
+
 			v, err := proto.Marshal(kept)
 			if err != nil {
 				return uuid.Nil(), nil, err
@@ -13367,6 +13372,11 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id, image proto.Messag
 		b := []byte{}
 		if keep {
 			kept := row
+			kept = proto.Clone(row).(*rstr.Nomination)
+			_, secret, personal := described(key)
+			audit.Clear(kept, secret)
+			audit.Clear(kept, personal)
+
 			v, err := proto.Marshal(kept)
 			if err != nil {
 				return uuid.Nil(), nil, err
@@ -13436,6 +13446,11 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id, image proto.Messag
 		b := []byte{}
 		if keep {
 			kept := row
+			kept = proto.Clone(row).(*rstr.Relation)
+			_, secret, personal := described(key)
+			audit.Clear(kept, secret)
+			audit.Clear(kept, personal)
+
 			v, err := proto.Marshal(kept)
 			if err != nil {
 				return uuid.Nil(), nil, err
@@ -13902,7 +13917,7 @@ func (v *keptTrail) write(ctx context.Context) error {
 // row's seal covers (payday#115).
 func isSealed(key pdid.Id) bool {
 	switch key.Domain() {
-	case EmailDomain, HolderDomain, IdentityDomain, PhoneDomain:
+	case ApiKeyDomain, BindingDomain, CredentialDomain, EmailDomain, HolderDomain, IdentityDomain, NominationDomain, PhoneDomain, RelationDomain:
 		return true
 	}
 
@@ -14216,7 +14231,12 @@ func checkedApiKey(db *ent.Client) audit.Kind {
 			}
 
 			recorded, err := newestDigests(ctx, db, objects(rows))
-			out = audit.Page{Rows: rows, Recorded: recorded}
+			if err != nil {
+				return err
+			}
+
+			seals, err := sealsOf(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded, Seals: seals}
 			return err
 		})
 
@@ -14225,6 +14245,7 @@ func checkedApiKey(db *ent.Client) audit.Kind {
 
 	return audit.Kind{
 		Domain: ApiKeyDomain,
+		Sealed: true,
 		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
 			return read(ctx, entApiKey.IdGT(uuid.UUID(after)))
 		},
@@ -14262,7 +14283,12 @@ func checkedBinding(db *ent.Client) audit.Kind {
 			}
 
 			recorded, err := newestDigests(ctx, db, objects(rows))
-			out = audit.Page{Rows: rows, Recorded: recorded}
+			if err != nil {
+				return err
+			}
+
+			seals, err := sealsOf(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded, Seals: seals}
 			return err
 		})
 
@@ -14271,6 +14297,7 @@ func checkedBinding(db *ent.Client) audit.Kind {
 
 	return audit.Kind{
 		Domain: BindingDomain,
+		Sealed: true,
 		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
 			return read(ctx, entBinding.IdGT(uuid.UUID(after)))
 		},
@@ -14446,7 +14473,12 @@ func checkedCredential(db *ent.Client) audit.Kind {
 			}
 
 			recorded, err := newestDigests(ctx, db, objects(rows))
-			out = audit.Page{Rows: rows, Recorded: recorded}
+			if err != nil {
+				return err
+			}
+
+			seals, err := sealsOf(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded, Seals: seals}
 			return err
 		})
 
@@ -14455,6 +14487,7 @@ func checkedCredential(db *ent.Client) audit.Kind {
 
 	return audit.Kind{
 		Domain: CredentialDomain,
+		Sealed: true,
 		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
 			return read(ctx, entCredential.IdGT(uuid.UUID(after)))
 		},
@@ -15016,7 +15049,12 @@ func checkedNomination(db *ent.Client) audit.Kind {
 			}
 
 			recorded, err := newestDigests(ctx, db, objects(rows))
-			out = audit.Page{Rows: rows, Recorded: recorded}
+			if err != nil {
+				return err
+			}
+
+			seals, err := sealsOf(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded, Seals: seals}
 			return err
 		})
 
@@ -15025,6 +15063,7 @@ func checkedNomination(db *ent.Client) audit.Kind {
 
 	return audit.Kind{
 		Domain: NominationDomain,
+		Sealed: true,
 		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
 			return read(ctx, entNomination.IdGT(uuid.UUID(after)))
 		},
@@ -15114,7 +15153,12 @@ func checkedRelation(db *ent.Client) audit.Kind {
 			}
 
 			recorded, err := newestDigests(ctx, db, objects(rows))
-			out = audit.Page{Rows: rows, Recorded: recorded}
+			if err != nil {
+				return err
+			}
+
+			seals, err := sealsOf(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded, Seals: seals}
 			return err
 		})
 
@@ -15123,6 +15167,7 @@ func checkedRelation(db *ent.Client) audit.Kind {
 
 	return audit.Kind{
 		Domain: RelationDomain,
+		Sealed: true,
 		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
 			return read(ctx, entRelation.IdGT(uuid.UUID(after)))
 		},
@@ -18106,6 +18151,11 @@ func (s interceptRole) Narrow(ctx context.Context, req *rstr.RoleNarrowRequest) 
 		rstr.RoleService_Narrow_FullMethodName, req, s.RoleServiceServer.Narrow)
 }
 
+func (s interceptRole) HandsOver(ctx context.Context, req *rstr.RoleHandsOverRequest) (*rstr.RoleHandsOverResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.RoleServiceServer,
+		rstr.RoleService_HandsOver_FullMethodName, req, s.RoleServiceServer.HandsOver)
+}
+
 func (s Intercept) Binding() rstr.BindingServiceServer {
 	return interceptBinding{s, s.Next().Binding()}
 }
@@ -19667,6 +19717,43 @@ var (
 
 func init() {
 	{
+		md := (&rstr.ApiKey{}).ProtoReflect().Descriptor()
+		fs := md.Fields()
+		personals[md.FullName()] = personal{
+			key: fs.ByNumber(1),
+			fields: []protoreflect.FieldDescriptor{
+				fs.ByNumber(4),
+				fs.ByNumber(6),
+			},
+		}
+		r := (&rstr.ApiKeyRef{}).ProtoReflect().Descriptor()
+		refs[r.FullName()] = r.Fields().ByName("id")
+	}
+	{
+		md := (&rstr.Binding{}).ProtoReflect().Descriptor()
+		fs := md.Fields()
+		personals[md.FullName()] = personal{
+			key: fs.ByNumber(1),
+			fields: []protoreflect.FieldDescriptor{
+				fs.ByNumber(7),
+			},
+		}
+		r := (&rstr.BindingRef{}).ProtoReflect().Descriptor()
+		refs[r.FullName()] = r.Fields().ByName("id")
+	}
+	{
+		md := (&rstr.Credential{}).ProtoReflect().Descriptor()
+		fs := md.Fields()
+		personals[md.FullName()] = personal{
+			key: fs.ByNumber(1),
+			fields: []protoreflect.FieldDescriptor{
+				fs.ByNumber(5),
+			},
+		}
+		r := (&rstr.CredentialRef{}).ProtoReflect().Descriptor()
+		refs[r.FullName()] = r.Fields().ByName("id")
+	}
+	{
 		md := (&rstr.Email{}).ProtoReflect().Descriptor()
 		fs := md.Fields()
 		personals[md.FullName()] = personal{
@@ -19721,6 +19808,22 @@ func init() {
 		refs[r.FullName()] = r.Fields().ByName("id")
 	}
 	{
+		md := (&rstr.Nomination{}).ProtoReflect().Descriptor()
+		fs := md.Fields()
+		personals[md.FullName()] = personal{
+			key: fs.ByNumber(1),
+			fields: []protoreflect.FieldDescriptor{
+				fs.ByNumber(7),
+				fs.ByNumber(5),
+			},
+			tenant: func(m protoreflect.Message) pdid.Id {
+				return accessKeyOf(m.Get(fs.ByName("tenant")).Message())
+			},
+		}
+		r := (&rstr.NominationRef{}).ProtoReflect().Descriptor()
+		refs[r.FullName()] = r.Fields().ByName("id")
+	}
+	{
 		md := (&rstr.Phone{}).ProtoReflect().Descriptor()
 		fs := md.Fields()
 		personals[md.FullName()] = personal{
@@ -19733,6 +19836,21 @@ func init() {
 			},
 		}
 		r := (&rstr.PhoneRef{}).ProtoReflect().Descriptor()
+		refs[r.FullName()] = r.Fields().ByName("id")
+	}
+	{
+		md := (&rstr.Relation{}).ProtoReflect().Descriptor()
+		fs := md.Fields()
+		personals[md.FullName()] = personal{
+			key: fs.ByNumber(1),
+			fields: []protoreflect.FieldDescriptor{
+				fs.ByNumber(7),
+			},
+			tenant: func(m protoreflect.Message) pdid.Id {
+				return accessIdOf(m.Get(fs.ByName("tenant_id")).Bytes())
+			},
+		}
+		r := (&rstr.RelationRef{}).ProtoReflect().Descriptor()
 		refs[r.FullName()] = r.Fields().ByName("id")
 	}
 }
@@ -19977,7 +20095,16 @@ type accessKept struct{ call *access.Call }
 // data left and erased, which are what say whose it was.
 func (accessRecorder) Snapshots(method string) bare.SnapshotOptions {
 	switch method {
-	case rstr.EmailService_Add_FullMethodName,
+	case rstr.ApiKeyService_Add_FullMethodName,
+		rstr.ApiKeyService_Patch_FullMethodName,
+		rstr.ApiKeyService_Apply_FullMethodName,
+		rstr.BindingService_Add_FullMethodName,
+		rstr.BindingService_Patch_FullMethodName,
+		rstr.BindingService_Apply_FullMethodName,
+		rstr.CredentialService_Add_FullMethodName,
+		rstr.CredentialService_Patch_FullMethodName,
+		rstr.CredentialService_Apply_FullMethodName,
+		rstr.EmailService_Add_FullMethodName,
 		rstr.EmailService_Patch_FullMethodName,
 		rstr.EmailService_Apply_FullMethodName,
 		rstr.HolderService_Add_FullMethodName,
@@ -19986,14 +20113,25 @@ func (accessRecorder) Snapshots(method string) bare.SnapshotOptions {
 		rstr.IdentityService_Add_FullMethodName,
 		rstr.IdentityService_Patch_FullMethodName,
 		rstr.IdentityService_Apply_FullMethodName,
+		rstr.NominationService_Add_FullMethodName,
+		rstr.NominationService_Patch_FullMethodName,
+		rstr.NominationService_Apply_FullMethodName,
 		rstr.PhoneService_Add_FullMethodName,
 		rstr.PhoneService_Patch_FullMethodName,
-		rstr.PhoneService_Apply_FullMethodName:
+		rstr.PhoneService_Apply_FullMethodName,
+		rstr.RelationService_Add_FullMethodName,
+		rstr.RelationService_Patch_FullMethodName,
+		rstr.RelationService_Apply_FullMethodName:
 		return bare.SnapshotOptions{Value: true}
-	case rstr.EmailService_Erase_FullMethodName,
+	case rstr.ApiKeyService_Erase_FullMethodName,
+		rstr.BindingService_Erase_FullMethodName,
+		rstr.CredentialService_Erase_FullMethodName,
+		rstr.EmailService_Erase_FullMethodName,
 		rstr.HolderService_Erase_FullMethodName,
 		rstr.IdentityService_Erase_FullMethodName,
-		rstr.PhoneService_Erase_FullMethodName:
+		rstr.NominationService_Erase_FullMethodName,
+		rstr.PhoneService_Erase_FullMethodName,
+		rstr.RelationService_Erase_FullMethodName:
 		return bare.SnapshotOptions{Previous: true}
 	}
 

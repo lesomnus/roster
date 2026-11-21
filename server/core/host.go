@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/protobuf-orm/ent/dialect"
@@ -9,6 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/otx/log"
 	"github.com/lesomnus/z"
 
 	"github.com/lesomnus/payday/frame"
@@ -42,6 +44,20 @@ import (
 // what a browser arrived at, so a row that is not normalised is a row no
 // request ever reaches. The symptom is a sign-in page saying nobody is there,
 // on a tenant that is plainly configured, which is a long way from the cause.
+//
+// # And a host's name is a hostname
+//
+// Being what `front.Hostname` answers is a rule about spelling, and it passes
+// anything that function leaves alone: `*.example.com`, `a b`,
+// `contoso.example.com/x`, `@fabrikam`. None of those is a name a request
+// arrives at, so each is a row that never matches, listed as though it could
+// -- and the last is how `roster-at` spells a tenant, which
+// `front.TenantMark` says no hostname can be mistaken for.
+//
+// So a `Host` and a claim on one are held to what DNS could hold
+// ([hostnamed], [front.NotHostname]), by whichever road writes them. A proof
+// is asked about the name as written, and a name DNS cannot hold is one
+// nothing can be asked about.
 
 type coreHost struct {
 	Core
@@ -78,7 +94,7 @@ func (s coreHost) Add(ctx context.Context, req *app.HostAddRequest) (*app.Host, 
 	if err := s.acrossTheTenant(ctx, app.HostService_Add_FullMethodName); err != nil {
 		return nil, err
 	}
-	if err := normalised("name", req.GetName(), front.Hostname); err != nil {
+	if err := hostnamed("name", req.GetName()); err != nil {
 		return nil, err
 	}
 	own, err := s.ownName(ctx, req.GetTenant())
@@ -190,10 +206,22 @@ func (s coreHost) proved(ctx context.Context, req *app.HostAddRequest) (*app.Hos
 	// mornings: a lookup that never left is not a record that is wrong, and
 	// telling somebody their zone is wrong when it is not is how an afternoon
 	// goes on a correct zone file.
+	//
+	// And refused in one sentence, whatever failed. The error is the
+	// resolver's own words -- its address, the server it was sent to, whether
+	// that server's name exists -- and which servers are asked is what the
+	// claimed name's zone lists, which the caller writes. Repeated to them, it
+	// answers a question about this deployment's network per claim. So what
+	// failed goes to the log, for the operator it is news to, and the caller
+	// is told only that the asking failed.
 	held, err := prove.Held(ctx, s.proving, name, c.GetToken())
 	if err != nil {
+		log.From(ctx).WarnContext(ctx, "host: could not ask DNS whether a claim's record is there",
+			slog.String("name", name), slog.Any("err", err))
+
 		return nil, status.Errorf(codes.Unavailable,
-			"%s: could not ask DNS whether the record is there: %v", name, err)
+			"%s: could not ask DNS whether the record is there, which says nothing about the record; "+
+				"what failed is in this deployment's log, for a roster operator to read", name)
 	}
 	if !held {
 		return nil, status.Errorf(codes.FailedPrecondition,
@@ -256,7 +284,7 @@ func (s coreHost) Patch(ctx context.Context, req *app.HostPatchRequest) (*app.Ho
 		return nil, err
 	}
 	if req.HasName() {
-		if err := normalised("name", req.GetName(), front.Hostname); err != nil {
+		if err := hostnamed("name", req.GetName()); err != nil {
 			return nil, err
 		}
 	}
@@ -341,6 +369,22 @@ func normalised(field, v string, by func(string) string) error {
 
 	return status.Errorf(codes.InvalidArgument,
 		"%s: stored as it is compared, so %q rather than %q", field, w, v)
+}
+
+// hostnamed is [normalised] for a host's name, which is also held to being a
+// hostname.
+//
+// What is held to it is what the name would be stored as, and before the other
+// rule speaks: a refusal that says *write it this way* names a form the next
+// write would be refused for otherwise, and somebody is sent round twice.
+func hostnamed(field, v string) error {
+	if w := front.Hostname(v); w != "" {
+		if why := front.NotHostname(w); why != "" {
+			return status.Errorf(codes.InvalidArgument, "%s: %q is not a hostname: %s", field, v, why)
+		}
+	}
+
+	return normalised(field, v, front.Hostname)
 }
 
 // Update is `Patch` with the name held back; `host_svc.ext.proto` says why.

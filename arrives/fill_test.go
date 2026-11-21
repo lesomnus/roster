@@ -92,7 +92,7 @@ func TestAPictureIsReadTheWayItsProviderServesIt(t *testing.T) {
 	require.NoError(t, err)
 
 	token := &oauth2.Token{AccessToken: idptest.AccessToken, TokenType: "Bearer"}
-	p := &Providers{own: ownClient(), anywhere: publicClient(public)}
+	p := onThisMachine(t, nil)
 
 	// No `picture` in the token, a URL to one in userinfo, and the picture
 	// fetched with the token -- which is why that URL is not kept.
@@ -145,7 +145,8 @@ func TestAPictureIsReadTheWayItsProviderServesIt(t *testing.T) {
 		// The test's own client, which trusts the test's certificate and
 		// would be refused 127.0.0.1 otherwise: the refusal is the test above,
 		// and this one is about what is kept.
-		p := &Providers{own: ownClient(), anywhere: s.Client()}
+		p := onThisMachine(t, nil)
+		p.anywhere = s.Client()
 
 		got, where, err := p.picture(ctx, v, Caller{Subject: idp.Subject, Picture: s.URL + "/erin.png", token: token})
 		x.NoError(err)

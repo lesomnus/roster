@@ -57,7 +57,7 @@ const (
 // being good, and -- once per person per connection, the first time it hears of
 // them with anything at all set -- when one may already have.
 //
-// It is also **less** than a watch on purpose: no row travels, only the three
+// It is also **less** than a watch on purpose: no row travels, only the four
 // facts. And the generated `Watch` refuses a subscription with no filters --
 // *the whole table, forever* -- which is exactly the subscription an app wants
 // here and cannot narrow, because it does not know in advance who will sign in
@@ -86,10 +86,10 @@ const (
 // The decision an app holds has two halves, and the four facts are the first:
 // *this is that person*. The second -- *they may do these things* -- is what
 // `HolderService/Reaches` answered when the app asked, and it stops being true
-// when somebody writes a role, a binding or a membership that reaches them. So
-// an event is sent about each person such a write may have changed that for,
-// saying so (`SYNC_REASON_REACH`), and an app that keeps what `Reaches` said
-// asks again (`reach`, `docs/apps.md`).
+// when somebody writes a role, a binding or a membership that reaches them, or
+// erases a group or a team they are in. So an event is sent about each person
+// such a write may have changed that for, saying so (`SYNC_REASON_REACH`), and
+// an app that keeps what `Reaches` said asks again (`reach`, `docs/apps.md`).
 //
 // It says *may have*, and names nobody's methods. Working out whether what a
 // person reaches really moved is asking the policy about everybody a role is
@@ -97,8 +97,16 @@ const (
 // hand `Reaches` to whoever holds this stream and not that method. A person
 // told about who reaches what they did is asked about once more, which costs
 // one call; a person not told keeps a stale answer until the app's own copy
-// runs out.
+// runs out. Once, or twice: where the deployment keeps a queue of its writes
+// (`watch.outbox`), a write over the wire is published by its call and again
+// by the queue, and an event about what somebody may call is compared with
+// nothing, so it is said twice and they are asked about twice.
 type SyncServiceClient interface {
+	// Watch is the stream. Its response header is the stream saying it
+	// listens: a write committed after the header is heard, and one committed
+	// before it may not be. So a follower forgets what it held when the header
+	// arrives, and not when the call returns, which may be before roster
+	// listens.
 	Watch(ctx context.Context, in *SyncWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SyncEvent], error)
 }
 
@@ -164,7 +172,7 @@ type SyncService_WatchClient = grpc.ServerStreamingClient[SyncEvent]
 // being good, and -- once per person per connection, the first time it hears of
 // them with anything at all set -- when one may already have.
 //
-// It is also **less** than a watch on purpose: no row travels, only the three
+// It is also **less** than a watch on purpose: no row travels, only the four
 // facts. And the generated `Watch` refuses a subscription with no filters --
 // *the whole table, forever* -- which is exactly the subscription an app wants
 // here and cannot narrow, because it does not know in advance who will sign in
@@ -193,10 +201,10 @@ type SyncService_WatchClient = grpc.ServerStreamingClient[SyncEvent]
 // The decision an app holds has two halves, and the four facts are the first:
 // *this is that person*. The second -- *they may do these things* -- is what
 // `HolderService/Reaches` answered when the app asked, and it stops being true
-// when somebody writes a role, a binding or a membership that reaches them. So
-// an event is sent about each person such a write may have changed that for,
-// saying so (`SYNC_REASON_REACH`), and an app that keeps what `Reaches` said
-// asks again (`reach`, `docs/apps.md`).
+// when somebody writes a role, a binding or a membership that reaches them, or
+// erases a group or a team they are in. So an event is sent about each person
+// such a write may have changed that for, saying so (`SYNC_REASON_REACH`), and
+// an app that keeps what `Reaches` said asks again (`reach`, `docs/apps.md`).
 //
 // It says *may have*, and names nobody's methods. Working out whether what a
 // person reaches really moved is asking the policy about everybody a role is
@@ -204,8 +212,16 @@ type SyncService_WatchClient = grpc.ServerStreamingClient[SyncEvent]
 // hand `Reaches` to whoever holds this stream and not that method. A person
 // told about who reaches what they did is asked about once more, which costs
 // one call; a person not told keeps a stale answer until the app's own copy
-// runs out.
+// runs out. Once, or twice: where the deployment keeps a queue of its writes
+// (`watch.outbox`), a write over the wire is published by its call and again
+// by the queue, and an event about what somebody may call is compared with
+// nothing, so it is said twice and they are asked about twice.
 type SyncServiceServer interface {
+	// Watch is the stream. Its response header is the stream saying it
+	// listens: a write committed after the header is heard, and one committed
+	// before it may not be. So a follower forgets what it held when the header
+	// arrives, and not when the call returns, which may be before roster
+	// listens.
 	Watch(*SyncWatchRequest, grpc.ServerStreamingServer[SyncEvent]) error
 	mustEmbedUnimplementedSyncServiceServer()
 }

@@ -63,7 +63,7 @@ func TestASeedIsNotAWayIn(t *testing.T) {
 			Secret: []byte(vouchtest.CodeBefore(seed)),
 		}.Build())
 		x.NoError(err)
-		x.True(got.GetOk())
+		x.Equal([]string{vouch.KindTotp}, got.GetSatisfied())
 
 		_, err = b.Ungated.Identity().Erase(ctx, app.IdentityRef_builder{Id: id.GetId()}.Build())
 		x.ErrorContains(err, "the only way they can sign in")
@@ -140,10 +140,14 @@ func TestASeedAloneSignsNobodyIn(t *testing.T) {
 		}.Build())
 		x.NoError(err)
 
+		// The next step's code, which the drift window takes. The one above
+		// was right, and a right code is spent by being presented, whatever it
+		// was answered: it is written as used before anything else is decided
+		// (`vouch.Server.claim`).
 		got, err := v.Verify(as, app.VouchVerifyRequest_builder{
 			Who:    app.VouchWho_builder{Id: who.Bytes()}.Build(),
 			Kind:   vouch.KindTotp,
-			Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30)),
+			Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30+1)),
 		}.Build())
 		x.NoError(err)
 		x.False(got.GetOk())

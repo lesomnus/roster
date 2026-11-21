@@ -52,6 +52,8 @@ func NewCmdIssue(c *cmd.Config) *xli.Command {
 			newCmdIssueKey(c),
 			newCmdIssuePassword(c),
 		},
+
+		Handler: xli.RequireSubcommand(),
 	}
 }
 
@@ -132,7 +134,13 @@ func newCmdIssueKey(c *cmd.Config) *xli.Command {
 			}
 			req.DateExpires = expires
 
+			// `default` where none is said, as `key add` and `me issue-key`
+			// call theirs: this sent none, and the server answered that a key
+			// needs a name (#284).
 			name, _ := flg.Find[string](cl, "name")
+			if name == "" {
+				name = "default"
+			}
 			req.Alias = name
 
 			v, err := app.NewApiKeyServiceClient(conn).Issue(ctx, req.Build())
@@ -145,7 +153,7 @@ func newCmdIssueKey(c *cmd.Config) *xli.Command {
 			fmt.Fprintf(os.Stderr,
 				"key %q, allowing %d method(s). This is the only time it is shown.\n",
 				v.GetKey().GetAlias(), len(methods))
-			if w := cmd.Widest(methods); w != "" {
+			if w := cmd.Widest(v.GetToken(), methods); w != "" {
 				fmt.Fprintf(os.Stderr, "\n%s\n", w)
 			}
 

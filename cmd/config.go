@@ -10,16 +10,25 @@ package cmd
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"errors"
 	"fmt"
+	"maps"
+	"net/url"
 	"os"
+	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/config"
+	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/rbac/rbacfile"
 
+	"github.com/lesomnus/roster/server/pd"
 	"github.com/lesomnus/roster/server/prove"
 	// The two engines this app runs on, blank-imported here rather than by
 	// payday so that an app does not carry one it never opens.
@@ -367,7 +376,7 @@ func (c HolderConfig) Trail(ctx context.Context, from Config) (trail.Policy, err
 // moment. A deployment that runs no loops (`spin.lease: none`) has nothing to
 // take turns on, and its policy says so where it is logged.
 func TrailPolicy(ctx context.Context, c Config) (trail.Policy, error) {
-	p, err := c.Audit.Policy()
+	p, err := AuditPolicy(c.Audit)
 	if err != nil {
 		return trail.Policy{}, err
 	}
@@ -378,6 +387,734 @@ func TrailPolicy(ctx context.Context, c Config) (trail.Policy, error) {
 	}
 
 	return p, nil
+}
+
+// AuditPolicy is `audit:` as roster reads it: refused where it cannot be
+// meant ([AuditMeant]), then payday's policy, with one thing a block says
+// read as what it says.
+//
+// # A kind's block that names no window keeps the deployment's
+//
+// payday reads a kind's block as a window of its own unless the block says a
+// floor (`config.AuditKeepConfig.window`), and a window with nothing in it is
+// *for ever*. So `by: {holder: {content: fields}}` beside `retain: 2160h`
+// kept every line about a person for good while the rest left, and the policy
+// said `holder: forever` (#280) -- where the same block with a `min:` beside
+// its content kept the deployment's window. What such a block says is how
+// much of a write a line keeps, which is [config.AuditConfig.Contents]'s to
+// read and payday's own comment calls best said by kind; it says nothing of
+// how long. The kind is left to the deployment's window here, and
+// `profile: forever` is how a block says for ever.
+//
+// Every reading of the policy in this binary goes through this, so that a
+// pass, a check of the rows and a command at the box cannot disagree about
+// one kind's window.
+func AuditPolicy(a config.AuditConfig) (trail.Policy, error) {
+	if err := AuditMeant(a); err != nil {
+		return trail.Policy{}, err
+	}
+
+	p, err := a.Policy()
+	if err != nil {
+		return trail.Policy{}, err
+	}
+	for name, v := range a.By {
+		if windowed(v) {
+			continue
+		}
+		if d, err := trail.DomainOf(name); err == nil {
+			delete(p.By, d)
+		}
+	}
+
+	return p, nil
+}
+
+// windowed answers whether a kind's block says anything of how long: a
+// profile, or either clock, or that no copy is kept.
+func windowed(v config.AuditKeepConfig) bool {
+	return v.Profile != "" || v.Retain != 0 || v.Discard || v.Destroy != 0
+}
+
+// trailsOwn is the kinds the schema registers for the trail's own tables: the
+// trail, the outbox, the archive's account, the erasures owed and a row's
+// seal. No line of the trail is about a row of one -- nothing records a write
+// to them -- so a block under `audit.by` for one is read by nothing.
+//
+// Written down, and held to the generated recorder by
+// `TestWhatAKindsBlockMaySayFollowsFromWhatTheTrailHoldsOfIt`, which fails
+// for a kind the schema adds that the trail holds no lines about.
+var trailsOwn = []pdid.Domain{pd.AuditDomain, pd.OutboxDomain, pd.ArchivedDomain, pd.OwedDomain, pd.RowSealDomain}
+
+// AuditMeant refuses an `audit:` block that cannot be meant.
+//
+// # Why roster refuses what payday reads
+//
+// The block is payday's, and so is what reads it (`config.AuditConfig`,
+// `trail.Policy`): what each of these comes to is decided there, and each is
+// payday's to mend. What is roster's is the file a deployment starts from.
+// Every block refused here started, ran, and did something other than what
+// it says, with nothing anywhere to say so -- the shape a `control:` block
+// with no database had (#334), and a file that said `allow_general_writes`
+// (#351). It is refused for their reason, where they are: before anything is
+// opened, in a sentence that names the key and says what to write instead.
+//
+// # Two sorts
+//
+// **Nothing reads it.** The setting is taken and changes nothing, so the file
+// believes something the deployment does not do: `discard` with no `retain`,
+// a kind's block that says nothing, `every` with no window, `hear_within`
+// with no witness, a time that is less than none, and a block for one of the
+// trail's own tables.
+//
+// **Two things that cannot both be meant.** Each is read, and what comes of
+// the pair is what neither says: `destroy` with no `retain`, which keeps a
+// row in the database for ever; a discard beside a digest key, which makes a
+// finding of every row nobody has written since; and a `store:` witness
+// inside the archive it exists to be out of reach of.
+//
+// # What it leaves, which looked the same and is read
+//
+// `checkpoints.key`, `.dir` and `.trust` with no archive: `trail prune --to`,
+// and `--in` of `purge`, `verify` and `accept`, name the archive of one run
+// for a deployment that names none, and that archive is signed and
+// checkpointed by what these say. `min`: roster's tenants answer holds and
+// no windows, so a floor raises nobody's answer, but it is still what the
+// deployment's own windows are held to where it comes up, and a window under
+// it is refused there. `every` with no window, where a witness is named and
+// `hear_within` is not: twice `every` is how long that witness may go
+// without hearing.
+//
+// What payday refuses already is left to it, and a kind this app does not
+// have is passed over here so that its refusal, which lists the kinds, is the
+// one that is read.
+func AuditMeant(a config.AuditConfig) error {
+	type block struct {
+		config.AuditKeepConfig
+
+		at    string
+		kind  pdid.Domain
+		named bool
+	}
+
+	blocks := []block{{at: "audit", AuditKeepConfig: config.AuditKeepConfig{
+		Profile: a.Profile, Retain: a.Retain, Discard: a.Discard, Destroy: a.Destroy, Min: a.Min, Content: a.Content,
+	}}}
+	for _, name := range slices.Sorted(maps.Keys(a.By)) {
+		d, err := trail.DomainOf(name)
+		if err != nil {
+			continue
+		}
+
+		blocks = append(blocks, block{at: "audit.by." + name, AuditKeepConfig: a.By[name], kind: d, named: true})
+	}
+
+	// A time that is less than none. payday asks each clock whether it is
+	// more than nothing, so a negative one is read as one nobody wrote.
+	negative := func(key string, v time.Duration, read string) error {
+		if v >= 0 {
+			return nil
+		}
+
+		return fmt.Errorf("%s: %s is less than no time, and is read as if nothing were written: %s. "+
+			"write how long, or take it out", key, v, read)
+	}
+	for _, b := range blocks {
+		for _, v := range []struct {
+			key  string
+			v    time.Duration
+			read string
+		}{
+			{b.at + ".retain", b.Retain, "its rows stay in the database for ever"},
+			{b.at + ".destroy", b.Destroy, "its rows are kept for ever"},
+			{b.at + ".min.retain", b.Min.Retain, "there is no floor"},
+			{b.at + ".min.destroy", b.Min.Destroy, "there is no floor"},
+		} {
+			if err := negative(v.key, v.v, v.read); err != nil {
+				return err
+			}
+		}
+	}
+	if err := negative("audit.every", a.Every, "the policy is applied once a day"); err != nil {
+		return err
+	}
+	if err := negative("audit.checkpoints.hear_within", a.Checkpoints.HearWithin,
+		"a checkpoint may go unheard for twice audit.every"); err != nil {
+		return err
+	}
+
+	digests := strings.TrimSpace(a.Digest.Key) != ""
+	on := false
+	for _, b := range blocks {
+		if b.named {
+			if slices.Contains(trailsOwn, b.kind) {
+				return fmt.Errorf("%s: no line of the trail is about a row of this kind, which is one of the trail's own tables, "+
+					"so nothing reads a window, a floor or a content for it. take the block out: what the trail itself keeps is "+
+					"audit.retain and audit.destroy, and the access record is audit.by.access", b.at)
+			}
+			if b.AuditKeepConfig == (config.AuditKeepConfig{}) {
+				// payday reads this as the kind kept for ever.
+				return fmt.Errorf("%s: the block says nothing, and a kind is named to say how its window, its floor or its "+
+					"content differs. write one of them (profile: forever keeps the kind for ever), or take the block out", b.at)
+			}
+		}
+
+		// The two clocks as payday reads them, with what the profile fills
+		// in. A profile it does not have is its own to refuse.
+		k := trail.Keep{Retain: b.Retain, Destroy: b.Destroy}
+		if b.Profile != "" {
+			v, err := trail.NamedProfile(b.Profile)
+			if err != nil {
+				on = true
+
+				continue
+			}
+
+			k = v.Over(k)
+		}
+		on = on || k.Retain > 0
+
+		// A kind's block is the whole of its window, which is the half of
+		// these two that is easy to write by mistake: `by.holder.discard`
+		// under a deployment's `retain` reads as that kind discarded on the
+		// deployment's clock, and is that kind kept for ever.
+		whole := ""
+		if b.named {
+			whole = " A kind's block is the whole of its window, and does not take audit.retain."
+		}
+		if b.Discard && k.Retain <= 0 {
+			return fmt.Errorf("%[1]s.discard: says a row leaves the database with no copy kept, and %[1]s.retain names no "+
+				"window for it to leave after -- so nothing leaves, and nothing reads discard.%[2]s "+
+				"write %[1]s.retain, or take discard out", b.at, whole)
+		}
+		if k.Destroy > 0 && k.Retain <= 0 {
+			return fmt.Errorf("%[1]s.destroy: says a row exists no longer than this, and %[1]s.retain names no window, which "+
+				"keeps a row in the database for ever: the two cannot both be meant. What comes of them is the second -- "+
+				"nothing leaves the database, and only what is in the archive already, moved there by hand or under an "+
+				"earlier window, is destroyed.%[2]s "+
+				"write %[1]s.retain, how long a row stays in the database before the archive has it, or take destroy out", b.at, whole)
+		}
+
+		// A discard beside a digest key. A pass carries a digest forward out
+		// of a chunk of the archive it is about to destroy, and out of
+		// nothing else (`trail.pass.carry`), so a line discarded from the
+		// database takes with it the one thing a check of the rows reads. The
+		// access record's lines keep no digest, and are no part of this.
+		if b.Discard && digests && !(b.named && b.kind == pd.AccessDomain) {
+			return fmt.Errorf("%[1]s.discard with audit.digest.key: a pass that discards a line of the trail carries its digest "+
+				"nowhere, so each row nobody wrote since its window would be found not-on-trail by `roster trail rows` -- "+
+				"what a row added past the servers looks like, and a finding for every row is one nobody reads. "+
+				"keep the lines, with audit.archive and %[1]s.destroy in place of discard, or take audit.digest.key out", b.at)
+		}
+	}
+
+	heard := len(a.Checkpoints.Witnesses) > 0
+	if a.Every > 0 && !on && !(heard && a.Checkpoints.HearWithin == 0) {
+		return errors.New("audit.every: says how often the policy is applied, and nothing names a window -- no audit.retain, " +
+			"no audit.profile that has one, none under audit.by -- so no pass runs and nothing reads every. " +
+			"write a window, or take every out")
+	}
+	if a.Checkpoints.HearWithin > 0 && !heard {
+		return errors.New("audit.checkpoints.hear_within: says how long the newest checkpoint may go unheard, and " +
+			"audit.checkpoints.witnesses names nobody to hear it, so nothing reads it. name a witness, or take hear_within out")
+	}
+
+	// A `store:` witness in the archive's own directory. The manual says a
+	// witness on the archive's disk is none; this is the one case of that a
+	// path can show.
+	if a.Archive != "" {
+		for _, w := range a.Checkpoints.Witnesses {
+			dir, ok := strings.CutPrefix(strings.TrimSpace(w), "store:")
+			if !ok || dir == "" {
+				continue
+			}
+			if within(a.Archive, dir) {
+				return fmt.Errorf("audit.checkpoints.witnesses: %s is inside audit.archive (%s). A witness hears each checkpoint "+
+					"somewhere the archive's credentials do not reach, and this one goes wherever the archive goes: the two "+
+					"cannot both be meant. name a directory of its own, on another volume, or `log:`", strings.TrimSpace(w), a.Archive)
+			}
+		}
+	}
+
+	return nil
+}
+
+// Meant refuses a file a deployment starts from whose settings cannot be
+// meant, as [AuditMeant] does an `audit:` block and for its reason: each of
+// these started, and did something other than what the file says, with
+// nothing to say so. Asked by [Build] before anything is opened, so a command
+// at the box is refused the same file `serve` is; each refusal names the key
+// as the file writes it, and says what would be right.
+func (c Config) Meant() error {
+	for _, v := range []func(Config) error{
+		plainBesideCertificate,
+		certificates,
+		answersNothing,
+		lessThanNone,
+		formed,
+		noEffect,
+		severalOverSqlite,
+	} {
+		if err := v(c); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// listeners is the three listener blocks a file may say, by the name it
+// writes each with: the data plane's, the control plane's and the admin
+// listener.
+func (c Config) listeners() []listenerBlock {
+	return []listenerBlock{
+		{"server", c.Server},
+		{"control", c.Control.ServerConfig},
+		{"admin", c.Admin.ServerConfig},
+	}
+}
+
+type listenerBlock struct {
+	key string
+	config.ServerConfig
+}
+
+// plainBesideCertificate refuses a block whose `tls:` asks every caller for a
+// certificate and that opens an `http.addr` beside it.
+//
+// A block's `tls:` is its gRPC listener's alone: the `http` listener beside it
+// is a plain socket and reads nothing of the block (`Server.http`). So the
+// second listener answers, transcoded, the calls of whoever the first refuses
+// at the handshake. Where the certificate is not asked of the caller the
+// `http` listener is plain on purpose, for a proxy in front that holds one,
+// and `serve` says so ([Server.plain]).
+func plainBesideCertificate(c Config) error {
+	for _, b := range c.listeners() {
+		if b.Tls.ClientCAFile == "" || b.Http.Addr == "" {
+			continue
+		}
+
+		return fmt.Errorf("%[1]s.tls.client_ca_file: asks every caller of %[1]s.addr for a certificate, and %[1]s.http.addr "+
+			"beside it is plain -- tls: is the gRPC listener's alone -- so it would answer whoever the first keeps out. "+
+			"take %[1]s.http.addr out, or put a proxy that asks for the certificate in front of it and take client_ca_file out", b.key)
+	}
+
+	return nil
+}
+
+// certificates refuses a listener block's certificate that cannot be read,
+// naming the key: both `cert_file` and `key_file` or neither, and each a file
+// that can be read.
+//
+// payday reads them where the block's gRPC server is made, which `serve` does
+// after the resources are applied, the port is bound and the loops have
+// started, and says `tls: both cert_file and key_file must be set` with
+// nothing to say which of three blocks.
+func certificates(c Config) error {
+	for _, b := range c.listeners() {
+		t := b.Tls
+		if !t.Active() {
+			continue
+		}
+		switch {
+		case t.CertFile == "" && t.KeyFile == "":
+			return fmt.Errorf("%[1]s.tls.cert_file: %[1]s.tls says TLS, and names neither cert_file nor key_file. "+
+				"name both, or take the block out", b.key)
+		case t.CertFile == "":
+			return fmt.Errorf("%[1]s.tls.cert_file: %[1]s.tls.key_file is named, and no certificate beside it. name both, or neither", b.key)
+		case t.KeyFile == "":
+			return fmt.Errorf("%[1]s.tls.key_file: %[1]s.tls.cert_file is named, and no key beside it. name both, or neither", b.key)
+		}
+
+		cert, err := os.ReadFile(t.CertFile)
+		if err != nil {
+			return fmt.Errorf("%s.tls.cert_file: %w", b.key, err)
+		}
+		key, err := os.ReadFile(t.KeyFile)
+		if err != nil {
+			return fmt.Errorf("%s.tls.key_file: %w", b.key, err)
+		}
+		if _, err := tls.X509KeyPair(cert, key); err != nil {
+			return fmt.Errorf("%[1]s.tls.cert_file, %[1]s.tls.key_file: not a certificate and its key: %[2]w", b.key, err)
+		}
+		if t.ClientCAFile != "" {
+			ca, err := os.ReadFile(t.ClientCAFile)
+			if err != nil {
+				return fmt.Errorf("%s.tls.client_ca_file: %w", b.key, err)
+			}
+			if !x509.NewCertPool().AppendCertsFromPEM(ca) {
+				return fmt.Errorf("%s.tls.client_ca_file: %s holds no certificate", b.key, t.ClientCAFile)
+			}
+		}
+	}
+
+	return nil
+}
+
+// answersNothing refuses an `http.addr` that would answer nothing it is there
+// for.
+//
+// The transcoder is mounted only where `http.allow_web` says so, and payday
+// cannot refuse an address without it, since it does not know an app's
+// routes. roster knows its own. `control.http` has no page and no route of
+// its own, so with neither `allow_web` nor `allow_pprof` it answered `404` to
+// everything while the log said it was up; an `admin.http` or a `server.http`
+// that serves a console without `allow_web` served the page and none of the
+// calls the page makes.
+func answersNothing(c Config) error {
+	if c.Control.Serves() && c.Control.Http.Addr != "" && !c.Control.Http.AllowWeb && !c.Control.Http.AllowPprof {
+		return errors.New("control.http.addr: the listener has no page and no route of its own, and with neither " +
+			"control.http.allow_web nor control.http.allow_pprof it answers 404 to everything. turn allow_web on for " +
+			"the control plane's calls over HTTP, or take control.http.addr out: a shell asks control.addr")
+	}
+	for _, v := range []struct {
+		key, page string
+		http      config.HttpConfig
+		dir       string
+	}{
+		{"admin", "admin.console.dir", c.Admin.Http, c.Admin.Console.Dir},
+		{"server", "user_console.dir", c.Server.Http, c.UserConsole.Dir},
+	} {
+		if v.http.Addr == "" || v.dir == "" || v.http.AllowWeb {
+			continue
+		}
+
+		return fmt.Errorf("%[1]s.http.addr: serves the page %[2]s names, and %[1]s.http.allow_web is off, so none of "+
+			"the calls the page makes is answered. turn %[1]s.http.allow_web on, or take %[2]s out", v.key, v.page)
+	}
+
+	return nil
+}
+
+// lessThanNone refuses a duration or a count below nought, wherever the file
+// holds one.
+//
+// Each is read as if nothing were written: payday and roster both ask a clock
+// whether it is more than nothing, so `holder.forget_after: -720h` was never,
+// `consent.keep` negative for good, `stream.recheck` negative five minutes,
+// and a negative `server.keepalive.time` gave back gRPC's two hours. [AuditMeant]
+// refuses the same of `audit:` (#398) and [ScimConfig.Meant] of
+// `scim.concurrency` (#429), and this is the rest of the file, found by
+// walking it as the loader does so that the next key added is held too. What
+// nought means is still what each key's comment says.
+//
+// [clocksLeft] is what it leaves, with why.
+func lessThanNone(c Config) error {
+	var walk func(v reflect.Value, at string) error
+	walk = func(v reflect.Value, at string) error {
+		if _, ok := clocksLeft[at]; ok {
+			return nil
+		}
+
+		switch v.Kind() {
+		case reflect.Struct:
+			t := v.Type()
+			for i := range t.NumField() {
+				f := t.Field(i)
+				if !f.IsExported() {
+					continue
+				}
+				name, opts, _ := strings.Cut(f.Tag.Get("yaml"), ",")
+				if name == "-" {
+					continue
+				}
+				key := at
+				if opts != "inline" {
+					if name == "" {
+						name = strings.ToLower(f.Name)
+					}
+					key = strings.TrimPrefix(at+"."+name, ".")
+				}
+				if err := walk(v.Field(i), key); err != nil {
+					return err
+				}
+			}
+
+		case reflect.Map:
+			keys := v.MapKeys()
+			slices.SortFunc(keys, func(a, b reflect.Value) int { return strings.Compare(a.String(), b.String()) })
+			for _, k := range keys {
+				if err := walk(v.MapIndex(k), at+"."+k.String()); err != nil {
+					return err
+				}
+			}
+
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			if v.Int() >= 0 {
+				return nil
+			}
+			if v.Type() == reflect.TypeFor[time.Duration]() {
+				return fmt.Errorf("%s: %s is less than no time, and is read as if nothing were written. "+
+					"write how long, or take it out", at, time.Duration(v.Int()))
+			}
+
+			return fmt.Errorf("%s: %d is less than none, and is read as if nothing were written. "+
+				"write how many, or take it out", at, v.Int())
+
+		case reflect.Float32, reflect.Float64:
+			if v.Float() >= 0 {
+				return nil
+			}
+
+			return fmt.Errorf("%s: %v is less than none, and is read as if nothing were written. "+
+				"write how many, or take it out", at, v.Float())
+		}
+
+		return nil
+	}
+
+	return walk(reflect.ValueOf(c), "")
+}
+
+// clocksLeft is what [lessThanNone] does not walk, and why.
+var clocksLeft = map[string]string{
+	// payday reads it, and gives less than none a meaning: a call that came
+	// with no deadline is given none. The manual says so.
+	"server.timeout":  "payday's: no deadline at all",
+	"control.timeout": "payday's: no deadline at all",
+	"admin.timeout":   "payday's: no deadline at all",
+
+	// What reads it is the telemetry library, which holds its own block to
+	// its own rules.
+	"otel": "the telemetry library's",
+}
+
+// formed refuses a value that has a form and is not of it, each by its key.
+// Each started, and was found at the first request that read it or never.
+func formed(c Config) error {
+	if err := c.Host.Meant(); err != nil {
+		return err
+	}
+	if err := dirThere("user_console.dir", c.UserConsole.Dir); err != nil {
+		return err
+	}
+	if err := dirThere("admin.console.dir", c.Admin.Console.Dir); err != nil {
+		return err
+	}
+
+	// payday matches an origin against what a browser sends, which is a
+	// scheme and a host and nothing else, so one written with a path or with
+	// no scheme matches no browser's.
+	for _, b := range c.listeners() {
+		for _, o := range b.Http.Origins {
+			if o == "*" {
+				continue
+			}
+			u, err := url.Parse(o)
+			if err == nil && u.Scheme != "" && u.Host != "" && u.Path == "" && u.User == nil && u.RawQuery == "" && u.Fragment == "" {
+				continue
+			}
+
+			return fmt.Errorf("%s.http.origins: %q is no origin, which is a scheme and a host and nothing after them, "+
+				"as http://localhost:5173; a browser sends nothing else, so it would match none", b.key, o)
+		}
+	}
+
+	// Two keys of one name: the second replaced the first under the name new
+	// seeds are sealed with, so a seed sealed with the first could not be
+	// opened. The name is said and neither value.
+	names := map[string]bool{}
+	for _, v := range c.Vouch.Keys {
+		name, _, ok := strings.Cut(v, ":")
+		if !ok || name == "" {
+			// [vouch.NewKeyring] refuses it, in words of its own.
+			continue
+		}
+		if names[name] {
+			return fmt.Errorf("vouch.keys: two keys are named %q, and a seed names the key it is sealed with. "+
+				"name each key once", name)
+		}
+		names[name] = true
+	}
+
+	for _, v := range []struct {
+		serves bool
+		meant  func() error
+	}{
+		{c.Account.Serves(), c.Account.Meant},
+		{c.Ldap.Serves(), c.Ldap.Meant},
+		{c.Login.Serves(), c.Login.Meant},
+	} {
+		if !v.serves {
+			continue
+		}
+		if err := v.meant(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// noEffect refuses a setting that is written down and cannot take effect, for
+// the reason [Build] refuses `control:` with no database and
+// `user_console.dir` with no sign-in: an address written down and not served
+// is worse than one that is refused, because it is a port somebody believes is
+// there. Each names both keys.
+//
+// A consumer's block said with no address is not among them: `roster ldap
+// serve` and the others read the same block.
+func noEffect(c Config) error {
+	if c.Admin.Console.Dir != "" && !c.Control.Serves() {
+		return errors.New("admin.console.dir: the admin console signs an operator in against the control plane, and " +
+			"control.db.driver names no database, so no listener serves it. name a control plane, or take the page out")
+	}
+	if c.Admin.Console.Dir != "" && c.Admin.Http.Addr == "" {
+		return errors.New("admin.console.dir: the page is served by admin.http.addr, which names no listener, so " +
+			"nothing serves it. name admin.http.addr, or take the page out")
+	}
+	if c.UserConsole.Dir != "" && c.SignIn.Enabled && c.Server.Http.Addr == "" {
+		return errors.New("user_console.dir: the page is served by server.http.addr, which names no listener, so " +
+			"nothing serves it. name server.http.addr, or take the page out")
+	}
+	for _, b := range c.listeners() {
+		if b.Http.Addr == "" {
+			if b.Http.AllowWeb {
+				return fmt.Errorf("%[1]s.http.allow_web: says what %[1]s.http.addr answers, and it names no listener. "+
+					"name %[1]s.http.addr, or take allow_web out", b.key)
+			}
+			if len(b.Http.Origins) > 0 {
+				return fmt.Errorf("%[1]s.http.origins: says which pages may call %[1]s.http.addr, and it names no listener. "+
+					"name %[1]s.http.addr, or take origins out", b.key)
+			}
+		}
+		if b.Limit.Burst != 0 && !b.Limit.Limits() {
+			return fmt.Errorf("%[1]s.limit.burst: says how many calls may arrive at once before %[1]s.limit.rate holds them, "+
+				"and no rate is said, so nothing is limited. write %[1]s.limit.rate, or take burst out", b.key)
+		}
+	}
+	if c.Policy.Refresh != 0 && c.Policy.File == "" {
+		return errors.New("policy.refresh: says how often policy.file is read again, and no file is named. " +
+			"name policy.file, or take refresh out")
+	}
+	planes := []struct {
+		key   string
+		watch config.WatchConfig
+	}{{"watch", c.Watch}}
+	if c.Control.Serves() {
+		planes = append(planes, struct {
+			key   string
+			watch config.WatchConfig
+		}{"control.watch", c.Control.watch(c.Watch)})
+	}
+	for _, v := range planes {
+		if v.watch.Dsn == "" || (v.watch.Broker != config.BrokerMemory && v.watch.Broker != config.BrokerNone) {
+			continue
+		}
+		broker := v.key + ".broker"
+		if v.key == "control.watch" && c.Control.Watch.Broker == "" {
+			broker = "watch.broker, which control.watch.broker took as it is empty,"
+		}
+
+		return fmt.Errorf("%[1]s.dsn: says where the broker connects, and %[2]s is %[3]q, which connects nowhere. "+
+			"take %[1]s.dsn out, or name a broker that reads it (postgres)", v.key, broker, v.watch.Broker)
+	}
+
+	return nil
+}
+
+// severalOverSqlite refuses a lease of several processes over a plane whose
+// database is SQLite.
+//
+// SQLite is a file on one machine, so several processes on it are several
+// deployments, each with operators, keys and sessions of its own. payday asks
+// the data plane's database of a lease only where `spin.dsn` names none, and
+// never asks the control plane's, so a lease of several stood over a SQLite
+// control plane always and over a SQLite data plane whose lease was kept
+// elsewhere.
+func severalOverSqlite(c Config) error {
+	switch c.Spin.Lease {
+	case "", config.LeaseLocal, config.LeaseNone:
+		return nil
+	}
+
+	for _, v := range []struct {
+		key string
+		db  config.DbConfig
+	}{
+		{"db", c.Db},
+		{"control.db", c.Control.Db},
+	} {
+		if v.db.Dialect != config.DialectSQLite && !strings.HasPrefix(v.db.Driver, "sqlite") {
+			continue
+		}
+
+		return fmt.Errorf("%[1]s.driver: %[2]q is a database on one machine, and spin.lease is %[3]q, which shares the "+
+			"loops among several processes: each would be a deployment of its own, with its own operators, keys and "+
+			"sessions. run one process (spin.lease: local), or put %[1]s on a database every process reaches", v.key, v.db.Driver, c.Spin.Lease)
+	}
+
+	return nil
+}
+
+// webOrigin refuses a URL a browser is sent to, or that is dialled, that has
+// no scheme of the web's or no host: `hydra:4445` was taken, logged, and
+// failed at the first call. Empty is left to whatever reads it.
+//
+// And one that carries a credential between `://` and `@`. An address is
+// printed by `roster config` as the file writes it and logged where an app
+// starts, so it is no place for one; a credential for Hydra's admin API goes
+// in `login.hydra.header`, whose values are never printed. The address is not
+// said back.
+func webOrigin(key, v string) error {
+	if v == "" {
+		return nil
+	}
+	authority := v
+	if _, rest, ok := strings.Cut(v, "://"); ok {
+		authority = rest
+	}
+	if i := strings.IndexAny(authority, "/?#"); i >= 0 {
+		authority = authority[:i]
+	}
+	if strings.Contains(authority, "@") {
+		return fmt.Errorf("%s: the address carries a credential before its host, and an address is printed and logged "+
+			"as it is written. write it without one; a credential for Hydra's admin API goes in login.hydra.header, "+
+			"whose values are never printed", key)
+	}
+	u, err := url.Parse(v)
+	if err == nil && (u.Scheme == "http" || u.Scheme == "https") && u.Host != "" {
+		return nil
+	}
+
+	return fmt.Errorf("%s: %q is no URL with a scheme of http or https and a host, as https://login.example.com", key, v)
+}
+
+// dirThere refuses a page's directory that is not there: it started, and
+// served nothing. Empty is no page, which is what each key says.
+func dirThere(key, dir string) error {
+	if dir == "" {
+		return nil
+	}
+	st, err := os.Stat(dir)
+	if err == nil && st.IsDir() {
+		return nil
+	}
+	if err == nil {
+		return fmt.Errorf("%s: %s is not a directory. name the directory the page was built into, or take it out for no page", key, dir)
+	}
+
+	return fmt.Errorf("%s: %w. name the directory the page was built into, or take it out for no page", key, err)
+}
+
+// within answers whether `dir` is `root` or under it, as far as their paths
+// say.
+func within(root, dir string) bool {
+	x, err := filepath.Abs(root)
+	if err != nil {
+		return false
+	}
+	y, err := filepath.Abs(dir)
+	if err != nil {
+		return false
+	}
+
+	rel, err := filepath.Rel(x, y)
+	if err != nil {
+		return false
+	}
+
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)))
 }
 
 // VouchConfig is what checking secrets needs beyond the rows.
@@ -723,7 +1460,8 @@ func (c ControlConfig) Serves() bool { return c.Db.Driver != "" }
 // Answers reports whether the control plane is reachable over the network.
 func (c ControlConfig) Answers() bool { return c.Serves() && c.Addr != "" }
 
-// Said reports whether this block says anything beyond which database it is on.
+// Said reports whether this block says anything beyond which kind of database
+// it is on.
 //
 // It is the other half of [ControlConfig.Serves], and it exists because that
 // one reads `control.db.driver` **and nothing else**. That is the right field
@@ -735,10 +1473,17 @@ func (c ControlConfig) Answers() bool { return c.Serves() && c.Addr != "" }
 // Whatever the block said rather than its address alone, because
 // `control.http.addr`, `control.watch.broker` and every limit under it are as
 // inert without a database as `control.addr` is. Compared against the zero
-// value with the database taken out, so that the next field added here does
-// not have to be remembered.
+// value with the driver taken out, so that the next field added here does not
+// have to be remembered.
+//
+// The **driver** and not the whole `db` block, which is what was taken out.
+// [ControlConfig.Serves] reads the one field, so the rest of `db` is as inert
+// without it as an address is -- and is what somebody writes first: a block
+// that says where the database is (`db.dsn`) with `driver:` misspelled, or
+// left to a default it has not got, said nothing by this reading and started
+// a deployment that believed every caller (#276).
 func (c ControlConfig) Said() bool {
-	c.Db = config.DbConfig{}
+	c.Db.Driver = ""
 
 	return !reflect.DeepEqual(c, ControlConfig{})
 }

@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/site.proto.
  */
 export const file_app_site: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvc2l0ZS5wcm90bxIGcm9zdGVyIpQECgRTaXRlEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESDQoFYWxpYXMYBCABKAkSDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEigKBmxhYmVscxgHIAMoCzIYLnJvc3Rlci5TaXRlLkxhYmVsc0VudHJ5EjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOpQByvwVUxICEAEaLBIEcGFnZRoKCgZ0ZW5hbnQQAhoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGh8SBHNsdWcaCQoFYWxpYXMQBBoKCgZ0ZW5hbnQQAjABirsWOQgHMjMKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBnRlbmFudCAUKGQ6AEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvc2l0ZS5wcm90bxIGcm9zdGVyIrQECgRTaXRlEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESFQoFYWxpYXMYBCABKAlCBqrBFgIYABIUCgRuYW1lGAUgASgJQgaqwRYCGAASFAoEZGVzYxgGIAEoCUIGqsEWAhgAEjAKBmxhYmVscxgHIAMoCzIYLnJvc3Rlci5TaXRlLkxhYmVsc0VudHJ5QgaqwRYCGAASOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6lAHK/BVTEgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxY5CAcyMwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGdGVuYW50IBQoZDoAQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Site is where a deployment of the product runs, and the boundary everything
@@ -30,9 +30,15 @@ export const file_app_site: GenFile = /*@__PURE__*/
  * every site in it.
  *
  * It is a row rather than a label because things point at it and because it has
- * a name people say. `labels` is what an administrative grant matches on --
- * "every site in Asia" is a selector over these, resolved to a set of sites by
- * this app rather than by payday.
+ * a name people say.
+ *
+ * # What is said of one is said when it is made
+ *
+ * A site has `Add` and `Erase` and no write between them, and no port serves
+ * a general one (`cmd/serve.go`). So over the wire its alias, its name, its
+ * description and its labels are what `Add` was told. Changing one is the
+ * deployment's, at the box (`roster site patch`); or the site is erased and
+ * made again, which takes what is in it out first.
  *
  * @generated from message roster.Site
  */
@@ -51,6 +57,10 @@ export type Site = Message<"roster.Site"> & {
    * Unique within the tenant, which is what makes `@contoso/seoul` a name
    * somebody can type into a configuration file.
    *
+   * Not personal, this, the name, the description and the labels: a site is
+   * a place of the tenant's, and nobody is written into them, as into a
+   * tenant's (`tenant.proto`).
+   *
    * @generated from field: string alias = 4;
    */
   alias: string;
@@ -66,9 +76,12 @@ export type Site = Message<"roster.Site"> & {
   desc: string;
 
   /**
-   * What a grant selects on. `{"region": "asia"}` and a grant matching it is
-   * the design's `admin_scope`; resolving the match to a set of sites is this
-   * app's, since payday's grant carries identifiers rather than selectors.
+   * Whatever the deployment keeps about a site that the schema does not name.
+   *
+   * Nothing reads them. They were to be what a grant selects on -- a grant
+   * over `{"region": "asia"}`, the design's `admin_scope` -- and no grant
+   * does: a binding names one site or none (`role.proto`), and nothing
+   * resolves a selector to a set of sites.
    *
    * @generated from field: map<string, string> labels = 7;
    */

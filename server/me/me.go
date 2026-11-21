@@ -23,6 +23,8 @@
 package me
 
 import (
+	"bytes"
+	"cmp"
 	"context"
 	"slices"
 	"strings"
@@ -38,6 +40,8 @@ import (
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 
+	"github.com/protobuf-orm/ent/dialect"
+	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 
 	"github.com/lesomnus/roster/internal/ent"
@@ -64,6 +68,10 @@ import (
 // Given rather than computed, for the reason `server/core`'s rules are: `cmd`
 // already reads it, and a second implementation of one question is two that
 // drift.
+//
+// The methods are in the order of their spelling. The sites are each said
+// once, in the order of their identifiers, which is the order they were made
+// in.
 type Held func(ctx context.Context, who pdid.Id) (methods []string, sites []pdid.Id, every bool, err error)
 
 // Own is what somebody may call about their own account and nobody else's:
@@ -148,7 +156,7 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 		Id:     f.Actor.Bytes(),
 		Tenant: f.Tenant.Bytes(),
 		Alias:  v.Alias,
-		Name:   v.Name,
+		Name:   called(v),
 	}
 
 	if res.Emails, err = s.emails(ctx, f.Actor); err != nil {
@@ -205,6 +213,8 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 			res.Own = meet(theirs, f.Grant)
 		}
 
+		// Each site once, in the order of their identifiers: [Held] says it
+		// so, for this and for `HolderService.Reaches`.
 		res.EverySite = every
 		for _, k := range sites {
 			res.Sites = append(res.Sites, k.Bytes())
@@ -214,11 +224,56 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 	return res.Build(), nil
 }
 
-// emails is every address roster holds for them, verified or not.
+// called is what somebody is called now.
+//
+// A holder carries three things that look like a name
+// (`holder_svc.ext.proto`): the alias; `name`, which is set when the row is
+// added and which nothing may change; and the profile's display name, which is
+// what every write that renames somebody writes -- `HolderService/Update`, a
+// tenant's profile setting filling a blank, a directory. This answered the
+// second, and a front door fills a token's `name` from here: somebody renamed
+// went on being called what they were added as, and somebody added by their
+// alias alone was called nothing however their profile was filled since.
+//
+// So it is the display name where there is one, and what they were added as
+// where there is none -- which is how a directory is answered the same
+// question (`scim/user.go`).
+func called(v *ent.Holder) string {
+	if n := v.Profile.GetDisplayName(); n != "" {
+		return n
+	}
+
+	return v.Name
+}
+
+// emails is every address roster holds for them, verified or not: the ones
+// somebody proved in the order they were proved, and then the rest in the
+// order they were written.
 //
 // Unverified ones are included rather than filtered: "we have this and nobody
 // has confirmed it" is a different fact from not having it, and a page that
 // wants to prompt somebody needs the difference.
+//
+// # Why there is an order
+//
+// The first proved address here is the one a front door says is theirs --
+// `email` in a token (`login/claims.go`) -- and a relying party keys accounts
+// on that. No order was asked for, so it was whichever the store returned
+// first, which on SQLite is the one that sorts first: proving a second address
+// could change the claim under a product that had an account by the first.
+//
+// *Proved first* is a rule that stays where it was put. Proving another
+// address never moves it, and it is the next one proved only once the first is
+// erased. Two proved at one instant are in the order of their rows'
+// identifiers, which is the order they were written in, so that there is one
+// answer. What is read is `date_verified`, and a second proof of an address
+// leaves that as it was -- a link confirmed again, a directory vouching at each
+// sign-in (`server/core`, `Email.Confirm` and `Email.Attest`) -- so proving
+// the first one again does not move it either. An address erased and written
+// again is another row, and its proof a new one.
+//
+// Sorted here rather than by the query, because where a null sorts is the
+// database's to say and SQLite and PostgreSQL say opposite things.
 func (s *Server) emails(ctx context.Context, who pdid.Id) ([]*app.MeEmail, error) {
 	vs, err := s.db.Email.Query().
 		Where(email.DateErasedIsNil(), email.HasHolderWith(holder.IdEQ(who.Uuid()))).
@@ -226,6 +281,20 @@ func (s *Server) emails(ctx context.Context, who pdid.Id) ([]*app.MeEmail, error
 	if err != nil {
 		return nil, err
 	}
+	slices.SortFunc(vs, func(a, b *ent.Email) int {
+		switch {
+		case a.DateVerified != nil && b.DateVerified != nil:
+			if c := a.DateVerified.Compare(*b.DateVerified); c != 0 {
+				return c
+			}
+		case a.DateVerified != nil:
+			return -1
+		case b.DateVerified != nil:
+			return 1
+		}
+
+		return bytes.Compare(a.Id[:], b.Id[:])
+	})
 
 	out := make([]*app.MeEmail, 0, len(vs))
 	for _, v := range vs {
@@ -240,11 +309,18 @@ func (s *Server) emails(ctx context.Context, who pdid.Id) ([]*app.MeEmail, error
 	return out, nil
 }
 
-// teams is the teams they are in, each with the site it is in.
+// teams is the teams they are in, each with the site it is in, in the order of
+// their sites' aliases and then of their own.
 //
 // The site travels with the team because a team's name is unique within one and
 // means nothing without it: a page showing "operators" for somebody in two
 // sites would be showing one word for two different groups of people.
+//
+// And in one order, as `groups` and `emails` are. None was asked for, so each
+// reader got the store's -- the order somebody's places were written in, on
+// SQLite -- and one that wanted the same answer twice sorted for itself, as a
+// front door does for a token. A team of no site comes before the ones that
+// have one, and a team's identifier settles what is left.
 func (s *Server) teams(ctx context.Context, who pdid.Id) ([]*app.MeTeam, error) {
 	vs, err := s.db.TeamMembership.Query().
 		Where(
@@ -284,6 +360,13 @@ func (s *Server) teams(ctx context.Context, who pdid.Id) ([]*app.MeTeam, error) 
 
 		out = append(out, m.Build())
 	}
+	slices.SortFunc(out, func(a, b *app.MeTeam) int {
+		return cmp.Or(
+			strings.Compare(a.GetSiteAlias(), b.GetSiteAlias()),
+			strings.Compare(a.GetAlias(), b.GetAlias()),
+			bytes.Compare(a.GetId(), b.GetId()),
+		)
+	})
 
 	return out, nil
 }
@@ -361,9 +444,16 @@ func (s *Server) groups(ctx context.Context, who pdid.Id) ([]*app.MeGroup, error
 // through it reads their whole tenant's and filters -- the leak D17 named and
 // D23 exists to remove. This one takes no subject, so there is nothing to point
 // at anybody else.
+//
+// In the order they were made, and by identifier where two were made in one
+// instant: the order `HolderService.SignsIn` answers an administrator in,
+// which is every list's. None was asked for, so it was the store's, where
+// [Server.teams] and [Server.emails] each say theirs (#279). The same for
+// [Server.credentials] and [Server.keys].
 func (s *Server) identities(ctx context.Context, who pdid.Id) ([]*app.SignInIdentity, error) {
 	vs, err := s.db.Identity.Query().
 		Where(identity.DateErasedIsNil(), identity.HasHolderWith(holder.IdEQ(who.Uuid()))).
+		Order(identity.ByDateCreated(), identity.ById()).
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -392,6 +482,7 @@ func (s *Server) identities(ctx context.Context, who pdid.Id) ([]*app.SignInIden
 func (s *Server) credentials(ctx context.Context, who pdid.Id) ([]*app.SignInCredential, error) {
 	vs, err := s.db.Credential.Query().
 		Where(credential.DateErasedIsNil(), credential.HasHolderWith(holder.IdEQ(who.Uuid()))).
+		Order(credential.ByDateCreated(), credential.ById()).
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -430,6 +521,7 @@ func (s *Server) credentials(ctx context.Context, who pdid.Id) ([]*app.SignInCre
 func (s *Server) keys(ctx context.Context, who pdid.Id) ([]*app.SignInKey, error) {
 	vs, err := s.db.ApiKey.Query().
 		Where(apikey.DateErasedIsNil(), apikey.HasHolderWith(holder.IdEQ(who.Uuid()))).
+		Order(apikey.ByDateCreated(), apikey.ById()).
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -508,22 +600,6 @@ func (s *Server) Unlink(ctx context.Context, req *app.MeUnlinkRequest) (*app.MeU
 
 	return app.MeUnlinkResponse_builder{}.Build(), nil
 }
-
-// Link attaches a provider account the caller has just proved they control.
-//
-// The other half of [Server.Unlink], and the half §4 left undrawn. It writes
-// through the **walled** server for `Unlink`'s reason -- so `server/core` runs,
-// and with it the rule that a second identity of one provider for one person is
-// a link that found the wrong row.
-//
-// # It hangs off the frame and never off an argument
-//
-// `f.Actor`, exactly as `SignOutEverywhere` does. There is no field naming
-// whose row this is and there will not be: what makes this method the person's
-// own is the same absence that makes the other three theirs.
-//
-// # And what a refusal must not say
-//
 
 // SignOutEverywhere voids everything issued to the caller before now.
 //
@@ -709,9 +785,9 @@ func meant(me *ent.Holder, confirm string) error {
 }
 
 // declared refuses a row a file owns: it is removed from the file, which is
-// `HolderService.Erase`'s rule -- asked here first, because leaving writes
-// twice and the second write is where the stack would refuse it, after the
-// first had signed it out.
+// `HolderService.Erase`'s rule -- asked here first, among the rules about the
+// person, so that it is said before a proof is spent on a leaving that will
+// be refused ([Server.Depart], [Server.MayLeave]).
 func declared(me *ent.Holder) error {
 	if by, ok := me.Labels[declaredBy]; ok {
 		return status.Errorf(codes.FailedPrecondition,
@@ -724,28 +800,57 @@ func declared(me *ent.Holder) error {
 // erase is what leaving is, once everything has been asked: signed out
 // everywhere, then erased, through the stack and as whoever `ctx` is -- the
 // person themselves.
+//
+// # Both, or neither
+//
+// The two writes are one transaction. The erase is where the stack asks what
+// it asks of any erase, and one of those is a count nothing here can take
+// first: a tenant keeps somebody administering it
+// (`server/core/administered.go`). Made one after the other, the last
+// administrator who asked to leave was refused there -- *give it to somebody
+// else first* -- after the first write had signed them out of everything, the
+// sign-in the call came with included; and they are who has to give it to
+// somebody else. A refusal at the erase, that one or any other, now leaves
+// them as they were.
 func (s *Server) erase(ctx context.Context, me *ent.Holder) (*app.MeLeaveResponse, error) {
 	ref := app.HolderRef_builder{Id: pdid.Id(me.Id).Bytes()}.Build()
+
+	// The stack again, on a transaction of this call's own, which is what an
+	// RPC that writes several rows as one does (`cmd/init.go`): every rule the
+	// two writes meet is the one they met apart.
+	drv, tx, err := dialect.BeginTx(ctx, s.db.Driver())
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	both, err := enttx.Rebind(s.walled, drv)
+	if err != nil {
+		return nil, err
+	}
 
 	// Void first, so that a restore brings the account back and none of the
 	// sign-ins it had: a delegation lives for minutes, and one an operator's
 	// restore found still alive would be a session the person ended. Keys are
 	// not voided by this and are not meant to be (`date_invalidated`); an
 	// erase stops them, and a restore is the operator's decision to start them.
-	if _, err := s.walled.Holder().Invalidate(ctx, app.HolderInvalidateRequest_builder{Ref: ref}.Build()); err != nil {
+	if _, err := both.Holder().Invalidate(ctx, app.HolderInvalidateRequest_builder{Ref: ref}.Build()); err != nil {
 		return nil, err
 	}
 
 	// Then the erase, through the stack and as them, so it is the same erase
 	// an operator's is: the trail says who, the sync stream carries it, and a
 	// declared holder is refused by the rule that refuses an operator.
-	v, err := s.walled.Holder().Erase(ctx, ref)
+	v, err := both.Holder().Erase(ctx, ref)
 	if err != nil {
 		return nil, err
 	}
 	if !v.GetErased() {
 		// Somebody else erased them between the read above and this.
 		return nil, status.Error(codes.NotFound, "there is no such person any more")
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
 	}
 
 	at := time.Now()

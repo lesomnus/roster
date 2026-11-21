@@ -22,12 +22,42 @@
 // # What the loop gets right, and tests
 //
 // Message identifiers: every answer carries its request's, and a connection
-// may have several searches in flight. Abandon stops a search that is still
-// sending. The StartTLS turn writes its response in the clear and the very
+// may have several searches in flight. A request's is one the protocol lets
+// it have, from one to `maxInt` and not that of a search still running, or
+// the connection is ended. Abandon stops a search that is still sending. The StartTLS turn writes its response in the clear and the very
 // next byte is the handshake, which is why nothing here buffers the reader.
 // A critical control this package does not know refuses the operation rather
 // than ignoring it. The client's size and time limits are handed to the
 // handler as a bound and a deadline.
+//
+// # What a message may be
+//
+// As long as a request is and no longer, made of as many elements as a
+// search has, and its filter as deep as one is written: [MaxMessage] and
+// [MaxMessageUnbound], [MaxElements], [MaxFilterDepth], each with its reason
+// beside it. They are this package's, held where it reads, and not the BER
+// library's, whose reader a stranger's bytes do not reach. A message over one
+// is told so and the connection is ended.
+//
+// # What a connection has in flight
+//
+// At most [MaxInFlight] searches, counted in by the loop before each is
+// started, so that the abandon or the StartTLS in the next message finds
+// what it is about; one more is answered `busy`. Before a bind, none: a
+// search is run where it is read. Every write has [WriteTimeout] and a bind
+// has [BindTimeout], so that neither a client that does not read nor a
+// directory that does not answer holds a connection. A bind ends what is in
+// flight before it is processed, and so does the end of the connection: told
+// to stop, and then waited for.
+//
+// # What a listener holds
+//
+// At most [MaxConns] connections, and [MaxConnsPerAddr] of them from one
+// address; one more is closed with nothing said. A connection that has not
+// bound has [UnboundReadTimeout] for each thing it says, where one that has
+// may sit idle. And an accept that fails for a moment is waited out and
+// asked again, so that a process briefly out of descriptors is not a
+// directory gone for good.
 //
 // # What it refuses on the handler's behalf
 //
@@ -46,6 +76,7 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"net/netip"
 	"sync"
 	"time"
 
@@ -65,6 +96,7 @@ const (
 	NoSuchObject                 = 32
 	InvalidCredentials           = 49
 	InsufficientAccessRights     = 50
+	Busy                         = 51
 	UnwillingToPerform           = 53
 )
 
@@ -173,13 +205,22 @@ func (s *Search) Cookie(cookie []byte) { s.cookie = cookie }
 // Handler is what a directory is to this package.
 type Handler interface {
 	// Bind answers a simple bind. On [Success] the connection is bound as
-	// the request's DN until the next bind or the end of the connection; on
-	// anything else it is anonymous.
+	// the request's DN -- or as the name the handler kept, with whatever it
+	// kept of whoever bound ([Conn.Keep]) -- until the next bind, the end of
+	// the connection, or the handler dropping what it kept ([Conn.Drop]); on
+	// anything else it is anonymous. The context ends after [BindTimeout]:
+	// nothing else on the connection is read while a bind is answered.
 	Bind(ctx context.Context, c *Conn, req BindRequest) Result
 
 	// Search writes its results to `w` and returns the result of the whole
-	// operation. The context ends when the client abandons the search or
-	// its time limit passes.
+	// operation. The context ends when the client abandons the search, when
+	// its time limit passes, when the connection binds again, and when the
+	// connection ends.
+	//
+	// On a connection that has not bound it is called in the connection's
+	// own loop, one search at a time, and the next message is not read
+	// until it returns. What a handler has for such a connection is small:
+	// the root DSE, or a refusal.
 	Search(ctx context.Context, c *Conn, req SearchRequest, w *Search) Result
 }
 
@@ -199,30 +240,22 @@ type Server struct {
 	// and an unbound connection cannot read anything a bind guards.
 	RequireTLS bool
 
-	// ReadTimeout is how long a connection may be idle. Zero is
-	// [DefaultReadTimeout].
+	// ReadTimeout is how long a connection that has bound may be idle. Zero
+	// is [DefaultReadTimeout]. One that has not bound has
+	// [UnboundReadTimeout], or this where this is less.
 	ReadTimeout time.Duration
 
 	Log *slog.Logger
 
 	mu    sync.Mutex
 	conns map[*Conn]struct{}
-}
 
-// Serve accepts on `l` until it is closed.
-func (s *Server) Serve(l net.Listener) error {
-	for {
-		nc, err := l.Accept()
-		if err != nil {
-			if errors.Is(err, net.ErrClosed) {
-				return nil
-			}
-
-			return err
-		}
-
-		go s.ServeConn(nc)
-	}
+	// What [Server.Serve] has let in and not seen leave, in all and by where
+	// from; and how many it has turned away since it last said so.
+	open    int
+	from    map[netip.Addr]int
+	refused int
+	said    time.Time
 }
 
 // Close hangs up every connection. The listener is the caller's to close.
@@ -266,10 +299,16 @@ type Conn struct {
 	s  *Server
 	nc net.Conn
 
+	// remote is the client's address, kept from the start. nc is the
+	// connection as it is now, which StartTLS makes another: it is read
+	// under mu by everything but the loop, which is what changes it.
+	remote net.Addr
+
 	writeMu sync.Mutex
 
 	mu       sync.Mutex
 	bound    string
+	who      any // what the handler kept of whoever bound; nil for anonymous
 	tls      bool
 	inflight map[int64]context.CancelFunc
 	closed   bool
@@ -283,6 +322,40 @@ func (c *Conn) Bound() (string, bool) {
 	return c.bound, c.bound != ""
 }
 
+// Keep is the handler's, from inside [Handler.Bind] before it answers
+// [Success]: the name the connection is bound as, where that is not the
+// request's own spelling of it, and whatever the handler wants to know of
+// whoever bound when a later request arrives on the connection. `who` is a
+// pointer, and is compared as one. Both are gone at the next bind.
+func (c *Conn) Keep(dn string, who any) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.bound, c.who = dn, who
+}
+
+// Kept is what [Conn.Keep] was handed, and nil for a connection that is
+// anonymous or whose handler kept nothing.
+func (c *Conn) Kept() any {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.who
+}
+
+// Drop makes the connection anonymous, as a bind that failed leaves it: for a
+// handler that learns whoever bound is not to be served any more. Only while
+// `who` is still what is kept, since the search that learns it runs beside the
+// loop and must not undo a bind made since.
+func (c *Conn) Drop(who any) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.who != nil && c.who == who {
+		c.bound, c.who = "", nil
+	}
+}
+
 // Secure is whether the connection is under TLS -- LDAPS or after StartTLS.
 func (c *Conn) Secure() bool {
 	c.mu.Lock()
@@ -292,15 +365,33 @@ func (c *Conn) Secure() bool {
 }
 
 // RemoteAddr is the client's.
-func (c *Conn) RemoteAddr() net.Addr { return c.nc.RemoteAddr() }
+func (c *Conn) RemoteAddr() net.Addr { return c.remote }
 
+// write sends one message, and ends the connection if it cannot be sent in
+// [WriteTimeout]: a write that fails is the first a search hears of a client
+// that has gone, or that is not reading, and everything in flight ends with
+// the connection.
 func (c *Conn) write(p *ber.Packet) error {
 	c.writeMu.Lock()
 	defer c.writeMu.Unlock()
 
-	_, err := c.nc.Write(p.Bytes())
+	return c.send(p)
+}
 
-	return err
+// send is [Conn.write] for a caller that holds writeMu.
+func (c *Conn) send(p *ber.Packet) error {
+	c.mu.Lock()
+	nc := c.nc
+	c.mu.Unlock()
+
+	_ = nc.SetWriteDeadline(time.Now().Add(WriteTimeout))
+	if _, err := nc.Write(p.Bytes()); err != nil {
+		c.close()
+
+		return err
+	}
+
+	return nil
 }
 
 func (c *Conn) close() {
@@ -314,75 +405,76 @@ func (c *Conn) close() {
 	for _, cancel := range c.inflight {
 		cancel()
 	}
+	nc := c.nc
 	c.mu.Unlock()
 
-	_ = c.nc.Close()
-}
-
-func (c *Conn) begin(id int64, ctx context.Context) (context.Context, func()) {
-	ctx, cancel := context.WithCancel(ctx)
-	c.mu.Lock()
-	c.inflight[id] = cancel
-	c.mu.Unlock()
-
-	return ctx, func() {
-		cancel()
-		c.mu.Lock()
-		delete(c.inflight, id)
-		c.mu.Unlock()
-	}
-}
-
-func (c *Conn) abandon(id int64) {
-	c.mu.Lock()
-	cancel, ok := c.inflight[id]
-	c.mu.Unlock()
-	if ok {
-		cancel()
-	}
-}
-
-func (c *Conn) busy() int {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	return len(c.inflight)
+	_ = nc.Close()
 }
 
 // ServeConn speaks the protocol on one connection until it is unbound, closed
 // or fails. Exported for a caller that accepts its own connections.
 func (s *Server) ServeConn(nc net.Conn) {
-	c := &Conn{s: s, nc: nc, inflight: map[int64]context.CancelFunc{}}
+	c := &Conn{s: s, nc: nc, remote: nc.RemoteAddr(), inflight: map[int64]context.CancelFunc{}}
 	if _, ok := nc.(*tls.Conn); ok {
 		c.tls = true
 	}
 	s.track(c, true)
-	defer s.track(c, false)
-	defer c.close()
 
+	// The searches of a connection that has bound run beside the loop, at
+	// most [MaxInFlight] of them, so that a second request can arrive while
+	// one is answering and an abandon can reach one. Everything else runs in
+	// the loop. A bind, an unbind and StartTLS each change what the
+	// connection is, and nothing may be read while that is happening. And a
+	// search before a bind is the root DSE or a refusal, with nothing in it
+	// to abandon: run where it is read, it makes a connection that has
+	// proved nothing one goroutine whatever it sends, where a goroutine for
+	// each was as many as a stranger cared to ask for.
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	var wg sync.WaitGroup
+
+	// What is in flight ends with the connection, however it ends: told to
+	// stop first, and waited for after. The other way about, a client that
+	// hung up left its searches running to their own ends.
+	defer func() {
+		cancel()
+		c.close()
+		wg.Wait()
+		s.track(c, false)
+	}()
 
 	timeout := s.ReadTimeout
 	if timeout == 0 {
 		timeout = DefaultReadTimeout
 	}
 
-	// Searches run beside the loop so a second request can arrive while one
-	// is answering, and so an abandon can reach one. Binds, unbinds and
-	// StartTLS run in the loop: each changes what the connection is, and
-	// nothing may be read while that is happening.
-	var wg sync.WaitGroup
-	defer wg.Wait()
-
 	for {
 		// Through the connection as it is now: after StartTLS it is another.
 		c.mu.Lock()
 		rc := c.nc
 		c.mu.Unlock()
-		_ = rc.SetReadDeadline(time.Now().Add(timeout))
-		p, err := ber.ReadPacket(rc)
+
+		// A connection that has bound may be idle, and may send a message as
+		// long as a search is. One that has not is anybody's: it has the time
+		// a client takes to bind, and a message as long as a bind is.
+		_, bound := c.Bound()
+		wait, most := min(timeout, UnboundReadTimeout), MaxMessageUnbound
+		if bound {
+			wait, most = timeout, MaxMessage
+		}
+		_ = rc.SetReadDeadline(time.Now().Add(wait))
+		p, err := readMessage(rc, most)
 		if err != nil {
+			// A message over a bound is told so, in the one message there is
+			// for a server that is hanging up: it has no identifier yet to be
+			// answered by. Anything else that is not a message has nobody to
+			// tell, as below.
+			var over ending
+			if errors.As(err, &over) {
+				if !bound {
+					over += ending(fmt.Sprintf("; a connection that has bound may send %d", MaxMessage))
+				}
+				c.notice(Refuse(ProtocolError, string(over)))
+			}
 			if !errors.Is(err, io.EOF) && !errors.Is(err, net.ErrClosed) {
 				s.log().Debug("ldap: connection ended", slog.String("from", nc.RemoteAddr().String()), slog.Any("err", err))
 			}
@@ -391,9 +483,21 @@ func (s *Server) ServeConn(nc net.Conn) {
 		}
 
 		msg, err := decodeMessage(p)
+		if err == nil && c.outstanding(msg.id) {
+			// RFC 4511 § 4.1.1.1: not that of a request in progress. Two
+			// under one identifier were one to an abandon, and an answer
+			// under it would end the wrong one for the client.
+			err = ending(fmt.Sprintf("message id %d is that of a search still running on this connection", msg.id))
+		}
 		if err != nil {
 			// Nothing to answer with: without an identifier the client could
 			// not match a response, and RFC 4511 § 4.1.1 says to disconnect.
+			// An identifier that is there and is not one a request may have
+			// is said first, in the notice that answers no request.
+			var bad ending
+			if errors.As(err, &bad) {
+				c.notice(Refuse(ProtocolError, string(bad)))
+			}
 			s.log().Debug("ldap: not a message", slog.Any("err", err))
 
 			return
@@ -401,7 +505,18 @@ func (s *Server) ServeConn(nc net.Conn) {
 
 		switch msg.op.Tag {
 		case tagBindRequest:
-			s.bind(ctx, c, msg)
+			// RFC 4511 § 4.2.1: what is in flight is completed or abandoned
+			// before a bind is processed. Abandoned, and waited for: nothing
+			// asked as one person goes on answering once the connection is
+			// another's, and a bind does not wait on a search that takes as
+			// long as it likes with nothing reading the connection.
+			c.abandonAll()
+			wg.Wait()
+
+			// And answered in [BindTimeout], for the reason given there.
+			binding, done := context.WithTimeout(ctx, BindTimeout)
+			s.bind(binding, c, msg)
+			done()
 		case tagUnbindRequest:
 			return
 		case tagSearchRequest:
@@ -414,12 +529,31 @@ func (s *Server) ServeConn(nc net.Conn) {
 			if err != nil {
 				_ = c.write(envelope(msg.id, encodeResult(tagSearchResultDone, Refuse(ProtocolError, err.Error())), nil))
 
+				// A filter over its bound is a search, and is answered as one;
+				// and the connection is ended as for any message over a bound.
+				if errors.As(err, new(ending)) {
+					return
+				}
+
+				continue
+			}
+			if !bound {
+				s.search(ctx, c, msg.id, req, func() {})
+
+				continue
+			}
+			running, done, ok := c.begin(ctx, msg.id)
+			if !ok {
+				_ = c.write(envelope(msg.id, encodeResult(tagSearchResultDone,
+					Refuse(Busy, fmt.Sprintf("%d searches are in flight on this connection, and that is as many as one has", MaxInFlight))), nil))
+
 				continue
 			}
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				s.search(ctx, c, msg.id, req)
+				defer done()
+				s.search(running, c, msg.id, req, done)
 			}()
 		case tagAbandonRequest:
 			if id, err := ber.ParseInt64(msg.op.Data.Bytes()); err == nil {
@@ -435,7 +569,7 @@ func (s *Server) ServeConn(nc net.Conn) {
 		default:
 			// RFC 4511 § 4.1.1: an operation the server does not recognise is
 			// answered with a notice of disconnection, and the connection ends.
-			_ = c.write(envelope(0, encodeExtended(Refuse(ProtocolError, "unknown operation"), OidNoticeOfDisconnection, nil), nil))
+			c.notice(Refuse(ProtocolError, "unknown operation"))
 
 			return
 		}
@@ -446,11 +580,17 @@ func (s *Server) ServeConn(nc net.Conn) {
 // before it hangs up on a client it cannot follow.
 const OidNoticeOfDisconnection = "1.3.6.1.4.1.1466.20036"
 
+// notice says why the connection is about to end, RFC 4511 § 4.4.1. Whoever
+// calls it ends the connection next.
+func (c *Conn) notice(why Result) {
+	_ = c.write(envelope(0, encodeExtended(why, OidNoticeOfDisconnection, nil), nil))
+}
+
 func (s *Server) bind(ctx context.Context, c *Conn, msg *message) {
-	// A bind resets the authentication state whatever it answers, and waits
-	// for what is in flight, RFC 4511 § 4.2.1.
+	// A bind resets the authentication state whatever it answers, RFC 4511
+	// § 4.2.1. What was in flight is ended by now: the loop does that.
 	c.mu.Lock()
-	c.bound = ""
+	c.bound, c.who = "", nil
 	c.mu.Unlock()
 
 	req, sasl, err := decodeBind(msg)
@@ -476,17 +616,23 @@ func (s *Server) bind(ctx context.Context, c *Conn, msg *message) {
 	}
 
 	res := s.Handler.Bind(ctx, c, req)
-	if res.Code == Success {
-		c.mu.Lock()
+	c.mu.Lock()
+	switch {
+	case res.Code != Success:
+		// Whatever a handler kept before it refused is not a bind.
+		c.bound, c.who = "", nil
+	case c.bound == "":
+		// A handler that kept no name of its own: the request's.
 		c.bound = req.DN
-		c.mu.Unlock()
 	}
+	c.mu.Unlock()
 	_ = c.write(envelope(msg.id, encodeResult(tagBindResponse, res), nil))
 }
 
-func (s *Server) search(ctx context.Context, c *Conn, id int64, req SearchRequest) {
-	ctx, done := c.begin(id, ctx)
-	defer done()
+// search asks the handler and answers. For a search that runs beside the
+// loop, the context is the one it was counted in under ([Conn.begin]) and
+// `out` counts it out again, which its answer does ([Conn.last]).
+func (s *Server) search(ctx context.Context, c *Conn, id int64, req SearchRequest, out func()) {
 	if req.TimeLimit > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, req.TimeLimit)
@@ -509,7 +655,7 @@ func (s *Server) search(ctx context.Context, c *Conn, id int64, req SearchReques
 	if req.Paging != nil {
 		controls = append(controls, encodePaging(Paging{Cookie: w.cookie}))
 	}
-	_ = c.write(envelope(id, encodeResult(tagSearchResultDone, res), controls))
+	_ = c.last(out, envelope(id, encodeResult(tagSearchResultDone, res), controls))
 }
 
 // extended answers an extended request, and reports whether the connection

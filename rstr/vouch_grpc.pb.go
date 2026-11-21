@@ -147,6 +147,17 @@ type VouchServiceClient interface {
 	// second factor it is asked for exactly as it would have been after a
 	// password, because a link that skipped one would be a way to turn a mailbox
 	// into an account.
+	//
+	// # A link ends with what ends a sign-in
+	//
+	// One minted at or before its holder's epoch (`Holder.date_invalidated`) is
+	// refused as one that expired is, and in the same words: a password issued
+	// for them, a password they changed and *sign out everywhere* each end the
+	// links already out with the sign-ins already made (`Link.date_created`).
+	// Redeeming stamps nothing itself. A recovery is this and then
+	// `Credential.Issue`, and it is the password issued that ends the other
+	// links somebody asked for -- and the attempt one of them left open, where
+	// somebody with a second factor had spent it (`Continuation.date_created`).
 	Redeem(ctx context.Context, in *VouchRedeemRequest, opts ...grpc.CallOption) (*VouchDelegateResponse, error)
 	// LeaveLink mints a link that confirms one person **leaving**, and answers
 	// with it once, for the front door to mail to an address of theirs that
@@ -201,9 +212,10 @@ type VouchServiceClient interface {
 	// # In this order
 	//
 	//   - the link: one this caller was issued, still open, of this kind, for
-	//     somebody who may still sign in, and mailed to an address that is still
-	//     theirs and still proved -- `NotFound` for every way of being wrong,
-	//     one answer, as every link's;
+	//     somebody who may still sign in and whose sign-ins nothing has ended
+	//     since it was minted (`Link.date_created`), and mailed to an address
+	//     that is still theirs and still proved -- `NotFound` for every way of
+	//     being wrong, one answer, as every link's;
 	//   - `Leave`'s rules but the one this replaces: that their tenant offers
 	//     it, that its directory does not provision them, and that `confirm` is
 	//     their alias as it is -- each refusal says which, and **none spends the
@@ -233,6 +245,13 @@ type VouchServiceClient interface {
 	// continuation in place of a `who` and a secret. So a two-step sign-in is
 	// `Delegate` -> `Continue` -> `Delegate`, and the last call spends what the
 	// first two proved.
+	//
+	// # An attempt ends with what ends a sign-in
+	//
+	// One begun at or before its holder's epoch (`Holder.date_invalidated`) is
+	// refused as one that expired is, here and where `Delegate` takes one: a
+	// first factor proved before a password was replaced, or before *sign out
+	// everywhere*, is not proved after it (`Continuation.date_created`).
 	Continue(ctx context.Context, in *VouchContinueRequest, opts ...grpc.CallOption) (*VouchContinueResponse, error)
 	// Accept mints for somebody a front door has **already** checked, and it is
 	// the one method here that verifies nothing.
@@ -487,6 +506,17 @@ type VouchServiceServer interface {
 	// second factor it is asked for exactly as it would have been after a
 	// password, because a link that skipped one would be a way to turn a mailbox
 	// into an account.
+	//
+	// # A link ends with what ends a sign-in
+	//
+	// One minted at or before its holder's epoch (`Holder.date_invalidated`) is
+	// refused as one that expired is, and in the same words: a password issued
+	// for them, a password they changed and *sign out everywhere* each end the
+	// links already out with the sign-ins already made (`Link.date_created`).
+	// Redeeming stamps nothing itself. A recovery is this and then
+	// `Credential.Issue`, and it is the password issued that ends the other
+	// links somebody asked for -- and the attempt one of them left open, where
+	// somebody with a second factor had spent it (`Continuation.date_created`).
 	Redeem(context.Context, *VouchRedeemRequest) (*VouchDelegateResponse, error)
 	// LeaveLink mints a link that confirms one person **leaving**, and answers
 	// with it once, for the front door to mail to an address of theirs that
@@ -541,9 +571,10 @@ type VouchServiceServer interface {
 	// # In this order
 	//
 	//   - the link: one this caller was issued, still open, of this kind, for
-	//     somebody who may still sign in, and mailed to an address that is still
-	//     theirs and still proved -- `NotFound` for every way of being wrong,
-	//     one answer, as every link's;
+	//     somebody who may still sign in and whose sign-ins nothing has ended
+	//     since it was minted (`Link.date_created`), and mailed to an address
+	//     that is still theirs and still proved -- `NotFound` for every way of
+	//     being wrong, one answer, as every link's;
 	//   - `Leave`'s rules but the one this replaces: that their tenant offers
 	//     it, that its directory does not provision them, and that `confirm` is
 	//     their alias as it is -- each refusal says which, and **none spends the
@@ -573,6 +604,13 @@ type VouchServiceServer interface {
 	// continuation in place of a `who` and a secret. So a two-step sign-in is
 	// `Delegate` -> `Continue` -> `Delegate`, and the last call spends what the
 	// first two proved.
+	//
+	// # An attempt ends with what ends a sign-in
+	//
+	// One begun at or before its holder's epoch (`Holder.date_invalidated`) is
+	// refused as one that expired is, here and where `Delegate` takes one: a
+	// first factor proved before a password was replaced, or before *sign out
+	// everywhere*, is not proved after it (`Continuation.date_created`).
 	Continue(context.Context, *VouchContinueRequest) (*VouchContinueResponse, error)
 	// Accept mints for somebody a front door has **already** checked, and it is
 	// the one method here that verifies nothing.

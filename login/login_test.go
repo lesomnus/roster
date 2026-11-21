@@ -28,6 +28,8 @@ import (
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdtest"
 
+	"github.com/lesomnus/roster/arrives"
+	"github.com/lesomnus/roster/cli"
 	"github.com/lesomnus/roster/cmd"
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	"github.com/lesomnus/roster/internal/idptest"
@@ -61,8 +63,10 @@ type hydra struct {
 	ungranted []string // the subjects whose every client's grant hydra was told to revoke
 
 	// The third challenge. `rp` is whether a relying party started it, which
-	// is the field the app's one refusal reads.
+	// is the field the app's one refusal reads; `leaving` is whose session at
+	// Hydra it is about, where a test says, and `somebody` otherwise.
 	rp        map[string]bool
+	leaving   map[string]string
 	endedBy   map[string]bool
 	refusedBy map[string]bool
 
@@ -97,12 +101,19 @@ type hydra struct {
 	// instead of accepted.
 	remembered map[string]string
 	loginNo    map[string]string
+
+	// The consents Hydra remembers, which it raises with `skip` too; and the
+	// challenges raised by a device's code rather than by a client's redirect,
+	// which a real Hydra records another request for ([hydra.printedFor]).
+	consented map[string]bool
+	device    map[string]bool
 }
 
 func newHydra(t *testing.T) *hydra {
 	h := &hydra{
 		client:    map[string]string{},
 		rp:        map[string]bool{},
+		leaving:   map[string]string{},
 		endedBy:   map[string]bool{},
 		refusedBy: map[string]bool{},
 		codes:     map[string]string{},
@@ -116,6 +127,8 @@ func newHydra(t *testing.T) *hydra {
 		subjectOf:  map[string]string{},
 		remembered: map[string]string{},
 		loginNo:    map[string]string{},
+		consented:  map[string]bool{},
+		device:     map[string]bool{},
 	}
 
 	m := http.NewServeMux()
@@ -161,6 +174,7 @@ func newHydra(t *testing.T) *hydra {
 		h.mu.Lock()
 		client, ok := h.client[c]
 		rp := h.rp[c]
+		subject := h.leaving[c]
 		h.mu.Unlock()
 
 		if !ok {
@@ -168,9 +182,12 @@ func newHydra(t *testing.T) *hydra {
 
 			return
 		}
+		if subject == "" {
+			subject = "somebody"
+		}
 		writeJson(w, map[string]any{
 			"challenge":    c,
-			"subject":      "somebody",
+			"subject":      subject,
 			"rp_initiated": rp,
 			"client":       map[string]string{"client_id": client},
 		})
@@ -225,6 +242,17 @@ func newHydra(t *testing.T) *hydra {
 		// Into the ordinary flow, which is the whole point: everything after this
 		// is `/login` and `/consent`, unchanged.
 		writeJson(w, map[string]string{"redirect_to": "https://issuer.test/oauth2/device/verify?login_challenge=" + c})
+	})
+
+	// What a client registered, which a flow with no redirect in its request is
+	// resolved through (`login/at.go`): a device's. One redirect, at the host
+	// the harness gives that client's tenant.
+	m.HandleFunc("GET /admin/clients/{id}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		writeJson(w, map[string]any{
+			"client_id":     id,
+			"redirect_uris": []string{"https://" + redirectHostFor(id) + "/callback"},
+		})
 	})
 
 	m.HandleFunc("DELETE /admin/oauth2/auth/sessions/login", func(w http.ResponseWriter, r *http.Request) {
@@ -301,15 +329,33 @@ func (h *hydra) raised(w http.ResponseWriter, r *http.Request, param string) {
 	}
 	scope := h.scope[c]
 
-	// A consent is about whoever its login was accepted as; a login is about
-	// nobody yet, unless this is a browser Hydra remembers.
-	subject, skip := h.subjectOf[c], false
+	// A consent is about whoever its login was accepted as, and skipped where
+	// Hydra remembers one; a login is about nobody yet, unless this is a
+	// browser Hydra remembers.
+	subject, skip := h.subjectOf[c], h.consented[c]
 	if param == "login_challenge" {
 		subject, skip = h.remembered[c], h.remembered[c] != ""
 	}
+	device := h.device[c]
 	h.mu.Unlock()
 	if scope == nil {
 		scope = []string{"openid", "profile", "email"}
+	}
+
+	// The authorization request, whole, which is what a real Hydra records
+	// and what says **which tenant** this flow is about (#36): the host of
+	// the `redirect_uri` in it. Derived from the client id here because the
+	// harness names clients `<alias>-web` and `<alias>-mobile`, so one
+	// fixture covers both of a tenant's products reaching one sign-in.
+	//
+	// A device's flow has no authorization request. What Hydra v26.2.0 records
+	// for one is the address the browser brought the code to, its own
+	// verification endpoint, with the client and no redirect: read off the
+	// image, for the login request and the consent request alike.
+	request := "https://issuer.test/oauth2/auth?client_id=" + client +
+		"&redirect_uri=" + url.QueryEscape("https://"+redirectHostFor(client)+"/callback") + extra
+	if device {
+		request = "https://issuer.test/oauth2/device/verify?client_id=" + client
 	}
 
 	writeJson(w, map[string]any{
@@ -319,16 +365,8 @@ func (h *hydra) raised(w http.ResponseWriter, r *http.Request, param string) {
 		"skip":      skip,
 
 		"requested_access_token_audience": asked,
-
-		// The authorization request, whole, which is what a real Hydra records
-		// and what says **which tenant** this flow is about (#36): the host of
-		// the `redirect_uri` in it. Derived from the client id here because the
-		// harness names clients `<alias>-web` and `<alias>-mobile`, so one
-		// fixture covers both of a tenant's products reaching one sign-in.
-		"request_url": "https://issuer.test/oauth2/auth?client_id=" + client +
-			"&redirect_uri=" + url.QueryEscape("https://"+redirectHostFor(client)+"/callback") + extra,
-
-		"requested_scope": scope,
+		"request_url":                     request,
+		"requested_scope":                 scope,
 	})
 }
 
@@ -376,6 +414,16 @@ func (h *hydra) asked(challenge, client string, rp bool) {
 	h.rp[challenge] = rp
 }
 
+// askedOf is [hydra.asked] for a logout about `subject`: a real Hydra says whose
+// session a logout challenge would end, hint or no hint.
+func (h *hydra) askedOf(challenge, client, subject string, rp bool) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.client[challenge] = client
+	h.rp[challenge] = rp
+	h.leaving[challenge] = subject
+}
+
 // ended is whether that logout challenge was accepted.
 func (h *hydra) ended(challenge string) bool {
 	h.mu.Lock()
@@ -405,6 +453,25 @@ func (h *hydra) raiseWith(challenge, client string, scope ...string) {
 	defer h.mu.Unlock()
 	h.client[challenge] = client
 	h.scope[challenge] = scope
+}
+
+// printedFor is [hydra.raise] for a flow a device began: the login challenge,
+// and the consent challenge after it, that Hydra raises once somebody has typed
+// the device's code. The same two requests as any flow's, about a request that
+// is not an authorization request.
+func (h *hydra) printedFor(challenge, client string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.client[challenge] = client
+	h.device[challenge] = true
+}
+
+// consents is Hydra remembering the consent a challenge asks for, so that it
+// raises it with `skip`.
+func (h *hydra) consents(challenge string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.consented[challenge] = true
 }
 
 // remembers is [hydra.raise] for a browser Hydra already knows as `subject`:
@@ -526,8 +593,9 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 
 	// The app's one credential: a deployment key, on a control-plane holder.
 	//
-	// The three reads it makes before it knows whose flow it is, and nothing
-	// else -- `cli.LoginResolving` is the same list and says why. What every
+	// What it calls before a flow names a tenant, and nothing else:
+	// `cli.LoginResolving`, the list `roster login provision` mints its key
+	// with, so that every flow walked here is walked on that list. What every
 	// call *inside* a flow may do is the nominated holder's role, because
 	// `keys.At` answers as that holder with `frame.Whole()` and does not carry
 	// the key's own list through.
@@ -540,11 +608,7 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 		x.NoError(err)
 		_, err = s.Control.Ungated.ApiKey().Add(ctx, rstr.ApiKeyAddRequest_builder{
 			Holder: rstr.HolderRef_builder{Id: who.Bytes()}.Build(), Alias: "login-app", Secret: sum,
-			Methods: []string{
-				rstr.FrontService_WhoseHost_FullMethodName,
-				rstr.TenantService_Get_FullMethodName,
-				rstr.SyncService_Watch_FullMethodName,
-			},
+			Methods: cli.LoginResolving,
 		}.Build())
 		x.NoError(err)
 
@@ -593,43 +657,25 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 		x.NoError(err)
 
 		// The app, as a holder in this tenant, with a key that acts as it.
+		//
+		// Its role is `cli.LoginMethods`, the list `roster login provision`
+		// writes: what a flow walked here may call is what a flow in a
+		// deployment may, so a call the app makes that the list has not got is
+		// a test here that fails.
 		front, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: "login-app"}.Build())
 		x.NoError(err)
 		frontRole, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
 			Tenant: at, Alias: "front-door",
 			Methods: append([]string{
-				"/roster.TenantService/Get",
 				"/roster.TenantService/Update",
-				"/roster.VouchService/Verify",
-				"/roster.VouchService/Delegate",
-				"/roster.VouchService/Accept",
-				"/roster.DelegationService/Revoke",
-				"/roster.SyncService/Watch",
-				"/roster.ConnectionService/Get",
-				"/roster.ConnectionService/List",
-				"/roster.IdentityService/Get",
-				"/roster.IdentityService/Add",
-				"/roster.EmailService/Get",
-				"/roster.EmailService/Attest",
 				"/roster.EmailService/Add",
 
-				// Whether somebody an address names has arrived yet, which is
-				// what an invitation is read under (`arrives.invitation`).
-				"/roster.HolderService/SignsIn",
-
-				// What `enrol: enrolling` needs, and what the key `roster login
-				// provision` mints deliberately does not hold. Here so that one
-				// test can be about the policy rather than about the grant.
+				// What `enrol: enrolling` needs, and what the role `roster login
+				// provision` writes holds only where a deployment said so. Here
+				// so that one test can be about the policy rather than about the
+				// grant.
 				"/roster.HolderService/Add",
-
-				// And what fills a tenant's blanks, which `roster login
-				// provision` writes into the role whatever the policy.
-				"/roster.HolderService/Fill",
-
-				// And what moves somebody to the claim their connection
-				// names, which it writes in whatever the connection says.
-				"/roster.IdentityService/Resubject",
-			}, login.Methods...),
+			}, cli.LoginMethods...),
 		}.Build())
 		x.NoError(err)
 		_, err = s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
@@ -728,6 +774,10 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 		Key:            front,
 		InsecureCookie: true,
 	}
+	// The fake providers are on this machine, where this app asks no provider
+	// unless its deployment says it may (`login.private_hosts`).
+	cfg.PrivateHosts, err = arrives.ParsePrivateHosts(idptest.Loopback)
+	x.NoError(err)
 	if with != nil {
 		with(&cfg)
 	}
@@ -1195,12 +1245,14 @@ func TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne(t *testing.T) {
 		res := consent(t, d, b, "c3")
 		res.Body.Close()
 
+		// Answered to the page, which goes where it says
+		// (`TestAConsentIsAnsweredWhereThePageCanFollowIt`).
 		res, err := b.PostForm(d.app.URL+"/consent", url.Values{
 			"consent_challenge": {"c3"}, "allow": {"1"},
 		})
 		x.NoError(err)
 		defer res.Body.Close()
-		x.Equal(http.StatusSeeOther, res.StatusCode)
+		x.Equal(http.StatusOK, res.StatusCode)
 
 		_, claims := d.hydra.told()
 		x.Equal("erin", claims["preferred_username"])
@@ -1221,7 +1273,7 @@ func TestTheConsentScreenIsDrawnWhenTheDeploymentAsksForOne(t *testing.T) {
 		res, err := b.PostForm(d.app.URL+"/consent", url.Values{"consent_challenge": {"c4"}})
 		x.NoError(err)
 		defer res.Body.Close()
-		x.Equal(http.StatusSeeOther, res.StatusCode)
+		x.Equal(http.StatusOK, res.StatusCode)
 
 		_, rejected := d.hydra.said()
 		x.True(rejected, "a no granted anyway")
@@ -1386,8 +1438,8 @@ func TestSomebodyBackInGoodStandingIsNotSignedOutAgain(t *testing.T) {
 // TestWhatSomebodyMayCallIsNoSignOut: roster's stream also says when what
 // somebody may call may have changed (`SYNC_REASON_REACH`), with their facts as
 // they are -- none of them news. Read as if they were, the first such event
-// about somebody this connection had not heard of would have Hydra forget them
-// for a sign-out acted on long before, once for every person a role edit
+// about somebody this process had not heard of would have Hydra forget them
+// for a sign-out it was not there to hear, once for every person a role edit
 // reaches. So a role bound to somebody signed out everywhere before the stream
 // opened reaches Hydra as nothing.
 func TestWhatSomebodyMayCallIsNoSignOut(t *testing.T) {

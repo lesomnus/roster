@@ -54,9 +54,14 @@ message Connection {
   // One name per tenant. Two operators may both call one "entra" and mean two
   // different directories, which is why the key is the pair -- and the same
   // reason `MailDomain`'s is.
-  string name = 5;
+  //
+  // Not personal, this and what follows it on this row: a connection is the
+  // tenant's own arrangement with a provider -- what it is called, where the
+  // provider is, what it is asked for -- and who changed which is the record.
+  // Nobody is written into them, as into a tenant's (`tenant.proto`).
+  string name = 5 [(payday.field) = {personal: false}];
 
-  string desc = 6;
+  string desc = 6 [(payday.field) = {personal: false}];
 
   // Whatever the deployment keeps about this row that the schema does not name.
   //
@@ -69,7 +74,7 @@ message Connection {
   // everywhere else that has them -- and not a setting roster acts on. A
   // setting goes in a field, so that what is configuration and what is a note
   // stay tellable apart.
-  map<string, string> labels = 7;
+  map<string, string> labels = 7 [(payday.field) = {personal: false}];
 
   // Where discovery is done, as the provider publishes it:
   // "https://accounts.google.com".
@@ -90,10 +95,10 @@ message Connection {
   // goes. Each token is held to the directory it names (`arrives/microsoft.go`).
   // Personal accounts alone are the one directory they are all in,
   // `.../9188040d-6c67-4c5b-b112-36a304b66dad/v2.0`.
-  string issuer = 8;
+  string issuer = 8 [(payday.field) = {personal: false}];
 
   // What the provider calls this app.
-  string client_id = 9;
+  string client_id = 9 [(payday.field) = {personal: false}];
 
   // Scopes beyond `openid`. `email` is usual and is what enrolment needs to
   // name somebody.
@@ -101,7 +106,7 @@ message Connection {
   // GitHub's are its own words, beside `user:email`, which a GitHub
   // connection asks for whatever this says, as an OpenID one asks for
   // `openid`.
-  repeated string scopes = 10;
+  repeated string scopes = 10 [(payday.field) = {personal: false}];
 
   // Where the deployment keeps the client secret, in whatever words it uses
   // for that -- "env:CONTOSO_ENTRA_SECRET", "file:/run/secrets/contoso-entra".
@@ -110,6 +115,14 @@ message Connection {
   // with, and what it means is the front door's to know. That is the whole of
   // how D13 survives a connection: nothing here is a secret, so nothing here is
   // a secret being handed out.
+  //
+  // The front doors roster ships read `env:NAME` and refuse every other word
+  // (`account.EnvSecret`): a `file:` reference is one a front door of a
+  // deployment's own would have to read.
+  //
+  // Whatever the words, a reference is a scheme, a colon and the rest
+  // (`server/core/connection.go`); one with no scheme is refused, since it is
+  // most often the secret itself, written where its reference belongs.
   //
   // Empty is a provider that needs none -- a public client with PKCE, which is
   // what a front door with no back end has.
@@ -125,7 +138,7 @@ message Connection {
   // secret the front door holds beside an issuer of their own
   // (`server/core/connection.go`). A tenant keeps the reference it was given or
   // takes it away, and a connection with none is wholly its own.
-  string secret_ref = 11;
+  string secret_ref = 11 [(payday.field) = {personal: false}];
 
   // Which claim of the ID token is a person's `Identity.subject` here.
   //
@@ -161,7 +174,7 @@ message Connection {
   // them. A tenant may move forward and not back: going back would leave
   // everybody already moved unknown at their next sign-in, so it is the
   // deployment's (`server/core/connection.go`).
-  string subject_claim = 12;
+  string subject_claim = 12 [(payday.field) = {personal: false}];
 
   // Whether the tenant's directory provisions its people through this
   // connection: the people it makes (`HolderService.Provision`) are linked

@@ -1,10 +1,12 @@
 package scim
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -62,8 +64,10 @@ func (s *Server) listUsers(ctx context.Context, w http.ResponseWriter, r *http.R
 		return err
 	}
 
-	if f := q.Get("filter"); f != "" {
-		attr, value, err := parseFilter(f)
+	// A `filter` that says nothing is refused as one, where it was the list:
+	// a directory asking after somebody read everybody as somebody else.
+	if q.Has("filter") {
+		attr, value, err := parseFilter(q.Get("filter"))
 		if err != nil {
 			return err
 		}
@@ -94,8 +98,15 @@ func (s *Server) listUsers(ctx context.Context, w http.ResponseWriter, r *http.R
 	}
 	items := []any{}
 	for i := start - 1; i < len(ids) && len(items) < count; i++ {
+		// Somebody counted and not answered -- erased since, or a row a file
+		// declares -- is skipped, where the whole list was `404`.
 		p, err := s.read(ctx, t, ids[i])
 		if err != nil {
+			var nf *problem
+			if asProblem(err, &nf) && nf.status == http.StatusNotFound {
+				continue
+			}
+
 			return err
 		}
 		u, err := s.shownUser(ctx, p)
@@ -155,6 +166,10 @@ func (s *Server) lookup(ctx context.Context, t *tenancy, attr, value string) (*p
 		}
 
 	case byExternalId:
+		// In the spelling it is kept in, here and where the directory's word
+		// for somebody is: neither lookup folds what it is asked.
+		value := t.subject(value)
+
 		v, err := s.roster.Identity().Get(ctx, rstr.IdentityGetRequest_builder{
 			Ref: rstr.IdentityRef_builder{Subject: rstr.IdentityRefBySubject_builder{
 				TenantId: t.tenant, Provider: proto.String(t.provider), Subject: proto.String(value),
@@ -243,7 +258,7 @@ func (s *Server) tell(ctx context.Context, r *http.Request, t *tenancy, p *perso
 	said := false
 
 	if c.externalId != nil {
-		want := *c.externalId
+		want := t.subject(*c.externalId)
 		if want == p.linked {
 			want = ""
 		}
@@ -303,6 +318,17 @@ func asProblem(err error, p **problem) bool {
 // `totalResults` that is true: a tenant is people a directory provisions, a
 // count measured in thousands at the most, and a cycle that lists them is not
 // a request somebody waits on.
+//
+// Each is asked [Server.present], one call that reads nothing personal. It
+// read each person whole, three calls and three rows of the access record, on
+// every page. So the count may hold somebody no page shows: a holder a file
+// declares who has an account at the connection, which nothing makes unless
+// an operator writes one, or somebody erased between the count and the page,
+// which skips whom [Server.read] does not answer. It is not made exact by
+// reading `labels`, which are personal, for everybody.
+//
+// What would make it a call a hundred people is `HolderService/List`, which
+// is not on the key's list; adding it mints every key again.
 func (s *Server) everybody(ctx context.Context, t *tenancy) ([][]byte, error) {
 	var out [][]byte
 	seen := map[string]bool{}
@@ -326,15 +352,13 @@ func (s *Server) everybody(ctx context.Context, t *tenancy) ([][]byte, error) {
 			}
 			seen[string(id)] = true
 
-			if _, err := s.read(ctx, t, id); err != nil {
-				var nf *problem
-				if asProblem(err, &nf) && nf.status == http.StatusNotFound {
-					continue
-				}
-
+			ok, err := s.present(ctx, t, id)
+			if err != nil {
 				return nil, err
 			}
-			out = append(out, id)
+			if ok {
+				out = append(out, id)
+			}
 		}
 
 		after = vs.GetNext()
@@ -369,6 +393,18 @@ func (s *Server) getUser(ctx context.Context, w http.ResponseWriter, r *http.Req
 // taken: the directory looked them up first and did not find them, so the row
 // it is about to make would be a second of them. A directory answered
 // `uniqueness` matches instead.
+//
+// # Unless it is the person it was making
+//
+// A create is `Provision` and then `Tell` of the name the directory looks
+// somebody up by, where that is not their address. One cut between the two --
+// its asker gave up, roster did not answer the second -- leaves somebody the
+// lookup by that name does not find, and so does somebody who signed in
+// through the connection before the directory began. The create that follows
+// met them and was refused on every cycle. So where the `externalId` and the
+// address find the same person and the `userName` finds nobody, this is their
+// create said again ([Server.finish]). Anything else that finds somebody is
+// refused as before, and a second create of the same User with it.
 func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.Request, t *tenancy) error {
 	b, err := body(r)
 	if err != nil {
@@ -387,7 +423,9 @@ func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.
 	}
 
 	address := front.Address(u.address())
-	for attr, value := range map[string]string{byEmail: address, byExternalId: u.externalId, byUserName: u.userName} {
+	found := map[string]*person{}
+	for _, attr := range []string{byEmail, byExternalId, byUserName} {
+		value := map[string]string{byEmail: address, byExternalId: u.externalId, byUserName: u.userName}[attr]
 		if value == "" {
 			continue
 		}
@@ -396,6 +434,15 @@ func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.
 			return err
 		}
 		if p != nil {
+			found[attr] = p
+		}
+	}
+	if at, ext := found[byEmail], found[byExternalId]; at != nil && ext != nil && found[byUserName] == nil &&
+		bytes.Equal(at.holder.GetId(), ext.holder.GetId()) {
+		return s.finish(ctx, w, t, u, address, at.holder.GetId())
+	}
+	for _, attr := range []string{byEmail, byExternalId, byUserName} {
+		if found[attr] != nil {
 			return &problem{status: http.StatusConflict, scimType: "uniqueness",
 				detail: "somebody here already has that " +
 					map[string]string{byEmail: "address", byExternalId: "externalId", byUserName: "userName"}[attr]}
@@ -436,23 +483,8 @@ func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.
 	if err != nil {
 		return err
 	}
-	// The name the directory made them by, where it is not the address they
-	// were made with: a sign-in name beside a mail alias, or a name that is no
-	// address at all. Kept, so that the lookup by it that comes next -- and
-	// every one after a restart -- finds who was just made.
-	if n := front.Address(u.userName); n != address {
-		if _, err := s.roster.Holder().Tell(ctx, rstr.HolderTellRequest_builder{
-			Ref: rstr.HolderRef_builder{Id: h.GetId()}.Build(), Name: proto.String(n),
-		}.Build()); err != nil {
-			return err
-		}
-	}
-	if u.active != nil && !*u.active {
-		if _, err := s.roster.Holder().Deactivate(ctx, rstr.HolderDeactivateRequest_builder{
-			Ref: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
-		}.Build()); err != nil {
-			return err
-		}
+	if err := s.named(ctx, u, address, h.GetId()); err != nil {
+		return err
 	}
 	if err := s.dial(ctx, r, h.GetId(), &u.changes); err != nil {
 		return err
@@ -466,11 +498,53 @@ func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.
 	if err != nil {
 		return err
 	}
+	return s.created(ctx, w, p)
+}
+
+// named is what a create writes after `Provision`: the directory's word that
+// they left, first, by [Server.change]'s rule; then the name it made them by,
+// where that is not the address they were made with -- a sign-in name beside
+// a mail alias, or a name that is no address at all. Kept, so that the lookup
+// by it that comes next, and every one after a restart, finds who was made.
+func (s *Server) named(ctx context.Context, u *incoming, address string, id []byte) error {
+	ref := rstr.HolderRef_builder{Id: id}.Build()
+	if u.active != nil && !*u.active {
+		if _, err := s.roster.Holder().Deactivate(ctx, rstr.HolderDeactivateRequest_builder{Ref: ref}.Build()); err != nil {
+			return err
+		}
+	}
+	if n := front.Address(u.userName); n != address {
+		if _, err := s.roster.Holder().Tell(ctx, rstr.HolderTellRequest_builder{Ref: ref, Name: proto.String(n)}.Build()); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// finish is a create of somebody already here by its `externalId` and its
+// address and not by its `userName`: what [Server.named] writes, and nothing
+// else of the body -- no name, no profile, no number -- since they were made,
+// or were here, already. Answered as a create is, with them as they are.
+func (s *Server) finish(ctx context.Context, w http.ResponseWriter, t *tenancy, u *incoming, address string, id []byte) error {
+	if err := s.named(ctx, u, address, id); err != nil {
+		return err
+	}
+	p, err := s.read(ctx, t, id)
+	if err != nil {
+		return err
+	}
+
+	return s.created(ctx, w, p)
+}
+
+// created answers a create with who was made.
+func (s *Server) created(ctx context.Context, w http.ResponseWriter, p *person) error {
 	made, err := s.shownUser(ctx, p)
 	if err != nil {
 		return err
 	}
-	w.Header().Set("Location", Base+"/Users/"+idOf(h.GetId()))
+	w.Header().Set("Location", Base+"/Users/"+idOf(p.holder.GetId()))
 	answer(w, http.StatusCreated, made)
 
 	return nil
@@ -511,6 +585,19 @@ func (s *Server) patchUser(ctx context.Context, w http.ResponseWriter, r *http.R
 // untouched, since a different one would take their portrait away. A version
 // that moved in between is read again, a few times, rather than handed to the
 // directory as a failure it would retry anyway.
+//
+// # The word that somebody left goes first
+//
+// `active: false` is written before anything else the request says, and
+// `active: true` after it all. RFC 7644 §3.5.2 asks that a PATCH be all or
+// nothing; this endpoint is a consumer of roster's API, with no transaction of
+// its own across the calls a request is written in, so a request refused
+// halfway leaves half of it written. Of the two halves, the one that keeps a
+// leaver signed in is the wrong one: a suspension that lands stands though
+// what was said beside it is refused, and the refusal is answered as it would
+// be anyway, so a directory that sends it again finds them suspended already.
+// What lets somebody back in is not written ahead of a refusal. Nothing is
+// checked ahead and nothing is rolled back.
 func (s *Server) change(ctx context.Context, w http.ResponseWriter, r *http.Request, t *tenancy, c *changes) error {
 	id, ok := parseId(r.PathValue("id"))
 	if !ok {
@@ -520,10 +607,16 @@ func (s *Server) change(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		return err
 	}
+	ref := rstr.HolderRef_builder{Id: id}.Build()
+
+	if c.active != nil && !*c.active {
+		if _, err := s.roster.Holder().Deactivate(ctx, rstr.HolderDeactivateRequest_builder{Ref: ref}.Build()); err != nil {
+			return err
+		}
+	}
 	if err := s.tell(ctx, r, t, was, c); err != nil {
 		return err
 	}
-	ref := rstr.HolderRef_builder{Id: id}.Build()
 
 	if c.profiled() {
 		for try := 0; ; try++ {
@@ -540,14 +633,8 @@ func (s *Server) change(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	if c.active != nil {
-		var err error
-		if *c.active {
-			_, err = s.roster.Holder().Activate(ctx, rstr.HolderActivateRequest_builder{Ref: ref}.Build())
-		} else {
-			_, err = s.roster.Holder().Deactivate(ctx, rstr.HolderDeactivateRequest_builder{Ref: ref}.Build())
-		}
-		if err != nil {
+	if c.active != nil && *c.active {
+		if _, err := s.roster.Holder().Activate(ctx, rstr.HolderActivateRequest_builder{Ref: ref}.Build()); err != nil {
 			return err
 		}
 	}
@@ -640,5 +727,10 @@ func (s *Server) said(r *http.Request, ignored []string) {
 	if len(ignored) == 0 {
 		return
 	}
-	s.c.Log.InfoContext(r.Context(), "scim: not kept here", "method", r.Method, "path", r.URL.Path, "attributes", ignored)
+	// By the attribute's name: a path may say an address, and none is written.
+	names := make([]string, len(ignored))
+	for i, v := range ignored {
+		names[i], _, _ = strings.Cut(v, "[")
+	}
+	s.c.Log.InfoContext(r.Context(), "scim: not kept here", "method", r.Method, "path", r.URL.Path, "attributes", names)
 }

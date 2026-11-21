@@ -148,13 +148,40 @@ to=$(c -X POST "${LOGIN}/accept?login_challenge=${login_challenge}" \
 	| json redirect_to | sed 's|\\u0026|\&|g; s|\\/|/|g' | fix)
 case "${to}" in http*) ;; *) die "nothing was accepted: ${to}";; esac
 
-# The consent hop, and then Hydra is done with the browser. `login.sh` runs with
-# `consent: skip`, so this is redirects the whole way; where it ends is Hydra's own
-# *you may close this* page rather than a callback, because a device flow has no
-# browser to send a code to. That is the difference worth seeing.
+# The consent hop, which for a device is **a screen, whatever `login.consent`
+# says** -- and `login.sh` runs with `skip`, so a redirect here is the defect this
+# step is for. The screen the code was typed at could not say whose device this
+# is: Hydra has no getter for a device challenge. The consent screen is the first
+# thing that can, so it is drawn before anything is granted (`login/login.go`,
+# `sentByItsClient`).
+#
+# It is also the one place that reading is held against a real Hydra. The app
+# tells a device's consent from a client's by the request Hydra recorded --
+# `…/oauth2/device/verify` rather than `…/oauth2/auth` -- because the consent
+# request has no field for it. An issuer that records something else for a
+# device's flow is red here.
 l=$(c -o /dev/null -D - "${to}" | loc | fix)
-l=$(c -o /dev/null -D - "${l}" | loc | fix)
-step "consent -> the issuer" "$(printf '%s' "${l}" | cut -c1-40)…"
+case "${l}" in
+*/consent*consent_challenge=*) ;;
+*) die "signing in did not raise a consent challenge: ${l}" ;;
+esac
+consent=$(printf '%s' "${l}" | sed 's/.*consent_challenge=//; s/&.*//')
+
+got=$(c -o /dev/null -w '%{http_code}' "${l}")
+[ "${got}" = "200" ] || die "a device's consent answered ${got} where a screen names its client"
+asking=$(c "${LOGIN}/flow?consent_challenge=${consent}")
+printf '%s' "${asking}" | grep -q '"client":"[^"]' \
+	|| die "the screen has nothing to say whose device this is: ${asking}"
+step "the consent, drawn whatever the mode" "$(printf '%s' "${asking}" | json client)"
+
+# The answer, which is told to the page rather than redirected to: where it goes
+# is the issuer, another origin. Where **that** ends is Hydra's own *you may close
+# this* page rather than a callback, because a device flow has no browser to send
+# a code to. That is the difference worth seeing.
+l=$(c -X POST "${LOGIN}/consent" -d "consent_challenge=${consent}" -d "allow=1" \
+	| json redirect_to | sed 's|\\u0026|\&|g; s|\\/|/|g' | fix)
+case "${l}" in http*) ;; *) die "the consent's answer named nowhere to go: ${l}";; esac
+step "somebody says allow" "$(printf '%s' "${l}" | cut -c1-40)…"
 c -o /dev/null "${l}" || true
 
 # 7. And the device, still polling, is handed a token. Which is the assertion the

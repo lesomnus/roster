@@ -36,8 +36,10 @@ func TestSomebodyRemovesASecondFactorOfTheirOwn(t *testing.T) {
 	_, err = b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Ref: own, Kind: vouch.KindTotp, Name: "phone"}.Build())
 	x.NoError(err)
 
+	// A sign-in of hers a moment old, which is what taking a factor off one's
+	// own account takes (`TestASecondFactorOfYourOwnTakesAFreshSignIn`).
 	permits(t, ctx, b, b.Contoso, b.Who, "self", erase)
-	hers := mintFor(t, ctx, b, b.Who, "laptop", []string{erase}, time.Time{})
+	hers := acting(ctx, b.Token, signedInAt(t, ctx, b, b.Who, []string{erase}, time.Now()))
 	cl := app.NewCredentialServiceClient(b.Conn)
 
 	byKind := func(who *app.HolderRef, kind, name string) *app.CredentialRef {
@@ -49,14 +51,14 @@ func TestSomebodyRemovesASecondFactorOfTheirOwn(t *testing.T) {
 	t.Run("the password is replaced, never removed", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := cl.Erase(bearing(ctx, hers), byKind(own, vouch.KindPassword, ""))
+		_, err := cl.Erase(hers, byKind(own, vouch.KindPassword, ""))
 		x.Equal(codes.FailedPrecondition, status.Code(err), "a password was removed")
 	})
 
 	t.Run("the phone goes, and the password still signs her in", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := cl.Erase(bearing(ctx, hers), byKind(own, vouch.KindTotp, "phone"))
+		_, err := cl.Erase(hers, byKind(own, vouch.KindTotp, "phone"))
 		x.NoError(err)
 
 		ways, err := b.Ungated.Holder().SignsIn(ctx, app.HolderSignsInRequest_builder{Ref: own}.Build())
@@ -66,7 +68,7 @@ func TestSomebodyRemovesASecondFactorOfTheirOwn(t *testing.T) {
 
 		// Twice is once: erasing what is not there succeeds and removes
 		// nothing, which is `Erase`'s rule.
-		_, err = cl.Erase(bearing(ctx, hers), byKind(own, vouch.KindTotp, "phone"))
+		_, err = cl.Erase(hers, byKind(own, vouch.KindTotp, "phone"))
 		x.NoError(err)
 	})
 
@@ -79,7 +81,7 @@ func TestSomebodyRemovesASecondFactorOfTheirOwn(t *testing.T) {
 		_, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Ref: theirs, Kind: vouch.KindTotp, Name: "key"}.Build())
 		x.NoError(err)
 
-		_, err = cl.Erase(bearing(ctx, hers), byKind(theirs, vouch.KindTotp, "key"))
+		_, err = cl.Erase(hers, byKind(theirs, vouch.KindTotp, "key"))
 		x.Equal(codes.PermissionDenied, status.Code(err), "a plain person took a factor off an administrator")
 	})
 }

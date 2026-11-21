@@ -191,9 +191,11 @@ func TestAClaimIsSpentInsideATransaction(t *testing.T) {
 
 // TestAnAddressDoesNotMoveWhereItsWritesCannotBeOne is the other side of the
 // two tests above: a stack built with no driver and called outside any
-// transaction -- the admin port's is one -- has nothing to make the three
-// writes one with, and refuses rather than make them one at a time, which a
-// failure between them would leave as an address nobody holds.
+// transaction has nothing to make the three writes one with, and refuses
+// rather than make them one at a time, which a failure between them would
+// leave as an address nobody holds. No port answers through such a stack: the
+// admin port's was one, and is built on the data plane's driver as the other
+// two are (#279, `TestTheOperatorsStackWritesAsOneWhatTheDataPlaneDoes`).
 func TestAnAddressDoesNotMoveWhereItsWritesCannotBeOne(t *testing.T) {
 	const theirs = "ceo@contoso.example"
 	x := require.New(t)

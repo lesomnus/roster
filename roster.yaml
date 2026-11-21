@@ -43,9 +43,9 @@ control:
     driver: sqlite3
     dsn: "file:roster-control.db?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_txlock=immediate"
   addr: "127.0.0.1:50052"
-  # What the admin console talks to. A browser cannot speak gRPC, and this is the
-  # port that has the rows a console is for. `ts/console/main.tsx` looks here by
-  # default.
+  # The control plane's RPCs over HTTP, for a caller that cannot speak gRPC.
+  # Not the admin console's: that page is served by `admin.http` below and calls
+  # the same listener, which is where `ts/console/main.tsx` looks by default.
   http:
     addr: "127.0.0.1:8082"
     allow_web: true
@@ -165,7 +165,9 @@ watch:
   # writing a row in the same transaction, and the drainer then publishes into
   # whatever broker is named here. So with `memory` it is durability and not
   # fan-out; with `postgres` it is both, which is what a deployment that can
-  # lose neither wants.
+  # lose neither wants. Under it a write over the wire is published twice, by
+  # its call and by the drainer: a fact is compared and said once, and that
+  # what somebody may call changed is said twice (`sync.proto`).
   #
   # The drainer runs wherever a broker is named, outbox or not: every command
   # run beside this deployment -- `roster holder disable` at a shell on the box
@@ -211,6 +213,21 @@ spin:
 # what this file is for is a box somebody is trying roster on, so it does not
 # say otherwise. How long the evidence lasts is a deployment's to decide, not a
 # default's; `docs/operating.md` § "The audit trail".
+#
+# So does the access record -- who read whose data -- and it costs more to
+# leave. The trail is a row a write; this is a row for every call that shows
+# somebody, so a directory front that polls writes thousands of them a search,
+# and with no window every one stays in the database for good. `serve` says so
+# as it starts for as long as none is named. One of its own, with no archive:
+#
+#   audit:
+#     by:
+#       access:
+#         retain: 2160h     # ninety days in the database,
+#         discard: true     # and then destroyed, with no copy kept
+#
+# `docs/operating.md` § "Who read whose data" says what a row holds and what
+# writes most of them.
 #
 # Which is also why it names no **witness**. A witness hears each checkpoint
 # of the archive's account (payday#115), a database that keeps the whole trail

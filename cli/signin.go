@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -76,7 +78,10 @@ func NewCmdSignIn(c *cmd.Config) *xli.Command {
 			}
 
 			raw, _ := flg.Find[[]string](cl, "allow")
-			allow := cmd.SplitMethods(raw)
+			allow, err := cmd.MethodsOf("--allow", raw)
+			if err != nil {
+				return err
+			}
 			// Refused rather than defaulted, which is `roster key add`'s decision:
 			// a credential nobody chose the reach of is either wider than somebody
 			// meant or narrower than works.
@@ -84,7 +89,24 @@ func NewCmdSignIn(c *cmd.Config) *xli.Command {
 				return errors.New("--allow: what this terminal may call, e.g. /roster.MeService/Get")
 			}
 
-			key, err := SignIn(ctx, cl.Printf, http.DefaultClient, strings.TrimSuffix(at, "/"), name, allow)
+			// Over `https`, since what comes back is a key; `http` is taken
+			// for this machine alone, which is a development rig.
+			u, err := url.Parse(at)
+			if err != nil || u.Host == "" || (u.Scheme != "https" && !(u.Scheme == "http" && thisMachine(u.Hostname()))) {
+				return fmt.Errorf("--at %s: an https address of the account app; http is taken for this machine alone", at)
+			}
+
+			// A client that gives up on one request, which the default never
+			// does: a front door that took a connection and said nothing held
+			// this command for as long as it liked.
+			//
+			// What is said to the person -- where to go, what to type, that it
+			// is waiting -- on standard error, and the key alone on standard
+			// output. All of it was on standard output, so `roster sign-in …
+			// > key` put the code to type in the file and nothing on the
+			// terminal, and nobody could approve it (#284).
+			say := func(format string, vs ...any) (int, error) { return fmt.Fprintf(cl.ErrWriter, format, vs...) }
+			key, err := SignIn(ctx, say, &http.Client{Timeout: 30 * time.Second}, strings.TrimSuffix(at, "/"), name, allow)
 			if err != nil {
 				return err
 			}
@@ -94,23 +116,36 @@ func NewCmdSignIn(c *cmd.Config) *xli.Command {
 				// stdout, so `$(roster sign-in …)` is the key and nothing else --
 				// the shape `roster key add` answers in, and for its reason.
 				fmt.Fprintf(os.Stdout, "%s\n", key)
-				cl.Printf("this is the only time it is shown. `client.auth.credential_file` is where a configuration reads one.\n")
+				say("this is the only time it is shown. `client.auth.credential_file` is where a configuration reads one.\n")
 
 				return nil
 			}
 
-			if err := os.MkdirAll(filepath.Dir(out), 0o700); err != nil {
+			if err := keep(out, key); err != nil {
 				return err
 			}
-			// 0600: it is a credential, and the file is the only thing keeping it.
-			if err := os.WriteFile(out, []byte(key+"\n"), 0o600); err != nil {
-				return err
-			}
-			cl.Printf("written to %s. point `client.auth.credential_file` at it.\n", out)
+			say("written to %s. point `client.auth.credential_file` at it.\n", out)
 
 			return nil
 		}),
 	}
+}
+
+// keep writes a key a terminal was handed into the file `--out` names.
+//
+// `0600` in a directory made at `0700`: it is a credential, and the file is the
+// only thing keeping it. Through [writeKey] -- written beside and moved into
+// place -- because that is what makes the mode true. It was `os.WriteFile`
+// with `0600`, which is the mode of a file it **creates**: one that is already
+// there keeps its own, and the file a second sign-in writes to is the one the
+// first left, or one somebody made by hand, readable by whoever it was
+// readable by (#276).
+func keep(out, key string) error {
+	if err := os.MkdirAll(filepath.Dir(out), 0o700); err != nil {
+		return err
+	}
+
+	return writeKey(out, key)
 }
 
 // begun is what the front door answers when a flow starts: RFC 8628 §3.2.
@@ -170,10 +205,18 @@ func SignIn(ctx context.Context, say func(string, ...any) (int, error), cl *http
 	_, _ = say("waiting, for up to %s...\n", (time.Duration(v.ExpiresIn) * time.Second).String())
 
 	wait := time.Duration(max(v.Interval, 1)) * time.Second
+
+	// The code's own clock, kept here too: a front door that cannot be reached
+	// reads as *not yet* below, so that a moment's outage is not the end of
+	// the flow, and without this it read as *not yet* for ever.
+	ctx, cancel := context.WithTimeoutCause(ctx, time.Duration(max(v.ExpiresIn, 1))*time.Second+wait,
+		errors.New("the code ran out before anybody approved it"))
+	defer cancel()
+
 	for {
 		select {
 		case <-ctx.Done():
-			return "", ctx.Err()
+			return "", context.Cause(ctx)
 		case <-time.After(wait):
 		}
 
@@ -202,10 +245,18 @@ func SignIn(ctx context.Context, say func(string, ...any) (int, error), cl *http
 
 // poll asks once. It answers the key, or the reason to keep waiting.
 func poll(ctx context.Context, cl *http.Client, at, code string) (string, string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, at+"/device/poll?device_code="+code, nil)
+	// Posted, with the code in the body: it is the whole of what a poll is held
+	// to, and an address is what every log between here and there keeps
+	// (`account/device.go`, `devicePoll`).
+	body, err := json.Marshal(map[string]string{"device_code": code})
 	if err != nil {
 		return "", "", err
 	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, at+"/device/poll", bytes.NewReader(body))
+	if err != nil {
+		return "", "", err
+	}
+	req.Header.Set("content-type", "application/json")
 
 	res, err := cl.Do(req)
 	if err != nil {
@@ -231,6 +282,16 @@ func poll(ctx context.Context, cl *http.Client, at, code string) (string, string
 	}
 
 	return "", out.Error, nil
+}
+
+// thisMachine is whether a host is this machine's own name for itself.
+func thisMachine(host string) bool {
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+
+	return ip != nil && ip.IsLoopback()
 }
 
 func read(res *http.Response) string {

@@ -32,8 +32,26 @@ import (
 // the redirect -- a provider sends a browser only to a URL it was registered
 // with, and one per flow is not that.
 
-// stateCookie binds a browser to the round trip it started.
+// stateCookie binds a browser to the round trip it started, by the name
+// [App.stateName] gives it.
 const stateCookie = "login_state"
+
+// stateName is the name the round trip's cookie goes by: `__Host-` in front of
+// it wherever cookies are `Secure`, which is everywhere but a development rig.
+//
+// The session's cookie has always had the prefix, so that another host of the
+// same domain cannot write one over it. This one had not, and it is what a
+// callback is held to: a host beside this one could set it, and with it choose
+// which of its own round trips a browser's callback finished. The account app's
+// took the prefix for that (#277, `account.App.stateName`); this is the same
+// cookie one front door along (#278).
+func (a *App) stateName() string {
+	if a.c.InsecureCookie {
+		return stateCookie
+	}
+
+	return "__Host-" + stateCookie
+}
 
 // A flow is one round trip to a provider, started and not yet finished.
 type flow struct {
@@ -84,10 +102,15 @@ func (a *App) provider(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-	a.flows.Put(state, flow{tenant: o, trip: trip, challenge: r.URL.Query().Get(Challenge)}, 10*time.Minute)
+	if !a.flows.Put(state, flow{tenant: o, trip: trip, challenge: r.URL.Query().Get(Challenge)}, 10*time.Minute) {
+		// As many round trips are under way as this holds (`arrives.StatesHeld`).
+		w.Header().Set("retry-after", "30")
+		http.Error(w, "too many sign-ins are under way here; try again in a moment", http.StatusServiceUnavailable)
+		return
+	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     stateCookie,
+		Name:     a.stateName(),
 		Value:    state,
 		Path:     "/",
 		HttpOnly: true,
@@ -106,10 +129,12 @@ func (a *App) provider(w http.ResponseWriter, r *http.Request) {
 // that flow went to (`arrives.Trip`).
 func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	http.SetCookie(w, &http.Cookie{Name: stateCookie, Path: "/", MaxAge: -1})
+	// Cleared as it was set: a browser takes no `__Host-` cookie that is not
+	// `Secure`, and one that clears is a cookie like any other.
+	http.SetCookie(w, &http.Cookie{Name: a.stateName(), Path: "/", MaxAge: -1, HttpOnly: true, Secure: !a.c.InsecureCookie})
 
 	state := r.URL.Query().Get("state")
-	c, err := r.Cookie(stateCookie)
+	c, err := r.Cookie(a.stateName())
 	if err != nil || state == "" || c.Value != state {
 		// One answer for a missing cookie, a missing parameter and a mismatch:
 		// saying which would tell whoever sent this browser how far they got.
@@ -147,6 +172,36 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, arrives.ErrUninvited) {
 			http.Error(w, "this account has not been invited", http.StatusForbidden)
+
+			return
+		}
+		if errors.Is(err, arrives.ErrUnlinked) {
+			// Somebody the tenant has, whose first link is not this app's to
+			// write: they hold more than it does. A refusal like the one
+			// above, and not this app failing -- `arrives` has said in the
+			// log what an administrator links.
+			http.Error(w, "this account is known here and is not linked yet; "+
+				"an administrator of your organisation has to link it for you", http.StatusForbidden)
+
+			return
+		}
+		if errors.Is(err, arrives.ErrAnotherAccount) {
+			// Their address is somebody's here who signs in through this
+			// provider already, by another account: a refusal too, and not
+			// one this app can end by linking.
+			http.Error(w, "somebody here already signs in with another account at this provider, under the address this one carries; "+
+				"an administrator of your organisation has to say which account is theirs", http.StatusForbidden)
+
+			return
+		}
+		if errors.Is(err, arrives.ErrErased) {
+			// Somebody erased, whose account at the provider and whose proved
+			// address are theirs until they are forgotten: a refusal too, and
+			// not this app failing. One sentence whichever of the two they
+			// were found by, and nothing of who they were -- `arrives` has
+			// said that in the log, for whoever ends it.
+			http.Error(w, "this account was deleted here; "+
+				"an administrator of your organisation can bring it back, or let it go", http.StatusForbidden)
 
 			return
 		}

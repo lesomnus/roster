@@ -427,10 +427,17 @@ type MeLeaveResponse_builder struct {
 
 	// When the account was erased.
 	DateErased *timestamppb.Timestamp
-	// When it will be forgotten -- the erase plus `holder.forget_after` -- and
-	// unset where the deployment forgets nobody on a clock, which is a
-	// deployment where an operator's `roster forget` is the only way, or while
-	// a hold on the tenant stops that clock (`roster hold`).
+	// From when it is forgotten -- the erase plus `holder.forget_after`, which
+	// is when its grace runs out, and not the moment of the forget: that is the
+	// first pass after it, up to `holder.every` later. Unset where the
+	// deployment forgets nobody on a clock, which is a deployment where an
+	// operator's `roster forget` is the only way, or while a hold on the tenant
+	// stops that clock (`roster hold`). A hold placed after this was answered
+	// stops it too, and nobody is told.
+	//
+	// What a page says of it is *from* this date, and what is kept past it:
+	// what they consented to, for `consent.keep`, and the trail and the access
+	// record, by identifier (`account.leftSaying`).
 	DateForgotten *timestamppb.Timestamp
 }
 
@@ -707,7 +714,9 @@ type MeGetResponse_builder struct {
 	// looked.
 	Methods []string
 	// The sites they are narrowed to, and empty means every site of their
-	// tenant. It is `frame.Sets` as an answer; see `cmd.Sets`.
+	// tenant. It is `frame.Sets` as an answer; see `cmd.Sets`. Each is said
+	// once, in the order of their identifiers, which is the order they were
+	// made in.
 	Sites     [][]byte
 	EverySite bool
 	// What they may call about **their own account**, and nobody else's: the
@@ -738,6 +747,10 @@ type MeGetResponse_builder struct {
 	// This message is the one shape narrowed to the person **by construction**:
 	// it takes no subject, so there is nothing to point at somebody else. That is
 	// also why `cmd.Policy` can waive a binding for it and for nothing else.
+	//
+	// Each of these, and `keys` below, is every one they have, in the order
+	// they were made in: what `HolderService.SignsIn` answers an administrator
+	// about them, in the same order.
 	Identities  []*SignInIdentity
 	Credentials []*SignInCredential
 	// And the keys that act as them, which is the third way in and the one that

@@ -300,6 +300,8 @@ type Continuation_builder struct {
 	// Its **length** is how far along somebody is, and that is all a page needs
 	// to draw "step two". What is deliberately not here is how many there are in
 	// total: *two is enough* is sufficiency and D20 leaves that to the caller.
+	//
+	// Not personal: the kinds of factor, and no one's values of them.
 	Satisfied []string
 	// The verifier, never the handle -- the shape `ApiKey` argued and
 	// `Delegation` repeated: 256 bits from `crypto/rand` have no dictionary, so
@@ -312,6 +314,8 @@ type Continuation_builder struct {
 	// checkable on a delegation: this is spent through an RPC that runs behind
 	// roster's own authentication, so there is a frame naming who is asking.
 	// Opaque bytes, and never an edge -- see `delegation.proto`.
+	//
+	// Not personal: a key's identifier, as bytes.
 	Issuer []byte
 	// Which credential row the attempt is **metered on**.
 	//
@@ -340,6 +344,16 @@ type Continuation_builder struct {
 	DateExpires *timestamppb.Timestamp
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
+	// When the attempt was begun, which is what its holder's epoch is read
+	// against: one begun at or before `Holder.date_invalidated` is no attempt,
+	// as a link minted then is no link (`Link.date_created`), and a tie is too
+	// old.
+	//
+	// A first factor proved before everything was ended is not proved after it.
+	// The password it was proved with may be the one a reset has just replaced,
+	// and what finishing mints is dated after the stamp, so nothing further on
+	// would read it as old: until this was read, a sign-in begun with the old
+	// password finished with the code for as long as the attempt had left.
 	DateCreated *timestamppb.Timestamp
 }
 
@@ -364,14 +378,14 @@ var File_app_continuation_proto protoreflect.FileDescriptor
 
 const file_app_continuation_proto_rawDesc = "" +
 	"\n" +
-	"\x16app/continuation.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xff\x04\n" +
+	"\x16app/continuation.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x8b\x05\n" +
 	"\fContinuation\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12$\n" +
-	"\tsatisfied\x18\b \x03(\tB\x06\xea\x82\x16\x02@\x01R\tsatisfied\x12&\n" +
-	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12\x1e\n" +
+	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12*\n" +
+	"\tsatisfied\x18\b \x03(\tB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\tsatisfied\x12&\n" +
+	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12$\n" +
 	"\x06issuer\x18\n" +
-	" \x01(\fB\x06\xea\x82\x16\x02@\x01R\x06issuer\x12)\n" +
+	" \x01(\fB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\x06issuer\x12)\n" +
 	"\n" +
 	"metered_by\x18\f \x01(\fB\n" +
 	"\xea\x82\x16\x06\x10@8\x01@\x01R\tmeteredBy\x12G\n" +

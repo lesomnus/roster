@@ -51,6 +51,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/pdid"
 
 	"google.golang.org/protobuf/proto"
@@ -111,6 +112,11 @@ type Server struct {
 	// leaving is what leaving is, for the link that confirms it
 	// (`leave.go`); nil answers that nobody leaves by one here.
 	leaving Leaving
+
+	// gate is what this listener's gate asks about a caller; nil is a stack
+	// with none, which hands out no delegation to a caller it has a frame for
+	// (`delegate.go`, `mayDelegate`).
+	gate gate.Policy
 }
 
 // Option is how a deployment says what this service is allowed to assume.
@@ -127,6 +133,11 @@ func WithKeys(v Keyring) Option { return func(s *Server) { s.keys = v } }
 // WithLockout gives the server the deployment's numbers; unset is
 // [DefaultLockout].
 func WithLockout(v Lockout) Option { return func(s *Server) { s.lockout = v } }
+
+// WithGate gives the service the policy this listener's gate asks, so that a
+// delegation is within what its caller may call: the one question, asked of
+// the one thing that answers it (`delegate.go`, `mayDelegate`).
+func WithGate(v gate.Policy) Option { return func(s *Server) { s.gate = v } }
 
 // New makes the service from the two stacks it needs.
 //
@@ -172,6 +183,20 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 	ref, err := refOf(who, in)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	if kindOf(kind) == KindWebAuthn {
+		// A security key answers an attempt, and here there is none: nothing
+		// for it to have signed but a challenge its presenter chose, which a
+		// captured assertion carries with it. It begins no sign-in either
+		// ([Begins]), so nothing is lost but the order -- what begins one is
+		// proved first, and the answer says what the key is to sign.
+		//
+		// A fact about the request and not about the person, so it is said
+		// before anybody is looked for, as an unknown kind is.
+		return nil, nil, status.Error(codes.FailedPrecondition,
+			"kind: a security key answers an attempt -- prove what begins a sign-in first, and "+
+				"have the key sign the challenge that answer carries")
 	}
 
 	by, err := s.verifierOf(kind)
@@ -356,6 +381,15 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 		// nothing here can: ten wrong guesses every [LockFor] will close it
 		// again, which is what locking by name costs; the package comment says
 		// why that is accepted.
+		//
+		// **Burned**, though nothing is compared, as every other refusal
+		// here is. This answered before any hashing -- a millisecond where a
+		// name nobody has takes thirty -- and that is the lock said by the
+		// clock, to a caller the answer is kept from: roster's own sign-in is
+		// public and folds a lock into *no* on purpose, and whoever timed the
+		// eleventh wrong password knew the name was somebody's (#275).
+		by.Burn(secret)
+
 		return app.VouchVerifyResponse_builder{DateLocked: until}.Build(), nil, nil
 	}
 
@@ -372,13 +406,14 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 		return res, nil, err
 	}
 
-	holder, err := pdid.From(v.GetHolder().GetId())
+	// The step is spent first, and only the caller that spent it goes on:
+	// [Server.claim].
+	v, mine, err := s.claim(ctx, v, step)
 	if err != nil {
 		return nil, nil, err
 	}
-	tenant, err := pdid.From(v.GetHolder().GetTenant().GetId())
-	if err != nil {
-		return nil, nil, err
+	if !mine {
+		return no(), nil, nil
 	}
 
 	// And now the part that is not a yes or a no: what else this person could
@@ -386,29 +421,24 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 	// `ok` when there is not -- the two are mutually exclusive, which is what
 	// keeps a caller that has never heard of second factors failing closed.
 	//
-	// A caller with no frame -- `init`, the sandbox -- cannot be issued one and
-	// does not want one, so it gets the answer this always gave.
+	// # A caller with no frame is answered the same, less the handle
 	//
-	// Which is also why [Begins] is not asked here, and it is worth saying so
-	// where somebody will look for it. This branch already answers `ok` to a
-	// **first** factor without asking for a second, because it has nowhere to
-	// put a continuation -- so what its `ok` means is *the secret matched*
-	// rather than *the sign-in is finished*, and a rule about which factor
-	// finishes one has nothing to decide here. Nothing in a deployment reaches
-	// it either: every caller that gets this far holds a key or a certificate
-	// and so carries an actor. It is `init`, and it is the tests and the
-	// example confirming a freshly enrolled seed without signing anybody in.
+	// `init`, a command at the box, a test: nobody a continuation could be
+	// minted for, so none is. What is proved and what is left are still said,
+	// and `ok` still means there is nothing left.
+	//
+	// It did not. This branch answered `ok` to a **first** factor -- *the
+	// secret matched* rather than *the sign-in is finished* -- which is the
+	// second meaning `vouch.proto` says the field must never have, on the
+	// argument that nothing in a deployment reached it: every caller that got
+	// this far held a key or a certificate. `AuthService/SignIn` is public and
+	// holds neither, and roster's own sign-in minted a session on that `ok`
+	// for somebody with an authenticator app (#275). A door of roster's own
+	// says who it is ([Server.VerifyAt]); whatever else arrives with no frame
+	// fails closed.
 	issuer, err := issuerOf(ctx)
 	if err != nil {
-		if err := s.passed(ctx, v, step, true); err != nil {
-			return nil, nil, err
-		}
-
-		return app.VouchVerifyResponse_builder{
-			Ok:     true,
-			Holder: holder.Bytes(),
-			Tenant: tenant.Bytes(),
-		}.Build(), v, nil
+		issuer = pdid.Nil
 	}
 
 	res, err := s.answer(ctx, v.GetHolder(), []string{kindOf(kind)}, v.GetId(), issuer)
@@ -435,20 +465,66 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 
 // failed counts an attempt, and closes the account when there have been enough.
 //
-// # What this counter is and is not for
+// # Every one is counted
 //
-// It is a compare-and-swap, so two attempts arriving together are one recorded
-// failure rather than two: the loser reads the same count the winner did and
-// its write is refused. That is a real under-count, and it is left this way
-// because the alternative -- forcing past the version -- has the same
-// under-count and gives up the locking as well.
+// It is a compare-and-swap: two attempts arriving together read the same
+// count, one writes, and the other is refused its write. This took a refusal
+// as counted -- *a real under-count, left this way because the alternative,
+// forcing past the version, has the same under-count and gives up the locking
+// as well* -- and left a burst to `grpcx.Limit`, which counts by the caller's
+// tenant, has nothing to count a public sign-in by, and is off unless a
+// deployment sets it. So a hundred and twenty wrong passwords, forty at a
+// time, were six, and whoever sent their guesses side by side was held to no
+// lockout at all (#275).
 //
-// What it means is that this defends against **sustained guessing** and not
-// against a burst of it. The burst is `grpcx.Limit`'s, which counts calls
-// rather than rows and does not have to read anything to do it. Two mechanisms
-// because they are two different attacks, and a counter that tried to be both
-// would need an atomic increment this schema has no way to ask for.
+// There was a third way. The swap stays, and a write that loses reads the row
+// again and counts on what is there now: each round one of those waiting
+// lands, so after as many rounds as close an account it is closed, and
+// whoever is still waiting finds it so and has nothing left to count.
+//
+// What this does not bound is the answers already being compared when the
+// lock lands, which is as many as the deployment compares at once.
 func (s *Server) failed(ctx context.Context, v *app.Credential) (*app.VouchVerifyResponse, error) {
+	// As many tries as there can be writes ahead of this one before the
+	// account is closed, and one more.
+	for range max(int(s.lockout.Failures), 1) + 1 {
+		res, counted, err := s.count(ctx, v)
+		if err != nil || counted {
+			return res, err
+		}
+
+		// Somebody else wrote this instant. What is there now?
+		v, err = s.open.Credential().Get(ctx, app.CredentialGetRequest_builder{
+			Ref: app.CredentialRef_builder{Id: v.GetId()}.Build(),
+			Select: app.CredentialSelect_builder{
+				Failures:    z.Ptr(true),
+				DateLocked:  z.Ptr(true),
+				DateUpdated: z.Ptr(true),
+			}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return no(), nil
+			}
+
+			return nil, err
+		}
+		if until := v.GetDateLocked(); until != nil && until.AsTime().After(time.Now()) {
+			// Closed by the ones ahead of this. Said, as the answer that
+			// closed it was.
+			return app.VouchVerifyResponse_builder{DateLocked: until}.Build(), nil
+		}
+	}
+
+	// Never landed, which is a row written more often than this could keep up
+	// with. Answering "no" is right, and an error would be worse than the lost
+	// count: it turns people mistyping at once into a request that failed
+	// rather than one that was refused.
+	return no(), nil
+}
+
+// count is one try at [Server.failed]'s write, and whether it landed.
+func (s *Server) count(ctx context.Context, v *app.Credential) (*app.VouchVerifyResponse, bool, error) {
 	n := v.GetFailures() + 1
 
 	patch := app.CredentialPatchRequest_builder{
@@ -471,18 +547,14 @@ func (s *Server) failed(ctx context.Context, v *app.Credential) (*app.VouchVerif
 	}
 
 	if _, err := s.open.Credential().Patch(ctx, patch.Build()); err != nil {
-		if !raced(err) {
-			return nil, err
+		if raced(err) {
+			return nil, false, nil
 		}
 
-		// Somebody else counted this instant. Answering "no" is right and
-		// answering with an error would be worse than the lost count: it turns
-		// two people mistyping at once into a request that failed rather than
-		// one that was refused.
-		return no(), nil
+		return nil, false, err
 	}
 
-	return res, nil
+	return res, true, nil
 }
 
 // raced is a write that lost a compare-and-swap.
@@ -541,15 +613,103 @@ func (s *Server) passed(ctx context.Context, v *app.Credential, step int64, done
 
 	_, err := s.open.Credential().Patch(ctx, patch.Build())
 	if raced(err) {
-		// Another request got there first. For the counter that is the same
-		// outcome; for the step it is **also** the same outcome, because the
-		// request that won wrote the same step or a later one -- two attempts
-		// with one code cannot both be the winner, which is the property this
-		// is for.
+		// Another request got there first, and for the counter that is the
+		// same outcome. The step is not left to this: [Server.claim] has
+		// already written it, and answered whether this caller did.
 		return nil
 	}
 
 	return err
+}
+
+// claimTries is how many times [Server.claim] reads a row again because a
+// write landed between its read and its own.
+const claimTries = 4
+
+// claim records a step as spent, and answers whether **this** call is the one
+// that spent it -- with the row as it is now, for whatever is written next.
+//
+// # It used to be taken for granted
+//
+// A spent step is written by compare-and-swap, in [Server.passed], and one
+// that lost was taken as written: *the request that won wrote the same step or
+// a later one -- two attempts with one code cannot both be the winner*. The
+// first half is true and the second did not follow. The one that lost went on
+// to answer as the one that won had, so a single code presented on two
+// attempts in the same instant finished both -- which is the replay D20 puts
+// in roster's half, in the one shape a sequential check cannot see. And a
+// write of any other kind landing in between -- a wrong answer counted, an
+// unlock -- lost the step altogether, and the code worked again until its
+// window closed (#275).
+//
+// So it is the row that answers, as it is for an attempt ([Server.spend]): a
+// write that loses reads again, and a step already there is somebody else's.
+// One that cannot be written is refused rather than accepted unrecorded.
+//
+// A secret with no step -- a password, a key that counts nothing -- has
+// nothing to claim, and is everybody's who presents it.
+func (s *Server) claim(ctx context.Context, v *app.Credential, step int64) (*app.Credential, bool, error) {
+	if step <= v.GetLastStep() {
+		// Nothing to move. The comparison has already refused a step at or
+		// behind the one on the row, so this is a secret that has none.
+		return v, true, nil
+	}
+
+	for range claimTries {
+		got, err := s.open.Credential().Patch(ctx, app.CredentialPatchRequest_builder{
+			Ref:         app.CredentialRef_builder{Id: v.GetId()}.Build(),
+			LastStep:    z.Ptr(step),
+			DateUpdated: v.GetDateUpdated(),
+		}.Build())
+		if err == nil {
+			// The row as it is now, so that what is written next -- the count
+			// being cleared -- is written against this version.
+			next := proto.CloneOf(v)
+			next.SetLastStep(step)
+			next.SetDateUpdated(got.GetDateUpdated())
+
+			return next, true, nil
+		}
+		if !raced(err) {
+			return nil, false, err
+		}
+
+		at, err := s.open.Credential().Get(ctx, app.CredentialGetRequest_builder{
+			Ref: app.CredentialRef_builder{Id: v.GetId()}.Build(),
+			Select: app.CredentialSelect_builder{
+				LastStep:    z.Ptr(true),
+				Failures:    z.Ptr(true),
+				DateLocked:  z.Ptr(true),
+				DateUpdated: z.Ptr(true),
+			}.Build(),
+		}.Build())
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, false, nil
+			}
+
+			return nil, false, err
+		}
+		if step <= at.GetLastStep() {
+			// Spent, by whoever got there first.
+			return nil, false, nil
+		}
+
+		next := proto.CloneOf(v)
+		next.SetLastStep(at.GetLastStep())
+		next.SetFailures(at.GetFailures())
+		next.SetDateUpdated(at.GetDateUpdated())
+		if u := at.GetDateLocked(); u != nil {
+			next.SetDateLocked(u)
+		} else {
+			next.ClearDateLocked()
+		}
+		v = next
+	}
+
+	// Never landed. Refused, since accepting it is accepting a code nothing
+	// records as used.
+	return nil, false, nil
 }
 
 // no is the answer to everything that is not somebody proving themselves.
@@ -583,8 +743,19 @@ func kindOf(v string) string {
 // A caller that names one anyway is not trusted more for it: the walled read in
 // [Server.verify] answers for the key either way, so a field that disagrees with
 // the credential resolves to nobody.
+//
+// # What somebody typed is folded
+//
+// The tenant here and the alias in [refOf] are what a person typed into a
+// form, as an address is, and an address has always been folded before it is
+// looked for ([Server.byAddress]). These two were looked for as typed: a
+// password that was right was refused for `Alice` and for `Contoso`, and
+// accepted for `Alice@Contoso.Example`. A row's alias is in small letters or
+// it was not written (`server/core`, `spelled`), so there is one row a typed
+// name can mean, and it is found. Here and not in a reference anywhere else:
+// what a program names, it names exactly.
 func tenantOf(w *app.VouchWho, ctx context.Context) *app.TenantRef {
-	if v := w.GetTenant(); v != "" {
+	if v := front.Alias(w.GetTenant()); v != "" {
 		return app.TenantRef_builder{Alias: z.Ptr(v)}.Build()
 	}
 
@@ -606,7 +777,9 @@ func tenantOf(w *app.VouchWho, ctx context.Context) *app.TenantRef {
 // named nothing. Nil is a caller that is in no tenant and named none.
 func refOf(w *app.VouchWho, in *app.TenantRef) (*app.HolderRef, error) {
 	id := w.GetId()
-	tenant, alias, address := w.GetTenant(), w.GetAlias(), w.GetAddress()
+
+	// Folded, as [tenantOf] folds the tenant and for its reason.
+	tenant, alias, address := front.Alias(w.GetTenant()), front.Alias(w.GetAlias()), w.GetAddress()
 
 	byId := len(id) > 0
 	bySlug := alias != ""

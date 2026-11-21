@@ -192,7 +192,7 @@ func (s *Server) Redeem(ctx context.Context, req *app.VouchRedeemRequest) (*app.
 		return nil, status.Error(codes.InvalidArgument,
 			"methods: a delegation that allows nothing opens no door")
 	}
-	if err := mayDelegate(ctx, methods); err != nil {
+	if err := s.mayDelegate(ctx, methods); err != nil {
 		return nil, err
 	}
 
@@ -208,7 +208,8 @@ func (s *Server) Redeem(ctx context.Context, req *app.VouchRedeemRequest) (*app.
 		}
 
 		// A link that was never here, one that was spent, one that expired, one
-		// somebody else was issued, and one minted for a stranger: one answer.
+		// somebody else was issued, one minted for a stranger, and one out
+		// since before everything of its holder's was ended: one answer.
 		return app.VouchDelegateResponse_builder{Verified: no()}.Build(), nil
 	}
 
@@ -306,9 +307,39 @@ func (s *Server) link(ctx context.Context, token string, by pdid.Id) (*app.Link,
 	return v, nil
 }
 
-// row is the link a token names, if it is real, still open, and for somebody
-// who may still sign in -- which is what every kind of link has in common.
-// What each kind is bound to is the caller's to check.
+// row is the link a token names, if it is real, still open, for somebody who
+// may still sign in, and minted since everything of theirs was last ended --
+// which is what every kind of link spent here has in common. What each kind
+// is bound to is the caller's to check.
+//
+// # A link ends with what ends a sign-in
+//
+// `Holder.date_invalidated` says everything issued before a moment is void. A
+// password issued for somebody stamps it, a password they change does, and so
+// does *sign out everywhere*: each is somebody saying that what was out before
+// is not to be trusted, and a link in a mailbox is out. Nothing read the stamp
+// against one. So of two recovery links asked for, following the second -- a
+// new password, everything signed out -- left the first a way in for the rest
+// of its quarter hour, and following that replaced the password the second
+// had just handed over (#277).
+//
+// It is read here, once, because this is the read all three kinds spent in
+// this package pass through: a recovery (`Redeem`), a departure (`Leave`) and
+// a hand into the user console (`SpendAt`). And it can only be read where the
+// row is: when a link was minted is the link's to say, so the resolver, which
+// sees the holder and not the link, cannot cover it -- `keys.findDelegation`'s
+// arrangement.
+//
+// None of the three stamps the epoch before it reads. A recovery's stamp is
+// the password issued once `Redeem` has answered, leaving signs out after the
+// link is spent (`me.Server.Depart`), and a hand into the user console stamps
+// nothing.
+//
+// A link that confirms an address is not read here and is not ended by the
+// epoch (`Email.Confirm`, in `server/core`): it signs nobody in and hands
+// nothing over, and somebody who changed their password a minute ago still
+// reads their mailbox. The rest of what this asks -- that whoever the link is
+// for may still sign in -- that read asks for itself.
 func (s *Server) row(ctx context.Context, token string) (*app.Link, error) {
 	if !strings.HasPrefix(token, PrefixLink) {
 		return nil, status.Error(codes.NotFound, "no such link")
@@ -323,6 +354,9 @@ func (s *Server) row(ctx context.Context, token string) (*app.Link, error) {
 			Issuer:      z.Ptr(true),
 			At:          z.Ptr(true),
 			DateExpires: z.Ptr(true),
+			// When it was minted, to read against when everything of its
+			// holder's was last ended (`date_invalidated`, below).
+			DateCreated: z.Ptr(true),
 			Leave:       z.Ptr(true),
 			// The address a link was mailed to, for the kind that is spent on
 			// whether it is still theirs and still proved (`leave.go`).
@@ -332,10 +366,12 @@ func (s *Server) row(ctx context.Context, token string) (*app.Link, error) {
 				Holder:       app.HolderSelect_builder{}.Build(),
 			}.Build(),
 
+			// With their tenant, which is also how somebody erased is read:
+			// see below.
 			Holder: app.HolderSelect_builder{
-				Tenant:       app.TenantSelect_builder{Alias: z.Ptr(true), DateClosed: z.Ptr(true)}.Build(),
-				DateErased:   z.Ptr(true),
-				DateDisabled: z.Ptr(true),
+				Tenant:          app.TenantSelect_builder{Alias: z.Ptr(true), DateClosed: z.Ptr(true)}.Build(),
+				DateDisabled:    z.Ptr(true),
+				DateInvalidated: z.Ptr(true),
 			}.Build(),
 		}.Build(),
 	}.Build())
@@ -354,7 +390,34 @@ func (s *Server) row(ctx context.Context, token string) (*app.Link, error) {
 
 	// Somebody erased or suspended between the sending and the clicking, or
 	// whose tenant closed, is somebody this must not let in.
-	if h := v.GetHolder(); h.GetDateErased() != nil || h.GetDateDisabled() != nil || h.GetTenant().GetDateClosed() != nil {
+	//
+	// Erased is read as **a holder that did not come back**, which is
+	// `keys.signable`'s reading of a token. An edge is loaded through the rows
+	// still there, so somebody erased is answered as a bare reference: the
+	// identifier, and nothing of them. Every holder has a tenant and this read
+	// selects it, so one with none was not found.
+	//
+	// It asked for `date_erased` on that edge, which is a column of a row
+	// that was not loaded: the check never fired. What stopped somebody
+	// erased was the next thing to need their tenant -- after `Redeem` had
+	// spent the link, and as an identifier with no bytes, which a caller saw
+	// as `Unknown` where every other dead link is one answer (#277). Refused
+	// here, it is that answer, and before anything is spent.
+	h := v.GetHolder()
+	if gone := len(h.GetTenant().GetId()) == 0; gone || h.GetDateDisabled() != nil || h.GetTenant().GetDateClosed() != nil {
+		return nil, status.Error(codes.NotFound, "no such link")
+	}
+
+	// And one minted at or before the holder's epoch is void, which is the
+	// reading `keys.findDelegation` gives a delegation, a tie included. A link
+	// and a stamp in one instant are a link handed to the sign-in the stamp
+	// was ending, so the safe reading of a tie is that the link is too old.
+	// That is meant: somebody handed toward the user console in the instant
+	// their password changed signs in again.
+	//
+	// The same `NotFound` as every dead link above, so that spending one says
+	// nothing about why.
+	if w := h.GetDateInvalidated(); w != nil && !v.GetDateCreated().AsTime().After(w.AsTime()) {
 		return nil, status.Error(codes.NotFound, "no such link")
 	}
 
@@ -373,8 +436,9 @@ func (s *Server) row(ctx context.Context, token string) (*app.Link, error) {
 // It answers in `Verify`'s shape: `ok` and the person, or `ok` false for every
 // way of being wrong -- a link that was never here, one already spent, one
 // expired, one minted for another name or another tenant, a recovery link,
-// somebody erased or suspended since. One answer, because told apart it says
-// whether a string was ever a real link.
+// somebody erased or suspended since, or who has ended every sign-in of theirs
+// since ([Server.row]). One answer, because told apart it says whether a
+// string was ever a real link.
 //
 // No continuation, deliberately. The person was checked by the front door
 // against the tenant's own directory, which is the check `Accept` takes as

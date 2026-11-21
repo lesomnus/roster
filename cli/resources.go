@@ -3,6 +3,9 @@ package cli
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"strings"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/cfg"
@@ -28,6 +31,8 @@ func NewCmdResources(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 		Brief: "the rows a file declares: a customer, its names, its directories",
 
 		Commands: xli.Commands{newCmdResourcesApply(l, c)},
+
+		Handler: xli.RequireSubcommand(),
 	}
 }
 
@@ -60,26 +65,42 @@ func newCmdResourcesApply(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command
 			}
 			defer s.Close()
 
+			// A dry run alters no table: it asks of both planes what `serve`
+			// asks before it serves, without migrating either, and is refused
+			// in those words where a table is missing. It migrated the data
+			// plane where `db.migrate` was on and never looked at the control
+			// plane, so on a deployment nothing had started it made one plane's
+			// tables and then failed on the other's.
 			dry, _ := flg.Find[bool](cl, "dry-run")
-			if err := ready(ctx, s, c.Db); err != nil {
+			if dry {
+				asked := *c
+				asked.Db.Migrate, asked.Control.Db.Migrate = false, false
+				if err := Ready(ctx, s, asked); err != nil {
+					return err
+				}
+			} else if err := ready(ctx, s, c.Db); err != nil {
 				return err
 			}
 
+			// What was done before an error is printed before it. The command
+			// returned before it printed, so a tenant made ahead of a row that
+			// failed was made with no line saying so.
 			v, err := cmd.ApplyResources(ctx, s, rs, dry)
+			printApplied(cl.Root().Writer, v)
 			if err != nil {
 				return err
 			}
 
-			// Said one per line and not counted, because what somebody running
-			// this wants is **which**. The counts are what a log line is for.
-			for _, w := range v.Added {
-				fmt.Fprintf(cl.Root().Writer, "+ %s\n", w)
+			// What `serve` logs, said here because nothing installs a logger
+			// on a command: a file that declares nothing is no row, so it is
+			// said beside them and not among them.
+			for _, f := range v.Nothing {
+				fmt.Fprintf(os.Stderr, "roster: resources: %s declares nothing.\n", f)
 			}
-			for _, w := range v.Changed {
-				fmt.Fprintf(cl.Root().Writer, "~ %s\n", w)
-			}
-			for _, w := range v.Same {
-				fmt.Fprintf(cl.Root().Writer, "  %s\n", w)
+
+			if len(v.Left) > 0 {
+				fmt.Fprintln(cl.Root().Writer, "\n(! is of a tenant that is closed or destroyed: left as it is. "+
+					"Restore the tenant if it is closed, or take these out of the file)")
 			}
 			if dry {
 				fmt.Fprintln(cl.Root().Writer, "\n(dry run; nothing was written)")
@@ -87,5 +108,35 @@ func newCmdResourcesApply(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command
 
 			return nil
 		}),
+	}
+}
+
+// printApplied is one line a row, `<sign> <Kind> <name>`, and after a `~` the
+// keys that change: `~ Connection @contoso/entra: issuer, scopes`. The line is
+// this command's output, and a script may read it.
+//
+// Said one per line and not counted, because what somebody running this wants
+// is **which**; the counts are what a log line is for. The keys, because a
+// `~` alone did not say what this command is for: that a `Connection`'s issuer
+// is about to change. The kind and the tenant, because a `Host` and a
+// `MailDomain` of one name printed alike and said nothing of whose they were.
+//
+// By what was done, as it always was: what is added, then what is changed,
+// then what is the same; and last, `!`, what the files declare of a tenant
+// that is closed or destroyed, which is not written and not compared
+// (`cmd.ApplyResources`) -- said here because nothing installs a logger on a
+// command, and the warning `serve` logs for it would reach nobody.
+func printApplied(w io.Writer, v cmd.Applied) {
+	for _, was := range []struct{ was, sign string }{{"added", "+"}, {"changed", "~"}, {"same", " "}, {"left", "!"}} {
+		for _, r := range v.Rows {
+			if r.Was != was.was {
+				continue
+			}
+			line := fmt.Sprintf("%s %s %s", was.sign, r.Kind, r.Name)
+			if was.was == "changed" && len(r.Fields) > 0 {
+				line += ": " + strings.Join(r.Fields, ", ")
+			}
+			fmt.Fprintln(w, line)
+		}
 	}
 }

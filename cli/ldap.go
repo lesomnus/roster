@@ -35,6 +35,8 @@ func NewCmdLdap(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 		Brief: "roster as a directory, over LDAP",
 
 		Commands: xli.Commands{newCmdLdapServe(l, c)},
+
+		Handler: xli.RequireSubcommand(),
 	}
 }
 
@@ -54,7 +56,7 @@ func newCmdLdapServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			cfg.Bind(l, &c.Ldap.AddrTls, &flg.String{Name: "listen-tls", Brief: "where to speak LDAPS; needs --tls"}),
 			cfg.Bind(l, &c.Ldap.Roster, &flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"}),
 			cfg.Bind(l, &c.Ldap.Insecure, &flg.Switch{Name: "insecure", Brief: "dial roster without TLS"}),
-			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per operator fronted. Or " + LdapKeyPrefix + "<ALIAS> in the environment"},
+			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per tenant fronted. Or " + LdapKeyPrefix + "<ALIAS> in the environment"},
 			cfg.Bind(l, &c.Ldap.Key, &flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it, as rk_…, env:NAME or file:PATH; instead of --key"}),
 			&flg.Strings{Name: "base", Brief: "a tenant's suffix, as alias=dc=…; o=<alias> if not given"},
 			cfg.Bind(l, &c.Ldap.Bind, &flg.String{Name: "bind", Brief: "what a bind's password may be: key (an app password the person minted; the default), password (their own), either"}),
@@ -145,6 +147,11 @@ func serveLdap(ctx context.Context, lc cmd.LdapConfig) error {
 	// or from a flag and this cannot tell which, so naming one would be right
 	// half the time -- and a reader who has only ever used the other would be
 	// told about a setting they do not have.
+	// What has a form, held to it before anything is dialled; `roster serve`
+	// asks the same in `cmd.Build`.
+	if err := lc.Meant(); err != nil {
+		return err
+	}
 	mode, err := ldap.ParseMode(lc.Bind)
 	if err != nil {
 		return fmt.Errorf("ldap.bind (--bind): %w", err)
@@ -176,6 +183,10 @@ func serveLdap(ctx context.Context, lc cmd.LdapConfig) error {
 		Bind:     mode,
 		Insecure: lc.Insecure,
 		Log:      log.From(ctx),
+
+		// What the root DSE says of StartTLS is what the listener below does:
+		// one certificate, said to both.
+		StartTLS: tlsConfig != nil,
 	}
 
 	d, err := ldap.New(ctx, cfg)
@@ -214,6 +225,14 @@ func serveLdap(ctx context.Context, lc cmd.LdapConfig) error {
 		n++
 		go serve(tls.NewListener(l, tlsConfig), "ldaps")
 	}
+	// A listener that ends with an error ends this, and so the process: under
+	// `roster serve` that is roster's own ports too, as it is for the account
+	// app, SCIM and the Login App there, each of which returns what its
+	// listener returned. It is not an accept that failed for a moment -- the
+	// process out of descriptors, which [wire.Server.Serve] waits out and
+	// which used to come back here and stop roster -- but a listener that is
+	// broken, and a process whose directory is gone for good is one to start
+	// again and not one to leave answering everything else.
 	for range n {
 		if err := <-errs; err != nil {
 			return err

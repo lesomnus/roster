@@ -1037,7 +1037,7 @@ func TestTwoFormsAndTheAppRemembersNothing(t *testing.T) {
 		Secret: []byte(vouch.CodeAt(seed, time.Now().Unix()/30-1)),
 	}.Build())
 	x.NoError(err)
-	x.True(got.GetOk())
+	x.Equal([]string{vouch.KindTotp}, got.GetSatisfied())
 
 	jar, err := cookiejar.New(nil)
 	x.NoError(err)
@@ -1819,6 +1819,12 @@ func TestSomebodyChangesTheirPasswordAndAddsAFactor(t *testing.T) {
 
 		x.Equal(http.StatusNoContent, signIn(other, next), "the new password does not work")
 		x.Equal(http.StatusUnauthorized, signIn(other, first), "the old password still works")
+
+		// And the session that changed it is over, with every other the old
+		// password opened: somebody changes a password because somebody else
+		// may have it, and that somebody was signed in already. So this
+		// browser signs in again, as a person would, with the new one.
+		x.Equal(http.StatusNoContent, signIn(c, next), "the new password does not sign the same browser in again")
 	})
 
 	t.Run("and the wrong current password is refused", func(t *testing.T) {

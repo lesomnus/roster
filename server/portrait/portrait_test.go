@@ -3,11 +3,14 @@ package portrait_test
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/binary"
+	"hash/crc32"
 	"image"
 	"image/color"
 	"image/gif"
 	"image/jpeg"
 	"image/png"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -76,7 +79,7 @@ func sizes(p *rstr.Portrait) []uint32 {
 func TestAnImageIsKeptAtEverySize(t *testing.T) {
 	x := require.New(t)
 
-	p, err := portrait.Render(encoded(t, paint(300, 300, func(int, int) color.Color { return color.NRGBA{200, 40, 40, 255} })))
+	p, err := portrait.Render(t.Context(), encoded(t, paint(300, 300, func(int, int) color.Color { return color.NRGBA{200, 40, 40, 255} })))
 	x.NoError(err)
 	x.Equal([]uint32{32, 64, 128}, sizes(p))
 
@@ -103,7 +106,7 @@ func TestASmallImageIsNotEnlarged(t *testing.T) {
 		{129, []uint32{32, 64, 128}},
 	} {
 		x := require.New(t)
-		p, err := portrait.Render(encoded(t, paint(c.side, c.side, func(int, int) color.Color { return color.White })))
+		p, err := portrait.Render(t.Context(), encoded(t, paint(c.side, c.side, func(int, int) color.Color { return color.White })))
 		x.NoError(err)
 		x.Equal(c.want, sizes(p), "%d pixels a side", c.side)
 	}
@@ -125,7 +128,7 @@ func TestTheMiddleIsKept(t *testing.T) {
 			return color.NRGBA{0, 0, 255, 255}
 		}
 	})
-	p, err := portrait.Render(encoded(t, m))
+	p, err := portrait.Render(t.Context(), encoded(t, m))
 	x.NoError(err)
 	x.Equal([]uint32{32, 64, 100}, sizes(p))
 
@@ -140,7 +143,7 @@ func TestTheMiddleIsKept(t *testing.T) {
 func TestWhatIsTransparentIsWhite(t *testing.T) {
 	x := require.New(t)
 
-	p, err := portrait.Render(encoded(t, paint(64, 64, func(int, int) color.Color { return color.NRGBA{} })))
+	p, err := portrait.Render(t.Context(), encoded(t, paint(64, 64, func(int, int) color.Color { return color.NRGBA{} })))
 	x.NoError(err)
 	near(t, color.White, decoded(t, p.GetRenditions()[0]).At(16, 16))
 }
@@ -162,7 +165,7 @@ func TestEachFormatIsRead(t *testing.T) {
 	for name, b := range map[string][]byte{"jpeg": j.Bytes(), "png": encoded(t, m), "gif": g.Bytes(), "webp": webp} {
 		t.Run(name, func(t *testing.T) {
 			x := require.New(t)
-			p, err := portrait.Render(b)
+			p, err := portrait.Render(t.Context(), b)
 			x.NoError(err)
 			x.NotEmpty(p.GetRenditions())
 			decoded(t, p.GetRenditions()[0])
@@ -181,7 +184,7 @@ func TestWhatIsNotAnImageIsRefused(t *testing.T) {
 		"truncated": j.Bytes()[:j.Len()/2],
 	} {
 		t.Run(name, func(t *testing.T) {
-			_, err := portrait.Render(b)
+			_, err := portrait.Render(t.Context(), b)
 			require.ErrorIs(t, err, portrait.ErrNotAnImage)
 		})
 	}
@@ -195,13 +198,120 @@ func TestATooLargeImageIsRefusedBeforeItIsDecoded(t *testing.T) {
 		b := encoded(t, image.NewGray(image.Rect(0, 0, portrait.MaxSide+1, 1)))
 		x.Less(len(b), 64<<10, "the point is a small file")
 
-		_, err := portrait.Render(b)
+		_, err := portrait.Render(t.Context(), b)
 		x.ErrorIs(err, portrait.ErrTooLarge)
 	})
 	t.Run("in bytes", func(t *testing.T) {
-		_, err := portrait.Render(make([]byte, portrait.MaxBytes+1))
+		_, err := portrait.Render(t.Context(), make([]byte, portrait.MaxBytes+1))
 		require.ErrorIs(t, err, portrait.ErrTooLarge)
 	})
+
+	// What the wire takes is 2048 a side, and 4096 was: one image of that,
+	// which a caller needs no role to send, cost a process up to 269 MiB to
+	// render (#279). Held by a header that claims the old largest image and
+	// has no such pixels behind it: read to find out, it is no image; refused
+	// from its header, it is too large, and that is the answer.
+	t.Run("and the most is 2048 a side, from the header alone", func(t *testing.T) {
+		x := require.New(t)
+		x.Equal(2048, portrait.MaxSide, "what a picture may be is said in `holder_svc.ext.proto` and in the manual, by this number")
+
+		_, err := portrait.Render(t.Context(), claiming(t, 4096, 4096))
+		x.ErrorIs(err, portrait.ErrTooLarge, "an image of the size that cost the most was decoded to find out what it is")
+		x.ErrorContains(err, "2048", "the refusal does not say what the most is")
+
+		_, err = portrait.Render(t.Context(), claiming(t, portrait.MaxSide, portrait.MaxSide))
+		x.ErrorIs(err, portrait.ErrNotAnImage, "a header alone was taken for a picture")
+	})
+}
+
+// claiming is a PNG whose header says it is w by h and that holds no such
+// pixels: one pixel's worth, under a header rewritten and summed again.
+func claiming(t *testing.T, w, h int) []byte {
+	t.Helper()
+	b := encoded(t, image.NewGray(image.Rect(0, 0, 1, 1)))
+
+	// The signature, then the first chunk: its length, `IHDR`, thirteen bytes
+	// that begin with the width and the height, and their sum.
+	require.Equal(t, "IHDR", string(b[12:16]))
+	binary.BigEndian.PutUint32(b[16:], uint32(w))
+	binary.BigEndian.PutUint32(b[20:], uint32(h))
+	binary.BigEndian.PutUint32(b[29:], crc32.ChecksumIEEE(b[12:29]))
+
+	return b
+}
+
+// progressive is a progressive JPEG of w by h, its three components at full
+// resolution and every coefficient zero: about three bits a block, and the
+// costliest thing a decoder can be handed for its size, since a progressive
+// image is every coefficient of every block kept until its last scan.
+func progressive(w, h int) []byte {
+	var b bytes.Buffer
+	b.Write([]byte{0xff, 0xd8})
+
+	// One quantization table, all ones.
+	b.Write([]byte{0xff, 0xdb, 0, 67, 0})
+	b.Write(bytes.Repeat([]byte{1}, 64))
+
+	// The frame: progressive, eight bits, three components each sampled once.
+	b.Write([]byte{0xff, 0xc2, 0, 17, 8, byte(h >> 8), byte(h), byte(w >> 8), byte(w), 3, 1, 0x11, 0, 2, 0x11, 0, 3, 0x11, 0})
+
+	// One table for the first coefficient, with one code, one bit long, that
+	// says *the same as the block before*.
+	b.Write([]byte{0xff, 0xc4, 0, 20, 0x00, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x00})
+
+	// One scan of that coefficient for all three, which is that code once a
+	// block.
+	b.Write([]byte{0xff, 0xda, 0, 12, 3, 1, 0x00, 2, 0x00, 3, 0x00, 0, 0, 0})
+	bits := 3 * ((w + 7) / 8) * ((h + 7) / 8)
+	b.Write(make([]byte, (bits+7)/8+2))
+
+	b.Write([]byte{0xff, 0xd9})
+
+	return b.Bytes()
+}
+
+// TestTheLargestPictureIsRenderedWithinABound: what rendering an image costs
+// a process is the image decoded whole and the scaler's rows beside it, and
+// nothing a file weighs says how much that is. The largest the wire took, 4096
+// pixels a side, allocated 93 MiB as 57 KiB of PNG, 157 MiB at sixteen bits a
+// channel and 269 MiB as 98 KiB of progressive JPEG, and `Portray` is
+// everybody's to call about their own row.
+//
+// The largest it takes now is held to under 96 MiB, whichever format it comes
+// in: measured, 46 and 74 for the two costliest. A change to how an image is
+// decoded or scaled that costs more than that for one image fails here, before
+// it is a process's memory.
+func TestTheLargestPictureIsRenderedWithinABound(t *testing.T) {
+	const most = 96 << 20
+
+	deep := image.NewNRGBA64(image.Rect(0, 0, portrait.MaxSide, portrait.MaxSide))
+	for i := range deep.Pix {
+		deep.Pix[i] = 0x7f
+	}
+
+	for _, c := range []struct {
+		name string
+		b    []byte
+	}{
+		{"a PNG at sixteen bits a channel", encoded(t, deep)},
+		{"a progressive JPEG", progressive(portrait.MaxSide, portrait.MaxSide)},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			x := require.New(t)
+			x.LessOrEqual(len(c.b), portrait.MaxBytes, "the wire would not take this, so it proves nothing")
+
+			runtime.GC()
+			var before, after runtime.MemStats
+			runtime.ReadMemStats(&before)
+			p, err := portrait.Render(t.Context(), c.b)
+			runtime.ReadMemStats(&after)
+
+			x.NoError(err)
+			x.Equal([]uint32{32, 64, 128}, sizes(p))
+			x.Less(after.TotalAlloc-before.TotalAlloc, uint64(most),
+				"%d MiB to render one image of %d bytes", (after.TotalAlloc-before.TotalAlloc)>>20, len(c.b))
+		})
+	}
 }
 
 // A page carries one rendition, the largest no larger than the page's size.

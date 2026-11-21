@@ -1,6 +1,10 @@
 package cmd
 
-import "time"
+import (
+	"fmt"
+	"strings"
+	"time"
+)
 
 // The consumers, as configuration.
 //
@@ -67,7 +71,7 @@ type AccountConfig struct {
 	// page somewhere else.
 	//
 	// A block of one field rather than `static:` beside the rest, because
-	// `control.console.dir` is already the name for "the built UI directory
+	// `admin.console.dir` is already the name for "the built UI directory
 	// for this listener" and a reader who has seen one should be able to guess
 	// the other. The flag is still `--static`, which is what it was.
 	Page PageConfig `yaml:"page"`
@@ -75,6 +79,31 @@ type AccountConfig struct {
 	// Enrol is who a provider may sign in: `invited`, `expected` or
 	// `enrolling`. See [LoginConfig.Enrol], which says what each is.
 	Enrol string `yaml:"enrol"`
+
+	// PrivateHosts is the hosts off the internet this front door may ask a
+	// provider at, each a name, an address or a network: `idp.corp.example`,
+	// `10.20.0.5`, `10.20.0.0/16`.
+	//
+	// A `Connection` says where its provider is, and a connection with no
+	// secret is its tenant's administrator's to write. So a front door asks a
+	// provider -- for its document, at its token endpoint, for its keys and
+	// its userinfo -- only at an address on the internet, and refuses this
+	// machine, a private network, a link's own addresses and with them the
+	// cloud's metadata service, whatever the name it was given resolves to.
+	// A directory on the premises is at one of those, and which hosts inside
+	// are a provider's is the deployment's to say: here, and nowhere a tenant
+	// writes. A row this deployment's own file declares is held to it like
+	// any other, since the rule is about the address.
+	//
+	// Named rather than a switch, as [MailConfig.PlaintextHosts] is and for
+	// its reason: a switch would open every address inside to every tenant's
+	// row. Empty is none.
+	//
+	// It is about what this process connects to itself. Where the environment
+	// names a proxy (`HTTPS_PROXY`), a request goes out through that and where
+	// the provider is, is the proxy's to refuse; this then holds only what
+	// `NO_PROXY` sends direct.
+	PrivateHosts []string `yaml:"private_hosts"`
 
 	// Keys is one tenant key per tenant fronted, by alias.
 	//
@@ -187,6 +216,19 @@ func (c MailConfig) On() bool { return c.Addr != "" }
 // Serves is whether this deployment answers a front door.
 func (c AccountConfig) Serves() bool { return c.Addr != "" }
 
+// Meant refuses an `account:` block whose values are not of their form, as
+// [ScimConfig.Meant] does: each started and was found at the first request
+// that read it. Asked by [Build] where the block is served, and by `roster
+// account serve`; the flag is named beside the key, since this cannot tell
+// which said it.
+func (c AccountConfig) Meant() error {
+	if err := webOrigin("account.base (--base)", c.Base); err != nil {
+		return err
+	}
+
+	return dirThere("account.page.dir (--static)", c.Page.Dir)
+}
+
 // PageConfig is a built page, as a directory.
 type PageConfig struct {
 	// Dir is `ts/dist/account`, or wherever the build was put.
@@ -237,6 +279,26 @@ type LdapConfig struct {
 // Serves is whether this deployment answers LDAP.
 func (c LdapConfig) Serves() bool { return c.Addr != "" || c.AddrTls != "" }
 
+// Meant refuses an `ldap:` block whose values are not of their form; see
+// [AccountConfig.Meant].
+//
+// A suffix holds an `=`, and one that does not is what a suffix written with
+// its own commas in `ROSTER_LDAP_BASES` becomes: the environment parts a map's
+// pairs at commas, so `acme=dc=acme,dc=example` is two tenants, the second
+// called `dc` under `example`. The flow form, `{acme: "dc=acme,dc=example"}`,
+// is read whole.
+func (c LdapConfig) Meant() error {
+	for alias, suffix := range c.Bases {
+		if !strings.Contains(suffix, "=") {
+			return fmt.Errorf("ldap.bases.%s (--base): %q is no suffix, which is attributes and their values, as "+
+				"dc=acme,dc=example. In ROSTER_LDAP_BASES a suffix with commas is written in the flow form, "+
+				"'{acme: \"dc=acme,dc=example\"}': written as pairs, the commas part it", alias, suffix)
+		}
+	}
+
+	return nil
+}
+
 // ScimConfig is roster as a SCIM 2.0 endpoint: where a directory pushes the
 // people it provisions (`docs/scim.md`).
 //
@@ -255,14 +317,29 @@ type ScimConfig struct {
 	// Insecure dials roster without TLS.
 	Insecure bool `yaml:"insecure"`
 
-	// Concurrency is how many requests are worked on at once: a directory's
-	// cycle is a burst, and the rate a tenant's callers are held to is shared
-	// with its people signing in. Four when unsaid.
+	// Concurrency is how many requests of one tenant's directory are worked
+	// on at once, counted by the tenant the key is of: a directory's cycle is
+	// a burst, and the rate a tenant's callers are held to is shared with its
+	// people signing in. Asking roster who a key is, for a key not
+	// remembered, is held to the same number for the process. Four when
+	// nought or unsaid; below nought is refused ([ScimConfig.Meant]).
 	Concurrency int `yaml:"concurrency"`
 }
 
 // Serves is whether this deployment answers SCIM.
 func (c ScimConfig) Serves() bool { return c.Addr != "" }
+
+// Meant refuses a `scim:` block that cannot be meant, as [AuditMeant] does an
+// `audit:` one: a `concurrency` below nought was read as four with nothing
+// said.
+func (c ScimConfig) Meant() error {
+	if c.Concurrency < 0 {
+		return fmt.Errorf("scim.concurrency: %d requests at once cannot be meant; write how many of one "+
+			"tenant's directory are worked on together, or leave it out for four", c.Concurrency)
+	}
+
+	return nil
+}
 
 // LoginConfig is the Login App: the box Hydra hands a `login_challenge` to.
 //
@@ -333,7 +410,7 @@ type LoginConfig struct {
 	//	expected   somebody an tenant entered, matched by the **address** on
 	//	           their row, and nobody else
 	//	enrolling  that, and a stranger too, named by the local part of their
-	//	           address
+	//	           address where the directory says it is verified
 	//
 	// `expected` is what an tenant means by *putting people in*, and
 	// `invited` is not: the subject a directory asserts is issued there and is
@@ -346,23 +423,33 @@ type LoginConfig struct {
 	// to sign in as whoever the row is about*, `CLAUDE.md`): the directory has
 	// to say the address is **verified**. One that lets somebody type an
 	// address into their own profile would otherwise hand out whichever account
-	// carries it.
+	// carries it. A name is read off an address on the same condition: a
+	// stranger whose address nobody checked is enrolled under a name nobody
+	// chose, and not under whatever they typed before the `@`.
 	//
 	// `enrolling` needs the key to hold `HolderService.Add`, which the one
 	// `roster login provision` mints does not: making people is a wider grant
 	// than signing them in, and `--enrol` is what says so out loud.
 	Enrol string `yaml:"enrol"`
 
+	// PrivateHosts is the hosts off the internet this app may ask a provider
+	// at; see [AccountConfig.PrivateHosts], which says why it asks only
+	// outside unless told.
+	PrivateHosts []string `yaml:"private_hosts"`
+
 	// Consent is what happens at the consent hop: `skip`, which grants what the
 	// client asked for and draws nothing, or `ask`, which draws a screen.
 	//
-	// Empty is `skip`, and that is a decision rather than an omission. Every
-	// client in [Clients] was registered by this deployment for one of its own
-	// tenants -- a third party cannot be in that map -- so every one of them
-	// is first-party, and a consent screen for an app the tenant wrote is a
-	// dialog people learn to click through. `ask` is for a deployment that
-	// registers clients somebody else wrote, where the screen is the whole
-	// point.
+	// Empty is `skip`, and that is a decision rather than an omission. A
+	// client is registered with Hydra by whoever runs this deployment, for its
+	// own tenants' apps, so the ordinary one is first-party, and a consent
+	// screen for an app the tenant wrote is a dialog people learn to click
+	// through. `ask` is for a deployment that registers clients somebody else
+	// wrote, where the screen is the whole point.
+	//
+	// A device's flow (RFC 8628) is drawn the screen whichever this says: the
+	// screen its code is typed at cannot name the client, so the consent is
+	// where somebody first sees whose device they are letting in.
 	Consent string `yaml:"consent"`
 
 	// Remember is how long Hydra should skip the form for a browser that has
@@ -383,8 +470,9 @@ type LoginConfig struct {
 	// development.
 	InsecureCookie bool `yaml:"insecure_cookie"`
 
-	// Page is the sign-in page, when a deployment serves its own instead of the
-	// one this app embeds. Empty takes the embedded one.
+	// Page is the built sign-in page (`ts/dist/login`). Empty serves none: the
+	// app embeds no page, and `/login` answers 404, *this deployment serves no
+	// sign-in page*. A directory that is not there is refused at start.
 	Page PageConfig `yaml:"page"`
 }
 
@@ -398,12 +486,27 @@ type HydraConfig struct {
 	Admin string `yaml:"admin"`
 
 	// Header is sent with every admin call, as `Name: value`, for that proxy.
-	// The deployment's arrangement and not this app's.
-	Header map[string]string `yaml:"header"`
+	// The deployment's arrangement and not this app's. A secret to the loader,
+	// since a header for a proxy is a credential: `roster config` prints none
+	// of its values.
+	Header map[string]string `yaml:"header" cfg:",secret"`
 }
 
 // Serves is whether this deployment answers a login flow.
 func (c LoginConfig) Serves() bool { return c.Addr != "" }
+
+// Meant refuses a `login:` block whose values are not of their form; see
+// [AccountConfig.Meant].
+func (c LoginConfig) Meant() error {
+	if err := webOrigin("login.hydra.admin (--hydra)", c.Hydra.Admin); err != nil {
+		return err
+	}
+	if err := webOrigin("login.base (--base)", c.Base); err != nil {
+		return err
+	}
+
+	return dirThere("login.page.dir (--static)", c.Page.Dir)
+}
 
 // TlsConfig is a certificate and the key that goes with it, as paths.
 type TlsConfig struct {

@@ -255,6 +255,11 @@ type Relation_builder struct {
 	// words as much as a map -- `manager`, with nothing after it -- so that two
 	// people who are two things to each other are still one row, which is what
 	// the index below makes them.
+	//
+	// Personal (payday#92): the words are about two people, what one is to the
+	// other, and are written by whoever knows. The trail records that a
+	// relation was said and between whom, by identifier, and never what it was
+	// (#280). `Holder.labels` is declared so for the same reason, whole.
 	Labels map[string]string
 	// Who they are that to. Of the same tenant, and never themselves:
 	// `server/core` refuses both.
@@ -286,11 +291,11 @@ var File_app_relation_proto protoreflect.FileDescriptor
 
 const file_app_relation_proto_rawDesc = "" +
 	"\n" +
-	"\x12app/relation.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xb2\x05\n" +
+	"\x12app/relation.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xba\x05\n" +
 	"\bRelation\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x124\n" +
-	"\x06labels\x18\a \x03(\v2\x1c.roster.Relation.LabelsEntryR\x06labels\x12,\n" +
+	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12<\n" +
+	"\x06labels\x18\a \x03(\v2\x1c.roster.Relation.LabelsEntryB\x06\xaa\xc1\x16\x02\x18\x01R\x06labels\x12,\n" +
 	"\x05other\x18\b \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x05other\x12%\n" +
 	"\ttenant_id\x18\v \x01(\fB\b\xea\x82\x16\x04\x10@@\x01R\btenantId\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +

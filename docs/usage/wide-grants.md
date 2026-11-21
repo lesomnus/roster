@@ -19,7 +19,9 @@ writing a role whose methods end in `*`.
 | [A person's verb, across the tenant](#a-persons-verb-across-the-tenant) | *may manage keys*, *may add an address* | every colleague who holds no more |
 | [`VouchService/Link` with `Redeem`](#vouchservicelink-with-redeem) | *may send recovery links* | every account of the tenant |
 | [`VouchService/Accept`](#vouchserviceaccept) | *may sign people in* | a credential for anybody, on the caller's word |
+| [`ConnectionService/Add` and `Update`](#connectionserviceadd-and-update) | *may set up sign-in through a directory* | everybody who signs in through it |
 | [`EmailService/Verify` with `Confirm`](#emailserviceverify-with-confirm) | *may confirm addresses* | any address, proved with no mailbox |
+| [`EmailService/Attest`](#emailserviceattest) | *may record a directory's address* | an address proved on the caller's word |
 | [`NominationService/Add`](#nominationserviceadd) | *may install an app* | an app's key answered as somebody |
 | [The same verbs at `admin.addr`](#the-same-verbs-at-adminaddr) | an operator's helpdesk role | any account in any tenant |
 | [`BindingService/Add`](#bindingserviceadd) | *may assign roles* | everything its holder holds, to anybody |
@@ -28,10 +30,12 @@ writing a role whose methods end in `*`.
 | [`SiteMembershipService/Add`](#sitemembershipserviceadd) | *may say who works where* | who is within a site's helpdesk's reach |
 | [A pattern](#a-pattern) | `/roster.HolderService/*` | every method of it, and the next one added |
 | [`HolderService/Disable`](#holderservicedisable) | *may suspend an account* | anybody's, the administrator's included |
+| [`VouchService/LeaveLink` with `Leave`](#vouchserviceleavelink-with-leave) | *may mail a link that deletes an account* | anybody's account, deleted |
 | [`AuditService`](#auditservice) | *may read the audit log* | what every write said, of every row |
 | [`HolderService/SignsIn`](#holderservicesignsin) | *may see how somebody signs in* | everybody's keys and sessions, by name |
 | [A deployment key](#a-deployment-key) | a key for one app | its list, in every tenant |
-| [A directory's key](#a-directorys-key) | a sync job | makes people, and suspends the last administrator |
+| [A key that mints keys](#a-key-that-mints-keys) | a key that lists one method | everything its holder holds |
+| [A directory's key](#a-directorys-key) | a sync job | makes people, writes anybody's profile, reads everybody's addresses and accounts, and suspends the last administrator |
 | [The `self-service` role](#the-self-service-role) | a role nobody is bound | on for everybody the moment a method is in it |
 
 ## Becoming somebody
@@ -39,8 +43,8 @@ writing a role whose methods end in `*`.
 ### A person's verb, across the tenant
 
 `ApiKeyService/Issue`, `CredentialService/Issue`, `/Enrol`, `/Unlock`,
-`IdentityService/Add`, `EmailService/Add`, `PhoneService/Add` -- each writes a
-way into an account, and each takes a *whose*.
+`IdentityService/Add`, `/Resubject`, `EmailService/Add`, `PhoneService/Add` --
+each writes a way into an account, and each takes a *whose*.
 
 **Reads as** *may manage their keys*. **Is** *may write a way into anybody who
 holds no more than they do* -- which, bound to two people, is each other.
@@ -90,6 +94,36 @@ the caller's word that a provider signed them in. It checks nothing itself.
 says so (`TestNobodyAcceptsWithoutBeingAllowedTo`). An app that checks a
 password through `Vouch.Verify` does not need it.
 
+### `ConnectionService/Add` and `Update`
+
+**Reads as** *may set up sign-in through a directory*. **Is** the account of
+everybody who signs in through that connection, an administrator's among them.
+
+A connection says where a tenant's people are asked who they are, and roster
+believes the answer. Somebody's account at a provider is kept by the
+connection's **name**, so a connection moved to another issuer -- or erased and
+added again under the same name -- is where those people are asked from the next
+sign-in on, and whoever the new issuer says they are is who signs in.
+
+> contoso binds its helpdesk lead a role naming `ConnectionService/*`, to set up
+> a second directory. The connection the administrator signs in through keeps no
+> secret. The lead moves its issuer to one they run, which says the
+> administrator's subject, and signs in as the administrator.
+
+What is kept: it is held across the tenant, so a role bound in a site writes no
+connection; a tenant cannot move a connection that carries one of the
+deployment's secrets, nor give one a secret of the deployment's
+(`TestAConnectionsSecretGoesWhereTheDeploymentSays`); and a connection a file
+declares is written from the file. What is not asked is who arrives through it,
+and it cannot be: that is everybody, on purpose.
+
+Where the front door links a first sign-in by address (`enrol: expected`), it
+also reaches somebody who has never signed in through it: a new connection whose
+issuer says a person's proved address is verified is linked to that person.
+
+**It is for** whoever administers the tenant, and nobody narrower. `Erase`
+alone signs nobody in.
+
 ### `EmailService/Verify` with `Confirm`
 
 **Reads as** *may confirm addresses*. **Is** any address, proved, with no
@@ -106,6 +140,25 @@ owner cannot take it back: a proved address does not change hands.
 **It is for** a front door, which mints the link as itself and mails it. Neither
 verb is somebody's own to call, and `Confirm` alone is one step from this the
 day `Verify` is granted beside it.
+
+### `EmailService/Attest`
+
+**Reads as** *may record the address a directory handed over*. **Is** an
+address proved on the caller's word, with no mailbox read and no link sent.
+
+It is what a front door calls when somebody signs in through a provider that
+says their address is verified: the address is written down as proved, on the
+word of that sign-in. roster cannot see the sign-in. What it asks is that the
+person has an account at a directory to be the word's source, and that they
+hold no more than the caller.
+
+> A key that lists `EmailService/Attest` names a colleague who signs in through
+> the tenant's directory, and an address. The address is theirs and proved, and
+> if somebody had written it onto their own account without proving it, it has
+> been taken from them.
+
+**It is for** a front door. Beside `Verify` with `Confirm` it is the shorter
+road to the same place, and it is not somebody's own to call.
 
 ### `NominationService/Add`
 
@@ -209,18 +262,49 @@ wider than they are. What is kept is that a tenant is left with somebody
 administering it. `HolderService/Invalidate` -- *sign them out everywhere* --
 is the same.
 
+So is `HolderService/Erase`. It reads as *may delete an account* and is
+anybody's, an administrator's among them: whoever holds it across the tenant
+erases somebody who holds more than they do, and what is kept is the last
+administrator and a row a file declares. An erase destroys nothing and an
+operator brings the person back (`roster restore`) until they are forgotten,
+which is why it asks what suspending does and not what writing a way in does.
+
+### `VouchService/LeaveLink` with `Leave`
+
+**Reads as** *may mail a link that deletes an account*. **Is** anybody's
+account the caller can see, deleted, where the tenant lets its people leave.
+
+`LeaveLink` answers the link to its caller, for the caller to mail, as
+`VouchService/Link` does; `Leave` spends one and asks for the person's alias,
+which the caller knows.
+
+> A key that lists both names the tenant's administrator and one of their
+> proved addresses. It is answered the link, and spends it.
+
+What is kept: the address has to be one of the person's that somebody proved, a
+tenant has to offer leaving at all (`TenantConfig.leave`), a tenant is left with
+somebody administering it, and an operator can bring the account back until it
+is forgotten.
+
+**It is for** a front door, which asks about whoever is signed in at it and
+mails the link to them. Neither verb is somebody's own to call.
+
 ## Reading
 
 ### `AuditService`
 
 **Reads as** *may read the audit log*. **Is** what every write said: a line
-of the trail carries the row as the write left it, for rows long since erased
-too. Not what the schema calls personal or secret -- names, addresses and
-verifiers are on the trail as having been set, and never as what to.
+of the trail carries what the write set, for rows long since erased too. It
+carries the row the write left as well only for a kind the deployment keeps at
+`audit.content: value`; at the default that is empty, and a line is what was
+set and by whom. Not what the schema calls personal or secret -- names,
+addresses and verifiers are on the trail as having been set, and never as what
+to.
 
 It is held across the tenant. On a deployment key it is every tenant
-(`TestADeploymentKeyReadsEveryTenantsTrail`), and `roster key add` says so
-(`TestMintingAKeyThatReachesTheTrailSaysSo`).
+(`TestADeploymentKeyReadsEveryTenantsTrail`), and minting a key says which it
+is: `roster control key add` of every tenant's, `roster key add` of the key's
+own (`TestAKeyIsToldWhatItsOwnKindReads`).
 
 ### `HolderService/SignsIn`
 
@@ -247,6 +331,32 @@ about. A key that reads across tenants on purpose -- a job that exports the
 trail -- is the other kind, and should be the only kind that is not narrowed
 ([ways-in.md](ways-in.md) § *A deployment key*).
 
+### A key that mints keys
+
+A key, or a delegation, that lists `ApiKeyService/Issue`. **Reads as** a
+narrow credential: its list says one method. **Is** as wide as whoever it
+is for. What a caller may put on a key is what its **holder** is bound, and
+the list on the credential it called with is not asked -- so a key that lists
+`Issue` and nothing else mints a second key, for its own holder, listing
+anything they hold.
+
+> A build job is given a key on an administrator's account listing
+> `ApiKeyService/Issue` alone, to mint short-lived keys for its steps.
+> Whoever reads that job's environment mints one listing `/roster.*/*`.
+
+It is meant. A terminal is signed in this way: the account page's delegation
+lists the dozen methods the page calls, and when somebody approves
+`roster sign-in` it mints the key the terminal asked for, as wide as the
+person approving and no wider
+(`TestATerminalIsNeverAllowedMoreThanWhoeverApprovesIt`). So a key that has to
+be narrow does not list `Issue`, and a key that has to mint is put on a holder
+bound only what it should hand out -- which is the bound that is asked
+(`TestAKeyThatMintsKeysMintsWhatItsHolderHolds`).
+
+A **delegation** is the other way round: an app is handed one for the methods
+it may itself call, by its key's list and by what it is bound, and for no other
+([rules.md](rules.md)).
+
 ### A directory's key
 
 **Reads as** a sync job. **Is** a key on the internet that makes people in the
@@ -255,8 +365,23 @@ last administrator among them, whose word about who works there is not refused
 (`TestADirectoryMaySuspendTheLastAdministrator`).
 
 It makes only new people, writes no way into anybody already here, and lifts
-only a suspension it made ([scim.md](../scim.md)). What it can do with those is
-enough to matter: whoever holds it can lock a tenant out.
+only a suspension it made ([scim.md](../scim.md)). It reaches more than the
+people it makes and signs in, and that is decided:
+
+- It writes the profile of anybody of the tenant no file declares, an
+  administrator's among them, and who they report to
+  (`TestADirectorysKeyWritesTheProfileOfAnybodyNoFileDeclares`).
+- It makes groups, manages the ones its holder made, puts anybody of the tenant
+  in them, and erases them with what was bound to them
+  (`TestADirectorysKeyPutsAnybodyOfTheTenantInTheGroupsItMakes`).
+- It reads every person's addresses, accounts at providers and numbers
+  (`TestADirectorysKeyReadsEveryPersonsAddressesAccountsAndNumbers`).
+- The directory is whoever holds these verbs: nothing ties them to the key
+  `roster scim provision` minted, except that only the holder who made a group
+  manages it (`TestTheDirectoryIsWhoeverHoldsItsVerbs`).
+
+What it can do with those is enough to matter: whoever holds it can lock a
+tenant out, and rename its administrator.
 
 ## What everybody holds
 
@@ -268,8 +393,11 @@ over what is their own, the moment a method is in it.
 It names only what is somebody's own to do, and a write that would put
 anything else there is refused. Of what it does name, one is worth knowing:
 `IdentityService/Add` writes an account at a provider onto the caller's own
-row with no proof that the account is theirs. A tenant whose people do not
-link a second directory themselves takes it out:
+row with no proof that the account is theirs. Not at the connection the
+tenant's directory provisions through: an account there is who the directory
+means by somebody, so it is the directory's to say, and one's own write is
+refused ([scim.md](../scim.md)). A tenant whose people do not link a second
+directory themselves takes it out:
 
 ```sh
 roster --as admin role narrow @newco/self-service '{"methods":["/roster.IdentityService/Add"]}'
@@ -277,10 +405,52 @@ roster --as admin role narrow @newco/self-service '{"methods":["/roster.Identity
 
 ## What says so when one is granted
 
-Today, three of these are said at the moment of granting, and only for a key:
-`roster key add` prints a note when a key's methods reach the trail,
-`VouchService/Accept` or `VouchService/Link`.
+**A list of methods can be asked.** `RoleService/HandsOver` answers this page
+for one list: which of its methods are here, what each reads as, and what it
+is where it would be held. It is what a page asks before a role is bound,
+widened or put on a key, so that what it says beside the button is this page
+and not a copy of it.
 
-Nothing says it of a role or of a binding, at a terminal or on a page. That a
-page should, before the write, is
+```sh
+roster --as admin role hands-over '{"methods":["/roster.ApiKeyService/Issue","/roster.HolderService/Get"]}'
+```
+
+```
+grants (1)
+  grant      a-persons-verb-across-the-tenant
+  methods    (1)
+    /roster.ApiKeyService/Issue
+  reads_as   may manage somebody's keys, password or addresses
+  hands_over a way into the account of anybody of the tenant who holds no more than whoever is given it -- which, given to two people, is each other
+```
+
+`grant` is the heading here, as its link is written. `methods` is which of the
+ones asked about reach it, as they were written, so a pattern is answered for
+everything it covers. A list that means what it says is answered nothing.
+
+Where it would be held is `held`, and it changes the answer, because a sentence
+said of the wrong place is one nobody reads the next time:
+
+| `held` | |
+| --- | --- |
+| `ROLE_HELD_ACROSS_THE_TENANT` | a binding that names no site. Not said is read as this, the widest |
+| `ROLE_HELD_IN_A_SITE` | a binding that names a site, or a role held in a team. A person's verb reaches the people of that site; what is held across the tenant or not at all -- the trail, `SiteMembershipService/Add` -- hands over nothing there and is not answered |
+| `ROLE_HELD_NOWHERE` | the tenant's `self-service` role, which reaches nobody else |
+
+Asked of the control plane -- `roster control role hands-over` -- the answer is
+a deployment's: every tenant, since that is where an operator's role and a
+deployment key are exercised.
+
+Three entries above are not about a method and are not answered: a role bound
+to a group, a deployment key, and a directory's key. Whoever is making one of
+those knows it is one.
+
+**A key is told at the terminal.** `roster key add` and `roster control key
+add` print a note when a key's methods reach the trail, `VouchService/Accept`
+or `VouchService/Link`, and the note is the one for that kind of key -- a
+tenant's, or every tenant's.
+
+**Nothing refuses.** A page that asks may still not say, and `roster role add`
+and `roster binding add` print nothing of their own. Whether a write should
+wait until it is said to be meant is
 [#310](https://github.com/lesomnus/roster/issues/310).

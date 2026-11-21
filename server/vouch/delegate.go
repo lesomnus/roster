@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 
@@ -65,7 +66,7 @@ func (s *Server) Delegate(ctx context.Context, req *app.VouchDelegateRequest) (*
 		return nil, status.Error(codes.InvalidArgument,
 			"methods: a delegation that allows nothing opens no door")
 	}
-	if err := mayDelegate(ctx, methods); err != nil {
+	if err := s.mayDelegate(ctx, methods); err != nil {
 		return nil, err
 	}
 
@@ -158,30 +159,56 @@ func (s *Server) mint(ctx context.Context, res *app.VouchVerifyResponse, who, is
 // by what its holder may do, so it can never reach past them -- but an app
 // allowed only to check passwords could mint one carrying
 // `/roster.HolderService/Erase` and then use it through somebody who may erase.
-// It would have gained, through a person, a method its own credential does not
-// carry.
+// It would have gained, through a person, a method it may not itself call.
 //
-// # What it is not
+// # What a caller may call is two questions, and both are asked
 //
-// It is **not** `server/core/escalate.go`'s rule, and the difference matters
-// enough to say. `mayGrant` reads what the caller holds through *bindings*,
-// because what it is guarding is a row that hands permissions to somebody else.
-// Here the caller is a machine with a key, its bindings are in another database
-// entirely, and what bounds it is the attenuation on its own credential. So
-// this reads `f.Grant`, which is the key's `methods` column.
+// The **credential's** list, which is the grant on the frame: a key's `methods`
+// column, applied by the interceptor. And what **whoever the credential is**
+// may call, which the gate answers on every call from their bindings.
+//
+// Only the first was asked, on the reading that the caller is a machine with a
+// key and its list is what bounds it. That is a deployment key calling as
+// itself, which holds nothing else. It is not a deployment key sent with
+// `roster-at`: that one is answered as the holder a tenant nominated, and its
+// frame's grant is `frame.Whole()` -- *whatever that holder may do, which their
+// bindings decide on every call* (`keys.At`). So for the shape every
+// roster-hosted front door calls in, the list said everything and nothing asked
+// the bindings: an app a tenant bound `Verify` and `Delegate` was handed a
+// delegation for `/roster.*/*` (#276). A tenant's own key was the same hole
+// from the other side, its list asked and its holder never.
+//
+// The second is asked of the gate itself rather than read again here
+// ([WithGate]): it is the question *may this caller call that*, word for word,
+// and a second reading of bindings is a second answer to it. So what nobody
+// needs a role for is handed on with no role -- `MeService/Get`, which is the
+// whole of a Login App's delegation -- and a deployment key calling as itself
+// is still bounded by its list alone, because that is what the gate says of
+// one.
+//
+// It is still **not** `server/core/escalate.go`'s rule. `mayGrant` guards a row
+// that hands permissions to somebody else, and reads what may be passed on.
+// This hands nobody anything they do not hold: it narrows a person to a list,
+// and asks only that the list is one the app could have called.
 //
 // # How hard it bites
 //
-// Exactly as hard as the caller's own credential is narrow. `auth.Plain` and
-// mTls both carry `frame.Whole`, because a header and a certificate have
-// nowhere to put an attenuation -- so in those deployments this refuses
-// nothing, and correctly: there is nothing there to be wider than. It is a
-// rule about keys, and `roster key add --allow` is where a deployment writes
-// it down.
+// As hard as the caller is narrow, by either reading. `auth.Plain` and mTls
+// carry `frame.Whole`, because a header and a certificate have nowhere to put
+// an attenuation, and what bounds a caller there is what they are bound.
 //
 // A request with no frame at all is the deployment's own work in this process,
-// which is `mayGrant`'s reading of the same case and the same answer.
-func mayDelegate(ctx context.Context, methods []string) error {
+// which is `mayGrant`'s reading of the same case and the same answer. A frame
+// and no gate is a stack assembled without one, and it refuses: it cannot say
+// what the caller may call.
+func (s *Server) mayDelegate(ctx context.Context, methods []string) error {
+	// And a list is one, before any of it is asked: what follows asks the gate
+	// an entry at a time, and what comes after that checks a password or
+	// spends a link, for a list the store would then refuse ([keys.Listed]).
+	if err := keys.Listed("methods", methods); err != nil {
+		return err
+	}
+
 	f, ok := frame.From(ctx)
 	if !ok {
 		return nil
@@ -194,10 +221,76 @@ func mayDelegate(ctx context.Context, methods []string) error {
 		}
 	}
 
+	if s.gate == nil {
+		return status.Error(codes.PermissionDenied,
+			"methods: this server cannot say what you may call, so it will not let you hand anything out")
+	}
+	for _, m := range methods {
+		err := s.gate.May(ctx, gate.Call{
+			Actor: f.Actor, Tenant: f.Tenant, Name: f.Name, Row: f.Row,
+			Action:  m,
+			Account: f.Account, AsAccount: f.AsAccount(),
+		})
+		if status.Code(err) == codes.PermissionDenied {
+			// In this rule's words and not the gate's, which are about a call
+			// that was made: nothing here was called.
+			return status.Errorf(codes.PermissionDenied,
+				"methods: you may not call %s, so you may not hand it out", m)
+		}
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
+// doorKey is where [Server.VerifyAt] and [Server.ContinueAt] say which door of
+// roster's own is asking, for [issuerOf] to read.
+type doorKey struct{}
+
+// VerifyAt is [Server.Verify] asked by a door of roster's own rather than by a
+// caller: `AuthService/SignIn`, which is public, so that nothing about the
+// request says who is asking.
+//
+// # Why a door says who it is
+//
+// An attempt is minted for whoever asked and spent by nobody else
+// (`continuation.proto`, D21's third condition), and *whoever asked* is the
+// frame's actor. A public method has none. So the door names itself: `door` is
+// what the attempt is issued to, and [Server.ContinueAt] with the same `door`
+// is the only thing that spends it -- not a key, whose actor is a row of
+// another kind, and not another door.
+//
+// It is a Go call and takes the door as an argument, as `keys.Delegate` takes
+// who a delegation is for: nothing arriving on the wire can say it is one.
+func (s *Server) VerifyAt(ctx context.Context, door pdid.Id, req *app.VouchVerifyRequest) (*app.VouchVerifyResponse, error) {
+	if door == pdid.Nil {
+		return nil, status.Error(codes.Internal, "a door that asks says which door it is")
+	}
+
+	return s.Verify(context.WithValue(ctx, doorKey{}, door), req)
+}
+
+// ContinueAt is [Server.Continue] for an attempt [Server.VerifyAt] began, at
+// the same door.
+func (s *Server) ContinueAt(ctx context.Context, door pdid.Id, req *app.VouchContinueRequest) (*app.VouchVerifyResponse, error) {
+	if door == pdid.Nil {
+		return nil, status.Error(codes.Internal, "a door that asks says which door it is")
+	}
+
+	res, err := s.Continue(context.WithValue(ctx, doorKey{}, door), req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.GetVerified(), nil
+}
+
 // issuerOf is who the delegation is being minted for, or revoked by.
+//
+// A door of roster's own first, where one said it is asking: see
+// [Server.VerifyAt].
 //
 // The frame's actor, which for a deployment key is the **key row** rather than
 // the service holding it -- `cmd.Resolver` reads one with an empty select and
@@ -211,6 +304,10 @@ func mayDelegate(ctx context.Context, methods []string) error {
 // this process there is `keys.Delegate` itself, which is a Go call and says who
 // it is for.
 func issuerOf(ctx context.Context) (pdid.Id, error) {
+	if door, ok := ctx.Value(doorKey{}).(pdid.Id); ok && door != pdid.Nil {
+		return door, nil
+	}
+
 	f, ok := frame.From(ctx)
 	if !ok || f.Actor == pdid.Nil {
 		return pdid.Nil, status.Error(codes.Unauthenticated,
@@ -259,7 +356,7 @@ func (s *Server) Accept(ctx context.Context, req *app.VouchAcceptRequest) (*app.
 		return nil, status.Error(codes.InvalidArgument,
 			"methods: a delegation that allows nothing opens no door")
 	}
-	if err := mayDelegate(ctx, methods); err != nil {
+	if err := s.mayDelegate(ctx, methods); err != nil {
 		return nil, err
 	}
 
@@ -392,16 +489,16 @@ func (s *Server) claimed(ctx context.Context, claim *app.VouchClaim) (*app.Holde
 				Subject:  z.Ptr(subject),
 			}.Build(),
 		}.Build(),
-		// The same three the credential read asks for, and for the same
-		// reasons: the tenant because a delegation names one, and the two
-		// stamps because a person who is suspended or gone is not somebody a
-		// token gets to be. And the tenant's settings, for [Server.mayHandOn]:
-		// one read either way, and the alternative is a second one on a path
-		// that was reading the row anyway.
+		// What the credential read asks for, and for the same reasons: the
+		// tenant because a delegation names one -- and because a holder that
+		// comes back without one is gone, below -- and the stamp because a
+		// person who is suspended is not somebody a token gets to be. And the
+		// tenant's settings, for [Server.mayHandOn]: one read either way, and
+		// the alternative is a second one on a path that was reading the row
+		// anyway.
 		Select: app.IdentitySelect_builder{
 			Holder: app.HolderSelect_builder{
 				Tenant:       app.TenantSelect_builder{Config: z.Ptr(true), DateClosed: z.Ptr(true)}.Build(),
-				DateErased:   z.Ptr(true),
 				DateDisabled: z.Ptr(true),
 			}.Build(),
 		}.Build(),
@@ -419,18 +516,32 @@ func (s *Server) claimed(ctx context.Context, claim *app.VouchClaim) (*app.Holde
 	}
 
 	who := v.GetHolder()
+	if gone := len(who.GetTenant().GetId()) == 0; gone {
+		// `holder.proto` states this as a guarantee -- an erased holder "cannot
+		// authenticate" -- and this is the control: an erase stamps the holder
+		// alone, so their identity is still here to be found by its subject.
+		//
+		// Erased is read as **a holder that did not come back**, as
+		// [Server.row] reads a link's and `keys.signable` a token's. An edge is
+		// loaded through the rows still there, so somebody erased is answered
+		// as a bare reference: the identifier, and nothing of them. Every
+		// holder has a tenant and this read selects it, so one with none was
+		// not found.
+		//
+		// It asked for `date_erased` on that edge, which is a column of a row
+		// that was not loaded: the check never fired. What stopped somebody
+		// erased was [Server.Accept] reading their tenant next, as an
+		// identifier with no bytes, which a front door saw as `Unknown` and
+		// could only answer as its own failure (#279). Refused here, it is the
+		// answer a claim that reaches nobody gets, and says nothing of which.
+		return nil, status.Error(codes.NotFound, "no such identity")
+	}
 	if who.GetDateDisabled() != nil || who.GetTenant().GetDateClosed() != nil {
 		// The same refusal `verify` makes, and it has to be here too: a
 		// suspension that held for a password and not for a token would be a
 		// suspension that depends on which door somebody came through. A
 		// tenant that closed is everybody in it suspended at once.
 		return nil, status.Error(codes.PermissionDenied, "not to sign in")
-	}
-	if who.GetDateErased() != nil {
-		// `holder.proto` states this as a guarantee -- an erased holder "cannot
-		// authenticate" -- and a reference narrows to the rows still there, so
-		// this is belt beside braces rather than the only control.
-		return nil, status.Error(codes.NotFound, "no such identity")
 	}
 
 	return who, nil

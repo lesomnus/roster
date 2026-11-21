@@ -120,12 +120,27 @@ func (c *changes) called() *string {
 	return c.formatted
 }
 
-// set is one attribute, by its path as a directory writes it.
+// set is one attribute, by its path as a directory writes it: bare, or
+// behind the core URN ([bare]).
 func (c *changes) set(path string, raw json.RawMessage) error {
-	p := strings.ToLower(strings.TrimSpace(path))
+	path = bare(path, userSchema)
+	p := strings.ToLower(path)
 	ext := strings.ToLower(enterpriseSchema)
 
 	switch {
+	case p == strings.ToLower(userSchema):
+		// The URN as a key of an operation with no path, holding the
+		// attributes behind it.
+		var all map[string]json.RawMessage
+		if err := json.Unmarshal(raw, &all); err != nil {
+			return badRequest("invalidValue", userSchema+": an object")
+		}
+		for k, v := range all {
+			if err := c.set(k, v); err != nil {
+				return err
+			}
+		}
+
 	case p == "displayname":
 		v, err := text(raw)
 		if err != nil {
@@ -260,7 +275,8 @@ func (c *changes) set(path string, raw json.RawMessage) error {
 // clear is a `remove` of one attribute.
 func (c *changes) clear(path string) {
 	empty := ""
-	p := strings.ToLower(strings.TrimSpace(path))
+	path = bare(path, userSchema)
+	p := strings.ToLower(path)
 	ext := strings.ToLower(enterpriseSchema)
 
 	switch p {
@@ -286,39 +302,66 @@ func (c *changes) clear(path string) {
 	}
 }
 
+// bare is a path with the resource's own core URN taken off its front, without
+// regard to case, as a URN is compared: `urn:…:core:2.0:User:active` is
+// `active`, which RFC 7644 §3.10 lets a client write. It fell through to
+// *not kept here*, so a directory that wrote `active: false` that way was
+// answered `200` and nobody was suspended. A path behind any other URN is as
+// it was written: the enterprise extension's is read as it is, and one
+// nothing is kept of is not kept, and said.
+func bare(path, schema string) string {
+	p := strings.TrimSpace(path)
+	if len(p) > len(schema) && p[len(schema)] == ':' && strings.EqualFold(p[:len(schema)], schema) {
+		return p[len(schema)+1:]
+	}
+
+	return p
+}
+
 // text is a value a directory sent as a string, or as the one thing a string
 // is often sent inside: a number for an employee number, an empty list or a
 // null for nothing.
+//
+// Decoded once and walked, with a number kept as it was written. It
+// marshalled what was inside a list or an object and parsed it again at every
+// level, which a value nested a few thousand deep made seconds of a turn; and
+// read a number through a float, so `9007199254740993` was kept as
+// `9007199254740992`.
 func text(raw json.RawMessage) (string, error) {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
 	var v any
-	if err := json.Unmarshal(raw, &v); err != nil {
+	if err := dec.Decode(&v); err != nil {
 		return "", fmt.Errorf("not a value")
 	}
-	switch v := v.(type) {
-	case nil:
-		return "", nil
-	case string:
-		return strings.TrimSpace(v), nil
-	case float64:
-		return strconv.FormatFloat(v, 'f', -1, 64), nil
-	case bool:
-		return strconv.FormatBool(v), nil
-	case []any:
-		if len(v) == 0 {
+
+	for {
+		switch w := v.(type) {
+		case nil:
 			return "", nil
-		}
-		b, _ := json.Marshal(v[0])
+		case string:
+			return strings.TrimSpace(w), nil
+		case json.Number:
+			return w.String(), nil
+		case bool:
+			return strconv.FormatBool(w), nil
+		case []any:
+			if len(w) == 0 {
+				return "", nil
+			}
+			v = w[0]
 
-		return text(b)
-	case map[string]any:
-		if inner, ok := v["value"]; ok {
-			b, _ := json.Marshal(inner)
+			continue
+		case map[string]any:
+			if inner, ok := w["value"]; ok {
+				v = inner
 
-			return text(b)
+				continue
+			}
 		}
+
+		return "", fmt.Errorf("not a string")
 	}
-
-	return "", fmt.Errorf("not a string")
 }
 
 // primary is the address a list of `emails` puts first: the one marked
@@ -488,9 +531,63 @@ func (p *person) externalId() string {
 	return p.holder.GetDirectorySubject()
 }
 
-// read is a person this endpoint speaks of: never a row a file declared,
-// never the directory's own holder, never somebody it deleted. Any of those is
-// "not here", which is what it is to the directory.
+// speaksOf is whether this endpoint speaks of somebody, by their row: never a
+// row a file declared, never the directory's own holder, never somebody it
+// deleted. Somebody erased has no row to ask, and is not spoken of either.
+// [Server.read] asks it, and so does [Server.answers] of somebody a write
+// names as a member.
+func speaksOf(t *tenancy, h *rstr.Holder) bool {
+	return h.GetLabels()[declared] == "" && standing(t, h)
+}
+
+// standing is [speaksOf] without the question of who declared them, which is
+// all a count, or a list of who is in a group, asks ([Server.present]).
+func standing(t *tenancy, h *rstr.Holder) bool {
+	return !bytes.Equal(h.GetId(), t.self) && h.GetDirectory() != directoryDeleted
+}
+
+// answers is whether the endpoint speaks of somebody, asked with no more of
+// them than [speaksOf] reads: one call, and no address and no account. Asked
+// of each person a write names as a member, and its `labels` are personal, so
+// it may be a row of the access record each: somebody is being written about.
+func (s *Server) answers(ctx context.Context, t *tenancy, id []byte) (bool, error) {
+	return s.ask(ctx, t, id, rstr.HolderSelect_builder{Labels: proto.Bool(true), Directory: proto.Bool(true)}.Build(), speaksOf)
+}
+
+// present is the question a read that only counts or names somebody asks:
+// that they are there, which somebody erased is not, and [standing]. It reads
+// nothing personal -- `directory` is not -- so it is one call a person and no
+// row of the access record, where a count of ten thousand people on every page
+// would otherwise be ten thousand rows.
+//
+// # What it does not ask
+//
+// Whether a file declared them, which only `labels` says. A row a file
+// declares has an account at the connection, or a place in a group, only where
+// an operator wrote one, which nothing the endpoint does makes; so it is
+// counted, or named among `members`, while `GET /Users/{id}` of it is `404`.
+// That is said here and not mended by reading `labels` for everybody.
+func (s *Server) present(ctx context.Context, t *tenancy, id []byte) (bool, error) {
+	return s.ask(ctx, t, id, rstr.HolderSelect_builder{Directory: proto.Bool(true)}.Build(), standing)
+}
+
+func (s *Server) ask(ctx context.Context, t *tenancy, id []byte, sel *rstr.HolderSelect, is func(*tenancy, *rstr.Holder) bool) (bool, error) {
+	h, err := s.roster.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+		Ref:    rstr.HolderRef_builder{Id: id}.Build(),
+		Select: sel,
+	}.Build())
+	switch status.Code(err) {
+	case codes.OK:
+		return is(t, h), nil
+	case codes.NotFound, codes.InvalidArgument:
+		return false, nil
+	default:
+		return false, err
+	}
+}
+
+// read is a person this endpoint speaks of ([speaksOf]). Anybody else is "not
+// here", which is what they are to the directory.
 func (s *Server) read(ctx context.Context, t *tenancy, id []byte) (*person, error) {
 	h, err := s.roster.Holder().Get(ctx, rstr.HolderGetRequest_builder{
 		Ref: rstr.HolderRef_builder{Id: id}.Build(),
@@ -515,7 +612,7 @@ func (s *Server) read(ctx context.Context, t *tenancy, id []byte) (*person, erro
 	default:
 		return nil, err
 	}
-	if h.GetLabels()[declared] != "" || bytes.Equal(h.GetId(), t.self) || h.GetDirectory() == directoryDeleted {
+	if !speaksOf(t, h) {
 		return nil, notFound("nobody here by that id")
 	}
 

@@ -40,7 +40,7 @@ func (b *built) operated() app.CredentialServiceServer {
 // everything else. It was `b.Ungated, b.Operable` and the second argument is
 // the one stack now.
 func (b *built) vouchedWalled() *vouch.Server {
-	return vouch.New(b.Ungated, b.Walled)
+	return vouch.New(b.Ungated, b.Walled, vouch.WithGate(cmd.Policy(b.Ent)))
 }
 
 // mayCall gives somebody a binding across their tenant and answers with a

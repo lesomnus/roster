@@ -1,14 +1,21 @@
 package cli
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/lesomnus/roster/cmd"
+	"io"
 	"net"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/lesomnus/xli"
+	"github.com/lesomnus/xli/arg"
+	"github.com/lesomnus/xli/flg"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -21,6 +28,8 @@ import (
 	"github.com/lesomnus/payday/pdcmd"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/core"
+	"github.com/lesomnus/roster/server/pd"
 )
 
 // NewCmdEntities is `tenant`, `holder`, `identity` and the rest -- `get`, `ls`,
@@ -29,7 +38,9 @@ import (
 //
 // Nothing here says which entities there are or which verbs they have. `ls`
 // exists for an entity that declared `list:` and not otherwise, so the commands
-// and the schema cannot disagree; see `payday/pdcmd`.
+// and the schema cannot disagree; see `payday/pdcmd`. One verb is taken back
+// out by hand, since the schema declares it and no server does it: a tenant's
+// `erase` ([newCmdTenantNotErased]).
 //
 // # Two ways in, and `client.addr` chooses -- or `--HAL` does
 //
@@ -66,8 +77,8 @@ import (
 // with no address and torn down when the command finishes.
 //
 // It also carries **no `closed` interceptor**, which is worth saying out loud
-// because the wire does. `grpcx.GeneralWrite` closes `/Patch` and `/Apply`
-// unless a deployment opens them, and none of that is installed here -- so
+// because the wire does. No port serves `/Patch` or `/Apply`, whatever a
+// configuration says (`closed`, `cmd/serve.go`), and none of that is installed here -- so
 // `roster holder patch` reaches the general write at a shell, and can null a
 // person's profile or overwrite their alias.
 //
@@ -76,6 +87,21 @@ import (
 // write they could do with a SQL client. It is written down because *local is
 // Ungated* was documented and *and general writes are open there* was not, and
 // the two are different sentences.
+//
+// # What it does not answer: a verifier
+//
+// A general read is open here as a write is -- `credential list`, `api-key
+// get`, which no port serves -- and what it answers is cleared of every column
+// declared `secret`, as at every port: a password's verifier, a key's hash, the
+// seed of an authenticator, a delegation's, a session's, a link's and a
+// continuation's. The generated layer that clears them on the walled stack
+// stands in front of this server too ([pipe]). It printed them (#284): the
+// argon2id verifier of every password on the page, under a read that names
+// nobody's personal data and so is no row of the access record. A shell that
+// holds the database could read them with SQL, as it could write; a command
+// that prints them is a way to hand them on that nobody meant, and a reader of
+// `-o json` is often a file. `vouch` and `keys` read the same columns through
+// `Ungated`, in process, because comparing a verifier is their whole job.
 //
 // **Remote is not that.** It is a caller like any other, so `tenant ls` over
 // the wire answers with the tenants that credential may see -- which for an
@@ -169,6 +195,13 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 	}
 
 	overlays(t)
+	nowhere(t)
+
+	if err := t.Replace("tenant/erase", newCmdTenantNotErased()); err != nil {
+		// A path the schema no longer has, which is a mistake in this file
+		// rather than something a deployment can cause.
+		panic(err)
+	}
 
 	// And this app's other hand-written services, remote only for `me`'s
 	// reason each: they are questions to a served deployment, and the local
@@ -185,7 +218,152 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 		panic(err)
 	}
 
-	return t.Commands()
+	add := t.Command("tenant/add")
+	if add == nil {
+		panic("cli: the schema has no `tenant add` to ask for a name before")
+	}
+	add.Handler = xli.Chain(xli.OnRun(tenantNamed), add.Handler)
+
+	cs := t.Commands()
+	formatsFirst(cs)
+
+	return cs
+}
+
+// tenantNamed refuses `tenant add` that names no alias, by NAME or in REQ.
+//
+// NAME is optional for every entity's `add`, and a tenant added with none was
+// made under an alias roster chose -- with its administrator and its roles --
+// and status 0 (#284). Nothing else of a tenant is so costly to take back: a
+// tenant is not erased, so a slip of the hand is a close and a forget. What
+// `Add` does with no alias is the server's; the command asks for one.
+//
+// A REQ read from stdin is read here and handed on as it was, so the command
+// reads what was piped to it.
+func tenantNamed(ctx context.Context, cl *xli.Command, next xli.Next) error {
+	raw := []string{}
+	if v, ok := arg.Get[string](cl, "NAME"); ok && v != "" {
+		if v != "-" && !strings.HasPrefix(v, "{") {
+			return next(ctx)
+		}
+		raw = append(raw, v)
+	}
+	vs, _ := arg.Get[[]string](cl, "REQ")
+	raw = append(raw, vs...)
+
+	for _, v := range raw {
+		b := []byte(v)
+		if v == "-" {
+			var err error
+			if b, err = io.ReadAll(io.LimitReader(cl, 1<<20)); err != nil {
+				return fmt.Errorf("read stdin: %w", err)
+			}
+			cl.ReadCloser = io.NopCloser(bytes.NewReader(b))
+		}
+
+		var m map[string]any
+		if json.Unmarshal(b, &m) == nil {
+			if a, _ := m["alias"].(string); strings.TrimSpace(a) != "" {
+				return next(ctx)
+			}
+		}
+	}
+
+	return errors.New("NAME: which tenant, as @alias -- roster tenant add @contoso -- or an alias in REQ. " +
+		"A tenant is not erased, so one added under an alias nobody chose costs a close and a forget")
+}
+
+// formatsFirst puts [formatsOf] in front of every command of `cs`, and of the
+// commands under them, that reads `-o` or `--in`: before the connection is
+// opened, which each generated command opens first.
+//
+// payday's verbs merge the request, make the call, and only then resolve the
+// printer: `roster --as admin holder add -o yaml @acme/f1` answered `-o yaml:
+// not a format` with status 1, and the person had been added; `erase` the
+// same (#284). A failure said of a write that was made is worse than either
+// alone. The order is payday's to mend; until it is, the tree roster builds
+// asks first.
+func formatsFirst(cs xli.Commands) {
+	for _, v := range cs {
+		formatsFirst(v.Commands)
+		if v.Flags.Get("output") == nil && v.Flags.Get("in") == nil {
+			continue
+		}
+
+		v.Handler = xli.Chain(xli.OnRun(formatsOf), v.Handler)
+	}
+}
+
+// formatsOf refuses an `-o` or an `--in` that is none of payday's, in payday's
+// own words, and lets every other through: a format it names, and a template
+// that parses.
+func formatsOf(ctx context.Context, cl *xli.Command, next xli.Next) error {
+	if v, ok := flg.Find[string](cl, "output"); ok && v != "" {
+		switch {
+		case slices.Contains([]string{"pretty", "json", "protojson", "prototext", "name", "table", "wide"}, v):
+		case strings.HasPrefix(v, "template="):
+			if _, err := pdcmd.Template(strings.TrimPrefix(v, "template=")); err != nil {
+				return fmt.Errorf("-o %s: %w", v, err)
+			}
+		default:
+			return fmt.Errorf("-o %s: not a format; one of pretty, json, prototext, protojson, name, table, wide, template=...", v)
+		}
+	}
+	if v, ok := flg.Find[string](cl, "in"); ok && v != "" && v != "json" && v != "protojson" {
+		return fmt.Errorf("--in %s: not an input format; one of json, protojson", v)
+	}
+
+	return next(ctx)
+}
+
+// nowhere takes out of `t` the commands the schema builds that work in neither
+// mode: the trail's general writes, which no server takes (*the trail is
+// written by what happened, not by anybody asking*). They were offered by
+// `--help` on both planes, and each could only refuse (#284). A function
+// because both trees have them, as [overlays] is.
+func nowhere(t *pdcmd.Tree) {
+	for _, path := range []string{"audit/add", "audit/patch", "audit/erase"} {
+		if err := t.Drop(path); err != nil {
+			// A path the schema no longer has, which is a mistake in this
+			// file rather than something a deployment can cause.
+			panic(err)
+		}
+	}
+}
+
+// newCmdTenantNotErased is what stands where `tenant erase` was built.
+//
+// The tree is built from the schema, and `Tenant` declares an erase, so there
+// was a `roster tenant erase`. It could never work: every row of a tenant is
+// keyed to it, and what the command printed was the database's own words about
+// a foreign key, at every point of a tenant's life (#279). The server refuses
+// the method now, in a sentence ([core.NotErased]).
+//
+// # Not offered, and answered all the same
+//
+// A command that can only refuse is not one to offer, so it is hidden: `roster
+// tenant --help` lists what does end a tenant, `close`, and no `erase`. It is
+// not dropped, because every other entity has one and somebody who has typed
+// `roster holder erase` types this next. Dropped, they are told *unknown
+// subcommand*, which reads as a slip of the hand, and not that the act they
+// mean has two other names. So it is there to say so, in the server's words,
+// and it fails.
+//
+// It opens nothing: no database, no connection, and so nobody is asked who is
+// at the shell. The answer is the same in both modes and of every tenant.
+func newCmdTenantNotErased() *xli.Command {
+	return &xli.Command{
+		Brief:  "not a thing a tenant has: see `tenant close`, and `roster forget`",
+		Hidden: true,
+
+		// Whatever was typed after it, as every other `erase` takes it: a
+		// refusal about the arguments would be about the wrong thing.
+		Args: arg.Args{&arg.RestStrings{Name: "REF", Brief: "ignored"}},
+
+		Handler: xli.OnRun(func(context.Context, *xli.Command, xli.Next) error {
+			return errors.New(core.NotErased)
+		}),
+	}
 }
 
 // wireOnly is `t.WithConn()` for a tree of questions only a served deployment
@@ -242,6 +420,7 @@ func overlays(t *pdcmd.Tree) {
 		{"group/update", "roster.GroupService.Update", "what a group is called, and its note; never its alias"},
 		{"role/widen", "roster.RoleService.Widen", "add methods to a role and take none away; never what you may not grant"},
 		{"role/narrow", "roster.RoleService.Narrow", "take methods out of a role and add none; only what you hold, and never the tenant's last administrator"},
+		{"role/hands-over", "roster.RoleService.HandsOver", "which of a list of methods hand over more than they read as, where they would be held"},
 		{"connection/update", "roster.ConnectionService.Update", "a provider's issuer, client id, scopes, secret ref, subject claim, note; never its name"},
 		{"identity/resubject", "roster.IdentityService.Resubject", "move somebody's identity to the claim their connection now names; once, and only from `sub`"},
 		{"email/verify", "roster.EmailService.Verify", "mint a link that proves an address, printed once; delivering it is yours"},
@@ -341,10 +520,11 @@ func (l local) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 	// configuration file that was meant to name a server and did not.
 	//
 	// To stderr and not through `log`, which is the part worth explaining:
-	// nothing installs a logger on a command in this app -- `log.From` on a
-	// bare context discards -- so a warning written that way is one nobody ever
-	// sees, which is worse than none. Stderr also keeps it out of a pipe, so
-	// `roster tenant ls -o json | jq` is unaffected.
+	// nothing installs a logger on an entity command -- `log.From` on a bare
+	// context discards, and the one a command is given where its work logs
+	// ([aloud]) is put there after this -- so a warning written that way is
+	// one nobody ever sees, which is worse than none. Stderr also keeps it out
+	// of a pipe, so `roster tenant ls -o json | jq` is unaffected.
 	why := "set client.addr to go over the wire"
 	if l.c.Client.Addr != "" {
 		// `--HAL` against a deployment that is configured for the wire, which
@@ -405,6 +585,49 @@ func atTheBox(ctx context.Context, c *cmd.Config, s *cmd.Server) (cmd.Operator, 
 	return by, nil
 }
 
+// namedAt is who `--as` named at this shell, looked up as [atTheBox] looks
+// them up, or nil where it named nobody: what a command that writes somebody's
+// way in keeps, and what [built] asks of every command before it opens
+// anything else.
+func namedAt(ctx context.Context, c *cmd.Config, s *cmd.Server) (*cmd.Operator, error) {
+	if strings.TrimSpace(c.Client.As) == "" {
+		return nil, nil
+	}
+
+	by, err := atTheBox(ctx, c, s)
+	if err != nil {
+		return nil, err
+	}
+
+	return &by, nil
+}
+
+// keptBy runs `write` on the plane `at`, as a call of `method` made at the
+// shell by `by` where a name was given ([cmd.Server.AtTheShell]): what a
+// command writing somebody's way in or their standing does, so that the write
+// is a row of the access record naming who made it, as the same write through
+// the entity tree is (#284). Where no name was given it is the write alone, as
+// it was: whether these commands require one is the owner's to decide.
+//
+// `method` is the RPC the act is over the wire, which is what a reviewer reads
+// the row by -- and what every line of the trail the act writes is called,
+// named or not. A write made in process is filed under the method gRPC says
+// is being served, and a call made in process is served as none, so each line
+// was filed under the generated method that wrote it: a reset at the box was
+// `CredentialService/Patch` (`/Add` the first time) and `HolderService/Patch`,
+// where over the wire it is `CredentialService/Issue` on every line, and `key
+// add` was `ApiKeyService/Add` where a key minted over the wire is `/Issue`
+// (#284). The context says which act this is, as a call over the wire would
+// have.
+func keptBy(ctx context.Context, at *cmd.Server, by *cmd.Operator, method string, write func(ctx context.Context) error) error {
+	ctx = grpcx.AsMethod(ctx, method)
+	if by == nil {
+		return write(ctx)
+	}
+
+	return at.AtTheShell(ctx, *by, method, write)
+}
+
 // piped is [pipe] on `at`, a plane of `s`, and closes `s` with it: what a
 // connector hands `pdcmd`, which calls the close once the command is done.
 func piped(s *cmd.Server, at *cmd.Server, by cmd.Operator) (pdcmd.Conn, func(), error) {
@@ -433,6 +656,10 @@ func piped(s *cmd.Server, at *cmd.Server, by cmd.Operator) (pdcmd.Conn, func(), 
 // refusal of every stream, which here is a watch that would hear nothing.
 // `TestEveryPipeIsRecorded` holds every server a command stands up to this
 // function.
+//
+// And the server is `Ungated` as an answer leaves it: with every column
+// declared `secret` cleared (`pd.NewSecret`), as the walled stack and the admin
+// listener answer. See [NewCmdEntities].
 func pipe(at *cmd.Server, by cmd.Operator) (pdcmd.Conn, func(), error) {
 	chain := grpcx.Chain{}
 	if at.HearsOnlyItself() {
@@ -441,7 +668,7 @@ func pipe(at *cmd.Server, by cmd.Operator) (pdcmd.Conn, func(), error) {
 	chain = chain.With(at.Shell(by).Interceptor())
 
 	g := grpc.NewServer(chain.ServerOptions()...)
-	app.RegisterServer(g, at.Ungated)
+	app.RegisterServer(g, pd.NewSecret(at.Ungated))
 
 	lis := bufconn.Listen(1 << 20)
 	go g.Serve(lis)

@@ -38,19 +38,24 @@ const (
 	SyncReason_SYNC_REASON_INVALIDATED SyncReason = 1
 	// [SyncEvent.date_disabled] was set.
 	SyncReason_SYNC_REASON_SUSPENDED SyncReason = 2
-	// And cleared, which is here because an app that dropped their sessions has
-	// no other way to learn it may stop refusing them.
+	// And cleared. Heard only on a stream that said the suspension: a stream
+	// that began after it has nothing to compare against, and says nothing of
+	// the lifting. A follower forgets what it held when a stream begins, and so
+	// what it then believed of anybody it asked; an app that keeps a mark of a
+	// suspension of its own asks roster before it acts on it.
 	SyncReason_SYNC_REASON_REINSTATED SyncReason = 3
 	// [SyncEvent.date_erased] was set.
 	SyncReason_SYNC_REASON_ERASED SyncReason = 4
 	// [SyncEvent.date_closed] was set: their tenant was closed.
 	SyncReason_SYNC_REASON_CLOSED SyncReason = 5
-	// And cleared: their tenant was restored. Here for the reason
-	// `SYNC_REASON_REINSTATED` is.
+	// And cleared: their tenant was restored. Heard, as
+	// `SYNC_REASON_REINSTATED` is, only on a stream that said the closing; an
+	// app that keeps a mark of a closing of its own asks before it acts on it.
 	SyncReason_SYNC_REASON_REOPENED SyncReason = 6
 	// What they may call may have changed: a role, a binding or a membership
 	// that reaches them -- through a group, or a team -- was written, added or
-	// erased. None of the timestamps moved. An app keeping what
+	// erased, or a group or a team they are in was erased. None of the
+	// timestamps moved. An app keeping what
 	// `HolderService/Reaches` answered about them asks again; the event says
 	// nothing of what they reach, which is that method's to answer.
 	SyncReason_SYNC_REASON_REACH SyncReason = 7
@@ -151,13 +156,14 @@ func (b0 SyncWatchRequest_builder) Build() *SyncWatchRequest {
 // # It carries state and not a delta
 //
 // Which is the rule the whole watch machinery is built on, and the reason a
-// stream that missed something is still correct: what arrives is the three
-// facts as they are, so a duplicate is a no-op, an out-of-order pair converges,
-// and an app that reconnects is told the truth rather than a history. An event
-// saying only *invalidated* would be a delta, and a delta that did not arrive
-// is a lie that never gets corrected.
+// stream that missed something is still correct: what arrives is the four
+// facts as they are, so a duplicate is a no-op and an out-of-order pair
+// converges. An app that reconnects is told nothing of anybody until they are
+// next written, and forgets what it held. An event saying only *invalidated*
+// would be a delta, and a delta that did not arrive is a lie that never gets
+// corrected.
 //
-// So the three timestamps below are the message, and [SyncEvent.reason] is
+// So the four timestamps below are the message, and [SyncEvent.reason] is
 // commentary on them.
 type SyncEvent struct {
 	state                      protoimpl.MessageState `protogen:"opaque.v1"`
@@ -366,7 +372,7 @@ type SyncEvent_builder struct {
 	// about somebody it has the facts and not the movement -- which is exactly
 	// what every event is immediately after a reconnect, and is why the facts are
 	// here beside it. An app that switches on this field alone will be told
-	// nothing on that first event; an app that compares the three timestamps
+	// nothing on that first event; an app that compares the four timestamps
 	// against its own session is right every time.
 	//
 	// `SYNC_REASON_REACH` is the one answer that is not about the timestamps,
@@ -377,7 +383,7 @@ type SyncEvent_builder struct {
 	// and nothing else may pass it by.
 	Reason SyncReason
 	// When this was sent, which is worth having for a log and for nothing else.
-	// What decides anything is the three fields below.
+	// What decides anything is the four fields below.
 	DateSent *timestamppb.Timestamp
 	// Everything issued to them before this is void, and unset means nothing is.
 	//
@@ -387,8 +393,9 @@ type SyncEvent_builder struct {
 	DateInvalidated *timestamppb.Timestamp
 	// They may not sign in, and everything they already held stopped working.
 	// Unset is somebody in good standing -- including somebody who **was**
-	// suspended and is not any more, which is a fact an app has no other way to
-	// learn.
+	// suspended and is not any more. That is said, `SYNC_REASON_REINSTATED`, on
+	// a stream that said the suspension; a stream that began after it says
+	// nothing of its lifting.
 	DateDisabled *timestamppb.Timestamp
 	// They are gone. Nothing resolves to them any more, and an app holding a
 	// session for them is holding a name for nobody.

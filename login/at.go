@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"sync"
+	"time"
 
 	"google.golang.org/protobuf/proto"
 
@@ -62,48 +63,94 @@ import (
 //
 // What is left is one narrow case: a tenant whose product is **not** public
 // sharing an OAuth client with one that is. That is registration hygiene, and
-// `roster login doctor` is where a deployment is told about it -- as an
-// ambiguity rather than as an attack, because a client whose redirects span
-// tenants is a client whose flows resolve differently depending on what the
-// browser sent.
+// `roster login doctor` says of a client whose redirects are several tenants'
+// that it is one -- and fails no run for it, because it is the registration
+// the section above took the tenant off the client for. Each of its flows is
+// about the tenant whose redirect it named. What that leaves to the product is
+// telling its tenants apart, which a token does not do for it.
 
-// hosts is what a name resolved to.
+// remembered is how long what a name resolved to is believed before it is asked
+// about again.
+//
+// A minute, which is what the account app keeps a name for (`App.tenantOf`)
+// and what `docs/usage/rules.md` says of a front door: it may go on answering
+// for a name it resolved for up to a minute.
+//
+// # Why there is one at all
+//
+// There was none, and what was kept was three facts that each change: which
+// tenant a name is, and that tenant's alias and its name. A name that moved to
+// another tenant went on being the first one's here, so its new tenant's
+// people were refused with the right password. A tenant renamed was drawn
+// under its old name. And an alias changed was every password sign-in of that
+// tenant answered 401 -- a sign-in is addressed by the alias -- until the
+// process was restarted.
+const remembered = time.Minute
+
+// hosts is what a name resolved to, for [remembered] after it was asked.
 //
 // A cache and not state: every entry can be recomputed from two reads, so
 // dropping the whole thing costs round trips and nothing else. Nothing negative
 // is kept, so a `Host` row written a moment ago is honoured on the next attempt
-// rather than after a restart.
+// rather than after a minute. And an entry that has run out is not refreshed in
+// place but resolved again from the name, both reads: the tenant, its alias and
+// what it is called are each read afresh.
 type hosts struct {
 	mu sync.RWMutex
 	at map[string]*tenant
+
+	// until is when each entry of `at` stops being believed.
+	until map[string]time.Time
 }
 
-func (h *hosts) get(name string) (*tenant, bool) {
+func (h *hosts) get(name string, now time.Time) (*tenant, bool) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	o, ok := h.at[name]
 
-	return o, ok
+	return o, ok && now.Before(h.until[name])
 }
 
-func (h *hosts) put(name string, o *tenant) {
+func (h *hosts) put(name string, o *tenant, now time.Time) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	if h.until == nil {
+		h.until = map[string]time.Time{}
+	}
 	h.at[name] = o
+	h.until[name] = now.Add(remembered)
+}
+
+// now is the clock an entry of [hosts] is aged by.
+func (a *App) now() time.Time {
+	if a.c.Now != nil {
+		return a.c.Now()
+	}
+
+	return time.Now()
 }
 
 // at is the tenant that claims a name.
 //
-// Two reads, and both go out as the deployment key with **no** `roster-at`,
-// which is the one place in this app that is deliberate rather than incidental:
-// these are the reads that decide what the narrowing will be, so they cannot be
-// narrowed by it. That is what an `rk_` is for, and `keys.At` says so from the
-// other side.
+// Two reads, and only the first goes out as the deployment key with **no**
+// `roster-at`, which is the one place in this app that is deliberate rather
+// than incidental: it is the read that decides what the narrowing will be, so
+// it cannot be narrowed by it. That is what an `rk_` is for, and `keys.At` says
+// so from the other side.
+//
+// The second is narrowed by the name the first was asked about. It used not to
+// be, on the reading that it too comes before the narrowing -- and it does not:
+// once the name has answered with a tenant, the name is what narrows. Sent
+// unnarrowed, it needed `TenantService/Get` on the key itself, and a key that
+// holds that as itself reads any tenant's whole row, by identifier or by alias,
+// whether this app fronts it or not. As the holder the tenant nominated it
+// reads that tenant's row, which is the only one this needs
+// (`cli.LoginResolving`).
 func (a *App) at(ctx context.Context, name string) (*tenant, error) {
 	if name == "" {
 		return nil, fmt.Errorf("login: nothing in this flow says which name it is about")
 	}
-	if o, ok := a.known.get(name); ok {
+	if o, ok := a.known.get(name, a.now()); ok {
 		return o, nil
 	}
 
@@ -120,7 +167,7 @@ func (a *App) at(ctx context.Context, name string) (*tenant, error) {
 		return nil, err
 	}
 
-	v, err := a.roster.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
+	v, err := a.roster.Tenant().Get(withAt(ctx, name), rstr.TenantGetRequest_builder{
 		Ref: rstr.TenantRef_builder{Id: id.Bytes()}.Build(),
 		// The alias as well as the name, and the alias is the one that is
 		// load-bearing: it is what `arrives` names a tenant by when it enrols
@@ -131,7 +178,10 @@ func (a *App) at(ctx context.Context, name string) (*tenant, error) {
 		Select: rstr.TenantSelect_builder{Alias: proto.Bool(true), Name: proto.Bool(true)}.Build(),
 	}.Build())
 	if err != nil {
-		return nil, fmt.Errorf("login: %q is %s and this key cannot read it: %w", name, id, err)
+		// A tenant that claimed the name and nominated nobody for this app's
+		// key, or whose nominee may not read it: `roster login provision`
+		// writes both at the next start.
+		return nil, fmt.Errorf("login: %q is %s and this key cannot read it as the holder that tenant nominated: %w", name, id, err)
 	}
 
 	alias := v.GetAlias()
@@ -139,7 +189,7 @@ func (a *App) at(ctx context.Context, name string) (*tenant, error) {
 	if who.name == "" {
 		who.name = alias
 	}
-	a.known.put(name, who)
+	a.known.put(name, who, a.now())
 
 	return who, nil
 }
@@ -157,7 +207,9 @@ func (a *App) at(ctx context.Context, name string) (*tenant, error) {
 // **one host**: several that resolve to one tenant would be fine and several
 // that do not are a flow with two answers, which is not something to pick
 // between. Refused, naming them, and `roster login doctor` is where a deployment
-// finds out before somebody tries to sign in.
+// finds out before somebody tries to sign in: a client that can do the device
+// grant, with redirects of several tenants, is the one such client it reports
+// broken.
 func (a *App) arrivedAt(ctx context.Context, requested, client string) (string, error) {
 	if h := redirectHost(requested); h != "" {
 		return h, nil

@@ -70,6 +70,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -85,6 +86,7 @@ import (
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/auth/authsession"
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/roster/arrives"
@@ -157,6 +159,10 @@ type Config struct {
 	// sign-in, which is asked for `auth_time` the way Google documents it.
 	Google string
 
+	// PrivateHosts is the Login App's `login.Config.PrivateHosts`: the hosts
+	// off the internet a tenant's provider may be at, none unless said.
+	PrivateHosts arrives.PrivateHosts
+
 	// Sessions is this app's own cookie. Never roster's.
 	Sessions *authsession.Sessions
 
@@ -224,7 +230,6 @@ var Methods = []string{
 	rstr.EmailService_Get_FullMethodName,
 	rstr.EmailService_Add_FullMethodName,
 	rstr.EmailService_Erase_FullMethodName,
-	rstr.EmailService_Verify_FullMethodName,
 	rstr.ApiKeyService_Issue_FullMethodName,
 	rstr.CredentialService_Set_FullMethodName,
 	rstr.CredentialService_Enrol_FullMethodName,
@@ -258,7 +263,6 @@ var Resolving = []string{
 var Calls = append([]string{
 	rstr.TenantService_Get_FullMethodName,
 	rstr.FrontService_WhoseHost_FullMethodName,
-	rstr.FrontService_WhereFrom_FullMethodName,
 	rstr.ConnectionService_List_FullMethodName,
 	rstr.ConnectionService_Get_FullMethodName,
 	rstr.IdentityService_Get_FullMethodName,
@@ -277,6 +281,11 @@ var Calls = append([]string{
 	rstr.VouchService_Leave_FullMethodName,
 	rstr.DelegationService_Revoke_FullMethodName,
 	rstr.CredentialService_Issue_FullMethodName,
+	// The link that confirms an address, minted by this app as itself and
+	// mailed (`verify`), and spent by what its page posts. `Verify` is here
+	// and not on [Methods]: it answers the link to its caller, and through
+	// the page's road that caller was a browser.
+	rstr.EmailService_Verify_FullMethodName,
 	rstr.EmailService_Confirm_FullMethodName,
 
 	// What a tenant's profile setting fills at a sign-in here, as the Login
@@ -307,7 +316,14 @@ var Calls = append([]string{
 func EnvSecret(ref string) (string, error) {
 	name, ok := strings.CutPrefix(ref, "env:")
 	if !ok || name == "" {
-		return "", fmt.Errorf("secret_ref %q: only env:NAME is understood here", ref)
+		// **Not repeated.** What is written where a reference belongs and is
+		// not one is, more often than anything else, the secret itself -- and
+		// this refusal is a line in a start-up log. It quoted the value, so
+		// the mistake this exists to catch put the secret where logs are kept
+		// (#276). A reference that does resolve to a name is quoted below: a
+		// name is not a secret.
+		return "", errors.New("secret_ref: only env:NAME is understood here, and what is written is not that. " +
+			"it is not repeated, since a secret written where a reference belongs is what this usually is")
 	}
 	v, ok := os.LookupEnv(name)
 	if !ok {
@@ -446,6 +462,7 @@ func New(ctx context.Context, c Config) (*App, error) {
 	a.arrives.GitHub = c.GitHub
 	a.arrives.Microsoft = c.Microsoft
 	a.arrives.Google = c.Google
+	a.arrives.PrivateHosts = c.PrivateHosts
 
 	if c.Key != "" {
 		if err := a.nominated(ctx); err != nil {
@@ -536,16 +553,23 @@ func (a *App) Handler() http.Handler {
 
 	// A terminal, which has no browser and no credential: `device.go`.
 	m.HandleFunc("POST /device/begin", a.deviceBegin)
-	m.HandleFunc("GET /device/poll", a.devicePoll)
+	// No method on the pattern: one would leave every other method to the page
+	// below, and a poll asked by its address is told so ([App.devicePoll]).
+	m.HandleFunc("/device/poll", a.devicePoll)
+	m.HandleFunc("GET /device", a.devicePage)
 	m.HandleFunc("GET /device/pending", a.devicePending)
 	m.HandleFunc("POST /device/approve", a.deviceApprove)
 	m.HandleFunc("GET /callback/{tenant}/{connection}", a.callback)
 	m.HandleFunc("POST /recover", a.recover)
-	m.HandleFunc("GET /redeem", a.redeem)
+	// A mailed link is a `GET` that asks and a `POST` that does: see
+	// [App.asking].
+	m.HandleFunc("GET /redeem", a.asking(redeemAsk))
+	m.HandleFunc("POST /redeem", a.redeem)
 	m.HandleFunc("POST /verify", a.verify)
 	m.HandleFunc("POST /claim", a.claim)
 	m.HandleFunc("POST /prove", a.prove)
-	m.HandleFunc("GET /confirm", a.confirm)
+	m.HandleFunc("GET /confirm", a.asking(confirmAsk))
+	m.HandleFunc("POST /confirm", a.confirm)
 	m.HandleFunc("POST /leave/link", a.leaveLink)
 	m.HandleFunc("GET /leave", a.leaving)
 	m.HandleFunc("POST /leave", a.leave)
@@ -568,7 +592,9 @@ func (a *App) Handler() http.Handler {
 		page.ServeHTTP(w, r)
 	})
 
-	return a.resolve(m)
+	// Whatever changes something is asked by this origin's own page, or by
+	// what is not a browser; and no page here is drawn inside another's.
+	return a.resolve(frontdoor.Guard(m))
 }
 
 // resolve puts the tenant a request is about -- and its key -- in the context,
@@ -701,7 +727,10 @@ func (a *App) providers(w http.ResponseWriter, r *http.Request) {
 	tn, err := a.roster.Tenant().Get(t.on(r.Context()), rstr.TenantGetRequest_builder{
 		Ref: rstr.TenantRef_builder{Id: t.id.Bytes()}.Build(),
 		Select: rstr.TenantSelect_builder{
-			Alias: proto.Bool(true), Name: proto.Bool(true), Labels: proto.Bool(true),
+			// What the page draws of the tenant, and no more: this is answered
+			// to anybody, and it answered the tenant's labels too, which are
+			// where a deployment puts what the schema does not name.
+			Alias: proto.Bool(true), Name: proto.Bool(true),
 			Config: proto.Bool(true),
 		}.Build(),
 	}.Build())
@@ -716,9 +745,8 @@ func (a *App) providers(w http.ResponseWriter, r *http.Request) {
 	}
 	out := struct {
 		Tenant struct {
-			Alias  string            `json:"alias"`
-			Name   string            `json:"name"`
-			Labels map[string]string `json:"labels"`
+			Alias string `json:"alias"`
+			Name  string `json:"name"`
 		} `json:"tenant"`
 		Providers []provider `json:"providers"`
 		Password  bool       `json:"password"`
@@ -755,7 +783,6 @@ func (a *App) providers(w http.ResponseWriter, r *http.Request) {
 	}
 	out.Tenant.Alias = tn.GetAlias()
 	out.Tenant.Name = tn.GetName()
-	out.Tenant.Labels = tn.GetLabels()
 	for _, c := range cs {
 		out.Providers = append(out.Providers, provider{Name: c.GetName(), Issuer: c.GetIssuer()})
 	}
@@ -779,12 +806,27 @@ func (a *App) origin(r *http.Request) string {
 	if a.c.Base != nil {
 		return a.c.Base.String()
 	}
-	scheme := "http"
-	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
-		scheme = "https"
+
+	return a.scheme(r) + "://" + r.Host
+}
+
+// scheme is how this app is reached, where no `Base` says: `https`, wherever
+// its own cookies are `Secure`.
+//
+// It was what the request said of itself -- `https` if the connection was TLS
+// or `X-Forwarded-Proto` said so, and `http` otherwise. Behind what terminates
+// TLS the connection never is, and the header is whoever sent the request's to
+// write or leave out; so a recovery link a stranger asked for went out as
+// `http://`, and so did the address a provider is told to send a browser back
+// to (#277). An app whose cookies are `Secure` works over `https` and nothing
+// else, so that is what it says, whatever a request says. A development rig,
+// which said its cookies are not, is read as it was.
+func (a *App) scheme(r *http.Request) string {
+	if !a.c.InsecureCookie || r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		return "https"
 	}
 
-	return scheme + "://" + r.Host
+	return "http"
 }
 
 // A flow is one round trip to a provider, started and not yet finished. It is
@@ -803,7 +845,23 @@ type flow struct {
 	next *url.URL
 }
 
+// stateCookie is the round trip's cookie, by the name [App.stateName] gives it.
 const stateCookie = "account_state"
+
+// stateName is the name the round trip's cookie goes by: `__Host-` in front of
+// it wherever cookies are `Secure`, which is everywhere but a development rig.
+//
+// The session's cookie has always had the prefix, so that another host of the
+// same domain cannot write one over it. This one had not, and it is what a
+// callback is held to: a host beside this one could set it, and with it choose
+// which of its own round trips a browser's callback finished (#277).
+func (a *App) stateName() string {
+	if a.c.InsecureCookie {
+		return stateCookie
+	}
+
+	return "__Host-" + stateCookie
+}
 
 // login starts a sign-in through one of the tenant's providers.
 //
@@ -825,15 +883,76 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	a.start(w, r, false, pdid.Nil)
 }
 
+// present is who roster says is at this browser, asked now: `Me.Get` through
+// the delegation their session holds.
+//
+// # Why the cookie is not asked
+//
+// The sealed cookie says who signed in, and it opens until its own clock runs
+// out. Whether that sign-in still stands is roster's to say: signed out of,
+// signed out everywhere, suspended, erased -- each ends the delegation there
+// and none of them reaches a cookie. A call the page makes of roster goes as
+// the person and is refused by all of those. What this app does for the person
+// **with its own key** has to ask the same thing first, or it is the one road
+// a session that ended still walks: it linked a provider's account, claimed an
+// address and answered whether a password was theirs, from any copy of the
+// cookie (#277).
+//
+// And the answer says what they may do of their own accord ([lets]), which is
+// the second thing a write made for them has to ask.
+func (a *App) present(r *http.Request, t *tenant) (*rstr.MeGetResponse, bool) {
+	as, err := a.door.Acting(r.Context(), r)
+	if err != nil {
+		return nil, false
+	}
+
+	me, err := rstr.NewMeServiceClient(a.conn).Get(t.on(as), rstr.MeGetRequest_builder{}.Build())
+	if err != nil || len(me.GetId()) == 0 {
+		return nil, false
+	}
+
+	return me, true
+}
+
+// lets is whether roster lets somebody call `method` themselves: a role of
+// theirs names it, or it is among what everybody of their tenant does to their
+// own account (`MeGetResponse.own`).
+//
+// Asked before this app writes for them with its own key, which is bound the
+// method for everybody: a tenant that took a method out of `self-service` has
+// turned it off for its people (`docs/usage/permissions.md`), and that was the
+// page's button and nothing behind it.
+func lets(me *rstr.MeGetResponse, method string) bool {
+	return slices.Contains(me.GetOwn(), method) ||
+		slices.ContainsFunc(me.GetMethods(), func(v string) bool { return frame.Covers(v, method) })
+}
+
 // addWay is the same round trip by somebody already signed in, attaching what
 // the provider proves to **their** account. The session says whose; the
 // request never does.
+//
+// Somebody roster says is there, and may ([App.present], [lets]).
 func (a *App) addWay(w http.ResponseWriter, r *http.Request) {
-	who, ok := a.door.Who(r.Context(), r)
+	t, ok := tenantFrom(r.Context())
+	if !ok {
+		http.Error(w, "no operator here serves this name", http.StatusNotFound)
+		return
+	}
+	me, ok := a.present(r, t)
 	if !ok {
 		http.Error(w, "no", http.StatusForbidden)
 		return
 	}
+	if !lets(me, rstr.IdentityService_Add_FullMethodName) {
+		http.Error(w, "your organisation does not let its people connect an account themselves", http.StatusForbidden)
+		return
+	}
+	who, err := pdid.From(me.GetId())
+	if err != nil {
+		http.Error(w, "no", http.StatusForbidden)
+		return
+	}
+
 	a.start(w, r, true, who)
 }
 
@@ -879,10 +998,15 @@ func (a *App) start(w http.ResponseWriter, r *http.Request, link bool, who pdid.
 		http.Error(w, "cannot start", http.StatusInternalServerError)
 		return
 	}
-	a.flows.Put(state, flow{tenant: t, trip: trip, link: link, who: who, next: next}, 10*time.Minute)
+	if !a.flows.Put(state, flow{tenant: t, trip: trip, link: link, who: who, next: next}, 10*time.Minute) {
+		// As many round trips are under way as this holds (`arrives.StatesHeld`).
+		w.Header().Set("retry-after", "30")
+		http.Error(w, "too many sign-ins are under way here; try again in a moment", http.StatusServiceUnavailable)
+		return
+	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     stateCookie,
+		Name:     a.stateName(),
 		Value:    state,
 		Path:     "/",
 		HttpOnly: true,
@@ -897,10 +1021,10 @@ func (a *App) start(w http.ResponseWriter, r *http.Request, link bool, who pdid.
 // the flow went to, which is the one it has to come back to (`arrives.Trip`).
 func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	http.SetCookie(w, &http.Cookie{Name: stateCookie, Path: "/", MaxAge: -1})
+	http.SetCookie(w, &http.Cookie{Name: a.stateName(), Path: "/", MaxAge: -1, HttpOnly: true, Secure: !a.c.InsecureCookie})
 
 	state := r.URL.Query().Get("state")
-	c, err := r.Cookie(stateCookie)
+	c, err := r.Cookie(a.stateName())
 	if err != nil || state == "" || c.Value != state {
 		// One answer for a missing cookie, a missing parameter and a
 		// mismatch: saying which would tell whoever sent this browser how far
@@ -929,11 +1053,23 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if f.link {
-		_, err := a.roster.Identity().Add(as, rstr.IdentityAddRequest_builder{
-			Holder:   rstr.HolderRef_builder{Id: f.who.Bytes()}.Build(),
-			Provider: who.Provider,
-			Subject:  who.Subject,
-		}.Build())
+		// Written **as the person**, through the delegation their session
+		// holds now, and not with this app's key as it was: the provider has
+		// proved the subject, which is this app's part; whether they are still
+		// signed in, and whether their tenant lets them, is roster's, and a
+		// write made as them is asked both. A round trip is ten minutes long,
+		// and one begun before somebody signed out finished after it.
+		err := status.Error(codes.Unauthenticated, "nobody is signed in")
+		if now, ok := a.door.Who(ctx, r); ok && now == f.who {
+			var theirs context.Context
+			if theirs, err = a.door.Acting(ctx, r); err == nil {
+				_, err = a.roster.Identity().Add(f.tenant.on(theirs), rstr.IdentityAddRequest_builder{
+					Holder:   rstr.HolderRef_builder{Id: f.who.Bytes()}.Build(),
+					Provider: who.Provider,
+					Subject:  who.Subject,
+				}.Build())
+			}
+		}
 		// Back to the page, whichever way it went, with a word for it.
 		//
 		// A browser is here because somebody pressed *connect* on their own
@@ -966,6 +1102,33 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 	if err := a.known(as, &who); err != nil {
 		if errors.Is(err, ErrUninvited) {
 			http.Error(w, "this account has not been invited", http.StatusForbidden)
+			return
+		}
+		if errors.Is(err, arrives.ErrUnlinked) {
+			// Somebody the tenant has, whose first link is not this app's to
+			// write: they hold more than it does. A refusal like the one
+			// above, and not this app failing -- `arrives` has said in the
+			// log what an administrator links.
+			http.Error(w, "this account is known here and is not linked yet; "+
+				"an administrator of your organisation has to link it for you", http.StatusForbidden)
+			return
+		}
+		if errors.Is(err, arrives.ErrAnotherAccount) {
+			// Their address is somebody's here who signs in through this
+			// provider already, by another account: a refusal too, and not
+			// one this app can end by linking.
+			http.Error(w, "somebody here already signs in with another account at this provider, under the address this one carries; "+
+				"an administrator of your organisation has to say which account is theirs", http.StatusForbidden)
+			return
+		}
+		if errors.Is(err, arrives.ErrErased) {
+			// Somebody erased, whose account at the provider and whose proved
+			// address are theirs until they are forgotten: a refusal too, and
+			// not this app failing. One sentence whichever of the two they
+			// were found by, and nothing of who they were -- `arrives` has
+			// said that in the log, for whoever ends it.
+			http.Error(w, "this account was deleted here; "+
+				"an administrator of your organisation can bring it back, or let it go", http.StatusForbidden)
 			return
 		}
 		fmt.Fprintf(os.Stderr, "account: %s/%s: %v\n", who.Provider, who.Subject, err)
@@ -1020,15 +1183,20 @@ func claimOf(t *tenant, who arrives.Caller) frontdoor.Claim {
 // console's to name and not the caller's. One answer for a name nobody serves
 // and a name another tenant does: which of the two it was is not the browser's
 // to learn at a form strangers reach.
+//
+// And `https`, wherever this app's own cookies are `Secure`. What is sent
+// there is the link that ends in the person's whole session at that console,
+// and `/login` is a `GET` anybody can write: `next=http://<the tenant's name>`
+// was taken, and the link travelled in the clear (#277).
 func (a *App) nextOf(ctx context.Context, v string, t *tenant) (*url.URL, error) {
 	if v == "" {
 		return nil, nil
 	}
 
-	bad := errors.New("an origin this tenant answers at, and nothing after the host")
+	bad := errors.New("an https origin this tenant answers at, and nothing after the host")
 
 	u, err := url.Parse(v)
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil ||
+	if err != nil || (u.Scheme != "https" && !(u.Scheme == "http" && a.c.InsecureCookie)) || u.Host == "" || u.User != nil ||
 		(u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" {
 		return nil, bad
 	}
@@ -1354,22 +1522,29 @@ func redeemable(row *rstr.Email) bool {
 // issued before it, which is what recovering from a takeover requires. Their
 // own row asks for the current password on `Set` and there is none to give,
 // which is exactly why this road exists.
+//
+// It is the answer to the page the link opens ([App.asking]), and not the link
+// itself: the link fetched changes nothing.
 func (a *App) redeem(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	token := r.URL.Query().Get("token")
-	if token == "" {
-		http.Error(w, "no", http.StatusBadRequest)
-		return
-	}
 
 	// The tenant the link names, whose key minted it and is the one that
 	// redeems it; see [App.finish].
-	if t, ok := a.linkTenant(r); ok {
+	if token, t, ok := a.answered(w, r); ok {
 		as := t.on(ctx)
 		res, err := a.vouch.Redeem(as, rstr.VouchRedeemRequest_builder{
 			Token:   token,
 			Methods: []string{rstr.MeService_Get_FullMethodName},
 		}.Build())
+		if err == nil && !res.GetVerified().GetOk() && res.GetVerified().GetContinuation() != "" {
+			// The link was one, and proved the mailbox; roster asks for a
+			// second proof, which somebody who holds one is always asked, and
+			// this page has no form for it. Said, where it was *this link is
+			// not one*: the link is spent, and the road is whoever administers
+			// them.
+			page(w, http.StatusForbidden, noSecond)
+			return
+		}
 		if err != nil || !res.GetVerified().GetOk() {
 			http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
 			return
@@ -1384,21 +1559,73 @@ func (a *App) redeem(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.Header().Set("content-type", "text/html; charset=utf-8")
-		w.Header().Set("cache-control", "no-store")
-		fmt.Fprintf(w, recovered, htmlEscape(reset.GetSecret()))
-		return
+		page(w, http.StatusOK, fmt.Sprintf(recovered, htmlEscape(reset.GetSecret())))
+	}
+}
+
+// asking is where a mailed link lands: a page that says what the link does and
+// asks, and spends nothing. What the page posts is what acts.
+//
+// Nothing, because a link is fetched by more than the person it was sent to: a
+// mail client previewing it, a gateway following every link in a message. The
+// link that deletes an account was written this way from the start
+// ([App.leaving]). The one that recovers an account and the one that confirms
+// an address did the whole act on the fetch -- on a `HEAD` too, which a mux
+// answers on a `GET` pattern -- so where mail is scanned, the scanner replaced
+// the person's password and was shown the new one, and proved an address for
+// whoever had written it onto their account; and `POST /recover` takes an
+// address from anybody (#277).
+//
+// roster is not asked whether the link is one. Asking is a call per fetch for
+// anybody who can write a URL, and what it would add -- *this link is no
+// longer* a click earlier -- the answer says anyway.
+func (a *App) asking(form string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		token := r.URL.Query().Get("token")
+		t, ok := a.linkTenant(r)
+		if token == "" || !ok {
+			http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
+			return
+		}
+
+		page(w, http.StatusOK, fmt.Sprintf(form, htmlEscape(url.Values{"at": {t.id.String()}}.Encode()), htmlEscape(token)))
+	}
+}
+
+// answered reads what a link's page posted: the token, under the tenant the
+// link named. It has answered the request itself when it says no.
+//
+// Read to a size, as every other body here is: a form was the one thing
+// `ParseForm` read to Go's own ten megabytes.
+func (a *App) answered(w http.ResponseWriter, r *http.Request) (string, *tenant, bool) {
+	t, ok := a.linkTenant(r)
+	if !ok {
+		http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
+		return "", nil, false
 	}
 
-	http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
+	r.Body = http.MaxBytesReader(w, r.Body, 4<<10)
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "no", http.StatusBadRequest)
+		return "", nil, false
+	}
+
+	token := r.PostForm.Get("token")
+	if token == "" {
+		http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
+		return "", nil, false
+	}
+
+	return token, t, true
 }
 
 // verify mails a link that proves one of the signed-in person's addresses.
 //
-// `Email.Verify` is called as the person, through their delegation -- the same
-// call the page could make itself -- and the reason it is a route here is
-// delivery: the app mails, roster does not. The address is read off the row,
-// never from the request.
+// The row is read as the person, through their delegation, and the link is
+// minted by this app as itself: `Email.Verify` answers the link to whoever
+// calls it, so it is not a call the page makes -- it is not on [Methods] -- and
+// the reason there is a route here at all is delivery: the app mails, roster
+// does not. The address is read off the row, never from the request.
 func (a *App) verify(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if a.c.Mail == nil {
@@ -1503,17 +1730,24 @@ func (a *App) claim(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "this deployment cannot send mail, so it cannot claim an address this way", http.StatusNotImplemented)
 		return
 	}
-	if _, err := a.door.Acting(ctx, r); err != nil {
-		http.Error(w, "no", http.StatusUnauthorized)
-		return
-	}
 	t, ok := tenantFrom(ctx)
 	if !ok {
 		http.Error(w, "no operator here serves this name", http.StatusNotFound)
 		return
 	}
-	who, ok := a.door.Who(ctx, r)
+	// Somebody roster says is there, who may add an address themselves: the
+	// link this mints ends with one on their account ([App.present], [lets]).
+	me, ok := a.present(r, t)
 	if !ok {
+		http.Error(w, "no", http.StatusUnauthorized)
+		return
+	}
+	if !lets(me, rstr.EmailService_Add_FullMethodName) {
+		http.Error(w, "your organisation does not let its people add an address themselves", http.StatusForbidden)
+		return
+	}
+	who, err := pdid.From(me.GetId())
+	if err != nil {
 		http.Error(w, "no", http.StatusUnauthorized)
 		return
 	}
@@ -1611,29 +1845,21 @@ func (a *App) post(ctx context.Context, w http.ResponseWriter, kind, to, by, sub
 }
 
 // confirm spends a verification link. Nobody is signed in by it, and nobody
-// need be signed in to click it: the key that minted it confirms it.
+// need be signed in to answer its page: the key that minted it confirms it.
+//
+// The page's answer, as [App.redeem] is: [App.asking].
 func (a *App) confirm(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	token := r.URL.Query().Get("token")
-	if token == "" {
-		http.Error(w, "no", http.StatusBadRequest)
-		return
-	}
 
-	if t, ok := a.linkTenant(r); ok {
+	if token, t, ok := a.answered(w, r); ok {
 		res, err := a.roster.Email().Confirm(t.on(ctx), rstr.EmailConfirmRequest_builder{Token: token}.Build())
 		if err != nil {
 			http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
 			return
 		}
 
-		w.Header().Set("content-type", "text/html; charset=utf-8")
-		w.Header().Set("cache-control", "no-store")
-		fmt.Fprintf(w, confirmed, htmlEscape(res.GetEmail().GetAddress()))
-		return
+		page(w, http.StatusOK, fmt.Sprintf(confirmed, htmlEscape(res.GetEmail().GetAddress())))
 	}
-
-	http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
 }
 
 // leaveLink mails the signed-in person a link that deletes their account, to
@@ -1739,20 +1965,11 @@ func (a *App) leaving(w http.ResponseWriter, r *http.Request) {
 // still good where nothing about it was wrong.
 func (a *App) leave(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	t, ok := a.linkTenant(r)
+	token, t, ok := a.answered(w, r)
 	if !ok {
-		http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
 		return
 	}
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "no", http.StatusBadRequest)
-		return
-	}
-	token, confirm := r.PostForm.Get("token"), r.PostForm.Get("confirm")
-	if token == "" {
-		http.Error(w, "this link is not one, or is no longer", http.StatusNotFound)
-		return
-	}
+	confirm := r.PostForm.Get("confirm")
 
 	res, err := a.vouch.Leave(t.on(ctx), rstr.VouchLeaveRequest_builder{Token: token, Confirm: confirm}.Build())
 	if err != nil {
@@ -1771,12 +1988,44 @@ func (a *App) leave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	forgotten := "Until it is forgotten, whoever runs it can bring it back if you ask them."
+	var forgotten time.Time
 	if f := res.GetDateForgotten(); f != nil {
-		forgotten = fmt.Sprintf("Until %s, when it is forgotten, whoever runs it can bring it back if you ask them; "+
-			"after that, everything held about you is destroyed.", f.AsTime().UTC().Format("2 January 2006"))
+		forgotten = f.AsTime()
 	}
-	page(w, http.StatusOK, fmt.Sprintf(left, htmlEscape(forgotten)))
+	page(w, http.StatusOK, fmt.Sprintf(left, htmlEscape(leftSaying(forgotten))))
+}
+
+// leftSaying is what somebody who has just deleted their account is told
+// happens to it next. `forgotten` is the moment their grace runs out, and the
+// zero time where the deployment names none.
+//
+// # What is done, and not more
+//
+// It said *Until <date>, when it is forgotten ... after that, everything held
+// about you is destroyed*, and four things about that were not so (#280). The
+// date is when the grace runs out: the forget is made by the first pass after
+// it, up to `holder.every` later, and a restore works until that pass. A
+// legal hold on the tenant stops the clock, and nobody tells the person. What
+// they agreed to is kept past them as proof, for `consent.keep`, which is for
+// good unless the deployment says otherwise. And the trail and the access
+// record keep what was done and who read their data, by identifier -- and the
+// second, a word somebody looked them up by, for its own window.
+//
+// This is said to somebody at the moment they leave, and is what they will
+// hold the deployment to. So it says *from* the date, and what is kept. The
+// words only: what is done is `server/forget`'s.
+func leftSaying(forgotten time.Time) string {
+	const kept = "Two things are kept past that. What you agreed to, for as long as it is kept as proof that you did. " +
+		"And the record of what was done and of who read your data, which says an identifier where your account was and nothing you were called."
+
+	if forgotten.IsZero() {
+		return "Whoever runs it can bring it back if you ask them, until they forget it, which no date here does by itself: " +
+			"what is held about you is destroyed when they do, and a legal claim on the organisation's records puts that off for as long as it lasts. " + kept
+	}
+
+	return fmt.Sprintf("From %s it is forgotten: what is held about you is destroyed at the first pass after that day, and not before. "+
+		"Until that pass, whoever runs it can bring it back if you ask them; and a legal claim on the organisation's records puts it off for as long as the claim lasts. "+kept,
+		forgotten.UTC().Format("2 January 2006"))
 }
 
 // page answers one of the plain pages a mailed link ends at, which nothing
@@ -1837,20 +2086,47 @@ func (a *App) redirectBase(r *http.Request) *url.URL {
 
 		return &u
 	}
-	scheme := "http"
-	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
-		scheme = "https"
-	}
 
-	return &url.URL{Scheme: scheme, Host: r.Host}
+	return &url.URL{Scheme: a.scheme(r), Host: r.Host}
 }
 
 func htmlEscape(v string) string {
 	return strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", "\"", "&quot;").Replace(v)
 }
 
-// The two pages a mailed link ends at. Plain HTML, because a person arriving
-// from a mail client has no session and the page has one thing to say.
+// What a link that recovers an account and one that confirms an address ask
+// before anything happens ([App.asking]): what the link does, one button, and
+// what to do with a message nobody asked for. The tenant in the action, the
+// token in the form.
+const redeemAsk = `<!doctype html><meta charset="utf-8"><title>recover your account</title>
+<main style="font-family:system-ui;max-width:32rem;margin:3rem auto;padding:0 1rem">
+<h1>Recover your account</h1>
+<p>You will be shown a new password, <strong>once</strong>. The one you had stops working, and everything you are signed in to is signed out.</p>
+<form method="post" action="/redeem?%s">
+<input type="hidden" name="token" value="%s">
+<p><button type="submit">make me a new password</button></p>
+</form>
+<p>Did not ask for this? Close this page: nothing has happened, and the link stops working by itself a few minutes after it was sent.</p></main>`
+
+const confirmAsk = `<!doctype html><meta charset="utf-8"><title>confirm your address</title>
+<main style="font-family:system-ui;max-width:32rem;margin:3rem auto;padding:0 1rem">
+<h1>Confirm your address</h1>
+<p>Somebody asked to have the address this message reached recorded as theirs. Confirming says that it is, and signs nobody in.</p>
+<form method="post" action="/confirm?%s">
+<input type="hidden" name="token" value="%s">
+<p><button type="submit">this address is mine</button></p>
+</form>
+<p>Did not ask for this? Close this page, and do not confirm: the address would be recorded as somebody else's. Nothing has happened, and the link stops working by itself a few minutes after it was sent.</p></main>`
+
+// What a recovery link ends at for somebody who holds a second factor.
+const noSecond = `<!doctype html><meta charset="utf-8"><title>not recovered</title>
+<main style="font-family:system-ui;max-width:32rem;margin:3rem auto;padding:0 1rem">
+<h1>This account is not recovered by mail</h1>
+<p>It asks for a second proof when somebody signs in, and a link in a message is not one. Nothing has changed: your password is the one you had.</p>
+<p>Whoever administers your organisation can give you a new password.</p></main>`
+
+// The two pages those end at. Plain HTML, because a person arriving from a
+// mail client has no session and the page has one thing to say.
 const recovered = `<!doctype html><meta charset="utf-8"><title>recovered</title>
 <main style="font-family:system-ui;max-width:32rem;margin:3rem auto;padding:0 1rem">
 <h1>Your new password</h1>
@@ -1912,14 +2188,22 @@ func bytesEqual(a, b []byte) bool {
 // security key needs no proving: the ceremony that enrolled it was one.
 func (a *App) prove(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	who, ok := a.door.Who(ctx, r)
+	t, ok := tenantFrom(ctx)
+	if !ok {
+		http.Error(w, "no operator here serves this name", http.StatusNotFound)
+		return
+	}
+	// Somebody roster says is there ([App.present]): the check below is made
+	// with this app's key about whoever is named, and for a cookie whose
+	// session had ended it went on saying whether a password was theirs.
+	me, ok := a.present(r, t)
 	if !ok {
 		http.Error(w, "no", http.StatusUnauthorized)
 		return
 	}
-	t, ok := tenantFrom(ctx)
-	if !ok {
-		http.Error(w, "no operator here serves this name", http.StatusNotFound)
+	who, err := pdid.From(me.GetId())
+	if err != nil {
+		http.Error(w, "no", http.StatusUnauthorized)
 		return
 	}
 

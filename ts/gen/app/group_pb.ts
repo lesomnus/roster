@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/group.proto.
  */
 export const file_app_group: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvZ3JvdXAucHJvdG8SBnJvc3RlciLCBAoFR3JvdXASFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIkCgRzaXRlGAMgASgLMgwucm9zdGVyLlNpdGVCCPKCFgQ4AUABEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRIpCgZsYWJlbHMYByADKAsyGS5yb3N0ZXIuR3JvdXAuTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6mgHK/BVTEgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxY/CBAyOwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGdGVuYW50GgYKBHNpdGUgFChkIrMDCg1Hcm91cEV4cG9zdXJlEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIkCgVncm91cBgCIAEoCzINLnJvc3Rlci5Hcm91cEIG8oIWAkABEhYKBmNsaWVudBgIIAEoCUIG6oIWAkABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqYAcr8FUoSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARoiEgdjYXJyaWVkGgkKBWdyb3VwEAIaCgoGY2xpZW50EAgwAYq7FkYIHDIyChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoHCgVncm91cCAUKGQiDgoMZ3JvdXAudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_tenant, file_app_site, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg9hcHAvZ3JvdXAucHJvdG8SBnJvc3RlciLiBAoFR3JvdXASFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIkCgRzaXRlGAMgASgLMgwucm9zdGVyLlNpdGVCCPKCFgQ4AUABEhUKBWFsaWFzGAQgASgJQgaqwRYCGAASFAoEbmFtZRgFIAEoCUIGqsEWAhgAEhQKBGRlc2MYBiABKAlCBqrBFgIYABIxCgZsYWJlbHMYByADKAsyGS5yb3N0ZXIuR3JvdXAuTGFiZWxzRW50cnlCBqrBFgIYABI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATqaAcr8FVMSAhABGiwSBHBhZ2UaCgoGdGVuYW50EAIaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwAYq7Fj8IEDI7ChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZ0ZW5hbnQaBgoEc2l0ZSAUKGQiuQMKDUdyb3VwRXhwb3N1cmUSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiQKBWdyb3VwGAIgASgLMg0ucm9zdGVyLkdyb3VwQgbyghYCQAESHAoGY2xpZW50GAggASgJQgzqghYCQAGqwRYCGAASOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOpgByvwVShICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGiISB2NhcnJpZWQaCQoFZ3JvdXAQAhoKCgZjbGllbnQQCDABirsWRggcMjIKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGgcKBWdyb3VwIBQoZCIOCgxncm91cC50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_tenant, file_app_site, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Group is a named set of people, and nothing else.
@@ -86,6 +86,11 @@ export type Group = Message<"roster.Group"> & {
   site?: Site | undefined;
 
   /**
+   * Not personal, these three and the labels: a group is the tenant's own,
+   * and what it is called and said to be is the record of who named it what.
+   * Nobody is written into them, as into a tenant's (`tenant.proto`): a group
+   * named after a person keeps that name on the trail, where no forget reaches.
+   *
    * @generated from field: string alias = 4;
    */
   alias: string;
@@ -179,6 +184,8 @@ export type GroupExposure = Message<"roster.GroupExposure"> & {
    * The client, as the issuer names it: what a token's `azp` and an ID
    * token's `aud` say. A string because the client is the issuer's row and not
    * roster's.
+   *
+   * Not personal: an app's name for itself.
    *
    * @generated from field: string client = 8;
    */

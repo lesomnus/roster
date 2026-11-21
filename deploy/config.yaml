@@ -51,6 +51,18 @@ spin:
 # account is signed and checkpointed, and every checkpoint heard outside both --
 # is the component `trail/`, which the rig includes and a deployment turns on in
 # its own overlay (`deploy/README.md`).
+#
+# The access record -- who read whose data -- is kept the same way, and costs
+# more to leave: a row for every call that shows somebody, where the trail is a
+# row a write, on a volume that also holds the database. `serve` warns as it
+# starts for as long as it has no window. An overlay gives it one of its own,
+# which needs no archive (`docs/operating.md` § "Who read whose data"):
+#
+#   audit:
+#     by:
+#       access:
+#         retain: 2160h     # ninety days in the database,
+#         discard: true     # and then destroyed, with no copy kept
 
 control:
   db:
@@ -59,28 +71,27 @@ control:
     migrate: true
   watch:
     broker: memory
+  # gRPC, which is what a shell asks, carrying an `rk_`. Anything pointed at it
+  # over HTTP gets an HTTP/2 SETTINGS frame and reads it as a malformed
+  # response, which is a probe that never passes and says nothing about why;
+  # the probes connect to the data plane's gRPC port instead, which every
+  # deployment opens -- see `deploy/roster.yaml`.
+  #
+  # No `http:` here. It had one, with no `allow_web`, which answered 404 to
+  # everything; `serve` refuses that now. The admin console is served by
+  # `admin.http` below, which is also the listener it calls -- a `__Host-`
+  # session cookie is host-only, so the two have to be one host (#27).
   addr: 0.0.0.0:8060
-  # The control plane's HTTP listener, for a caller that cannot speak gRPC.
-  # `control.addr` above is **gRPC** -- anything pointed at it gets an HTTP/2
-  # SETTINGS frame and reads it as a malformed response, which is a probe that
-  # never passes and says nothing about why. The probes connect to the data
-  # plane's gRPC port instead, which every deployment opens -- see
-  # `deploy/roster.yaml`.
-  http:
-    addr: 0.0.0.0:8061
-  # No page here. The admin console is served by `admin.http` below, which is
-  # also the listener it calls -- a `__Host-` session cookie is host-only, so
-  # the two have to be one host (#27). What this listener answers is what a
-  # shell asks, carrying an `rk_`.
 
 # The data plane with **no wall**, which is what the admin console's customers screen
 # reads: creating a customer happens before there is a tenant to be narrowed to,
 # so it cannot be done through the walled plane at all.
 #
-# Up, and offered to nobody. There is no Service for it here and `origins` is
-# empty, because the caller is a browser on the admin console's own origin and that
-# origin is a deployment's to know. Both lines are filled in together or neither
-# is; `cmd/serve.go` is why this is a third listener rather than a flag.
+# This is the listener the manual calls root (`docs/operating.md`, "`admin.addr`
+# is root"). `deploy/roster.yaml` has a Service for its `http`, named `roster`,
+# which a deployment routes a host to: it is the one a person opens. `origins`
+# is empty, because the caller is a browser on the admin console's own origin.
+# `cmd/serve.go` is why this is a third listener rather than a flag.
 admin:
   addr: 0.0.0.0:8070
   http:

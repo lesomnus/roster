@@ -68,7 +68,7 @@ const draw = (children: React.ReactNode): void => root.render(<AccountUI>{sandbo
 
 /** Providers is what `/providers` says: who this front door is for, and how they arrive. */
 interface Providers {
-	tenant: { alias: string; name: string; labels: Record<string, string> }
+	tenant: { alias: string; name: string }
 	providers: { name: string; issuer: string }[]
 	terminal?: boolean
 	password: boolean
@@ -1208,8 +1208,9 @@ function Leave(props: {
 			<p className="note">
 				You will not be able to sign in to {brand} again, nor to anything that signs you in through
 				it, and every app that holds a session for you is told. Nothing is destroyed at once: until the
-				account is forgotten, whoever runs {brand} can bring it back if you ask them. After that,
-				everything held about you is destroyed.
+				account is forgotten, whoever runs {brand} can bring it back if you ask them. After that, what
+				is held about you is destroyed. Two things are kept: what you agreed to, as proof that you did,
+				and the record of what was done, which says an identifier where your account was.
 			</p>
 			<Form
 				onSubmit={(e) => {
@@ -1349,7 +1350,7 @@ function Left(props: { brand: string; forgotten: string; said?: string | undefin
 			<p>
 				You are signed out of {props.brand} everywhere.{' '}
 				{props.forgotten !== ''
-					? `Until ${props.forgotten} whoever runs ${props.brand} can bring it back if you ask; after that, everything held about you is destroyed.`
+					? `Until ${props.forgotten} whoever runs ${props.brand} can bring it back if you ask; from then on what is held about you is destroyed, except what you agreed to and the record of what was done.`
 					: `Whoever runs ${props.brand} can bring it back if you ask them, until they forget it.`}
 			</p>
 		</main>

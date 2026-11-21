@@ -3,11 +3,16 @@ package cli
 import (
 	"context"
 	"errors"
-	"github.com/lesomnus/roster/cmd"
+	"fmt"
+	"io"
 	"strings"
 	"time"
 
 	"github.com/lesomnus/xli"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"github.com/lesomnus/roster/cmd"
 
 	"github.com/lesomnus/payday/pdcmd"
 	"github.com/lesomnus/payday/pdid"
@@ -41,7 +46,8 @@ func newCmdSync(c *cmd.Config) *xli.Command {
 // The same stance `pdcmd`'s `watch` takes, for the same reason: a watch has no
 // backlog, so a stream that stopped and a stream where nothing is happening
 // look exactly alike, and a command that returned quietly would be somebody
-// reading an empty screen and believing it.
+// reading an empty screen and believing it. What it fails with is what the
+// server ended the stream with ([ended]).
 func newCmdSyncWatch(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "watch",
@@ -69,8 +75,7 @@ func newCmdSyncWatch(c *cmd.Config) *xli.Command {
 						return next(ctx)
 					}
 
-					return errors.New("the stream ended, and a watch has no backlog: " +
-						"whatever changed after this was sent to nobody. Run it again")
+					return ended(err)
 				}
 
 				h, _ := pdid.From(v.GetHolder())
@@ -96,4 +101,38 @@ func newCmdSyncWatch(c *cmd.Config) *xli.Command {
 			}
 		}),
 	}
+}
+
+// ended is what `sync watch` says of a stream the server, or the connection,
+// ended: its code and its words, and *run it again* only where running it
+// again mends it. A connection lost (`Unavailable`), a stream cut for falling
+// behind or for a broker that lost its connection (`ResourceExhausted`), and a
+// stream roster ended to have its caller ask again (`Unauthenticated`, whose
+// words end in *reconnect*: `stream.recheck`, a credential or a policy that
+// changed) are mended by it. A refusal, a deployment with no broker and a key
+// that is not one are not, and are the server's words and nothing more.
+//
+// A stream that ended with no error at all is said as one that is mended by
+// running it again, which is what this said of every ending before: roster
+// ends none that way.
+func ended(err error) error {
+	if errors.Is(err, io.EOF) {
+		return errors.New("the stream ended, and a watch has no backlog: " +
+			"whatever changed after this was sent to nobody. Run it again")
+	}
+
+	v := status.Convert(err)
+	again := false
+	switch v.Code() {
+	case codes.Unavailable, codes.ResourceExhausted:
+		again = true
+	case codes.Unauthenticated:
+		again = strings.HasSuffix(v.Message(), "reconnect")
+	}
+	if !again {
+		return fmt.Errorf("the stream ended, %s: %s", v.Code(), v.Message())
+	}
+
+	return fmt.Errorf("the stream ended, %s: %s. A watch has no backlog: "+
+		"whatever changed after this was sent to nobody. Run it again", v.Code(), v.Message())
 }

@@ -31,9 +31,12 @@ import (
 //
 // # What roster does not know, and takes as arguments
 //
-// The relying-party id, the origin and the challenge. Those are the
-// browser-facing half: an app chose the challenge, served the page, and knows
-// which origin the browser was at. D20 named all three.
+// The relying-party id and the origin. Those are the browser-facing half: an
+// app served the page, and knows which origin the browser was at. D20 named
+// three, and the third was the challenge -- *an app chose the challenge* --
+// which is roster's now, for an assertion that answers an attempt:
+// [ChallengeOf] says why. Where one is still read off the envelope is a
+// registration, and a comparison nobody signs in by.
 //
 // They arrive **inside the presented bytes** rather than as fields on
 // `VouchVerifyRequest`, and that is deliberate. The request is generic across
@@ -213,7 +216,43 @@ func Register(b []byte) (Registered, error) {
 }
 
 // WebAuthn is a stored public key and an assertion.
-type WebAuthn struct{}
+//
+// `Challenge` is what the assertion has to be over, where roster says: the
+// attempt's ([ChallengeOf]). Then whatever the envelope names as the challenge
+// is not read. Empty is the envelope's, which is an assertion checked against
+// what its presenter says it was for -- right for the arithmetic, and for
+// nothing a sign-in rests on.
+type WebAuthn struct {
+	Challenge string
+}
+
+// ChallengeOf is what a security key signs to answer an attempt: a digest of
+// the continuation, base64url, as a browser's `challenge` is written.
+//
+// # Why the attempt
+//
+// A challenge is what makes an assertion good once. Somebody has to mint it,
+// remember it, and spend it, and roster had left all three to its caller -- *an
+// app chose the challenge* -- with the relying party and the origin, as the
+// things it has no browser to know. The front door it ships passed on the
+// browser's own. So nothing checked that an assertion was made for **this**
+// sign-in, and one that had been seen once was a second factor again whenever
+// its key reported no counter, which a passkey kept by a platform never does
+// (#275).
+//
+// A continuation is already all three: minted here, for one attempt, spent by
+// its first answer, gone in minutes. Deriving the challenge from it needs no
+// row and no call, and every door gets it for nothing -- whoever holds the
+// attempt is answered what the key is to sign (`VouchFactor.challenge`), and
+// whoever presents the assertion presents the attempt it was for.
+//
+// A digest and not the handle: what a browser is handed must not be what
+// continues the attempt.
+func ChallengeOf(continuation string) string {
+	sum := sha256.Sum256([]byte("roster: a security key signs this attempt\x00" + continuation))
+
+	return base64.RawURLEncoding.EncodeToString(sum[:])
+}
 
 // Compare verifies an assertion and answers with the counter it consumed.
 //
@@ -253,8 +292,15 @@ func (v WebAuthn) Compare(row, b []byte, since int64) (bool, int64, error) {
 		return false, 0, nil
 	}
 
+	// Over the attempt's challenge where there is one, whatever the envelope
+	// says of it.
+	challenge := p.Challenge
+	if v.Challenge != "" {
+		challenge = v.Challenge
+	}
+
 	if err := res.Verify(
-		p.Challenge,
+		challenge,
 		p.RelyingParty,
 		"", // no appId: the U2F compatibility path is not offered
 		p.Origins,

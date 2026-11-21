@@ -279,7 +279,11 @@ type Role_builder struct {
 	//
 	// Field 3 is payday's second axis, so a role belonging to a site is narrowed
 	// by it the way everything else on that axis is.
-	Site  *Site
+	Site *Site
+	// Not personal, these three, the labels and `methods`: a role is the
+	// tenant's own, and what it is called and what it allows is what a trail is
+	// kept to say. Nobody is written into them, as into a tenant's
+	// (`tenant.proto`).
 	Alias string
 	Name  string
 	Desc  string
@@ -364,6 +368,15 @@ func (b0 Role_builder) Build() *Role {
 // roster's own rule and lives in a layer; docs/position.md, § 'Authorization:
 // what roster does', says why. What carries a role for a team is the
 // `TeamMembership` that already said somebody is in it.
+//
+// # Made once
+//
+// One role to one holder or one group in one place is one row, and adding it
+// again answers `AlreadyExists`: a grant that was two rows is one somebody
+// takes away and still holds. No index says so -- a subject and a site that
+// are not named are values here, and SQL reads two nulls as different -- so
+// it is refused in `server/core` with the rest. One that was erased may be
+// made again.
 type Binding struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
@@ -601,6 +614,13 @@ type Binding_builder struct {
 	// deployment declared -- a roster-hosted front door's role, written from its
 	// configuration at every start -- carries `roster.declared`, and
 	// `server/core` refuses every write to it from anybody else (`declared.go`).
+	//
+	// Personal (payday#92): a binding is a grant to somebody, and what is
+	// written on one is written about them -- why they were given it, who
+	// asked. The trail records that a grant was made, of which role, to whom
+	// and where, which is the record, and never the words beside it (#280).
+	// What `roster.declared` says is read off the row, which is where it is
+	// kept.
 	Labels      map[string]string
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
@@ -627,16 +647,16 @@ var File_app_role_proto protoreflect.FileDescriptor
 
 const file_app_role_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/role.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1aroster/payday/holder.proto\x1a\x0eapp/site.proto\x1a\x0fapp/group.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xb9\x05\n" +
+	"\x0eapp/role.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1aroster/payday/holder.proto\x1a\x0eapp/site.proto\x1a\x0fapp/group.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe1\x05\n" +
 	"\x04Role\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12*\n" +
-	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x12\x14\n" +
-	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x12\n" +
-	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\x120\n" +
-	"\x06labels\x18\a \x03(\v2\x18.roster.Role.LabelsEntryR\x06labels\x12\x18\n" +
-	"\amethods\x18\b \x03(\tR\amethods\x12F\n" +
+	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x12\x1c\n" +
+	"\x05alias\x18\x04 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x05alias\x12\x1a\n" +
+	"\x04name\x18\x05 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04name\x12\x1a\n" +
+	"\x04desc\x18\x06 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04desc\x128\n" +
+	"\x06labels\x18\a \x03(\v2\x18.roster.Role.LabelsEntryB\x06\xaa\xc1\x16\x02\x18\x00R\x06labels\x12 \n" +
+	"\amethods\x18\b \x03(\tB\x06\xaa\xc1\x16\x02\x18\x00R\amethods\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -659,14 +679,14 @@ const file_app_role_proto_rawDesc = "" +
 	"\x02id\x10\x01\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
 	"\x06tenant\x1a\x06\n" +
-	"\x04site \x14(d\"\xb5\x05\n" +
+	"\x04site \x14(d\"\xbd\x05\n" +
 	"\aBinding\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12(\n" +
 	"\x04role\x18\x02 \x01(\v2\f.roster.RoleB\x06\xf2\x82\x16\x02@\x01R\x04role\x12*\n" +
 	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x120\n" +
 	"\x06holder\x18\b \x01(\v2\x0e.roster.HolderB\b\xf2\x82\x16\x048\x01@\x01R\x06holder\x12-\n" +
-	"\x05group\x18\t \x01(\v2\r.roster.GroupB\b\xf2\x82\x16\x048\x01@\x01R\x05group\x123\n" +
-	"\x06labels\x18\a \x03(\v2\x1b.roster.Binding.LabelsEntryR\x06labels\x12F\n" +
+	"\x05group\x18\t \x01(\v2\r.roster.GroupB\b\xf2\x82\x16\x048\x01@\x01R\x05group\x12;\n" +
+	"\x06labels\x18\a \x03(\v2\x1b.roster.Binding.LabelsEntryB\x06\xaa\xc1\x16\x02\x18\x01R\x06labels\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +

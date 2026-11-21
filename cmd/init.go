@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/protobuf-orm/ent/dialect"
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/lesomnus/z"
 
+	"github.com/lesomnus/roster/internal/ent"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/vouch"
@@ -33,6 +35,11 @@ type Seeded struct {
 	Tenant   pdid.Id
 	Holder   pdid.Id
 	Operator pdid.Id
+
+	// Found is whether the operator's holder was on the control plane before
+	// this: a service `control key add` named, or the provisioner, which
+	// `init` binds the role and a password to all the same, and says so.
+	Found bool
 
 	// Shown once and not stored. What is stored is an argon2id hash.
 	Password string
@@ -109,12 +116,12 @@ func Seed(ctx context.Context, s *Server, in Seeding) (Seeded, error) {
 			return Seeded{}, nil
 		}
 
-		operator, secret, err := seedOperator(ctx, s.Control, operator, password)
+		operator, found, secret, err := seedOperator(ctx, s.Control, operator, password)
 		if err != nil {
 			return Seeded{}, fmt.Errorf("operator %q: %w", in.Operator, err)
 		}
 
-		return Seeded{Operator: operator, Password: secret}, nil
+		return Seeded{Operator: operator, Found: found, Password: secret}, nil
 	}
 
 	req := app.TenantAddRequest_builder{Alias: tenant}
@@ -167,7 +174,7 @@ func Seed(ctx context.Context, s *Server, in Seeding) (Seeded, error) {
 		return v, nil
 	}
 
-	v.Operator, v.Password, err = seedOperator(ctx, s.Control, operator, password)
+	v.Operator, v.Found, v.Password, err = seedOperator(ctx, s.Control, operator, password)
 	if err != nil {
 		return Seeded{}, fmt.Errorf("operator %q: %w", operator, err)
 	}
@@ -275,13 +282,18 @@ func allow(ctx context.Context, at app.Server, in pdid.Id, to pdid.Id) error {
 // runs against the wrong deployment and believes.
 var ErrOperated = errors.New("this deployment has an operator already")
 
-// signsIn is somebody who signs in on this plane with a secret kept here, by
-// alias, and empty where nobody does.
+// signsIn is somebody who signs in on this plane with a secret kept here, said
+// as the refusal of a second `init` says them, and empty where nobody does.
 //
 // Any `Credential` at all -- a password, or what is enrolled beside one --
 // since each is a person's and none is a caller's: a key is an `ApiKey`, and a
 // holder made for one has no row here.
-func signsIn(ctx context.Context, at app.Server) (string, error) {
+//
+// One who was erased is not found by a server, and was said as thirty-two
+// hexadecimal digits in no form any command prints, of somebody who signs in
+// nowhere now (#284): so they are read from `db`, erased or not, named by
+// alias and identifier as a command names somebody, and said to be erased.
+func signsIn(ctx context.Context, at app.Server, db *ent.Client) (string, error) {
 	vs, err := at.Credential().List(ctx, app.CredentialListRequest_builder{Size: 1}.Build())
 	if err != nil {
 		return "", fmt.Errorf("who signs in here: %w", err)
@@ -296,13 +308,27 @@ func signsIn(ctx context.Context, at app.Server) (string, error) {
 	}.Build())
 	if status.Code(err) == codes.NotFound {
 		// Whoever it was, there is one; the name is for the reader.
-		return fmt.Sprintf("%x", id), nil
+		who, err := pdid.From(id)
+		if err != nil {
+			return "", fmt.Errorf("who signs in here: %w", err)
+		}
+		e, err := db.Holder.Get(ctx, who.Uuid())
+		if err != nil {
+			return fmt.Sprintf("%s signed in to its admin console, and was erased", who), nil
+		}
+		erased := "was erased"
+		if e.DateErased != nil {
+			erased = "was erased " + e.DateErased.UTC().Format(time.RFC3339)
+		}
+
+		return fmt.Sprintf("%q (%s) signed in to its admin console, and %s; "+
+			"somebody of the control plane who is erased is not brought back", e.Alias, who, erased), nil
 	}
 	if err != nil {
 		return "", fmt.Errorf("who signs in here: %w", err)
 	}
 
-	return v.GetAlias(), nil
+	return fmt.Sprintf("%q signs in to its admin console", v.GetAlias()), nil
 }
 
 // seedOperator is the person who signs in to the admin console, and the password they
@@ -359,43 +385,52 @@ func signsIn(ctx context.Context, at app.Server) (string, error) {
 // A holder with no way in is not one. The provisioner is a holder of this
 // plane, and so is a caller `roster control key add` named; nobody signs in as
 // either, and a deployment that has only those has not been `init`ed.
-func seedOperator(ctx context.Context, s *Server, alias, given string) (pdid.Id, string, error) {
+func seedOperator(ctx context.Context, s *Server, alias, given string) (pdid.Id, bool, string, error) {
 	secret := given
 	if secret == "" {
 		var err error
 		secret, err = vouch.Passphrase()
 		if err != nil {
-			return pdid.Nil, "", err
+			return pdid.Nil, false, "", err
 		}
 	}
 
 	drv, tx, err := dialect.BeginTx(ctx, s.Drv)
 	if err != nil {
-		return pdid.Nil, "", err
+		return pdid.Nil, false, "", err
 	}
 	defer tx.Rollback()
 
 	at, err := enttx.Rebind(s.Ungated, drv)
 	if err != nil {
-		return pdid.Nil, "", err
+		return pdid.Nil, false, "", err
 	}
 
-	if has, err := signsIn(ctx, at); err != nil {
-		return pdid.Nil, "", err
+	if has, err := signsIn(ctx, at, s.Ent); err != nil {
+		return pdid.Nil, false, "", err
 	} else if has != "" {
-		return pdid.Nil, "", fmt.Errorf("%w: %q signs in to its admin console. "+
+		return pdid.Nil, false, "", fmt.Errorf("%w: %s. "+
 			"init makes the first operator and no other; if that is not who you expected to find, "+
 			"this is not the deployment you meant", ErrOperated, has)
+	}
+
+	// Whether somebody of this name is here already: a service `control key
+	// add` named, or the provisioner. They are bound and given a password all
+	// the same, since nobody signs in as them yet; and the caller says so, so
+	// that a name that was somebody's is not read as one made now (#284).
+	found, err := heldAlready(ctx, at, alias)
+	if err != nil {
+		return pdid.Nil, false, "", err
 	}
 
 	// The same owner tenant `roster key add` uses, made here if this is a fresh
 	// control plane. There is nothing to choose: a control plane has one owner.
 	who, tenant, err := holderNamedIn(ctx, at, alias)
 	if err != nil {
-		return pdid.Nil, "", err
+		return pdid.Nil, false, "", err
 	}
 	if err := allow(ctx, at, tenant, who); err != nil {
-		return pdid.Nil, "", err
+		return pdid.Nil, false, "", err
 	}
 
 	// Hashed by the service that will later check it, so the argon2 parameters
@@ -405,12 +440,40 @@ func seedOperator(ctx context.Context, s *Server, alias, given string) (pdid.Id,
 		Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Secret: []byte(secret),
 	}.Build()); err != nil {
-		return pdid.Nil, "", err
+		return pdid.Nil, false, "", err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return pdid.Nil, "", err
+		return pdid.Nil, false, "", err
 	}
 
-	return who, secret, nil
+	return who, found, secret, nil
+}
+
+// heldAlready is whether this plane's one tenant has a holder called `alias`.
+func heldAlready(ctx context.Context, at app.Server, alias string) (bool, error) {
+	ts, err := at.Tenant().List(ctx, app.TenantListRequest_builder{Size: 1}.Build())
+	if err != nil {
+		return false, err
+	}
+	if len(ts.GetItems()) == 0 {
+		return false, nil
+	}
+
+	_, err = at.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{
+			Slug: app.HolderRefBySlug_builder{
+				Alias:  z.Ptr(alias),
+				Tenant: app.TenantRef_builder{Id: ts.GetItems()[0].GetId()}.Build(),
+			}.Build(),
+		}.Build(),
+	}.Build())
+	switch status.Code(err) {
+	case codes.OK:
+		return true, nil
+	case codes.NotFound:
+		return false, nil
+	default:
+		return false, err
+	}
 }

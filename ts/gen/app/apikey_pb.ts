@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/apikey.proto.
  */
 export const file_app_apikey: GenFile = /*@__PURE__*/
-  fileDesc("ChBhcHAvYXBpa2V5LnByb3RvEgZyb3N0ZXIimgUKBkFwaUtleRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEg0KBWFsaWFzGAQgASgJEgwKBGRlc2MYBiABKAkSDwoHbWV0aG9kcxgIIAMoCRIcCgZzZWNyZXQYCSABKAxCDOqCFgIwAarBFgIIARI1CglkYXRlX3VzZWQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEkYKEmRhdGVfYXV0aGVudGljYXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCDuqCFgQ4AUABqsEWAhABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqXAcr8FUcSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGaG9sZGVyEAIwAYq7FkgIDjIzChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZob2xkZXIgFChkIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChBhcHAvYXBpa2V5LnByb3RvEgZyb3N0ZXIisgUKBkFwaUtleRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEhUKBWFsaWFzGAQgASgJQgaqwRYCGAESFAoEZGVzYxgGIAEoCUIGqsEWAhgBEhcKB21ldGhvZHMYCCADKAlCBqrBFgIYABIcCgZzZWNyZXQYCSABKAxCDOqCFgIwAarBFgIIARI1CglkYXRlX3VzZWQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEkYKEmRhdGVfYXV0aGVudGljYXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCDuqCFgQ4AUABqsEWAhABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqXAcr8FUcSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGaG9sZGVyEAIwAYq7FkgIDjIzChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZob2xkZXIgFChkIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * ApiKey is what one service may call this deployment for.
@@ -79,6 +79,14 @@ export type ApiKey = Message<"roster.ApiKey"> & {
    * What somebody calls this key when deciding whether to revoke it --
    * "loft, production". Unique per holder so that a list of them reads.
    *
+   * Personal (payday#92), and so is `desc`: each is what somebody wrote about
+   * a key of theirs, and what people write there is whose laptop it is on.
+   * The trail records that a key was named and never what; the row is the
+   * one copy, and goes with its holder when they are forgotten. It said
+   * neither, so the trail kept both for as long as it kept the line, and a
+   * forget blanked them only by reaching the line (#280). A key is still
+   * listed, shown and found by its alias: that is the row's to answer.
+   *
    * @generated from field: string alias = 4;
    */
   alias: string;
@@ -98,6 +106,9 @@ export type ApiKey = Message<"roster.ApiKey"> & {
    *
    * Empty allows **nothing**, which is `frame.Grant`'s zero value and the right
    * way round: a key somebody forgot to fill in opens no door.
+   *
+   * Not personal: it is what the key may do, which is what a trail is kept to
+   * say, and names no one.
    *
    * @generated from field: repeated string methods = 8;
    */

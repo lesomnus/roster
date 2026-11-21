@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/host.proto.
  */
 export const file_app_host: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvaG9zdC5wcm90bxIGcm9zdGVyIqQECgRIb3N0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESFAoEbmFtZRgFIAEoCUIG6oIWAjABEgwKBGRlc2MYBiABKAkSKAoGbGFiZWxzGAcgAygLMhgucm9zdGVyLkhvc3QuTGFiZWxzRW50cnkSPQoLZGF0ZV9wcm92ZWQYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgzqghYCOAGqwRYCEAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6bcr8FTISAhABGiwSBHBhZ2UaCgoGdGVuYW50EAIaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQAYq7FjMIFDIvChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudCAUKGQimgQKCk1haWxEb21haW4SFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIMCgRuYW1lGAUgASgJEhAKCHByb3ZpZGVyGAkgASgJEgwKBGRlc2MYBiABKAkSLgoGbGFiZWxzGAcgAygLMh4ucm9zdGVyLk1haWxEb21haW4uTGFiZWxzRW50cnkSOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6iwHK/BVQEgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHBICYXQaCgoGdGVuYW50EAIaCAoEbmFtZRAFMAGKuxYzCBUyLwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQgFChkIoEECglIb3N0UHJvb2YSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIUCgRuYW1lGAUgASgJQgbqghYCQAESFQoFdG9rZW4YCSABKAlCBuqCFgJAARI4CgxkYXRlX2V4cGlyZXMYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESDAoEZGVzYxgGIAEoCRI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6iwHK/BVQEgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHBICYXQaCgoGdGVuYW50EAIaCAoEbmFtZRAFMAGKuxYzCBoyLwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQgFChkQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvaG9zdC5wcm90bxIGcm9zdGVyIroECgRIb3N0EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESGgoEbmFtZRgFIAEoCUIM6oIWAjABqsEWAhgAEhQKBGRlc2MYBiABKAlCBqrBFgIYABIwCgZsYWJlbHMYByADKAsyGC5yb3N0ZXIuSG9zdC5MYWJlbHNFbnRyeUIGqsEWAhgAEj0KC2RhdGVfcHJvdmVkGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIM6oIWAjgBqsEWAhABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOm3K/BUyEgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxYzCBQyLwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQgFChkIroECgpNYWlsRG9tYWluEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESFAoEbmFtZRgFIAEoCUIGqsEWAhgAEhgKCHByb3ZpZGVyGAkgASgJQgaqwRYCGAASFAoEZGVzYxgGIAEoCUIGqsEWAhgAEjYKBmxhYmVscxgHIAMoCzIeLnJvc3Rlci5NYWlsRG9tYWluLkxhYmVsc0VudHJ5QgaqwRYCGAASOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6iwHK/BVQEgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHBICYXQaCgoGdGVuYW50EAIaCAoEbmFtZRAFMAGKuxYzCBUyLwoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZhoICgZ0ZW5hbnQgFChkIpUECglIb3N0UHJvb2YSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIaCgRuYW1lGAUgASgJQgzqghYCQAGqwRYCGAASGwoFdG9rZW4YCSABKAlCDOqCFgJAAarBFgIYABI4CgxkYXRlX2V4cGlyZXMYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESFAoEZGVzYxgGIAEoCUIGqsEWAhgAEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqLAcr8FVASAhABGiwSBHBhZ2UaCgoGdGVuYW50EAIaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARocEgJhdBoKCgZ0ZW5hbnQQAhoICgRuYW1lEAUwAYq7FjMIGjIvChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudCAUKGRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_roster_payday_tenant, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Host is a name a front door answers at, and the tenant it belongs to.
@@ -72,7 +72,8 @@ export const file_app_host: GenFile = /*@__PURE__*/
  * proving requires present control of DNS, and whoever has that has the name
  * whatever a row here says. The incumbent is not asked, which is the right way
  * round and is worth knowing: their people stop being able to sign in at that
- * name, and the erase in the trail is where it is written down.
+ * name, and their own trail is where it is written down, by whoever took it
+ * (`roster.host.release`). A row a file declares is not taken.
  *
  * # Proving the name is yours
  *
@@ -120,13 +121,23 @@ export type Host = Message<"roster.Host"> & {
   tenant?: Tenant | undefined;
 
   /**
-   * The name a browser arrived at, lowercased and without a port:
-   * "contoso.example.com".
+   * The name a browser arrived at, lowercased, without a port and without the
+   * dot a fully qualified name ends in: "contoso.example.com".
    *
-   * Stored as it is compared. A host is case-insensitive and a port is not part
-   * of it, so whatever writes one normalises first -- `server/core` refuses one
-   * that is not already normalised, because a row that differs from what a
-   * front door will look up is a row that silently never matches.
+   * Stored as it is compared. A host is case-insensitive, a port is not part of
+   * it and `contoso.example.com.` is the same name, so whatever writes one
+   * normalises first -- `server/core` refuses one that is not already
+   * normalised, because a row that differs from what a front door will look up
+   * is a row that silently never matches.
+   *
+   * And a hostname, or an address: labels of letters, digits and hyphens
+   * between dots, as DNS could hold them. `server/core` refuses anything else
+   * -- a wildcard, a path, an underscore -- because no request arrives at it,
+   * and refuses a name in other letters with the form to write instead, which
+   * is its A-label ("xn--...").
+   *
+   * Not personal, this and the description and labels: a hostname is the
+   * tenant's own, and which was claimed when is the record.
    *
    * @generated from field: string name = 5;
    */
@@ -258,6 +269,9 @@ export type MailDomain = Message<"roster.MailDomain"> & {
    * The domain, lowercased and without the `@`: "contoso.com". Normalised on
    * the way in for [Host.name]'s reason.
    *
+   * Not personal, this and what follows it on this row: a mail domain is the
+   * tenant's own, as a hostname is.
+   *
    * @generated from field: string name = 5;
    */
   name: string;
@@ -381,6 +395,9 @@ export type HostProof = Message<"roster.HostProof"> & {
    * The name being claimed, normalised the way [Host.name] is and for the same
    * reason: this is compared against a `Host` and looked up in DNS, so a value
    * that differs from what those will use is a claim that can never succeed.
+   *
+   * Not personal, this and the token and description: a claim on a hostname,
+   * and what is published to prove it.
    *
    * @generated from field: string name = 5;
    */

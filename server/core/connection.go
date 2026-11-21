@@ -2,15 +2,21 @@ package core
 
 import (
 	"context"
+	"errors"
+	"net/url"
 	"strings"
+	"unicode"
 
 	"github.com/lesomnus/z"
+	"github.com/protobuf-orm/ent/dialect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/pderr"
+	"github.com/lesomnus/payday/slug"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/front"
 )
 
 // coreConnection is the layer over the generated `ConnectionService`, for its
@@ -61,12 +67,167 @@ func (s Core) maySend(ctx context.Context, was *app.Connection, ref, issuer stri
 	return nil
 }
 
+// A connection is held to a form: a name that is an alias, an issuer that is
+// an address, and a client that is called something.
+//
+// None of it was. A second connection `Entra` was taken beside `entra`, and so
+// were a name `a/b c?`, an issuer `not a url` and no `client_id` at all: rows
+// that sign nobody in, found out at the door by whoever tried. And none of it
+// can be asked for later -- a rule that comes after rows it would refuse
+// breaks whoever wrote them -- so it is asked from the start, of the
+// deployment as of a tenant, since what a row has to be to work is the same
+// whoever wrote it.
+
+// named holds what a provider is called to the grammar an alias is held to
+// (`slug.Validate`): lower-case letters, digits and single hyphens, beginning
+// with a letter.
+//
+// A connection's name is every one of its identities' `provider`, and a
+// segment of the path its answer comes back to (`arrives.Trip`); both are
+// compared as written. So one directory under two names that differ by a
+// capital is one person twice.
+//
+// Refused and not folded, as an alias is ([spelled]) and for its reason: the
+// name is written again wherever the provider is told its redirect, and a row
+// called something other than what was typed is not found by it.
+func named(field, v string) error {
+	err := slug.Validate(v)
+	if err == nil {
+		return nil
+	}
+
+	var broke *slug.AliasError
+	if errors.As(err, &broke) {
+		return pderr.Invalidf(field, "%s", broke.Why)
+	}
+
+	return pderr.At(field, err)
+}
+
+// addressed holds a connection's issuer to being where a provider is asked: an
+// absolute `https` or `http` address, with a host, and with neither a query
+// nor a fragment -- which is what OpenID Connect says an issuer is, and what
+// GitHub's is spelled as (`https://github.com`).
+//
+// And with nobody's name and password in it. An issuer is public -- it is
+// answered to whoever reads the row -- and a front door would send what is
+// written there with every request.
+//
+// The scheme and the host are written in small letters, as a provider
+// publishes them. A front door finds a provider by comparing its issuer with
+// the one a document or a token says, exactly, so another spelling is another
+// issuer -- and two readers of one row must not differ about whose it is: this
+// package knows GitHub's and Google's with the case folded ([spelt]), and a
+// front door knows GitHub's as written (`arrives/github.go`), so
+// `https://GitHub.com` was GitHub's to the rule about `provisions` and an
+// OpenID provider that answers nothing to the door. A path is the provider's
+// own to spell, capitals and all.
+//
+// # Plain `http` is not refused here
+//
+// Whether a provider may be asked in the clear depends on where it is: a
+// directory on the premises often is, over a network its deployment trusts.
+// Which hosts those are is said to a front door (`private_hosts`) and to
+// nothing else, so it is the front door that refuses (`arrives/dial.go`).
+func addressed(field, v string) error {
+	if v == "" {
+		return pderr.Invalidf(field, "must not be empty: where the provider publishes what it is, as `https://accounts.google.com`")
+	}
+
+	u, err := url.Parse(v)
+	if err != nil ||
+		!(strings.HasPrefix(v, "https://") || strings.HasPrefix(v, "http://")) ||
+		u.Hostname() == "" || u.User != nil ||
+		strings.ContainsAny(v, "?#") || strings.ContainsFunc(v, unicode.IsSpace) {
+		return pderr.Invalidf(field,
+			"%q is not an issuer: an address written `https://` (or `http://`) with a host, and no query, fragment, password or space, "+
+				"as the provider publishes it", v)
+	}
+	if u.Host != strings.ToLower(u.Host) {
+		return pderr.Invalidf(field,
+			"%q names its host in capitals: an issuer is compared as it is written, so write the host in small letters, as %q",
+			v, u.Scheme+"://"+strings.ToLower(u.Host)+u.EscapedPath())
+	}
+
+	return nil
+}
+
+// Referenced holds a connection's `secret_ref` to being a reference:
+// `<scheme>:<rest>`, a scheme of small letters (a letter first, then letters,
+// digits, `+`, `.` or `-`), a colon, and something after it -- or empty, which
+// is a provider that needs no secret.
+//
+// It was any string. #276 stopped a front door repeating in its log what it
+// could not read as a reference; the row and the trail's patch still took it,
+// from a file, from the box and over the wire -- and what is written where a
+// reference belongs and is not one is, more often than anything else, the
+// secret itself. So the refusal says the form and **does not repeat the
+// value**.
+//
+// That is all this holds it to. What a reference means is the front door's
+// that reads it (`connection.proto`): roster's own read `env:NAME`, and a
+// deployment's own may read `file:` or a word of its own, which this does not
+// know and does not pretend to. A secret that happens to be written `abc:def`
+// passes; the rule is for the mistake people make, a bare secret where a
+// reference belongs.
+//
+// Exported because a resources file is held to it as it is read, with its name
+// and line, before anything is opened.
+func Referenced(v string) error {
+	if v == "" {
+		return nil
+	}
+	scheme, rest, ok := strings.Cut(v, ":")
+	if ok && rest != "" && schemed(scheme) {
+		return nil
+	}
+
+	return errors.New("is not a reference: write where the deployment keeps the secret, as a scheme, a colon and the rest " +
+		"-- env:NAME is what roster's own front doors read -- and never the secret itself. " +
+		"what is written is not repeated, since it usually is the secret")
+}
+
+// schemed is whether `v` is a scheme as a URI's is spelled, in small letters.
+func schemed(v string) bool {
+	if v == "" || v[0] < 'a' || v[0] > 'z' {
+		return false
+	}
+	for _, c := range v[1:] {
+		switch {
+		case c >= 'a' && c <= 'z', c >= '0' && c <= '9', c == '+', c == '.', c == '-':
+		default:
+			return false
+		}
+	}
+
+	return true
+}
+
+// referenced is [Referenced] as a refusal of the field.
+func referenced(field, v string) error {
+	if err := Referenced(v); err != nil {
+		return pderr.Invalidf(field, "%s", err.Error())
+	}
+
+	return nil
+}
+
+// called holds a connection to naming this app as its provider knows it. A
+// connection with no `client_id` is a round trip the provider refuses.
+func called(field, v string) error {
+	if v == "" {
+		return pderr.Invalidf(field, "must not be empty: what the provider calls this app")
+	}
+
+	return nil
+}
+
 // The claims a connection may name as a person's subject. `Connection` says
 // why there are two: `sub` is the person to most providers, and Entra's is
 // pairwise, so it names them as `oid`.
 const (
 	claimSub = "sub"
-	claimOid = "oid"
+	claimOid = front.ClaimOid
 )
 
 // subjectClaimOf is the claim a connection names, with empty read as the `sub`
@@ -84,7 +245,8 @@ func subjectClaimOf(v string) string {
 //
 // Forward is anybody's who may write the connection: everybody already signed
 // in moves at their next sign-in, by the token that carries both claims
-// (`IdentityService.Resubject`), and nobody is lost. Back is the deployment's:
+// (`IdentityService.Resubject`), and nobody is lost -- where the door issues
+// the claim at all, which [mayNameBy] asks. Back is the deployment's:
 // everybody already moved has an identity the old claim never names, and would
 // be a stranger at their next sign-in -- refused, or enrolled a second time.
 func (s Core) maySubject(ctx context.Context, was, now string) error {
@@ -104,13 +266,73 @@ func (s Core) maySubject(ctx context.Context, was, now string) error {
 		"subject_claim: going back would leave everybody already moved unknown at their next sign-in, so it is the deployment's")
 }
 
+// mayNameBy refuses a connection that names its people by `oid` at a door
+// known to issue none, whichever half of that a write moves: the claim, or the
+// door under a claim already named. `field` is the half it moved.
+//
+// [Core.maySubject] read the claim and never the issuer, so `oid` was taken at
+// GitHub's, which issues no ID token to carry a claim, and at Google's, whose
+// tokens carry no `oid`. A front door then refuses every sign-in through the
+// connection -- one person under two subjects is two people, so it does not
+// fall back to `sub` -- and going back is the deployment's. A tenant's
+// administrator could close a door of their tenant and not open it again.
+//
+// Refused to the deployment as well: it is as true of it. And only where the
+// door is one of the two this can tell ([spelt]); a claim some other provider
+// does not issue is found out at that provider's first sign-in, and a GitHub
+// Enterprise Server is one only the front door knows (`arrives/github.go`).
+func mayNameBy(field, claim, issuer string) error {
+	if subjectClaimOf(claim) != claimOid {
+		return nil
+	}
+
+	why := ""
+	switch spelt(issuer) {
+	case gitHubs:
+		why = "GitHub issues no ID token, so its people are their account's id and no claim names them"
+	case googles:
+		why = "Google's ID token carries no `oid`"
+	default:
+		return nil
+	}
+
+	return pderr.Invalidf(field,
+		"%s, and a connection at %s that named its people by `oid` would sign nobody in; `oid` is Entra's", why, issuer)
+}
+
+// claimMoved is the half a write moved, for [mayNameBy] to name: the claim,
+// when it says one, and otherwise the door.
+func claimMoved(says bool) string {
+	if says {
+		return "subject_claim"
+	}
+
+	return "issuer"
+}
+
+// The two doors this layer knows by their issuer alone, as `arrives` reads
+// them (`arrives/github.go`, `arrives/google.go`).
+const (
+	gitHubs = "https://github.com"
+	googles = "https://accounts.google.com"
+)
+
+// spelt is an issuer as two spellings of it compare here: without the space
+// around it or the slash after it, in small letters.
+func spelt(issuer string) string {
+	return strings.ToLower(strings.TrimSuffix(strings.TrimSpace(issuer), "/"))
+}
+
 // oneProvisions refuses a second connection a tenant's directory provisions
 // through. A directory names the people it makes once, so two would be two
 // places the same person could be linked, and the second the wrong one.
-func (s Core) oneProvisions(ctx context.Context, tenant []byte, self []byte) error {
+//
+// Asked through `next`, the server [Core.oneMarked] hands in: inside the
+// transaction the write is made in, behind the tenant's lock.
+func (s Core) oneProvisions(ctx context.Context, next app.Server, tenant []byte, self []byte) error {
 	after := ""
 	for {
-		vs, err := s.Next().Connection().List(ctx, app.ConnectionListRequest_builder{
+		vs, err := next.Connection().List(ctx, app.ConnectionListRequest_builder{
 			Filters: []*app.ConnectionFilter{app.ConnectionFilter_builder{
 				Tenant: app.TenantRef_builder{Id: tenant}.Build(),
 			}.Build()},
@@ -133,6 +355,42 @@ func (s Core) oneProvisions(ctx context.Context, tenant []byte, self []byte) err
 	}
 }
 
+// oneMarked makes `write`, which marks a connection of `tenant` as the one its
+// directory provisions through when `marks`, and refuses it where another is
+// marked already ([Core.oneProvisions]); `self` is the connection written, nil
+// for one being made. A write that does not mark is made as it always was.
+//
+// # Why behind the tenant's row
+//
+// It was a look and then a write: two connections marked at the same moment
+// each found none marked, and both were -- after which roster took the first
+// as the one and the endpoint the last, and every create by the directory was
+// refused. A count of other rows is the case [Core.only] is for, and it is a
+// tenant's rows, so the lock is the tenant's row, as whether anybody still
+// administers it is ([Core.keepsAdministered]). The question and the write
+// both go through the `next` the lock hands in, so whoever is second counts
+// what the first wrote.
+//
+// Asked of every caller, the deployment's own work included: a declared
+// connection is marked by what applies the file, and two of those are two
+// callers as much as two administrators are.
+//
+// `write` is handed the server to write through: inside the transaction, the
+// one under this layer bound to it.
+func (s Core) oneMarked(ctx context.Context, tenant, self []byte, marks bool, write func(next app.Server) error) error {
+	if !marks {
+		return write(s.Next())
+	}
+
+	return s.only(ctx, tenant, func(next app.Server, _ dialect.Driver) error {
+		if err := s.oneProvisions(ctx, next, tenant, self); err != nil {
+			return err
+		}
+
+		return write(next)
+	})
+}
+
 // A directory provisions the people of one organisation, linked at the door
 // they sign in through. What lets a key a directory's cloud presents write that
 // link (`HolderService.Provision`) is that it lets in nobody the organisation
@@ -146,11 +404,11 @@ func (s Core) oneProvisions(ctx context.Context, tenant []byte, self []byte) err
 // provider off (`arrives/github.go`, `arrives/microsoft.go`); a door that lets
 // anybody sign up of its own accord is the same, and cannot be told from here.
 func openTo(issuer string) string {
-	at := strings.ToLower(strings.TrimSuffix(strings.TrimSpace(issuer), "/"))
+	at := spelt(issuer)
 	switch at {
-	case "https://github.com":
+	case gitHubs:
 		return "anybody with a GitHub account"
-	case "https://accounts.google.com":
+	case googles:
 		return "anybody with a Google account"
 	}
 	for _, v := range []struct{ path, who string }{
@@ -214,9 +472,22 @@ func (s Core) tenantOfConnection(ctx context.Context, ref *app.ConnectionRef) ([
 }
 
 // Add refuses a secret from a tenant, for [maySend]'s reason: a new connection
-// is a new reference and a new issuer at once.
+// is a new reference and a new issuer at once. And a row that is not of the
+// form a connection is held to ([named], [addressed], [called]).
 func (s coreConnection) Add(ctx context.Context, req *app.ConnectionAddRequest) (*app.Connection, error) {
 	if err := s.acrossTheTenant(ctx, app.ConnectionService_Add_FullMethodName); err != nil {
+		return nil, err
+	}
+	if err := named("name", req.GetName()); err != nil {
+		return nil, err
+	}
+	if err := addressed("issuer", req.GetIssuer()); err != nil {
+		return nil, err
+	}
+	if err := called("client_id", req.GetClientId()); err != nil {
+		return nil, err
+	}
+	if err := referenced("secret_ref", req.GetSecretRef()); err != nil {
 		return nil, err
 	}
 	if err := s.maySend(ctx, nil, req.GetSecretRef(), req.GetIssuer()); err != nil {
@@ -225,9 +496,13 @@ func (s coreConnection) Add(ctx context.Context, req *app.ConnectionAddRequest) 
 	if err := s.maySubject(ctx, "", req.GetSubjectClaim()); err != nil {
 		return nil, err
 	}
+	if err := mayNameBy("subject_claim", req.GetSubjectClaim(), req.GetIssuer()); err != nil {
+		return nil, err
+	}
 	if err := mayProvision("provisions", req.GetProvisions(), req.GetIssuer()); err != nil {
 		return nil, err
 	}
+	var tenant []byte
 	if req.GetProvisions() {
 		t, err := s.Next().Tenant().Get(ctx, app.TenantGetRequest_builder{
 			Ref: req.GetTenant(), Select: app.TenantSelect_builder{}.Build(),
@@ -235,58 +510,109 @@ func (s coreConnection) Add(ctx context.Context, req *app.ConnectionAddRequest) 
 		if err != nil {
 			return nil, err
 		}
-		if err := s.oneProvisions(ctx, t.GetId(), nil); err != nil {
-			return nil, err
-		}
+		tenant = t.GetId()
 	}
 
-	return s.ConnectionServiceServer.Add(ctx, req)
+	var out *app.Connection
+	err := s.oneMarked(ctx, tenant, nil, req.GetProvisions(), func(next app.Server) error {
+		var err error
+		out, err = next.Connection().Add(ctx, req)
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 // Patch is closed at the transport, and is what the deployment's own writers
 // use -- `cmd/resources.go` declares a connection with it. So it is held only
-// to the claims a front door can read: everything that reaches it is the
-// deployment, which [Core.maySubject] lets move either way.
+// to what is true of a connection whoever wrote it: the form of one, the
+// claims a front door can read, and where each may be named. Everything that
+// reaches it is the deployment, which [Core.maySubject] lets move either way.
 func (s coreConnection) Patch(ctx context.Context, req *app.ConnectionPatchRequest) (*app.Connection, error) {
 	if err := s.acrossTheTenant(ctx, app.ConnectionService_Patch_FullMethodName); err != nil {
 		return nil, err
+	}
+	if req.HasName() {
+		if err := named("name", req.GetName()); err != nil {
+			return nil, err
+		}
+	}
+	if req.HasIssuer() {
+		if err := addressed("issuer", req.GetIssuer()); err != nil {
+			return nil, err
+		}
+	}
+	if req.HasClientId() {
+		if err := called("client_id", req.GetClientId()); err != nil {
+			return nil, err
+		}
+	}
+	if req.HasSecretRef() {
+		if err := referenced("secret_ref", req.GetSecretRef()); err != nil {
+			return nil, err
+		}
 	}
 	if req.HasSubjectClaim() {
 		if err := s.maySubject(ctx, req.GetSubjectClaim(), req.GetSubjectClaim()); err != nil {
 			return nil, err
 		}
 	}
-	if req.HasIssuer() || req.GetProvisions() {
+	if req.HasIssuer() || req.HasSubjectClaim() || req.GetProvisions() {
 		// Whichever half the patch moves, the other is what the row holds.
 		was, err := s.ConnectionServiceServer.Get(ctx, app.ConnectionGetRequest_builder{
-			Ref:    req.GetRef(),
-			Select: app.ConnectionSelect_builder{Issuer: z.Ptr(true), Provisions: z.Ptr(true)}.Build(),
+			Ref: req.GetRef(),
+			Select: app.ConnectionSelect_builder{
+				Issuer: z.Ptr(true), SubjectClaim: z.Ptr(true), Provisions: z.Ptr(true),
+			}.Build(),
 		}.Build())
 		if err != nil {
 			return nil, err
 		}
-		issuer, provisions := was.GetIssuer(), was.GetProvisions()
+		issuer, claim, provisions := was.GetIssuer(), was.GetSubjectClaim(), was.GetProvisions()
 		if req.HasIssuer() {
 			issuer = req.GetIssuer()
+		}
+		if req.HasSubjectClaim() {
+			claim = req.GetSubjectClaim()
 		}
 		if req.HasProvisions() {
 			provisions = req.GetProvisions()
 		}
-		if err := mayProvision(movedOf(req.GetProvisions()), provisions, issuer); err != nil {
-			return nil, err
+		if req.HasIssuer() || req.HasSubjectClaim() {
+			if err := mayNameBy(claimMoved(req.HasSubjectClaim()), claim, issuer); err != nil {
+				return nil, err
+			}
+		}
+		if req.HasIssuer() || req.GetProvisions() {
+			if err := mayProvision(movedOf(req.GetProvisions()), provisions, issuer); err != nil {
+				return nil, err
+			}
 		}
 	}
+	var tenant, self []byte
 	if req.GetProvisions() {
-		tenant, self, err := s.tenantOfConnection(ctx, req.GetRef())
-		if err != nil {
-			return nil, err
-		}
-		if err := s.oneProvisions(ctx, tenant, self); err != nil {
+		var err error
+		if tenant, self, err = s.tenantOfConnection(ctx, req.GetRef()); err != nil {
 			return nil, err
 		}
 	}
 
-	return s.ConnectionServiceServer.Patch(ctx, req)
+	var out *app.Connection
+	err := s.oneMarked(ctx, tenant, self, req.GetProvisions(), func(next app.Server) error {
+		var err error
+		out, err = next.Connection().Patch(ctx, req)
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 // Update is `Patch` with the name held back -- and refused outright on a row a
@@ -317,11 +643,35 @@ func (s coreConnection) Update(ctx context.Context, req *app.ConnectionUpdateReq
 	if req.HasIssuer() {
 		issuer = req.GetIssuer()
 	}
+	if req.HasIssuer() {
+		if err := addressed("issuer", issuer); err != nil {
+			return nil, err
+		}
+	}
+	if req.HasClientId() {
+		if err := called("client_id", req.GetClientId()); err != nil {
+			return nil, err
+		}
+	}
+	if req.HasSecretRef() {
+		if err := referenced("secret_ref", req.GetSecretRef()); err != nil {
+			return nil, err
+		}
+	}
 	if err := s.maySend(ctx, got, ref, issuer); err != nil {
 		return nil, err
 	}
 	if req.HasSubjectClaim() {
 		if err := s.maySubject(ctx, got.GetSubjectClaim(), req.GetSubjectClaim()); err != nil {
+			return nil, err
+		}
+	}
+	if req.HasSubjectClaim() || req.HasIssuer() {
+		claim := got.GetSubjectClaim()
+		if req.HasSubjectClaim() {
+			claim = req.GetSubjectClaim()
+		}
+		if err := mayNameBy(claimMoved(req.HasSubjectClaim()), claim, issuer); err != nil {
 			return nil, err
 		}
 	}
@@ -334,12 +684,9 @@ func (s coreConnection) Update(ctx context.Context, req *app.ConnectionUpdateReq
 			return nil, err
 		}
 	}
+	var tenant, self []byte
 	if req.GetProvisions() {
-		tenant, self, err := s.tenantOfConnection(ctx, req.GetRef())
-		if err != nil {
-			return nil, err
-		}
-		if err := s.oneProvisions(ctx, tenant, self); err != nil {
+		if tenant, self, err = s.tenantOfConnection(ctx, req.GetRef()); err != nil {
 			return nil, err
 		}
 	}
@@ -373,5 +720,16 @@ func (s coreConnection) Update(ctx context.Context, req *app.ConnectionUpdateReq
 
 	// The generated one, not [coreConnection.Patch]: what that holds a patch to
 	// is said above, against the row as read.
-	return s.ConnectionServiceServer.Patch(ctx, patch.Build())
+	var out *app.Connection
+	err = s.oneMarked(ctx, tenant, self, req.GetProvisions(), func(next app.Server) error {
+		var err error
+		out, err = next.Connection().Patch(ctx, patch.Build())
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }

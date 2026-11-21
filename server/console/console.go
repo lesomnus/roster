@@ -56,16 +56,34 @@ import (
 // direction: one that carried on with no tenant would look somebody up in
 // whichever one it happened to reach, the failure `front.WhoseHost` names.
 func Auth(s app.Server, db *ent.Client, sessions *authsession.Sessions, opts ...Option) app.AuthServiceServer {
-	a := authed{s: s, db: db, sessions: sessions, v: vouch.New(s, s)}
+	a := authed{s: s, db: db, sessions: sessions}
 	for _, opt := range opts {
 		opt(&a)
 	}
+
+	// Built last, from what it was told: see [WithVouch].
+	a.v = vouch.New(s, s, a.vouch...)
 
 	return a
 }
 
 // Option is what [Auth] is told beyond the three things it is built on.
 type Option func(*authed)
+
+// WithVouch is what the verifier behind this door is built with: the
+// deployment's lockout, and the keyring a second factor's seed is read with.
+//
+// This door checks a password with a `vouch.Server` of its own, since the one
+// on the wire reads behind the wall and nobody here has been resolved yet. It
+// built that server with nothing, and so counted wrong answers by the default
+// -- ten, and fifteen minutes -- whatever `vouch.lockout` said: a deployment
+// that asked for an account to close at the third wrong password had it close
+// there for every app that asks roster, and at the tenth at the one sign-in
+// anybody with a browser reaches (#275). What a deployment says of checking a
+// secret is said once, and every server that checks one is handed it.
+func WithVouch(opts ...vouch.Option) Option {
+	return func(a *authed) { a.vouch = append(a.vouch, opts...) }
+}
 
 // WithTenant is which tenant a sign-in is about, by alias, from the request.
 func WithTenant(fn func(ctx context.Context) (string, error)) Option {
@@ -92,6 +110,9 @@ type authed struct {
 	sessions *authsession.Sessions
 	v        *vouch.Server
 
+	// vouch is [WithVouch], and none is `server/vouch`'s own defaults.
+	vouch []vouch.Option
+
 	// tenant is [WithTenant], and nil is the one this plane has.
 	tenant func(ctx context.Context) (string, error)
 
@@ -100,14 +121,34 @@ type authed struct {
 }
 
 func (a authed) SignIn(ctx context.Context, req *app.AuthSignInRequest) (*app.AuthSignInResponse, error) {
-	if link := req.GetLink(); link != "" {
-		// Exactly one way of proving somebody, refused rather than resolved in
-		// some order this comment would then have to define.
-		if req.GetAlias() != "" || req.GetPassword() != "" {
+	link, attempt := req.GetLink(), req.GetContinuation()
+	named := req.GetAlias() != "" || req.GetPassword() != ""
+	proved := req.GetKind() != "" || req.GetName() != "" || len(req.GetSecret()) != 0
+
+	// Exactly one way of asking, refused rather than resolved in some order
+	// this comment would then have to define.
+	switch {
+	case link != "":
+		if named || attempt != "" || proved {
 			return nil, status.Error(codes.InvalidArgument, "a link, or an alias and a password; not both")
 		}
 
 		return a.handed(ctx, link)
+
+	case attempt != "":
+		if named {
+			return nil, status.Error(codes.InvalidArgument,
+				"an attempt and its next proof, or an alias and a password; not both")
+		}
+		if len(req.GetSecret()) == 0 {
+			return nil, status.Error(codes.InvalidArgument, "secret: what continues the attempt")
+		}
+
+		return a.proceed(ctx, req)
+
+	case proved:
+		return nil, status.Error(codes.InvalidArgument,
+			"continuation: a proof continues an attempt, and this names none")
 	}
 
 	if req.GetAlias() == "" || req.GetPassword() == "" {
@@ -117,12 +158,12 @@ func (a authed) SignIn(ctx context.Context, req *app.AuthSignInRequest) (*app.Au
 	// Which tenant, by **alias**, because that is what `VouchWho` names one by:
 	// the pair a username field and a tenant selector make, rather than an
 	// identifier a form would have to be told.
-	tenant, err := a.whose(ctx)
+	tenant, door, err := a.door(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := a.v.Verify(ctx, app.VouchVerifyRequest_builder{
+	res, err := a.v.VerifyAt(ctx, door, app.VouchVerifyRequest_builder{
 		Who: app.VouchWho_builder{
 			Tenant: tenant,
 			Alias:  req.GetAlias(),
@@ -132,14 +173,91 @@ func (a authed) SignIn(ctx context.Context, req *app.AuthSignInRequest) (*app.Au
 	if err != nil {
 		return nil, err
 	}
-	if !res.GetOk() {
-		// One answer however it was wrong. Which of "no such person", "wrong
-		// password" and "locked" it was is an oracle, and the lockout in
-		// `server/vouch` is what makes guessing expensive rather than this.
-		return nil, status.Error(codes.Unauthenticated, "no")
+
+	return a.answered(ctx, res)
+}
+
+// proceed is the second call: the attempt a first answer left open, and the
+// next proof. `AuthSignInRequest.continuation` is the why.
+func (a authed) proceed(ctx context.Context, req *app.AuthSignInRequest) (*app.AuthSignInResponse, error) {
+	_, door, err := a.door(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	return a.admit(ctx, res)
+	res, err := a.v.ContinueAt(ctx, door, app.VouchContinueRequest_builder{
+		Continuation: req.GetContinuation(),
+		Kind:         req.GetKind(),
+		Name:         req.GetName(),
+		Secret:       req.GetSecret(),
+	}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	return a.answered(ctx, res)
+}
+
+// answered is what either call ends in, read off what the verifier said: the
+// session, what is left to prove, or no.
+//
+// `ok` and a continuation are never both set (`vouch.proto`), and that is what
+// this rests on: a session is minted on `ok` and on nothing else, and `ok` is
+// set only when nothing is left. It was minted on the `ok` of a verifier asked
+// by nobody, which answered it to a first factor; [vouch.Server.VerifyAt] is
+// this door saying who it is, so that there is somebody to withhold it from.
+func (a authed) answered(ctx context.Context, res *app.VouchVerifyResponse) (*app.AuthSignInResponse, error) {
+	switch {
+	case res.GetOk():
+		return a.admit(ctx, res)
+
+	case res.GetContinuation() != "":
+		// Right so far, and not the whole of it. No cookie: what the page
+		// draws the second form from, and what the second call carries.
+		return app.AuthSignInResponse_builder{
+			Available:    res.GetAvailable(),
+			Continuation: res.GetContinuation(),
+		}.Build(), nil
+	}
+
+	// One answer however it was wrong. Which of "no such person", "wrong
+	// password", "wrong code" and "locked" it was is an oracle, and the
+	// lockout in `server/vouch` is what makes guessing expensive rather than
+	// this.
+	return nil, status.Error(codes.Unauthenticated, "no")
+}
+
+// door is the tenant this sign-in is about, by alias and as what an attempt
+// begun here is issued to.
+//
+// The tenant's own identifier is the door. An attempt is spent by whoever it
+// was issued to and nobody else; a key's actor is a row of another kind and
+// never equals it, and another tenant's name is another tenant's door.
+func (a authed) door(ctx context.Context) (string, pdid.Id, error) {
+	tenant, err := a.whose(ctx)
+	if err != nil {
+		return "", pdid.Nil, err
+	}
+
+	t, err := a.s.Tenant().Get(ctx, app.TenantGetRequest_builder{
+		Ref: app.TenantRef_builder{Alias: &tenant}.Build(),
+	}.Build())
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			// A name whose tenant has gone since it was resolved: nobody signs
+			// in there, and it is answered as nobody.
+			return "", pdid.Nil, status.Error(codes.Unauthenticated, "no")
+		}
+
+		return "", pdid.Nil, err
+	}
+
+	id, err := pdid.From(t.GetId())
+	if err != nil {
+		return "", pdid.Nil, err
+	}
+
+	return tenant, id, nil
 }
 
 // handed is a sign-in by a link a front door handed the browser: the person

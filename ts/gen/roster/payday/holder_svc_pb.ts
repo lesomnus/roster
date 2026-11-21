@@ -980,6 +980,10 @@ export type HolderSignsInResponse = Message<"roster.HolderSignsInResponse"> & {
    * one thing would be two that drift, and the drift would be between what a
    * person sees about themselves and what an operator sees about them.
    *
+   * Every one they have, of each of the three: this message has no cursor, so
+   * what it says is all there is. Each list is in the order its rows were
+   * made in, as `MeService` answers the person.
+   *
    * @generated from field: repeated roster.SignInIdentity identities = 13;
    */
   identities: SignInIdentity[];
@@ -990,14 +994,9 @@ export type HolderSignsInResponse = Message<"roster.HolderSignsInResponse"> & {
   credentials: SignInCredential[];
 
   /**
-   * And the keys that act as them, which `MeService` does not answer with.
-   *
-   * That asymmetry is deliberate rather than an omission. A person reading
-   * their own record is looking at what **they** sign in with; a key is
-   * something a machine of theirs holds, and the screen that lists one is the
-   * screen that revokes it -- which is an operator's, on the port with no wall.
-   * If a self-service version is wanted later it is a different decision with a
-   * different reason, and `me.proto` is where it would be argued.
+   * And the keys that act as them, which `MeService` answers the person with
+   * too (`me.proto` says why). This is the screen that ends one of somebody
+   * else's.
    *
    * @generated from field: repeated roster.SignInKey keys = 15;
    */
@@ -1042,7 +1041,8 @@ export type HolderReachesResponse = Message<"roster.HolderReachesResponse"> & {
 
   /**
    * The sites their bindings and teams name; empty with `every_site` false is
-   * somebody narrowed to nothing.
+   * somebody narrowed to nothing. Each is said once, in the order of their
+   * identifiers, which is the order they were made in.
    *
    * @generated from field: repeated bytes sites = 11;
    */
@@ -1084,7 +1084,9 @@ export const HolderReachesResponseSchema: GenMessage<HolderReachesResponse> = /*
 export type HolderSearchRequest = Message<"roster.HolderSearchRequest"> & {
   /**
    * Where to look, the way `List` is told: none is everywhere the caller may
-   * see, and a site or a team narrows to who is in it.
+   * see, and a filter narrows to the people it names, to a tenant's, or to
+   * the ones a label is on. There is none by site or by team: who is of a
+   * site decides what a grant made there reaches, and is not asked for here.
    *
    * @generated from field: repeated roster.HolderFilter filters = 1;
    */
@@ -1100,7 +1102,8 @@ export type HolderSearchRequest = Message<"roster.HolderSearchRequest"> & {
   q: string;
 
   /**
-   * Exact, when given.
+   * The whole of it when given, and not a fragment: a department without
+   * regard to case, an employee number exactly as it is written.
    *
    * @generated from field: string department = 9;
    */
@@ -1113,6 +1116,11 @@ export type HolderSearchRequest = Message<"roster.HolderSearchRequest"> & {
 
   /**
    * As `List` takes them: how many, and where to carry on from.
+   *
+   * How many is how many are answered, and not how many are read. The match
+   * is made in the server over the people the caller may see, so one call
+   * reads on until its page is full and one more matches, or to the end of
+   * them: a search that finds little reads everybody, whatever `size` says.
    *
    * @generated from field: int32 size = 2 [features.field_presence = IMPLICIT];
    */
@@ -1141,7 +1149,8 @@ export type HolderSearchResponse = Message<"roster.HolderSearchResponse"> & {
   items: Holder[];
 
   /**
-   * What to ask for next, and empty when this was the last of them.
+   * What to ask for next, and empty when this was the last of them -- a page
+   * that came back full included.
    *
    * @generated from field: string next = 2 [features.field_presence = IMPLICIT];
    */
@@ -1183,7 +1192,8 @@ export type HolderFillRequest = Message<"roster.HolderFillRequest"> & {
 
   /**
    * The picture itself, as the provider handed it over: JPEG, PNG, GIF or
-   * WebP, rendered as `Portray` renders one.
+   * WebP, rendered as `Portray` renders one and held to what `Portray` holds
+   * one to -- 2 MiB, 2048 pixels a side, a turn to be rendered in.
    *
    * @generated from field: bytes image = 10 [features.field_presence = IMPLICIT];
    */
@@ -1243,8 +1253,13 @@ export type HolderPortrayRequest = Message<"roster.HolderPortrayRequest"> & {
   dateUpdated?: Timestamp | undefined;
 
   /**
-   * JPEG, PNG, GIF or WebP, at most 2 MiB and 4096 pixels a side. Empty takes
-   * their picture away.
+   * JPEG, PNG, GIF or WebP, at most 2 MiB and 2048 pixels a side. How large
+   * one is, is read from its header, and one larger is refused before any of
+   * it is decoded; a photograph from a camera is made smaller by whoever sends
+   * it. A process renders two images at once: a call beyond those waits its
+   * turn for as long as it lasts, and one that ends waiting is answered as a
+   * call that ran out of time is, not as an image refused. Empty takes their
+   * picture away.
    *
    * @generated from field: bytes image = 8 [features.field_presence = IMPLICIT];
    */

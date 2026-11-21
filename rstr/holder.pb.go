@@ -481,11 +481,15 @@ type Holder_builder struct {
 	// answer the question an app actually asks, which is whether the session in
 	// front of it predates the write.
 	//
-	// What it voids **here** is a `Delegation`, which is a sign-in in miniature.
-	// It deliberately does not void an `ApiKey`: a key is named, listed and
-	// revoked one at a time, and killing somebody's scripts silently under
-	// "sign out everywhere" is an outage with nothing anywhere saying why. That
-	// is a second act and it has a second name.
+	// What it voids **here** is a `Delegation`, which is a sign-in in miniature;
+	// a sign-in half made (`Continuation`); a session at roster's own consoles;
+	// the sign-in an `ApiKey` carries (`date_authenticated`); and a `Link`
+	// already out that would act for the person (`Link.date_created` says which
+	// kinds, and why not the one that confirms an address). It deliberately does
+	// not void an `ApiKey` itself: a key is named, listed and revoked one at a
+	// time, and killing somebody's scripts silently under "sign out everywhere"
+	// is an outage with nothing anywhere saying why. That is a second act and it
+	// has a second name.
 	//
 	// Never cleared, and nothing takes it as an argument -- the server stamps it.
 	// A caller who could write an older value could un-revoke, and a caller who

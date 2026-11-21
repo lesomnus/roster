@@ -90,7 +90,7 @@ func (a *Accounts) Reconcile(ctx context.Context, accounts []pdid.Id, marked fun
 				out.Gone = append(out.Gone, v)
 			}
 		case err != nil:
-			return nil, fmt.Errorf("roster could not be asked about %s, so nothing was decided: %w", v, err)
+			return nil, worded(err, fmt.Errorf("roster could not be asked about %s, so nothing was decided: %w", v, err))
 		default:
 			out.Found++
 			if st.Erased.IsZero() && marked(v) {
@@ -120,9 +120,10 @@ func (a *Accounts) Reconcile(ctx context.Context, accounts []pdid.Id, marked fun
 // nothing to do.
 //
 // About an account roster could not answer for, nothing is decided: it is said
-// and left, and asked about again at the next look. What `gone` or `back`
-// answer with is gathered and answered once every account was looked at, so
-// that one that failed does not keep the rest waiting a whole pass.
+// and left, and asked about again at the next look. That, and what `gone` or
+// `back` answer with, is gathered and answered once every account was looked
+// at -- [ErrUnreachable] for an account roster could not answer for -- so that
+// one that failed does not keep the rest waiting a whole pass.
 //
 // Each account roster answered for is dropped from what this process knows
 // ([Accounts.Recheck]), since acting on a mark or taking it back is a change.
@@ -155,6 +156,7 @@ func (a *Accounts) Settle(
 			}
 			a.log(ctx).WarnContext(ctx, "standing: roster could not say whether an account is still gone; it is asked again next time",
 				"account", v.String(), slog.Any("err", err))
+			errs = append(errs, fmt.Errorf("account %s: %w", v, err))
 		case st.Erased.IsZero():
 			a.Recheck(v)
 			if back != nil {

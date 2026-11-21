@@ -1,16 +1,19 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"time"
 
 	"github.com/protobuf-orm/ent/dialect"
+	entsql "github.com/protobuf-orm/ent/dialect/sql"
 	"slices"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"uuid"
 
+	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/pdid"
@@ -736,14 +739,26 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 //
 // # What it writes
 //
-// The version column, to now. It is a concurrency token rather than a fact
-// about the person, so moving it says nothing untrue, and going around the
-// recorder means the trail carries the erase that explains it and no entry for
-// the lock itself.
+// The version column, to what it already is. What two callers contend for is
+// the write and not what it writes: a database holds the row for whoever
+// wrote it first until they are done, whatever they wrote.
 //
-// What it costs is that a console holding a version of that row from before the
-// unlink is told to read again on its next write, which is what a version is
-// for.
+// It moved the column to now, on the reasoning that a version is a token and
+// not a fact about the person. But a deployment that keeps digests checks its
+// rows against its trail (`roster trail rows`), and a row written past the
+// recorder is what that check is for: after an identity was erased it found
+// the person, `differs holder`, for a row nobody had touched (#279). So the
+// row is left as the trail keeps it, and a console holding its version is not
+// told to read again about a change that was none.
+//
+// # Whose row
+//
+// The person's, for a count of what is theirs; the tenant's, for whether
+// anybody still administers it, whether it has a team of a name in no site,
+// and whether another of its connections is marked to provision; the site's, for whether anything is in it when it is erased, and
+// whether a role is bound there already; and the role's, for whether it is
+// bound across the tenant already. Which of them `who` is, is in the
+// identifier.
 func Locking(db *ent.Client) core.Lock {
 	return func(ctx context.Context, drv dialect.Driver, who pdid.Id) error {
 		// On the driver it is handed, which is the transaction `server/core`
@@ -759,13 +774,53 @@ func Locking(db *ent.Client) core.Lock {
 			c = ent.NewClient(ent.Driver(drv))
 		}
 
+		// A rule about a site -- whether anything is in it when it is erased
+		// -- contends on the site's row, which the erase and whatever is put
+		// in a site both write first. On a site that is still there: one
+		// erased by whoever took the lock before is no site to put anything
+		// in, and is answered as it is a moment later.
+		if who.Domain() == pd.SiteDomain {
+			n, err := c.Site.Update().
+				Where(entsite.IdEQ(who.Uuid()), entsite.DateErasedIsNil()).
+				Modify(asItIs(entsite.FieldDateUpdated)).
+				Save(ctx)
+			if err != nil {
+				return err
+			}
+			if n == 0 {
+				return status.Error(codes.NotFound, "Site not found")
+			}
+
+			return nil
+		}
+
+		// A rule about a role's bindings across the tenant -- whether this
+		// one was made already -- contends on the role's row, which two
+		// callers making the same binding both name. On a role that is still
+		// there, as a site's is.
+		if who.Domain() == pd.RoleDomain {
+			n, err := c.Role.Update().
+				Where(entrole.IdEQ(who.Uuid()), entrole.DateErasedIsNil()).
+				Modify(asItIs(entrole.FieldDateUpdated)).
+				Save(ctx)
+			if err != nil {
+				return err
+			}
+			if n == 0 {
+				return status.Error(codes.NotFound, "Role not found")
+			}
+
+			return nil
+		}
+
 		// A rule about a whole tenant -- whether anybody is left administering
-		// it -- contends on the tenant's row, which every narrowing that could
-		// leave it without anybody has to write.
+		// it, whether it has a team of a name already -- contends on the
+		// tenant's row, which every write that could change the answer has to
+		// make.
 		if who.Domain() == pd.TenantDomain {
 			n, err := c.Tenant.Update().
 				Where(enttenant.IdEQ(who.Uuid())).
-				SetDateUpdated(time.Now()).
+				Modify(asItIs(enttenant.FieldDateUpdated)).
 				Save(ctx)
 			if err != nil {
 				return err
@@ -779,7 +834,7 @@ func Locking(db *ent.Client) core.Lock {
 
 		n, err := c.Holder.Update().
 			Where(holder.IdEQ(who.Uuid())).
-			SetDateUpdated(time.Now()).
+			Modify(asItIs(holder.FieldDateUpdated)).
 			Save(ctx)
 		if err != nil {
 			return err
@@ -790,6 +845,12 @@ func Locking(db *ent.Client) core.Lock {
 
 		return nil
 	}
+}
+
+// asItIs is a write of a column to the value it has: what [Locking] writes, so
+// that the row is held and nothing of it is changed.
+func asItIs(column string) func(*entsql.UpdateBuilder) {
+	return func(u *entsql.UpdateBuilder) { u.Set(column, entsql.Expr(column)) }
 }
 
 // Administered is [core.Administered] on this deployment's rows: the tenant's
@@ -865,19 +926,83 @@ func Rules(db *ent.Client, sources ...rbac.Source) core.Rules {
 		Granted:      Granted(db, sources...),
 		Joining:      Joining(db),
 		Holding:      Holding(db, sources...),
+		Giving:       Giving(db),
 		Held:         core.Held(Everything(db, sources...)),
 		Everywhere:   Everywhere(db, sources...),
 		Administered: Administered(db),
-		Releasing:    Releasing(db),
+		Releasing:    Releasing(db, audit.Contents{}),
 		Named:        Named(db),
 		Sited:        Sited(db),
+		Bound:        Bound(db),
+		Unsited:      Unsited(db),
+	}
+}
+
+// Bound is whether a role is already bound to somebody, or to a group, in a
+// place, for [core.Bound]: a live binding of that role to that holder or
+// group, in that site or -- where `site` is the nil identifier -- in none.
+//
+// Written out where an index would say it, because an index cannot: a null
+// site is a value here, and no two nulls are equal to SQL.
+func Bound(db *ent.Client) core.Bound {
+	return func(ctx context.Context, drv dialect.Driver, role, to, site pdid.Id) (bool, error) {
+		// On the driver it is handed, as [Administered] is: the transaction
+		// the binding is written in.
+		c := db
+		if drv != nil {
+			c = ent.NewClient(ent.Driver(drv))
+		}
+
+		ps := []predicate.Binding{binding.DateErasedIsNil(), binding.RoleIdEQ(role.Uuid())}
+		if to.Domain() == pd.GroupDomain {
+			ps = append(ps, binding.GroupIdEQ(to.Uuid()))
+		} else {
+			ps = append(ps, binding.HolderIdEQ(to.Uuid()))
+		}
+		if site == pdid.Nil {
+			ps = append(ps, binding.SiteIdIsNil())
+		} else {
+			ps = append(ps, binding.SiteIdEQ(site.Uuid()))
+		}
+
+		return c.Binding.Query().Where(ps...).Exist(ctx)
+	}
+}
+
+// Unsited is whether a tenant already has a team of a name in no site, for
+// [core.Unsited]: what the index over a team's name and its site would hold
+// if a null site were a value.
+func Unsited(db *ent.Client) core.Unsited {
+	return func(ctx context.Context, drv dialect.Driver, tenant pdid.Id, alias string) (bool, error) {
+		// On the driver it is handed, as [Administered] is.
+		c := db
+		if drv != nil {
+			c = ent.NewClient(ent.Driver(drv))
+		}
+
+		return c.Team.Query().
+			Where(
+				entteam.DateErasedIsNil(),
+				entteam.TenantIdEQ(tenant.Uuid()),
+				entteam.SiteIdIsNil(),
+				entteam.AliasEQ(alias),
+			).
+			Exist(ctx)
 	}
 }
 
 // Sited is what a site still has in it, for [core.Sited]: the live roles,
 // bindings, teams and groups that name it, counted from the rows.
 func Sited(db *ent.Client) core.Sited {
-	return func(ctx context.Context, site pdid.Id) (core.InSite, error) {
+	return func(ctx context.Context, drv dialect.Driver, site pdid.Id) (core.InSite, error) {
+		// On the driver it is handed, as [Administered] is: the transaction
+		// the erase is made in, so that what it counts is what a write that
+		// took the site's lock before it has left.
+		db := db
+		if drv != nil {
+			db = ent.NewClient(ent.Driver(drv))
+		}
+
 		var (
 			in  core.InSite
 			err error
@@ -950,7 +1075,25 @@ func Named(db *ent.Client) core.Named {
 // Bounded by the name and by nothing else, which is the whole of why this is
 // safe to hand to a layer a caller reaches: there is no argument here that could
 // be widened, and at most one live row can match.
-func Releasing(db *ent.Client) core.Releasing {
+//
+// # And it is written down where whoever held the name reads
+//
+// The incumbent is not asked, and what makes that bearable is that they are
+// told: `host.proto`, `docs/operating.md` and this function's own comment each
+// said the erase is on the trail. It was not. A row erased beneath the servers
+// is on the trail only if something puts it there, and nothing did: a tenant
+// whose name had gone found its row erased and nothing saying who, when or how
+// (#277). So the row is put there ([Released]), by whoever `ctx` is framed as,
+// filed under the row's own tenant -- `pd.Record`, which is what a row written
+// beneath the servers on purpose is recorded by. `cs` is what the trail keeps
+// of a row, as the recorder is handed it.
+//
+// # A row a file declares is not taken
+//
+// Every other road refuses a write to one, since the file is where it is
+// written from (`core.mayWriteDeclared`); this one erased it, and the next
+// `resources apply` then met a name that was somebody else's.
+func Releasing(db *ent.Client, cs audit.Contents) core.Releasing {
 	return func(ctx context.Context, drv dialect.Driver, name string) error {
 		// On the driver it is handed, which is the transaction `server/core`
 		// opened, for `Locking`'s reason: a write outside it could not be undone
@@ -963,14 +1106,32 @@ func Releasing(db *ent.Client) core.Releasing {
 
 		// Not an error when nothing holds it. Taking a free name is the ordinary
 		// case, and refusing here would make the caller read first.
-		_, err := c.Host.Update().
-			Where(host.NameEQ(name), host.DateErasedIsNil()).
-			SetDateErased(time.Now()).
-			Save(ctx)
+		held, err := c.Host.Query().Where(host.NameEQ(name), host.DateErasedIsNil()).Only(ctx)
+		if ent.IsNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if from, ok := held.Labels[Declared]; ok {
+			return status.Errorf(codes.FailedPrecondition,
+				"%s: the name is declared in %s, and a name a file declares is not taken by a proof; "+
+					"whoever runs this deployment takes it out of the file first", name, from)
+		}
+
+		if err := c.Host.UpdateOneId(held.Id).SetDateErased(time.Now()).Exec(ctx); err != nil {
+			return err
+		}
+
+		_, err = pd.Record(ctx, c, cs, Released, []pdid.Id{pdid.Id(held.Id)})
 
 		return err
 	}
 }
+
+// Released is the act a name taken by a newer proof is on the trail as, in the
+// trail of the tenant that held it.
+const Released = "roster.host.release"
 
 // Granted is every pattern somebody holds through a binding, and **where**.
 //
@@ -1044,6 +1205,92 @@ func Joining(db *ent.Client) core.Joining {
 		}
 
 		return grantsOf(vs), nil
+	}
+}
+
+// Giving is what one row hands whoever it names, for [core.Giving]: a
+// binding, a place on a team, or a manager's place in a group, told apart by
+// the identifier.
+//
+// Each is read as [policy.of] reads it, so that what an erase is held to is
+// what the gate stops counting when the row goes. A role that was erased
+// gives nothing ([live]); nor does a place on a team that was ([liveTeam]),
+// a place in a group that was ([groupRoles]), or a binding to one
+// ([bindingsReaching]).
+//
+// Where each is held is where granting it was asked about, which for two of
+// the three is where the gate holds it too: a binding at its site, a team's
+// role at the team's site. A manager's role is answered across the tenant,
+// whichever site the group is in, since that is what appointing one asks
+// (`core`'s `mayAppoint`).
+func Giving(db *ent.Client) core.Giving {
+	return func(ctx context.Context, row pdid.Id) ([]core.Grant, error) {
+		switch row.Domain() {
+		case pd.BindingDomain:
+			vs, err := db.Binding.Query().
+				Where(
+					binding.IdEQ(row.Uuid()),
+					binding.DateErasedIsNil(),
+					binding.Or(binding.Not(binding.HasGroup()), binding.HasGroupWith(group.DateErasedIsNil())),
+				).
+				WithRole(live).
+				WithSite().
+				All(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			return grantsOf(vs), nil
+
+		case pd.TeamMembershipDomain:
+			vs, err := db.TeamMembership.Query().
+				Where(teammembership.IdEQ(row.Uuid()), teammembership.DateErasedIsNil(), liveTeam).
+				WithRole(live).
+				WithTeam(func(q *ent.TeamQuery) { q.WithSite() }).
+				All(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			var gs []core.Grant
+			for _, v := range vs {
+				if v.Edges.Role == nil {
+					continue
+				}
+
+				g := core.Grant{Methods: v.Edges.Role.Methods}
+				if v.Edges.Team != nil && v.Edges.Team.Edges.Site != nil {
+					g.Site = pdid.Id(v.Edges.Team.Edges.Site.Id)
+				}
+				gs = append(gs, g)
+			}
+
+			return gs, nil
+
+		case pd.GroupMembershipDomain:
+			vs, err := db.GroupMembership.Query().
+				Where(
+					groupmembership.IdEQ(row.Uuid()),
+					groupmembership.DateErasedIsNil(),
+					groupmembership.HasGroupWith(group.DateErasedIsNil()),
+				).
+				WithRole(live).
+				All(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			var gs []core.Grant
+			for _, v := range vs {
+				if v.Edges.Role != nil {
+					gs = append(gs, core.Grant{Methods: v.Edges.Role.Methods})
+				}
+			}
+
+			return gs, nil
+		}
+
+		return nil, nil
 	}
 }
 
@@ -1333,10 +1580,21 @@ func Everything(db *ent.Client, sources ...rbac.Source) me.Held {
 
 		slices.Sort(ms)
 
+		// Each site once, in the order of their identifiers, which is the
+		// order they were made in.
+		//
+		// `h.sites` is a site for every binding and every team that names
+		// it, as the rows came, and that is what a query is narrowed by: a
+		// site named twice narrows as it does named once. Answered as it
+		// stood, somebody bound twice in Seoul, once in Busan and on two of
+		// Seoul's teams was told `[seoul seoul seoul busan seoul]`, in an
+		// order that was the store's (#279).
 		ks := make([]pdid.Id, 0, len(h.sites))
 		for _, v := range h.sites {
 			ks = append(ks, pdid.Id(v))
 		}
+		slices.SortFunc(ks, func(a, b pdid.Id) int { return bytes.Compare(a.Bytes(), b.Bytes()) })
+		ks = slices.Compact(ks)
 
 		return ms, ks, h.anySite, nil
 	}

@@ -108,6 +108,12 @@ const (
 //
 // A field would be worse than either: a caller naming the tenant it would like
 // to be checked against is a caller choosing which passwords it is guessing at.
+// The name is no secret from a caller either -- it is `Host`, or
+// `X-Forwarded-Host` where a proxy says the public one, and whoever reaches
+// the listener with nothing in front writes both. What the name buys over a
+// field is that a browser cannot be made to send another origin's, and that a
+// tenant answers only at names it has claimed; `docs/operating.md` says what a
+// deployment that keeps names apart by network puts in front.
 //
 // And `SignIn` is served without a credential, which it has to be -- that is
 // what is being asked for -- as is `Offers`, which a page asks one step earlier
@@ -126,6 +132,21 @@ type AuthServiceClient interface {
 	// The cookie is the whole answer. It is `HttpOnly`, so the page that called
 	// this cannot read it -- which is the point, since script that can read a
 	// credential is script that can send it somewhere else.
+	//
+	// # Somebody with a second factor is asked for it
+	//
+	// A password that is right, for somebody who has more to prove, sets no
+	// cookie: the answer is what is left and a `continuation`, and a second call
+	// carrying that and the next proof is what ends in the session. One call or
+	// two, the session is the same one.
+	//
+	// It was one call whoever it was. `Vouch.Verify` answers `ok` only when
+	// nothing is left to prove, and withholds it behind a continuation -- which
+	// it mints for whoever asked, and nobody had asked: this method is public,
+	// so it has no caller, and a verifier with nobody to mint for answered `ok`
+	// to the first factor. Every other door asked for the second -- the Login
+	// App, the account app, an LDAP bind -- and roster's own let somebody with
+	// an authenticator app in on the password alone (#275).
 	SignIn(ctx context.Context, in *AuthSignInRequest, opts ...grpc.CallOption) (*AuthSignInResponse, error)
 	// SignOut deletes the session and clears the cookie.
 	//
@@ -334,6 +355,12 @@ func (c *authServiceClient) Which(ctx context.Context, in *AuthWhichRequest, opt
 //
 // A field would be worse than either: a caller naming the tenant it would like
 // to be checked against is a caller choosing which passwords it is guessing at.
+// The name is no secret from a caller either -- it is `Host`, or
+// `X-Forwarded-Host` where a proxy says the public one, and whoever reaches
+// the listener with nothing in front writes both. What the name buys over a
+// field is that a browser cannot be made to send another origin's, and that a
+// tenant answers only at names it has claimed; `docs/operating.md` says what a
+// deployment that keeps names apart by network puts in front.
 //
 // And `SignIn` is served without a credential, which it has to be -- that is
 // what is being asked for -- as is `Offers`, which a page asks one step earlier
@@ -352,6 +379,21 @@ type AuthServiceServer interface {
 	// The cookie is the whole answer. It is `HttpOnly`, so the page that called
 	// this cannot read it -- which is the point, since script that can read a
 	// credential is script that can send it somewhere else.
+	//
+	// # Somebody with a second factor is asked for it
+	//
+	// A password that is right, for somebody who has more to prove, sets no
+	// cookie: the answer is what is left and a `continuation`, and a second call
+	// carrying that and the next proof is what ends in the session. One call or
+	// two, the session is the same one.
+	//
+	// It was one call whoever it was. `Vouch.Verify` answers `ok` only when
+	// nothing is left to prove, and withholds it behind a continuation -- which
+	// it mints for whoever asked, and nobody had asked: this method is public,
+	// so it has no caller, and a verifier with nobody to mint for answered `ok`
+	// to the first factor. Every other door asked for the second -- the Login
+	// App, the account app, an LDAP bind -- and roster's own let somebody with
+	// an authenticator app in on the password alone (#275).
 	SignIn(context.Context, *AuthSignInRequest) (*AuthSignInResponse, error)
 	// SignOut deletes the session and clears the cookie.
 	//

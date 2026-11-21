@@ -4,11 +4,13 @@ import (
 	"context"
 	"slices"
 
+	"github.com/protobuf-orm/ent/dialect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
+	"github.com/lesomnus/payday/slug"
 	"github.com/lesomnus/z"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -208,11 +210,8 @@ func (s coreTeamMembership) Patch(ctx context.Context, req *app.TeamMembershipPa
 // comment there is the long version.
 func (s coreTeamMembership) Erase(ctx context.Context, req *app.TeamMembershipRef) (*app.TeamMembershipEraseResponse, error) {
 	v, err := s.Next().TeamMembership().Get(ctx, app.TeamMembershipGetRequest_builder{
-		Ref: req,
-		Select: app.TeamMembershipSelect_builder{
-			Team: app.TeamSelect_builder{Site: app.SiteSelect_builder{}.Build()}.Build(),
-			Role: app.RoleSelect_builder{Methods: z.Ptr(true)}.Build(),
-		}.Build(),
+		Ref:    req,
+		Select: app.TeamMembershipSelect_builder{Team: app.TeamSelect_builder{}.Build()}.Build(),
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -229,13 +228,14 @@ func (s coreTeamMembership) Erase(ctx context.Context, req *app.TeamMembershipRe
 	}
 
 	// And what the role held there gave them, which `Add` asked `mayGrant`
-	// about at the team's site (`takeaway.go`). A team's role is never held
+	// about at the team's site (`takeaway.go`): read from the row, and nothing
+	// when the role or the team was erased. A team's role is never held
 	// across the tenant, so nothing about who administers it changes here.
-	at, err := idOr(v.GetTeam().GetSite().GetId())
+	gs, err := s.given(ctx, v.GetId())
 	if err != nil {
 		return nil, err
 	}
-	if err := s.mayTakeAway(ctx, "ref", v.GetRole().GetMethods(), at); err != nil {
+	if err := s.mayTakeAll(ctx, "ref", gs); err != nil {
 		return nil, err
 	}
 
@@ -271,7 +271,86 @@ func (s coreTeam) Add(ctx context.Context, req *app.TeamAddRequest) (*app.Team, 
 		return nil, err
 	}
 
-	return s.TeamServiceServer.Add(ctx, req)
+	var out *app.Team
+	if req.GetSite() == nil && of != pdid.Nil {
+		// A team of no site, named once in its tenant ([Unsited]): looked
+		// for and written in one transaction, after a write on the tenant's
+		// row that two callers making the same team both make first
+		// ([Core.only]).
+		err = s.only(ctx, of.Bytes(), func(next app.Server, tx dialect.Driver) error {
+			if err := s.unsited(ctx, tx, of, req.GetAlias()); err != nil {
+				return err
+			}
+
+			var err error
+			out, err = next.Team().Add(ctx, req)
+
+			return err
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return out, nil
+	}
+
+	// In a site that is still one when the team is written, and not one
+	// being erased at the same moment ([Core.inSite]). Its name is unique
+	// there by the table's own index.
+	err = s.inSite(ctx, req.GetSite(), func(next app.Server) error {
+		var err error
+		out, err = next.Team().Add(ctx, req)
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+// Unsited is whether a tenant already has a team of this name in no site.
+//
+// # Why the table cannot say it
+//
+// A team's name is unique within its site (`team.proto`), and the index that
+// holds it is over the name and the site. SQL reads two nulls as different, so
+// it binds nothing where the site is null: two teams `board` of no site were
+// both made in one tenant, and a team of no site is named by nothing but its
+// identifier as it is (#279). A team of no site is the tenant's, so its name
+// is held within the tenant, among the teams of no site -- here, where the
+// write is made.
+//
+// On the driver it is handed, as [Administered] is: asked inside the
+// transaction the team is written in. Nil is a stack that cannot say, and a
+// team is then made as it always was.
+type Unsited func(ctx context.Context, drv dialect.Driver, tenant pdid.Id, alias string) (bool, error)
+
+// unsited refuses a team of no site whose name a team of no site already has
+// in this tenant, in the words a name taken in a site is refused in.
+//
+// The name is compared as it is kept: folded, as the write folds it. One that
+// was not given is made up by the server, and one that cannot be a name is
+// the write's to refuse.
+func (s Core) unsited(ctx context.Context, tx dialect.Driver, tenant pdid.Id, alias string) error {
+	if s.rules.Unsited == nil || alias == "" {
+		return nil
+	}
+	name, err := slug.ParseAlias(alias)
+	if err != nil {
+		return nil
+	}
+
+	taken, err := s.rules.Unsited(ctx, tx, tenant, name)
+	if err != nil {
+		return err
+	}
+	if taken {
+		return status.Error(codes.AlreadyExists, "Team already exists")
+	}
+
+	return nil
 }
 
 // Erase takes from each of a team's people the role they hold in it, and is
@@ -290,7 +369,7 @@ func (s coreTeam) Add(ctx context.Context, req *app.TeamAddRequest) (*app.Team, 
 func (s coreTeam) Erase(ctx context.Context, req *app.TeamRef) (*app.TeamEraseResponse, error) {
 	got, err := s.TeamServiceServer.Get(ctx, app.TeamGetRequest_builder{
 		Ref:    req,
-		Select: app.TeamSelect_builder{Site: app.SiteSelect_builder{}.Build()}.Build(),
+		Select: app.TeamSelect_builder{}.Build(),
 	}.Build())
 	if status.Code(err) == codes.NotFound {
 		return s.TeamServiceServer.Erase(ctx, req)
@@ -301,11 +380,6 @@ func (s coreTeam) Erase(ctx context.Context, req *app.TeamRef) (*app.TeamEraseRe
 
 	team := app.TeamRef_builder{Id: got.GetId()}.Build()
 	if err := s.mayChangeTeam(ctx, app.TeamService_Erase_FullMethodName, team); err != nil {
-		return nil, err
-	}
-
-	at, err := idOr(got.GetSite().GetId())
-	if err != nil {
 		return nil, err
 	}
 
@@ -324,13 +398,17 @@ func (s coreTeam) Erase(ctx context.Context, req *app.TeamRef) (*app.TeamEraseRe
 				continue
 			}
 
-			// A list answers a role as its reference, so each is read; a team
-			// is a handful of people and their roles fewer.
-			methods, err := s.methodsOf(ctx, app.RoleRef_builder{Id: m.GetRole().GetId()}.Build())
+			// What each place gives is read as taking it out alone reads it
+			// (`takeaway.go`), one at a time: a team is a handful of people
+			// and their roles fewer. It was the role itself that was read,
+			// as the caller reads one, and a role erased since -- or one of
+			// the whole tenant, to somebody who sees one site -- was a
+			// `NotFound` about a role, for the erase of a team (#279).
+			gs, err := s.given(ctx, m.GetId())
 			if err != nil {
 				return nil, err
 			}
-			if err := s.mayTakeAway(ctx, "ref", methods, at); err != nil {
+			if err := s.mayTakeAll(ctx, "ref", gs); err != nil {
 				return nil, err
 			}
 		}
@@ -455,7 +533,6 @@ func (s coreGroupMembership) Erase(ctx context.Context, req *app.GroupMembership
 		Ref: req,
 		Select: app.GroupMembershipSelect_builder{
 			Group: app.GroupSelect_builder{Alias: z.Ptr(true), Tenant: app.TenantSelect_builder{}.Build()}.Build(),
-			Role:  app.RoleSelect_builder{Methods: z.Ptr(true)}.Build(),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -475,7 +552,8 @@ func (s coreGroupMembership) Erase(ctx context.Context, req *app.GroupMembership
 	// And what being in it gave them -- the group's bindings, each at its
 	// scope, and a manager's role -- which nobody takes away who could not
 	// have given it (`takeaway.go`); and the tenant's administration, when
-	// the group carries it.
+	// the group carries it. Both are read from the rows, and are nothing for a
+	// group that was erased.
 	group, err := pdid.From(v.GetGroup().GetId())
 	if err != nil {
 		return nil, err
@@ -487,16 +565,28 @@ func (s coreGroupMembership) Erase(ctx context.Context, req *app.GroupMembership
 	if err := s.mayTakeAll(ctx, "ref", gs); err != nil {
 		return nil, err
 	}
-	if err := s.mayTakeAway(ctx, "ref", v.GetRole().GetMethods(), pdid.Nil); err != nil {
+	theirs, err := s.given(ctx, v.GetId())
+	if err != nil {
 		return nil, err
 	}
+	if err := s.mayTakeAll(ctx, "ref", theirs); err != nil {
+		return nil, err
+	}
+	if !grantsAdministration(gs) {
+		// Nothing a tenant is administered through: a group bound to less,
+		// and one that is not there any more, whose places give nothing.
+		return s.GroupMembershipServiceServer.Erase(ctx, req)
+	}
+
+	// A group that is there, bound across the tenant, which whoever passed
+	// for it above reads with the row.
 	tenant, err := pdid.From(v.GetGroup().GetTenant().GetId())
 	if err != nil {
 		return nil, err
 	}
 
 	var out *app.GroupMembershipEraseResponse
-	err = s.keepsAdministered(ctx, tenant, grantsAdministration(gs), "taking them out of group "+v.GetGroup().GetAlias(), func(next app.Server) error {
+	err = s.keepsAdministered(ctx, tenant, true, "taking them out of group "+v.GetGroup().GetAlias(), func(next app.Server) error {
 		var err error
 		out, err = next.GroupMembership().Erase(ctx, req)
 
@@ -544,7 +634,19 @@ func (s coreRole) Add(ctx context.Context, req *app.RoleAddRequest) (*app.Role, 
 		return nil, err
 	}
 
-	return s.RoleServiceServer.Add(ctx, req)
+	// In a site that is still one when the role is written ([Core.inSite]).
+	var out *app.Role
+	err = s.inSite(ctx, req.GetSite(), func(next app.Server) error {
+		var err error
+		out, err = next.Role().Add(ctx, req)
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 // Patch is held to the same rule as Add, and it has to be.
@@ -658,11 +760,27 @@ func (s coreGroup) Add(ctx context.Context, req *app.GroupAddRequest) (*app.Grou
 	if err != nil {
 		return nil, err
 	}
-	if !ok {
-		return s.GroupServiceServer.Add(ctx, req)
+
+	if ok {
+		return s.made(ctx, req, of, who)
 	}
 
-	return s.made(ctx, req, of, who)
+	// In a site that is still one when the group is written, and not one
+	// being erased at the same moment ([Core.inSite]). A group its maker
+	// manages is written in a transaction of its own, which begins with the
+	// same write ([coreGroup.made]).
+	var out *app.Group
+	err = s.inSite(ctx, req.GetSite(), func(next app.Server) error {
+		var err error
+		out, err = next.Group().Add(ctx, req)
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 type coreBinding struct {
@@ -735,5 +853,101 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 		return nil, err
 	}
 
-	return s.BindingServiceServer.Add(ctx, req)
+	// And once ([Bound]). Which role and to whom, as identifiers: the request
+	// may have named either by a name.
+	which, err := s.roleOf(ctx, req.GetRole())
+	if err != nil {
+		return nil, err
+	}
+	var to pdid.Id
+	if holder != nil {
+		to, err = s.holderOf(ctx, holder)
+	} else {
+		to, err = s.groupOf(ctx, group)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if which == pdid.Nil {
+		// A binding of no role, which the write refuses.
+		return s.BindingServiceServer.Add(ctx, req)
+	}
+
+	// Looked for and written in one transaction, after a write two callers
+	// making the same binding both make first ([Core.only]). In a site it is
+	// the site's row, which is also what keeps the binding out of a site
+	// being erased at the same moment ([Core.inSite]): a binding that
+	// outlived its site is the row the site's erase is refused for. Across
+	// the tenant it is the role's.
+	on := at
+	if on == pdid.Nil {
+		on = which
+	}
+
+	var out *app.Binding
+	err = s.only(ctx, on.Bytes(), func(next app.Server, tx dialect.Driver) error {
+		if s.rules.Bound != nil {
+			made, err := s.rules.Bound(ctx, tx, which, to, at)
+			if err != nil {
+				return err
+			}
+			if made {
+				return status.Error(codes.AlreadyExists, "Binding already exists")
+			}
+		}
+
+		var err error
+		out, err = next.Binding().Add(ctx, req)
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+// Bound is whether a role is already bound to somebody, or to a group, in a
+// place: `to` is the holder or the group, told apart by its identifier, and
+// `site` is [pdid.Nil] for a binding across the tenant.
+//
+// # A grant is made once
+//
+// A binding declared no uniqueness, and an index could not have held it: it
+// names a holder **or** a group and a site **or** none, and SQL reads two
+// nulls as different. So the same binding added twice was two rows, and after
+// one was erased the person was still answered -- somebody who takes a grant
+// away, and sees it gone, has not taken it away (#279). One role to one
+// holder or group in one place is one row, and the second is refused where
+// the write is made.
+//
+// Among the bindings that are there: one erased is one that may be made
+// again. And asked of the rows, not through a server, for [Sited]'s reason:
+// whether a grant was made is the same whoever is making it again.
+//
+// On the driver it is handed, as [Administered] is: asked inside the
+// transaction the binding is written in. Nil is a stack that cannot say, and
+// a binding is then made as it always was.
+type Bound func(ctx context.Context, drv dialect.Driver, role, to, site pdid.Id) (bool, error)
+
+// roleOf is the identifier a `RoleRef` names, read when it named something
+// else -- [Core.groupOf]'s shape, through `Next()`.
+func (s Core) roleOf(ctx context.Context, ref *app.RoleRef) (pdid.Id, error) {
+	if ref == nil {
+		return pdid.Nil, nil
+	}
+	if b := ref.GetId(); len(b) > 0 {
+		return pdid.From(b)
+	}
+
+	v, err := s.Next().Role().Get(ctx, app.RoleGetRequest_builder{
+		Ref:    ref,
+		Select: app.RoleSelect_builder{}.Build(),
+	}.Build())
+	if err != nil {
+		return pdid.Nil, err
+	}
+
+	return pdid.From(v.GetId())
 }

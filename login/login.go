@@ -33,22 +33,30 @@
 //
 // # Which tenant, and where that comes from
 //
-// Not from the hostname. `account/` resolves the browser's `Host` because it
-// has nothing else; this app has something better, and it arrives with the
-// browser: the challenge names the **OAuth client**, one per tenant, read
-// from Hydra over the admin API. So which tenant a flow belongs to is Hydra's
-// word rather than a header the browser wrote or a mapping this app parsed --
-// and it is re-derived from the challenge on every request, never carried in
-// anything the browser holds.
+// Not from the hostname the browser arrived at. `account/` resolves the
+// browser's `Host` because it has nothing else, and here that host says
+// nothing: Hydra sends every browser to this app under one name. What says it
+// arrives with the browser all the same -- the challenge, which Hydra answers
+// about over the admin API with the authorization request whole, and the
+// **redirect** that request named is at a name a tenant claimed (`at.go`). So
+// which tenant a flow belongs to is Hydra's word and a `Host` row of roster's,
+// rather than a header the browser wrote or a mapping this app was configured
+// with -- and it is re-derived from the challenge on every request, never
+// carried in anything the browser holds.
 //
-// The key follows from it: one `rt_` per tenant, and every call about a flow
-// goes out with the key of the tenant that flow's client resolved to. See
-// `docs/login.md`, § "And what its own credential has to reach", for why that
-// is several narrow credentials rather than one wide one.
+// The key follows from it: **one** deployment key (`rk_`) for every tenant,
+// and every call about a flow goes out with `roster-at` saying the name that
+// flow resolved through, so that roster answers it as the holder that tenant
+// nominated for this app. Two calls name no tenant: the one that asks which
+// tenant a name is, and the stream that hears every tenant's sign-outs. See
+// `docs/login.md`, § *What a front door needs*, for why one key narrowed per
+// request is not the wide credential it looks like.
 package login
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -153,9 +161,20 @@ type Config struct {
 	// applied per **request** rather than per process, and that adding a tenant
 	// is a `Host` row rather than a key.
 	//
-	// One call goes out without `roster-at` and it is the one that has to:
-	// [App.Watch] hears every tenant, which is what an `rk_` is for.
+	// Two calls go out without `roster-at`, and they are the two that have to:
+	// the one that asks which tenant a name is, since its answer is what the
+	// rest are narrowed by (`at.go`), and [App.Watch], which hears every tenant
+	// -- which is what an `rk_` is for.
 	Key string
+
+	// Now is the clock what a name resolved to is aged by (`login/at.go`). Nil
+	// is `time.Now`.
+	Now func() time.Time
+
+	// Refused is how long a sync stream roster refused is left before it is
+	// asked for again ([App.Watch]). Zero is ten minutes, which is what every
+	// deployment gets: nothing under `login:` writes this.
+	Refused time.Duration
 
 	// Remember is how long Hydra should skip the form, and the consent screen,
 	// for a browser that has already been through them. Zero asks every time.
@@ -207,9 +226,22 @@ type Config struct {
 	// ([arrives.Providers.Google]).
 	Google string
 
-	// InsecureCookie drops `Secure` from the session cookie, for a page served
-	// over plain http in development. It is `authsession`'s and is said there;
-	// this app sets no cookie of its own.
+	// PrivateHosts is the hosts off the internet a tenant's provider may be
+	// at, which is the deployment's to say and is none unless it does
+	// ([arrives.Providers.PrivateHosts]): a provider is otherwise asked only
+	// at an address on the internet.
+	PrivateHosts arrives.PrivateHosts
+
+	// InsecureCookie drops `Secure` from the cookies this app sets itself, for
+	// a page served over plain http in development. It is the same setting
+	// `Sessions` is built with and is here because this app sets one cookie of
+	// its own -- the state of a provider's round trip ([App.stateName]) -- and
+	// that one is not `authsession`'s to mark. A deployment fact and not a
+	// guess from the request, for the reason `account.Config.InsecureCookie`
+	// gives.
+	//
+	// The comment here said this app sets no cookie of its own, from before it
+	// had a provider's round trip to bind a browser to.
 	InsecureCookie bool
 
 	// Page is the sign-in page, when a deployment serves its own rather than
@@ -225,6 +257,10 @@ const (
 	// Skip grants what the client asked for and draws nothing. The default, and
 	// right for the clients this app can have: every one of them was registered
 	// by this deployment for one of its own tenants.
+	//
+	// For a browser one of those clients sent here. A device's flow is drawn a
+	// screen under either mode ([App.consent]): what brings a browser to it is
+	// a code, and nothing before the consent can say whose device it is.
 	Skip Consent = iota
 
 	// Ask draws a screen and grants nothing until somebody says so.
@@ -258,6 +294,11 @@ type App struct {
 	front rstr.FrontServiceClient
 	door  *frontdoor.Door
 	admin admin
+
+	// outs is who roster's stream has said stopped being good, and whom Hydra
+	// is still to be told to forget. This process's, from when it starts
+	// (`login/sync.go`).
+	outs *signOuts
 
 	// arrives is the relying-party half, shared with the account app: the
 	// `Connection` rows, the discovery, the exchange and the enrolment.
@@ -307,6 +348,10 @@ func New(ctx context.Context, c Config) (*App, error) {
 		return nil, errors.New("login: Sessions: the cookie is the app's, so the app makes it")
 	case c.Key == "":
 		return nil, errors.New("login: Key: the one deployment key this app holds; none is nobody to be")
+	case c.Refused < 0:
+		// Refused rather than read as the default, as `standing.New` does: a
+		// duration whose sign came out wrong is not one to guess at.
+		return nil, errors.New("login: Refused: a wait cannot be over before it begins")
 	}
 
 	// **Not** a check that the key is an `rk_`, which is a real mistake and is
@@ -351,15 +396,21 @@ func New(ctx context.Context, c Config) (*App, error) {
 		me:     rstr.NewMeServiceClient(conn),
 		sync:   rstr.NewSyncServiceClient(conn),
 		front:  rstr.NewFrontServiceClient(conn),
-		admin:  admin{base: c.Hydra, header: c.HydraHeader, client: http.DefaultClient},
+		admin:  hydraAt(c.Hydra, c.HydraHeader),
 		flows:  arrives.Held[flow](),
 		known:  &hosts{at: map[string]*tenant{}},
+
+		// From now: what a sign-out first heard is held against is when this
+		// process started, and this is where it does.
+		outs: newSignOuts(time.Now()),
 	}
+	a.admin.settle = a.outs.settle
 	a.arrives = arrives.New(a.roster, c.Secret)
 	a.arrives.SlackAPI = c.SlackAPI
 	a.arrives.GitHub = c.GitHub
 	a.arrives.Microsoft = c.Microsoft
 	a.arrives.Google = c.Google
+	a.arrives.PrivateHosts = c.PrivateHosts
 
 	// Nothing per tenant is resolved here, because there is nothing to resolve:
 	// who this app fronts is every tenant with a `Host` row, and that is a
@@ -388,6 +439,23 @@ func New(ctx context.Context, c Config) (*App, error) {
 
 			return o.alias, nil
 		},
+
+		// What a sign-in made at this door is for: the login challenge its form
+		// was answered at. `accept` holds a session to it.
+		For: func(r *http.Request) string {
+			return madeFor(r.URL.Query().Get(Challenge))
+		},
+
+		// And where a call about a session is made: narrowed to the session's
+		// own tenant, named as itself. A sign-out that arrives through Hydra
+		// is in no flow -- a logout challenge names a subject and no redirect
+		// -- so there is no name to narrow by, and `roster-at` takes a tenant
+		// as well as a name ([front.AtTenant]). The nomination that decides
+		// who this key is there is the same either way, so the delegation is
+		// recognised as this app's own.
+		In: func(ctx context.Context, tenant pdid.Id) context.Context {
+			return withAt(ctx, front.AtTenant(tenant.String()))
+		},
 	})
 	if err != nil {
 		conn.Close()
@@ -396,6 +464,24 @@ func New(ctx context.Context, c Config) (*App, error) {
 	}
 
 	return a, nil
+}
+
+// madeFor is the mark a session carries of the login challenge its form was
+// answered at ([frontdoor.Config.For]), and what `accept` compares with the
+// challenge it is asked to answer.
+//
+// The challenge's SHA-256 and not the challenge, for the reason [Challenge]
+// gives for not being a cookie: Hydra's is about two kilobytes, and where the
+// session is sealed into the cookie a second copy of it there is past what a
+// browser keeps. A digest names the challenge as well as the challenge does,
+// and nothing here needs it back.
+func madeFor(challenge string) string {
+	if challenge == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(challenge))
+
+	return base64.RawURLEncoding.EncodeToString(sum[:])
 }
 
 // outlast is how much longer this app's session lives than Hydra remembers the
@@ -484,7 +570,18 @@ func (a *App) Handler() http.Handler {
 	// The built page, and its assets.
 	m.Handle("/", a.page())
 
-	return m
+	// Whatever changes something is asked by this origin's own page, or by
+	// what is not a browser; and no page here is drawn inside another's.
+	//
+	// Nothing a flow needs is turned away by it. Hydra sends a browser here
+	// with a redirect and a provider sends it back with one, and those are
+	// navigations that land on a `GET`; every `POST` and the one `DELETE` are
+	// the page's own, to the origin it was served from. They were answered
+	// whoever sent them, and most of them need no cookie: a consent, a
+	// sign-out's confirmation and a device's code are bound by a challenge in
+	// the body, and `POST /session` signs a browser in as whoever its body
+	// names (#278).
+	return frontdoor.Guard(m)
 }
 
 // begin is the redirect from Hydra: the start of one browser's flow.
@@ -660,18 +757,64 @@ func (a *App) offers(ctx context.Context, o *tenant, name string) bool {
 	return false
 }
 
-// accept is the last hop: this app's session becomes Hydra's answer.
+// accept is the last hop: the sign-in just made at this challenge becomes
+// Hydra's answer to it.
+//
+// # The sign-in made for this challenge, and no other
+//
+// It was whoever the cookie named, for whatever challenge the request named. A
+// sealed cookie opens until its own clock runs out -- `remember` and a minute
+// -- so the last sign-in a browser made answered every challenge raised after
+// it with no form drawn: one of another tenant, and one Hydra raised because
+// its client wanted a sign-in made now (`prompt=login`, `max_age`), which was
+// then stamped `auth_time` for a sign-in hours old (#278).
+//
+// What the page does is narrower than that, and is the whole of what is
+// answered. It calls this straight after a form at the same challenge, so a
+// session answers the challenge its form was posted at ([madeFor]) and is of
+// the tenant that challenge resolves to. The other two ways a login is
+// accepted do not come through here: a browser Hydra remembers is answered at
+// `begin`, and a provider's round trip at `callback`.
+//
+// # And roster is asked who is there
+//
+// The cookie says who signed in. Whether that sign-in still stands is
+// roster's: signed out of, signed out everywhere, suspended, erased -- each
+// ends the delegation there and none reaches a cookie. So Hydra was told
+// somebody roster had ended, from any copy of their cookie, and the consent
+// hop granted where the request asked for no claim. `reads` is asked first,
+// as `begin` asks it of a browser Hydra remembers and the account app asks
+// before it writes for somebody (`account.App.present`): `Me.Get` as the
+// cookie's person, in the flow's tenant, answering as that person.
+//
+// Every refusal is one answer and tells Hydra nothing, so the challenge is
+// still there for the form.
 func (a *App) accept(w http.ResponseWriter, r *http.Request) {
-	who, ok := a.door.Who(r.Context(), r)
-	if !ok {
-		// Not signed in, or half way. Either is the same to a caller: there is
-		// nobody here to name.
+	ctx := r.Context()
+	challenge := r.URL.Query().Get(Challenge)
+
+	o, flowing := tenantOf(ctx)
+	s, ok := a.door.SignedIn(ctx, r)
+	if !flowing || !ok || s.For == "" || s.For != madeFor(challenge) || s.Tenant != o.id {
+		// Not signed in, or half way; or signed in for something else. Each
+		// is the same to a caller: there is nobody here to name for this.
 		http.Error(w, "no", http.StatusUnauthorized)
 
 		return
 	}
 
-	to, err := a.admin.acceptLogin(r.Context(), r.URL.Query().Get(Challenge), who.String(), a.c.Remember)
+	if _, err := a.reads(ctx, r, o, s.Who.String()); err != nil {
+		if errors.Is(err, frontdoor.ErrNotSignedIn) {
+			http.Error(w, "no", http.StatusUnauthorized)
+
+			return
+		}
+		a.broken(w, r, err)
+
+		return
+	}
+
+	to, err := a.admin.acceptLogin(ctx, challenge, s.Who.String(), a.c.Remember)
 	if err != nil {
 		a.broken(w, r, err)
 
@@ -754,12 +897,41 @@ func (a *App) logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// This app's own session too, for the browser that has one. It lasts as
-	// long as Hydra's memory of the same browser, so a person signing out with
-	// one open is exactly a person who would otherwise sign in again and find
-	// the old one waiting.
-	http.SetCookie(w, a.door.End(ctx, r))
+	// This app's own session too, for the browser that has the one being
+	// signed out of. It lasts as long as Hydra's memory of the same browser, so
+	// a person signing out with one open is exactly a person who would
+	// otherwise sign in again and find the old one waiting.
+	a.left(w, r, v)
 	http.Redirect(w, r, to, http.StatusSeeOther)
+}
+
+// left ends this browser's own session for a logout Hydra was just told yes
+// to, where the logout is about whoever this browser is signed in as.
+//
+// # Only its own subject's
+//
+// A logout challenge is about one subject's session at Hydra, and Hydra says
+// whose (`subject`, with a hint or without one). It is raised for a hint
+// whichever browser presents it, so the browser that arrives here with a
+// challenge is not thereby the one the challenge is about. This ended the
+// arriving browser's session all the same: somebody signed in here who opened
+// a logout about somebody else had their own cookie cleared (#278). What is
+// about somebody else at the issuer is Hydra's to end, and was told so above.
+//
+// # And the delegation with it
+//
+// `Door.End` drops the session and revokes the delegation it held, in the
+// tenant the session is of ([frontdoor.Config.In]) -- which this request
+// could not have said, since a logout is in no flow.
+func (a *App) left(w http.ResponseWriter, r *http.Request, v *logoutRequest) {
+	ctx := r.Context()
+
+	who, ok := a.door.Who(ctx, r)
+	if !ok || who.String() != v.Subject {
+		return
+	}
+
+	http.SetCookie(w, a.door.End(ctx, r))
 }
 
 // leave is the confirmation screen's answer, for the logout nobody proved a
@@ -770,6 +942,9 @@ func (a *App) logout(w http.ResponseWriter, r *http.Request) {
 // question was asked. The page says so and stays where it is.
 func (a *App) leave(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	if !answered(w, r) {
+		return
+	}
 	challenge := r.FormValue(logoutChallenge)
 
 	// Asked again rather than trusted from the form: a browser that posts the
@@ -807,7 +982,7 @@ func (a *App) leave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, a.door.End(ctx, r))
+	a.left(w, r, v)
 	writeJson(w, map[string]any{"signed_out": true, "to": to})
 }
 
@@ -817,6 +992,18 @@ func (a *App) leave(w http.ResponseWriter, r *http.Request) {
 // Hydra's own `skip` is answered first and is not a mode: it means this browser
 // has already consented and Hydra remembered, so there is nothing to ask and
 // asking again is the dialog people learn to click through.
+//
+// # A device's is always asked about
+//
+// Neither of those is an argument about a device. `skip` rests on where the
+// browser came from -- a client of this deployment's sent it here, so whoever
+// is looking at the screen was just at that client -- and a device's flow
+// begins with a code somebody was shown, or sent. The screen the code is typed
+// at cannot name the client (`login/device.go`), and said the consent screen
+// does *before anything is granted*; under `skip` there was no consent screen,
+// so a code typed and a sign-in were a device granted with nothing having said
+// whose (#278). So a consent that belongs to a device's flow is drawn,
+// whatever the deployment's mode and whatever Hydra remembers.
 func (a *App) consent(w http.ResponseWriter, r *http.Request) {
 	v, o, err := a.asking(r.Context(), r.URL.Query().Get(consentChallenge))
 	if err != nil {
@@ -825,8 +1012,10 @@ func (a *App) consent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if v.Skip || a.c.Consent == Skip {
-		a.grant(w, r, v, o)
+	if (v.Skip || a.c.Consent == Skip) && sentByItsClient(v.Url) {
+		if to, ok := a.grant(w, r, v, o); ok {
+			http.Redirect(w, r, to, http.StatusSeeOther)
+		}
 
 		return
 	}
@@ -835,6 +1024,43 @@ func (a *App) consent(w http.ResponseWriter, r *http.Request) {
 	// rather than rendered here, so there is one screen and not two of them in
 	// two technologies.
 	a.page().ServeHTTP(w, r)
+}
+
+// sentByItsClient is whether a consent is for a request a client sent the
+// browser to Hydra with -- an authorization request -- which is the one kind
+// that may be granted with no screen.
+//
+// # What Hydra says of a device's flow, and what it does not
+//
+// Nothing by name. The consent request of v26.2.0 has no field that says a
+// device began the flow -- read off the image, a device's beside a client's
+// redirect's: the same keys in both -- and there is no getter for a device
+// challenge to ask instead. What differs is the request Hydra recorded,
+// `request_url`:
+//
+//	a client's redirect   <issuer>/oauth2/auth?client_id=…&redirect_uri=…&…
+//	a device's code       <issuer>/oauth2/device/verify?client_id=…
+//
+// the second being where the browser brought the code, for the login request
+// and the consent request alike. It is the field `login/at.go` already reads
+// for the tenant, and has always found no redirect in for a device.
+//
+// # Read towards a screen
+//
+// As *is the authorization endpoint*, not as *is not the verification
+// endpoint*. A request this cannot place -- empty, unparseable, an endpoint a
+// later Hydra raises a consent from -- is then drawn, which costs somebody a
+// click on a screen that names the client. Read the other way, an endpoint
+// renamed would be a device granted with nothing drawn, and nothing would say
+// so. `docker/device.sh` holds the reading against the real Hydra: its walk
+// runs under `consent: skip` and passes only if the screen was drawn.
+//
+// By the end of the path, so that an issuer served under a prefix is the same
+// issuer.
+func sentByItsClient(request string) bool {
+	u, err := url.Parse(request)
+
+	return err == nil && strings.HasSuffix(u.Path, "/oauth2/auth")
 }
 
 // flow is what the page needs about the challenge in its own URL, and the only
@@ -956,6 +1182,54 @@ func (a *App) flow(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// answerSize is as much of a screen's answer as is read.
+//
+// Each of the three forms is a challenge and a word or two. A challenge is the
+// large part, about two kilobytes of Hydra's choosing, and it reached the page
+// as an address -- so it is no longer than what is in front of this app lets an
+// address be, which is commonly eight kilobytes. Twice that, so that the body
+// limit is never the first thing a long challenge meets.
+const answerSize = 16 << 10
+
+// answered reads what a screen posted, to a size, and has answered the request
+// itself when it says no.
+//
+// `r.FormValue` read it, which is Go's own ten megabytes of a form and a
+// multipart one onto the disk past thirty-two -- for routes anybody may post
+// to with no cookie. After this the form is parsed, so `r.FormValue` reads
+// what is here and nothing more.
+//
+// In either shape, as before. This app's page posts a plain form; a page of a
+// deployment's own may post a `FormData`, which is multipart, and was read. It
+// is read from the same bounded body, so all of one fits in the memory it is
+// allowed and none of it reaches a disk.
+func answered(w http.ResponseWriter, r *http.Request) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, answerSize)
+
+	// `ParseForm` first and by itself: `ParseMultipartForm` calls it, and then
+	// answers *not multipart* over whatever it said, a body past its size
+	// included.
+	err := r.ParseForm()
+	if err == nil {
+		if err = r.ParseMultipartForm(answerSize); errors.Is(err, http.ErrNotMultipart) {
+			err = nil
+		}
+	}
+	if err != nil {
+		var much *http.MaxBytesError
+		if errors.As(err, &much) {
+			http.Error(w, "that is more than an answer", http.StatusRequestEntityTooLarge)
+
+			return false
+		}
+		http.Error(w, "no", http.StatusBadRequest)
+
+		return false
+	}
+
+	return true
+}
+
 // named is what to call a client on a screen.
 func named(c client) string {
 	if c.Name != "" {
@@ -966,7 +1240,21 @@ func named(c client) string {
 }
 
 // decide is the screen's answer, and the only two there are.
+//
+// # `{redirect_to}`, and not a redirect
+//
+// Where the browser goes next is Hydra's to say, and it is said to the page
+// rather than done to it: `POST /accept`'s shape, and for its reason. The page
+// asks with `fetch`, and this answered a 303 to the issuer -- another origin,
+// which sends no CORS headers, so the `fetch` failed where a browser's own
+// navigation would have gone on. The screen's two buttons stayed disabled and
+// `consent: ask` could not be got past in a browser at all (#278). Nothing here
+// saw it: a walk with curl follows anything, and the page's spec ran against a
+// made-up server whose redirect was to itself.
 func (a *App) decide(w http.ResponseWriter, r *http.Request) {
+	if !answered(w, r) {
+		return
+	}
 	challenge := r.FormValue(consentChallenge)
 
 	if r.FormValue("allow") == "" {
@@ -984,7 +1272,7 @@ func (a *App) decide(w http.ResponseWriter, r *http.Request) {
 		if a.c.Remember <= 0 {
 			http.SetCookie(w, a.door.End(r.Context(), r))
 		}
-		http.Redirect(w, r, to, http.StatusSeeOther)
+		writeJson(w, map[string]string{"redirect_to": to})
 
 		return
 	}
@@ -996,14 +1284,25 @@ func (a *App) decide(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.grant(w, r, v, o)
+	if to, ok := a.grant(w, r, v, o); ok {
+		writeJson(w, map[string]string{"redirect_to": to})
+	}
 }
 
-// grant reads the person once, as them, and answers Hydra.
+// grant reads the person once, as them, and answers Hydra. What it hands back
+// is where Hydra says the browser goes next -- to the client with a code, or
+// with the refusal this hop made -- and false where it has answered the
+// request itself, as broken.
 //
-// The only place this app reads anybody. What it reads is `Me.Get`, which
-// answers everything a claim could come from in one call, and what it puts in
-// the token is decided by the scope the client asked for -- `claimsOf`.
+// Handed back and not redirected to, because its two callers tell a browser
+// differently: one Hydra sent here is redirected (`consent`), and a page that
+// asked with `fetch` is told (`decide`).
+//
+// The only place this app keeps what it read of anybody. What it reads is
+// `Me.Get`, which answers everything a claim could come from in one call, and
+// what it puts in the token is decided by the scope the client asked for --
+// `claimsOf`. `begin` and `accept` ask the same call and keep none of the
+// answer: what they want of it is that somebody is there to give one.
 //
 // # Only the audiences the client is registered for, by their exact name
 //
@@ -1016,7 +1315,7 @@ func (a *App) decide(w http.ResponseWriter, r *http.Request) {
 // registered for Loft's, it got levyan's and one that names nothing.
 // Compared here as strings, exactly, and anything else refused: the client is
 // sent back with `invalid_target` (RFC 8707) and nobody's token.
-func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o *tenant) {
+func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o *tenant) (string, bool) {
 	ctx := r.Context()
 
 	for _, aud := range v.Audience {
@@ -1029,20 +1328,14 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 		if err != nil {
 			a.broken(w, r, err)
 
-			return
+			return "", false
 		}
-		http.Redirect(w, r, to, http.StatusSeeOther)
 
-		return
+		return to, true
 	}
 
-	claims := map[string]any{}
 	me, err := a.reads(ctx, r, o, v.Subject)
-	switch {
-	case err == nil:
-		claims = claimsOf(me, v.Scope, v.Client.Id)
-
-	case errors.Is(err, frontdoor.ErrNotSignedIn):
+	if errors.Is(err, frontdoor.ErrNotSignedIn) {
 		// Nobody here to read the subject with, and reading them needs a
 		// credential nobody here holds.
 		//
@@ -1053,7 +1346,8 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 		// login is asked again now when this app cannot read the person
 		// (`begin`), so what is left here is a session that ended between the
 		// hops of one flow: a consent screen left open past it, a cookie cleared
-		// in another tab.
+		// in another tab -- or somebody signed out everywhere, suspended or
+		// erased between them, which is the same answer from roster.
 		//
 		// And it is refused rather than granted with `sub` alone, which it was.
 		// A token missing the claims its client asked for is not a smaller
@@ -1061,32 +1355,36 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 		// from a person who has no name, and a relying party that keys accounts
 		// on `email` fails somewhere far from here. `login_required` says what
 		// happened, and the sign-in a client starts on hearing it is a skipped
-		// login this app asks again. A client that asked for nothing but `sub`
-		// still gets it, which is all it was ever going to get.
-		if asksForClaims(v.Scope) {
-			to, err := a.admin.refuseConsent(ctx, v.Challenge, "login_required",
-				"this browser has to sign in again before its claims can be read")
-			if err != nil {
-				a.broken(w, r, err)
+		// login this app asks again.
+		//
+		// **Whatever the client asked for.** A client that asked for nothing but
+		// `sub` was still granted, on the reading that `sub` is all it was ever
+		// going to get. But the read is also the one place this hop asks
+		// whether the subject is still somebody, and the scope is the
+		// authorization request's to choose: a flow narrowed to `openid` was a
+		// consent granted, and tokens minted, for a person roster had ended
+		// (#278). Nobody to read is nobody to grant for.
+		to, err := a.admin.refuseConsent(ctx, v.Challenge, "login_required",
+			"this browser has to sign in again before its claims can be read")
+		if err != nil {
+			a.broken(w, r, err)
 
-				return
-			}
-			http.Redirect(w, r, to, http.StatusSeeOther)
-
-			return
+			return "", false
 		}
 
-	default:
-		a.broken(w, r, err)
-
-		return
+		return to, true
 	}
-
-	to, err := a.admin.acceptConsent(ctx, v.Challenge, v, claims, a.c.Remember)
 	if err != nil {
 		a.broken(w, r, err)
 
-		return
+		return "", false
+	}
+
+	to, err := a.admin.acceptConsent(ctx, v.Challenge, v, claimsOf(me, v.Scope, v.Client.Id), a.c.Remember)
+	if err != nil {
+		a.broken(w, r, err)
+
+		return "", false
 	}
 
 	// And the session **stays**, for as long as Hydra will skip the form.
@@ -1106,13 +1404,16 @@ func (a *App) grant(w http.ResponseWriter, r *http.Request, v *consentRequest, o
 	// it is still narrow: [Methods] is `Me.Get` alone about one person.
 	//
 	// `Remember` of zero is a deployment that asks every time, so there is no
-	// later flow to hold anything for and the credential goes at the redirect
-	// the way it always did.
+	// later flow to hold anything for and the credential goes at the redirect:
+	// the cookie cleared and the delegation revoked. The second half was said
+	// and not so while the revocation went out in this request's context,
+	// which no flow narrowed (#278); `Door.End` makes it in the session's own
+	// tenant.
 	if a.c.Remember <= 0 {
 		http.SetCookie(w, a.door.End(ctx, r))
 	}
 
-	http.Redirect(w, r, to, http.StatusSeeOther)
+	return to, true
 }
 
 // asking is the consent request and the tenant it belongs to.

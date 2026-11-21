@@ -74,7 +74,8 @@ const (
 // proving requires present control of DNS, and whoever has that has the name
 // whatever a row here says. The incumbent is not asked, which is the right way
 // round and is worth knowing: their people stop being able to sign in at that
-// name, and the erase in the trail is where it is written down.
+// name, and their own trail is where it is written down, by whoever took it
+// (`roster.host.release`). A row a file declares is not taken.
 //
 // # Proving the name is yours
 //
@@ -309,13 +310,23 @@ type Host_builder struct {
 
 	Id     []byte
 	Tenant *Tenant
-	// The name a browser arrived at, lowercased and without a port:
-	// "contoso.example.com".
+	// The name a browser arrived at, lowercased, without a port and without the
+	// dot a fully qualified name ends in: "contoso.example.com".
 	//
-	// Stored as it is compared. A host is case-insensitive and a port is not part
-	// of it, so whatever writes one normalises first -- `server/core` refuses one
-	// that is not already normalised, because a row that differs from what a
-	// front door will look up is a row that silently never matches.
+	// Stored as it is compared. A host is case-insensitive, a port is not part of
+	// it and `contoso.example.com.` is the same name, so whatever writes one
+	// normalises first -- `server/core` refuses one that is not already
+	// normalised, because a row that differs from what a front door will look up
+	// is a row that silently never matches.
+	//
+	// And a hostname, or an address: labels of letters, digits and hyphens
+	// between dots, as DNS could hold them. `server/core` refuses anything else
+	// -- a wildcard, a path, an underscore -- because no request arrives at it,
+	// and refuses a name in other letters with the form to write instead, which
+	// is its A-label ("xn--...").
+	//
+	// Not personal, this and the description and labels: a hostname is the
+	// tenant's own, and which was claimed when is the record.
 	Name string
 	Desc string
 	// Whatever the deployment keeps about this row that the schema does not name.
@@ -601,6 +612,9 @@ type MailDomain_builder struct {
 	Tenant *Tenant
 	// The domain, lowercased and without the `@`: "contoso.com". Normalised on
 	// the way in for [Host.name]'s reason.
+	//
+	// Not personal, this and what follows it on this row: a mail domain is the
+	// tenant's own, as a hostname is.
 	Name string
 	// Which provider to send them to, by the name `Identity.provider` uses.
 	//
@@ -891,6 +905,9 @@ type HostProof_builder struct {
 	// The name being claimed, normalised the way [Host.name] is and for the same
 	// reason: this is compared against a `Host` and looked up in DNS, so a value
 	// that differs from what those will use is a claim that can never succeed.
+	//
+	// Not personal, this and the token and description: a claim on a hostname,
+	// and what is published to prove it.
 	Name string
 	// What to publish, and roster's to generate.
 	//
@@ -932,13 +949,13 @@ var File_app_host_proto protoreflect.FileDescriptor
 
 const file_app_host_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/host.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x82\x05\n" +
+	"\x0eapp/host.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1aroster/payday/tenant.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x98\x05\n" +
 	"\x04Host\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x1a\n" +
-	"\x04name\x18\x05 \x01(\tB\x06\xea\x82\x16\x020\x01R\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\x120\n" +
-	"\x06labels\x18\a \x03(\v2\x18.roster.Host.LabelsEntryR\x06labels\x12I\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12 \n" +
+	"\x04name\x18\x05 \x01(\tB\f\xea\x82\x16\x020\x01\xaa\xc1\x16\x02\x18\x00R\x04name\x12\x1a\n" +
+	"\x04desc\x18\x06 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04desc\x128\n" +
+	"\x06labels\x18\a \x03(\v2\x18.roster.Host.LabelsEntryB\x06\xaa\xc1\x16\x02\x18\x00R\x06labels\x12I\n" +
 	"\vdate_proved\x18\t \x01(\v2\x1a.google.protobuf.TimestampB\f\xea\x82\x16\x028\x01\xaa\xc1\x16\x02\x10\x01R\n" +
 	"dateProved\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
@@ -959,15 +976,15 @@ const file_app_host_proto_rawDesc = "" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
-	"\x06tenant \x14(d\"\xf6\x04\n" +
+	"\x06tenant \x14(d\"\x96\x05\n" +
 	"\n" +
 	"MailDomain\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x12\n" +
-	"\x04name\x18\x05 \x01(\tR\x04name\x12\x1a\n" +
-	"\bprovider\x18\t \x01(\tR\bprovider\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\x126\n" +
-	"\x06labels\x18\a \x03(\v2\x1e.roster.MailDomain.LabelsEntryR\x06labels\x12F\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x1a\n" +
+	"\x04name\x18\x05 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04name\x12\"\n" +
+	"\bprovider\x18\t \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\bprovider\x12\x1a\n" +
+	"\x04desc\x18\x06 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04desc\x12>\n" +
+	"\x06labels\x18\a \x03(\v2\x1e.roster.MailDomain.LabelsEntryB\x06\xaa\xc1\x16\x02\x18\x00R\x06labels\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -989,15 +1006,15 @@ const file_app_host_proto_rawDesc = "" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
-	"\x06tenant \x14(d\"\xd3\x04\n" +
+	"\x06tenant \x14(d\"\xe7\x04\n" +
 	"\tHostProof\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12\x1a\n" +
-	"\x04name\x18\x05 \x01(\tB\x06\xea\x82\x16\x02@\x01R\x04name\x12\x1c\n" +
-	"\x05token\x18\t \x01(\tB\x06\xea\x82\x16\x02@\x01R\x05token\x12E\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12 \n" +
+	"\x04name\x18\x05 \x01(\tB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\x04name\x12\"\n" +
+	"\x05token\x18\t \x01(\tB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\x05token\x12E\n" +
 	"\fdate_expires\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\vdateExpires\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\x12F\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\vdateExpires\x12\x1a\n" +
+	"\x04desc\x18\x06 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04desc\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
