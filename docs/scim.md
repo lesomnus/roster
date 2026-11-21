@@ -369,13 +369,18 @@ in through the connection, where `login.enrol` matches by address (`expected`,
 `enrolling`), or by an operator at the box:
 
 ```sh
-roster --as admin scim adopt --tenant contoso                     # who, their address, what the directory calls them
-roster --as admin scim adopt --tenant contoso --confirm contoso   # and link them, the list believed
+roster --as admin scim adopt --tenant contoso                                  # who, their address, what the directory calls them; and the list's digest
+roster --as admin scim adopt --tenant contoso --confirm contoso --of <digest>  # and link them, the list believed
 ```
 
 The list is where a pair that does not belong together is seen before it is
 written -- believing it is a decision about a way into somebody's account, which
-is why it is made there and not by the directory. The endpoint says so in its
+is why it is made there and not by the directory. So what is linked is the list
+that was read: the first run says its digest on standard error, and the second
+links that list or nothing. Where the directory said anything in between --
+somebody new on it, an address or an id that moved -- it writes nothing,
+prints the list as it is now with its digest, and fails, for it to be read
+again. It is the whole list or none of it. The endpoint says so in its
 log the first time a directory names somebody it matched, and the admin console
 says it on the person. Run it after a directory's first cycle, and again when
 the log says so.
@@ -666,7 +671,7 @@ its log what it could not.
 | a person's whole life at the endpoint, in Entra's order and dialect | `TestADirectoryProvisionsSomebodyTheWayEntraDoes` |
 | somebody already here is matched and not made again | `TestSomebodyAlreadyHereIsMatchedAndNotMadeAgain` |
 | and is not suspended by their directory until they are linked; what it calls them is kept and believed by nothing | `TestSomebodyMatchedIsNotSuspendedByTheirDirectoryUntilTheyAreLinked` · `TestWhatADirectorySaysIsKeptAndBelievedByNothing` |
-| an operator links who the directory matched, from a list | `TestAnOperatorLinksWhoTheDirectoryMatched` |
+| an operator links who the directory matched, from the list they read, or nothing | `TestAnOperatorLinksWhoTheDirectoryMatched` · `TestAdoptLinksTheListThatWasReadOrNothing` · `TestAdoptsConfirmAndItsDigestGoTogether` |
 | a changed `userName` is kept and answered, and the address stays | `TestAChangedUserNameIsKeptAndAnsweredAndTheAddressStays` |
 | what Microsoft's validator asks, request by request; and `/Schemas` lists what is kept | `TestWhatMicrosoftsValidatorAsks` · `TestTheSchemaListsWhatIsKept` |
 | the page itself, run by a person against a roster stood up for it | `scripts/scim-check.sh`, by the workflow `scim-check` |
