@@ -128,6 +128,10 @@ tutorial does not say -- once, against a deployment. Two things to give it:
 
 - **By *Discover schema*.** `/Schemas` lists the attributes this keeps a value
   of its own for and no other, which is what the validator takes it to mean.
+  All five discovery routes -- `/ServiceProviderConfig`, `/ResourceTypes`,
+  `/Schemas` and one of each -- take the key as every other route does: `401`
+  without one, and `409` where the key's tenant has no connection that
+  provisions.
 - **A GUID for `externalId`**, where the connection names people by `oid`: the
   value it makes up is not one, and a person made under an `externalId` no
   sign-in could carry is refused.
