@@ -21,16 +21,13 @@ import (
 // recorders behind every write and they read the same `bare.Change`; the
 // finding named one and the fix reached one.
 //
-// So this is the same question one table over. A row in `outbox` holds the
-// patch document at rest until something drains it, and what it is drained
-// into is whichever broker a deployment names -- nothing carries a patch off
-// the box today, which is a property of the two brokers that exist rather than
-// of the recorder.
-//
-// It is roster's test of a property of the **pinned payday**, for
-// `erasetrail_test.go`'s reason: a sentence that is true only because of how
-// somebody else composes a document is a sentence that stops being true without
-// anything here changing.
+// So this is the same question one table over. A row in `outbox` held the
+// patch document at rest until something drained it, redacted by payday's
+// recorder. It holds none now: roster's recorder hands payday's the change
+// without its patch, which row was written and by what, and nothing else
+// (`TestTheQueueKeepsWhichRowAndNotWhatWasWritten`). So no verifier reaches
+// the queue because nothing of a write does, and this holds that every row is
+// so, whatever payday redacts.
 func TestNoVerifierReachesTheQueueEither(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
@@ -68,17 +65,12 @@ func TestNoVerifierReachesTheQueueEither(t *testing.T) {
 	x.NoError(err)
 	x.NotEmpty(vs, "nothing was queued, so this proves nothing")
 
-	patched := false
 	for _, u := range vs {
-		if len(u.Patch) > 0 {
-			patched = true
-		}
-
 		// The encoded form rather than this deployment's parameters, as
 		// `trailsecret_test.go` does: what must not be there is an argon2id
 		// string, whoever tuned it.
 		x.False(bytes.Contains(u.Patch, []byte("$argon2id$")),
 			"a verifier reached the queue in %s", u.Method)
+		x.Empty(u.Patch, "a write's document reached the queue in %s", u.Method)
 	}
-	x.True(patched, "no queued write carried a patch, so nothing was redacted")
 }
