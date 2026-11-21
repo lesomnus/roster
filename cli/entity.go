@@ -190,6 +190,7 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 	}
 
 	overlays(t)
+	nowhere(t)
 
 	if err := t.Replace("tenant/erase", newCmdTenantNotErased()); err != nil {
 		// A path the schema no longer has, which is a mistake in this file
@@ -213,6 +214,21 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 	}
 
 	return t.Commands()
+}
+
+// nowhere takes out of `t` the commands the schema builds that work in neither
+// mode: the trail's general writes, which no server takes (*the trail is
+// written by what happened, not by anybody asking*). They were offered by
+// `--help` on both planes, and each could only refuse (#284). A function
+// because both trees have them, as [overlays] is.
+func nowhere(t *pdcmd.Tree) {
+	for _, path := range []string{"audit/add", "audit/patch", "audit/erase"} {
+		if err := t.Drop(path); err != nil {
+			// A path the schema no longer has, which is a mistake in this
+			// file rather than something a deployment can cause.
+			panic(err)
+		}
+	}
 }
 
 // newCmdTenantNotErased is what stands where `tenant erase` was built.

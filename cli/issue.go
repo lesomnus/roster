@@ -52,6 +52,8 @@ func NewCmdIssue(c *cmd.Config) *xli.Command {
 			newCmdIssueKey(c),
 			newCmdIssuePassword(c),
 		},
+
+		Handler: xli.RequireSubcommand(),
 	}
 }
 

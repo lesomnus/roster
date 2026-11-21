@@ -1,14 +1,18 @@
 # The CLI
 
-`roster tenant add` and `TenantService.Add` are the same call. Every entity has
-the same four verbs -- `get`, `list` (or `ls`), `add`, `erase` -- and
+`roster tenant add` and `TenantService.Add` are the same call. An entity has
+four verbs -- `get`, `list` (or `ls`), `add`, `erase` -- and
 `watch` where its rows are watched (`holder`, `email`, `identity`, `credential`,
-`team` and a few more; `--help` says). `access` is read and never written, so it
-has `get` and `list` alone. `tenant` has no `erase`, because no tenant is erased:
+`team` and a few more; `--help` says), and some have verbs of their own
+(`holder disable`, `role widen`, `tenant close`). `access` and `audit` are read
+and never written by anybody asking, so they have `get` and `list` alone.
+`tenant` has no `erase`, because no tenant is erased:
 one is closed with `roster tenant close` and a closed one destroyed with
 `roster forget @tenant` ([operating.md](../operating.md) § *A tenant leaving*),
-and `roster tenant erase` typed all the same says so and fails. Each command is a client for exactly the RPC of that
-name, so what you learn typing is what you write in code. `roster <entity> <verb> --help` prints
+and `roster tenant erase` typed all the same says so and fails. Each command is
+the RPC of that name, so what you learn typing is what you write in code -- but
+not every RPC is served on every port, and some of these commands answer only
+at the box ([below](#which-commands-have-only-one-mode)). `roster <entity> <verb> --help` prints
 the request shape.
 
 **`patch` is a fifth, and it is the box's.** It is the general write: any field
@@ -99,6 +103,7 @@ or under a broker every process hears.
 | | |
 | --- | --- |
 | local only | `init`, `key add`, `key list`, `key revoke`, `vouch reset\|set\|unlock`, `trail`, `forget`, `restore`, `hold`, `resources`, `app install\|uninstall`, `login provision`, `account provision`, `scim provision\|adopt`, and all of `control` -- what they write is not served, which is the whole reason they are commands |
+| local only, of the entity commands | every `patch`; every verb of `access`, `session`, `link` and `continuation`; `credential get\|list\|watch\|add`; `api-key add`, `delegation add`; `consent add\|erase`; `tenant add`. No port a caller reaches serves them -- a verifier, a raw write of one, the record of who read what, a tenant put up from inside one -- and over the wire each is refused in the server's words |
 | remote only | the rest of `vouch` (`verify`, `delegate`, `continue`, `link`, `redeem`, `revoke`, `enrol`, `accept`, `leave-link`, `leave`), `issue`, `me`, `front`, `sync` -- those calls are a *caller's*, and a local run has none |
 
 ### The control plane is `roster control`
@@ -112,8 +117,9 @@ roster control vouch reset @admin                                     # the oper
 roster --as admin control holder list                                   # the holders of the control plane, a page of them
 ```
 
-The entity commands are all there except `tenant add`: the control plane has
-one tenant, `owner`. `--as`, `control vouch` and `control key add` name an
+The entity commands are all there except `tenant add`, `tenant close` and
+`tenant restore`: the control plane has one tenant, `owner`, and it is the
+deployment. `--as`, `control vouch` and `control key add` name an
 operator by alias alone because of it; an entity command's reference is
 written whole, `@owner/admin`. What answers
 across both planes stays outside -- `roster key list` and `roster key revoke`,

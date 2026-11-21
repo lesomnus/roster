@@ -50,6 +50,8 @@ func NewCmdLogin(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 		Brief: "the Login App, for a deployment with Hydra in front",
 
 		Commands: xli.Commands{newCmdLoginServe(l, c), newCmdLoginProvision(c), newCmdLoginDoctor(l, c)},
+
+		Handler: xli.RequireSubcommand(),
 	}
 }
 

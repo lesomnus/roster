@@ -67,6 +67,8 @@ func NewCmdKey(c *cmd.Config) *xli.Command {
 			newCmdKeyList(c),
 			newCmdKeyRevoke(c),
 		},
+
+		Handler: xli.RequireSubcommand(),
 	}
 }
 

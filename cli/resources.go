@@ -31,6 +31,8 @@ func NewCmdResources(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 		Brief: "the rows a file declares: a customer, its names, its directories",
 
 		Commands: xli.Commands{newCmdResourcesApply(l, c)},
+
+		Handler: xli.RequireSubcommand(),
 	}
 }
 
