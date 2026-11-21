@@ -17,6 +17,7 @@ import (
 	"github.com/goccy/go-yaml/parser"
 	"github.com/goccy/go-yaml/token"
 	"github.com/lesomnus/otx/log"
+	"github.com/lesomnus/protobuf-patch/patch"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -441,9 +442,16 @@ func isComment(n ast.Node) bool {
 }
 
 // checkResources refuses, before anything is written, what a run would stop
-// at half way: a kind this does not apply. A file has been refused it already
-// as it was read, with the line; this is for a caller that hands rows in.
+// at half way or apply twice: a kind this does not apply, and two entries
+// that declare one row. A file has been refused a kind already as it was
+// read, with the line; this is for a caller that hands rows in too.
+//
+// Two entries of one row were applied in turn, the second over the first: `+`
+// and then `~`, and `~` twice at every start after, with a row that is
+// whichever came last. Refused naming both, since which is meant is the
+// person's to say.
 func checkResources(rs []Resource) error {
+	seen := map[string]Resource{}
 	for _, r := range rs {
 		if r.nothing {
 			continue
@@ -452,9 +460,38 @@ func checkResources(rs []Resource) error {
 			return fmt.Errorf("resources: %s: %q is not a kind this applies; one of %s",
 				r.where(), r.Kind, strings.Join(kindsApplied, ", "))
 		}
+
+		id := r.Kind + " " + rowOf(r)
+		if rowOf(r) == "" {
+			// No row to be the same as: the kind's own refusal says what
+			// is missing.
+			continue
+		}
+		if was, ok := seen[id]; ok {
+			return fmt.Errorf("resources: %s: %s %s: %s declares it too, and two entries declare one row; "+
+				"take one of them out", r.where(), r.Kind, named(r), was.where())
+		}
+		seen[id] = r
 	}
 
 	return nil
+}
+
+// rowOf is what makes a row one row, by kind: the key its apply finds it by.
+// A `Host`'s name is one row across the deployment, and every other kind but
+// a `Tenant` is one within its tenant.
+func rowOf(r Resource) string {
+	switch r.Kind {
+	case "Tenant":
+		return r.Alias
+	case "Host":
+		return r.Name
+	}
+	if r.Tenant == "" || r.Name == "" {
+		return ""
+	}
+
+	return r.Tenant + "/" + r.Name
 }
 
 // refused is a refusal of `r`, by where it is declared and what it is called
@@ -904,7 +941,7 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 		return what, "changed", nil
 	}
 
-	_, err = s.Connection().Patch(ctx, app.ConnectionPatchRequest_builder{
+	v, err := s.Connection().Patch(ctx, app.ConnectionPatchRequest_builder{
 		Ref:          app.ConnectionRef_builder{Id: got.GetId()}.Build(),
 		Desc:         proto.String(r.Desc),
 		Issuer:       proto.String(r.Issuer),
@@ -915,6 +952,29 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 		Provisions:   proto.Bool(r.Provisions),
 		Labels:       labelsOf(r),
 		DateUpdated:  got.GetDateUpdated(),
+	}.Build())
+	if err != nil || len(r.Scopes) > 0 || len(got.GetScopes()) == 0 {
+		return what, "changed", err
+	}
+
+	// Scopes left out are none, as every other key left out is empty. A list
+	// has no presence in `Patch` -- empty there is *not said* -- so the row
+	// kept the scopes a file once asked for, was found changed, and was
+	// written again at every start. Emptied here, against the version the
+	// patch left.
+	doc, err := patch.New(string((&app.Connection{}).ProtoReflect().Descriptor().FullName()),
+		patch.Target(patch.Name("date_updated")).Test(patch.Msg(
+			patch.F(patch.Name("seconds"), patch.Int64(v.GetDateUpdated().GetSeconds())),
+			patch.F(patch.Name("nanos"), patch.Int32(v.GetDateUpdated().GetNanos())),
+		)),
+		patch.Target(patch.Name("scopes")).Assign(patch.List()),
+	)
+	if err != nil {
+		return what, "", err
+	}
+	_, err = s.Connection().Apply(ctx, app.ConnectionApplyRequest_builder{
+		Ref:   app.ConnectionRef_builder{Id: got.GetId()}.Build(),
+		Patch: doc,
 	}.Build())
 
 	return what, "changed", err
