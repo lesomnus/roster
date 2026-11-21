@@ -108,8 +108,11 @@ func newCmdControlKeyAdd(c *cmd.Config) *xli.Command {
 			defer s.Close()
 
 			// The control database may be new: this is often the first thing
-			// that writes to it.
-			if err := migrate(ctx, s.Control); err != nil {
+			// that writes to it. Its tables are made where `control.db.migrate`
+			// says this process may alter them, and otherwise a database
+			// without them is refused, as `login provision` asks: this
+			// migrated whatever the switch said (#284).
+			if err := ready(ctx, s.Control, c.Control.Db); err != nil {
 				return err
 			}
 

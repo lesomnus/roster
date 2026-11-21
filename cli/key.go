@@ -111,6 +111,14 @@ func newCmdKeyAdd(c *cmd.Config) *xli.Command {
 				return err
 			}
 
+			// Where nothing reads keys, refused as `init` is refused there:
+			// this minted a key, said it was shown once, and left `key list`
+			// and `key revoke` beside it refusing it, while the day a control
+			// plane is named it would work with every other such key (#284).
+			if !c.Control.Serves() {
+				return needsControl("key add")
+			}
+
 			s, err := built(ctx, *c)
 			if err != nil {
 				return err
