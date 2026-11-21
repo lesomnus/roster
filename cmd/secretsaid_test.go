@@ -96,7 +96,9 @@ login:
 	// And `HYDRAURLPASSWORD23`, in `login.hydra.admin`: an address carries no
 	// credential -- one for Hydra's admin API goes in `login.hydra.header` --
 	// so there is nothing in it to redact, and `roster config` prints a file
-	// as it is written. Where Hydra is goes on being printed.
+	// as it is written. A file that holds one does not start
+	// (`TestAnAddressCarriesNoCredential`). Where Hydra is goes on being
+	// printed.
 	x.Contains(printed, "MAILUSER16")
 	x.True(strings.Contains(printed, "DIGESTPREVSECRET10"), "payday's to tag; when it is, this goes in the list above")
 	x.Contains(printed, "hydra:4445")

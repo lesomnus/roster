@@ -798,6 +798,11 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 	if lc.Hydra.Admin == "" {
 		return errors.New("login.hydra.admin (--hydra): where Hydra's admin API answers")
 	}
+	// What has a form, held to it before anything is dialled; `roster serve`
+	// asks the same in `cmd.Build`.
+	if err := lc.Meant(); err != nil {
+		return err
+	}
 
 	sealed, err := sealOf("login", lc.Seal)
 	if err != nil {
