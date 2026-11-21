@@ -337,6 +337,11 @@ func roleNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias str
 // The question [ensureRoleNamed] has to ask before it rewrites a role it finds
 // by name: a tenant's own role of the same name, bound to its people, would be
 // rewritten to an app's methods -- and every one of them would hold those.
+//
+// A binding whose holder is erased is nobody's: an erase leaves it hanging, on
+// purpose (#279), and whoever reads one reads past it. Counted, it held the
+// name of a provisioner's holder that was erased, and the command refused for
+// good with a role bound to others that was bound to nobody.
 func boundToOthers(ctx context.Context, s *cmd.Server, role, who []byte) (bool, error) {
 	after := ""
 	for {
@@ -349,7 +354,23 @@ func boundToOthers(ctx context.Context, s *cmd.Server, role, who []byte) (bool, 
 			return false, err
 		}
 		for _, v := range vs.GetItems() {
-			if !bytes.Equal(v.GetHolder().GetId(), who) || len(v.GetGroup().GetId()) > 0 {
+			if len(v.GetGroup().GetId()) > 0 {
+				return true, nil
+			}
+			if bytes.Equal(v.GetHolder().GetId(), who) {
+				continue
+			}
+			h, err := s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+				Ref:    rstr.HolderRef_builder{Id: v.GetHolder().GetId()}.Build(),
+				Select: rstr.HolderSelect_builder{DateErased: z.Ptr(true)}.Build(),
+			}.Build())
+			if status.Code(err) == codes.NotFound {
+				continue
+			}
+			if err != nil {
+				return false, err
+			}
+			if h.GetDateErased() == nil {
 				return true, nil
 			}
 		}
