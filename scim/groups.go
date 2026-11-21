@@ -11,6 +11,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/lesomnus/payday/slug"
+
 	"github.com/lesomnus/roster/arrives"
 	rstr "github.com/lesomnus/roster/rstr"
 )
@@ -34,8 +36,9 @@ import (
 //
 // The ones carrying [directoryLabel], which it wrote when it made them. A
 // label and no more: no rule reads it. It is how the endpoint tells a group a
-// directory made from one an operator did, so that a group already here under
-// the same name is refused as taken rather than taken over.
+// directory made from one an operator did, so that an operator's group is
+// never taken over: a directory naming a group alike makes another, under
+// another alias ([Server.createGroup]).
 //
 // # And who is in one, as far as it says
 //
@@ -499,12 +502,23 @@ func (s *Server) getGroup(ctx context.Context, w http.ResponseWriter, r *http.Re
 // createGroup makes a group as the directory's own holder, which is what makes
 // it the directory's to change: whoever makes a group manages it.
 //
-// One a directory already made under that name is refused as taken, since it
-// looked the name up first and did not find it. One an **operator** made
-// under the alias the name becomes is refused the same way by roster -- an
-// alias is one group's within a tenant -- and is not taken over: handing a
-// group to a directory is deciding who says what its bindings reach, and that
-// is not decided by two names being alike.
+// One a directory already made under that name, or under that `externalId`,
+// is refused as taken, since it looked first and did not find it
+// ([Server.taken]).
+//
+// # An alias somebody else has
+//
+// The alias is made from the name by the rule written for an address, so two
+// names a directory keeps apart -- `R&D` and `R/D`, `Sales@EU` and
+// `Sales@US`, `2024 Interns` and `2025 Interns` -- make one, and a group an
+// operator made may have it already. Where roster answers that the alias is
+// taken and no group of the directory's is called that, the group is made
+// under the alias and a suffix, as a person whose alias is taken is
+// (`server/core/directory.go`, `freeAlias`). An operator's group under the
+// plain alias is not touched and not taken over: handing a group to a
+// directory is deciding who says what its bindings reach, and that is not
+// decided by two names being alike. So the alias a relying party grants on is
+// read in roster, not guessed from the name.
 func (s *Server) createGroup(ctx context.Context, w http.ResponseWriter, r *http.Request, t *tenancy) error {
 	b, err := body(r)
 	if err != nil {
@@ -518,26 +532,35 @@ func (s *Server) createGroup(ctx context.Context, w http.ResponseWriter, r *http
 		return badRequest("invalidValue", "displayName: required")
 	}
 
-	all, err := s.everyGroup(ctx, t)
-	if err != nil {
+	if err := s.taken(ctx, t, nil, g.displayName, g.externalId); err != nil {
 		return err
-	}
-	for _, v := range all {
-		if groupIs(v, byDisplayName, g.displayName) || (g.externalId != "" && groupIs(v, byExternalId, g.externalId)) {
-			return &problem{status: http.StatusConflict, scimType: "uniqueness", detail: "a group here is already called that"}
-		}
 	}
 
 	// The alias is made from the name once, and stays: it is what a slug names
 	// the group by and what a token carries for a client it is shown to, so a
 	// rename in the directory changes what the group is called and never what
 	// a relying party grants on.
-	v, err := s.roster.Group().Add(ctx, rstr.GroupAddRequest_builder{
-		Tenant: rstr.TenantRef_builder{Id: t.tenant}.Build(),
-		Alias:  arrives.AliasOf(g.displayName),
-		Name:   g.displayName,
-		Labels: map[string]string{directoryLabel: g.externalId},
-	}.Build())
+	want := arrives.AliasOf(g.displayName)
+	alias := want
+	var v *rstr.Group
+	for try := 0; ; try++ {
+		v, err = s.roster.Group().Add(ctx, rstr.GroupAddRequest_builder{
+			Tenant: rstr.TenantRef_builder{Id: t.tenant}.Build(),
+			Alias:  alias,
+			Name:   g.displayName,
+			Labels: map[string]string{directoryLabel: g.externalId},
+		}.Build())
+		if status.Code(err) != codes.AlreadyExists || try == 7 {
+			break
+		}
+		// Asked again: a group of its own made under that name since -- two
+		// creates at once -- is the refusal above, and anybody else's alias is
+		// one to go round.
+		if err := s.taken(ctx, t, nil, g.displayName, g.externalId); err != nil {
+			return err
+		}
+		alias = suffixed(want)
+	}
 	if err != nil {
 		return err
 	}
@@ -558,6 +581,36 @@ func (s *Server) createGroup(ctx context.Context, w http.ResponseWriter, r *http
 	answer(w, http.StatusCreated, out)
 
 	return nil
+}
+
+// taken is the refusal of a name, or an `externalId`, that one of the groups a
+// directory made already has, other than `self`; nil where none has.
+func (s *Server) taken(ctx context.Context, t *tenancy, self []byte, name, externalId string) error {
+	all, err := s.everyGroup(ctx, t)
+	if err != nil {
+		return err
+	}
+	for _, v := range all {
+		if self != nil && bytes.Equal(v.GetId(), self) {
+			continue
+		}
+		if groupIs(v, byDisplayName, name) || (externalId != "" && groupIs(v, byExternalId, externalId)) {
+			return &problem{status: http.StatusConflict, scimType: "uniqueness", detail: "a group here is already called that"}
+		}
+	}
+
+	return nil
+}
+
+// suffixed is an alias with a hyphen and four letters after it, within the
+// length an alias may be.
+func suffixed(alias string) string {
+	const tail = 5 // a hyphen and four
+	if len(alias) > slug.AliasMaxLen-tail {
+		alias = strings.TrimRight(alias[:slug.AliasMaxLen-tail], "-")
+	}
+
+	return alias + "-" + slug.RandomAliasN(4)
 }
 
 // patchGroup changes what a group is called, or who is in it. Answered with no
@@ -582,7 +635,7 @@ func (s *Server) patchGroup(ctx context.Context, w http.ResponseWriter, r *http.
 	}
 
 	if c.name != nil {
-		if err := s.rename(ctx, v, *c.name); err != nil {
+		if err := s.rename(ctx, t, v, *c.name); err != nil {
 			return err
 		}
 	}
@@ -628,7 +681,7 @@ func (s *Server) replaceGroup(ctx context.Context, w http.ResponseWriter, r *htt
 	}
 
 	if g.displayName != "" {
-		if err := s.rename(ctx, v, g.displayName); err != nil {
+		if err := s.rename(ctx, t, v, g.displayName); err != nil {
 			return err
 		}
 	}
@@ -700,9 +753,16 @@ func (s *Server) deleteGroup(ctx context.Context, w http.ResponseWriter, r *http
 
 // rename says what a group is called, under the version read. The alias stays
 // ([Server.createGroup]).
-func (s *Server) rename(ctx context.Context, v *rstr.Group, name string) error {
+//
+// A name another of the directory's groups has is refused as a create under
+// it is ([Server.taken]). It was written, after which a lookup by that name
+// found two groups, and a directory cannot say which of two it means.
+func (s *Server) rename(ctx context.Context, t *tenancy, v *rstr.Group, name string) error {
 	if name == v.GetName() {
 		return nil
+	}
+	if err := s.taken(ctx, t, v.GetId(), name, ""); err != nil {
+		return err
 	}
 	_, err := s.roster.Group().Update(ctx, rstr.GroupUpdateRequest_builder{
 		Ref:         rstr.GroupRef_builder{Id: v.GetId()}.Build(),
