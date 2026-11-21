@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc/codes"
@@ -30,11 +31,21 @@ const (
 // It is how something already open ends when roster ends it, rather than at
 // the next time it is held to roster, and how an app hears an account leave.
 //
-// Each account it hears of is dropped from what this process knows first
-// ([Accounts.Recheck]), so the next [Accounts.Held] asks. `on` may be nil, and
-// the stream then does only that. What `on` answers with is said and does not
-// stop the stream: the next time the account is held to roster it is asked
-// anyway, and the next event about it is the whole truth.
+// Each account it hears of is dropped from what this process knows as the
+// event is read ([Accounts.Recheck]), so the next [Accounts.Held] asks. `on`
+// may be nil, and the stream then does only that. What `on` answers with is
+// said and does not stop the stream: the next time the account is held to
+// roster it is asked anyway, and the next event about it is the whole truth.
+//
+// `on` runs beside the stream and not in the loop that reads it: in one
+// goroutine of the follower's, one call at a time, never for two accounts at
+// once, and with ctx -- the follower's own. While it is busy, what the stream
+// says of others is still dropped as it is read, and waits for `on`; and what
+// it says of an account again replaces what waited, since it is state and not
+// a history: `on` is handed the latest [Standing] heard of each account. Run
+// in the loop, one slow call held every later drop, and sixty-four events
+// behind roster cuts the stream. When ctx ends, what was not handed on is let
+// go, and Follow returns once `on` has.
 //
 // An event about what somebody may call (`SYNC_REASON_REACH`) is passed by:
 // it is `reach`'s, and none of the four facts on it is news.
@@ -60,10 +71,21 @@ const (
 // meanwhile: [Accounts.Held] still asks within [HeldTtl]. But an erased account
 // is not heard leaving until a reconcile finds it.
 func (a *Accounts) Follow(ctx context.Context, on func(ctx context.Context, v Standing) error) error {
+	var next *handing
+	if on != nil {
+		next = &handing{latest: map[pdid.Id]Standing{}, ready: make(chan struct{}, 1)}
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			next.run(ctx, on, a.log(ctx))
+		}()
+		defer func() { <-done }()
+	}
+
 	wait := reopenFirst
 	for {
 		began := time.Now()
-		err := a.follow(ctx, on)
+		err := a.follow(ctx, next)
 		if ctx.Err() != nil {
 			return nil
 		}
@@ -107,7 +129,8 @@ func (a *Accounts) Follow(ctx context.Context, on func(ctx context.Context, v St
 // outlives a suspension, in all but one replica. Left unmarked under a lease,
 // it is that, and nothing says so.
 //
-// The cost is `on`, which every process then runs for every event: what it does
+// The cost is `on`, which every process then runs for every account the stream
+// speaks of: what it does
 // has to be safe to do once per process, as writing down state is -- a session
 // ended twice is ended, an account marked twice is marked.
 func (a *Accounts) Follower(name string, on func(ctx context.Context, v Standing) error) spin.Spinner {
@@ -117,7 +140,7 @@ func (a *Accounts) Follower(name string, on func(ctx context.Context, v Standing
 }
 
 // follow is one stream, from opening to the error that ended it.
-func (a *Accounts) follow(ctx context.Context, on func(ctx context.Context, v Standing) error) error {
+func (a *Accounts) follow(ctx context.Context, next *handing) error {
 	as, err := a.as(ctx)
 	if err != nil {
 		return err
@@ -167,11 +190,72 @@ func (a *Accounts) follow(ctx context.Context, on func(ctx context.Context, v St
 			continue
 		}
 		a.Recheck(st.Holder)
-		if on == nil {
-			continue
+		if next != nil {
+			next.put(st)
 		}
-		if err := on(ctx, st); err != nil {
-			a.log(ctx).WarnContext(ctx, "standing: a sync event was not carried out here", "holder", st.Holder.String(), slog.Any("err", err))
+	}
+}
+
+// handing is what the stream said and `on` has not been handed yet: the latest
+// of each account, in the order they were first heard.
+type handing struct {
+	mu     sync.Mutex
+	latest map[pdid.Id]Standing
+	order  []pdid.Id
+
+	// ready says there is something to hand on, and holds one word at most.
+	ready chan struct{}
+}
+
+// put keeps what the stream said of an account for `on`, over anything said
+// of them before that is still waiting.
+func (h *handing) put(v Standing) {
+	h.mu.Lock()
+	if _, ok := h.latest[v.Holder]; !ok {
+		h.order = append(h.order, v.Holder)
+	}
+	h.latest[v.Holder] = v
+	h.mu.Unlock()
+
+	select {
+	case h.ready <- struct{}{}:
+	default:
+	}
+}
+
+func (h *handing) take() (Standing, bool) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if len(h.order) == 0 {
+		return Standing{}, false
+	}
+	k := h.order[0]
+	h.order = h.order[1:]
+	v := h.latest[k]
+	delete(h.latest, k)
+
+	return v, true
+}
+
+// run hands `on` what waits, one at a time, until ctx ends.
+func (h *handing) run(ctx context.Context, on func(ctx context.Context, v Standing) error, logger *slog.Logger) {
+	for {
+		for {
+			if ctx.Err() != nil {
+				return
+			}
+			v, ok := h.take()
+			if !ok {
+				break
+			}
+			if err := on(ctx, v); err != nil {
+				logger.WarnContext(ctx, "standing: a sync event was not carried out here", "holder", v.Holder.String(), slog.Any("err", err))
+			}
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-h.ready:
 		}
 	}
 }
