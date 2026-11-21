@@ -3077,8 +3077,9 @@ through a pooler, which `LISTEN` cannot cross.
 With `memory`, a client watching one replica never hears about a write that landed
 on another, and nothing reports it: the stream stays open and the client looks
 connected. `serve` says so once as it starts, at `WARN`, where `memory` is beside a
-`spin.lease` of several processes (`postgres`), and refuses nothing: one process
-may hold such a lease.
+`spin.lease` of several processes (`postgres`) on either plane -- naming
+`control.watch.broker` where the control plane's is the one -- and refuses
+nothing: one process may hold such a lease.
 
 What a file declares (`resources`) is applied by `serve` as it starts, before it
 serves and past what publishes a write: a declared role whose methods changed is
@@ -3111,7 +3112,9 @@ in, and runs in whichever replica holds it; when that replica goes, its locks go
 with its connection and another takes each loop within a few seconds. A host
 that vanishes rather than exits is noticed by TCP keepalives the lease asks for,
 within about a minute. Both planes' loops are under the one lease, named
-`roster.*` and `roster.control.*`; who holds what is the database's to say:
+`roster.*` and `roster.control.*`; a lease of several over a plane whose
+database is SQLite is refused at start, since each process would be a
+deployment of its own; who holds what is the database's to say:
 
 ```sql
 SELECT a.pid, a.client_addr, a.backend_start, l.objid

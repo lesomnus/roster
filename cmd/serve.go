@@ -249,6 +249,13 @@ func (r keysOnly) Record(ctx context.Context, s bare.Server, c bare.Change) erro
 	return r.next.Record(ctx, s, bare.Change{Method: c.Method, By: c.By, Key: c.Key})
 }
 
+// brokerRefused is a plane's broker refusing to be built, which the caller
+// that builds the control plane names the setting of when it was taken from
+// the data plane; see where it is answered.
+type brokerRefused struct{ error }
+
+func (e brokerRefused) Unwrap() error { return e.error }
+
 // ErrOutboxHasNowhereToGo is `watch.outbox` on with no broker to publish into.
 //
 // A sentinel because the caller that builds the **control** plane has one thing
@@ -475,7 +482,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	b, err := c.Watch.Build(ctx, c.Db)
 	if err != nil {
 		db.Close()
-		return nil, err
+		return nil, brokerRefused{err}
 	}
 	if c.Watch.Outbox && b == nil {
 		// A queue with nothing at the other end of it.
@@ -783,6 +790,14 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 				// sentence about brokers on a database that would not answer.
 				return nil, fmt.Errorf(
 					"control: %w (control.watch.broker is empty, so it took watch.broker)", err)
+			}
+
+			// And the broker the control plane took refusing its database --
+			// `postgres` over a SQLite `control.db` -- for the same reason.
+			if errors.As(err, new(brokerRefused)) && c.Control.Watch.Broker == "" {
+				return nil, fmt.Errorf(
+					"control: %w (control.watch.broker is empty, so it took watch.broker; the control plane takes "+
+						"the data plane's broker unless control.watch.broker names its own)", err)
 			}
 
 			return nil, fmt.Errorf("control: %w", err)
@@ -1849,27 +1864,40 @@ func (s *Server) plain(ctx context.Context, c Config) {
 	}
 }
 
-// alone says, where it is so, that this plane's broker publishes inside the
-// process while its lease shares the loops among several: `watch.broker:
+// alone says, where it is so, that a plane's broker publishes inside the
+// process while the lease shares the loops among several: `watch.broker:
 // memory` beside `spin.lease: postgres`, or any lease but `local` and `none`.
 // The file says one process and several at once, and under it a follower of
 // one replica hears nothing written at another, on a stream that looks open.
+//
+// Both planes, in one line: the control plane's broker is a setting of its own
+// (`control.watch.broker`), named where it is the one, and a control plane
+// that left it unsaid took the data plane's, which `watch.broker` names.
 //
 // Said and not refused: one process may hold a lease of several, and is right
 // to while it is one. By `serve` as it starts, as [Server.unbounded] is; the
 // box asks [Server.HearsOnlyItself] of its own.
 func (s *Server) alone(ctx context.Context, c Config) {
-	if !s.HearsOnlyItself() {
-		return
-	}
 	switch c.Spin.Lease {
 	case "", config.LeaseLocal, config.LeaseNone:
 		return
 	}
 
-	log.From(ctx).WarnContext(ctx, fmt.Sprintf("watch.broker is %q and spin.lease is %q, which shares the loops among several processes: "+
+	said := []string{}
+	if s.HearsOnlyItself() {
+		said = append(said, "watch.broker")
+	}
+	if s.Control != nil && s.Control.HearsOnlyItself() && c.Control.Watch.Broker != "" {
+		said = append(said, "control.watch.broker")
+	}
+	if len(said) == 0 {
+		return
+	}
+
+	log.From(ctx).WarnContext(ctx, fmt.Sprintf("%s %q and spin.lease is %q, which shares the loops among several processes: "+
 		"a follower of the sync stream, and of any Watch, hears only the process it is connected to. "+
-		"Name a broker every process hears (postgres), or run one process", config.BrokerMemory, c.Spin.Lease))
+		"Name a broker every process hears (postgres), or run one process",
+		strings.Join(said, " and ")+map[bool]string{true: " are", false: " is"}[len(said) > 1], config.BrokerMemory, c.Spin.Lease))
 }
 
 // stopping takes a server down, and does not wait forever to.
