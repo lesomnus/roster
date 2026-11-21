@@ -326,7 +326,16 @@ func failed(ctx context.Context, err error) error {
 // It reads the four facts and nothing else. Not the person's name or anything
 // else declared personal, because none of it is used, and a read that carries
 // it is a read of somebody's data in roster's access record: a session held to
-// roster is asked about every [HeldTtl], and every one was a row.
+// roster is asked about every [HeldTtl], and every one was a row. Asking about
+// somebody who is there is no row -- 300 sessions in good standing held over
+// four HeldTtl were 1,200 askings and none. Asking about somebody roster has
+// not got is one every time, since roster's refusal of a read is a row of the
+// record: ten sessions of people erased since were 40 askings and 40 rows,
+// and a [Accounts.Reconcile] of 300 with ten gone was 300 askings and 10 rows
+// at every pass, as [Accounts.Settle] is one for every mark still gone. So an
+// app ends a session [Accounts.Held] refused rather than holding it to roster
+// again, and looks again at everybody as often as it would have that many rows
+// written, which is hours and not seconds.
 //
 // The directory's closing is read with them, as the stream reads it. Asked as
 // a holder **in** that directory, a closed one answers nothing at all -- every
@@ -385,6 +394,12 @@ func (a *Accounts) StandingOf(ctx context.Context, account pdid.Id) (Standing, e
 //
 // What roster said is believed for [HeldTtl], and that it could not be asked
 // for [HeldRetry]; nobody there is an answer, and kept as long as one.
+//
+// `began` is the app's clock and is compared with when roster signed them out
+// everywhere, which is roster's: an app whose clock runs ahead of roster's by
+// more than the time between a session's beginning and a sign-out keeps that
+// session. A time `began` takes from roster -- a token's, say -- is on
+// roster's clock and is not.
 //
 // A call that ends while roster is being asked -- a page left half loaded, a
 // call that ran out of its own time -- is told so, and nothing is kept of it:
@@ -445,6 +460,12 @@ func (a *Accounts) Recheck(account pdid.Id) {
 // Addresses is an account's addresses that somebody checked -- roster holds
 // them as verified, by a link it sent or by the provider the account signed in
 // through -- as roster stores them, folded.
+//
+// Of somebody erased it answers the addresses they checked, and no error:
+// roster lists what outlived somebody on purpose, for a restore to give back.
+// Of an identifier nobody has, it answers nothing and no error. Neither is
+// [ErrNoPerson], which is answered only where roster says the list itself has
+// nobody to be filtered to.
 //
 // An address nobody checked is not one of them, and that is the whole of the
 // method. Any directory's administrator may put any address on a person of
