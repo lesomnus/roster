@@ -100,11 +100,18 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 			if tenant == "" {
 				return errors.New("--tenant: which tenant to install it into")
 			}
-			methods := cmd.SplitMethods(role)
+			methods, err := cmd.MethodsOf("--role", role)
+			if err != nil {
+				return err
+			}
 			if len(methods) == 0 {
 				// An app with nothing bound acts as a holder that may do nothing,
 				// which is an installation that silently does not work.
 				return errors.New("--role: what the app may do in the tenant; a role that allows nothing installs nothing")
+			}
+			handed, err := cmd.MethodsOf("--administer", administer)
+			if err != nil {
+				return err
 			}
 
 			s, err := controlled(ctx, c)
@@ -113,7 +120,7 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
-			got, err := installApp(ctx, s, name, tenant, methods, cmd.SplitMethods(administer), adopt)
+			got, err := installApp(ctx, s, name, tenant, methods, handed, adopt)
 			if err != nil {
 				return err
 			}

@@ -78,7 +78,10 @@ func NewCmdSignIn(c *cmd.Config) *xli.Command {
 			}
 
 			raw, _ := flg.Find[[]string](cl, "allow")
-			allow := cmd.SplitMethods(raw)
+			allow, err := cmd.MethodsOf("--allow", raw)
+			if err != nil {
+				return err
+			}
 			// Refused rather than defaulted, which is `roster key add`'s decision:
 			// a credential nobody chose the reach of is either wider than somebody
 			// meant or narrower than works.

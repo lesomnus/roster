@@ -211,7 +211,10 @@ func secretFrom(cl *xli.Command, name string) ([]byte, error) {
 // is empty in the server's own words.
 func allowed(cl *xli.Command) ([]string, error) {
 	vs, _ := flg.Find[[]string](cl, "allow")
-	methods := cmd.SplitMethods(vs)
+	methods, err := cmd.MethodsOf("--allow", vs)
+	if err != nil {
+		return nil, err
+	}
 	if len(methods) == 0 {
 		return nil, errors.New("--allow: a delegation that allows nothing opens no door; name the methods")
 	}

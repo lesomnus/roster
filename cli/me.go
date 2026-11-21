@@ -173,7 +173,10 @@ func newCmdMeIssueKey(c *cmd.Config) *xli.Command {
 			}
 
 			allow, _ := flg.Find[[]string](cl, "allow")
-			methods := cmd.SplitMethods(allow)
+			methods, err := cmd.MethodsOf("--allow", allow)
+			if err != nil {
+				return err
+			}
 			if len(methods) == 0 {
 				return errors.New("--allow: a key that allows nothing is not a key; name the methods")
 			}
