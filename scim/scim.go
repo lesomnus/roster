@@ -21,12 +21,15 @@
 package scim
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"slices"
 	"strings"
 	"sync"
@@ -123,11 +126,24 @@ func Bound() []string {
 	return out
 }
 
-// DefaultConcurrency is how many requests are worked on at once when nothing
-// says otherwise. Low on purpose: a directory's provisioning cycle is a burst,
-// and the rate a tenant's callers are held to is shared with the people of
-// that tenant signing in.
+// DefaultConcurrency is how many requests of one tenant's directory are worked
+// on at once when nothing says otherwise. Low on purpose: a directory's
+// provisioning cycle is a burst, and the rate a tenant's callers are held to
+// is shared with the people of that tenant signing in. That is a reason about
+// one tenant, so the turns are counted for each: one tenant's directory in
+// the middle of a burst holds no other tenant's back.
+//
+// Asking roster who a key is, for a key not remembered, is held to the same
+// number for the whole process, since no tenant is known until it is asked.
 const DefaultConcurrency = 4
+
+// BodyTimeout is how long a request's body has to arrive once its key is
+// accepted. A directory sends a body of a few hundred bytes with its headers;
+// a body still on its way after this is a connection being held open, and it
+// is answered `408` where it can still be answered. The body is read outside
+// any turn, so what this bounds is a connection and a goroutine, not anybody
+// else's request.
+const BodyTimeout = 30 * time.Second
 
 // Config is what the endpoint is built from.
 type Config struct {
@@ -137,8 +153,10 @@ type Config struct {
 	// Insecure dials roster without TLS.
 	Insecure bool
 
-	// Concurrency bounds the requests in flight; [DefaultConcurrency] when
-	// zero.
+	// Concurrency is how many requests of one tenant's directory are worked
+	// on at once, and how many keys not remembered are asked about at once;
+	// [DefaultConcurrency] when nought or less. A negative number is refused
+	// where a deployment's file is read, not here.
 	Concurrency int
 
 	// Log is where what was refused or ignored is said.
@@ -153,8 +171,15 @@ type Server struct {
 	roster rstr.Client
 	me     rstr.MeServiceClient
 
-	mux   *http.ServeMux
-	slots chan struct{}
+	mux *http.ServeMux
+
+	// asks is the turns of asking roster who a key is: one for each request
+	// whose key is not remembered, for the process.
+	asks chan struct{}
+
+	// turns is each tenant's turns of work, made the first time a key of that
+	// tenant is accepted.
+	turns sync.Map // string(tenant) -> chan struct{}
 
 	// known is what a token's tenant is, kept for a minute: every request
 	// would otherwise ask twice before it asked anything it came for.
@@ -217,7 +242,7 @@ func New(c Config) (*Server, error) {
 		conn:   conn,
 		roster: rstr.NewClient(conn),
 		me:     rstr.NewMeServiceClient(conn),
-		slots:  make(chan struct{}, c.Concurrency),
+		asks:   make(chan struct{}, c.Concurrency),
 	}
 	s.routes()
 
@@ -263,20 +288,21 @@ func (s *Server) routes() {
 }
 
 // authed is a route behind the bearer: a tenant key, or nothing.
+//
+// In this order, so that a turn is held only for work. The bearer's shape;
+// who the key is, which asks roster -- in one of the process's turns of
+// asking -- only for a key not remembered; then the body, to its bound and
+// its clock and in no turn at all, since a body is the asker's to send as
+// slowly as it likes; and then one of the tenant's turns, for the work.
+// Nothing of a body is read before the key is accepted.
 func (s *Server) authed(h handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, ok := bearer(r)
 		if !ok {
+			unread(w, r)
 			w.Header().Set("WWW-Authenticate", `Bearer realm="roster"`)
 			fail(w, http.StatusUnauthorized, "", "a tenant key, as `Authorization: Bearer rt_…`")
 
-			return
-		}
-
-		select {
-		case s.slots <- struct{}{}:
-			defer func() { <-s.slots }()
-		case <-r.Context().Done():
 			return
 		}
 
@@ -286,14 +312,108 @@ func (s *Server) authed(h handler) http.Handler {
 
 		t, err := s.tenancyOf(ctx, token)
 		if err != nil {
+			unread(w, r)
+			if r.Context().Err() == nil {
+				s.failed(w, r, err)
+			}
+
+			return
+		}
+		if err := read(w, r); err != nil {
 			s.failed(w, r, err)
 
 			return
 		}
+
+		turns := s.turnsOf(t.tenant)
+		if !take(r.Context(), turns) {
+			return
+		}
+		defer func() { <-turns }()
+
 		if err := h(ctx, w, r, t); err != nil {
 			s.failed(w, r, err)
 		}
 	})
+}
+
+// take is a turn of ch, or false where the asker went first.
+func take(ctx context.Context, ch chan struct{}) bool {
+	select {
+	case ch <- struct{}{}:
+		return true
+	case <-ctx.Done():
+		return false
+	}
+}
+
+// turnsOf is a tenant's turns of work.
+func (s *Server) turnsOf(tenant []byte) chan struct{} {
+	if v, ok := s.turns.Load(string(tenant)); ok {
+		return v.(chan struct{})
+	}
+	v, _ := s.turns.LoadOrStore(string(tenant), make(chan struct{}, s.c.Concurrency))
+
+	return v.(chan struct{})
+}
+
+// read is the request's body, read whole before the work: to [maxBody] and
+// within [BodyTimeout], the connection's own read deadline. The handlers read
+// it from the request as they did.
+//
+// Only a method that carries something is waited for. A body sent with any
+// other is not read, and the connection ends with the answer.
+func read(w http.ResponseWriter, r *http.Request) error {
+	if !hasBody(r) {
+		return nil
+	}
+	switch r.Method {
+	case http.MethodPost, http.MethodPut, http.MethodPatch:
+	default:
+		unread(w, r)
+
+		return nil
+	}
+
+	rc := http.NewResponseController(w)
+	_ = rc.SetReadDeadline(time.Now().Add(BodyTimeout))
+	b, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxBody))
+	if err != nil {
+		unread(w, r)
+
+		var large *http.MaxBytesError
+		switch {
+		case errors.As(err, &large):
+			return &problem{status: http.StatusRequestEntityTooLarge, detail: "a body of at most a megabyte"}
+		case errors.Is(err, os.ErrDeadlineExceeded):
+			return &problem{status: http.StatusRequestTimeout, detail: "a body has thirty seconds to arrive"}
+		default:
+			return badRequest("invalidSyntax", "a body of at most a megabyte")
+		}
+	}
+	// What is read is read: the connection is the asker's again, until its
+	// next request's clocks.
+	_ = rc.SetReadDeadline(time.Time{})
+	r.Body = io.NopCloser(bytes.NewReader(b))
+
+	return nil
+}
+
+func hasBody(r *http.Request) bool { return r.Body != nil && r.Body != http.NoBody }
+
+// unread answers a request whose body will not be read, and ends its
+// connection with the answer. `net/http` reads what is left of a declared
+// body before it writes an answer, and after, to keep the connection; so a
+// request refused before its key was accepted, that declared a body and sent
+// a byte of it, was held for as long as its asker liked. The read deadline,
+// passed, is what stops that reading; `Connection: close` is the answer
+// saying so.
+func unread(w http.ResponseWriter, r *http.Request) {
+	if !hasBody(r) {
+		return
+	}
+	w.Header().Set("Connection", "close")
+	_ = http.NewResponseController(w).SetReadDeadline(time.Now())
 }
 
 // bearer is the request's tenant key. A deployment key is refused here: it is
@@ -321,6 +441,11 @@ func (s *Server) tenancyOf(ctx context.Context, token string) (*tenancy, error) 
 			return t, nil
 		}
 	}
+
+	if !take(ctx, s.asks) {
+		return nil, ctx.Err()
+	}
+	defer func() { <-s.asks }()
 
 	me, err := s.me.Get(ctx, rstr.MeGetRequest_builder{}.Build())
 	if err != nil {

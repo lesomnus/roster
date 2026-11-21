@@ -76,9 +76,23 @@ an open door, a key that leaked would name its holder's own account and sign the
 in. A door of the organisation's own that lets anybody sign up is the same, and
 roster cannot tell it apart -- do not mark one.
 
-The endpoint works on a few requests at once and has the rest wait -- four,
-unless `scim.concurrency` says another number -- which is what a directory that
-sends a dozen at a time meets, and nothing it has to be told.
+The endpoint works on a few requests of a tenant's directory at once and has
+the rest wait -- four, unless `scim.concurrency` says another number -- which is
+what a directory that sends a dozen at a time meets, and nothing it has to be
+told. They are counted for each tenant, by the tenant the key is of, since the
+reason they are few is that the rate a tenant's callers are held to is shared
+with that tenant's people signing in: one tenant's directory in the middle of a
+burst holds no other tenant's back. Asking roster who a key is, for a key not
+remembered, is held to the same number for the whole process, since no tenant
+is known until it is asked. A number below nought is refused at start.
+
+A request's headers have ten seconds to arrive and 64 KiB to be said in, and a
+connection may sit idle two minutes, as at the account app and the Login App. A
+body is read once the key is accepted and before a turn is taken, so one that is
+slow to come holds nothing anybody else waits for: it has thirty seconds and a
+megabyte, and is answered `408` or `413` past them. Nothing of a body is read
+under no key or a key nobody has: that is `401`, at once, and the connection
+ends with it.
 
 ### Entra
 

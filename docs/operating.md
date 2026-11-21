@@ -653,6 +653,7 @@ login:                                    # only with Hydra in front; see login.
 
 scim:                                     # where a directory provisions people; see scim.md
   addr: :8092                             # a listener of its own, and /scim/v2 is all it serves
+  # concurrency: 4                        # requests of one tenant's directory worked on at once; below nought is refused
 ```
 
 `account.terminal` is **off unless a deployment says so**, and it is the one

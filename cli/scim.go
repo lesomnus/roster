@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/lesomnus/otx/log"
 	"github.com/lesomnus/payday/access"
@@ -75,6 +76,9 @@ func newCmdScimServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 // serveScim answers SCIM until ctx is done. Told a [cmd.ScimConfig] and nothing
 // else, for the reason `serveAccount` is: two callers build it the same way.
 func serveScim(ctx context.Context, sc cmd.ScimConfig) error {
+	if err := sc.Meant(); err != nil {
+		return err
+	}
 	s, err := scim.New(scim.Config{
 		Roster:      sc.Roster,
 		Insecure:    sc.Insecure,
@@ -92,7 +96,19 @@ func serveScim(ctx context.Context, sc cmd.ScimConfig) error {
 	}
 	log.From(ctx).InfoContext(ctx, "scim", slog.String("addr", l.Addr().String()))
 
-	srv := &http.Server{Handler: s}
+	// With the clocks the account app's and the Login App's listeners have:
+	// how long a request's headers may take to arrive, how long a connection
+	// may sit idle, and how much header is read. This listener faces a
+	// directory's cloud, which is the internet, and had none -- a connection
+	// left half way through a header was kept for ever. A body has a clock of
+	// its own once its key is accepted (`scim.BodyTimeout`). Nothing bounds
+	// the answer: a page of people is read from roster while it is written.
+	srv := &http.Server{
+		Handler:           s,
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       2 * time.Minute,
+		MaxHeaderBytes:    64 << 10,
+	}
 	go func() {
 		<-ctx.Done()
 		_ = srv.Close()
