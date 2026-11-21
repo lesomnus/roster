@@ -72,10 +72,31 @@ func opened(t *testing.T, e *external, h *reach.Holders, d door) *marker {
 	return m
 }
 
+// kept asks about somebody until the answer is one that is kept, and is that
+// answer. An answer asked for across a drop is not kept, and the follower's
+// forgetting when its stream began to listen is a drop that lands a moment
+// after [external.listening] returns. An answer that was not kept is asked
+// for again at the next call, and then says what roster says and nothing of
+// what the stream said: twice in CI a test took such an answer for one that
+// was kept.
+func kept(t *testing.T, h *reach.Holders, who pdid.Id, method string) error {
+	t.Helper()
+	var err error
+	require.Eventually(t, func() bool {
+		err = h.May(t.Context(), who, method)
+		return h.Kept(who)
+	}, 10*time.Second, 10*time.Millisecond, "an answer about them is never kept")
+
+	return err
+}
+
 // flip binds the marker's role, or takes it away, and waits until the
-// follower has heard it.
+// follower has heard it: what was kept of the marker before the write is
+// answered otherwise after it, which with a clock that does not move is the
+// stream having dropped it.
 func (m *marker) flip(t *testing.T) {
 	t.Helper()
+	_ = kept(t, m.h, m.who, get)
 	var want error = reach.ErrDenied
 	if m.bound == nil {
 		m.bound, want = m.d.bind(t, m.role, m.who, nil), nil
@@ -196,7 +217,7 @@ func TestAStreamOpenedAgainForgetsWhatWasKept(t *testing.T) {
 	m := opened(t, e, h, d)
 	bound := d.bind(t, d.role(t, "staff", get), e.kim, nil)
 	m.settled(t)
-	x.NoError(h.May(ctx, e.kim, get), "a role bound to them")
+	x.NoError(kept(t, h, e.kim, get), "a role bound to them")
 
 	// Through roster's own server, which publishes nothing: no stream says it.
 	_, err := e.s.Ungated.Binding().Erase(ctx, bound)
@@ -557,4 +578,95 @@ func TestFollowerIsForEveryProcess(t *testing.T) {
 	n, ok := loop.(spin.Named)
 	x.True(ok, "and named, as it was")
 	x.Equal("test.roster-reach", n.SpinName())
+}
+
+// methodsOfApp sets what the role acme installed the app with holds, through
+// roster's own server.
+func (e *external) methodsOfApp(t *testing.T, methods ...string) {
+	t.Helper()
+	ctx := t.Context()
+	role, err := e.s.Ungated.Role().Get(ctx, rstr.RoleGetRequest_builder{
+		Ref: rstr.RoleRef_builder{Slug: rstr.RoleRefBySlug_builder{
+			Alias: proto.String(app + "-app"), Tenant: rstr.TenantRef_builder{Id: e.acme.Bytes()}.Build(),
+		}.Build()}.Build(),
+	}.Build())
+	require.NoError(t, err)
+	_, err = e.s.Ungated.Role().Patch(ctx, rstr.RolePatchRequest_builder{
+		Ref:         rstr.RoleRef_builder{Id: role.GetId()}.Build(),
+		Methods:     methods,
+		DateUpdated: role.GetDateUpdated(),
+	}.Build())
+	require.NoError(t, err)
+}
+
+// TestAStreamListeningIsSaid: a stream that listens is a line of the log at
+// the level of information, the first time and each time one listens again
+// after one ended. Nothing was said of a stream opening, so a log said a
+// stream ended and never that it was back.
+func TestAStreamListeningIsSaid(t *testing.T) {
+	x := require.New(t)
+	e := newExternal(t)
+	d := &dropping{}
+	l := &logs{}
+	follow(t, holders(t, reach.Config{Conn: e.dial(t, d.option()), As: e.as, Log: slog.New(slog.NewTextHandler(l, nil))}))
+	listening := func() int {
+		return strings.Count(l.String(), `level=INFO msg="reach: listening to roster's sync stream`)
+	}
+
+	e.listening(t)
+	x.Eventually(func() bool { return listening() == 1 }, 10*time.Second, 10*time.Millisecond, "the first time:\n%s", l.String())
+	d.cut()
+	e.listening(t)
+	x.Eventually(func() bool { return listening() == 2 }, 10*time.Second, 10*time.Millisecond, "and again:\n%s", l.String())
+	x.Contains(l.String(), "again")
+}
+
+// TestTheSameEndingIsSaidOnce: a stream that ended, or that roster refused,
+// is said once, with roster's own words beside the package's, and not again
+// until a stream has listened in between. A refusal was said at every
+// asking. The sentence for PermissionDenied says both things it can be, and
+// an `As` that failed is said as that.
+func TestTheSameEndingIsSaidOnce(t *testing.T) {
+	t.Run("refused", func(t *testing.T) {
+		x := require.New(t)
+		e := newExternal(t)
+		e.methodsOfApp(t, rstr.HolderService_Reaches_FullMethodName)
+		d := &dropping{}
+		l := &logs{}
+		follow(t, holders(t, reach.Config{
+			Conn: e.dial(t, d.option()), As: e.as,
+			Log: slog.New(slog.NewTextHandler(l, nil)), Refused: 50 * time.Millisecond,
+		}))
+		refusals := func() int { return strings.Count(l.String(), "level=ERROR") }
+
+		x.Eventually(func() bool { return d.opens() >= 4 }, 10*time.Second, 10*time.Millisecond)
+		x.Equal(1, refusals(), "said once:\n%s", l.String())
+		x.Contains(l.String(), "roster role patch")
+		x.Contains(l.String(), "key's own list")
+		x.Contains(l.String(), "PermissionDenied", "roster's own words beside")
+
+		// Listening in between, and then the same refusal is said again.
+		e.methodsOfApp(t, reach.Methods...)
+		e.listening(t)
+		e.methodsOfApp(t, rstr.HolderService_Reaches_FullMethodName)
+		d.cut()
+		opens := d.opens()
+		x.Eventually(func() bool { return d.opens() >= opens+3 }, 10*time.Second, 10*time.Millisecond)
+		x.Equal(2, refusals(), "said again, once, after a stream listened:\n%s", l.String())
+	})
+
+	t.Run("an As that fails", func(t *testing.T) {
+		x := require.New(t)
+		em := newEmbedded(t)
+		l := &logs{}
+		var asked atomic.Int32
+		mine := errors.New("no tenant yet")
+		follow(t, holders(t, reach.Config{Conn: em.dial(t), Log: slog.New(slog.NewTextHandler(l, nil)),
+			As: func(context.Context) (context.Context, error) { asked.Add(1); return nil, mine }}))
+
+		x.Eventually(func() bool { return asked.Load() >= 2 }, 10*time.Second, 10*time.Millisecond)
+		x.Equal(1, strings.Count(l.String(), "level=WARN"), "said once:\n%s", l.String())
+		x.Contains(l.String(), "could not be somebody at roster")
+		x.Contains(l.String(), mine.Error())
+	})
 }

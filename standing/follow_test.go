@@ -928,3 +928,77 @@ func TestFollowerIsForEveryProcess(t *testing.T) {
 	x.True(ok, "and named, as it was")
 	x.Equal("test.roster-stream", n.SpinName())
 }
+
+// TestAStreamListeningIsSaid: a stream that listens is a line of the log at
+// the level of information, the first time and each time one listens again
+// after one ended. Nothing was said of a stream opening, so a log said a
+// stream ended and never that it was back.
+func TestAStreamListeningIsSaid(t *testing.T) {
+	x := require.New(t)
+	e := newExternal(t)
+	d := &dropping{}
+	l := &logs{}
+	follow(t, accounts(t, standing.Config{Conn: e.dial(t, d.option()), As: at(e.key, "acme"), Log: slog.New(slog.NewTextHandler(l, nil))}))
+	listening := func() int {
+		return strings.Count(l.String(), `level=INFO msg="standing: listening to roster's sync stream`)
+	}
+
+	e.listening(t)
+	x.Eventually(func() bool { return listening() == 1 }, 10*time.Second, 10*time.Millisecond, "the first time:\n%s", l.String())
+	d.cut()
+	e.listening(t)
+	x.Eventually(func() bool { return listening() == 2 }, 10*time.Second, 10*time.Millisecond, "and again:\n%s", l.String())
+	x.Contains(l.String(), "again")
+}
+
+// TestTheSameEndingIsSaidOnce: a stream that ended, or that roster refused,
+// is said once, with roster's own words beside the package's, and not again
+// until a stream has listened in between. A refusal was said at every
+// asking, and a stream refused with Unauthenticated was a warning every
+// thirty seconds for as long as it lasted. The sentence for PermissionDenied
+// says both things it can be, and an `As` that failed is said as that.
+func TestTheSameEndingIsSaidOnce(t *testing.T) {
+	t.Run("refused", func(t *testing.T) {
+		x := require.New(t)
+		e := newExternal(t)
+		without := slices.DeleteFunc(slices.Clone(methods), func(m string) bool { return m == rstr.SyncService_Watch_FullMethodName })
+		e.role(t, without)
+		d := &dropping{}
+		l := &logs{}
+		follow(t, accounts(t, standing.Config{
+			Conn: e.dial(t, d.option()), As: at(e.key, "acme"),
+			Log: slog.New(slog.NewTextHandler(l, nil)), Refused: 50 * time.Millisecond,
+		}))
+		refusals := func() int { return strings.Count(l.String(), "level=ERROR") }
+
+		x.Eventually(func() bool { return d.opens() >= 4 }, 10*time.Second, 10*time.Millisecond)
+		x.Equal(1, refusals(), "said once:\n%s", l.String())
+		x.Contains(l.String(), "roster role patch")
+		x.Contains(l.String(), "key's own list")
+		x.Contains(l.String(), "PermissionDenied", "roster's own words beside")
+
+		// Listening in between, and then the same refusal is said again.
+		e.role(t, methods)
+		e.listening(t)
+		e.role(t, without)
+		d.cut()
+		opens := d.opens()
+		x.Eventually(func() bool { return d.opens() >= opens+3 }, 10*time.Second, 10*time.Millisecond)
+		x.Equal(2, refusals(), "said again, once, after a stream listened:\n%s", l.String())
+	})
+
+	t.Run("an As that fails", func(t *testing.T) {
+		x := require.New(t)
+		em := newEmbedded(t)
+		l := &logs{}
+		var asked atomic.Int32
+		mine := errors.New("no directory yet")
+		follow(t, accounts(t, standing.Config{Conn: em.dial(t), Log: slog.New(slog.NewTextHandler(l, nil)),
+			As: func(context.Context) (context.Context, error) { asked.Add(1); return nil, mine }}))
+
+		x.Eventually(func() bool { return asked.Load() >= 2 }, 10*time.Second, 10*time.Millisecond)
+		x.Equal(1, strings.Count(l.String(), "level=WARN"), "said once:\n%s", l.String())
+		x.Contains(l.String(), "could not be somebody at roster")
+		x.Contains(l.String(), mine.Error())
+	})
+}
