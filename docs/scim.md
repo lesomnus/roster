@@ -331,14 +331,23 @@ first of theirs, nothing is kept beside it.
 up before it creates them, and the people a tenant had -- signed in already, or
 entered by an operator -- are found by their address. A create for an address or
 an `externalId` somebody has is refused as `uniqueness`, which is what tells a
-directory to match instead.
+directory to match instead. **But a create that meets the person it was
+making finishes them.** A create is `Provision` and then the name the directory
+looks them up by, where that is not their address; one cut between the two
+leaves somebody the lookup by that name does not find. So where the
+`externalId` and the address find the same person and the `userName` finds
+nobody, they are told the name -- after an `active: false` the create says --
+and the answer is `201` with them as they are, nothing else of the body
+written. Anything else that finds somebody is `409`, a second create of the
+same User among them.
 
 **Found by the address roster has, which is not always what the directory calls
 them.** The lookup is by `userName`, and a directory whose `userName` is a
 sign-in name (`kim.lee@corp.contoso.example`) while its mail is the address
 kept here (`kim@contoso.example`) finds nobody, then creates, and is refused
 for the address: `409`, every cycle, with nobody matched and so nobody for
-`adopt` to list. Either end mends it -- the directory maps `userName` from the
+`adopt` to list -- unless they sign in through the connection already, as its
+`externalId`, which is a create finished as above. Either end mends it -- the directory maps `userName` from the
 attribute that is the address here, or an operator gives the person the other
 address (`roster email add`), after which the lookup finds them.
 

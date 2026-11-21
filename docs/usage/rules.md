@@ -346,7 +346,7 @@ written against (`server/core/directory.go`).
 
 | | held to it by |
 | --- | --- |
-| It makes people, and only new ones; somebody already here is matched and not made again | `TestADirectoryMakesPeopleAndOnlyNewOnes` · `TestSomebodyAlreadyHereIsMatchedAndNotMadeAgain` |
+| It makes people, and only new ones; somebody already here is matched and not made again, and a create that meets the person it was making finishes them rather than make a second | `TestADirectoryMakesPeopleAndOnlyNewOnes` · `TestSomebodyAlreadyHereIsMatchedAndNotMadeAgain` · `TestACreateThatMeetsThePersonItWasMakingFinishesThem` |
 | It suspends who signs in through its connection, and lifts only a suspension it made. Its word that somebody left is written before anything said beside it, and stands though the rest is refused; its word that they are back is written after | `TestADirectoryLiftsOnlyItsOwnSuspension` · `TestTheDirectoryDoesNotLiftAnOperatorsSuspension` · `TestSomebodyMatchedIsNotSuspendedByTheirDirectoryUntilTheyAreLinked` · `TestADirectorysWordThatSomebodyLeftIsWrittenFirst` |
 | An operator's suspension that answered OK stands, whatever the directory says at the same moment: what the directory says of somebody's standing is read, decided and written as one act, behind a lock on their row | `TestADirectorysWordAndAnOperatorsSuspensionAtOnce` |
 | What it says of somebody already here is kept and believed by nothing | `TestWhatADirectorySaysIsKeptAndBelievedByNothing` |

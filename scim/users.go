@@ -1,6 +1,7 @@
 package scim
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
@@ -374,6 +375,18 @@ func (s *Server) getUser(ctx context.Context, w http.ResponseWriter, r *http.Req
 // taken: the directory looked them up first and did not find them, so the row
 // it is about to make would be a second of them. A directory answered
 // `uniqueness` matches instead.
+//
+// # Unless it is the person it was making
+//
+// A create is `Provision` and then `Tell` of the name the directory looks
+// somebody up by, where that is not their address. One cut between the two --
+// its asker gave up, roster did not answer the second -- leaves somebody the
+// lookup by that name does not find, and so does somebody who signed in
+// through the connection before the directory began. The create that follows
+// met them and was refused on every cycle. So where the `externalId` and the
+// address find the same person and the `userName` finds nobody, this is their
+// create said again ([Server.finish]). Anything else that finds somebody is
+// refused as before, and a second create of the same User with it.
 func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.Request, t *tenancy) error {
 	b, err := body(r)
 	if err != nil {
@@ -392,7 +405,9 @@ func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.
 	}
 
 	address := front.Address(u.address())
-	for attr, value := range map[string]string{byEmail: address, byExternalId: u.externalId, byUserName: u.userName} {
+	found := map[string]*person{}
+	for _, attr := range []string{byEmail, byExternalId, byUserName} {
+		value := map[string]string{byEmail: address, byExternalId: u.externalId, byUserName: u.userName}[attr]
 		if value == "" {
 			continue
 		}
@@ -401,6 +416,15 @@ func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.
 			return err
 		}
 		if p != nil {
+			found[attr] = p
+		}
+	}
+	if at, ext := found[byEmail], found[byExternalId]; at != nil && ext != nil && found[byUserName] == nil &&
+		bytes.Equal(at.holder.GetId(), ext.holder.GetId()) {
+		return s.finish(ctx, w, t, u, address, at.holder.GetId())
+	}
+	for _, attr := range []string{byEmail, byExternalId, byUserName} {
+		if found[attr] != nil {
 			return &problem{status: http.StatusConflict, scimType: "uniqueness",
 				detail: "somebody here already has that " +
 					map[string]string{byEmail: "address", byExternalId: "externalId", byUserName: "userName"}[attr]}
@@ -441,23 +465,8 @@ func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.
 	if err != nil {
 		return err
 	}
-	// The name the directory made them by, where it is not the address they
-	// were made with: a sign-in name beside a mail alias, or a name that is no
-	// address at all. Kept, so that the lookup by it that comes next -- and
-	// every one after a restart -- finds who was just made.
-	if n := front.Address(u.userName); n != address {
-		if _, err := s.roster.Holder().Tell(ctx, rstr.HolderTellRequest_builder{
-			Ref: rstr.HolderRef_builder{Id: h.GetId()}.Build(), Name: proto.String(n),
-		}.Build()); err != nil {
-			return err
-		}
-	}
-	if u.active != nil && !*u.active {
-		if _, err := s.roster.Holder().Deactivate(ctx, rstr.HolderDeactivateRequest_builder{
-			Ref: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
-		}.Build()); err != nil {
-			return err
-		}
+	if err := s.named(ctx, u, address, h.GetId()); err != nil {
+		return err
 	}
 	if err := s.dial(ctx, r, h.GetId(), &u.changes); err != nil {
 		return err
@@ -471,11 +480,53 @@ func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.
 	if err != nil {
 		return err
 	}
+	return s.created(ctx, w, p)
+}
+
+// named is what a create writes after `Provision`: the directory's word that
+// they left, first, by [Server.change]'s rule; then the name it made them by,
+// where that is not the address they were made with -- a sign-in name beside
+// a mail alias, or a name that is no address at all. Kept, so that the lookup
+// by it that comes next, and every one after a restart, finds who was made.
+func (s *Server) named(ctx context.Context, u *incoming, address string, id []byte) error {
+	ref := rstr.HolderRef_builder{Id: id}.Build()
+	if u.active != nil && !*u.active {
+		if _, err := s.roster.Holder().Deactivate(ctx, rstr.HolderDeactivateRequest_builder{Ref: ref}.Build()); err != nil {
+			return err
+		}
+	}
+	if n := front.Address(u.userName); n != address {
+		if _, err := s.roster.Holder().Tell(ctx, rstr.HolderTellRequest_builder{Ref: ref, Name: proto.String(n)}.Build()); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// finish is a create of somebody already here by its `externalId` and its
+// address and not by its `userName`: what [Server.named] writes, and nothing
+// else of the body -- no name, no profile, no number -- since they were made,
+// or were here, already. Answered as a create is, with them as they are.
+func (s *Server) finish(ctx context.Context, w http.ResponseWriter, t *tenancy, u *incoming, address string, id []byte) error {
+	if err := s.named(ctx, u, address, id); err != nil {
+		return err
+	}
+	p, err := s.read(ctx, t, id)
+	if err != nil {
+		return err
+	}
+
+	return s.created(ctx, w, p)
+}
+
+// created answers a create with who was made.
+func (s *Server) created(ctx context.Context, w http.ResponseWriter, p *person) error {
 	made, err := s.shownUser(ctx, p)
 	if err != nil {
 		return err
 	}
-	w.Header().Set("Location", Base+"/Users/"+idOf(h.GetId()))
+	w.Header().Set("Location", Base+"/Users/"+idOf(p.holder.GetId()))
 	answer(w, http.StatusCreated, made)
 
 	return nil
