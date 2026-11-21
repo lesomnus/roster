@@ -134,7 +134,13 @@ func newCmdIssueKey(c *cmd.Config) *xli.Command {
 			}
 			req.DateExpires = expires
 
+			// `default` where none is said, as `key add` and `me issue-key`
+			// call theirs: this sent none, and the server answered that a key
+			// needs a name (#284).
 			name, _ := flg.Find[string](cl, "name")
+			if name == "" {
+				name = "default"
+			}
 			req.Alias = name
 
 			v, err := app.NewApiKeyServiceClient(conn).Issue(ctx, req.Build())

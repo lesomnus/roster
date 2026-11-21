@@ -378,10 +378,35 @@ const aliasFreed = "roster.alias.free"
 // written here, and is now also how the tenant acme is. When both exist this
 // refuses rather than choose: destroying the wrong one of those is not a
 // mistake anybody can take back.
+//
+// An identifier is looked up too, erased or not, and one that names nothing
+// here is refused in a sentence: `forget --dry-run` printed it back and ended
+// with status 0 whoever had it, and `forget` and `restore` said `ent: holder
+// not found` -- which is all they said of an operator's identifier, whose row
+// is the control plane's and not this database's (#284).
 func tenantOrHolder(ctx context.Context, db *ent.Client, ref pdcmd.Ref) (pdid.Id, bool, error) {
 	switch {
 	case !ref.Id.IsZero():
-		return ref.Id, ref.Id.Domain() == pd.TenantDomain, nil
+		isTenant := ref.Id.Domain() == pd.TenantDomain
+
+		var there bool
+		var err error
+		if isTenant {
+			there, err = db.Tenant.Query().Where(enttenant.IdEQ(ref.Id.Uuid())).Exist(ctx)
+		} else {
+			there, err = db.Holder.Query().Where(entholder.IdEQ(ref.Id.Uuid())).Exist(ctx)
+		}
+		switch {
+		case err != nil:
+			return pdid.Nil, false, err
+		case !there && isTenant:
+			return pdid.Nil, false, fmt.Errorf("%s: no tenant of the customers' database has that identifier", ref.Id)
+		case !there:
+			return pdid.Nil, false, fmt.Errorf("%s: nobody of the customers' database has that identifier; "+
+				"an operator is the control plane's, which this does not read", ref.Id)
+		}
+
+		return ref.Id, isTenant, nil
 
 	case ref.Tenant != "" || ref.Domain == pd.HolderDomain:
 		who, err := whoIs(ctx, db, ref)
@@ -531,6 +556,11 @@ func restoredOne(ctx context.Context, s *cmd.Server, who pdid.Id, cs audit.Conte
 func forgotten(ctx context.Context, s *cmd.Server, who pdid.Id, p trail.Policy, cs audit.Contents) error {
 	res, err := forget.Forget(ctx, s.Ent, who, p, cs, s.Queue)
 	if err != nil {
+		// Once: a forget that lost a race to a restore says who already.
+		if strings.HasPrefix(err.Error(), who.String()) {
+			return err
+		}
+
 		return fmt.Errorf("%s: %w", who, err)
 	}
 

@@ -433,6 +433,8 @@ commands themselves ([cli.md](cli.md)).
 | A command alters a plane's tables only where its `migrate` switch says this process may -- `control key add` as `login provision` -- and `init` alone makes both whatever the switches say, as the step a deployment runs first. `key add` refuses where there is no control plane to read the key, as `init` does | `cli/control.go` · `cli/key.go` | `TestControlKeyAddAsksBeforeItAltersTables` · `TestKeyAddRefusesWhereNothingReadsKeys` |
 | A group of commands typed with nothing after it says a subcommand is required, and fails; and no command or flag is offered that works in neither mode -- the trail's general writes, a close or a restore of the control plane's tenant, `vouch enrol --tenant` and `--address` | `cli/` | `TestAGroupWithNothingAfterItFails` · `TestNoCommandIsOfferedThatWorksNowhere` |
 | An entity command given an `-o` or an `--in` that is none of theirs is refused before anything is opened: nothing is written and then reported as failed | `cli/entity.go` | `TestAWrongFormatIsRefusedBeforeTheWrite` |
+| `tenant add` names its tenant, by NAME or an alias in REQ, or is refused: a tenant is not erased, so one made under an alias nobody chose is not taken back by a command | `cli/entity.go` | `TestATenantIsNotAddedUnderAnAliasNobodyChose` |
+| `forget`, `restore` and `hold` given an identifier the customers' database does not have say so, and do nothing; an operator's is the control plane's, which they do not read | `cli/forget.go` | `TestAnIdentifierNobodyHasIsSaidToBeNobodys` |
 
 ### At the box, of the trail
 

@@ -221,7 +221,7 @@ func newCmdMeRevokeKey(c *cmd.Config) *xli.Command {
 		Brief: "stop one of your keys, now",
 
 		Args: arg.Args{
-			&arg.String{Name: "Id", Brief: "the key, as `me get` prints it"},
+			&arg.String{Name: "KEY", Brief: "the key, as `me get` prints it"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -230,14 +230,14 @@ func newCmdMeRevokeKey(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			v, ok := arg.Get[string](cl, "Id")
+			v, ok := arg.Get[string](cl, "KEY")
 			if !ok || v == "" {
-				return errors.New("Id: which key")
+				return errors.New("KEY: which key")
 			}
 
 			k, err := pdid.Parse(v)
 			if err != nil {
-				return fmt.Errorf("Id: %w", err)
+				return fmt.Errorf("KEY: %w", err)
 			}
 
 			// `ApiKey.Erase` by identifier: the layer reads the row through the
@@ -305,7 +305,7 @@ func newCmdMeUnlink(c *cmd.Config) *xli.Command {
 		Brief: "take back a provider account of yours",
 
 		Args: arg.Args{
-			&arg.String{Name: "Id", Brief: "the identity, as `me get` prints it"},
+			&arg.String{Name: "IDENTITY", Brief: "the identity, as `me get` prints it"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -314,14 +314,14 @@ func newCmdMeUnlink(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			v, ok := arg.Get[string](cl, "Id")
+			v, ok := arg.Get[string](cl, "IDENTITY")
 			if !ok || v == "" {
-				return errors.New("Id: which identity")
+				return errors.New("IDENTITY: which identity")
 			}
 
 			k, err := pdid.Parse(v)
 			if err != nil {
-				return fmt.Errorf("Id: %w", err)
+				return fmt.Errorf("IDENTITY: %w", err)
 			}
 
 			_, err = app.NewMeServiceClient(conn).Unlink(ctx,

@@ -274,8 +274,9 @@ func (m minting) mint(ctx context.Context, at *cmd.Server, by *cmd.Operator, who
 // a line is printed (#221).
 func newCmdKeyList(c *cmd.Config) *xli.Command {
 	return &xli.Command{
-		Name:  "list",
-		Brief: "what keys exist, and what each may call",
+		Name:    "list",
+		Aliases: []string{"ls"},
+		Brief:   "what keys exist, and what each may call",
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			if err := saidWho(c); err != nil {
@@ -297,11 +298,12 @@ func newCmdKeyList(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			// Both planes, because `add` writes to both. This listed the
-			// control plane's alone, so a customer's `rt_` -- which the command
-			// beside it mints -- appeared nowhere, and the only way to see one
-			// was `roster apikey ls`, which is a different command answering a
-			// different question.
+			// Both planes, because a key is minted on either: `key add` a
+			// customer's, on the data plane, and `control key add` the
+			// deployment's. This listed the control plane's alone, so a
+			// customer's `rt_` -- which the command beside it mints -- appeared
+			// nowhere, and the only way to see one was `roster apikey ls`,
+			// which is a different command answering a different question.
 			if err := cmd.ListKeys(ctx, os.Stdout, s.Control, by); err != nil {
 				return err
 			}

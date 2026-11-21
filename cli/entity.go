@@ -1,10 +1,13 @@
 package cli
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/lesomnus/roster/cmd"
+	"io"
 	"net"
 	"os"
 	"slices"
@@ -215,10 +218,59 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 		panic(err)
 	}
 
+	add := t.Command("tenant/add")
+	if add == nil {
+		panic("cli: the schema has no `tenant add` to ask for a name before")
+	}
+	add.Handler = xli.Chain(xli.OnRun(tenantNamed), add.Handler)
+
 	cs := t.Commands()
 	formatsFirst(cs)
 
 	return cs
+}
+
+// tenantNamed refuses `tenant add` that names no alias, by NAME or in REQ.
+//
+// NAME is optional for every entity's `add`, and a tenant added with none was
+// made under an alias roster chose -- with its administrator and its roles --
+// and status 0 (#284). Nothing else of a tenant is so costly to take back: a
+// tenant is not erased, so a slip of the hand is a close and a forget. What
+// `Add` does with no alias is the server's; the command asks for one.
+//
+// A REQ read from stdin is read here and handed on as it was, so the command
+// reads what was piped to it.
+func tenantNamed(ctx context.Context, cl *xli.Command, next xli.Next) error {
+	raw := []string{}
+	if v, ok := arg.Get[string](cl, "NAME"); ok && v != "" {
+		if v != "-" && !strings.HasPrefix(v, "{") {
+			return next(ctx)
+		}
+		raw = append(raw, v)
+	}
+	vs, _ := arg.Get[[]string](cl, "REQ")
+	raw = append(raw, vs...)
+
+	for _, v := range raw {
+		b := []byte(v)
+		if v == "-" {
+			var err error
+			if b, err = io.ReadAll(io.LimitReader(cl, 1<<20)); err != nil {
+				return fmt.Errorf("read stdin: %w", err)
+			}
+			cl.ReadCloser = io.NopCloser(bytes.NewReader(b))
+		}
+
+		var m map[string]any
+		if json.Unmarshal(b, &m) == nil {
+			if a, _ := m["alias"].(string); strings.TrimSpace(a) != "" {
+				return next(ctx)
+			}
+		}
+	}
+
+	return errors.New("NAME: which tenant, as @alias -- roster tenant add @contoso -- or an alias in REQ. " +
+		"A tenant is not erased, so one added under an alias nobody chose costs a close and a forget")
 }
 
 // formatsFirst puts [formatsOf] in front of every command of `cs`, and of the
