@@ -449,6 +449,7 @@ that names the key as the file writes it (`cmd.Config.Meant`).
 | --- | --- | --- |
 | A listener block's `tls:` is its gRPC listener's alone, and the `http.addr` beside it is plain: a block whose certificate is asked of every caller has no plain port beside it, and one whose certificate is not is said at start | `cmd/config.go` | `TestABlockThatAsksForACertificateHasNoPlainPortBesideIt` · `TestTlsBesideAnHttpPortIsSaidAtStart` |
 | A key nothing reads is refused by name, payday's among them: `allow_reflection` on any of the three listeners, since no port serves reflection, and `db.dev_dsn` or `control.db.dev_dsn`, since roster plans no migration | `cmd/serve.go` | `TestAKeyNothingReadsIsRefusedByName` |
+| A database named by nothing is refused, each plane's by its own key: an empty `db.dsn`, and an empty `control.db.dsn` where `control.db.driver` is said. A command at the box on a configuration that names no `db.driver` says that it reads the deployment's database and which commands ask a running roster instead | `cmd/serve.go` · `cli/cli.go` | `TestADatabaseNamedByNothingIsRefused` · `TestACommandOfTheBoxSaysSoWhereNoDatabaseIsNamed` |
 
 ## What roster does by itself
 
