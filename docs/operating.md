@@ -1030,8 +1030,15 @@ fight over (#73).
 A deployment with no names yet is **said and not refused**, because this runs on
 every start and a fresh volume has nothing to nominate. It replaces rather than
 adds -- a key cannot be read back, so a restart is a rotation -- and it writes
-each tenant's role again with the list this build's app calls, so both lists
-are this build's from its first start.
+a tenant's role again where it holds another list than this build's app calls,
+so both lists are this build's from its first start; a role already as it should
+be is not written.
+
+**What it did not make is the tenant's.** A holder or a role called `login-app`
+that does not carry the label it writes on what it makes
+(`roster.declared: config: login`) is the tenant's own, bound to somebody or
+not: that tenant is skipped and said on stderr, and nothing of it is written.
+The account app's provisioning is the same under `account`.
 
 **A tenant's first name declared in `resources:` is nominated in on the next
 start, not this one.** This runs *before* the server, and the server is what

@@ -293,6 +293,7 @@ func TestEveryReadOfSomebodyAtTheBoxIsRecordedOrSaysWhy(t *testing.T) {
 		"holderNamed":    "the holder a front door is answered as, made or found by the alias the command chose; prints nothing of the row",
 		"holderFound":    "whether a tenant has a holder of the alias a provisioner chose, before it decides whose they are; reads an id and prints nothing of the row",
 		"holdingOf":      "counts what an app's holder already holds, for a refusal; prints counts and role names",
+		"somebodys":      "reads the labels of a holder of the alias a provisioner chose, to tell its own from the tenant's; prints the alias and the provisioner's own label",
 		"adoptScim":      shown,
 		"matched":        "gathers who a directory matched and roster has not linked, for adoptScim, which says whose it shows; prints nothing itself",
 

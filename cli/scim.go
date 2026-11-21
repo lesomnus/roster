@@ -210,7 +210,7 @@ func provisionScim(ctx context.Context, s *cmd.Server, tenant, connection string
 	if err != nil {
 		return "", err
 	}
-	why, err := somebodys(ctx, s, tenant, ScimHolder, found, existing)
+	why, err := somebodys(ctx, s, tenant, ScimHolder, found, existing, nil)
 	if err != nil {
 		return "", err
 	}
