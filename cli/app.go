@@ -133,8 +133,12 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 // # What it looks at before it writes
 //
 // The tenant, and the role its administrators hold when `--administer` names
-// one, are read first: an install that failed half way left a holder, a role
-// and a nomination behind for a command that said it failed.
+// one, are read first, and so is whether a holder of the app's name is
+// somebody's: an install that failed half way on one of those left a holder, a
+// role and a nomination behind for a command that said it failed. What is
+// refused by a write itself is not read first: the holder is made before the
+// role, so a role the server refused leaves the holder, which a second run
+// finds holding nothing and takes.
 //
 // A holder of the app's name that is already there is somebody's, and is used
 // only if it holds nothing but the app's own role -- which is what a second run
