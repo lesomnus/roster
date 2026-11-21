@@ -59,8 +59,8 @@ func (e *external) shell(t *testing.T, args ...string) {
 	require.NoError(t, k.Run(t.Context(), args), strings.Join(args, " "))
 }
 
-// said is a write made somewhere else, which is waited for rather than made
-// again: a shell's word is said once.
+// said is a write made somewhere else, before [heard] is asked to wait for
+// it: a shell's word.
 func said() error { return nil }
 
 // TestWhatAShellSaysArrivesAsItIsSaid: roster's operator suspending somebody,
@@ -74,11 +74,11 @@ func TestWhatAShellSaysArrivesAsItIsSaid(t *testing.T) {
 	e := newExternal(t)
 	e.serving(t)
 	got := follow(t, accounts(t, standing.Config{Conn: e.dial(t), As: at(e.key, "acme")}))
+	e.listening(t)
 	op, as := e.asOperator(t)
 	ref := rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build()
 
-	// Over the wire first, for the stream to be known to be open: a write
-	// before it is heard by nobody, however it was made.
+	// Over the wire first, for what the shell's are compared with.
 	v := heard(t, got, e.kim, func() error {
 		_, err := op.Invalidate(as, rstr.HolderInvalidateRequest_builder{Ref: ref}.Build())
 		return err
@@ -105,14 +105,10 @@ func TestADirectoryRestoredAtTheShellIsHeard(t *testing.T) {
 	e := newExternal(t)
 	e.serving(t)
 	got := follow(t, accounts(t, standing.Config{Conn: e.dial(t), As: at(e.key, "acme")}))
-	op, as := e.asOperator(t)
+	_, as := e.asOperator(t)
 	tenants := rstr.NewTenantServiceClient(e.dial(t))
 	ref := rstr.TenantRef_builder{Id: e.acme.Bytes()}.Build()
-
-	heard(t, got, e.kim, func() error {
-		_, err := op.Invalidate(as, rstr.HolderInvalidateRequest_builder{Ref: rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build()}.Build())
-		return err
-	}, func(v standing.Standing) bool { return !v.Invalidated.IsZero() })
+	e.listening(t)
 
 	// Read once before it closes, so that the stream saw it open; see
 	// `TestADirectoryClosedShutsOutEveryoneInIt`.
@@ -144,8 +140,8 @@ func TestARestoreIsHeardAsItIsMade(t *testing.T) {
 	op, as := e.asOperator(t)
 	ref := rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build()
 
-	// Invalidated first, for the stream to be known to be open: an erasure is
-	// made once, and one made before the stream is open is heard by nobody.
+	// Invalidated first, for what the restore's moment is compared with.
+	e.listening(t)
 	was := heard(t, got, e.kim, func() error {
 		_, err := op.Invalidate(as, rstr.HolderInvalidateRequest_builder{Ref: ref}.Build())
 		return err
@@ -176,12 +172,7 @@ func TestAForgetIsHeardAsTheErasureItIs(t *testing.T) {
 	e := newExternal(t)
 	e.serving(t)
 	got := follow(t, accounts(t, standing.Config{Conn: e.dial(t), As: at(e.key, "acme")}))
-	op, as := e.asOperator(t)
-
-	heard(t, got, e.kim, func() error {
-		_, err := op.Invalidate(as, rstr.HolderInvalidateRequest_builder{Ref: rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build()}.Build())
-		return err
-	}, func(v standing.Standing) bool { return !v.Invalidated.IsZero() })
+	e.listening(t)
 
 	e.shell(t, "forget", "@acme/kim")
 	v := heard(t, got, e.kim, said, func(v standing.Standing) bool { return !v.Erased.IsZero() })

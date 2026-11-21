@@ -327,7 +327,7 @@ func (s *server) watch(_ *app.SyncWatchRequest, out grpc.ServerStreamingServer[a
 	// every holder this caller can see -- for a deployment key, every holder of
 	// every tenant -- which is the read the generated `Watch` refuses to do
 	// without filters, and this has none to give it.
-	return watch.Stream(ctx, s.w, written, nil,
+	return watch.Stream(ctx, s.w, written, func(watch.Seen) error { return out.SendHeader(nil) },
 		func(ks map[pdid.Id]string, _ watch.Seen) error {
 			// Whom this batch told anything, so that a person whose facts
 			// moved is not told a second time that what they may call might

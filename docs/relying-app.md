@@ -171,6 +171,13 @@ What it promises:
 - **What changed while it was open, and nothing else.** Nothing is replayed, and
   opening it again forgets what was known of everybody rather than believing
   answers that may have changed unheard (`TestAStreamOpenedAgainForgetsWhatWasKnown`).
+  It forgets when roster says the stream listens -- its response header, sent
+  once roster has subscribed the stream and with nothing else -- which is from
+  when a write is heard: forgotten when `Watch` returned, which is before, an
+  answer asked for in between was believed over a write made in between
+  (`TestTheFollowerForgetsWhenTheStreamListens`). An event that names nobody is
+  passed by without a word; roster sends none, and keeps it for a sign of life
+  on a quiet stream (`TestAnEventAboutNobodyIsPassedBy`).
 - **An erasure is heard even when it is the first thing heard of somebody**,
   which it usually is (roster#104,
   `TestAnErasureIsHeardOfSomebodyNothingElseHappenedTo`), and a directory closed

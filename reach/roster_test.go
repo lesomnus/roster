@@ -60,6 +60,10 @@ type external struct {
 	key, admin string
 	acme, beta pdid.Id
 	kim        pdid.Id
+
+	// streams says when a stream on a connection [external.dial] made
+	// listens.
+	streams *listens
 }
 
 func newExternal(t *testing.T) *external {
@@ -78,7 +82,7 @@ func newExternal(t *testing.T) *external {
 	k.Writer = io.Discard
 	x.NoError(k.Run(ctx, nil))
 
-	e := &external{c: c}
+	e := &external{c: c, streams: newListens()}
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
 	for alias, id := range map[string]*pdid.Id{"acme": &e.acme, "beta": &e.beta} {
@@ -112,11 +116,61 @@ func newExternal(t *testing.T) *external {
 // dial is a connection to the data plane, the way an app dials it.
 func (e *external) dial(t *testing.T, opts ...grpc.DialOption) *grpc.ClientConn {
 	t.Helper()
-	conn, err := grpc.NewClient(e.addr, append([]grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}, opts...)...)
+	conn, err := grpc.NewClient(e.addr, append([]grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials()), e.streams.option()}, opts...)...)
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
 	return conn
+}
+
+// listening returns once a stream on a connection [external.dial] made is
+// listening: roster has subscribed it, and a write made from now on is heard
+// on it.
+func (e *external) listening(t *testing.T) {
+	t.Helper()
+	e.streams.wait(t)
+}
+
+// listens says when a stream listens: when the header roster sends once it has
+// subscribed has come to whoever reads the stream, as the follower does.
+type listens struct{ heard chan struct{} }
+
+func newListens() *listens { return &listens{heard: make(chan struct{}, 64)} }
+
+func (l *listens) option() grpc.DialOption {
+	// Chained, so that a test's own interceptor (`dropping`) is kept beside it.
+	return grpc.WithChainStreamInterceptor(func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+		s, err := streamer(ctx, desc, cc, method, opts...)
+		if err != nil {
+			return nil, err
+		}
+		return &listened{ClientStream: s, l: l}, nil
+	})
+}
+
+func (l *listens) wait(t *testing.T) {
+	t.Helper()
+	select {
+	case <-l.heard:
+	case <-time.After(10 * time.Second):
+		t.Fatal("no stream listened")
+	}
+}
+
+type listened struct {
+	grpc.ClientStream
+	l *listens
+}
+
+func (s *listened) Header() (metadata.MD, error) {
+	md, err := s.ClientStream.Header()
+	if md != nil {
+		select {
+		case s.l.heard <- struct{}{}:
+		default:
+		}
+	}
+	return md, err
 }
 
 // as is [reach.Config.As] for the app's deployment key: the key, and

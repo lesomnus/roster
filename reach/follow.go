@@ -38,7 +38,8 @@ const (
 //
 // [standing]'s stream, and the same promises: what changed while it was
 // open, and nothing else. So opening it again forgets what was kept of
-// everybody, rather than trusting answers that may have changed unheard. It
+// everybody, rather than trusting answers that may have changed unheard --
+// once roster says the stream listens, which is from when a write is heard. It
 // is opened again until ctx ends, waiting longer each time it will not open.
 //
 // A stream roster refuses is said once, as an error, and asked for again only
@@ -108,7 +109,17 @@ func (h *Holders) follow(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("roster: %w", err)
 	}
-	// Whatever was kept before this opened may have changed unheard.
+	// Whatever was kept may have changed unheard, and is forgotten when roster
+	// says it has subscribed the stream -- its header, sent with nothing else
+	// -- and not when Watch returned, which is before: an answer asked for in
+	// between was kept over a write made in between, which nothing heard. A
+	// stream whose header does not come is one that failed, and Recv says how.
+	if md, err := stream.Header(); err != nil || md == nil {
+		if err == nil {
+			_, err = stream.Recv()
+		}
+		return fmt.Errorf("roster: %w", err)
+	}
 	h.mu.Lock()
 	clear(h.known)
 	h.dropped++
@@ -118,6 +129,12 @@ func (h *Holders) follow(ctx context.Context) error {
 		ev, err := stream.Recv()
 		if err != nil {
 			return fmt.Errorf("roster: %w", err)
+		}
+		if len(ev.GetHolder()) == 0 {
+			// About nobody, which roster sends none of: it is kept for a sign
+			// of life on a stream that is quiet, and a follower of this
+			// release does not complain of one.
+			continue
 		}
 		k, err := pdid.From(ev.GetHolder())
 		if err != nil {
