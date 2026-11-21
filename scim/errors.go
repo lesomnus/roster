@@ -1,6 +1,7 @@
 package scim
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -66,7 +67,13 @@ func notFound(detail string) error {
 // not there, and it asks as a matter of course -- before every create, after
 // every delete. `401` is anybody's to cause on a listener a cloud reaches,
 // and roster's own log has the call that was denied.
+//
+// Nor is an asker who went before the answer: a directory that gives up on a
+// slow page is ordinary, not *unexpected*, and there is nobody to write to.
 func (s *Server) failed(w http.ResponseWriter, r *http.Request, err error) {
+	if gone(r, err) {
+		return
+	}
 	code, scimType, detail := refusal(err)
 
 	switch code {
@@ -86,6 +93,17 @@ func (s *Server) failed(w http.ResponseWriter, r *http.Request, err error) {
 	}
 
 	fail(w, code, scimType, detail)
+}
+
+// gone is whether err is the asker having gone: their request's context
+// ended, and the error is that ending.
+func gone(r *http.Request, err error) bool {
+	if r.Context().Err() == nil {
+		return false
+	}
+
+	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) ||
+		status.Code(err) == codes.Canceled
 }
 
 // refusal is an error as the status, the `scimType` and the words it is

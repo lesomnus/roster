@@ -56,10 +56,17 @@ const Base = "/scim/v2"
 //
 // What is **not** here is the point of it. No `Identity.Add`, no address
 // written or attested, no `Holder.Add`, no `Holder.Erase`: each of those
-// reaches people who already exist, and a key a directory's cloud presents
-// from the internet should reach only the people it makes (`Provision`) and
-// the people it signs in (`Deactivate`, `Activate`, a profile it owns). `Tell`
-// reaches anybody and is no exception: what it writes is believed by nothing.
+// would give somebody who already exists a way in, or take them away, from a
+// key a directory's cloud presents from the internet.
+//
+// What is here reaches more than the people the directory makes and signs
+// in, and is meant to. It writes the profile of anybody of the tenant no file
+// declares (`Holder.Update`), and who they report to; it reads every
+// person's addresses, accounts and numbers. Only making (`Provision`),
+// suspending (`Deactivate`, `Activate`) and telling (`Tell`) are held to the
+// connection the tenant provisions through: none is made where there is no
+// such connection, a suspension reaches only who signs in through it, and
+// what `Tell` writes is believed by nothing.
 var Methods = []string{
 	rstr.MeService_Get_FullMethodName,
 	rstr.ConnectionService_List_FullMethodName,
@@ -260,31 +267,57 @@ type handler func(ctx context.Context, w http.ResponseWriter, r *http.Request, t
 func (s *Server) routes() {
 	m := http.NewServeMux()
 
-	m.Handle("GET "+Base+"/ServiceProviderConfig", s.authed(serviceProviderConfig))
-	m.Handle("GET "+Base+"/ResourceTypes", s.authed(resourceTypes))
-	m.Handle("GET "+Base+"/ResourceTypes/{name}", s.authed(resourceType))
-	m.Handle("GET "+Base+"/Schemas", s.authed(schemas))
-	m.Handle("GET "+Base+"/Schemas/{urn}", s.authed(schema))
-
-	m.Handle("GET "+Base+"/Users", s.authed(s.listUsers))
-	m.Handle("POST "+Base+"/Users", s.authed(s.createUser))
-	m.Handle("GET "+Base+"/Users/{id}", s.authed(s.getUser))
-	m.Handle("PUT "+Base+"/Users/{id}", s.authed(s.replaceUser))
-	m.Handle("PATCH "+Base+"/Users/{id}", s.authed(s.patchUser))
-	m.Handle("DELETE "+Base+"/Users/{id}", s.authed(s.deleteUser))
-
-	m.Handle("GET "+Base+"/Groups", s.authed(s.listGroups))
-	m.Handle("POST "+Base+"/Groups", s.authed(s.createGroup))
-	m.Handle("GET "+Base+"/Groups/{id}", s.authed(s.getGroup))
-	m.Handle("PUT "+Base+"/Groups/{id}", s.authed(s.replaceGroup))
-	m.Handle("PATCH "+Base+"/Groups/{id}", s.authed(s.patchGroup))
-	m.Handle("DELETE "+Base+"/Groups/{id}", s.authed(s.deleteGroup))
+	// Each path, and what it takes. A path asked by a method it does not
+	// take is `405` with `Allow`, answered here and not by the catch-all
+	// below, which would say nothing is served at a path that is.
+	for _, p := range []struct {
+		path string
+		by   map[string]handler
+	}{
+		{"/ServiceProviderConfig", map[string]handler{http.MethodGet: serviceProviderConfig}},
+		{"/ResourceTypes", map[string]handler{http.MethodGet: resourceTypes}},
+		{"/ResourceTypes/{name}", map[string]handler{http.MethodGet: resourceType}},
+		{"/Schemas", map[string]handler{http.MethodGet: schemas}},
+		{"/Schemas/{urn}", map[string]handler{http.MethodGet: schema}},
+		{"/Users", map[string]handler{http.MethodGet: s.listUsers, http.MethodPost: s.createUser}},
+		{"/Users/{id}", map[string]handler{
+			http.MethodGet: s.getUser, http.MethodPut: s.replaceUser, http.MethodPatch: s.patchUser, http.MethodDelete: s.deleteUser,
+		}},
+		{"/Groups", map[string]handler{http.MethodGet: s.listGroups, http.MethodPost: s.createGroup}},
+		{"/Groups/{id}", map[string]handler{
+			http.MethodGet: s.getGroup, http.MethodPut: s.replaceGroup, http.MethodPatch: s.patchGroup, http.MethodDelete: s.deleteGroup,
+		}},
+	} {
+		var allow []string
+		for _, method := range []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete} {
+			h, ok := p.by[method]
+			if !ok {
+				continue
+			}
+			m.Handle(method+" "+Base+p.path, s.authed(h))
+			allow = append(allow, method)
+			if method == http.MethodGet {
+				// `net/http` serves a HEAD by the GET's handler.
+				allow = append(allow, http.MethodHead)
+			}
+		}
+		m.Handle(Base+p.path, notAllowed(strings.Join(allow, ", ")))
+	}
 
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fail(w, http.StatusNotFound, "", "nothing is served here but "+Base)
 	})
 
 	s.mux = m
+}
+
+// notAllowed answers a path asked by a method it does not take.
+func notAllowed(allow string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		unread(w, r)
+		w.Header().Set("Allow", allow)
+		fail(w, http.StatusMethodNotAllowed, "", "this path takes "+allow)
+	})
 }
 
 // authed is a route behind the bearer: a tenant key, or nothing.
@@ -313,9 +346,7 @@ func (s *Server) authed(h handler) http.Handler {
 		t, err := s.tenancyOf(ctx, token, !reads(r))
 		if err != nil {
 			unread(w, r)
-			if r.Context().Err() == nil {
-				s.failed(w, r, err)
-			}
+			s.failed(w, r, err)
 
 			return
 		}
@@ -418,6 +449,12 @@ func unread(w http.ResponseWriter, r *http.Request) {
 
 // bearer is the request's tenant key. A deployment key is refused here: it is
 // no tenant until a call names one, which is what this endpoint never does.
+//
+// A key is `rt_` and then RFC 6750's `b64token`, and anything else is no key:
+// refused here, in the words any bearer that is no tenant key gets, with
+// roster not asked. It took any bytes after `rt_`, and gRPC sends no header
+// that holds some of them, so a bearer anybody could write was a `500` and a
+// line of the log at `ERROR`.
 func bearer(r *http.Request) (string, bool) {
 	v := r.Header.Get("Authorization")
 	scheme, token, ok := strings.Cut(v, " ")
@@ -425,11 +462,31 @@ func bearer(r *http.Request) (string, bool) {
 		return "", false
 	}
 	token = strings.TrimSpace(token)
-	if !strings.HasPrefix(token, "rt_") {
+	rest, ok := strings.CutPrefix(token, "rt_")
+	if !ok || !b64token(rest) {
 		return "", false
 	}
 
 	return token, true
+}
+
+// b64token is whether v is RFC 6750's `b64token`: one or more of its letters,
+// then any number of `=`.
+func b64token(v string) bool {
+	v = strings.TrimRight(v, "=")
+	if v == "" {
+		return false
+	}
+	for _, c := range []byte(v) {
+		switch {
+		case 'a' <= c && c <= 'z', 'A' <= c && c <= 'Z', '0' <= c && c <= '9':
+		case c == '-', c == '.', c == '_', c == '~', c == '+', c == '/':
+		default:
+			return false
+		}
+	}
+
+	return true
 }
 
 // reads is whether a request only reads, and so may be answered from what is

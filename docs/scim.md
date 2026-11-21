@@ -513,7 +513,8 @@ person. Whoever runs the deployment has this one, and three kinds of thing are
 in it.
 
 **What was not kept**, at `INFO`: `scim: not kept here` with the attributes a
-write named and roster has nowhere for, `a number was not kept`, `a manager who
+write named and roster has nowhere for, by name and never by what a path said
+of one, `a number was not kept`, `a manager who
 is nobody here, so not kept`. The write went on without them.
 
 **What was refused**, at `INFO`, a line a refusal:
@@ -539,10 +540,13 @@ The directory is answered `503` and tries again on its next cycle, so this is
 the only place the reason is. That one is `scim.insecure` left out in front of
 a listener with no TLS ([operating.md](operating.md) § *One process, or five*).
 
-Two answers leave no line: `404`, which a directory is told as a matter of
-course -- it looks before every create, and after every delete -- and `401`,
-which anybody who reaches the listener can cause. A key roster did not accept
-is in roster's own log, as the call that was denied.
+Three answers leave no line: `404`, which a directory is told as a matter of
+course -- it looks before every create, and after every delete -- `405`, a path
+asked by a method it does not take, and `401`, which anybody who reaches the
+listener can cause, a bearer that cannot be a key among them. A key roster did
+not accept is in roster's own log, as the call that was denied. Nor does a
+request whose asker hung up before it was answered, and nothing is written to
+it.
 
 ## What its key may do, and why not more
 

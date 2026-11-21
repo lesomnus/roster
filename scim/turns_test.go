@@ -41,6 +41,9 @@ type gate struct {
 	// calls is how many calls of each method roster was asked through it.
 	calls map[string]int
 
+	// serving is the requests the endpoint behind it has not finished.
+	serving sync.WaitGroup
+
 	// arrived is told of each call held.
 	arrived chan struct{}
 	open    chan struct{}
@@ -127,7 +130,11 @@ func (d *deployment) gated(t *testing.T, g *gate) string {
 	e, err := scim.New(scim.Config{Roster: l.Addr().String(), Insecure: true, Log: slog.New(slog.NewTextHandler(d.log, nil))})
 	x.NoError(err)
 	t.Cleanup(func() { e.Close() })
-	front := httptest.NewServer(e)
+	front := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		g.serving.Add(1)
+		defer g.serving.Done()
+		e.ServeHTTP(w, r)
+	}))
 	t.Cleanup(front.Close)
 
 	return front.URL
