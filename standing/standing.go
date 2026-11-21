@@ -98,13 +98,15 @@ var (
 	// ErrNoPerson is somebody roster does not have: never there, erased or
 	// forgotten -- or in a directory the app's holder cannot see, which is the
 	// same answer from where the app asks. It is an answer, and [Accounts.Held]
-	// keeps it as long as one.
+	// keeps it as long as one. [Accounts.StandingOf] answers it as a status of
+	// `NotFound`, and [Accounts.Held] as [ErrRefused] with this beside it.
 	ErrNoPerson = errors.New("no such person")
 
 	// ErrRefused is something issued that roster's word does not hold any
 	// more: suspended, erased, signed out everywhere since, a directory closed,
 	// or nobody there at all -- which is [ErrNoPerson] beside it. It is
-	// [Accounts.Held]'s.
+	// [Accounts.Held]'s, and a caller handed it is answered `Unauthenticated`
+	// with this sentence alone.
 	ErrRefused = errors.New("refused")
 
 	// ErrUnreachable is a roster that could not be asked: it refused the app,
@@ -115,9 +117,58 @@ var (
 	// [Accounts.Settle] -- and none does where the caller's own context ended
 	// first, which is the caller's doing. [Accounts.Held] refuses while it
 	// lasts -- what roster would have said is not known -- and an app that
-	// tells its caller so tells them it is not their doing.
+	// tells its caller so tells them it is not their doing: a caller handed it
+	// is answered `Unavailable` with this sentence alone, and nothing of
+	// roster's or the transport's, which name where roster is dialed.
 	ErrUnreachable = errors.New("roster cannot be asked just now")
 )
+
+// answer is an error this package returns: a gRPC status of the package's
+// choosing, whose message is the sentence of the package's value `says` and
+// nothing else, around `err`, which says everything -- roster's words and the
+// transport's among them -- for the app's log, and holds the package's values,
+// roster's error and the app's own for [errors.Is] and [errors.As].
+//
+// The returned error is itself the status, so that gRPC reads the package's
+// and not the one roster answered with, which it would find through wrapping:
+// an app may hand what it is answered to its own caller as it is, as payday's
+// gate takes an error for the caller's answer, and the caller reads neither
+// roster's refusal nor where roster is dialed. An app that wraps it before it
+// returns it has chosen its own words, and gRPC then reads those.
+type answer struct {
+	code codes.Code
+	says error
+	err  error
+}
+
+func (e *answer) Error() string { return e.err.Error() }
+func (e *answer) Unwrap() error { return e.err }
+
+func (e *answer) GRPCStatus() *status.Status { return status.New(e.code, e.says.Error()) }
+
+// nobody is roster saying it has nobody by that identifier.
+var nobody error = &answer{codes.NotFound, ErrNoPerson, ErrNoPerson}
+
+// unreachable is a roster that could not be asked, for whatever reason `err`
+// says; and left is the caller's own context ending first, which is answered
+// as gRPC answers that context.
+func unreachable(err error) error {
+	return &answer{codes.Unavailable, ErrUnreachable, fmt.Errorf("%w: %w", ErrUnreachable, err)}
+}
+
+func left(ctx context.Context) error {
+	return &answer{status.FromContextError(ctx.Err()).Code(), ctx.Err(), fmt.Errorf("the call ended before roster answered: %w", ctx.Err())}
+}
+
+// worded is `err`, said in more words, as the status `was` is.
+func worded(was error, err error) error {
+	var a *answer
+	if errors.As(was, &a) {
+		return &answer{a.code, a.says, err}
+	}
+
+	return err
+}
 
 // HeldTtl is how long what roster says of an account is believed before it is
 // asked again: how late a suspension, an erasure or signing out everywhere
@@ -261,10 +312,10 @@ func (a *Accounts) log(ctx context.Context) *slog.Logger {
 // otherwise -- whatever ended it, [HeldWait] among them.
 func failed(ctx context.Context, err error) error {
 	if ctx.Err() != nil {
-		return fmt.Errorf("the call ended before roster answered: %w", ctx.Err())
+		return left(ctx)
 	}
 
-	return fmt.Errorf("%w: %w", ErrUnreachable, err)
+	return unreachable(err)
 }
 
 // StandingOf is what roster says of an account now, asked every time and kept
@@ -300,7 +351,7 @@ func (a *Accounts) StandingOf(ctx context.Context, account pdid.Id) (Standing, e
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			return Standing{}, ErrNoPerson
+			return Standing{}, nobody
 		}
 
 		return Standing{}, failed(ctx, err)
@@ -325,6 +376,12 @@ func (a *Accounts) StandingOf(ctx context.Context, account pdid.Id) (Standing, e
 // their directory closed, or nobody is there at all, with [ErrNoPerson]
 // beside it then; [ErrUnreachable] when roster could not be asked, which is a
 // refusal too.
+//
+// What it answers may be handed to the app's own caller as it is: a refusal
+// is `Unauthenticated`, a roster that could not be asked `Unavailable`, and a
+// call that ended what gRPC says of its context, each with the package's
+// sentence and nothing else, while `Error` says everything for the app's log
+// (`answer`). An app that wraps it first has chosen its own words.
 //
 // What roster said is believed for [HeldTtl], and that it could not be asked
 // for [HeldRetry]; nobody there is an answer, and kept as long as one.
@@ -363,11 +420,11 @@ func (a *Accounts) Held(ctx context.Context, account pdid.Id, began time.Time) e
 
 	switch {
 	case errors.Is(v.err, ErrNoPerson):
-		return fmt.Errorf("%w: roster has %w", ErrRefused, v.err)
+		return &answer{codes.Unauthenticated, ErrRefused, fmt.Errorf("%w: roster has %w", ErrRefused, v.err)}
 	case v.err != nil:
 		return v.err
 	case !v.st.Good(began):
-		return fmt.Errorf("%w: suspended, erased, signed out everywhere or their directory closed since", ErrRefused)
+		return &answer{codes.Unauthenticated, ErrRefused, fmt.Errorf("%w: suspended, erased, signed out everywhere or their directory closed since", ErrRefused)}
 	}
 
 	return nil
@@ -423,7 +480,7 @@ func (a *Accounts) Addresses(ctx context.Context, account pdid.Id) ([]string, er
 		}.Build())
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
-				return nil, ErrNoPerson
+				return nil, nobody
 			}
 
 			return nil, failed(ctx, err)
