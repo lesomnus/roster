@@ -1558,6 +1558,7 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 
 	s.unbounded(ctx)
 	s.aged(ctx, c)
+	s.alone(ctx, c)
 
 	// The stops, collected rather than deferred one at a time.
 	//
@@ -1776,6 +1777,29 @@ func (s *Server) aged(ctx context.Context, c Config) {
 			"gRPC waits for one for ever, and a follower of the sync stream is never moved. "+
 			"Say how long a stream is given once its connection is that old", v.key, v.key))
 	}
+}
+
+// alone says, where it is so, that this plane's broker publishes inside the
+// process while its lease shares the loops among several: `watch.broker:
+// memory` beside `spin.lease: postgres`, or any lease but `local` and `none`.
+// The file says one process and several at once, and under it a follower of
+// one replica hears nothing written at another, on a stream that looks open.
+//
+// Said and not refused: one process may hold a lease of several, and is right
+// to while it is one. By `serve` as it starts, as [Server.unbounded] is; the
+// box asks [Server.HearsOnlyItself] of its own.
+func (s *Server) alone(ctx context.Context, c Config) {
+	if !s.HearsOnlyItself() {
+		return
+	}
+	switch c.Spin.Lease {
+	case "", config.LeaseLocal, config.LeaseNone:
+		return
+	}
+
+	log.From(ctx).WarnContext(ctx, fmt.Sprintf("watch.broker is %q and spin.lease is %q, which shares the loops among several processes: "+
+		"a follower of the sync stream, and of any Watch, hears only the process it is connected to. "+
+		"Name a broker every process hears (postgres), or run one process", config.BrokerMemory, c.Spin.Lease))
 }
 
 // stopping takes a server down, and does not wait forever to.
