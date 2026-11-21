@@ -263,6 +263,77 @@ func TestAnAnswerIsHeldToTheRoundTripThatAskedForIt(t *testing.T) {
 		x.False(told, "a token minted for another sign-in signed somebody in")
 	})
 
+	// What the provider answers with is believed only if the provider would
+	// stand behind it: a token for this client, signed with a key it publishes,
+	// from a code it agreed to redeem. A deployment's checks used to walk these
+	// with a fake provider in front of the whole stack (roster.hday.dev, #33);
+	// they are this app's, so they are here.
+	for _, tc := range []struct {
+		name  string
+		bad   func(p *idptest.Idp)
+		claim string
+	}{
+		{"a token for another client is refused", func(p *idptest.Idp) { p.Claims = map[string]any{"aud": "another-app"} }, "audience"},
+		{"a token nobody at the issuer signed is refused", func(p *idptest.Idp) { p.Forge = true }, "signature"},
+		{"a code the provider turns down signs nobody in", func(p *idptest.Idp) { p.Refuse = "the code has expired" }, "exchange"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			x := require.New(t)
+			p := idptest.New(t, "login-app")
+			d := serve(t)
+			d.connect(t, p, "entra")
+			d.identity(t, "entra", "erin-at-entra")
+			p.Subject = "erin-at-entra"
+			tc.bad(p)
+			d.hydra.raise("c1", "contoso-web")
+
+			res := d.through(t, d.browser(t), "c1", "entra")
+			x.NotEqual(http.StatusSeeOther, res.StatusCode, "a bad %s was let through", tc.claim)
+			x.GreaterOrEqual(res.StatusCode, 400)
+			accepted, _ := d.hydra.said()
+			x.Zero(accepted, "a bad %s signed somebody in", tc.claim)
+		})
+	}
+
+	// An answer is used once. The browser that started the flow comes back
+	// through the same callback -- the code and state it carried -- after the
+	// sign-in finished: nothing is redeemed again and nobody is signed in twice.
+	t.Run("an answer is believed once", func(t *testing.T) {
+		x := require.New(t)
+		p := idptest.New(t, "login-app")
+		d := serve(t)
+		d.connect(t, p, "entra")
+		d.identity(t, "entra", "erin-at-entra")
+		p.Subject = "erin-at-entra"
+		d.hydra.raise("c1", "contoso-web")
+
+		b := d.browser(t)
+		res, err := b.Get(d.app.URL + "/provider?login_challenge=c1&connection=entra")
+		x.NoError(err)
+		res.Body.Close()
+		x.Equal(http.StatusFound, res.StatusCode)
+		res, err = b.Get(res.Header.Get("location"))
+		x.NoError(err)
+		res.Body.Close()
+		x.Equal(http.StatusFound, res.StatusCode)
+		callback := res.Header.Get("location")
+
+		res, err = b.Get(callback)
+		x.NoError(err)
+		res.Body.Close()
+		x.Equal(http.StatusSeeOther, res.StatusCode)
+		accepted, _ := d.hydra.said()
+		x.Equal(1, accepted)
+
+		res, err = b.Get(callback)
+		x.NoError(err)
+		res.Body.Close()
+		x.Equal(http.StatusBadRequest, res.StatusCode, "a used callback was taken again")
+		x.Equal(int32(1), p.Exchanges.Load(), "a used code was sent to the provider again")
+		accepted, _ = d.hydra.said()
+		x.Equal(1, accepted, "a used callback signed somebody in again")
+	})
+
 	// The mix-up. A tenant's administrator may connect a server of their own;
 	// a browser sent there can be sent on to another connection's provider,
 	// and that provider's code comes back to the URL registered for **its**
