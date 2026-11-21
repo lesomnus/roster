@@ -163,7 +163,9 @@ roster --as admin holder list -o wide
 
 `-o` is `pretty` (the default), `json`, `protojson`, `prototext`, `name`, `table`,
 `wide`, or `template=…`. `-o name` prints the identifier alone, which is what a
-script wants.
+script wants. An `-o` that is none of these, or an `--in` that is neither `json`
+nor `protojson`, is refused before anything is opened, so a write is never made
+and then reported as failed.
 
 **A `list` is a page, and not the whole.** It answers twenty rows unless told,
 in the order they were made. `-n` (`--size`) asks for more, up to a hundred,
