@@ -1,7 +1,10 @@
 package cmd_test
 
 import (
+	"bytes"
+	"fmt"
 	"regexp"
+	"slices"
 	"testing"
 
 	"github.com/lesomnus/xli/cfg"
@@ -10,6 +13,7 @@ import (
 
 	"github.com/lesomnus/roster/cli"
 	"github.com/lesomnus/roster/cmd"
+	"github.com/lesomnus/roster/internal/ent"
 	app "github.com/lesomnus/roster/rstr"
 )
 
@@ -344,4 +348,91 @@ func TestAdoptListsPeopleAndNotWhatAnAppActsAs(t *testing.T) {
 	ids, kept := b.subjectsOf(billing)
 	x.Empty(ids, "nobody signs in as what an app acts as")
 	x.Equal(ginaOid, kept)
+}
+
+// TestAdoptsLinksAreOnTheRecordUnderWhoeverMadeThem: each link `adopt` makes
+// leaves on the access record exactly the rows the same write through `roster
+// --as … identity add` leaves -- the write's, naming the operator at the shell
+// and the account written -- and the `Tell` that takes away what was kept
+// leaves the write's row of the person, naming the operator too.
+//
+// It recorded its read of the list as the operator's, and then made each link
+// on the bare context: an `IdentityService/Add` on the trail by nobody, and no
+// row of the access record at all. Answered: no row; right is a write's row
+// naming who ran it. The trail's line still names nobody for a command at the
+// box, which is decided (`docs/operating.md`).
+func TestAdoptsLinksAreOnTheRecordUnderWhoeverMadeThem(t *testing.T) {
+	x := require.New(t)
+	b := newAdoptBed(t)
+	ctx := t.Context()
+
+	var fred, henry *app.HolderRef
+	var operator cmd.Operator
+	b.with(func(s *cmd.Server) {
+		fred, henry = b.person(s, "fred"), b.person(s, "henry")
+		b.tell(s, fred, fredOid)
+
+		var err error
+		operator, err = cmd.OperatorNamed(ctx, s, "admin")
+		x.NoError(err)
+	})
+
+	_, said, err := b.adopt()
+	x.NoError(err)
+	_, _, err = b.adopt("--confirm", "acme", "--of", listDigest(t, said))
+	x.NoError(err)
+	ids, _ := b.subjectsOf(fred)
+	x.Equal([]string{fredOid}, ids)
+
+	// The same write, by the command an operator types for it.
+	out, err := entities(t, &b.c, "identity", "add",
+		fmt.Sprintf(`{"holder":{"slug":{"alias":"henry","tenant":{"alias":"acme"}}},"provider":"entra","subject":%q}`, lateOid))
+	x.NoError(err, out)
+	ids, _ = b.subjectsOf(henry)
+	x.Equal([]string{lateOid}, ids)
+
+	// The account each has at the connection, which is what a row of its
+	// write names.
+	account := func(ref *app.HolderRef) []byte {
+		t.Helper()
+		var id []byte
+		b.with(func(s *cmd.Server) {
+			vs, err := s.Ungated.Identity().List(ctx, app.IdentityListRequest_builder{
+				Filters: []*app.IdentityFilter{app.IdentityFilter_builder{Holder: ref}.Build()},
+			}.Build())
+			x.NoError(err)
+			x.Len(vs.GetItems(), 1)
+			id = vs.GetItems()[0].GetId()
+		})
+
+		return id
+	}
+	rowsOf := func(method string, subject []byte) []*ent.Access {
+		t.Helper()
+		var out []*ent.Access
+		for _, r := range accessed(t, b.c, false, method) {
+			x.Equal("ok", r.Result, method)
+			x.Equal(operator.Id.Uuid(), r.ActorId, "%s: naming the operator --as named", method)
+			x.Equal(operator.Tenant.Uuid(), r.ActorTenantId, method)
+			if slices.ContainsFunc(r.Subjects, func(v []byte) bool { return bytes.Equal(v, subject) }) {
+				out = append(out, r)
+			}
+		}
+
+		return out
+	}
+
+	byAdopt := rowsOf(app.IdentityService_Add_FullMethodName, account(fred))
+	byHand := rowsOf(app.IdentityService_Add_FullMethodName, account(henry))
+	x.Len(accessed(t, b.c, false, app.IdentityService_Add_FullMethodName), 2, "a row for each link, and nothing beside it")
+	x.Len(byAdopt, 1)
+	x.Len(byHand, 1)
+	x.Equal(byHand[0].Kind, byAdopt[0].Kind)
+	x.Equal("write", byAdopt[0].Kind)
+	x.Len(byAdopt[0].Subjects, len(byHand[0].Subjects))
+
+	told := rowsOf(app.HolderService_Tell_FullMethodName, fred.GetId())
+	x.Len(accessed(t, b.c, false, app.HolderService_Tell_FullMethodName), 1)
+	x.Len(told, 1, "the person whose kept word was taken away")
+	x.Equal("write", told[0].Kind)
 }
