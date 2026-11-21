@@ -353,6 +353,7 @@ written against (`server/core/directory.go`).
 | Who has an account at that connection is its to say: nobody writes themselves one there, and one for somebody already here takes `IdentityService/Add` held across the tenant, which a front door that saw them sign in holds | `TestADirectoryFindsNobodyByAnAccountTheyWroteThemselves` · `TestAFrontDoorLinksSomebodyAtTheConnectionTheirDirectoryProvisionsThrough` |
 | Nor does anybody take their own away there, or move one, and so leave their directory's hands: an erase, an *unlink* and a move each take their verb held across the tenant, not a grant made in a site | `TestSomebodyDoesNotTakeThemselvesOutOfTheirDirectorysHands` · `TestAnAccountAtTheDirectorysConnectionIsTakenAwayAcrossTheTenant` |
 | It writes the numbers of whoever holds no more than its key does | `TestADirectoryLeavesTheNumbersOfSomebodyWiderThanIt` |
+| Its writes stop at once when its connection stops provisioning: what the SCIM endpoint remembers of a key, for a minute, is for reads, and a write asks again which connection provisions | `TestAWriteAsksAgainWhichConnectionProvisions` · `TestAReadInsideTheMinuteAsksRosterNothingAboutTheKey` |
 
 ### What a directory over LDAP says
 

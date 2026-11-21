@@ -483,16 +483,18 @@ roster --as admin key list                  # the directory's is @contoso/scim/s
 roster key revoke --id <its identifier>
 ```
 
-Every call after is `401`. Nobody it suspended comes back and nobody it made
-goes: they are the tenant's people, as they were. `roster scim provision` again
+Every request after that asks roster is `401`, and every write asks it. What
+asks roster nothing -- the discovery routes, and an id that is no id -- is
+answered from what the endpoint remembers of the key for up to a minute.
+Nobody it suspended comes back and nobody it made goes: they are the tenant's people, as they were. `roster scim provision` again
 mints another key -- which is also all a rotation is, the key before it ended
 by the same command.
 
 **The mark on the connection**, which says the tenant has no directory: for a
 connection a file declares, `provisions: true` taken out of `resources.yaml`
 and a restart. The endpoint then answers `409`, *no connection of this tenant
-provisions its people* -- a write at once, and a read within the minute it
-keeps a key's tenant for.
+provisions its people* -- every write at once, since a write asks again, and a
+read within the minute it keeps a key's tenant for.
 
 **The listener**: the `scim` component out of the overlay, or `scim.addr` out
 of the configuration.
