@@ -253,7 +253,9 @@ s.Spin = append(s.Spin, spin.InEveryProcess(reaches.Follower("loft.roster-reach"
   running both holds two streams, one each.
 - **A roster that cannot be asked is a refusal**: `reach.ErrUnreachable`,
   which is `standing`'s own, so an app tells its caller *this is not your
-  doing* the same way whichever asked. A method roster does not say they may
+  doing* the same way whichever asked. So is one that does not answer within
+  `standing.HeldWait`, five seconds, and an `As` that failed, whose error is
+  beside it; `ReachOf`, `Reach` and `May` all say it. A method roster does not say they may
   call is `reach.ErrDenied`; so is anybody roster has nobody by, and anybody
   suspended, who reaches nothing.
 - **What its role holds**: `reach.Methods`, which is `HolderService/Reaches`
