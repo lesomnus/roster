@@ -182,9 +182,9 @@ func newCmdScimProvision(c *cmd.Config) *xli.Command {
 //
 // The connection marked as the one the tenant provisions through, unless a
 // file declares it -- then the file says so, or the next start would take it
-// back. A holder for the directory, a role holding [scim.Methods] exactly, the
-// binding, and a tenant key on that holder: replaced, never added to, so
-// running it again is a rotation.
+// back. A holder for the directory, a role holding [scim.Bound], the binding,
+// and a tenant key on that holder listing [scim.Methods]: replaced, never added
+// to, so running it again is a rotation.
 //
 // A tenant key and not a deployment key: a directory is one tenant's, and a
 // key that is one tenant by being minted in it cannot be pointed at another.

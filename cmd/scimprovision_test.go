@@ -20,8 +20,10 @@ import (
 
 // TestADirectorysKeyIsMintedForOneTenantAndOneConnection: `roster scim
 // provision` marks the connection the tenant's directory provisions through,
-// makes the directory's holder with a role holding exactly what it calls, and
-// mints a tenant key -- replaced on every run, so a second run is a rotation.
+// makes the directory's holder with a role holding what it calls but the
+// writes that change a group (`scim.Bound()`), and mints a tenant key listing
+// all of it (`scim.Methods`) -- replaced on every run, so a second run is a
+// rotation.
 // A connection a file declares is the file's to mark.
 func TestADirectorysKeyIsMintedForOneTenantAndOneConnection(t *testing.T) {
 	x := require.New(t)
