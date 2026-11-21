@@ -144,6 +144,15 @@ dropped from what this process knows, so the next `Held` asks: that is how a
 suspension reaches a session already open at once rather than within
 `HeldTtl` (`TestWhatRosterSaysArrivesAsItIsSaid`).
 
+`on` runs beside the stream, in one goroutine of the follower's, one account
+at a time, with the follower's context. A slow `on` holds up nothing the stream
+says: each account is dropped as its event is read, whatever `on` is doing
+(`TestABusyOnHoldsNoLaterDrop`), and what waits for `on` is the latest heard of
+each account, so an account spoken of twice while it was busy is handed on once,
+as it is now (`TestOnIsHandedTheLatestOfEachAccount`). When the follower stops,
+what was not handed on is let go -- the next reconcile is what finds it -- and
+`Follow` returns once `on` has.
+
 The stream also says when what somebody may call may have changed
 (`SYNC_REASON_REACH`), which is `reach`'s to act on. None of the four facts on
 such an event is news -- a fact that moved is an event of its own -- so
@@ -163,7 +172,7 @@ Under `spin.lease` an unmarked loop runs in the one process that holds the
 lease, and every other replica goes on believing what it was told for
 `HeldTtl` -- a session that outlives a suspension in all but one of them, with
 nothing to say so. The price is that `on` runs once per process for every
-event, so what it does has to be safe to do twice, as writing down state is: a
+account the stream speaks of, so what it does has to be safe to do twice, as writing down state is: a
 session ended twice is ended (`TestTheFollowerIsALoopEveryProcessRuns`).
 
 What it promises:

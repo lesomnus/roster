@@ -8,15 +8,19 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/pdid"
@@ -604,7 +608,8 @@ func TestTheFollowerForgetsWhenTheStreamListens(t *testing.T) {
 // said it listens.
 type scripted struct {
 	rstr.UnimplementedSyncServiceServer
-	events chan *rstr.SyncEvent
+	events  chan *rstr.SyncEvent
+	streams *listens
 }
 
 func (s *scripted) Watch(_ *rstr.SyncWatchRequest, out grpc.ServerStreamingServer[rstr.SyncEvent]) error {
@@ -626,7 +631,7 @@ func (s *scripted) Watch(_ *rstr.SyncWatchRequest, out grpc.ServerStreamingServe
 // newScripted serves a [scripted] roster on a listener in memory, and dials it.
 func newScripted(t *testing.T, more ...func(grpc.ServiceRegistrar)) (*scripted, *grpc.ClientConn) {
 	t.Helper()
-	s := &scripted{events: make(chan *rstr.SyncEvent)}
+	s := &scripted{events: make(chan *rstr.SyncEvent), streams: newListens()}
 	g := grpc.NewServer()
 	rstr.RegisterSyncServiceServer(g, s)
 	for _, f := range more {
@@ -637,7 +642,7 @@ func newScripted(t *testing.T, more ...func(grpc.ServiceRegistrar)) (*scripted, 
 	t.Cleanup(g.Stop)
 	conn, err := grpc.NewClient("passthrough:///scripted",
 		grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) { return lis.DialContext(ctx) }),
-		grpc.WithTransportCredentials(insecure.NewCredentials()))
+		grpc.WithTransportCredentials(insecure.NewCredentials()), s.streams.option())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
@@ -678,4 +683,197 @@ func TestAnEventAboutNobodyIsPassedBy(t *testing.T) {
 		t.Fatal("nothing was handed on")
 	}
 	x.Equal(1, strings.Count(l.String(), "level=WARN"), "a line for the one that names somebody unreadable, and none for nobody:\n%s", l.String())
+}
+
+// standings is what a scripted roster answers of an account: suspended where
+// the test says so, and good otherwise.
+type standings struct {
+	rstr.UnimplementedHolderServiceServer
+	mu        sync.Mutex
+	suspended map[pdid.Id]time.Time
+	asked     map[pdid.Id]int
+}
+
+func newStandings() *standings {
+	return &standings{suspended: map[pdid.Id]time.Time{}, asked: map[pdid.Id]int{}}
+}
+
+// askedOf is how many times roster was asked about somebody.
+func (s *standings) askedOf(who pdid.Id) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.asked[who]
+}
+
+func (s *standings) Get(_ context.Context, req *rstr.HolderGetRequest) (*rstr.Holder, error) {
+	k, err := pdid.From(req.GetRef().GetId())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "no identifier")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.asked[k]++
+	v := &rstr.Holder{}
+	if at, ok := s.suspended[k]; ok {
+		v.SetDateDisabled(timestamppb.New(at))
+	}
+	return v, nil
+}
+
+func (s *standings) suspend(who pdid.Id) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.suspended[who] = time.Now()
+}
+
+// busyOn is an `on` that is slow with one account -- a database that is, a
+// lock -- until the test lets it go, and hands on everything it is handed.
+type busyOn struct {
+	slow    pdid.Id
+	entered chan struct{}
+	busy    chan struct{}
+	release func()
+	got     chan standing.Standing
+}
+
+func newBusyOn(t *testing.T, slow pdid.Id) *busyOn {
+	o := &busyOn{slow: slow, entered: make(chan struct{}, 1), busy: make(chan struct{}), got: make(chan standing.Standing, 64)}
+	var once sync.Once
+	o.release = func() { once.Do(func() { close(o.busy) }) }
+	t.Cleanup(o.release)
+
+	return o
+}
+
+func (o *busyOn) on(ctx context.Context, v standing.Standing) error {
+	if v.Holder == o.slow {
+		select {
+		case o.entered <- struct{}{}:
+		default:
+		}
+		// Or the follower stopping, so that a test that failed ends.
+		select {
+		case <-o.busy:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	o.got <- v
+	return nil
+}
+
+// busied returns once `on` is busy with the slow account.
+func (o *busyOn) busied(t *testing.T) {
+	t.Helper()
+	select {
+	case <-o.entered:
+	case <-time.After(10 * time.Second):
+		t.Fatal("on was never handed the slow account")
+	}
+}
+
+// next is what `on` was handed next.
+func (o *busyOn) next(t *testing.T) standing.Standing {
+	t.Helper()
+	select {
+	case v := <-o.got:
+		return v
+	case <-time.After(10 * time.Second):
+		t.Fatal("on was handed nothing more")
+		return standing.Standing{}
+	}
+}
+
+// followScripted runs the follower on a scripted roster until the test ends,
+// with roster's answers about an account in `s`.
+func followScripted(t *testing.T, s *standings, on func(context.Context, standing.Standing) error) (*scripted, *standing.Accounts) {
+	t.Helper()
+	sc, conn := newScripted(t, func(g grpc.ServiceRegistrar) { rstr.RegisterHolderServiceServer(g, s) })
+	a := accounts(t, standing.Config{
+		Conn: conn, As: func(ctx context.Context) (context.Context, error) { return ctx, nil },
+		Now: (&clock{now: time.Now()}).Now,
+	})
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan struct{})
+	t.Cleanup(func() { cancel(); <-done })
+	go func() {
+		defer close(done)
+		_ = a.Follow(ctx, on)
+	}()
+	sc.streams.wait(t)
+
+	return sc, a
+}
+
+// TestABusyOnHoldsNoLaterDrop: while `on` is busy with one account, what the
+// stream says of another is dropped from what this process knows as it is
+// read. `on` ran in the loop that reads, so nothing later was read while it
+// was busy: Held answered nil for somebody roster had suspended, until `on`
+// returned; right is ErrRefused at once. Sixty-four events behind, roster cuts
+// the stream.
+func TestABusyOnHoldsNoLaterDrop(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+	lee, kim := pdid.New(pdid.Domain(2)), pdid.New(pdid.Domain(2))
+	s := newStandings()
+	o := newBusyOn(t, lee)
+	sc, a := followScripted(t, s, o.on)
+
+	began := time.Now().Add(-time.Second)
+	x.NoError(a.Held(ctx, kim, began))
+	s.suspend(lee)
+	sc.send(t, rstr.SyncEvent_builder{Holder: lee.Bytes(), DateDisabled: timestamppb.Now()}.Build())
+	o.busied(t)
+
+	s.suspend(kim)
+	sc.send(t, rstr.SyncEvent_builder{Holder: kim.Bytes(), DateDisabled: timestamppb.Now()}.Build())
+	x.Eventually(func() bool { return errors.Is(a.Held(ctx, kim, began), standing.ErrRefused) }, 10*time.Second, 10*time.Millisecond,
+		"suspended, and heard while on was busy with somebody else")
+
+	o.release()
+	x.Equal(lee, o.next(t).Holder)
+	v := o.next(t)
+	x.Equal(kim, v.Holder, "and handed on once on was free")
+	x.False(v.Disabled.IsZero())
+}
+
+// TestOnIsHandedTheLatestOfEachAccount: what the stream says of an account
+// while `on` is busy waits for it, and what it says of the same account again
+// replaces what waited, since it is state and not a history: `on` is handed
+// the latest, once, and never two accounts at once.
+func TestOnIsHandedTheLatestOfEachAccount(t *testing.T) {
+	x := require.New(t)
+	lee, kim, last := pdid.New(pdid.Domain(2)), pdid.New(pdid.Domain(2)), pdid.New(pdid.Domain(2))
+	s := newStandings()
+	o := newBusyOn(t, lee)
+	var at atomic.Int32
+	sc, a := followScripted(t, s, func(ctx context.Context, v standing.Standing) error {
+		defer at.Add(-1)
+		x.Equal(int32(1), at.Add(1), "on was called for two accounts at once")
+		return o.on(ctx, v)
+	})
+
+	x.NoError(a.Held(t.Context(), last, time.Now()))
+	sc.send(t, rstr.SyncEvent_builder{Holder: lee.Bytes(), DateDisabled: timestamppb.Now()}.Build())
+	o.busied(t)
+
+	signedOut := time.Now().Add(-time.Minute).Truncate(time.Microsecond)
+	suspended := time.Now().Truncate(time.Microsecond)
+	sc.send(t, rstr.SyncEvent_builder{Holder: kim.Bytes(), DateInvalidated: timestamppb.New(signedOut)}.Build())
+	sc.send(t, rstr.SyncEvent_builder{Holder: kim.Bytes(), DateInvalidated: timestamppb.New(signedOut), DateDisabled: timestamppb.New(suspended)}.Build())
+	sc.send(t, rstr.SyncEvent_builder{Holder: last.Bytes()}.Build())
+	// All three read while on is still busy: the last is dropped, so asked
+	// about again, once the two before it were read.
+	x.Eventually(func() bool {
+		_ = a.Held(t.Context(), last, time.Now())
+		return s.askedOf(last) == 2
+	}, 10*time.Second, 10*time.Millisecond, "the stream was not read while on was busy")
+	o.release()
+
+	x.Equal(lee, o.next(t).Holder)
+	v := o.next(t)
+	x.Equal(kim, v.Holder)
+	x.True(suspended.Equal(v.Disabled), "the latest of what was said of them, and not the first")
+	x.True(signedOut.Equal(v.Invalidated))
+	x.Equal(last, o.next(t).Holder, "and kim once")
 }
