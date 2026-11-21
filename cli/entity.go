@@ -494,8 +494,17 @@ func namedAt(ctx context.Context, c *cmd.Config, s *cmd.Server) (*cmd.Operator, 
 // it was: whether these commands require one is the owner's to decide.
 //
 // `method` is the RPC the act is over the wire, which is what a reviewer reads
-// the row by.
+// the row by -- and what every line of the trail the act writes is called,
+// named or not. A write made in process is filed under the method gRPC says
+// is being served, and a call made in process is served as none, so each line
+// was filed under the generated method that wrote it: a reset at the box was
+// `CredentialService/Patch` (`/Add` the first time) and `HolderService/Patch`,
+// where over the wire it is `CredentialService/Issue` on every line, and `key
+// add` was `ApiKeyService/Add` where a key minted over the wire is `/Issue`
+// (#284). The context says which act this is, as a call over the wire would
+// have.
 func keptBy(ctx context.Context, at *cmd.Server, by *cmd.Operator, method string, write func(ctx context.Context) error) error {
+	ctx = grpcx.AsMethod(ctx, method)
 	if by == nil {
 		return write(ctx)
 	}

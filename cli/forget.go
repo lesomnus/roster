@@ -277,7 +277,7 @@ func due(ctx context.Context, s *cmd.Server, c *cmd.Config, p trail.Policy, dry 
 
 			continue
 		}
-		if err := forget.FreeAlias(ctx, s.Ungated, t); err != nil {
+		if err := forget.FreeAlias(grpcx.AsMethod(ctx, aliasFreed), s.Ungated, t); err != nil {
 			fail(fmt.Sprintf("%s: its alias was not freed", t), err)
 
 			continue
@@ -354,7 +354,7 @@ func destroyed(ctx context.Context, s *cmd.Server, t pdid.Id, p trail.Policy, cs
 	}
 
 	if reuse {
-		if err := forget.FreeAlias(ctx, s.Ungated, t); err != nil {
+		if err := forget.FreeAlias(grpcx.AsMethod(ctx, aliasFreed), s.Ungated, t); err != nil {
 			return fmt.Errorf("%s: %w", t, err)
 		}
 		fmt.Fprintf(os.Stderr, "%s: its alias is free now, ahead of its hold, and the trail says so\n", t)
@@ -362,6 +362,12 @@ func destroyed(ctx context.Context, s *cmd.Server, t pdid.Id, p trail.Policy, cs
 
 	return nil
 }
+
+// aliasFreed is what a tenant's alias freed is called on the trail. It is a
+// patch of the tenant, and was filed under the generated method that wrote
+// it, `/roster.TenantService/Patch`, as any change of a tenant is (#284). It
+// has no RPC, so it is named as `roster.tenant.destroy` beside it is.
+const aliasFreed = "roster.alias.free"
 
 // tenantOrHolder is what a REF names where it may be either: a tenant, by
 // `@alias`, `@alias#tenant` or its identifier, or a person, by
