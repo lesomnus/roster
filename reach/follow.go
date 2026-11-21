@@ -2,6 +2,7 @@ package reach
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -48,11 +49,31 @@ const (
 // needs none, since every change to its roles is the app's own and it calls
 // [Holders.Recheck]. Nothing stops working meanwhile: what roster said is still
 // asked again within [standing.HeldTtl].
+//
+// What it says in its log is what [standing.Accounts.Follow] says: a stream
+// that listens is a line at the level of information, each time; an ending or
+// a refusal is said once, with roster's own words beside the package's, and
+// not again until a stream has listened in between; a refusal of the stream
+// is either the app's role or the key's own list of methods, and an
+// [Config.As] that failed is said as the app not being able to be somebody at
+// roster.
 func (h *Holders) Follow(ctx context.Context) error {
 	wait := reopenFirst
+	// How the last stream ended, as it was said, and whether one has ever
+	// listened: an ending is said once, and the same one again is no line
+	// until a stream has listened in between.
+	said, ever := "", false
+	listened := func() {
+		if ever {
+			h.log(ctx).InfoContext(ctx, "reach: listening to roster's sync stream again; what was kept before it is forgotten")
+		} else {
+			h.log(ctx).InfoContext(ctx, "reach: listening to roster's sync stream")
+		}
+		ever, said = true, ""
+	}
 	for {
 		began := time.Now()
-		err := h.follow(ctx)
+		err := h.follow(ctx, listened)
 		if ctx.Err() != nil {
 			return nil
 		}
@@ -60,22 +81,36 @@ func (h *Holders) Follow(ctx context.Context) error {
 			wait = reopenFirst
 		}
 
-		pause := wait
-		switch status.Code(err) {
-		case codes.PermissionDenied:
-			h.log(ctx).ErrorContext(ctx, "reach: roster refuses this app its sync stream. "+
-				"The role it is installed with wants /roster.SyncService/Watch, which `roster role patch` adds "+
-				"and installing again does not. Until then a change to what somebody may call is heard when they are next asked about",
+		code := status.Code(err)
+		var self *notSomebody
+		mine := errors.As(err, &self)
+		ending := fmt.Sprint(mine, code)
+		say := ending != said
+		said = ending
+
+		pause, level := wait, slog.LevelWarn
+		if code == codes.PermissionDenied || code == codes.Unimplemented {
+			pause, level = h.refused, slog.LevelError
+		} else {
+			wait = min(wait*2, reopenAtMost)
+		}
+		if !say {
+			// Said already, and nothing listened since.
+		} else if mine {
+			h.log(ctx).Log(ctx, level, "reach: this app could not be somebody at roster, so its sync stream was not asked for; "+
+				"it is asked for again", "in", pause.String(), "err", fmt.Sprint(self.err))
+		} else if code == codes.PermissionDenied {
+			h.log(ctx).Log(ctx, level, "reach: roster refuses this app its sync stream. "+
+				"Either the role it is installed with does not hold /roster.SyncService/Watch, which `roster role patch` adds "+
+				"and installing again does not, or the key's own list of methods leaves it out, which a key minted with it mends. "+
+				"Until then a change to what somebody may call is heard when they are next asked about",
 				slog.Any("err", err))
-			pause = h.refused
-		case codes.Unimplemented:
-			h.log(ctx).ErrorContext(ctx, "reach: this roster publishes no changes (its watch.broker), so there is no stream to hold. "+
+		} else if code == codes.Unimplemented {
+			h.log(ctx).Log(ctx, level, "reach: this roster publishes no changes (its watch.broker), so there is no stream to hold. "+
 				"A change to what somebody may call is heard when they are next asked about",
 				slog.Any("err", err))
-			pause = h.refused
-		default:
-			h.log(ctx).WarnContext(ctx, "reach: roster's sync stream ended; opening it again", "in", wait.String(), "err", fmt.Sprint(err))
-			wait = min(wait*2, reopenAtMost)
+		} else {
+			h.log(ctx).Log(ctx, level, "reach: roster's sync stream ended; opening it again", "in", pause.String(), "err", fmt.Sprint(err))
 		}
 		select {
 		case <-ctx.Done():
@@ -103,10 +138,10 @@ func (h *Holders) Follower(name string) spin.Spinner {
 }
 
 // follow is one stream, from opening to the error that ended it.
-func (h *Holders) follow(ctx context.Context) error {
+func (h *Holders) follow(ctx context.Context, listened func()) error {
 	as, err := h.as(ctx)
 	if err != nil {
-		return err
+		return &notSomebody{err}
 	}
 	stream, err := rstr.NewSyncServiceClient(h.conn).Watch(as, rstr.SyncWatchRequest_builder{}.Build())
 	if err != nil {
@@ -127,6 +162,7 @@ func (h *Holders) follow(ctx context.Context) error {
 	clear(h.known)
 	h.dropped++
 	h.mu.Unlock()
+	listened()
 
 	for {
 		ev, err := stream.Recv()
@@ -147,3 +183,10 @@ func (h *Holders) follow(ctx context.Context) error {
 		h.Recheck(k)
 	}
 }
+
+// notSomebody is [Config.As] failing, so that the stream was not asked for:
+// said as that, and not as roster refusing the stream.
+type notSomebody struct{ err error }
+
+func (e *notSomebody) Error() string { return e.err.Error() }
+func (e *notSomebody) Unwrap() error { return e.err }

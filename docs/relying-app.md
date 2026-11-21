@@ -227,13 +227,19 @@ What it promises:
   (`TestWhatAShellSaysArrivesAsItIsSaid`,
   `TestADirectoryRestoredAtTheShellIsHeard`).
 - **A refusal is said once, as an error, and asked again rarely.** A role
-  without `SyncService/Watch`, or a roster with no broker, is not something a
-  retry fixes, so it is said in so many words -- `roster role patch`, or
-  `watch.broker` -- and asked for again every `standing.RefusedRetry`, which is
-  soon enough that the fix is noticed without a restart
-  (`TestAStreamRosterRefusesIsSaidAndThenHeld`,
+  without `SyncService/Watch`, a key whose own list of methods leaves it out,
+  or a roster with no broker, is not something a retry fixes, so it is said in
+  so many words -- `roster role patch` or the key, or `watch.broker` -- and
+  asked for again every `standing.RefusedRetry`, which is soon enough that the
+  fix is noticed without a restart (`TestAStreamRosterRefusesIsSaidAndThenHeld`,
   `TestARosterThatPublishesNothingIsSaidOnce`). A stream that drops is a
-  warning, and opened again within a second, then two, up to thirty.
+  warning, and opened again within a second, then two, up to thirty. Either is
+  said once, with roster's own words beside, and the same ending again is no
+  line until a stream has listened in between; an `As` that failed is said as
+  the app not being able to be somebody at roster
+  (`TestTheSameEndingIsSaidOnce`). A stream that listens is a line at the level
+  of information, the first time and each time it is back
+  (`TestAStreamListeningIsSaid`).
 
 The roster an app runs in its own process has no broker, so it has no stream,
 and needs none: every change to its people is the app's own, which calls
