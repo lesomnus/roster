@@ -646,6 +646,7 @@ func (c Config) Meant() error {
 	for _, v := range []func(Config) error{
 		plainBesideCertificate,
 		answersNothing,
+		lessThanNone,
 	} {
 		if err := v(c); err != nil {
 			return err
@@ -727,6 +728,99 @@ func answersNothing(c Config) error {
 	}
 
 	return nil
+}
+
+// lessThanNone refuses a duration or a count below nought, wherever the file
+// holds one.
+//
+// Each is read as if nothing were written: payday and roster both ask a clock
+// whether it is more than nothing, so `holder.forget_after: -720h` was never,
+// `consent.keep` negative for good, `stream.recheck` negative five minutes,
+// and a negative `server.keepalive.time` gave back gRPC's two hours. [AuditMeant]
+// refuses the same of `audit:` (#398) and [ScimConfig.Meant] of
+// `scim.concurrency` (#429), and this is the rest of the file, found by
+// walking it as the loader does so that the next key added is held too. What
+// nought means is still what each key's comment says.
+//
+// [clocksLeft] is what it leaves, with why.
+func lessThanNone(c Config) error {
+	var walk func(v reflect.Value, at string) error
+	walk = func(v reflect.Value, at string) error {
+		if _, ok := clocksLeft[at]; ok {
+			return nil
+		}
+
+		switch v.Kind() {
+		case reflect.Struct:
+			t := v.Type()
+			for i := range t.NumField() {
+				f := t.Field(i)
+				if !f.IsExported() {
+					continue
+				}
+				name, opts, _ := strings.Cut(f.Tag.Get("yaml"), ",")
+				if name == "-" {
+					continue
+				}
+				key := at
+				if opts != "inline" {
+					if name == "" {
+						name = strings.ToLower(f.Name)
+					}
+					key = strings.TrimPrefix(at+"."+name, ".")
+				}
+				if err := walk(v.Field(i), key); err != nil {
+					return err
+				}
+			}
+
+		case reflect.Map:
+			keys := v.MapKeys()
+			slices.SortFunc(keys, func(a, b reflect.Value) int { return strings.Compare(a.String(), b.String()) })
+			for _, k := range keys {
+				if err := walk(v.MapIndex(k), at+"."+k.String()); err != nil {
+					return err
+				}
+			}
+
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			if v.Int() >= 0 {
+				return nil
+			}
+			if v.Type() == reflect.TypeFor[time.Duration]() {
+				return fmt.Errorf("%s: %s is less than no time, and is read as if nothing were written. "+
+					"write how long, or take it out", at, time.Duration(v.Int()))
+			}
+
+			return fmt.Errorf("%s: %d is less than none, and is read as if nothing were written. "+
+				"write how many, or take it out", at, v.Int())
+
+		case reflect.Float32, reflect.Float64:
+			if v.Float() >= 0 {
+				return nil
+			}
+
+			return fmt.Errorf("%s: %v is less than none, and is read as if nothing were written. "+
+				"write how many, or take it out", at, v.Float())
+		}
+
+		return nil
+	}
+
+	return walk(reflect.ValueOf(c), "")
+}
+
+// clocksLeft is what [lessThanNone] does not walk, and why.
+var clocksLeft = map[string]string{
+	// payday reads it, and gives less than none a meaning: a call that came
+	// with no deadline is given none. The manual says so.
+	"server.timeout":  "payday's: no deadline at all",
+	"control.timeout": "payday's: no deadline at all",
+	"admin.timeout":   "payday's: no deadline at all",
+
+	// What reads it is the telemetry library, which holds its own block to
+	// its own rules.
+	"otel": "the telemetry library's",
 }
 
 // within answers whether `dir` is `root` or under it, as far as their paths

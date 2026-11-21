@@ -348,14 +348,6 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 			return nil, fmt.Errorf("%s: nothing reads it -- %s. take the setting out", v.key, v.why)
 		}
 	}
-	// And the rest of the file, once, where it is the deployment's
-	// ([Config.Meant]): the nested build that raises the control plane is
-	// handed a config this one made.
-	if prefix == keys.PrefixTenant {
-		if err := c.Meant(); err != nil {
-			return nil, err
-		}
-	}
 	// And an `audit:` block that cannot be meant: a setting nothing reads, or
 	// two that contradict each other. Each of them started, and did something
 	// other than what its file says -- a kind kept for ever, a trail that
@@ -373,6 +365,14 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// A `scim:` block likewise; `roster scim serve` asks the same.
 	if err := c.Scim.Meant(); err != nil {
 		return nil, err
+	}
+	// And the rest of the file ([Config.Meant]), after those two, whose words
+	// are their own. Once, where it is the deployment's: the nested build that
+	// raises the control plane is handed a config this one made.
+	if prefix == keys.PrefixTenant {
+		if err := c.Meant(); err != nil {
+			return nil, err
+		}
 	}
 	// A directory's key is a tenant key, and a deployment with no control
 	// plane reads none: its callers are believed by name (`auth.Plain`), so
