@@ -24,6 +24,7 @@ import (
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/core"
+	"github.com/lesomnus/roster/server/pd"
 )
 
 // NewCmdEntities is `tenant`, `holder`, `identity` and the rest -- `get`, `ls`,
@@ -81,6 +82,21 @@ import (
 // write they could do with a SQL client. It is written down because *local is
 // Ungated* was documented and *and general writes are open there* was not, and
 // the two are different sentences.
+//
+// # What it does not answer: a verifier
+//
+// A general read is open here as a write is -- `credential list`, `api-key
+// get`, which no port serves -- and what it answers is cleared of every column
+// declared `secret`, as at every port: a password's verifier, a key's hash, the
+// seed of an authenticator, a delegation's, a session's, a link's and a
+// continuation's. The generated layer that clears them on the walled stack
+// stands in front of this server too ([pipe]). It printed them (#284): the
+// argon2id verifier of every password on the page, under a read that names
+// nobody's personal data and so is no row of the access record. A shell that
+// holds the database could read them with SQL, as it could write; a command
+// that prints them is a way to hand them on that nobody meant, and a reader of
+// `-o json` is often a file. `vouch` and `keys` read the same columns through
+// `Ungated`, in process, because comparing a verifier is their whole job.
 //
 // **Remote is not that.** It is a caller like any other, so `tenant ls` over
 // the wire answers with the tenants that credential may see -- which for an
@@ -481,6 +497,10 @@ func piped(s *cmd.Server, at *cmd.Server, by cmd.Operator) (pdcmd.Conn, func(), 
 // refusal of every stream, which here is a watch that would hear nothing.
 // `TestEveryPipeIsRecorded` holds every server a command stands up to this
 // function.
+//
+// And the server is `Ungated` as an answer leaves it: with every column
+// declared `secret` cleared (`pd.NewSecret`), as the walled stack and the admin
+// listener answer. See [NewCmdEntities].
 func pipe(at *cmd.Server, by cmd.Operator) (pdcmd.Conn, func(), error) {
 	chain := grpcx.Chain{}
 	if at.HearsOnlyItself() {
@@ -489,7 +509,7 @@ func pipe(at *cmd.Server, by cmd.Operator) (pdcmd.Conn, func(), error) {
 	chain = chain.With(at.Shell(by).Interceptor())
 
 	g := grpc.NewServer(chain.ServerOptions()...)
-	app.RegisterServer(g, at.Ungated)
+	app.RegisterServer(g, pd.NewSecret(at.Ungated))
 
 	lis := bufconn.Listen(1 << 20)
 	go g.Serve(lis)
