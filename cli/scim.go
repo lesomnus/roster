@@ -2,6 +2,8 @@ package cli
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -9,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/lesomnus/otx/log"
@@ -266,12 +269,23 @@ func newCmdScimAdopt(c *cmd.Config) *xli.Command {
 		Flags: flg.Flags{
 			&flg.String{Name: "tenant", Brief: "the tenant, by alias"},
 			&flg.String{Name: "confirm", Brief: "the tenant's alias, as it is, to say the list is believed; without it nothing is written"},
+			&flg.String{Name: "of", Brief: "with --confirm, the digest `roster scim adopt` printed of the list that was read"},
 		},
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			tenant, _ := flg.Find[string](cl, "tenant")
 			confirm, _ := flg.Find[string](cl, "confirm")
+			of, _ := flg.Find[string](cl, "of")
+			of = strings.TrimSpace(of)
 			if tenant == "" {
 				return errors.New("--tenant: whose directory")
+			}
+			// Which list is believed, before anything is read: a list read
+			// again is one nobody has looked at yet.
+			if confirm != "" && of == "" {
+				return errors.New("--of: the digest `roster scim adopt` printed of the list that was read; nothing was written")
+			}
+			if of != "" && confirm == "" {
+				return errors.New("--of: goes with --confirm")
 			}
 			if confirm != "" && confirm != tenant {
 				return fmt.Errorf("--confirm %s: that is not %s; nothing was written", confirm, tenant)
@@ -288,22 +302,26 @@ func newCmdScimAdopt(c *cmd.Config) *xli.Command {
 				return err
 			}
 
-			found, failed, err := adoptScim(ctx, s, by, tenant, confirm != "", os.Stdout)
+			v, err := adoptScim(ctx, s, by, tenant, of, os.Stdout)
 			if err != nil {
 				return err
 			}
 			switch {
-			case len(found) == 0:
+			case len(v.found) == 0:
 				fmt.Fprintf(os.Stderr, "roster: %s's directory has matched nobody roster has not linked.\n", tenant)
-			case confirm == "":
+			case of == "":
 				fmt.Fprintf(os.Stderr, "roster: %d of %s's people are matched and not linked, so their directory cannot suspend them. "+
 					"Nothing was written: each line is who roster has, their address, and what the directory calls them. "+
-					"`--confirm %s` links them where you believe it.\n", len(found), tenant, tenant)
+					"`--confirm %s --of %s` links them where you believe it.\n", len(v.found), tenant, tenant, v.digest)
 			default:
-				fmt.Fprintf(os.Stderr, "roster: linked %d of %d.\n", len(found)-failed, len(found))
+				fmt.Fprintf(os.Stderr, "roster: linked %d of %d.\n", len(v.found)-v.failed, len(v.found))
 			}
-			if failed > 0 {
-				return fmt.Errorf("%d could not be linked; each is said above", failed)
+			if of == "" {
+				// What `--of` names, as `roster trail rows` says its own.
+				fmt.Fprintf(os.Stderr, "digest %s\n", v.digest)
+			}
+			if v.failed > 0 {
+				return fmt.Errorf("%d could not be linked; each is said above", v.failed)
 			}
 
 			return nil
@@ -319,10 +337,18 @@ type adopted struct {
 	subject string
 }
 
+// adoption is what one run of [adoptScim] found and did: the list, its
+// digest, and how many of it could not be linked.
+type adoption struct {
+	found  []adopted
+	digest string
+	failed int
+}
+
 // adoptScim is [newCmdScimAdopt] without the process: everybody of the tenant
 // whose directory said what it calls them (`Holder.directory_subject`) and who
 // has no identity at the connection it provisions through, written to `out` a
-// line each -- and, when `write`, linked there.
+// line each -- and, when `of` is the digest of that list, linked there.
 //
 // # Why this is a command at the box, and not something a directory does
 //
@@ -333,6 +359,15 @@ type adopted struct {
 // decision about a way into somebody's account, and that is the deployment's
 // to make, looking at the list: an address beside an id, where one that does
 // not belong together is seen before it is written.
+//
+// # What is believed is the list that was read
+//
+// The list is read again by the run that writes, and a directory may have
+// said something in between: somebody new on it, or an address or an id that
+// moved. So the run that writes is told which list was read, by its digest
+// ([listDigest]), and writes nothing when the list it reads now is another --
+// it prints that one, and its digest, for somebody to read. The whole list or
+// none of it: a line cannot be left out.
 //
 // Each link is the write `roster identity add` makes, through the same rules
 // -- a subject somebody else signs in by is refused, and said -- and what was
@@ -345,11 +380,11 @@ type adopted struct {
 // showed (`access.Saw`) in a call of `HolderService/List` made at the shell by
 // `by`, which is the RPC it stands for, and prints once that row is written
 // (#221, [cmd.ListKeys]).
-func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant string, write bool, out io.Writer) ([]adopted, int, error) {
+func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant string, of string, out io.Writer) (adoption, error) {
 	at := rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build()
 	t, err := s.Ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{Ref: at}.Build())
 	if err != nil {
-		return nil, 0, fmt.Errorf("--tenant %s: %w", tenant, err)
+		return adoption{}, fmt.Errorf("--tenant %s: %w", tenant, err)
 	}
 	at = rstr.TenantRef_builder{Id: t.GetId()}.Build()
 
@@ -360,7 +395,7 @@ func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant strin
 			After:   after,
 		}.Build())
 		if err != nil {
-			return nil, 0, err
+			return adoption{}, err
 		}
 		for _, v := range vs.GetItems() {
 			if v.GetProvisions() {
@@ -372,7 +407,7 @@ func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant strin
 		}
 	}
 	if provider == "" {
-		return nil, 0, fmt.Errorf("--tenant %s: no connection of it provisions its people, so no directory has matched anybody", tenant)
+		return adoption{}, fmt.Errorf("--tenant %s: no connection of it provisions its people, so no directory has matched anybody", tenant)
 	}
 
 	var found []adopted
@@ -397,13 +432,23 @@ func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant strin
 
 		return nil
 	}); err != nil {
-		return nil, 0, err
+		return adoption{}, err
 	}
 
-	failed := 0
+	r := adoption{found: found, digest: listDigest(t.GetId(), provider, found)}
+	if of != "" && of != r.digest {
+		for _, v := range found {
+			fmt.Fprintf(out, "%s\t%s\t%s\n", v.alias, v.address, v.subject)
+		}
+		fmt.Fprintf(os.Stderr, "digest %s\n", r.digest)
+
+		return r, fmt.Errorf("--of: the list read was %s, and it is now %s; nothing was written. "+
+			"Read the list above, and `--confirm %s --of %s` links it where you believe it", of, r.digest, tenant, r.digest)
+	}
+
 	for _, v := range found {
 		fmt.Fprintf(out, "%s\t%s\t%s\n", v.alias, v.address, v.subject)
-		if !write {
+		if of == "" {
 			continue
 		}
 
@@ -411,7 +456,7 @@ func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant strin
 		if _, err := s.Ungated.Identity().Add(ctx, rstr.IdentityAddRequest_builder{
 			Holder: ref, Provider: provider, Subject: v.subject,
 		}.Build()); err != nil {
-			failed++
+			r.failed++
 			fmt.Fprintf(os.Stderr, "roster: %s was not linked: %v\n", v.alias, err)
 
 			continue
@@ -419,11 +464,36 @@ func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant strin
 		if _, err := s.Ungated.Holder().Tell(ctx, rstr.HolderTellRequest_builder{
 			Ref: ref, Subject: z.Ptr(""),
 		}.Build()); err != nil {
-			return found, failed, fmt.Errorf("%s is linked, and what the directory said of them was not taken away: %w", v.alias, err)
+			return r, fmt.Errorf("%s is linked, and what the directory said of them was not taken away: %w", v.alias, err)
 		}
 	}
 
-	return found, failed, nil
+	return r, nil
+}
+
+// listDigest is what names the list `adopt` printed of a tenant and the
+// connection its directory provisions through: SHA-256, in hexadecimal, of the
+// tenant's identifier, the connection's name, and of each line in the order
+// printed the person's identifier, alias, address and what the directory
+// calls them -- each followed by a zero byte. So a line added, taken away or
+// moved, or an address or an id that changed, is another digest.
+func listDigest(tenant []byte, provider string, found []adopted) string {
+	h := sha256.New()
+	field := func(b []byte) {
+		h.Write(b)
+		h.Write([]byte{0})
+	}
+
+	field(tenant)
+	field([]byte(provider))
+	for _, v := range found {
+		field(v.id)
+		field([]byte(v.alias))
+		field([]byte(v.address))
+		field([]byte(v.subject))
+	}
+
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // matched is everybody of the tenant `at` whose directory said what it calls
