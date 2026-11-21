@@ -86,10 +86,10 @@ const (
 // The decision an app holds has two halves, and the four facts are the first:
 // *this is that person*. The second -- *they may do these things* -- is what
 // `HolderService/Reaches` answered when the app asked, and it stops being true
-// when somebody writes a role, a binding or a membership that reaches them. So
-// an event is sent about each person such a write may have changed that for,
-// saying so (`SYNC_REASON_REACH`), and an app that keeps what `Reaches` said
-// asks again (`reach`, `docs/apps.md`).
+// when somebody writes a role, a binding or a membership that reaches them, or
+// erases a group or a team they are in. So an event is sent about each person
+// such a write may have changed that for, saying so (`SYNC_REASON_REACH`), and
+// an app that keeps what `Reaches` said asks again (`reach`, `docs/apps.md`).
 //
 // It says *may have*, and names nobody's methods. Working out whether what a
 // person reaches really moved is asking the policy about everybody a role is
@@ -193,10 +193,10 @@ type SyncService_WatchClient = grpc.ServerStreamingClient[SyncEvent]
 // The decision an app holds has two halves, and the four facts are the first:
 // *this is that person*. The second -- *they may do these things* -- is what
 // `HolderService/Reaches` answered when the app asked, and it stops being true
-// when somebody writes a role, a binding or a membership that reaches them. So
-// an event is sent about each person such a write may have changed that for,
-// saying so (`SYNC_REASON_REACH`), and an app that keeps what `Reaches` said
-// asks again (`reach`, `docs/apps.md`).
+// when somebody writes a role, a binding or a membership that reaches them, or
+// erases a group or a team they are in. So an event is sent about each person
+// such a write may have changed that for, saying so (`SYNC_REASON_REACH`), and
+// an app that keeps what `Reaches` said asks again (`reach`, `docs/apps.md`).
 //
 // It says *may have*, and names nobody's methods. Working out whether what a
 // person reaches really moved is asking the policy about everybody a role is

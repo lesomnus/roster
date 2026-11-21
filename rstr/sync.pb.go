@@ -50,7 +50,8 @@ const (
 	SyncReason_SYNC_REASON_REOPENED SyncReason = 6
 	// What they may call may have changed: a role, a binding or a membership
 	// that reaches them -- through a group, or a team -- was written, added or
-	// erased. None of the timestamps moved. An app keeping what
+	// erased, or a group or a team they are in was erased. None of the
+	// timestamps moved. An app keeping what
 	// `HolderService/Reaches` answered about them asks again; the event says
 	// nothing of what they reach, which is that method's to answer.
 	SyncReason_SYNC_REASON_REACH SyncReason = 7

@@ -263,3 +263,73 @@ func TestNobodyIsToldWhatAnotherCustomerMayCall(t *testing.T) {
 
 	x.Empty(caughtUp(t, r.as, r.conn, r.c, r.canary), "an app was told what somebody in a tenant it cannot read may call")
 }
+
+// heardOfTeam is what of `vs` is about `who`.
+func heardOfTeam(vs []*app.SyncEvent, who pdid.Id) []*app.SyncEvent {
+	var out []*app.SyncEvent
+	for _, v := range vs {
+		if string(v.GetHolder()) == string(who.Bytes()) {
+			out = append(out, v)
+		}
+	}
+
+	return out
+}
+
+// TestATeamErasedIsHeardByEverybodyOnIt: a role held in a team stops granting
+// when the team is erased, and the erase writes the team's row and no place on
+// it. The stream read no write to a team's own row, so `Reaches` about
+// somebody on it went from a method to none and nothing was said of them.
+// Everybody with a live place on it is told, once, as an erased group's
+// members are; somebody whose place was taken away before is not, since the
+// team took nothing more from them.
+func TestATeamErasedIsHeardByEverybodyOnIt(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+	ctx, stop := context.WithCancel(ctx)
+	defer stop()
+	r := reaching(t, b, ctx)
+
+	lead := b.holder(t, ctx, b.Contoso, "lead")
+	staff := b.holder(t, ctx, b.Contoso, "staff")
+	left := b.holder(t, ctx, b.Contoso, "left")
+	role := b.role(t, ctx, "desk", "/roster.HolderService/Get")
+	team := b.team(t, ctx, b.site(t, ctx, b.Contoso, "seoul"), "desk")
+	teamRef := app.TeamRef_builder{Id: team.Bytes()}.Build()
+
+	places := map[pdid.Id][]byte{}
+	for _, who := range []pdid.Id{lead, staff, left} {
+		v, err := r.teams.Add(r.as, app.TeamMembershipAddRequest_builder{
+			Team:   teamRef,
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Role:   app.RoleRef_builder{Id: role.Bytes()}.Build(),
+		}.Build())
+		x.NoError(err)
+		places[who] = v.GetId()
+	}
+	reachedBy(t, r.c, lead, staff, left)
+	_, err := r.teams.Erase(r.as, app.TeamMembershipRef_builder{Id: places[left]}.Build())
+	x.NoError(err)
+	reachedBy(t, r.c, left)
+	caughtUp(t, r.as, r.conn, r.c, r.canary)
+
+	holders := app.NewHolderServiceClient(r.conn)
+	ref := app.HolderRef_builder{Id: lead.Bytes()}.Build()
+	before, err := holders.Reaches(r.as, app.HolderReachesRequest_builder{Ref: ref}.Build())
+	x.NoError(err)
+	x.Contains(before.GetMethods(), "/roster.HolderService/Get")
+
+	_, err = app.NewTeamServiceClient(r.conn).Erase(r.as, teamRef)
+	x.NoError(err)
+	after, err := holders.Reaches(r.as, app.HolderReachesRequest_builder{Ref: ref}.Build())
+	x.NoError(err)
+	x.NotContains(after.GetMethods(), "/roster.HolderService/Get", "the team's role is still held")
+
+	heard := caughtUp(t, r.as, r.conn, r.c, r.canary)
+	for _, who := range []pdid.Id{lead, staff} {
+		vs := heardOfTeam(heard, who)
+		x.Len(vs, 1, "somebody on a team that was erased was not told what they may call changed")
+		x.Equal(app.SyncReason_SYNC_REASON_REACH, vs[0].GetReason())
+	}
+	x.Empty(heardOfTeam(heard, left), "somebody who had left the team was told of it")
+}

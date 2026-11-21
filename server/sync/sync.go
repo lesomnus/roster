@@ -116,11 +116,11 @@
 // and a role, a binding or a membership changes -- none of them a column on the
 // person. So a write to one of those is read for who it reaches ([Reached]):
 // the person a binding or a membership names, everybody in the group a binding
-// names, everybody a role reaches by any of those, everybody in a group that
-// was erased. Each of them the caller may see is told, with their four facts as
-// they are and `SYNC_REASON_REACH`, once per batch and not at all when a fact
-// of theirs moved in it -- an event about them is already on its way, and an
-// app drops what it knew of somebody on any event.
+// names, everybody a role reaches by any of those, everybody in a group or on a
+// team that was erased. Each of them the caller may see is told, with their
+// four facts as they are and `SYNC_REASON_REACH`, once per batch and not at all
+// when a fact of theirs moved in it -- an event about them is already on its
+// way, and an app drops what it knew of somebody on any event.
 //
 // It compares nothing, unlike the four facts. Whether what a person reaches
 // really moved is the policy asked about everybody a role is bound to, at every
@@ -326,7 +326,7 @@ func (s *server) Watch(_ *app.SyncWatchRequest, out grpc.ServerStreamingServer[a
 					err = s.one(ctx, told, was, k)
 				case pd.TenantDomain:
 					err = s.people(ctx, told, was, tenants, k)
-				case pd.BindingDomain, pd.RoleDomain, pd.GroupDomain, pd.GroupMembershipDomain, pd.TeamMembershipDomain:
+				case pd.BindingDomain, pd.RoleDomain, pd.GroupDomain, pd.TeamDomain, pd.GroupMembershipDomain, pd.TeamMembershipDomain:
 					if s.reached == nil {
 						continue
 					}
