@@ -231,8 +231,8 @@ err = reaches.May(ctx, call.Actor, call.Action)
 // And inside a method, for a permission finer than it:
 err = reaches.May(ctx, call.Actor, "/loft.Permission/BookForOthers")
 
-// In every process, as standing's follower is:
-s.Spin = append(s.Spin, spin.InEveryProcess(reaches.Follower("loft.roster-reach")))
+// Marked to run in every process, as standing's follower is:
+s.Spin = append(s.Spin, reaches.Follower("loft.roster-reach"))
 ```
 
 - **`Holders.May` is `Reaches` and `frame.Covers`**, read from `everywhere`:

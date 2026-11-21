@@ -88,15 +88,18 @@ func (h *Holders) Follow(ctx context.Context) error {
 // Follower is [Holders.Follow] as a loop for payday's `spin.Run`, called
 // `name` -- the app's, and prefixed with it as payday asks (`loft.roster-reach`).
 //
-// Mark it to run in every process, with `spin.InEveryProcess`, for
-// [standing.Accounts.Follower]'s reason: what the stream drops is what **this**
-// process kept, and a stream held by the one process that holds the lease
-// leaves every other replica answering from what it was told, for up to
-// [standing.HeldTtl], after the role was taken away.
+// It comes marked to run in every process (`spin.InEveryProcess`), and an app
+// that marks it again changes nothing, for [standing.Accounts.Follower]'s
+// reason: what the stream drops is what **this** process kept, and a stream
+// held by the one process that holds the lease would leave every other replica
+// answering from what it was told, for up to [standing.HeldTtl], after the
+// role was taken away.
 func (h *Holders) Follower(name string) spin.Spinner {
-	return spin.Called(name, spin.Func(func(ctx context.Context) error {
+	// Named outside the mark, so that the loop handed back still says its
+	// name; payday finds the mark beneath it.
+	return spin.Called(name, spin.InEveryProcess(spin.Func(func(ctx context.Context) error {
 		return h.Follow(ctx)
-	}))
+	})))
 }
 
 // follow is one stream, from opening to the error that ended it.

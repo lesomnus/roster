@@ -122,21 +122,23 @@ func (a *Accounts) Follow(ctx context.Context, on func(ctx context.Context, v St
 // `name` -- the app's, and prefixed with it as payday asks
 // (`loft.roster-stream`).
 //
-// Mark it to run in every process, with `spin.InEveryProcess`. What the stream
-// says drops what **this** process knows of an account, so a stream held by the
-// one process that holds the deployment's lease leaves every other process
-// believing what it was told for up to [HeldTtl] -- which is a session that
-// outlives a suspension, in all but one replica. Left unmarked under a lease,
-// it is that, and nothing says so.
+// It comes marked to run in every process (`spin.InEveryProcess`), and an app
+// that marks it again changes nothing. What the stream says drops what
+// **this** process knows of an account, so a stream held by the one process
+// that holds the deployment's lease would leave every other process believing
+// what it was told for up to [HeldTtl] -- a session that outlives a
+// suspension, in all but one replica -- and no use of the loop wants that.
 //
-// The cost is `on`, which every process then runs for every account the stream
-// speaks of: what it does
-// has to be safe to do once per process, as writing down state is -- a session
-// ended twice is ended, an account marked twice is marked.
+// The cost is `on`, which every process then runs for every account the
+// stream speaks of: what it does has to be safe to do once per process, as
+// writing down state is -- a session ended twice is ended, an account marked
+// twice is marked.
 func (a *Accounts) Follower(name string, on func(ctx context.Context, v Standing) error) spin.Spinner {
-	return spin.Called(name, spin.Func(func(ctx context.Context) error {
+	// Named outside the mark, so that the loop handed back still says its
+	// name; payday finds the mark beneath it.
+	return spin.Called(name, spin.InEveryProcess(spin.Func(func(ctx context.Context) error {
 		return a.Follow(ctx, on)
-	}))
+	})))
 }
 
 // follow is one stream, from opening to the error that ended it.
