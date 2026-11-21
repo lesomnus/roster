@@ -1040,12 +1040,80 @@ func TestADirectoryChangesTheGroupsItMadeAndNoOther(t *testing.T) {
 		x.Equal(http.StatusNotFound, code)
 	})
 
+	// Where only the alias meets -- the directory's group is called what an
+	// operator's is, which no group it made is -- the directory's is another
+	// group under another alias, as a person whose alias is taken is somebody
+	// else under a suffix. It was refused as taken on every cycle, though no
+	// group of the directory's had the name.
 	t.Run("not taken over by a group named alike", func(t *testing.T) {
 		x := require.New(t)
-		code, got := d.group(t, http.MethodPost, "", map[string]any{"displayName": "On Call", "externalId": opsOid})
-		x.Equal(http.StatusConflict, code, "%v", got)
-		x.Equal("uniqueness", got["scimType"])
-		x.Empty(d.membersOf(t, theirId.String()))
+
+		// One with somebody in it and a role bound to it, which is what a
+		// group taken over would hand the directory.
+		payroll, err := d.s.Ungated.Group().Add(ctx, rstr.GroupAddRequest_builder{Tenant: at, Alias: "payroll", Name: "Payroll"}.Build())
+		x.NoError(err)
+		payrollId, err := pdid.From(payroll.GetId())
+		x.NoError(err)
+		_, err = d.s.Ungated.GroupMembership().Add(ctx, rstr.GroupMembershipAddRequest_builder{
+			Holder: rstr.HolderRef_builder{Id: who.Bytes()}.Build(), Group: rstr.GroupRef_builder{Id: payroll.GetId()}.Build(),
+		}.Build())
+		x.NoError(err)
+		reads, err := d.s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
+			Tenant: at, Alias: "payroll-reader", Methods: []string{rstr.AccessService_List_FullMethodName},
+		}.Build())
+		x.NoError(err)
+		_, err = d.s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+			Role: rstr.RoleRef_builder{Id: reads.GetId()}.Build(), Group: rstr.GroupRef_builder{Id: payroll.GetId()}.Build(),
+		}.Build())
+		x.NoError(err)
+		bindings := func() []string {
+			t.Helper()
+			var out []string
+			for _, g := range [][]byte{theirs.GetId(), payroll.GetId()} {
+				vs, err := d.s.Ungated.Binding().List(ctx, rstr.BindingListRequest_builder{
+					Filters: []*rstr.BindingFilter{rstr.BindingFilter_builder{Group: rstr.GroupRef_builder{Id: g}.Build()}.Build()},
+				}.Build())
+				x.NoError(err)
+				for _, v := range vs.GetItems() {
+					out = append(out, string(v.GetId()))
+				}
+			}
+
+			return out
+		}
+		before := bindings()
+		x.Len(before, 1)
+
+		for _, tc := range []struct {
+			name, alias string
+			theirs      pdid.Id
+			members     map[string]string
+		}{
+			{"On Call", "on-call", theirId, map[string]string{}},
+			{"Payroll", "payroll", payrollId, map[string]string{"erin": ""}},
+		} {
+			code, got := d.group(t, http.MethodPost, "", map[string]any{"displayName": tc.name, "externalId": guid(t)})
+			x.Equal(http.StatusCreated, code, "%v", got)
+			mine, err := pdid.Parse(got["id"].(string))
+			x.NoError(err)
+			x.NotEqual(tc.theirs, mine, "another group")
+			row, err := d.s.Ungated.Group().Get(ctx, rstr.GroupGetRequest_builder{
+				Ref: rstr.GroupRef_builder{Id: mine.Bytes()}.Build(), Select: rstr.GroupSelect_builder{All: z.Ptr(true)}.Build(),
+			}.Build())
+			x.NoError(err)
+			x.True(strings.HasPrefix(row.GetAlias(), tc.alias+"-"), "under another alias: %s", row.GetAlias())
+			x.Equal(map[string]string{"scim": "group-manager"}, d.membersOf(t, mine.String()))
+
+			row, err = d.s.Ungated.Group().Get(ctx, rstr.GroupGetRequest_builder{
+				Ref: rstr.GroupRef_builder{Id: tc.theirs.Bytes()}.Build(), Select: rstr.GroupSelect_builder{All: z.Ptr(true)}.Build(),
+			}.Build())
+			x.NoError(err)
+			x.Equal(tc.name, row.GetName())
+			x.Equal(tc.alias, row.GetAlias())
+			x.Empty(row.GetLabels())
+			x.Equal(tc.members, d.membersOf(t, tc.theirs.String()), "the operator's group is as it was")
+		}
+		x.Equal(before, bindings(), "and so is what is bound to it")
 	})
 
 	t.Run("not reached by its key", func(t *testing.T) {

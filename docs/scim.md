@@ -426,7 +426,7 @@ back ([operating.md](operating.md) § *Stopping somebody*).
 | SCIM | roster |
 | --- | --- |
 | `id` | `Group.id` |
-| `displayName` | `Group.name`; the alias is made from it once, and stays |
+| `displayName` | `Group.name`; the alias is made from it once, with a suffix where another group has it, and stays |
 | `externalId` | the label `roster.directory` on the group |
 | `members` | a `GroupMembership` each, for the people the endpoint speaks of |
 
@@ -441,9 +441,12 @@ rule every manager is held to and none of the directory's own.
 **The label is how it finds them, and no rule reads it.** A group it made
 carries `roster.directory`, holding what the directory calls it. The endpoint
 speaks of the groups that carry it and of no other: one an operator made is not
-found, not changed, and **not taken over** by a directory naming a group alike
--- that create is refused as `uniqueness`, since handing a group to a directory
-is deciding who says what its bindings reach.
+found, not changed, and **not taken over** by a directory naming a group alike,
+since handing a group to a directory is deciding who says what its bindings
+reach. A create, or a rename, under a name one of the directory's own groups
+has already -- or a create under an `externalId` one has -- is refused as
+`uniqueness`, *a group here is already called that*; an operator's group is not
+among those, and the directory's is made beside it.
 
 **A role may be bound to such a group, or a client shown it, as to any other.**
 Nothing is refused a directory's group that is not refused every group. What
@@ -455,6 +458,16 @@ who else does -- which is what binding a role to a directory's group is for.
 writes `Group.name` (`Group.Update`). The alias was made from the first name and
 is what a token carries for a client the group is shown to (`GroupExposure`), so
 a rename in the directory never changes what a relying party grants on.
+
+**The alias is made by the rule for an address, and may carry a suffix.** It
+stops at an `@`, drops the digits it begins with and folds punctuation into a
+hyphen, so names a directory keeps apart can make one alias -- `R&D` and `R/D`
+are both `r-d`, `Sales@EU` and `Sales@US` both `sales`, `2024 Interns` and
+`2025 Interns` both `interns` -- and a group an operator made may have it
+already. Where it is taken, the directory's group is made under it with a
+hyphen and four letters after (`r-d-k3mq`), as a person whose alias is taken
+is. So an operator reads a group's alias in roster -- `roster group list` --
+before a relying party grants on it, rather than guessing it from the name.
 
 **Who is in it, as far as the directory is told, is the plain members.** Its
 own holder is in every group it made and is no member to it; somebody an
