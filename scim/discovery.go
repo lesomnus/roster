@@ -101,13 +101,18 @@ func userSchemaDoc() map[string]any {
 		}
 	}
 
+	userName := str("userName", "Their address, which is how a directory finds somebody here.", "readWrite")
+	userName["uniqueness"] = "server"
+
 	return map[string]any{
 		"schemas":     []string{schemaSchema},
 		"id":          userSchema,
 		"name":        "User",
 		"description": "A person, as roster keeps one.",
 		"attributes": []map[string]any{
-			str("userName", "Their address, which is how a directory finds somebody here.", "immutable"),
+			// Written, and one person's: a replace of it is kept and read back,
+			// and a second person under one is refused `uniqueness`.
+			userName,
 			// `name` is not listed, and is read: a `name.formatted` is what
 			// somebody is called where a directory says no `displayName`, and
 			// not a second name kept beside it -- so a schema that listed it
@@ -134,7 +139,7 @@ func userSchemaDoc() map[string]any {
 			},
 			{
 				"name": "emails", "type": "complex", "multiValued": true, "required": false,
-				"mutability": "immutable", "returned": "default",
+				"mutability": "readWrite", "returned": "default",
 				// Of one type, and said so. A directory writes and reads an
 				// address by its type -- `emails[type eq "work"].value` -- and
 				// Microsoft's validator makes one up for each type a schema
@@ -145,8 +150,12 @@ func userSchemaDoc() map[string]any {
 				// not listed: it is no value kept. The address a directory
 				// says is the primary one, and there is no second for it to
 				// say which of.
+				//
+				// Written: what a directory says is answered first, and the
+				// address a link is mailed to stays where the person or an
+				// operator put it (`person.user`).
 				"subAttributes": []map[string]any{
-					str("value", "An address.", "immutable"),
+					str("value", "An address.", "readWrite"),
 					{
 						"name": "type", "type": "string", "multiValued": false, "required": false, "caseExact": false,
 						"mutability": "immutable", "returned": "default", "uniqueness": "none",
