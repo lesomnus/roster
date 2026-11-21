@@ -428,6 +428,12 @@ in the directory before erasing them here, and the people a directory provisions
 do not delete their own account, whatever their tenant offers
 (`MeService.Leave`).
 
+**A list with no filter is the people who sign in through its connection.**
+Its `totalResults` is counted by asking after each of them what reads nothing
+personal, so it may count somebody no page shows -- a row a file declares that
+has an account at the connection, which only an operator writing one makes, or
+somebody erased between the count and the page -- and a page skips them.
+
 **The directory lifts its own suspensions and no other.** It is one way: it never
 hears that an operator suspended somebody, and restarting its provisioning says
 `active` for everybody in scope. So `Holder.directory` says whose a suspension is,
@@ -489,7 +495,11 @@ administrator appointed to manage one beside it is theirs to take out. A member
 is a person the endpoint speaks of, which is who `GET /Users/{id}` answers --
 a group inside a group is not followed, and roster has none. Somebody erased
 since, or deleted by the directory, keeps their place in roster as an erase
-leaves it, and is not among `members`.
+leaves it, and is not among `members`. Who is listed is asked with nothing
+personal, so a read of a group leaves no row of the access record for its
+members; what that does not ask is whether a file declared somebody, so a row
+a file declares that somebody else put in the group would be listed, though a
+read of it is `404`. Nothing the endpoint does puts one there.
 
 **A list of members is written whole or not at all.** Every id an `add` or a
 whole list names is looked up before anything is written, and one that is

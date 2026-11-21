@@ -96,8 +96,15 @@ func (s *Server) listUsers(ctx context.Context, w http.ResponseWriter, r *http.R
 	}
 	items := []any{}
 	for i := start - 1; i < len(ids) && len(items) < count; i++ {
+		// Somebody counted and not answered -- erased since, or a row a file
+		// declares -- is skipped, where the whole list was `404`.
 		p, err := s.read(ctx, t, ids[i])
 		if err != nil {
+			var nf *problem
+			if asProblem(err, &nf) && nf.status == http.StatusNotFound {
+				continue
+			}
+
 			return err
 		}
 		u, err := s.shownUser(ctx, p)
@@ -309,6 +316,17 @@ func asProblem(err error, p **problem) bool {
 // `totalResults` that is true: a tenant is people a directory provisions, a
 // count measured in thousands at the most, and a cycle that lists them is not
 // a request somebody waits on.
+//
+// Each is asked [Server.present], one call that reads nothing personal. It
+// read each person whole, three calls and three rows of the access record, on
+// every page. So the count may hold somebody no page shows: a holder a file
+// declares who has an account at the connection, which nothing makes unless
+// an operator writes one, or somebody erased between the count and the page,
+// which skips whom [Server.read] does not answer. It is not made exact by
+// reading `labels`, which are personal, for everybody.
+//
+// What would make it a call a hundred people is `HolderService/List`, which
+// is not on the key's list; adding it mints every key again.
 func (s *Server) everybody(ctx context.Context, t *tenancy) ([][]byte, error) {
 	var out [][]byte
 	seen := map[string]bool{}
@@ -332,15 +350,13 @@ func (s *Server) everybody(ctx context.Context, t *tenancy) ([][]byte, error) {
 			}
 			seen[string(id)] = true
 
-			if _, err := s.read(ctx, t, id); err != nil {
-				var nf *problem
-				if asProblem(err, &nf) && nf.status == http.StatusNotFound {
-					continue
-				}
-
+			ok, err := s.present(ctx, t, id)
+			if err != nil {
 				return nil, err
 			}
-			out = append(out, id)
+			if ok {
+				out = append(out, id)
+			}
 		}
 
 		after = vs.GetNext()
