@@ -329,6 +329,14 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 					"rules (`Update`, and each entity's own). take the setting out", v.block)
 		}
 	}
+	// And the rest of the file, once, where it is the deployment's
+	// ([Config.Meant]): the nested build that raises the control plane is
+	// handed a config this one made.
+	if prefix == keys.PrefixTenant {
+		if err := c.Meant(); err != nil {
+			return nil, err
+		}
+	}
 	// And an `audit:` block that cannot be meant: a setting nothing reads, or
 	// two that contradict each other. Each of them started, and did something
 	// other than what its file says -- a kind kept for ever, a trail that
@@ -1559,6 +1567,7 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 	s.unbounded(ctx)
 	s.aged(ctx, c)
 	s.alone(ctx, c)
+	s.plain(ctx, c)
 
 	// The stops, collected rather than deferred one at a time.
 	//
@@ -1776,6 +1785,25 @@ func (s *Server) aged(ctx context.Context, c Config) {
 			"%s.keepalive.max_connection_age_grace is not, so a connection that reaches its age ends no stream that is open on it: "+
 			"gRPC waits for one for ever, and a follower of the sync stream is never moved. "+
 			"Say how long a stream is given once its connection is that old", v.key, v.key))
+	}
+}
+
+// plain says, where it is so, that a listener block says `tls:` and an
+// `http.addr`, and the second is plain: `tls:` is the block's gRPC listener's
+// alone. Right for a proxy in front that holds the certificate, so said and
+// not refused; a block whose certificate is asked of every caller is refused
+// ([Config.Meant]). By `serve` as it starts, as [Server.unbounded] is.
+func (s *Server) plain(ctx context.Context, c Config) {
+	for _, b := range c.listeners() {
+		if !b.Tls.Active() || b.Http.Addr == "" {
+			continue
+		}
+		if b.key != "server" && !c.Control.Serves() {
+			continue
+		}
+
+		log.From(ctx).WarnContext(ctx, fmt.Sprintf("%[1]s.tls is %[1]s.addr's alone, and %[1]s.http.addr is plain: "+
+			"what it answers travels in the clear unless a proxy in front of it holds a certificate", b.key))
 	}
 }
 

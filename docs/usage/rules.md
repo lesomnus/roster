@@ -442,6 +442,13 @@ call is decided by: what is refused of it, where the process comes up.
 | A kind's block that says its content and no window keeps the deployment's window, and `profile: forever` is how a block says for ever | `cmd/config.go` | `TestAKindsContentAloneKeepsTheDeploymentsWindow` |
 | What looked as if nothing read it, and is read, still starts: a checkpoints key with no archive, a floor, `every` where a witness waits on it. And every `audit:` block the pages show, and every file and environment this repository ships | `cmd/config.go` | `TestWhatOfAnAuditBlockIsReadAfterAllStillStarts` · `TestEveryAuditBlockThePagesShowStarts` |
 
+And of the rest of that file, refused before anything is opened, in a sentence
+that names the key as the file writes it (`cmd.Config.Meant`).
+
+| | written in | held to it by |
+| --- | --- | --- |
+| A listener block's `tls:` is its gRPC listener's alone, and the `http.addr` beside it is plain: a block whose certificate is asked of every caller has no plain port beside it, and one whose certificate is not is said at start | `cmd/config.go` | `TestABlockThatAsksForACertificateHasNoPlainPortBesideIt` · `TestTlsBesideAnHttpPortIsSaidAtStart` |
+
 ## What roster does by itself
 
 Not refusals. These are rows roster writes beside the one a caller asked for,
