@@ -326,15 +326,10 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 		IdleTimeout:       2 * time.Minute,
 		MaxHeaderBytes:    64 << 10,
 	}
-	go func() {
-		<-ctx.Done()
-		_ = srv.Close()
-	}()
-	if err := srv.Serve(l); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return err
-	}
 
-	return nil
+	// Stopped as roster's own listeners stop: a request in flight is answered,
+	// under the one grace from the signal.
+	return cmd.ServeUntil(ctx, srv, l)
 }
 
 // mailOf is `account.mail` as the account app's deliverer, or nil where it

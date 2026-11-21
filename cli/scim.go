@@ -114,15 +114,10 @@ func serveScim(ctx context.Context, sc cmd.ScimConfig) error {
 		IdleTimeout:       2 * time.Minute,
 		MaxHeaderBytes:    64 << 10,
 	}
-	go func() {
-		<-ctx.Done()
-		_ = srv.Close()
-	}()
-	if err := srv.Serve(l); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return err
-	}
 
-	return nil
+	// Stopped as roster's own listeners stop: a request in flight is answered,
+	// under the one grace from the signal.
+	return cmd.ServeUntil(ctx, srv, l)
 }
 
 // scimOf is `scim:` with the deployment's own data plane as its roster, for

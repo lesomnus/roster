@@ -186,7 +186,9 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 			// In the same errgroup as the server, which is the whole of what
 			// "one process" costs and buys: whichever stops first stops the
 			// others, so a front door that cannot come up is a start-up failure
-			// rather than a deployment that is half there.
+			// rather than a deployment that is half there. And each that
+			// answers over HTTP is counted (`Front`), so that the data plane
+			// it calls is not stopped under a request it is still answering.
 			if c.Account.Serves() {
 				ac, err := frontDoor(ctx, c, l, s)
 				if err != nil {
@@ -202,7 +204,7 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 					slog.Warn("account: no key is named -- account.key, account.keys or ROSTER_ACCOUNT_KEY_<ALIAS> -- and there is " +
 						"no control plane to make one on, so the app is not serving; name a tenant key, or a control plane")
 				} else {
-					g.Go(func() error { return serveAccount(ctx, ac) })
+					g.Go(s.Front(func() error { return serveAccount(ctx, ac) }))
 				}
 			}
 			if c.Ldap.Serves() {
@@ -214,7 +216,7 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 			}
 			if c.Scim.Serves() {
 				sc := scimOf(c, l)
-				g.Go(func() error { return serveScim(ctx, sc) })
+				g.Go(s.Front(func() error { return serveScim(ctx, sc) }))
 			}
 			if c.Login.Serves() {
 				gc, err := loginApp(ctx, c, l, s)
@@ -242,7 +244,7 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 					slog.Warn("login: this deployment has no Login App key yet, so the app is not serving; " +
 						"`roster login provision` writes one and a restart picks it up")
 				} else {
-					g.Go(func() error { return serveLogin(ctx, gc) })
+					g.Go(s.Front(func() error { return serveLogin(ctx, gc) }))
 				}
 			}
 

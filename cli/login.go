@@ -960,10 +960,6 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		IdleTimeout:       2 * time.Minute,
 		MaxHeaderBytes:    64 << 10,
 	}
-	go func() {
-		<-ctx.Done()
-		_ = srv.Close()
-	}()
 
 	// The sign-in and the sign-out, in one errgroup: an app that answers
 	// challenges while roster cannot tell it who has been signed out is an app
@@ -979,13 +975,10 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 	// restart.
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return a.Watch(ctx) })
-	g.Go(func() error {
-		if err := srv.Serve(l); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			return err
-		}
 
-		return nil
-	})
+	// Stopped as roster's own listeners stop: a request in flight is
+	// answered, under the one grace from the signal.
+	g.Go(func() error { return cmd.ServeUntil(ctx, srv, l) })
 
 	return g.Wait()
 }
