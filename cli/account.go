@@ -224,6 +224,12 @@ const AccountKeyPrefix = "ROSTER_ACCOUNT_KEY_"
 // It does not build telemetry. Both callers already have; there is one process
 // either way and two would be two providers.
 func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
+	// What has a form, held to it before anything is dialled; `roster
+	// serve` asks the same in `cmd.Build`.
+	if err := ac.Meant(); err != nil {
+		return err
+	}
+
 	// Both names in every refusal below, for the reason `serveLdap` gives: the
 	// value reached here from a block or from a flag and this cannot tell which.
 	target, err := url.Parse(ac.Connect)

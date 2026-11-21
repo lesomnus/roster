@@ -17,6 +17,14 @@ description says it is. The one left is `server.timeout` (and `control.timeout`,
 `admin.timeout`), how long a call that came with no deadline of its own is
 given: thirty seconds unsaid, and less than none is **no deadline at all**.
 
+**A list or a map in a variable** is written in YAML's flow form, as the file
+would write it on one line: `ROSTER_VOUCH_KEYS='["one:…", "two:…"]'`,
+`ROSTER_LDAP_BASES='{acme: "dc=acme,dc=example"}'`. A map may also be written as
+pairs parted by commas, `acme=o=acme,newco=o=newco`, which cuts a value that holds
+commas of its own: an LDAP suffix of more than one part is written in the flow
+form, and a value that is no suffix -- what the pairs would make of one -- is
+refused at start.
+
 ## Which database
 
 Either, and the trade is size rather than capability. Everything roster generates
@@ -54,9 +62,11 @@ transaction, and the one of the four an operator has no way to reason about from
 the database's own documentation. Two overlapping write RPCs, each reading the row
 it is about before changing it, are the one case SQLite refuses to *wait* for, so
 the second is refused at once and `busy_timeout` is never consulted. payday adds
-it to any SQLite DSN that does not say it (`config.DbConfig.Open`, which carries
-the measurements); it is written out here because a DSN is the one place an
-operator can see what their database was asked for.
+it to a SQLite DSN written as a `file:` name that does not say it
+(`config.DbConfig.Open`, which carries the measurements); a bare path is a
+filename to SQLite and is left as it is, so it goes without. It is written out
+here because a DSN is the one place an operator can see what their database was
+asked for.
 
 The driver is named by whatever registers it, so Postgres is `pgx` and not
 `postgres`, and a name nothing registered is refused at startup rather than
@@ -676,7 +686,8 @@ ldap:
 
 login:                                    # only with Hydra in front; see login.md
   addr: :8091
-  hydra: { admin: http://hydra:4445 }
+  hydra: { admin: http://hydra:4445 }      # an address and no credential; a proxy's goes in hydra.header,
+                                          # whose values are never printed
   # key: left out -- one rk_ made at start, narrowed per request. A process of
   # its own names it: env:ROSTER_LOGIN_KEY, or file:… from `roster login provision`
 
@@ -692,6 +703,13 @@ scim:                                     # where a directory provisions people;
   addr: :8092                             # a listener of its own, and /scim/v2 is all it serves
   # concurrency: 4                        # requests of one tenant's directory worked on at once; below nought is refused
 ```
+
+**An address carries no credential.** `login.hydra.admin`, `login.base` and
+`account.base` are printed by `roster config` as the file writes them and logged
+where the app starts, so one written with anything between `://` and `@` is
+refused at start, by its key and without the address. A proxy in front of
+Hydra's admin API that wants a credential is given it in `login.hydra.header`,
+`Name: value`, whose values `roster config` never prints.
 
 `account.terminal` is **off unless a deployment says so**, and it is the one
 setting in that block that opens a door into an account: it lets a machine with no
@@ -1651,7 +1669,9 @@ rather than trusted, because an unsorted file answers *no* to things that are in
 it -- the quiet direction in the one feature whose whole job is to say yes.
 
 **`vouch.keys`** is what a second factor's seed is sealed under, and a deployment
-with no key refuses to enrol rather than storing one in the clear. Every replica
+with no key refuses to enrol rather than storing one in the clear. Each is
+`name:base64`, a name given once (two of one name are refused at start), and in
+`ROSTER_VOUCH_KEYS` the list is written in the flow form, `'["one:…"]'`. Every replica
 holds the whole set, so order only decides which key new seeds are sealed with:
 rotate in two phases, giving every replica the new key *second* first, and only
 then moving it to the front.

@@ -141,6 +141,22 @@ type Config struct {
 	Asks Resolver `yaml:"-"`
 }
 
+// Meant refuses a resolver that is none of the three: anything but `none`
+// was dialled as an address, so `None`, `off` or an address with no port
+// started, and every proof then failed as a resolver that could not be
+// reached -- the case `none` exists to tell apart from an air gap.
+func (c Config) Meant() error {
+	if c.Resolver == "" || c.Resolver == None {
+		return nil
+	}
+	if host, port, err := net.SplitHostPort(c.Resolver); err == nil && host != "" && port != "" {
+		return nil
+	}
+
+	return fmt.Errorf("host.resolver: %q is none of the three it may be: empty for the system's, an address with "+
+		"its port (1.1.1.1:53), or none for a deployment that cannot ask", c.Resolver)
+}
+
 // Asking is the resolver this configuration describes, and **nil** where it
 // describes none.
 func (c Config) Asking() Resolver {

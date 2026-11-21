@@ -145,6 +145,11 @@ func serveLdap(ctx context.Context, lc cmd.LdapConfig) error {
 	// or from a flag and this cannot tell which, so naming one would be right
 	// half the time -- and a reader who has only ever used the other would be
 	// told about a setting they do not have.
+	// What has a form, held to it before anything is dialled; `roster serve`
+	// asks the same in `cmd.Build`.
+	if err := lc.Meant(); err != nil {
+		return err
+	}
 	mode, err := ldap.ParseMode(lc.Bind)
 	if err != nil {
 		return fmt.Errorf("ldap.bind (--bind): %w", err)

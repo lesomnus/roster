@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -647,6 +648,7 @@ func (c Config) Meant() error {
 		plainBesideCertificate,
 		answersNothing,
 		lessThanNone,
+		formed,
 	} {
 		if err := v(c); err != nil {
 			return err
@@ -821,6 +823,123 @@ var clocksLeft = map[string]string{
 	// What reads it is the telemetry library, which holds its own block to
 	// its own rules.
 	"otel": "the telemetry library's",
+}
+
+// formed refuses a value that has a form and is not of it, each by its key.
+// Each started, and was found at the first request that read it or never.
+func formed(c Config) error {
+	if err := c.Host.Meant(); err != nil {
+		return err
+	}
+	if err := dirThere("user_console.dir", c.UserConsole.Dir); err != nil {
+		return err
+	}
+	if err := dirThere("admin.console.dir", c.Admin.Console.Dir); err != nil {
+		return err
+	}
+
+	// payday matches an origin against what a browser sends, which is a
+	// scheme and a host and nothing else, so one written with a path or with
+	// no scheme matches no browser's.
+	for _, b := range c.listeners() {
+		for _, o := range b.Http.Origins {
+			if o == "*" {
+				continue
+			}
+			u, err := url.Parse(o)
+			if err == nil && u.Scheme != "" && u.Host != "" && u.Path == "" && u.User == nil && u.RawQuery == "" && u.Fragment == "" {
+				continue
+			}
+
+			return fmt.Errorf("%s.http.origins: %q is no origin, which is a scheme and a host and nothing after them, "+
+				"as http://localhost:5173; a browser sends nothing else, so it would match none", b.key, o)
+		}
+	}
+
+	// Two keys of one name: the second replaced the first under the name new
+	// seeds are sealed with, so a seed sealed with the first could not be
+	// opened. The name is said and neither value.
+	names := map[string]bool{}
+	for _, v := range c.Vouch.Keys {
+		name, _, ok := strings.Cut(v, ":")
+		if !ok || name == "" {
+			// [vouch.NewKeyring] refuses it, in words of its own.
+			continue
+		}
+		if names[name] {
+			return fmt.Errorf("vouch.keys: two keys are named %q, and a seed names the key it is sealed with. "+
+				"name each key once", name)
+		}
+		names[name] = true
+	}
+
+	for _, v := range []struct {
+		serves bool
+		meant  func() error
+	}{
+		{c.Account.Serves(), c.Account.Meant},
+		{c.Ldap.Serves(), c.Ldap.Meant},
+		{c.Login.Serves(), c.Login.Meant},
+	} {
+		if !v.serves {
+			continue
+		}
+		if err := v.meant(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// webOrigin refuses a URL a browser is sent to, or that is dialled, that has
+// no scheme of the web's or no host: `hydra:4445` was taken, logged, and
+// failed at the first call. Empty is left to whatever reads it.
+//
+// And one that carries a credential between `://` and `@`. An address is
+// printed by `roster config` as the file writes it and logged where an app
+// starts, so it is no place for one; a credential for Hydra's admin API goes
+// in `login.hydra.header`, whose values are never printed. The address is not
+// said back.
+func webOrigin(key, v string) error {
+	if v == "" {
+		return nil
+	}
+	authority := v
+	if _, rest, ok := strings.Cut(v, "://"); ok {
+		authority = rest
+	}
+	if i := strings.IndexAny(authority, "/?#"); i >= 0 {
+		authority = authority[:i]
+	}
+	if strings.Contains(authority, "@") {
+		return fmt.Errorf("%s: the address carries a credential before its host, and an address is printed and logged "+
+			"as it is written. write it without one; a credential for Hydra's admin API goes in login.hydra.header, "+
+			"whose values are never printed", key)
+	}
+	u, err := url.Parse(v)
+	if err == nil && (u.Scheme == "http" || u.Scheme == "https") && u.Host != "" {
+		return nil
+	}
+
+	return fmt.Errorf("%s: %q is no URL with a scheme of http or https and a host, as https://login.example.com", key, v)
+}
+
+// dirThere refuses a page's directory that is not there: it started, and
+// served nothing. Empty is no page, which is what each key says.
+func dirThere(key, dir string) error {
+	if dir == "" {
+		return nil
+	}
+	st, err := os.Stat(dir)
+	if err == nil && st.IsDir() {
+		return nil
+	}
+	if err == nil {
+		return fmt.Errorf("%s: %s is not a directory. name the directory the page was built into, or take it out for no page", key, dir)
+	}
+
+	return fmt.Errorf("%s: %w. name the directory the page was built into, or take it out for no page", key, err)
 }
 
 // within answers whether `dir` is `root` or under it, as far as their paths

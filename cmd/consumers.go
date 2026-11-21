@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -215,6 +216,19 @@ func (c MailConfig) On() bool { return c.Addr != "" }
 // Serves is whether this deployment answers a front door.
 func (c AccountConfig) Serves() bool { return c.Addr != "" }
 
+// Meant refuses an `account:` block whose values are not of their form, as
+// [ScimConfig.Meant] does: each started and was found at the first request
+// that read it. Asked by [Build] where the block is served, and by `roster
+// account serve`; the flag is named beside the key, since this cannot tell
+// which said it.
+func (c AccountConfig) Meant() error {
+	if err := webOrigin("account.base (--base)", c.Base); err != nil {
+		return err
+	}
+
+	return dirThere("account.page.dir (--static)", c.Page.Dir)
+}
+
 // PageConfig is a built page, as a directory.
 type PageConfig struct {
 	// Dir is `ts/dist/account`, or wherever the build was put.
@@ -264,6 +278,26 @@ type LdapConfig struct {
 
 // Serves is whether this deployment answers LDAP.
 func (c LdapConfig) Serves() bool { return c.Addr != "" || c.AddrTls != "" }
+
+// Meant refuses an `ldap:` block whose values are not of their form; see
+// [AccountConfig.Meant].
+//
+// A suffix holds an `=`, and one that does not is what a suffix written with
+// its own commas in `ROSTER_LDAP_BASES` becomes: the environment parts a map's
+// pairs at commas, so `acme=dc=acme,dc=example` is two tenants, the second
+// called `dc` under `example`. The flow form, `{acme: "dc=acme,dc=example"}`,
+// is read whole.
+func (c LdapConfig) Meant() error {
+	for alias, suffix := range c.Bases {
+		if !strings.Contains(suffix, "=") {
+			return fmt.Errorf("ldap.bases.%s (--base): %q is no suffix, which is attributes and their values, as "+
+				"dc=acme,dc=example. In ROSTER_LDAP_BASES a suffix with commas is written in the flow form, "+
+				"'{acme: \"dc=acme,dc=example\"}': written as pairs, the commas part it", alias, suffix)
+		}
+	}
+
+	return nil
+}
 
 // ScimConfig is roster as a SCIM 2.0 endpoint: where a directory pushes the
 // people it provisions (`docs/scim.md`).
@@ -437,8 +471,9 @@ type LoginConfig struct {
 	// development.
 	InsecureCookie bool `yaml:"insecure_cookie"`
 
-	// Page is the sign-in page, when a deployment serves its own instead of the
-	// one this app embeds. Empty takes the embedded one.
+	// Page is the built sign-in page (`ts/dist/login`). Empty serves none: the
+	// app embeds no page, and `/login` answers 404, *this deployment serves no
+	// sign-in page*. A directory that is not there is refused at start.
 	Page PageConfig `yaml:"page"`
 }
 
@@ -460,6 +495,19 @@ type HydraConfig struct {
 
 // Serves is whether this deployment answers a login flow.
 func (c LoginConfig) Serves() bool { return c.Addr != "" }
+
+// Meant refuses a `login:` block whose values are not of their form; see
+// [AccountConfig.Meant].
+func (c LoginConfig) Meant() error {
+	if err := webOrigin("login.hydra.admin (--hydra)", c.Hydra.Admin); err != nil {
+		return err
+	}
+	if err := webOrigin("login.base (--base)", c.Base); err != nil {
+		return err
+	}
+
+	return dirThere("login.page.dir (--static)", c.Page.Dir)
+}
 
 // TlsConfig is a certificate and the key that goes with it, as paths.
 type TlsConfig struct {
