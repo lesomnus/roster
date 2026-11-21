@@ -272,6 +272,11 @@ account page says, on the form somebody a directory provisions edits their
 profile in, that what the directory says of them is written over what is there.
 What it sends that is not kept here --
 a title, a postal address -- is answered as accepted and written to the log.
+An attribute written behind its schema's URN, as RFC 7644 §3.10 allows --
+`urn:ietf:params:scim:schemas:core:2.0:User:active`, in a path or as a key of
+an operation with no path -- is the attribute it names, and so for a group's
+`displayName` and `members`; one behind a URN nothing here is kept of is not
+kept, and said.
 
 **A number is written, and replaced when it changes.** The people a directory
 provisions hold nothing, and a number is written onto somebody by whoever holds

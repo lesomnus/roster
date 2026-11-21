@@ -172,8 +172,22 @@ func parseGroupPatch(body []byte) (*groupChanges, error) {
 	}
 
 	c := &groupChanges{}
-	set := func(op, path string, raw json.RawMessage) error {
-		switch strings.ToLower(strings.TrimSpace(path)) {
+	var set func(op, path string, raw json.RawMessage) error
+	set = func(op, path string, raw json.RawMessage) error {
+		path = bare(path, groupSchema)
+		switch strings.ToLower(path) {
+		case strings.ToLower(groupSchema):
+			// The URN as a key of an operation with no path, holding the
+			// attributes behind it.
+			var all map[string]json.RawMessage
+			if err := json.Unmarshal(raw, &all); err != nil {
+				return badRequest("invalidValue", groupSchema+": an object")
+			}
+			for k, v := range all {
+				if err := set(op, k, v); err != nil {
+					return err
+				}
+			}
 		case "displayname":
 			v, err := text(raw)
 			if err != nil {
@@ -196,7 +210,7 @@ func parseGroupPatch(body []byte) (*groupChanges, error) {
 
 	for _, op := range p.Operations {
 		kind := strings.ToLower(strings.TrimSpace(op.Op))
-		path := strings.TrimSpace(op.Path)
+		path := bare(op.Path, groupSchema)
 
 		switch kind {
 		case "add", "replace":

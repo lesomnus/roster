@@ -120,12 +120,27 @@ func (c *changes) called() *string {
 	return c.formatted
 }
 
-// set is one attribute, by its path as a directory writes it.
+// set is one attribute, by its path as a directory writes it: bare, or
+// behind the core URN ([bare]).
 func (c *changes) set(path string, raw json.RawMessage) error {
-	p := strings.ToLower(strings.TrimSpace(path))
+	path = bare(path, userSchema)
+	p := strings.ToLower(path)
 	ext := strings.ToLower(enterpriseSchema)
 
 	switch {
+	case p == strings.ToLower(userSchema):
+		// The URN as a key of an operation with no path, holding the
+		// attributes behind it.
+		var all map[string]json.RawMessage
+		if err := json.Unmarshal(raw, &all); err != nil {
+			return badRequest("invalidValue", userSchema+": an object")
+		}
+		for k, v := range all {
+			if err := c.set(k, v); err != nil {
+				return err
+			}
+		}
+
 	case p == "displayname":
 		v, err := text(raw)
 		if err != nil {
@@ -260,7 +275,8 @@ func (c *changes) set(path string, raw json.RawMessage) error {
 // clear is a `remove` of one attribute.
 func (c *changes) clear(path string) {
 	empty := ""
-	p := strings.ToLower(strings.TrimSpace(path))
+	path = bare(path, userSchema)
+	p := strings.ToLower(path)
 	ext := strings.ToLower(enterpriseSchema)
 
 	switch p {
@@ -284,6 +300,22 @@ func (c *changes) clear(path string) {
 		}
 		c.ignored = append(c.ignored, path)
 	}
+}
+
+// bare is a path with the resource's own core URN taken off its front, without
+// regard to case, as a URN is compared: `urn:…:core:2.0:User:active` is
+// `active`, which RFC 7644 §3.10 lets a client write. It fell through to
+// *not kept here*, so a directory that wrote `active: false` that way was
+// answered `200` and nobody was suspended. A path behind any other URN is as
+// it was written: the enterprise extension's is read as it is, and one
+// nothing is kept of is not kept, and said.
+func bare(path, schema string) string {
+	p := strings.TrimSpace(path)
+	if len(p) > len(schema) && p[len(schema)] == ':' && strings.EqualFold(p[:len(schema)], schema) {
+		return p[len(schema)+1:]
+	}
+
+	return p
 }
 
 // text is a value a directory sent as a string, or as the one thing a string
