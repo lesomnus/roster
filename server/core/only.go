@@ -33,7 +33,9 @@ import (
 // same count asked by a write that adds to it ([coreIdentity.add]): two
 // accounts added at once each counted none, and thirty-eight of forty people
 // held both (#279). And *a tenant keeps somebody administering it* is one over
-// a tenant's rows ([Core.keepsAdministered]).
+// a tenant's rows ([Core.keepsAdministered]), and so is *a tenant's directory
+// provisions through one connection*, asked where a connection is marked to
+// provision ([Core.oneMarked]): both lock the tenant's row.
 //
 // # What they contend for
 //

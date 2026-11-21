@@ -8,6 +8,7 @@ import (
 	"unicode"
 
 	"github.com/lesomnus/z"
+	"github.com/protobuf-orm/ent/dialect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -265,10 +266,13 @@ func spelt(issuer string) string {
 // oneProvisions refuses a second connection a tenant's directory provisions
 // through. A directory names the people it makes once, so two would be two
 // places the same person could be linked, and the second the wrong one.
-func (s Core) oneProvisions(ctx context.Context, tenant []byte, self []byte) error {
+//
+// Asked through `next`, the server [Core.oneMarked] hands in: inside the
+// transaction the write is made in, behind the tenant's lock.
+func (s Core) oneProvisions(ctx context.Context, next app.Server, tenant []byte, self []byte) error {
 	after := ""
 	for {
-		vs, err := s.Next().Connection().List(ctx, app.ConnectionListRequest_builder{
+		vs, err := next.Connection().List(ctx, app.ConnectionListRequest_builder{
 			Filters: []*app.ConnectionFilter{app.ConnectionFilter_builder{
 				Tenant: app.TenantRef_builder{Id: tenant}.Build(),
 			}.Build()},
@@ -289,6 +293,42 @@ func (s Core) oneProvisions(ctx context.Context, tenant []byte, self []byte) err
 			return nil
 		}
 	}
+}
+
+// oneMarked makes `write`, which marks a connection of `tenant` as the one its
+// directory provisions through when `marks`, and refuses it where another is
+// marked already ([Core.oneProvisions]); `self` is the connection written, nil
+// for one being made. A write that does not mark is made as it always was.
+//
+// # Why behind the tenant's row
+//
+// It was a look and then a write: two connections marked at the same moment
+// each found none marked, and both were -- after which roster took the first
+// as the one and the endpoint the last, and every create by the directory was
+// refused. A count of other rows is the case [Core.only] is for, and it is a
+// tenant's rows, so the lock is the tenant's row, as whether anybody still
+// administers it is ([Core.keepsAdministered]). The question and the write
+// both go through the `next` the lock hands in, so whoever is second counts
+// what the first wrote.
+//
+// Asked of every caller, the deployment's own work included: a declared
+// connection is marked by what applies the file, and two of those are two
+// callers as much as two administrators are.
+//
+// `write` is handed the server to write through: inside the transaction, the
+// one under this layer bound to it.
+func (s Core) oneMarked(ctx context.Context, tenant, self []byte, marks bool, write func(next app.Server) error) error {
+	if !marks {
+		return write(s.Next())
+	}
+
+	return s.only(ctx, tenant, func(next app.Server, _ dialect.Driver) error {
+		if err := s.oneProvisions(ctx, next, tenant, self); err != nil {
+			return err
+		}
+
+		return write(next)
+	})
 }
 
 // A directory provisions the people of one organisation, linked at the door
@@ -399,6 +439,7 @@ func (s coreConnection) Add(ctx context.Context, req *app.ConnectionAddRequest) 
 	if err := mayProvision("provisions", req.GetProvisions(), req.GetIssuer()); err != nil {
 		return nil, err
 	}
+	var tenant []byte
 	if req.GetProvisions() {
 		t, err := s.Next().Tenant().Get(ctx, app.TenantGetRequest_builder{
 			Ref: req.GetTenant(), Select: app.TenantSelect_builder{}.Build(),
@@ -406,12 +447,21 @@ func (s coreConnection) Add(ctx context.Context, req *app.ConnectionAddRequest) 
 		if err != nil {
 			return nil, err
 		}
-		if err := s.oneProvisions(ctx, t.GetId(), nil); err != nil {
-			return nil, err
-		}
+		tenant = t.GetId()
 	}
 
-	return s.ConnectionServiceServer.Add(ctx, req)
+	var out *app.Connection
+	err := s.oneMarked(ctx, tenant, nil, req.GetProvisions(), func(next app.Server) error {
+		var err error
+		out, err = next.Connection().Add(ctx, req)
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 // Patch is closed at the transport, and is what the deployment's own writers
@@ -475,17 +525,26 @@ func (s coreConnection) Patch(ctx context.Context, req *app.ConnectionPatchReque
 			}
 		}
 	}
+	var tenant, self []byte
 	if req.GetProvisions() {
-		tenant, self, err := s.tenantOfConnection(ctx, req.GetRef())
-		if err != nil {
-			return nil, err
-		}
-		if err := s.oneProvisions(ctx, tenant, self); err != nil {
+		var err error
+		if tenant, self, err = s.tenantOfConnection(ctx, req.GetRef()); err != nil {
 			return nil, err
 		}
 	}
 
-	return s.ConnectionServiceServer.Patch(ctx, req)
+	var out *app.Connection
+	err := s.oneMarked(ctx, tenant, self, req.GetProvisions(), func(next app.Server) error {
+		var err error
+		out, err = next.Connection().Patch(ctx, req)
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
 
 // Update is `Patch` with the name held back -- and refused outright on a row a
@@ -552,12 +611,9 @@ func (s coreConnection) Update(ctx context.Context, req *app.ConnectionUpdateReq
 			return nil, err
 		}
 	}
+	var tenant, self []byte
 	if req.GetProvisions() {
-		tenant, self, err := s.tenantOfConnection(ctx, req.GetRef())
-		if err != nil {
-			return nil, err
-		}
-		if err := s.oneProvisions(ctx, tenant, self); err != nil {
+		if tenant, self, err = s.tenantOfConnection(ctx, req.GetRef()); err != nil {
 			return nil, err
 		}
 	}
@@ -591,5 +647,16 @@ func (s coreConnection) Update(ctx context.Context, req *app.ConnectionUpdateReq
 
 	// The generated one, not [coreConnection.Patch]: what that holds a patch to
 	// is said above, against the row as read.
-	return s.ConnectionServiceServer.Patch(ctx, patch.Build())
+	var out *app.Connection
+	err = s.oneMarked(ctx, tenant, self, req.GetProvisions(), func(next app.Server) error {
+		var err error
+		out, err = next.Connection().Patch(ctx, patch.Build())
+
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
 }
