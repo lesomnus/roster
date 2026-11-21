@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -644,5 +645,10 @@ func (s *Server) said(r *http.Request, ignored []string) {
 	if len(ignored) == 0 {
 		return
 	}
-	s.c.Log.InfoContext(r.Context(), "scim: not kept here", "method", r.Method, "path", r.URL.Path, "attributes", ignored)
+	// By the attribute's name: a path may say an address, and none is written.
+	names := make([]string, len(ignored))
+	for i, v := range ignored {
+		names[i], _, _ = strings.Cut(v, "[")
+	}
+	s.c.Log.InfoContext(r.Context(), "scim: not kept here", "method", r.Method, "path", r.URL.Path, "attributes", names)
 }
