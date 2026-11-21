@@ -35,7 +35,7 @@ writing a role whose methods end in `*`.
 | [`HolderService/SignsIn`](#holderservicesignsin) | *may see how somebody signs in* | everybody's keys and sessions, by name |
 | [A deployment key](#a-deployment-key) | a key for one app | its list, in every tenant |
 | [A key that mints keys](#a-key-that-mints-keys) | a key that lists one method | everything its holder holds |
-| [A directory's key](#a-directorys-key) | a sync job | makes people, and suspends the last administrator |
+| [A directory's key](#a-directorys-key) | a sync job | makes people, writes anybody's profile, reads everybody's addresses and accounts, and suspends the last administrator |
 | [The `self-service` role](#the-self-service-role) | a role nobody is bound | on for everybody the moment a method is in it |
 
 ## Becoming somebody
@@ -365,8 +365,23 @@ last administrator among them, whose word about who works there is not refused
 (`TestADirectoryMaySuspendTheLastAdministrator`).
 
 It makes only new people, writes no way into anybody already here, and lifts
-only a suspension it made ([scim.md](../scim.md)). What it can do with those is
-enough to matter: whoever holds it can lock a tenant out.
+only a suspension it made ([scim.md](../scim.md)). It reaches more than the
+people it makes and signs in, and that is decided:
+
+- It writes the profile of anybody of the tenant no file declares, an
+  administrator's among them, and who they report to
+  (`TestADirectorysKeyWritesTheProfileOfAnybodyNoFileDeclares`).
+- It makes groups, manages the ones its holder made, puts anybody of the tenant
+  in them, and erases them with what was bound to them
+  (`TestADirectorysKeyPutsAnybodyOfTheTenantInTheGroupsItMakes`).
+- It reads every person's addresses, accounts at providers and numbers
+  (`TestADirectorysKeyReadsEveryPersonsAddressesAccountsAndNumbers`).
+- The directory is whoever holds these verbs: nothing ties them to the key
+  `roster scim provision` minted, except that only the holder who made a group
+  manages it (`TestTheDirectoryIsWhoeverHoldsItsVerbs`).
+
+What it can do with those is enough to matter: whoever holds it can lock a
+tenant out, and rename its administrator.
 
 ## What everybody holds
 

@@ -2,11 +2,14 @@ package cmd_test
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/lesomnus/payday/config"
+	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/pdtest"
 	"github.com/lesomnus/xli/cfg"
 	"github.com/stretchr/testify/require"
@@ -209,4 +212,56 @@ func TestProvisionAfterTheDirectorysHolderWasErased(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 	x.Len(bs.GetItems(), 1, "bound the directory's role")
+}
+
+// TestTheMarkProvisionWroteComesOffByConnectionUpdate: the mark `roster scim
+// provision` puts on a connection comes off with `roster connection update`,
+// `provisions: false` under the version read, which is what the manual tells
+// an operator turning a tenant's directory off. The manual said how the mark
+// comes off a connection a file declares, and nothing of this one.
+func TestTheMarkProvisionWroteComesOffByConnectionUpdate(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	c := seedbed(t)
+	out, err := initRun(t, c)
+	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin"
+
+	s, err := cmd.Build(ctx, c)
+	x.NoError(err)
+	acme, err := s.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "acme"}.Build())
+	x.NoError(err)
+	at := app.TenantRef_builder{Id: acme.GetId()}.Build()
+	_, err = s.Ungated.Connection().Add(ctx, app.ConnectionAddRequest_builder{
+		Tenant: at, Name: "entra", Issuer: "https://login.microsoftonline.com/acme/v2.0", ClientId: "the-app",
+		SubjectClaim: "oid",
+	}.Build())
+	x.NoError(err)
+	x.NoError(s.Close())
+
+	stdoutOf(t, cli.NewCmdScim(cfg.New(cmd.Name, &c), &c), "provision", "--tenant", "acme", "--connection", "entra")
+
+	connection := func() *app.Connection {
+		t.Helper()
+		s, err := cmd.Build(ctx, c)
+		x.NoError(err)
+		defer s.Close()
+		v, err := s.Ungated.Connection().Get(ctx, app.ConnectionGetRequest_builder{
+			Ref:    app.ConnectionRef_builder{At: app.ConnectionRefByAt_builder{Tenant: at, Name: proto.String("entra")}.Build()}.Build(),
+			Select: app.ConnectionSelect_builder{All: proto.Bool(true)}.Build(),
+		}.Build())
+		x.NoError(err)
+
+		return v
+	}
+	v := connection()
+	x.True(v.GetProvisions())
+	k, err := pdid.From(v.GetId())
+	x.NoError(err)
+
+	out, err = entities(t, &c, "connection", "update", k.String(),
+		fmt.Sprintf(`{"date_updated":%q,"provisions":false}`, v.GetDateUpdated().AsTime().Format(time.RFC3339Nano)))
+	x.NoError(err, out)
+	x.False(connection().GetProvisions())
 }

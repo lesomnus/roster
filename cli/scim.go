@@ -371,8 +371,10 @@ type adoption struct {
 // none of it: a line cannot be left out.
 //
 // Each link is the write `roster identity add` makes, through the same rules
-// -- a subject somebody else signs in by is refused, and said -- and what was
-// kept is taken away once it is how roster knows them.
+// -- a subject somebody else signs in by is refused, and so is one an account
+// somebody erased still holds, which nobody can read and roster answers as
+// already there; each is said -- and what was kept is taken away once it is how
+// roster knows them.
 //
 // # On the access record, before anything is printed
 //
