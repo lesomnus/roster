@@ -148,12 +148,7 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 			// Go call, which is exactly where `Plain` belongs -- and this is
 			// the only command anybody types to create one.
 			if !c.Control.Serves() {
-				return errors.New(
-					"control.db.driver: init needs a control plane and this names no database for one. " +
-						"a deployment that adds one later serves auth.Plain until it does -- every caller is " +
-						"whoever they type, and an rt_ key minted by any of them sits inert in the data plane " +
-						"until the day a control plane reads it, when all of them work at once. " +
-						"name control.db, then run this again")
+				return needsControl("init")
 			}
 
 			// The archive's key, before anything is built that reads it: this
@@ -257,6 +252,18 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 			return nil
 		}),
 	}
+}
+
+// needsControl is the refusal of a command that would leave a deployment with
+// no control plane holding a key nothing reads: `init`, which would make one
+// serve `auth.Plain`, and `key add`, which would mint the key (#284).
+func needsControl(what string) error {
+	return fmt.Errorf(
+		"control.db.driver: %s needs a control plane and this names no database for one. "+
+			"a deployment that adds one later serves auth.Plain until it does -- every caller is "+
+			"whoever they type, and an rt_ key minted by any of them sits inert in the data plane "+
+			"until the day a control plane reads it, when all of them work at once. "+
+			"name control.db, then run this again", what)
 }
 
 // keyFor writes a key for the trail's archive to sign its account with, made

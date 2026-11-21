@@ -85,7 +85,12 @@ falling back.
 it answers anything and refuses one that is not the shape `internal/ent`
 describes, printing the SQL that is missing. That is what you want N replicas of;
 run the migration as its own step. `control.db.migrate` is the same switch for the
-other plane, and both are read.
+other plane, and both are read. `roster init` is that step for a new deployment:
+it makes both planes' tables whatever the switches say, since no other command
+is. The others that make tables ask them first -- `serve`, `login provision`,
+`resources apply` and `control key add` make a plane's only where its switch
+is on, and otherwise refuse a database without them -- and every other command
+alters none.
 
 **In `deploy/` the migration is the init container's.** `roster login provision`
 runs in the pod before `serve` and brings both planes to this build's shape
