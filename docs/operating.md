@@ -515,6 +515,37 @@ the walled data plane, where an operator's session names nobody. It is the only
 right one for the **user** console, for the same reason read the other way --
 that is where a roster user's session names somebody.
 
+### A stream held open
+
+roster sends nothing on a sync stream nothing happens on, so a connection that
+died without a word looks like a quiet tenant to whoever holds it. What tells
+the two apart is gRPC's keepalive, a ping each side may send. Where
+`server.keepalive` leaves a key unsaid, roster's own are:
+
+| key | unsaid is | what it is |
+| --- | --- | --- |
+| `server.keepalive.time` | a minute | how long the server waits before asking an idle connection whether it is there |
+| `server.keepalive.timeout` | twenty seconds | how long it waits for the answer before hanging up |
+| `server.keepalive.min_time` | twenty seconds | how often a client may ask the same of the server |
+
+A value the file says is kept as it says it. `control` and `admin` are left to
+gRPC's, a ping after two hours and a client allowed one every five minutes.
+
+**A follower dials with a ping every thirty seconds and ten seconds' wait**
+(`keepalive.ClientParameters{Time: 30 * time.Second, Timeout: 10 * time.Second}`
+in Go), and so learns of a connection that died within forty seconds. A client
+that asks more often than `min_time` is hung up on, `ENHANCE_YOUR_CALM` and
+`too_many_pings`: a deployment that raises `min_time` raises what its followers
+dial with first.
+
+**An age with no grace ends no stream.** `max_connection_age` asks a client to
+move once its connection is that old, and gRPC then waits for every stream open
+on it for as long as `max_connection_age_grace` says, which is for ever where
+nothing does. A sync stream is open for as long as its follower holds it, so an
+age alone moves no follower. `serve` says so as it starts, at `WARN`, where a
+listener's file says the first and not the second; nothing is defaulted for the
+grace.
+
 ## The admin console
 
 ```yaml
@@ -3060,10 +3091,13 @@ added here has to be too.
 
 The rest of the checklist:
 
-- **Set a maximum connection age.** `server.keepalive.max_connection_age`, and the
-  same under `control` and `admin`. Unset means a gRPC client holds its connection
-  forever, so a replica added to the pool gets no traffic until something else
-  disconnects. The HTTP transcoders balance per request and are unaffected.
+- **Set a maximum connection age, and its grace.** `server.keepalive.max_connection_age`
+  and `max_connection_age_grace`, and the same under `control` and `admin`. Unset
+  means a gRPC client holds its connection forever, so a replica added to the
+  pool gets no traffic until something else disconnects. An age with no grace
+  ends no stream that is open (§ *A stream held open*), so a follower of the
+  sync stream stays where it is. The HTTP transcoders balance per request and
+  are unaffected.
 - **The same `vouch.keys`, in the same order, everywhere** -- see above for why the
   rotation is two phases.
 - **The same breached-password corpus, or none.** It gates setting a password and
