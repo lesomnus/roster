@@ -754,8 +754,8 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 // # Whose row
 //
 // The person's, for a count of what is theirs; the tenant's, for whether
-// anybody still administers it, and whether it has a team of a name in no
-// site; the site's, for whether anything is in it when it is erased, and
+// anybody still administers it, whether it has a team of a name in no site,
+// and whether another of its connections is marked to provision; the site's, for whether anything is in it when it is erased, and
 // whether a role is bound there already; and the role's, for whether it is
 // bound across the tenant already. Which of them `who` is, is in the
 // identifier.
