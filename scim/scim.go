@@ -181,8 +181,8 @@ type Server struct {
 	// tenant is accepted.
 	turns sync.Map // string(tenant) -> chan struct{}
 
-	// known is what a token's tenant is, kept for a minute: every request
-	// would otherwise ask twice before it asked anything it came for.
+	// known is what a token's tenant is, kept for a minute for reads: every
+	// read would otherwise ask twice before it asked anything it came for.
 	known sync.Map // [32]byte -> *tenancy
 }
 
@@ -310,7 +310,7 @@ func (s *Server) authed(h handler) http.Handler {
 		// not carried over from the request.
 		ctx := metadata.AppendToOutgoingContext(r.Context(), "authorization", "Bearer "+token)
 
-		t, err := s.tenancyOf(ctx, token)
+		t, err := s.tenancyOf(ctx, token, !reads(r))
 		if err != nil {
 			unread(w, r)
 			if r.Context().Err() == nil {
@@ -432,11 +432,22 @@ func bearer(r *http.Request) (string, bool) {
 	return token, true
 }
 
+// reads is whether a request only reads, and so may be answered from what is
+// remembered of its key.
+func reads(r *http.Request) bool { return r.Method == http.MethodGet || r.Method == http.MethodHead }
+
 // tenancyOf is which tenant a key is, and which connection that tenant's
 // directory provisions through.
-func (s *Server) tenancyOf(ctx context.Context, token string) (*tenancy, error) {
+//
+// Remembered for a minute, for reads. A write asks again (fresh) and what it
+// learns is remembered for the reads after it: with `provisions` taken off a
+// connection, a rename, a number and every write of a group landed for that
+// minute, since only making, suspending and telling ask roster about the
+// mark themselves. A write that is refused leaves what was remembered as it
+// was, so a read within the minute is still answered.
+func (s *Server) tenancyOf(ctx context.Context, token string, fresh bool) (*tenancy, error) {
 	k := sha256.Sum256([]byte(token))
-	if v, ok := s.known.Load(k); ok {
+	if v, ok := s.known.Load(k); ok && !fresh {
 		if t := v.(*tenancy); time.Now().Before(t.until) {
 			return t, nil
 		}

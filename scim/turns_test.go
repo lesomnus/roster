@@ -38,13 +38,26 @@ type gate struct {
 	key    string
 	shut   bool
 
+	// calls is how many calls of each method roster was asked through it.
+	calls map[string]int
+
 	// arrived is told of each call held.
 	arrived chan struct{}
 	open    chan struct{}
 }
 
 func newGate() *gate {
-	return &gate{arrived: make(chan struct{}, 64), open: make(chan struct{})}
+	return &gate{arrived: make(chan struct{}, 64), open: make(chan struct{}), calls: map[string]int{}}
+}
+
+// asked is how many calls of method were made since it was last asked.
+func (g *gate) asked(method string) int {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	n := g.calls[method]
+	g.calls[method] = 0
+
+	return n
 }
 
 // close holds every call of method made under key from now on.
@@ -67,6 +80,7 @@ func (g *gate) release() {
 func (g *gate) holds(ctx context.Context, method string) bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	g.calls[method]++
 	if !g.shut || method != g.method {
 		return false
 	}
