@@ -246,7 +246,8 @@ s.Spin = append(s.Spin, spin.InEveryProcess(reaches.Follower("loft.roster-reach"
   which has no stream.
 - **Dropped when roster says so.** roster's stream says when what somebody may
   call may have changed -- a role, a binding or a membership that reaches them
-  was written, `SYNC_REASON_REACH` (`proto/app/sync.proto`) -- and the follower
+  was written, or a group or a team they are in was erased,
+  `SYNC_REASON_REACH` (`proto/app/sync.proto`) -- and the follower
   drops what is kept of anybody it hears of, a suspension or an erasure as
   much as a role. `standing`'s follower passes those events by, so an app
   running both holds two streams, one each.

@@ -13,15 +13,17 @@ import (
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/lesomnus/roster/internal/ent/role"
+	"github.com/lesomnus/roster/internal/ent/team"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/pd"
 )
 
 // Reached is who a write to a row of the access model -- a role, a binding, a
-// membership of a group or a team, a group -- may have changed what they may
-// call for: the paths `cmd/policy.go` walks to answer `Holder.Reaches`, read
-// from the other end. Nobody, for a row this caller may not see.
+// membership of a group or a team, a group, a team -- may have changed what
+// they may call for: the paths `cmd/policy.go` walks to answer
+// `Holder.Reaches`, read from the other end. Nobody, for a row this caller may
+// not see.
 //
 // What it answers is not news yet. Each of them is read through the wall
 // before anything is said of them ([server.reach]), so a path that reaches
@@ -53,6 +55,8 @@ func Reaching(db *ent.Client, narrow bare.Scope) Reached {
 			return r.role(ctx, k.Uuid())
 		case pd.GroupDomain:
 			return r.group(ctx, k.Uuid())
+		case pd.TeamDomain:
+			return r.team(ctx, k.Uuid())
 		}
 
 		return nil, nil
@@ -205,6 +209,42 @@ func (r reaching) group(ctx context.Context, k uuid.UUID) ([]pdid.Id, error) {
 	}
 
 	return r.members(ctx, groupmembership.GroupIdEQ(k))
+}
+
+// team is everybody with a place on a team that was erased, whose roles held
+// in it stopped reaching them with it (`liveTeam` in `cmd/policy.go`). The
+// erase writes the team's row and no place on it, so this is the one write
+// that says so. A team renamed or moved reaches nobody differently.
+//
+// A team brought back by a general write at the box is passed by, as a group
+// brought back is: it is read here as live, and so as nobody's news.
+func (r reaching) team(ctx context.Context, k uuid.UUID) ([]pdid.Id, error) {
+	q := r.db.Team.Query().Where(team.Id(k), team.DateErasedNotNil())
+	p, err := r.narrow.TeamScope(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if p != nil {
+		q = q.Where(p)
+	}
+	if ok, err := q.Exist(ctx); err != nil || !ok {
+		return nil, err
+	}
+
+	vs, err := r.db.TeamMembership.Query().
+		Where(teammembership.TeamIdEQ(k), teammembership.DateErasedIsNil()).
+		QueryHolder().
+		Ids(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]pdid.Id, len(vs))
+	for i, v := range vs {
+		out[i] = pdid.Id(v)
+	}
+
+	return out, nil
 }
 
 // members is the people of the live memberships `which` picks.
