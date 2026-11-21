@@ -290,6 +290,7 @@ how many requests are worked on at once is `scim.concurrency`.
 | --- | --- | --- |
 | A row a file declares is read-only at every port: not edited, not renamed, not erased, not narrowed, not widened. Signing a declared holder out everywhere edits nothing of it, and is not refused | `server/core/declared.go` | `TestARowAFileDeclaredIsWrittenFromThere` · `TestARowAFileDeclaresIsNotRenamed` · `TestADeclaredRoleIsNobodysToNarrow` · `TestADeclaredRoleIsNobodysToWiden` · `TestAFrontDoorsOwnRowsAreDeclared` |
 | A file declares a row of the tenant it names, and takes nobody else's | `cmd/resources.go` | `TestAFileDeclaresANameOfItsOwnTenant` |
+| A resources file is read strictly: a key nothing reads, and a kind nothing applies, are refused by file and line before anything is written; a file that declares nothing is said | `cmd/resources.go` | `TestAResourcesFileIsReadStrictly` · `TestAFileThatDeclaresNothingIsSaid` |
 | Nobody at a port says a file declared a row | `cmd/undeclared.go` | `TestNobodyAtAPortSaysAFileDeclaredARow` |
 | A file does not close a tenant and does not bring one back: what it declares of a tenant that is closed or destroyed, and under one, is left as it is, and the log says at each start which files still declare it. The server starts | `cmd/resources.go` | `TestAFileDoesNotBringATenantBack` |
 | A declared tenant is not renamed, at the box either: its alias is what its file finds it by | `server/core/tenant.go` | `TestADeclaredTenantIsNotRenamedAtTheBox` |
