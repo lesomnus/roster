@@ -7,10 +7,12 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	"net"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
+	"github.com/lesomnus/xli/flg"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -213,7 +215,53 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 		panic(err)
 	}
 
-	return t.Commands()
+	cs := t.Commands()
+	formatsFirst(cs)
+
+	return cs
+}
+
+// formatsFirst puts [formatsOf] in front of every command of `cs`, and of the
+// commands under them, that reads `-o` or `--in`: before the connection is
+// opened, which each generated command opens first.
+//
+// payday's verbs merge the request, make the call, and only then resolve the
+// printer: `roster --as admin holder add -o yaml @acme/f1` answered `-o yaml:
+// not a format` with status 1, and the person had been added; `erase` the
+// same (#284). A failure said of a write that was made is worse than either
+// alone. The order is payday's to mend; until it is, the tree roster builds
+// asks first.
+func formatsFirst(cs xli.Commands) {
+	for _, v := range cs {
+		formatsFirst(v.Commands)
+		if v.Flags.Get("output") == nil && v.Flags.Get("in") == nil {
+			continue
+		}
+
+		v.Handler = xli.Chain(xli.OnRun(formatsOf), v.Handler)
+	}
+}
+
+// formatsOf refuses an `-o` or an `--in` that is none of payday's, in payday's
+// own words, and lets every other through: a format it names, and a template
+// that parses.
+func formatsOf(ctx context.Context, cl *xli.Command, next xli.Next) error {
+	if v, ok := flg.Find[string](cl, "output"); ok && v != "" {
+		switch {
+		case slices.Contains([]string{"pretty", "json", "protojson", "prototext", "name", "table", "wide"}, v):
+		case strings.HasPrefix(v, "template="):
+			if _, err := pdcmd.Template(strings.TrimPrefix(v, "template=")); err != nil {
+				return fmt.Errorf("-o %s: %w", v, err)
+			}
+		default:
+			return fmt.Errorf("-o %s: not a format; one of pretty, json, prototext, protojson, name, table, wide, template=...", v)
+		}
+	}
+	if v, ok := flg.Find[string](cl, "in"); ok && v != "" && v != "json" && v != "protojson" {
+		return fmt.Errorf("--in %s: not an input format; one of json, protojson", v)
+	}
+
+	return next(ctx)
 }
 
 // nowhere takes out of `t` the commands the schema builds that work in neither

@@ -237,7 +237,10 @@ func newCmdControlEntities(c *cmd.Config) xli.Commands {
 	}
 	erase.Handler = xli.Chain(xli.OnRun(notBroughtBack), erase.Handler)
 
-	return t.Commands()
+	cs := t.Commands()
+	formatsFirst(cs)
+
+	return cs
 }
 
 // notBroughtBack is what `roster control holder erase` says before it erases
