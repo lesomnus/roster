@@ -35,6 +35,8 @@ func NewCmdLdap(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 		Brief: "roster as a directory, over LDAP",
 
 		Commands: xli.Commands{newCmdLdapServe(l, c)},
+
+		Handler: xli.RequireSubcommand(),
 	}
 }
 

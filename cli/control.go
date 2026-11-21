@@ -209,7 +209,7 @@ func newCmdControlVouch(c *cmd.Config) *xli.Command {
 // whichever row a query happened to return first -- so the command that could
 // make one is not here. The tenant itself is made by whatever writes first.
 //
-// # Nor `tenant erase`
+// # Nor `tenant erase`, `close` or `restore`
 //
 // No tenant is erased (`core.NotErased`), and this one is the deployment
 // itself: it is not closed either, so there is nothing to say a command there
@@ -217,8 +217,13 @@ func newCmdControlVouch(c *cmd.Config) *xli.Command {
 func newCmdControlEntities(c *cmd.Config) xli.Commands {
 	t := pdcmd.NewIn(controlConnector{c}, "roster")
 	overlays(t)
+	nowhere(t)
 
-	for _, path := range []string{"tenant/add", "tenant/erase"} {
+	// `tenant close` and `tenant restore` too, which the overlays mount on
+	// both trees: the control plane's one tenant is this deployment, and
+	// closing it would leave nobody to restore it, so the server refuses the
+	// first and has nothing to undo for the second (#284).
+	for _, path := range []string{"tenant/add", "tenant/erase", "tenant/close", "tenant/restore"} {
 		if err := t.Drop(path); err != nil {
 			// A path the schema no longer has, which is a mistake in this file
 			// rather than something a deployment can cause.

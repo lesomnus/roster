@@ -43,6 +43,7 @@ func NewCmdScim(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 		Name:     "scim",
 		Brief:    "roster as a SCIM 2.0 endpoint, where a directory provisions its people",
 		Commands: xli.Commands{newCmdScimServe(l, c), newCmdScimProvision(c), newCmdScimAdopt(c)},
+		Handler:  xli.RequireSubcommand(),
 	}
 }
 

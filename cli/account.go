@@ -83,6 +83,8 @@ func NewCmdAccount(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 		Brief: "the front door a customer's people sign in at",
 
 		Commands: xli.Commands{newCmdAccountServe(l, c), newCmdAccountProvision(c)},
+
+		Handler: xli.RequireSubcommand(),
 	}
 }
 

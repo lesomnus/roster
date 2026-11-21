@@ -70,6 +70,8 @@ func NewCmdTrail(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			newCmdTrailOwed(c),
 			newCmdTrailProfiles(),
 		},
+
+		Handler: xli.RequireSubcommand(),
 	}
 }
 

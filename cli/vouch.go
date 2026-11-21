@@ -85,6 +85,8 @@ func NewCmdVouch(c *cmd.Config) *xli.Command {
 			newCmdVouchEnrol(c),
 			newCmdVouchAccept(c),
 		},
+
+		Handler: xli.RequireSubcommand(),
 	}
 }
 
