@@ -10,6 +10,8 @@ package cmd
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"maps"
@@ -646,6 +648,7 @@ func AuditMeant(a config.AuditConfig) error {
 func (c Config) Meant() error {
 	for _, v := range []func(Config) error{
 		plainBesideCertificate,
+		certificates,
 		answersNothing,
 		lessThanNone,
 		formed,
@@ -694,6 +697,55 @@ func plainBesideCertificate(c Config) error {
 		return fmt.Errorf("%[1]s.tls.client_ca_file: asks every caller of %[1]s.addr for a certificate, and %[1]s.http.addr "+
 			"beside it is plain -- tls: is the gRPC listener's alone -- so it would answer whoever the first keeps out. "+
 			"take %[1]s.http.addr out, or put a proxy that asks for the certificate in front of it and take client_ca_file out", b.key)
+	}
+
+	return nil
+}
+
+// certificates refuses a listener block's certificate that cannot be read,
+// naming the key: both `cert_file` and `key_file` or neither, and each a file
+// that can be read.
+//
+// payday reads them where the block's gRPC server is made, which `serve` does
+// after the resources are applied, the port is bound and the loops have
+// started, and says `tls: both cert_file and key_file must be set` with
+// nothing to say which of three blocks.
+func certificates(c Config) error {
+	for _, b := range c.listeners() {
+		t := b.Tls
+		if !t.Active() {
+			continue
+		}
+		switch {
+		case t.CertFile == "" && t.KeyFile == "":
+			return fmt.Errorf("%[1]s.tls.cert_file: %[1]s.tls says TLS, and names neither cert_file nor key_file. "+
+				"name both, or take the block out", b.key)
+		case t.CertFile == "":
+			return fmt.Errorf("%[1]s.tls.cert_file: %[1]s.tls.key_file is named, and no certificate beside it. name both, or neither", b.key)
+		case t.KeyFile == "":
+			return fmt.Errorf("%[1]s.tls.key_file: %[1]s.tls.cert_file is named, and no key beside it. name both, or neither", b.key)
+		}
+
+		cert, err := os.ReadFile(t.CertFile)
+		if err != nil {
+			return fmt.Errorf("%s.tls.cert_file: %w", b.key, err)
+		}
+		key, err := os.ReadFile(t.KeyFile)
+		if err != nil {
+			return fmt.Errorf("%s.tls.key_file: %w", b.key, err)
+		}
+		if _, err := tls.X509KeyPair(cert, key); err != nil {
+			return fmt.Errorf("%[1]s.tls.cert_file, %[1]s.tls.key_file: not a certificate and its key: %[2]w", b.key, err)
+		}
+		if t.ClientCAFile != "" {
+			ca, err := os.ReadFile(t.ClientCAFile)
+			if err != nil {
+				return fmt.Errorf("%s.tls.client_ca_file: %w", b.key, err)
+			}
+			if !x509.NewCertPool().AppendCertsFromPEM(ca) {
+				return fmt.Errorf("%s.tls.client_ca_file: %s holds no certificate", b.key, t.ClientCAFile)
+			}
+		}
 	}
 
 	return nil
