@@ -2013,6 +2013,9 @@ row of the trail keeps a keyed digest of the row its write left, bound to the
 row of the trail that keeps it (payday#115). The key is a file of `openssl rand
 -base64 32` mounted as a secret, or `base64:` and the key in
 `ROSTER_AUDIT_DIGEST_KEY`, and keys rotated out go in `audit.digest.previous`.
+Give an old key there as a **file**, wherever the configuration may be printed:
+`roster config` redacts `audit.digest.key` and prints `audit.digest.previous` as
+written, so one written `base64:` is the key in clear.
 
 `trail rows` digests every row again -- live, or erased and not yet forgotten --
 and compares it with the newest row of the trail about it: in the database, or
