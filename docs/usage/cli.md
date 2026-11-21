@@ -73,10 +73,16 @@ roster --as admin key list
 ```
 
 What a local command shows or writes of anybody is on the access record, and
-the record names a person: `--as`, an operator of the control plane by alias --
-who `init` made, or anybody the admin console signs in. The entity commands,
-`key list` and `scim adopt` refuse to open anything without it on a deployment with a control
-plane, and refuse a name that matches nobody or a disabled operator. A row is
+the record names a person: `--as`, a holder of the control plane by alias that
+is not stopped -- who `init` made, anybody the admin console signs in, or, where
+the operators are all disabled, a service, which is the way back. The entity
+commands, `key list` and `scim adopt` refuse to start without it on a
+deployment with a control plane. Wherever it is given, every local command
+looks it up and refuses a name that matches nobody, or somebody disabled or
+erased, before it writes anything; the commands that write somebody's way in
+(`key add|revoke`, `control key add`, `vouch reset|set|unlock` on either
+plane, `control vouch enrol|prove`, `restore` of a person) and `trail accept` keep it, and the rest only
+check it ([operating.md](../operating.md#the-cli-on-the-box-is-the-deployment)). A row is
 written before the answer is printed, and a read whose row cannot be written is
 refused rather than shown. It is a flag on the root, before the command, and
 deliberately not a setting: the configuration and the environment are

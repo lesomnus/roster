@@ -1648,7 +1648,9 @@ identifier until a `serve` drains it.
 **What it reads and writes of anybody is on the access record, naming you**
 ([below](#who-read-whose-data)). Say who you are with `--as`, an operator of the
 control plane by alias -- the same person the admin console signs in, so a
-reviewer finds your reads at the admin console and at the shell under one name:
+reviewer finds your reads at the admin console and at the shell under one name.
+It takes any holder of the control plane that is not stopped, an operator or
+not (below):
 
 ```sh
 roster --as admin holder get @newco/alice
@@ -1681,15 +1683,37 @@ roster --as admin key list
 - What the call may do is unchanged: it carries no frame, so it is still the
   deployment's own work, under no rule about callers. `--as` is read by the
   record and by nothing else.
+- It takes any holder of the control plane that is not stopped: an operator,
+  and also a service `control key add` made, the provisioner or the Login App's
+  holder. A deployment whose operators are all disabled has nobody else to
+  name, and naming a service is its way back:
+  `roster --as provisioner control holder enable @owner/admin`.
 - A deployment with no control plane has no operators to name: its rows name
   nobody, from this shell, and `--as` is refused there.
 
 `roster scim adopt` is asked too: it lists people, by address. The other
-commands -- `init`, `key add`, `vouch`, `forget`, `restore`, `hold`, `trail`,
-`login provision`, `scim provision` -- print no field anybody's row declares personal:
-identifiers, keys, secrets made for the occasion. They need no `--as`, and
-leave no row; `cli/recorded_test.go` holds every read of a person's rows a
-command makes to one or the other.
+commands print no field anybody's row declares personal -- identifiers, keys,
+secrets made for the occasion -- and need no `--as`. Given, it is looked up by
+every command that opens the database, and a name that is nobody's, or
+somebody's who is stopped, is refused before anything is written; so is any
+name before `roster init` has made the control plane's tables, since nobody
+can be named there yet. Then:
+
+- **Kept**, by the commands that write somebody's way in or their standing:
+  `key add`, `key revoke`, `control key add`, `vouch reset|set|unlock` and
+  `control vouch reset|set|unlock|enrol|prove`, and `restore` of a person. Each write is
+  a call at the shell by who `--as` names, and leaves the row of the access
+  record that `roster --as … <entity> <verb>` of the same write leaves. With
+  no `--as` they leave none, as before.
+- **Kept** by `trail accept`, as who accepted, where `--by` would have said it;
+  `--by` stays for where `--as` is not given, and the two together are refused.
+- **Checked, and kept nowhere**, by the rest: `init`, `hold`, `forget`,
+  `restore` of a tenant, `trail`'s other commands, `app install|uninstall`,
+  `resources apply` and the `provision` commands.
+  None of them writes anybody's way in, or a row a person is named in.
+
+`cli/recorded_test.go` holds every command that opens the database to one or
+the other, and every read of a person's rows to a record or a reason.
 
 **A watch at the box is refused under `watch.broker: memory`.** It would
 subscribe to this process's own broker, which nothing the deployment does
@@ -2072,7 +2096,9 @@ accepted at checkpoint 41, 2026-10-21T03:12:09Z, by ops@bastion: a pass the 10-2
 one looked at was -- and is refused when that finds anything else: a finding
 that turned up after somebody looked is not taken in beside the ones they
 did. Run `verify` again, look at what it finds now, and accept its digest. Who
-accepts is `--by`, the user and host of the shell when it does not say, and
+accepts is the operator `--as` names and the shell they are at, as `trail rows
+--accept` says it; where `--as` is not given it is `--by`, the user and host of
+the shell when that does not say either, and the two together are refused.
 `--why` is required. Both are kept where the archive's own word is: in the
 checkpoint the acceptance ends in, which every checkpoint after it names, so
 that what was accepted is held to the key as the archive is, and in a receipt
@@ -2762,8 +2788,8 @@ roster restore @contoso/erin
 **And it says when their name is somebody else's.** An erase frees the alias at
 once, so somebody new may be called it by the time of a restore, which then refuses
 in words: who has the name now, and the rename that makes way. It names them by
-identifier and prints no name -- `restore` takes no `--as`, so it shows nothing
-anybody's row declares personal, and the first command it gives is the read that
+identifier and prints no name -- `restore` needs no `--as`, and shows nothing
+anybody's row declares personal; the first command it gives is the read that
 does. Somebody erased is renamed by nothing, so it is the other who is:
 
 ```sh

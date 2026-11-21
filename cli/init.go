@@ -164,7 +164,15 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 				cl.Printf("name it as audit.checkpoints.key, or ROSTER_AUDIT_CHECKPOINTS_KEY, before serving\n\n")
 			}
 
-			s, err := built(ctx, *c)
+			// Built with nobody named, since the tables a name is looked up in
+			// may not be there yet; a name given is looked up once they are,
+			// below, and kept nowhere (#284). What this writes is the first
+			// operator's way in, made by the deployment: a name given beside it
+			// is somebody already on the control plane -- the provisioner, a
+			// service -- and not who the first operator was made by.
+			unnamed := *c
+			unnamed.Client.As = ""
+			s, err := built(ctx, unnamed)
 			if err != nil {
 				return err
 			}
@@ -200,6 +208,9 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 			// called by the Wasm sandbox, and the call that migrates is the
 			// call that links Atlas. See this package's doc comment.
 			if err := Migrate(ctx, s); err != nil {
+				return err
+			}
+			if _, err := namedAt(ctx, c, s); err != nil {
 				return err
 			}
 
