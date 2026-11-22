@@ -20394,7 +20394,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 			row, err := resourcesql.Row(db.Dialect(), entContinuation.Table, []resourcesql.Column{
 				{Number: 1, Name: entContinuation.FieldId, Type: 64, Nullable: false, Key: 0},
 				{Number: 2, Name: entContinuation.HolderColumn, Type: 64, Nullable: false, Key: 1},
-				{Number: 10, Name: entContinuation.FieldIssuer, Type: 12, Nullable: false, Key: 0},
+				{Number: 10, Name: entContinuation.FieldIssuedTo, Type: 12, Nullable: false, Key: 0},
 				{Number: 11, Name: entContinuation.FieldDateExpires, Type: 65, Nullable: true, Key: 0},
 				{Number: 13, Name: entContinuation.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
 				{Number: 14, Name: entContinuation.FieldDateErased, Type: 65, Nullable: true, Key: 0},
@@ -20466,7 +20466,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 			row, err := resourcesql.Row(db.Dialect(), entDelegation.Table, []resourcesql.Column{
 				{Number: 1, Name: entDelegation.FieldId, Type: 64, Nullable: false, Key: 0},
 				{Number: 2, Name: entDelegation.HolderColumn, Type: 64, Nullable: false, Key: 1},
-				{Number: 10, Name: entDelegation.FieldIssuer, Type: 12, Nullable: false, Key: 0},
+				{Number: 10, Name: entDelegation.FieldIssuedTo, Type: 12, Nullable: false, Key: 0},
 				{Number: 11, Name: entDelegation.FieldDateExpires, Type: 65, Nullable: true, Key: 0},
 				{Number: 12, Name: entDelegation.FieldDateAuthenticated, Type: 65, Nullable: true, Key: 0},
 				{Number: 13, Name: entDelegation.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
@@ -20787,7 +20787,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 				{Number: 12, Name: entLink.EmailColumn, Type: 64, Nullable: true, Key: 1},
 				{Number: 8, Name: entLink.FieldAt, Type: 9, Nullable: false, Key: 0},
 				{Number: 16, Name: entLink.FieldLeave, Type: 8, Nullable: false, Key: 0},
-				{Number: 10, Name: entLink.FieldIssuer, Type: 12, Nullable: false, Key: 0},
+				{Number: 10, Name: entLink.FieldIssuedTo, Type: 12, Nullable: false, Key: 0},
 				{Number: 11, Name: entLink.FieldDateExpires, Type: 65, Nullable: true, Key: 0},
 				{Number: 13, Name: entLink.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
 				{Number: 14, Name: entLink.FieldDateErased, Type: 65, Nullable: true, Key: 0},

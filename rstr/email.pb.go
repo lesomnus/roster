@@ -372,7 +372,7 @@ type Email_builder struct {
 	//
 	// The caller may be the control plane's -- an operator at the admin port, a
 	// deployment's key -- and this row is the data plane's, which is
-	// `Delegation.issuer`'s reason, word for word: an identifier compared and
+	// `Delegation.issued_to`'s reason, word for word: an identifier compared and
 	// never followed. **Stamped**, so a request cannot say it: `server/core`
 	// writes the frame's actor, and the generated gate refuses an `Add` that
 	// asserts one.

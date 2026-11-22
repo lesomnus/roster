@@ -499,19 +499,19 @@ func TestNothingDeclaredSecretReachesTheRecord(t *testing.T) {
 		},
 		"Continuation.secret": func(secret []byte) error {
 			_, err := b.Ungated.Continuation().Add(ctx, app.ContinuationAddRequest_builder{
-				Holder: whose, Issuer: issuer, Secret: secret, DateExpires: soon,
+				Holder: whose, IssuedTo: issuer, Secret: secret, DateExpires: soon,
 			}.Build())
 			return err
 		},
 		"Delegation.secret": func(secret []byte) error {
 			_, err := b.Ungated.Delegation().Add(ctx, app.DelegationAddRequest_builder{
-				Holder: whose, Issuer: issuer, Secret: secret, Methods: []string{app.MeService_Get_FullMethodName}, DateExpires: soon,
+				Holder: whose, IssuedTo: issuer, Secret: secret, Methods: []string{app.MeService_Get_FullMethodName}, DateExpires: soon,
 			}.Build())
 			return err
 		},
 		"Link.secret": func(secret []byte) error {
 			_, err := b.Ungated.Link().Add(ctx, app.LinkAddRequest_builder{
-				Holder: whose, Issuer: issuer, At: "alice@contoso.example", Secret: secret, DateExpires: soon,
+				Holder: whose, IssuedTo: issuer, At: "alice@contoso.example", Secret: secret, DateExpires: soon,
 			}.Build())
 			return err
 		},

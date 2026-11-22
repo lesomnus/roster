@@ -77,7 +77,7 @@ type Continuation struct {
 	xxx_hidden_Holder      *Holder                `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Satisfied   []string               `protobuf:"bytes,8,rep,name=satisfied"`
 	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
-	xxx_hidden_Issuer      []byte                 `protobuf:"bytes,10,opt,name=issuer"`
+	xxx_hidden_IssuedTo    []byte                 `protobuf:"bytes,10,opt,name=issued_to,json=issuedTo"`
 	xxx_hidden_MeteredBy   []byte                 `protobuf:"bytes,12,opt,name=metered_by,json=meteredBy"`
 	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
@@ -140,9 +140,9 @@ func (x *Continuation) GetSecret() []byte {
 	return nil
 }
 
-func (x *Continuation) GetIssuer() []byte {
+func (x *Continuation) GetIssuedTo() []byte {
 	if x != nil {
-		return x.xxx_hidden_Issuer
+		return x.xxx_hidden_IssuedTo
 	}
 	return nil
 }
@@ -204,11 +204,11 @@ func (x *Continuation) SetSecret(v []byte) {
 	x.xxx_hidden_Secret = v
 }
 
-func (x *Continuation) SetIssuer(v []byte) {
+func (x *Continuation) SetIssuedTo(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
-	x.xxx_hidden_Issuer = v
+	x.xxx_hidden_IssuedTo = v
 }
 
 func (x *Continuation) SetMeteredBy(v []byte) {
@@ -316,7 +316,7 @@ type Continuation_builder struct {
 	// Opaque bytes, and never an edge -- see `delegation.proto`.
 	//
 	// Not personal: a key's identifier, as bytes.
-	Issuer []byte
+	IssuedTo []byte
 	// Which credential row the attempt is **metered on**.
 	//
 	// D21's fourth condition is *one count across `Begin` and `Continue`, or the
@@ -365,7 +365,7 @@ func (b0 Continuation_builder) Build() *Continuation {
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Satisfied = b.Satisfied
 	x.xxx_hidden_Secret = b.Secret
-	x.xxx_hidden_Issuer = b.Issuer
+	x.xxx_hidden_IssuedTo = b.IssuedTo
 	x.xxx_hidden_MeteredBy = b.MeteredBy
 	x.xxx_hidden_DateExpires = b.DateExpires
 	x.xxx_hidden_DateUpdated = b.DateUpdated
@@ -378,14 +378,14 @@ var File_app_continuation_proto protoreflect.FileDescriptor
 
 const file_app_continuation_proto_rawDesc = "" +
 	"\n" +
-	"\x16app/continuation.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x92\x05\n" +
+	"\x16app/continuation.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x97\x05\n" +
 	"\fContinuation\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12*\n" +
 	"\tsatisfied\x18\b \x03(\tB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\tsatisfied\x12&\n" +
-	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12$\n" +
-	"\x06issuer\x18\n" +
-	" \x01(\fB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\x06issuer\x12)\n" +
+	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12)\n" +
+	"\tissued_to\x18\n" +
+	" \x01(\fB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\bissuedTo\x12)\n" +
 	"\n" +
 	"metered_by\x18\f \x01(\fB\n" +
 	"\xea\x82\x16\x06\x10@8\x01@\x01R\tmeteredBy\x12G\n" +

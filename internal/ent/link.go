@@ -26,8 +26,8 @@ type Link struct {
 	Leave bool `json:"leave,omitempty"`
 	// Secret holds the value of the "secret" field.
 	Secret []byte `json:"secret,omitempty"`
-	// Issuer holds the value of the "issuer" field.
-	Issuer []byte `json:"issuer,omitempty"`
+	// IssuedTo holds the value of the "issued_to" field.
+	IssuedTo []byte `json:"issued_to,omitempty"`
 	// DateExpires holds the value of the "date_expires" field.
 	DateExpires *time.Time `json:"date_expires,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
@@ -84,7 +84,7 @@ func (*Link) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case link.FieldSecret, link.FieldIssuer:
+		case link.FieldSecret, link.FieldIssuedTo:
 			values[i] = new([]byte)
 		case link.FieldLeave:
 			values[i] = new(sql.NullBool)
@@ -138,13 +138,13 @@ func (_m *Link) assignValues(columns []string, values []any) error {
 					_m.Secret = []byte{}
 				}
 			}
-		case link.FieldIssuer:
+		case link.FieldIssuedTo:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field issuer", values[i])
+				return fmt.Errorf("unexpected type %T for field issued_to", values[i])
 			} else if value != nil {
-				_m.Issuer = *value
-				if _m.Issuer == nil {
-					_m.Issuer = []byte{}
+				_m.IssuedTo = *value
+				if _m.IssuedTo == nil {
+					_m.IssuedTo = []byte{}
 				}
 			}
 		case link.FieldDateExpires:
@@ -240,8 +240,8 @@ func (_m *Link) String() string {
 	builder.WriteString("secret=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Secret))
 	builder.WriteString(", ")
-	builder.WriteString("issuer=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Issuer))
+	builder.WriteString("issued_to=")
+	builder.WriteString(fmt.Sprintf("%v", _m.IssuedTo))
 	builder.WriteString(", ")
 	if v := _m.DateExpires; v != nil {
 		builder.WriteString("date_expires=")

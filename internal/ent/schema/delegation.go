@@ -26,7 +26,7 @@ func (Delegation) Fields() []ent.Field {
 			Optional(),
 		field.Bytes("secret").
 			Immutable(),
-		field.Bytes("issuer").
+		field.Bytes("issued_to").
 			Immutable(),
 		field.Time("date_expires").
 			Nillable().

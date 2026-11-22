@@ -61,7 +61,7 @@ const (
 // way here than it did for `Credential`: a delegation and a key are the same
 // **cost** and the same **cardinality**, and differ in who names the row.
 //
-// # The issuer is a column and cannot be an edge
+// # Who it was issued to is a column and cannot be an edge
 //
 // D21 and D23 both require the same condition -- *bound to the caller it was
 // issued to*, so that one product app cannot pick up what another was given.
@@ -86,7 +86,7 @@ type Delegation struct {
 	xxx_hidden_Holder            *Holder                `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Methods           []string               `protobuf:"bytes,8,rep,name=methods"`
 	xxx_hidden_Secret            []byte                 `protobuf:"bytes,9,opt,name=secret"`
-	xxx_hidden_Issuer            []byte                 `protobuf:"bytes,10,opt,name=issuer"`
+	xxx_hidden_IssuedTo          []byte                 `protobuf:"bytes,10,opt,name=issued_to,json=issuedTo"`
 	xxx_hidden_DateExpires       *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
 	xxx_hidden_DateAuthenticated *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_authenticated,json=dateAuthenticated"`
 	xxx_hidden_DateUpdated       *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
@@ -149,9 +149,9 @@ func (x *Delegation) GetSecret() []byte {
 	return nil
 }
 
-func (x *Delegation) GetIssuer() []byte {
+func (x *Delegation) GetIssuedTo() []byte {
 	if x != nil {
-		return x.xxx_hidden_Issuer
+		return x.xxx_hidden_IssuedTo
 	}
 	return nil
 }
@@ -213,11 +213,11 @@ func (x *Delegation) SetSecret(v []byte) {
 	x.xxx_hidden_Secret = v
 }
 
-func (x *Delegation) SetIssuer(v []byte) {
+func (x *Delegation) SetIssuedTo(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
-	x.xxx_hidden_Issuer = v
+	x.xxx_hidden_IssuedTo = v
 }
 
 func (x *Delegation) SetDateExpires(v *timestamppb.Timestamp) {
@@ -348,10 +348,10 @@ type Delegation_builder struct {
 	// Empty is not a state this can hold. A zero-length value compares equal to
 	// an unresolved caller -- `subtle.ConstantTimeCompare` answers 1 for two
 	// empty slices -- so "bound to nobody" and "bound to whoever forgot to say"
-	// would be one thing. Whatever mints one refuses an empty issuer instead.
+	// would be one thing. Whatever mints one refuses an empty `issued_to` instead.
 	//
 	// Not personal: a key's identifier, as bytes.
-	Issuer []byte
+	IssuedTo []byte
 	// When it stops working, and there is no such thing as one that does not.
 	//
 	// Nullable because the generator has no way to say required -- a singular
@@ -402,7 +402,7 @@ func (b0 Delegation_builder) Build() *Delegation {
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Methods = b.Methods
 	x.xxx_hidden_Secret = b.Secret
-	x.xxx_hidden_Issuer = b.Issuer
+	x.xxx_hidden_IssuedTo = b.IssuedTo
 	x.xxx_hidden_DateExpires = b.DateExpires
 	x.xxx_hidden_DateAuthenticated = b.DateAuthenticated
 	x.xxx_hidden_DateUpdated = b.DateUpdated
@@ -415,15 +415,15 @@ var File_app_delegation_proto protoreflect.FileDescriptor
 
 const file_app_delegation_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/delegation.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xbf\x05\n" +
+	"\x14app/delegation.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xc4\x05\n" +
 	"\n" +
 	"Delegation\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12&\n" +
 	"\amethods\x18\b \x03(\tB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\amethods\x12&\n" +
-	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12$\n" +
-	"\x06issuer\x18\n" +
-	" \x01(\fB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\x06issuer\x12G\n" +
+	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12)\n" +
+	"\tissued_to\x18\n" +
+	" \x01(\fB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\bissuedTo\x12G\n" +
 	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpires\x12Y\n" +
 	"\x12date_authenticated\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x0e\xea\x82\x16\x048\x01@\x01\xaa\xc1\x16\x02\x10\x01R\x11dateAuthenticated\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +

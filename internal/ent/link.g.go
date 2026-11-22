@@ -29,7 +29,7 @@ func (e *Link) Proto() *rstr.Link {
 	x.SetAt(e.At)
 	x.SetLeave(e.Leave)
 	x.SetSecret(e.Secret)
-	x.SetIssuer(e.Issuer)
+	x.SetIssuedTo(e.IssuedTo)
 	if e.DateExpires != nil {
 		x.SetDateExpires(timestamppb.New(*e.DateExpires))
 	}

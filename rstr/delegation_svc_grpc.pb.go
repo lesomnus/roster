@@ -62,7 +62,7 @@ type DelegationServiceClient interface {
 	// # A delegation, issued to the receiver
 	//
 	// A delegation already says *who* (`holder`) and *who may present it*
-	// (`issuer`), and `TokenService/Introspect` already answers only the caller
+	// (`issued_to`), and `TokenService/Introspect` already answers only the caller
 	// it was issued to. So this mints one about the **caller** and issues it to
 	// the **audience**: Loft, narrowed to acme, asks for a token for
 	// `@acme/levyan`; levyan, narrowed to acme too, introspects it and is told
@@ -208,7 +208,7 @@ type DelegationServiceServer interface {
 	// # A delegation, issued to the receiver
 	//
 	// A delegation already says *who* (`holder`) and *who may present it*
-	// (`issuer`), and `TokenService/Introspect` already answers only the caller
+	// (`issued_to`), and `TokenService/Introspect` already answers only the caller
 	// it was issued to. So this mints one about the **caller** and issues it to
 	// the **audience**: Loft, narrowed to acme, asks for a token for
 	// `@acme/levyan`; levyan, narrowed to acme too, introspects it and is told

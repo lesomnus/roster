@@ -29,7 +29,7 @@ type LinkAddRequest struct {
 	xxx_hidden_At          string                 `protobuf:"bytes,8,opt,name=at"`
 	xxx_hidden_Leave       bool                   `protobuf:"varint,16,opt,name=leave"`
 	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
-	xxx_hidden_Issuer      []byte                 `protobuf:"bytes,10,opt,name=issuer"`
+	xxx_hidden_IssuedTo    []byte                 `protobuf:"bytes,10,opt,name=issued_to,json=issuedTo"`
 	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
@@ -105,9 +105,9 @@ func (x *LinkAddRequest) GetSecret() []byte {
 	return nil
 }
 
-func (x *LinkAddRequest) GetIssuer() []byte {
+func (x *LinkAddRequest) GetIssuedTo() []byte {
 	if x != nil {
-		return x.xxx_hidden_Issuer
+		return x.xxx_hidden_IssuedTo
 	}
 	return nil
 }
@@ -158,11 +158,11 @@ func (x *LinkAddRequest) SetSecret(v []byte) {
 	x.xxx_hidden_Secret = v
 }
 
-func (x *LinkAddRequest) SetIssuer(v []byte) {
+func (x *LinkAddRequest) SetIssuedTo(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
-	x.xxx_hidden_Issuer = v
+	x.xxx_hidden_IssuedTo = v
 }
 
 func (x *LinkAddRequest) SetDateExpires(v *timestamppb.Timestamp) {
@@ -250,7 +250,7 @@ type LinkAddRequest_builder struct {
 	At          string
 	Leave       *bool
 	Secret      []byte
-	Issuer      []byte
+	IssuedTo    []byte
 	DateExpires *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
 }
@@ -271,7 +271,7 @@ func (b0 LinkAddRequest_builder) Build() *LinkAddRequest {
 		x.xxx_hidden_Leave = *b.Leave
 	}
 	x.xxx_hidden_Secret = b.Secret
-	x.xxx_hidden_Issuer = b.Issuer
+	x.xxx_hidden_IssuedTo = b.IssuedTo
 	x.xxx_hidden_DateExpires = b.DateExpires
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
@@ -547,7 +547,7 @@ type LinkSelect struct {
 	xxx_hidden_At          bool                   `protobuf:"varint,8,opt,name=at"`
 	xxx_hidden_Leave       bool                   `protobuf:"varint,16,opt,name=leave"`
 	xxx_hidden_Secret      bool                   `protobuf:"varint,9,opt,name=secret"`
-	xxx_hidden_Issuer      bool                   `protobuf:"varint,10,opt,name=issuer"`
+	xxx_hidden_IssuedTo    bool                   `protobuf:"varint,10,opt,name=issued_to,json=issuedTo"`
 	xxx_hidden_DateExpires bool                   `protobuf:"varint,11,opt,name=date_expires,json=dateExpires"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
@@ -625,9 +625,9 @@ func (x *LinkSelect) GetSecret() bool {
 	return false
 }
 
-func (x *LinkSelect) GetIssuer() bool {
+func (x *LinkSelect) GetIssuedTo() bool {
 	if x != nil {
-		return x.xxx_hidden_Issuer
+		return x.xxx_hidden_IssuedTo
 	}
 	return false
 }
@@ -688,8 +688,8 @@ func (x *LinkSelect) SetSecret(v bool) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 11)
 }
 
-func (x *LinkSelect) SetIssuer(v bool) {
-	x.xxx_hidden_Issuer = v
+func (x *LinkSelect) SetIssuedTo(v bool) {
+	x.xxx_hidden_IssuedTo = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 11)
 }
 
@@ -755,7 +755,7 @@ func (x *LinkSelect) HasSecret() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *LinkSelect) HasIssuer() bool {
+func (x *LinkSelect) HasIssuedTo() bool {
 	if x == nil {
 		return false
 	}
@@ -818,9 +818,9 @@ func (x *LinkSelect) ClearSecret() {
 	x.xxx_hidden_Secret = false
 }
 
-func (x *LinkSelect) ClearIssuer() {
+func (x *LinkSelect) ClearIssuedTo() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
-	x.xxx_hidden_Issuer = false
+	x.xxx_hidden_IssuedTo = false
 }
 
 func (x *LinkSelect) ClearDateExpires() {
@@ -852,7 +852,7 @@ type LinkSelect_builder struct {
 	At          *bool
 	Leave       *bool
 	Secret      *bool
-	Issuer      *bool
+	IssuedTo    *bool
 	DateExpires *bool
 	DateUpdated *bool
 	DateErased  *bool
@@ -881,9 +881,9 @@ func (b0 LinkSelect_builder) Build() *LinkSelect {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 11)
 		x.xxx_hidden_Secret = *b.Secret
 	}
-	if b.Issuer != nil {
+	if b.IssuedTo != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 11)
-		x.xxx_hidden_Issuer = *b.Issuer
+		x.xxx_hidden_IssuedTo = *b.IssuedTo
 	}
 	if b.DateExpires != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 11)
@@ -1250,16 +1250,16 @@ var File_app_link_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_link_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/link_svc.g.proto\x12\x06roster\x1a\x15app/email_svc.g.proto\x1a\x0eapp/link.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a roster/payday/holder_svc.g.proto\"\xdc\x02\n" +
+	"\x14app/link_svc.g.proto\x12\x06roster\x1a\x15app/email_svc.g.proto\x1a\x0eapp/link.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a roster/payday/holder_svc.g.proto\"\xe1\x02\n" +
 	"\x0eLinkAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12&\n" +
 	"\x05email\x18\f \x01(\v2\x10.roster.EmailRefR\x05email\x12\x15\n" +
 	"\x02at\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\x02at\x12\x14\n" +
 	"\x05leave\x18\x10 \x01(\bR\x05leave\x12\x1d\n" +
-	"\x06secret\x18\t \x01(\fB\x05\xaa\x01\x02\b\x02R\x06secret\x12\x1d\n" +
-	"\x06issuer\x18\n" +
-	" \x01(\fB\x05\xaa\x01\x02\b\x02R\x06issuer\x12=\n" +
+	"\x06secret\x18\t \x01(\fB\x05\xaa\x01\x02\b\x02R\x06secret\x12\"\n" +
+	"\tissued_to\x18\n" +
+	" \x01(\fB\x05\xaa\x01\x02\b\x02R\bissuedTo\x12=\n" +
 	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"_\n" +
 	"\x0eLinkGetRequest\x12!\n" +
@@ -1268,7 +1268,7 @@ const file_app_link_svc_g_proto_rawDesc = "" +
 	"\aLinkRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x18\n" +
 	"\x06secret\x18\t \x01(\fH\x00R\x06secretB\x05\n" +
-	"\x03key\"\xd7\x02\n" +
+	"\x03key\"\xdc\x02\n" +
 	"\n" +
 	"LinkSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
@@ -1276,9 +1276,9 @@ const file_app_link_svc_g_proto_rawDesc = "" +
 	"\x05email\x18\f \x01(\v2\x13.roster.EmailSelectR\x05email\x12\x0e\n" +
 	"\x02at\x18\b \x01(\bR\x02at\x12\x14\n" +
 	"\x05leave\x18\x10 \x01(\bR\x05leave\x12\x16\n" +
-	"\x06secret\x18\t \x01(\bR\x06secret\x12\x16\n" +
-	"\x06issuer\x18\n" +
-	" \x01(\bR\x06issuer\x12!\n" +
+	"\x06secret\x18\t \x01(\bR\x06secret\x12\x1b\n" +
+	"\tissued_to\x18\n" +
+	" \x01(\bR\bissuedTo\x12!\n" +
 	"\fdate_expires\x18\v \x01(\bR\vdateExpires\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +

@@ -61,9 +61,9 @@ func Secret(v []byte) predicate.Continuation {
 	return predicate.Continuation(sql.FieldEQ(FieldSecret, v))
 }
 
-// Issuer applies equality check predicate on the "issuer" field. It's identical to IssuerEQ.
-func Issuer(v []byte) predicate.Continuation {
-	return predicate.Continuation(sql.FieldEQ(FieldIssuer, v))
+// IssuedTo applies equality check predicate on the "issued_to" field. It's identical to IssuedToEQ.
+func IssuedTo(v []byte) predicate.Continuation {
+	return predicate.Continuation(sql.FieldEQ(FieldIssuedTo, v))
 }
 
 // MeteredBy applies equality check predicate on the "metered_by" field. It's identical to MeteredByEQ.
@@ -146,44 +146,44 @@ func SecretLTE(v []byte) predicate.Continuation {
 	return predicate.Continuation(sql.FieldLTE(FieldSecret, v))
 }
 
-// IssuerEQ applies the EQ predicate on the "issuer" field.
-func IssuerEQ(v []byte) predicate.Continuation {
-	return predicate.Continuation(sql.FieldEQ(FieldIssuer, v))
+// IssuedToEQ applies the EQ predicate on the "issued_to" field.
+func IssuedToEQ(v []byte) predicate.Continuation {
+	return predicate.Continuation(sql.FieldEQ(FieldIssuedTo, v))
 }
 
-// IssuerNEQ applies the NEQ predicate on the "issuer" field.
-func IssuerNEQ(v []byte) predicate.Continuation {
-	return predicate.Continuation(sql.FieldNEQ(FieldIssuer, v))
+// IssuedToNEQ applies the NEQ predicate on the "issued_to" field.
+func IssuedToNEQ(v []byte) predicate.Continuation {
+	return predicate.Continuation(sql.FieldNEQ(FieldIssuedTo, v))
 }
 
-// IssuerIn applies the In predicate on the "issuer" field.
-func IssuerIn(vs ...[]byte) predicate.Continuation {
-	return predicate.Continuation(sql.FieldIn(FieldIssuer, vs...))
+// IssuedToIn applies the In predicate on the "issued_to" field.
+func IssuedToIn(vs ...[]byte) predicate.Continuation {
+	return predicate.Continuation(sql.FieldIn(FieldIssuedTo, vs...))
 }
 
-// IssuerNotIn applies the NotIn predicate on the "issuer" field.
-func IssuerNotIn(vs ...[]byte) predicate.Continuation {
-	return predicate.Continuation(sql.FieldNotIn(FieldIssuer, vs...))
+// IssuedToNotIn applies the NotIn predicate on the "issued_to" field.
+func IssuedToNotIn(vs ...[]byte) predicate.Continuation {
+	return predicate.Continuation(sql.FieldNotIn(FieldIssuedTo, vs...))
 }
 
-// IssuerGT applies the GT predicate on the "issuer" field.
-func IssuerGT(v []byte) predicate.Continuation {
-	return predicate.Continuation(sql.FieldGT(FieldIssuer, v))
+// IssuedToGT applies the GT predicate on the "issued_to" field.
+func IssuedToGT(v []byte) predicate.Continuation {
+	return predicate.Continuation(sql.FieldGT(FieldIssuedTo, v))
 }
 
-// IssuerGTE applies the GTE predicate on the "issuer" field.
-func IssuerGTE(v []byte) predicate.Continuation {
-	return predicate.Continuation(sql.FieldGTE(FieldIssuer, v))
+// IssuedToGTE applies the GTE predicate on the "issued_to" field.
+func IssuedToGTE(v []byte) predicate.Continuation {
+	return predicate.Continuation(sql.FieldGTE(FieldIssuedTo, v))
 }
 
-// IssuerLT applies the LT predicate on the "issuer" field.
-func IssuerLT(v []byte) predicate.Continuation {
-	return predicate.Continuation(sql.FieldLT(FieldIssuer, v))
+// IssuedToLT applies the LT predicate on the "issued_to" field.
+func IssuedToLT(v []byte) predicate.Continuation {
+	return predicate.Continuation(sql.FieldLT(FieldIssuedTo, v))
 }
 
-// IssuerLTE applies the LTE predicate on the "issuer" field.
-func IssuerLTE(v []byte) predicate.Continuation {
-	return predicate.Continuation(sql.FieldLTE(FieldIssuer, v))
+// IssuedToLTE applies the LTE predicate on the "issued_to" field.
+func IssuedToLTE(v []byte) predicate.Continuation {
+	return predicate.Continuation(sql.FieldLTE(FieldIssuedTo, v))
 }
 
 // MeteredByEQ applies the EQ predicate on the "metered_by" field.

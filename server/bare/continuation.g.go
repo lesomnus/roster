@@ -143,7 +143,7 @@ func (st ContinuationServiceServer) create(ctx context.Context, req *rstr.Contin
 		q.SetSatisfied(u)
 	}
 	q.SetSecret(req.GetSecret())
-	q.SetIssuer(req.GetIssuer())
+	q.SetIssuedTo(req.GetIssuedTo())
 	if req.HasMeteredBy() {
 		if v, err := entuuid.FromBytes(req.GetMeteredBy()); err != nil {
 			return nil, nil, status.Errorf(codes.InvalidArgument, "metered_by: %s", err)
@@ -295,8 +295,8 @@ func ContinuationSelectedFields(m *rstr.ContinuationSelect) []string {
 	if m.GetSecret() {
 		vs = append(vs, continuation.FieldSecret)
 	}
-	if m.GetIssuer() {
-		vs = append(vs, continuation.FieldIssuer)
+	if m.GetIssuedTo() {
+		vs = append(vs, continuation.FieldIssuedTo)
 	}
 	if m.GetMeteredBy() {
 		vs = append(vs, continuation.FieldMeteredBy)

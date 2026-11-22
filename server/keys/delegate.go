@@ -102,7 +102,7 @@ func Delegate(ctx context.Context, s app.Server, req Delegated) (string, *app.De
 	add := app.DelegationAddRequest_builder{
 		Holder:      app.HolderRef_builder{Id: req.Holder.Bytes()}.Build(),
 		Secret:      sum,
-		Issuer:      req.Issuer,
+		IssuedTo:    req.Issuer,
 		Methods:     req.Methods,
 		DateExpires: timestamppb.New(time.Now().Add(d)),
 	}
@@ -250,7 +250,7 @@ func findDelegation(ctx context.Context, s app.Server, token string) (*bearer, e
 		Select: app.DelegationSelect_builder{
 			Secret:      z.Ptr(true),
 			Methods:     z.Ptr(true),
-			Issuer:      z.Ptr(true),
+			IssuedTo:    z.Ptr(true),
 			DateExpires: z.Ptr(true),
 			DateCreated: z.Ptr(true),
 
@@ -297,7 +297,7 @@ func findDelegation(ctx context.Context, s app.Server, token string) (*bearer, e
 		Holder:  v.GetHolder(),
 		Methods: v.GetMethods(),
 		Expires: u.AsTime(),
-		Issuer:  v.GetIssuer(),
+		Issuer:  v.GetIssuedTo(),
 	}, nil
 }
 

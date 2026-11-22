@@ -18,8 +18,8 @@ const (
 	FieldLeave = "leave"
 	// FieldSecret holds the string denoting the secret field in the database.
 	FieldSecret = "secret"
-	// FieldIssuer holds the string denoting the issuer field in the database.
-	FieldIssuer = "issuer"
+	// FieldIssuedTo holds the string denoting the issued_to field in the database.
+	FieldIssuedTo = "issued_to"
 	// FieldDateExpires holds the string denoting the date_expires field in the database.
 	FieldDateExpires = "date_expires"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
@@ -60,7 +60,7 @@ var Columns = []string{
 	FieldAt,
 	FieldLeave,
 	FieldSecret,
-	FieldIssuer,
+	FieldIssuedTo,
 	FieldDateExpires,
 	FieldDateUpdated,
 	FieldDateErased,

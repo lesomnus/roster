@@ -36,9 +36,9 @@ func (_c *ContinuationCreate) SetSecret(v []byte) *ContinuationCreate {
 	return _c
 }
 
-// SetIssuer sets the "issuer" field.
-func (_c *ContinuationCreate) SetIssuer(v []byte) *ContinuationCreate {
-	_c.mutation.SetIssuer(v)
+// SetIssuedTo sets the "issued_to" field.
+func (_c *ContinuationCreate) SetIssuedTo(v []byte) *ContinuationCreate {
+	_c.mutation.SetIssuedTo(v)
 	return _c
 }
 
@@ -161,8 +161,8 @@ func (_c *ContinuationCreate) check() error {
 	if _, ok := _c.mutation.Secret(); !ok {
 		return &ValidationError{Name: "secret", err: errors.New(`ent: missing required field "Continuation.secret"`)}
 	}
-	if _, ok := _c.mutation.Issuer(); !ok {
-		return &ValidationError{Name: "issuer", err: errors.New(`ent: missing required field "Continuation.issuer"`)}
+	if _, ok := _c.mutation.IssuedTo(); !ok {
+		return &ValidationError{Name: "issued_to", err: errors.New(`ent: missing required field "Continuation.issued_to"`)}
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Continuation.date_updated"`)}
@@ -232,9 +232,9 @@ func (_c *ContinuationCreate) createSpec() (*Continuation, *sqlgraph.CreateSpec)
 		_spec.SetField(continuation.FieldSecret, field.TypeBytes, value)
 		_node.Secret = value
 	}
-	if value, ok := _c.mutation.Issuer(); ok {
-		_spec.SetField(continuation.FieldIssuer, field.TypeBytes, value)
-		_node.Issuer = value
+	if value, ok := _c.mutation.IssuedTo(); ok {
+		_spec.SetField(continuation.FieldIssuedTo, field.TypeBytes, value)
+		_node.IssuedTo = value
 	}
 	if value, ok := _c.mutation.MeteredBy(); ok {
 		_spec.SetField(continuation.FieldMeteredBy, field.TypeUuid, value)

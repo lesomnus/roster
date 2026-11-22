@@ -88,7 +88,7 @@ func TestALinkIsAWayInThatSomebodyElseDelivers(t *testing.T) {
 		_, err = b.Ungated.Link().Add(ctx, app.LinkAddRequest_builder{
 			Holder:      app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 			Secret:      sum,
-			Issuer:      issuerOf(t, ctx, b),
+			IssuedTo:    issuerOf(t, ctx, b),
 			DateExpires: timestamppb.New(time.Now().Add(-time.Minute)),
 		}.Build())
 		x.NoError(err)

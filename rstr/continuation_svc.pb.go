@@ -27,7 +27,7 @@ type ContinuationAddRequest struct {
 	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Satisfied   []string               `protobuf:"bytes,8,rep,name=satisfied"`
 	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
-	xxx_hidden_Issuer      []byte                 `protobuf:"bytes,10,opt,name=issuer"`
+	xxx_hidden_IssuedTo    []byte                 `protobuf:"bytes,10,opt,name=issued_to,json=issuedTo"`
 	xxx_hidden_MeteredBy   []byte                 `protobuf:"bytes,12,opt,name=metered_by,json=meteredBy"`
 	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -90,9 +90,9 @@ func (x *ContinuationAddRequest) GetSecret() []byte {
 	return nil
 }
 
-func (x *ContinuationAddRequest) GetIssuer() []byte {
+func (x *ContinuationAddRequest) GetIssuedTo() []byte {
 	if x != nil {
-		return x.xxx_hidden_Issuer
+		return x.xxx_hidden_IssuedTo
 	}
 	return nil
 }
@@ -141,11 +141,11 @@ func (x *ContinuationAddRequest) SetSecret(v []byte) {
 	x.xxx_hidden_Secret = v
 }
 
-func (x *ContinuationAddRequest) SetIssuer(v []byte) {
+func (x *ContinuationAddRequest) SetIssuedTo(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
-	x.xxx_hidden_Issuer = v
+	x.xxx_hidden_IssuedTo = v
 }
 
 func (x *ContinuationAddRequest) SetMeteredBy(v []byte) {
@@ -228,7 +228,7 @@ type ContinuationAddRequest_builder struct {
 	Holder      *HolderRef
 	Satisfied   []string
 	Secret      []byte
-	Issuer      []byte
+	IssuedTo    []byte
 	MeteredBy   []byte
 	DateExpires *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
@@ -245,7 +245,7 @@ func (b0 ContinuationAddRequest_builder) Build() *ContinuationAddRequest {
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Satisfied = b.Satisfied
 	x.xxx_hidden_Secret = b.Secret
-	x.xxx_hidden_Issuer = b.Issuer
+	x.xxx_hidden_IssuedTo = b.IssuedTo
 	if b.MeteredBy != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
 		x.xxx_hidden_MeteredBy = b.MeteredBy
@@ -523,7 +523,7 @@ type ContinuationSelect struct {
 	xxx_hidden_Holder      *HolderSelect          `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Satisfied   bool                   `protobuf:"varint,8,opt,name=satisfied"`
 	xxx_hidden_Secret      bool                   `protobuf:"varint,9,opt,name=secret"`
-	xxx_hidden_Issuer      bool                   `protobuf:"varint,10,opt,name=issuer"`
+	xxx_hidden_IssuedTo    bool                   `protobuf:"varint,10,opt,name=issued_to,json=issuedTo"`
 	xxx_hidden_MeteredBy   bool                   `protobuf:"varint,12,opt,name=metered_by,json=meteredBy"`
 	xxx_hidden_DateExpires bool                   `protobuf:"varint,11,opt,name=date_expires,json=dateExpires"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
@@ -588,9 +588,9 @@ func (x *ContinuationSelect) GetSecret() bool {
 	return false
 }
 
-func (x *ContinuationSelect) GetIssuer() bool {
+func (x *ContinuationSelect) GetIssuedTo() bool {
 	if x != nil {
-		return x.xxx_hidden_Issuer
+		return x.xxx_hidden_IssuedTo
 	}
 	return false
 }
@@ -649,8 +649,8 @@ func (x *ContinuationSelect) SetSecret(v bool) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 10)
 }
 
-func (x *ContinuationSelect) SetIssuer(v bool) {
-	x.xxx_hidden_Issuer = v
+func (x *ContinuationSelect) SetIssuedTo(v bool) {
+	x.xxx_hidden_IssuedTo = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 10)
 }
 
@@ -707,7 +707,7 @@ func (x *ContinuationSelect) HasSecret() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
-func (x *ContinuationSelect) HasIssuer() bool {
+func (x *ContinuationSelect) HasIssuedTo() bool {
 	if x == nil {
 		return false
 	}
@@ -768,9 +768,9 @@ func (x *ContinuationSelect) ClearSecret() {
 	x.xxx_hidden_Secret = false
 }
 
-func (x *ContinuationSelect) ClearIssuer() {
+func (x *ContinuationSelect) ClearIssuedTo() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
-	x.xxx_hidden_Issuer = false
+	x.xxx_hidden_IssuedTo = false
 }
 
 func (x *ContinuationSelect) ClearMeteredBy() {
@@ -805,7 +805,7 @@ type ContinuationSelect_builder struct {
 	Holder      *HolderSelect
 	Satisfied   *bool
 	Secret      *bool
-	Issuer      *bool
+	IssuedTo    *bool
 	MeteredBy   *bool
 	DateExpires *bool
 	DateUpdated *bool
@@ -830,9 +830,9 @@ func (b0 ContinuationSelect_builder) Build() *ContinuationSelect {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 10)
 		x.xxx_hidden_Secret = *b.Secret
 	}
-	if b.Issuer != nil {
+	if b.IssuedTo != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 10)
-		x.xxx_hidden_Issuer = *b.Issuer
+		x.xxx_hidden_IssuedTo = *b.IssuedTo
 	}
 	if b.MeteredBy != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 10)
@@ -1203,14 +1203,14 @@ var File_app_continuation_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_continuation_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1capp/continuation_svc.g.proto\x12\x06roster\x1a\x16app/continuation.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a roster/payday/holder_svc.g.proto\"\xcc\x02\n" +
+	"\x1capp/continuation_svc.g.proto\x12\x06roster\x1a\x16app/continuation.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a roster/payday/holder_svc.g.proto\"\xd1\x02\n" +
 	"\x16ContinuationAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1c\n" +
 	"\tsatisfied\x18\b \x03(\tR\tsatisfied\x12\x1d\n" +
-	"\x06secret\x18\t \x01(\fB\x05\xaa\x01\x02\b\x02R\x06secret\x12\x1d\n" +
-	"\x06issuer\x18\n" +
-	" \x01(\fB\x05\xaa\x01\x02\b\x02R\x06issuer\x12\x1d\n" +
+	"\x06secret\x18\t \x01(\fB\x05\xaa\x01\x02\b\x02R\x06secret\x12\"\n" +
+	"\tissued_to\x18\n" +
+	" \x01(\fB\x05\xaa\x01\x02\b\x02R\bissuedTo\x12\x1d\n" +
 	"\n" +
 	"metered_by\x18\f \x01(\fR\tmeteredBy\x12=\n" +
 	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12=\n" +
@@ -1221,14 +1221,14 @@ const file_app_continuation_svc_g_proto_rawDesc = "" +
 	"\x0fContinuationRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x18\n" +
 	"\x06secret\x18\t \x01(\fH\x00R\x06secretB\x05\n" +
-	"\x03key\"\xcb\x02\n" +
+	"\x03key\"\xd0\x02\n" +
 	"\x12ContinuationSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12\x1c\n" +
 	"\tsatisfied\x18\b \x01(\bR\tsatisfied\x12\x16\n" +
-	"\x06secret\x18\t \x01(\bR\x06secret\x12\x16\n" +
-	"\x06issuer\x18\n" +
-	" \x01(\bR\x06issuer\x12\x1d\n" +
+	"\x06secret\x18\t \x01(\bR\x06secret\x12\x1b\n" +
+	"\tissued_to\x18\n" +
+	" \x01(\bR\bissuedTo\x12\x1d\n" +
 	"\n" +
 	"metered_by\x18\f \x01(\bR\tmeteredBy\x12!\n" +
 	"\fdate_expires\x18\v \x01(\bR\vdateExpires\x12!\n" +

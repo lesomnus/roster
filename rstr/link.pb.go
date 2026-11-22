@@ -63,7 +63,7 @@ type Link struct {
 	xxx_hidden_At          string                 `protobuf:"bytes,8,opt,name=at"`
 	xxx_hidden_Leave       bool                   `protobuf:"varint,16,opt,name=leave"`
 	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
-	xxx_hidden_Issuer      []byte                 `protobuf:"bytes,10,opt,name=issuer"`
+	xxx_hidden_IssuedTo    []byte                 `protobuf:"bytes,10,opt,name=issued_to,json=issuedTo"`
 	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
@@ -139,9 +139,9 @@ func (x *Link) GetSecret() []byte {
 	return nil
 }
 
-func (x *Link) GetIssuer() []byte {
+func (x *Link) GetIssuedTo() []byte {
 	if x != nil {
-		return x.xxx_hidden_Issuer
+		return x.xxx_hidden_IssuedTo
 	}
 	return nil
 }
@@ -204,11 +204,11 @@ func (x *Link) SetSecret(v []byte) {
 	x.xxx_hidden_Secret = v
 }
 
-func (x *Link) SetIssuer(v []byte) {
+func (x *Link) SetIssuedTo(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
-	x.xxx_hidden_Issuer = v
+	x.xxx_hidden_IssuedTo = v
 }
 
 func (x *Link) SetDateExpires(v *timestamppb.Timestamp) {
@@ -313,12 +313,13 @@ type Link_builder struct {
 	//
 	// # The third kind, and what tells it from the other two
 	//
-	// A recovery link is bound to its **issuer** -- the app that asked for it
-	// spends it (`issuer`, below) -- and ends in a delegation for that app. This
-	// one is the opposite on both counts, deliberately: it is minted by one
-	// caller and spent by a browser at roster's own console, where there is no
-	// key to bind to, so what it is bound to instead is **where** -- the tenant's
-	// own name, resolved the way every sign-in at that console is (`cmd.Hosted`).
+	// A recovery link is bound to the caller it was **issued to** -- the app that
+	// asked for it spends it (`issued_to`, below) -- and ends in a delegation for
+	// that app. This one is the opposite on both counts, deliberately: it is
+	// minted by one caller and spent by a browser at roster's own console, where
+	// there is no key to bind to, so what it is bound to instead is **where** --
+	// the tenant's own name, resolved the way every sign-in at that console is
+	// (`cmd.Hosted`).
 	// And it ends in roster's own session, which is why a tenant with no
 	// passwords may have one minted: nothing about it hands over a password.
 	//
@@ -372,7 +373,7 @@ type Link_builder struct {
 	// issued. Opaque bytes and never an edge; see `delegation.proto`.
 	//
 	// Not personal: a key's identifier, as bytes.
-	Issuer []byte
+	IssuedTo []byte
 	// When it stops working, and there is no such thing as one that does not.
 	//
 	// Nullable because the generator has no way to say required -- D6, and F3 is
@@ -411,7 +412,7 @@ func (b0 Link_builder) Build() *Link {
 	x.xxx_hidden_At = b.At
 	x.xxx_hidden_Leave = b.Leave
 	x.xxx_hidden_Secret = b.Secret
-	x.xxx_hidden_Issuer = b.Issuer
+	x.xxx_hidden_IssuedTo = b.IssuedTo
 	x.xxx_hidden_DateExpires = b.DateExpires
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
@@ -423,7 +424,7 @@ var File_app_link_proto protoreflect.FileDescriptor
 
 const file_app_link_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/link.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x0fapp/email.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xa6\x05\n" +
+	"\x0eapp/link.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x0fapp/email.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xab\x05\n" +
 	"\x04Link\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12-\n" +
@@ -431,9 +432,9 @@ const file_app_link_proto_rawDesc = "" +
 	"\x02at\x18\b \x01(\tB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\x02at\x12$\n" +
 	"\x05leave\x18\x10 \x01(\bB\x0e\xea\x82\x16\n" +
 	"@\x01\x82\x01\x05falseR\x05leave\x12&\n" +
-	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12$\n" +
-	"\x06issuer\x18\n" +
-	" \x01(\fB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\x06issuer\x12G\n" +
+	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12)\n" +
+	"\tissued_to\x18\n" +
+	" \x01(\fB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\bissuedTo\x12G\n" +
 	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpires\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +

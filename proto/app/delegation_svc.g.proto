@@ -38,7 +38,7 @@ service DelegationService {
   // # A delegation, issued to the receiver
   //
   // A delegation already says *who* (`holder`) and *who may present it*
-  // (`issuer`), and `TokenService/Introspect` already answers only the caller
+  // (`issued_to`), and `TokenService/Introspect` already answers only the caller
   // it was issued to. So this mints one about the **caller** and issues it to
   // the **audience**: Loft, narrowed to acme, asks for a token for
   // `@acme/levyan`; levyan, narrowed to acme too, introspects it and is told
@@ -68,7 +68,7 @@ message DelegationAddRequest {
   HolderRef holder = 2;
   repeated string methods = 8;
   bytes secret = 9 [features.field_presence = IMPLICIT];
-  bytes issuer = 10 [features.field_presence = IMPLICIT];
+  bytes issued_to = 10 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_expires = 11;
   google.protobuf.Timestamp date_authenticated = 12;
   google.protobuf.Timestamp date_created = 15;
@@ -91,7 +91,7 @@ message DelegationSelect {
   HolderSelect holder = 2;
   bool methods = 8;
   bool secret = 9;
-  bool issuer = 10;
+  bool issued_to = 10;
   bool date_expires = 11;
   bool date_authenticated = 12;
   bool date_updated = 13;
