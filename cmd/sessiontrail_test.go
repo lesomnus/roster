@@ -140,7 +140,7 @@ func TestASessionMadeAtRostersOwnDoorIsOnTheTrail(t *testing.T) {
 	at := metadata.NewOutgoingContext(ctx, arrivingAt(t, "contoso.example"))
 
 	var h metadata.MD
-	_, err = auth.SignIn(at, app.AuthSignInRequest_builder{Alias: "someone", Password: res.GetSecret()}.Build(), grpc.Header(&h))
+	_, err = auth.SignIn(at, app.AuthSignInRequest_builder{Alias: "someone", Secret: []byte(res.GetSecret())}.Build(), grpc.Header(&h))
 	x.NoError(err)
 	cookie := cookieIn(t, h)
 	_, value, _ := strings.Cut(cookie, "=")

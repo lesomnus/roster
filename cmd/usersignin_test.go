@@ -63,7 +63,7 @@ func TestARosterUserSignsInOnTheirOwnTenantsName(t *testing.T) {
 
 	at := metadata.NewOutgoingContext(ctx, arrivingAt(t, "contoso.example"))
 	_, err = auth.SignIn(at, app.AuthSignInRequest_builder{
-		Alias: "someone", Password: secret,
+		Alias: "someone", Secret: []byte(secret),
 	}.Build())
 	x.NoError(err, "the tenant's own person could not sign in at the tenant's own name")
 
@@ -71,7 +71,7 @@ func TestARosterUserSignsInOnTheirOwnTenantsName(t *testing.T) {
 		x := require.New(t)
 
 		_, err := auth.SignIn(at, app.AuthSignInRequest_builder{
-			Alias: "someone", Password: secret + "x",
+			Alias: "someone", Secret: []byte(secret + "x"),
 		}.Build())
 		x.Error(err)
 		x.Equal(codes.Unauthenticated, status.Code(err))
@@ -84,7 +84,7 @@ func TestARosterUserSignsInOnTheirOwnTenantsName(t *testing.T) {
 
 		nowhere := metadata.NewOutgoingContext(ctx, arrivingAt(t, "nobody.example"))
 		_, err := auth.SignIn(nowhere, app.AuthSignInRequest_builder{
-			Alias: "someone", Password: secret,
+			Alias: "someone", Secret: []byte(secret),
 		}.Build())
 		x.Error(err)
 		x.Equal(codes.FailedPrecondition, status.Code(err))
@@ -95,7 +95,7 @@ func TestARosterUserSignsInOnTheirOwnTenantsName(t *testing.T) {
 		x := require.New(t)
 
 		_, err := auth.SignIn(ctx, app.AuthSignInRequest_builder{
-			Alias: "someone", Password: secret,
+			Alias: "someone", Secret: []byte(secret),
 		}.Build())
 		x.Error(err)
 		x.Equal(codes.FailedPrecondition, status.Code(err))
@@ -114,7 +114,7 @@ func TestARosterUserSignsInOnTheirOwnTenantsName(t *testing.T) {
 
 		elsewhere := metadata.NewOutgoingContext(ctx, arrivingAt(t, "fabrikam.example"))
 		_, err = auth.SignIn(elsewhere, app.AuthSignInRequest_builder{
-			Alias: "someone", Password: secret,
+			Alias: "someone", Secret: []byte(secret),
 		}.Build())
 		x.Error(err, "contoso's password signed somebody in at fabrikam's name")
 		x.Equal(codes.Unauthenticated, status.Code(err))
@@ -134,7 +134,7 @@ func TestTheDataPlaneServesNoSignInUnlessItSaysSo(t *testing.T) {
 	conn := pdtest.Serve(t, b.grpc(t))
 	_, err := app.NewAuthServiceClient(conn).SignIn(
 		metadata.NewOutgoingContext(ctx, arrivingAt(t, "contoso.example")),
-		app.AuthSignInRequest_builder{Alias: "someone", Password: "whatever"}.Build())
+		app.AuthSignInRequest_builder{Alias: "someone", Secret: []byte("whatever")}.Build())
 
 	x.Error(err)
 	x.Equal(codes.Unimplemented, status.Code(err))
@@ -169,7 +169,7 @@ func TestTheCookieARosterUserGetsIsACaller(t *testing.T) {
 	var h metadata.MD
 	_, err = app.NewAuthServiceClient(conn).SignIn(
 		metadata.NewOutgoingContext(ctx, arrivingAt(t, "contoso.example")),
-		app.AuthSignInRequest_builder{Alias: "someone", Password: res.GetSecret()}.Build(),
+		app.AuthSignInRequest_builder{Alias: "someone", Secret: []byte(res.GetSecret())}.Build(),
 		grpc.Header(&h))
 	x.NoError(err)
 
@@ -276,7 +276,7 @@ func TestASessionTheServerHasForgottenIsNobodyAtTheDoor(t *testing.T) {
 	// A session, and then the row gone from under it: signed out here, idled
 	// out in the wild, and one answer for both.
 	var h metadata.MD
-	_, err = auth.SignIn(at, app.AuthSignInRequest_builder{Alias: "someone", Password: secret}.Build(), grpc.Header(&h))
+	_, err = auth.SignIn(at, app.AuthSignInRequest_builder{Alias: "someone", Secret: []byte(secret)}.Build(), grpc.Header(&h))
 	x.NoError(err)
 	dead := cookieIn(t, h)
 	carrying := metadata.NewOutgoingContext(ctx,
@@ -298,7 +298,7 @@ func TestASessionTheServerHasForgottenIsNobodyAtTheDoor(t *testing.T) {
 	// browser. What comes back is the cookie that clears the dead one and then
 	// the live one, in that order, so a browser applying them ends signed in.
 	h = metadata.MD{}
-	_, err = auth.SignIn(carrying, app.AuthSignInRequest_builder{Alias: "someone", Password: secret}.Build(), grpc.Header(&h))
+	_, err = auth.SignIn(carrying, app.AuthSignInRequest_builder{Alias: "someone", Secret: []byte(secret)}.Build(), grpc.Header(&h))
 	x.NoError(err, "the form the page drew could not work")
 	x.Len(h.Get("set-cookie"), 2, "the dead cookie was not dropped, or the live one not minted: %v", h.Get("set-cookie"))
 	live := cookieIn(t, h)
@@ -510,7 +510,7 @@ func TestAFrontDoorHandsSomebodyIntoTheirOwnConsole(t *testing.T) {
 		x := require.New(t)
 
 		_, err := auth.SignIn(at, app.AuthSignInRequest_builder{
-			Link: mint(t, "contoso.example"), Alias: "someone", Password: "whatever",
+			Link: mint(t, "contoso.example"), Alias: "someone", Secret: []byte("whatever"),
 		}.Build())
 		x.Equal(codes.InvalidArgument, status.Code(err))
 	})

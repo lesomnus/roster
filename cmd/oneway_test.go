@@ -96,7 +96,7 @@ func TestWhatSaysWhenSomebodySignedInIsWhatTheCallCameWith(t *testing.T) {
 	var h metadata.MD
 	_, err := app.NewAuthServiceClient(b.Conn).SignIn(
 		metadata.NewOutgoingContext(ctx, arrivingAt(t, "contoso.example")),
-		app.AuthSignInRequest_builder{Alias: "someone", Password: password}.Build(), grpc.Header(&h))
+		app.AuthSignInRequest_builder{Alias: "someone", Secret: []byte(password)}.Build(), grpc.Header(&h))
 	x.NoError(err)
 	cookie := cookieOf(h)
 	x.NotEmpty(cookie)

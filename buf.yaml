@@ -82,3 +82,15 @@ breaking:
     # their pin (CLAUDE.md). From the launch on, put it back: then it is a
     # compile error somebody else has to fix.
     - FIELD_SAME_CARDINALITY
+  # Changes on purpose and before the first app's launch (CLAUDE.md), each the
+  # owner's answer to a name put to them (#286). `AuthSignInRequest.password`
+  # goes, its number and name reserved: what is proved at each step of a
+  # sign-in is `secret`, bytes, as every other request that takes a password
+  # takes one.
+  #
+  # Out with the first change after this reaches `main`, which is the only
+  # baseline here, as #234 took #233's out: left in, it is a hole in the check
+  # for the next change to these files.
+  ignore_only:
+    FIELD_NO_DELETE:
+      - proto/app/auth.proto

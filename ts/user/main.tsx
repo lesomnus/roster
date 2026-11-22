@@ -296,7 +296,7 @@ function SignIn(props: { onDone: () => void; said?: string | undefined }): React
 						void auth
 							.signIn({
 								alias: String(f.get('alias') ?? ''),
-								password: String(f.get('password') ?? ''),
+								secret: new TextEncoder().encode(String(f.get('password') ?? '')),
 							})
 							.then(answered)
 							.catch(refused)

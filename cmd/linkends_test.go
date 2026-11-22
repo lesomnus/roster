@@ -533,7 +533,7 @@ func TestASignInBegunBeforeEverythingWasEndedDoesNotFinish(t *testing.T) {
 		auth := app.NewAuthServiceClient(b.Conn)
 		at := metadata.NewOutgoingContext(ctx, arrivingAt(t, "contoso.example"))
 		begins := func(password string) string {
-			res, err := auth.SignIn(at, app.AuthSignInRequest_builder{Alias: "dan", Password: password}.Build())
+			res, err := auth.SignIn(at, app.AuthSignInRequest_builder{Alias: "dan", Secret: []byte(password)}.Build())
 			x.NoError(err)
 			x.NotEmpty(res.GetContinuation())
 

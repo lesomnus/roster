@@ -213,9 +213,10 @@ message AuthSignInRequest {
   // one answer is one somebody eventually fills in wrongly.
   string alias = 1;
 
-  // The secret, as typed. Not a hash: hashing is the store's, because
-  // parameters chosen by a caller are parameters it cannot vouch for.
-  string password = 2;
+  // The password is `secret`, below: one field for what is being proved at
+  // each step.
+  reserved 2;
+  reserved password;
 
   // The other way in: a link a front door handed this browser, spent here
   // instead of a password. Exactly one of the two ways is meant, and a request
@@ -262,6 +263,12 @@ message AuthSignInRequest {
   // minutes: a wrong code is the first form again, where the lockout counts.
   // It is spent at the tenant it was begun at and by nothing else -- not a
   // key, and not this method at another tenant's name.
+  //
+  // `secret` is what is being proved at this step: the password, as typed,
+  // beside `alias` at the first, and the second factor beside `continuation`
+  // at the next. Bytes, as every request that takes a password takes one, and
+  // not a hash: hashing is the store's, because parameters chosen by a caller
+  // are parameters it cannot vouch for.
   string continuation = 12;
   string kind = 8;
   string name = 5;

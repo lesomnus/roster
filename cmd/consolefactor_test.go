@@ -86,7 +86,7 @@ func TestRostersOwnSignInAsksTheSecondFactor(t *testing.T) {
 	begin := func(t *testing.T) string {
 		t.Helper()
 
-		res, cookie, err := signIn(at("contoso.example"), app.AuthSignInRequest_builder{Alias: "kim", Password: password}.Build())
+		res, cookie, err := signIn(at("contoso.example"), app.AuthSignInRequest_builder{Alias: "kim", Secret: []byte(password)}.Build())
 		require.NoError(t, err)
 		require.Empty(t, cookie)
 		require.NotEmpty(t, res.GetContinuation())
@@ -97,7 +97,7 @@ func TestRostersOwnSignInAsksTheSecondFactor(t *testing.T) {
 	t.Run("the password alone is not a session", func(t *testing.T) {
 		x := require.New(t)
 
-		res, cookie, err := signIn(at("contoso.example"), app.AuthSignInRequest_builder{Alias: "kim", Password: password}.Build())
+		res, cookie, err := signIn(at("contoso.example"), app.AuthSignInRequest_builder{Alias: "kim", Secret: []byte(password)}.Build())
 		x.NoError(err)
 		x.Empty(cookie, "somebody with a second factor was handed a session for the first")
 
@@ -157,10 +157,13 @@ func TestRostersOwnSignInAsksTheSecondFactor(t *testing.T) {
 		x := require.New(t)
 
 		for name, req := range map[string]*app.AuthSignInRequest{
-			"an attempt and a password": app.AuthSignInRequest_builder{Continuation: "vc_x", Kind: vouch.KindTotp, Secret: code(), Alias: "kim", Password: password}.Build(),
-			"an attempt and a link":     app.AuthSignInRequest_builder{Continuation: "vc_x", Kind: vouch.KindTotp, Secret: code(), Link: "rl_x"}.Build(),
-			"an attempt and no proof":   app.AuthSignInRequest_builder{Continuation: "vc_x"}.Build(),
-			"a proof and no attempt":    app.AuthSignInRequest_builder{Alias: "kim", Password: password, Kind: vouch.KindTotp, Secret: code()}.Build(),
+			// One `secret` is proved at each step, so a password and a code
+			// cannot be sent at once: an attempt is told by its continuation,
+			// and an alias or a factor beside the wrong one is refused.
+			"an attempt and an alias": app.AuthSignInRequest_builder{Continuation: "vc_x", Kind: vouch.KindTotp, Secret: code(), Alias: "kim"}.Build(),
+			"an attempt and a link":   app.AuthSignInRequest_builder{Continuation: "vc_x", Kind: vouch.KindTotp, Secret: code(), Link: "rl_x"}.Build(),
+			"an attempt and no proof": app.AuthSignInRequest_builder{Continuation: "vc_x"}.Build(),
+			"a factor and no attempt": app.AuthSignInRequest_builder{Alias: "kim", Secret: []byte(password), Kind: vouch.KindTotp}.Build(),
 		} {
 			_, _, err := signIn(at("contoso.example"), req)
 			x.Equal(codes.InvalidArgument, status.Code(err), "%s: %v", name, err)
@@ -171,7 +174,7 @@ func TestRostersOwnSignInAsksTheSecondFactor(t *testing.T) {
 		x := require.New(t)
 		x.NoError(setFor(ctx, b.Server, b.ContosoUser.Bytes(), password))
 
-		res, cookie, err := signIn(at("contoso.example"), app.AuthSignInRequest_builder{Alias: "someone", Password: password}.Build())
+		res, cookie, err := signIn(at("contoso.example"), app.AuthSignInRequest_builder{Alias: "someone", Secret: []byte(password)}.Build())
 		x.NoError(err)
 		x.NotEmpty(cookie)
 		x.Empty(res.GetContinuation())
@@ -186,7 +189,7 @@ func TestRostersOwnSignInAsksTheSecondFactor(t *testing.T) {
 		enrolled(t, ctx, b.Ungated.Credential(), b.keyedLocal(t), lee)
 
 		for range 3 {
-			res, _, err := signIn(at("contoso.example"), app.AuthSignInRequest_builder{Alias: "lee", Password: password}.Build())
+			res, _, err := signIn(at("contoso.example"), app.AuthSignInRequest_builder{Alias: "lee", Secret: []byte(password)}.Build())
 			x.NoError(err)
 
 			_, _, err = signIn(at("contoso.example"), app.AuthSignInRequest_builder{
@@ -197,7 +200,7 @@ func TestRostersOwnSignInAsksTheSecondFactor(t *testing.T) {
 
 		// Three wrong codes, each behind a right password, and it is the
 		// password that is closed: nothing begins.
-		_, cookie, err := signIn(at("contoso.example"), app.AuthSignInRequest_builder{Alias: "lee", Password: password}.Build())
+		_, cookie, err := signIn(at("contoso.example"), app.AuthSignInRequest_builder{Alias: "lee", Secret: []byte(password)}.Build())
 		x.Equal(codes.Unauthenticated, status.Code(err), "%v", err)
 		x.Empty(cookie)
 	})
