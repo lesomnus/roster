@@ -2,7 +2,6 @@ package cmd_test
 
 import (
 	"fmt"
-	"sync"
 	"testing"
 	"time"
 
@@ -65,9 +64,18 @@ func TestARestoreInsideATransactionKeepsTheGrace(t *testing.T) {
 // `TestTheLastWayInSurvivesTwoCallersAtOnce` with each erase in a transaction
 // of its own: the count `only` takes is a decision only under the write both
 // callers make first, and on a rebuilt stack that write was not made.
+//
+// It raced nothing for a while. Since a way in is one that works (#363), an
+// identity at a provider the tenant is connected to by nothing is no way in,
+// and all eighty erases were refused as the last way in whatever the lock
+// did; their errors were thrown away, so the test passed with the lock taken
+// out. The providers are connected, as the sibling's are, and each pair is
+// held to its answer: exactly one erase went through, and the other was
+// refused by the rule.
 func TestTheLastWayInSurvivesTwoTransactionsAtOnce(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
+	b.connected(t, ctx, b.Contoso, "github", "entra")
 
 	door := b.holder(t, ctx, b.Contoso, "front-door")
 	role, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
@@ -84,21 +92,24 @@ func TestTheLastWayInSurvivesTwoTransactionsAtOnce(t *testing.T) {
 	as := b.as(ctx, door, b.Contoso)
 
 	// One erase, in a transaction of its own, the stack rebuilt on it.
-	erase := func(v *app.Identity) {
-		drv, tx, err := dialect.BeginTx(ctx, b.Drv)
-		if err != nil {
-			return
+	erase := func(v *app.Identity) func() error {
+		return func() error {
+			drv, tx, err := dialect.BeginTx(ctx, b.Drv)
+			if err != nil {
+				return err
+			}
+			s, err := enttx.Rebind(b.Walled, drv)
+			if err != nil {
+				_ = tx.Rollback()
+				return err
+			}
+			if _, err := s.Identity().Erase(as, app.IdentityRef_builder{Id: v.GetId()}.Build()); err != nil {
+				_ = tx.Rollback()
+				return err
+			}
+
+			return tx.Commit()
 		}
-		s, err := enttx.Rebind(b.Walled, drv)
-		if err != nil {
-			_ = tx.Rollback()
-			return
-		}
-		if _, err := s.Identity().Erase(as, app.IdentityRef_builder{Id: v.GetId()}.Build()); err != nil {
-			_ = tx.Rollback()
-			return
-		}
-		_ = tx.Commit()
 	}
 
 	const people = 40
@@ -111,19 +122,14 @@ func TestTheLastWayInSurvivesTwoTransactionsAtOnce(t *testing.T) {
 			b.identity(t, ctx, who, "entra", fmt.Sprintf("en-%d", i)),
 		}
 
-		var wg sync.WaitGroup
-		start := make(chan struct{})
-		for _, v := range vs {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				<-start
-
-				erase(v)
-			}()
+		errs := answeredByTheRule(erase(vs[0]), erase(vs[1]))
+		x.True((errs[0] == nil) != (errs[1] == nil), "person %d: not exactly one erase went through: %v", i, errs)
+		for _, err := range errs {
+			if err != nil {
+				x.Equal(codes.FailedPrecondition, status.Code(err), "person %d: %v", i, err)
+				x.ErrorContains(err, "the only way they can sign in", "person %d", i)
+			}
 		}
-		close(start)
-		wg.Wait()
 
 		left, err := b.Ungated.Identity().List(ctx, app.IdentityListRequest_builder{
 			Filters: []*app.IdentityFilter{app.IdentityFilter_builder{

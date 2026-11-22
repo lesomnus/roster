@@ -2,7 +2,6 @@ package cmd_test
 
 import (
 	"context"
-	"sync"
 	"testing"
 
 	"github.com/lesomnus/z"
@@ -285,30 +284,25 @@ func TestTwoNarrowingsCannotBothTakeTheLast(t *testing.T) {
 		ps[i] = pair{tenant: tn, one: one, two: two, ones: b.everything(t, ctx, tn), twos: app.RoleRef_builder{Id: r.GetId()}.Build()}
 	}
 
-	var wg sync.WaitGroup
-	errs := make([][2]error, tenants)
-	for i, p := range ps {
-		for j, at := range []struct {
-			who  pdid.Id
-			role *app.RoleRef
-		}{{p.one, p.ones}, {p.two, p.twos}} {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				_, errs[i][j] = b.Walled.Role().Narrow(framed(ctx, at.who, p.tenant), app.RoleNarrowRequest_builder{
-					Ref: at.role, Methods: []string{core.EveryMethod},
-				}.Build())
-			}()
-		}
-	}
-	wg.Wait()
-
+	// A pair at a time, both behind one gate: started as they were made, the
+	// first of a pair was often answered before the second began, and the
+	// test passed three runs of four with the tenant's lock taken out.
 	administered := cmd.Administered(b.Ent)
 	for i, p := range ps {
+		narrows := func(who pdid.Id, role *app.RoleRef) func() error {
+			return func() error {
+				_, err := b.Walled.Role().Narrow(framed(ctx, who, p.tenant), app.RoleNarrowRequest_builder{
+					Ref: role, Methods: []string{core.EveryMethod},
+				}.Build())
+				return err
+			}
+		}
+		errs := answeredByTheRule(narrows(p.one, p.ones), narrows(p.two, p.twos))
+
 		ok, err := administered(ctx, nil, p.tenant, core.EveryMethod)
 		x.NoError(err)
-		x.True(ok, "tenant %d left with nobody administering it: %v", i, errs[i])
-		x.True(errs[i][0] == nil || errs[i][1] == nil, "neither went through in tenant %d: %v", i, errs[i])
+		x.True(ok, "tenant %d left with nobody administering it: %v", i, errs)
+		x.True(errs[0] == nil || errs[1] == nil, "neither went through in tenant %d: %v", i, errs)
 	}
 }
 

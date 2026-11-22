@@ -3,7 +3,6 @@ package cmd_test
 import (
 	"context"
 	"fmt"
-	"sync"
 	"testing"
 	"time"
 
@@ -87,30 +86,20 @@ func TestASiteIsErasedWithNothingInItByTwoCallersAtOnce(t *testing.T) {
 				x.NoError(err)
 				site := app.SiteRef_builder{Id: s.GetId()}.Build()
 
-				var (
-					wg              sync.WaitGroup
-					erased          *app.SiteEraseResponse
-					eraseErr, inErr error
+				var erased *app.SiteEraseResponse
+				errs := answeredByTheRule(
+					func() error {
+						// What is put in a site is asked more before it is
+						// written than the erase is, so the erase is begun a
+						// little after it: by more each time.
+						time.Sleep(time.Duration(i%20) * 200 * time.Microsecond)
+						var err error
+						erased, err = app.NewSiteServiceClient(conn).Erase(admin, site)
+						return err
+					},
+					func() error { return put.into(admin, site) },
 				)
-				start := make(chan struct{})
-				wg.Add(2)
-				go func() {
-					defer wg.Done()
-					<-start
-
-					// What is put in a site is asked more before it is
-					// written than the erase is, so the erase is begun a
-					// little after it: by more each time.
-					time.Sleep(time.Duration(i%20) * 200 * time.Microsecond)
-					erased, eraseErr = app.NewSiteServiceClient(conn).Erase(admin, site)
-				}()
-				go func() {
-					defer wg.Done()
-					<-start
-					inErr = put.into(admin, site)
-				}()
-				close(start)
-				wg.Wait()
+				eraseErr, inErr := errs[0], errs[1]
 
 				// One of the two went through, and the other was told why not.
 				x.True(eraseErr == nil || inErr == nil, "neither went through: %v, %v", eraseErr, inErr)
