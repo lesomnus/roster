@@ -170,6 +170,17 @@ type Server struct {
 	// is asked again who opened it ([AskedAgain]).
 	recheck time.Duration
 
+	// stopsSeen, where it is set, is told as each listener begins its stop,
+	// with the deadline it was given, and as it has stopped. Nothing of the
+	// app sets it: a test does, so that one grace for every listener is read
+	// off the deadlines rather than timed.
+	stopsSeen func(listener string, until time.Time, stopped bool)
+
+	// fronts are the front doors this process runs beside the data plane
+	// ([Server.Front]), which call into it: its gRPC server is not stopped
+	// under a request one of them is still answering.
+	fronts doors
+
 	// RestoreWithin is `tenant.restore_within`, for the same servers: a close
 	// undone at the admin port answers to the same grace as one undone here.
 	RestoreWithin time.Duration
@@ -1626,25 +1637,42 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 	s.alone(ctx, c)
 	s.plain(ctx, c)
 
-	// The stops, collected rather than deferred one at a time.
+	// The stops, collected rather than deferred one at a time, and all of
+	// them under one deadline.
 	//
 	// A `defer` per listener runs them in series, and each waits up to
 	// [ShutdownGrace] -- so five listeners is five graces end to end, and the
-	// number that justifies the grace is `docker stop`'s ten seconds. Five of
-	// them is twenty-five, which is SIGKILL with four of the five never having
-	// been asked. Run together, the budget is the grace whatever a deployment
-	// opened.
-	var stops shutdown
+	// number that justifies the grace is `docker stop`'s ten seconds. So is a
+	// data plane stopped and waited for before the others begin, which is how
+	// a stream on it and one on the admin listener came to two graces. Every
+	// stop is begun at the signal, and every one is given the deadline [budget]
+	// fixed then: the budget is the grace whatever a deployment opened.
+	//
+	// Each plane is its gRPC server and what calls into it. A page's call
+	// reaches the gRPC server through the HTTP listener in front of it, and a
+	// `GracefulStop` closes such a call at once, where it lets one made over
+	// gRPC finish: so the HTTP listeners stop first, taking no new connection
+	// and answering what they hold, and the gRPC server is stopped once they
+	// have, in what is left of the same deadline.
+	var (
+		at    budget
+		stops shutdown
+		once  sync.Once
+	)
+	halt := func() { once.Do(stops.run) }
 	defer func() {
-		stops.run()
+		halt()
 		s.flushAccess(ctx)
 	}()
 
-	stop, err := s.serveHttp(ctx, c, g)
+	stopHttp, err := s.serveHttp(ctx, c, g)
 	if err != nil {
 		return err
 	}
-	stops.add(stop)
+
+	// The data plane's own, with the front doors this process runs beside it,
+	// which call into it as well.
+	stops.add(s.plane(&at, "grpc", g, stopHttp, s.frontsStopped))
 
 	var control *grpc.Server
 	if s.Control != nil {
@@ -1654,39 +1682,36 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 		}
 	}
 
-	stopControl, err := s.serveControl(ctx, c, control)
-	if err != nil {
+	if err := s.serveControl(ctx, c, control); err != nil {
 		return err
 	}
-	stops.add(stopControl)
 
 	stopControlHttp, err := s.serveControlHttp(ctx, c, control)
 	if err != nil {
 		return err
 	}
-	stops.add(stopControlHttp)
+	stops.add(s.plane(&at, "control", control, stopControlHttp))
 
 	admin, err := s.GrpcAdmin(ctx, c)
 	if err != nil {
 		return err
 	}
 
-	stopAdmin, err := s.serveAdmin(ctx, c, admin)
-	if err != nil {
+	if err := s.serveAdmin(ctx, c, admin); err != nil {
 		return err
 	}
-	stops.add(stopAdmin)
 
 	stopAdminHttp, err := s.serveAdminHttp(ctx, c, admin)
 	if err != nil {
 		return err
 	}
-	stops.add(stopAdminHttp)
+	stops.add(s.plane(&at, "admin", admin, stopAdminHttp))
 
 	stopped := make(chan struct{})
 	go func() {
 		<-ctx.Done()
-		stopping(g)
+		at.deadline()
+		halt()
 		close(stopped)
 	}()
 
@@ -1746,6 +1771,150 @@ func (v *shutdown) run() {
 	}
 
 	wg.Wait()
+}
+
+// budget is the one deadline every listener's stop is given: [ShutdownGrace]
+// from the first time a stop asks for it, which is the signal.
+//
+// One deadline and not one grace each, so that what a stop is given does not
+// depend on when it began: a listener that waits for another before it stops
+// its own server waits inside the budget rather than adding to it.
+type budget struct {
+	once  sync.Once
+	until time.Time
+}
+
+func (v *budget) deadline() time.Time {
+	v.once.Do(func() { v.until = time.Now().Add(ShutdownGrace) })
+
+	return v.until
+}
+
+// plane is the stop of one gRPC server and of what calls into it: each of
+// `before` together, and the server once they have all returned, under the
+// one deadline `at` holds.
+//
+// A nil server is a plane this deployment does not have, and its stop is
+// only the others'.
+func (s *Server) plane(at *budget, name string, g *grpc.Server, before ...func(context.Context)) func() {
+	return func() {
+		until := at.deadline()
+		ctx, cancel := context.WithDeadline(context.Background(), until)
+		defer cancel()
+
+		s.seen(name, until, false)
+		defer s.seen(name, until, true)
+
+		var wg sync.WaitGroup
+		for _, f := range before {
+			wg.Go(func() { f(ctx) })
+		}
+		wg.Wait()
+
+		if g != nil {
+			stopping(ctx, g)
+		}
+	}
+}
+
+// seen tells [Server.stopsSeen], where a test set it.
+func (s *Server) seen(listener string, until time.Time, stopped bool) {
+	if s.stopsSeen != nil {
+		s.stopsSeen(listener, until, stopped)
+	}
+}
+
+// Front runs `serve`, a front door this process runs beside the data plane,
+// and counts it until it returns, which a front door does once what it was
+// answering is answered ([ServeUntil]): the data plane's gRPC server, which
+// the front door calls, is not stopped under a request it still holds.
+//
+// Counted as this is called and not as `serve` begins, so that a stop that
+// comes before the goroutine has run still waits for it.
+func (s *Server) Front(serve func() error) func() error {
+	s.fronts.add()
+
+	return func() error {
+		defer s.fronts.done()
+
+		return serve()
+	}
+}
+
+// frontsStopped waits for the front doors counted by [Server.Front], and no
+// longer than ctx.
+func (s *Server) frontsStopped(ctx context.Context) { s.fronts.wait(ctx) }
+
+// doors is a count of what is running that a wait can be bounded on.
+//
+// Not a `sync.WaitGroup`, which may not be added to from zero while somebody
+// waits: a front door is counted after `Serve` has begun, and a signal may
+// come in between.
+type doors struct {
+	mu   sync.Mutex
+	n    int
+	none chan struct{}
+}
+
+func (v *doors) add() {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
+	if v.n == 0 {
+		v.none = make(chan struct{})
+	}
+	v.n++
+}
+
+func (v *doors) done() {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
+	v.n--
+	if v.n == 0 {
+		close(v.none)
+	}
+}
+
+func (v *doors) wait(ctx context.Context) {
+	v.mu.Lock()
+	if v.n == 0 {
+		v.mu.Unlock()
+		return
+	}
+	none := v.none
+	v.mu.Unlock()
+
+	select {
+	case <-none:
+	case <-ctx.Done():
+	}
+}
+
+// ServeUntil answers on `l` with `srv` until ctx is done, and then stops it as
+// every listener of roster's stops: it takes no new connection, a request in
+// flight is answered, and what is still open [ShutdownGrace] after the signal
+// is cut. It returns once that is so, and not as the listener closes.
+func ServeUntil(ctx context.Context, srv *http.Server, l net.Listener) error {
+	stopped := make(chan struct{})
+	go func() {
+		defer close(stopped)
+		<-ctx.Done()
+
+		last, cancel := context.WithTimeout(context.WithoutCancel(ctx), ShutdownGrace)
+		defer cancel()
+		if srv.Shutdown(last) != nil {
+			_ = srv.Close()
+		}
+	}()
+
+	err := srv.Serve(l)
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	<-stopped
+
+	return nil
 }
 
 // ShutdownGrace is how long a stop waits for the calls that are still in
@@ -1900,18 +2069,21 @@ func (s *Server) alone(ctx context.Context, c Config) {
 		strings.Join(said, " and ")+map[bool]string{true: " are", false: " is"}[len(said) > 1], config.BrokerMemory, c.Spin.Lease))
 }
 
-// stopping takes a server down, and does not wait forever to.
+// stopping takes a server down, and does not wait past ctx's deadline to.
 //
-// Graceful first, so a unary call in flight finishes and its caller gets an
-// answer rather than a broken connection. Hard after [ShutdownGrace], because
-// waiting on a stream that has no reason to end is not waiting, it is hanging.
+// Graceful first, so a call made over gRPC that is in flight finishes and its
+// caller gets an answer rather than a broken connection. A call that came
+// through an HTTP listener is not among them -- `GracefulStop` closes those at
+// once -- which is why [Server.plane] stops the HTTP listeners in front of `g`
+// before it calls this. Hard at the deadline, because waiting on a stream that
+// has no reason to end is not waiting, it is hanging.
 //
 // `Stop` beside a `GracefulStop` already in flight is what unblocks it: it
 // closes the transports out from under the handlers, the connections drain, and
 // the graceful call returns -- which is why the goroutine is still waited for
 // rather than abandoned. Anything left running after this is running under a
 // process that is on its way out anyway.
-func stopping(g *grpc.Server) {
+func stopping(ctx context.Context, g *grpc.Server) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -1920,7 +2092,7 @@ func stopping(g *grpc.Server) {
 
 	select {
 	case <-done:
-	case <-time.After(ShutdownGrace):
+	case <-ctx.Done():
 		g.Stop()
 		<-done
 	}
@@ -2015,43 +2187,43 @@ func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerO
 // the gate, the trail. What differs is which database is behind it: the
 // `ApiKeyService` here, as on every server (`Register`), mints and reads the
 // deployment's own keys, an `rk_`, where the data plane's are a tenant's.
-func (s *Server) serveControl(ctx context.Context, c Config, g *grpc.Server) (func(), error) {
+//
+// Its stop is `Serve`'s, with the listener in front of it, under the one
+// deadline: this port serves the same watchable services, so a console with a
+// stream open would otherwise hold the whole shutdown.
+func (s *Server) serveControl(ctx context.Context, c Config, g *grpc.Server) error {
 	if !c.Control.Answers() || g == nil {
-		return func() {}, nil
+		return nil
 	}
 
 	l, err := Listen(ctx, c.Control.Addr)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	go func() { _ = g.Serve(l) }()
 
 	log.From(ctx).InfoContext(ctx, "control", slog.String("addr", l.Addr().String()))
 
-	// Bounded like the one above, and for the same reason: this port serves the
-	// same watchable services, so a console with a stream open would otherwise
-	// hold the whole shutdown -- from a `defer`, after the data plane had
-	// already stopped and with nothing left to report it.
-	return func() { stopping(g) }, nil
+	return nil
 }
 
 // serveAdmin is where an operator administers customers; see `admin.go`.
-func (s *Server) serveAdmin(ctx context.Context, c Config, g *grpc.Server) (func(), error) {
+func (s *Server) serveAdmin(ctx context.Context, c Config, g *grpc.Server) error {
 	if c.Admin.Addr == "" || g == nil {
-		return func() {}, nil
+		return nil
 	}
 
 	l, err := Listen(ctx, c.Admin.Addr)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	go func() { _ = g.Serve(l) }()
 
 	log.From(ctx).InfoContext(ctx, "admin", slog.String("addr", l.Addr().String()))
 
-	return func() { stopping(g) }, nil
+	return nil
 }
 
 // serveHttp is the second listener, for whatever cannot speak gRPC -- which is
@@ -2066,7 +2238,7 @@ func (s *Server) serveAdmin(ctx context.Context, c Config, g *grpc.Server) (func
 // tenant, and which tenant that is comes from the name they arrived at. See
 // [Config.UserConsole], which is refused unless `sign_in.enabled` puts the door
 // on this listener.
-func (s *Server) serveHttp(ctx context.Context, c Config, g *grpc.Server) (func(), error) {
+func (s *Server) serveHttp(ctx context.Context, c Config, g *grpc.Server) (func(context.Context), error) {
 	return s.http(ctx, "http", c.Server.Http, g, ConsoleMount(c.UserConsole))
 }
 
@@ -2075,9 +2247,9 @@ func (s *Server) serveHttp(ctx context.Context, c Config, g *grpc.Server) (func(
 // The first console is this one: who runs the deployment, which services call
 // it, what each key may do. All of that is here and none of it is on either of
 // the other two ports.
-func (s *Server) serveControlHttp(ctx context.Context, c Config, g *grpc.Server) (func(), error) {
+func (s *Server) serveControlHttp(ctx context.Context, c Config, g *grpc.Server) (func(context.Context), error) {
 	if g == nil {
-		return func() {}, nil
+		return func(context.Context) {}, nil
 	}
 
 	return s.http(ctx, "control.http", c.Control.Http, g)
@@ -2141,17 +2313,17 @@ func ConsoleMount(c ConsoleConfig) func(*web.Mux) {
 // A second listener rather than a route on the first, because both servers
 // register `roster.HolderService` and a transcoder routes by the method's own
 // path. There is nowhere to put a prefix that the name does not already occupy.
-func (s *Server) serveAdminHttp(ctx context.Context, c Config, g *grpc.Server) (func(), error) {
+func (s *Server) serveAdminHttp(ctx context.Context, c Config, g *grpc.Server) (func(context.Context), error) {
 	if g == nil {
-		return func() {}, nil
+		return func(context.Context) {}, nil
 	}
 
 	return s.http(ctx, "admin.http", c.Admin.Http, g, ConsoleMount(c.Admin.Console))
 }
 
-func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *grpc.Server, mounts ...func(*web.Mux)) (func(), error) {
+func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *grpc.Server, mounts ...func(*web.Mux)) (func(context.Context), error) {
 	if !c.Serves() {
-		return func() {}, nil
+		return func(context.Context) {}, nil
 	}
 
 	h, err := web.New(c, g)
@@ -2196,7 +2368,18 @@ func (s *Server) http(ctx context.Context, name string, c config.HttpConfig, g *
 
 	log.From(ctx).InfoContext(ctx, name, slog.String("addr", l.Addr().String()))
 
-	return func() { srv.Close() }, nil
+	// `Shutdown` and not `Close`: no new connection is taken, and a call in
+	// flight is answered, as one over gRPC is. What is still open at the
+	// deadline -- a stream, which never ends on its own -- is cut.
+	return func(ctx context.Context) {
+		until, _ := ctx.Deadline()
+		s.seen(name, until, false)
+		defer s.seen(name, until, true)
+
+		if srv.Shutdown(ctx) != nil {
+			_ = srv.Close()
+		}
+	}, nil
 }
 
 // Arrived carries the name a browser came in on into the request's headers, so

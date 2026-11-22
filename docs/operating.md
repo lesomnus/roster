@@ -581,6 +581,21 @@ age alone moves no follower. `serve` says so as it starts, at `WARN`, where a
 listener's file says the first and not the second; nothing is defaulted for the
 grace.
 
+### Stopping
+
+Told to stop (`SIGTERM`, or Ctrl-C), a process gives **one grace of five
+seconds, from the signal, to every listener it has**, whatever a deployment
+opened: roster's own and the front doors `roster serve` runs beside them stop
+together, and none begins after another has finished. A listener takes no new
+connection and answers the calls it holds, **whether they came over gRPC or
+through a page's HTTP listener**: the HTTP listeners stop first, and the gRPC
+server behind them once they have, inside the same five seconds. What is still
+open when they are up is cut, which is every stream, since a stream never ends
+on its own. The directory's LDAP connections are closed at the signal. The
+loops stop at the signal too and give the lease back, and once the listeners
+have stopped the access record is written once more. `docker stop` waits ten
+seconds before it kills, and Kubernetes thirty.
+
 ## The admin console
 
 ```yaml
