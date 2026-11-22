@@ -128,6 +128,13 @@ func TestAKindNothingChecksIsRefusedBeforeAnybodyIsLookedFor(t *testing.T) {
 		password := fastest(3, vouch.KindPassword)
 		totp := fastest(3, vouch.KindTotp)
 
+		// It is timed, and left so: the rule is about time. What it measures
+		// is the quickest of three answers of each kind; both make the same
+		// two reads, so what tells them apart is the hash. Held to half, it
+		// asks that the reads cost less than one argon2 burn, and so it fails
+		// for the machine's sake where the database is slower than the hash
+		// -- a remote one, or a runner under load, for three answers running
+		// -- and then a run again passes where a defect would not.
 		x.Less(totp, password/2,
 			"an address nobody has burned argon2 for a kind that compares in microseconds")
 	})
