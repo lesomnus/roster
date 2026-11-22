@@ -49,9 +49,10 @@ import (
 //
 // `s` has no wall on it, for the reason `cmd.Resolver` and `vouch.Verify` do:
 // this is asked before anybody has been resolved to a person, so there is no
-// frame to narrow by. It is also the only way to read the row at all --
-// `ApiKeyService`'s generated reads are shut a method at a time, precisely
-// because its `Get` answers with the verifier.
+// frame to narrow by. No read a caller has would do: `ApiKeyService/Get` and
+// `/List` are served behind the gate and the wall, which ask for the person
+// this is asked to find, answer no verifier, and refuse a key named by one at
+// every port.
 func Service(s app.Server) pdpb.TokenServiceServer { return service{s: s} }
 
 type service struct {

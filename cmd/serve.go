@@ -1297,9 +1297,10 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// A customer minting a key for themselves, which until now needed a shell
 	// on the box.
 	//
-	// Not on the control plane, which mints the other kind and registers its
-	// own `IssueService` after this -- see [Server.Keys], which is the one flag
-	// that tells the two apart because `Control == nil` cannot.
+	// The control plane serves the same service, by the same `Register`, and
+	// mints the other kind there: which kind is the stack's (`core.WithPrefix`),
+	// and [Server.Keys] is the one flag that tells the two planes apart because
+	// `Control == nil` cannot.
 	//
 	// The **walled** server, so `core.ApiKey.Add` runs both rules a key is held
 	// to: nobody hands out a method they do not hold, and nobody writes a way
@@ -1372,9 +1373,10 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	// databases were separated for.
 	//
 	// `Ungated` for the reason `vouch.Verify` uses one: this is asked before
-	// anybody has been resolved, so there is no frame to narrow by, and the row
-	// is unreadable through the wall anyway -- `ApiKeyService`'s generated reads
-	// are shut a method at a time, because its `Get` answers with the verifier.
+	// anybody has been resolved, so there is no frame to narrow by. No read a
+	// caller has would do: `ApiKeyService/Get` and `/List` are served behind
+	// the gate and the wall, which ask for the person this is asked to find,
+	// answer no verifier, and refuse a key named by one ([NotByVerifier]).
 	pdpb.RegisterTokenServiceServer(g, keys.Service(s.Ungated))
 
 	return g, nil
@@ -1383,17 +1385,19 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 // register puts every service on the wire, and it is written out rather than
 // being `app.RegisterServer` because of the ones that are missing.
 //
-// `CredentialService`, `ApiKeyService` and `DelegationService` are not here.
-// Each has a generated `Get` that answers with whatever columns it was asked
-// for, and in all three cases one of them is a verifier -- a password hash, a
+// `SessionService`, `LinkService` and `ContinuationService` are not here, and
+// `CredentialService`, `ApiKeyService` and `DelegationService` are here for
+// their verbs. Each of the six has a generated `Get` that answers with whatever
+// columns it was asked for, and one of them is a verifier -- a password hash, a
 // key hash, the hash of a delegation, the digest of a session cookie, the
-// secret of a link, the secret of a continuation -- six services in all, and
-// every one of them holds a column declared `secret`. Serving any of them is
-// publishing that column to anybody the wall lets read a row. The rows still
-// exist and this app still reads them, in process, but there is no method on
-// this server that answers with one.
+// secret of a link, the secret of a continuation -- every one of them a column
+// declared `secret`. The first three are served by nothing: the rows exist and
+// this app reads them, in process, but there is no method on this server that
+// answers with one. Of the other three, `closed` shuts a credential's reads and
+// its `Add`, and a key's and a delegation's `Add`; their reads are served, and
+// the column is cleared out of every answer.
 //
-// For `DelegationService` this is the **only** control that closes it, and that
+// For the first three this is the **only** control that closes them, and that
 // is worth knowing before somebody adds a line here for tidiness.
 //
 // `closed` below now reaches a stream as well, because both interceptors are
@@ -1413,18 +1417,19 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 // in. The other arrangement -- serve everything, then take one away -- fails by
 // publishing something nobody meant to, and it fails silently.
 func Register(g grpc.ServiceRegistrar, s app.Server) {
-	// `CredentialService` is served for its overlays (`Set`, `Unlock`, `Enrol`), and
-	// its generated reads and raw `Add`/`Erase` are shut by method in
-	// `closed` -- so nothing on the wire answers with the `secret` column.
+	// `CredentialService` is served for its overlays (`Set`, `Issue`, `Unlock`,
+	// `Enrol`) and its `Erase`, and its generated reads and raw `Add` are shut
+	// by method in `closed` -- so nothing on the wire answers with the `secret`
+	// column.
 	app.RegisterCredentialServiceServer(g, s.Credential())
-	// `DelegationService`, like `CredentialService`, for its overlay (`Revoke`)
-	// -- its reads and raw writes are shut by method in `closed`, so nothing on
-	// the wire answers with the token column.
+	// `DelegationService` for its overlays (`Revoke`, `Exchange`) and its
+	// `Get`, `List` and `Erase`, which answer no token: the column is cleared
+	// out of every answer. Its raw `Add` is shut by method in `closed`.
 	app.RegisterDelegationServiceServer(g, s.Delegation())
 	// `ApiKeyService` for its `Issue` overlay -- the mint `IssueService.IssueKey`
-	// was. Its raw `Add` and its general writes are shut by method in `closed`,
-	// on every port, so a key is made by `Issue` alone and the prefix it stamps
-	// is the stack's, not the caller's.
+	// was, and its `Get`, `List` and `Erase`. Its raw `Add` and its general
+	// writes are shut by method in `closed`, on every port, so a key is made by
+	// `Issue` alone and the prefix it stamps is the stack's, not the caller's.
 	app.RegisterApiKeyServiceServer(g, s.ApiKey())
 	app.RegisterTenantServiceServer(g, s.Tenant())
 	app.RegisterHostServiceServer(g, s.Host())
@@ -1518,8 +1523,8 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 // mean *not served*.
 func (s *Server) closed() func(method string) bool {
 	// `ApiKey.Add` takes a verifier from the caller, so serving it beside
-	// `IssueService` would be offering the thing `Issue` exists to stop: a key
-	// whose secret somebody else chose, in a prefix they picked.
+	// `Issue` would be offering the thing `Issue` exists to stop: a key whose
+	// secret somebody else chose, in a prefix they picked.
 	//
 	// `CredentialService` is registered for its verbs (`Set`, `Issue`,
 	// `Unlock`, `Enrol`, `Erase`), so the rest of it is shut one method at a
@@ -1538,7 +1543,7 @@ func (s *Server) closed() func(method string) bool {
 		// is stripped on the way out like every other secret, and the layer
 		// holds them to `mayReach` on the row's holder. What stays closed is
 		// `Add` -- a caller-chosen token. `DelegationService` is registered
-		// for its `Revoke` overlay.
+		// for those reads and its `Revoke` and `Exchange` overlays.
 		app.DelegationService_Add_FullMethodName,
 		// `Consent` is a ledger: `Agree` and `Withdraw` add to it, stamping
 		// what a request must not say, and nothing changes or removes a row of
