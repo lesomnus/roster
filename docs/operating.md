@@ -3182,11 +3182,17 @@ it prints on stderr, where whoever ran it is looking (§ "The audit trail").
 
 ## Running more than one
 
-Everything durable is in the database and nothing in `cmd/` or `server/` writes to
-local disk, so a second replica needs no shared filesystem and holds nothing the
-first one needs. Sessions, keys, delegations, failure counts, lockouts, the TOTP
-replay window, continuations and magic links are all rows, re-read on every
-request.
+Everything a request reads is in the database: sessions, keys, delegations,
+failure counts, lockouts, the TOTP replay window, continuations and magic links
+are all rows, re-read on every request, and a second replica holds nothing the
+first one needs to answer. **The trail is the exception.** `audit.archive`,
+`audit.checkpoints.dir` and a `store:` witness are directories on the disk of the
+process that writes them, and the pass that moves lines out of the database into
+them runs in whichever process holds its lease -- so with a disk each, the trail
+ends up in two places and verifies at neither. Each has to be one directory every
+process mounts. `serve` says so once as it starts, at `WARN`, naming the keys,
+where `spin.lease` is of several processes and any of the three is set; nothing is
+refused, since roster cannot see whether a path is shared.
 
 **`Watch` crosses replicas only if you say which broker.** There is no default,
 deliberately: memory is right for one process and silently wrong for two, and a
@@ -3281,6 +3287,8 @@ The rest of the checklist:
   in one, so N replicas mean N times the limit. The interface is the seam if that
   matters. The account app's limits on mail are counted the same way (*The front
   door's mail*, above).
+- **The trail's directories on one filesystem every process mounts**:
+  `audit.archive`, `audit.checkpoints.dir` and any `store:` witness, as above.
 - **Seed once, out of band.** `docker/entrypoint.sh` keeps an *already seeded*
   marker on a local volume; that is a dev-image convenience and not a lock.
 

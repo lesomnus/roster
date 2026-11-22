@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -1635,6 +1636,7 @@ func (s *Server) Serve(ctx context.Context, c Config, l net.Listener) error {
 	s.unbounded(ctx)
 	s.aged(ctx, c)
 	s.alone(ctx, c)
+	s.disks(ctx, c)
 	s.plain(ctx, c)
 
 	// The stops, collected rather than deferred one at a time, and all of
@@ -2067,6 +2069,42 @@ func (s *Server) alone(ctx context.Context, c Config) {
 		"a follower of the sync stream, and of any Watch, hears only the process it is connected to. "+
 		"Name a broker every process hears (postgres), or run one process",
 		strings.Join(said, " and ")+map[bool]string{true: " are", false: " is"}[len(said) > 1], config.BrokerMemory, c.Spin.Lease))
+}
+
+// disks says, where it may be so, that the trail is written to a directory of
+// this process's own disk by a loop several processes share.
+//
+// `audit.archive`, `audit.checkpoints.dir` and a `store:` witness are paths,
+// and the pass that moves lines of the trail out of the database into them
+// runs in whichever process holds its lease. With a disk each, the next holder
+// writes into its own directory: it finds the archive is not what its manifest
+// says, and goes on, and the trail is then in two places of which neither
+// verifies. Said and not refused, as [Server.alone] is, since roster cannot see
+// whether a path is one every process mounts -- which is what it has to be.
+func (s *Server) disks(ctx context.Context, c Config) {
+	switch c.Spin.Lease {
+	case "", config.LeaseLocal, config.LeaseNone:
+		return
+	}
+
+	said := []string{}
+	if c.Audit.Archive != "" {
+		said = append(said, "audit.archive")
+	}
+	if c.Audit.Checkpoints.Dir != "" {
+		said = append(said, "audit.checkpoints.dir")
+	}
+	if slices.ContainsFunc(c.Audit.Checkpoints.Witnesses, func(v string) bool { return strings.HasPrefix(v, "store:") }) {
+		said = append(said, "audit.checkpoints.witnesses")
+	}
+	if len(said) == 0 {
+		return
+	}
+
+	log.From(ctx).WarnContext(ctx, fmt.Sprintf("%s a directory on this process's disk and spin.lease is %q, which shares the loops among several processes: "+
+		"the trail's pass writes to it in whichever process holds its lease. "+
+		"Make each one directory every process mounts, or run one process",
+		strings.Join(said, ", ")+map[bool]string{true: " are each", false: " is"}[len(said) > 1], c.Spin.Lease))
 }
 
 // stopping takes a server down, and does not wait past ctx's deadline to.
