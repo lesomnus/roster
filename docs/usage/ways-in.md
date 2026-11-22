@@ -675,9 +675,12 @@ admin console: `AuthService.SignIn` answers what is left and a `continuation`
 with no cookie, and a second call carries that and the code.
 
 ```
-AuthService.SignIn { alias: …, password: … }                        -> { available: [{kind: "totp"}], continuation: "vc_…" }
-AuthService.SignIn { continuation: "vc_…", kind: "totp", secret: "123456" }  -> a cookie
+AuthService.SignIn { alias: …, secret: <the password> }                     -> { available: [{kind: "totp"}], continuation: "vc_…" }
+AuthService.SignIn { continuation: "vc_…", kind: "totp", secret: <the code> } -> a cookie
 ```
+
+`secret` is what is proved at each step, as bytes: the password beside the
+alias, the code beside the continuation.
 
 One attempt per password: a wrong code spends the continuation, and is counted
 where a wrong password is. A link a front door hands a browser is the one

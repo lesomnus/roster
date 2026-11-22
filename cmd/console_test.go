@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -51,7 +52,7 @@ func signIn(t *testing.T, s *cmd.Server, alias, password string) *http.Cookie {
 
 	var h metadata.MD
 	_, err = app.NewAuthServiceClient(pdtest.Serve(t, g)).SignIn(t.Context(),
-		app.AuthSignInRequest_builder{Alias: alias, Password: password}.Build(),
+		app.AuthSignInRequest_builder{Alias: alias, Secret: []byte(password)}.Build(),
 		grpc.Header(&h))
 	if err != nil {
 		return nil
@@ -627,7 +628,7 @@ func TestAConsolePageAsksWhoseStoreItDraws(t *testing.T) {
 		t.Helper()
 
 		code, body := p.call(t, "/roster.AuthService/SignIn",
-			`{"alias":"admin","password":"`+passwordFrom(t, out)+`"}`, "")
+			`{"alias":"admin","secret":"`+base64.StdEncoding.EncodeToString([]byte(passwordFrom(t, out)))+`"}`, "")
 		require.Equal(t, http.StatusOK, code, body)
 	}
 	signIn(t)
@@ -724,7 +725,7 @@ func TestTheAdminPortIsTheWholeOfTheConsolesPath(t *testing.T) {
 	// calls -- and the cookie comes back as an ordinary `set-cookie` header,
 	// which is the whole of what `web.Transcode` does with response metadata.
 	code, body := post("/roster.AuthService/SignIn",
-		`{"alias":"admin","password":"`+passwordFrom(t, out)+`"}`)
+		`{"alias":"admin","secret":"`+base64.StdEncoding.EncodeToString([]byte(passwordFrom(t, out)))+`"}`)
 	x.Equal(http.StatusOK, code, body)
 	x.NotEmpty(jar.Cookies(mustURL(t, srv.URL)), "signing in set no cookie")
 
@@ -857,7 +858,7 @@ func TestTheDataPlanesHttpHasNoSignIn(t *testing.T) {
 	// And the service that replaced it, which is registered on the control
 	// listener and not on this one.
 	code, _ = post("/roster.AuthService/SignIn",
-		`{"alias":"admin","password":"`+passwordFrom(t, out)+`"}`)
+		`{"alias":"admin","secret":"`+base64.StdEncoding.EncodeToString([]byte(passwordFrom(t, out)))+`"}`)
 	x.Equal(http.StatusNotFound, code, "the data plane serves a sign-in")
 
 	here, err := url.Parse(srv.URL)

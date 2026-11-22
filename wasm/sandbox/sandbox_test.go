@@ -62,7 +62,7 @@ func TestTheSandboxSignsIn(t *testing.T) {
 	t.Run("a wrong password is refused and remembers nobody", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "admin", Password: "not it"}.Build())
+		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "admin", Secret: []byte("not it")}.Build())
 		x.Equal(codes.Unauthenticated, status.Code(err))
 
 		_, err = who.Handle(ctx)
@@ -72,7 +72,7 @@ func TestTheSandboxSignsIn(t *testing.T) {
 	t.Run("the right one is the caller from then on", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "admin", Password: "admin"}.Build())
+		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "admin", Secret: []byte("admin")}.Build())
 		x.NoError(err)
 
 		id, err := who.Handle(ctx)
@@ -149,7 +149,7 @@ func TestTheSandboxSignsARosterUserIn(t *testing.T) {
 	t.Run("a name nothing claims is refused, naming it", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "admin", Password: "admin"}.Build())
+		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "admin", Secret: []byte("admin")}.Build())
 		x.Equal(codes.FailedPrecondition, status.Code(err))
 		x.ErrorContains(err, at)
 
@@ -166,7 +166,7 @@ func TestTheSandboxSignsARosterUserIn(t *testing.T) {
 	t.Run("a wrong password is refused and remembers nobody", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "admin", Password: "not it"}.Build())
+		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "admin", Secret: []byte("not it")}.Build())
 		x.Equal(codes.Unauthenticated, status.Code(err))
 
 		_, err = who.Handle(ctx)
@@ -176,7 +176,7 @@ func TestTheSandboxSignsARosterUserIn(t *testing.T) {
 	t.Run("the tenant's own administrator is the caller from then on", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "admin", Password: "admin"}.Build())
+		_, err := a.SignIn(ctx, app.AuthSignInRequest_builder{Alias: "admin", Secret: []byte("admin")}.Build())
 		x.NoError(err)
 
 		id, err := who.Handle(ctx)

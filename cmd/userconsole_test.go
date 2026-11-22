@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"encoding/base64"
 	"io"
 	"net"
 	"net/http"
@@ -122,7 +123,7 @@ func TestTheUserConsoleAndItsDoorAreOneListener(t *testing.T) {
 		x := require.New(t)
 
 		code, body := post("/roster.AuthService/SignIn",
-			`{"alias":"someone","password":"`+secret+`"}`)
+			`{"alias":"someone","secret":"`+base64.StdEncoding.EncodeToString([]byte(secret))+`"}`)
 		x.Equal(http.StatusOK, code, body)
 
 		cs := jar.Cookies(mustUrl(t, srv.URL))
@@ -246,7 +247,7 @@ func TestAUserConsolePageAsksWhoseStoreItDraws(t *testing.T) {
 	p := pageAt(t, srv.URL)
 	x.Empty(p.which(t), "nobody is signed in, and somebody's store was named")
 
-	code, body := p.call(t, "/roster.AuthService/SignIn", `{"alias":"someone","password":"`+secret+`"}`, "")
+	code, body := p.call(t, "/roster.AuthService/SignIn", `{"alias":"someone","secret":"`+base64.StdEncoding.EncodeToString([]byte(secret))+`"}`, "")
 	x.Equal(http.StatusOK, code, body)
 
 	theirs := p.which(t)

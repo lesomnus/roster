@@ -96,3 +96,52 @@ func TestARequestsRefIsItsServicesOwnRow(t *testing.T) {
 	x.Greater(asked, 15, "few requests were read, so this proves little")
 	x.Empty(other, "a request's `ref` that is not its service's own row: a person is `holder`")
 }
+
+// TestASecretACallerSendsIsBytes: no request carries a password or a code
+// being proved as text.
+//
+// `AuthSignInRequest.password` was a `string`, where the five other requests
+// that take a password take `bytes`, and the same request's second step
+// already took `secret` as `bytes`; so one page sent a password as it was
+// typed to sign in and encoded to change it. Answered: text in one request;
+// right is one type, and in `AuthSignInRequest` one field for whatever is
+// being proved at that step.
+//
+// Which fields carry such a thing is said by their names, since nothing in a
+// descriptor says it: `secret`, `current` and `password` are what this schema
+// calls a password or a code a caller proves. A token roster minted and
+// answered as text -- a `continuation`, a `link` -- is sent back as it was
+// answered, and is not one of them.
+func TestASecretACallerSendsIsBytes(t *testing.T) {
+	x := require.New(t)
+
+	proved := []string{"secret", "current", "password"}
+	asked := 0
+	text := []string{}
+	var walk func(protoreflect.MessageDescriptors)
+	walk = func(ms protoreflect.MessageDescriptors) {
+		for i := range ms.Len() {
+			m := ms.Get(i)
+			walk(m.Messages())
+			if !strings.HasSuffix(string(m.Name()), "Request") {
+				continue
+			}
+			for j := range m.Fields().Len() {
+				f := m.Fields().Get(j)
+				if !slices.Contains(proved, string(f.Name())) {
+					continue
+				}
+				asked++
+				if f.Kind() != protoreflect.BytesKind {
+					text = append(text, string(m.Name())+"."+string(f.Name()))
+				}
+			}
+		}
+	}
+	protoregistry.GlobalFiles.RangeFilesByPackage("roster", func(file protoreflect.FileDescriptor) bool {
+		walk(file.Messages())
+		return true
+	})
+	x.GreaterOrEqual(asked, 6, "few fields were read, so this proves little")
+	x.Empty(text, "a password or a code a caller proves, sent as text")
+}

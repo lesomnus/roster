@@ -69,7 +69,7 @@ func TestAnOperatorHoldsASecondFactor(t *testing.T) {
 
 		// A seed nobody has proved is a QR somebody may have mis-scanned, and
 		// asking for its code would be locking them out with it.
-		res, cookie, err := signIn(app.AuthSignInRequest_builder{Alias: "admin", Password: password}.Build())
+		res, cookie, err := signIn(app.AuthSignInRequest_builder{Alias: "admin", Secret: []byte(password)}.Build())
 		x.NoError(err)
 		x.NotEmpty(cookie)
 		x.Empty(res.GetContinuation())
@@ -90,7 +90,7 @@ func TestAnOperatorHoldsASecondFactor(t *testing.T) {
 	t.Run("and then the password alone is not a session", func(t *testing.T) {
 		x := require.New(t)
 
-		res, cookie, err := signIn(app.AuthSignInRequest_builder{Alias: "admin", Password: password}.Build())
+		res, cookie, err := signIn(app.AuthSignInRequest_builder{Alias: "admin", Secret: []byte(password)}.Build())
 		x.NoError(err)
 		x.Empty(cookie, "an operator with a second factor was handed a session for the first")
 		x.Len(res.GetAvailable(), 1)
@@ -102,7 +102,7 @@ func TestAnOperatorHoldsASecondFactor(t *testing.T) {
 		x.Equal(codes.Unauthenticated, status.Code(err), "%v", err)
 		x.Empty(cookie)
 
-		res, _, err = signIn(app.AuthSignInRequest_builder{Alias: "admin", Password: password}.Build())
+		res, _, err = signIn(app.AuthSignInRequest_builder{Alias: "admin", Secret: []byte(password)}.Build())
 		x.NoError(err)
 
 		_, cookie, err = signIn(app.AuthSignInRequest_builder{

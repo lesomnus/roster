@@ -81,7 +81,7 @@ func TestRostersOwnDoorReadsANameAsAFrontDoorDoes(t *testing.T) {
 		x.Equal(codes.FailedPrecondition, status.Code(err), "a closed tenant still said how its people sign in: %v", err)
 
 		_, err = auth.SignIn(metadata.NewOutgoingContext(ctx, arrivingAt(t, "contoso.example")),
-			app.AuthSignInRequest_builder{Alias: "someone", Password: "correct horse battery staple"}.Build())
+			app.AuthSignInRequest_builder{Alias: "someone", Secret: []byte("correct horse battery staple")}.Build())
 		x.Error(err)
 	})
 }

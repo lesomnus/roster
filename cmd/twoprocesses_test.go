@@ -190,7 +190,7 @@ func TestTwoProcessesOnOneDatabase(t *testing.T) {
 
 		var h metadata.MD
 		_, err := app.NewAuthServiceClient(one.dial(t, one.admin)).SignIn(ctx,
-			app.AuthSignInRequest_builder{Alias: "admin", Password: password}.Build(),
+			app.AuthSignInRequest_builder{Alias: "admin", Secret: []byte(password)}.Build(),
 			grpc.Header(&h))
 		x.NoError(err, "the operator init printed could not sign in")
 		cookie := ""

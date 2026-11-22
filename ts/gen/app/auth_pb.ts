@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/auth.proto.
  */
 export const file_app_auth: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvYXV0aC5wcm90bxIGcm9zdGVyIoQBChFBdXRoU2lnbkluUmVxdWVzdBINCgVhbGlhcxgBIAEoCRIQCghwYXNzd29yZBgCIAEoCRIMCgRsaW5rGAMgASgJEhQKDGNvbnRpbnVhdGlvbhgMIAEoCRIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSDgoGc2VjcmV0GAkgASgMIlIKEkF1dGhTaWduSW5SZXNwb25zZRImCglhdmFpbGFibGUYCyADKAsyEy5yb3N0ZXIuVm91Y2hGYWN0b3ISFAoMY29udGludWF0aW9uGAwgASgJIhQKEkF1dGhTaWduT3V0UmVxdWVzdCIVChNBdXRoU2lnbk91dFJlc3BvbnNlIhIKEEF1dGhXaGljaFJlcXVlc3QiJQoRQXV0aFdoaWNoUmVzcG9uc2USEAoIaWRlbnRpdHkYASABKAkiEwoRQXV0aE9mZmVyc1JlcXVlc3QiaQoSQXV0aE9mZmVyc1Jlc3BvbnNlEhAKCHBhc3N3b3JkGAEgASgIEi0KCXByb3ZpZGVycxgCIAMoCzIaLnJvc3Rlci5BdXRoT2ZmZXJzUHJvdmlkZXISEgoKZnJvbnRfZG9vchgDIAEoCSIyChJBdXRoT2ZmZXJzUHJvdmlkZXISDAoEbmFtZRgBIAEoCRIOCgZpc3N1ZXIYAiABKAkykQIKC0F1dGhTZXJ2aWNlEj8KBlNpZ25JbhIZLnJvc3Rlci5BdXRoU2lnbkluUmVxdWVzdBoaLnJvc3Rlci5BdXRoU2lnbkluUmVzcG9uc2USQgoHU2lnbk91dBIaLnJvc3Rlci5BdXRoU2lnbk91dFJlcXVlc3QaGy5yb3N0ZXIuQXV0aFNpZ25PdXRSZXNwb25zZRI/CgZPZmZlcnMSGS5yb3N0ZXIuQXV0aE9mZmVyc1JlcXVlc3QaGi5yb3N0ZXIuQXV0aE9mZmVyc1Jlc3BvbnNlEjwKBVdoaWNoEhgucm9zdGVyLkF1dGhXaGljaFJlcXVlc3QaGS5yb3N0ZXIuQXV0aFdoaWNoUmVzcG9uc2VCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_app_vouch]);
+  fileDesc("Cg5hcHAvYXV0aC5wcm90bxIGcm9zdGVyIoIBChFBdXRoU2lnbkluUmVxdWVzdBINCgVhbGlhcxgBIAEoCRIMCgRsaW5rGAMgASgJEhQKDGNvbnRpbnVhdGlvbhgMIAEoCRIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSDgoGc2VjcmV0GAkgASgMSgQIAhADUghwYXNzd29yZCJSChJBdXRoU2lnbkluUmVzcG9uc2USJgoJYXZhaWxhYmxlGAsgAygLMhMucm9zdGVyLlZvdWNoRmFjdG9yEhQKDGNvbnRpbnVhdGlvbhgMIAEoCSIUChJBdXRoU2lnbk91dFJlcXVlc3QiFQoTQXV0aFNpZ25PdXRSZXNwb25zZSISChBBdXRoV2hpY2hSZXF1ZXN0IiUKEUF1dGhXaGljaFJlc3BvbnNlEhAKCGlkZW50aXR5GAEgASgJIhMKEUF1dGhPZmZlcnNSZXF1ZXN0ImkKEkF1dGhPZmZlcnNSZXNwb25zZRIQCghwYXNzd29yZBgBIAEoCBItCglwcm92aWRlcnMYAiADKAsyGi5yb3N0ZXIuQXV0aE9mZmVyc1Byb3ZpZGVyEhIKCmZyb250X2Rvb3IYAyABKAkiMgoSQXV0aE9mZmVyc1Byb3ZpZGVyEgwKBG5hbWUYASABKAkSDgoGaXNzdWVyGAIgASgJMpECCgtBdXRoU2VydmljZRI/CgZTaWduSW4SGS5yb3N0ZXIuQXV0aFNpZ25JblJlcXVlc3QaGi5yb3N0ZXIuQXV0aFNpZ25JblJlc3BvbnNlEkIKB1NpZ25PdXQSGi5yb3N0ZXIuQXV0aFNpZ25PdXRSZXF1ZXN0Ghsucm9zdGVyLkF1dGhTaWduT3V0UmVzcG9uc2USPwoGT2ZmZXJzEhkucm9zdGVyLkF1dGhPZmZlcnNSZXF1ZXN0Ghoucm9zdGVyLkF1dGhPZmZlcnNSZXNwb25zZRI8CgVXaGljaBIYLnJvc3Rlci5BdXRoV2hpY2hSZXF1ZXN0Ghkucm9zdGVyLkF1dGhXaGljaFJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_app_vouch]);
 
 /**
  * @generated from message roster.AuthSignInRequest
@@ -29,14 +29,6 @@ export type AuthSignInRequest = Message<"roster.AuthSignInRequest"> & {
    * @generated from field: string alias = 1;
    */
   alias: string;
-
-  /**
-   * The secret, as typed. Not a hash: hashing is the store's, because
-   * parameters chosen by a caller are parameters it cannot vouch for.
-   *
-   * @generated from field: string password = 2;
-   */
-  password: string;
 
   /**
    * The other way in: a link a front door handed this browser, spent here
@@ -88,6 +80,12 @@ export type AuthSignInRequest = Message<"roster.AuthSignInRequest"> & {
    * minutes: a wrong code is the first form again, where the lockout counts.
    * It is spent at the tenant it was begun at and by nothing else -- not a
    * key, and not this method at another tenant's name.
+   *
+   * `secret` is what is being proved at this step: the password, as typed,
+   * beside `alias` at the first, and the second factor beside `continuation`
+   * at the next. Bytes, as every request that takes a password takes one, and
+   * not a hash: hashing is the store's, because parameters chosen by a caller
+   * are parameters it cannot vouch for.
    *
    * @generated from field: string continuation = 12;
    */

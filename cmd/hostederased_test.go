@@ -51,7 +51,7 @@ func TestANameErasedAnswersNobodyAndANameMovedAnswersWhoHasIt(t *testing.T) {
 	auth := app.NewAuthServiceClient(pdtest.Serve(t, b.grpc(t)))
 	signIn := func(secret string) error {
 		at := metadata.NewOutgoingContext(ctx, arrivingAt(t, name))
-		_, err := auth.SignIn(at, app.AuthSignInRequest_builder{Alias: "someone", Password: secret}.Build())
+		_, err := auth.SignIn(at, app.AuthSignInRequest_builder{Alias: "someone", Secret: []byte(secret)}.Build())
 
 		return err
 	}

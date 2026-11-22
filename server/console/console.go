@@ -122,14 +122,18 @@ type authed struct {
 
 func (a authed) SignIn(ctx context.Context, req *app.AuthSignInRequest) (*app.AuthSignInResponse, error) {
 	link, attempt := req.GetLink(), req.GetContinuation()
-	named := req.GetAlias() != "" || req.GetPassword() != ""
-	proved := req.GetKind() != "" || req.GetName() != "" || len(req.GetSecret()) != 0
+	named := req.GetAlias() != ""
+	// `secret` is what is proved at whichever step this is: the password
+	// beside an alias, the second factor beside a continuation. So one request
+	// cannot carry both, and the step is told by `continuation` alone.
+	secret := len(req.GetSecret()) != 0
+	factor := req.GetKind() != "" || req.GetName() != ""
 
 	// Exactly one way of asking, refused rather than resolved in some order
 	// this comment would then have to define.
 	switch {
 	case link != "":
-		if named || attempt != "" || proved {
+		if named || attempt != "" || secret || factor {
 			return nil, status.Error(codes.InvalidArgument, "a link, or an alias and a password; not both")
 		}
 
@@ -140,19 +144,19 @@ func (a authed) SignIn(ctx context.Context, req *app.AuthSignInRequest) (*app.Au
 			return nil, status.Error(codes.InvalidArgument,
 				"an attempt and its next proof, or an alias and a password; not both")
 		}
-		if len(req.GetSecret()) == 0 {
+		if !secret {
 			return nil, status.Error(codes.InvalidArgument, "secret: what continues the attempt")
 		}
 
 		return a.proceed(ctx, req)
 
-	case proved:
+	case factor:
 		return nil, status.Error(codes.InvalidArgument,
 			"continuation: a proof continues an attempt, and this names none")
 	}
 
-	if req.GetAlias() == "" || req.GetPassword() == "" {
-		return nil, status.Error(codes.InvalidArgument, "both an alias and a password")
+	if !named || !secret {
+		return nil, status.Error(codes.InvalidArgument, "both an alias and a password, as secret")
 	}
 
 	// Which tenant, by **alias**, because that is what `VouchWho` names one by:
@@ -168,7 +172,7 @@ func (a authed) SignIn(ctx context.Context, req *app.AuthSignInRequest) (*app.Au
 			Tenant: tenant,
 			Alias:  req.GetAlias(),
 		}.Build(),
-		Secret: []byte(req.GetPassword()),
+		Secret: req.GetSecret(),
 	}.Build())
 	if err != nil {
 		return nil, err

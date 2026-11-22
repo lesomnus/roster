@@ -23,7 +23,6 @@ const (
 type AuthSignInRequest struct {
 	state                   protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Alias        string                 `protobuf:"bytes,1,opt,name=alias"`
-	xxx_hidden_Password     string                 `protobuf:"bytes,2,opt,name=password"`
 	xxx_hidden_Link         string                 `protobuf:"bytes,3,opt,name=link"`
 	xxx_hidden_Continuation string                 `protobuf:"bytes,12,opt,name=continuation"`
 	xxx_hidden_Kind         string                 `protobuf:"bytes,8,opt,name=kind"`
@@ -61,13 +60,6 @@ func (x *AuthSignInRequest) ProtoReflect() protoreflect.Message {
 func (x *AuthSignInRequest) GetAlias() string {
 	if x != nil {
 		return x.xxx_hidden_Alias
-	}
-	return ""
-}
-
-func (x *AuthSignInRequest) GetPassword() string {
-	if x != nil {
-		return x.xxx_hidden_Password
 	}
 	return ""
 }
@@ -111,10 +103,6 @@ func (x *AuthSignInRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = v
 }
 
-func (x *AuthSignInRequest) SetPassword(v string) {
-	x.xxx_hidden_Password = v
-}
-
 func (x *AuthSignInRequest) SetLink(v string) {
 	x.xxx_hidden_Link = v
 }
@@ -147,9 +135,6 @@ type AuthSignInRequest_builder struct {
 	// in to would be asking a question with a single answer -- and a field with
 	// one answer is one somebody eventually fills in wrongly.
 	Alias string
-	// The secret, as typed. Not a hash: hashing is the store's, because
-	// parameters chosen by a caller are parameters it cannot vouch for.
-	Password string
 	// The other way in: a link a front door handed this browser, spent here
 	// instead of a password. Exactly one of the two ways is meant, and a request
 	// that carries both is refused rather than resolved in some order this
@@ -194,6 +179,12 @@ type AuthSignInRequest_builder struct {
 	// minutes: a wrong code is the first form again, where the lockout counts.
 	// It is spent at the tenant it was begun at and by nothing else -- not a
 	// key, and not this method at another tenant's name.
+	//
+	// `secret` is what is being proved at this step: the password, as typed,
+	// beside `alias` at the first, and the second factor beside `continuation`
+	// at the next. Bytes, as every request that takes a password takes one, and
+	// not a hash: hashing is the store's, because parameters chosen by a caller
+	// are parameters it cannot vouch for.
 	Continuation string
 	Kind         string
 	Name         string
@@ -205,7 +196,6 @@ func (b0 AuthSignInRequest_builder) Build() *AuthSignInRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Alias = b.Alias
-	x.xxx_hidden_Password = b.Password
 	x.xxx_hidden_Link = b.Link
 	x.xxx_hidden_Continuation = b.Continuation
 	x.xxx_hidden_Kind = b.Kind
@@ -728,15 +718,14 @@ var File_app_auth_proto protoreflect.FileDescriptor
 
 const file_app_auth_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/auth.proto\x12\x06roster\x1a\x0fapp/vouch.proto\"\xbd\x01\n" +
+	"\x0eapp/auth.proto\x12\x06roster\x1a\x0fapp/vouch.proto\"\xb1\x01\n" +
 	"\x11AuthSignInRequest\x12\x14\n" +
-	"\x05alias\x18\x01 \x01(\tR\x05alias\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x12\n" +
+	"\x05alias\x18\x01 \x01(\tR\x05alias\x12\x12\n" +
 	"\x04link\x18\x03 \x01(\tR\x04link\x12\"\n" +
 	"\fcontinuation\x18\f \x01(\tR\fcontinuation\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x16\n" +
-	"\x06secret\x18\t \x01(\fR\x06secret\"k\n" +
+	"\x06secret\x18\t \x01(\fR\x06secretJ\x04\b\x02\x10\x03R\bpassword\"k\n" +
 	"\x12AuthSignInResponse\x121\n" +
 	"\tavailable\x18\v \x03(\v2\x13.roster.VouchFactorR\tavailable\x12\"\n" +
 	"\fcontinuation\x18\f \x01(\tR\fcontinuation\"\x14\n" +

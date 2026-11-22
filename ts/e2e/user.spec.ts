@@ -293,7 +293,7 @@ test('a page left holding one person\'s store lets go of it when somebody else s
 				await fetch('/roster.AuthService/SignIn', {
 					method: 'POST',
 					headers: { 'content-type': 'application/json', 'connect-protocol-version': '1' },
-					body: JSON.stringify({ alias: 'grace', password: secret }),
+					body: JSON.stringify({ alias: 'grace', secret: btoa(secret) }),
 					credentials: 'include',
 				})
 			).status,

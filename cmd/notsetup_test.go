@@ -110,7 +110,7 @@ func TestADeploymentNotSetUpForSomethingIsUnimplemented(t *testing.T) {
 		x.NoError(err)
 		conn := pdtest.Serve(t, g)
 		for _, tc := range []struct{ what, req string }{
-			{"signing in to nobody's deployment", `{"alias":"ops","password":"correct horse battery staple"}`},
+			{"signing in to nobody's deployment", `{"alias":"ops","secret":"` + base64.StdEncoding.EncodeToString([]byte("correct horse battery staple")) + `"}`},
 			{"a link spent where nothing arrives at a name", `{"link":"a-link"}`},
 		} {
 			in, out := failureMessages(t, app.AuthService_SignIn_FullMethodName, tc.req)

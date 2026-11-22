@@ -105,11 +105,11 @@ func TestTheConsolesSignInCountsByTheDeploymentsLockout(t *testing.T) {
 		x := require.New(t)
 
 		for range 2 {
-			_, err := auth.SignIn(at, app.AuthSignInRequest_builder{Alias: alias, Password: "not it, not it"}.Build())
+			_, err := auth.SignIn(at, app.AuthSignInRequest_builder{Alias: alias, Secret: []byte("not it, not it")}.Build())
 			x.Equal(codes.Unauthenticated, status.Code(err), "%v", err)
 		}
 
-		_, err := auth.SignIn(at, app.AuthSignInRequest_builder{Alias: alias, Password: secret}.Build())
+		_, err := auth.SignIn(at, app.AuthSignInRequest_builder{Alias: alias, Secret: []byte(secret)}.Build())
 		x.Equal(codes.Unauthenticated, status.Code(err),
 			"two wrong passwords did not close the account at this door, as the deployment said they should: %v", err)
 	}
