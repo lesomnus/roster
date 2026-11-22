@@ -2,7 +2,6 @@ package cmd_test
 
 import (
 	"fmt"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -135,19 +134,11 @@ func TestAGrantIsMadeOnce(t *testing.T) {
 				req = binding(writer, who, &seoul)
 			}
 
-			var wg sync.WaitGroup
-			errs := make([]error, 2)
-			start := make(chan struct{})
-			for n := range errs {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					<-start
-					_, errs[n] = bindings.Add(admin, req)
-				}()
+			add := func() error {
+				_, err := bindings.Add(admin, req)
+				return err
 			}
-			close(start)
-			wg.Wait()
+			errs := answeredByTheRule(add, add)
 
 			x.True(errs[0] == nil || errs[1] == nil, "neither went through: %v", errs)
 
@@ -224,19 +215,11 @@ func TestATeamOfNoSiteIsNamedOnceInItsTenant(t *testing.T) {
 		for i := range names {
 			alias := fmt.Sprintf("council-%d", i)
 
-			var wg sync.WaitGroup
-			errs := make([]error, 2)
-			start := make(chan struct{})
-			for n := range errs {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					<-start
-					_, errs[n] = teams.Add(admin, app.TeamAddRequest_builder{Tenant: contoso, Alias: alias}.Build())
-				}()
+			add := func() error {
+				_, err := teams.Add(admin, app.TeamAddRequest_builder{Tenant: contoso, Alias: alias}.Build())
+				return err
 			}
-			close(start)
-			wg.Wait()
+			errs := answeredByTheRule(add, add)
 
 			x.True(errs[0] == nil || errs[1] == nil, "neither went through: %v", errs)
 			if errs[0] == nil && errs[1] == nil {

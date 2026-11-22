@@ -2,7 +2,6 @@ package cmd_test
 
 import (
 	"context"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -182,42 +181,43 @@ func TestTwoWritesCannotBothTakeTheLast(t *testing.T) {
 		seconds[i] = ls[i].second(t, ctx)
 	}
 
-	var wg sync.WaitGroup
-	errs := make([][2]error, tenants)
+	// A pair at a time, both behind one gate: started as they were made, the
+	// first of a pair was often answered before the second began, and the
+	// test passed most runs with the tenant's lock taken out.
 	for i, l := range ls {
 		one, two := l.as, framed(ctx, seconds[i], l.tenant)
 		theirs := b.bindingOf(t, ctx, seconds[i])
-		wg.Add(2)
+		var errs []error
 		if i%2 == 0 {
-			go func() {
-				defer wg.Done()
-				_, errs[i][0] = b.Walled.Binding().Erase(one, theirs)
-			}()
-			go func() {
-				defer wg.Done()
-				_, errs[i][1] = b.Walled.Binding().Erase(two, l.binding)
-			}()
-
-			continue
+			errs = answeredByTheRule(
+				func() error {
+					_, err := b.Walled.Binding().Erase(one, theirs)
+					return err
+				},
+				func() error {
+					_, err := b.Walled.Binding().Erase(two, l.binding)
+					return err
+				},
+			)
+		} else {
+			errs = answeredByTheRule(
+				func() error {
+					_, err := b.Walled.Holder().Disable(one, app.HolderDisableRequest_builder{
+						Ref: app.HolderRef_builder{Id: seconds[i].Bytes()}.Build(),
+					}.Build())
+					return err
+				},
+				func() error {
+					_, err := b.Walled.Holder().Disable(two, app.HolderDisableRequest_builder{
+						Ref: app.HolderRef_builder{Id: l.admin.Bytes()}.Build(),
+					}.Build())
+					return err
+				},
+			)
 		}
-		go func() {
-			defer wg.Done()
-			_, errs[i][0] = b.Walled.Holder().Disable(one, app.HolderDisableRequest_builder{
-				Ref: app.HolderRef_builder{Id: seconds[i].Bytes()}.Build(),
-			}.Build())
-		}()
-		go func() {
-			defer wg.Done()
-			_, errs[i][1] = b.Walled.Holder().Disable(two, app.HolderDisableRequest_builder{
-				Ref: app.HolderRef_builder{Id: l.admin.Bytes()}.Build(),
-			}.Build())
-		}()
-	}
-	wg.Wait()
 
-	for i, l := range ls {
-		x.True(l.administered(t, ctx), "tenant %d left with nobody administering it: %v", i, errs[i])
-		x.True(errs[i][0] == nil || errs[i][1] == nil, "neither went through in tenant %d: %v", i, errs[i])
+		x.True(l.administered(t, ctx), "tenant %d left with nobody administering it: %v", i, errs)
+		x.True(errs[0] == nil || errs[1] == nil, "neither went through in tenant %d: %v", i, errs)
 	}
 }
 
