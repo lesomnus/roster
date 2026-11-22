@@ -269,7 +269,7 @@ func (a authed) door(ctx context.Context) (string, pdid.Id, error) {
 // nothing arrives at a name there, so nothing was ever minted for it.
 func (a authed) handed(ctx context.Context, link string) (*app.AuthSignInResponse, error) {
 	if a.tenant == nil || a.arrival == nil {
-		return nil, status.Error(codes.FailedPrecondition,
+		return nil, status.Error(codes.Unimplemented,
 			"a link is spent at the name it was minted for, and nothing arrives at a name here")
 	}
 
@@ -397,7 +397,7 @@ func (a authed) whose(ctx context.Context) (string, error) {
 
 	v, err := a.db.Tenant.Query().First(ctx)
 	if err != nil {
-		return "", status.Error(codes.FailedPrecondition, "this deployment has no owner")
+		return "", status.Error(codes.Unimplemented, "this deployment has no owner")
 	}
 
 	return v.Alias, nil

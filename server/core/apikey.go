@@ -258,7 +258,7 @@ func (s Core) holderNamed(ctx context.Context, alias string) (*app.HolderRef, er
 		return nil, err
 	}
 	if len(ts.GetItems()) == 0 {
-		return nil, status.Error(codes.FailedPrecondition, "this deployment has no owner")
+		return nil, status.Error(codes.Unimplemented, "this deployment has no owner")
 	}
 	tenant := ts.GetItems()[0].GetId()
 
