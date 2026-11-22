@@ -39,6 +39,10 @@ spec:
         app.kubernetes.io/name: roster
         app.kubernetes.io/component: product
     spec:
+      # No token for the cluster's API: nothing in this pod calls it, and a
+      # token mounted where nothing reads it is one more thing a process that
+      # was broken into holds.
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532

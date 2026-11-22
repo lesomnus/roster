@@ -95,6 +95,10 @@ spec:
       # would hide the line it exists for -- a real `ROSTER_LOGIN_ADDRR` as entry
       # fifty-eight. Nothing here reads them and nothing should.
       enableServiceLinks: false
+      # No token for the cluster's API: nothing in this pod calls it, and a
+      # token mounted where nothing reads it is one more thing a process that
+      # was broken into holds.
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
@@ -146,8 +150,10 @@ spec:
             - { name: data-http, containerPort: 8081 }
             - { name: control-grpc, containerPort: 8060 }
             # The data plane with **no wall**, for the admin console's customers
-            # screen. Up, and offered to nobody until a deployment routes a
-            # host to it -- see `config.yaml`.
+            # screen. Routed out of the cluster by nobody until a deployment
+            # routes a host to it -- see `config.yaml` -- and the HTTP one is
+            # offered to every pod of the cluster by the Service `roster` above,
+            # which is the admin console's (`README.md` § *Before this is safe*).
             - { name: admin-grpc, containerPort: 8070 }
             - { name: admin-http, containerPort: 8071 }
             - { name: login-http, containerPort: 8091 }
@@ -208,7 +214,9 @@ spec:
           # and one that outlived the process would be one nobody remembers to
           # revoke.
           emptyDir: { medium: Memory }
-        # Somewhere writable, because `readOnlyRootFilesystem` is right and a Go
-        # toolchain and TLS both want a temporary directory anyway.
+        # Somewhere writable beside a read-only root. `serve` starts and serves
+        # with no `/tmp` at all; this is here so that whatever one day wants a
+        # temporary directory finds one, rather than failing on the day it
+        # does.
         - name: tmp
           emptyDir: {}

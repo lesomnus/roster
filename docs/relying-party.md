@@ -32,7 +32,7 @@ the issuer's side; this document is it from the product's.
 | `docker/itself.sh` | the walk: sign in, read the page, sign out, and be asked for a form again |
 | `docker/behind.sh` | the same walk for the proxy shape, plus the two asymmetries only it has |
 | `docker/device.sh` | the third shape: a client with **no browser**, RFC 8628 ([`login.md`](login.md) § *A device with no browser*) |
-| `compose.yaml` | both services, their clients, and Hydra's five `URLS_*` |
+| `compose.yaml` | both services, their clients, and Hydra's six `URLS_*` |
 | `deploy/product.yaml`, `deploy/clients/product.json` | `itself` as a manifest and a declared client |
 | `scripts/hydra.sh` | stands compose up and runs seven walks |
 | `scripts/cluster.sh` | k3d over `deploy/`, and `itself.sh` as a Job inside it |
