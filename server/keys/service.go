@@ -98,7 +98,8 @@ func (v service) Introspect(ctx context.Context, req *pdpb.TokenIntrospectReques
 	}
 
 	k, err := find(ctx, v.s, token)
-	if status.Code(err) == codes.PermissionDenied {
+	switch status.Code(err) {
+	case codes.PermissionDenied:
 		// The read was refused by `server/core`'s reach rule, which is about
 		// the row's holder and not about this caller holding the token: a
 		// caller narrower than whoever the token is about is told so by name.
@@ -106,6 +107,12 @@ func (v service) Introspect(ctx context.Context, req *pdpb.TokenIntrospectReques
 		// that a found string tells its holder nothing -- not that it is real,
 		// and not whose. The one caller the read is not refused to is the one it
 		// was issued to (`coreDelegation`), which is the caller this answers.
+		err = status.Error(codes.NotFound, "no such token")
+	case codes.NotFound:
+		// And in one sentence, the door's. The code was one and the words
+		// were three -- the generated read's for a row nobody has, `no such
+		// key` for one expired, `no such token` for a holder suspended -- and
+		// an app holding this method read which by the message.
 		err = status.Error(codes.NotFound, "no such token")
 	}
 	if err != nil {

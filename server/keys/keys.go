@@ -356,11 +356,11 @@ func lookup(ctx context.Context, s app.Server, token string) (*app.ApiKey, error
 	// independent of how a mismatched hash sorts, and it costs one comparison
 	// of thirty-two bytes.
 	if subtle.ConstantTimeCompare(v.GetSecret(), Sum(token)) != 1 {
-		return nil, status.Error(codes.NotFound, "no such key")
+		return nil, status.Error(codes.NotFound, "no such token")
 	}
 
 	if u := v.GetDateExpires(); u != nil && !time.Now().Before(u.AsTime()) {
-		return nil, status.Error(codes.NotFound, "no such key")
+		return nil, status.Error(codes.NotFound, "no such token")
 	}
 
 	touch(ctx, s, v)
