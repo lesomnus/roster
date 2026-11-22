@@ -36,6 +36,31 @@
       "datasourceTemplate": "docker",
       "versioningTemplate": "docker",
       "autoReplaceStringTemplate": "{{{depName}}}:{{{newValue}}}@{{{newDigest}}}"
+    },
+    {
+      "customType": "regex",
+      "description": "`oauth2-proxy`, named inside `scripts/cluster.sh` and on the pages that quote it (`docs/*.md`); `compose.yaml`'s is the docker-compose manager's. Moved there alone, the script fell a version behind (#270).",
+      "managerFilePatterns": [
+        "/^scripts/[^/]+\\.sh$/",
+        "/^docs/[^/]+\\.md$/"
+      ],
+      "matchStrings": [
+        "(?<depName>quay\\.io/oauth2-proxy/oauth2-proxy):(?<currentValue>v[0-9]+\\.[0-9]+\\.[0-9]+)"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "The images `scripts/cluster.sh` borrows, each named inside it and nowhere else: kubectl's, alpine's, openssl's and nginx's. Matched where one is run, after a space, a quote or `=`, and not where a comment quotes one in backquotes.",
+      "managerFilePatterns": [
+        "/^scripts/[^/]+\\.sh$/"
+      ],
+      "matchStrings": [
+        "[\\s\"'=](?<depName>alpine/k8s|alpine/openssl|nginxinc/nginx-unprivileged|alpine):(?<currentValue>[0-9][a-z0-9._-]*)"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
     }
   ],
   "vulnerabilityAlerts": {

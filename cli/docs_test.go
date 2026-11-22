@@ -634,6 +634,10 @@ func TestTheHydraPinIsOneVersion(t *testing.T) {
 // manifest of its own -- went on running the version before, beside a page that
 // said so of both. What moves a pin moves the file it knows of, so it is the
 // tree that is asked whether the others followed.
+//
+// It read less of the tree than it said: the walk it shared passed over any
+// path with `.git` in it, which is `.github/` too, and read no `Dockerfile` --
+// so no workflow and no image's base was held. It reads [pinSources].
 func TestAnImageIsOneVersionWhereverItIsNamed(t *testing.T) {
 	x := require.New(t)
 	root := repoRoot(t)
@@ -641,7 +645,7 @@ func TestAnImageIsOneVersionWhereverItIsNamed(t *testing.T) {
 	named := regexp.MustCompile(`\b([a-z0-9.-]+(?:/[a-z0-9._-]+)+):(v\d+\.\d+\.\d+)\b`)
 
 	pinned := map[string]map[string][]string{}
-	for _, f := range sources(t, root) {
+	for _, f := range pinSources(t, root) {
 		// Where an image is run, or quoted from where it is: not a comment in
 		// Go, which names an old tag to say why it was wrong.
 		if strings.HasSuffix(f, ".go") {
@@ -663,6 +667,86 @@ func TestAnImageIsOneVersionWhereverItIsNamed(t *testing.T) {
 	for image, versions := range pinned {
 		x.Len(versions, 1, "%s is named at more than one version: %v", image, versions)
 	}
+	x.Contains(pinned, "moby/buildkit", "the workflows were not read: BuildKit is named by a version there and nowhere else")
+}
+
+// pinSources is every file of the checkout that may name what it runs on: the
+// pages, the manifests, the scripts, the sources, the bake file, every
+// `Dockerfile` and the workflows. It passes over the directory `.git`, and
+// over the two that are no file of the checkout's but what a build or `npm
+// ci` leaves, `node_modules` and `dist`; and over `docs/roadmap.md`, the
+// record, which names what was pinned then.
+func pinSources(t *testing.T, root string) []string {
+	t.Helper()
+
+	var out []string
+	require.NoError(t, filepath.Walk(root, func(p string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			switch info.Name() {
+			case ".git", "node_modules", "dist":
+				return filepath.SkipDir
+			}
+
+			return nil
+		}
+
+		rel, err := filepath.Rel(root, p)
+		if err != nil {
+			return err
+		}
+		if rel == filepath.Join("docs", "roadmap.md") {
+			return nil
+		}
+		switch filepath.Ext(p) {
+		case ".go", ".proto", ".sh", ".ts", ".tsx", ".yaml", ".yml", ".md", ".hcl":
+			out = append(out, rel)
+		default:
+			if strings.HasPrefix(info.Name(), "Dockerfile") {
+				out = append(out, rel)
+			}
+		}
+
+		return nil
+	}))
+
+	return out
+}
+
+// TestNodeIsOneVersionWhereverItIsNamed: the pages are built by the Node the
+// `Dockerfile` names and checked by the Node each workflow sets up, and it was
+// written four times with nothing to hold them alike. Every one is the same.
+func TestNodeIsOneVersionWhereverItIsNamed(t *testing.T) {
+	x := require.New(t)
+	root := repoRoot(t)
+
+	images := regexp.MustCompile(`(?m)^FROM\s+(?:--\S+\s+)*node:([^\s@]+)`)
+	setup := regexp.MustCompile(`(?m)^\s*node-version:\s*["']?([^\s"']+)`)
+	workflows := filepath.Join(".github", "workflows") + string(filepath.Separator)
+
+	named := map[string][]string{}
+	for _, f := range pinSources(t, root) {
+		var re *regexp.Regexp
+		switch {
+		case strings.HasPrefix(filepath.Base(f), "Dockerfile"):
+			re = images
+		case strings.HasPrefix(f, workflows):
+			re = setup
+		default:
+			continue
+		}
+		src, err := os.ReadFile(filepath.Join(root, f))
+		x.NoError(err)
+
+		for _, m := range re.FindAllSubmatch(src, -1) {
+			v, _, _ := strings.Cut(string(m[1]), "-")
+			named[v] = append(named[v], f)
+		}
+	}
+	x.NotEmpty(named, "Node is named nowhere, which is this test reading nothing")
+	x.Len(named, 1, "Node is named at more than one version: %v", named)
 }
 
 // banned is a phrase the glossary settled against, and what to write instead.
