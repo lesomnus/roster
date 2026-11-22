@@ -128,7 +128,7 @@ func TestAFlagThePolicysPassDoesNotReadIsRefusedByName(t *testing.T) {
 
 	for flag, args := range map[string][]string{
 		"--kind":    {"--kind", "holder"},
-		"--to":      {"--to", t.TempDir()},
+		"--archive": {"--archive", t.TempDir()},
 		"--discard": {"--discard"},
 	} {
 		for _, dry := range [][]string{nil, {"--dry-run"}} {
@@ -146,7 +146,7 @@ func TestAFlagThePolicysPassDoesNotReadIsRefusedByName(t *testing.T) {
 // TestADiscardByHandIsTakenBesideAnArchive.
 //
 // `prune --older-than … --discard` was refused wherever `audit.archive` is
-// set, as "--discard and --to say two different things", about a `--to`
+// set, as "--discard and --archive say two different things", about an `--archive`
 // nobody gave: where the rows go fell back to the configured archive and was
 // then compared with `--discard` (#280). So the one command the manual gives
 // for removing rows by hand under a legal hold could not be run by a
@@ -178,8 +178,8 @@ func TestADiscardByHandIsTakenBesideAnArchive(t *testing.T) {
 	x.NoError(err)
 	x.Greater(was, held, "every line is the held tenant's, so this proves nothing")
 
-	err = cli.Cmd(&c).Run(ctx, []string{"trail", "prune", "--older-than", "1ns", "--discard", "--to", dir})
-	x.ErrorContains(err, "--discard and --to", "the two together say two things")
+	err = cli.Cmd(&c).Run(ctx, []string{"trail", "prune", "--older-than", "1ns", "--discard", "--archive", dir})
+	x.ErrorContains(err, "--discard and --archive", "the two together say two things")
 	now, err := b.Ent.Audit.Query().Count(ctx)
 	x.NoError(err)
 	x.Equal(was, now)

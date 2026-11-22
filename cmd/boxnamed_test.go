@@ -74,7 +74,7 @@ func TestANameGivenAtTheBoxIsLookedUpWhereverItIsGiven(t *testing.T) {
 		{"", []string{"control", "vouch", "reset", "@admin"}},
 		{"", []string{"control", "vouch", "unlock", "@admin"}},
 		{"", []string{"key", "add", "--tenant", "newco", "--holder", "admin", "--allow", "/roster.MeService/Get"}},
-		{"", []string{"key", "revoke", "--id", k}},
+		{"", []string{"key", "revoke", k}},
 		{"", []string{"control", "key", "add", "--allow", "/roster.MeService/Get", "loft"}},
 		{"", []string{"restore", "@newco/alice"}},
 		{"", []string{"forget", "--dry-run", "@newco/alice"}},
@@ -91,7 +91,7 @@ func TestANameGivenAtTheBoxIsLookedUpWhereverItIsGiven(t *testing.T) {
 
 	// `trail accept` keeps who `--as` names where `--by` said it, and the two
 	// together are two answers to one question.
-	_, _, err = boxRun(t, at(b.c, "admin"), "", "trail", "accept", "--in", t.TempDir(), "--of", "sha256:00", "--why", "looked", "--by", "somebody")
+	_, _, err = boxRun(t, at(b.c, "admin"), "", "trail", "accept", "--archive", t.TempDir(), "--of", "sha256:00", "--why", "looked", "--by", "somebody")
 	x.ErrorContains(err, "--by: --as says who accepts")
 
 	t.Run("and one who is stopped is refused as well", func(t *testing.T) {
@@ -220,7 +220,7 @@ func TestAWayInWrittenAtTheBoxIsOnTheRecordUnderWhoeverWasNamed(t *testing.T) {
 		x.Equal(app.ApiKeyService_Issue_FullMethodName, byBox[0].Action)
 		x.Equal(k, pdid.Id(byBox[0].Subjects[0]).String(), "the row is of the key written")
 
-		byBox, _ = run(false, "", "key", "revoke", "--id", k)
+		byBox, _ = run(false, "", "key", "revoke", k)
 		vs := boxRows(t, b.c, false, nil)
 		hand := ""
 		for _, v := range vs {

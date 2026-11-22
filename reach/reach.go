@@ -67,7 +67,7 @@ import (
 // that may have changed (`SyncService/Watch`).
 //
 // It is the part of the role this package asks for, beside [standing.Methods]
-// and whatever the app asks for itself: the `--role` of `roster app install`,
+// and whatever the app asks for itself: the `--allow` of `roster app install`,
 // or the role an app running roster in its own process writes for its holder.
 var Methods = []string{
 	rstr.HolderService_Reaches_FullMethodName,

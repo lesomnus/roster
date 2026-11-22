@@ -231,7 +231,7 @@ is for.
 ## 8. Stopping something
 
 ```sh
-roster --as admin key revoke --id 01a0332f-d64d-8d70-880e-c31ade371232
+roster --as admin key revoke 01a0332f-d64d-8d70-880e-c31ade371232
 ```
 
 The next call carrying that key finds nothing. No window, nothing to expire, and

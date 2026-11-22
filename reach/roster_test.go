@@ -101,7 +101,7 @@ func newExternal(t *testing.T) *external {
 
 	e.key = stdoutOf(t, cli.NewCmdControl(&box), "key", "add", "--narrowed", app)
 	x.NoError(cli.NewCmdApp(&box).Run(ctx, []string{"install", "--tenant", "acme",
-		"--role", strings.Join(reach.Methods, ","), "--administer", ownMethods, app}))
+		"--allow", strings.Join(reach.Methods, ","), "--administer", ownMethods, app}))
 	e.admin = stdoutOf(t, cli.NewCmdKey(&box), "add", "--tenant", "acme", "--holder", "admin", "--name", "admin", "--allow", "/roster.*/*")
 
 	e.s, err = cmd.Build(ctx, c)

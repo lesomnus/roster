@@ -234,10 +234,10 @@ func TestRowsNobodySignedAreAcceptedOnce(t *testing.T) {
 	t.Run("and a prune into a second archive is refused", func(t *testing.T) {
 		x := require.New(t)
 
-		err := run("trail", "prune", "--older-than", "1ns", "--to", t.TempDir())
-		x.ErrorContains(err, "--to")
+		err := run("trail", "prune", "--older-than", "1ns", "--archive", t.TempDir())
+		x.ErrorContains(err, "--archive")
 		x.ErrorContains(err, "audit.archive")
-		x.NoError(run("trail", "prune", "--older-than", "1ns", "--to", dir), "the archive it already has")
+		x.NoError(run("trail", "prune", "--older-than", "1ns", "--archive", dir), "the archive it already has")
 	})
 
 	t.Run("and so are an acceptance and a purge of one", func(t *testing.T) {
@@ -247,18 +247,18 @@ func TestRowsNobodySignedAreAcceptedOnce(t *testing.T) {
 		// every chunk of this one for missing.
 		other := t.TempDir()
 		for _, args := range [][]string{
-			{"trail", "accept", "--in", other, "--of", nothingLookedAt, "--why", "a second archive"},
-			{"trail", "purge", "--older-than", "1ns", "--in", other},
+			{"trail", "accept", "--archive", other, "--of", nothingLookedAt, "--why", "a second archive"},
+			{"trail", "purge", "--older-than", "1ns", "--archive", other},
 		} {
 			err := run(args...)
-			x.ErrorContains(err, "--in", args)
+			x.ErrorContains(err, "--archive", args)
 			x.ErrorContains(err, "audit.archive", args)
 		}
 		out, err := stderrOf(t, cli.Cmd(&c), "trail", "verify")
 		x.NoError(err, "a refused act changed the account")
 
-		x.NoError(run("trail", "accept", "--in", dir, "--of", digestOf(t, out), "--why", "the archive it already has"))
-		x.NoError(run("trail", "purge", "--older-than", "1ns", "--in", dir, "--dry-run"))
+		x.NoError(run("trail", "accept", "--archive", dir, "--of", digestOf(t, out), "--why", "the archive it already has"))
+		x.NoError(run("trail", "purge", "--older-than", "1ns", "--archive", dir, "--dry-run"))
 		x.NoError(run("trail", "verify"))
 	})
 }
@@ -381,7 +381,7 @@ func TestAnArchiveIsKeptWithAKey(t *testing.T) {
 		was, err := b.Ent.Audit.Query().Count(ctx)
 		x.NoError(err)
 
-		err = cli.Cmd(&c).Run(ctx, []string{"trail", "prune", "--older-than", "1ns", "--to", t.TempDir()})
+		err = cli.Cmd(&c).Run(ctx, []string{"trail", "prune", "--older-than", "1ns", "--archive", t.TempDir()})
 		x.ErrorContains(err, "audit.checkpoints.key")
 
 		now, err := b.Ent.Audit.Query().Count(ctx)

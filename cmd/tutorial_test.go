@@ -116,7 +116,7 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 			laptop = strings.Fields(line)[0]
 		}
 	}
-	x.NotEmpty(laptop, "the listing names the key `revoke --id` takes:\n%s", listing)
+	x.NotEmpty(laptop, "the listing names the key `revoke` takes:\n%s", listing)
 
 	// The port the tutorial's curl talks to: the **walled data plane**,
 	// transcoded -- `server.http` in the shipped configuration. The same `g`,
@@ -235,7 +235,7 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 
 		k := cli.NewCmdKey(&c)
 		k.Writer = io.Discard
-		x.NoError(k.Run(ctx, []string{"revoke", "--id", laptop}))
+		x.NoError(k.Run(ctx, []string{"revoke", laptop}))
 
 		code, body := post("/roster.MeService/Get", key, `{}`)
 		x.Equal(http.StatusUnauthorized, code, body)

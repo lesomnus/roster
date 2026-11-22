@@ -86,7 +86,7 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 			&flg.String{Name: "older-than", Brief: "how old a row has to be, e.g. 2160h for ninety days"},
 			&flg.String{Name: "before", Brief: "an instant instead, RFC 3339"},
 			&flg.String{Name: "kind", Brief: "with a window of your own, only rows about this kind of thing, e.g. holder; every kind by default"},
-			&flg.String{Name: "to", Brief: "with a window of your own, the directory to write into; audit.archive by default"},
+			&flg.String{Name: "archive", Brief: "with a window of your own, the directory to write into; audit.archive by default"},
 			&flg.Switch{Name: "discard", Brief: "with a window of your own, remove them and keep no copy"},
 			&flg.Switch{Name: "dry-run", Brief: "say how many there are and where they would go, and change nothing"},
 		},
@@ -103,7 +103,7 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 			// *change nothing* destroyed what was past the window.
 			dry, _ := flg.Find[bool](cl, "dry-run")
 			kind, _ := flg.Find[string](cl, "kind")
-			to, _ := flg.Find[string](cl, "to")
+			to, _ := flg.Find[string](cl, "archive")
 			discard, _ := flg.Find[bool](cl, "discard")
 
 			if !given {
@@ -119,14 +119,14 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 				// Which kinds, where to and whether a copy is kept are the
 				// configuration's on this road, so a flag that says one of them
 				// is refused by its name. Passed over, `--kind holder` applied
-				// every kind's window and `--to` wrote somewhere else than it
+				// every kind's window and `--archive` wrote somewhere else than it
 				// named, and somebody who gave a flag meant something by it.
 				for _, f := range []struct {
 					name  string
 					given bool
 				}{
 					{"--kind", kind != ""},
-					{"--to", to != ""},
+					{"--archive", to != ""},
 					{"--discard", discard},
 				} {
 					if f.given {
@@ -146,17 +146,17 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 
 			// What was said twice: a directory to write the rows into, and that
 			// no copy is kept. Compared before the configured archive is read
-			// for a `--to` nobody gave -- compared after, `--discard` was
-			// refused in a sentence about `--to` wherever `audit.archive` is
+			// for an `--archive` nobody gave -- compared after, `--discard` was
+			// refused in a sentence about `--archive` wherever `audit.archive` is
 			// set (#280), which is every deployment the manual describes a
 			// discard under a hold for. A dry run is refused too: what it
 			// counts is what the same line without `--dry-run` would take.
 			if to != "" && discard {
-				return invocation(errors.New("--discard and --to say two different things about the same rows: " +
+				return invocation(errors.New("--discard and --archive say two different things about the same rows: " +
 					"one keeps no copy and the other says where the copy goes; give one"))
 			}
 
-			// Read here and not bound to `audit.archive` as `--in` is: bound,
+			// Read here and not bound to `audit.archive` as `read --archive` is: bound,
 			// it would also move the archive of the policy a run with no window
 			// applies -- the sweep's, exactly -- and of the one `cmd.Build`
 			// checks.
@@ -168,8 +168,8 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 				// check reads that one (`trail verify`, every pass). Rows
 				// written into a second are rows the first one is found to be
 				// missing.
-				return fmt.Errorf("--to: %s is not audit.archive (%s), and the database keeps an account of one archive; "+
-					"leave --to out, or name that one", dir, c.Audit.Archive)
+				return fmt.Errorf("--archive: %s is not audit.archive (%s), and the database keeps an account of one archive; "+
+					"leave --archive out, or name that one", dir, c.Audit.Archive)
 			}
 
 			// Where the rows go is a question about **destroying** them, so it
@@ -183,7 +183,7 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 				// configuration, at the other door. Somebody who has not
 				// said where the rows go has not said they may be
 				// destroyed.
-				return errors.New("--to: nowhere to put what leaves the database; " +
+				return errors.New("--archive: nowhere to put what leaves the database; " +
 					"name a directory, set audit.archive, or --discard to say the rows are meant to go")
 			}
 
@@ -224,7 +224,7 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 			// hand is not an exception to one -- nor to an operator's hold on a
 			// tenant, which roster answers it with.
 			//
-			// And its archive, which is where it writes: `--to` is that
+			// And its archive, which is where it writes: `--archive` is that
 			// archive, or the one for this run where the configuration names
 			// none. A discard beside a configured archive keeps the policy's
 			// own, where its receipt and its checkpoint go, and writes no row
@@ -283,11 +283,11 @@ func newCmdTrailRead(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 		Brief: "read an archive back, without a database",
 
 		Args: arg.Args{
-			&arg.RestStrings{Name: "FILE", Brief: "files to read -- a chunk taken out of the archive; the archive at --in or audit.archive by default"},
+			&arg.RestStrings{Name: "FILE", Brief: "files to read -- a chunk taken out of the archive; the archive at --archive or audit.archive by default"},
 		},
 
 		Flags: flg.Flags{
-			cfg.Bind(l, &c.Audit.Archive, &flg.String{Name: "in", Brief: "a directory of archives; audit.archive by default"}),
+			cfg.Bind(l, &c.Audit.Archive, &flg.String{Name: "archive", Brief: "a directory of archives; audit.archive by default"}),
 			&flg.String{Name: "object", Brief: "only what happened to this identifier"},
 			&flg.String{Name: "actor", Brief: "only what this person did"},
 			&flg.String{Name: "tenant", Brief: "only this tenant, on any of the three columns"},
@@ -303,7 +303,7 @@ func newCmdTrailRead(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				return err
 			}
 			if len(paths) == 0 && c.Audit.Archive == "" {
-				return errors.New("name a file, or --in a directory, or set audit.archive")
+				return errors.New("name a file, or a directory with --archive, or set audit.archive")
 			}
 
 			keep, err := filterOf(cl)
@@ -367,7 +367,7 @@ func newCmdTrailPurge(c *cmd.Config) *xli.Command {
 			&flg.String{Name: "older-than", Brief: "how old the archive has to be, e.g. 61320h for seven years"},
 			&flg.String{Name: "before", Brief: "an instant instead, RFC 3339"},
 			&flg.String{Name: "kind", Brief: "only chunks of this kind of thing; every kind by default"},
-			&flg.String{Name: "in", Brief: "the directory to destroy from, which is audit.archive when that is set"},
+			&flg.String{Name: "archive", Brief: "the directory to destroy from, which is audit.archive when that is set"},
 			&flg.Switch{Name: "dry-run", Brief: "say which chunks and remove nothing"},
 		},
 
@@ -395,7 +395,7 @@ func newCmdTrailPurge(c *cmd.Config) *xli.Command {
 				return err
 			}
 			if c.Audit.Archive == "" {
-				return errors.New("--in: which directory")
+				return errors.New("--archive: which directory")
 			}
 
 			// The deployment's policy, for its archive and for its holds: a
@@ -471,7 +471,7 @@ func newCmdTrailVerify(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 		Brief: "compare the archive with the account the database keeps of it, and change nothing",
 
 		Flags: flg.Flags{
-			cfg.Bind(l, &c.Audit.Archive, &flg.String{Name: "in", Brief: "the archive's directory; audit.archive by default"}),
+			cfg.Bind(l, &c.Audit.Archive, &flg.String{Name: "archive", Brief: "the archive's directory; audit.archive by default"}),
 			&flg.Switch{Name: "full", Brief: "also read every chunk whole and check its bytes"},
 		},
 
@@ -875,7 +875,7 @@ func newCmdTrailAccept(c *cmd.Config) *xli.Command {
 		Brief: "make the account of the archive say what it holds, once somebody has looked",
 
 		Flags: flg.Flags{
-			&flg.String{Name: "in", Brief: "the archive's directory, which is audit.archive when that is set"},
+			&flg.String{Name: "archive", Brief: "the archive's directory, which is audit.archive when that is set"},
 			&flg.String{Name: "of", Brief: "the digest `roster trail verify` printed of the findings looked at"},
 			&flg.String{Name: "by", Brief: "who accepts, where --as names nobody; the shell's user and host by default"},
 			&flg.String{Name: "why", Brief: "what was looked at and decided; it is kept"},
@@ -979,7 +979,7 @@ func thisShell() string {
 // account of its archive, refused when there is no archive to account for.
 func archived(ctx context.Context, c *cmd.Config) (*cmd.Server, trail.Policy, error) {
 	if c.Audit.Archive == "" {
-		return nil, trail.Policy{}, errors.New("--in: which directory; or set audit.archive")
+		return nil, trail.Policy{}, errors.New("--archive: which directory; or set audit.archive")
 	}
 
 	p, err := cmd.AuditPolicy(c.Audit)
@@ -1439,7 +1439,7 @@ func named(b []byte) string {
 	return k.String()
 }
 
-// inArchive is the configuration an act on the archive is taken with: `--in`
+// inArchive is the configuration an act on the archive is taken with: `--archive`
 // names the archive `audit.archive` already is, or the archive of this run for
 // a deployment that names none, and nothing else.
 //
@@ -1447,10 +1447,10 @@ func named(b []byte) string {
 // one (`trail verify`, every pass). Read in place of a second, an acceptance
 // would write the account from what the second holds -- every chunk of the
 // first taken for missing, and signed as erased -- and a purge would decide
-// by an account of chunks it does not hold. So `--in` is read here, the way
-// `prune --to` is, and not bound to `audit.archive` as `read --in` is.
+// by an account of chunks it does not hold. So `--archive` is read here, the way
+// `prune --archive` is, and not bound to `audit.archive` as `read --archive` is.
 func inArchive(cl *xli.Command, c *cmd.Config) (*cmd.Config, error) {
-	dir, _ := flg.Find[string](cl, "in")
+	dir, _ := flg.Find[string](cl, "archive")
 	switch {
 	case dir == "":
 		return c, nil
@@ -1459,8 +1459,8 @@ func inArchive(cl *xli.Command, c *cmd.Config) (*cmd.Config, error) {
 		v.Audit.Archive = dir
 		return &v, nil
 	case !sameDir(dir, c.Audit.Archive):
-		return nil, fmt.Errorf("--in: %s is not audit.archive (%s), and the database keeps an account of one archive; "+
-			"leave --in out, or name that one", dir, c.Audit.Archive)
+		return nil, fmt.Errorf("--archive: %s is not audit.archive (%s), and the database keeps an account of one archive; "+
+			"leave --archive out, or name that one", dir, c.Audit.Archive)
 	}
 
 	return c, nil

@@ -95,7 +95,7 @@ operator does it, once per tenant (#75):
 
 ```sh
 roster app install --tenant acme \
-  --role '/loft.AssetService/*' \
+  --allow '/loft.AssetService/*' \
   --administer '/loft.*/*' \
   loft
 ```
@@ -296,7 +296,7 @@ lined up.
 
    ```sh
    roster app install --tenant acme \
-     --role '/roster.HolderService/Reaches,/roster.SyncService/Watch,…,/roster.RoleService/Add,/roster.RoleService/Get,/roster.RoleService/Widen,/loft.*/*' \
+     --allow '/roster.HolderService/Reaches,/roster.SyncService/Watch,…,/roster.RoleService/Add,/roster.RoleService/Get,/roster.RoleService/Widen,/loft.*/*' \
      --administer '/loft.*/*' \
      loft
    ```
@@ -395,7 +395,7 @@ levyan ─ HolderService/Reaches(@acme/loft) → covers → serves it, or not
   `/levyan.InvoiceService/Get` -- which roster neither knows nor checks. levyan
   narrows by them as it would by a key's, and still decides with `Reaches`.
 - **What each side's role needs.** The sender `/roster.DelegationService/Exchange`;
-  the receiver `/payday.TokenService/Introspect`. Both go in the `--role` an app is
+  the receiver `/payday.TokenService/Introspect`. Both go in the `--allow` an app is
   installed with.
 
 ### As a person
@@ -549,7 +549,7 @@ asks and lists; an app that lets somebody decline an optional document adds
 
 ```sh
 roster app install --tenant acme \
-  --role '/roster.ConsentService/Agree,/roster.ConsentService/Settled,/roster.ConsentService/List' \
+  --allow '/roster.ConsentService/Agree,/roster.ConsentService/Settled,/roster.ConsentService/List' \
   loft
 ```
 

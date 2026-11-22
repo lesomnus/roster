@@ -92,7 +92,7 @@ func TestAReconcileThatFindsNobodyIsNotBelieved(t *testing.T) {
 	ctx := t.Context()
 	e := newExternal(t)
 	lee := addPerson(t, e.s, e.acme, "lee")
-	x.NoError(cli.NewCmdApp(&e.c).Run(ctx, []string{"install", "--tenant", "beta", "--role", strings.Join(methods, ","), app}))
+	x.NoError(cli.NewCmdApp(&e.c).Run(ctx, []string{"install", "--tenant", "beta", "--allow", strings.Join(methods, ","), app}))
 
 	wrong := accounts(t, standing.Config{Conn: e.dial(t), As: at(e.key, "beta")})
 	r, err := wrong.Reconcile(ctx, []pdid.Id{e.kim, lee}, nil)

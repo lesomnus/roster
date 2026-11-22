@@ -29,7 +29,7 @@ every time).
 
 ```sh
 (umask 077 && roster --as admin control key add --allow /roster.NominationService/List directory > directory.key)
-roster app install --tenant contoso --role '<the methods below>' directory
+roster app install --tenant contoso --allow '<the methods below>' directory
 
 roster ldap serve --roster roster:50051 \
   --deployment-key file:directory.key \
@@ -569,7 +569,7 @@ client's problem and not this process's.
 
 One deployment key, allowed as itself only `/roster.NominationService/List` --
 the tenants it serves -- and in each tenant a holder it is answered as, whose role
-names what a directory reads. `roster app install --tenant … --role … directory`
+names what a directory reads. `roster app install --tenant … --allow … directory`
 writes the holder, the role, the binding and the nomination:
 
 ```

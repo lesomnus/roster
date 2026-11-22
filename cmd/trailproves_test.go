@@ -196,7 +196,7 @@ func TestNeitherCheckReadsTheControlPlaneOrTheAccessRecord(t *testing.T) {
 	x.NoError(err, "a check of the rows finds what was done to the control plane or to the access record")
 	x.NotContains(said, "not checked:", "the check lists what it did not read")
 
-	x.ErrorContains(cli.Cmd(&c).Run(ctx, []string{"trail", "verify"}), "--in: which directory")
+	x.ErrorContains(cli.Cmd(&c).Run(ctx, []string{"trail", "verify"}), "--archive: which directory")
 }
 
 // TestAPassThatCouldNotWriteItsArchiveLeavesACheckpointTheStoreNeverKept.

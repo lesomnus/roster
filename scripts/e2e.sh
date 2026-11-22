@@ -237,7 +237,7 @@ key="${work}/keys/account.key"
 # and what its administrator ends in `user.spec.ts`. The key is minted and
 # thrown away: nothing here calls as the app, and the rows are the point.
 op control key add --narrowed loft >/dev/null 2>&1
-r app install --tenant contoso --role '/loft.AssetService/*' loft >/dev/null 2>&1
+r app install --tenant contoso --allow '/loft.AssetService/*' loft >/dev/null 2>&1
 
 echo "== serve"
 "${work}/roster" --config "${work}/roster.yaml" serve >"${work}/serve.log" 2>&1 &

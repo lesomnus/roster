@@ -177,7 +177,7 @@ func TestAnExitStatusSaysWhichKindOfFailure(t *testing.T) {
 		{what: "a flag's value that does not parse", c: &b.Local, args: []string{"key", "add", "--tenant", "newco", "--holder", "alice", "--allow", get, "--expires", "soon"}, want: 2, says: "--expires"},
 		{what: "a method that is not one", c: &b.Local, args: []string{"key", "add", "--tenant", "newco", "--holder", "alice", "--allow", "HolderService.Get"}, want: 2, says: "not a method"},
 		{what: "an -o that is none of its words", c: &b.Local, args: []string{"tenant", "list", "-o", "yaml"}, want: 2, says: "not a format"},
-		{what: "two flags that do not go together", c: &b.Local, args: []string{"trail", "prune", "--older-than", "1h", "--discard", "--to", filepath.Join(t.TempDir(), "x")}, want: 2, says: "--discard and --to"},
+		{what: "two flags that do not go together", c: &b.Local, args: []string{"trail", "prune", "--older-than", "1h", "--discard", "--archive", filepath.Join(t.TempDir(), "x")}, want: 2, says: "--discard and --archive"},
 		{what: "a group with nothing after it", c: &b.Local, args: []string{"key"}, want: 2, says: "subcommand is required"},
 		{what: "no --as at a deployment with a control plane", c: &unnamed, args: []string{"holder", "list"}, want: 2, says: "--as: who is at this shell"},
 

@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/lesomnus/xli"
+	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -328,19 +329,21 @@ func newCmdKeyRevoke(c *cmd.Config) *xli.Command {
 		Name:  "revoke",
 		Brief: "stop a key, now",
 
-		Flags: flg.Flags{
-			&flg.String{Name: "id", Brief: "the key, as `key list` prints it"},
+		// An argument, as `me revoke-key KEY` and `api-key erase` take the
+		// key (#284).
+		Args: arg.Args{
+			&arg.String{Name: "KEY", Brief: "the key, as `key list` prints it"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
-			v, _ := flg.Find[string](cl, "id")
+			v, _ := arg.Get[string](cl, "KEY")
 			if v == "" {
-				return invocation(errors.New("--id: which key"))
+				return invocation(errors.New("KEY: which key"))
 			}
 
 			k, err := pdid.Parse(v)
 			if err != nil {
-				return invocation(fmt.Errorf("--id: %w", err))
+				return invocation(fmt.Errorf("KEY: %w", err))
 			}
 			// Somebody's way in, taken away: named, as `key add` is (#284).
 			if err := saidWho(c); err != nil {
