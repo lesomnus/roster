@@ -27,10 +27,33 @@ roster --as admin team patch 01a1e7ef-… '{"name":"Operations","date_updated":"
 ```
 
 What changes a row over the wire is a verb of its own, where the entity has
-one: `holder update`, `group update`, `tenant update`, `connection update`,
-`role widen` and `role narrow`. A site and a team have none, nor does the role
+one: `holder update` (a profile, whole, and `data`), `holder realias`,
+`group update`, `tenant update`, `connection update`, `host update` and
+`mail-domain update` (a note, and where a domain routes), `role widen` and
+`role narrow`. A site and a team have none, nor does the role
 on somebody's place in a team or a group: those are erased and added again
 ([permissions.md](permissions.md) says so where each is described).
+
+And what a caller writes at `add` is not written again over the wire by any
+verb, where the entity has no verb for it:
+
+| | not written after `add` |
+| --- | --- |
+| a role | its alias, name, note and labels: `widen` and `narrow` write its methods alone |
+| a person | their name, note and labels: `update` writes the profile and `data`, `realias` the alias |
+| a group | its alias and labels |
+| a connection, a host, a mail domain | their labels, and the name, which is so by design |
+| a nomination | its name, its labels, and who it acts as |
+| a number | the number and its kind |
+| a binding, a relation | their labels |
+| a key | its alias; and its note by nothing over the wire, since `ApiKeyService/Issue` does not carry it |
+| a site, a team, the role on a place | everything, as above |
+| a tenant | its alias; the last of its labels, which `update` cannot take away; and a hold, which is `roster hold` at the box |
+
+Labels are the pattern: of the eleven entities that carry them, only a
+tenant's are written after `add`. And **a person erased is brought back at the
+box alone** (`roster restore`), where a tenant closed is brought back over the
+wire (`tenant restore`).
 
 ## Two modes, and the configuration decides which
 
@@ -170,9 +193,10 @@ and then reported as failed.
 
 **A `list` is a page, and not the whole.** It answers twenty rows unless told,
 in the order they were made -- but for `audit list` and `access list`, which
-answer the newest first; `--reverse` turns either order round. `-n` (`--size`) asks for more, up to a hundred,
-and where there are more than it answered, the answer says where to carry on
-from, which `--next` takes:
+answer fifty, the newest first; `--reverse` turns either order round. `-n`
+(`--size`) asks for more, up to a hundred however many it asks for, and up to
+two hundred of the trail and the access record; and where there are more than
+it answered, the answer says where to carry on from, which `--next` takes:
 
 ```sh
 roster --as admin holder list -n 100                 # ends with `next: WyIyMDI2…` when there are more
@@ -221,6 +245,44 @@ there is no parent to name it within. Everything else is
 `{"slug": {"alias": …, "<parent>": …}}`, and the parent is whatever the alias is
 unique inside: a tenant for most, a **site** for a team, a **holder** for a key.
 
+## What a read and a list answer
+
+What a page's author meets of the generated `Get` and `List`, which no
+comment of theirs says. Each was seen on a run.
+
+**A `Get` answers what its `select` names.** With no `select` it answers what
+`{"all": true}` answers: every field of the row, and each row it points at as
+its identifier alone. The identifier is always answered. A row it points at
+that is selected comes nested, to any depth -- a place in a site with its
+person and that person's tenant, in one call -- each read by its own rule
+([rules.md](rules.md)). A field not selected is absent or empty, **but for
+the two stamps**: `date_created` and `date_updated` not selected are answered
+as year one, `0001-01-01T00:00:00Z`. Year one is *not selected*, and not a
+moment; `date_updated` is the version a write sends back,
+and year one sent back is refused as a version that moved. Select it with
+whatever you mean to write. `date_erased` is a field of twenty-six entities,
+and of each one's `select`, and no read fills it: every read leaves the erased
+out.
+
+**A `List` takes no `select`.** A listed row carries each row it points at as
+its identifier alone, so a list of places with their people's names is the
+list, and then `HolderService/List` with a filter a person.
+
+**A list is a page.** Twenty rows where the request says no `size`, and a
+hundred at most however many it asks for; the trail's (`AuditService/List`)
+and the access record's (`AccessService/List`, the box's) are fifty and two
+hundred. A request carries thirty-two filters at most, and
+more is refused rather than cut short. Rows come in the order they were made
+(`reverse` turns it round), the trail's and the access record's newest first. Where there are more,
+the answer's `next` is the next call's `after`. A list with nothing in it is
+`{}` in JSON, with no `items` at all: read a missing `items` as none.
+
+**What a read leaves on the access record** follows the fields an answer
+carries that are declared somebody's. `HolderService/Reaches`,
+`BindingService/List`, `DelegationService/List` and `RoleService/HandsOver` about somebody else leave
+no row of it, where `HolderService/SignsIn` leaves one; `MeService/Get` leaves
+none either, which #280 said. What somebody may call is declared nowhere.
+
 ## What a `watch` says
 
 `roster holder watch @newco/alice` is `HolderService/Watch`: a stream that says
@@ -230,22 +292,24 @@ is what is so:
 
 - **A watch names its rows.** Its filters have the shape a `list`'s have, and
   only one that names a row by reference is taken. A filter by tenant, by site
-  or by anything else a `list` takes is refused -- *a watch says which rows it
-  is about by naming them* -- and so is no filter at all. To follow a set,
-  list it and watch what it answered.
-- **A row that is gone is said with the call that took it.** An item with no
-  `value` is a row this stream carried and its caller no longer sees. It still
-  carries `action`, the RPC that was called: `…/Erase` for a row that was
-  erased, and whatever touched it for one that left the caller's reach. So the
-  two are told apart, where the comment says there is deliberately no way to.
-- **A row that leaves the caller's reach is not said until it is next
-  written.** A stream hears the writes of its own entity. What takes a row out
-  of somebody's reach is mostly a write of another -- their place in a site
-  erased, a binding taken away -- and nothing is said then: the row's next
-  write is answered as an item with no value. Until it is, the last value sent
-  is one the caller was allowed when it was sent. A caller who may no longer
-  call `Watch` at all has the stream ended, when it is next asked who opened
-  it (`stream.recheck`, [operating.md](../operating.md)).
+  or by anything else a `list` takes is refused, `InvalidArgument` -- *a watch
+  says which rows it is about by naming them* -- and so is no filter at all.
+  So a watch's filter is not what a list's may be: to follow a set, list it
+  and watch what it answered.
+- **An erase is said by the identifier and the action.** An item with no
+  `value` is a row this stream carried that was erased: it carries `id`, and
+  `action`, the RPC that took it (`…/Erase`).
+- **A row that leaves its hearer's reach is not said.** A stream hears the
+  writes of its own entity, and answers its hearer only what they may read.
+  What takes a row out of somebody's reach is mostly a write of another --
+  their place in a site erased, a binding taken away -- and nothing is said
+  then, nor when the row is next written, nor when it is erased. So **a hearer
+  keeps a row it may no longer read, for as long as the stream is open**, as
+  the last value it was sent, which it was allowed when it was sent. A
+  stream opened again knows: a watch of a row out of sight is refused
+  `NotFound` before it opens. A caller who may no longer call `Watch` at all
+  has the stream ended, when it is next asked who opened it
+  (`stream.recheck`, [operating.md](../operating.md)).
 
 ## Which RPCs have no command
 
