@@ -115,6 +115,84 @@ func TestEveryFieldSaysWhetherItIsSomebodys(t *testing.T) {
 		"Say which beside each: [(payday.field) = {personal: true}] for words about a person, [(payday.field) = {personal: false}] for what is about no one")
 }
 
+// TestWhatIsDeclaredPersonalOrSecretIsThisList: which fields are somebody's,
+// and which are a verifier, changes only by a line of this list.
+//
+// `TestEveryFieldSaysWhetherItIsSomebodys` holds that a field says one or the
+// other, and not that it goes on saying the same, and no rule of `buf` reads
+// an option. `personal: true` made `false` on `Identity.subject`, and `secret:
+// true` made `personal: false` on `ApiKey.secret`, passed that test and `buf
+// breaking` both: the first keeps a person's subject at a provider on the trail
+// in words, and the second takes a key's verifier out of what the secret
+// layer withholds. Answered: passed; right is a diff of this list, which
+// somebody reads.
+//
+// Every entity of the package is asked, payday's copies included, since a
+// declaration that moves there moves here when the pin does.
+func TestWhatIsDeclaredPersonalOrSecretIsThisList(t *testing.T) {
+	x := require.New(t)
+
+	personal := []string{
+		"ApiKey.alias",
+		"ApiKey.desc",
+		"Binding.labels",
+		"Credential.name",
+		"Email.address",
+		"Holder.alias",
+		"Holder.data",
+		"Holder.desc",
+		"Holder.directory_address",
+		"Holder.directory_name",
+		"Holder.directory_subject",
+		"Holder.labels",
+		"Holder.name",
+		"Holder.portrait",
+		"Holder.profile",
+		"Identity.subject",
+		"Nomination.labels",
+		"Nomination.name",
+		"Phone.number",
+		"Relation.labels",
+	}
+	secret := []string{
+		"ApiKey.secret",
+		"Continuation.secret",
+		"Credential.previous",
+		"Credential.secret",
+		"Delegation.secret",
+		"Link.secret",
+		"Session.secret",
+	}
+
+	declared := map[string][]string{}
+	protoregistry.GlobalFiles.RangeFilesByPackage("roster", func(file protoreflect.FileDescriptor) bool {
+		for i := range file.Messages().Len() {
+			m := file.Messages().Get(i)
+			if !proto.HasExtension(m.Options(), pdpb.E_Entity) {
+				continue
+			}
+			for j := range m.Fields().Len() {
+				f := m.Fields().Get(j)
+				o, _ := proto.GetExtension(f.Options(), pdpb.E_Field).(*pdpb.Field)
+				name := string(m.Name()) + "." + string(f.Name())
+				if o.GetPersonal() {
+					declared["personal"] = append(declared["personal"], name)
+				}
+				if o.GetSecret() {
+					declared["secret"] = append(declared["secret"], name)
+				}
+			}
+		}
+
+		return true
+	})
+	slices.Sort(declared["personal"])
+	slices.Sort(declared["secret"])
+
+	x.Equal(personal, declared["personal"], "the fields declared `personal: true` are not the list: a field that is somebody's and one that is not are each a line of it, written there on purpose")
+	x.Equal(secret, declared["secret"], "the fields declared `secret` are not the list: a verifier and a field that is none are each a line of it, written there on purpose")
+}
+
 // TestWhatIsWrittenAboutSomebodyIsNotOnTheTrail is what the declarations
 // change, seen on a run, for each of the seven fields that had said nothing
 // and are somebody's words (`TestEveryFieldSaysWhetherItIsSomebodys`).
