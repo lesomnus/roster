@@ -126,7 +126,10 @@ message Session {
   }];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    // Read, and nothing more. The store writes a session through ent and no
+    // port registers this service, so `Get` and `List` are what the box reads
+    // sessions with; a write by a call would make a row only a sign-in makes.
+    rpc: {get: {}}
     indexes: [
       {
         name: "page"
@@ -147,6 +150,11 @@ message Session {
     domain: 24
 
     tenanted: {via: "holder.tenant"}
+
+    // No server writes a session, and each write the store makes is on the
+    // trail as the act it is (`server/session`, `written`): minted, used,
+    // ended, and expired by the sweep.
+    trail: {recorded: {}}
 
     // No `watch:`, for `Delegation`'s reason: payday's `Secret` layer does not
     // cover `Watch`, so a watchable entity with a verifier streams it.

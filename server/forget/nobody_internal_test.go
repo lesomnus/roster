@@ -25,8 +25,8 @@ import (
 // written for, where five kinds were.
 //
 // Held twice, since the list is spelled in both: to the messages, for which
-// writes name a person -- an `Add` of every kind with an edge to a holder,
-// and a `Patch` and an `Apply` of each whose edge is not fixed when its row
+// writes name a person -- an `Add` of every kind with an edge to a holder
+// whose service declares one, and a `Patch` and an `Apply` of each whose edge is not fixed when its row
 // is made -- and to the tables, for the columns such an edge is kept in.
 func TestEveryRowThatNamesAPersonIsAskedAboutThem(t *testing.T) {
 	x := require.New(t)
@@ -89,8 +89,19 @@ func TestEveryRowThatNamesAPersonIsAskedAboutThem(t *testing.T) {
 			table := strings.ToLower(string(m.Name()))
 			x.ElementsMatch(columns, keyed[table], "%s names a holder in %v, and its table is keyed to one by %v", m.Name(), columns, keyed[table])
 
+			// A kind no server adds, a session, is written by its own store
+			// and comes past no recorder.
+			declared := func(verb string) bool {
+				d, err := protoregistry.GlobalFiles.FindDescriptorByName(m.FullName() + "Service")
+				x.NoError(err, "%s has no service", m.Name())
+
+				return d.(protoreflect.ServiceDescriptor).Methods().ByName(protoreflect.Name(verb)) != nil
+			}
+
 			service := "/" + string(m.FullName()) + "Service/"
-			want[service+"Add"] = columns
+			if declared("Add") {
+				want[service+"Add"] = columns
+			}
 			if moves {
 				want[service+"Patch"] = columns
 				want[service+"Apply"] = columns

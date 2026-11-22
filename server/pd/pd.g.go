@@ -2682,23 +2682,6 @@ func (s sinkContinuation) Erase(ctx context.Context, req *rstr.ContinuationRef) 
 	return s.ContinuationServiceServer.Erase(ctx, req)
 }
 
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkContinuation) Apply(ctx context.Context, req *rstr.ContinuationApplyRequest) (*rstr.Continuation, error) {
-	seen.Forget(s.store.Db.Driver(), "Continuation", req.GetRef())
-
-	return s.ContinuationServiceServer.Apply(ctx, req)
-}
-
-// Patch forgets what the transaction was told about the row, before it is
-// written; see [sinkContinuation.Apply].
-func (s sinkContinuation) Patch(ctx context.Context, req *rstr.ContinuationPatchRequest) (*rstr.Continuation, error) {
-	seen.Forget(s.store.Db.Driver(), "Continuation", req.GetRef())
-
-	return s.ContinuationServiceServer.Patch(ctx, req)
-}
-
 // orderContinuation is how Continuations come back.
 //
 // The last column is the key, and it is not decoration: a cursor cannot
@@ -6226,23 +6209,6 @@ func (s sinkLink) Erase(ctx context.Context, req *rstr.LinkRef) (*rstr.LinkErase
 	return s.LinkServiceServer.Erase(ctx, req)
 }
 
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkLink) Apply(ctx context.Context, req *rstr.LinkApplyRequest) (*rstr.Link, error) {
-	seen.Forget(s.store.Db.Driver(), "Link", req.GetRef())
-
-	return s.LinkServiceServer.Apply(ctx, req)
-}
-
-// Patch forgets what the transaction was told about the row, before it is
-// written; see [sinkLink.Apply].
-func (s sinkLink) Patch(ctx context.Context, req *rstr.LinkPatchRequest) (*rstr.Link, error) {
-	seen.Forget(s.store.Db.Driver(), "Link", req.GetRef())
-
-	return s.LinkServiceServer.Patch(ctx, req)
-}
-
 // orderLink is how Links come back.
 //
 // The last column is the key, and it is not decoration: a cursor cannot
@@ -8016,33 +7982,6 @@ type sinkSession struct {
 
 func (s Sink) Session() rstr.SessionServiceServer {
 	return sinkSession{s.Server.Session(), s.Server.Store, s.w, s.namer, s.joined}
-}
-
-// Erase forgets what the transaction was told about the row, before it is
-// erased: whether a frame may see it, and where a walk from it arrives.
-// Neither is true of a row that is gone, nor of another put under its
-// key. See [seen.Forget].
-func (s sinkSession) Erase(ctx context.Context, req *rstr.SessionRef) (*rstr.SessionEraseResponse, error) {
-	seen.Forget(s.store.Db.Driver(), "Session", req)
-
-	return s.SessionServiceServer.Erase(ctx, req)
-}
-
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkSession) Apply(ctx context.Context, req *rstr.SessionApplyRequest) (*rstr.Session, error) {
-	seen.Forget(s.store.Db.Driver(), "Session", req.GetRef())
-
-	return s.SessionServiceServer.Apply(ctx, req)
-}
-
-// Patch forgets what the transaction was told about the row, before it is
-// written; see [sinkSession.Apply].
-func (s sinkSession) Patch(ctx context.Context, req *rstr.SessionPatchRequest) (*rstr.Session, error) {
-	seen.Forget(s.store.Db.Driver(), "Session", req.GetRef())
-
-	return s.SessionServiceServer.Patch(ctx, req)
 }
 
 // orderSession is how Sessions come back.
@@ -11831,50 +11770,6 @@ func (s gateRole) admit(ctx context.Context, req *rstr.RoleAddRequest) (*rstr.Ro
 	return req, nil
 }
 
-type gateSession struct {
-	Gate
-	rstr.SessionServiceServer
-}
-
-func (s Gate) Session() rstr.SessionServiceServer {
-	v := gateSession{s, s.Next().Session()}
-	v.SessionServiceServer = bare.SessionWithAddRule(v.SessionServiceServer, v.admit)
-	return v
-}
-
-// admit refuses a Session put into a Holder this caller cannot see.
-//
-// The wall is a predicate and an Add has no query, so without this the
-// identifier in `holder` becomes a foreign key with nothing consulted.
-// The row is then invisible to whoever planted it and visible to whoever
-// holds that Holder, which is the shape of the bug rather than a
-// mitigation of it.
-//
-// NotFound rather than a refusal, for the reason on `gateHolder.admit`:
-// that a row exists is itself something a caller who may not see it
-// should not be told.
-//
-// It is what an Add is asked, and an AddMany of every item it carries;
-// see [Gate.Session].
-func (s gateSession) admit(ctx context.Context, req *rstr.SessionAddRequest) (*rstr.SessionAddRequest, error) {
-	if ref := req.GetHolder(); ref != nil {
-		if err := seen.Visible(ctx, s.Gate.drv, "Holder", ref, func() error {
-			_, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
-				Ref: ref,
-			}.Build())
-			return err
-		}); err != nil {
-			if status.Code(err) == codes.NotFound {
-				return nil, gate.ErrNotFound("Holder")
-			}
-
-			return nil, err
-		}
-	}
-
-	return req, nil
-}
-
 type gateSite struct {
 	Gate
 	rstr.SiteServiceServer
@@ -12679,7 +12574,6 @@ func added(by string) bool {
 		rstr.PhoneService_Add_FullMethodName,
 		rstr.RelationService_Add_FullMethodName,
 		rstr.RoleService_Add_FullMethodName,
-		rstr.SessionService_Add_FullMethodName,
 		rstr.SiteService_Add_FullMethodName,
 		rstr.SiteMembershipService_Add_FullMethodName,
 		rstr.TeamService_Add_FullMethodName,
@@ -16777,18 +16671,6 @@ func (s secretContinuation) Get(ctx context.Context, req *rstr.ContinuationGetRe
 	return hideContinuation(v), err
 }
 
-func (s secretContinuation) Patch(ctx context.Context, req *rstr.ContinuationPatchRequest) (*rstr.Continuation, error) {
-	v, err := s.ContinuationServiceServer.Patch(ctx, req)
-
-	return hideContinuation(v), err
-}
-
-func (s secretContinuation) Apply(ctx context.Context, req *rstr.ContinuationApplyRequest) (*rstr.Continuation, error) {
-	v, err := s.ContinuationServiceServer.Apply(ctx, req)
-
-	return hideContinuation(v), err
-}
-
 func (s secretContinuation) List(ctx context.Context, req *rstr.ContinuationListRequest) (*rstr.ContinuationListResponse, error) {
 	v, err := s.ContinuationServiceServer.List(ctx, req)
 	if v == nil {
@@ -17030,18 +16912,6 @@ func (s secretLink) Get(ctx context.Context, req *rstr.LinkGetRequest) (*rstr.Li
 	return hideLink(v), err
 }
 
-func (s secretLink) Patch(ctx context.Context, req *rstr.LinkPatchRequest) (*rstr.Link, error) {
-	v, err := s.LinkServiceServer.Patch(ctx, req)
-
-	return hideLink(v), err
-}
-
-func (s secretLink) Apply(ctx context.Context, req *rstr.LinkApplyRequest) (*rstr.Link, error) {
-	v, err := s.LinkServiceServer.Apply(ctx, req)
-
-	return hideLink(v), err
-}
-
 func (s secretLink) List(ctx context.Context, req *rstr.LinkListRequest) (*rstr.LinkListResponse, error) {
 	v, err := s.LinkServiceServer.List(ctx, req)
 	if v == nil {
@@ -17095,26 +16965,8 @@ type secretSession struct {
 	rstr.SessionServiceServer
 }
 
-func (s secretSession) Add(ctx context.Context, req *rstr.SessionAddRequest) (*rstr.Session, error) {
-	v, err := s.SessionServiceServer.Add(ctx, req)
-
-	return hideSession(v), err
-}
-
 func (s secretSession) Get(ctx context.Context, req *rstr.SessionGetRequest) (*rstr.Session, error) {
 	v, err := s.SessionServiceServer.Get(ctx, req)
-
-	return hideSession(v), err
-}
-
-func (s secretSession) Patch(ctx context.Context, req *rstr.SessionPatchRequest) (*rstr.Session, error) {
-	v, err := s.SessionServiceServer.Patch(ctx, req)
-
-	return hideSession(v), err
-}
-
-func (s secretSession) Apply(ctx context.Context, req *rstr.SessionApplyRequest) (*rstr.Session, error) {
-	v, err := s.SessionServiceServer.Apply(ctx, req)
 
 	return hideSession(v), err
 }
@@ -17566,16 +17418,6 @@ func (s interceptContinuation) Add(ctx context.Context, req *rstr.ContinuationAd
 func (s interceptContinuation) Get(ctx context.Context, req *rstr.ContinuationGetRequest) (*rstr.Continuation, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ContinuationServiceServer,
 		rstr.ContinuationService_Get_FullMethodName, req, s.ContinuationServiceServer.Get)
-}
-
-func (s interceptContinuation) Patch(ctx context.Context, req *rstr.ContinuationPatchRequest) (*rstr.Continuation, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ContinuationServiceServer,
-		rstr.ContinuationService_Patch_FullMethodName, req, s.ContinuationServiceServer.Patch)
-}
-
-func (s interceptContinuation) Apply(ctx context.Context, req *rstr.ContinuationApplyRequest) (*rstr.Continuation, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ContinuationServiceServer,
-		rstr.ContinuationService_Apply_FullMethodName, req, s.ContinuationServiceServer.Apply)
 }
 
 func (s interceptContinuation) Erase(ctx context.Context, req *rstr.ContinuationRef) (*rstr.ContinuationEraseResponse, error) {
@@ -18082,16 +17924,6 @@ func (s interceptLink) Get(ctx context.Context, req *rstr.LinkGetRequest) (*rstr
 		rstr.LinkService_Get_FullMethodName, req, s.LinkServiceServer.Get)
 }
 
-func (s interceptLink) Patch(ctx context.Context, req *rstr.LinkPatchRequest) (*rstr.Link, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.LinkServiceServer,
-		rstr.LinkService_Patch_FullMethodName, req, s.LinkServiceServer.Patch)
-}
-
-func (s interceptLink) Apply(ctx context.Context, req *rstr.LinkApplyRequest) (*rstr.Link, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.LinkServiceServer,
-		rstr.LinkService_Apply_FullMethodName, req, s.LinkServiceServer.Apply)
-}
-
 func (s interceptLink) Erase(ctx context.Context, req *rstr.LinkRef) (*rstr.LinkEraseResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.LinkServiceServer,
 		rstr.LinkService_Erase_FullMethodName, req, s.LinkServiceServer.Erase)
@@ -18497,29 +18329,9 @@ type interceptSession struct {
 	rstr.SessionServiceServer
 }
 
-func (s interceptSession) Add(ctx context.Context, req *rstr.SessionAddRequest) (*rstr.Session, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		rstr.SessionService_Add_FullMethodName, req, s.SessionServiceServer.Add)
-}
-
 func (s interceptSession) Get(ctx context.Context, req *rstr.SessionGetRequest) (*rstr.Session, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		rstr.SessionService_Get_FullMethodName, req, s.SessionServiceServer.Get)
-}
-
-func (s interceptSession) Patch(ctx context.Context, req *rstr.SessionPatchRequest) (*rstr.Session, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		rstr.SessionService_Patch_FullMethodName, req, s.SessionServiceServer.Patch)
-}
-
-func (s interceptSession) Apply(ctx context.Context, req *rstr.SessionApplyRequest) (*rstr.Session, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		rstr.SessionService_Apply_FullMethodName, req, s.SessionServiceServer.Apply)
-}
-
-func (s interceptSession) Erase(ctx context.Context, req *rstr.SessionRef) (*rstr.SessionEraseResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
-		rstr.SessionService_Erase_FullMethodName, req, s.SessionServiceServer.Erase)
 }
 
 func (s interceptSession) List(ctx context.Context, req *rstr.SessionListRequest) (*rstr.SessionListResponse, error) {
@@ -21455,10 +21267,6 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.ContinuationService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
-	case rstr.ContinuationService_Patch_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.ContinuationService_Apply_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.ContinuationService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.CredentialService_Add_FullMethodName:
@@ -21543,10 +21351,6 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.LinkService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
-	case rstr.LinkService_Patch_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.LinkService_Apply_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.LinkService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.MailDomainService_Add_FullMethodName:
@@ -21588,14 +21392,6 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 	case rstr.RoleService_Apply_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.RoleService_Erase_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_DELETED
-	case rstr.SessionService_Add_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_CREATED
-	case rstr.SessionService_Patch_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.SessionService_Apply_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.SessionService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.SiteService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED

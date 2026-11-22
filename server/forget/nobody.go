@@ -24,7 +24,6 @@ import (
 	"github.com/lesomnus/roster/internal/ent/phone"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/lesomnus/roster/internal/ent/relation"
-	"github.com/lesomnus/roster/internal/ent/session"
 	"github.com/lesomnus/roster/internal/ent/sitemembership"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	app "github.com/lesomnus/roster/rstr"
@@ -156,9 +155,11 @@ func namedBy(of names, row uuid.UUID) predicate.Holder {
 }
 
 // naming is every write that names a person, by the method that makes it
-// ([bare.Change.By]): an `Add` of each kind keyed to a holder, and the two
-// writes that move a nomination's `acts_as`, which is the only such edge
-// that is not fixed when its row is made.
+// ([bare.Change.By]): an `Add` of each kind keyed to a holder that a server
+// adds, and the two writes that move a nomination's `acts_as`, which is the
+// only such edge that is not fixed when its row is made. A session is keyed
+// to a holder and has no `Add`: its store writes it through ent, past every
+// recorder (`server/session`).
 //
 // Written out, for [subjects]' reason, and held to the schema by a test; see
 // [Nobody]. A consent is here though a forget leaves it: one that is there is
@@ -176,7 +177,6 @@ var naming = map[string]names{
 	app.LinkService_Add_FullMethodName:            {link.Table, []string{link.HolderColumn}},
 	app.PhoneService_Add_FullMethodName:           {phone.Table, []string{phone.HolderColumn}},
 	app.RelationService_Add_FullMethodName:        {relation.Table, []string{relation.HolderColumn, relation.OtherColumn}},
-	app.SessionService_Add_FullMethodName:         {session.Table, []string{session.HolderColumn}},
 	app.SiteMembershipService_Add_FullMethodName:  {sitemembership.Table, []string{sitemembership.HolderColumn}},
 	app.TeamMembershipService_Add_FullMethodName:  {teammembership.Table, []string{teammembership.HolderColumn}},
 

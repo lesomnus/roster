@@ -7,10 +7,8 @@
 package rstr
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	unsafe "unsafe"
 )
@@ -22,218 +20,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type SessionAddRequest struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
-	xxx_hidden_Grant       []byte                 `protobuf:"bytes,8,opt,name=grant"`
-	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
-	xxx_hidden_DateIdle    *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_idle,json=dateIdle"`
-	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *SessionAddRequest) Reset() {
-	*x = SessionAddRequest{}
-	mi := &file_app_session_svc_g_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SessionAddRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SessionAddRequest) ProtoMessage() {}
-
-func (x *SessionAddRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_session_svc_g_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *SessionAddRequest) GetId() []byte {
-	if x != nil {
-		return x.xxx_hidden_Id
-	}
-	return nil
-}
-
-func (x *SessionAddRequest) GetHolder() *HolderRef {
-	if x != nil {
-		return x.xxx_hidden_Holder
-	}
-	return nil
-}
-
-func (x *SessionAddRequest) GetGrant() []byte {
-	if x != nil {
-		return x.xxx_hidden_Grant
-	}
-	return nil
-}
-
-func (x *SessionAddRequest) GetSecret() []byte {
-	if x != nil {
-		return x.xxx_hidden_Secret
-	}
-	return nil
-}
-
-func (x *SessionAddRequest) GetDateExpires() *timestamppb.Timestamp {
-	if x != nil {
-		return x.xxx_hidden_DateExpires
-	}
-	return nil
-}
-
-func (x *SessionAddRequest) GetDateIdle() *timestamppb.Timestamp {
-	if x != nil {
-		return x.xxx_hidden_DateIdle
-	}
-	return nil
-}
-
-func (x *SessionAddRequest) GetDateCreated() *timestamppb.Timestamp {
-	if x != nil {
-		return x.xxx_hidden_DateCreated
-	}
-	return nil
-}
-
-func (x *SessionAddRequest) SetId(v []byte) {
-	if v == nil {
-		v = []byte{}
-	}
-	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
-}
-
-func (x *SessionAddRequest) SetHolder(v *HolderRef) {
-	x.xxx_hidden_Holder = v
-}
-
-func (x *SessionAddRequest) SetGrant(v []byte) {
-	if v == nil {
-		v = []byte{}
-	}
-	x.xxx_hidden_Grant = v
-}
-
-func (x *SessionAddRequest) SetSecret(v []byte) {
-	if v == nil {
-		v = []byte{}
-	}
-	x.xxx_hidden_Secret = v
-}
-
-func (x *SessionAddRequest) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
-}
-
-func (x *SessionAddRequest) SetDateIdle(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateIdle = v
-}
-
-func (x *SessionAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateCreated = v
-}
-
-func (x *SessionAddRequest) HasId() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *SessionAddRequest) HasHolder() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Holder != nil
-}
-
-func (x *SessionAddRequest) HasDateExpires() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_DateExpires != nil
-}
-
-func (x *SessionAddRequest) HasDateIdle() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_DateIdle != nil
-}
-
-func (x *SessionAddRequest) HasDateCreated() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_DateCreated != nil
-}
-
-func (x *SessionAddRequest) ClearId() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Id = nil
-}
-
-func (x *SessionAddRequest) ClearHolder() {
-	x.xxx_hidden_Holder = nil
-}
-
-func (x *SessionAddRequest) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
-}
-
-func (x *SessionAddRequest) ClearDateIdle() {
-	x.xxx_hidden_DateIdle = nil
-}
-
-func (x *SessionAddRequest) ClearDateCreated() {
-	x.xxx_hidden_DateCreated = nil
-}
-
-type SessionAddRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Id          []byte
-	Holder      *HolderRef
-	Grant       []byte
-	Secret      []byte
-	DateExpires *timestamppb.Timestamp
-	DateIdle    *timestamppb.Timestamp
-	DateCreated *timestamppb.Timestamp
-}
-
-func (b0 SessionAddRequest_builder) Build() *SessionAddRequest {
-	m0 := &SessionAddRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
-		x.xxx_hidden_Id = b.Id
-	}
-	x.xxx_hidden_Holder = b.Holder
-	x.xxx_hidden_Grant = b.Grant
-	x.xxx_hidden_Secret = b.Secret
-	x.xxx_hidden_DateExpires = b.DateExpires
-	x.xxx_hidden_DateIdle = b.DateIdle
-	x.xxx_hidden_DateCreated = b.DateCreated
-	return m0
-}
-
 type SessionGetRequest struct {
 	state             protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref    *SessionRef            `protobuf:"bytes,1,opt,name=ref"`
@@ -244,7 +30,7 @@ type SessionGetRequest struct {
 
 func (x *SessionGetRequest) Reset() {
 	*x = SessionGetRequest{}
-	mi := &file_app_session_svc_g_proto_msgTypes[1]
+	mi := &file_app_session_svc_g_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -256,7 +42,7 @@ func (x *SessionGetRequest) String() string {
 func (*SessionGetRequest) ProtoMessage() {}
 
 func (x *SessionGetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_session_svc_g_proto_msgTypes[1]
+	mi := &file_app_session_svc_g_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -336,7 +122,7 @@ type SessionRef struct {
 
 func (x *SessionRef) Reset() {
 	*x = SessionRef{}
-	mi := &file_app_session_svc_g_proto_msgTypes[2]
+	mi := &file_app_session_svc_g_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -348,7 +134,7 @@ func (x *SessionRef) String() string {
 func (*SessionRef) ProtoMessage() {}
 
 func (x *SessionRef) ProtoReflect() protoreflect.Message {
-	mi := &file_app_session_svc_g_proto_msgTypes[2]
+	mi := &file_app_session_svc_g_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -473,7 +259,7 @@ func (b0 SessionRef_builder) Build() *SessionRef {
 type case_SessionRef_Key protoreflect.FieldNumber
 
 func (x case_SessionRef_Key) String() string {
-	md := file_app_session_svc_g_proto_msgTypes[2].Descriptor()
+	md := file_app_session_svc_g_proto_msgTypes[1].Descriptor()
 	if x == 0 {
 		return "not set"
 	}
@@ -515,7 +301,7 @@ type SessionSelect struct {
 
 func (x *SessionSelect) Reset() {
 	*x = SessionSelect{}
-	mi := &file_app_session_svc_g_proto_msgTypes[3]
+	mi := &file_app_session_svc_g_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -527,7 +313,7 @@ func (x *SessionSelect) String() string {
 func (*SessionSelect) ProtoMessage() {}
 
 func (x *SessionSelect) ProtoReflect() protoreflect.Message {
-	mi := &file_app_session_svc_g_proto_msgTypes[3]
+	mi := &file_app_session_svc_g_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -806,375 +592,6 @@ func (b0 SessionSelect_builder) Build() *SessionSelect {
 	return m0
 }
 
-type SessionPatchRequest struct {
-	state                       protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref              *SessionRef            `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_DateIdle         *timestamppb.Timestamp `protobuf:"bytes,24,opt,name=date_idle,json=dateIdle"`
-	xxx_hidden_DateIdleNull     bool                   `protobuf:"varint,25,opt,name=date_idle_null,json=dateIdleNull"`
-	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
-	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
-	XXX_presence                [1]uint32
-	unknownFields               protoimpl.UnknownFields
-	sizeCache                   protoimpl.SizeCache
-}
-
-func (x *SessionPatchRequest) Reset() {
-	*x = SessionPatchRequest{}
-	mi := &file_app_session_svc_g_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SessionPatchRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SessionPatchRequest) ProtoMessage() {}
-
-func (x *SessionPatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_session_svc_g_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *SessionPatchRequest) GetRef() *SessionRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *SessionPatchRequest) GetDateIdle() *timestamppb.Timestamp {
-	if x != nil {
-		return x.xxx_hidden_DateIdle
-	}
-	return nil
-}
-
-func (x *SessionPatchRequest) GetDateIdleNull() bool {
-	if x != nil {
-		return x.xxx_hidden_DateIdleNull
-	}
-	return false
-}
-
-func (x *SessionPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
-	if x != nil {
-		return x.xxx_hidden_DateUpdated
-	}
-	return nil
-}
-
-func (x *SessionPatchRequest) GetDateUpdatedForce() bool {
-	if x != nil {
-		return x.xxx_hidden_DateUpdatedForce
-	}
-	return false
-}
-
-func (x *SessionPatchRequest) SetRef(v *SessionRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *SessionPatchRequest) SetDateIdle(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateIdle = v
-}
-
-func (x *SessionPatchRequest) SetDateIdleNull(v bool) {
-	x.xxx_hidden_DateIdleNull = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
-}
-
-func (x *SessionPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateUpdated = v
-}
-
-func (x *SessionPatchRequest) SetDateUpdatedForce(v bool) {
-	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
-}
-
-func (x *SessionPatchRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *SessionPatchRequest) HasDateIdle() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_DateIdle != nil
-}
-
-func (x *SessionPatchRequest) HasDateIdleNull() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
-}
-
-func (x *SessionPatchRequest) HasDateUpdated() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_DateUpdated != nil
-}
-
-func (x *SessionPatchRequest) HasDateUpdatedForce() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
-}
-
-func (x *SessionPatchRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *SessionPatchRequest) ClearDateIdle() {
-	x.xxx_hidden_DateIdle = nil
-}
-
-func (x *SessionPatchRequest) ClearDateIdleNull() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_DateIdleNull = false
-}
-
-func (x *SessionPatchRequest) ClearDateUpdated() {
-	x.xxx_hidden_DateUpdated = nil
-}
-
-func (x *SessionPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
-	x.xxx_hidden_DateUpdatedForce = false
-}
-
-type SessionPatchRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref      *SessionRef
-	DateIdle *timestamppb.Timestamp
-	// Clear date_idle instead of writing it.
-	// It takes a field of its own because an unset value already means
-	// "leave it alone", so no value could have meant NULL. It wins
-	// outright: setting both this and date_idle clears.
-	DateIdleNull *bool
-	// The version this update requires the stored date_updated to be.
-	// It is a precondition, not a write: the update applies only if the row
-	// still holds this value, and the server stamps the new version itself.
-	// Setting it together with date_updated_force is an error --
-	// the version is the token every client's compare-and-swap is measured
-	// against, so it is not the caller's to choose.
-	DateUpdated *timestamppb.Timestamp
-	// Update whatever the stored date_updated is, with no precondition.
-	// The server still stamps a new version, so other clients' tokens are
-	// invalidated as usual; this declines the check for THIS update only.
-	// One of date_updated or this must be set. An omitted version is
-	// refused rather than assumed, because an unset field cannot be told
-	// apart from a caller who never considered locking at all.
-	DateUpdatedForce *bool
-}
-
-func (b0 SessionPatchRequest_builder) Build() *SessionPatchRequest {
-	m0 := &SessionPatchRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_DateIdle = b.DateIdle
-	if b.DateIdleNull != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
-		x.xxx_hidden_DateIdleNull = *b.DateIdleNull
-	}
-	x.xxx_hidden_DateUpdated = b.DateUpdated
-	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
-		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
-	}
-	return m0
-}
-
-type SessionApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *SessionRef            `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *SessionApplyRequest) Reset() {
-	*x = SessionApplyRequest{}
-	mi := &file_app_session_svc_g_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SessionApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SessionApplyRequest) ProtoMessage() {}
-
-func (x *SessionApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_session_svc_g_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *SessionApplyRequest) GetRef() *SessionRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *SessionApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *SessionApplyRequest) SetRef(v *SessionRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *SessionApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *SessionApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *SessionApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *SessionApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *SessionApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type SessionApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *SessionRef
-	Patch *patchpb.Patch
-}
-
-func (b0 SessionApplyRequest_builder) Build() *SessionApplyRequest {
-	m0 := &SessionApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
-type SessionEraseResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
-}
-
-func (x *SessionEraseResponse) Reset() {
-	*x = SessionEraseResponse{}
-	mi := &file_app_session_svc_g_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SessionEraseResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SessionEraseResponse) ProtoMessage() {}
-
-func (x *SessionEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_session_svc_g_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *SessionEraseResponse) GetErased() bool {
-	if x != nil {
-		return x.xxx_hidden_Erased
-	}
-	return false
-}
-
-func (x *SessionEraseResponse) SetErased(v bool) {
-	x.xxx_hidden_Erased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
-}
-
-func (x *SessionEraseResponse) HasErased() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
-}
-
-func (x *SessionEraseResponse) ClearErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
-	x.xxx_hidden_Erased = false
-}
-
-type SessionEraseResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	// Erased is whether this call is the one that erased the row.
-	//
-	// False for a row that was already gone, was never there, or is out
-	// of this caller's reach -- which are one answer on purpose, and the
-	// reason the RPC does not fail instead.
-	Erased *bool
-}
-
-func (b0 SessionEraseResponse_builder) Build() *SessionEraseResponse {
-	m0 := &SessionEraseResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	if b.Erased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
-		x.xxx_hidden_Erased = *b.Erased
-	}
-	return m0
-}
-
 type SessionListRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Filters *[]*SessionFilter      `protobuf:"bytes,1,rep,name=filters"`
@@ -1187,7 +604,7 @@ type SessionListRequest struct {
 
 func (x *SessionListRequest) Reset() {
 	*x = SessionListRequest{}
-	mi := &file_app_session_svc_g_proto_msgTypes[7]
+	mi := &file_app_session_svc_g_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1199,7 +616,7 @@ func (x *SessionListRequest) String() string {
 func (*SessionListRequest) ProtoMessage() {}
 
 func (x *SessionListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_session_svc_g_proto_msgTypes[7]
+	mi := &file_app_session_svc_g_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1299,7 +716,7 @@ type SessionListResponse struct {
 
 func (x *SessionListResponse) Reset() {
 	*x = SessionListResponse{}
-	mi := &file_app_session_svc_g_proto_msgTypes[8]
+	mi := &file_app_session_svc_g_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1311,7 +728,7 @@ func (x *SessionListResponse) String() string {
 func (*SessionListResponse) ProtoMessage() {}
 
 func (x *SessionListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_session_svc_g_proto_msgTypes[8]
+	mi := &file_app_session_svc_g_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1378,7 +795,7 @@ type SessionFilter struct {
 
 func (x *SessionFilter) Reset() {
 	*x = SessionFilter{}
-	mi := &file_app_session_svc_g_proto_msgTypes[9]
+	mi := &file_app_session_svc_g_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1390,7 +807,7 @@ func (x *SessionFilter) String() string {
 func (*SessionFilter) ProtoMessage() {}
 
 func (x *SessionFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_session_svc_g_proto_msgTypes[9]
+	mi := &file_app_session_svc_g_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1441,15 +858,7 @@ var File_app_session_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_session_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x17app/session_svc.g.proto\x12\x06roster\x1a\x11app/session.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xc1\x02\n" +
-	"\x11SessionAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
-	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1b\n" +
-	"\x05grant\x18\b \x01(\fB\x05\xaa\x01\x02\b\x02R\x05grant\x12\x1d\n" +
-	"\x06secret\x18\t \x01(\fB\x05\xaa\x01\x02\b\x02R\x06secret\x12=\n" +
-	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x127\n" +
-	"\tdate_idle\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\bdateIdle\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"h\n" +
+	"\x17app/session_svc.g.proto\x12\x06roster\x1a\x11app/session.proto\x1a roster/payday/holder_svc.g.proto\"h\n" +
 	"\x11SessionGetRequest\x12$\n" +
 	"\x03ref\x18\x01 \x01(\v2\x12.roster.SessionRefR\x03ref\x12-\n" +
 	"\x06select\x18\x02 \x01(\v2\x15.roster.SessionSelectR\x06select\"?\n" +
@@ -1468,18 +877,7 @@ const file_app_session_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\x87\x02\n" +
-	"\x13SessionPatchRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.roster.SessionRefR\x03ref\x127\n" +
-	"\tdate_idle\x18\x18 \x01(\v2\x1a.google.protobuf.TimestampR\bdateIdle\x12$\n" +
-	"\x0edate_idle_null\x18\x19 \x01(\bR\fdateIdleNull\x12=\n" +
-	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"_\n" +
-	"\x13SessionApplyRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.roster.SessionRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\".\n" +
-	"\x14SessionEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x9e\x01\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\x9e\x01\n" +
 	"\x12SessionListRequest\x12/\n" +
 	"\afilters\x18\x01 \x03(\v2\x15.roster.SessionFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
@@ -1489,66 +887,38 @@ const file_app_session_svc_g_proto_rawDesc = "" +
 	"\x05items\x18\x01 \x03(\v2\x0f.roster.SessionR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"5\n" +
 	"\rSessionFilter\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.roster.SessionRefR\x03ref2\xe0\x02\n" +
+	"\x03ref\x18\x01 \x01(\v2\x12.roster.SessionRefR\x03ref2\x84\x01\n" +
 	"\x0eSessionService\x121\n" +
-	"\x03Add\x12\x19.roster.SessionAddRequest\x1a\x0f.roster.Session\x121\n" +
-	"\x03Get\x12\x19.roster.SessionGetRequest\x1a\x0f.roster.Session\x125\n" +
-	"\x05Patch\x12\x1b.roster.SessionPatchRequest\x1a\x0f.roster.Session\x125\n" +
-	"\x05Apply\x12\x1b.roster.SessionApplyRequest\x1a\x0f.roster.Session\x129\n" +
-	"\x05Erase\x12\x12.roster.SessionRef\x1a\x1c.roster.SessionEraseResponse\x12?\n" +
+	"\x03Get\x12\x19.roster.SessionGetRequest\x1a\x0f.roster.Session\x12?\n" +
 	"\x04List\x12\x1a.roster.SessionListRequest\x1a\x1b.roster.SessionListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_session_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_app_session_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_app_session_svc_g_proto_goTypes = []any{
-	(*SessionAddRequest)(nil),     // 0: roster.SessionAddRequest
-	(*SessionGetRequest)(nil),     // 1: roster.SessionGetRequest
-	(*SessionRef)(nil),            // 2: roster.SessionRef
-	(*SessionSelect)(nil),         // 3: roster.SessionSelect
-	(*SessionPatchRequest)(nil),   // 4: roster.SessionPatchRequest
-	(*SessionApplyRequest)(nil),   // 5: roster.SessionApplyRequest
-	(*SessionEraseResponse)(nil),  // 6: roster.SessionEraseResponse
-	(*SessionListRequest)(nil),    // 7: roster.SessionListRequest
-	(*SessionListResponse)(nil),   // 8: roster.SessionListResponse
-	(*SessionFilter)(nil),         // 9: roster.SessionFilter
-	(*HolderRef)(nil),             // 10: roster.HolderRef
-	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
-	(*HolderSelect)(nil),          // 12: roster.HolderSelect
-	(*patchpb.Patch)(nil),         // 13: patch.Patch
-	(*Session)(nil),               // 14: roster.Session
+	(*SessionGetRequest)(nil),   // 0: roster.SessionGetRequest
+	(*SessionRef)(nil),          // 1: roster.SessionRef
+	(*SessionSelect)(nil),       // 2: roster.SessionSelect
+	(*SessionListRequest)(nil),  // 3: roster.SessionListRequest
+	(*SessionListResponse)(nil), // 4: roster.SessionListResponse
+	(*SessionFilter)(nil),       // 5: roster.SessionFilter
+	(*HolderSelect)(nil),        // 6: roster.HolderSelect
+	(*Session)(nil),             // 7: roster.Session
 }
 var file_app_session_svc_g_proto_depIdxs = []int32{
-	10, // 0: roster.SessionAddRequest.holder:type_name -> roster.HolderRef
-	11, // 1: roster.SessionAddRequest.date_expires:type_name -> google.protobuf.Timestamp
-	11, // 2: roster.SessionAddRequest.date_idle:type_name -> google.protobuf.Timestamp
-	11, // 3: roster.SessionAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	2,  // 4: roster.SessionGetRequest.ref:type_name -> roster.SessionRef
-	3,  // 5: roster.SessionGetRequest.select:type_name -> roster.SessionSelect
-	12, // 6: roster.SessionSelect.holder:type_name -> roster.HolderSelect
-	2,  // 7: roster.SessionPatchRequest.ref:type_name -> roster.SessionRef
-	11, // 8: roster.SessionPatchRequest.date_idle:type_name -> google.protobuf.Timestamp
-	11, // 9: roster.SessionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 10: roster.SessionApplyRequest.ref:type_name -> roster.SessionRef
-	13, // 11: roster.SessionApplyRequest.patch:type_name -> patch.Patch
-	9,  // 12: roster.SessionListRequest.filters:type_name -> roster.SessionFilter
-	14, // 13: roster.SessionListResponse.items:type_name -> roster.Session
-	2,  // 14: roster.SessionFilter.ref:type_name -> roster.SessionRef
-	0,  // 15: roster.SessionService.Add:input_type -> roster.SessionAddRequest
-	1,  // 16: roster.SessionService.Get:input_type -> roster.SessionGetRequest
-	4,  // 17: roster.SessionService.Patch:input_type -> roster.SessionPatchRequest
-	5,  // 18: roster.SessionService.Apply:input_type -> roster.SessionApplyRequest
-	2,  // 19: roster.SessionService.Erase:input_type -> roster.SessionRef
-	7,  // 20: roster.SessionService.List:input_type -> roster.SessionListRequest
-	14, // 21: roster.SessionService.Add:output_type -> roster.Session
-	14, // 22: roster.SessionService.Get:output_type -> roster.Session
-	14, // 23: roster.SessionService.Patch:output_type -> roster.Session
-	14, // 24: roster.SessionService.Apply:output_type -> roster.Session
-	6,  // 25: roster.SessionService.Erase:output_type -> roster.SessionEraseResponse
-	8,  // 26: roster.SessionService.List:output_type -> roster.SessionListResponse
-	21, // [21:27] is the sub-list for method output_type
-	15, // [15:21] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	1, // 0: roster.SessionGetRequest.ref:type_name -> roster.SessionRef
+	2, // 1: roster.SessionGetRequest.select:type_name -> roster.SessionSelect
+	6, // 2: roster.SessionSelect.holder:type_name -> roster.HolderSelect
+	5, // 3: roster.SessionListRequest.filters:type_name -> roster.SessionFilter
+	7, // 4: roster.SessionListResponse.items:type_name -> roster.Session
+	1, // 5: roster.SessionFilter.ref:type_name -> roster.SessionRef
+	0, // 6: roster.SessionService.Get:input_type -> roster.SessionGetRequest
+	3, // 7: roster.SessionService.List:input_type -> roster.SessionListRequest
+	7, // 8: roster.SessionService.Get:output_type -> roster.Session
+	4, // 9: roster.SessionService.List:output_type -> roster.SessionListResponse
+	8, // [8:10] is the sub-list for method output_type
+	6, // [6:8] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_app_session_svc_g_proto_init() }
@@ -1558,7 +928,7 @@ func file_app_session_svc_g_proto_init() {
 	}
 	file_app_session_proto_init()
 	file_roster_payday_holder_svc_g_proto_init()
-	file_app_session_svc_g_proto_msgTypes[2].OneofWrappers = []any{
+	file_app_session_svc_g_proto_msgTypes[1].OneofWrappers = []any{
 		(*sessionRef_Id)(nil),
 		(*sessionRef_Secret)(nil),
 	}
@@ -1568,7 +938,7 @@ func file_app_session_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_session_svc_g_proto_rawDesc), len(file_app_session_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

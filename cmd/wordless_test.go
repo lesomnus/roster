@@ -515,11 +515,19 @@ func TestNothingDeclaredSecretReachesTheRecord(t *testing.T) {
 			}.Build())
 			return err
 		},
+		// Through ent, as `server/session`'s store writes one: no call adds a
+		// session.
 		"Session.secret": func(secret []byte) error {
-			_, err := b.Ungated.Session().Add(ctx, app.SessionAddRequest_builder{
-				Holder: whose, Grant: []byte{0}, Secret: secret, DateExpires: soon,
-			}.Build())
-			return err
+			now := time.Now()
+			return b.Ent.Session.Create().
+				SetId(pdid.New(pd.SessionDomain).Uuid()).
+				SetHolderId(alice.Uuid()).
+				SetSecret(secret).
+				SetGrant([]byte{0}).
+				SetDateExpires(soon.AsTime()).
+				SetDateUpdated(now).
+				SetDateCreated(now).
+				Exec(ctx)
 		},
 	}
 

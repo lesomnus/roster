@@ -161,7 +161,14 @@ message Continuation {
   }];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    // What `server/vouch` calls: an attempt is begun, read at its next step,
+    // and erased. Every field is immutable, so there is no `Patch` to have, and
+    // `List` comes with `Get`.
+    rpc: {
+      add: {}
+      get: {}
+      erase: {}
+    }
     indexes: [
       {
         name: "page"

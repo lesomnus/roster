@@ -8,8 +8,6 @@ import type { Continuation, ContinuationSchema } from "./continuation_pb.js";
 import { file_app_continuation } from "./continuation_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
 import { file_roster_payday_holder_svc_g } from "../roster/payday/holder_svc_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -18,7 +16,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/continuation_svc.g.proto.
  */
 export const file_app_continuation_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChxhcHAvY29udGludWF0aW9uX3N2Yy5nLnByb3RvEgZyb3N0ZXIigAIKFkNvbnRpbnVhdGlvbkFkZFJlcXVlc3QSCgoCaWQYASABKAwSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIRCglzYXRpc2ZpZWQYCCADKAkSFQoGc2VjcmV0GAkgASgMQgWqAQIIAhIVCgZpc3N1ZXIYCiABKAxCBaoBAggCEhIKCm1ldGVyZWRfYnkYDCABKAwSMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImoKFkNvbnRpbnVhdGlvbkdldFJlcXVlc3QSJAoDcmVmGAEgASgLMhcucm9zdGVyLkNvbnRpbnVhdGlvblJlZhIqCgZzZWxlY3QYAiABKAsyGi5yb3N0ZXIuQ29udGludWF0aW9uU2VsZWN0IjgKD0NvbnRpbnVhdGlvblJlZhIMCgJpZBgBIAEoDEgAEhAKBnNlY3JldBgJIAEoDEgAQgUKA2tleSLlAQoSQ29udGludWF0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EhEKCXNhdGlzZmllZBgIIAEoCBIOCgZzZWNyZXQYCSABKAgSDgoGaXNzdWVyGAogASgIEhIKCm1ldGVyZWRfYnkYDCABKAgSFAoMZGF0ZV9leHBpcmVzGAsgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgijgEKGENvbnRpbnVhdGlvblBhdGNoUmVxdWVzdBIkCgNyZWYYASABKAsyFy5yb3N0ZXIuQ29udGludWF0aW9uUmVmEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIl0KGENvbnRpbnVhdGlvbkFwcGx5UmVxdWVzdBIkCgNyZWYYASABKAsyFy5yb3N0ZXIuQ29udGludWF0aW9uUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giKwoZQ29udGludWF0aW9uRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiiQEKF0NvbnRpbnVhdGlvbkxpc3RSZXF1ZXN0EisKB2ZpbHRlcnMYASADKAsyGi5yb3N0ZXIuQ29udGludWF0aW9uRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJUChhDb250aW51YXRpb25MaXN0UmVzcG9uc2USIwoFaXRlbXMYASADKAsyFC5yb3N0ZXIuQ29udGludWF0aW9uEhMKBG5leHQYAiABKAlCBaoBAggCIjoKEkNvbnRpbnVhdGlvbkZpbHRlchIkCgNyZWYYASABKAsyFy5yb3N0ZXIuQ29udGludWF0aW9uUmVmMqEDChNDb250aW51YXRpb25TZXJ2aWNlEjsKA0FkZBIeLnJvc3Rlci5Db250aW51YXRpb25BZGRSZXF1ZXN0GhQucm9zdGVyLkNvbnRpbnVhdGlvbhI7CgNHZXQSHi5yb3N0ZXIuQ29udGludWF0aW9uR2V0UmVxdWVzdBoULnJvc3Rlci5Db250aW51YXRpb24SPwoFUGF0Y2gSIC5yb3N0ZXIuQ29udGludWF0aW9uUGF0Y2hSZXF1ZXN0GhQucm9zdGVyLkNvbnRpbnVhdGlvbhI/CgVBcHBseRIgLnJvc3Rlci5Db250aW51YXRpb25BcHBseVJlcXVlc3QaFC5yb3N0ZXIuQ29udGludWF0aW9uEkMKBUVyYXNlEhcucm9zdGVyLkNvbnRpbnVhdGlvblJlZhohLnJvc3Rlci5Db250aW51YXRpb25FcmFzZVJlc3BvbnNlEkkKBExpc3QSHy5yb3N0ZXIuQ29udGludWF0aW9uTGlzdFJlcXVlc3QaIC5yb3N0ZXIuQ29udGludWF0aW9uTGlzdFJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_continuation, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChxhcHAvY29udGludWF0aW9uX3N2Yy5nLnByb3RvEgZyb3N0ZXIigAIKFkNvbnRpbnVhdGlvbkFkZFJlcXVlc3QSCgoCaWQYASABKAwSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIRCglzYXRpc2ZpZWQYCCADKAkSFQoGc2VjcmV0GAkgASgMQgWqAQIIAhIVCgZpc3N1ZXIYCiABKAxCBaoBAggCEhIKCm1ldGVyZWRfYnkYDCABKAwSMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wImoKFkNvbnRpbnVhdGlvbkdldFJlcXVlc3QSJAoDcmVmGAEgASgLMhcucm9zdGVyLkNvbnRpbnVhdGlvblJlZhIqCgZzZWxlY3QYAiABKAsyGi5yb3N0ZXIuQ29udGludWF0aW9uU2VsZWN0IjgKD0NvbnRpbnVhdGlvblJlZhIMCgJpZBgBIAEoDEgAEhAKBnNlY3JldBgJIAEoDEgAQgUKA2tleSLlAQoSQ29udGludWF0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EhEKCXNhdGlzZmllZBgIIAEoCBIOCgZzZWNyZXQYCSABKAgSDgoGaXNzdWVyGAogASgIEhIKCm1ldGVyZWRfYnkYDCABKAgSFAoMZGF0ZV9leHBpcmVzGAsgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiKwoZQ29udGludWF0aW9uRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiiQEKF0NvbnRpbnVhdGlvbkxpc3RSZXF1ZXN0EisKB2ZpbHRlcnMYASADKAsyGi5yb3N0ZXIuQ29udGludWF0aW9uRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJUChhDb250aW51YXRpb25MaXN0UmVzcG9uc2USIwoFaXRlbXMYASADKAsyFC5yb3N0ZXIuQ29udGludWF0aW9uEhMKBG5leHQYAiABKAlCBaoBAggCIjoKEkNvbnRpbnVhdGlvbkZpbHRlchIkCgNyZWYYASABKAsyFy5yb3N0ZXIuQ29udGludWF0aW9uUmVmMp8CChNDb250aW51YXRpb25TZXJ2aWNlEjsKA0FkZBIeLnJvc3Rlci5Db250aW51YXRpb25BZGRSZXF1ZXN0GhQucm9zdGVyLkNvbnRpbnVhdGlvbhI7CgNHZXQSHi5yb3N0ZXIuQ29udGludWF0aW9uR2V0UmVxdWVzdBoULnJvc3Rlci5Db250aW51YXRpb24SQwoFRXJhc2USFy5yb3N0ZXIuQ29udGludWF0aW9uUmVmGiEucm9zdGVyLkNvbnRpbnVhdGlvbkVyYXNlUmVzcG9uc2USSQoETGlzdBIfLnJvc3Rlci5Db250aW51YXRpb25MaXN0UmVxdWVzdBogLnJvc3Rlci5Db250aW51YXRpb25MaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_continuation, file_google_protobuf_timestamp, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.ContinuationAddRequest
@@ -186,69 +184,6 @@ export const ContinuationSelectSchema: GenMessage<ContinuationSelect> = /*@__PUR
   messageDesc(file_app_continuation_svc_g, 3);
 
 /**
- * @generated from message roster.ContinuationPatchRequest
- */
-export type ContinuationPatchRequest = Message<"roster.ContinuationPatchRequest"> & {
-  /**
-   * @generated from field: roster.ContinuationRef ref = 1;
-   */
-  ref?: ContinuationRef | undefined;
-
-  /**
-   * The version this update requires the stored date_updated to be.
-   * It is a precondition, not a write: the update applies only if the row
-   * still holds this value, and the server stamps the new version itself.
-   * Setting it together with date_updated_force is an error --
-   * the version is the token every client's compare-and-swap is measured
-   * against, so it is not the caller's to choose.
-   *
-   * @generated from field: google.protobuf.Timestamp date_updated = 26;
-   */
-  dateUpdated?: Timestamp | undefined;
-
-  /**
-   * Update whatever the stored date_updated is, with no precondition.
-   * The server still stamps a new version, so other clients' tokens are
-   * invalidated as usual; this declines the check for THIS update only.
-   * One of date_updated or this must be set. An omitted version is
-   * refused rather than assumed, because an unset field cannot be told
-   * apart from a caller who never considered locking at all.
-   *
-   * @generated from field: bool date_updated_force = 27;
-   */
-  dateUpdatedForce: boolean;
-};
-
-/**
- * Describes the message roster.ContinuationPatchRequest.
- * Use `create(ContinuationPatchRequestSchema)` to create a new message.
- */
-export const ContinuationPatchRequestSchema: GenMessage<ContinuationPatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_continuation_svc_g, 4);
-
-/**
- * @generated from message roster.ContinuationApplyRequest
- */
-export type ContinuationApplyRequest = Message<"roster.ContinuationApplyRequest"> & {
-  /**
-   * @generated from field: roster.ContinuationRef ref = 1;
-   */
-  ref?: ContinuationRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.ContinuationApplyRequest.
- * Use `create(ContinuationApplyRequestSchema)` to create a new message.
- */
-export const ContinuationApplyRequestSchema: GenMessage<ContinuationApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_continuation_svc_g, 5);
-
-/**
  * @generated from message roster.ContinuationEraseResponse
  */
 export type ContinuationEraseResponse = Message<"roster.ContinuationEraseResponse"> & {
@@ -269,7 +204,7 @@ export type ContinuationEraseResponse = Message<"roster.ContinuationEraseRespons
  * Use `create(ContinuationEraseResponseSchema)` to create a new message.
  */
 export const ContinuationEraseResponseSchema: GenMessage<ContinuationEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_continuation_svc_g, 6);
+  messageDesc(file_app_continuation_svc_g, 4);
 
 /**
  * @generated from message roster.ContinuationListRequest
@@ -318,7 +253,7 @@ export type ContinuationListRequest = Message<"roster.ContinuationListRequest"> 
  * Use `create(ContinuationListRequestSchema)` to create a new message.
  */
 export const ContinuationListRequestSchema: GenMessage<ContinuationListRequest> = /*@__PURE__*/
-  messageDesc(file_app_continuation_svc_g, 7);
+  messageDesc(file_app_continuation_svc_g, 5);
 
 /**
  * @generated from message roster.ContinuationListResponse
@@ -348,7 +283,7 @@ export type ContinuationListResponse = Message<"roster.ContinuationListResponse"
  * Use `create(ContinuationListResponseSchema)` to create a new message.
  */
 export const ContinuationListResponseSchema: GenMessage<ContinuationListResponse> = /*@__PURE__*/
-  messageDesc(file_app_continuation_svc_g, 8);
+  messageDesc(file_app_continuation_svc_g, 6);
 
 /**
  * @generated from message roster.ContinuationFilter
@@ -365,7 +300,7 @@ export type ContinuationFilter = Message<"roster.ContinuationFilter"> & {
  * Use `create(ContinuationFilterSchema)` to create a new message.
  */
 export const ContinuationFilterSchema: GenMessage<ContinuationFilter> = /*@__PURE__*/
-  messageDesc(file_app_continuation_svc_g, 9);
+  messageDesc(file_app_continuation_svc_g, 7);
 
 /**
  * @generated from service roster.ContinuationService
@@ -389,26 +324,6 @@ export const ContinuationService: GenService<{
   get: {
     methodKind: "unary";
     input: typeof ContinuationGetRequestSchema;
-    output: typeof ContinuationSchema;
-  },
-  /**
-   * Patch updates an existing Continuation
-   *
-   * @generated from rpc roster.ContinuationService.Patch
-   */
-  patch: {
-    methodKind: "unary";
-    input: typeof ContinuationPatchRequestSchema;
-    output: typeof ContinuationSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Continuation
-   *
-   * @generated from rpc roster.ContinuationService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof ContinuationApplyRequestSchema;
     output: typeof ContinuationSchema;
   },
   /**

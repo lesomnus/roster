@@ -19,28 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SessionService_Add_FullMethodName   = "/roster.SessionService/Add"
-	SessionService_Get_FullMethodName   = "/roster.SessionService/Get"
-	SessionService_Patch_FullMethodName = "/roster.SessionService/Patch"
-	SessionService_Apply_FullMethodName = "/roster.SessionService/Apply"
-	SessionService_Erase_FullMethodName = "/roster.SessionService/Erase"
-	SessionService_List_FullMethodName  = "/roster.SessionService/List"
+	SessionService_Get_FullMethodName  = "/roster.SessionService/Get"
+	SessionService_List_FullMethodName = "/roster.SessionService/List"
 )
 
 // SessionServiceClient is the client API for SessionService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SessionServiceClient interface {
-	// Add creates a new Session
-	Add(ctx context.Context, in *SessionAddRequest, opts ...grpc.CallOption) (*Session, error)
 	// Get retrieves a Session
 	Get(ctx context.Context, in *SessionGetRequest, opts ...grpc.CallOption) (*Session, error)
-	// Patch updates an existing Session
-	Patch(ctx context.Context, in *SessionPatchRequest, opts ...grpc.CallOption) (*Session, error)
-	// Apply applies a patch document to an existing Session
-	Apply(ctx context.Context, in *SessionApplyRequest, opts ...grpc.CallOption) (*Session, error)
-	// Erase deletes a Session
-	Erase(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*SessionEraseResponse, error)
 	// List reads Sessions a page at a time.
 	List(ctx context.Context, in *SessionListRequest, opts ...grpc.CallOption) (*SessionListResponse, error)
 }
@@ -53,50 +41,10 @@ func NewSessionServiceClient(cc grpc.ClientConnInterface) SessionServiceClient {
 	return &sessionServiceClient{cc}
 }
 
-func (c *sessionServiceClient) Add(ctx context.Context, in *SessionAddRequest, opts ...grpc.CallOption) (*Session, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Session)
-	err := c.cc.Invoke(ctx, SessionService_Add_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *sessionServiceClient) Get(ctx context.Context, in *SessionGetRequest, opts ...grpc.CallOption) (*Session, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Session)
 	err := c.cc.Invoke(ctx, SessionService_Get_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *sessionServiceClient) Patch(ctx context.Context, in *SessionPatchRequest, opts ...grpc.CallOption) (*Session, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Session)
-	err := c.cc.Invoke(ctx, SessionService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *sessionServiceClient) Apply(ctx context.Context, in *SessionApplyRequest, opts ...grpc.CallOption) (*Session, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Session)
-	err := c.cc.Invoke(ctx, SessionService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *sessionServiceClient) Erase(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*SessionEraseResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SessionEraseResponse)
-	err := c.cc.Invoke(ctx, SessionService_Erase_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -117,16 +65,8 @@ func (c *sessionServiceClient) List(ctx context.Context, in *SessionListRequest,
 // All implementations must embed UnimplementedSessionServiceServer
 // for forward compatibility.
 type SessionServiceServer interface {
-	// Add creates a new Session
-	Add(context.Context, *SessionAddRequest) (*Session, error)
 	// Get retrieves a Session
 	Get(context.Context, *SessionGetRequest) (*Session, error)
-	// Patch updates an existing Session
-	Patch(context.Context, *SessionPatchRequest) (*Session, error)
-	// Apply applies a patch document to an existing Session
-	Apply(context.Context, *SessionApplyRequest) (*Session, error)
-	// Erase deletes a Session
-	Erase(context.Context, *SessionRef) (*SessionEraseResponse, error)
 	// List reads Sessions a page at a time.
 	List(context.Context, *SessionListRequest) (*SessionListResponse, error)
 	mustEmbedUnimplementedSessionServiceServer()
@@ -139,20 +79,8 @@ type SessionServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedSessionServiceServer struct{}
 
-func (UnimplementedSessionServiceServer) Add(context.Context, *SessionAddRequest) (*Session, error) {
-	return nil, status.Error(codes.Unimplemented, "method Add not implemented")
-}
 func (UnimplementedSessionServiceServer) Get(context.Context, *SessionGetRequest) (*Session, error) {
 	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
-}
-func (UnimplementedSessionServiceServer) Patch(context.Context, *SessionPatchRequest) (*Session, error) {
-	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedSessionServiceServer) Apply(context.Context, *SessionApplyRequest) (*Session, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
-func (UnimplementedSessionServiceServer) Erase(context.Context, *SessionRef) (*SessionEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
 func (UnimplementedSessionServiceServer) List(context.Context, *SessionListRequest) (*SessionListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -178,24 +106,6 @@ func RegisterSessionServiceServer(s grpc.ServiceRegistrar, srv SessionServiceSer
 	s.RegisterService(&SessionService_ServiceDesc, srv)
 }
 
-func _SessionService_Add_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SessionAddRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SessionServiceServer).Add(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SessionService_Add_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SessionServiceServer).Add(ctx, req.(*SessionAddRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SessionService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SessionGetRequest)
 	if err := dec(in); err != nil {
@@ -210,60 +120,6 @@ func _SessionService_Get_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SessionServiceServer).Get(ctx, req.(*SessionGetRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SessionService_Patch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SessionPatchRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SessionServiceServer).Patch(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SessionService_Patch_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SessionServiceServer).Patch(ctx, req.(*SessionPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SessionService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SessionApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SessionServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SessionService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SessionServiceServer).Apply(ctx, req.(*SessionApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SessionService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SessionRef)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SessionServiceServer).Erase(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SessionService_Erase_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SessionServiceServer).Erase(ctx, req.(*SessionRef))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -294,24 +150,8 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*SessionServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Add",
-			Handler:    _SessionService_Add_Handler,
-		},
-		{
 			MethodName: "Get",
 			Handler:    _SessionService_Get_Handler,
-		},
-		{
-			MethodName: "Patch",
-			Handler:    _SessionService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _SessionService_Apply_Handler,
-		},
-		{
-			MethodName: "Erase",
-			Handler:    _SessionService_Erase_Handler,
 		},
 		{
 			MethodName: "List",

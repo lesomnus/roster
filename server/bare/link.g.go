@@ -5,8 +5,6 @@ package bare
 
 import (
 	context "context"
-	errors "errors"
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	link "github.com/lesomnus/roster/internal/ent/link"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
@@ -15,8 +13,6 @@ import (
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
-	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
-	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -390,189 +386,6 @@ func LinkSelectInit(ctx context.Context, scope Scope, q *ent.LinkQuery, m *rstr.
 		return LinkSelect(ctx, scope, q, m)
 	}
 	return nil
-}
-
-func (s LinkServiceServer) Patch(ctx context.Context, req *rstr.LinkPatchRequest) (*rstr.Link, error) {
-	doc, err := ormpatch.FromPatchRequest(linkOrmEntity, req.ProtoReflect(), nil)
-	if err != nil {
-		if _, ok := status.FromError(err); ok {
-			return nil, err
-		}
-		if errors.Is(err, ormpatch.ErrRequestLayout) {
-			return nil, status.Errorf(codes.Internal, "%s", err)
-		}
-		if errors.Is(err, ormpatch.ErrUnsupported) {
-			return nil, status.Errorf(codes.Unimplemented, "%s", err)
-		}
-		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-	}
-
-	return s.apply(ctx, req.GetRef(), doc, rstr.LinkService_Patch_FullMethodName)
-}
-
-func LinkGetKey(ctx context.Context, db *ent.Client, ref *rstr.LinkRef) (uuid.UUID, error) {
-	var z uuid.UUID
-	if ref.HasId() {
-		if v, err := entuuid.FromBytes(ref.GetId()); err != nil {
-			return z, status.Errorf(codes.InvalidArgument, "id: %s", err)
-		} else {
-			return v, nil
-		}
-	}
-
-	p, err := LinkPick(ref)
-	if err != nil {
-		return z, err
-	}
-
-	v, err := db.Link.Query().Where(p).OnlyId(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return z, status.Error(codes.NotFound, "Link not found")
-		}
-		return z, err
-	}
-
-	return v, nil
-}
-
-var linkOrmEntity = ormpatch.MustEntityOf(rstr.File_app_link_proto, "Link")
-
-var linkPatchColumns = entpatch.Columns{
-	1: link.FieldId, 2: link.HolderColumn, 12: link.EmailColumn, 8: link.FieldAt, 16: link.FieldLeave, 9: link.FieldSecret, 10: link.FieldIssuer, 11: link.FieldDateExpires, 13: link.FieldDateUpdated, 14: link.FieldDateErased, 15: link.FieldDateCreated}
-
-func (s LinkServiceServer) Apply(ctx context.Context, req *rstr.LinkApplyRequest) (*rstr.Link, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.LinkService_Apply_FullMethodName)
-}
-
-func (s LinkServiceServer) apply(ctx context.Context, ref *rstr.LinkRef, doc *patchpb.Patch, by string) (*rstr.Link, error) {
-	plan := &ormpatch.Plan{Entity: linkOrmEntity}
-	if doc != nil {
-		v, err := ormpatch.Compile(linkOrmEntity, doc)
-		if err != nil {
-			if errors.Is(err, ormpatch.ErrUnsupported) {
-				return nil, status.Errorf(codes.Unimplemented, "%s", err)
-			}
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-		}
-		plan = v
-	}
-
-	pred, mod, err := entpatch.Build(plan, linkPatchColumns, s.Db.Dialect())
-	if err != nil {
-		if errors.Is(err, entpatch.ErrValue) {
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-		}
-		return nil, status.Errorf(codes.Internal, "%s", err)
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	k, err := LinkGetKey(ctx, st.Db, ref)
-	if err != nil {
-		return nil, err
-	}
-	at := &rstr.LinkRef{}
-	at.SetId(k[:])
-	p, err := s.narrow(ctx, link.IdEQ(k))
-	if err != nil {
-		return nil, err
-	}
-
-	var previous *rstr.Link
-	images := snapshotOptions(s.Rec, by)
-	if images.Previous && mod != nil {
-		u, err := st.snapshot(ctx, p, true)
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return nil, status.Error(codes.NotFound, "resource not found")
-			}
-			return nil, err
-		}
-		previous = s.image(u.Proto())
-	}
-	if mod == nil {
-		q := st.Db.Link.Query().Where(p)
-		if pred != nil {
-			q.Where(predicate.Link(pred))
-		}
-		if ok, err := q.Exist(ctx); err != nil {
-			return nil, err
-		} else if !ok {
-			return nil, func() error {
-				if ok, err := st.Db.Link.Query().Where(p).Exist(ctx); err != nil {
-					return err
-				} else if !ok {
-					return status.Error(codes.NotFound, "Link not found")
-				}
-				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
-			}()
-		}
-	} else {
-		q := st.Db.Link.Update().Where(p)
-		if pred != nil {
-			q.Where(predicate.Link(pred))
-		}
-		q.Modify(mod)
-		if !plan.WritesTo(13) {
-			q.SetDateUpdated(st.now())
-		}
-		tx.Writing()
-		if n, err := q.Save(ctx); err != nil {
-			if err, ok := err.(*ent.ConstraintError); ok {
-				if sqlgraph.IsUniqueConstraintError(err) {
-					return nil, status.Error(codes.AlreadyExists, "Link already exists")
-				}
-				if sqlgraph.IsForeignKeyConstraintError(err) {
-					return nil, status.Error(codes.NotFound, "Link: referenced entity not found")
-				}
-			}
-			return nil, err
-		} else if n == 0 {
-			return nil, func() error {
-				if ok, err := st.Db.Link.Query().Where(p).Exist(ctx); err != nil {
-					return err
-				} else if !ok {
-					return status.Error(codes.NotFound, "Link not found")
-				}
-				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
-			}()
-		}
-	}
-
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
-	if mod != nil {
-		var value *rstr.Link
-		if images.Value {
-			value = s.image(out)
-		}
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       by,
-			Key:      k,
-			Patch:    doc,
-			Previous: previous, Value: value,
-		}); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (s LinkServiceServer) Erase(ctx context.Context, req *rstr.LinkRef) (*rstr.LinkEraseResponse, error) {

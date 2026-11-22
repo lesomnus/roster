@@ -21,8 +21,6 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	ContinuationService_Add_FullMethodName   = "/roster.ContinuationService/Add"
 	ContinuationService_Get_FullMethodName   = "/roster.ContinuationService/Get"
-	ContinuationService_Patch_FullMethodName = "/roster.ContinuationService/Patch"
-	ContinuationService_Apply_FullMethodName = "/roster.ContinuationService/Apply"
 	ContinuationService_Erase_FullMethodName = "/roster.ContinuationService/Erase"
 	ContinuationService_List_FullMethodName  = "/roster.ContinuationService/List"
 )
@@ -35,10 +33,6 @@ type ContinuationServiceClient interface {
 	Add(ctx context.Context, in *ContinuationAddRequest, opts ...grpc.CallOption) (*Continuation, error)
 	// Get retrieves a Continuation
 	Get(ctx context.Context, in *ContinuationGetRequest, opts ...grpc.CallOption) (*Continuation, error)
-	// Patch updates an existing Continuation
-	Patch(ctx context.Context, in *ContinuationPatchRequest, opts ...grpc.CallOption) (*Continuation, error)
-	// Apply applies a patch document to an existing Continuation
-	Apply(ctx context.Context, in *ContinuationApplyRequest, opts ...grpc.CallOption) (*Continuation, error)
 	// Erase deletes a Continuation
 	Erase(ctx context.Context, in *ContinuationRef, opts ...grpc.CallOption) (*ContinuationEraseResponse, error)
 	// List reads Continuations a page at a time.
@@ -73,26 +67,6 @@ func (c *continuationServiceClient) Get(ctx context.Context, in *ContinuationGet
 	return out, nil
 }
 
-func (c *continuationServiceClient) Patch(ctx context.Context, in *ContinuationPatchRequest, opts ...grpc.CallOption) (*Continuation, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Continuation)
-	err := c.cc.Invoke(ctx, ContinuationService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *continuationServiceClient) Apply(ctx context.Context, in *ContinuationApplyRequest, opts ...grpc.CallOption) (*Continuation, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Continuation)
-	err := c.cc.Invoke(ctx, ContinuationService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *continuationServiceClient) Erase(ctx context.Context, in *ContinuationRef, opts ...grpc.CallOption) (*ContinuationEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ContinuationEraseResponse)
@@ -121,10 +95,6 @@ type ContinuationServiceServer interface {
 	Add(context.Context, *ContinuationAddRequest) (*Continuation, error)
 	// Get retrieves a Continuation
 	Get(context.Context, *ContinuationGetRequest) (*Continuation, error)
-	// Patch updates an existing Continuation
-	Patch(context.Context, *ContinuationPatchRequest) (*Continuation, error)
-	// Apply applies a patch document to an existing Continuation
-	Apply(context.Context, *ContinuationApplyRequest) (*Continuation, error)
 	// Erase deletes a Continuation
 	Erase(context.Context, *ContinuationRef) (*ContinuationEraseResponse, error)
 	// List reads Continuations a page at a time.
@@ -144,12 +114,6 @@ func (UnimplementedContinuationServiceServer) Add(context.Context, *Continuation
 }
 func (UnimplementedContinuationServiceServer) Get(context.Context, *ContinuationGetRequest) (*Continuation, error) {
 	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
-}
-func (UnimplementedContinuationServiceServer) Patch(context.Context, *ContinuationPatchRequest) (*Continuation, error) {
-	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedContinuationServiceServer) Apply(context.Context, *ContinuationApplyRequest) (*Continuation, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedContinuationServiceServer) Erase(context.Context, *ContinuationRef) (*ContinuationEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -214,42 +178,6 @@ func _ContinuationService_Get_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ContinuationService_Patch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ContinuationPatchRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ContinuationServiceServer).Patch(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ContinuationService_Patch_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ContinuationServiceServer).Patch(ctx, req.(*ContinuationPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ContinuationService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ContinuationApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ContinuationServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ContinuationService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ContinuationServiceServer).Apply(ctx, req.(*ContinuationApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ContinuationService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ContinuationRef)
 	if err := dec(in); err != nil {
@@ -300,14 +228,6 @@ var ContinuationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _ContinuationService_Get_Handler,
-		},
-		{
-			MethodName: "Patch",
-			Handler:    _ContinuationService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _ContinuationService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",
