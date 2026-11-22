@@ -4,3 +4,9 @@ dist/
 ts/public/
 .git/
 *.db
+
+# What `.gitignore` keeps out of the repository stays out of the context too: a
+# key `roster init` wrote beside an archive, and what `scripts/scim-check.sh`
+# left.
+*-checkpoints.pem
+scim-check/

@@ -59,8 +59,9 @@ services:
         || psql -h postgres -U roster -d roster -c "CREATE DATABASE hydra OWNER roster"
 
   roster:
-    # `dev` and not the default stage. The image has two: `app` is what a
-    # deployment runs -- distroless, nonroot, no shell -- and `dev` is this one,
+    # `dev`, by name: a build that names no stage makes `app`, the last. The
+    # image has two: `app` is what a deployment runs -- distroless, uid 65532,
+    # no shell -- and `dev` is this one,
     # which adds a shell and the scripts in `docker/` so that `up` leaves a
     # deployment with a customer in it. See the head of `Dockerfile`.
     #

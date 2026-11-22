@@ -1,20 +1,24 @@
-# roster, as an image: the binary, the two pages, and nothing else.
+# roster, as an image: two binaries -- roster, and the example product beside
+# it -- and the four pages roster serves, and nothing else.
 #
-# One image and not three. `serve`, `account serve` and `ldap serve` are three
-# commands of one binary -- a deployment runs the same image three times with
-# three arguments, which is also why the entrypoint is the binary rather than a
-# script that picks one.
+# One image and not five. `serve`, `account serve`, `ldap serve`, `login serve`
+# and `scim serve` are five commands of one binary -- a deployment runs the same
+# image once per command with its own arguments, which is also why the
+# entrypoint is the binary rather than a script that picks one.
 #
-# Two final stages, and which one is built is the caller's:
+# Two final stages:
 #
-#   app   what a deployment runs. distroless, nonroot, no shell.
+#   app   what a deployment runs. distroless, uid 65532, no shell.
 #   dev   what `docker compose up` runs. alpine, and the seeding scripts in
 #         `docker/`, so the quickstart in `docs/operating.md` is one command.
 #
-# `docker buildx bake` builds `app`; `compose.yaml` names `target: dev`. Both
-# are copies out of one stage, `dist`, and are nothing else -- see there for why.
+# `app` is the last stage, so a `docker build .` that names no `--target` makes
+# it, and `docker buildx bake` builds it too; `compose.yaml` names `target:
+# dev`. `dev` is never what a build gets by default, since it seeds an operator
+# whose password is `admin` where nothing else is said. Both are copies out of
+# one stage, `dist`, and are nothing else -- see there for why.
 
-# The two pages, on the **builder's** architecture, because a page has none.
+# The four pages, on the **builder's** architecture, because a page has none.
 # Under `platforms` a naive stage would run node twice, the second time under
 # emulation, to produce the same bytes.
 FROM --platform=$BUILDPLATFORM node:26 AS page
@@ -25,8 +29,9 @@ COPY ts/package.json ts/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
 COPY ts/ ./
-# `tsc` and both vite builds. The sandbox module is not here -- `ts/public/` is
-# in `.dockerignore` -- and nothing in a served console asks for it.
+# `tsc` and the four vite builds. The sandbox module is not here --
+# `ts/public/` is in `.dockerignore` -- and nothing in a served console asks for
+# it.
 RUN npm run build
 
 # Also on the builder's, cross-compiling to the target: a Go toolchain does that
@@ -66,10 +71,13 @@ ARG ARCHS="${TARGETARCH}"
 #
 # The toolchain would stamp `vcs.revision` from the checkout, and cannot here:
 # `.git/` is in `.dockerignore`, deliberately, because the build does not need
-# it and it is the largest thing in the context. So the version is handed in and
-# the revision goes on the image as a label instead (`docker-bake.hcl`), which
-# is where something reading a registry can find it anyway.
+# it and it is the largest thing in the context. So both are handed in: the
+# version, and the commit, which `roster version --short` prints and the image
+# carries as a label as well (`docker-bake.hcl`), where something reading a
+# registry looks for it. A build that hands in no commit makes a binary that
+# says none, as a build at a desk always has.
 ARG APP_VERSION="0.0.0-dev"
+ARG APP_REVISION=""
 
 # roster, and beside it the example product app, which is not roster and is in
 # this image anyway.
@@ -88,7 +96,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 	set -e; for arch in ${ARCHS}; do \
 		CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${arch} \
 		go build -trimpath \
-		-ldflags="-s -w -X github.com/lesomnus/payday/version.version=${APP_VERSION}" \
+		-ldflags="-s -w -X github.com/lesomnus/payday/version.version=${APP_VERSION} -X github.com/lesomnus/roster/cli.revision=${APP_REVISION}" \
 		-o /out/${arch}/roster ./cmd/roster; \
 		CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${arch} \
 		go build -trimpath -ldflags="-s -w" \
@@ -116,39 +124,13 @@ COPY --from=page /src/ts/dist/user /pages/user
 COPY --from=page /src/ts/dist/account /pages/account
 COPY --from=page /src/ts/dist/login /pages/login
 
-# Static rather than scratch: `roster account serve` makes outbound TLS calls to
-# whatever providers a tenant wrote down as `Connection` rows, so it needs root
-# certificates, and this is the smallest base that has them and a nonroot uid.
-FROM gcr.io/distroless/static-debian12:nonroot AS app
-
-ARG TARGETARCH
-
-COPY --from=dist /${TARGETARCH}/roster /usr/local/bin/roster
-COPY --from=dist /${TARGETARCH}/example-product /usr/local/bin/example-product
-
-# Where the four pages land. A deployment points at each:
-#
-#   admin.console.dir              the admin console, at `/` on that listener
-#   user_console.dir               the user console, at `/` on `server.http`
-#   account.page.dir               the account page
-#   login.page.dir                 the Login App's, for a deployment with Hydra
-COPY --from=dist /pages/ /usr/share/roster/
-
-USER nonroot:nonroot
-
-# No EXPOSE and no default port. Every listener is named in the configuration
-# and there are three of them with three answers about who may reach them --
-# `docs/operating.md`, "The two planes". A port declared here would be a fourth
-# answer that is not the deployment's.
-ENTRYPOINT ["/usr/local/bin/roster"]
-CMD ["serve"]
-
 # The compose image: the same binary and pages, plus a shell and the scripts
 # that seed a deployment once so `docker compose up` has a customer in it.
 #
-# Not a production image, and the difference is the point: it runs as root, the
-# base is not pinned by digest, and its answer about secrets is an environment
-# variable. See `docker/entrypoint.sh`.
+# Not a production image, and the difference is the point: it runs as root, its
+# base is named by a tag alone, and its answer about secrets is an environment
+# variable. See `docker/entrypoint.sh`. It is not the last stage, so a build
+# gets it only by naming it.
 FROM alpine:3.24 AS dev
 
 # `curl` and `oathtool` beside the certificates because this stage is the one
@@ -167,4 +149,34 @@ COPY --from=dist /pages/ /usr/share/roster/
 COPY docker/entrypoint.sh docker/customer.sh docker/account.sh docker/ldap.sh docker/login.sh docker/dial.sh docker/flow.sh docker/behind.sh docker/itself.sh docker/device.sh /usr/local/bin/
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["serve"]
+
+# Static rather than scratch: `roster account serve` makes outbound TLS calls to
+# whatever providers a tenant wrote down as `Connection` rows, so it needs root
+# certificates, and this is the smallest base that has them and a nonroot uid.
+FROM gcr.io/distroless/static-debian12:nonroot AS app
+
+ARG TARGETARCH
+
+COPY --from=dist /${TARGETARCH}/roster /usr/local/bin/roster
+COPY --from=dist /${TARGETARCH}/example-product /usr/local/bin/example-product
+
+# Where the four pages land. A deployment points at each:
+#
+#   admin.console.dir              the admin console, at `/` on that listener
+#   user_console.dir               the user console, at `/` on `server.http`
+#   account.page.dir               the account page
+#   login.page.dir                 the Login App's, for a deployment with Hydra
+COPY --from=dist /pages/ /usr/share/roster/
+
+# By number rather than by name: it is distroless's `nonroot`, and a kubelet
+# told `runAsNonRoot` with no `runAsUser` checks the image's user and cannot
+# check a name.
+USER 65532:65532
+
+# No EXPOSE and no default port. Every listener is named in the configuration
+# and there are three of them with three answers about who may reach them --
+# `docs/operating.md`, "The two planes". A port declared here would be a fourth
+# answer that is not the deployment's.
+ENTRYPOINT ["/usr/local/bin/roster"]
 CMD ["serve"]
