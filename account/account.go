@@ -1086,9 +1086,22 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 		case codes.OK:
 			why = "ok"
 		case codes.AlreadyExists:
+			// Either the account is on a row already, theirs or somebody
+			// else's, or they have another account at this provider: roster
+			// answers both as a row that exists already, and the page says
+			// which.
 			why = "taken"
-		case codes.InvalidArgument:
-			why = "already"
+			if _, err := a.roster.Identity().Get(as, rstr.IdentityGetRequest_builder{
+				Ref: rstr.IdentityRef_builder{
+					Subject: rstr.IdentityRefBySubject_builder{
+						TenantId: f.tenant.id.Bytes(),
+						Provider: proto.String(who.Provider),
+						Subject:  proto.String(who.Subject),
+					}.Build(),
+				}.Build(),
+			}.Build()); status.Code(err) == codes.NotFound {
+				why = "already"
+			}
 		default:
 			fmt.Fprintf(os.Stderr, "account: link %s/%s: %v\n", who.Provider, who.Subject, err)
 		}

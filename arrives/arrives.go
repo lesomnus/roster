@@ -1182,21 +1182,6 @@ func (p *Providers) Known(ctx context.Context, enrol Enrol, who *Caller) (pdid.I
 
 		return pdid.Nil, ErrUnlinked
 	}
-	if status.Code(err) == codes.InvalidArgument {
-		// Refused as a row roster would not keep. One reason is about this
-		// arrival and nobody's fault: the person the policy found already
-		// signs in through this provider, by another account
-		// ([ErrAnotherAccount]). Any other is the connection's -- a subject
-		// that is an address, or not of the claim's shape -- and is everybody's
-		// who arrives through it, so it stays the error it was.
-		if has, ok := p.accountAt(ctx, id, who.Provider); ok {
-			slog.WarnContext(ctx, "arrives: matched by an address of somebody who already signs in through this provider by another account, and not linked; "+
-				"an administrator of the tenant says which account is theirs",
-				"tenant", who.TenantAlias, "holder", id.String(), "provider", who.Provider, "subject", who.Subject, "has", has, "err", err)
-
-			return pdid.Nil, ErrAnotherAccount
-		}
-	}
 	if status.Code(err) == codes.AlreadyExists {
 		// Taken since this arrival looked, which is another arrival of the
 		// same account, finished first at another front door: the account is
@@ -1217,6 +1202,17 @@ func (p *Providers) Known(ctx context.Context, enrol Enrol, who *Caller) (pdid.I
 			}
 
 			return has, nil
+		}
+
+		// Or the person the policy found already signs in through this
+		// provider, by another account ([ErrAnotherAccount]): a row that
+		// exists already too, and about this arrival and nobody's fault.
+		if has, ok := p.accountAt(ctx, id, who.Provider); ok {
+			slog.WarnContext(ctx, "arrives: matched by an address of somebody who already signs in through this provider by another account, and not linked; "+
+				"an administrator of the tenant says which account is theirs",
+				"tenant", who.TenantAlias, "holder", id.String(), "provider", who.Provider, "subject", who.Subject, "has", has, "err", err)
+
+			return pdid.Nil, ErrAnotherAccount
 		}
 	}
 	if err != nil {

@@ -361,7 +361,7 @@ func TestTheManualsTableOfFailuresIsWhatIsAnswered(t *testing.T) {
 		failureCall{"a row that exists already", 0, admin, "/roster.SiteService/Add", `{"tenant":` + contoso + `,"alias":"failures-twice"}`},
 		failureCall{"a row that exists already", 0, admin, "/roster.HolderService/Add", `{"tenant":` + contoso + `,"alias":"h-seoul"}`},
 		failureCall{"a row that exists already", 0, admin, "/roster.RoleService/Add", `{"tenant":` + contoso + `,"site":` + failureRef(seoul.site) + `,"alias":"role-seoul","methods":["/roster.HolderService/Get"]}`},
-		failureCall{"a row that exists already", 1, admin, "/roster.IdentityService/Add", `{"holder":` + failureRef(seoul.holder) + `,"provider":"okta","subject":"second"}`},
+		failureCall{"a row that exists already", 0, admin, "/roster.IdentityService/Add", `{"holder":` + failureRef(seoul.holder) + `,"provider":"okta","subject":"second"}`},
 
 		failureCall{"a request that cannot be taken as it is written", 0, admin, "/roster.RoleService/Widen", `{"ref":` + failureRef(seoul.role) + `}`},
 		failureCall{"a request that cannot be taken as it is written", 0, admin, "/roster.HolderService/Update", `{"ref":` + failureRef(seoul.holder) + `,"profile":{}}`},

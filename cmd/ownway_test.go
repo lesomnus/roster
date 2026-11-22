@@ -58,7 +58,7 @@ func TestSomebodyAddsAWayIntoTheirOwnAccount(t *testing.T) {
 			Provider: "google",
 			Subject:  "some-other-google",
 		}.Build())
-		x.Equal(codes.InvalidArgument, status.Code(err))
+		x.Equal(codes.AlreadyExists, status.Code(err))
 	})
 
 	t.Run("and one already somebody else's is refused without saying whose", func(t *testing.T) {

@@ -168,7 +168,7 @@ func TestASecondAccountAtOneProviderIsRefused(t *testing.T) {
 		Provider: "github",
 		Subject:  "2222222",
 	}.Build())
-	x.Equal(codes.InvalidArgument, status.Code(err))
+	x.Equal(codes.AlreadyExists, status.Code(err))
 	x.Contains(err.Error(), "already has a github identity")
 }
 
@@ -203,7 +203,7 @@ func TestASecondAccountIsRefusedBehindAFullPage(t *testing.T) {
 		Provider: "github",
 		Subject:  "2222222",
 	}.Build())
-	x.Equal(codes.InvalidArgument, status.Code(err))
+	x.Equal(codes.AlreadyExists, status.Code(err))
 	x.Contains(err.Error(), "already has a github identity")
 }
 
@@ -235,7 +235,7 @@ func TestASecondAccountIsRefusedWhoeverTheRefNames(t *testing.T) {
 		Provider: "github",
 		Subject:  "2222222",
 	}.Build())
-	x.Equal(codes.InvalidArgument, status.Code(err))
+	x.Equal(codes.AlreadyExists, status.Code(err))
 	x.Contains(err.Error(), "already has a github identity")
 }
 
