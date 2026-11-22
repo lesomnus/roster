@@ -333,7 +333,7 @@ bounded 30 docker volume create "${vol}" >/dev/null
 # `--init` and the label for the reasons `kube` gives.
 carry() {
 	tar -C "${work}" -cf - . \
-		| bounded 60 docker run --rm -i --init --label "roster.cluster=${CLUSTER}" -v "${vol}:/w" alpine sh -c 'tar -C /w -xf -'
+		| bounded 60 docker run --rm -i --init --label "roster.cluster=${CLUSTER}" -v "${vol}:/w" alpine:3.24 sh -c 'tar -C /w -xf -'
 }
 
 # The sentence a run says last when it went red for the runner and not for
@@ -724,8 +724,10 @@ image dev "${ROSTER_DEV_IMAGE}" "roster-walk:${CLUSTER}"
 deadline=$((deadline + $(date +%s) - built))
 
 # And the three it borrows, which the steps below would otherwise pull in the
-# middle of whatever they are waiting for.
-for borrowed in "${KUBECTL_IMAGE}" alpine alpine/openssl:3.3.2; do
+# middle of whatever they are waiting for. Each by a tag, which Renovate moves
+# (`renovate.json`): `alpine` had none, so it was whatever the registry said
+# that day.
+for borrowed in "${KUBECTL_IMAGE}" alpine:3.24 alpine/openssl:3.3.2; do
 	pulled "${borrowed}"
 done
 standing
