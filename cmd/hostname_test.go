@@ -22,6 +22,7 @@ import (
 	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/prove"
+	"github.com/lesomnus/roster/server/quote"
 )
 
 // TestATrailingDotIsTheSameName: `name.` is `name`, to whatever writes one and
@@ -199,7 +200,7 @@ func TestANameThatIsNotAHostnameIsRefused(t *testing.T) {
 				require.Equal(t, codes.InvalidArgument, status.Code(err), "%s: %v", road.desc, err)
 
 				msg := status.Convert(err).Message()
-				require.Contains(t, msg, strconv.Quote(tc.name), road.desc)
+				require.Contains(t, msg, quote.Sent(tc.name), road.desc)
 				require.Contains(t, msg, "is not a hostname", road.desc)
 				require.Contains(t, msg, tc.says, road.desc)
 			}

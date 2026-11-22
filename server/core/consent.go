@@ -14,6 +14,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/quote"
 )
 
 // coreConsent is the layer over the generated `ConsentService`: an app's
@@ -223,10 +224,10 @@ func (s coreConsent) Withdraw(ctx context.Context, req *app.ConsentWithdrawReque
 		switch {
 		case was.GetAct() != app.ConsentAct_CONSENT_ACT_AGREE:
 			return status.Errorf(codes.FailedPrecondition,
-				"there is no agreement to %s at %s in force to withdraw", req.GetDocument(), req.GetVersion())
+				"there is no agreement to %s at %s in force to withdraw", quote.Sent(req.GetDocument()), quote.Sent(req.GetVersion()))
 		case !was.GetOptional():
 			return status.Errorf(codes.FailedPrecondition,
-				"%s is required: an account does not withdraw from what is required, it leaves", req.GetDocument())
+				"%s is required: an account does not withdraw from what is required, it leaves", quote.Sent(req.GetDocument()))
 		}
 
 		out, err = next.Consent().Add(ctx, app.ConsentAddRequest_builder{

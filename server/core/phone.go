@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/quote"
 )
 
 // corePhone is the layer over the generated `PhoneService`: a number is kept
@@ -50,7 +51,7 @@ func (s corePhone) Add(ctx context.Context, req *app.PhoneAddRequest) (*app.Phon
 		return nil, err
 	}
 	if k := req.GetKind(); k != "" && !slices.Contains(PhoneKinds, k) {
-		return nil, pderr.Invalidf("kind", "%q: one of %s, or nothing", k, strings.Join(PhoneKinds, ", "))
+		return nil, pderr.Invalidf("kind", "%s: one of %s, or nothing", quote.Sent(k), strings.Join(PhoneKinds, ", "))
 	}
 	if err := s.mayWriteAWayIn(ctx, "holder", req.GetHolder()); err != nil {
 		return nil, err
@@ -68,7 +69,7 @@ func (s corePhone) Patch(ctx context.Context, req *app.PhonePatchRequest) (*app.
 		}
 	}
 	if k := req.GetKind(); k != "" && !slices.Contains(PhoneKinds, k) {
-		return nil, pderr.Invalidf("kind", "%q: one of %s, or nothing", k, strings.Join(PhoneKinds, ", "))
+		return nil, pderr.Invalidf("kind", "%s: one of %s, or nothing", quote.Sent(k), strings.Join(PhoneKinds, ", "))
 	}
 
 	return s.PhoneServiceServer.Patch(ctx, req)
@@ -104,13 +105,13 @@ func isPhone(v string) error {
 	case v == "":
 		return pderr.Invalidf("number", "the number")
 	case v != strings.TrimSpace(v):
-		return pderr.Invalidf("number", "%q is not trimmed; %q", v, strings.TrimSpace(v))
+		return pderr.Invalidf("number", "%s is not trimmed; %s", quote.Sent(v), quote.Sent(strings.TrimSpace(v)))
 	case utf8.RuneCountInString(v) > maxPhone:
 		return pderr.Invalidf("number", "at most %d characters, and a number is a good deal shorter", maxPhone)
 	case strings.IndexFunc(v, unicode.IsControl) >= 0:
 		return pderr.Invalidf("number", "a number has no control character in it")
 	case strings.IndexFunc(v, unicode.IsDigit) < 0:
-		return pderr.Invalidf("number", "%q has no digit in it", v)
+		return pderr.Invalidf("number", "%s has no digit in it", quote.Sent(v))
 	}
 
 	return nil

@@ -17,6 +17,7 @@ import (
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
+	"github.com/lesomnus/roster/server/quote"
 )
 
 // coreDelegation is the layer over the generated `DelegationService`.
@@ -265,7 +266,7 @@ func (s coreDelegation) Exchange(ctx context.Context, req *app.DelegationExchang
 	for _, m := range req.GetMethods() {
 		if !f.Grant.Allows(m) {
 			return nil, status.Errorf(codes.PermissionDenied,
-				"methods: you may not call %s, so you may not hand it on", m)
+				"methods: you may not call %s, so you may not hand it on", quote.Sent(m))
 		}
 	}
 

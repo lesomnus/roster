@@ -17,6 +17,7 @@ import (
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
+	"github.com/lesomnus/roster/server/quote"
 )
 
 // coreConnection is the layer over the generated `ConnectionService`, for its
@@ -140,13 +141,13 @@ func addressed(field, v string) error {
 		u.Hostname() == "" || u.User != nil ||
 		strings.ContainsAny(v, "?#") || strings.ContainsFunc(v, unicode.IsSpace) {
 		return pderr.Invalidf(field,
-			"%q is not an issuer: an address written `https://` (or `http://`) with a host, and no query, fragment, password or space, "+
-				"as the provider publishes it", v)
+			"%s is not an issuer: an address written `https://` (or `http://`) with a host, and no query, fragment, password or space, "+
+				"as the provider publishes it", quote.Sent(v))
 	}
 	if u.Host != strings.ToLower(u.Host) {
 		return pderr.Invalidf(field,
-			"%q names its host in capitals: an issuer is compared as it is written, so write the host in small letters, as %q",
-			v, u.Scheme+"://"+strings.ToLower(u.Host)+u.EscapedPath())
+			"%s names its host in capitals: an issuer is compared as it is written, so write the host in small letters, as %s",
+			quote.Sent(v), quote.Sent(u.Scheme+"://"+strings.ToLower(u.Host)+u.EscapedPath()))
 	}
 
 	return nil
@@ -253,7 +254,7 @@ func (s Core) maySubject(ctx context.Context, was, now string) error {
 	switch now {
 	case "", claimSub, claimOid:
 	default:
-		return pderr.Invalidf("subject_claim", "%q is not a claim a front door reads as a subject; `sub`, or `oid` for Entra", now)
+		return pderr.Invalidf("subject_claim", "%s is not a claim a front door reads as a subject; `sub`, or `oid` for Entra", quote.Sent(now))
 	}
 	if subjectClaimOf(now) == subjectClaimOf(was) || s.deployment(ctx) {
 		return nil
@@ -297,7 +298,7 @@ func mayNameBy(field, claim, issuer string) error {
 	}
 
 	return pderr.Invalidf(field,
-		"%s, and a connection at %s that named its people by `oid` would sign nobody in; `oid` is Entra's", why, issuer)
+		"%s, and a connection at %s that named its people by `oid` would sign nobody in; `oid` is Entra's", why, quote.Sent(issuer))
 }
 
 // claimMoved is the half a write moved, for [mayNameBy] to name: the claim,

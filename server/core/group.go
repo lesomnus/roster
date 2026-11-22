@@ -18,6 +18,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/quote"
 )
 
 // Who may change a group's members.
@@ -443,7 +444,7 @@ func isClient(v string) error {
 	case len(v) > maxClient:
 		return pderr.Invalidf("client", "at most %d bytes, and a client_id is a good deal shorter", maxClient)
 	case strings.IndexFunc(v, func(r rune) bool { return unicode.IsSpace(r) || unicode.IsControl(r) }) >= 0:
-		return pderr.Invalidf("client", "%q: a client_id has no space or control character in it", v)
+		return pderr.Invalidf("client", "%s: a client_id has no space or control character in it", quote.Sent(v))
 	}
 
 	return nil

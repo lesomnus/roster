@@ -17,6 +17,7 @@ import (
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
+	"github.com/lesomnus/roster/server/quote"
 	"github.com/lesomnus/roster/server/vouch"
 )
 
@@ -384,7 +385,7 @@ func (s coreIdentity) subjectFits(ctx context.Context, tenant pdid.Id, provider,
 	}
 	if claim == claimOid && !front.GUID(subject) {
 		return "", pderr.Invalidf("subject",
-			"the %s connection names people by `oid`, which is a GUID, and %q is not one", provider, subject)
+			"the %s connection names people by `oid`, which is a GUID, and %s is not one", provider, quote.Sent(subject))
 	}
 
 	return front.Subject(claim, subject), nil
@@ -491,7 +492,7 @@ func (s coreIdentity) Resubject(ctx context.Context, req *app.IdentityResubjectR
 				"subject: this identity already holds an `oid`, and a person's `oid` does not change; another one is another person")
 		}
 		if !front.GUID(to) {
-			return nil, pderr.Invalidf("subject", "an `oid` is a GUID, and %q is not one", to)
+			return nil, pderr.Invalidf("subject", "an `oid` is a GUID, and %s is not one", quote.Sent(to))
 		}
 	}
 	if err := subjectIsStable(to); err != nil {

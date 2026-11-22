@@ -5,8 +5,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/subtle"
-	"fmt"
-	"strconv"
 
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pderr"
@@ -22,6 +20,7 @@ import (
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
+	"github.com/lesomnus/roster/server/quote"
 )
 
 // An address is a way in, and it is stored as it will be looked up.
@@ -145,22 +144,11 @@ func (s coreEmail) Patch(ctx context.Context, req *app.EmailPatchRequest) (*app.
 func mailboxed(field, v string) error {
 	if w := front.Address(v); w != "" {
 		if why := front.NotAddress(w); why != "" {
-			return pderr.Invalidf(field, "%s is not an address: %s", quoted(v), why)
+			return pderr.Invalidf(field, "%s is not an address: %s", quote.Sent(v), why)
 		}
 	}
 
 	return normalised(field, v, front.Address)
-}
-
-// quoted is a value said back in a refusal, cut where it is long: what was
-// refused may be a megabyte, and a refusal is not where it is kept.
-func quoted(v string) string {
-	const most = 80
-	if len(v) <= most {
-		return strconv.Quote(v)
-	}
-
-	return strconv.Quote(strings.ToValidUTF8(v[:most], "")) + fmt.Sprintf("... (%d bytes)", len(v))
 }
 
 // Erase takes an address away from somebody, and is held to what writing one

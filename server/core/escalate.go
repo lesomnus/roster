@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/quote"
 )
 
 // Nobody may hand out what they do not hold.
@@ -210,7 +211,7 @@ func (s Core) mayGrant(ctx context.Context, field string, methods []string, at p
 		// `frame.Covers`.
 		if !slices.ContainsFunc(reaches, func(v string) bool { return frame.Covers(v, m) }) {
 			return status.Errorf(codes.PermissionDenied,
-				"%s: you do not hold %s here, so you may not grant it", field, m)
+				"%s: you do not hold %s here, so you may not grant it", field, quote.Sent(m))
 		}
 	}
 
