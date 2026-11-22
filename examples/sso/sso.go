@@ -617,19 +617,26 @@ func (a *App) link(w http.ResponseWriter, r *http.Request) {
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.AlreadyExists {
-			// That account is already a way in, here or for somebody else.
-			// Told apart from nothing, for the reason `Identity.Add` gives.
-			http.Error(w, "that account is already a way in", http.StatusConflict)
-			return
-		}
-		if status.Code(err) == codes.InvalidArgument {
 			// One provider per person, which `server/core` refuses in as many
 			// words: *a second one is a link that found the wrong row, and
 			// linking it would join two people into one.* A person can act on
 			// this -- it means they are already signed in with this provider,
 			// under a different account -- so they are told rather than shown a
-			// five-hundred.
-			http.Error(w, "you already sign in with this provider", http.StatusConflict)
+			// five-hundred. roster answers it as it answers the account being a
+			// way in already, here or for somebody else, so their own accounts
+			// say which.
+			if me, err := a.me_.Get(as, rstr.MeGetRequest_builder{}.Build()); err == nil {
+				for _, i := range me.GetIdentities() {
+					if i.GetProvider() == who.Provider && i.GetSubject() != who.Subject {
+						http.Error(w, "you already sign in with this provider", http.StatusConflict)
+						return
+					}
+				}
+			}
+
+			// That account is already a way in, here or for somebody else.
+			// Told apart from nothing, for the reason `Identity.Add` gives.
+			http.Error(w, "that account is already a way in", http.StatusConflict)
 			return
 		}
 		if status.Code(err) == codes.PermissionDenied {

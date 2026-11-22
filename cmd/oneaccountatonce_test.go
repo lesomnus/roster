@@ -80,7 +80,7 @@ func TestAPersonHasOneAccountAtAProviderWhenTwoAreAddedAtOnce(t *testing.T) {
 		if refused == nil {
 			refused = errs[1]
 		}
-		x.Equal(codes.InvalidArgument, status.Code(refused), "person %d: %v", i, refused)
+		x.Equal(codes.AlreadyExists, status.Code(refused), "person %d: %v", i, refused)
 		x.ErrorContains(refused, "already has a github identity")
 	}
 

@@ -621,8 +621,10 @@ func (s coreIdentity) oneAccountPerProvider(ctx context.Context, req *app.Identi
 				continue
 			}
 
-			return pderr.Invalidf("provider",
-				"this person already has a %s identity; a second one is a link that found the wrong row, "+
+			// `AlreadyExists`, as every other row that exists already is: a
+			// caller that offers *already linked* on 409 is told so here too.
+			return status.Errorf(codes.AlreadyExists,
+				"provider: this person already has a %s identity; a second one is a link that found the wrong row, "+
 					"and linking it would join two people into one", req.GetProvider())
 		}
 

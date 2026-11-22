@@ -525,8 +525,16 @@ func TestTheAccountAppFrontsTwoOperators(t *testing.T) {
 		x.Contains(to, "link=already", "the page was not told why: %s", to)
 		x.Contains(to, "at=example")
 
+		// An account roster would not keep -- a subject that is an address --
+		// is the page's ordinary failure, and not *already*.
+		d.idp.Subject = "erin@contoso.com"
+		code, to = b.landed(t, http.MethodPost, "/ways?connection=other")
+		x.Equal(http.StatusOK, code, to)
+		x.Contains(to, "link=error", "a request roster would not take was said as something else: %s", to)
+
 		// At another provider it lands on her: the provider says who it is, the
 		// session says whose account it is for, and the request says nothing.
+		d.idp.Subject = "3002"
 		code, to = b.landed(t, http.MethodPost, "/ways?connection=other")
 		x.Equal(http.StatusOK, code, to)
 		x.Contains(to, "link=ok", "a link that worked did not say so: %s", to)
