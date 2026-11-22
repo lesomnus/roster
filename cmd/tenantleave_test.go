@@ -865,7 +865,8 @@ func (s tenantRead) Get(ctx context.Context, req *app.TenantGetRequest) (*app.Te
 // TestTwoClosesStampOnce: a close that read an open tenant while another closed
 // it is refused rather than stamping again -- the stamp is what the grace runs
 // from, and a second one would quietly restart the clock on destroying it. And
-// the version a caller sends is still the condition it was.
+// the version a caller sends is still the condition it was, and one that moved
+// is answered as every verb answers it.
 func TestTwoClosesStampOnce(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
@@ -900,7 +901,7 @@ func TestTwoClosesStampOnce(t *testing.T) {
 		}.Build())
 		x.NoError(err)
 		_, err = b.Ungated.Tenant().Close(ctx, app.TenantCloseRequest_builder{Ref: ref, DateUpdated: was.GetDateUpdated()}.Build())
-		x.Equal(codes.FailedPrecondition, status.Code(err), "a close made on a version that was not the row's")
+		x.Equal(codes.Aborted, status.Code(err), "a close made on a version that was not the row's, which is the version moving")
 
 		now, err := b.Ungated.Tenant().Get(ctx, app.TenantGetRequest_builder{
 			Ref: ref, Select: app.TenantSelect_builder{DateUpdated: z.Ptr(true)}.Build(),

@@ -337,7 +337,7 @@ func (s coreGroup) Update(ctx context.Context, req *app.GroupUpdateRequest) (*ap
 		patch.Desc = z.Ptr(req.GetDesc())
 	}
 
-	return s.GroupServiceServer.Patch(ctx, patch.Build())
+	return versioned(s.GroupServiceServer.Patch(ctx, patch.Build()))
 }
 
 // mayHoldInGroup refuses a role that would reach past the group it is held in:

@@ -624,8 +624,10 @@ func (s *Server) change(ctx context.Context, w http.ResponseWriter, r *http.Requ
 			if err == nil {
 				break
 			}
-			code := status.Code(err)
-			if (code == codes.Aborted || code == codes.FailedPrecondition) && try < 3 {
+			// `Aborted` is the version that moved, and it alone: a rule's
+			// refusal is `FailedPrecondition`, which asking again does not
+			// mend, and was asked three times more while the two shared it.
+			if status.Code(err) == codes.Aborted && try < 3 {
 				continue
 			}
 

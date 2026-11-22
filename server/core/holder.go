@@ -98,7 +98,7 @@ func (s coreHolder) Update(ctx context.Context, req *app.HolderUpdateRequest) (*
 		patch.Data = req.GetData()
 	}
 
-	return s.HolderServiceServer.Patch(ctx, patch.Build())
+	return versioned(s.HolderServiceServer.Patch(ctx, patch.Build()))
 }
 
 // Realias writes the index, which is what makes it a method of its own and not
@@ -139,11 +139,11 @@ func (s coreHolder) Realias(ctx context.Context, req *app.HolderRealiasRequest) 
 		return nil, err
 	}
 
-	return s.HolderServiceServer.Patch(ctx, app.HolderPatchRequest_builder{
+	return versioned(s.HolderServiceServer.Patch(ctx, app.HolderPatchRequest_builder{
 		Ref:         req.GetRef(),
 		Alias:       z.Ptr(req.GetAlias()),
 		DateUpdated: req.GetDateUpdated(),
-	}.Build())
+	}.Build()))
 }
 
 // Disable, Enable and Invalidate are the two facts an operator writes about
@@ -230,14 +230,17 @@ func (s coreHolder) Disable(ctx context.Context, req *app.HolderDisableRequest) 
 		}
 		lock(&patch, was)
 
+		// The write's own refusal is told from the rule's around it here,
+		// where it is still the write's: a tenant left with nobody
+		// administering it is `FailedPrecondition` too, and is no version.
 		var out *app.Holder
 		err = s.keepsTheirs(ctx, req.GetRef(), "suspending them", func(next app.Server) error {
 			var err error
-			out, err = next.Holder().Patch(ctx, patch.Build())
+			out, err = versioned(next.Holder().Patch(ctx, patch.Build()))
 
 			return err
 		})
-		if kept && req.GetDateUpdated() == nil && status.Code(err) == codes.FailedPrecondition {
+		if kept && req.GetDateUpdated() == nil && status.Code(err) == codes.Aborted {
 			continue
 		}
 
@@ -256,7 +259,7 @@ func (s coreHolder) Enable(ctx context.Context, req *app.HolderEnableRequest) (*
 	}
 	lock(&patch, req.GetDateUpdated())
 
-	return s.HolderServiceServer.Patch(ctx, patch.Build())
+	return versioned(s.HolderServiceServer.Patch(ctx, patch.Build()))
 }
 
 // lock carries the caller's version through, or declines the check when they
@@ -288,6 +291,38 @@ func lock(patch *app.HolderPatchRequest_builder, was *timestamppb.Timestamp) {
 	patch.DateUpdatedForce = z.Ptr(true)
 }
 
+// errMoved is what every verb that takes a version answers for one that has
+// moved since the caller read it.
+//
+// `Aborted`, and not the `FailedPrecondition` the generated `Patch` answers
+// it with: that is the code of every rule's refusal, which sending again does
+// not mend, and this is the one refusal a caller mends by reading the row
+// again and sending the write again. Over HTTP it is 409, and not the 400 of
+// a request that cannot be taken as it is written. And one sentence, which
+// names the field, wherever it is answered from.
+var errMoved = status.Error(codes.Aborted,
+	"date_updated: it has changed since the version you sent; read it again and send the write again")
+
+// versioned is a verb's answer for a write it made with nothing but the
+// caller's version as its condition: a condition that did not hold is that
+// version having moved, and is answered [errMoved]; anything else is answered
+// as it is.
+//
+// Each verb turns it here, at its own edge, because the generated `Patch`
+// goes on answering what it answers in process, where a write with tests of
+// its own reads `FailedPrecondition` as one of them failing (`Widen`,
+// `Narrow`). A verb whose write has another condition beside the version
+// tells the two apart itself ([coreTenant.written]); and a refusal of a rule
+// made around the write is no version, so a verb that holds its write to one
+// turns the write's answer inside it ([coreHolder.Disable]).
+func versioned[T any](v T, err error) (T, error) {
+	if status.Code(err) == codes.FailedPrecondition {
+		return v, errMoved
+	}
+
+	return v, err
+}
+
 // Invalidate stamps now, and takes no time from anybody.
 //
 // Monotonic without reading the row first, which is what the missing argument
@@ -301,7 +336,7 @@ func (s coreHolder) Invalidate(ctx context.Context, req *app.HolderInvalidateReq
 	}
 	lock(&patch, req.GetDateUpdated())
 
-	return s.HolderServiceServer.Patch(ctx, patch.Build())
+	return versioned(s.HolderServiceServer.Patch(ctx, patch.Build()))
 }
 
 // SignsIn answers how somebody signs in, without the verifier.

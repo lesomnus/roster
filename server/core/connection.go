@@ -724,7 +724,7 @@ func (s coreConnection) Update(ctx context.Context, req *app.ConnectionUpdateReq
 	var out *app.Connection
 	err = s.oneMarked(ctx, tenant, self, req.GetProvisions(), func(next app.Server) error {
 		var err error
-		out, err = next.Connection().Patch(ctx, patch.Build())
+		out, err = versioned(next.Connection().Patch(ctx, patch.Build()))
 
 		return err
 	})

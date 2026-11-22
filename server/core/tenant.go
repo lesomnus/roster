@@ -251,7 +251,7 @@ func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*
 		patch.Config = cfg
 	}
 
-	return s.TenantServiceServer.Patch(ctx, patch.Build())
+	return versioned(s.TenantServiceServer.Patch(ctx, patch.Build()))
 }
 
 // Patch is the general write, which no port serves and a command at the box

@@ -347,8 +347,7 @@ func (s coreHolder) said(ctx context.Context, ref *app.HolderRef, was *timestamp
 		return nil, err
 	}
 	if was != nil && !was.AsTime().Equal(v.GetDateUpdated().AsTime()) {
-		return nil, status.Error(codes.FailedPrecondition,
-			"date_updated: they have changed since the version you sent; read them again")
+		return nil, errMoved
 	}
 
 	// Nothing to write, or a refusal, by what the row says now: answered as it
@@ -505,7 +504,7 @@ func (s coreHolder) Tell(ctx context.Context, req *app.HolderTellRequest) (*app.
 	}
 	lock(&patch, req.GetDateUpdated())
 
-	return s.HolderServiceServer.Patch(ctx, patch.Build())
+	return versioned(s.HolderServiceServer.Patch(ctx, patch.Build()))
 }
 
 // directed is somebody a directory may speak for, read with what deciding

@@ -175,7 +175,7 @@ func (s coreHolder) Portray(ctx context.Context, req *app.HolderPortrayRequest) 
 		patch.Profile = p
 	}
 
-	return s.HolderServiceServer.Patch(ctx, patch.Build())
+	return versioned(s.HolderServiceServer.Patch(ctx, patch.Build()))
 }
 
 // unrendered is the answer for an image no portrait was made of.

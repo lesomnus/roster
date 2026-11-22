@@ -144,6 +144,14 @@ func (s coreTenant) Restore(ctx context.Context, req *app.TenantRestoreRequest) 
 // edit a label can hold off. A condition that no longer holds is no write, and
 // is answered as the decision would have been had it read the row as it is
 // now: read it again.
+//
+// Which condition it was is told apart, because the caller is told two
+// things: their version having moved is [errMoved], the one answer every verb
+// that takes a version gives, and the decision's own is `FailedPrecondition`
+// as before. The store says only that a test did not hold, so the version is
+// read again. Every write of a tenant moves it, so a decision's condition
+// cannot fail under a version that still holds; a version that moved is said
+// whichever of the two failed.
 func (s coreTenant) written(ctx context.Context, ref *app.TenantRef, was *timestamppb.Timestamp, ops ...patch.Op) (*app.Tenant, error) {
 	if was != nil {
 		ops = append([]patch.Op{patch.Target(patch.Name("date_updated")).Test(stamp(was))}, ops...)
@@ -154,12 +162,23 @@ func (s coreTenant) written(ctx context.Context, ref *app.TenantRef, was *timest
 	}
 
 	v, err := s.TenantServiceServer.Apply(ctx, app.TenantApplyRequest_builder{Ref: ref, Patch: doc}.Build())
-	if status.Code(err) == codes.FailedPrecondition {
-		return nil, status.Error(codes.FailedPrecondition,
-			"the tenant changed while this was being decided -- closed, restored, destroyed, or edited since the version you sent; read it again")
+	if status.Code(err) != codes.FailedPrecondition {
+		return v, err
+	}
+	if was != nil {
+		now, err := s.TenantServiceServer.Get(ctx, app.TenantGetRequest_builder{
+			Ref: ref, Select: app.TenantSelect_builder{DateUpdated: z.Ptr(true)}.Build(),
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+		if !now.GetDateUpdated().AsTime().Equal(was.AsTime()) {
+			return nil, errMoved
+		}
 	}
 
-	return v, err
+	return nil, status.Error(codes.FailedPrecondition,
+		"the tenant changed while this was being decided -- closed, restored or destroyed; read it again")
 }
 
 // stamp is a timestamp as a patch writes one: the message, field by field.
