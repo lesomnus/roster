@@ -284,6 +284,9 @@ test('the WebGL employee badge follows the pointer and holds still on hover', as
 })
 
 test('scroll lifts the badge inside a fixed view and content pushes the toolbar away', async ({ page }, info) => {
+	// Several complete traversals share the cloth's bounded simulation clock.
+	// Software WebGL can need more wall time; keep every position assertion.
+	test.setTimeout(120_000)
 	await page.goto(`${base}/`)
 	const scene = page.getByRole('region', { name: 'Your employee ID', exact: true })
 	await expect(scene).toHaveAttribute('data-renderer', 'webgl', { timeout: 30_000 })
@@ -323,9 +326,9 @@ test('scroll lifts the badge inside a fixed view and content pushes the toolbar 
 		const settled = lift > 15 && Math.abs(lift - last) < .00001
 		last = lift
 		return settled
-	}, { intervals: [200, 300] }).toBe(true)
+	}, { intervals: [200, 300], timeout: 20_000 }).toBe(true)
 	await page.evaluate(() => window.scrollTo(0, 0))
-	await expect.poll(async () => Number(await scene.getAttribute('data-badge-scroll'))).toBe(0)
+	await expect.poll(async () => Number(await scene.getAttribute('data-badge-scroll')), { timeout: 20_000 }).toBe(0)
 	expect((await toolbar.boundingBox())!.y).toBeCloseTo(toolbarBox.y, 0)
 	const portrait = JSON.parse(await scene.getAttribute('data-badge-portrait-center') ?? '[]') as number[]
 	expect(portrait[1]).toBeCloseTo(page.viewportSize()!.height / 2, 0)

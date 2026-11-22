@@ -40,7 +40,8 @@ test('a password signs her in, and a wrong one does not', async ({ page }) => {
 })
 
 test('the HTML employee ID saves a name and photo against the deployment', async ({ page }) => {
-	test.setTimeout(60_000)
+	// Multiple card edits, two image writes and sign-out share a software WebGL renderer.
+	test.setTimeout(90_000)
 	await signIn(page)
 	await signedIn(page)
 	const scene = page.getByRole('region', { name: 'Your employee ID', exact: true })

@@ -237,7 +237,7 @@ export function start() {
 				const body = await req.json() as { alias: string; password: string }
 				pending = false
 				if (erased || body.alias !== holder.alias || body.password !== currentPassword) return response(401)
-				const factors = me.credentials.filter((c) => c.kind !== 'password').map((c) => ({ kind: c.kind, name: c.name, id: b64url(holder.id) }))
+				const factors = me.credentials.filter((c) => c.kind !== 'password').map((c) => ({ kind: c.kind, name: c.name, id: b64url(holder.id), challenge: b64url(crypto.getRandomValues(new Uint8Array(32))) }))
 				if (factors.length > 0) { pending = true; return response(200, { factors }) }
 				signedIn = true; fresh = true
 				return response(204)

@@ -1,3 +1,5 @@
+import { Button, Section, Table as NoxTable, TableBody, TableCell, TableHead, TableRow } from '@lesomnus/nox'
+import { Form, Input, Textarea } from '#lib/presentation.js'
 /**
  * The tenant itself: what it is, and what it says about itself.
  *
@@ -51,10 +53,10 @@ export function Tenant(props: {
 	if (id === undefined) return null
 
 	return (
-		<section className="within">
+		<Section className="within">
 			<h3>{props.tenant?.alias}</h3>
 			<Row tenant={id} may={props.may} />
-		</section>
+		</Section>
 	)
 }
 
@@ -82,32 +84,32 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 			    are stamps. A screen that offered to edit them would be offering a
 			    write the server refuses. */}
 			<h4>what it is</h4>
-			<table className="facts">
-				<tbody>
-					<tr>
-						<th>alias</th>
-						<td>{t.alias}</td>
-					</tr>
-					<tr>
-						<th>id</th>
-						<td>
+			<NoxTable className="facts">
+				<TableBody>
+					<TableRow>
+						<TableHead scope="row">alias</TableHead>
+						<TableCell>{t.alias}</TableCell>
+					</TableRow>
+					<TableRow>
+						<TableHead scope="row">id</TableHead>
+						<TableCell>
 							<code>{uuid(t.id)}</code>
-						</td>
-					</tr>
-					<tr>
-						<th>created</th>
-						<td>{when(t.dateCreated)}</td>
-					</tr>
-					<tr>
-						<th>updated</th>
-						<td>{when(t.dateUpdated)}</td>
-					</tr>
-				</tbody>
-			</table>
+						</TableCell>
+					</TableRow>
+					<TableRow>
+						<TableHead scope="row">created</TableHead>
+						<TableCell>{when(t.dateCreated)}</TableCell>
+					</TableRow>
+					<TableRow>
+						<TableHead scope="row">updated</TableHead>
+						<TableCell>{when(t.dateUpdated)}</TableCell>
+					</TableRow>
+				</TableBody>
+			</NoxTable>
 
 			<h4>what it says about itself</h4>
 			{!mayWrite && <p className="none">this needs /roster.TenantService/Update</p>}
-			<form
+			<Form
 				className="profile"
 				onSubmit={(e) => {
 					e.preventDefault()
@@ -147,9 +149,9 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 						.catch((e: unknown) => tell({ kind: 'bad', text: said(e) }))
 				}}
 			>
-				<input name="name" placeholder="name" defaultValue={t.name} />
-				<input name="desc" placeholder="note" defaultValue={t.desc} />
-				<textarea name="labels" placeholder={'labels, one per line: brand=Contoso'} defaultValue={labels} rows={3} />
+				<Input name="name" placeholder="name" defaultValue={t.name} />
+				<Input name="desc" placeholder="note" defaultValue={t.desc} />
+				<Textarea name="labels" placeholder={'labels, one per line: brand=Contoso'} defaultValue={labels} rows={3} />
 				{/*
 					A way in, and not a screen setting: roster refuses a password
 					for a tenant with this off, so what the sign-in pages draw is
@@ -169,7 +171,7 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					not a screen setting (`tenant.ext.proto`). Empty is no front
 					door, which is what a tenant whose people all have passwords is.
 				*/}
-				<input
+				<Input
 					name="front_door"
 					placeholder="front door: https://account.contoso.example"
 					defaultValue={t.config?.frontDoor ?? ''}
@@ -195,10 +197,10 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					<input type="checkbox" name="leave" defaultChecked={t.config?.leave ?? false} />
 					people here may delete their own account
 				</label>
-				<button type="submit" disabled={update.state === 'pending' || !mayWrite}>
+				<Button type="submit" disabled={update.state === 'pending' || !mayWrite}>
 					save
-				</button>
-			</form>
+				</Button>
+			</Form>
 			{told?.kind === 'done' && <p className="note">{told.text}</p>}
 			{told?.kind === 'bad' && <p className="bad">{told.text}</p>}
 		</>

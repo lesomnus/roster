@@ -19,4 +19,4 @@ version. Nox declares an optional `^0.55.0` editor peer; this app consumes only
 the core UI entry and does not use `@lesomnus/nox/editor`.
 
 Once Nox is published, replace the tarball dependency with a chosen registry
-version, remove the archive, and re-run the account UI checks.
+version, remove the archive, and re-run the four apps' UI checks.

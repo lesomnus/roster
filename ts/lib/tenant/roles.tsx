@@ -1,3 +1,5 @@
+import { Button, Section, Table as NoxTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@lesomnus/nox'
+import { Choice, Form, Input } from '#lib/presentation.js'
 /**
  * One customer's access: the roles, and who each is bound to.
  *
@@ -56,10 +58,10 @@ export function Roles(props: {
 	if (id === undefined) return null
 
 	return (
-		<section className="within">
+		<Section className="within">
 			<h3>{props.tenant?.alias}</h3>
 			<RoleList tenant={id} may={props.may} />
-		</section>
+		</Section>
 	)
 }
 
@@ -104,7 +106,7 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 	const ss = sites.data?.items ?? []
 
 	return (
-		<section>
+		<Section>
 			<h4>roles</h4>
 			<p className="note">
 				A role is a list of method patterns. Bound in a site it reaches that
@@ -113,7 +115,7 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 			</p>
 
 			<Bar>
-				<input
+				<Input
 					className="find"
 					type="search"
 					aria-label="filter roles"
@@ -122,13 +124,13 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					onChange={(e) => setFind(e.target.value)}
 				/>
 				<Fill />
-				<button
-					className="add"
+				<Button
+					variant="solid" className="add"
 					disabled={!props.may('/roster.RoleService/Add')}
 					onClick={() => openAdd(true)}
 				>
 					add role
-				</button>
+				</Button>
 			</Bar>
 
 			{items.length === 0 && (
@@ -137,36 +139,36 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 				</p>
 			)}
 			{items.length > 0 && (
-				<table>
-					<thead>
-						<tr>
-							<th>role</th>
-							<th>scoped to</th>
-							<th>may call</th>
-							<th />
-						</tr>
-					</thead>
-					<tbody>
+				<NoxTable>
+					<TableHeader>
+						<TableRow>
+							<TableHead>role</TableHead>
+							<TableHead>scoped to</TableHead>
+							<TableHead>may call</TableHead>
+							<TableHead />
+						</TableRow>
+					</TableHeader>
+					<TableBody>
 						{items.map((v) => {
 							const k = uuid(v.id)
 
 							return (
-								<tr key={k} className={k === at ? 'at' : ''}>
+								<TableRow key={k} className={k === at ? 'at' : ''}>
 									{/* What it is called and what it is for: the alias is written
 								    into a binding, the note is read. */}
-									<td>
+									<TableCell>
 										{v.alias}
 										<span className="under">{v.desc}</span>
-									</td>
-									<td>
+									</TableCell>
+									<TableCell>
 										<SiteName id={v.site?.id} />
-									</td>
-									<td className="mono methods">
+									</TableCell>
+									<TableCell className="mono methods">
 										{v.methods.length === 0 && <span className="dim">nothing</span>}
 										{v.methods.map((m) => (
 											<span key={m} className="method">
 												{m}
-												<button
+												<Button
 													type="button"
 													className="link"
 													aria-label={`take ${m} out of ${v.alias}`}
@@ -180,50 +182,51 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 													}}
 												>
 													×
-												</button>
+												</Button>
 											</span>
 										))}
-									</td>
-									<td className="acts">
-										<button onClick={() => go(k === at ? null : k)}>
+									</TableCell>
+									<TableCell className="acts">
+										<Button onClick={() => go(k === at ? null : k)}>
 											{k === at ? 'hide' : 'who has it'}
-										</button>
-										<Menu label={`more for ${v.alias}`}>
-											<button
-												disabled={!props.may('/roster.RoleService/Widen')}
-												onClick={() => {
-													setBad(null)
-													openWiden(k)
-												}}
-											>
-												add methods
-											</button>
-											<button
-												className="danger"
-												disabled={!props.may('/roster.RoleService/Erase')}
-												onClick={() => {
-													setBad(null)
-													void erase
-														.call(ref(v.id))
-														.then(() => setGone((was) => [...was, k]))
-														.catch((e: unknown) => setBad(said(e)))
-												}}
-											>
-												remove role
-											</button>
-										</Menu>
-									</td>
-								</tr>
+										</Button>
+										<Menu
+											label={`more for ${v.alias}`}
+											items={[
+												{
+													label: 'add methods',
+													disabled: !props.may('/roster.RoleService/Widen'),
+													run: () => {
+														setBad(null)
+														openWiden(k)
+													},
+												},
+												{
+													label: 'remove role',
+													danger: true,
+													disabled: !props.may('/roster.RoleService/Erase'),
+													run: () => {
+														setBad(null)
+														void erase
+															.call(ref(v.id))
+															.then(() => setGone((was) => [...was, k]))
+															.catch((e: unknown) => setBad(said(e)))
+													},
+												},
+											]}
+										/>
+									</TableCell>
+								</TableRow>
 							)
 						})}
-					</tbody>
-				</table>
+					</TableBody>
+				</NoxTable>
 			)}
 
 			{bad !== null && <p className="bad">{bad}</p>}
 
 			<Sheet at={adding} onClose={() => openAdd(false)} title="add a role" bad={bad}>
-			<form
+			<Form
 				className="role"
 				onSubmit={(e) => {
 					e.preventDefault()
@@ -253,26 +256,26 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
-				<input name="alias" placeholder="role alias" required />
-				<select name="site" defaultValue="">
+				<Input name="alias" placeholder="role alias" required />
+				<Choice name="site" defaultValue="">
 					<option value="">whole tenant</option>
 					{ss.map((s) => (
 						<option key={uuid(s.id)} value={uuid(s.id)}>
 							in {s.alias}
 						</option>
 					))}
-				</select>
-				<input
+				</Choice>
+				<Input
 					name="methods"
 					placeholder="/roster.HolderService/List /roster.SiteService/*"
 					className="wide"
 					required
 				/>
-				<input name="desc" placeholder="what it is for (optional)" />
-				<button type="submit" disabled={add.state === 'pending' || !props.may('/roster.RoleService/Add')}>
+				<Input name="desc" placeholder="what it is for (optional)" />
+				<Button type="submit" disabled={add.state === 'pending' || !props.may('/roster.RoleService/Add')}>
 					add role
-				</button>
-			</form>
+				</Button>
+			</Form>
 			</Sheet>
 
 			<Sheet
@@ -281,7 +284,7 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 				title={`add methods to ${all.find((v) => uuid(v.id) === widening)?.alias ?? 'the role'}`}
 				bad={bad}
 			>
-				<form
+				<Form
 					className="widen"
 					onSubmit={(e) => {
 						e.preventDefault()
@@ -303,23 +306,23 @@ function RoleList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 							.catch((e: unknown) => setBad(said(e)))
 					}}
 				>
-					<input
+					<Input
 						name="methods"
 						aria-label="methods to add"
 						placeholder="/roster.HolderService/Get /loft.Permission/*"
 						className="wide"
 						required
 					/>
-					<button type="submit" disabled={widen.state === 'pending' || !props.may('/roster.RoleService/Widen')}>
+					<Button type="submit" disabled={widen.state === 'pending' || !props.may('/roster.RoleService/Widen')}>
 						add methods
-					</button>
-				</form>
+					</Button>
+				</Form>
 			</Sheet>
 
 			{at !== null && (
 				<Bound tenant={props.tenant} role={items.find((v) => uuid(v.id) === at)} may={props.may} />
 			)}
-		</section>
+		</Section>
 	)
 }
 
@@ -350,57 +353,59 @@ function Bound(props: {
 	const ss = sites.data?.items ?? []
 
 	return (
-		<section className="within">
+		<Section className="within">
 			<h5>{props.role?.alias} — who has it</h5>
 			<Bar>
 				<Fill />
-				<button
-					className="add"
+				<Button
+					variant="solid" className="add"
 					disabled={!props.may('/roster.BindingService/Add')}
 					onClick={() => openBind(true)}
 				>
 					give it to somebody
-				</button>
+				</Button>
 			</Bar>
 			{items.length === 0 && <p className="none">nobody — the role exists and hands out nothing yet</p>}
 			{items.length > 0 && (
-				<table>
-					<tbody>
+				<NoxTable>
+					<TableBody>
 						{items.map((v) => (
-							<tr key={uuid(v.id)}>
-								<td>
+							<TableRow key={uuid(v.id)}>
+								<TableCell>
 									{v.group !== undefined ? <GroupName id={v.group.id} /> : <Alias id={v.holder?.id} />}
-								</td>
-								<td>
+								</TableCell>
+								<TableCell>
 									<SiteName id={v.site?.id} />
-								</td>
-								<td className="acts">
-									<Menu label="more for this binding">
-										<button
-											className="danger"
-											disabled={!props.may('/roster.BindingService/Erase')}
-											onClick={() => {
-												setBad(null)
-												void erase
-													.call(ref(v.id))
-													.then(() => setGone((was) => [...was, uuid(v.id)]))
-													.catch((e: unknown) => setBad(said(e)))
-											}}
-										>
-											take the role away
-										</button>
-									</Menu>
-								</td>
-							</tr>
+								</TableCell>
+								<TableCell className="acts">
+									<Menu
+										label="more for this binding"
+										items={[
+											{
+												label: 'take the role away',
+												danger: true,
+												disabled: !props.may('/roster.BindingService/Erase'),
+												run: () => {
+													setBad(null)
+													void erase
+														.call(ref(v.id))
+														.then(() => setGone((was) => [...was, uuid(v.id)]))
+														.catch((e: unknown) => setBad(said(e)))
+												},
+											},
+										]}
+									/>
+								</TableCell>
+							</TableRow>
 						))}
-					</tbody>
-				</table>
+					</TableBody>
+				</NoxTable>
 			)}
 
 			{bad !== null && <p className="bad">{bad}</p>}
 
 			<Sheet at={binding} onClose={() => openBind(false)} title={`give ${props.role?.alias ?? 'this role'} to somebody`} bad={bad}>
-			<form
+			<Form
 				onSubmit={(e) => {
 					e.preventDefault()
 					const form = e.currentTarget
@@ -423,14 +428,14 @@ function Bound(props: {
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
-				<select value={to} onChange={(e) => setTo(e.currentTarget.value === 'group' ? 'group' : 'holder')}>
+				<Choice value={to} onChange={(e) => setTo(e.currentTarget.value === 'group' ? 'group' : 'holder')}>
 					<option value="holder">a person</option>
 					<option value="group">a group</option>
-				</select>
+				</Choice>
 				{to === 'holder' ? (
 					<PickHolder tenant={props.tenant} name="who" />
 				) : (
-					<select name="who" defaultValue="" required>
+					<Choice name="who" defaultValue="" required>
 						<option value="" disabled>
 							which group
 						</option>
@@ -439,27 +444,27 @@ function Bound(props: {
 								{g.alias}
 							</option>
 						))}
-					</select>
+					</Choice>
 				)}
 				{/* A site-scoped role can only be bound in its site; the server
 				    refuses otherwise (`bindableIn`). The choice is drawn anyway,
 				    because the refusal names the rule and a hidden field hides it. */}
-				<select name="site" defaultValue="">
+				<Choice name="site" defaultValue="">
 					<option value="">whole tenant</option>
 					{ss.map((s) => (
 						<option key={uuid(s.id)} value={uuid(s.id)}>
 							in {s.alias}
 						</option>
 					))}
-				</select>
-				<button
+				</Choice>
+				<Button
 					type="submit"
 					disabled={add.state === 'pending' || !props.may('/roster.BindingService/Add')}
 				>
 					bind
-				</button>
-			</form>
+				</Button>
+			</Form>
 			</Sheet>
-		</section>
+		</Section>
 	)
 }

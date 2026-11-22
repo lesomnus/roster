@@ -1,3 +1,5 @@
+import { Section, Table as NoxTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@lesomnus/nox'
+import { Input } from '#lib/presentation.js'
 /**
  * The trail: what was done to one customer's rows, by whom, when.
  *
@@ -40,10 +42,10 @@ export function Trail(props: { tenant: { id?: Uint8Array; alias?: string } | und
 	if (id === undefined) return null
 
 	return (
-		<section className="within trail">
+		<Section className="within trail">
 			<h3>{props.tenant?.alias} — trail</h3>
 			<Rows tenant={id} />
-		</section>
+		</Section>
 	)
 }
 
@@ -71,14 +73,14 @@ function Rows(props: { tenant: Uint8Array }): React.ReactNode {
 				)
 
 	return (
-		<section>
+		<Section>
 			<p className="note">
 				What was done to this customer's rows, most recent first. An act by one of
 				their people on another customer's rows is recorded under that customer;
 				this is the half about <em>these</em> rows.
 			</p>
 			<Bar>
-				<input
+				<Input
 					className="find"
 					type="search"
 					aria-label="filter the trail"
@@ -92,35 +94,35 @@ function Rows(props: { tenant: Uint8Array }): React.ReactNode {
 				<p className="none">{all.length === 0 ? 'nothing recorded yet' : 'none of these match'}</p>
 			)}
 			{items.length > 0 && (
-				<table>
-					<thead>
-						<tr>
-							<th>when</th>
-							<th>who</th>
-							<th>did</th>
-							<th>to</th>
-						</tr>
-					</thead>
-					<tbody>
+				<NoxTable>
+					<TableHeader>
+						<TableRow>
+							<TableHead>when</TableHead>
+							<TableHead>who</TableHead>
+							<TableHead>did</TableHead>
+							<TableHead>to</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
 						{items.map((v) => (
-							<tr key={uuid(v.id)}>
+							<TableRow key={uuid(v.id)}>
 								{/* One width whatever the stamp says: `toISOString` is fixed
 							    length and the digits are tabular, so the column beside it does
 							    not move as rows arrive. */}
-							<td className="mono dim">{when(v.dateCreated)}</td>
-								<td>
+							<TableCell className="mono dim">{when(v.dateCreated)}</TableCell>
+								<TableCell>
 									<Alias id={v.actorId.length === 16 ? v.actorId : undefined} />
-								</td>
-								<td className="mono">{v.action}</td>
-								<td className="mono">
+								</TableCell>
+								<TableCell className="mono">{v.action}</TableCell>
+								<TableCell className="mono">
 									{names.get(v.domain) ?? `domain ${v.domain}`}{' '}
 									<span className="dim">{uuid(v.objectId).slice(0, 8)}</span>
-								</td>
-							</tr>
+								</TableCell>
+							</TableRow>
 						))}
-					</tbody>
-				</table>
+					</TableBody>
+				</NoxTable>
 			)}
-		</section>
+		</Section>
 	)
 }

@@ -1,3 +1,5 @@
+import { Button } from '@lesomnus/nox'
+import { Field, Form } from '#lib/presentation.js'
 /**
  * The Login App's page: the two forms, and the consent, logout and device screens.
  *
@@ -27,6 +29,8 @@ import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { SignIn, type Provider } from '#lib/signin.js'
+import { AppUI, signInControls } from '#lib/presentation.js'
+import '@lesomnus/nox/styles.css'
 import '#lib/style.css'
 
 /** Flow is what the app says about the challenge in this page's URL. */
@@ -177,12 +181,12 @@ function Consent(props: { of: Flow; onBroken: () => void }): React.ReactNode {
 				for rather than a way out of it.
 			*/}
 			<div className="acts">
-				<button type="button" className="go" disabled={sent} onClick={() => answer(true)}>
+				<Button type="button" className="go" disabled={sent} onClick={() => answer(true)}>
 					allow
-				</button>
-				<button type="button" disabled={sent} onClick={() => answer(false)}>
+				</Button>
+				<Button type="button" disabled={sent} onClick={() => answer(false)}>
 					no
-				</button>
+				</Button>
 			</div>
 
 			<p className="note">
@@ -253,12 +257,12 @@ function Logout(props: { of: Flow }): React.ReactNode {
 			</p>
 
 			<div className="acts">
-				<button type="button" className="go" disabled={sent} onClick={() => answer(true)}>
+				<Button type="button" className="go" disabled={sent} onClick={() => answer(true)}>
 					sign out
-				</button>
-				<button type="button" disabled={sent} onClick={() => answer(false)}>
+				</Button>
+				<Button type="button" disabled={sent} onClick={() => answer(false)}>
 					stay signed in
-				</button>
+				</Button>
 			</div>
 		</main>
 	)
@@ -322,11 +326,8 @@ function Device(): React.ReactNode {
 				to sign in.
 			</p>
 
-			<form onSubmit={answer}>
-				<label>
-					code
-					<input
-						name="user_code"
+			<Form onSubmit={answer}>
+				<Field label="code" name="user_code"
 						value={code}
 						onChange={(e) => setCode(e.target.value)}
 						autoComplete="off"
@@ -335,9 +336,7 @@ function Device(): React.ReactNode {
 						spellCheck={false}
 						// eslint-disable-next-line jsx-a11y/no-autofocus
 						autoFocus
-						required
-					/>
-				</label>
+						required />
 
 				{/*
 					One message for every way a code can be wrong. The app answers
@@ -348,11 +347,11 @@ function Device(): React.ReactNode {
 				{bad && <p className="bad">that code did not work; check the device and type it again</p>}
 
 				<div className="acts">
-					<button type="submit" className="go" disabled={sent || code.trim() === ''}>
+					<Button type="submit" className="go" disabled={sent || code.trim() === ''}>
 						continue
-					</button>
+					</Button>
 				</div>
-			</form>
+			</Form>
 		</main>
 	)
 }
@@ -423,6 +422,7 @@ function Root(): React.ReactNode {
 	// So the challenge travels on the link, the way it does on every other call.
 	return (
 		<SignIn
+			controls={signInControls}
 			brand={of.brand}
 			password={of.password}
 			providers={of.providers}
@@ -434,7 +434,7 @@ function Root(): React.ReactNode {
 }
 
 createRoot(document.getElementById('root') as HTMLElement).render(
-	<StrictMode>
+	<StrictMode><AppUI>
 		<Root />
-	</StrictMode>,
+	</AppUI></StrictMode>,
 )

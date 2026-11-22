@@ -1,3 +1,5 @@
+import { Button, Section, Table as NoxTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@lesomnus/nox'
+import { Choice, Form, Input } from '#lib/presentation.js'
 /**
  * One person, and what somebody administering them may do about them.
  *
@@ -148,11 +150,11 @@ export function Holders(props: {
 	const items = q === '' ? all : all.filter((v) => `${v.alias} ${v.name}`.toLowerCase().includes(q))
 
 	return (
-		<section className="within">
+		<Section className="within">
 			<h3>{props.tenant?.alias}</h3>
 
 			<Bar>
-				<input
+				<Input
 					className="find"
 					type="search"
 					aria-label="filter holders"
@@ -161,9 +163,9 @@ export function Holders(props: {
 					onChange={(e) => setFind(e.target.value)}
 				/>
 				<Fill />
-				<button className="add" disabled={!props.may('/roster.HolderService/Add')} onClick={() => openAdd(true)}>
+				<Button variant="solid" className="add" disabled={!props.may('/roster.HolderService/Add')} onClick={() => openAdd(true)}>
 					add somebody
-				</button>
+				</Button>
 			</Bar>
 
 			{items.length === 0 && (
@@ -183,35 +185,35 @@ export function Holders(props: {
 			</Sheet>
 
 
-			<table>
-				<thead>
-					<tr>
-						<th>alias, and who they are</th>
-						<th>since</th>
-						<th />
-					</tr>
-				</thead>
-				<tbody>
+			<NoxTable>
+				<TableHeader>
+					<TableRow>
+						<TableHead>alias, and who they are</TableHead>
+						<TableHead>since</TableHead>
+						<TableHead />
+					</TableRow>
+				</TableHeader>
+				<TableBody>
 					{items.map((v) => {
 						const who = v.alias
 
 						return (
-							<tr key={uuid(v.id)} className={who === at ? 'at' : ''}>
-								<td>
+							<TableRow key={uuid(v.id)} className={who === at ? 'at' : ''}>
+								<TableCell>
 									{v.alias}
 									<span className="under">{v.name}</span>
-								</td>
-								<td>{when(v.dateCreated)}</td>
-								<td className="acts">
-									<button onClick={() => props.onOpen(who === at ? null : who)}>
+								</TableCell>
+								<TableCell>{when(v.dateCreated)}</TableCell>
+								<TableCell className="acts">
+									<Button onClick={() => props.onOpen(who === at ? null : who)}>
 										{who === at ? 'hide' : 'signs in with'}
-									</button>
-								</td>
-							</tr>
+									</Button>
+								</TableCell>
+							</TableRow>
 						)
 					})}
-				</tbody>
-			</table>
+				</TableBody>
+			</NoxTable>
 
 			{at !== null && (
 				<Person
@@ -224,7 +226,7 @@ export function Holders(props: {
 					}}
 				/>
 			)}
-		</section>
+		</Section>
 	)
 }
 
@@ -252,7 +254,7 @@ function NewHolder(props: {
 
 	return (
 		<div className="new-holder">
-			<form
+			<Form
 				onSubmit={(e) => {
 					e.preventDefault()
 
@@ -275,12 +277,12 @@ function NewHolder(props: {
 						.catch((e: unknown) => setBad(e instanceof Error ? e.message : 'no'))
 				}}
 			>
-				<input name="alias" placeholder="alias" required />
-				<input name="name" placeholder="name (optional)" />
-				<button type="submit" disabled={add.state === 'pending' || !allowed}>
+				<Input autoFocus name="alias" placeholder="alias" required />
+				<Input name="name" placeholder="name (optional)" />
+				<Button type="submit" disabled={add.state === 'pending' || !allowed}>
 					add somebody
-				</button>
-			</form>
+				</Button>
+			</Form>
 
 			{/* Said rather than hidden, for the reason `NewCustomer` says it: a
 			    screen that dropped the form would leave somebody wondering
@@ -339,7 +341,7 @@ export function Person(props: {
 	const disabled = props.holder.dateDisabled !== undefined
 
 	return (
-		<section className="within holder">
+		<Section className="within holder">
 			<h4>{props.holder.alias}</h4>
 
 			<Ways ids={ids} creds={creds} may={props.may} />
@@ -389,7 +391,7 @@ export function Person(props: {
 				    `Credential.Issue` -- it was `Vouch.Reset`, and it is the same call an
 				    operator of the deployment makes about a new operator, which is
 				    `service` instead of `ref`. */}
-				<button
+				<Button
 					disabled={!props.may('/roster.CredentialService/Issue')}
 					onClick={() => {
 						say(null)
@@ -402,20 +404,20 @@ export function Person(props: {
 					}}
 				>
 					new password
-				</button>
+				</Button>
 
 				{/* A lockout releases itself after fifteen minutes, so this is a
 				    convenience — and it is also the answer to what locking by name costs:
 				    an account can be held closed by somebody else, and a person on site can
 				    simply open it. */}
-				<button
+				<Button
 					disabled={!props.may('/roster.CredentialService/Unlock')}
 					onClick={() =>
 						run(props.writes.credential.unlock({ ref: who }), 'the account is open')
 					}
 				>
 					unlock
-				</button>
+				</Button>
 
 				{/* A second factor made **for** somebody: the operator's half of
 				    `Credential.Enrol`, for a hardware key issued in an air gap or a phone
@@ -424,59 +426,59 @@ export function Person(props: {
 				    every credential write. */}
 				<EnrolFor holder={key} writes={props.writes} may={props.may} say={say} />
 
-				<Menu label={`more for ${props.holder?.alias ?? 'them'}`}>
-					{/* Suspending and reinstating are two grants on purpose: a role is a
-					    list of methods, so a deployment can only hand out what it can
-					    name. */}
-					{disabled ? (
-						<button
-							disabled={!props.may('/roster.HolderService/Enable')}
-							onClick={() => run(props.writes.holder.enable({ ref: who }), 'signing in is open again')}
-						>
-							reinstate
-						</button>
-					) : (
-						<button
-							className="danger"
-							disabled={!props.may('/roster.HolderService/Disable')}
-							onClick={() => run(props.writes.holder.disable({ ref: who }), 'suspended')}
-						>
-							suspend
-						</button>
-					)}
-
-					{/* One write, and there is no undo by construction: the server stamps
-					    the moment and nothing can write an older one. */}
-					<button
-						className="danger"
-						disabled={!props.may('/roster.HolderService/Invalidate')}
-						onClick={() =>
-							run(
-								props.writes.holder.invalidate({ ref: who }),
-								'everything issued before now is void',
-							)
-						}
-					>
-						sign out everywhere
-					</button>
-
-					{/* Soft: the row stays for the trail and vanishes from every read.
-					    There is no undo drawn, because there is no undo. */}
-					<button
-						className="danger"
-						disabled={!props.may('/roster.HolderService/Erase')}
-						onClick={() => {
-							if (!window.confirm(`erase ${props.holder?.alias ?? 'them'}? they vanish from every read; the trail keeps what they did`)) return
-							say(null)
-							void props.writes.holder
-								.erase(who)
-								.then(() => props.onErased?.())
-								.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
-						}}
-					>
-						erase
-					</button>
-				</Menu>
+				<Menu
+					label={`more for ${props.holder?.alias ?? 'them'}`}
+					items={[
+						/* Suspending and reinstating are two grants on purpose: a role is a
+									    list of methods, so a deployment can only hand out what it can
+									    name. */
+						...(disabled
+							? [
+									{
+										label: 'reinstate',
+										disabled: !props.may('/roster.HolderService/Enable'),
+										run: () => run(props.writes.holder.enable({ ref: who }), 'signing in is open again'),
+									},
+								]
+							: [
+									{
+										label: 'suspend',
+										danger: true,
+										disabled: !props.may('/roster.HolderService/Disable'),
+										run: () => run(props.writes.holder.disable({ ref: who }), 'suspended'),
+									},
+								]),
+						/* One write, and there is no undo by construction: the server stamps
+									    the moment and nothing can write an older one. */
+						{
+							label: 'sign out everywhere',
+							danger: true,
+							disabled: !props.may('/roster.HolderService/Invalidate'),
+							run: () =>
+								run(props.writes.holder.invalidate({ ref: who }), 'everything issued before now is void'),
+						},
+						/* Soft: the row stays for the trail and vanishes from every read.
+									    There is no undo drawn, because there is no undo. */
+						{
+							label: 'erase',
+							danger: true,
+							disabled: !props.may('/roster.HolderService/Erase'),
+							run: () => {
+								if (
+									!window.confirm(
+										`erase ${props.holder?.alias ?? 'them'}? they vanish from every read; the trail keeps what they did`,
+									)
+								)
+									return
+								say(null)
+								void props.writes.holder
+									.erase(who)
+									.then(() => props.onErased?.())
+									.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
+							},
+						},
+					]}
+				/>
 			</div>
 
 			{said?.kind === 'secret' && (
@@ -495,7 +497,7 @@ export function Person(props: {
 			)}
 			{said?.kind === 'done' && <p className="note">{said.text}</p>}
 			{said?.kind === 'bad' && <p className="bad">{said.text}</p>}
-		</section>
+		</Section>
 	)
 }
 
@@ -515,10 +517,10 @@ function Reaches(props: { holder: Uint8Array; may: (method: string) => boolean }
 
 	if (!allowed) {
 		return (
-			<section className="reaches">
+			<Section className="reaches">
 				<h5>may call</h5>
 				<p className="none">this needs /roster.HolderService/Reaches</p>
-			</section>
+			</Section>
 		)
 	}
 	if (vs.state === 'pending') return <p className="loading">…</p>
@@ -527,7 +529,7 @@ function Reaches(props: { holder: Uint8Array; may: (method: string) => boolean }
 	const ms = vs.data?.methods ?? []
 
 	return (
-		<section className="reaches">
+		<Section className="reaches">
 			<h5>may call</h5>
 			{ms.length === 0 ? (
 				<p className="none">nothing — no role reaches them, by any path</p>
@@ -549,7 +551,7 @@ function Reaches(props: { holder: Uint8Array; may: (method: string) => boolean }
 				{' — '}patterns, as the roles wrote them, added up over bindings, groups
 				and teams the way the gate adds them up.
 			</p>
-		</section>
+		</Section>
 	)
 }
 
@@ -603,41 +605,41 @@ function Keys(props: {
 		props.say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' })
 
 	return (
-		<section className="keys">
+		<Section className="keys">
 			<h5>keys</h5>
 
 			{keys.length === 0 ? (
 				<p className="none">none — nothing of theirs calls this deployment</p>
 			) : (
-				<table>
-					<thead>
-						<tr>
-							<th>name</th>
-							<th>may call</th>
-							<th>until</th>
-							<th>last used</th>
-							<th />
-						</tr>
-					</thead>
-					<tbody>
+				<NoxTable>
+					<TableHeader>
+						<TableRow>
+							<TableHead>name</TableHead>
+							<TableHead>may call</TableHead>
+							<TableHead>until</TableHead>
+							<TableHead>last used</TableHead>
+							<TableHead />
+						</TableRow>
+					</TableHeader>
+					<TableBody>
 						{keys.map((v) => (
-							<tr key={uuid(v.id)}>
-								<td>{v.alias}</td>
+							<TableRow key={uuid(v.id)}>
+								<TableCell>{v.alias}</TableCell>
 								{/* What it may call, in full. A key is never wider
 								    than the person it hangs off, so this is how
 								    much narrower it was made -- which is the only
 								    thing worth reading before revoking one. */}
-								<td className="mono">{v.methods.join(', ')}</td>
-								<td className={v.dateExpires === undefined ? 'none' : ''}>{until(v.dateExpires)}</td>
-								<td>
+								<TableCell className="mono">{v.methods.join(', ')}</TableCell>
+								<TableCell className={v.dateExpires === undefined ? 'none' : ''}>{until(v.dateExpires)}</TableCell>
+								<TableCell>
 									{v.dateUsed === undefined ? (
 										<span className="none">never</span>
 									) : (
 										when(v.dateUsed)
 									)}
-								</td>
-								<td>
-									<button
+								</TableCell>
+								<TableCell>
+									<Button
 										disabled={!props.may('/roster.ApiKeyService/Erase')}
 										onClick={() => {
 											void props.writes.apiKey
@@ -650,16 +652,16 @@ function Keys(props: {
 										}}
 									>
 										revoke
-									</button>
-								</td>
-							</tr>
+									</Button>
+								</TableCell>
+							</TableRow>
 						))}
-					</tbody>
-				</table>
+					</TableBody>
+				</NoxTable>
 			)}
 
 			<div className="acts">
-				<input
+				<Input
 					placeholder="what to call it"
 					value={alias}
 					onChange={(e) => setAlias(e.target.value)}
@@ -669,19 +671,19 @@ function Keys(props: {
 				    mints a key that silently does not work -- which is the
 				    refusal `ApiKey.Issue` makes, said here so somebody meets it
 				    before they have typed a name. */}
-				<input
+				<Input
 					placeholder="/roster.HolderService/List, …"
 					value={methods}
 					onChange={(e) => setMethods(e.target.value)}
 				/>
-				<select value={expires} onChange={(e) => setExpires(e.target.value)}>
+				<Choice value={expires} onChange={(e) => setExpires(e.target.value)}>
 					{expiries.map((v) => (
 						<option key={v.value} value={v.value}>
 							{v.name}
 						</option>
 					))}
-				</select>
-				<button
+				</Choice>
+				<Button
 					disabled={
 						!props.may('/roster.ApiKeyService/Issue') ||
 						alias === '' ||
@@ -709,9 +711,9 @@ function Keys(props: {
 					}}
 				>
 					mint a key
-				</button>
+				</Button>
 			</div>
-		</section>
+		</Section>
 	)
 }
 
@@ -735,39 +737,39 @@ function Ways(props: {
 	}
 
 	return (
-		<table>
-			<thead>
-				<tr>
-					<th>way in</th>
-					<th>which</th>
-					<th>since</th>
-					<th />
-				</tr>
-			</thead>
-			<tbody>
+		<NoxTable>
+			<TableHeader>
+				<TableRow>
+					<TableHead>way in</TableHead>
+					<TableHead>which</TableHead>
+					<TableHead>since</TableHead>
+					<TableHead />
+				</TableRow>
+			</TableHeader>
+			<TableBody>
 				{props.creds.map((v) => (
-					<tr key={`c:${v.kind}:${v.name}`}>
-						<td>{v.kind}</td>
-						<td>{v.name === '' ? <span className="none">the only one</span> : v.name}</td>
-						<td>{v.dateRotated === undefined ? 'never changed' : when(v.dateRotated)}</td>
-						<td>
+					<TableRow key={`c:${v.kind}:${v.name}`}>
+						<TableCell>{v.kind}</TableCell>
+						<TableCell>{v.name === '' ? <span className="none">the only one</span> : v.name}</TableCell>
+						<TableCell>{v.dateRotated === undefined ? 'never changed' : when(v.dateRotated)}</TableCell>
+						<TableCell>
 							{v.dateLocked !== undefined && (
 								<span className="bad">closed until {when(v.dateLocked)}</span>
 							)}
-						</td>
-					</tr>
+						</TableCell>
+					</TableRow>
 				))}
 				{ids.map((v) => (
-					<tr key={`i:${uuid(v.id)}`}>
-						<td>{v.provider}</td>
+					<TableRow key={`i:${uuid(v.id)}`}>
+						<TableCell>{v.provider}</TableCell>
 						{/* The subject as the provider gave it, and it is not a
 						    name: somebody reading this is checking *which
 						    account*, and the answer has to be the one the
 						    provider would answer with. */}
-						<td className="mono">{v.subject}</td>
-						<td>{when(v.dateCreated)}</td>
-						<td>
-							<button
+						<TableCell className="mono">{v.subject}</TableCell>
+						<TableCell>{when(v.dateCreated)}</TableCell>
+						<TableCell>
+							<Button
 								disabled={!props.may('/roster.IdentityService/Erase')}
 								onClick={() => {
 									setBad(null)
@@ -778,21 +780,21 @@ function Ways(props: {
 								}}
 							>
 								unlink
-							</button>
-						</td>
-					</tr>
+							</Button>
+						</TableCell>
+					</TableRow>
 				))}
-			</tbody>
+			</TableBody>
 			{bad !== null && (
 				<tfoot>
-					<tr>
-						<td colSpan={4} className="bad">
+					<TableRow>
+						<TableCell colSpan={4} className="bad">
 							{bad}
-						</td>
-					</tr>
+						</TableCell>
+					</TableRow>
 				</tfoot>
 			)}
-		</table>
+		</NoxTable>
 	)
 }
 
@@ -853,25 +855,25 @@ function Emails(props: {
 	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
 
 	return (
-		<section className="emails">
+		<Section className="emails">
 			<h5>addresses</h5>
 			{items.length === 0 ? (
 				<p className="none">none — a recovery link has nowhere to go</p>
 			) : (
-				<table>
-					<tbody>
+				<NoxTable>
+					<TableBody>
 						{items.map((v) => (
-							<tr key={uuid(v.id)}>
-								<td className="mono">{v.address}</td>
-								<td>
+							<TableRow key={uuid(v.id)}>
+								<TableCell className="mono">{v.address}</TableCell>
+								<TableCell>
 									{v.dateVerified === undefined ? (
 										<span className="none">never checked</span>
 									) : (
 										`checked ${when(v.dateVerified)}`
 									)}
-								</td>
-								<td>
-									<button
+								</TableCell>
+								<TableCell>
+									<Button
 										disabled={!props.may('/roster.EmailService/Erase')}
 										onClick={() => {
 											setBad(null)
@@ -882,14 +884,14 @@ function Emails(props: {
 										}}
 									>
 										remove
-									</button>
-								</td>
-							</tr>
+									</Button>
+								</TableCell>
+							</TableRow>
 						))}
-					</tbody>
-				</table>
+					</TableBody>
+				</NoxTable>
 			)}
-			<form
+			<Form
 				onSubmit={(e) => {
 					e.preventDefault()
 					const form = e.currentTarget
@@ -903,11 +905,11 @@ function Emails(props: {
 						.catch((e: unknown) => setBad(e instanceof Error ? e.message : 'no'))
 				}}
 			>
-				<input name="address" type="email" placeholder="somebody@contoso.com" required />
-				<button type="submit" disabled={add.state === 'pending' || !props.may('/roster.EmailService/Add')}>
+				<Input name="address" type="email" placeholder="somebody@contoso.com" required />
+				<Button type="submit" disabled={add.state === 'pending' || !props.may('/roster.EmailService/Add')}>
 					add address
-				</button>
-			</form>
+				</Button>
+			</Form>
 			{props.said !== '' && !items.some((v) => v.address === props.said) && (
 				<p className="note said">
 					their directory says their address is <span className="mono">{props.said}</span>, which is none
@@ -915,7 +917,7 @@ function Emails(props: {
 				</p>
 			)}
 			{bad !== null && <p className="bad">{bad}</p>}
-		</section>
+		</Section>
 	)
 }
 
@@ -935,11 +937,11 @@ function Profile(props: { holder: Holder; may: (method: string) => boolean }): R
 	const p = props.holder.profile
 
 	return (
-		<section className="profile">
+		<Section className="profile">
 			<h5>profile</h5>
 			{/* From a list, which carries the 64 rendition: drawn at 32 it is sharp. */}
-			<Picture holder={props.holder} may={props.may} px={32} />
-			<form
+			<Picture Button={Button} holder={props.holder} may={props.may} px={32} />
+			<Form
 				className="profile"
 				onSubmit={(e) => {
 					e.preventDefault()
@@ -963,18 +965,18 @@ function Profile(props: { holder: Holder; may: (method: string) => boolean }): R
 						.catch((e: unknown) => say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }))
 				}}
 			>
-				<input name="display_name" placeholder="display name" defaultValue={p?.displayName ?? ''} />
-				<input name="department" placeholder="department" defaultValue={p?.department ?? ''} />
-				<input name="employee_no" placeholder="employee no" defaultValue={p?.employeeNo ?? ''} />
-				<input name="locale" placeholder="locale, e.g. ko-KR" defaultValue={p?.locale ?? ''} />
-				<input name="picture" placeholder="picture url" defaultValue={p?.picture ?? ''} />
-				<button type="submit" disabled={update.state === 'pending' || !props.may('/roster.HolderService/Update')}>
+				<Input name="display_name" placeholder="display name" defaultValue={p?.displayName ?? ''} />
+				<Input name="department" placeholder="department" defaultValue={p?.department ?? ''} />
+				<Input name="employee_no" placeholder="employee no" defaultValue={p?.employeeNo ?? ''} />
+				<Input name="locale" placeholder="locale, e.g. ko-KR" defaultValue={p?.locale ?? ''} />
+				<Input name="picture" placeholder="picture url" defaultValue={p?.picture ?? ''} />
+				<Button type="submit" disabled={update.state === 'pending' || !props.may('/roster.HolderService/Update')}>
 					save profile
-				</button>
-			</form>
+				</Button>
+			</Form>
 			{said?.kind === 'done' && <p className="note">{said.text}</p>}
 			{said?.kind === 'bad' && <p className="bad">{said.text}</p>}
-		</section>
+		</Section>
 	)
 }
 
@@ -992,8 +994,8 @@ function EnrolFor(props: {
 
 	return (
 		<span className="enrol">
-			<input placeholder="factor name, e.g. phone" value={name} onChange={(e) => setName(e.target.value)} />
-			<button
+			<Input placeholder="factor name, e.g. phone" value={name} onChange={(e) => setName(e.target.value)} />
+			<Button
 				disabled={!props.may('/roster.CredentialService/Enrol')}
 				onClick={() => {
 					props.say(null)
@@ -1007,7 +1009,7 @@ function EnrolFor(props: {
 				}}
 			>
 				enrol a factor
-			</button>
+			</Button>
 		</span>
 	)
 }

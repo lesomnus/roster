@@ -1,3 +1,5 @@
+import { Button, Section } from '@lesomnus/nox'
+import { Field, Form } from '#lib/presentation.js'
 import React from 'react'
 
 /**
@@ -41,20 +43,20 @@ export function Second(props: {
 	// the front door's and not this one: a key answers for one name.
 	if (totp === undefined) {
 		return (
-			<section>
+			<Section>
 				<p className="bad" role="alert">
 					This account asks for a second proof this page cannot ask for. Sign in
 					through your organisation's own sign-in page.
 				</p>
-				<button type="button" onClick={props.back}>
+				<Button type="button" onClick={props.back}>
 					back
-				</button>
-			</section>
+				</Button>
+			</Section>
 		)
 	}
 
 	return (
-		<form
+		<Form
 			onSubmit={(e) => {
 				e.preventDefault()
 
@@ -63,11 +65,8 @@ export function Second(props: {
 			}}
 		>
 			<p className="note">one more: a code from your authenticator app</p>
-			<label>
-				code
-				<input name="code" inputMode="numeric" autoComplete="one-time-code" autoFocus />
-			</label>
-			<button type="submit">sign in</button>
-		</form>
+			<Field label="code" name="code" inputMode="numeric" autoComplete="one-time-code" autoFocus />
+			<Button type="submit">sign in</Button>
+		</Form>
 	)
 }

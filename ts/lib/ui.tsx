@@ -1,46 +1,13 @@
 /**
- * The pieces a screen is built from, so that the six rules both consoles are drawn
- * by are held in one place rather than in nine.
- *
- * # What the rules are
- *
- * **A click does not need a box.** A button is where a person expects to be able
- * to press, and the border that used to say so is noise once there are six of
- * them on a row. What is left is position and, on the primary act, colour.
- *
- * **A container is one container.** A screen is a card, and what is inside it is
- * inside it -- a bordered region within a bordered region says there are two
- * things when there is one. Nesting is said with space and with a rule, not with
- * another box.
- *
- * **Things at the same level are close, but not touching.** A list reads as a
- * list because the gap between rows is smaller than the gap around the list, and
- * it reads as separate rows because the gap is not zero.
- *
- * **A value that changes does not move what is beside it.** A date, an alias, a
- * count: the space is sized for what will arrive, so the column does not jump
- * when a shorter one does. Where the range is known, the unused part is drawn
- * rather than left blank -- [Pad] writes `0001` with the zeros dimmed, which says
- * *four digits go here* without saying anything a person has to read.
- *
- * **The top of a screen is what you came to do**: find something, filter it, add
- * one. What is rarer, and what cannot be undone, is behind [Menu].
- *
- * **A list is cards that line up**, not a grid of text. A row may take more than
- * one line, and often should -- the name a person reads and the identifier they
- * copy are not the same size and do not belong side by side.
- *
- * # Why the rows are still a `<table>`
- *
- * Because they are a table: parallel fields across records, read down as columns.
- * The card look is `border-spacing` and a background, not `display: block`, so
- * nothing is taken away from a screen reader to get it. A row that spans two
- * lines does it inside a cell, which is where the second line belongs anyway.
+ * Shared Nox building blocks for the two consoles: work toolbars, secondary
+ * actions, focused add/edit drawers and fixed-width counts. Screens retain
+ * their own requests, permission checks and local form state.
  *
  * @module
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
+import { ActionMenu, Button, CompactNumber, Drawer, PageToolbar, Section, type ActionMenuItem } from '@lesomnus/nox'
 
 /**
  * Bar is the top of a screen: what is used often, on the outside.
@@ -50,7 +17,7 @@ import { useEffect, useRef, useState } from 'react'
  * is in between.
  */
 export function Bar(props: { children: React.ReactNode }): React.ReactNode {
-	return <div className="bar">{props.children}</div>
+	return <PageToolbar className="bar">{props.children}</PageToolbar>
 }
 
 /** Fill is the gap in a [Bar] that pushes what follows it to the end. */
@@ -69,56 +36,16 @@ export function Fill(): React.ReactNode {
  * It closes on `Escape` and on a press anywhere else, because a menu that stays
  * open is a menu somebody clicks through.
  */
-export function Menu(props: { label?: string; children: React.ReactNode }): React.ReactNode {
-	const [at, go] = useState(false)
-	const box = useRef<HTMLDivElement>(null)
-
-	useEffect(() => {
-		if (!at) return
-
-		const away = (e: MouseEvent): void => {
-			if (box.current?.contains(e.target as Node) !== true) go(false)
-		}
-		const key = (e: KeyboardEvent): void => {
-			if (e.key === 'Escape') go(false)
-		}
-
-		document.addEventListener('mousedown', away)
-		document.addEventListener('keydown', key)
-
-		return () => {
-			document.removeEventListener('mousedown', away)
-			document.removeEventListener('keydown', key)
-		}
-	}, [at])
-
-	return (
-		<div className="menu" ref={box}>
-			<button
-				type="button"
-				aria-label={props.label ?? 'more'}
-				aria-expanded={at}
-				onClick={() => go((was) => !was)}
-			>
-				⋯
-			</button>
-			{/* Closed on any press inside, because every item in here is an act:
-			    there is nothing to pick without also doing it. */}
-			{at && (
-				<div className="items" onClick={() => go(false)}>
-					{props.children}
-				</div>
-			)}
-		</div>
-	)
+export function Menu(props: { label?: string; items: ActionMenuItem[] }): React.ReactNode {
+	return <ActionMenu label={props.label ?? 'more'} items={props.items} />
 }
 
 /**
- * Sheet is the form that adds one, arriving from the bottom.
+ * Sheet is the focused form that adds one, in a Nox drawer.
  *
  * Not a form under the list, which is where these were: on a screen with rows to
  * scroll, *add* was somewhere a person had to go and find, and it took space from
- * the list on every screen where nobody was adding anything. Coming up over the
+ * the list on every screen where nobody was adding anything. Opening over the
  * page instead means the button that opens it is at the top, where it is looked
  * for, and the form is the only thing to look at once it is open.
  *
@@ -143,37 +70,18 @@ export function Sheet(props: {
 	bad?: string | null
 }): React.ReactNode {
 	const shut = props.onClose
-
-	useEffect(() => {
-		if (!props.at) return
-
-		const key = (e: KeyboardEvent): void => {
-			if (e.key === 'Escape') shut()
-		}
-
-		document.addEventListener('keydown', key)
-
-		return () => document.removeEventListener('keydown', key)
-	}, [props.at, shut])
-
-	if (!props.at) return null
+	const firstControl = useRef<HTMLElement>(null)
 
 	return (
-		<div className="scrim" onClick={shut}>
-			{/* The press that opened this one lands here too; it must not close it. */}
-			<div
-				className="sheet"
-				role="dialog"
-				aria-label={props.title}
-				onClick={(e) => e.stopPropagation()}
-			>
-				<div className="handle" />
-				<h5>{props.title}</h5>
+		<Drawer initialFocus={firstControl} open={props.at} onClose={shut} side="right" width="min(560px, calc(100vw - 24px))" inset={12} className="sheet" aria-label={props.title}>
+			<Section className="sheet-content" ref={node => { firstControl.current = node?.querySelector<HTMLElement>('input:not([type="hidden"]), select, textarea') ?? null }}>
+				<header className="sheet-heading"><h2>{props.title}</h2><Button aria-label="Close" onClick={shut}>×</Button></header>
 				{props.children}
-				{props.bad !== undefined && props.bad !== null && <p className="bad">{props.bad}</p>}
-			</div>
-		</div>
+				{props.bad !== undefined && props.bad !== null && <p className="bad" role="alert">{props.bad}</p>}
+			</Section>
+		</Drawer>
 	)
+
 }
 
 /**
@@ -188,15 +96,8 @@ export function Sheet(props: {
  * question about layout with a lie about the value.
  */
 export function Pad(props: { value: number; width: number }): React.ReactNode {
-	const v = String(props.value)
-	const lead = '0'.repeat(Math.max(0, props.width - v.length))
+	return <CompactNumber mode="integer" digits={props.width} value={props.value} />
 
-	return (
-		<span className="pad">
-			{lead !== '' && <span className="lead">{lead}</span>}
-			{v}
-		</span>
-	)
 }
 
 /**

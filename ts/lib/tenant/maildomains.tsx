@@ -1,3 +1,5 @@
+import { Button, Section, Table as NoxTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@lesomnus/nox'
+import { Choice, Form, Input } from '#lib/presentation.js'
 /**
  * The mail domains a tenant claims: which addresses belong to whose people.
  *
@@ -39,10 +41,10 @@ export function MailDomains(props: {
 	if (id === undefined) return null
 
 	return (
-		<section className="within">
+		<Section className="within">
 			<h3>{props.tenant?.alias}</h3>
 			<MailDomainList tenant={id} may={props.may} />
-		</section>
+		</Section>
 	)
 }
 
@@ -69,7 +71,7 @@ function MailDomainList(props: { tenant: Uint8Array; may: (m: string) => boolean
 	const names = (providers.data?.items ?? []).map((v) => v.name)
 
 	return (
-		<section>
+		<Section>
 			<h4>mail domains</h4>
 			<p className="note">
 				<em>Addresses at @contoso.com go to Entra.</em> A front door that asks
@@ -79,7 +81,7 @@ function MailDomainList(props: { tenant: Uint8Array; may: (m: string) => boolean
 			</p>
 
 			<Bar>
-				<input
+				<Input
 					className="find"
 					type="search"
 					aria-label="filter domains"
@@ -88,34 +90,34 @@ function MailDomainList(props: { tenant: Uint8Array; may: (m: string) => boolean
 					onChange={(e) => setFind(e.target.value)}
 				/>
 				<Fill />
-				<button
-					className="add"
+				<Button
+					variant="solid" className="add"
 					disabled={!props.may('/roster.MailDomainService/Add')}
 					onClick={() => openAdd(true)}
 				>
 					route a domain
-				</button>
+				</Button>
 			</Bar>
 
 			{items.length === 0 && (
 				<p className="none">{all.length === 0 ? 'no domains routed yet' : 'none of these match'}</p>
 			)}
 			{items.length > 0 && (
-				<table>
-					<thead>
-						<tr>
-							<th>domain, and where it goes</th>
-							<th>note</th>
-							<th />
-						</tr>
-					</thead>
-					<tbody>
+				<NoxTable>
+					<TableHeader>
+						<TableRow>
+							<TableHead>domain, and where it goes</TableHead>
+							<TableHead>note</TableHead>
+							<TableHead />
+						</TableRow>
+					</TableHeader>
+					<TableBody>
 						{items.map((v) =>
 							editing === uuid(v.id) ? (
-								<tr key={uuid(v.id)} className="editing">
-									<td className="mono">@{v.name}</td>
-									<td colSpan={2}>
-										<form
+								<TableRow key={uuid(v.id)} className="editing">
+									<TableCell className="mono">@{v.name}</TableCell>
+									<TableCell colSpan={2}>
+										<Form
 											className="edit"
 											onSubmit={(e) => {
 												e.preventDefault()
@@ -132,66 +134,68 @@ function MailDomainList(props: { tenant: Uint8Array; may: (m: string) => boolean
 													.catch((e: unknown) => setBad(said(e)))
 											}}
 										>
-											<select name="provider" defaultValue={v.provider} autoFocus>
+											<Choice name="provider" defaultValue={v.provider} autoFocus>
 												<option value="">nowhere (known, not routed)</option>
 												{names.map((n) => (
 													<option key={n} value={n}>
 														{n}
 													</option>
 												))}
-											</select>
-											<input name="desc" placeholder="note" defaultValue={v.desc} />
-											<button type="submit" disabled={update.state === 'pending'}>
+											</Choice>
+											<Input name="desc" placeholder="note" defaultValue={v.desc} />
+											<Button type="submit" disabled={update.state === 'pending'}>
 												save
-											</button>
-											<button type="button" onClick={() => setEditing(null)}>
+											</Button>
+											<Button type="button" onClick={() => setEditing(null)}>
 												cancel
-											</button>
-										</form>
-									</td>
-								</tr>
+											</Button>
+										</Form>
+									</TableCell>
+								</TableRow>
 							) : (
-							<tr key={uuid(v.id)}>
+							<TableRow key={uuid(v.id)}>
 								{/* The domain and where it routes are one fact read together: an
 								    address at this domain goes to that provider. */}
-								<td className="mono">
+								<TableCell className="mono">
 									@{v.name}
 									<span className="under">
 										{v.provider === '' ? 'nowhere — known, not routed' : `→ ${v.provider}`}
 									</span>
-								</td>
-								<td>{v.desc}</td>
-								<td className="acts">
-									<button disabled={!props.may('/roster.MailDomainService/Update')} onClick={() => setEditing(uuid(v.id))}>
+								</TableCell>
+								<TableCell>{v.desc}</TableCell>
+								<TableCell className="acts">
+									<Button disabled={!props.may('/roster.MailDomainService/Update')} onClick={() => setEditing(uuid(v.id))}>
 										edit
-									</button>
-									<Menu label={`more for @${v.name}`}>
-										<button
-											className="danger"
-											disabled={!props.may('/roster.MailDomainService/Erase')}
-											onClick={() => {
-												setBad(null)
-												void erase
-													.call({ key: { case: 'id', value: v.id } })
-													.then(() => setGone((was) => [...was, uuid(v.id)]))
-													.catch((e: unknown) => setBad(said(e)))
-											}}
-										>
-											stop routing it
-										</button>
-									</Menu>
-								</td>
-							</tr>
+									</Button>
+									<Menu
+										label={`more for @${v.name}`}
+										items={[
+											{
+												label: 'stop routing it',
+												danger: true,
+												disabled: !props.may('/roster.MailDomainService/Erase'),
+												run: () => {
+													setBad(null)
+													void erase
+														.call({ key: { case: 'id', value: v.id } })
+														.then(() => setGone((was) => [...was, uuid(v.id)]))
+														.catch((e: unknown) => setBad(said(e)))
+												},
+											},
+										]}
+									/>
+								</TableCell>
+							</TableRow>
 							),
 						)}
-					</tbody>
-				</table>
+					</TableBody>
+				</NoxTable>
 			)}
 
 			{bad !== null && <p className="bad">{bad}</p>}
 
 			<Sheet at={adding} onClose={() => openAdd(false)} title="route a mail domain" bad={bad}>
-			<form
+			<Form
 				onSubmit={(e) => {
 					e.preventDefault()
 					const form = e.currentTarget
@@ -216,26 +220,26 @@ function MailDomainList(props: { tenant: Uint8Array; may: (m: string) => boolean
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
-				<input name="name" placeholder="contoso.com" required />
+				<Input name="name" placeholder="contoso.com" required />
 				{/* A choice and not a text field: the value has to be a
 				    `Connection.name` of this tenant, or the route goes nowhere. */}
-				<select name="provider" defaultValue="">
+				<Choice name="provider" defaultValue="">
 					<option value="">nowhere (known, not routed)</option>
 					{names.map((n) => (
 						<option key={n} value={n}>
 							{n}
 						</option>
 					))}
-				</select>
-				<input name="desc" placeholder="note (optional)" />
-				<button
+				</Choice>
+				<Input name="desc" placeholder="note (optional)" />
+				<Button
 					type="submit"
 					disabled={add.state === 'pending' || !props.may('/roster.MailDomainService/Add')}
 				>
 					route domain
-				</button>
-			</form>
+				</Button>
+			</Form>
 			</Sheet>
-		</section>
+		</Section>
 	)
 }

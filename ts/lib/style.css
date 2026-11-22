@@ -1,1331 +1,182 @@
-/* One stylesheet for both pages: the console an operator opens and the
-   account page a customer's people sign in at.
-
-   What it is: a small system rather than a look -- a palette in variables
-   (light and dark from the same names), a spacing scale, one shape for a
-   section, a table, a form and a button, and the handful of notices the
-   pages already had (`.note`, `.bad`, `.none`, `.secret`). Nothing here is a
-   component library, and nothing here is a decision about what the pages
-   do; the markup was left as it was and this only gives it a shape. */
-
+/* Nox owns controls and surfaces. This file arranges the four-page product. */
 :root {
-	color-scheme: light dark;
-
-	--bg: #f6f7f9;
-	--surface: #ffffff;
-	--surface-2: #f0f2f5;
-	--border: #dde1e6;
-	--text: #1f2328;
-	--muted: #6b7280;
-	--accent: #3b5bdb;
-	--accent-text: #ffffff;
-	--accent-soft: #e8ecfb;
-	--danger: #c0392b;
-	--danger-soft: #fdecea;
-	--warn: #b58900;
-	--warn-soft: #fff8e1;
-	--ok: #2f855a;
-
-	--radius: 6px;
-	--shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-
-	--s-1: 0.25rem;
-	--s-2: 0.5rem;
-	--s-3: 0.75rem;
-	--s-4: 1rem;
-	--s-5: 1.5rem;
-	--s-6: 2rem;
-
-	font-family:
-		system-ui,
-		-apple-system,
-		'Segoe UI',
-		Roboto,
-		sans-serif;
-	font-size: 15px;
-	line-height: 1.5;
-	color: var(--text);
-	background: var(--bg);
-}
-
-@media (prefers-color-scheme: dark) {
-	:root {
-		--bg: #0f1216;
-		--surface: #171b21;
-		--surface-2: #1f242c;
-		--border: #2b323c;
-		--text: #e6e8eb;
-		--muted: #9aa3ad;
-		--accent: #7b93ff;
-		--accent-text: #0f1216;
-		--accent-soft: #232a45;
-		--danger: #f07167;
-		--danger-soft: #3a1f1d;
-		--warn: #e0b341;
-		--warn-soft: #33290f;
-		--ok: #5cb885;
-		--shadow: none;
-	}
-}
-
-* {
-	box-sizing: border-box;
-}
-
-body {
-	margin: 0;
-	background: var(--bg);
-	color: var(--text);
-}
-
-code,
-.mono {
-	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-	font-size: 0.9em;
-}
-
-a {
-	color: var(--accent);
-}
-
-/* ---------------------------------------------------------------- text */
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-	margin: 0;
-	font-weight: 600;
-	line-height: 1.3;
-}
-
-h1 {
-	font-size: 1.15rem;
-	letter-spacing: 0.01em;
-}
-
-h2 {
-	font-size: 1.2rem;
-	margin-bottom: var(--s-4);
-}
-
-h3 {
-	font-size: 1.05rem;
-	margin-bottom: var(--s-3);
-}
-
-h4 {
-	font-size: 0.95rem;
-	margin: var(--s-4) 0 var(--s-2);
-}
-
-/* The two smallest are labels over a table inside a panel: quiet, so the
-   table reads first. */
-h5,
-h6 {
-	font-size: 0.75rem;
-	text-transform: uppercase;
-	letter-spacing: 0.06em;
-	color: var(--muted);
-	margin: var(--s-4) 0 var(--s-2);
-}
-
-p {
-	margin: 0 0 var(--s-3);
-}
-
-/* ------------------------------------------------------------- layout */
-
-/* The console: a sidebar of screens and the screen. */
-.console {
-	display: grid;
-	grid-template-columns: 13rem minmax(0, 1fr);
-	min-height: 100vh;
-}
-
-.console > nav {
-	display: flex;
-	flex-direction: column;
-	gap: var(--s-1);
-	padding: var(--s-5) var(--s-4);
-	border-right: 1px solid var(--border);
-	background: var(--surface);
-	position: sticky;
-	top: 0;
-	height: 100vh;
-}
-
-.console > nav h1 {
-	padding: 0 var(--s-2);
-	margin-bottom: var(--s-4);
-}
-
-.console > nav button {
-	text-align: left;
-	background: none;
-	border: none;
-	padding: var(--s-2) var(--s-3);
-	border-radius: var(--radius);
-	color: var(--text);
-	font-weight: 500;
-}
-
-.console > nav button:hover:not([disabled]) {
-	background: var(--surface-2);
-}
-
-/* A rule above a tab, so a sidebar of ten buttons can be read in parts.
-   `Tab.lead` in `lib/console.tsx` is what sets it; the admin console has two
-   that mean something -- the deployment's own screens, and the customer one of
-   them selected. Margin as well as the border, because a line with buttons
-   tight against it reads as an underline on the one above. */
-.console > nav button.group,
-.console > nav button.head {
-	margin-top: var(--s-3);
-	padding-top: var(--s-3);
-	border-top: 1px solid var(--border);
-	border-radius: 0 0 var(--radius) var(--radius);
-}
-
-/* The head of a group, which is the tenant naming the screens under it. Drawn at
-   the size of the `h1` it stands in for, because in the user console that is what
-   it is: the top of the sidebar, and the name of the thing the whole page is
-   about. It keeps the rule above so the admin console's `tenants` stays on the
-   other side of a line from the tenant that was picked. */
-.console > nav button.head {
-	font-size: 1.15rem;
-	font-weight: 650;
-	line-height: 1.2;
-	padding-bottom: var(--s-3);
-	/* An alias is one word and rarely wraps, but a long one should stack rather
-	   than widen a sidebar that is a fixed column. */
-	overflow-wrap: anywhere;
-}
-
-/* Selected, it takes the accent like any other tab -- but it is also the tab a
-   person lands on least, so an unselected head still has to read as the heading
-   it replaces rather than as a button waiting to be pressed. */
-.console > nav button.head:not(.at) {
-	color: var(--text);
-}
-
-/* And no rule when it is the top of the sidebar, which it is in the user console:
-   that page passes no `title`, so the head is the first thing in the `nav` and a
-   border above it would be a line drawn under nothing. The admin console has the
-   `h1` and the picker above it, so there it keeps the rule. */
-.console > nav button.head:first-child {
-	margin-top: 0;
-	padding-top: 0;
-	border-top: none;
-	border-radius: var(--radius);
-}
-
-.console > nav button.at {
-	background: var(--accent-soft);
-	color: var(--accent);
-}
-
-.console > nav button[disabled] {
-	color: var(--muted);
-	opacity: 0.6;
-	cursor: not-allowed;
-}
-
-/* Who is signed in, and the way out, pinned to the bottom of the sidebar. */
-.console > nav .who {
-	margin-top: auto;
-	padding: var(--s-2) var(--s-3) 0;
-	font-size: 0.85rem;
-	color: var(--muted);
-}
-
-.console > main {
-	padding: var(--s-6);
-	max-width: 68rem;
-	width: 100%;
-}
-
-@media (max-width: 48rem) {
-	.console {
-		grid-template-columns: 1fr;
-	}
-
-	.console > nav {
-		position: static;
-		height: auto;
-		flex-direction: row;
-		flex-wrap: wrap;
-		align-items: center;
-		border-right: none;
-		border-bottom: 1px solid var(--border);
-		padding: var(--s-3) var(--s-4);
-	}
-
-	.console > nav h1 {
-		margin: 0 var(--s-3) 0 0;
-	}
-
-	/* The sidebar is a row here, and a row has no *above*: the rule that separates
-	   groups in a column drew a line on the left of whichever button happened to
-	   wrap. The head keeps its size, because it is still the name of what the rest
-	   of the bar is about. */
-	.console > nav button.group,
-	.console > nav button.head {
-		margin-top: 0;
-		padding-top: var(--s-2);
-		border-top: none;
-		border-radius: var(--radius);
-	}
-
-	.console > nav button.head {
-		padding-bottom: var(--s-2);
-		margin-right: var(--s-2);
-	}
-
-	.console > nav .who {
-		margin-top: 0;
-		margin-left: auto;
-		padding: 0 var(--s-2);
-	}
-
-	.console > main {
-		padding: var(--s-4);
-	}
-}
-
-/* The account page: a bar with the operator's name, and one column. */
-.account > nav {
-	display: flex;
-	align-items: center;
-	gap: var(--s-3);
-	padding: var(--s-3) var(--s-5);
-	background: var(--surface);
-	border-bottom: 1px solid var(--border);
-}
-
-.account > nav h1 {
-	flex: 1;
-}
-
-.account > nav .who {
-	font-size: 0.85rem;
-	color: var(--muted);
-}
-
-.account > main,
-main.loading,
-main.error {
-	max-width: 44rem;
-	margin: 0 auto;
-	padding: var(--s-6) var(--s-4);
-}
-
-/* ------------------------------------------------------------ sections */
-
-/* A screen is one or more sections, each a card. */
-main > section,
-.account > main > section {
-	background: var(--surface);
-	border: 1px solid var(--border);
-	border-radius: var(--radius);
-	box-shadow: var(--shadow);
-	padding: var(--s-5);
-	margin-bottom: var(--s-5);
-}
-
-/* Inside a card, a section is a part of it and not a card of its own. The
-   customers screen nests three deep -- tenant, person, what they sign in
-   with -- and `.within` is the panel that opened under a row: set off by a
-   rule down the left, so the nesting reads as nesting. */
-.within {
-	margin: var(--s-4) 0 0;
-	padding: var(--s-3) 0 0 var(--s-4);
-	border-left: 3px solid var(--accent-soft);
-}
-
-.within > h3,
-.within > h4,
-.within > h5,
-.within > h6 {
-	margin-top: 0;
-}
-
-section > section {
-	margin-top: var(--s-4);
-}
-
-/* ------------------------------------------------------------- tables */
-
-table {
-	width: 100%;
-	border-collapse: collapse;
-	margin-bottom: var(--s-4);
-	font-size: 0.95rem;
-}
-
-th {
-	text-align: left;
-	font-size: 0.72rem;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.06em;
-	color: var(--muted);
-	padding: 0 var(--s-2) var(--s-2);
-	border-bottom: 1px solid var(--border);
-}
-
-td {
-	padding: var(--s-2);
-	border-bottom: 1px solid var(--border);
-	vertical-align: middle;
-}
-
-tbody tr:hover {
-	background: var(--surface-2);
-}
-
-/* The row whose panel is open. */
-tr.at > td {
-	background: var(--accent-soft);
-}
-
-td:last-child {
-	text-align: right;
-	width: 1%;
-	white-space: nowrap;
-}
-
-td.acts {
-	white-space: nowrap;
-}
-
-td.acts button + button {
-	margin-left: var(--s-1);
-}
-
-/* A role's methods, each with what takes it out beside it. */
-td.methods .method {
-	display: inline-flex;
-	align-items: baseline;
-	margin-right: var(--s-2);
-	white-space: nowrap;
-}
-
-td.methods .method button.link {
-	padding: 0 var(--s-1);
-	text-decoration: none;
-}
-
-/* An edit row: the form takes the row and wraps. */
-td form {
-	margin: 0;
-	flex-wrap: wrap;
-}
-
-/* -------------------------------------------------------------- forms */
-
-form {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: var(--s-2);
-	margin-bottom: var(--s-3);
-}
-
-input,
-select,
-textarea {
-	font: inherit;
-	color: var(--text);
-	background: var(--surface);
-	border: 1px solid var(--border);
-	border-radius: var(--radius);
-	padding: var(--s-2) var(--s-3);
-	min-width: 0;
-}
-
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
-button:focus-visible {
-	outline: 2px solid var(--accent);
-	outline-offset: 1px;
-}
-
-input::placeholder {
-	color: var(--muted);
-}
-
-input.wide {
-	flex: 1 1 100%;
-}
-
-label {
-	display: flex;
-	align-items: center;
-	gap: var(--s-2);
-	font-size: 0.9rem;
-	color: var(--muted);
-}
-
-label input {
-	color: var(--text);
-}
-
-/* -------------------------------------------------------------- buttons */
-
-button {
-	font: inherit;
-	font-size: 0.9rem;
-	padding: var(--s-2) var(--s-3);
-	border-radius: var(--radius);
-	border: 1px solid var(--border);
-	background: var(--surface);
-	color: var(--text);
-	cursor: pointer;
-	line-height: 1.2;
-}
-
-button:hover:not([disabled]) {
-	background: var(--surface-2);
-}
-
-/* The act a form is for. */
-form button[type='submit'] {
-	background: var(--accent);
-	border-color: var(--accent);
-	color: var(--accent-text);
-}
-
-form button[type='submit']:hover:not([disabled]) {
-	filter: brightness(1.08);
-	background: var(--accent);
-}
-
-/* A disabled button is a permission this operator does not hold, and it
-   stays on the page rather than disappearing: a screen that hid what
-   somebody may not do would leave them wondering whether the feature exists. */
-button[disabled] {
-	opacity: 0.45;
-	cursor: not-allowed;
-}
-
-/* The irreversible act, told apart by colour. */
-button.danger {
-	color: var(--danger);
-	border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
-}
-
-button.danger:hover:not([disabled]) {
-	background: var(--danger-soft);
-}
-
-/* A text-shaped button for the choices beside a form ("forgot?", "back"). */
-button.link {
-	background: none;
-	border: none;
-	padding: var(--s-2) var(--s-1);
-	color: var(--accent);
-	text-decoration: underline;
-}
-
-a.button {
-	display: inline-block;
-	padding: var(--s-2) var(--s-3);
-	border: 1px solid var(--border);
-	border-radius: var(--radius);
-	background: var(--surface);
-	color: var(--text);
-	text-decoration: none;
-	font-size: 0.9rem;
-}
-
-a.button:hover {
-	background: var(--surface-2);
-}
-
-/* A row of acts under a panel. A cell of acts (`td.acts`) stays a cell: in a
-   table the buttons sit in one line on the row they are about. */
-div.acts,
-p.acts {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--s-2);
-	align-items: center;
-	margin-bottom: var(--s-3);
-}
-
-.enrol {
-	display: inline-flex;
-	gap: var(--s-1);
-}
-
-/* ------------------------------------------------------------- pictures */
-
-/* Somebody's picture, and beside it what may be done about it. Round because
-   a person is drawn that way everywhere else, and covered so a picture that
-   is not square -- a URL somebody typed -- is cropped rather than squashed. */
-.picture {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: var(--s-3);
-	margin-bottom: var(--s-3);
-}
-
-.picture img {
-	border-radius: 50%;
-	object-fit: cover;
-}
-
-.picture .actions {
-	display: inline-flex;
-	align-items: center;
-	gap: var(--s-2);
-}
-
-.picture input[type='file'] {
-	max-width: 14rem;
-	margin-left: var(--s-1);
-}
-
-/* ------------------------------------------------------------- notices */
-
-.note {
-	color: var(--muted);
-	font-size: 0.9rem;
-}
-
-.hint {
-	flex-basis: 100%;
-	color: var(--muted);
-	font-size: 0.85rem;
-	margin: 0 0 var(--s-2);
-}
-
-.none {
-	color: var(--muted);
-	font-style: italic;
-}
-
-.dim {
-	color: var(--muted);
-}
-
-.bad {
-	color: var(--danger);
-	font-size: 0.9rem;
-}
-
-p.bad {
-	background: var(--danger-soft);
-	border-radius: var(--radius);
-	padding: var(--s-2) var(--s-3);
-}
-
-.loading,
-.error {
-	color: var(--muted);
-}
-
-/* The one place either app puts a secret on a screen.
-
-   Loud on purpose. It is shown once, it is not stored, and the operator is
-   about to read it out to somebody -- so it has to be selectable, legible at
-   a glance, and obviously not part of the page around it. */
-.secret {
-	border: 1px solid var(--warn);
-	background: var(--warn-soft);
-	border-radius: var(--radius);
-	padding: var(--s-3) var(--s-4);
-	margin: var(--s-3) 0;
-}
-
-.secret code {
-	display: block;
-	font-size: 1.1rem;
-	word-break: break-all;
-	user-select: all;
-	margin: var(--s-2) 0;
-}
-
-.secret p {
-	margin: 0;
-	font-size: 0.9rem;
-}
-
-/* ------------------------------------------------------------- sign-in */
-
-/* Both sign-in forms: one card in the middle of the page. */
-.sign-in {
-	max-width: 24rem;
-	margin: 12vh auto 0;
-	padding: var(--s-6);
-	background: var(--surface);
-	border: 1px solid var(--border);
-	border-radius: var(--radius);
-	box-shadow: var(--shadow);
-	display: flex;
-	flex-direction: column;
-	align-items: stretch;
-	gap: var(--s-3);
-}
-
-.sign-in h1 {
-	font-size: 1.35rem;
-	margin-bottom: var(--s-2);
-}
-
-.sign-in label {
-	flex-direction: column;
-	align-items: stretch;
-	gap: var(--s-1);
-}
-
-.sign-in label input {
-	width: 100%;
-}
-
-.sign-in form {
-	flex-direction: column;
-	align-items: stretch;
-	margin: 0;
-}
-
-.sign-in form button[type='submit'] {
-	margin-top: var(--s-2);
-}
-
-.sign-in p {
-	margin: 0;
-}
-
-.sign-in > p:last-child {
-	color: var(--muted);
-	font-size: 0.85rem;
-}
-
-/* The consent screen: the same card as a sign-in, asking a different question.
- *
- * It is the one place somebody is asked to agree to something, so it says three
- * things in order -- where they are, who is asking, and what that means -- and
- * the scopes are the middle of it rather than a list of the words a client sent.
- */
-.consent .at {
-	color: var(--muted);
-	font-size: 0.85rem;
-	letter-spacing: 0.02em;
-	text-transform: uppercase;
-}
-
-.consent h1 {
-	font-size: 1.15rem;
-	font-weight: 400;
-	line-height: 1.4;
-	margin: 0;
-	color: var(--muted);
-}
-
-.consent h1 strong {
-	display: block;
-	font-size: 1.35rem;
-	font-weight: 600;
-	color: var(--text);
-}
-
-/* One row per scope: what it is, and under it what that covers. No bullets --
-   a list of two-line rows is already a list, and the marker competes with the
-   thing that matters. */
-.consent ul.scopes {
-	list-style: none;
-	margin: var(--s-2) 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 1px;
-	background: var(--border);
-	border: 1px solid var(--border);
-	border-radius: var(--radius);
-	overflow: hidden;
-}
-
-.consent ul.scopes li {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-	padding: var(--s-2) var(--s-3);
-	background: var(--surface-2);
-}
-
-.consent .what {
-	font-size: 0.95rem;
-}
-
-.consent .how {
-	color: var(--muted);
-	font-size: 0.82rem;
-	line-height: 1.4;
-}
-
-/* The answer, and both of them are answers. `allow` carries the accent the way
-   a form's submit does -- it is the act -- and `no` is a real button beside it,
-   because refusing is what this screen is asking for rather than a way out. */
-.consent .acts {
-	display: flex;
-	gap: var(--s-2);
-	margin: var(--s-2) 0 0;
-}
-
-.consent .acts button {
-	flex: 1;
-	padding: var(--s-2) var(--s-3);
-}
-
-.consent .acts button.go {
-	flex: 2;
-	background: var(--accent);
-	border-color: var(--accent);
-	color: var(--accent-text);
-	font-weight: 500;
-}
-
-.consent .acts button.go:hover:not([disabled]) {
-	filter: brightness(1.08);
-}
-
-.consent > p.note {
-	color: var(--muted);
-	font-size: 0.8rem;
-	line-height: 1.5;
-	margin-top: var(--s-1);
-}
-
-/* The sandbox coming up: the same card as a sign-in, with a bar in it. */
-.booting {
-	max-width: 24rem;
-	margin: 12vh auto 0;
-	padding: var(--s-6);
-	background: var(--surface);
-	border: 1px solid var(--border);
-	border-radius: var(--radius);
-	box-shadow: var(--shadow);
-}
-
-.booting h1 {
-	font-size: 1.35rem;
-	margin-bottom: var(--s-3);
-}
-
-.booting progress {
-	display: block;
-	width: 100%;
-	height: 0.5rem;
-	margin: var(--s-2) 0 var(--s-4);
-	accent-color: var(--accent);
-}
-
-/* The providers as buttons above the password form, because a person who
-   arrives through Entra should not read a password field first. */
-/* The ways in that are not a password: one per line, full width, and no box
-   around them.
- *
- * They were a wrapping row of chips beside the form, which read as a toolbar --
- * two words a person has to parse before knowing whether either is their
- * organisation. Stacked, each is a target the width of the form above it and
- * the list is read down rather than across. The container carries nothing of
- * its own: the buttons are the group. */
-.providers {
-	display: flex;
-	flex-direction: column;
-	align-items: stretch;
-	gap: var(--s-2);
-
-	/* Undone rather than avoided. `.sign-in` is a `main`, so `main > section`
-	   makes every section inside it a card -- background, border, shadow and
-	   padding -- and this one is not a card: it is the buttons and nothing
-	   else. Written out here because the alternative is narrowing the card
-	   rule, and that rule is right about every other screen. */
-	background: none;
-	border: 0;
-	border-radius: 0;
-	box-shadow: none;
-	padding: 0;
-	margin: 0;
-}
-
-.providers button {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: var(--s-2);
-	width: 100%;
-}
-
-/* A provider reads down the list in three columns -- the mark, "sign in with",
-   the name -- and the three of them sit in the **middle** of the row.
- *
- * Those two wants pull against each other, which is why this is a grid and not
- * a flex line. Centring each row on its own makes the columns disagree, since
- * the rows are different widths; aligning them by starting each row at the left
- * leaves the list hanging off one edge of a card that is centred about
- * everything else.
- *
- * So the columns belong to the **list** and every row borrows them: five
- * tracks, `1fr` on each end and the three real ones between, and a row is a
- * subgrid spanning all five. The equal `1fr`s are what centres the group, and
- * because the tracks are the list's, the widest name sets the column for every
- * row rather than for its own.
- *
- * Baseline flexbox is left behind for a browser without subgrid -- aligned and
- * not centred, which is the half worth keeping of the two. */
-.providers a.button {
-	display: flex;
-	align-items: center;
-	justify-content: start;
-	gap: var(--s-2);
-	width: 100%;
-	text-align: left;
-}
-
-@supports (grid-template-columns: subgrid) {
-	.providers {
-		display: grid;
-		grid-template-columns: 1fr auto auto auto 1fr;
-		gap: var(--s-2) 0;
-	}
-
-	.providers a.button {
-		display: grid;
-		grid-column: 1 / -1;
-		grid-template-columns: subgrid;
-		align-items: center;
-		gap: 0;
-	}
-
-	.providers a.button > .mark {
-		grid-column: 2;
-	}
-
-	.providers a.button > .with {
-		grid-column: 3;
-		margin: 0 var(--s-2);
-	}
-
-	.providers a.button > .who {
-		grid-column: 4;
-	}
-
-	/* Not a subgrid row: it has one label and no columns to line up with. */
-	.providers button {
-		grid-column: 1 / -1;
-	}
-}
-
-/* The vendor's own mark, at the height of the text beside it, in a slot that
-   holds the column open when there is none. `aria-hidden` in the markup, since
-   the button already says whose it is. */
-.providers .mark {
-	flex: none;
-	display: grid;
-	place-items: center;
-	width: 1.05em;
-	height: 1.05em;
-}
-
-.providers .mark svg {
-	width: 100%;
-	height: 100%;
-}
-
-/* Never wrapped: it is the middle column, and a break in it moves the one after
-   it. The **name** may wrap, which is what a long one should do. */
-.providers .with {
-	flex: none;
-	white-space: nowrap;
-	color: var(--muted);
-}
-
-.providers .who {
-	min-width: 0;
-	overflow-wrap: anywhere;
-}
-
-/* The rule between the password form and the list, with a word in it.
- *
- * A bare `<hr>` says the page ended; a word says there is another way. The
- * lines are drawn with a border on a pseudo-element each rather than as a
- * background, so they take the theme's border colour without a second variable
- * to keep in step. */
-.sign-in p.or {
-	display: flex;
-	align-items: center;
-	gap: var(--s-3);
-	margin: var(--s-2) 0;
-	color: var(--muted);
-	font-size: 0.85rem;
-}
-
-.sign-in p.or::before,
-.sign-in p.or::after {
-	content: '';
-	flex: 1;
-	border-top: 1px solid var(--border);
-}
-
-/* ------------------------------------------------- screen particulars */
-
-/* The forms that add a row. They used to sit above the list, in a box: a person
-   on a screen with rows to scroll had to go and find *add*, and the box took
-   room on every screen where nobody was adding anything. They come up from the
-   bottom now (`lib/ui.tsx`, [Sheet]), so what is left here is no box -- one
-   inside the sheet would be a box in a box. */
-.new-tenant,
-.new-holder {
-	margin-bottom: 0;
-}
-
-.new-tenant form,
-.new-holder form {
-	margin-bottom: var(--s-1);
-}
-
-/* A hostname being proved: the record to publish, laid out the way a DNS
-   provider's form asks for it. Boxed rather than a table row, because what is
-   on it is three values somebody is copying by hand into another window. */
-.claim {
-	padding: var(--s-3) var(--s-4);
-	background: var(--surface-2);
-	border-radius: var(--radius);
-	margin-bottom: var(--s-3);
-}
-
-.claim table {
-	margin-bottom: var(--s-2);
-}
-
-/* The holder panel: what somebody signs in with, and the acts whoever is
-   administering them has when they cannot. Together because they are one
-   decision. */
-.holder .state {
-	margin: var(--s-3) 0;
-}
-
-/* ------------------------------------------------- console: the system */
-
-/* The six rules the console is drawn by; `lib/ui.tsx` says what they are and why.
-   Scoped to `.console` on purpose -- the sign-in pages and the consent screen are
-   somebody arriving at one decision, not an operator working through a list, and
-   their boxed buttons are right for that. */
-
-/* 1. A screen is one container.
-      Every screen's root is `section.within`, which was picking up the card from
-      `main > section` **and** the nesting rule from `.within` -- a box that is
-      also a thing inside a box. It is the box. */
-.console > main > section.within {
-	margin-top: 0;
-	padding: var(--s-5);
-	border-left: none;
-}
-
-/* And what is inside it is inside it. A panel that opens under a row is set off
-   by space and a rule down its left, which says *this belongs to the row above*
-   without drawing a second card to say it. */
-.console > main > section section {
-	background: none;
-	border: none;
-	box-shadow: none;
-	padding: 0;
-}
-
-.console > main > section .within {
-	padding: 0 0 0 var(--s-4);
-	border-left: 2px solid var(--border);
-}
-
-/* The one exception, and it earns it: a record somebody is copying by hand into
-   another window is a thing to hold still and look at, not a part of the page. */
-.console .claim {
-	background: var(--surface-2);
-	border-radius: var(--radius);
-	padding: var(--s-3) var(--s-4);
-}
-
-/* 2. A click does not need a box.
-      What says *press here* is where it is: on the row it is about, at the end of
-      the bar, under the form. The primary act keeps its fill, because on a form
-      there is one act and it is worth pointing at. */
-.console main button,
-.console main a.button {
-	border-color: transparent;
-	background: none;
-	color: var(--accent);
-}
-
-.console main button:hover:not([disabled]),
-.console main a.button:hover {
-	background: var(--accent-soft);
-}
-
-.console main button.danger {
-	color: var(--danger);
-	border-color: transparent;
-}
-
-.console main button.danger:hover:not([disabled]) {
-	background: var(--danger-soft);
-}
-
-.console main form button[type='submit'] {
-	background: var(--accent);
-	border-color: var(--accent);
-	color: var(--accent-text);
-}
-
-/* 3. Same level, close but not touching.
-      `separate` rather than `collapse` so the gap can exist at all: a row is a
-      card, and two pixels is enough to say there are two of them. */
-.console main table {
-	border-collapse: separate;
-	border-spacing: 0 2px;
-	margin-bottom: var(--s-3);
-}
-
-.console main th {
-	border-bottom: none;
-	padding: 0 var(--s-3) var(--s-1);
-}
-
-.console main td {
-	background: var(--surface-2);
-	border-bottom: none;
-	padding: var(--s-2) var(--s-3);
-}
-
-.console main td:first-child {
-	border-radius: var(--radius) 0 0 var(--radius);
-}
-
-.console main td:last-child {
-	border-radius: 0 var(--radius) var(--radius) 0;
-}
-
-/* The hover and the open row are the card lifting, not a stripe across a grid. */
-.console main tbody tr:hover td {
-	background: var(--border);
-}
-
-.console main tr.at > td {
-	background: var(--accent-soft);
-}
-
-/* 4. A row may take more than one line.
-      What a person reads and what they copy are not the same size and do not
-      belong beside each other. `.under` is the second line of a cell. */
-.console main td .under {
-	display: block;
-	min-height: 1.15em;
-	font-size: 0.8rem;
-	color: var(--muted);
-	margin-top: 1px;
-}
-
-/* 5. A value that changes does not move what is beside it. */
-.console main td,
-.console main .pad,
-.console main .slot {
-	font-variant-numeric: tabular-nums;
-}
-
-.slot {
-	display: inline-block;
-}
-
-/* The part of a number that is only there to say how wide the number can be.
-   Near the background on purpose: it is a hint about the space, and a person who
-   reads it as a digit has been told something untrue about the value. */
-.pad > .lead {
-	color: color-mix(in srgb, var(--muted) 25%, transparent);
-}
-
-/* `.dim` is the same idea where the value itself is partly predictable -- the
-   leading bytes of an identifier, a stamp nobody reads to the second. */
-.dim {
-	color: var(--muted);
-}
-
-/* ------------------------------------------------------------ the bar */
-
-/* The top of a screen: find, filter, add. The rule under it runs to the edges of
-   the container, which is what says the bar is the container's and not the
-   list's. */
-.console main .bar {
-	display: flex;
-	align-items: center;
-	gap: var(--s-2);
-	margin: 0 0 var(--s-3);
-	padding: 0 0 var(--s-2);
-	border-bottom: 1px solid var(--border);
-}
-
-/* The screen's own bar runs to the edges of the container, which is what says it
-   belongs to the container and not to the list under it. Only that one: a bar
-   inside a panel would be bleeding past a padding that is not there. */
-.console > main > section > .bar,
-.console > main > section > section > .bar {
-	margin: 0 calc(-1 * var(--s-5)) var(--s-4);
-	padding: 0 var(--s-5) var(--s-3);
-}
-
-.console main .bar .fill {
-	flex: 1 1 auto;
-}
-
-.console main .bar input[type='search'],
-.console main .bar input.find {
-	flex: 0 1 18rem;
-}
-
-.console main .bar form {
-	margin: 0;
-}
-
-/* The act that adds one keeps its fill here, away from a form: it is the one
-   thing on the bar somebody is looking for. */
-.console main .bar button.add {
-	background: var(--accent);
-	border-color: var(--accent);
-	color: var(--accent-text);
-}
-
-.console main .bar button.add:hover:not([disabled]) {
-	background: var(--accent);
-	filter: brightness(1.08);
-}
-
-/* ----------------------------------------------------------- the menu */
-
-.menu {
-	position: relative;
-	display: inline-block;
-}
-
-.console main .menu > button {
-	padding: var(--s-1) var(--s-2);
-	color: var(--muted);
-	line-height: 1;
-}
-
-.menu > .items {
-	position: absolute;
-	right: 0;
-	top: calc(100% + var(--s-1));
-	z-index: 20;
-	min-width: 9rem;
-	display: flex;
-	flex-direction: column;
-	padding: var(--s-1);
-	background: var(--surface);
-	border: 1px solid var(--border);
-	border-radius: var(--radius);
-	box-shadow: 0 6px 20px rgba(15, 23, 42, 0.14);
-}
-
-/* The one place a list of buttons is a list: they are stacked, full width, and
-   read as lines rather than as things to aim at. */
-.console main .menu > .items button {
-	justify-content: flex-start;
-	text-align: left;
-	width: 100%;
-	white-space: nowrap;
-}
-
-/* --------------------------------------------------------- the sheet */
-
-.scrim {
-	position: fixed;
-	inset: 0;
-	z-index: 30;
-	display: flex;
-	align-items: flex-end;
-	justify-content: center;
-	background: rgba(15, 23, 42, 0.35);
-}
-
-.sheet {
-	width: min(40rem, 100%);
-	max-height: 85vh;
-	overflow: auto;
-	padding: var(--s-3) var(--s-5) var(--s-5);
-	background: var(--surface);
-	border: 1px solid var(--border);
-	border-bottom: none;
-	border-radius: calc(var(--radius) * 2) calc(var(--radius) * 2) 0 0;
-	animation: rise 140ms ease-out;
-}
-
-/* The grip a sheet is dragged by on a phone. Nothing drags it here, and it is
-   drawn anyway: it is what says which edge this came from. */
-.sheet > .handle {
-	width: 2.5rem;
-	height: 4px;
-	margin: 0 auto var(--s-3);
-	border-radius: 2px;
-	background: var(--border);
-}
-
-.sheet > h5 {
-	margin: 0 0 var(--s-3);
-}
-
-.sheet form {
-	flex-direction: column;
-	align-items: stretch;
-	margin-bottom: 0;
-}
-
-.sheet form button[type='submit'] {
-	align-self: flex-end;
-}
-
-@keyframes rise {
-	from {
-		transform: translateY(1rem);
-		opacity: 0;
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.sheet {
-		animation: none;
-	}
-}
-
-/* A table of two columns that is not a list: a label and a value, one row per
-   fact. `td:last-child` is right-aligned and one per cent wide because on a list
-   the last cell is the acts, and on this one that pushed every value to the far
-   edge with the label stranded on the other. So this says what it is instead of
-   being told apart by shape. */
-.console main table.facts th,
-.console main table.facts td {
-	background: var(--surface-2);
-	padding: var(--s-2) var(--s-3);
-	text-align: left;
-	width: auto;
-	white-space: normal;
-	text-transform: none;
-	letter-spacing: 0;
-	font-size: inherit;
-	font-weight: 400;
-}
-
-.console main table.facts th {
-	width: 9rem;
-	color: var(--muted);
-	border-radius: var(--radius) 0 0 var(--radius);
-}
-
-.console main table.facts td:last-child {
-	border-radius: 0 var(--radius) var(--radius) 0;
-}
+ color-scheme: light dark;
+ font: 14px/1.6 system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+ color: var(--ui-shade-237);
+ background: var(--ui-shade-16);
+ --bg: var(--ui-shade-16);
+ --surface: var(--ui-shade-24);
+ --surface-2: var(--ui-shade-32);
+ --border: var(--ui-shade-48);
+ --text: var(--ui-shade-237);
+ --muted: var(--ui-muted);
+ --accent: var(--ui-text-value);
+ --accent-soft: var(--ui-shade-40);
+ --danger: var(--ui-action-error-color);
+ --radius: 12px;
+ --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--text); background: var(--bg); }
+a { color: inherit; }
+h1,h2,h3,h4,h5,h6,p { margin: 0; }
+h1,h2,h3,h4,h5,h6 { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+h1 { font-size: 26px; font-weight: 650; letter-spacing: -.04em; }
+h2,h3 { font-size: 20px; font-weight: 600; letter-spacing: -.025em; }
+h4,h5 { font-size: 15px; font-weight: 600; }
+code,.mono { font: 12px/1.6 var(--ui-font-mono); overflow-wrap: anywhere; }
+button,input,select,textarea { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: default; }
+:focus-visible { outline: 2px solid var(--ui-text-value); outline-offset: 3px; }
+input:not([type=checkbox]):not([type=radio]),select,textarea { min-width: 0; max-width: 100%; }
+input[type=checkbox],input[type=radio] { accent-color: var(--ui-shade-170); }
+textarea { min-height: 120px; resize: vertical; }
+form { min-width: 0; }
+form > :is(.note,.bad,p,.actions,.acts,header) { grid-column: 1 / -1; }
+form > button { justify-self: start; margin-top: 8px; }
+form label { display: grid; gap: 6px; color: var(--ui-muted); font-size: 12px; }
+form label:has(input[type=checkbox]) { display: flex; align-items: center; }
+.note,.none,.hint,.dim { color: var(--ui-muted); font-size: 12px; }
+.bad,.error { color: var(--ui-action-error-color); }
+p.bad { font-size: 12px; overflow-wrap: anywhere; }
+.ok { color: var(--ui-text-value); }
+.note,.bad,.none { line-height: 1.65; }
+ul.methods { list-style: none; display: grid; gap: 4px; padding: 0; margin: 0; }
+ul.methods li { padding: 8px 12px; background: var(--ui-shade-28); border-radius: 6px; overflow-wrap: anywhere; }
+.acts,.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.secret,.claim { padding: 20px; border: 1px solid var(--ui-shade-48); border-radius: 12px; background: var(--ui-shade-24); overflow-wrap: anywhere; }
+.secret { margin-block: 16px; }
+.secret p { margin-bottom: 12px; }
+.copyable { display: flex; align-items: center; gap: 12px; }
+.copyable code { flex: 1; min-width: 0; }
+.picture { display: flex; align-items: center; gap: 16px; margin-block: 12px; }
+.picture img { object-fit: cover; border-radius: 12px; }
+.picture .actions { max-width: 100%; }
+.picture input { max-width: 220px; }
+
+/* A quiet, bounded sign-in surface is shared by the two consoles and Login App. */
+.sign-in { width: min(420px, calc(100% - 40px)); margin: clamp(40px, 12vh, 120px) auto 48px; padding: 32px; border-radius: 24px; background: var(--ui-shade-24); border: 1px solid var(--ui-shade-36); box-shadow: 0 24px 80px #0000000c; display: grid; gap: 24px; }
+.sign-in > h1 { margin-bottom: 0; }
+.sign-in > form { margin: 0; }
+.sign-in form { row-gap: 12px; }
+.sign-in form > button[type=submit] { width: 100%; margin-top: 12px; }
+.sign-in > button { width: 100%; }
+.sign-in .providers { display: grid; gap: 8px; padding: 0; background: transparent; border-radius: 0; }
+.providers a.button { width: 100%; }
+.providers .button-content { display: flex; width: 100%; align-items: center; gap: 12px; text-align: left; }
+.providers .mark { display: flex; width: 20px; flex: 0 0 20px; }
+.providers .mark svg { width: 18px; height: 18px; }
+.providers .with { color: var(--ui-muted); white-space: nowrap; }
+.providers .who { overflow-wrap: anywhere; }
+.or { display: flex; align-items: center; gap: 12px; color: var(--ui-muted); font-size: 12px; }
+.or::before,.or::after { content: ''; height: 1px; flex: 1; background: var(--ui-shade-48); }
+.scopes { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
+.scopes li { padding: 12px; background: var(--ui-shade-32); border-radius: 8px; }
+.scopes .what,.scopes .how { display: block; }
+.scopes .how { margin-top: 4px; color: var(--ui-muted); font-size: 12px; }
+.at { color: var(--ui-muted); font: 12px var(--ui-font-mono); }
+.sign-in.consent .acts { margin-top: 0; }
+.loading,.booting,main.error { width: min(600px, calc(100% - 40px)); margin: 12vh auto; display: grid; gap: 20px; }
+.booting progress { width: 100%; accent-color: var(--ui-shade-170); }
+
+/* The console is a navigation rail and one spacious work surface. */
+.console { display: grid; grid-template-columns: 236px minmax(0, 1fr); min-height: 100dvh; }
+.console-navigation { position: sticky; top: 0; height: 100dvh; background: var(--ui-shade-20); }
+.console-brand { gap: 12px; padding: 28px 24px; border: 0; }
+.console-brand > svg { flex: none; }
+.console-brand h1 { display: block; font-size: 18px; letter-spacing: -.04em; }
+.console-brand small { color: var(--ui-muted); font-size: 11px; }
+.console-navigation nav { display: flex; flex-direction: column; min-height: calc(100dvh - 110px); padding: 4px 12px 12px; }
+.console-links { display: grid; gap: 4px; align-content: start; flex: 1; }
+.console-links > button { width: 100%; text-align: left; min-height: 42px; border-radius: 10px; }
+.console-links .button-content { justify-content: start; gap: 12px; width: 100%; }
+.console-links .at { color: var(--ui-shade-237); background: var(--ui-shade-36); font: inherit; }
+.console-links .head,.console-links .group { margin-top: 20px; }
+.console-links .head { color: var(--ui-muted); font-size: 12px; }
+.console-links .head.at { color: var(--ui-shade-237); }
+.console-person { display: flex; align-items: center; gap: 10px; padding: 16px 4px 0; margin-top: 20px; border-top: 1px solid var(--ui-shade-36); }
+.console-person .who { min-width: 0; overflow-wrap: anywhere; flex: 1; font-size: 12px; }
+.console-avatar { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--ui-shade-40); font-size: 12px; }
+.console-person button { width: 36px; height: 36px; padding: 8px; }
+.console-workspace { min-width: 0; padding: 24px 36px 64px; }
+.console-toolbar { min-height: 64px; padding: 0 0 20px; margin-bottom: 24px; background: transparent; border-bottom: 1px solid var(--ui-shade-36); border-radius: 0; }
+.console-location { display: grid; gap: 4px; padding-left: 4px; }
+.console-location > span { color: var(--ui-muted); font-size: 11px; }
+.console-location > strong { font-size: 24px; line-height: 1.3; letter-spacing: -.04em; font-weight: 600; }
+.console-content,.console-content > div { min-width: 0; }
+.console-content section { min-width: 0; overflow-x: auto; }
+.console-content section section { padding: 20px 0 0; border-radius: 0; border-top: 1px solid var(--ui-shade-36); background: transparent; }
+.console-content section section:first-child { padding-top: 0; border-top: 0; }
+.console-content section > section + section { margin-top: 12px; }
+.console-content h3 { margin-bottom: 4px; }
+.console-content h4 { margin-top: 12px; }
+.console-content .bar { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; padding: 0 0 16px; background: transparent; border-radius: 0; border-bottom: 1px solid var(--ui-shade-36); }
+.bar h2,.bar h3,.bar h4 { align-self: center; margin: 0; }
+.bar .fill { flex: 1 1 auto; }
+.bar form { margin: 0; }
+.console table { min-width: 100%; }
+.console td,.console th { text-align: left; overflow-wrap: anywhere; }
+.console td:last-child { white-space: nowrap; }
+.console td .under { display: block; font-size: 11px; color: var(--ui-muted); margin-top: 4px; }
+.console table.facts { table-layout: fixed; }
+.console table.facts th { width: 140px; color: var(--ui-muted); }
+.console table.facts td { white-space: normal; }
+.console tr.at { background: var(--ui-shade-36); }
+.console .state { display: flex; gap: 8px; flex-wrap: wrap; }
+.console .profile { max-width: 720px; }
+.slot { display: inline-block; font-variant-numeric: tabular-nums; }
+button.danger { color: var(--ui-action-error-color); }
+.sheet { padding: 0; color: var(--text); }
+.sheet-content { height: 100%; align-content: start; overflow-y: auto; padding: 28px; }
+.sheet-heading { display: flex; gap: 16px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.sheet-heading button { width: 36px; height: 36px; font-size: 22px; }
+.sheet form { width: 100%; gap: 12px; }
+.sheet form > button[type=submit] { justify-self: end; }
+@media (max-width: 1000px) {
+ .console { grid-template-columns: 210px minmax(0,1fr); }
+ .console-workspace { padding: 20px; }
+ .console-brand { padding: 24px 20px; }
+}
+@media (max-width: 720px) {
+ .console { display: block; }
+ .console-navigation { position: static; height: auto; padding: 12px; background: var(--ui-shade-20); }
+ .console-brand { padding: 8px 12px 16px; }
+ .console-navigation nav { padding: 0; min-height: 0; }
+ .console-links { display: flex; overflow-x: auto; gap: 4px; padding-bottom: 8px; }
+ .console-links > button { width: auto; flex: 0 0 auto; }
+ .console-links .head,.console-links .group { margin-top: 0; }
+ .console-person { padding: 8px 4px 0; margin-top: 4px; }
+ .console-person .who { flex: none; margin-right: auto; }
+ .console-workspace { padding: 20px 12px 40px; }
+ .console-toolbar { margin-bottom: 16px; }
+ .console-location > strong { font-size: 22px; }
+ .console-content { max-width: 100%; }
+ .console-content section { padding: 16px; }
+ .console-content section section { padding: 16px 0 0; }
+ .bar .fill { flex: 1 1 20px; }
+ .sign-in { padding: 24px; border-radius: 20px; }
+ .sheet-content { padding: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior: auto !important; } }
+
+/* Keep navigation reachable on short displays and toolbar controls on small ones. */
+.console-navigation nav { height: 100%; min-height: 0; }
+.console-links { min-height: 0; overflow-y: auto; }
+.console-brand > div,.console-location { min-width: 0; overflow-wrap: anywhere; }
+.bar > div { width: 100%; flex-wrap: wrap; gap: 12px; align-items: end; }
+.bar > div > div:has(input[type=search]),.bar > div > div:has(input.find) { flex: 1 1 180px; max-width: 300px; }
+@media (max-width: 720px) {
+ .console-navigation nav { height: auto; }
+ .console-links { overflow-y: hidden; }
+}
+
+/* Table cells retain their native layout; only their contents are flex rows. */
+.console td.methods,.console td.acts { display: table-cell; }
+.console td.methods { min-width: 240px; white-space: normal; }
+.method { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 2px 6px; margin: 2px; background: var(--ui-shade-32); border-radius: 6px; }
+.method .link { min-height: 24px; padding: 2px 4px; }
+.console td.acts > button { margin-right: 4px; }
+
+.console-navigation { display: grid; grid-template-rows: auto minmax(0, 1fr); }
+.console-person { flex: 0 0 auto; }

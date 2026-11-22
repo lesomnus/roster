@@ -1,3 +1,4 @@
+import { Button, Section, Table as NoxTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@lesomnus/nox'
 /**
  * The apps acting in a tenant: which roster-hosted app is answered as whom.
  *
@@ -40,10 +41,10 @@ export function Apps(props: {
 	if (id === undefined) return null
 
 	return (
-		<section className="within">
+		<Section className="within">
 			<h3>{props.tenant?.alias}</h3>
 			<AppList tenant={id} may={props.may} />
-		</section>
+		</Section>
 	)
 }
 
@@ -59,7 +60,7 @@ function AppList(props: { tenant: Uint8Array; may: (m: string) => boolean }): Re
 	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
 
 	return (
-		<section>
+		<Section>
 			<h4>apps</h4>
 			<p className="note">
 				An app run for many tenants acts in this one as one of your own holders,
@@ -77,55 +78,57 @@ function AppList(props: { tenant: Uint8Array; may: (m: string) => boolean }): Re
 
 			{items.length === 0 && <p className="none">no apps act in this tenant</p>}
 			{items.length > 0 && (
-				<table>
-					<thead>
-						<tr>
-							<th>app</th>
-							<th>acts as</th>
-							<th>since</th>
-							<th />
-						</tr>
-					</thead>
-					<tbody>
+				<NoxTable>
+					<TableHeader>
+						<TableRow>
+							<TableHead>app</TableHead>
+							<TableHead>acts as</TableHead>
+							<TableHead>since</TableHead>
+							<TableHead />
+						</TableRow>
+					</TableHeader>
+					<TableBody>
 						{items.map((v) => (
-							<tr key={uuid(v.id)}>
-								<td>
+							<TableRow key={uuid(v.id)}>
+								<TableCell>
 									{v.name === '' ? <span className="mono">{uuid(v.borrowerId)}</span> : v.name}
-								</td>
-								<td>
+								</TableCell>
+								<TableCell>
 									<Alias id={v.actsAs?.id} />
-								</td>
-								<td>{when(v.dateCreated)}</td>
-								<td className="acts">
+								</TableCell>
+								<TableCell>{when(v.dateCreated)}</TableCell>
+								<TableCell className="acts">
 									{v.labels[declared] !== undefined ? (
 										<span className="note" title={`declared in ${v.labels[declared]}`}>
 											declared
 										</span>
 									) : (
-										<Menu label={`more for ${v.name || uuid(v.borrowerId)}`}>
-											<button
-												className="danger"
-												disabled={!props.may('/roster.NominationService/Erase')}
-												onClick={() => {
-													setBad(null)
-													void erase
-														.call({ key: { case: 'id', value: v.id } })
-														.then(() => setGone((was) => [...was, uuid(v.id)]))
-														.catch((e: unknown) => setBad(said(e)))
-												}}
-											>
-												stop it acting here
-											</button>
-										</Menu>
+										<Menu
+											label={`more for ${v.name || uuid(v.borrowerId)}`}
+											items={[
+												{
+													label: 'stop it acting here',
+													danger: true,
+													disabled: !props.may('/roster.NominationService/Erase'),
+													run: () => {
+														setBad(null)
+														void erase
+															.call({ key: { case: 'id', value: v.id } })
+															.then(() => setGone((was) => [...was, uuid(v.id)]))
+															.catch((e: unknown) => setBad(said(e)))
+													},
+												},
+											]}
+										/>
 									)}
-								</td>
-							</tr>
+								</TableCell>
+							</TableRow>
 						))}
-					</tbody>
-				</table>
+					</TableBody>
+				</NoxTable>
 			)}
 
 			{bad !== null && <p className="bad">{bad}</p>}
-		</section>
+		</Section>
 	)
 }

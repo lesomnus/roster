@@ -22,7 +22,7 @@ test('an operator signs in and stands a customer up', async ({ page }) => {
 	await expect(page.locator('h2', { hasText: 'tenants' })).toBeVisible()
 	await expect(page.getByRole('cell', { name: /contoso/ })).toBeVisible()
 
-	// Standing one up comes up from the bottom, opened from the bar: the form is
+	// Standing one up opens a focused drawer from the bar: the form is
 	// not on the screen until somebody asks for it, so the list has the room.
 	await page.locator('button.add', { hasText: 'stand one up' }).click()
 	const form = page.locator('.sheet .new-tenant form')
@@ -53,7 +53,7 @@ test('an operator signs in and stands a customer up', async ({ page }) => {
 	const head = page.locator('nav button.head')
 	await expect(page).toHaveURL(/\/tenants\/@fabrikam\/tenant$/)
 	await expect(head).toHaveText('fabrikam')
-	await expect(page.locator('nav h1')).toHaveText('roster')
+	await expect(page.locator('.console-brand h1')).toHaveText('roster')
 
 	// And it is the tenant's own screen under it, with the alias it was reached by
 	// and the form that changes what it says about itself.
@@ -73,7 +73,7 @@ test('an operator signs in and stands a customer up', async ({ page }) => {
 	// is the one thing a sidebar has to get right: `you` is the control plane's,
 	// and coming back must not have lost fabrikam.
 	await page.locator('nav button', { hasText: 'you' }).click()
-	await expect(page.locator('nav h1')).toHaveText('roster')
+	await expect(page.locator('.console-brand h1')).toHaveText('roster')
 	await page.locator('nav button', { hasText: 'holders' }).click()
 	await expect(page).toHaveURL(/\/tenants\/@fabrikam\/holders$/)
 	await expect(page.getByRole('cell', { name: 'admin', exact: true }).first()).toBeVisible()

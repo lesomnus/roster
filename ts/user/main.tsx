@@ -1,3 +1,5 @@
+import { Button, ButtonAnchor, Section } from '@lesomnus/nox'
+import { Field, Form } from '#lib/presentation.js'
 /**
  * Where the user console starts.
  *
@@ -29,6 +31,8 @@ import type { Progress, Sandbox } from '#lib/sandbox.js'
 import { letGo, nobody, open, stillHere } from '#lib/store.js'
 import { left, Second, type Left } from '#lib/second.js'
 import { Page } from './page.js'
+import { AppUI } from '#lib/presentation.js'
+import '@lesomnus/nox/styles.css'
 import '#lib/style.css'
 
 /**
@@ -100,9 +104,9 @@ async function connect(): Promise<Transport> {
  */
 function booting(p: Progress): void {
 	root.render(
-		<StrictMode>
+		<StrictMode><AppUI>
 			<Booting at={p} />
-		</StrictMode>,
+		</AppUI></StrictMode>,
 	)
 }
 
@@ -288,7 +292,7 @@ function SignIn(props: { onDone: () => void; said?: string | undefined }): React
 				(`server/vouch/vouch.go`).
 			*/}
 			{offers.password && (
-				<form
+				<Form
 					onSubmit={(e) => {
 						e.preventDefault()
 
@@ -302,21 +306,15 @@ function SignIn(props: { onDone: () => void; said?: string | undefined }): React
 							.catch(refused)
 					}}
 				>
-					<label>
-						who
-						<input name="alias" autoFocus />
-					</label>
-					<label>
-						password
-						<input name="password" type="password" />
-					</label>
-					<button type="submit">sign in</button>
+					<Field label="who" name="alias" autoFocus />
+					<Field label="password" name="password" type="password" />
+					<Button type="submit">sign in</Button>
 
 					{/* One answer however it was wrong. Which of "no such person",
 					    "wrong password" and "locked" it was is an oracle, and the
 					    lockout in `server/vouch` is what makes guessing expensive. */}
 					{bad && <p className="bad">no</p>}
-				</form>
+				</Form>
 			)}
 
 			{/* After the form and under a rule, as `#lib/signin.tsx` draws them
@@ -326,15 +324,15 @@ function SignIn(props: { onDone: () => void; said?: string | undefined }): React
 			{offers.password && doors.length > 0 && <p className="or">or</p>}
 
 			{doors.length > 0 && (
-				<section className="providers">
+				<Section className="providers">
 					{doors.map((p) => (
-						<a key={p.name} className="button" href={through(p.name)}>
+						<ButtonAnchor key={p.name} className="button" href={through(p.name)}>
 							<span className="mark" aria-hidden="true" />
 							<span className="with">sign in with</span>
 							<span className="who">{p.name}</span>
-						</a>
+						</ButtonAnchor>
 					))}
-				</section>
+				</Section>
 			)}
 
 			{!offers.password && doors.length === 0 && (
@@ -387,7 +385,7 @@ async function run(transport: Transport): Promise<void> {
 
 	const draw = (app: App, signedIn: boolean, out: () => void, said?: string): void => {
 		root.render(
-			<StrictMode>
+			<StrictMode><AppUI>
 				<Provider app={app}>
 					<Shell
 						signedIn={signedIn}
@@ -398,7 +396,7 @@ async function run(transport: Transport): Promise<void> {
 						said={said}
 					/>
 				</Provider>
-			</StrictMode>,
+			</AppUI></StrictMode>,
 		)
 	}
 

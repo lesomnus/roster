@@ -1,3 +1,5 @@
+import { Button, Section, Table as NoxTable, TableBody, TableCell, TableRow } from '@lesomnus/nox'
+import { Choice, Form, Input } from '#lib/presentation.js'
 /**
  * A tenant's sites, the teams in them, and who is in each.
  *
@@ -41,10 +43,10 @@ export function Sites(props: {
 	if (id === undefined) return null
 
 	return (
-		<section className="within">
+		<Section className="within">
 			<h3>{props.tenant?.alias}</h3>
 			<SiteList tenant={id} may={props.may} />
-		</section>
+		</Section>
 	)
 }
 
@@ -68,7 +70,7 @@ function SiteList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 	const items = q === '' ? all : all.filter((v) => `${v.alias} ${v.name}`.toLowerCase().includes(q))
 
 	return (
-		<section>
+		<Section>
 			<h4>sites</h4>
 			<p className="note">
 				A site is the set a role can be scoped to — a binding made in a site
@@ -77,7 +79,7 @@ function SiteList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 			</p>
 
 			<Bar>
-				<input
+				<Input
 					className="find"
 					type="search"
 					aria-label="filter sites"
@@ -86,13 +88,13 @@ function SiteList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					onChange={(e) => setFind(e.target.value)}
 				/>
 				<Fill />
-				<button
-					className="add"
+				<Button
+					variant="solid" className="add"
 					disabled={!props.may('/roster.SiteService/Add')}
 					onClick={() => openAdd(true)}
 				>
 					add site
-				</button>
+				</Button>
 			</Bar>
 
 			{items.length === 0 && (
@@ -101,48 +103,50 @@ function SiteList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 				</p>
 			)}
 			{items.length > 0 && (
-				<table>
-					<tbody>
+				<NoxTable>
+					<TableBody>
 						{items.map((v) => {
 							const k = uuid(v.id)
 
 							return (
-								<tr key={k} className={k === at ? 'at' : ''}>
-									<td>
+								<TableRow key={k} className={k === at ? 'at' : ''}>
+									<TableCell>
 										{v.alias}
 										<span className="under">{v.name}</span>
-									</td>
-									<td className="acts">
-										<button onClick={() => go(k === at ? null : k)}>
+									</TableCell>
+									<TableCell className="acts">
+										<Button onClick={() => go(k === at ? null : k)}>
 											{k === at ? 'hide' : 'open'}
-										</button>
-										<Menu label={`more for ${v.alias}`}>
-											<button
-												className="danger"
-												disabled={!props.may('/roster.SiteService/Erase')}
-												onClick={() => {
-													setBad(null)
-													void erase
-														.call(ref(v.id))
-														.then(() => setGone((was) => [...was, k]))
-														.catch((e: unknown) => setBad(said(e)))
-												}}
-											>
-												remove site
-											</button>
-										</Menu>
-									</td>
-								</tr>
+										</Button>
+										<Menu
+											label={`more for ${v.alias}`}
+											items={[
+												{
+													label: 'remove site',
+													danger: true,
+													disabled: !props.may('/roster.SiteService/Erase'),
+													run: () => {
+														setBad(null)
+														void erase
+															.call(ref(v.id))
+															.then(() => setGone((was) => [...was, k]))
+															.catch((e: unknown) => setBad(said(e)))
+													},
+												},
+											]}
+										/>
+									</TableCell>
+								</TableRow>
 							)
 						})}
-					</tbody>
-				</table>
+					</TableBody>
+				</NoxTable>
 			)}
 
 			{bad !== null && <p className="bad">{bad}</p>}
 
 			<Sheet at={adding} onClose={() => openAdd(false)} title="add a site" bad={bad}>
-			<form
+			<Form
 				onSubmit={(e) => {
 					e.preventDefault()
 					const form = e.currentTarget
@@ -160,12 +164,12 @@ function SiteList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
-				<input name="alias" placeholder="site alias" required />
-				<input name="name" placeholder="name (optional)" />
-				<button type="submit" disabled={add.state === 'pending' || !props.may('/roster.SiteService/Add')}>
+				<Input name="alias" placeholder="site alias" required />
+				<Input name="name" placeholder="name (optional)" />
+				<Button type="submit" disabled={add.state === 'pending' || !props.may('/roster.SiteService/Add')}>
 					add site
-				</button>
-			</form>
+				</Button>
+			</Form>
 			</Sheet>
 
 			{at !== null && (
@@ -175,7 +179,7 @@ function SiteList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					may={props.may}
 				/>
 			)}
-		</section>
+		</Section>
 	)
 }
 
@@ -188,11 +192,11 @@ function Site(props: {
 	if (id === undefined) return null
 
 	return (
-		<section className="within">
+		<Section className="within">
 			<h5>{props.site?.alias}</h5>
 			<SiteMembers tenant={props.tenant} site={id} may={props.may} />
 			<Teams tenant={props.tenant} site={id} may={props.may} />
-		</section>
+		</Section>
 	)
 }
 
@@ -212,51 +216,53 @@ function SiteMembers(props: { tenant: Uint8Array; site: Uint8Array; may: May }):
 	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
 
 	return (
-		<section>
+		<Section>
 			<h6>members</h6>
 			<Bar>
 				<Fill />
-				<button
-					className="add"
+				<Button
+					variant="solid" className="add"
 					disabled={!props.may('/roster.SiteMembershipService/Add')}
 					onClick={() => openAdd(true)}
 				>
 					add somebody
-				</button>
+				</Button>
 			</Bar>
 			{items.length === 0 && <p className="none">nobody in this site</p>}
 			{items.length > 0 && (
-				<table>
-					<tbody>
+				<NoxTable>
+					<TableBody>
 						{items.map((v) => (
-							<tr key={uuid(v.id)}>
-								<td>
+							<TableRow key={uuid(v.id)}>
+								<TableCell>
 									<Alias id={v.holder?.id} />
-								</td>
-								<td className="acts">
-									<Menu label="more for this member">
-										<button
-											className="danger"
-											disabled={!props.may('/roster.SiteMembershipService/Erase')}
-											onClick={() => {
-												setBad(null)
-												void erase
-													.call(ref(v.id))
-													.then(() => setGone((was) => [...was, uuid(v.id)]))
-													.catch((e: unknown) => setBad(said(e)))
-											}}
-										>
-											take out of site
-										</button>
-									</Menu>
-								</td>
-							</tr>
+								</TableCell>
+								<TableCell className="acts">
+									<Menu
+										label="more for this member"
+										items={[
+											{
+												label: 'take out of site',
+												danger: true,
+												disabled: !props.may('/roster.SiteMembershipService/Erase'),
+												run: () => {
+													setBad(null)
+													void erase
+														.call(ref(v.id))
+														.then(() => setGone((was) => [...was, uuid(v.id)]))
+														.catch((e: unknown) => setBad(said(e)))
+												},
+											},
+										]}
+									/>
+								</TableCell>
+							</TableRow>
 						))}
-					</tbody>
-				</table>
+					</TableBody>
+				</NoxTable>
 			)}
 			<Sheet at={adding} onClose={() => openAdd(false)} title="put somebody in this site" bad={bad}>
-			<form
+			<Form
 				onSubmit={(e) => {
 					e.preventDefault()
 					const form = e.currentTarget
@@ -274,16 +280,16 @@ function SiteMembers(props: { tenant: Uint8Array; site: Uint8Array; may: May }):
 				}}
 			>
 				<PickHolder tenant={props.tenant} name="who" />
-				<button
+				<Button
 					type="submit"
 					disabled={add.state === 'pending' || !props.may('/roster.SiteMembershipService/Add')}
 				>
 					add to site
-				</button>
-			</form>
+				</Button>
+			</Form>
 			</Sheet>
 			{bad !== null && <p className="bad">{bad}</p>}
-		</section>
+		</Section>
 	)
 }
 
@@ -302,59 +308,61 @@ function Teams(props: { tenant: Uint8Array; site: Uint8Array; may: May }): React
 	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
 
 	return (
-		<section>
+		<Section>
 			<h6>teams</h6>
 			<Bar>
 				<Fill />
-				<button
-					className="add"
+				<Button
+					variant="solid" className="add"
 					disabled={!props.may('/roster.TeamService/Add')}
 					onClick={() => openAdd(true)}
 				>
 					add team
-				</button>
+				</Button>
 			</Bar>
 			{items.length === 0 && <p className="none">no teams in this site</p>}
 			{items.length > 0 && (
-				<table>
-					<tbody>
+				<NoxTable>
+					<TableBody>
 						{items.map((v) => {
 							const k = uuid(v.id)
 
 							return (
-								<tr key={k} className={k === at ? 'at' : ''}>
-									<td>
+								<TableRow key={k} className={k === at ? 'at' : ''}>
+									<TableCell>
 										{v.alias}
 										<span className="under">{v.name}</span>
-									</td>
-									<td className="acts">
-										<button onClick={() => go(k === at ? null : k)}>
+									</TableCell>
+									<TableCell className="acts">
+										<Button onClick={() => go(k === at ? null : k)}>
 											{k === at ? 'hide' : 'members'}
-										</button>
-										<Menu label={`more for ${v.alias}`}>
-											<button
-												className="danger"
-												disabled={!props.may('/roster.TeamService/Erase')}
-												onClick={() => {
-													setBad(null)
-													void erase
-														.call(ref(v.id))
-														.then(() => setGone((was) => [...was, k]))
-														.catch((e: unknown) => setBad(said(e)))
-												}}
-											>
-												remove team
-											</button>
-										</Menu>
-									</td>
-								</tr>
+										</Button>
+										<Menu
+											label={`more for ${v.alias}`}
+											items={[
+												{
+													label: 'remove team',
+													danger: true,
+													disabled: !props.may('/roster.TeamService/Erase'),
+													run: () => {
+														setBad(null)
+														void erase
+															.call(ref(v.id))
+															.then(() => setGone((was) => [...was, k]))
+															.catch((e: unknown) => setBad(said(e)))
+													},
+												},
+											]}
+										/>
+									</TableCell>
+								</TableRow>
 							)
 						})}
-					</tbody>
-				</table>
+					</TableBody>
+				</NoxTable>
 			)}
 			<Sheet at={adding} onClose={() => openAdd(false)} title="add a team" bad={bad}>
-			<form
+			<Form
 				onSubmit={(e) => {
 					e.preventDefault()
 					const form = e.currentTarget
@@ -377,12 +385,12 @@ function Teams(props: { tenant: Uint8Array; site: Uint8Array; may: May }): React
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
-				<input name="alias" placeholder="team alias" required />
-				<input name="name" placeholder="name (optional)" />
-				<button type="submit" disabled={add.state === 'pending' || !props.may('/roster.TeamService/Add')}>
+				<Input name="alias" placeholder="team alias" required />
+				<Input name="name" placeholder="name (optional)" />
+				<Button type="submit" disabled={add.state === 'pending' || !props.may('/roster.TeamService/Add')}>
 					add team
-				</button>
-			</form>
+				</Button>
+			</Form>
 			</Sheet>
 			{bad !== null && <p className="bad">{bad}</p>}
 
@@ -393,7 +401,7 @@ function Teams(props: { tenant: Uint8Array; site: Uint8Array; may: May }): React
 					may={props.may}
 				/>
 			)}
-		</section>
+		</Section>
 	)
 }
 
@@ -421,7 +429,7 @@ function TeamMembers(props: {
 	const rs = roles.data?.items ?? []
 
 	return (
-		<section className="within">
+		<Section className="within">
 			<h6>{props.team?.alias} — members</h6>
 			<p className="note">
 				A membership may name a role, and then it is a <strong>grant</strong>: the
@@ -430,51 +438,53 @@ function TeamMembers(props: {
 			</p>
 			<Bar>
 				<Fill />
-				<button
-					className="add"
+				<Button
+					variant="solid" className="add"
 					disabled={!props.may('/roster.TeamMembershipService/Add')}
 					onClick={() => openAdd(true)}
 				>
 					add somebody
-				</button>
+				</Button>
 			</Bar>
 
 			{items.length === 0 && <p className="none">nobody in this team</p>}
 			{items.length > 0 && (
-				<table>
-					<tbody>
+				<NoxTable>
+					<TableBody>
 						{items.map((v) => (
-							<tr key={uuid(v.id)}>
-								<td>
+							<TableRow key={uuid(v.id)}>
+								<TableCell>
 									<Alias id={v.holder?.id} />
-								</td>
-								<td className="mono">
+								</TableCell>
+								<TableCell className="mono">
 									<RoleName id={v.role?.id} />
-								</td>
-								<td className="acts">
-									<Menu label="more for this member">
-										<button
-											className="danger"
-											disabled={!props.may('/roster.TeamMembershipService/Erase')}
-											onClick={() => {
-												setBad(null)
-												void erase
-													.call(ref(v.id))
-													.then(() => setGone((was) => [...was, uuid(v.id)]))
-													.catch((e: unknown) => setBad(said(e)))
-											}}
-										>
-											take out of team
-										</button>
-									</Menu>
-								</td>
-							</tr>
+								</TableCell>
+								<TableCell className="acts">
+									<Menu
+										label="more for this member"
+										items={[
+											{
+												label: 'take out of team',
+												danger: true,
+												disabled: !props.may('/roster.TeamMembershipService/Erase'),
+												run: () => {
+													setBad(null)
+													void erase
+														.call(ref(v.id))
+														.then(() => setGone((was) => [...was, uuid(v.id)]))
+														.catch((e: unknown) => setBad(said(e)))
+												},
+											},
+										]}
+									/>
+								</TableCell>
+							</TableRow>
 						))}
-					</tbody>
-				</table>
+					</TableBody>
+				</NoxTable>
 			)}
 			<Sheet at={adding} onClose={() => openAdd(false)} title="put somebody in this team" bad={bad}>
-			<form
+			<Form
 				onSubmit={(e) => {
 					e.preventDefault()
 					const form = e.currentTarget
@@ -498,23 +508,23 @@ function TeamMembers(props: {
 				}}
 			>
 				<PickHolder tenant={props.tenant} name="who" />
-				<select name="role" defaultValue="">
+				<Choice name="role" defaultValue="">
 					<option value="">no role — a member and nothing more</option>
 					{rs.map((r) => (
 						<option key={uuid(r.id)} value={uuid(r.id)}>
 							{r.alias}
 						</option>
 					))}
-				</select>
-				<button
+				</Choice>
+				<Button
 					type="submit"
 					disabled={add.state === 'pending' || !props.may('/roster.TeamMembershipService/Add')}
 				>
 					add to team
-				</button>
-			</form>
+				</Button>
+			</Form>
 			</Sheet>
 			{bad !== null && <p className="bad">{bad}</p>}
-		</section>
+		</Section>
 	)
 }

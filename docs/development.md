@@ -179,7 +179,7 @@ React is a **peer** dependency of payday and an optional one. `payday/store` and
 The account page uses `@lesomnus/nox` for Section surfaces, forms, tables and
 buttons. Layout lives in `ts/account/style.css`; it does not load
 the consoles' global control styles. Shared sign-in and picture behavior accepts
-the account page's controls while the other pages keep their existing controls.
+the shared Nox controls used by the other pages as well.
 Settings start directly with the profile section, without introductory copy.
 Each panel is a Nox `Section` within `SectionLayout`, using its native surface,
 padding and content gaps rather than the Card wrapper and shadow.
@@ -413,3 +413,17 @@ and again at run time.
 - [docs/roadmap.md](roadmap.md) -- what was built, in order, and what it cost
 - payday's [guides](https://github.com/lesomnus/payday/tree/main/docs) -- the
   framework this is written against
+
+### Shared Nox presentation
+
+All four pages — Admin Console (`ts/console`), User Console (`ts/user`), Account
+(`ts/account`) and Login App (`ts/login`) — use the pinned Nox package documented
+in `ts/vendor/README.md`. `ts/lib/presentation.tsx` provides the theme, labelled
+native controls and sign-in adapters. Each app retains its own transport and
+authorisation flow. Admin and User Console share the navigation and workspace
+in `ts/lib/console.tsx`, and their tenant screens remain shared in `ts/lib/tenant`.
+
+`ts/lib/style.css` arranges the consoles and Login App using Nox theme tokens;
+Account keeps its badge and page layout in `ts/account/style.css`. Tables keep
+their native semantics and scroll inside narrow screens. Add/edit forms use a
+Nox drawer with focus containment, Escape dismissal and focus restoration.

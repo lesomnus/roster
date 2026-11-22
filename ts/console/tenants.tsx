@@ -1,3 +1,5 @@
+import { Button, Section, Table as NoxTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@lesomnus/nox'
+import { Form, Input } from '#lib/presentation.js'
 /**
  * The tenants screen -- the ones this deployment serves, and one of them
  * selected.
@@ -284,11 +286,11 @@ function Table(props: {
 			: all.filter((v) => v.alias.toLowerCase().includes(needle) || v.name.toLowerCase().includes(needle))
 
 	return (
-		<section>
+		<Section>
 			<h2>tenants</h2>
 
 			<Bar>
-				<input
+				<Input
 					className="find"
 					type="search"
 					value={typed}
@@ -297,48 +299,48 @@ function Table(props: {
 					aria-label="filter tenants"
 				/>
 				<Fill />
-				<button className="add" disabled={!props.may('/roster.TenantService/Add')} onClick={() => openAdd(true)}>
+				<Button variant="solid" className="add" disabled={!props.may('/roster.TenantService/Add')} onClick={() => openAdd(true)}>
 					stand one up
-				</button>
+				</Button>
 			</Bar>
 
 			{all.length === 0 && <p className="none">none yet</p>}
 			{all.length > 0 && items.length === 0 && <p className="none">none of these match</p>}
 
 			{items.length > 0 && (
-				<table>
-					<thead>
-						<tr>
-							<th>tenant, and what it is called</th>
-							<th>since</th>
-							<th />
-						</tr>
-					</thead>
-					<tbody>
+				<NoxTable>
+					<TableHeader>
+						<TableRow>
+							<TableHead>tenant, and what it is called</TableHead>
+							<TableHead>since</TableHead>
+							<TableHead />
+						</TableRow>
+					</TableHeader>
+					<TableBody>
 						{items.map((v) => {
 							const open = props.at === v.alias
 
 							return (
-								<tr key={uuid(v.id)} className={open ? 'at' : ''}>
-									<td>
+								<TableRow key={uuid(v.id)} className={open ? 'at' : ''}>
+									<TableCell>
 										{v.alias}
 										<span className="under">{v.name}</span>
-									</td>
-									<td>{when(v.dateCreated)}</td>
-									<td className="acts">
+									</TableCell>
+									<TableCell>{when(v.dateCreated)}</TableCell>
+									<TableCell className="acts">
 										{/* One button, and the sidebar is where the screens
 										    are. Six buttons per row was six ways to open one
 										    thing, and somebody who wanted `access` after
 										    `people` had to come back out to the table. */}
-										<button onClick={() => props.onOpen(open ? null : v.alias)}>
+										<Button onClick={() => props.onOpen(open ? null : v.alias)}>
 											{open ? 'selected' : 'open'}
-										</button>
-									</td>
-								</tr>
+										</Button>
+									</TableCell>
+								</TableRow>
 							)
 						})}
-					</tbody>
-				</table>
+					</TableBody>
+				</NoxTable>
 			)}
 
 			<Sheet at={adding} onClose={() => openAdd(false)} title="stand a customer up">
@@ -351,7 +353,7 @@ function Table(props: {
 					}}
 				/>
 			</Sheet>
-		</section>
+		</Section>
 	)
 }
 
@@ -488,7 +490,7 @@ function NewTenant(props: {
 
 	return (
 		<div className="new-tenant">
-			<form
+			<Form
 				onSubmit={(e) => {
 					e.preventDefault()
 
@@ -518,18 +520,18 @@ function NewTenant(props: {
 						.finally(() => setBusy(false))
 				}}
 			>
-				<input name="alias" placeholder="tenant" required />
-				<input name="name" placeholder="name (optional)" />
-				<input name="who" placeholder="their first person" defaultValue="admin" required />
+				<Input autoFocus name="alias" placeholder="tenant" required />
+				<Input name="name" placeholder="name (optional)" />
+				<Input name="who" placeholder="their first person" defaultValue="admin" required />
 				{/* Almost always empty. It is here because an app that already
 				    knows this organisation has to agree with roster about which
 				    tenant it is from the start, and disagreeing fails silently
 				    -- see `stand`. */}
-				<input name="id" placeholder="identifier (only if an app has one)" />
-				<button type="submit" disabled={busy || !allowed}>
+				<Input name="id" placeholder="identifier (only if an app has one)" />
+				<Button type="submit" disabled={busy || !allowed}>
 					new customer
-				</button>
-			</form>
+				</Button>
+			</Form>
 
 			{/* A permission this operator does not hold, said rather than
 			    hidden: a screen that dropped the form would leave them

@@ -1,3 +1,5 @@
+import { Button, Section, Table as NoxTable, TableBody, TableCell, TableRow } from '@lesomnus/nox'
+import { Form, Input } from '#lib/presentation.js'
 /**
  * A tenant's groups, and who is in each.
  *
@@ -31,10 +33,10 @@ export function Groups(props: {
 	if (id === undefined) return null
 
 	return (
-		<section className="within">
+		<Section className="within">
 			<h3>{props.tenant?.alias}</h3>
 			<GroupList tenant={id} may={props.may} />
-		</section>
+		</Section>
 	)
 }
 
@@ -61,7 +63,7 @@ function GroupList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 	const items = q === '' ? all : all.filter((v) => `${v.alias} ${v.name}`.toLowerCase().includes(q))
 
 	return (
-		<section>
+		<Section>
 			<h4>groups</h4>
 			<p className="note">
 				A group is somewhere a binding can be written instead of to a person.
@@ -71,7 +73,7 @@ function GroupList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 			</p>
 
 			<Bar>
-				<input
+				<Input
 					className="find"
 					type="search"
 					aria-label="filter groups"
@@ -80,66 +82,68 @@ function GroupList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					onChange={(e) => setFind(e.target.value)}
 				/>
 				<Fill />
-				<button
-					className="add"
+				<Button
+					variant="solid" className="add"
 					disabled={!props.may('/roster.GroupService/Add')}
 					onClick={() => openAdd(true)}
 				>
 					add group
-				</button>
+				</Button>
 			</Bar>
 
 			{items.length === 0 && (
 				<p className="none">{all.length === 0 ? 'no groups' : 'none of these match'}</p>
 			)}
 			{items.length > 0 && (
-				<table>
-					<tbody>
+				<NoxTable>
+					<TableBody>
 						{items.map((v) => {
 							const k = uuid(v.id)
 
 							return (
-								<tr key={k} className={k === at ? 'at' : ''}>
+								<TableRow key={k} className={k === at ? 'at' : ''}>
 									{/* Two lines, because the alias is what a binding is written
 									    to and the name is what a person calls it: one is copied
 									    and one is read. */}
-									<td>
+									<TableCell>
 										{v.alias}
 										{/* Always drawn, empty or not: a row with a name and one
 										    without are the same height, so the list does not go
 										    ragged on whether somebody filled a field in. */}
 										<span className="under">{v.name}</span>
-									</td>
-									<td className="acts">
-										<button onClick={() => go(k === at ? null : k)}>
+									</TableCell>
+									<TableCell className="acts">
+										<Button onClick={() => go(k === at ? null : k)}>
 											{k === at ? 'hide' : 'members'}
-										</button>
-										<Menu label={`more for ${v.alias}`}>
-											<button
-												className="danger"
-												disabled={!props.may('/roster.GroupService/Erase')}
-												onClick={() => {
-													setBad(null)
-													void erase
-														.call(ref(v.id))
-														.then(() => setGone((was) => [...was, k]))
-														.catch((e: unknown) => setBad(said(e)))
-												}}
-											>
-												remove group
-											</button>
-										</Menu>
-									</td>
-								</tr>
+										</Button>
+										<Menu
+											label={`more for ${v.alias}`}
+											items={[
+												{
+													label: 'remove group',
+													danger: true,
+													disabled: !props.may('/roster.GroupService/Erase'),
+													run: () => {
+														setBad(null)
+														void erase
+															.call(ref(v.id))
+															.then(() => setGone((was) => [...was, k]))
+															.catch((e: unknown) => setBad(said(e)))
+													},
+												},
+											]}
+										/>
+									</TableCell>
+								</TableRow>
 							)
 						})}
-					</tbody>
-				</table>
+					</TableBody>
+				</NoxTable>
 			)}
 			{bad !== null && <p className="bad">{bad}</p>}
 
 			<Sheet at={adding} onClose={() => openAdd(false)} title="add a group" bad={bad}>
-				<form
+				<Form
 					onSubmit={(e) => {
 						e.preventDefault()
 						const form = e.currentTarget
@@ -157,12 +161,12 @@ function GroupList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 							.catch((e: unknown) => setBad(said(e)))
 					}}
 				>
-					<input name="alias" placeholder="group alias" required />
-					<input name="name" placeholder="name (optional)" />
-					<button type="submit" disabled={add.state === 'pending' || !props.may('/roster.GroupService/Add')}>
+					<Input name="alias" placeholder="group alias" required />
+					<Input name="name" placeholder="name (optional)" />
+					<Button type="submit" disabled={add.state === 'pending' || !props.may('/roster.GroupService/Add')}>
 						add group
-					</button>
-				</form>
+					</Button>
+				</Form>
 			</Sheet>
 
 			{at !== null && (
@@ -172,7 +176,7 @@ function GroupList(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					may={props.may}
 				/>
 			)}
-		</section>
+		</Section>
 	)
 }
 
@@ -198,53 +202,55 @@ function GroupMembers(props: {
 	const items = (vs.data?.items ?? []).filter((v) => !gone.includes(uuid(v.id)))
 
 	return (
-		<section className="within">
+		<Section className="within">
 			<h6>{props.group?.alias} — members</h6>
 			<Bar>
 				<Fill />
-				<button
-					className="add"
+				<Button
+					variant="solid" className="add"
 					disabled={!props.may('/roster.GroupMembershipService/Add')}
 					onClick={() => openAdd(true)}
 				>
 					add somebody
-				</button>
+				</Button>
 			</Bar>
 			{items.length === 0 && <p className="none">nobody in this group</p>}
 			{items.length > 0 && (
-				<table>
-					<tbody>
+				<NoxTable>
+					<TableBody>
 						{items.map((v) => (
-							<tr key={uuid(v.id)}>
-								<td>
+							<TableRow key={uuid(v.id)}>
+								<TableCell>
 									<Alias id={v.holder?.id} />
-								</td>
-								<td className="acts">
-									<Menu label="more for this member">
-										<button
-											className="danger"
-											disabled={!props.may('/roster.GroupMembershipService/Erase')}
-											onClick={() => {
-												setBad(null)
-												void erase
-													.call(ref(v.id))
-													.then(() => setGone((was) => [...was, uuid(v.id)]))
-													.catch((e: unknown) => setBad(said(e)))
-											}}
-										>
-											take out of group
-										</button>
-									</Menu>
-								</td>
-							</tr>
+								</TableCell>
+								<TableCell className="acts">
+									<Menu
+										label="more for this member"
+										items={[
+											{
+												label: 'take out of group',
+												danger: true,
+												disabled: !props.may('/roster.GroupMembershipService/Erase'),
+												run: () => {
+													setBad(null)
+													void erase
+														.call(ref(v.id))
+														.then(() => setGone((was) => [...was, uuid(v.id)]))
+														.catch((e: unknown) => setBad(said(e)))
+												},
+											},
+										]}
+									/>
+								</TableCell>
+							</TableRow>
 						))}
-					</tbody>
-				</table>
+					</TableBody>
+				</NoxTable>
 			)}
 			{bad !== null && <p className="bad">{bad}</p>}
 
 			<Sheet at={adding} onClose={() => openAdd(false)} title={`put somebody in ${props.group?.alias ?? 'this group'}`} bad={bad}>
-				<form
+				<Form
 					onSubmit={(e) => {
 						e.preventDefault()
 						const form = e.currentTarget
@@ -262,14 +268,14 @@ function GroupMembers(props: {
 					}}
 				>
 					<PickHolder tenant={props.tenant} name="who" />
-					<button
+					<Button
 						type="submit"
 						disabled={add.state === 'pending' || !props.may('/roster.GroupMembershipService/Add')}
 					>
 						add to group
-					</button>
-				</form>
+					</Button>
+				</Form>
 			</Sheet>
-		</section>
+		</Section>
 	)
 }

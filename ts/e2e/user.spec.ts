@@ -72,7 +72,7 @@ test('a tenant administrator signs in and sees their own tenant', async ({ page 
 	const app = page.locator('tr', { hasText: 'loft' })
 	await expect(app).toBeVisible()
 	await app.getByRole('button', { name: /more for loft/ }).click()
-	await page.getByRole('button', { name: 'stop it acting here' }).click()
+	await page.getByRole('menuitem', { name: 'stop it acting here' }).click()
 	// The account app is nominated here too -- it provisions itself into every
 	// tenant with a name -- so the list is not empty afterwards; loft's row is
 	// what goes.
@@ -139,7 +139,7 @@ test('a tenant administrator changes what a role holds', async ({ page }) => {
 
 	// More, from its menu.
 	await auditor.getByRole('button', { name: 'more for auditor' }).click()
-	await page.getByRole('button', { name: 'add methods' }).click()
+	await page.getByRole('menuitem', { name: 'add methods' }).click()
 	const sheet = page.locator('.sheet')
 	await sheet.getByRole('textbox', { name: 'methods to add' }).fill('/roster.HolderService/List')
 	await sheet.locator('button[type=submit]').click()
@@ -161,7 +161,7 @@ test('a tenant administrator changes what a role holds', async ({ page }) => {
 	// Nor is the role erased from under them, which is the same refusal from
 	// another door (loft#341).
 	await everything.getByRole('button', { name: 'more for everything' }).click()
-	await page.getByRole('button', { name: 'remove role' }).click()
+	await page.getByRole('menuitem', { name: 'remove role' }).click()
 	await expect(page.locator('p.bad')).toContainText('erasing role everything leaves nobody administering the tenant')
 	await expect(everything).toBeVisible()
 })

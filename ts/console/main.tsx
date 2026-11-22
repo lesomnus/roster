@@ -1,3 +1,5 @@
+import { Button } from '@lesomnus/nox'
+import { Field, Form } from '#lib/presentation.js'
 /**
  * Where the page starts.
  *
@@ -31,6 +33,8 @@ import { go, useRoute } from '#lib/route.js'
 // payday's panel, where this build has one; see `devtools.tsx`.
 import { Devtools } from '#lib/devtools.js'
 import { entities } from '#gen/entities.js'
+import { AppUI } from '#lib/presentation.js'
+import '@lesomnus/nox/styles.css'
 import '#lib/style.css'
 
 /**
@@ -106,9 +110,9 @@ async function connect(): Promise<Transport> {
  */
 function booting(p: Progress): void {
 	root.render(
-		<StrictMode>
+		<StrictMode><AppUI>
 			<Booting at={p} />
-		</StrictMode>,
+		</AppUI></StrictMode>,
 	)
 }
 
@@ -238,7 +242,7 @@ function SignIn(props: { onDone: () => void; said?: string | undefined }): React
 	}
 
 	return (
-		<form
+		<Form
 			className="sign-in"
 			onSubmit={(e) => {
 				e.preventDefault()
@@ -259,15 +263,9 @@ function SignIn(props: { onDone: () => void; said?: string | undefined }): React
 					{props.said}
 				</p>
 			)}
-			<label>
-				operator
-				<input name="alias" defaultValue="admin" autoFocus />
-			</label>
-			<label>
-				password
-				<input name="password" type="password" />
-			</label>
-			<button type="submit">sign in</button>
+			<Field label="operator" name="alias" defaultValue="admin" autoFocus />
+			<Field label="password" name="password" type="password" />
+			<Button type="submit">sign in</Button>
 
 			{/* One answer however it was wrong. Which of "no such person",
 			    "wrong password" and "locked" it was is an oracle, and the
@@ -278,7 +276,7 @@ function SignIn(props: { onDone: () => void; said?: string | undefined }): React
 				Run <code>roster init</code> first; it prints the operator and their
 				password, once.
 			</p>
-		</form>
+		</Form>
 	)
 }
 
@@ -372,7 +370,7 @@ async function run(transport: Transport): Promise<void> {
 		said?: string,
 	): void => {
 		root.render(
-			<StrictMode>
+			<StrictMode><AppUI>
 				<Provider app={app}>
 					<Shell
 						signedIn={signedIn}
@@ -384,7 +382,7 @@ async function run(transport: Transport): Promise<void> {
 						said={said}
 					/>
 				</Provider>
-			</StrictMode>,
+			</AppUI></StrictMode>,
 		)
 	}
 

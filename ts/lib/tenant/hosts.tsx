@@ -1,3 +1,5 @@
+import { Button, Section, Table as NoxTable, TableBody, TableCell, TableRow } from '@lesomnus/nox'
+import { Form, Input } from '#lib/presentation.js'
 /**
  * The names a tenant answers at, and the claims that prove them.
  *
@@ -43,11 +45,11 @@ export function Hosts(props: {
 	if (id === undefined) return null
 
 	return (
-		<section className="within">
+		<Section className="within">
 			<h3>{props.tenant?.alias}</h3>
 			<HostList tenant={id} may={props.may} />
 			<Claims tenant={id} may={props.may} />
-		</section>
+		</Section>
 	)
 }
 
@@ -72,7 +74,7 @@ function HostList(props: { tenant: Uint8Array; may: (m: string) => boolean }): R
 	const items = q === '' ? all : all.filter((v) => `${v.name} ${v.desc}`.toLowerCase().includes(q))
 
 	return (
-		<section>
+		<Section>
 			<h4>hosts</h4>
 			<p className="note">
 				The hostnames a browser arrives at that mean this customer. A front door
@@ -87,7 +89,7 @@ function HostList(props: { tenant: Uint8Array; may: (m: string) => boolean }): R
 			</p>
 
 			<Bar>
-				<input
+				<Input
 					className="find"
 					type="search"
 					aria-label="filter hosts"
@@ -96,27 +98,27 @@ function HostList(props: { tenant: Uint8Array; may: (m: string) => boolean }): R
 					onChange={(e) => setFind(e.target.value)}
 				/>
 				<Fill />
-				<button
-					className="add"
+				<Button
+					variant="solid" className="add"
 					disabled={!props.may('/roster.HostService/Add')}
 					onClick={() => openAdd(true)}
 				>
 					add name
-				</button>
+				</Button>
 			</Bar>
 
 			{items.length === 0 && (
 				<p className="none">{all.length === 0 ? 'no names yet' : 'none of these match'}</p>
 			)}
 			{items.length > 0 && (
-				<table>
-					<tbody>
+				<NoxTable>
+					<TableBody>
 						{items.map((v) =>
 							editing === uuid(v.id) ? (
-								<tr key={uuid(v.id)} className="editing">
-									<td className="mono">{v.name}</td>
-									<td colSpan={2}>
-										<form
+								<TableRow key={uuid(v.id)} className="editing">
+									<TableCell className="mono">{v.name}</TableCell>
+									<TableCell colSpan={2}>
+										<Form
 											className="edit"
 											onSubmit={(e) => {
 												e.preventDefault()
@@ -132,23 +134,23 @@ function HostList(props: { tenant: Uint8Array; may: (m: string) => boolean }): R
 													.catch((e: unknown) => setBad(said(e)))
 											}}
 										>
-											<input name="desc" placeholder="note" defaultValue={v.desc} autoFocus />
-											<button type="submit" disabled={update.state === 'pending'}>
+											<Input name="desc" placeholder="note" defaultValue={v.desc} autoFocus />
+											<Button type="submit" disabled={update.state === 'pending'}>
 												save
-											</button>
-											<button type="button" onClick={() => setEditing(null)}>
+											</Button>
+											<Button type="button" onClick={() => setEditing(null)}>
 												cancel
-											</button>
-										</form>
-									</td>
-								</tr>
+											</Button>
+										</Form>
+									</TableCell>
+								</TableRow>
 							) : (
-							<tr key={uuid(v.id)}>
-								<td className="mono">
+							<TableRow key={uuid(v.id)}>
+								<TableCell className="mono">
 									{v.name}
 									<span className="under">{v.desc}</span>
-								</td>
-								<td>
+								</TableCell>
+								<TableCell>
 									{/* Which road wrote it. Not a gate -- a front door resolves a
 									    name either way -- so this says nothing about the row being
 									    usable and everything about what it is evidence of. */}
@@ -157,38 +159,40 @@ function HostList(props: { tenant: Uint8Array; may: (m: string) => boolean }): R
 									) : (
 										<span>proved</span>
 									)}
-								</td>
-								<td className="acts">
-									<button disabled={!props.may('/roster.HostService/Update')} onClick={() => setEditing(uuid(v.id))}>
+								</TableCell>
+								<TableCell className="acts">
+									<Button disabled={!props.may('/roster.HostService/Update')} onClick={() => setEditing(uuid(v.id))}>
 										edit
-									</button>
-									<Menu label={`more for ${v.name}`}>
-										<button
-											className="danger"
-											disabled={!props.may('/roster.HostService/Erase')}
-											onClick={() => {
-												setBad(null)
-												void erase
-													.call({ key: { case: 'id', value: v.id } })
-													.then(() => setGone((was) => [...was, uuid(v.id)]))
-													.catch((e: unknown) => setBad(said(e)))
-											}}
-										>
-											remove name
-										</button>
-									</Menu>
-								</td>
-							</tr>
+									</Button>
+									<Menu
+										label={`more for ${v.name}`}
+										items={[
+											{
+												label: 'remove name',
+												danger: true,
+												disabled: !props.may('/roster.HostService/Erase'),
+												run: () => {
+													setBad(null)
+													void erase
+														.call({ key: { case: 'id', value: v.id } })
+														.then(() => setGone((was) => [...was, uuid(v.id)]))
+														.catch((e: unknown) => setBad(said(e)))
+												},
+											},
+										]}
+									/>
+								</TableCell>
+							</TableRow>
 							),
 						)}
-					</tbody>
-				</table>
+					</TableBody>
+				</NoxTable>
 			)}
 
 			{bad !== null && <p className="bad">{bad}</p>}
 
 			<Sheet at={adding} onClose={() => openAdd(false)} title="add a name" bad={bad}>
-			<form
+			<Form
 				onSubmit={(e) => {
 					e.preventDefault()
 					const form = e.currentTarget
@@ -210,14 +214,14 @@ function HostList(props: { tenant: Uint8Array; may: (m: string) => boolean }): R
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
-				<input name="name" placeholder="contoso.example.com" required />
-				<input name="desc" placeholder="note (optional)" />
-				<button type="submit" disabled={add.state === 'pending' || !props.may('/roster.HostService/Add')}>
+				<Input name="name" placeholder="contoso.example.com" required />
+				<Input name="desc" placeholder="note (optional)" />
+				<Button type="submit" disabled={add.state === 'pending' || !props.may('/roster.HostService/Add')}>
 					add name
-				</button>
-			</form>
+				</Button>
+			</Form>
 			</Sheet>
-		</section>
+		</Section>
 	)
 }
 
@@ -259,7 +263,7 @@ function Claims(props: { tenant: Uint8Array; may: (m: string) => boolean }): Rea
 	}
 
 	return (
-		<section>
+		<Section>
 			<h4>host proofs</h4>
 			<p className="note">
 				Claim a name here, publish the value below as a <code>TXT</code> record,
@@ -271,40 +275,40 @@ function Claims(props: { tenant: Uint8Array; may: (m: string) => boolean }): Rea
 
 			<Bar>
 				<Fill />
-				<button
-					className="add"
+				<Button
+					variant="solid" className="add"
 					disabled={!props.may('/roster.HostProofService/Add')}
 					onClick={() => openClaim(true)}
 				>
 					claim a name
-				</button>
+				</Button>
 			</Bar>
 
 			{items.length === 0 && <p className="none">nothing being proved</p>}
 			{items.map((v) => (
 				<div className="claim" key={uuid(v.id)}>
 					<p className="mono">{v.name}</p>
-					<table className="facts">
-						<tbody>
-							<tr>
-								<td>name</td>
-								<td className="mono">{record(v.name)}</td>
-							</tr>
-							<tr>
-								<td>type</td>
-								<td className="mono">TXT</td>
-							</tr>
-							<tr>
-								<td>value</td>
-								<td className="mono">{v.token}</td>
-							</tr>
-							<tr>
-								<td>good until</td>
-								<td>{when(v.dateExpires)}</td>
-							</tr>
-						</tbody>
-					</table>
-					<button
+					<NoxTable className="facts">
+						<TableBody>
+							<TableRow>
+								<TableCell>name</TableCell>
+								<TableCell className="mono">{record(v.name)}</TableCell>
+							</TableRow>
+							<TableRow>
+								<TableCell>type</TableCell>
+								<TableCell className="mono">TXT</TableCell>
+							</TableRow>
+							<TableRow>
+								<TableCell>value</TableCell>
+								<TableCell className="mono">{v.token}</TableCell>
+							</TableRow>
+							<TableRow>
+								<TableCell>good until</TableCell>
+								<TableCell>{when(v.dateExpires)}</TableCell>
+							</TableRow>
+						</TableBody>
+					</NoxTable>
+					<Button
 						disabled={take.state === 'pending' || !props.may('/roster.HostService/Add')}
 						onClick={() => {
 							setBad(null)
@@ -321,21 +325,23 @@ function Claims(props: { tenant: Uint8Array; may: (m: string) => boolean }): Rea
 						}}
 					>
 						take the name
-					</button>
-					<Menu label={`more for ${v.name}`}>
-						<button
-							className="danger"
-							disabled={!props.may('/roster.HostProofService/Erase')}
-							onClick={() => drop(v.id)}
-						>
-							give up this claim
-						</button>
-					</Menu>
+					</Button>
+					<Menu
+						label={`more for ${v.name}`}
+						items={[
+							{
+								label: 'give up this claim',
+								danger: true,
+								disabled: !props.may('/roster.HostProofService/Erase'),
+								run: () => drop(v.id),
+							},
+						]}
+					/>
 				</div>
 			))}
 
 			<Sheet at={claiming} onClose={() => openClaim(false)} title="claim a name" bad={bad}>
-			<form
+			<Form
 				onSubmit={(e) => {
 					e.preventDefault()
 					const form = e.currentTarget
@@ -357,14 +363,14 @@ function Claims(props: { tenant: Uint8Array; may: (m: string) => boolean }): Rea
 						.catch((e: unknown) => setBad(said(e)))
 				}}
 			>
-				<input name="name" placeholder="contoso.example.com" required />
-				<button type="submit" disabled={add.state === 'pending' || !props.may('/roster.HostProofService/Add')}>
+				<Input name="name" placeholder="contoso.example.com" required />
+				<Button type="submit" disabled={add.state === 'pending' || !props.may('/roster.HostProofService/Add')}>
 					claim a name
-				</button>
-			</form>
+				</Button>
+			</Form>
 			</Sheet>
 			{done !== null && <p className="note">{done}</p>}
 			{bad !== null && <p className="bad">{bad}</p>}
-		</section>
+		</Section>
 	)
 }

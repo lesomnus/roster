@@ -1,3 +1,4 @@
+import { Choice } from '#lib/presentation.js'
 /**
  * The small pieces every tenant screen draws with: an identifier written the way
  * a person reads one, a holder or a role by name, and a picker.
@@ -101,7 +102,7 @@ export function PickHolder(props: { tenant: Uint8Array; name: string }): React.R
 	const items = vs.data?.items ?? []
 
 	return (
-		<select name={props.name} defaultValue="" required>
+		<Choice name={props.name} defaultValue="" required>
 			<option value="" disabled>
 				who
 			</option>
@@ -110,7 +111,7 @@ export function PickHolder(props: { tenant: Uint8Array; name: string }): React.R
 					{v.alias}
 				</option>
 			))}
-		</select>
+		</Choice>
 	)
 }
 

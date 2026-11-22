@@ -1,3 +1,5 @@
+import { Button, Section, Table as NoxTable, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@lesomnus/nox'
+import { Choice, Form, Input } from '#lib/presentation.js'
 /**
  * The directories a tenant's people arrive through: its `Connection` rows.
  *
@@ -39,10 +41,10 @@ export function Connections(props: {
 	if (id === undefined) return null
 
 	return (
-		<section className="within">
+		<Section className="within">
 			<h3>{props.tenant?.alias}</h3>
 			<ConnectionList tenant={id} may={props.may} />
-		</section>
+		</Section>
 	)
 }
 
@@ -68,7 +70,7 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 	const items = q === '' ? all : all.filter((v) => `${v.name} ${v.issuer}`.toLowerCase().includes(q))
 
 	return (
-		<section>
+		<Section>
 			<h4>connections</h4>
 			<p className="note">
 				Where this customer's people authenticate — Entra, Google, GitHub. What
@@ -89,7 +91,7 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 			</p>
 
 			<Bar>
-				<input
+				<Input
 					className="find"
 					type="search"
 					aria-label="filter providers"
@@ -98,13 +100,13 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 					onChange={(e) => setFind(e.target.value)}
 				/>
 				<Fill />
-				<button
-					className="add"
+				<Button
+					variant="solid" className="add"
 					disabled={!props.may('/roster.ConnectionService/Add')}
 					onClick={() => openAdd(true)}
 				>
 					add provider
-				</button>
+				</Button>
 			</Bar>
 
 			{items.length === 0 && (
@@ -115,22 +117,22 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 				</p>
 			)}
 			{items.length > 0 && (
-				<table>
-					<thead>
-						<tr>
-							<th>name, and the issuer it is</th>
-							<th>client id, and the scopes asked for</th>
-							<th>secret ref</th>
-							<th />
-						</tr>
-					</thead>
-					<tbody>
+				<NoxTable>
+					<TableHeader>
+						<TableRow>
+							<TableHead>name, and the issuer it is</TableHead>
+							<TableHead>client id, and the scopes asked for</TableHead>
+							<TableHead>secret ref</TableHead>
+							<TableHead />
+						</TableRow>
+					</TableHeader>
+					<TableBody>
 						{items.map((v) =>
 							editing === uuid(v.id) ? (
-								<tr key={uuid(v.id)} className="editing">
-									<td className="mono">{v.name}</td>
-									<td colSpan={3}>
-										<form
+								<TableRow key={uuid(v.id)} className="editing">
+									<TableCell className="mono">{v.name}</TableCell>
+									<TableCell colSpan={3}>
+										<Form
 											className="edit connection"
 											onSubmit={(e) => {
 												e.preventDefault()
@@ -155,69 +157,71 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 													.catch((e: unknown) => setBad(said(e)))
 											}}
 										>
-											<input name="issuer" placeholder="issuer" defaultValue={v.issuer} required autoFocus />
-											<input name="client_id" placeholder="client id" defaultValue={v.clientId} required />
-											<input name="scopes" placeholder="scopes beyond openid" defaultValue={v.scopes.join(' ')} />
-											<input name="secret_ref" placeholder="env:CONTOSO_ENTRA_SECRET" defaultValue={v.secretRef} />
+											<Input name="issuer" placeholder="issuer" defaultValue={v.issuer} required autoFocus />
+											<Input name="client_id" placeholder="client id" defaultValue={v.clientId} required />
+											<Input name="scopes" placeholder="scopes beyond openid" defaultValue={v.scopes.join(' ')} />
+											<Input name="secret_ref" placeholder="env:CONTOSO_ENTRA_SECRET" defaultValue={v.secretRef} />
 											<Subject value={v.subjectClaim} />
-											<input name="desc" placeholder="note" defaultValue={v.desc} />
-											<button type="submit" disabled={update.state === 'pending'}>
+											<Input name="desc" placeholder="note" defaultValue={v.desc} />
+											<Button type="submit" disabled={update.state === 'pending'}>
 												save
-											</button>
-											<button type="button" onClick={() => setEditing(null)}>
+											</Button>
+											<Button type="button" onClick={() => setEditing(null)}>
 												cancel
-											</button>
-										</form>
-									</td>
-								</tr>
+											</Button>
+										</Form>
+									</TableCell>
+								</TableRow>
 							) : (
-							<tr key={uuid(v.id)}>
+							<TableRow key={uuid(v.id)}>
 								{/* The name is what a row elsewhere points at and the issuer is
 								    what it means; one is copied and one is read, so they are a
 								    line each rather than two columns to scan across. */}
-								<td className="mono">
+								<TableCell className="mono">
 									{v.name}
 									<span className="under">{v.issuer}</span>
-								</td>
-								<td className="mono">
+								</TableCell>
+								<TableCell className="mono">
 									{v.clientId}
 									<span className="under">
 										{v.scopes.join(' ')}
 										{v.subjectClaim !== '' && ` · subject ${v.subjectClaim}`}
 									</span>
-								</td>
-								<td className="mono">{v.secretRef}</td>
-								<td className="acts">
-									<button disabled={!props.may('/roster.ConnectionService/Update')} onClick={() => setEditing(uuid(v.id))}>
+								</TableCell>
+								<TableCell className="mono">{v.secretRef}</TableCell>
+								<TableCell className="acts">
+									<Button disabled={!props.may('/roster.ConnectionService/Update')} onClick={() => setEditing(uuid(v.id))}>
 										edit
-									</button>
-									<Menu label={`more for ${v.name}`}>
-										<button
-											className="danger"
-											disabled={!props.may('/roster.ConnectionService/Erase')}
-											onClick={() => {
-												setBad(null)
-												void erase
-													.call({ key: { case: 'id', value: v.id } })
-													.then(() => setGone((was) => [...was, uuid(v.id)]))
-													.catch((e: unknown) => setBad(said(e)))
-											}}
-										>
-											remove provider
-										</button>
-									</Menu>
-								</td>
-							</tr>
+									</Button>
+									<Menu
+										label={`more for ${v.name}`}
+										items={[
+											{
+												label: 'remove provider',
+												danger: true,
+												disabled: !props.may('/roster.ConnectionService/Erase'),
+												run: () => {
+													setBad(null)
+													void erase
+														.call({ key: { case: 'id', value: v.id } })
+														.then(() => setGone((was) => [...was, uuid(v.id)]))
+														.catch((e: unknown) => setBad(said(e)))
+												},
+											},
+										]}
+									/>
+								</TableCell>
+							</TableRow>
 							),
 						)}
-					</tbody>
-				</table>
+					</TableBody>
+				</NoxTable>
 			)}
 
 			{bad !== null && <p className="bad">{bad}</p>}
 
 			<Sheet at={adding} onClose={() => openAdd(false)} title="add a provider" bad={bad}>
-			<form
+			<Form
 				className="connection"
 				onSubmit={(e) => {
 					e.preventDefault()
@@ -255,22 +259,22 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 				{/* The name is what `Identity.provider` and `MailDomain.provider`
 				    use, chosen once: a name that changed would make the same
 				    person a new person. */}
-				<input name="name" placeholder="entra" required />
-				<input name="issuer" placeholder="https://login.microsoftonline.com/…/v2.0" required />
-				<input name="client_id" placeholder="client id" required />
-				<input name="scopes" placeholder="scopes beyond openid, e.g. email" />
-				<input name="secret_ref" placeholder="env:CONTOSO_ENTRA_SECRET" />
+				<Input name="name" placeholder="entra" required />
+				<Input name="issuer" placeholder="https://login.microsoftonline.com/…/v2.0" required />
+				<Input name="client_id" placeholder="client id" required />
+				<Input name="scopes" placeholder="scopes beyond openid, e.g. email" />
+				<Input name="secret_ref" placeholder="env:CONTOSO_ENTRA_SECRET" />
 				<Subject value="" />
-				<input name="desc" placeholder="note (optional)" />
-				<button
+				<Input name="desc" placeholder="note (optional)" />
+				<Button
 					type="submit"
 					disabled={add.state === 'pending' || !props.may('/roster.ConnectionService/Add')}
 				>
 					add provider
-				</button>
-			</form>
+				</Button>
+			</Form>
 			</Sheet>
-		</section>
+		</Section>
 	)
 }
 
@@ -278,9 +282,9 @@ function ConnectionList(props: { tenant: Uint8Array; may: (m: string) => boolean
 // choice of the two a front door reads (`Connection.subject_claim`).
 function Subject(props: { value: string }) {
 	return (
-		<select name="subject_claim" aria-label="subject claim" defaultValue={props.value}>
+		<Choice name="subject_claim" aria-label="subject claim" defaultValue={props.value}>
 			<option value="">subject: sub</option>
 			<option value="oid">subject: oid (Entra)</option>
-		</select>
+		</Choice>
 	)
 }
