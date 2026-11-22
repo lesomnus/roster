@@ -833,7 +833,10 @@ arrived at, under `https`: its cookies are `Secure`, so it works over nothing
 else, and what a request says of its own scheme is the sender's to write. For
 the same reason a sign-in begun at a tenant's console (`next`) goes back to an
 `https` origin of that tenant's or is refused. A development rig that said its
-cookies are not `Secure` (`--insecure-cookie`) is read as it says.
+cookies are not `Secure` (`--insecure-cookie`) is read as it says. Beside an
+`https` base it is refused at start, naming both keys, for the account app and
+the Login App alike: `deploy/config.yaml` turns the switch on beside an `http`
+base, and an overlay that says its own base inherits it.
 
 **What is in front of the account app passes three headers as the browser wrote
 them.** `Host`, because which tenant a request is about is the name it arrived
