@@ -45,8 +45,10 @@ export type VouchWho = Message<"roster.VouchWho"> & {
    * make -- or the tenant and an [VouchWho.address], which is what a form that
    * asks for an email collects.
    *
-   * The tenant comes from the front door rather than from the form:
-   * `FrontService.WhoseHost` turns the name a browser arrived at into one.
+   * The tenant's alias, and it comes from the front door rather than from the
+   * form. `FrontService.WhoseHost` turns the name a browser arrived at into
+   * the tenant's identifier, which this field does not take: the front door
+   * says the alias that identifier is.
    *
    * **Optional for a caller that is inside a tenant**, which a front door
    * holding one key per tenant is: the key already says which one, `Verify`
@@ -239,10 +241,10 @@ export const VouchVerifyRequestSchema: GenMessage<VouchVerifyRequest> = /*@__PUR
 /**
  * VouchFactor is one way somebody can prove themselves, and when.
  *
- * A message rather than a bare kind, for the reason `MeCredential` is one: a
- * person may be locked out of their second factor with their password fine, and
- * a page told only the kind draws a form that is already dead. Both fields are
- * **facts**; a display name, an order or a "required" flag is where D21's
+ * A message rather than a bare kind, for the reason `SignInCredential` is one:
+ * a person may be locked out of their second factor with their password fine,
+ * and a page told only the kind draws a form that is already dead. Both fields
+ * are **facts**; a display name, an order or a "required" flag is where D21's
  * warning about Kratos bites, and the shape is what makes that boundary
  * visible rather than tempting.
  *
@@ -907,9 +909,9 @@ export const VouchRedeemRequestSchema: GenMessage<VouchRedeemRequest> = /*@__PUR
  *
  * [VouchService.Delegate] answers with a string and is not an exception to
  * that. What it hands back is a secret roster **made**, whose verifier goes
- * into a row before the answer leaves -- which is `IssueService`'s established
- * shape, and the opposite of answering with a verifier somebody else's password
- * is checked against.
+ * into a row before the answer leaves -- which is the shape `ApiKey.Issue` and
+ * `Credential.Issue` have, and the opposite of answering with a verifier
+ * somebody else's password is checked against.
  *
  * The distinction is the same one `Credential` states about comparison. A hash
  * that has left the store puts timing-safe comparison, attempt counting and

@@ -16,7 +16,9 @@ export const file_app_sync: GenFile = /*@__PURE__*/
   fileDesc("Cg5hcHAvc3luYy5wcm90bxIGcm9zdGVyIhIKEFN5bmNXYXRjaFJlcXVlc3QiyQIKCVN5bmNFdmVudBIOCgZob2xkZXIYASABKAwSDgoGdGVuYW50GAIgASgMEiIKBnJlYXNvbhgIIAEoDjISLnJvc3Rlci5TeW5jUmVhc29uEi0KCWRhdGVfc2VudBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASNAoQZGF0ZV9pbnZhbGlkYXRlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMQoNZGF0ZV9kaXNhYmxlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2RhdGVfY2xvc2VkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCreAQoKU3luY1JlYXNvbhIbChdTWU5DX1JFQVNPTl9VTlNQRUNJRklFRBAAEhsKF1NZTkNfUkVBU09OX0lOVkFMSURBVEVEEAESGQoVU1lOQ19SRUFTT05fU1VTUEVOREVEEAISGgoWU1lOQ19SRUFTT05fUkVJTlNUQVRFRBADEhYKElNZTkNfUkVBU09OX0VSQVNFRBAEEhYKElNZTkNfUkVBU09OX0NMT1NFRBAFEhgKFFNZTkNfUkVBU09OX1JFT1BFTkVEEAYSFQoRU1lOQ19SRUFTT05fUkVBQ0gQBzJFCgtTeW5jU2VydmljZRI2CgVXYXRjaBIYLnJvc3Rlci5TeW5jV2F0Y2hSZXF1ZXN0GhEucm9zdGVyLlN5bmNFdmVudDABQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
 
 /**
- * Nothing, and that is the shape rather than a first version.
+ * Nothing that names **whose** events: who an app hears is the caller's own
+ * narrowing, and that is the shape rather than a first version. A field that
+ * names *when* is not ruled out by it.
  *
  * What an app hears is narrowed exactly as a read is. A tenant's key hears
  * its tenant; a deployment key hears every tenant, or the one it names with

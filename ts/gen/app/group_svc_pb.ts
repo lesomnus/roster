@@ -431,7 +431,9 @@ export type GroupUpdateRequest = Message<"roster.GroupUpdateRequest"> & {
   ref?: GroupRef | undefined;
 
   /**
-   * Optimistic locking, as `Patch` takes it: the version this caller read.
+   * The version this caller read, and required: this replaces what they
+   * read, so one left out is refused. One that has moved since is refused,
+   * and the caller reads again.
    *
    * @generated from field: google.protobuf.Timestamp date_updated = 13;
    */

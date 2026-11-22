@@ -48,6 +48,7 @@ message Identity {
   // 4..7 are empty on purpose. An identity has no name a person writes: it is
   // named by the pair below, and both halves come from a provider rather than
   // from anybody here. The numbers stay reserved.
+  reserved 4 to 7;
 
   // Which provider said so -- "entra", "github", "ldap", "local". A string
   // rather than an enum because adding one is a deployment's decision and a new

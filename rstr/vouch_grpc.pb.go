@@ -66,9 +66,9 @@ const (
 //
 // [VouchService.Delegate] answers with a string and is not an exception to
 // that. What it hands back is a secret roster **made**, whose verifier goes
-// into a row before the answer leaves -- which is `IssueService`'s established
-// shape, and the opposite of answering with a verifier somebody else's password
-// is checked against.
+// into a row before the answer leaves -- which is the shape `ApiKey.Issue` and
+// `Credential.Issue` have, and the opposite of answering with a verifier
+// somebody else's password is checked against.
 //
 // The distinction is the same one `Credential` states about comparison. A hash
 // that has left the store puts timing-safe comparison, attempt counting and
@@ -425,9 +425,9 @@ func (c *vouchServiceClient) Accept(ctx context.Context, in *VouchAcceptRequest,
 //
 // [VouchService.Delegate] answers with a string and is not an exception to
 // that. What it hands back is a secret roster **made**, whose verifier goes
-// into a row before the answer leaves -- which is `IssueService`'s established
-// shape, and the opposite of answering with a verifier somebody else's password
-// is checked against.
+// into a row before the answer leaves -- which is the shape `ApiKey.Issue` and
+// `Credential.Issue` have, and the opposite of answering with a verifier
+// somebody else's password is checked against.
 //
 // The distinction is the same one `Credential` states about comparison. A hash
 // that has left the store puts timing-safe comparison, attempt counting and

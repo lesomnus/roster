@@ -646,7 +646,8 @@ export const CredentialUnlockResponseSchema: GenMessage<CredentialUnlockResponse
 export type CredentialSetRequest = Message<"roster.CredentialSetRequest"> & {
   /**
    * Whose credential, by reference -- an id or `@tenant/alias`. Not a sign-in
-   * form: an operator names somebody they already know.
+   * form. The caller's own: a caller with a frame writes nobody else's, and
+   * only the deployment itself, unframed, names somebody else here.
    *
    * @generated from field: roster.HolderRef ref = 1;
    */
@@ -708,7 +709,7 @@ export type CredentialEnrolRequest = Message<"roster.CredentialEnrolRequest"> & 
   ref?: HolderRef | undefined;
 
   /**
-   * "totp" or "webauthn". A password is `Set` or `Reset`; refused here.
+   * "totp" or "webauthn". A password is `Set` or `Issue`; refused here.
    *
    * @generated from field: string kind = 2 [features.field_presence = IMPLICIT];
    */
@@ -951,9 +952,9 @@ export const CredentialService: GenService<{
     output: typeof CredentialUnlockResponseSchema;
   },
   /**
-   * Set writes somebody's secret to the one given, hashing it. The operator
-   * write `Vouch.Set` was, now on the entity, named by a reference rather than
-   * a sign-in form -- the email/address addressing stays with the recovery
+   * Set writes the caller's own secret to the one given, hashing it. What
+   * `Vouch.Set` was, now on the entity, named by a reference rather than a
+   * sign-in form -- the email/address addressing stays with the recovery
    * flow, which is where the Email lookup belongs.
    *
    * It hashes because it compares (D14): the caller sends plaintext, the layer

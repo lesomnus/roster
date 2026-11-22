@@ -1806,7 +1806,9 @@ type GroupUpdateRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref *GroupRef
-	// Optimistic locking, as `Patch` takes it: the version this caller read.
+	// The version this caller read, and required: this replaces what they
+	// read, so one left out is refused. One that has moved since is refused,
+	// and the caller reads again.
 	DateUpdated *timestamppb.Timestamp
 	// What it is called, and the note about it. Unset is left as it was.
 	Name *string

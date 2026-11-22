@@ -345,9 +345,9 @@ type Credential_builder struct {
 	//
 	// A string, and unlike `Identity.provider` the set is **not** a deployment's
 	// to extend: what may be written here is exactly what something in
-	// `server/vouch` can later check, and `Vouch.Set` refuses anything else. A
-	// row of a kind nothing checks is offered to every sign-in from then on,
-	// refused when it is answered, and removable by no call on any plane.
+	// `server/vouch` can later check, and `Credential.Set` refuses anything
+	// else. A row of a kind nothing checks is offered to every sign-in from then
+	// on, refused when it is answered, and removable by no call on any plane.
 	//
 	// Not personal: it is which kind of secret, and says nothing of whose.
 	Kind string

@@ -37,10 +37,9 @@ service HolderService {
   rpc Watch(HolderWatchRequest) returns (stream HolderWatchResponse);
   // Update is the narrow write, and the one a caller is given.
   //
-  // `Patch` and `Apply` write anything the schema holds, which is why they are
-  // closed at the transport unless a deployment says otherwise -- *what a
-  // caller may change, and under what conditions, is not something a general
-  // write can be told*.
+  // `Patch` and `Apply` write anything the schema holds, which is why no port
+  // serves them and no setting opens one -- *what a caller may change, and
+  // under what conditions, is not something a general write can be told*.
   //
   // This can be told. Two fields, both of them things a holder carries about
   // itself and neither of them anything the wall, the trail or a permission
@@ -126,10 +125,11 @@ service HolderService {
   // # Why it cannot be read any other way
   //
   // `CredentialService`'s generated reads are shut a method at a time, because
-  // its `Get` answers with the verifier (D13). And `IdentityService` narrows by
-  // the **tenant**, so an operator's list of one person's identities is that
-  // whole tenant's, filtered in the app -- which is the leak D17 named and D23
-  // exists to remove.
+  // its `Get` answers with the verifier (D13). And `IdentityService` is held
+  // to the **tenant**: the grant that lists one person's identities lists the
+  // whole tenant's, and `IdentityFilter.holder` narrows what a list answers,
+  // not what its caller may read -- which is the leak D17 named and D23 exists
+  // to remove.
   //
   // # Why it is not MeService
   //
@@ -561,9 +561,10 @@ message HolderWatchItem {
 message HolderUpdateRequest {
   HolderRef ref = 1;
 
-  // Optimistic locking, as `Patch` takes it: the version this caller read. A
-  // write against a row that has moved is refused rather than applied to
-  // whatever it became.
+  // The version this caller read, and required: this replaces what they
+  // read, so one left out is refused. A write against a row that has moved is
+  // refused rather than applied to whatever it became, and the caller reads
+  // again.
   google.protobuf.Timestamp date_updated = 13;
 
   // Replaced **whole**, both of them, which is the shape each was chosen for:
@@ -576,7 +577,9 @@ message HolderUpdateRequest {
 message HolderRealiasRequest {
   HolderRef ref = 1;
 
-  // Optimistic locking, as `Patch` takes it: the version this caller read.
+  // The version this caller read, and required: this replaces what they
+  // read, so one left out is refused. One that has moved since is refused,
+  // and the caller reads again.
   google.protobuf.Timestamp date_updated = 13;
 
   // The new one, on the field number it lands in. Refused if it is not an
@@ -589,7 +592,11 @@ message HolderRealiasRequest {
 message HolderDisableRequest {
   HolderRef ref = 1;
 
-  // Optimistic locking, as `Update` takes it.
+  // The version this caller read, or nothing: a suspension is a decision
+  // about somebody and not an edit of what was read, so left out, the row is
+  // taken as whatever it is now (`lock`, in `server/core`, says why). One
+  // that has moved since is refused, and the caller reads again. `Enable` and
+  // `Invalidate` take theirs the same way.
   google.protobuf.Timestamp date_updated = 13;
 }
 
@@ -757,7 +764,9 @@ message HolderProvisionRequest {
 message HolderDeactivateRequest {
   HolderRef ref = 1;
 
-  // Optimistic locking, as `Disable` takes it.
+  // The version this caller read, or nothing, as `Disable` takes it: left
+  // out, the row is taken as whatever it is now. One that has moved since is
+  // refused, and the caller reads again.
   google.protobuf.Timestamp date_updated = 13;
 
   // The directory deleted them, rather than said they are inactive.
@@ -786,6 +795,8 @@ message HolderTellRequest {
   // and empty as `subject`: empty is their first address being that name.
   string name = 4;
 
-  // Optimistic locking, as `Disable` takes it.
+  // The version this caller read, or nothing, as `Disable` takes it: left
+  // out, the row is taken as whatever it is now. One that has moved since is
+  // refused, and the caller reads again.
   google.protobuf.Timestamp date_updated = 13;
 }

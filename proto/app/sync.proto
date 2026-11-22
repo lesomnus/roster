@@ -92,7 +92,9 @@ service SyncService {
 }
 
 message SyncWatchRequest {
-  // Nothing, and that is the shape rather than a first version.
+  // Nothing that names **whose** events: who an app hears is the caller's own
+  // narrowing, and that is the shape rather than a first version. A field that
+  // names *when* is not ruled out by it.
   //
   // What an app hears is narrowed exactly as a read is. A tenant's key hears
   // its tenant; a deployment key hears every tenant, or the one it names with

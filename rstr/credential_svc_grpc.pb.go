@@ -71,9 +71,9 @@ type CredentialServiceClient interface {
 	// so "may open a locked account" is grantable only by being nameable, apart
 	// from "may rewrite the row". The same argument `HolderService.Enable` makes.
 	Unlock(ctx context.Context, in *CredentialUnlockRequest, opts ...grpc.CallOption) (*CredentialUnlockResponse, error)
-	// Set writes somebody's secret to the one given, hashing it. The operator
-	// write `Vouch.Set` was, now on the entity, named by a reference rather than
-	// a sign-in form -- the email/address addressing stays with the recovery
+	// Set writes the caller's own secret to the one given, hashing it. What
+	// `Vouch.Set` was, now on the entity, named by a reference rather than a
+	// sign-in form -- the email/address addressing stays with the recovery
 	// flow, which is where the Email lookup belongs.
 	//
 	// It hashes because it compares (D14): the caller sends plaintext, the layer
@@ -347,9 +347,9 @@ type CredentialServiceServer interface {
 	// so "may open a locked account" is grantable only by being nameable, apart
 	// from "may rewrite the row". The same argument `HolderService.Enable` makes.
 	Unlock(context.Context, *CredentialUnlockRequest) (*CredentialUnlockResponse, error)
-	// Set writes somebody's secret to the one given, hashing it. The operator
-	// write `Vouch.Set` was, now on the entity, named by a reference rather than
-	// a sign-in form -- the email/address addressing stays with the recovery
+	// Set writes the caller's own secret to the one given, hashing it. What
+	// `Vouch.Set` was, now on the entity, named by a reference rather than a
+	// sign-in form -- the email/address addressing stays with the recovery
 	// flow, which is where the Email lookup belongs.
 	//
 	// It hashes because it compares (D14): the caller sends plaintext, the layer

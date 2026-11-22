@@ -123,8 +123,10 @@ type VouchWho_builder struct {
 	// make -- or the tenant and an [VouchWho.address], which is what a form that
 	// asks for an email collects.
 	//
-	// The tenant comes from the front door rather than from the form:
-	// `FrontService.WhoseHost` turns the name a browser arrived at into one.
+	// The tenant's alias, and it comes from the front door rather than from the
+	// form. `FrontService.WhoseHost` turns the name a browser arrived at into
+	// the tenant's identifier, which this field does not take: the front door
+	// says the alias that identifier is.
 	//
 	// **Optional for a caller that is inside a tenant**, which a front door
 	// holding one key per tenant is: the key already says which one, `Verify`
@@ -462,10 +464,10 @@ func (b0 VouchVerifyRequest_builder) Build() *VouchVerifyRequest {
 
 // VouchFactor is one way somebody can prove themselves, and when.
 //
-// A message rather than a bare kind, for the reason `MeCredential` is one: a
-// person may be locked out of their second factor with their password fine, and
-// a page told only the kind draws a form that is already dead. Both fields are
-// **facts**; a display name, an order or a "required" flag is where D21's
+// A message rather than a bare kind, for the reason `SignInCredential` is one:
+// a person may be locked out of their second factor with their password fine,
+// and a page told only the kind draws a form that is already dead. Both fields
+// are **facts**; a display name, an order or a "required" flag is where D21's
 // warning about Kratos bites, and the shape is what makes that boundary
 // visible rather than tempting.
 type VouchFactor struct {

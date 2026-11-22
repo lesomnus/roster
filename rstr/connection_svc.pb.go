@@ -2215,7 +2215,9 @@ type ConnectionUpdateRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref *ConnectionRef
-	// Optimistic locking, as `Patch` takes it: the version this caller read.
+	// The version this caller read, and required: this replaces what they
+	// read, so one left out is refused. One that has moved since is refused,
+	// and the caller reads again.
 	DateUpdated *timestamppb.Timestamp
 	// Each replaced whole when present, and left as it is when absent. Scopes
 	// have no presence: given, they replace; empty, they are left as they are,
