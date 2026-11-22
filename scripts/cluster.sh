@@ -98,6 +98,16 @@
 # cluster were doing, before anything is torn down. And because the way this
 # failed was by never finishing, CI gives the step twenty minutes and runs
 # `--state` itself after it, for a run that never got to say anything.
+#
+# The way out is bounded too, every call of it: a run whose node could not
+# make a sandbox for any pod said so six minutes in and was then held for
+# eleven by the one call there without a bound. Where that is what happened --
+# the kubelet's *failed to reserve sandbox name* in the node's log, and no
+# container of the namespace ever -- `runner` says in the last line, and as an
+# annotation, that it was the runner and not roster, and the script ends
+# within two minutes. Left, and only supposed to help: starting k3s without its
+# network policy controller, one of the writers of the tables the kernel was
+# blocked on.
 set -o errexit
 set -o nounset
 set -o pipefail
@@ -181,9 +191,11 @@ by() {
 	echo "${t}"
 }
 
-# briefly is a call made on the way out: twenty seconds, whatever the run has
-# left -- which, when the budget is what ended it, is nothing.
-briefly() { timeout --foreground -k 5 20 "$@"; }
+# briefly is a call made on the way out: `brief` seconds, twenty unless the
+# way out is hurrying, whatever the run has left -- which, when the budget is
+# what ended it, is nothing.
+brief=20
+briefly() { timeout --foreground -k 5 "${brief}" "$@"; }
 
 # nodectl is kubectl as the node has it: k3s ships one pointed at itself, so
 # asking it needs no volume, no image and no network of this script's -- any of
@@ -241,14 +253,18 @@ resolver() {
 #
 # Every call is `briefly` and `|| true`, for `resolver`'s reason and one more: a
 # diagnostic that waits for ever is the failure it was meant to explain.
+#
+# And what needs the cluster's API is asked only once the API has answered,
+# once: a node whose API does not answer spent ten seconds on each of a dozen
+# calls saying so.
 state() {
 	{
 		echo
 		echo "-- the machine, and what is using its memory"
-		uptime 2>/dev/null || true
-		free -m 2>/dev/null || true
-		df -h / 2>/dev/null || true
-		ps -eo pid,rss,etime,comm --sort=-rss 2>/dev/null | head -n 11 || true
+		briefly uptime 2>/dev/null || true
+		briefly free -m 2>/dev/null || true
+		briefly df -h / 2>/dev/null || true
+		briefly ps -eo pid,rss,etime,comm --sort=-rss 2>/dev/null | head -n 11 || true
 
 		echo
 		echo "-- the engine: this cluster's containers, and any of this script's still running"
@@ -256,16 +272,23 @@ state() {
 		briefly docker ps --no-trunc --filter "label=roster.cluster=${CLUSTER}" --format '{{.RunningFor}}  {{.Command}}' 2>/dev/null || true
 	} >&2
 
-	docker inspect "${node}" >/dev/null 2>&1 || return 0
+	briefly docker inspect "${node}" >/dev/null 2>&1 || return 0
 
 	{
 		echo
 		echo "-- the node"
 		briefly docker inspect -f '{{.State.Status}}, restarted {{.RestartCount}} time(s), OOM-killed {{.State.OOMKilled}}' "${node}" 2>/dev/null || true
 		briefly docker stats --no-stream --format '{{.CPUPerc}} CPU, {{.MemUsage}}' "${node}" 2>/dev/null || true
-		# The API itself can be down; kubectl-only diagnostics then say nothing.
 		briefly docker logs --tail 60 "${node}" 2>&1 || true
+	} >&2
 
+	if ! nodectl get --raw=/readyz >/dev/null 2>&1; then
+		echo >&2
+		echo "-- the cluster: its API did not answer, so nothing that needs it is asked" >&2
+		return 0
+	fi
+
+	{
 		echo
 		echo "-- the cluster"
 		nodectl get nodes -o 'jsonpath={range .items[*].status.conditions[*]}{.type}={.status}  {.message}{"\n"}{end}' 2>&1 || true
@@ -313,29 +336,91 @@ carry() {
 		| bounded 60 docker run --rm -i --init --label "roster.cluster=${CLUSTER}" -v "${vol}:/w" alpine sh -c 'tar -C /w -xf -'
 }
 
+# The sentence a run says last when it went red for the runner and not for
+# roster.
+theRunner="this was the runner and not roster: the kubelet could not make a sandbox for any pod (failed to reserve sandbox name), and no container of ${NS} ever ran. Run it again"
+
+# runner is whether a run that went red went red for the machine it ran on.
+#
+# Three of a hundred pushes to `main` went red in this job and none was
+# roster's. Two were one failure: iptables blocked in the kernel, the network
+# policy controller's heartbeat missed, and the kubelet answering *failed to
+# reserve sandbox name* for every pod, so that nothing of roster's or Hydra's
+# ever started. The script knew six minutes in, said what it knew, and then
+# the job's twenty minutes ran out on the way out, with the annotation saying
+# only that time was up. It is told by both halves: the kubelet's sentence in
+# the node's log, which is read without the API, and no container of the
+# namespace in the node's runtime, ever -- which is what a defect of roster's
+# that stops a pod does not look like, since a container that ran and fell
+# over is still listed.
+runner() {
+	local said ran
+	said="$(briefly docker logs --tail 2000 "${node}" 2>&1)" || return 1
+	case "${said}" in
+	*"failed to reserve sandbox name"*) ;;
+	*) return 1 ;;
+	esac
+
+	ran="$(briefly docker exec "${node}" crictl ps -a -q --label "io.kubernetes.pod.namespace=${NS}" 2>/dev/null)" || return 1
+	[ -z "${ran}" ]
+}
+
 cleanup() {
 	# Before anything is torn down, and only when the run is going out red --
 	# and only when there is a cluster to ask, so that a run which fell over
 	# before one existed says what it fell over on and nothing else.
-	local out=$?
-	if [ "${out}" -ne 0 ] && docker inspect "${node}" >/dev/null 2>&1; then
+	local out=$? itwas=""
+	if [ "${out}" -ne 0 ] && briefly docker inspect "${node}" >/dev/null 2>&1; then
 		echo "cluster: out red, $(($(date +%s) - started))s in" >&2
-		state
+
+		# The runner's failure is said and the rest of the way out is quick:
+		# what the cluster was doing is the same story at length, and what of
+		# it needs the API waits on a node that is not answering. Each call
+		# from here is ten seconds at most, so the script ends within two
+		# minutes of going red.
+		if runner; then
+			itwas=runner
+			brief=10
+			if [ -n "${GITHUB_ACTIONS:-}" ]; then
+				echo "::error title=cluster::${theRunner}" >&2
+			fi
+			{
+				echo
+				echo "-- the machine"
+				briefly uptime 2>/dev/null || true
+				echo
+				echo "-- the node, what the kubelet said last"
+				briefly docker logs --tail 2000 "${node}" 2>&1 | grep 'failed to reserve sandbox name' | tail -n 3 || true
+			} >&2
+		else
+			state
+		fi
 	fi
 
 	# A call `bounded` stopped can leave its container behind, still waiting --
 	# and while it is there, neither the volume nor the cluster's network can go.
+	# The remove has a bound of its own: it was the one call on the way out
+	# without one, and a wedged engine held it until the job's limit.
 	briefly docker ps -aq --filter "label=roster.cluster=${CLUSTER}" 2>/dev/null \
-		| xargs -r docker rm -f >/dev/null 2>&1 || true
+		| xargs -r timeout --foreground -k 5 "${brief}" docker rm -f >/dev/null 2>&1 || true
 
 	rm -rf "${work}"
 	briefly docker volume rm -f "${vol}" >/dev/null 2>&1 || true
 	if [ -z "${hold}" ]; then
-		timeout --foreground -k 10 120 k3d cluster delete "${CLUSTER}" >/dev/null 2>&1 || true
+		# Two minutes, or twenty seconds where it was the runner: CI deletes it
+		# again in the step after, and the sentence below is to come first.
+		local within=120
+		[ -z "${itwas}" ] || within=20
+		timeout --foreground -k 10 "${within}" k3d cluster delete "${CLUSTER}" >/dev/null 2>&1 || true
 	else
 		echo
 		echo "cluster: left up. kubeconfig:"
 		echo "  k3d kubeconfig get ${CLUSTER}"
+	fi
+
+	# Last, so that it is the line a person reads first.
+	if [ -n "${itwas}" ]; then
+		echo "cluster: ${theRunner}" >&2
 	fi
 }
 trap cleanup EXIT
@@ -656,8 +741,21 @@ standing
 #
 # The status is read for one thing: a copy `bounded` had to stop, which is no
 # `ERRO` line at all.
+#
+# A short read is tried once more, as `tried` tries a build: `ctr: failed to
+# ingest … short read` twenty seconds in was one of the three runs in a hundred
+# that went red for the runner, and a second import costs seconds.
 copied=0
 imported="$(bounded 180 k3d image import "roster-cluster:${CLUSTER}" "roster-walk:${CLUSTER}" -c "${CLUSTER}" 2>&1)" || copied=$?
+case "${copied}:${imported}" in
+124:* | 137:*) ;;
+*"short read"*)
+	printf '%s\n' "${imported}" >&2
+	echo "   (a short read as the images were copied in; trying once more)" >&2
+	copied=0
+	imported="$(bounded 180 k3d image import "roster-cluster:${CLUSTER}" "roster-walk:${CLUSTER}" -c "${CLUSTER}" 2>&1)" || copied=$?
+	;;
+esac
 case "${copied}" in
 124 | 137)
 	printf '%s\n' "${imported}" >&2
@@ -866,6 +964,31 @@ said "the key was not accepted" "the SCIM endpoint did not reach roster; it said
 	done; \
 	kubectl -n ${NS} logs pod/scim-probe 2>&1; \
 	kubectl -n ${NS} delete pod scim-probe --ignore-not-found >/dev/null 2>&1"
+
+# **And the admin console, through the Service a deployment routes a person
+# to** (`deploy/roster.yaml`, `roster`).
+#
+# A listener of the reference file answered 404 to everything from the day it
+# was written, and nothing here asked it (#470); `serve` refuses that file
+# now, and a Service whose port no listener opens was held by nothing. So the
+# page is asked for once, as the directory's endpoint is: from a pod of the
+# walk's image, its answer read from the pod's log. The page's title is the
+# console's, which a listener that is not it does not answer.
+echo
+echo "== the admin console, through its Service"
+said "<title>roster</title>" "the Service roster did not answer the admin console's page; it said:" \
+	"kubectl -n ${NS} delete pod console-probe --ignore-not-found >/dev/null 2>&1; \
+	kubectl -n ${NS} run console-probe --restart=Never \
+		--image=roster-walk:${CLUSTER} --image-pull-policy=Never --command -- \
+		curl -sS -m 20 http://roster:8071/ >/dev/null 2>&1; \
+	i=0; while [ \$i -lt 60 ]; do \
+		case \"\$(kubectl -n ${NS} get pod console-probe -o jsonpath='{.status.phase}' 2>/dev/null)\" in \
+		Succeeded | Failed) break ;; \
+		esac; \
+		i=\$((i + 1)); sleep 1; \
+	done; \
+	kubectl -n ${NS} logs pod/console-probe 2>&1; \
+	kubectl -n ${NS} delete pod console-probe --ignore-not-found >/dev/null 2>&1"
 
 echo
 echo "== the clients, as hydra has them"

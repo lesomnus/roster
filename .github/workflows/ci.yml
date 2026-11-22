@@ -580,8 +580,11 @@ jobs:
           chmod +x "${RUNNER_TEMP}/bin/k3d"
           echo "${RUNNER_TEMP}/bin" >> "${GITHUB_PATH}"
       # Twenty minutes: the script's own fifteen (`CLUSTER_BUDGET`), after which it
-      # stops itself and says why, and five for saying it and tearing down. This
-      # limit is for whatever the script could not stop.
+      # stops itself and says why, and five for saying it and tearing down, every
+      # call of which has a bound of its own. Where the node could make no pod's
+      # sandbox, the script's last line and an annotation say it was the runner
+      # and not roster, and it ends within two minutes of going red. This limit
+      # is for whatever the script could not stop.
       - run: ./scripts/cluster.sh
         timeout-minutes: 20
         env:
