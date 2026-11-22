@@ -295,6 +295,16 @@ func personal(p *app.Profile, data *anypb.Any) error {
 	if n := len(data.GetTypeUrl()) + len(data.GetValue()); n > MaxData {
 		return pderr.Invalidf("data", "at most %d bytes, its type and its value together, and this is %d", MaxData, n)
 	}
+	if data.GetTypeUrl() != "" || len(data.GetValue()) > 0 {
+		// Read as the store will write it, which is as a message of a type
+		// this server knows. Not asked, `Add` handed it to the store, whose
+		// encoder failed in words of its own that read as `Unknown`, where
+		// `Update` refused the same as the caller's mistake. One that says
+		// nothing at all is stored as nothing, as it was.
+		if _, err := data.UnmarshalNew(); err != nil {
+			return pderr.Invalidf("data", "roster cannot read a message of type %s from it", quoted(data.GetTypeUrl()))
+		}
+	}
 
 	return nil
 }

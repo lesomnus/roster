@@ -95,7 +95,7 @@ func (s Core) mayChangeTeam(ctx context.Context, method string, ref *app.TeamRef
 // else.
 func (s Core) teamOf(ctx context.Context, ref *app.TeamRef) (pdid.Id, error) {
 	if b := ref.GetId(); len(b) > 0 {
-		return pdid.From(b)
+		return sentId(b)
 	}
 
 	v, err := s.Next().Team().Get(ctx, app.TeamGetRequest_builder{

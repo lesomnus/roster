@@ -135,7 +135,9 @@ func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 				return no()
 			}
 
-			return auth.Identity{}, err
+			// The store could not be asked, which is not the credential
+			// failing; [Store] answers it the same way.
+			return auth.Identity{}, unasked(ctx, err)
 		}
 
 		raw := k.Id
@@ -168,6 +170,9 @@ func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 				return no()
 			}
 			h, err := Nominated(ctx, tenant, at, k.Holder.GetId())
+			if unaskable(err) {
+				return auth.Identity{}, unasked(ctx, err)
+			}
 			if err != nil || h == nil {
 				return no()
 			}
@@ -186,7 +191,7 @@ func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 				return no()
 			}
 
-			return auth.Identity{}, err
+			return auth.Identity{}, unasked(ctx, err)
 		}
 		if err := issued(v, who); err != nil {
 			return no()

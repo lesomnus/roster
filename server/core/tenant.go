@@ -170,7 +170,7 @@ func (s Core) tenantOfRef(ctx context.Context, ref *app.TenantRef) (pdid.Id, err
 		return pdid.Nil, nil
 	}
 	if b := ref.GetId(); len(b) > 0 {
-		return pdid.From(b)
+		return sentId(b)
 	}
 
 	v, err := s.Next().Tenant().Get(ctx, app.TenantGetRequest_builder{
