@@ -66,7 +66,7 @@ func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			cfg.Bind(l, &c.Login.Roster, &flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"}),
 			cfg.Bind(l, &c.Login.Insecure, &flg.Switch{Name: "insecure", Brief: "dial roster without TLS"}),
 			cfg.Bind(l, &c.Login.Hydra.Admin, &flg.String{Name: "hydra", Brief: "Hydra's admin API, e.g. http://hydra:4445. Private: anybody who reaches it can sign anybody in as anybody"}),
-			cfg.Bind(l, &c.Login.Key, &flg.String{Name: "key", Brief: "this app's one deployment key (rk_…), or a reference to it: env:NAME, file:PATH"}),
+			cfg.Bind(l, &c.Login.Key, &flg.String{Name: "deployment-key", Brief: "this app's one deployment key (rk_…), or a reference to it: env:NAME, file:PATH"}),
 			cfg.Bind(l, &c.Login.Consent, &flg.String{Name: "consent", Brief: "what the consent hop does: skip (grant what the client asked for; the default) or ask (draw a screen)"}),
 			cfg.Bind(l, &c.Login.Base, &flg.String{Name: "base", Brief: "this app's public origin, registered with every provider as the redirect. One for the whole app"}),
 			cfg.Bind(l, &c.Login.Enrol, &flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"}),
@@ -97,7 +97,7 @@ func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			// **control plane's** and needs no customer to exist, so it can be
 			// minted on an empty deployment and there is no cycle to break.
 			if lc.Key == "" {
-				return errors.New("--key (or login.key): this app's one deployment key")
+				return errors.New("--deployment-key (or login.key): this app's one deployment key")
 			}
 			if lc.Key, err = tokenOrRef(lc.Key); err != nil {
 				return fmt.Errorf("login.key: %w", err)
@@ -113,7 +113,7 @@ func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			// fact `server/keys` owns and that app may import no server package
 			// but `server/front`.
 			if !strings.HasPrefix(lc.Key, keys.PrefixDeployment) {
-				return fmt.Errorf("login.key (--key): a deployment key (%s…), and this is not one",
+				return fmt.Errorf("login.key (--deployment-key): a deployment key (%s…), and this is not one",
 					keys.PrefixDeployment)
 			}
 

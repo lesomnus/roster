@@ -43,7 +43,7 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 	install := func() error {
 		return cli.NewCmdApp(&c).Run(ctx, []string{"install",
 			"--tenant", "acme",
-			"--role", "/loft.AssetService/*",
+			"--allow", "/loft.AssetService/*",
 			"--administer", "/loft.*/*",
 			"loft"})
 	}
@@ -141,7 +141,7 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 
 	t.Run("and an app that may do nothing is not installed", func(t *testing.T) {
 		err := cli.NewCmdApp(&c).Run(ctx, []string{"install", "--tenant", "acme", "loft"})
-		require.ErrorContains(t, err, "--role")
+		require.ErrorContains(t, err, "--allow")
 	})
 }
 
@@ -172,7 +172,7 @@ func TestInstallingAnAppLeavesARoleCalledAfterItAlone(t *testing.T) {
 	token := stdoutOf(t, cli.NewCmdControl(&c), "key", "add", "--narrowed", "loft")
 	x.NoError(cli.NewCmdApp(&c).Run(ctx, []string{"install",
 		"--tenant", "acme",
-		"--role", "/roster.HolderService/Reaches",
+		"--allow", "/roster.HolderService/Reaches",
 		"loft"}))
 
 	s, err = cmd.Build(ctx, c)
@@ -231,7 +231,7 @@ func TestInstallingAnAppTakesNoHolderThatIsSomebodys(t *testing.T) {
 	x.NoError(s.Close())
 
 	install := func(args ...string) error {
-		return cli.NewCmdApp(&c).Run(ctx, append([]string{"install", "--tenant", "acme", "--role", "/roster.HolderService/Reaches"}, args...))
+		return cli.NewCmdApp(&c).Run(ctx, append([]string{"install", "--tenant", "acme", "--allow", "/roster.HolderService/Reaches"}, args...))
 	}
 
 	err = install("loft")
@@ -251,7 +251,7 @@ func TestInstallingAnAppTakesNoHolderThatIsSomebodys(t *testing.T) {
 	t.Run("and a tenant or an app nobody has is refused, making nothing", func(t *testing.T) {
 		x := require.New(t)
 
-		x.Error(cli.NewCmdApp(&c).Run(ctx, []string{"install", "--tenant", "nosuch", "--role", "/roster.HolderService/Reaches", "levyan"}))
+		x.Error(cli.NewCmdApp(&c).Run(ctx, []string{"install", "--tenant", "nosuch", "--allow", "/roster.HolderService/Reaches", "levyan"}))
 		x.Error(cli.NewCmdApp(&c).Run(ctx, []string{"uninstall", "--tenant", "nosuch", "loft"}))
 		x.Error(cli.NewCmdApp(&c).Run(ctx, []string{"uninstall", "--tenant", "acme", "lfot"}))
 

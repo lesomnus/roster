@@ -89,7 +89,7 @@ its consent ledger.
 
 ```sh
 roster app install --tenant acme \
-  --role /roster.HolderService/Get,/roster.SyncService/Watch,/roster.EmailService/List,/roster.EmailService/Get \
+  --allow /roster.HolderService/Get,/roster.SyncService/Watch,/roster.EmailService/List,/roster.EmailService/Get \
   levyan
 ```
 

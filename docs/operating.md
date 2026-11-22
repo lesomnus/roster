@@ -1015,7 +1015,7 @@ whose app calls something more -- the account app's `EmailService/Attest`, which
 it was missing -- is a restart in one process and `provision` run again in four.
 The directory's key is still yours to write either way:
 `roster --as admin control key add --allow /roster.NominationService/List directory`, and
-`roster app install --tenant … --role … directory` in each tenant it serves.
+`roster app install --tenant … --allow … directory` in each tenant it serves.
 
 **A sign-in through a provider is finished by the process that began it.** The
 Login App and the account app keep a round trip to a provider in memory for its
@@ -1080,7 +1080,7 @@ environment, and only when it was given, so an empty value is a value --
 `--insecure=false` turns off an `insecure: true` the file wrote. The same holds for
 the flags elsewhere that say a setting: `--hydra` of `roster login doctor` is
 `login.hydra.admin`, `--file` of `roster resources apply` is `resources`, and
-`--in` of `roster trail read` is `audit.archive`. What is
+`--archive` of `roster trail read` is `audit.archive`. What is
 not a setting is read as it was: `--key alias=rt_…` and the `--base` of
 `roster ldap serve` add to the block's map rather than replace it.
 
@@ -2059,7 +2059,7 @@ refuse each, before anything is opened, in a sentence that names the key and
 says what to write.
 
 Three that look the same are read, and are left. `checkpoints.key`, `.dir` and
-`.trust` with no `archive` are what the archive of a `prune --to` is signed and
+`.trust` with no `archive` are what the archive of a `prune --archive` is signed and
 checkpointed by, for a deployment that names none. `min` is what the
 deployment's own windows are held to at start -- a window under its floor is
 refused -- though a tenant of roster's answers no window for a floor to raise.
@@ -2092,7 +2092,7 @@ What guards those rows is who may write that database.
 roster trail prune                                # apply the policy now, per kind
 roster trail prune --dry-run                      # what that pass would take, and nothing is changed
 roster trail prune --older-than 2160h --dry-run   # a window of your own: how many
-roster trail read --in /var/lib/roster/audit      # read an archive back
+roster trail read --archive /var/lib/roster/audit # read an archive back
 roster trail purge --older-than 61320h --dry-run  # which chunks would go
 roster trail verify --full                        # the archive against the database's account of it, and the digest of what it found
 roster trail accept --of sha256:… --full --why "a pass the 10-21 crash stopped"  # once somebody has looked at that
@@ -2113,7 +2113,7 @@ older than it, and says where the same line without `--dry-run` would put them.
 With none it says what the pass would take: for each kind the policy names and
 for everything else, how many rows are past the window and whether they would
 go to the archive or nowhere; each chunk of the archive that would be
-destroyed; and how many erasures owed it would pay. `--kind`, `--to` and
+destroyed; and how many erasures owed it would pay. `--kind`, `--archive` and
 `--discard` are read with a window of your own and no other way, so a `prune`
 with no window that is given one is refused by the flag's name, where it used
 to pass it over and apply the policy.
@@ -2149,7 +2149,7 @@ keeps what the job printed.
 deletes anything, and deletes the rows that are in the chunk rather than re-running
 the query -- so the one failure it can leave is rows in both places, which is the
 direction to fail in. Nothing takes a lock, so `read` reads the archive as a whole
-(`--in`, or the files named on the command line) and a row two runs both archived is
+(`--archive`, or the files named on the command line) and a row two runs both archived is
 dropped by whichever read sees both. `read` opens no database, which is the point
 of keeping the archive. Each line it prints is when, what, about which row and by
 whom, and a `-` in the last column is a line by nobody: a sweep's, or a command's
@@ -2179,7 +2179,7 @@ no line of the trail that is still in the database, which is all of them until
 a window has moved some, nor a row of the access record there; and it reads no
 live row, which is `trail rows`. A deployment that names no archive has no
 account and no checkpoint -- there is nothing for a witness to hear -- and
-`verify` is refused there (`--in: which directory`): what stands for that
+`verify` is refused there (`--archive: which directory`): what stands for that
 deployment's trail is `trail rows` alone.
 
 **An acceptance is of what was looked at** (payday#115). `verify` prints, on
@@ -2471,7 +2471,7 @@ roster trail accept --of sha256:… --why "signed by the key before 10-22, which
 roster trail verify                                                         # clean
 ```
 
-`prune --to`, and `--in` of `purge` and `accept`, name the archive
+`--archive` of `prune`, `purge` and `accept` names the archive
 `audit.archive` already is, or one for a deployment that names none. The account
 is of one archive: rows written into a second would be rows the first is found to
 be missing, and an acceptance or a purge read against a second would take every
@@ -2480,7 +2480,7 @@ chunk of the first for missing. Each is refused.
 A **legal hold** is the one thing a manual window does answer to: what one is on is
 left by `prune --discard` and by `purge`, which say how much they kept and go ahead
 for everything else. `--discard` writes no row into the archive, whether or not
-`audit.archive` names one; given beside `--to` it is refused, since the two say
+`audit.archive` names one; given beside `--archive` it is refused, since the two say
 two things about the same rows. A hold is a tenant's: an operator places one with `roster hold
 place --why … @tenant` (§ "A tenant leaving"), and the trail keeps what it holds of
 that tenant from then until it is lifted -- the lines that say a row of the
@@ -2917,7 +2917,7 @@ erased**, and then restore:
 
 ```sh
 roster --as admin key list                 # an erased person's keys are listed with everybody's
-roster --as admin key revoke --id 01a03322-…   # now, and for good
+roster --as admin key revoke 01a03322-…   # now, and for good
 roster --as admin restore @contoso/erin
 ```
 

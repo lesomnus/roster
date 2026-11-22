@@ -191,7 +191,7 @@ func TestWhatOfAnAuditBlockIsReadAfterAllStillStarts(t *testing.T) {
 	const day = 24 * time.Hour
 
 	for name, block := range map[string]config.AuditConfig{
-		// `prune --to`, and `--in` of `purge`, `verify` and `accept`, name the
+		// `--archive` of `prune`, `purge`, `verify` and `accept` names the
 		// archive of a run for a deployment that names none, and such an
 		// archive is signed with this key and checkpointed where these say.
 		"a checkpoints key with no archive": {Checkpoints: config.AuditCheckpointsConfig{Key: pdtest.Key(t)}},

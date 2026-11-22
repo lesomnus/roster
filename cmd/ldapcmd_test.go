@@ -64,7 +64,7 @@ func TestTheDirectorysKeyIsTheManualsList(t *testing.T) {
 	x.NoError(err)
 	var installed []string
 	for _, line := range strings.Split(string(seed), "\n") {
-		if strings.Contains(line, "--role") && strings.HasSuffix(strings.TrimSpace(line), "directory >/dev/null") {
+		if strings.Contains(line, "--allow") && strings.HasSuffix(strings.TrimSpace(line), "directory >/dev/null") {
 			installed = methods.FindAllString(line, -1)
 		}
 	}

@@ -347,7 +347,7 @@ func TestRevokingReachesTheKeyItNames(t *testing.T) {
 	x.True(oursWorks())
 	x.NoError(s2.Close())
 
-	x.NoError(cli.NewCmdKey(&c).Run(ctx, []string{"revoke", "--id", id("@newco/alice")}))
+	x.NoError(cli.NewCmdKey(&c).Run(ctx, []string{"revoke", id("@newco/alice")}))
 
 	s3, err := cmd.Build(ctx, c)
 	x.NoError(err)
@@ -368,7 +368,7 @@ func TestRevokingReachesTheKeyItNames(t *testing.T) {
 	t.Run("and a key on neither plane is a refusal", func(t *testing.T) {
 		x := require.New(t)
 
-		err := cli.NewCmdKey(&c).Run(ctx, []string{"revoke", "--id", id("@newco/alice")})
+		err := cli.NewCmdKey(&c).Run(ctx, []string{"revoke", id("@newco/alice")})
 		x.Error(err, "revoking a key that is not there reported success")
 		x.ErrorContains(err, "either plane")
 	})

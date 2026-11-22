@@ -475,8 +475,8 @@ var trailsOwn = []pdid.Domain{pd.AuditDomain, pd.OutboxDomain, pd.ArchivedDomain
 //
 // # What it leaves, which looked the same and is read
 //
-// `checkpoints.key`, `.dir` and `.trust` with no archive: `trail prune --to`,
-// and `--in` of `purge`, `verify` and `accept`, name the archive of one run
+// `checkpoints.key`, `.dir` and `.trust` with no archive: `--archive` of
+// `trail prune`, `purge`, `verify` and `accept` names the archive of one run
 // for a deployment that names none, and that archive is signed and
 // checkpointed by what these say. `min`: roster's tenants answer holds and
 // no windows, so a floor raises nobody's answer, but it is still what the

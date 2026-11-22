@@ -201,7 +201,7 @@ const RefusedRetry = 10 * time.Minute
 // and the addresses somebody checked (`EmailService/List` and `Get`).
 //
 // It is the part of the role this package asks for, and an app's role is that
-// and whatever the app asks for itself: the `--role` of `roster app install`,
+// and whatever the app asks for itself: the `--allow` of `roster app install`,
 // or the role an app running roster in its own process writes for its holder.
 var Methods = []string{
 	rstr.HolderService_Get_FullMethodName,

@@ -125,7 +125,7 @@ that holder's bindings: everything a product does for one of your customers.
 [apps.md](../apps.md) is which of those an app needs, and the shapes it can take.
 
 A key narrowed to a tenant needs that tenant to have nominated somebody for it,
-which `roster app install --tenant T --role … NAME` does: the holder, its role,
+which `roster app install --tenant T --allow … NAME` does: the holder, its role,
 the binding and the nomination, once.
 
 Something a **tenant** runs -- their CI, their sync job, their own copy of an app
@@ -708,7 +708,7 @@ credential erase` takes it away.
 
 ```sh
 roster --as admin key list                  # both planes, with what each may call
-roster --as admin key revoke --id 01a03322-…           # now, on whichever plane holds it
+roster --as admin key revoke 01a03322-…           # now, on whichever plane holds it
 ```
 
 A revoke is a delete and not a flag: the next call carrying that key finds

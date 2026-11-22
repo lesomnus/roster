@@ -420,7 +420,7 @@ npm --prefix ts run dev:login                  # the sign-in pages, no backend a
 go run ./cmd/roster account serve --roster … \
   --connect … --deployment-key file:… --static ts/dist/account   # the front door
 go run ./cmd/roster ldap serve --roster … --deployment-key file:…  # the directory
-go run ./cmd/roster login serve --roster … --hydra … --key file:…   # the sign-in pages, behind Hydra
+go run ./cmd/roster login serve --roster … --hydra … --deployment-key file:…  # the sign-in pages, behind Hydra
 go run ./cmd/roster scim serve --roster …                           # where a directory provisions people
 
 docker compose up --build       # Postgres, both planes, a customer, every page, LDAP, SCIM, Hydra

@@ -9,14 +9,14 @@ import (
 )
 
 // TestAWordThatIsNoMethodIsRefused: where a command reads a list of methods
-// -- `--allow`, `--role`, `--administer` -- each is a method or a pattern in
+// -- `--allow`, `--administer` -- each is a method or a pattern in
 // the form the gate matches a caller's methods by, and a word that could match
 // nothing is refused before anything is opened, naming the flag, the word and
 // the form.
 //
 // `SplitMethods` trimmed and split and nothing looked further: `roster key add
 // … --allow HolderService/Get` printed a key *allowing 1 method(s)* that calls
-// nothing, and `app install --role not-a-method` a role that may call one.
+// nothing, and `app install --allow not-a-method` a role that may call one.
 // Answered: a key; right is a refusal, since a credential that silently does
 // not work is worse to debug than being told now.
 func TestAWordThatIsNoMethodIsRefused(t *testing.T) {
@@ -67,8 +67,8 @@ func TestAWordThatIsNoMethodIsRefused(t *testing.T) {
 		for _, args := range [][]string{
 			{"key", "add", "--tenant", "newco", "--holder", "admin", "--allow", "HolderService/Get"},
 			{"control", "key", "add", "--allow", "/roster.MeService/Get,roster.HolderService/Get", "loft"},
-			{"app", "install", "--tenant", "newco", "--role", "not-a-method", "loft"},
-			{"app", "install", "--tenant", "newco", "--role", "/roster.MeService/Get", "--administer", "/roster.Holder*/Get", "loft"},
+			{"app", "install", "--tenant", "newco", "--allow", "not-a-method", "loft"},
+			{"app", "install", "--tenant", "newco", "--allow", "/roster.MeService/Get", "--administer", "/roster.Holder*/Get", "loft"},
 			{"sign-in", "--at", "http://127.0.0.1:1", "--allow", "MeService/Get"},
 		} {
 			out, _, err := boxRun(t, at(b.c, "admin"), "", args...)

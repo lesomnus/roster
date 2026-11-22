@@ -169,7 +169,7 @@ control plane (`ways-in.md`). A key made for an app is refused there.
 
 `control key add --narrowed NAME` is the key for an app you host that always names
 a tenant: it allows nothing until a request does (`ways-in.md`). `roster app
-install --tenant T --role … NAME` puts that app into a tenant -- its holder there,
+install --tenant T --allow … NAME` puts that app into a tenant -- its holder there,
 the role, the nomination -- and `roster app uninstall` takes it out
 ([apps.md](../apps.md)). Something a
 **customer** runs for themselves is not this. It is a holder in their tenant with

@@ -85,7 +85,7 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 
 		Flags: flg.Flags{
 			&flg.String{Name: "tenant", Brief: "the tenant, by alias"},
-			&flg.Strings{Name: "role", Brief: "what the app may do there, as methods; repeat it, or comma separate"},
+			&flg.Strings{Name: "allow", Brief: "what the app may do there, as methods; repeat it, or comma separate"},
 			&flg.Strings{Name: "administer", Brief: "the methods the tenant's administrators may hand on; added to their role, once"},
 			&flg.Switch{Name: "adopt", Brief: "use a holder of the app's name that already holds roles, keys or a way to sign in, with all of it"},
 		},
@@ -93,21 +93,21 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			name, _ := arg.Get[string](cl, "APP")
 			tenant, _ := flg.Find[string](cl, "tenant")
-			role, _ := flg.Find[[]string](cl, "role")
+			allow, _ := flg.Find[[]string](cl, "allow")
 			administer, _ := flg.Find[[]string](cl, "administer")
 			adopt, _ := flg.Find[bool](cl, "adopt")
 
 			if tenant == "" {
 				return invocation(errors.New("--tenant: which tenant to install it into"))
 			}
-			methods, err := cmd.MethodsOf("--role", role)
+			methods, err := cmd.MethodsOf("--allow", allow)
 			if err != nil {
 				return invocation(err)
 			}
 			if len(methods) == 0 {
 				// An app with nothing bound acts as a holder that may do nothing,
 				// which is an installation that silently does not work.
-				return invocation(errors.New("--role: what the app may do in the tenant; a role that allows nothing installs nothing"))
+				return invocation(errors.New("--allow: what the app may do in the tenant; a role that allows nothing installs nothing"))
 			}
 			handed, err := cmd.MethodsOf("--administer", administer)
 			if err != nil {
@@ -287,7 +287,7 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 // [roleOnce] adopts a role that is already there, as it must for a second run.
 // So installing an app into a tenant whose staff role already had its name
 // bound that role to the app's own holder: the app's key answered with every
-// method of the app it is, and none of the roster reads `--role` named. Found
+// method of the app it is, and none of the roster reads `--allow` named. Found
 // on the first deployment it was pointed at, before it ran.
 //
 // A suffix rather than a flag, because `docs/apps.md` already drew it so and a

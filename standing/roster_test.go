@@ -105,7 +105,7 @@ func newExternal(t *testing.T) *external {
 	// key that holds nothing as itself, installed into the tenant whose people
 	// are its accounts -- acme, and not beta.
 	e.key = stdoutOf(t, cli.NewCmdControl(&box), "key", "add", "--narrowed", app)
-	x.NoError(cli.NewCmdApp(&box).Run(ctx, []string{"install", "--tenant", "acme", "--role", strings.Join(methods, ","), app}))
+	x.NoError(cli.NewCmdApp(&box).Run(ctx, []string{"install", "--tenant", "acme", "--allow", strings.Join(methods, ","), app}))
 	e.tenantKey = stdoutOf(t, cli.NewCmdKey(&box), "add", "--tenant", "acme", "--holder", app, "--name", app, "--allow", strings.Join(methods, ","))
 	e.admin = stdoutOf(t, cli.NewCmdKey(&box), "add", "--tenant", "acme", "--holder", "admin", "--name", "admin", "--allow", "/roster.*/*")
 	e.operator = stdoutOf(t, cli.NewCmdControl(&box), "key", "add", "--allow",

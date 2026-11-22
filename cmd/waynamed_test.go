@@ -55,7 +55,7 @@ func TestALocalWriteOfSomebodysWayInNamesWhoRanIt(t *testing.T) {
 		args    []string
 	}{
 		{false, nil, []string{"key", "add", "--tenant", "newco", "--holder", "alice", "--allow", "/roster.MeService/Get"}},
-		{false, nil, []string{"key", "revoke", "--id", key}},
+		{false, nil, []string{"key", "revoke", key}},
 		{true, nil, []string{"control", "key", "add", "--allow", "/roster.MeService/Get", "loft"}},
 		{false, nil, []string{"vouch", "reset", "@newco/alice"}},
 		{false, func() string { return pw }, []string{"vouch", "set", "--password-stdin", "@newco/alice"}},
