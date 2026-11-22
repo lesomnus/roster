@@ -28,7 +28,7 @@ func TestMeAnswersWhatTheCredentialLeavesOfWhatIsHeld(t *testing.T) {
 		meGet    = "/roster.MeService/Get"
 		emailAdd = "/roster.EmailService/Add"
 		anyMe    = "/roster.MeService/*"
-		unlink   = "/roster.MeService/Unlink"
+		signOut  = "/roster.MeService/SignOutEverywhere"
 		everyone = "/roster.*/*"
 	)
 
@@ -65,7 +65,7 @@ func TestMeAnswersWhatTheCredentialLeavesOfWhatIsHeld(t *testing.T) {
 		who := b.holder(t, ctx, b.Contoso, "pat")
 		b.mayCall(t, ctx, who, "some", meGet, emailAdd)
 
-		f := frame.New(who, b.Contoso, frame.Whole().To(unlink, emailAdd)).WithScope(frame.Only(b.Contoso))
+		f := frame.New(who, b.Contoso, frame.Whole().To(signOut, emailAdd)).WithScope(frame.Only(b.Contoso))
 		v, err := s.Get(frame.Into(ctx, f), app.MeGetRequest_builder{}.Build())
 		x.NoError(err)
 		x.Equal([]string{emailAdd}, v.GetMethods())

@@ -13,7 +13,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/me.proto.
  */
 export const file_app_me: GenFile = /*@__PURE__*/
-  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QiHQoPTWVVbmxpbmtSZXF1ZXN0EgoKAmlkGAEgASgMIhIKEE1lVW5saW5rUmVzcG9uc2UiHAoaTWVTaWduT3V0RXZlcnl3aGVyZVJlcXVlc3QiUwobTWVTaWduT3V0RXZlcnl3aGVyZVJlc3BvbnNlEjQKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiEKDk1lTGVhdmVSZXF1ZXN0Eg8KB2NvbmZpcm0YASABKAkidgoPTWVMZWF2ZVJlc3BvbnNlEi8KC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIyCg5kYXRlX2ZvcmdvdHRlbhgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAigwMKDU1lR2V0UmVzcG9uc2USCgoCaWQYASABKAwSDgoGdGVuYW50GAIgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSHwoGZW1haWxzGAggAygLMg8ucm9zdGVyLk1lRW1haWwSHQoFdGVhbXMYCSADKAsyDi5yb3N0ZXIuTWVUZWFtEg8KB21ldGhvZHMYCiADKAkSDQoFc2l0ZXMYCyADKAwSEgoKZXZlcnlfc2l0ZRgMIAEoCBILCgNvd24YEiADKAkSKgoKaWRlbnRpdGllcxgNIAMoCzIWLnJvc3Rlci5TaWduSW5JZGVudGl0eRItCgtjcmVkZW50aWFscxgOIAMoCzIYLnJvc3Rlci5TaWduSW5DcmVkZW50aWFsEh8KBGtleXMYDyADKAsyES5yb3N0ZXIuU2lnbkluS2V5EhsKE3Byb3Zpc2lvbmVkX3Rocm91Z2gYECABKAkSHwoGZ3JvdXBzGBEgAygLMg8ucm9zdGVyLk1lR3JvdXAimAEKCVNpZ25JbktleRIKCgJpZBgBIAEoDBINCgVhbGlhcxgEIAEoCRIPCgdtZXRob2RzGAggAygJEjAKDGRhdGVfZXhwaXJlcxgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLQoJZGF0ZV91c2VkGAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJxCg5TaWduSW5JZGVudGl0eRIKCgJpZBgBIAEoDBIQCghwcm92aWRlchgIIAEoCRIPCgdzdWJqZWN0GAkgASgJEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAikQEKEFNpZ25JbkNyZWRlbnRpYWwSDAoEa2luZBgIIAEoCRIMCgRuYW1lGAUgASgJEjAKDGRhdGVfcm90YXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLZGF0ZV9sb2NrZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIk0KB01lRW1haWwSDwoHYWRkcmVzcxgIIAEoCRIxCg1kYXRlX3ZlcmlmaWVkGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJRCgdNZUdyb3VwEgoKAmlkGAEgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDwoHY2xpZW50cxgIIAMoCRIMCgRyb2xlGAkgASgJImEKBk1lVGVhbRIKCgJpZBgBIAEoDBINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBHNpdGUYCCABKAwSEgoKc2l0ZV9hbGlhcxgJIAEoCRIMCgRyb2xlGAogASgJMpQCCglNZVNlcnZpY2USMgoDR2V0EhQucm9zdGVyLk1lR2V0UmVxdWVzdBoVLnJvc3Rlci5NZUdldFJlc3BvbnNlEjsKBlVubGluaxIXLnJvc3Rlci5NZVVubGlua1JlcXVlc3QaGC5yb3N0ZXIuTWVVbmxpbmtSZXNwb25zZRJcChFTaWduT3V0RXZlcnl3aGVyZRIiLnJvc3Rlci5NZVNpZ25PdXRFdmVyeXdoZXJlUmVxdWVzdBojLnJvc3Rlci5NZVNpZ25PdXRFdmVyeXdoZXJlUmVzcG9uc2USOAoFTGVhdmUSFi5yb3N0ZXIuTWVMZWF2ZVJlcXVlc3QaFy5yb3N0ZXIuTWVMZWF2ZVJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp]);
+  fileDesc("CgxhcHAvbWUucHJvdG8SBnJvc3RlciIOCgxNZUdldFJlcXVlc3QiHAoaTWVTaWduT3V0RXZlcnl3aGVyZVJlcXVlc3QiUwobTWVTaWduT3V0RXZlcnl3aGVyZVJlc3BvbnNlEjQKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIiEKDk1lTGVhdmVSZXF1ZXN0Eg8KB2NvbmZpcm0YASABKAkidgoPTWVMZWF2ZVJlc3BvbnNlEi8KC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIyCg5kYXRlX2ZvcmdvdHRlbhgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAigwMKDU1lR2V0UmVzcG9uc2USCgoCaWQYASABKAwSDgoGdGVuYW50GAIgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSHwoGZW1haWxzGAggAygLMg8ucm9zdGVyLk1lRW1haWwSHQoFdGVhbXMYCSADKAsyDi5yb3N0ZXIuTWVUZWFtEg8KB21ldGhvZHMYCiADKAkSDQoFc2l0ZXMYCyADKAwSEgoKZXZlcnlfc2l0ZRgMIAEoCBILCgNvd24YEiADKAkSKgoKaWRlbnRpdGllcxgNIAMoCzIWLnJvc3Rlci5TaWduSW5JZGVudGl0eRItCgtjcmVkZW50aWFscxgOIAMoCzIYLnJvc3Rlci5TaWduSW5DcmVkZW50aWFsEh8KBGtleXMYDyADKAsyES5yb3N0ZXIuU2lnbkluS2V5EhsKE3Byb3Zpc2lvbmVkX3Rocm91Z2gYECABKAkSHwoGZ3JvdXBzGBEgAygLMg8ucm9zdGVyLk1lR3JvdXAimAEKCVNpZ25JbktleRIKCgJpZBgBIAEoDBINCgVhbGlhcxgEIAEoCRIPCgdtZXRob2RzGAggAygJEjAKDGRhdGVfZXhwaXJlcxgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLQoJZGF0ZV91c2VkGAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJxCg5TaWduSW5JZGVudGl0eRIKCgJpZBgBIAEoDBIQCghwcm92aWRlchgIIAEoCRIPCgdzdWJqZWN0GAkgASgJEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAikQEKEFNpZ25JbkNyZWRlbnRpYWwSDAoEa2luZBgIIAEoCRIMCgRuYW1lGAUgASgJEjAKDGRhdGVfcm90YXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLZGF0ZV9sb2NrZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIk0KB01lRW1haWwSDwoHYWRkcmVzcxgIIAEoCRIxCg1kYXRlX3ZlcmlmaWVkGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJRCgdNZUdyb3VwEgoKAmlkGAEgASgMEg0KBWFsaWFzGAQgASgJEgwKBG5hbWUYBSABKAkSDwoHY2xpZW50cxgIIAMoCRIMCgRyb2xlGAkgASgJImEKBk1lVGVhbRIKCgJpZBgBIAEoDBINCgVhbGlhcxgEIAEoCRIMCgRuYW1lGAUgASgJEgwKBHNpdGUYCCABKAwSEgoKc2l0ZV9hbGlhcxgJIAEoCRIMCgRyb2xlGAogASgJMtcBCglNZVNlcnZpY2USMgoDR2V0EhQucm9zdGVyLk1lR2V0UmVxdWVzdBoVLnJvc3Rlci5NZUdldFJlc3BvbnNlElwKEVNpZ25PdXRFdmVyeXdoZXJlEiIucm9zdGVyLk1lU2lnbk91dEV2ZXJ5d2hlcmVSZXF1ZXN0GiMucm9zdGVyLk1lU2lnbk91dEV2ZXJ5d2hlcmVSZXNwb25zZRI4CgVMZWF2ZRIWLnJvc3Rlci5NZUxlYXZlUmVxdWVzdBoXLnJvc3Rlci5NZUxlYXZlUmVzcG9uc2VCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message roster.MeGetRequest
@@ -29,42 +29,6 @@ export const MeGetRequestSchema: GenMessage<MeGetRequest> = /*@__PURE__*/
   messageDesc(file_app_me, 0);
 
 /**
- * @generated from message roster.MeUnlinkRequest
- */
-export type MeUnlinkRequest = Message<"roster.MeUnlinkRequest"> & {
-  /**
-   * Which one, by the identifier `MeGetResponse` answers with.
-   *
-   * A *which* and never a *whose*: one that is not the caller's is `NotFound`,
-   * told apart from nothing, so this cannot be used to ask whether somebody
-   * else's identity exists.
-   *
-   * @generated from field: bytes id = 1;
-   */
-  id: Uint8Array;
-};
-
-/**
- * Describes the message roster.MeUnlinkRequest.
- * Use `create(MeUnlinkRequestSchema)` to create a new message.
- */
-export const MeUnlinkRequestSchema: GenMessage<MeUnlinkRequest> = /*@__PURE__*/
-  messageDesc(file_app_me, 1);
-
-/**
- * @generated from message roster.MeUnlinkResponse
- */
-export type MeUnlinkResponse = Message<"roster.MeUnlinkResponse"> & {
-};
-
-/**
- * Describes the message roster.MeUnlinkResponse.
- * Use `create(MeUnlinkResponseSchema)` to create a new message.
- */
-export const MeUnlinkResponseSchema: GenMessage<MeUnlinkResponse> = /*@__PURE__*/
-  messageDesc(file_app_me, 2);
-
-/**
  * @generated from message roster.MeSignOutEverywhereRequest
  */
 export type MeSignOutEverywhereRequest = Message<"roster.MeSignOutEverywhereRequest"> & {
@@ -75,7 +39,7 @@ export type MeSignOutEverywhereRequest = Message<"roster.MeSignOutEverywhereRequ
  * Use `create(MeSignOutEverywhereRequestSchema)` to create a new message.
  */
 export const MeSignOutEverywhereRequestSchema: GenMessage<MeSignOutEverywhereRequest> = /*@__PURE__*/
-  messageDesc(file_app_me, 3);
+  messageDesc(file_app_me, 1);
 
 /**
  * @generated from message roster.MeSignOutEverywhereResponse
@@ -95,7 +59,7 @@ export type MeSignOutEverywhereResponse = Message<"roster.MeSignOutEverywhereRes
  * Use `create(MeSignOutEverywhereResponseSchema)` to create a new message.
  */
 export const MeSignOutEverywhereResponseSchema: GenMessage<MeSignOutEverywhereResponse> = /*@__PURE__*/
-  messageDesc(file_app_me, 4);
+  messageDesc(file_app_me, 2);
 
 /**
  * @generated from message roster.MeLeaveRequest
@@ -116,7 +80,7 @@ export type MeLeaveRequest = Message<"roster.MeLeaveRequest"> & {
  * Use `create(MeLeaveRequestSchema)` to create a new message.
  */
 export const MeLeaveRequestSchema: GenMessage<MeLeaveRequest> = /*@__PURE__*/
-  messageDesc(file_app_me, 5);
+  messageDesc(file_app_me, 3);
 
 /**
  * @generated from message roster.MeLeaveResponse
@@ -152,7 +116,7 @@ export type MeLeaveResponse = Message<"roster.MeLeaveResponse"> & {
  * Use `create(MeLeaveResponseSchema)` to create a new message.
  */
 export const MeLeaveResponseSchema: GenMessage<MeLeaveResponse> = /*@__PURE__*/
-  messageDesc(file_app_me, 6);
+  messageDesc(file_app_me, 4);
 
 /**
  * @generated from message roster.MeGetResponse
@@ -337,7 +301,7 @@ export type MeGetResponse = Message<"roster.MeGetResponse"> & {
  * Use `create(MeGetResponseSchema)` to create a new message.
  */
 export const MeGetResponseSchema: GenMessage<MeGetResponse> = /*@__PURE__*/
-  messageDesc(file_app_me, 7);
+  messageDesc(file_app_me, 5);
 
 /**
  * SignInKey is one API key that acts as somebody.
@@ -400,7 +364,7 @@ export type SignInKey = Message<"roster.SignInKey"> & {
  * Use `create(SignInKeySchema)` to create a new message.
  */
 export const SignInKeySchema: GenMessage<SignInKey> = /*@__PURE__*/
-  messageDesc(file_app_me, 8);
+  messageDesc(file_app_me, 6);
 
 /**
  * SignInIdentity is one way somebody arrives from outside.
@@ -451,7 +415,7 @@ export type SignInIdentity = Message<"roster.SignInIdentity"> & {
  * Use `create(SignInIdentitySchema)` to create a new message.
  */
 export const SignInIdentitySchema: GenMessage<SignInIdentity> = /*@__PURE__*/
-  messageDesc(file_app_me, 9);
+  messageDesc(file_app_me, 7);
 
 /**
  * SignInCredential is one secret roster holds for somebody, and never the secret.
@@ -502,7 +466,7 @@ export type SignInCredential = Message<"roster.SignInCredential"> & {
  * Use `create(SignInCredentialSchema)` to create a new message.
  */
 export const SignInCredentialSchema: GenMessage<SignInCredential> = /*@__PURE__*/
-  messageDesc(file_app_me, 10);
+  messageDesc(file_app_me, 8);
 
 /**
  * @generated from message roster.MeEmail
@@ -524,7 +488,7 @@ export type MeEmail = Message<"roster.MeEmail"> & {
  * Use `create(MeEmailSchema)` to create a new message.
  */
 export const MeEmailSchema: GenMessage<MeEmail> = /*@__PURE__*/
-  messageDesc(file_app_me, 11);
+  messageDesc(file_app_me, 9);
 
 /**
  * @generated from message roster.MeGroup
@@ -565,7 +529,7 @@ export type MeGroup = Message<"roster.MeGroup"> & {
  * Use `create(MeGroupSchema)` to create a new message.
  */
 export const MeGroupSchema: GenMessage<MeGroup> = /*@__PURE__*/
-  messageDesc(file_app_me, 12);
+  messageDesc(file_app_me, 10);
 
 /**
  * @generated from message roster.MeTeam
@@ -609,7 +573,7 @@ export type MeTeam = Message<"roster.MeTeam"> & {
  * Use `create(MeTeamSchema)` to create a new message.
  */
 export const MeTeamSchema: GenMessage<MeTeam> = /*@__PURE__*/
-  messageDesc(file_app_me, 13);
+  messageDesc(file_app_me, 11);
 
 /**
  * MeService answers what a caller is, in one round trip.
@@ -636,19 +600,20 @@ export const MeTeamSchema: GenMessage<MeTeam> = /*@__PURE__*/
  *
  * # Only what no role can be asked for
  *
- * Four methods, and each is one somebody **must** be able to do with no role
- * at all: read their own record, take back a way in, sign out of every session
- * they no longer trust, and -- where their tenant offers it -- leave. `cmd.Policy` waives a binding for exactly these, and a
- * method can be waived only if it takes no subject -- `cmd/asself_test.go`
- * refuses one that carries a field that could name somebody -- so these are
- * subject-less by necessity, not by preference.
+ * Three methods, and each is one somebody **must** be able to do with no role
+ * at all: read their own record, sign out of every session they no longer
+ * trust, and -- where their tenant offers it -- leave. `cmd.Policy` waives a
+ * binding for exactly these, and a method can be waived only if it takes no
+ * subject -- `cmd/asself_test.go` refuses one that carries a field that could
+ * name somebody -- so these are subject-less by necessity, not by preference.
  *
  * Everything else a person does to their own account is the entity's own verb
- * with their own reference: `Identity.Add` to attach a provider account,
- * `ApiKey.Issue` to mint a key that acts as them, `ApiKey.Erase` to end
- * one, `Credential.Set`/`Enrol` for a password and a factor. Those were once
- * `Link`, `IssueKey` and `RevokeKey` here -- a self-only twin of each verb, for
- * the grant it let a role name -- and were folded back by the rule in CLAUDE.md,
+ * with their own reference: `Identity.Add` to attach a provider account and
+ * `Identity.Erase` to take one away, `ApiKey.Issue` to mint a key that acts as
+ * them, `ApiKey.Erase` to end one, `Credential.Set`/`Enrol` for a password and
+ * a factor. Those were once `Link`, `IssueKey` and `RevokeKey` here -- a
+ * self-only twin of each verb, for the grant it let a role name -- and were
+ * folded back by the rule in CLAUDE.md,
  * *no self-only twin of a verb*: RBAC grants the method, *whose row* is the
  * layer's (`mayReach`), and the app that serves a person is what passes only
  * their reference.
@@ -668,34 +633,6 @@ export const MeService: GenService<{
     methodKind: "unary";
     input: typeof MeGetRequestSchema;
     output: typeof MeGetResponseSchema;
-  },
-  /**
-   * Unlink removes one of the caller's own ways in.
-   *
-   * # Why it is here and not on IdentityService
-   *
-   * The same reason `MeGetResponse` carries identities at all: `Identity` is
-   * narrowed by the **tenant**, so a person removing their own through that
-   * service would be doing it with a permission that reaches everybody else's
-   * -- which is the leak D17 named and D23 exists to remove, arriving on the
-   * one screen it is most tempting on.
-   *
-   * This takes an identifier and refuses one that is not the caller's, so the
-   * argument is a *which*, never a *whose*. That is what keeps it in the same
-   * category as `Get`: it cannot be pointed at anybody else.
-   *
-   * # What it does not let go of
-   *
-   * The last one. `server/core` refuses the removal of somebody's only way in,
-   * and this goes through it -- so a person cannot lock themselves out with a
-   * button, which is a rule no deployment would want configured differently.
-   *
-   * @generated from rpc roster.MeService.Unlink
-   */
-  unlink: {
-    methodKind: "unary";
-    input: typeof MeUnlinkRequestSchema;
-    output: typeof MeUnlinkResponseSchema;
   },
   /**
    * SignOutEverywhere voids everything issued to the caller before now.

@@ -21,7 +21,8 @@ import (
 // TestSomebodyDoesNotTakeThemselvesOutOfTheirDirectorysHands: a directory
 // speaks for whoever has an account at the connection it provisions through,
 // and finds them by it. That account was theirs to take away: *unlink*, on
-// their own page, which needs no role (`MeService/Unlink`).
+// their own page, which is `IdentityService/Erase` of their own row and needs
+// no role bound (`self-service`).
 //
 // # What it was
 //
@@ -73,8 +74,8 @@ func TestSomebodyDoesNotTakeThemselvesOutOfTheirDirectorysHands(t *testing.T) {
 
 		// As herself, by the button on her own page.
 		as := metadata.AppendToOutgoingContext(ctx, "authorization",
-			"Bearer "+d.mint(t, erin.Bytes(), "her-own", []string{rstr.MeService_Unlink_FullMethodName}))
-		_, err := rstr.NewMeServiceClient(conn).Unlink(as, rstr.MeUnlinkRequest_builder{Id: theirs.GetId()}.Build())
+			"Bearer "+d.mint(t, erin.Bytes(), "her-own", []string{rstr.IdentityService_Erase_FullMethodName}))
+		_, err := rstr.NewIdentityServiceClient(conn).Erase(as, rstr.IdentityRef_builder{Id: theirs.GetId()}.Build())
 		// Said and gone on from, so that a run where she did says what came
 		// of it as well.
 		if assert.Equal(t, codes.PermissionDenied, status.Code(err), "somebody took away the account their directory finds them by: %v", err) {

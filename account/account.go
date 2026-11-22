@@ -217,7 +217,6 @@ type Config struct {
 // by this app, as itself, and mailed (`verify` below).
 var Methods = []string{
 	rstr.MeService_Get_FullMethodName,
-	rstr.MeService_Unlink_FullMethodName,
 	rstr.MeService_SignOutEverywhere_FullMethodName,
 	rstr.MeService_Leave_FullMethodName,
 	rstr.HolderService_Get_FullMethodName,
@@ -226,6 +225,7 @@ var Methods = []string{
 	rstr.ApiKeyService_List_FullMethodName,
 	rstr.ApiKeyService_Erase_FullMethodName,
 	rstr.IdentityService_Add_FullMethodName,
+	rstr.IdentityService_Erase_FullMethodName,
 	rstr.EmailService_List_FullMethodName,
 	rstr.EmailService_Get_FullMethodName,
 	rstr.EmailService_Add_FullMethodName,

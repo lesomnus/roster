@@ -1357,8 +1357,8 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	}
 
 	// And what a caller is, in one round trip. None of its methods takes a
-	// subject, so none can be pointed at anybody else -- `Unlink` names a
-	// *which* and never a *whose*; see `server/me` and [aboutYourself].
+	// subject, so none can be pointed at anybody else; see `server/me` and
+	// [aboutYourself].
 	app.RegisterMeServiceServer(g, mine)
 
 	// What a token stands for, for a product app that was handed one.

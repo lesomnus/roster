@@ -20,7 +20,6 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	MeService_Get_FullMethodName               = "/roster.MeService/Get"
-	MeService_Unlink_FullMethodName            = "/roster.MeService/Unlink"
 	MeService_SignOutEverywhere_FullMethodName = "/roster.MeService/SignOutEverywhere"
 	MeService_Leave_FullMethodName             = "/roster.MeService/Leave"
 )
@@ -53,19 +52,20 @@ const (
 //
 // # Only what no role can be asked for
 //
-// Four methods, and each is one somebody **must** be able to do with no role
-// at all: read their own record, take back a way in, sign out of every session
-// they no longer trust, and -- where their tenant offers it -- leave. `cmd.Policy` waives a binding for exactly these, and a
-// method can be waived only if it takes no subject -- `cmd/asself_test.go`
-// refuses one that carries a field that could name somebody -- so these are
-// subject-less by necessity, not by preference.
+// Three methods, and each is one somebody **must** be able to do with no role
+// at all: read their own record, sign out of every session they no longer
+// trust, and -- where their tenant offers it -- leave. `cmd.Policy` waives a
+// binding for exactly these, and a method can be waived only if it takes no
+// subject -- `cmd/asself_test.go` refuses one that carries a field that could
+// name somebody -- so these are subject-less by necessity, not by preference.
 //
 // Everything else a person does to their own account is the entity's own verb
-// with their own reference: `Identity.Add` to attach a provider account,
-// `ApiKey.Issue` to mint a key that acts as them, `ApiKey.Erase` to end
-// one, `Credential.Set`/`Enrol` for a password and a factor. Those were once
-// `Link`, `IssueKey` and `RevokeKey` here -- a self-only twin of each verb, for
-// the grant it let a role name -- and were folded back by the rule in CLAUDE.md,
+// with their own reference: `Identity.Add` to attach a provider account and
+// `Identity.Erase` to take one away, `ApiKey.Issue` to mint a key that acts as
+// them, `ApiKey.Erase` to end one, `Credential.Set`/`Enrol` for a password and
+// a factor. Those were once `Link`, `IssueKey` and `RevokeKey` here -- a
+// self-only twin of each verb, for the grant it let a role name -- and were
+// folded back by the rule in CLAUDE.md,
 // *no self-only twin of a verb*: RBAC grants the method, *whose row* is the
 // layer's (`mayReach`), and the app that serves a person is what passes only
 // their reference.
@@ -76,26 +76,6 @@ const (
 // answer is true when it was made.
 type MeServiceClient interface {
 	Get(ctx context.Context, in *MeGetRequest, opts ...grpc.CallOption) (*MeGetResponse, error)
-	// Unlink removes one of the caller's own ways in.
-	//
-	// # Why it is here and not on IdentityService
-	//
-	// The same reason `MeGetResponse` carries identities at all: `Identity` is
-	// narrowed by the **tenant**, so a person removing their own through that
-	// service would be doing it with a permission that reaches everybody else's
-	// -- which is the leak D17 named and D23 exists to remove, arriving on the
-	// one screen it is most tempting on.
-	//
-	// This takes an identifier and refuses one that is not the caller's, so the
-	// argument is a *which*, never a *whose*. That is what keeps it in the same
-	// category as `Get`: it cannot be pointed at anybody else.
-	//
-	// # What it does not let go of
-	//
-	// The last one. `server/core` refuses the removal of somebody's only way in,
-	// and this goes through it -- so a person cannot lock themselves out with a
-	// button, which is a rule no deployment would want configured differently.
-	Unlink(ctx context.Context, in *MeUnlinkRequest, opts ...grpc.CallOption) (*MeUnlinkResponse, error)
 	// SignOutEverywhere voids everything issued to the caller before now.
 	//
 	// The self-service half of D26. `HolderService.Invalidate` takes a subject
@@ -192,16 +172,6 @@ func (c *meServiceClient) Get(ctx context.Context, in *MeGetRequest, opts ...grp
 	return out, nil
 }
 
-func (c *meServiceClient) Unlink(ctx context.Context, in *MeUnlinkRequest, opts ...grpc.CallOption) (*MeUnlinkResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(MeUnlinkResponse)
-	err := c.cc.Invoke(ctx, MeService_Unlink_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *meServiceClient) SignOutEverywhere(ctx context.Context, in *MeSignOutEverywhereRequest, opts ...grpc.CallOption) (*MeSignOutEverywhereResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MeSignOutEverywhereResponse)
@@ -250,19 +220,20 @@ func (c *meServiceClient) Leave(ctx context.Context, in *MeLeaveRequest, opts ..
 //
 // # Only what no role can be asked for
 //
-// Four methods, and each is one somebody **must** be able to do with no role
-// at all: read their own record, take back a way in, sign out of every session
-// they no longer trust, and -- where their tenant offers it -- leave. `cmd.Policy` waives a binding for exactly these, and a
-// method can be waived only if it takes no subject -- `cmd/asself_test.go`
-// refuses one that carries a field that could name somebody -- so these are
-// subject-less by necessity, not by preference.
+// Three methods, and each is one somebody **must** be able to do with no role
+// at all: read their own record, sign out of every session they no longer
+// trust, and -- where their tenant offers it -- leave. `cmd.Policy` waives a
+// binding for exactly these, and a method can be waived only if it takes no
+// subject -- `cmd/asself_test.go` refuses one that carries a field that could
+// name somebody -- so these are subject-less by necessity, not by preference.
 //
 // Everything else a person does to their own account is the entity's own verb
-// with their own reference: `Identity.Add` to attach a provider account,
-// `ApiKey.Issue` to mint a key that acts as them, `ApiKey.Erase` to end
-// one, `Credential.Set`/`Enrol` for a password and a factor. Those were once
-// `Link`, `IssueKey` and `RevokeKey` here -- a self-only twin of each verb, for
-// the grant it let a role name -- and were folded back by the rule in CLAUDE.md,
+// with their own reference: `Identity.Add` to attach a provider account and
+// `Identity.Erase` to take one away, `ApiKey.Issue` to mint a key that acts as
+// them, `ApiKey.Erase` to end one, `Credential.Set`/`Enrol` for a password and
+// a factor. Those were once `Link`, `IssueKey` and `RevokeKey` here -- a
+// self-only twin of each verb, for the grant it let a role name -- and were
+// folded back by the rule in CLAUDE.md,
 // *no self-only twin of a verb*: RBAC grants the method, *whose row* is the
 // layer's (`mayReach`), and the app that serves a person is what passes only
 // their reference.
@@ -273,26 +244,6 @@ func (c *meServiceClient) Leave(ctx context.Context, in *MeLeaveRequest, opts ..
 // answer is true when it was made.
 type MeServiceServer interface {
 	Get(context.Context, *MeGetRequest) (*MeGetResponse, error)
-	// Unlink removes one of the caller's own ways in.
-	//
-	// # Why it is here and not on IdentityService
-	//
-	// The same reason `MeGetResponse` carries identities at all: `Identity` is
-	// narrowed by the **tenant**, so a person removing their own through that
-	// service would be doing it with a permission that reaches everybody else's
-	// -- which is the leak D17 named and D23 exists to remove, arriving on the
-	// one screen it is most tempting on.
-	//
-	// This takes an identifier and refuses one that is not the caller's, so the
-	// argument is a *which*, never a *whose*. That is what keeps it in the same
-	// category as `Get`: it cannot be pointed at anybody else.
-	//
-	// # What it does not let go of
-	//
-	// The last one. `server/core` refuses the removal of somebody's only way in,
-	// and this goes through it -- so a person cannot lock themselves out with a
-	// button, which is a rule no deployment would want configured differently.
-	Unlink(context.Context, *MeUnlinkRequest) (*MeUnlinkResponse, error)
 	// SignOutEverywhere voids everything issued to the caller before now.
 	//
 	// The self-service half of D26. `HolderService.Invalidate` takes a subject
@@ -382,9 +333,6 @@ type UnimplementedMeServiceServer struct{}
 func (UnimplementedMeServiceServer) Get(context.Context, *MeGetRequest) (*MeGetResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedMeServiceServer) Unlink(context.Context, *MeUnlinkRequest) (*MeUnlinkResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Unlink not implemented")
-}
 func (UnimplementedMeServiceServer) SignOutEverywhere(context.Context, *MeSignOutEverywhereRequest) (*MeSignOutEverywhereResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SignOutEverywhere not implemented")
 }
@@ -426,24 +374,6 @@ func _MeService_Get_Handler(srv interface{}, ctx context.Context, dec func(inter
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MeServiceServer).Get(ctx, req.(*MeGetRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _MeService_Unlink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MeUnlinkRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MeServiceServer).Unlink(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: MeService_Unlink_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MeServiceServer).Unlink(ctx, req.(*MeUnlinkRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -494,10 +424,6 @@ var MeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _MeService_Get_Handler,
-		},
-		{
-			MethodName: "Unlink",
-			Handler:    _MeService_Unlink_Handler,
 		},
 		{
 			MethodName: "SignOutEverywhere",

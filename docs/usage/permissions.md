@@ -593,7 +593,7 @@ roster --as admin role get @newco/self-service
 methods   /roster.HolderService/Get  /roster.HolderService/Update  /roster.HolderService/Portray
           /roster.EmailService/Get   /roster.EmailService/List     /roster.EmailService/Add   /roster.EmailService/Erase
           /roster.PhoneService/Get   /roster.PhoneService/List     /roster.PhoneService/Add   /roster.PhoneService/Erase
-          /roster.IdentityService/Add
+          /roster.IdentityService/Add  /roster.IdentityService/Erase
           /roster.CredentialService/Set  /roster.CredentialService/Enrol  /roster.CredentialService/Erase
           /roster.ApiKeyService/List /roster.ApiKeyService/Issue   /roster.ApiKeyService/Erase
           /roster.DelegationService/List  /roster.DelegationService/Erase

@@ -107,8 +107,9 @@ type directorysWrite struct {
 //
 // # And what taking one away did
 //
-// The same thing from the other side. *Unlink*, on somebody's own page, needs
-// no role (`MeService/Unlink`), and asked only that another way in be left.
+// The same thing from the other side. *Unlink*, on somebody's own page, is
+// this `Erase` of their own row, held through `self-service`, and asked only
+// that another way in be left.
 // Somebody the directory made, who also had a password, unlinked the account
 // it made them by, and was from then on nobody the directory spoke for: its
 // `active: false` on the day they left was refused, and they went on signing

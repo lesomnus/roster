@@ -88,7 +88,9 @@ breaking:
   # sign-in is `secret`, bytes, as every other request that takes a password
   # takes one. The alternatives of whom `ApiKeyService/Issue` and
   # `CredentialService/Issue` are for go into a `oneof whose`, their numbers
-  # as they were.
+  # as they were. `MeService/Unlink` goes, and its request and answer with
+  # it: an account at a provider is taken away by `IdentityService/Erase` of
+  # one's own row, which everybody holds.
   #
   # Out with the first change after this reaches `main`, which is the only
   # baseline here, as #234 took #233's out: left in, it is a hole in the check
@@ -99,3 +101,7 @@ breaking:
     FIELD_SAME_ONEOF:
       - proto/app/apikey_svc.g.proto
       - proto/app/credential_svc.g.proto
+    RPC_NO_DELETE:
+      - proto/app/me.proto
+    PACKAGE_MESSAGE_NO_DELETE:
+      - proto/app/me.proto

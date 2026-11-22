@@ -42,7 +42,6 @@ import (
 
 	"github.com/protobuf-orm/ent/dialect"
 	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/enttx"
-	"github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/apikey"
@@ -87,16 +86,14 @@ type Server struct {
 	held Held
 	own  Own
 
-	// walled is the stack the two writes go through: `Unlink` and
-	// `SignOutEverywhere`, the waived ones. What a person does beyond those is
-	// the entity's verb with their own reference, and not this service's.
-	//
+	// walled is the stack the writes go through: `SignOutEverywhere` and
+	// `Leave`, the waived ones. What a person does beyond those is the
+	// entity's verb with their own reference, and not this service's.
 	//
 	// The reads here go to ent because the missing subject has already narrowed
 	// them and there is nothing left for a wall to do. A write is different: the
-	// rules that make one safe -- refusing the removal of somebody's only way in
-	// -- live in a layer, and going around them would be a button that locks
-	// somebody out of their own account.
+	// rules that make one safe live in a layer, and going around them would be
+	// a button that does what no rule allowed.
 	//
 	// Nil is a server that answers and does not write, which is what `cmd`
 	// hands the admin port and what a caller gets `Unimplemented` from.
@@ -555,60 +552,6 @@ func (s *Server) keys(ctx context.Context, who pdid.Id) ([]*app.SignInKey, error
 	}
 
 	return out, nil
-}
-
-// Unlink removes one of the caller's own ways in.
-//
-// # A which, never a whose
-//
-// The identifier names one of **their** rows and the query says so: the read
-// that finds it is narrowed by the caller before it is narrowed by the
-// identifier, so one that belongs to somebody else is `NotFound` rather than
-// refused. Told apart, this would answer whether an identity exists.
-//
-// # And it goes through the stack rather than around it
-//
-// Unlike everything else in this file. The read here goes to ent because there
-// is nothing to narrow that the missing subject has not already narrowed; the
-// **write** has a rule on it -- `server/core` refuses the removal of somebody's
-// only way in -- and that rule lives in a layer. Going around it would be a
-// button that locks somebody out of their own account.
-func (s *Server) Unlink(ctx context.Context, req *app.MeUnlinkRequest) (*app.MeUnlinkResponse, error) {
-	f, ok := frame.From(ctx)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "who is asking?")
-	}
-	if s.walled == nil {
-		return nil, status.Error(codes.Unimplemented, "this server cannot write")
-	}
-
-	id, err := entuuid.FromBytes(req.GetId())
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "id: %s", err)
-	}
-
-	// Theirs, or nothing. The holder is the first predicate and the identifier
-	// the second, which is the order that makes the answer about the caller.
-	n, err := s.db.Identity.Query().
-		Where(
-			identity.DateErasedIsNil(),
-			identity.HasHolderWith(holder.IdEQ(f.Actor.Uuid())),
-			identity.IdEQ(id),
-		).
-		Count(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if n == 0 {
-		return nil, status.Error(codes.NotFound, "no such way in")
-	}
-
-	if _, err := s.walled.Identity().Erase(ctx,
-		app.IdentityRef_builder{Id: req.GetId()}.Build()); err != nil {
-		return nil, err
-	}
-
-	return app.MeUnlinkResponse_builder{}.Build(), nil
 }
 
 // SignOutEverywhere voids everything issued to the caller before now.

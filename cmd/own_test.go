@@ -207,6 +207,7 @@ func TestWhatIsSomebodysOwnReachesNobodyElse(t *testing.T) {
 	require.NoError(t, err)
 	secret, err := b.Ent.Credential.Query().Where(credential.HasHolderWith(holder.IdEQ(victim.Uuid()))).FirstId(ctx)
 	require.NoError(t, err)
+	account := b.identity(t, ctx, victim, "github", "the-victims")
 
 	// refused is a call that did nothing: the row is not one the caller sees,
 	// or the write is one the layer refuses for it.
@@ -224,6 +225,9 @@ func TestWhatIsSomebodysOwnReachesNobodyElse(t *testing.T) {
 		n, err := b.Ent.Credential.Query().Where(credential.HasHolderWith(holder.IdEQ(victim.Uuid()))).Count(ctx)
 		x.NoError(err)
 		x.Equal(1, n, "the victim's way in was changed")
+		got, err := b.Ent.Identity.Get(ctx, mustId(t, account.GetId()).Uuid())
+		x.NoError(err)
+		x.Nil(got.DateErased, "the victim's account at a provider was taken away")
 	}
 
 	holders, emails, phones := app.NewHolderServiceClient(conn), app.NewEmailServiceClient(conn), app.NewPhoneServiceClient(conn)
@@ -284,6 +288,11 @@ func TestWhatIsSomebodysOwnReachesNobodyElse(t *testing.T) {
 		app.IdentityService_Add_FullMethodName: func(x *require.Assertions) {
 			_, err := idents.Add(as, app.IdentityAddRequest_builder{Holder: theirs, Provider: "github", Subject: "an-account-of-mallorys"}.Build())
 			refused(x, err)
+		},
+		app.IdentityService_Erase_FullMethodName: func(x *require.Assertions) {
+			v, err := idents.Erase(as, app.IdentityRef_builder{Id: account.GetId()}.Build())
+			x.NoError(err)
+			x.False(v.GetErased())
 		},
 		app.CredentialService_Set_FullMethodName: func(x *require.Assertions) {
 			_, err := creds.Set(as, app.CredentialSetRequest_builder{Holder: theirs, Kind: "password", Secret: []byte("one mallory chose, long enough")}.Build())

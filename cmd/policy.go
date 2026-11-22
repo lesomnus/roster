@@ -252,21 +252,19 @@ func ofTheWholeTenant(method string) bool {
 //
 // # The writes, and why they are on the list
 //
-// `Unlink` and `SignOutEverywhere` write, which is the part worth
-// stopping on. They are here for `Get`'s reason and not by extension of it:
-// neither takes a subject, so neither can be pointed at anybody else, and what
-// each does is something a person may do to their own account by definition.
+// `SignOutEverywhere` writes, which is the part worth stopping on. It is here
+// for `Get`'s reason and not by extension of it: it takes no subject, so it
+// cannot be pointed at anybody else, and what it does is something a person
+// may do to their own account by definition.
 //
-// The alternative is a role, and a role is the wrong shape twice over. It would
-// have to reach every identity in the tenant, since `Identity` narrows by
-// tenant and there is no permission smaller than that -- so "may remove their
-// own way in" would be granted as "may remove anybody's". And requiring one at
-// all means somebody who has just been given an account cannot sign themselves
-// out of a session they no longer trust, which is the moment they most want to.
+// The alternative is a role, and requiring one at all means somebody who has
+// just been given an account cannot sign themselves out of a session they no
+// longer trust, which is the moment they most want to.
 //
-// What keeps them safe is the same absence that keeps `Get` safe, plus the
-// rules in the layer: `server/core` refuses the removal of a last way in, so
-// the button cannot lock somebody out of their own account.
+// What keeps it safe is the same absence that keeps `Get` safe. Taking back a
+// way in is not here: it is `IdentityService/Erase` with one's own row, which
+// everybody holds over what is theirs (`server/core`, `own.go`), and the layer
+// refuses the removal of a last way in.
 //
 // # And `Leave`, which a tenant offers and a role cannot
 //
@@ -330,7 +328,6 @@ func ofTheWholeTenant(method string) bool {
 func aboutYourself(method string) bool {
 	switch method {
 	case app.MeService_Get_FullMethodName,
-		app.MeService_Unlink_FullMethodName,
 		app.MeService_SignOutEverywhere_FullMethodName,
 		app.MeService_Leave_FullMethodName,
 		app.AuthService_SignOut_FullMethodName,

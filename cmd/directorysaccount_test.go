@@ -11,9 +11,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/me"
 )
 
 // TestAnAccountAtTheDirectorysConnectionIsTakenAwayAcrossTheTenant: at the
@@ -83,8 +81,7 @@ func TestAnAccountAtTheDirectorysConnectionIsTakenAwayAcrossTheTenant(t *testing
 
 	unlink := func(who pdid.Id, v *app.Identity) error {
 		t.Helper()
-		s := me.New(b.Ent, cmd.Everything(b.Ent), me.WithWrites(b.Walled))
-		_, err := s.Unlink(b.asNobody(ctx, who, b.Contoso), app.MeUnlinkRequest_builder{Id: v.GetId()}.Build())
+		_, err := b.Walled.Identity().Erase(b.asNobody(ctx, who, b.Contoso), app.IdentityRef_builder{Id: v.GetId()}.Build())
 
 		return err
 	}
