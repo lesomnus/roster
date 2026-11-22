@@ -46,6 +46,12 @@ That is five processes of roster's, Hydra, a mailbox, and two demo products
 ([docs/relying-party.md](docs/relying-party.md)). `docker compose down -v` takes
 it all away.
 
+Every port is published on `127.0.0.1` alone, because the passwords above, and
+the database's, Hydra's and the clients' secrets in `compose.yaml`, are the same
+in every checkout. To be reached from another machine say so, beside the name it
+is reached by -- `BIND=0.0.0.0 PUBLIC_HOST=<that name> docker compose up
+--build` -- and whoever can reach this machine can then sign in as the operator.
+
 ### Or from a checkout, in five commands
 
 ```sh
