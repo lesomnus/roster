@@ -2346,9 +2346,34 @@ however it was made: `vouch reset` and `control vouch reset` are
 `/Unlock`; `key add` and `control key add` mint as
 `/roster.ApiKeyService/Issue` (and a holder `control key add` makes is a
 `/roster.HolderService/Add`); `key revoke` is `/roster.ApiKeyService/Erase`.
-What has no RPC has a name of roster's own: `roster.hold.place`,
-`roster.hold.lift`, `roster.alias.free` for a tenant's alias freed, and
-`roster.holder.restore` for somebody brought back.
+What has no RPC has a name of roster's own, written in `action` where an RPC's
+name is. These are all of them, and the row each line is about is the one its
+`object_id` names:
+
+| the name | what writes it | what the line is about (`object_id`) |
+| --- | --- | --- |
+| `roster.alias.free` | `roster forget`, and the sweep once `tenant.alias_hold` is past: a destroyed tenant's alias freed, or ahead of the hold with `roster forget --reuse` | the tenant |
+| `roster.consent.destroy` | the consents' sweep: a consent of somebody erased, once `consent.keep` is past | the consent |
+| `roster.hold.lift` | `roster hold lift` | the tenant |
+| `roster.hold.place` | `roster hold place` | the tenant |
+| `roster.holder.forget` | `roster forget`, and the sweep once `holder.forget_after` is past: somebody erased, forgotten | the person, and a line for each row that went with them |
+| `roster.holder.restore` | `roster restore`: somebody erased, brought back | the person |
+| `roster.host.release` | a proof of a name another tenant holds (`HostService/Add`), which takes it from them | the host that held it, on its own tenant's trail |
+| `roster.keys.expire` | the delegations' sweep, of one past `date_expires` | **a delegation**. Named for the package that writes it, `server/keys` |
+| `roster.keys.use` | a call made with a key, at most once an hour a key | **an API key**: its last use, by nobody. Named for the package that writes it |
+| `roster.prove.expire` | the claims' sweep, of a claim to a name past `date_expires` | **a host proof** (`HostProof`). Named for the package that writes it, `server/prove` |
+| `roster.session.end` | a sign-out at roster's own door | the session |
+| `roster.session.expire` | the sessions' sweep | the session |
+| `roster.session.mint` | a sign-in at roster's own door | the session |
+| `roster.session.use` | a call that moved a session's idle clock, at most once in half an idle window | the session |
+| `roster.tenant.destroy` | `roster forget @tenant`, and the sweep once `tenant.restore_within` is past: a closed tenant destroyed | the tenant, and a line for each row that went with it |
+| `roster.trail.rows.accept` | `roster trail rows --accept` | each row accepted, of whatever kind |
+| `roster.vouch.expire` | the sweep of a sign-in's attempts and of links, of one past `date_expires` | **a continuation or a link**: two kinds of row under one name. Named for the package that writes it, `server/vouch` |
+
+Four are named for the Go package that writes them and not for the row, as
+the bold ones say; what each is of is this table's, and whether they are
+renamed is not settled. `TestTheTrailsOwnNamesAreTheManualsTable` holds the
+table to the names the code declares, both ways.
 
 A row a migration rewrote is a finding until somebody has looked. `trail rows`
 prints, on stderr, the digest of what it found, and `--accept --of <that digest>
