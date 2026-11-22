@@ -3,7 +3,6 @@ package cmd_test
 import (
 	"os"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -56,10 +55,9 @@ func TestAConsoleWatchingOneReplicaHearsTheOther(t *testing.T) {
 	x.NoError(err)
 	t.Cleanup(func() { two.Close() })
 
-	// `LISTEN` is a round trip and `Build` answers before it has necessarily
-	// landed. A publish that beats it is lost, which is the guarantee and not
-	// a defect.
-	time.Sleep(500 * time.Millisecond)
+	// Nothing to wait for: the broker issues its `LISTEN` and is answered
+	// before `Build` returns (`watchpg.New`), so each server listens from
+	// here. This slept half a second, for a round trip that was already over.
 
 	tenant, err := one.Ungated.Tenant().Add(ctx, app.TenantAddRequest_builder{Alias: "contoso"}.Build())
 	x.NoError(err)
