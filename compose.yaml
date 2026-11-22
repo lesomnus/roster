@@ -8,12 +8,22 @@
 #     http://localhost:8090/   account app     the same person, through an app
 #     http://localhost:8025/   Mailpit         what the account app mailed
 #
+# **Every port is published on 127.0.0.1 alone**, so nothing here is reached
+# from another machine. The passwords, keys and secrets in this file are the
+# same in every checkout of it -- the operator `admin` / `admin`, the database,
+# Hydra's, the clients' -- and a port published on every interface is one
+# anybody on the network can sign in at as the operator, or ask Hydra's admin
+# API to sign anybody in as anybody. `BIND` says otherwise: `BIND=0.0.0.0`,
+# beside `PUBLIC_HOST`, is for being reached from elsewhere, and is a choice to
+# offer all of the above to whoever can reach this machine.
+#
 # `PUBLIC_HOST` is the name a browser reaches this by, `localhost` unless said
 # otherwise: the account app and the user console both resolve the customer by
-# that name. Both consoles are `localhost` only: the cookie is `__Host-` and
-# `Secure`, which a browser takes over plain http from that name and from
-# nowhere else -- and each is served by the listener it calls, so there is no
-# second origin to name.
+# that name. Both consoles are `localhost` only, which is about a browser and not
+# about who may connect: the cookie is `__Host-` and `Secure`,
+# which a browser takes over plain http from that name and from nowhere else --
+# and each is served by the listener it calls, so there is no second origin to
+# name.
 name: roster
 
 services:
@@ -172,12 +182,12 @@ services:
     # Every port, including the two only a console should reach; each is a
     # line that would have to change for a deployment, and none is hidden.
     ports:
-      - "50051:50051" # product apps
-      - "8080:8080"   # the same over HTTP: the account app's calls, curl, and the user console
-      - "50052:50052" # operators, for a shell
-      - "8082:8082"   # the same over HTTP
-      - "50053:50053" # customers
-      - "8081:8081"   # the same over HTTP, and the admin console itself
+      - "${BIND:-127.0.0.1}:50051:50051" # product apps
+      - "${BIND:-127.0.0.1}:8080:8080"   # the same over HTTP: the account app's calls, curl, and the user console
+      - "${BIND:-127.0.0.1}:50052:50052" # operators, for a shell
+      - "${BIND:-127.0.0.1}:8082:8082"   # the same over HTTP
+      - "${BIND:-127.0.0.1}:50053:50053" # customers
+      - "${BIND:-127.0.0.1}:8081:8081"   # the same over HTTP, and the admin console itself
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8081/ >/dev/null || exit 1"]
       interval: 2s
@@ -241,7 +251,7 @@ services:
       ROSTER_ACCOUNT_MAIL_TLS: none
       ROSTER_ACCOUNT_MAIL_PLAINTEXT_HOSTS: '["mailpit"]'
     ports:
-      - "8090:8090"
+      - "${BIND:-127.0.0.1}:8090:8090"
     volumes:
       - account:/var/lib/roster-account:ro
 
@@ -250,14 +260,15 @@ services:
   mailpit:
     image: axllent/mailpit:v1.33.1@sha256:aef2aacc11f075ec0fb6874275ee4a421e688e11a96ebb296134d1735c7761ce
     ports:
-      - "8025:8025"
+      - "${BIND:-127.0.0.1}:8025:8025"
 
   # The directory: roster over LDAP, its own process with its own key, for
   # anything on the network that speaks nothing else. Bind with an app
   # password minted on the account page (`LDAP_BIND=either` lets a password
   # in too, for somebody with no second factor):
   #
-  #     ldapsearch -H ldap://localhost:1389 -x   #       -D uid=erin,ou=people,o=contoso -w rt_… -b o=contoso '(objectClass=inetOrgPerson)'
+  #     ldapsearch -H ldap://localhost:1389 -x \
+  #       -D uid=erin,ou=people,o=contoso -w rt_… -b o=contoso '(objectClass=inetOrgPerson)'
   ldap:
     image: ${ROSTER_DEV_IMAGE:-roster-dev}
     build:
@@ -271,7 +282,7 @@ services:
       SEED_CUSTOMER: ${SEED_CUSTOMER:-contoso}
       LDAP_BIND: ${LDAP_BIND:-key}
     ports:
-      - "1389:1389"
+      - "${BIND:-127.0.0.1}:1389:1389"
     volumes:
       - account:/var/lib/roster-account:ro
 
@@ -300,7 +311,7 @@ services:
     entrypoint: ["roster", "scim", "serve"]
     command: ["--listen", ":8092", "--roster", "roster:50051", "--insecure"]
     ports:
-      - "8092:8092"
+      - "${BIND:-127.0.0.1}:8092:8092"
 
   # Hydra, for the shape a deployment with several products has: one sign-in,
   # tokens each of them verifies. It has **no user database** -- that is the
@@ -399,9 +410,9 @@ services:
     # What it therefore cannot see: anything Hydra only enforces outside `--dev`,
     # anything about TLS termination (`X-Forwarded-Proto`, `r.TLS != nil`), and
     # anything that needs the real manifests. The gate for **those** is the
-    # deployment's own manifests in a real cluster, and it does not exist yet
-    # -- `docs/roadmap.md` carries it as open rather than this file naming a
-    # script that is not here.
+    # deployment's own manifests in a real cluster, against a Hydra with no
+    # `--dev` and TLS ending in front: `scripts/cluster.sh`, which CI runs as
+    # `cluster`.
     command: ["serve", "all", "--dev"]
     networks:
       default:
@@ -410,8 +421,8 @@ services:
         # why it has a dot in it.
         aliases: ["hydra.test"]
     ports:
-      - "4444:4444" # the public endpoints a product app uses
-      - "4445:4445" # admin: private, and this line is what a deployment removes
+      - "${BIND:-127.0.0.1}:4444:4444" # the public endpoints a product app uses
+      - "${BIND:-127.0.0.1}:4445:4445" # admin: private, and this line is what a deployment removes
 
   # The OAuth client the demo signs in for, once. One client per tenant is
   # what makes a challenge say which tenant it belongs to -- see `login/`.
@@ -534,7 +545,7 @@ services:
       # screen. `scripts/hydra.sh` walks both.
       LOGIN_CONSENT: ${LOGIN_CONSENT:-skip}
     ports:
-      - "8091:8091"
+      - "${BIND:-127.0.0.1}:8091:8091"
     volumes:
       - account:/var/lib/roster-account:ro
     networks:
@@ -602,7 +613,7 @@ services:
       # the exact lie the second hop exists to prevent.
       OAUTH2_PROXY_WHITELIST_DOMAINS: "hydra.test:4444,login:8091"
     ports:
-      - "4180:4180"
+      - "${BIND:-127.0.0.1}:4180:4180"
     networks:
       default:
         # A name with a dot in it, as the issuer's: curl 8.22 will not read a
@@ -640,7 +651,7 @@ services:
       - --base=http://product.test:5555
       - --insecure-cookie
     ports:
-      - "5555:5555"
+      - "${BIND:-127.0.0.1}:5555:5555"
     networks:
       default:
         # A name with a dot in it, as the issuer's: curl 8.22 will not read a
