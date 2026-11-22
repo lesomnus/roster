@@ -10,8 +10,6 @@ import type { Link, LinkSchema } from "./link_pb.js";
 import { file_app_link } from "./link_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
 import { file_roster_payday_holder_svc_g } from "../roster/payday/holder_svc_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -20,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/link_svc.g.proto.
  */
 export const file_app_link_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvbGlua19zdmMuZy5wcm90bxIGcm9zdGVyIpQCCg5MaW5rQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEh8KBWVtYWlsGAwgASgLMhAucm9zdGVyLkVtYWlsUmVmEhEKAmF0GAggASgJQgWqAQIIAhINCgVsZWF2ZRgQIAEoCBIVCgZzZWNyZXQYCSABKAxCBaoBAggCEhUKBmlzc3VlchgKIAEoDEIFqgECCAISMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlIKDkxpbmtHZXRSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLnJvc3Rlci5MaW5rUmVmEiIKBnNlbGVjdBgCIAEoCzISLnJvc3Rlci5MaW5rU2VsZWN0IjAKB0xpbmtSZWYSDAoCaWQYASABKAxIABIQCgZzZWNyZXQYCSABKAxIAEIFCgNrZXki9QEKCkxpbmtTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSIgoFZW1haWwYDCABKAsyEy5yb3N0ZXIuRW1haWxTZWxlY3QSCgoCYXQYCCABKAgSDQoFbGVhdmUYECABKAgSDgoGc2VjcmV0GAkgASgIEg4KBmlzc3VlchgKIAEoCBIUCgxkYXRlX2V4cGlyZXMYCyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCJ+ChBMaW5rUGF0Y2hSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLnJvc3Rlci5MaW5rUmVmEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIk0KEExpbmtBcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLkxpbmtSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIjChFMaW5rRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgieQoPTGlua0xpc3RSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5yb3N0ZXIuTGlua0ZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiRAoQTGlua0xpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLnJvc3Rlci5MaW5rEhMKBG5leHQYAiABKAlCBaoBAggCIioKCkxpbmtGaWx0ZXISHAoDcmVmGAEgASgLMg8ucm9zdGVyLkxpbmtSZWYyuQIKC0xpbmtTZXJ2aWNlEisKA0FkZBIWLnJvc3Rlci5MaW5rQWRkUmVxdWVzdBoMLnJvc3Rlci5MaW5rEisKA0dldBIWLnJvc3Rlci5MaW5rR2V0UmVxdWVzdBoMLnJvc3Rlci5MaW5rEi8KBVBhdGNoEhgucm9zdGVyLkxpbmtQYXRjaFJlcXVlc3QaDC5yb3N0ZXIuTGluaxIvCgVBcHBseRIYLnJvc3Rlci5MaW5rQXBwbHlSZXF1ZXN0Ggwucm9zdGVyLkxpbmsSMwoFRXJhc2USDy5yb3N0ZXIuTGlua1JlZhoZLnJvc3Rlci5MaW5rRXJhc2VSZXNwb25zZRI5CgRMaXN0Ehcucm9zdGVyLkxpbmtMaXN0UmVxdWVzdBoYLnJvc3Rlci5MaW5rTGlzdFJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_email_svc_g, file_app_link, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChRhcHAvbGlua19zdmMuZy5wcm90bxIGcm9zdGVyIpQCCg5MaW5rQWRkUmVxdWVzdBIKCgJpZBgBIAEoDBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEh8KBWVtYWlsGAwgASgLMhAucm9zdGVyLkVtYWlsUmVmEhEKAmF0GAggASgJQgWqAQIIAhINCgVsZWF2ZRgQIAEoCBIVCgZzZWNyZXQYCSABKAxCBaoBAggCEhUKBmlzc3VlchgKIAEoDEIFqgECCAISMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlIKDkxpbmtHZXRSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLnJvc3Rlci5MaW5rUmVmEiIKBnNlbGVjdBgCIAEoCzISLnJvc3Rlci5MaW5rU2VsZWN0IjAKB0xpbmtSZWYSDAoCaWQYASABKAxIABIQCgZzZWNyZXQYCSABKAxIAEIFCgNrZXki9QEKCkxpbmtTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSIgoFZW1haWwYDCABKAsyEy5yb3N0ZXIuRW1haWxTZWxlY3QSCgoCYXQYCCABKAgSDQoFbGVhdmUYECABKAgSDgoGc2VjcmV0GAkgASgIEg4KBmlzc3VlchgKIAEoCBIUCgxkYXRlX2V4cGlyZXMYCyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCIjChFMaW5rRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgieQoPTGlua0xpc3RSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5yb3N0ZXIuTGlua0ZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiRAoQTGlua0xpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLnJvc3Rlci5MaW5rEhMKBG5leHQYAiABKAlCBaoBAggCIioKCkxpbmtGaWx0ZXISHAoDcmVmGAEgASgLMg8ucm9zdGVyLkxpbmtSZWYy1wEKC0xpbmtTZXJ2aWNlEisKA0FkZBIWLnJvc3Rlci5MaW5rQWRkUmVxdWVzdBoMLnJvc3Rlci5MaW5rEisKA0dldBIWLnJvc3Rlci5MaW5rR2V0UmVxdWVzdBoMLnJvc3Rlci5MaW5rEjMKBUVyYXNlEg8ucm9zdGVyLkxpbmtSZWYaGS5yb3N0ZXIuTGlua0VyYXNlUmVzcG9uc2USOQoETGlzdBIXLnJvc3Rlci5MaW5rTGlzdFJlcXVlc3QaGC5yb3N0ZXIuTGlua0xpc3RSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_email_svc_g, file_app_link, file_google_protobuf_timestamp, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.LinkAddRequest
@@ -198,69 +196,6 @@ export const LinkSelectSchema: GenMessage<LinkSelect> = /*@__PURE__*/
   messageDesc(file_app_link_svc_g, 3);
 
 /**
- * @generated from message roster.LinkPatchRequest
- */
-export type LinkPatchRequest = Message<"roster.LinkPatchRequest"> & {
-  /**
-   * @generated from field: roster.LinkRef ref = 1;
-   */
-  ref?: LinkRef | undefined;
-
-  /**
-   * The version this update requires the stored date_updated to be.
-   * It is a precondition, not a write: the update applies only if the row
-   * still holds this value, and the server stamps the new version itself.
-   * Setting it together with date_updated_force is an error --
-   * the version is the token every client's compare-and-swap is measured
-   * against, so it is not the caller's to choose.
-   *
-   * @generated from field: google.protobuf.Timestamp date_updated = 26;
-   */
-  dateUpdated?: Timestamp | undefined;
-
-  /**
-   * Update whatever the stored date_updated is, with no precondition.
-   * The server still stamps a new version, so other clients' tokens are
-   * invalidated as usual; this declines the check for THIS update only.
-   * One of date_updated or this must be set. An omitted version is
-   * refused rather than assumed, because an unset field cannot be told
-   * apart from a caller who never considered locking at all.
-   *
-   * @generated from field: bool date_updated_force = 27;
-   */
-  dateUpdatedForce: boolean;
-};
-
-/**
- * Describes the message roster.LinkPatchRequest.
- * Use `create(LinkPatchRequestSchema)` to create a new message.
- */
-export const LinkPatchRequestSchema: GenMessage<LinkPatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_link_svc_g, 4);
-
-/**
- * @generated from message roster.LinkApplyRequest
- */
-export type LinkApplyRequest = Message<"roster.LinkApplyRequest"> & {
-  /**
-   * @generated from field: roster.LinkRef ref = 1;
-   */
-  ref?: LinkRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.LinkApplyRequest.
- * Use `create(LinkApplyRequestSchema)` to create a new message.
- */
-export const LinkApplyRequestSchema: GenMessage<LinkApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_link_svc_g, 5);
-
-/**
  * @generated from message roster.LinkEraseResponse
  */
 export type LinkEraseResponse = Message<"roster.LinkEraseResponse"> & {
@@ -281,7 +216,7 @@ export type LinkEraseResponse = Message<"roster.LinkEraseResponse"> & {
  * Use `create(LinkEraseResponseSchema)` to create a new message.
  */
 export const LinkEraseResponseSchema: GenMessage<LinkEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_link_svc_g, 6);
+  messageDesc(file_app_link_svc_g, 4);
 
 /**
  * @generated from message roster.LinkListRequest
@@ -330,7 +265,7 @@ export type LinkListRequest = Message<"roster.LinkListRequest"> & {
  * Use `create(LinkListRequestSchema)` to create a new message.
  */
 export const LinkListRequestSchema: GenMessage<LinkListRequest> = /*@__PURE__*/
-  messageDesc(file_app_link_svc_g, 7);
+  messageDesc(file_app_link_svc_g, 5);
 
 /**
  * @generated from message roster.LinkListResponse
@@ -360,7 +295,7 @@ export type LinkListResponse = Message<"roster.LinkListResponse"> & {
  * Use `create(LinkListResponseSchema)` to create a new message.
  */
 export const LinkListResponseSchema: GenMessage<LinkListResponse> = /*@__PURE__*/
-  messageDesc(file_app_link_svc_g, 8);
+  messageDesc(file_app_link_svc_g, 6);
 
 /**
  * @generated from message roster.LinkFilter
@@ -377,7 +312,7 @@ export type LinkFilter = Message<"roster.LinkFilter"> & {
  * Use `create(LinkFilterSchema)` to create a new message.
  */
 export const LinkFilterSchema: GenMessage<LinkFilter> = /*@__PURE__*/
-  messageDesc(file_app_link_svc_g, 9);
+  messageDesc(file_app_link_svc_g, 7);
 
 /**
  * @generated from service roster.LinkService
@@ -401,26 +336,6 @@ export const LinkService: GenService<{
   get: {
     methodKind: "unary";
     input: typeof LinkGetRequestSchema;
-    output: typeof LinkSchema;
-  },
-  /**
-   * Patch updates an existing Link
-   *
-   * @generated from rpc roster.LinkService.Patch
-   */
-  patch: {
-    methodKind: "unary";
-    input: typeof LinkPatchRequestSchema;
-    output: typeof LinkSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Link
-   *
-   * @generated from rpc roster.LinkService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof LinkApplyRequestSchema;
     output: typeof LinkSchema;
   },
   /**

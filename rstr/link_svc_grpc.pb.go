@@ -21,8 +21,6 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	LinkService_Add_FullMethodName   = "/roster.LinkService/Add"
 	LinkService_Get_FullMethodName   = "/roster.LinkService/Get"
-	LinkService_Patch_FullMethodName = "/roster.LinkService/Patch"
-	LinkService_Apply_FullMethodName = "/roster.LinkService/Apply"
 	LinkService_Erase_FullMethodName = "/roster.LinkService/Erase"
 	LinkService_List_FullMethodName  = "/roster.LinkService/List"
 )
@@ -35,10 +33,6 @@ type LinkServiceClient interface {
 	Add(ctx context.Context, in *LinkAddRequest, opts ...grpc.CallOption) (*Link, error)
 	// Get retrieves a Link
 	Get(ctx context.Context, in *LinkGetRequest, opts ...grpc.CallOption) (*Link, error)
-	// Patch updates an existing Link
-	Patch(ctx context.Context, in *LinkPatchRequest, opts ...grpc.CallOption) (*Link, error)
-	// Apply applies a patch document to an existing Link
-	Apply(ctx context.Context, in *LinkApplyRequest, opts ...grpc.CallOption) (*Link, error)
 	// Erase deletes a Link
 	Erase(ctx context.Context, in *LinkRef, opts ...grpc.CallOption) (*LinkEraseResponse, error)
 	// List reads Links a page at a time.
@@ -73,26 +67,6 @@ func (c *linkServiceClient) Get(ctx context.Context, in *LinkGetRequest, opts ..
 	return out, nil
 }
 
-func (c *linkServiceClient) Patch(ctx context.Context, in *LinkPatchRequest, opts ...grpc.CallOption) (*Link, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Link)
-	err := c.cc.Invoke(ctx, LinkService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *linkServiceClient) Apply(ctx context.Context, in *LinkApplyRequest, opts ...grpc.CallOption) (*Link, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Link)
-	err := c.cc.Invoke(ctx, LinkService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *linkServiceClient) Erase(ctx context.Context, in *LinkRef, opts ...grpc.CallOption) (*LinkEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LinkEraseResponse)
@@ -121,10 +95,6 @@ type LinkServiceServer interface {
 	Add(context.Context, *LinkAddRequest) (*Link, error)
 	// Get retrieves a Link
 	Get(context.Context, *LinkGetRequest) (*Link, error)
-	// Patch updates an existing Link
-	Patch(context.Context, *LinkPatchRequest) (*Link, error)
-	// Apply applies a patch document to an existing Link
-	Apply(context.Context, *LinkApplyRequest) (*Link, error)
 	// Erase deletes a Link
 	Erase(context.Context, *LinkRef) (*LinkEraseResponse, error)
 	// List reads Links a page at a time.
@@ -144,12 +114,6 @@ func (UnimplementedLinkServiceServer) Add(context.Context, *LinkAddRequest) (*Li
 }
 func (UnimplementedLinkServiceServer) Get(context.Context, *LinkGetRequest) (*Link, error) {
 	return nil, status.Error(codes.Unimplemented, "method Get not implemented")
-}
-func (UnimplementedLinkServiceServer) Patch(context.Context, *LinkPatchRequest) (*Link, error) {
-	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedLinkServiceServer) Apply(context.Context, *LinkApplyRequest) (*Link, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedLinkServiceServer) Erase(context.Context, *LinkRef) (*LinkEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -214,42 +178,6 @@ func _LinkService_Get_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
-func _LinkService_Patch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LinkPatchRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LinkServiceServer).Patch(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: LinkService_Patch_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LinkServiceServer).Patch(ctx, req.(*LinkPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _LinkService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LinkApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LinkServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: LinkService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LinkServiceServer).Apply(ctx, req.(*LinkApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _LinkService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LinkRef)
 	if err := dec(in); err != nil {
@@ -300,14 +228,6 @@ var LinkService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _LinkService_Get_Handler,
-		},
-		{
-			MethodName: "Patch",
-			Handler:    _LinkService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _LinkService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

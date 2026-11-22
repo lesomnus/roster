@@ -3,7 +3,6 @@ package roster;
 
 import "app/continuation.proto";
 import "google/protobuf/timestamp.proto";
-import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -13,10 +12,6 @@ service ContinuationService {
   rpc Add(ContinuationAddRequest) returns (Continuation);
   // Get retrieves a Continuation
   rpc Get(ContinuationGetRequest) returns (Continuation);
-  // Patch updates an existing Continuation
-  rpc Patch(ContinuationPatchRequest) returns (Continuation);
-  // Apply applies a patch document to an existing Continuation
-  rpc Apply(ContinuationApplyRequest) returns (Continuation);
   // Erase deletes a Continuation
   rpc Erase(ContinuationRef) returns (ContinuationEraseResponse);
   // List reads Continuations a page at a time.
@@ -57,29 +52,6 @@ message ContinuationSelect {
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
-}
-
-message ContinuationPatchRequest {
-  ContinuationRef ref = 1;
-  // The version this update requires the stored date_updated to be.
-  // It is a precondition, not a write: the update applies only if the row
-  // still holds this value, and the server stamps the new version itself.
-  // Setting it together with date_updated_force is an error --
-  // the version is the token every client's compare-and-swap is measured
-  // against, so it is not the caller's to choose.
-  google.protobuf.Timestamp date_updated = 26;
-  // Update whatever the stored date_updated is, with no precondition.
-  // The server still stamps a new version, so other clients' tokens are
-  // invalidated as usual; this declines the check for THIS update only.
-  // One of date_updated or this must be set. An omitted version is
-  // refused rather than assumed, because an unset field cannot be told
-  // apart from a caller who never considered locking at all.
-  bool date_updated_force = 27;
-}
-
-message ContinuationApplyRequest {
-  ContinuationRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message ContinuationEraseResponse {

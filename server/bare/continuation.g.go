@@ -5,8 +5,6 @@ package bare
 
 import (
 	context "context"
-	errors "errors"
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	ent "github.com/lesomnus/roster/internal/ent"
 	continuation "github.com/lesomnus/roster/internal/ent/continuation"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
@@ -15,8 +13,6 @@ import (
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
-	ormpatch "github.com/protobuf-orm/protobuf-orm/ormpatch"
-	entpatch "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entpatch"
 	entuuid "github.com/protobuf-orm/protoc-gen-orm-ent/runtime/entuuid"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -355,189 +351,6 @@ func ContinuationSelectInit(ctx context.Context, scope Scope, q *ent.Continuatio
 		return ContinuationSelect(ctx, scope, q, m)
 	}
 	return nil
-}
-
-func (s ContinuationServiceServer) Patch(ctx context.Context, req *rstr.ContinuationPatchRequest) (*rstr.Continuation, error) {
-	doc, err := ormpatch.FromPatchRequest(continuationOrmEntity, req.ProtoReflect(), nil)
-	if err != nil {
-		if _, ok := status.FromError(err); ok {
-			return nil, err
-		}
-		if errors.Is(err, ormpatch.ErrRequestLayout) {
-			return nil, status.Errorf(codes.Internal, "%s", err)
-		}
-		if errors.Is(err, ormpatch.ErrUnsupported) {
-			return nil, status.Errorf(codes.Unimplemented, "%s", err)
-		}
-		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-	}
-
-	return s.apply(ctx, req.GetRef(), doc, rstr.ContinuationService_Patch_FullMethodName)
-}
-
-func ContinuationGetKey(ctx context.Context, db *ent.Client, ref *rstr.ContinuationRef) (uuid.UUID, error) {
-	var z uuid.UUID
-	if ref.HasId() {
-		if v, err := entuuid.FromBytes(ref.GetId()); err != nil {
-			return z, status.Errorf(codes.InvalidArgument, "id: %s", err)
-		} else {
-			return v, nil
-		}
-	}
-
-	p, err := ContinuationPick(ref)
-	if err != nil {
-		return z, err
-	}
-
-	v, err := db.Continuation.Query().Where(p).OnlyId(ctx)
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return z, status.Error(codes.NotFound, "Continuation not found")
-		}
-		return z, err
-	}
-
-	return v, nil
-}
-
-var continuationOrmEntity = ormpatch.MustEntityOf(rstr.File_app_continuation_proto, "Continuation")
-
-var continuationPatchColumns = entpatch.Columns{
-	1: continuation.FieldId, 2: continuation.HolderColumn, 8: continuation.FieldSatisfied, 9: continuation.FieldSecret, 10: continuation.FieldIssuer, 12: continuation.FieldMeteredBy, 11: continuation.FieldDateExpires, 13: continuation.FieldDateUpdated, 14: continuation.FieldDateErased, 15: continuation.FieldDateCreated}
-
-func (s ContinuationServiceServer) Apply(ctx context.Context, req *rstr.ContinuationApplyRequest) (*rstr.Continuation, error) {
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.ContinuationService_Apply_FullMethodName)
-}
-
-func (s ContinuationServiceServer) apply(ctx context.Context, ref *rstr.ContinuationRef, doc *patchpb.Patch, by string) (*rstr.Continuation, error) {
-	plan := &ormpatch.Plan{Entity: continuationOrmEntity}
-	if doc != nil {
-		v, err := ormpatch.Compile(continuationOrmEntity, doc)
-		if err != nil {
-			if errors.Is(err, ormpatch.ErrUnsupported) {
-				return nil, status.Errorf(codes.Unimplemented, "%s", err)
-			}
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-		}
-		plan = v
-	}
-
-	pred, mod, err := entpatch.Build(plan, continuationPatchColumns, s.Db.Dialect())
-	if err != nil {
-		if errors.Is(err, entpatch.ErrValue) {
-			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-		}
-		return nil, status.Errorf(codes.Internal, "%s", err)
-	}
-
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Close()
-
-	st := s
-	st.Db = tx.Db
-
-	k, err := ContinuationGetKey(ctx, st.Db, ref)
-	if err != nil {
-		return nil, err
-	}
-	at := &rstr.ContinuationRef{}
-	at.SetId(k[:])
-	p, err := s.narrow(ctx, continuation.IdEQ(k))
-	if err != nil {
-		return nil, err
-	}
-
-	var previous *rstr.Continuation
-	images := snapshotOptions(s.Rec, by)
-	if images.Previous && mod != nil {
-		u, err := st.snapshot(ctx, p, true)
-		if err != nil {
-			if ent.IsNotFound(err) {
-				return nil, status.Error(codes.NotFound, "resource not found")
-			}
-			return nil, err
-		}
-		previous = s.image(u.Proto())
-	}
-	if mod == nil {
-		q := st.Db.Continuation.Query().Where(p)
-		if pred != nil {
-			q.Where(predicate.Continuation(pred))
-		}
-		if ok, err := q.Exist(ctx); err != nil {
-			return nil, err
-		} else if !ok {
-			return nil, func() error {
-				if ok, err := st.Db.Continuation.Query().Where(p).Exist(ctx); err != nil {
-					return err
-				} else if !ok {
-					return status.Error(codes.NotFound, "Continuation not found")
-				}
-				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
-			}()
-		}
-	} else {
-		q := st.Db.Continuation.Update().Where(p)
-		if pred != nil {
-			q.Where(predicate.Continuation(pred))
-		}
-		q.Modify(mod)
-		if !plan.WritesTo(13) {
-			q.SetDateUpdated(st.now())
-		}
-		tx.Writing()
-		if n, err := q.Save(ctx); err != nil {
-			if err, ok := err.(*ent.ConstraintError); ok {
-				if sqlgraph.IsUniqueConstraintError(err) {
-					return nil, status.Error(codes.AlreadyExists, "Continuation already exists")
-				}
-				if sqlgraph.IsForeignKeyConstraintError(err) {
-					return nil, status.Error(codes.NotFound, "Continuation: referenced entity not found")
-				}
-			}
-			return nil, err
-		} else if n == 0 {
-			return nil, func() error {
-				if ok, err := st.Db.Continuation.Query().Where(p).Exist(ctx); err != nil {
-					return err
-				} else if !ok {
-					return status.Error(codes.NotFound, "Continuation not found")
-				}
-				return status.Error(codes.FailedPrecondition, "a test in the patch did not hold")
-			}()
-		}
-	}
-
-	out, err := st.Get(ctx, at.Pick())
-	if err != nil {
-		return nil, err
-	}
-	if mod != nil {
-		var value *rstr.Continuation
-		if images.Value {
-			value = s.image(out)
-		}
-		if err := record(ctx, s.Rec, st.Db, Change{
-			By:       by,
-			Key:      k,
-			Patch:    doc,
-			Previous: previous, Value: value,
-		}); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (s ContinuationServiceServer) Erase(ctx context.Context, req *rstr.ContinuationRef) (*rstr.ContinuationEraseResponse, error) {

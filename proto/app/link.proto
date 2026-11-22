@@ -187,7 +187,14 @@ message Link {
   }];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    // What `server/vouch` and `server/core` call: a link is minted, read when
+    // it is spent, and erased. Every field is immutable, so there is no `Patch`
+    // to have, and `List` comes with `Get`.
+    rpc: {
+      add: {}
+      get: {}
+      erase: {}
+    }
     indexes: [
       {
         name: "page"

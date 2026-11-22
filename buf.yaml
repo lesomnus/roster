@@ -78,3 +78,22 @@ breaking:
     # their pin (CLAUDE.md). From the launch on, put it back: then it is a
     # compile error somebody else has to fix.
     - FIELD_SAME_CARDINALITY
+  # One change, on purpose and before the first app's launch (CLAUDE.md): the
+  # RPCs no port serves and nothing here calls go (#286). `SessionService` keeps
+  # `Get` and `List`, which the box reads sessions with, and loses the writes,
+  # since the store writes a session through ent; `LinkService` and
+  # `ContinuationService` lose `Patch` and `Apply`, since every field of both is
+  # immutable. Their requests go with them. Nothing a caller is served moves.
+  #
+  # Out with the first change after this reaches `main`, which is the only
+  # baseline here, as #234 took #233's out: left in, it is a hole in the check
+  # for the next change to those three files.
+  ignore_only:
+    RPC_NO_DELETE:
+      - proto/app/continuation_svc.g.proto
+      - proto/app/link_svc.g.proto
+      - proto/app/session_svc.g.proto
+    PACKAGE_MESSAGE_NO_DELETE:
+      - proto/app/continuation_svc.g.proto
+      - proto/app/link_svc.g.proto
+      - proto/app/session_svc.g.proto

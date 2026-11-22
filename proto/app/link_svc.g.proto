@@ -4,7 +4,6 @@ package roster;
 import "app/email_svc.g.proto";
 import "app/link.proto";
 import "google/protobuf/timestamp.proto";
-import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -14,10 +13,6 @@ service LinkService {
   rpc Add(LinkAddRequest) returns (Link);
   // Get retrieves a Link
   rpc Get(LinkGetRequest) returns (Link);
-  // Patch updates an existing Link
-  rpc Patch(LinkPatchRequest) returns (Link);
-  // Apply applies a patch document to an existing Link
-  rpc Apply(LinkApplyRequest) returns (Link);
   // Erase deletes a Link
   rpc Erase(LinkRef) returns (LinkEraseResponse);
   // List reads Links a page at a time.
@@ -60,29 +55,6 @@ message LinkSelect {
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
-}
-
-message LinkPatchRequest {
-  LinkRef ref = 1;
-  // The version this update requires the stored date_updated to be.
-  // It is a precondition, not a write: the update applies only if the row
-  // still holds this value, and the server stamps the new version itself.
-  // Setting it together with date_updated_force is an error --
-  // the version is the token every client's compare-and-swap is measured
-  // against, so it is not the caller's to choose.
-  google.protobuf.Timestamp date_updated = 26;
-  // Update whatever the stored date_updated is, with no precondition.
-  // The server still stamps a new version, so other clients' tokens are
-  // invalidated as usual; this declines the check for THIS update only.
-  // One of date_updated or this must be set. An omitted version is
-  // refused rather than assumed, because an unset field cannot be told
-  // apart from a caller who never considered locking at all.
-  bool date_updated_force = 27;
-}
-
-message LinkApplyRequest {
-  LinkRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message LinkEraseResponse {

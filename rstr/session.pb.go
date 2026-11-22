@@ -345,7 +345,7 @@ var File_app_session_proto protoreflect.FileDescriptor
 
 const file_app_session_proto_rawDesc = "" +
 	"\n" +
-	"\x11app/session.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xee\x04\n" +
+	"\x11app/session.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xf3\x04\n" +
 	"\aSession\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\"\n" +
@@ -356,16 +356,17 @@ const file_app_session_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:h\xca\xfc\x15&\x12\x02\x10\x01\x1a \x12\x04page\x1a\x10\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampB\t\xea\x82\x16\x05@\x01\x82\x01\x00R\vdateCreated:m\xca\xfc\x15'\x12\x03\x8a\x01\x00\x1a \x12\x04page\x1a\x10\n" +
 	"\fdate_created\x10\x0f\x1a\x06\n" +
-	"\x02id\x10\x01\x8a\xbb\x16:\b\x182%\n" +
+	"\x02id\x10\x01\x8a\xbb\x16>\b\x182%\n" +
 	"\x10\n" +
 	"\x0e\n" +
 	"\fdate_created\n" +
 	"\x06\n" +
 	"\x04\n" +
 	"\x02id\x1a\x05\n" +
-	"\x03ref \x14(d\"\x0f\n" +
+	"\x03ref \x14(dR\x02\n" +
+	"\x00\"\x0f\n" +
 	"\rholder.tenantB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_app_session_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
