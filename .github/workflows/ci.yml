@@ -20,7 +20,10 @@
 name: ci
 
 # `workflow_dispatch` because the image job is here: a rebuild of what `main`
-# already is should not need an empty commit.
+# already is should not need an empty commit. A run started by hand on `main`
+# runs every gate and then `push`, as a push to `main` does, which is how a
+# commit of `main` whose run went red for the runner's sake gets its image;
+# started by hand on any other ref it builds the image and pushes nothing.
 
 on:
   workflow_dispatch:
@@ -237,9 +240,35 @@ jobs:
       # same command with the variable set, but the parts of it that are not
       # tests -- gofmt, the generation check, two builds -- do not become a
       # different question on PostgreSQL, and this job has no node on it.
-      - run: go test ./... -count=1
+      #
+      # Thirty minutes, as `race` has: `cmd` took 408 s here of go's 600, and
+      # running out of time on a slower runner is not a finding about roster.
+      #
+      # As `-json` into a file, which the last step reads. What is printed is
+      # what a run without it prints: each package's line, and everything a
+      # test that failed said.
+      - run: |
+          status=0
+          go test ./... -count=1 -timeout 30m -json >"${RUNNER_TEMP}/go-test.json" || status=$?
+          jq -rj -s '
+            (map(select(.Action == "fail" and .Test != null) | [.Package, .Test])) as $failed
+            | .[]
+            | select(.Action == "output" or .Action == "build-output")
+            | select(.Test == null or ([.Package, .Test] as $k | any($failed[]; . == $k)))
+            | .Output' "${RUNNER_TEMP}/go-test.json"
+          exit "${status}"
         env:
           PDTEST_POSTGRES: postgres://app:app@127.0.0.1:5432/app?sslmode=disable
+
+      # That the tests above were run on PostgreSQL. With the variable misspelt
+      # every test runs on SQLite, those that need PostgreSQL skip, and the job
+      # is green; so one of those is named, and it has to have passed.
+      - name: a test that runs only on PostgreSQL ran, and passed
+        run: |
+          jq -e -s 'any(.[]; .Package == "github.com/lesomnus/roster/cmd" and .Test == "TestTwoProcessesOnOneDatabase" and .Action == "pass")' \
+            "${RUNNER_TEMP}/go-test.json" >/dev/null && exit 0
+          echo "::error title=postgres::TestTwoProcessesOnOneDatabase did not pass here: it was skipped or not run, so these tests ran without PostgreSQL. PDTEST_POSTGRES names the database"
+          exit 1
 
   # The tests that race callers against each other, under the race detector, on
   # the database where two transactions really do run at once.
@@ -282,9 +311,28 @@ jobs:
       # A longer timeout than go's ten minutes for one package: the detector
       # makes the same tests several times slower, and running out of time is
       # not the finding this job is for.
-      - run: go test -race -count=1 -timeout 30m ./cmd/
+      #
+      # As `-json` into a file, and printed, as `postgres` does.
+      - run: |
+          status=0
+          go test -race -count=1 -timeout 30m -json ./cmd/ >"${RUNNER_TEMP}/go-test.json" || status=$?
+          jq -rj -s '
+            (map(select(.Action == "fail" and .Test != null) | [.Package, .Test])) as $failed
+            | .[]
+            | select(.Action == "output" or .Action == "build-output")
+            | select(.Test == null or ([.Package, .Test] as $k | any($failed[]; . == $k)))
+            | .Output' "${RUNNER_TEMP}/go-test.json"
+          exit "${status}"
         env:
           PDTEST_POSTGRES: postgres://app:app@127.0.0.1:5432/app?sslmode=disable
+
+      # That they ran on PostgreSQL, for the reason `postgres` asks.
+      - name: a test that runs only on PostgreSQL ran, and passed
+        run: |
+          jq -e -s 'any(.[]; .Package == "github.com/lesomnus/roster/cmd" and .Test == "TestTwoProcessesOnOneDatabase" and .Action == "pass")' \
+            "${RUNNER_TEMP}/go-test.json" >/dev/null && exit 0
+          echo "::error title=race::TestTwoProcessesOnOneDatabase did not pass here: it was skipped or not run, so these tests ran without PostgreSQL. PDTEST_POSTGRES names the database"
+          exit 1
 
   # An upgrade, rehearsed (`scripts/upgrade.sh`): a build makes a deployment's
   # databases, a row goes into every table, and this one starts on them twice.
@@ -416,8 +464,13 @@ jobs:
   # operating guide says to. Its own job because it needs both toolchains and
   # a browser, and because what it checks -- that the page posts what the
   # server reads -- is what every job above has no way to see.
+  #
+  # Nine minutes, three times what it takes: a run that is still going then
+  # is waiting on something that will not answer, and a job with no limit of
+  # its own holds the runner for GitHub's six hours.
   e2e:
     runs-on: ubuntu-26.04
+    timeout-minutes: 9
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -448,9 +501,12 @@ jobs:
   #
   # The compose image is `build`'s binaries copied onto alpine -- `DIST` in
   # `docker-bake.hcl` -- and handed to the script rather than built by it.
+  #
+  # Three minutes, three times what it takes, for the reason `e2e` has nine.
   hydra:
     needs: build
     runs-on: ubuntu-26.04
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -604,10 +660,11 @@ jobs:
           files: docker-bake.hcl
           targets: app
 
-  # `image`, on a push to `main`, and pushed. The steps up to the build are
-  # `image`'s, and so is what it says of them.
+  # `image`, on a push to `main` or a run started by hand on `main`, and
+  # pushed. The steps up to the build are `image`'s, and so is what it says of
+  # them.
   push:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     needs: [build, go, postgres, race, upgrade, ts, e2e, hydra, cluster]
     runs-on: ubuntu-26.04
 

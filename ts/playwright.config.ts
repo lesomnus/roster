@@ -10,6 +10,7 @@ export default defineConfig({
 	fullyParallel: false,
 	workers: 1,
 	retries: 0,
+	forbidOnly: !!process.env.CI,
 	reporter: 'list',
 	// A password compare is slow on purpose, and the run before this one is a
 	// build: the first sign-in on a busy machine has taken four seconds.
