@@ -230,6 +230,18 @@ message Binding {
           {name: "date_created", number: 15},
           {name: "id", number: 1}
         ]
+      },
+      // What the gate reads for every call by somebody who is bound
+      // (`bindingsReaching`): the bindings of a person, and of each group
+      // they are in. The table has no tenant column, so without these every
+      // such call read every tenant's bindings.
+      {
+        name: "by_holder"
+        refs: [{name: "holder", number: 8}]
+      },
+      {
+        name: "by_group"
+        refs: [{name: "group", number: 9}]
       }
     ]
   };

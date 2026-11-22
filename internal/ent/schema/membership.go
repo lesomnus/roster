@@ -58,6 +58,8 @@ func (SiteMembership) Indexes() []ent.Index {
 			StorageKey("sitemembership_member").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
+		index.Fields("site_id").
+			StorageKey("sitemembership_by_site"),
 	}
 }
 
@@ -118,6 +120,8 @@ func (TeamMembership) Indexes() []ent.Index {
 			StorageKey("teammembership_member").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
+		index.Fields("team_id").
+			StorageKey("teammembership_by_team"),
 	}
 }
 
@@ -178,6 +182,8 @@ func (GroupMembership) Indexes() []ent.Index {
 			StorageKey("groupmembership_member").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
+		index.Fields("group_id").
+			StorageKey("groupmembership_by_group"),
 	}
 }
 

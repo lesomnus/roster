@@ -86,6 +86,12 @@ message SiteMembership {
           {name: "site", number: 3}
         ]
         unique: true
+      },
+      // Who is in a site, read by the site: what narrows the people of a
+      // caller bound there. The index above is by the person first.
+      {
+        name: "by_site"
+        refs: [{name: "site", number: 3}]
       }
     ]
   };
@@ -174,6 +180,12 @@ message TeamMembership {
           {name: "team", number: 8}
         ]
         unique: true
+      },
+      // Who is on a team, read by the team: a list of its members. The index
+      // above is by the person first.
+      {
+        name: "by_team"
+        refs: [{name: "team", number: 8}]
       }
     ]
   };
@@ -268,6 +280,13 @@ message GroupMembership {
           {name: "group", number: 8}
         ]
         unique: true
+      },
+      // Who is in a group, read by the group: what the gate reads of a
+      // binding to it, and a list of its members. The index above is by the
+      // person first.
+      {
+        name: "by_group"
+        refs: [{name: "group", number: 8}]
       }
     ]
   };

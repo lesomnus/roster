@@ -253,6 +253,16 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{BindingColumns[4], BindingColumns[0]},
 			},
+			{
+				Name:    "binding_by_holder",
+				Unique:  false,
+				Columns: []*schema.Column{BindingColumns[7]},
+			},
+			{
+				Name:    "binding_by_group",
+				Unique:  false,
+				Columns: []*schema.Column{BindingColumns[8]},
+			},
 		},
 	}
 	// ConnectionColumns holds the columns for the "connection" table.
@@ -666,6 +676,11 @@ var (
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
+			},
+			{
+				Name:    "groupmembership_by_group",
+				Unique:  false,
+				Columns: []*schema.Column{GroupmembershipColumns[5]},
 			},
 		},
 	}
@@ -1319,6 +1334,11 @@ var (
 					Where: "date_erased IS NULL",
 				},
 			},
+			{
+				Name:    "sitemembership_by_site",
+				Unique:  false,
+				Columns: []*schema.Column{SitemembershipColumns[5]},
+			},
 		},
 	}
 	// TeamColumns holds the columns for the "team" table.
@@ -1416,6 +1436,11 @@ var (
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
+			},
+			{
+				Name:    "teammembership_by_team",
+				Unique:  false,
+				Columns: []*schema.Column{TeammembershipColumns[5]},
 			},
 		},
 	}
