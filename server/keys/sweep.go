@@ -120,4 +120,4 @@ func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error
 }
 
 // Expired is the act a delegation the sweep collected is on the trail as.
-const Expired = "roster.keys.expire"
+const Expired = "roster.delegation.expire"

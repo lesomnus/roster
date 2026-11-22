@@ -61,12 +61,12 @@ func trailNamesWritten(t *testing.T) map[string][]string {
 // the code writes, both ways.
 //
 // A line of the trail is named by the RPC that wrote it or, for an act with no
-// RPC, by a name of roster's own. There are seventeen. Five were in no page of
-// `docs/` but the roadmap -- `roster.holder.forget`, `roster.tenant.destroy`
-// and the three sweeps' that are named for a package -- and the others were in
-// three places and nowhere whole, so a reader of a trail who met
-// `roster.keys.expire` found that it is a delegation by reading
-// `server/keys`. Each is a row of one table, with the act that writes it and
+// RPC, by a name of roster's own, named for the row the line is about. There
+// are eighteen. Five were in no page of `docs/` but the roadmap --
+// `roster.holder.forget`, `roster.tenant.destroy` and three sweeps' that were
+// named for a package then -- and the others were in three places and nowhere
+// whole, so a reader of a trail who met what is `roster.delegation.expire` now
+// found that it is a delegation by reading `server/keys`. Each is a row of one table, with the act that writes it and
 // the row the line is about; a name the code adds is a row the page has to
 // gain, and a row the page keeps after the code drops the name fails here.
 func TestTheTrailsOwnNamesAreTheManualsTable(t *testing.T) {

@@ -32,7 +32,7 @@ import (
 // It stays a line. A write past the recorder, as a lock's is, leaves a row a
 // check of the rows finds: the lock writes nothing of its row, and this writes
 // a column the digest covers. So the line there already was says what it is,
-// `roster.keys.use`, at most once an hour for a key (`keys.Touched`).
+// `roster.apikey.use`, at most once an hour for a key (`keys.Touched`).
 func TestAKeysLastUseIsALineOfItsOwn(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()

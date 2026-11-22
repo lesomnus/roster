@@ -2076,7 +2076,7 @@ deleting from.
 of itself is under a name of its own.** When a key was last used
 (`ApiKey.date_used`) is written as the key is read, at most once an hour for a
 key, on the trail of the plane the key is a row of -- the control plane's for a
-deployment key. That line is `roster.keys.use`, about the key and by nobody. It
+deployment key. That line is `roster.apikey.use`, about the key and by nobody. It
 was filed under the verb of whatever call the key had been presented for, so the
 trail read for who called `HolderService/Add` answered keys beside the people.
 
@@ -2357,27 +2357,26 @@ name is. These are all of them, and the row each line is about is the one its
 | the name | what writes it | what the line is about (`object_id`) |
 | --- | --- | --- |
 | `roster.alias.free` | `roster forget`, and the sweep once `tenant.alias_hold` is past: a destroyed tenant's alias freed, or ahead of the hold with `roster forget --reuse` | the tenant |
+| `roster.apikey.use` | a call made with a key, at most once an hour a key | the API key: its last use, by nobody |
 | `roster.consent.destroy` | the consents' sweep: a consent of somebody erased, once `consent.keep` is past | the consent |
+| `roster.continuation.expire` | the sweep of a sign-in's attempts, of one past `date_expires` | the continuation |
+| `roster.delegation.expire` | the delegations' sweep, of one past `date_expires` | the delegation |
 | `roster.hold.lift` | `roster hold lift` | the tenant |
 | `roster.hold.place` | `roster hold place` | the tenant |
 | `roster.holder.forget` | `roster forget`, and the sweep once `holder.forget_after` is past: somebody erased, forgotten | the person, and a line for each row that went with them |
 | `roster.holder.restore` | `roster restore`: somebody erased, brought back | the person |
 | `roster.host.release` | a proof of a name another tenant holds (`HostService/Add`), which takes it from them | the host that held it, on its own tenant's trail |
-| `roster.keys.expire` | the delegations' sweep, of one past `date_expires` | **a delegation**. Named for the package that writes it, `server/keys` |
-| `roster.keys.use` | a call made with a key, at most once an hour a key | **an API key**: its last use, by nobody. Named for the package that writes it |
-| `roster.prove.expire` | the claims' sweep, of a claim to a name past `date_expires` | **a host proof** (`HostProof`). Named for the package that writes it, `server/prove` |
+| `roster.hostproof.expire` | the claims' sweep, of a claim to a name past `date_expires` | the host proof (`HostProof`) |
+| `roster.link.expire` | the sweep of links, of one past `date_expires` | the link |
 | `roster.session.end` | a sign-out at roster's own door | the session |
 | `roster.session.expire` | the sessions' sweep | the session |
 | `roster.session.mint` | a sign-in at roster's own door | the session |
 | `roster.session.use` | a call that moved a session's idle clock, at most once in half an idle window | the session |
 | `roster.tenant.destroy` | `roster forget @tenant`, and the sweep once `tenant.restore_within` is past: a closed tenant destroyed | the tenant, and a line for each row that went with it |
 | `roster.trail.rows.accept` | `roster trail rows --accept` | each row accepted, of whatever kind |
-| `roster.vouch.expire` | the sweep of a sign-in's attempts and of links, of one past `date_expires` | **a continuation or a link**: two kinds of row under one name. Named for the package that writes it, `server/vouch` |
 
-Four are named for the Go package that writes them and not for the row, as
-the bold ones say; what each is of is this table's, and whether they are
-renamed is not settled. `TestTheTrailsOwnNamesAreTheManualsTable` holds the
-table to the names the code declares, both ways.
+`TestTheTrailsOwnNamesAreTheManualsTable` holds the table to the names the code
+declares, both ways.
 
 A row a migration rewrote is a finding until somebody has looked. `trail rows`
 prints, on stderr, the digest of what it found, and `--accept --of <that digest>
