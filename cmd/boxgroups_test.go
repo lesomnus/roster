@@ -62,6 +62,14 @@ func boxCommand(root *xli.Command, path ...string) *xli.Command {
 // the deployment; and `vouch enrol --tenant` and `--address`, refused whenever
 // they were given. Answered: each offered, and each a refusal when run; right
 // is not offered, as `control tenant add` is not.
+//
+// `ConsentService` `Agree`, `Withdraw`, `Settled` and `EmailService`
+// `Verify`, `Confirm` ask who is calling and refuse a call made as nobody,
+// which every call at the box is: they work over the wire alone. Under
+// `control`, which is local and nothing else, the five were offered and
+// refused when run (*this call is made as nobody*; *who is asking?*). Right
+// is offered on the data plane's tree, where the wire reaches them, and not
+// under `control`.
 func TestNoCommandIsOfferedThatWorksNowhere(t *testing.T) {
 	x := require.New(t)
 	root := cli.Cmd(&cmd.Config{})
@@ -77,6 +85,16 @@ func TestNoCommandIsOfferedThatWorksNowhere(t *testing.T) {
 	x.NotNil(boxCommand(root, "tenant", "restore"))
 	x.Nil(boxCommand(root, "control", "tenant", "close"), "the deployment's own tenant is offered a close")
 	x.Nil(boxCommand(root, "control", "tenant", "restore"))
+
+	for _, path := range [][]string{
+		{"consent", "agree"}, {"consent", "withdraw"}, {"consent", "settled"},
+		{"email", "verify"}, {"email", "confirm"},
+	} {
+		x.NotNil(boxCommand(root, path...), "%v is a caller's, and offered where the wire reaches it", path)
+		x.Nil(boxCommand(root, append([]string{"control"}, path...)...), "control %v is offered, and is made as nobody", path)
+	}
+	x.NotNil(boxCommand(root, "control", "consent", "list"), "the rest of `control consent` stays")
+	x.NotNil(boxCommand(root, "control", "email", "list"), "the rest of `control email` stays")
 
 	enrol := boxCommand(root, "vouch", "enrol")
 	x.NotNil(enrol)
