@@ -76,8 +76,9 @@ somebody else pushes, which is the thing GitOps exists to stop.
 **And the image by its digest, which no tag names by commit.** A build is
 tagged by the CI run that made it and its day -- `:r43640498656`, and
 `:261114-r43640498656`, which is also what `roster version` says inside it --
-and the commit is the image's label, `org.opencontainers.image.revision`. So
-from a commit to a digest is its `ci` run on `main`, whose id is the tag:
+and the commit is the image's label, `org.opencontainers.image.revision`, and
+what `roster version --short` says inside it. So from a commit to a digest is
+its `ci` run on `main`, whose id is the tag:
 
 ```sh
 docker buildx imagetools inspect ghcr.io/lesomnus/roster:r<the run's id>   # Digest: sha256:…

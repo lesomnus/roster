@@ -1,9 +1,9 @@
 # One image, because roster is one binary.
 #
-# `serve`, `account serve` and `ldap serve` are three commands of it, and a
-# deployment runs the same image three times with three arguments. Splitting
-# them would be three images that differ by `CMD`, which is a thing a compose
-# file already says better.
+# `serve`, `account serve`, `ldap serve`, `login serve` and `scim serve` are
+# five commands of it, and a deployment runs the same image once per command
+# with its own arguments. Splitting them would be five images that differ by
+# `CMD`, which is a thing a compose file already says better.
 #
 # `docker buildx bake` builds it. `test` is a target and not part of the
 # default group: the gate is `./scripts/test.sh`, and this is its Go half for a
@@ -41,6 +41,13 @@ variable "APP_VERSION" {
   default = "${BUILD_DATE}-${BUILD_ID}"
 }
 
+# The commit, compiled in so that `roster version --short` says it: the one the
+# image is labelled with, and nothing where no commit was said, so that a build
+# at a desk prints what it always has rather than a run of zeros.
+variable "APP_REVISION" {
+  default = BUILD_HASH == "0000000000000000000000000000000000000000" ? "" : BUILD_HASH
+}
+
 variable "PLATFORMS" {
   # Both stages that do work build on the builder's architecture and
   # cross-compile, so the second platform is a second link rather than a second
@@ -73,8 +80,9 @@ target "dist" {
   dockerfile = "Dockerfile"
 
   args = {
-    APP_VERSION = APP_VERSION
-    ARCHS       = join(" ", [for p in PLATFORMS : split("/", p)[1]])
+    APP_VERSION  = APP_VERSION
+    APP_REVISION = APP_REVISION
+    ARCHS        = join(" ", [for p in PLATFORMS : split("/", p)[1]])
   }
 
   output = [{ type = "local", dest = "./dist" }]
@@ -107,13 +115,14 @@ target "app" {
   tags       = tags(REPO)
   contexts   = dist()
 
-  # `APP_VERSION` rather than the revision, because it is what the binary can
-  # be told: `roster version` reads a variable payday exports for exactly this,
-  # and the toolchain cannot stamp `vcs.revision` from a context with no
-  # `.git/`. The revision is a label instead, which is where a registry client
-  # looks for it.
+  # Both compiled in, where this target compiles at all (`DIST` unset): the
+  # toolchain cannot stamp `vcs.revision` from a context with no `.git/`, so
+  # the version goes to the variable payday exports for it and the commit to
+  # roster's (`Dockerfile`). The commit is a label as well, which is where a
+  # registry client looks for it.
   args = {
-    APP_VERSION = APP_VERSION
+    APP_VERSION  = APP_VERSION
+    APP_REVISION = APP_REVISION
   }
 
   labels = {
@@ -142,7 +151,8 @@ target "dev" {
   contexts   = dist()
 
   args = {
-    APP_VERSION = APP_VERSION
+    APP_VERSION  = APP_VERSION
+    APP_REVISION = APP_REVISION
   }
 }
 

@@ -86,6 +86,7 @@ func Cmd(c *cmd.Config) *xli.Command {
 	if v, ok := version.Flags.Get("short").(*flg.Switch); ok {
 		v.Brief = "the commit it was built from and nothing else: twelve characters, a + for uncommitted changes, empty where the build has none"
 	}
+	stamped(version)
 
 	return &xli.Command{
 		Name:  cmd.Name,

@@ -435,6 +435,7 @@ commands themselves ([cli.md](cli.md)).
 | An entity command given an `-o` or an `--in` that is none of theirs is refused before anything is opened: nothing is written and then reported as failed | `cli/entity.go` | `TestAWrongFormatIsRefusedBeforeTheWrite` |
 | `tenant add` names its tenant, by NAME or an alias in REQ, or is refused: a tenant is not erased, so one made under an alias nobody chose is not taken back by a command | `cli/entity.go` | `TestATenantIsNotAddedUnderAnAliasNobodyChose` |
 | `forget`, `restore` and `hold` given an identifier the customers' database does not have say so, and do nothing; an operator's is the control plane's, which they do not read | `cli/forget.go` | `TestAnIdentifierNobodyHasIsSaidToBeNobodys` |
+| `version --short` prints the commit the binary was built from, in an image as at a desk: an image's build hands it in, having no `.git/` for the toolchain to read | `cli/version.go` · `Dockerfile` | `TestAnImageSaysWhichCommitItIs` |
 
 ### At the box, of the trail
 
