@@ -335,7 +335,9 @@ jobs:
           exit 1
 
   # An upgrade, rehearsed (`scripts/upgrade.sh`): a build makes a deployment's
-  # databases, a row goes into every table, and this one starts on them twice.
+  # databases, a row goes into every table, this one starts on them twice, and
+  # reads back a key, a password, an operator, a person's name and the trail's
+  # archive. On SQLite only: the script's head says what that leaves.
   #
   # Every other job migrates a database that is empty, and an upgrade fails in
   # the one way an empty database cannot: a column that comes to a table that
