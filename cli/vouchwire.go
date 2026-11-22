@@ -826,7 +826,7 @@ func newCmdVouchEnrol(c *cmd.Config) *xli.Command {
 			issuer, _ := flg.Find[string](cl, "issuer")
 
 			v, err := app.NewCredentialServiceClient(conn).Enrol(ctx, app.CredentialEnrolRequest_builder{
-				Ref:    ref,
+				Holder: ref,
 				Kind:   kind,
 				Name:   name,
 				Issuer: issuer,

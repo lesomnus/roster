@@ -131,7 +131,7 @@ func TestASessionMadeAtRostersOwnDoorIsOnTheTrail(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 	res, err := b.Ungated.Credential().Issue(ctx, app.CredentialIssueRequest_builder{
-		Ref: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 	x.NoError(rows())

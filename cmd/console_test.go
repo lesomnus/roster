@@ -131,7 +131,7 @@ func TestAnOperatorSignsIn(t *testing.T) {
 		}.Build())
 		x.NoError(err)
 		_, err = s.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-			Ref: app.HolderRef_builder{Id: alice.GetId()}.Build(), Secret: []byte(secret),
+			Holder: app.HolderRef_builder{Id: alice.GetId()}.Build(), Secret: []byte(secret),
 		}.Build())
 		x.NoError(err)
 

@@ -31,9 +31,9 @@ func TestSomebodyRemovesASecondFactorOfTheirOwn(t *testing.T) {
 	own := app.HolderRef_builder{Id: b.Who.Bytes()}.Build()
 
 	// A password and a phone, set the operator way.
-	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{Ref: own, Secret: []byte("correct horse battery staple")}.Build())
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{Holder: own, Secret: []byte("correct horse battery staple")}.Build())
 	x.NoError(err)
-	_, err = b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Ref: own, Kind: vouch.KindTotp, Name: "phone"}.Build())
+	_, err = b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Holder: own, Kind: vouch.KindTotp, Name: "phone"}.Build())
 	x.NoError(err)
 
 	// A sign-in of hers a moment old, which is what taking a factor off one's
@@ -78,7 +78,7 @@ func TestSomebodyRemovesASecondFactorOfTheirOwn(t *testing.T) {
 		boss := addHolder(t, ctx, b.Server, b.Contoso, "boss")
 		theirs := app.HolderRef_builder{Id: boss.Bytes()}.Build()
 		permits(t, ctx, b, b.Contoso, boss, "admin", "/roster.HolderService/Erase")
-		_, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Ref: theirs, Kind: vouch.KindTotp, Name: "key"}.Build())
+		_, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Holder: theirs, Kind: vouch.KindTotp, Name: "key"}.Build())
 		x.NoError(err)
 
 		_, err = cl.Erase(hers, byKind(theirs, vouch.KindTotp, "key"))

@@ -136,7 +136,7 @@ func TestTheSandboxSignsARosterUserIn(t *testing.T) {
 	// The two writes `wasm/main.go`'s `seed` makes beyond `Seed`: the name the
 	// tenant answers at, and a way in for the person who administers it.
 	_, err = s.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: seeded.Holder.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: seeded.Holder.Bytes()}.Build(),
 		Secret: []byte("admin"),
 	}.Build())
 	x.NoError(err)

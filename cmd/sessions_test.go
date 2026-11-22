@@ -36,7 +36,7 @@ func TestSomebodySeesWhereTheyAreSignedInAndEndsOne(t *testing.T) {
 
 	own := app.HolderRef_builder{Id: b.Who.Bytes()}.Build()
 	const password = "correct horse battery staple"
-	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{Ref: own, Secret: []byte(password)}.Build())
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{Holder: own, Secret: []byte(password)}.Build())
 	x.NoError(err)
 
 	// The front door signs her in and holds the delegation, as `frontdoor` does.

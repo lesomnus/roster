@@ -39,7 +39,7 @@ func TestASecondFactorIsEnrolledOnceAndReadBackNever(t *testing.T) {
 	v := b.keyed2fa(t)
 
 	res, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
-		Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind:   vouch.KindTotp,
 		Issuer: "roster",
 	}.Build())
@@ -125,16 +125,16 @@ func TestASecondFactorIsEnrolledOnceAndReadBackNever(t *testing.T) {
 		x := require.New(t)
 
 		_, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
-			Ref:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
-			Kind: vouch.KindTotp,
-			Name: "the spare phone",
+			Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Kind:   vouch.KindTotp,
+			Name:   "the spare phone",
 		}.Build())
 		x.NoError(err, "a second authenticator was refused, which is WebAuthn's whole recovery story")
 
 		_, err = b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
-			Ref:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
-			Kind: vouch.KindTotp,
-			Name: "the spare phone",
+			Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Kind:   vouch.KindTotp,
+			Name:   "the spare phone",
 		}.Build())
 		x.Equal(codes.AlreadyExists, status.Code(err), "one name twice")
 	})
@@ -153,8 +153,8 @@ func TestADeploymentWithNoKeyHoldsNoSecondFactor(t *testing.T) {
 	v := b.vouched()
 
 	_, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
-		Ref:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
-		Kind: vouch.KindTotp,
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Kind:   vouch.KindTotp,
 	}.Build())
 	x.Equal(codes.Unimplemented, status.Code(err))
 

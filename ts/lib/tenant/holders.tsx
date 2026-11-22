@@ -394,7 +394,7 @@ export function Person(props: {
 					onClick={() => {
 						say(null)
 						void props.writes.credential
-							.issue({ ref: who })
+							.issue({ holder: who })
 							.then((r) => say({ kind: 'secret', text: r.secret }))
 							.catch((e: unknown) =>
 								say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }),
@@ -411,7 +411,7 @@ export function Person(props: {
 				<button
 					disabled={!props.may('/roster.CredentialService/Unlock')}
 					onClick={() =>
-						run(props.writes.credential.unlock({ ref: who }), 'the account is open')
+						run(props.writes.credential.unlock({ holder: who }), 'the account is open')
 					}
 				>
 					unlock
@@ -998,7 +998,7 @@ function EnrolFor(props: {
 				onClick={() => {
 					props.say(null)
 					void props.writes.credential
-						.enrol({ ref: { key: { case: 'id', value: props.holder } }, kind: 'totp', name })
+						.enrol({ holder: { key: { case: 'id', value: props.holder } }, kind: 'totp', name })
 						.then((r) => {
 							setName('')
 							props.say({ kind: 'secret', text: r.uri })

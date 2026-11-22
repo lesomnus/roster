@@ -59,7 +59,7 @@ func TestADisabledHolderIsNotToSignInAndNotSignedIn(t *testing.T) {
 
 	v := vouch.New(b.Ungated, b.Ungated)
 	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)

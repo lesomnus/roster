@@ -38,8 +38,8 @@ func TestASeedIsNotAWayIn(t *testing.T) {
 	v := b.keyed2fa(t)
 
 	res, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
-		Ref:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
-		Kind: vouch.KindTotp,
+		Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Kind:   vouch.KindTotp,
 	}.Build())
 	x.NoError(err)
 
@@ -76,7 +76,7 @@ func TestASeedIsNotAWayIn(t *testing.T) {
 		// erased*: a way in that can begin a sign-in still counts, so the same
 		// erase goes through the moment there is one.
 		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
 		x.NoError(err)
@@ -106,8 +106,8 @@ func TestASeedAloneSignsNobodyIn(t *testing.T) {
 	v := b.keyed2fa(t)
 
 	res, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
-		Ref:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
-		Kind: vouch.KindTotp,
+		Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Kind:   vouch.KindTotp,
 	}.Build())
 	x.NoError(err)
 
@@ -135,7 +135,7 @@ func TestASeedAloneSignsNobodyIn(t *testing.T) {
 		// same call against the same seed answers with an attempt the moment
 		// the person has something that could have begun one.
 		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
 		x.NoError(err)

@@ -437,7 +437,7 @@ func seedOperator(ctx context.Context, s *Server, alias, given string) (pdid.Id,
 	// are in one place. A hash computed here would be a second set of them, and
 	// the weaker of the two is the one that matters.
 	if _, err := at.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Secret: []byte(secret),
 	}.Build()); err != nil {
 		return pdid.Nil, false, "", err

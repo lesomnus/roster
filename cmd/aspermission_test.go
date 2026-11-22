@@ -243,7 +243,7 @@ func TestNobodyMintsAKeyOnSomebodyElsesHolder(t *testing.T) {
 	// And the boss has a password, which is the thing that must still be his
 	// at the end of this.
 	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: boss.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: boss.Bytes()}.Build(),
 		Secret: []byte("the one he chose"),
 	}.Build())
 	require.NoError(t, err)
@@ -251,7 +251,7 @@ func TestNobodyMintsAKeyOnSomebodyElsesHolder(t *testing.T) {
 	c := app.NewVouchServiceClient(b.Conn)
 	set := func(as string, secret string) error {
 		_, err := app.NewCredentialServiceClient(b.Conn).Set(bearing(ctx, as), app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: boss.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: boss.Bytes()}.Build(),
 			Secret: []byte(secret),
 		}.Build())
 
@@ -387,7 +387,7 @@ func TestARoleHeldThroughATeamIsStillHeld(t *testing.T) {
 	// in the layer below both -- only the door did.
 	set := func(who pdid.Id) error {
 		_, err := b.operated().Issue(asOps, app.CredentialIssueRequest_builder{
-			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		}.Build())
 
 		return err

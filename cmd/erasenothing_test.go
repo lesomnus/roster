@@ -57,7 +57,7 @@ func (b *built) erasableRows(t *testing.T, ctx context.Context, tenant, site pdi
 		Holder: who, Alias: "erasable-" + sfx, Secret: sweepable(t), Methods: []string{app.MeService_Get_FullMethodName},
 	}.Build())
 	made("ApiKey", k.GetId(), err)
-	_, err = b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Ref: who, Kind: vouch.KindTotp, Name: "erasable"}.Build())
+	_, err = b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Holder: who, Kind: vouch.KindTotp, Name: "erasable"}.Build())
 	x.NoError(err)
 	cs, err := b.Ungated.Credential().List(ctx, app.CredentialListRequest_builder{
 		Filters: []*app.CredentialFilter{app.CredentialFilter_builder{Holder: who}.Build()},

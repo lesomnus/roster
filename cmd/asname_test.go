@@ -99,7 +99,7 @@ func TestNobodyWritesAWayInForSomebodyWiderThanThey(t *testing.T) {
 		x := require.New(t)
 
 		_, err := b.Walled.Credential().Set(asDesk, app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: boss.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: boss.Bytes()}.Build(),
 			Secret: []byte("a new one"),
 		}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err),

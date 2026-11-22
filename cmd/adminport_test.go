@@ -155,7 +155,7 @@ func TestTheCorpusIsTheDeploymentsAndNotThePorts(t *testing.T) {
 	v := app.NewCredentialServiceClient(conn)
 	set := func(secret string) error {
 		_, err := app.NewCredentialServiceClient(conn).Set(as, app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: who}.Build(),
+			Holder: app.HolderRef_builder{Id: who}.Build(),
 			Secret: []byte(secret),
 		}.Build())
 
@@ -177,7 +177,7 @@ func TestTheCorpusIsTheDeploymentsAndNotThePorts(t *testing.T) {
 		x := require.New(t)
 
 		_, err := v.Issue(as, app.CredentialIssueRequest_builder{
-			Ref: app.HolderRef_builder{Id: who}.Build(),
+			Holder: app.HolderRef_builder{Id: who}.Build(),
 		}.Build())
 		x.NoError(err, "thirty-two random bytes were in a corpus of one")
 	})
@@ -212,7 +212,7 @@ func TestEveryOperatorWriteLeavesBothTrails(t *testing.T) {
 	}{
 		{"/roster.CredentialService/Set", func(as context.Context) error {
 			_, err := app.NewCredentialServiceClient(conn).Set(as, app.CredentialSetRequest_builder{
-				Ref:    app.HolderRef_builder{Id: who}.Build(),
+				Holder: app.HolderRef_builder{Id: who}.Build(),
 				Secret: []byte("correct horse battery staple"),
 			}.Build())
 
@@ -220,7 +220,7 @@ func TestEveryOperatorWriteLeavesBothTrails(t *testing.T) {
 		}},
 		{"/roster.CredentialService/Issue", func(as context.Context) error {
 			_, err := app.NewCredentialServiceClient(conn).Issue(as, app.CredentialIssueRequest_builder{
-				Ref: app.HolderRef_builder{Id: who}.Build(),
+				Holder: app.HolderRef_builder{Id: who}.Build(),
 			}.Build())
 
 			return err

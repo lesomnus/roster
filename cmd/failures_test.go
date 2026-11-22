@@ -368,7 +368,7 @@ func TestTheManualsTableOfFailuresIsWhatIsAnswered(t *testing.T) {
 		failureCall{"a request that cannot be taken as it is written", 0, admin, "/roster.GroupService/Get", `{}`},
 
 		failureCall{"one rule's refusal", 0, admin, "/roster.SiteService/Erase", failureRef(frankfurt.site)},
-		failureCall{"one rule's refusal", 1, admin, "/roster.CredentialService/Set", `{"ref":` + failureRef(seoul.holder) + `,"kind":"password","secret":"` + base64.StdEncoding.EncodeToString([]byte("correct horse battery staple")) + `"}`},
+		failureCall{"one rule's refusal", 1, admin, "/roster.CredentialService/Set", `{"holder":` + failureRef(seoul.holder) + `,"kind":"password","secret":"` + base64.StdEncoding.EncodeToString([]byte("correct horse battery staple")) + `"}`},
 
 		failureCall{"a version that moved", 0, admin, "/roster.HolderService/Update", `{"ref":` + failureRef(seoul.holder) + `,"profile":{},` + stale + `}`},
 		failureCall{"a version that moved", 0, admin, "/roster.GroupService/Update", `{"ref":` + failureRef(seoul.group) + `,"name":"named",` + stale + `}`},
@@ -405,7 +405,7 @@ func TestTheManualsTableOfFailuresIsWhatIsAnswered(t *testing.T) {
 		b.mayAnything(admin, b.Contoso)
 
 		for _, c := range []failureCall{
-			{"the deployment is not set up for it", 0, admin, "/roster.CredentialService/Enrol", `{"ref":` + failureRef(admin) + `,"kind":"totp","name":"phone"}`},
+			{"the deployment is not set up for it", 0, admin, "/roster.CredentialService/Enrol", `{"holder":` + failureRef(admin) + `,"kind":"totp","name":"phone"}`},
 			{"the deployment is not set up for it", 0, admin, "/roster.HostService/Add", `{"tenant":` + failureRef(b.Contoso) + `,"name":"failures.example.com"}`},
 		} {
 			row := failureRowStarting(t, rows, c.row)

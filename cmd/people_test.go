@@ -104,15 +104,15 @@ func TestAGrantMadeInASiteReachesThePeopleOfThatSite(t *testing.T) {
 	t.Run("and write a way in for one of them, who holds no more than they do", func(t *testing.T) {
 		x := require.New(t)
 
-		v, err := b.operated().Issue(b.calling(ctx, kim, issue), app.CredentialIssueRequest_builder{Ref: ref(park)}.Build())
+		v, err := b.operated().Issue(b.calling(ctx, kim, issue), app.CredentialIssueRequest_builder{Holder: ref(park)}.Build())
 		x.NoError(err)
 		x.NotEmpty(v.GetSecret())
 
-		_, err = b.operated().Issue(b.calling(ctx, kim, issue), app.CredentialIssueRequest_builder{Ref: ref(lee)}.Build())
+		_, err = b.operated().Issue(b.calling(ctx, kim, issue), app.CredentialIssueRequest_builder{Holder: ref(lee)}.Build())
 		x.Equal(codes.NotFound, status.Code(err), "somebody of another site: %v", err)
 
 		// Of their site, and the tenant's administrator: seen, and not theirs.
-		_, err = b.operated().Issue(b.calling(ctx, kim, issue), app.CredentialIssueRequest_builder{Ref: ref(choi)}.Build())
+		_, err = b.operated().Issue(b.calling(ctx, kim, issue), app.CredentialIssueRequest_builder{Holder: ref(choi)}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
 	})
 

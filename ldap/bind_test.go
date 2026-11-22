@@ -140,7 +140,7 @@ func TestAPasswordIsTriedAsAPassword(t *testing.T) {
 
 	const begins = "rt_is how my passphrase happens to begin"
 	_, err := d.s.Ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
-		Ref: rstr.HolderRef_builder{Id: d.lee}.Build(), Secret: []byte(begins),
+		Holder: rstr.HolderRef_builder{Id: d.lee}.Build(), Secret: []byte(begins),
 	}.Build())
 	require.NoError(t, err)
 

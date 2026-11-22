@@ -55,7 +55,7 @@ func TestNoVerifierReachesTheQueueEither(t *testing.T) {
 	// second is the one that compiles to one, which is the whole subject here.
 	for _, secret := range []string{"correct horse battery staple", "a second one entirely"} {
 		_, err := s.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: who.GetId()}.Build(),
+			Holder: app.HolderRef_builder{Id: who.GetId()}.Build(),
 			Secret: []byte(secret),
 		}.Build())
 		x.NoError(err)

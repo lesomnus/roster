@@ -39,7 +39,7 @@ func TestANameErasedAnswersNobodyAndANameMovedAnswersWhoHasIt(t *testing.T) {
 	// Somebody of each tenant, under the same alias, with a password each.
 	password := func(who pdid.Id) string {
 		res, err := b.Ungated.Credential().Issue(ctx, app.CredentialIssueRequest_builder{
-			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		}.Build())
 		require.NoError(t, err)
 

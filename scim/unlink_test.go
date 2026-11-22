@@ -56,7 +56,7 @@ func TestSomebodyDoesNotTakeThemselvesOutOfTheirDirectorysHands(t *testing.T) {
 		k, err := pdid.Parse(id)
 		x.NoError(err)
 		ref := rstr.HolderRef_builder{Id: k.Bytes()}.Build()
-		_, err = d.s.Ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{Ref: ref, Secret: []byte("correct horse battery staple")}.Build())
+		_, err = d.s.Ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{Holder: ref, Secret: []byte("correct horse battery staple")}.Build())
 		x.NoError(err)
 		ids, err := d.s.Ungated.Identity().List(ctx, rstr.IdentityListRequest_builder{
 			Filters: []*rstr.IdentityFilter{rstr.IdentityFilter_builder{Holder: ref}.Build()},

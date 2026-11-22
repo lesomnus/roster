@@ -37,7 +37,7 @@ func personOn(t *testing.T, with func(c *cmd.Config)) (*cmd.Server, []byte) {
 
 func setFor(ctx context.Context, s *cmd.Server, who []byte, secret string) error {
 	_, err := s.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref: app.HolderRef_builder{Id: who}.Build(), Secret: []byte(secret),
+		Holder: app.HolderRef_builder{Id: who}.Build(), Secret: []byte(secret),
 	}.Build())
 
 	return err

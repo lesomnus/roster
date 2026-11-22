@@ -72,7 +72,7 @@ func TestABrowserSpeaksConnectToTheAppAndRosterAnswersAsThePerson(t *testing.T) 
 	}.Build())
 	x.NoError(err)
 	_, err = s.Ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
-		Ref:    rstr.HolderRef_builder{Id: erin.GetId()}.Build(),
+		Holder: rstr.HolderRef_builder{Id: erin.GetId()}.Build(),
 		Secret: []byte(password),
 	}.Build())
 	x.NoError(err)

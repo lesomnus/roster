@@ -171,7 +171,7 @@ func (w whomed) issuing(kind string) *app.CredentialIssueRequest {
 	if w.alias != "" {
 		req.HolderAlias = w.alias
 	} else {
-		req.Ref = app.HolderRef_builder{Id: w.who.GetId()}.Build()
+		req.Holder = app.HolderRef_builder{Id: w.who.GetId()}.Build()
 	}
 
 	return req.Build()
@@ -342,7 +342,7 @@ func newCmdVouchSet(c *cmd.Config, control bool) *xli.Command {
 			// through `Ungated`, where a frameless caller waives the reach rule.
 			if err := w.kept(ctx, app.CredentialService_Set_FullMethodName, func(ctx context.Context) error {
 				_, err := w.at.Credential().Set(ctx, app.CredentialSetRequest_builder{
-					Ref:    app.HolderRef_builder{Id: w.who.GetId()}.Build(),
+					Holder: app.HolderRef_builder{Id: w.who.GetId()}.Build(),
 					Kind:   kind,
 					Secret: []byte(secret),
 				}.Build())
@@ -397,8 +397,8 @@ func newCmdVouchUnlock(c *cmd.Config, control bool) *xli.Command {
 			if err := w.kept(ctx, app.CredentialService_Unlock_FullMethodName, func(ctx context.Context) error {
 				var err error
 				res, err = w.at.Credential().Unlock(ctx, app.CredentialUnlockRequest_builder{
-					Ref:  app.HolderRef_builder{Id: w.who.GetId()}.Build(),
-					Kind: kind,
+					Holder: app.HolderRef_builder{Id: w.who.GetId()}.Build(),
+					Kind:   kind,
 				}.Build())
 
 				return err
@@ -464,7 +464,7 @@ func newCmdOperatorEnrol(c *cmd.Config) *xli.Command {
 			if err := w.kept(ctx, app.CredentialService_Enrol_FullMethodName, func(ctx context.Context) error {
 				var err error
 				v, err = w.at.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{
-					Ref:    app.HolderRef_builder{Id: w.who.GetId()}.Build(),
+					Holder: app.HolderRef_builder{Id: w.who.GetId()}.Build(),
 					Kind:   vouch.KindTotp,
 					Name:   name,
 					Issuer: issuer,

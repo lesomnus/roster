@@ -339,7 +339,7 @@ func (a *App) changePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := a.roster.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
-		Ref:     rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Holder:  rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Current: []byte(in.Current),
 		Secret:  []byte(in.Secret),
 	}.Build()); err != nil {
@@ -390,9 +390,9 @@ func (a *App) enrolFactor(w http.ResponseWriter, r *http.Request) {
 	}
 
 	v, err := a.roster.Credential().Enrol(ctx, rstr.CredentialEnrolRequest_builder{
-		Ref:  rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
-		Kind: "totp",
-		Name: in.Name,
+		Holder: rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Kind:   "totp",
+		Name:   in.Name,
 	}.Build())
 	if err != nil {
 		switch status.Code(err) {

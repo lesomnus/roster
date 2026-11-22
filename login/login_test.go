@@ -637,7 +637,7 @@ func serveAs(t *testing.T, how login.Consent, with func(*login.Config)) *deploym
 		}.Build())
 		x.NoError(err)
 		_, err = s.Ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
-			Ref: rstr.HolderRef_builder{Id: who.GetId()}.Build(), Secret: []byte(password),
+			Holder: rstr.HolderRef_builder{Id: who.GetId()}.Build(), Secret: []byte(password),
 		}.Build())
 		x.NoError(err)
 		id, err := pdid.From(who.GetId())
@@ -1528,8 +1528,8 @@ func (d *deployment) enrolTotp(t *testing.T, ctx context.Context, who pdid.Id) [
 	x := require.New(t)
 
 	res, err := d.s.Ungated.Credential().Enrol(ctx, rstr.CredentialEnrolRequest_builder{
-		Ref:  rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
-		Kind: vouch.KindTotp,
+		Holder: rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Kind:   vouch.KindTotp,
 	}.Build())
 	x.NoError(err)
 

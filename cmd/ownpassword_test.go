@@ -39,7 +39,7 @@ func TestAPersonChangesTheirOwnPassword(t *testing.T) {
 	// Alice has a password, set the operator way: no frame, so nobody's own row
 	// and nothing to prove.
 	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    own,
+		Holder: own,
 		Secret: []byte(old),
 	}.Build())
 	x.NoError(err)
@@ -58,7 +58,7 @@ func TestAPersonChangesTheirOwnPassword(t *testing.T) {
 		// were it lifted from a build log -- can name her row and still not
 		// replace what she signs in with.
 		_, err := cl.Set(bearing(ctx, hers), app.CredentialSetRequest_builder{
-			Ref:    own,
+			Holder: own,
 			Secret: []byte(next),
 		}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err))
@@ -68,7 +68,7 @@ func TestAPersonChangesTheirOwnPassword(t *testing.T) {
 		x := require.New(t)
 
 		_, err := cl.Set(bearing(ctx, hers), app.CredentialSetRequest_builder{
-			Ref:     own,
+			Holder:  own,
 			Current: []byte("not it"),
 			Secret:  []byte(next),
 		}.Build())
@@ -79,7 +79,7 @@ func TestAPersonChangesTheirOwnPassword(t *testing.T) {
 		x := require.New(t)
 
 		_, err := cl.Set(bearing(ctx, hers), app.CredentialSetRequest_builder{
-			Ref:     own,
+			Holder:  own,
 			Current: []byte(old),
 			Secret:  []byte(next),
 		}.Build())
@@ -122,7 +122,7 @@ func TestAPersonChangesTheirOwnPassword(t *testing.T) {
 		theirs := app.HolderRef_builder{Id: mate.GetId()}.Build()
 
 		_, err = cl.Set(bearing(ctx, hers), app.CredentialSetRequest_builder{
-			Ref:    theirs,
+			Holder: theirs,
 			Secret: []byte("for mate"),
 		}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err),
@@ -133,7 +133,7 @@ func TestAPersonChangesTheirOwnPassword(t *testing.T) {
 		// And the deployment's own work is untouched: no frame, nobody to
 		// refuse. `roster init` and `roster vouch set` are this.
 		_, err = b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-			Ref:    theirs,
+			Holder: theirs,
 			Secret: []byte("for mate"),
 		}.Build())
 		x.NoError(err, "the unwalled server refused the deployment's own write")
@@ -165,7 +165,7 @@ func TestAPersonChangesTheirOwnPassword(t *testing.T) {
 		// lifts.
 		for range vouch.MaxFailures {
 			_, err := cl.Set(bearing(ctx, hers), app.CredentialSetRequest_builder{
-				Ref:     own,
+				Holder:  own,
 				Current: []byte("still not it"),
 				Secret:  []byte("whatever comes next"),
 			}.Build())
@@ -173,7 +173,7 @@ func TestAPersonChangesTheirOwnPassword(t *testing.T) {
 		}
 
 		_, err := cl.Set(bearing(ctx, hers), app.CredentialSetRequest_builder{
-			Ref:     own,
+			Holder:  own,
 			Current: []byte(next),
 			Secret:  []byte("whatever comes next"),
 		}.Build())
@@ -205,7 +205,7 @@ func TestAFirstPasswordOfYourOwnTakesAFreshSignIn(t *testing.T) {
 	cl := app.NewCredentialServiceClient(b.Conn)
 	sets := func(as context.Context, current, secret string) error {
 		_, err := cl.Set(as, app.CredentialSetRequest_builder{
-			Ref:     own,
+			Holder:  own,
 			Current: []byte(current),
 			Secret:  []byte(secret),
 		}.Build())
@@ -279,7 +279,7 @@ func TestAFirstPasswordOfYourOwnTakesAFreshSignIn(t *testing.T) {
 
 		_, err := app.NewCredentialServiceClient(c.Conn).Set(theirs,
 			app.CredentialSetRequest_builder{
-				Ref:     app.HolderRef_builder{Id: c.Who.Bytes()}.Build(),
+				Holder:  app.HolderRef_builder{Id: c.Who.Bytes()}.Build(),
 				Current: []byte("nothing is stored under this"),
 				Secret:  []byte(first),
 			}.Build())
@@ -315,7 +315,7 @@ func TestALinkSignInSetsAFirstPasswordAndLeaves(t *testing.T) {
 	as := acting(ctx, b.Token, spent.GetToken())
 
 	_, err = app.NewCredentialServiceClient(b.Conn).Set(as, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err, "a link spent a moment ago could not give its holder a password")
@@ -357,7 +357,7 @@ func TestChangingOnesOwnPasswordEndsWhatTheOldOneOpened(t *testing.T) {
 	const old, next = "correct horse battery staple", "a whole new set of words entirely"
 
 	own := app.HolderRef_builder{Id: b.Who.Bytes()}.Build()
-	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{Ref: own, Secret: []byte(old)}.Build())
+	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{Holder: own, Secret: []byte(old)}.Build())
 	x.NoError(err)
 	permits(t, ctx, b, b.Contoso, b.Who, "self", set, listHolders)
 
@@ -383,14 +383,14 @@ func TestChangingOnesOwnPasswordEndsWhatTheOldOneOpened(t *testing.T) {
 		x := require.New(t)
 
 		_, err := app.NewCredentialServiceClient(b.Conn).Set(here, app.CredentialSetRequest_builder{
-			Ref: own, Current: []byte("not it"), Secret: []byte(next),
+			Holder: own, Current: []byte("not it"), Secret: []byte(next),
 		}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err))
 		x.Nil(stamped(t))
 	})
 
 	_, err = app.NewCredentialServiceClient(b.Conn).Set(here, app.CredentialSetRequest_builder{
-		Ref: own, Current: []byte(old), Secret: []byte(next),
+		Holder: own, Current: []byte(old), Secret: []byte(next),
 	}.Build())
 	x.NoError(err)
 	x.NotNil(stamped(t), "a password changed, and nothing says what was issued before it is void")
@@ -431,7 +431,7 @@ func TestAPasswordSomebodyElseSetsEndsNothing(t *testing.T) {
 
 	own := app.HolderRef_builder{Id: b.Who.Bytes()}.Build()
 	for _, secret := range []string{"correct horse battery staple", "a whole new set of words entirely"} {
-		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{Ref: own, Secret: []byte(secret)}.Build())
+		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{Holder: own, Secret: []byte(secret)}.Build())
 		x.NoError(err)
 	}
 

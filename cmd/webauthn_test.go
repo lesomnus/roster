@@ -49,13 +49,13 @@ func TestAKeyIsEnrolledAndThenSignsSomebodyIn(t *testing.T) {
 	// since a person's own first password takes a sign-in a few minutes old,
 	// which this call has no credential to say.
 	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
 
 	res, err := b.Ungated.Credential().Enrol(as, app.CredentialEnrolRequest_builder{
-		Ref:         app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Holder:      app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind:        vouch.KindWebAuthn,
 		Name:        "the yubikey in the drawer",
 		Attestation: a.Register(t, vouchtest.Challenge(t)),
@@ -187,7 +187,7 @@ func TestASecurityKeySignsTheAttempt(t *testing.T) {
 	who := app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build()
 
 	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -195,7 +195,7 @@ func TestASecurityKeySignsTheAttempt(t *testing.T) {
 	// A key that reports no counter, which is the one a counter cannot guard.
 	a := vouchtest.New(t)
 	_, err = b.Ungated.Credential().Enrol(as, app.CredentialEnrolRequest_builder{
-		Ref:         app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Holder:      app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		Kind:        vouch.KindWebAuthn,
 		Attestation: a.Register(t, vouchtest.Challenge(t)),
 	}.Build())

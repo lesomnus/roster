@@ -162,7 +162,7 @@ func TestSetWritesOnlyAKindThisCanCheck(t *testing.T) {
 		t.Helper()
 
 		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Kind:   kind,
 			Secret: []byte("correct horse battery staple"),
 		}.Build())

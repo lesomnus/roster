@@ -102,7 +102,7 @@ func TestWhatSaysWhenSomebodySignedInIsWhatTheCallCameWith(t *testing.T) {
 	x.NotEmpty(cookie)
 
 	// Enrolled after, so that the sign-in above was one factor.
-	_, err = b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Ref: own, Kind: vouch.KindTotp, Name: "phone"}.Build())
+	_, err = b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Holder: own, Kind: vouch.KindTotp, Name: "phone"}.Build())
 	x.NoError(err)
 
 	phone := app.CredentialRef_builder{
@@ -181,7 +181,7 @@ func TestASignInFromBeforeEverythingWasEndedIsNotFresh(t *testing.T) {
 	cl := app.NewCredentialServiceClient(b.Conn)
 
 	enrol := func(name string) *app.CredentialRef {
-		_, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Ref: own, Kind: vouch.KindTotp, Name: name}.Build())
+		_, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Holder: own, Kind: vouch.KindTotp, Name: name}.Build())
 		x.NoError(err)
 
 		return app.CredentialRef_builder{

@@ -235,7 +235,7 @@ func TestWhatIsWrittenAboutSomebodyIsNotOnTheTrail(t *testing.T) {
 				Holder: ref, Alias: "zq-laptop", Desc: "Hana Kim's laptop", Methods: []string{getMe}, Secret: []byte("0123456789abcdef0123456789abcdef"),
 			}.Build())
 			x.NoError(err)
-			_, err = b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Ref: ref, Kind: vouch.KindTotp, Name: "zq-phone"}.Build())
+			_, err = b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Holder: ref, Kind: vouch.KindTotp, Name: "zq-phone"}.Build())
 			x.NoError(err)
 			factor, err := b.Ent.Credential.Query().Where(entcredential.HasHolderWith(entholder.IdEQ(who.Uuid()))).Only(ctx)
 			x.NoError(err)

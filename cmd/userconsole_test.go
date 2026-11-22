@@ -45,7 +45,7 @@ func TestTheUserConsoleAndItsDoorAreOneListener(t *testing.T) {
 	// they type into the page; the role is what decides which screens it draws.
 	b.mayAnything(b.ContosoUser, b.Contoso)
 	res, err := b.Ungated.Credential().Issue(ctx, app.CredentialIssueRequest_builder{
-		Ref: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 	secret := res.GetSecret()
@@ -225,7 +225,7 @@ func TestAUserConsolePageAsksWhoseStoreItDraws(t *testing.T) {
 	// Somebody in contoso with a password and no binding, which is every
 	// account the moment it is made.
 	res, err := b.Ungated.Credential().Issue(ctx, app.CredentialIssueRequest_builder{
-		Ref: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 	secret := res.GetSecret()

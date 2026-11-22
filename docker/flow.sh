@@ -141,7 +141,7 @@ if [ "${FACTOR:-}" = "totp" ]; then
 	[ -n "${INVALIDATE_KEY:-}" ] || die "a factor needs a key to enrol it with"
 
 	seed=$(rpc CredentialService/Enrol \
-		"$(printf '{"ref":{"slug":{"alias":"%s","tenant":{"alias":"%s"}}},"kind":"totp"}' "${SEED_USER}" "${SEED_CUSTOMER}")" \
+		"$(printf '{"holder":{"slug":{"alias":"%s","tenant":{"alias":"%s"}}},"kind":"totp"}' "${SEED_USER}" "${SEED_CUSTOMER}")" \
 		| json seed)
 	case "${seed}" in "") die "roster enrolled no authenticator";; esac
 

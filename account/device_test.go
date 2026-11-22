@@ -328,7 +328,7 @@ func password(t *testing.T, d *deployment) {
 	t.Helper()
 
 	_, err := d.ungated.Credential().Set(context.Background(), rstr.CredentialSetRequest_builder{
-		Ref:    rstr.HolderRef_builder{Id: d.erin}.Build(),
+		Holder: rstr.HolderRef_builder{Id: d.erin}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	require.NoError(t, err)

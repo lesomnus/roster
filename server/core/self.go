@@ -88,7 +88,7 @@ func (s selfCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 	}
 
 	who, err := s.s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{
-		Ref:    req.GetRef(),
+		Ref:    req.GetHolder(),
 		Select: app.HolderSelect_builder{}.Build(),
 	}.Build())
 	if err != nil {
@@ -100,7 +100,7 @@ func (s selfCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 	}
 	if holder != f.Actor {
 		return nil, status.Error(codes.PermissionDenied,
-			"ref: Set writes your own password; somebody else's is Issue, which generates one and answers with it once")
+			"holder: Set writes your own password; somebody else's is Issue, which generates one and answers with it once")
 	}
 
 	return s.CredentialServiceServer.Set(ctx, req)
