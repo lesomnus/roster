@@ -51,7 +51,8 @@ type ApiKeyServiceClient interface {
 	// to more than one row and the wall narrows a reference to the ones this
 	// caller sees; or a `holder_alias` on the control plane's one tenant, which
 	// is created if it is not there, because a caller of this deployment's own is
-	// not a row set up on purpose before it is needed. Giving both is refused.
+	// not a row set up on purpose before it is needed. The two are a `oneof`, so
+	// a request carries one or neither, and neither is refused.
 	Issue(ctx context.Context, in *ApiKeyIssueRequest, opts ...grpc.CallOption) (*ApiKeyIssueResponse, error)
 }
 
@@ -156,7 +157,8 @@ type ApiKeyServiceServer interface {
 	// to more than one row and the wall narrows a reference to the ones this
 	// caller sees; or a `holder_alias` on the control plane's one tenant, which
 	// is created if it is not there, because a caller of this deployment's own is
-	// not a row set up on purpose before it is needed. Giving both is refused.
+	// not a row set up on purpose before it is needed. The two are a `oneof`, so
+	// a request carries one or neither, and neither is refused.
 	Issue(context.Context, *ApiKeyIssueRequest) (*ApiKeyIssueResponse, error)
 	mustEmbedUnimplementedApiKeyServiceServer()
 }

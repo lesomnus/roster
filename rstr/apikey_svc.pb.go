@@ -1922,12 +1922,11 @@ func (b0 ApiKeyFilter_builder) Build() *ApiKeyFilter {
 }
 
 type ApiKeyIssueRequest struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_HolderAlias string                 `protobuf:"bytes,1,opt,name=holder_alias,json=holderAlias"`
-	xxx_hidden_Alias       string                 `protobuf:"bytes,2,opt,name=alias"`
-	xxx_hidden_Methods     []string               `protobuf:"bytes,3,rep,name=methods"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_expires,json=dateExpires"`
-	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,5,opt,name=holder"`
+	state                  protoimpl.MessageState     `protogen:"opaque.v1"`
+	xxx_hidden_Whose       isApiKeyIssueRequest_Whose `protobuf_oneof:"whose"`
+	xxx_hidden_Alias       string                     `protobuf:"bytes,2,opt,name=alias"`
+	xxx_hidden_Methods     []string                   `protobuf:"bytes,3,rep,name=methods"`
+	xxx_hidden_DateExpires *timestamppb.Timestamp     `protobuf:"bytes,4,opt,name=date_expires,json=dateExpires"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -1959,9 +1958,20 @@ func (x *ApiKeyIssueRequest) ProtoReflect() protoreflect.Message {
 
 func (x *ApiKeyIssueRequest) GetHolderAlias() string {
 	if x != nil {
-		return x.xxx_hidden_HolderAlias
+		if x, ok := x.xxx_hidden_Whose.(*apiKeyIssueRequest_HolderAlias); ok {
+			return x.HolderAlias
+		}
 	}
 	return ""
+}
+
+func (x *ApiKeyIssueRequest) GetHolder() *HolderRef {
+	if x != nil {
+		if x, ok := x.xxx_hidden_Whose.(*apiKeyIssueRequest_Holder); ok {
+			return x.Holder
+		}
+	}
+	return nil
 }
 
 func (x *ApiKeyIssueRequest) GetAlias() string {
@@ -1985,15 +1995,16 @@ func (x *ApiKeyIssueRequest) GetDateExpires() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *ApiKeyIssueRequest) GetHolder() *HolderRef {
-	if x != nil {
-		return x.xxx_hidden_Holder
-	}
-	return nil
+func (x *ApiKeyIssueRequest) SetHolderAlias(v string) {
+	x.xxx_hidden_Whose = &apiKeyIssueRequest_HolderAlias{v}
 }
 
-func (x *ApiKeyIssueRequest) SetHolderAlias(v string) {
-	x.xxx_hidden_HolderAlias = v
+func (x *ApiKeyIssueRequest) SetHolder(v *HolderRef) {
+	if v == nil {
+		x.xxx_hidden_Whose = nil
+		return
+	}
+	x.xxx_hidden_Whose = &apiKeyIssueRequest_Holder{v}
 }
 
 func (x *ApiKeyIssueRequest) SetAlias(v string) {
@@ -2008,8 +2019,27 @@ func (x *ApiKeyIssueRequest) SetDateExpires(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateExpires = v
 }
 
-func (x *ApiKeyIssueRequest) SetHolder(v *HolderRef) {
-	x.xxx_hidden_Holder = v
+func (x *ApiKeyIssueRequest) HasWhose() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Whose != nil
+}
+
+func (x *ApiKeyIssueRequest) HasHolderAlias() bool {
+	if x == nil {
+		return false
+	}
+	_, ok := x.xxx_hidden_Whose.(*apiKeyIssueRequest_HolderAlias)
+	return ok
+}
+
+func (x *ApiKeyIssueRequest) HasHolder() bool {
+	if x == nil {
+		return false
+	}
+	_, ok := x.xxx_hidden_Whose.(*apiKeyIssueRequest_Holder)
+	return ok
 }
 
 func (x *ApiKeyIssueRequest) HasDateExpires() bool {
@@ -2019,28 +2049,59 @@ func (x *ApiKeyIssueRequest) HasDateExpires() bool {
 	return x.xxx_hidden_DateExpires != nil
 }
 
-func (x *ApiKeyIssueRequest) HasHolder() bool {
-	if x == nil {
-		return false
+func (x *ApiKeyIssueRequest) ClearWhose() {
+	x.xxx_hidden_Whose = nil
+}
+
+func (x *ApiKeyIssueRequest) ClearHolderAlias() {
+	if _, ok := x.xxx_hidden_Whose.(*apiKeyIssueRequest_HolderAlias); ok {
+		x.xxx_hidden_Whose = nil
 	}
-	return x.xxx_hidden_Holder != nil
+}
+
+func (x *ApiKeyIssueRequest) ClearHolder() {
+	if _, ok := x.xxx_hidden_Whose.(*apiKeyIssueRequest_Holder); ok {
+		x.xxx_hidden_Whose = nil
+	}
 }
 
 func (x *ApiKeyIssueRequest) ClearDateExpires() {
 	x.xxx_hidden_DateExpires = nil
 }
 
-func (x *ApiKeyIssueRequest) ClearHolder() {
-	x.xxx_hidden_Holder = nil
+const ApiKeyIssueRequest_Whose_not_set_case case_ApiKeyIssueRequest_Whose = 0
+const ApiKeyIssueRequest_HolderAlias_case case_ApiKeyIssueRequest_Whose = 1
+const ApiKeyIssueRequest_Holder_case case_ApiKeyIssueRequest_Whose = 5
+
+func (x *ApiKeyIssueRequest) WhichWhose() case_ApiKeyIssueRequest_Whose {
+	if x == nil {
+		return ApiKeyIssueRequest_Whose_not_set_case
+	}
+	switch x.xxx_hidden_Whose.(type) {
+	case *apiKeyIssueRequest_HolderAlias:
+		return ApiKeyIssueRequest_HolderAlias_case
+	case *apiKeyIssueRequest_Holder:
+		return ApiKeyIssueRequest_Holder_case
+	default:
+		return ApiKeyIssueRequest_Whose_not_set_case
+	}
 }
 
 type ApiKeyIssueRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// The holder it is for, by alias within this plane's one tenant, created if
-	// it is not there. **Control plane only.** Giving both this and `holder` is
-	// refused.
-	HolderAlias string
+	// Whose it is, one of two ways; see the method. None is refused.
+
+	// Fields of oneof xxx_hidden_Whose:
+	// The holder it is for, by alias within this plane's one tenant, created
+	// if it is not there. **Control plane only.**
+	HolderAlias *string
+	// Whose it is, in full. **Data plane only**, and a reference rather than
+	// an alias because the wall has many tenants and a name alone is a
+	// question with more than one answer. Naming one that is not there is a
+	// refusal, not a creation: a customer's people are the customer's.
+	Holder *HolderRef
+	// -- end of xxx_hidden_Whose
 	// What somebody calls this key when deciding whether to revoke it.
 	Alias string
 	// What it may be used for, in full. Empty is refused rather than defaulted:
@@ -2049,24 +2110,55 @@ type ApiKeyIssueRequest_builder struct {
 	Methods []string
 	// When it stops working, unset for one that does not.
 	DateExpires *timestamppb.Timestamp
-	// Whose it is, in full. **Data plane only**, and a reference rather than an
-	// alias because the wall has many tenants and a name alone is a question with
-	// more than one answer. Naming one that is not there is a refusal, not a
-	// creation: a customer's people are the customer's.
-	Holder *HolderRef
 }
 
 func (b0 ApiKeyIssueRequest_builder) Build() *ApiKeyIssueRequest {
 	m0 := &ApiKeyIssueRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_HolderAlias = b.HolderAlias
+	if b.HolderAlias != nil {
+		x.xxx_hidden_Whose = &apiKeyIssueRequest_HolderAlias{*b.HolderAlias}
+	}
+	if b.Holder != nil {
+		x.xxx_hidden_Whose = &apiKeyIssueRequest_Holder{b.Holder}
+	}
 	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Methods = b.Methods
 	x.xxx_hidden_DateExpires = b.DateExpires
-	x.xxx_hidden_Holder = b.Holder
 	return m0
 }
+
+type case_ApiKeyIssueRequest_Whose protoreflect.FieldNumber
+
+func (x case_ApiKeyIssueRequest_Whose) String() string {
+	md := file_app_apikey_svc_g_proto_msgTypes[11].Descriptor()
+	if x == 0 {
+		return "not set"
+	}
+	return protoimpl.X.MessageFieldStringOf(md, protoreflect.FieldNumber(x))
+}
+
+type isApiKeyIssueRequest_Whose interface {
+	isApiKeyIssueRequest_Whose()
+}
+
+type apiKeyIssueRequest_HolderAlias struct {
+	// The holder it is for, by alias within this plane's one tenant, created
+	// if it is not there. **Control plane only.**
+	HolderAlias string `protobuf:"bytes,1,opt,name=holder_alias,json=holderAlias,oneof"`
+}
+
+type apiKeyIssueRequest_Holder struct {
+	// Whose it is, in full. **Data plane only**, and a reference rather than
+	// an alias because the wall has many tenants and a name alone is a
+	// question with more than one answer. Naming one that is not there is a
+	// refusal, not a creation: a customer's people are the customer's.
+	Holder *HolderRef `protobuf:"bytes,5,opt,name=holder,oneof"`
+}
+
+func (*apiKeyIssueRequest_HolderAlias) isApiKeyIssueRequest_Whose() {}
+
+func (*apiKeyIssueRequest_Holder) isApiKeyIssueRequest_Whose() {}
 
 type ApiKeyIssueResponse struct {
 	state            protoimpl.MessageState `protogen:"opaque.v1"`
@@ -2223,13 +2315,14 @@ const file_app_apikey_svc_g_proto_rawDesc = "" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"^\n" +
 	"\fApiKeyFilter\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.ApiKeyRefR\x03ref\x12)\n" +
-	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\"\xdf\x01\n" +
-	"\x12ApiKeyIssueRequest\x12(\n" +
-	"\fholder_alias\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\vholderAlias\x12\x1b\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\"\xe5\x01\n" +
+	"\x12ApiKeyIssueRequest\x12#\n" +
+	"\fholder_alias\x18\x01 \x01(\tH\x00R\vholderAlias\x12+\n" +
+	"\x06holder\x18\x05 \x01(\v2\x11.roster.HolderRefH\x00R\x06holder\x12\x1b\n" +
 	"\x05alias\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x18\n" +
 	"\amethods\x18\x03 \x03(\tR\amethods\x12=\n" +
-	"\fdate_expires\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12)\n" +
-	"\x06holder\x18\x05 \x01(\v2\x11.roster.HolderRefR\x06holder\"T\n" +
+	"\fdate_expires\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpiresB\a\n" +
+	"\x05whose\"T\n" +
 	"\x13ApiKeyIssueResponse\x12\x1b\n" +
 	"\x05token\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\x12 \n" +
 	"\x03key\x18\x02 \x01(\v2\x0e.roster.ApiKeyR\x03key2\x95\x03\n" +
@@ -2284,8 +2377,8 @@ var file_app_apikey_svc_g_proto_depIdxs = []int32{
 	17, // 17: roster.ApiKeyListResponse.items:type_name -> roster.ApiKey
 	2,  // 18: roster.ApiKeyFilter.ref:type_name -> roster.ApiKeyRef
 	13, // 19: roster.ApiKeyFilter.holder:type_name -> roster.HolderRef
-	14, // 20: roster.ApiKeyIssueRequest.date_expires:type_name -> google.protobuf.Timestamp
-	13, // 21: roster.ApiKeyIssueRequest.holder:type_name -> roster.HolderRef
+	13, // 20: roster.ApiKeyIssueRequest.holder:type_name -> roster.HolderRef
+	14, // 21: roster.ApiKeyIssueRequest.date_expires:type_name -> google.protobuf.Timestamp
 	17, // 22: roster.ApiKeyIssueResponse.key:type_name -> roster.ApiKey
 	0,  // 23: roster.ApiKeyService.Add:input_type -> roster.ApiKeyAddRequest
 	1,  // 24: roster.ApiKeyService.Get:input_type -> roster.ApiKeyGetRequest
@@ -2319,6 +2412,10 @@ func file_app_apikey_svc_g_proto_init() {
 		(*apiKeyRef_Id)(nil),
 		(*apiKeyRef_Slug)(nil),
 		(*apiKeyRef_Secret)(nil),
+	}
+	file_app_apikey_svc_g_proto_msgTypes[11].OneofWrappers = []any{
+		(*apiKeyIssueRequest_HolderAlias)(nil),
+		(*apiKeyIssueRequest_Holder)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

@@ -12,6 +12,7 @@ import (
 
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/pdtest"
+	"github.com/lesomnus/z"
 
 	"github.com/lesomnus/roster/cmd"
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
@@ -102,7 +103,7 @@ func TestADeploymentNotSetUpForSomethingIsUnimplemented(t *testing.T) {
 		x.NoError(entmigrate.NewSchema(s.Control.Drv).Create(ctx))
 
 		_, err = s.Control.Ungated.ApiKey().Issue(ctx, app.ApiKeyIssueRequest_builder{
-			HolderAlias: "ops", Alias: "laptop", Methods: []string{app.MeService_Get_FullMethodName},
+			HolderAlias: z.Ptr("ops"), Alias: "laptop", Methods: []string{app.MeService_Get_FullMethodName},
 		}.Build())
 		a.Equal(codes.Unimplemented.String(), status.Code(err).String(), "a key minted for an operator of nobody's deployment: %v", err)
 

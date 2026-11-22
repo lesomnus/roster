@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"testing"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -88,7 +89,7 @@ func TestAGeneralWriteDoesNotOpenAKeysRow(t *testing.T) {
 		// And minted, held to its rule, which is the point of a verb of its
 		// own: nobody hands out what they do not hold.
 		_, err = c.Issue(as, app.ApiKeyIssueRequest_builder{
-			HolderAlias: "another", Alias: "wider", Methods: []string{"/roster.*/*"},
+			HolderAlias: z.Ptr("another"), Alias: "wider", Methods: []string{"/roster.*/*"},
 		}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
 	})

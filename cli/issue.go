@@ -196,7 +196,7 @@ func newCmdIssuePassword(c *cmd.Config) *xli.Command {
 			}
 
 			v, err := app.NewCredentialServiceClient(conn).Issue(ctx, app.CredentialIssueRequest_builder{
-				HolderAlias: alias,
+				HolderAlias: z.Ptr(alias),
 			}.Build())
 			if err != nil {
 				return err
