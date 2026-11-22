@@ -34,6 +34,33 @@ commas of its own: an LDAP suffix of more than one part is written in the flow
 form, and a value that is no suffix -- what the pairs would make of one -- is
 refused at start.
 
+## What grows, and what makes it shrink
+
+Every write is a row, and most rows stay. What makes a table shrink is one of
+three things: a window the deployment names, a sweep on a clock of roster's own,
+or a command somebody types. Each is said where it is configured; this is all of
+them in one place.
+
+| table | what makes it shrink |
+| --- | --- |
+| `audit`, the data plane's trail | a window: `audit.retain` and the blocks under `audit.by` ([The audit trail](#the-audit-trail)), and nothing else. Every row a sweep, a forget or a tenant destroyed removes **adds** a line to it, saying the row went |
+| `audit` and `access`, the control plane's | nothing: neither is swept |
+| `access`, the data plane's record of who read whose data | a window of its own, `audit.by.access`, and nothing else; `serve` says at start while none is named ([Who read whose data](#who-read-whose-data)) |
+| `session`, and `delegation` | a sweep every hour, of those past their expiry |
+| `continuation` and `link`, sign-in attempts and the links mailed | a sweep every ten minutes, of those past their expiry |
+| `hostproof`, claims of a hostname | a sweep every day, of those past their expiry |
+| `outbox` | the drain, which runs in a `serve` that holds a broker. A command at the box writes here wherever there is a broker, so a deployment that names one and runs no `serve` grows it |
+| a person's rows -- their addresses, numbers, accounts at a provider, secrets, keys, sessions, memberships and bindings | `holder.forget_after` after they are erased, or `roster forget`. Their own row stays, blank ([Destroying somebody](#destroying-somebody-which-an-erase-does-not)) |
+| a closed tenant's rows | `tenant.restore_within` after the close, or by hand. The tenant's own row stays, blank ([A tenant leaving](#a-tenant-leaving)) |
+| `consent` | `consent.keep` after the person's erase |
+
+**What is erased over the wire is kept as a row for good**, but for what those
+destroy: a binding, a membership, a role, a group, a team, a site, an identity,
+an address, a key revoked or run out. An erase stamps the row and leaves it, so
+that the trail's lines about it name something. The only deletes in roster's own
+code are in `server/forget` -- `roster forget` and the windows above that run it --
+and in the four sweeps.
+
 ## Which database
 
 Either, and the trade is size rather than capability. Everything roster generates
@@ -92,6 +119,29 @@ is. The others that make tables ask them first -- `serve`, `login provision`,
 is on, and otherwise refuse a database without them -- and every other command
 alters none.
 
+**An upgrade with the switch off** has no command of its own. Its migration is
+one start, or one `roster init`, of the new build with `ROSTER_DB_MIGRATE=true`
+and `ROSTER_CONTROL_DB_MIGRATE=true` set for that process alone; the replicas
+then start with the switch as the file has it. `init` on a deployment that has
+an operator makes the tables, and then answers `this deployment has an operator
+already` and exits 1.
+
+**`migrate: true` is for one process starting at a time.** Nothing takes a turn
+around the migration, or around what `resources` declares: of two processes
+started together on one database, one may exit -- in the database's words, or
+with a refusal about a row that is as the file declares -- and starts clean when
+it is started again, since each plane's migration is whole or not at all and
+nothing was made twice.
+
+**A migration is derived at each start, from the schema.** There is no file of
+migrations: the database is compared with the tables this build declares
+(`internal/ent/migrate`), and what differs is applied, whole or not at all, for
+each plane -- the data plane's, then the control plane's. On PostgreSQL it drops
+nothing. **On SQLite a change to a column makes the table again from the
+schema's columns**, and a column the schema does not declare goes, with what it
+held; a column of an earlier build kept on SQLite is kept only while nothing
+else of its table changes.
+
 **In `deploy/` the migration is the init container's.** `roster login provision`
 runs in the pod before `serve` and brings both planes to this build's shape
 first -- the data plane, then the control plane, each a migration of its own --
@@ -120,9 +170,9 @@ own, or the `_ccnew` a `REINDEX CONCURRENTLY` left -- is only logged.
 **It also refuses a column the schema does not declare that takes no row without
 a value** (payday#228): NOT NULL, with no default and nothing that makes one.
 Such a column is one an earlier build declared and this one does not -- a field
-taken out of the schema, or out of an overlay. A migration drops no column, and
-`serve`'s check asks only after what is missing, so the database reads as this
-build's shape; but nothing this build writes gives the column a value, so every
+taken out of the schema, or out of an overlay. A migration on PostgreSQL drops
+no column, and `serve`'s check asks only after what is missing, so the database
+reads as this build's shape; but nothing this build writes gives the column a value, so every
 row written to its table is refused from then on, in whichever handler writes
 there first. The refusal names the plane, the table and the column, and gives
 the statement that drops it -- and on PostgreSQL the one that gives it a default
@@ -131,13 +181,22 @@ if nothing reads it any more, or give it a default, then migrate again. With
 `db.migrate` off, `serve` refuses it too and does not start: unlike an invalid
 index, it is not a cost to every write but the end of every write to its table.
 A column the schema does not declare that is nullable or has a default is left
-alone, and so is a table the schema does not declare.
+alone on PostgreSQL, and on SQLite until a change to another column of its
+table makes the table again without it; a table the schema does not declare is
+left alone on both.
 
 A build started on a database a **later** one migrated meets the same check from
 the other side, and starts where what the later build added is a table, or a
 column that takes a row without a value. Where it is refused, the statement it
 prints drops what the later build wrote there. Going back is the copy taken
 before the upgrade ([below](#backing-it-up)), and not that statement.
+
+**Two builds serving one database at once**, as a rolling update has them for a
+while, was not run. From the code, the older build writes its own columns by
+name: it goes on writing where what the newer one added is a table, or a column
+that is nullable or has a default, and its writes to a table fail where the
+newer one added a NOT NULL column with no default, or a unique index. `deploy/`
+is `Recreate`, so it does not have two.
 
 **A column that comes to a table which already has rows** needs something for
 the rows already there. A field with no default is a NOT NULL column with none,
@@ -165,6 +224,15 @@ stored, exported, issued or was configured with moves the number rather than
 carrying a way forward ([CLAUDE.md](../CLAUDE.md)), and the pull request that
 moves it names the build a deployment with data migrates on first. From the
 launch on it moves only on the owner's word.
+
+What a migration here can carry is an addition: a table, a column that is
+nullable or has a default, an index over rows that do not repeat. A change to the
+schema that is anything else -- a column renamed, retyped or made NOT NULL over
+rows that hold none, a unique index over rows that may repeat -- has no step to
+run in, between the old shape and the new one, and the database keeps no record
+of which build's shape it holds. Until the first app launches such a change moves
+the epoch, as the paragraph above says; from the launch on it is the owner's to
+allow.
 
 ### Backing it up
 
@@ -3288,6 +3356,14 @@ The rest of the checklist:
   in one, so N replicas mean N times the limit. The interface is the seam if that
   matters. The account app's limits on mail are counted the same way (*The front
   door's mail*, above).
+- **Bound the connections.** `db.max_open_conns` (and `control.db.max_open_conns`)
+  is the most a process's pool opens on a plane's database; unset is no bound.
+  Each process holds, beside its pools, two connections a plane for a `postgres`
+  broker -- one listening, one publishing -- and one for the lease. So what is
+  to stay under the server's `max_connections` is the number of processes times
+  the pool, and three more for each on the data plane's database and two on the
+  control plane's, with whatever else connects to it. Past it a call is refused
+  in PostgreSQL's words (`too many clients already`).
 - **The trail's directories on one filesystem every process mounts**:
   `audit.archive`, `audit.checkpoints.dir` and any `store:` witness, as above.
 - **Seed once, out of band.** `docker/entrypoint.sh` keeps an *already seeded*

@@ -314,9 +314,11 @@ func Migrate(ctx context.Context, s *cmd.Server) error {
 // (payday#176). The refusal says what to run to make it again.
 //
 // And a column the schema does not declare that is NOT NULL with no default:
-// the migration drops no column, so one an earlier build declared stays, and
-// every row written to its table after it would be refused (payday#228). The
-// refusal names it and the statement that drops it.
+// on PostgreSQL the migration drops no column, so one an earlier build declared
+// stays -- and on SQLite it stays until a change to another column of its table
+// makes the table again without it -- and every row written to its table after
+// it would be refused (payday#228). The refusal names it and the statement that
+// drops it.
 func migrate(ctx context.Context, s *cmd.Server) error {
 	if err := rename.Tables(ctx, s.Db, s.Dialect, pd.TableRenames); err != nil {
 		return err
