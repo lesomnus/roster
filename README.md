@@ -126,6 +126,17 @@ every commit so the page cannot drift from the binary.
 
 ## What the image is made of
 
+**roster's images are builds of `main`, named by run.** A push to `main` whose
+gates all pass is pushed once, as `:edge`, `:r<run>`, `:YYMMDD` and
+`:YYMMDD-r<run>`, and nothing else is pushed: a commit whose run went red has no
+image until that run is run again and passes. A tag of this repository, `v0.1.0` among them, names a commit and no
+image -- nothing is built for it, and the registry has no tag by that name. The
+image of a commit is found from its `ci` run on `main`, as
+[deploy/README.md](deploy/README.md#using-it-as-a-base) says, and names its
+commit as the label `org.opencontainers.image.revision`, and inside it as
+`roster version --short`; one pushed before that was compiled in prints an empty
+line there.
+
 Every image `main` pushes to
 [ghcr.io/lesomnus/roster](https://github.com/lesomnus/roster/pkgs/container/roster)
 carries its SBOM beside it: a CycloneDX document attached to the digest as an OCI
