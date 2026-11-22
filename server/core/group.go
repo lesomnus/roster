@@ -406,6 +406,22 @@ func (s coreGroupExposure) Add(ctx context.Context, req *app.GroupExposureAddReq
 		return nil, err
 	}
 
+	// The group is read as a read of it would be, so that one erased is not
+	// there to be shown to anybody. The data port's wall read it on the way
+	// to the write and the operators' port, which has none, did not: the row
+	// was written onto a group that is gone, and a token carried it the day
+	// the group came back. Asked here, where both ports pass; a request that
+	// names no group is the write's to refuse, as it was.
+	if req.GetGroup() == nil {
+		return s.GroupExposureServiceServer.Add(ctx, req)
+	}
+	if _, err := s.Next().Group().Get(ctx, app.GroupGetRequest_builder{
+		Ref:    req.GetGroup(),
+		Select: app.GroupSelect_builder{}.Build(),
+	}.Build()); err != nil {
+		return nil, err
+	}
+
 	return s.GroupExposureServiceServer.Add(ctx, req)
 }
 
