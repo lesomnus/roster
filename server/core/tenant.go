@@ -508,6 +508,37 @@ func (s coreTenant) Erase(context.Context, *app.TenantRef) (*app.TenantEraseResp
 	return nil, status.Error(codes.Unimplemented, NotErased)
 }
 
+// NotErasedBuild says [NotErased] in front of a stack whose generated gate
+// would answer a tenant's `Erase` first, in its own words: *taken down by
+// whoever runs this deployment*, at `server.addr` and `control.addr`, where
+// `admin.addr` and the box said what does end a tenant. One question, one
+// answer, by whichever port it is asked.
+func NotErasedBuild() app.Builder {
+	return app.BuilderFunc(func(next app.Server) (app.Server, error) { return notErased{app.NewOverlay(next)}, nil })
+}
+
+type notErased struct{ app.Overlay }
+
+func (s notErased) Tenant() app.TenantServiceServer {
+	return notErasedTenant{s.Next().Tenant()}
+}
+
+// WithDriver is what nothing inherits; see `CLAUDE.md`, "Writing a layer".
+func (s notErased) WithDriver(drv dialect.Driver) (app.Server, error) {
+	next, err := enttx.Rebind(s.Next(), drv)
+	if err != nil {
+		return nil, err
+	}
+
+	return notErased{app.NewOverlay(next)}, nil
+}
+
+type notErasedTenant struct{ app.TenantServiceServer }
+
+func (notErasedTenant) Erase(context.Context, *app.TenantRef) (*app.TenantEraseResponse, error) {
+	return nil, status.Error(codes.Unimplemented, NotErased)
+}
+
 // Everyverb is what the first role of a tenant is called, and EveryMethod is
 // what it holds.
 //

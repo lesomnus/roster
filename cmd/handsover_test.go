@@ -145,11 +145,14 @@ func TestAPageIsToldWhatAGrantHandsOver(t *testing.T) {
 			"emailserviceattest",
 			"vouchserviceleavelink-with-leave",
 			"connectionserviceadd-and-update",
+			"a-role-bound-to-a-group",
+			"syncservicewatch",
+			"a-directorys-key",
 		} {
 			x.Contains(got, grant)
 			x.Equal([]string{"/roster.*/*"}, got[grant].GetMethods(), grant)
 		}
-		x.Len(got, 16, "and nothing that is another plane's, or somebody's own")
+		x.Len(got, 19, "and nothing that is another plane's, or somebody's own")
 
 		// A service's, for what is that service's and no more.
 		got = handedOver(t, ctx, b.Ungated, tenant, "/roster.VouchService/*")

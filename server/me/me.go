@@ -60,6 +60,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
+	"github.com/lesomnus/roster/server/pd"
 )
 
 // Held is the union `gate.Policy` enforces, asked here so that what a page
@@ -135,6 +136,15 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 	f, ok := frame.From(ctx)
 	if !ok {
 		return nil, status.Error(codes.Unauthenticated, "who is asking?")
+	}
+	if f.Actor.Domain() == pd.ApiKeyDomain {
+		// A deployment's key is answered as the key itself, and is nobody's
+		// row of a tenant until a request names one and the tenant's
+		// nominee answers for it. Said as what it is: it was answered the
+		// sentence below, written for somebody erased between two lines, to
+		// every deployment key there is.
+		return nil, status.Error(codes.NotFound,
+			"this credential is a deployment's key, and is nobody of a tenant until it names one")
 	}
 
 	v, err := s.db.Holder.Query().

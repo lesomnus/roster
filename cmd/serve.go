@@ -171,6 +171,10 @@ type Server struct {
 	// is asked again who opened it ([AskedAgain]).
 	recheck time.Duration
 
+	// owners is who answers which control-plane holder a deployment key hangs
+	// off, for this plane's rules ([keyOwners]).
+	owners *keyOwners
+
 	// stopsSeen, where it is set, is told as each listener begins its stop,
 	// with the deadline it was given, and as it has stopped. Nothing of the
 	// app sets it: a test does, so that one grace for every listener is read
@@ -653,7 +657,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// handed: a name taken is on the trail of whoever held it.
 	rules.Releasing = Releasing(client, content)
 
-	stacked, err := app.Build(walled.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin)), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin)), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild(), core.NotErasedBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -680,6 +684,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password,
 		RestoreWithin: c.Tenant.RestoreWithin,
 		recheck:       c.Stream.Recheck,
+		owners:        owners,
 		contents:      content,
 		log:           log.From(ctx),
 	}
@@ -816,6 +821,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		}
 
 		control.Keys = true
+		control.owners.control = true
 
 		s.Control = control
 		owners.db = control.Ent
