@@ -126,7 +126,10 @@ func (s coreNomination) Erase(ctx context.Context, req *app.NominationRef) (*app
 	if err := byATenant(ctx); err != nil {
 		return nil, err
 	}
-	if err := s.declaredNomination(ctx, req); err != nil {
+	switch err := s.declaredNomination(ctx, req); {
+	case status.Code(err) == codes.NotFound:
+		return s.NominationServiceServer.Erase(ctx, req)
+	case err != nil:
 		return nil, err
 	}
 

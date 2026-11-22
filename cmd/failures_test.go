@@ -339,6 +339,10 @@ func TestTheManualsTableOfFailuresIsWhatIsAnswered(t *testing.T) {
 		failureCall{"somebody out of the caller's reach in a site", 1, sited, "/roster.TenantService/Update", `{"ref":` + contoso + `,"desc":"said"}`},
 		failureCall{"somebody out of the caller's reach in a site", 1, sited, "/roster.SiteService/Add", `{"tenant":` + contoso + `,"alias":"failures-sited-site"}`},
 		failureCall{"somebody out of the caller's reach in a site", 1, sited, "/roster.GroupService/Update", `{"ref":` + failureRef(frankfurt.group) + `,"name":"named",` + stale + `}`},
+		failureCall{"somebody out of the caller's reach in a site", 1, sited, "/roster.GroupExposureService/Add", `{"group":` + failureRef(seoul.group) + `,"client":"kube"}`},
+		failureCall{"somebody out of the caller's reach in a site", 1, sited, "/roster.GroupExposureService/Erase", failureRef(pdid.New(2))},
+		failureCall{"somebody out of the caller's reach in a site", 1, sited, "/roster.SiteMembershipService/Add", `{"holder":` + failureRef(seoul.holder) + `,"site":` + failureRef(seoul.site) + `}`},
+		failureCall{"somebody out of the caller's reach in a site", 1, sited, "/roster.SiteMembershipService/Erase", failureRef(pdid.New(2))},
 	)
 	calls = append(calls, failureReads("no credential", pdid.Nil, seoul)...)
 	calls = append(calls, failureReads("a credential that is none", pdid.New(2), seoul)...)

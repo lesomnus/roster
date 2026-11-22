@@ -51,10 +51,10 @@ itself failing, and is not mended by changing the request.
 
 | the failure | the code | HTTP | what a caller does |
 | --- | --- | --- | --- |
-| nobody by that reference | `NotFound`, *Holder not found* and the like, for every read and every verb that names a row. A `List` filtered to it answers nothing, and no error | 404 | stop asking about that reference |
+| nobody by that reference | `NotFound`, *Holder not found* and the like, for every read and every verb that names a row but an erase, which is the last row. A `List` filtered to it answers nothing, and no error | 404 | stop asking about that reference |
 | somebody of another tenant | `NotFound`, in the words nobody is answered in: another tenant's row is not said to be there | 404 | as for nobody |
 | somebody erased | `NotFound`, as for nobody | 404 | as for nobody; a person erased is brought back at the box alone (`roster restore`) |
-| somebody out of the caller's reach in a site | `NotFound`, as for nobody. A verb about the whole tenant (the tenant's own, and every write of `Connection`, `Host`, `HostProof`, `MailDomain`, `Nomination`, `Site`) is `PermissionDenied`, *is about the whole tenant, and you hold it only in part of it*, whether or not the row is there; and so is `GroupService/Update`, *you hold nothing for that group*, of a group that is there and of one that is not | 404 / 403 | ask somebody who holds the method across the tenant |
+| somebody out of the caller's reach in a site | `NotFound`, as for nobody. A verb about the whole tenant (the tenant's own, and every write of `Connection`, `GroupExposure`, `Host`, `HostProof`, `MailDomain`, `Nomination`, `Site`, `SiteMembership`) is `PermissionDenied`, *is about the whole tenant, and you hold it only in part of it*, whether or not the row is there; and so is `GroupService/Update`, *you hold nothing for that group*, of a group that is there and of one that is not | 404 / 403 | ask somebody who holds the method across the tenant |
 | no credential | `Unauthenticated`, *who is asking?*, on every method of every port but the three `AuthService` answers a stranger (`SignIn`, `Offers`, `Which`) | 401 | sign in, or send the key |
 | a credential that is none: a key nobody minted, one expired or revoked, one of somebody stopped, a scheme nobody reads | `Unauthenticated`, in two sentences that do not tell these apart. A stream already open is ended with it too, when whoever opened it may not any more | 401 | throw the credential away and sign in again |
 | a method the caller lacks | `PermissionDenied`, *no role of yours allows that*, or of a key that does not list it, *this credential is not for that*. A method of the tenant's `self-service` role asked about somebody else's row is `NotFound`, as the wall answers it | 403 / 404 | ask whoever writes the roles, or use a key that lists the method |
@@ -68,21 +68,21 @@ itself failing, and is not mended by changing the request.
 | too many calls | `ResourceExhausted`, *too many calls; wait and ask again*, with a `RetryInfo` that says how long. A stream cut for falling behind is the same code | 429 | wait as long as `RetryInfo` says, then ask again; open a stream again |
 | a deadline | `DeadlineExceeded`. A call that named no deadline is given `server.timeout`, thirty seconds unsaid; a stream is given none | 504 | ask again; a write may have been made, so read first |
 | roster itself failing | `Unavailable`, `Unknown` or `Internal`, by where it was met: a store that cannot be reached, a constraint the store refused in its own words, a panic. None of the three is a refusal of the call | 503 / 500 / 500 | ask again later; tell whoever runs the deployment, with the time |
-| an `Erase` of a row that is not there (**not settled**) | `NotFound` in `Binding`, `Connection`, `Holder`, `Host`, `MailDomain`, `Nomination`, `Role`, `Site`; and `OK`, erasing nothing, in `ApiKey`, `Credential`, `Delegation`, `Email`, `Group`, `GroupExposure`, `GroupMembership`, `HostProof`, `Identity`, `Phone`, `Relation`, `SiteMembership`, `Team`, `TeamMembership`. The same of a row of another tenant and of an erased one | 404 / 200 | take either as *it is gone* |
+| an `Erase` of a row that is not there | `OK`, erasing nothing and answering that nothing was erased, in every service whose erase is served: `ApiKey`, `Binding`, `Connection`, `Credential`, `Delegation`, `Email`, `Group`, `GroupExposure`, `GroupMembership`, `Holder`, `Host`, `HostProof`, `Identity`, `MailDomain`, `Nomination`, `Phone`, `Relation`, `Role`, `Site`, `SiteMembership`, `Team`, `TeamMembership`. The same of a row of another tenant, of one erased already and of one out of the caller's reach in a site, so that nothing is told by it; a caller who lacks the method is `PermissionDenied` first, and so is somebody who holds a verb about the whole tenant only in part of it, and a row that is there is held to every rule its erase asks | 200 | take it as *it is gone*; asked again after a timeout, it is answered the same |
 
-**Two are not settled**, and are written as they are today: one failure
-answered two ways. The deployment not set up for something is `Unimplemented` from
-some verbs and `FailedPrecondition` from others. An `Erase` of a row that is
-not there is `NotFound` from eight services and success from fourteen. Each may
-change before the API is frozen; a page written today reads the code as this
-table has it, and the roadmap says when it changes.
+**One is not settled**, and is written as it is today: one failure answered
+two ways. The deployment not set up for something is `Unimplemented` from
+some verbs and `FailedPrecondition` from others. It may change before the API
+is frozen; a page written today reads the code as this table has it, and the
+roadmap says when it changes.
 
 `TestTheManualsTableOfFailuresIsWhatIsAnswered` sends each failure a test can
 make to a verb of five or six services, over gRPC and through the transcoder,
 and holds the code and the status to this table's, reading the rows from this
 page. `TestAVersionThatMovedIsAbortedInOneSentence` asks each of the seventeen
 verbs that take a version with one that has moved, and holds each to the same
-code, status and sentence.
+code, status and sentence. `TestAnEraseOfNothingIsDone` asks the erase of every
+service the row names about a row that is not there in each of the four ways.
 
 ## Where a grant reaches
 

@@ -230,10 +230,11 @@ func TestWhatGrantsNothingAnyMoreIsTakenAway(t *testing.T) {
 			binding := k.bound(t, role, park, &k.seoul)
 			k.eraseRole(t, role)
 
-			_, err := k.unbind(busanDesk, binding)
-			x.Equal(codes.NotFound, status.Code(err), "%v", err)
+			erased, err := k.unbind(busanDesk, binding)
+			x.NoError(err, "a binding out of reach is not there, and an erase of what is not there erases nothing")
+			x.False(erased)
 
-			erased, err := k.unbind(seoulDesk, binding)
+			erased, err = k.unbind(seoulDesk, binding)
 			x.NoError(err, "it names what they do not hold, and it gives nobody that any more")
 			x.True(erased)
 		}
