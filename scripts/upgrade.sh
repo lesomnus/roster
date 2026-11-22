@@ -9,11 +9,25 @@
 # rows already there, as Postgres does for any table that is not empty. Every
 # gate was green the whole time, because none of them had seen a row.
 #
-# So BEFORE makes what a deployment has: the declared rows, the Login App's
-# provision, a start. Then this puts a row into every table still empty -- the
-# shape of the data does not matter to a migration, only that there is some --
-# and NOW starts on the result twice, the way the init container and `serve` do
-# on every start.
+# So BEFORE makes what a deployment has: an operator (`init`), the declared
+# rows, the Login App's provision, a person with a password and a key, a start,
+# and the trail moved into an archive. Then this puts a row into every table
+# still empty -- the shape of the data does not matter to a migration, only that
+# there is some -- and NOW starts on the result twice, the way the init
+# container and `serve` do on every start. And then it reads back what an
+# upgrade must not lose: NOW serving, the key answers `MeService/Get` and the
+# person's password verifies, where a wrong one does not; the operator is
+# still somebody `--as` names; the person's name, a column of a table that
+# changed since OLDEST, reads back as BEFORE wrote it; and `roster trail verify
+# --full` finds the archive BEFORE wrote as the account says.
+#
+# What it does not prove: anything of PostgreSQL, which a deployment of two
+# replicas runs on -- the type of a column changed under rows, which SQLite
+# takes and PostgreSQL refuses, is not seen here; a unique index over rows
+# that repeat, since a table here holds one made-up row or a few real ones and
+# nothing repeats; a default changed, or a column renamed that nobody
+# declared, unless it is one of the few values read back; and what NOW does
+# with the old rows once it serves, beyond the calls above.
 #
 #     ./scripts/upgrade.sh BEFORE NOW
 #
@@ -65,10 +79,13 @@ die() {
 }
 
 # A deployment, as little of one as starts: both planes on SQLite, the Login App
-# with its key from `login provision`, and a tenant with a name and a
-# directory. Every listener on port 0, so nothing here collides with anything
-# on the machine. Hydra is nowhere, which nothing in a start asks about.
-mkdir -p "${work}/data" "${work}/control" "${work}/run"
+# with its key from `login provision`, a tenant with a name and a directory,
+# and an archive of the trail with its account signed and heard by the log.
+# Every listener on port 0, so nothing here collides with anything on the
+# machine. Hydra is nowhere, which nothing in a start asks about.
+mkdir -p "${work}/data" "${work}/control" "${work}/run" "${work}/archive"
+openssl genpkey -algorithm ed25519 -out "${work}/run/checkpoints.pem" 2>/dev/null \
+	|| die "openssl could not make the key the archive's account is signed with"
 pragmas='_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_txlock=immediate&_timefmt=auto'
 cat >"${work}/resources.yaml" <<EOF
 resources:
@@ -113,33 +130,80 @@ login:
   key: file:${work}/run/login-app.key
   base: https://login.example.test
   remember: 8h
+audit:
+  archive: ${work}/archive
+  checkpoints:
+    key: ${work}/run/checkpoints.pem
+    witnesses: ["log:"]
 EOF
 
 # What a deployment hands the process rather than writes in the file.
 export ROSTER_VOUCH_KEYS="one:$(head -c 32 /dev/urandom | base64)"
 
-# start runs `serve` from one binary until it is answering, and stops it. A
-# process that exits first is a start that failed, and its log says why.
-start() {
+# serving runs `serve` from one binary until it is answering, and leaves it
+# running: its process is `served`, and the address of its data plane
+# `answering`. A process that exits first is a start that failed, and its log
+# says why.
+serving() {
 	local bin="$1" log="$2"
 	"${bin}" --config "${work}/config.yaml" serve >"${log}" 2>&1 &
-	local pid=$!
-	pids+=("${pid}")
+	served=$!
+	pids+=("${served}")
 
 	local i=0
 	until grep -q 'grpc - addr' "${log}"; do
-		kill -0 "${pid}" 2>/dev/null || { cat "${log}" >&2; die "${bin} did not start"; }
+		kill -0 "${served}" 2>/dev/null || { cat "${log}" >&2; die "${bin} did not start"; }
 		i=$((i + 1))
 		[ "${i}" -lt 60 ] || { cat "${log}" >&2; die "${bin} did not answer within a minute"; }
 		sleep 1
 	done
+	answering="$(grep -o 'grpc - addr=[^ ]*' "${log}" | head -n 1)"
+	answering="${answering#grpc - addr=}"
+}
+
+stop() {
+	kill "${served}" 2>/dev/null || true
+	wait "${served}" 2>/dev/null || true
+}
+
+# start runs `serve` from one binary until it is answering, and stops it.
+start() {
+	local bin="$1" log="$2"
+	serving "${bin}" "${log}"
 
 	# And it is still up a moment later, past whatever runs once it is.
 	sleep 2
-	kill -0 "${pid}" 2>/dev/null || { cat "${log}" >&2; die "${bin} stopped after it started"; }
-	kill "${pid}" 2>/dev/null || true
-	wait "${pid}" 2>/dev/null || true
+	kill -0 "${served}" 2>/dev/null || { cat "${log}" >&2; die "${bin} stopped after it started"; }
+	stop
 }
+
+# at runs one command of a build at the box, as the operator `init` made.
+at() {
+	local bin="$1"
+	shift
+	"${bin}" --config "${work}/config.yaml" --as admin "$@"
+}
+
+# over runs one command of a build over the wire, to the process `serving`
+# started, with the key BEFORE minted.
+over() {
+	local bin="$1"
+	shift
+	cat >"${work}/client.yaml" <<EOF
+client:
+  addr: "${answering}"
+  insecure: true
+  auth:
+    scheme: bearer
+    credential_file: ${work}/run/kept.key
+EOF
+	"${bin}" --config "${work}/client.yaml" "$@"
+}
+
+# What BEFORE writes and NOW reads back. The password is chosen here rather
+# than generated, so that NOW can be asked it.
+password='correct horse battery upgraded'
+name='Kim, kept through an upgrade'
 
 provision() {
 	local bin="$1" log="$2"
@@ -148,11 +212,39 @@ provision() {
 }
 
 echo "== ${before} makes a deployment"
+# The operator first, as `docs/operating.md` puts a deployment up: OLDEST's
+# `init` after `login provision` is refused, `Role already exists`. Its
+# password is this one's, read from stdin, since what `init` generates is
+# printed in words that changed between builds.
+printf '%s' "${password}" | "${before}/roster" --config "${work}/config.yaml" init --password-stdin >"${work}/old-init.log" 2>&1 \
+	|| { cat "${work}/old-init.log" >&2; die "${before} init failed"; }
+
 # A first start applies the declared rows, which is what gives `provision` a
 # tenant to provision in; then a start the way every one after it goes.
 start "${before}/roster" "${work}/old-0.log"
 provision "${before}/roster" "${work}/old-1.log"
+
+# A person with a password and a name, and a key: each by BEFORE's own
+# commands, all of which OLDEST has. The key is the tenant administrator's,
+# who holds what it allows -- a key hands out nothing its holder does not --
+# and asks after a password as a front door does.
+at "${before}/roster" holder add @acme/kim "{\"name\":\"${name}\"}" >"${work}/old-kim.log" 2>&1 \
+	|| { cat "${work}/old-kim.log" >&2; die "${before} could not add a person"; }
+printf '%s' "${password}" | at "${before}/roster" vouch set --password-stdin @acme/kim >>"${work}/old-kim.log" 2>&1 \
+	|| { cat "${work}/old-kim.log" >&2; die "${before} could not set a password"; }
+at "${before}/roster" key add --tenant acme --holder admin --name kept \
+	--allow /roster.MeService/Get,/roster.VouchService/Verify 2>"${work}/old-key.log" | tr -d '\n' >"${work}/run/kept.key" \
+	|| { cat "${work}/old-key.log" >&2; die "${before} could not mint a key"; }
+[ -s "${work}/run/kept.key" ] || { cat "${work}/old-key.log" >&2; die "${before} printed no key"; }
+
 start "${before}/roster" "${work}/old-2.log"
+
+# And the trail, written so far, into the archive: what NOW is to find as the
+# account BEFORE kept of it says. Up to a second ago, since `--older-than`
+# refuses a window of nothing.
+sleep 1
+at "${before}/roster" trail prune --before "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"${work}/old-prune.log" 2>&1 \
+	|| { cat "${work}/old-prune.log" >&2; die "${before} could not move the trail into its archive"; }
 
 echo "== and a row in every table it left empty"
 python3 - "${work}/data/roster.db" "${work}/control/roster-control.db" <<'PY'
@@ -235,5 +327,36 @@ for n in 1 2; do
 	start "${now}/roster" "${work}/new-${n}-serve.log"
 	echo "   start ${n}: ok"
 done
+
+echo "== and reads back what ${before} wrote"
+serving "${now}/roster" "${work}/new-3-serve.log"
+over "${now}/roster" me get >"${work}/new-me.log" 2>&1 \
+	|| { cat "${work}/new-me.log" >&2; die "the key ${before} minted is not answered by MeService/Get"; }
+grep -q '^alias[[:space:]]*admin$' "${work}/new-me.log" \
+	|| { cat "${work}/new-me.log" >&2; die "the key ${before} minted is answered as somebody else"; }
+echo "   the key: answered"
+printf '%s' "${password}" | over "${now}/roster" vouch verify --secret-stdin @acme/kim >"${work}/new-verify.log" 2>&1 \
+	|| { cat "${work}/new-verify.log" >&2; die "the password ${before} set does not verify"; }
+if printf '%s' "not ${password}" | over "${now}/roster" vouch verify --secret-stdin @acme/kim >>"${work}/new-verify.log" 2>&1; then
+	die "a password ${before} never set verifies"
+fi
+echo "   the password: verifies, and another does not"
+stop
+
+at "${now}/roster" key list >"${work}/new-operator.log" 2>&1 \
+	|| { cat "${work}/new-operator.log" >&2; die "the operator ${before} made is not somebody --as names"; }
+echo "   the operator: there"
+
+# A column the person's table had when BEFORE wrote it, read back by NOW. The
+# table took three columns between OLDEST and this, which on SQLite may be a
+# table made again and its rows copied.
+kept="$(at "${now}/roster" holder get -o json @acme/kim 2>"${work}/new-kim.log" | jq -r .name)" \
+	|| { cat "${work}/new-kim.log" >&2; die "${now} cannot read the person ${before} made"; }
+[ "${kept}" = "${name}" ] || die "the person's name was \"${name}\" and reads back \"${kept}\""
+echo "   the person's name: as it was written"
+
+at "${now}/roster" trail verify --full >"${work}/new-trail.log" 2>&1 \
+	|| { cat "${work}/new-trail.log" >&2; die "the archive ${before} wrote is not what its account says"; }
+echo "   the trail's archive: as its account says"
 
 echo "upgrade: ok, from ${before} to ${now}"
