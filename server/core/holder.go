@@ -2,9 +2,11 @@ package core
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"time"
 
+	"github.com/lesomnus/otx/log"
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -626,7 +628,10 @@ func (s coreHolder) Search(ctx context.Context, req *app.HolderSearchRequest) (*
 				return nil, err
 			}
 			if last, err = sqlpage.Encode(v.GetDateCreated().AsTime(), id.Uuid()); err != nil {
-				return nil, status.Errorf(codes.Internal, "next: %s", err)
+				// The log's, and not the caller's: nothing they sent is wrong.
+				log.From(ctx).ErrorContext(ctx, "holder: could not say where the next page begins", slog.Any("err", err))
+
+				return nil, status.Error(codes.Internal, "could not say where the next page begins")
 			}
 		}
 

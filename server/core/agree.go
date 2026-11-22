@@ -938,7 +938,7 @@ func (s Core) roleOf(ctx context.Context, ref *app.RoleRef) (pdid.Id, error) {
 		return pdid.Nil, nil
 	}
 	if b := ref.GetId(); len(b) > 0 {
-		return pdid.From(b)
+		return sentId(b)
 	}
 
 	v, err := s.Next().Role().Get(ctx, app.RoleGetRequest_builder{

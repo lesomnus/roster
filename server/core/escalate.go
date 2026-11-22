@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -362,7 +363,7 @@ func (s Core) mayWriteAWayIn(ctx context.Context, field string, ref *app.HolderR
 func (s Core) holderOf(ctx context.Context, ref *app.HolderRef) (pdid.Id, error) {
 	if b := ref.GetId(); len(b) > 0 {
 		if _, framed := frame.From(ctx); !framed {
-			return pdid.From(b)
+			return sentId(b)
 		}
 	}
 
@@ -377,12 +378,32 @@ func (s Core) holderOf(ctx context.Context, ref *app.HolderRef) (pdid.Id, error)
 	return pdid.From(v.GetId())
 }
 
+// sentId is the identifier a caller sent in a reference, read where it is
+// used as it is, without a read of the row it names.
+//
+// One that does not read is the caller's mistake and is said as one, in the
+// words a generated read says it in: as the error [pdid.From] returns, which
+// carries no status, it was answered `Unknown`, a server's fault to every
+// monitor and every page.
+func sentId(b []byte) (pdid.Id, error) {
+	if len(b) != len(pdid.Nil) {
+		return pdid.Nil, pderr.Invalidf("id", "got %d bytes, want %d", len(b), len(pdid.Nil))
+	}
+
+	k, err := pdid.From(b)
+	if err != nil {
+		return pdid.Nil, pderr.Invalidf("id", "%s", err)
+	}
+
+	return k, nil
+}
+
 // groupOf is the identifier a `GroupRef` names, read when it named something
 // else -- the same shape as [Core.teamOf], and read through `Next()` so that a
 // caller who cannot see the group cannot join it either.
 func (s Core) groupOf(ctx context.Context, ref *app.GroupRef) (pdid.Id, error) {
 	if b := ref.GetId(); len(b) > 0 {
-		return pdid.From(b)
+		return sentId(b)
 	}
 
 	v, err := s.Next().Group().Get(ctx, app.GroupGetRequest_builder{Ref: ref}.Build())

@@ -47,9 +47,11 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
+	"github.com/lesomnus/otx/log"
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -232,7 +234,8 @@ func Store(deployment app.Server, tenant app.Server) auth.TokenStore {
 			// The store could not be reached, which is not the caller's fault:
 			// told unauthenticated, a service throws away a perfectly good key
 			// and its operator goes looking for a problem that is not there.
-			return auth.Identity{}, fmt.Errorf("%w: %w", auth.ErrUnavailable, err)
+			//
+			return auth.Identity{}, unasked(ctx, err)
 		}
 
 		id := auth.Identity{
@@ -280,6 +283,34 @@ func Store(deployment app.Server, tenant app.Server) auth.TokenStore {
 
 		return id, nil
 	})
+}
+
+// unasked is the answer of a handler whose store could not be asked:
+// [auth.ErrUnavailable], which the door answers `Unavailable`, in its own
+// words.
+//
+// Not `Unauthenticated`, which tells a client to throw away a credential that
+// may be perfectly good and fetch another from what is already having a bad
+// day. And not the store's words, which the door puts in the message whole
+// and which are a stranger's to read without holding anything: on PostgreSQL
+// they name the database's user, its name and its address. What the store said
+// is the log's, for the one who can mend it.
+//
+// One function for every road a credential is read by -- a key, a
+// delegation, a key narrowed by `roster-at` -- so that no road says it
+// differently.
+func unasked(ctx context.Context, err error) error {
+	log.From(ctx).ErrorContext(ctx, "keys: could not ask whether a credential is good", slog.Any("err", err))
+
+	return auth.ErrUnavailable
+}
+
+// unaskable is whether `err` is a store that could not be asked, and not a
+// refusal: it carries no status, where every refusal of a read does.
+func unaskable(err error) bool {
+	_, ok := status.FromError(err)
+
+	return err != nil && !ok
 }
 
 // lookup finds the row a token stands for, or says there is none.

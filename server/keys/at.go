@@ -285,11 +285,19 @@ func At(deployment app.Server, tenant app.Server) auth.Handler {
 			return no()
 		}
 		k, err := findKey(ctx, deployment, token)
+		if err != nil && status.Code(err) != codes.NotFound {
+			// The store could not be asked, which is not the credential
+			// failing; [Store] answers it the same way. It was this refusal.
+			return auth.Identity{}, unasked(ctx, err)
+		}
 		if err != nil || k.Holder == nil {
 			return no()
 		}
 
 		h, err := Nominated(ctx, tenant, at, k.Holder.GetId())
+		if unaskable(err) {
+			return auth.Identity{}, unasked(ctx, err)
+		}
 		if err != nil || h == nil {
 			// A name nothing claims, or a tenant that nominated nobody for this
 			// key. Refused rather than answered as the key, because answering
