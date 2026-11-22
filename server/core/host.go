@@ -159,12 +159,12 @@ func (s coreHost) ownName(ctx context.Context, at *app.TenantRef) (bool, error) 
 // same reason.
 func (s coreHost) proved(ctx context.Context, req *app.HostAddRequest) (*app.Host, error) {
 	if s.proving == nil {
-		return nil, status.Error(codes.FailedPrecondition,
+		return nil, status.Error(codes.Unimplemented,
 			"this deployment cannot check whether a name is yours, so a tenant cannot claim one here; "+
 				"a roster operator writes the row (host.resolver, and docs/operating.md)")
 	}
 	if s.rules.Releasing == nil {
-		return nil, status.Error(codes.FailedPrecondition,
+		return nil, status.Error(codes.Unimplemented,
 			"this server cannot let go of a name another tenant holds, so it will not take one")
 	}
 	if s.tx != nil {
@@ -177,7 +177,7 @@ func (s coreHost) proved(ctx context.Context, req *app.HostAddRequest) (*app.Hos
 				"which this server does only for a call that asks for that alone -- send the Add by itself")
 	}
 	if s.drv == nil {
-		return nil, status.Error(codes.FailedPrecondition,
+		return nil, status.Error(codes.Unimplemented,
 			"this server cannot open a transaction, so it will not take a name in three writes")
 	}
 

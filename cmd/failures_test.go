@@ -30,6 +30,7 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/prove"
 )
 
 // failureRow is one row of the manual's table of failures: the codes it says,
@@ -381,8 +382,6 @@ func TestTheManualsTableOfFailuresIsWhatIsAnswered(t *testing.T) {
 		failureCall{"a method nobody serves", 0, admin, "/roster.HolderService/Nope", `{}`},
 		failureCall{"a method nobody serves", 0, admin, "/roster.NopeService/Get", `{}`},
 		failureCall{"a method nobody serves", 0, pdid.Nil, "/roster.HolderService/Nope", `{}`},
-
-		failureCall{"the deployment is not set up for it", 1, admin, "/roster.HostService/Add", `{"tenant":` + contoso + `,"name":"failures.example.com"}`},
 	)
 
 	made := map[string]bool{}
@@ -396,17 +395,24 @@ func TestTheManualsTableOfFailuresIsWhatIsAnswered(t *testing.T) {
 	}
 
 	// A deployment that holds no key to wrap a seed with cannot hold a second
-	// factor, and says so as `Unimplemented`.
+	// factor, and one that cannot ask DNS cannot check a name is a tenant's;
+	// each says so as `Unimplemented`. (A name claimed where DNS is asked, with
+	// no claim made first, is a rule's refusal about a row, and not this row.)
 	{
-		b, ctx := build(t, withoutKeyring)
+		b, ctx := build(t, withoutKeyring, func(c *cmd.Config) { c.Host.Resolver = prove.None })
 		at := failureServe(t, b, cmd.Config{})
 		admin := b.holder(t, ctx, b.Contoso, "failures-admin")
 		b.mayAnything(admin, b.Contoso)
 
-		c := failureCall{"the deployment is not set up for it", 0, admin, "/roster.CredentialService/Enrol", `{"ref":` + failureRef(admin) + `,"kind":"totp","name":"phone"}`}
-		row := failureRowStarting(t, rows, c.row)
-		x.Equal(row.codes[c.nth].String(), at.code(t, c).String(), "%s, %s", row.failure, c.method)
-		x.Equal(row.statuses[c.nth], at.status(t, c), "%s, %s over HTTP", row.failure, c.method)
+		for _, c := range []failureCall{
+			{"the deployment is not set up for it", 0, admin, "/roster.CredentialService/Enrol", `{"ref":` + failureRef(admin) + `,"kind":"totp","name":"phone"}`},
+			{"the deployment is not set up for it", 0, admin, "/roster.HostService/Add", `{"tenant":` + failureRef(b.Contoso) + `,"name":"failures.example.com"}`},
+		} {
+			row := failureRowStarting(t, rows, c.row)
+			made[row.failure] = true
+			x.Equal(row.codes[c.nth].String(), at.code(t, c).String(), "%s, %s", row.failure, c.method)
+			x.Equal(row.statuses[c.nth], at.status(t, c), "%s, %s over HTTP", row.failure, c.method)
+		}
 	}
 
 	// An `Erase` of a row that is not there, of every service whose `Erase`

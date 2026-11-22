@@ -257,7 +257,7 @@ func TestADeploymentThatCannotAskRefusesAClaim(t *testing.T) {
 	claiming(t, b, b.ContosoUser, b.Contoso, name)
 
 	_, err := adding(t, b, b.ContosoUser, b.Contoso, name)
-	x.Equal(codes.FailedPrecondition, status.Code(err))
+	x.Equal(codes.Unimplemented, status.Code(err), "what this deployment was not set up for")
 	x.ErrorContains(err, "host.resolver")
 }
 

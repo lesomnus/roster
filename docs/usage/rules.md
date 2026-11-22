@@ -64,25 +64,21 @@ itself failing, and is not mended by changing the request.
 | a version that moved, or a race roster lost to another write | `Aborted`. A version that moved is *date_updated: it has changed since the version you sent; read it again and send the write again*, from every verb that takes one; the version is `date_updated`, as the read answered it. A race roster lost is *… ask again*: a role's methods changed each time `Widen` or `Narrow` read them, or a tenant's `group-manager` role was being made by another call | 409 | read the row again and send the write again with its `date_updated`; a write that sent none, ask again |
 | a general write | `Unimplemented`, *is not served; it is how the servers write, not how a caller asks*: every `Patch` and `Apply`, and `CredentialService`'s reads. It is decided after the gate, so a caller who lacks the method is `PermissionDenied` first | 501 / 403 | use the entity's own verb (`Update`, `Widen`, `Realias`, …), where it has one |
 | a method nobody serves | `Unimplemented`, gRPC's own *unknown method* or *unknown service*, before anybody is asked who they are. Over HTTP it is a 404 as plain text, not the error's JSON | 404 | the server is older than the client, or the name is wrong |
-| the deployment is not set up for it (**not settled**) | `Unimplemented` (*this deployment holds no key to wrap a seed with*, *nobody leaves by a link here*, and others) or `FailedPrecondition` (*this deployment cannot check whether a name is yours*, and others), by the verb | 501 / 400 | do not offer it; whoever runs the deployment turns it on |
+| the deployment is not set up for it | `Unimplemented`, from every verb, where what is missing is what the deployment was set up with -- a key, a resolver, a listener, a setting, an owner -- and not a row's state: *this deployment holds no key to wrap a seed with*, *nobody leaves by a link here*, *this deployment cannot check whether a name is yours*, *this deployment has no owner*, and others | 501 | do not offer it; whoever runs the deployment turns it on |
 | too many calls | `ResourceExhausted`, *too many calls; wait and ask again*, with a `RetryInfo` that says how long. A stream cut for falling behind is the same code | 429 | wait as long as `RetryInfo` says, then ask again; open a stream again |
 | a deadline | `DeadlineExceeded`. A call that named no deadline is given `server.timeout`, thirty seconds unsaid; a stream is given none | 504 | ask again; a write may have been made, so read first |
 | roster itself failing | `Unavailable`, `Unknown` or `Internal`, by where it was met: a store that cannot be reached, a constraint the store refused in its own words, a panic. None of the three is a refusal of the call | 503 / 500 / 500 | ask again later; tell whoever runs the deployment, with the time |
 | an `Erase` of a row that is not there | `OK`, erasing nothing and answering that nothing was erased, in every service whose erase is served: `ApiKey`, `Binding`, `Connection`, `Credential`, `Delegation`, `Email`, `Group`, `GroupExposure`, `GroupMembership`, `Holder`, `Host`, `HostProof`, `Identity`, `MailDomain`, `Nomination`, `Phone`, `Relation`, `Role`, `Site`, `SiteMembership`, `Team`, `TeamMembership`. The same of a row of another tenant, of one erased already and of one out of the caller's reach in a site, so that nothing is told by it; a caller who lacks the method is `PermissionDenied` first, and so is somebody who holds a verb about the whole tenant only in part of it, and a row that is there is held to every rule its erase asks | 200 | take it as *it is gone*; asked again after a timeout, it is answered the same |
-
-**One is not settled**, and is written as it is today: one failure answered
-two ways. The deployment not set up for something is `Unimplemented` from
-some verbs and `FailedPrecondition` from others. It may change before the API
-is frozen; a page written today reads the code as this table has it, and the
-roadmap says when it changes.
 
 `TestTheManualsTableOfFailuresIsWhatIsAnswered` sends each failure a test can
 make to a verb of five or six services, over gRPC and through the transcoder,
 and holds the code and the status to this table's, reading the rows from this
 page. `TestAVersionThatMovedIsAbortedInOneSentence` asks each of the seventeen
 verbs that take a version with one that has moved, and holds each to the same
-code, status and sentence. `TestAnEraseOfNothingIsDone` asks the erase of every
-service the row names about a row that is not there in each of the four ways.
+code, status and sentence. `TestADeploymentNotSetUpForSomethingIsUnimplemented`
+asks the verbs that answered a deployment not set up `FailedPrecondition`.
+`TestAnEraseOfNothingIsDone` asks the erase of every service the row names
+about a row that is not there, in each of the four ways.
 
 ## Where a grant reaches
 

@@ -218,7 +218,7 @@ func TestAnAddressDoesNotMoveWhereItsWritesCannotBeOne(t *testing.T) {
 		VouchedBy: app.IdentityRef_builder{Id: who.GetId()}.Build(),
 		Verified:  true,
 	}.Build())
-	x.Equal(codes.FailedPrecondition, status.Code(err), "%v", err)
+	x.Equal(codes.Unimplemented, status.Code(err), "a server not set up to make the writes one: %v", err)
 
 	v, err := b.Ungated.Email().Get(ctx, app.EmailGetRequest_builder{
 		Ref:    app.EmailRef_builder{At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: z.Ptr(theirs)}.Build()}.Build(),

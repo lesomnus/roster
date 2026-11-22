@@ -28,7 +28,7 @@ import (
 func (s Core) atomically(ctx context.Context, what string, fn func(next app.Server) error) error {
 	if s.drv == nil {
 		if s.tx == nil {
-			return status.Errorf(codes.FailedPrecondition, "this server cannot open a transaction, so it will not %s", what)
+			return status.Errorf(codes.Unimplemented, "this server cannot open a transaction, so it will not %s", what)
 		}
 
 		return fn(s.Next())
