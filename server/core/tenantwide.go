@@ -194,6 +194,9 @@ func (s coreSite) Erase(ctx context.Context, req *app.SiteRef) (*app.SiteEraseRe
 	}
 
 	k, err := s.siteOf(ctx, req)
+	if status.Code(err) == codes.NotFound {
+		return s.SiteServiceServer.Erase(ctx, req)
+	}
 	if err != nil {
 		return nil, err
 	}

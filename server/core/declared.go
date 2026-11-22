@@ -185,6 +185,13 @@ func (s coreNomination) declaredNomination(ctx context.Context, ref *app.Nominat
 // Erase, for every kind a deployment declares: refused on a declared row, as
 // every other write to one is. See the top of this file. A tenant's is not
 // here: no tenant is erased, declared or not ([coreTenant.Erase]).
+//
+// A row that is not there to the caller -- nobody by that reference, another
+// tenant's, one erased already, one out of their reach -- is erased as the
+// generated `Erase` erases it: nothing, and `OK`. It answered `NotFound` here
+// and `OK` from the services with no rule about their erase, and an erase is
+// asked again after a timeout by every client: the second asking was a
+// failure. The same of every erase in this layer that reads its row first.
 
 func (s coreConnection) Erase(ctx context.Context, req *app.ConnectionRef) (*app.ConnectionEraseResponse, error) {
 	if err := s.acrossTheTenant(ctx, app.ConnectionService_Erase_FullMethodName); err != nil {
@@ -193,6 +200,9 @@ func (s coreConnection) Erase(ctx context.Context, req *app.ConnectionRef) (*app
 	got, err := s.ConnectionServiceServer.Get(ctx, app.ConnectionGetRequest_builder{
 		Ref: req, Select: app.ConnectionSelect_builder{Labels: z.Ptr(true)}.Build(),
 	}.Build())
+	if status.Code(err) == codes.NotFound {
+		return s.ConnectionServiceServer.Erase(ctx, req)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -210,6 +220,9 @@ func (s coreHost) Erase(ctx context.Context, req *app.HostRef) (*app.HostEraseRe
 	got, err := s.HostServiceServer.Get(ctx, app.HostGetRequest_builder{
 		Ref: req, Select: app.HostSelect_builder{Labels: z.Ptr(true)}.Build(),
 	}.Build())
+	if status.Code(err) == codes.NotFound {
+		return s.HostServiceServer.Erase(ctx, req)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -227,6 +240,9 @@ func (s coreMailDomain) Erase(ctx context.Context, req *app.MailDomainRef) (*app
 	got, err := s.MailDomainServiceServer.Get(ctx, app.MailDomainGetRequest_builder{
 		Ref: req, Select: app.MailDomainSelect_builder{Labels: z.Ptr(true)}.Build(),
 	}.Build())
+	if status.Code(err) == codes.NotFound {
+		return s.MailDomainServiceServer.Erase(ctx, req)
+	}
 	if err != nil {
 		return nil, err
 	}

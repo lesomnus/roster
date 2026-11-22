@@ -121,6 +121,11 @@ func (s coreBinding) Erase(ctx context.Context, req *app.BindingRef) (*app.Bindi
 			}.Build(),
 		}.Build(),
 	}.Build())
+	if status.Code(err) == codes.NotFound {
+		// Not there to this caller, which the generated `Erase` answers:
+		// nothing erased (`declared.go`, above the erases there).
+		return s.BindingServiceServer.Erase(ctx, req)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -169,6 +174,9 @@ func (s coreRole) Erase(ctx context.Context, req *app.RoleRef) (*app.RoleEraseRe
 			Site:   app.SiteSelect_builder{}.Build(),
 		}.Build(),
 	}.Build())
+	if status.Code(err) == codes.NotFound {
+		return s.RoleServiceServer.Erase(ctx, req)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +273,10 @@ func (s coreHolder) Erase(ctx context.Context, req *app.HolderRef) (*app.HolderE
 	if err := s.erasesAcrossTheTenant(ctx, req); err != nil {
 		return nil, err
 	}
-	if err := s.declaredHolder(ctx, req); err != nil {
+	switch err := s.declaredHolder(ctx, req); {
+	case status.Code(err) == codes.NotFound:
+		return s.HolderServiceServer.Erase(ctx, req)
+	case err != nil:
 		return nil, err
 	}
 

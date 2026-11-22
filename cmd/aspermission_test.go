@@ -407,9 +407,11 @@ func TestARoleHeldThroughATeamIsStillHeld(t *testing.T) {
 		conn := served(t, b.Server)
 		stranger := app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "stranger").Bytes()}.Build()
 
-		// Somebody in no site of his is not there for him.
-		_, err := app.NewHolderServiceClient(conn).Erase(asOverTheWire(ctx, boss), stranger)
-		x.Equal(codes.NotFound, status.Code(err), "%v", err)
+		// Somebody in no site of his is not there for him, and an erase of
+		// somebody not there erases nothing.
+		gone, err := app.NewHolderServiceClient(conn).Erase(asOverTheWire(ctx, boss), stranger)
+		x.NoError(err)
+		x.False(gone.GetErased(), "somebody out of his reach was erased")
 
 		// And somebody of his team's site is seen, and is not his to erase.
 		b.joins(t, ctx, mustId(t, stranger.GetId()), seoul)
