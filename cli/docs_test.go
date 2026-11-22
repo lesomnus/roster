@@ -715,6 +715,39 @@ func pinSources(t *testing.T, root string) []string {
 	return out
 }
 
+// TestGoIsOneVersionWhereverItIsNamed: the tests run on the Go `go.mod` names,
+// to the patch (`toolchain`), and the image is compiled by the Go a
+// `Dockerfile` names. `golang:1.27` is the newest 1.27 of the day it is
+// built, so the binary pushed could be compiled by a Go no test ran on. Every
+// `golang:` image a `Dockerfile` names is `go.mod`'s toolchain, to the patch.
+func TestGoIsOneVersionWhereverItIsNamed(t *testing.T) {
+	x := require.New(t)
+	root := repoRoot(t)
+
+	mod, err := os.ReadFile(filepath.Join(root, "go.mod"))
+	x.NoError(err)
+	m := regexp.MustCompile(`(?m)^toolchain go(\d+\.\d+\.\d+)\s*$`).FindSubmatch(mod)
+	x.NotNil(m, "go.mod names no toolchain to the patch")
+	toolchain := string(m[1])
+
+	images := regexp.MustCompile(`(?m)^FROM\s+(?:--\S+\s+)*golang:([^\s@]+)`)
+	found := 0
+	for _, f := range pinSources(t, root) {
+		if !strings.HasPrefix(filepath.Base(f), "Dockerfile") {
+			continue
+		}
+		src, err := os.ReadFile(filepath.Join(root, f))
+		x.NoError(err)
+
+		for _, m := range images.FindAllSubmatch(src, -1) {
+			found++
+			tag, _, _ := strings.Cut(string(m[1]), "-")
+			x.Equal(toolchain, tag, "%s compiles with golang:%s and go.mod's toolchain is go%s", f, m[1], toolchain)
+		}
+	}
+	x.NotZero(found, "no Dockerfile names a golang image, which is this test reading nothing")
+}
+
 // TestNodeIsOneVersionWhereverItIsNamed: the pages are built by the Node the
 // `Dockerfile` names and checked by the Node each workflow sets up, and it was
 // written four times with nothing to hold them alike. Every one is the same.
