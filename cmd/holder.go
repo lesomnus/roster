@@ -515,10 +515,23 @@ func KeyPlane(ctx context.Context, s *Server, k pdid.Id) (*Server, error) {
 //
 // A pointer filled in after the fact because the data plane's stack is built
 // before the control plane that answers it (`build`). Unfilled is a deployment
-// with no control plane, where there are no deployment keys to ask about.
-type keyOwners struct{ db *ent.Client }
+// with no control plane, where there are no deployment keys to ask about -- or
+// the control plane's own stack, which has none above it: a nomination is a
+// row of the plane a deployment key calls into, and is read there.
+type keyOwners struct {
+	db *ent.Client
+
+	// control is whether this is the control plane's own stack.
+	control bool
+}
 
 func (o *keyOwners) of(ctx context.Context, k pdid.Id) (pdid.Id, error) {
+	if o.db == nil && o.control {
+		// Said at `control.addr`, where the sentence below was not so: this
+		// deployment has a control plane, and it is the one being asked.
+		return pdid.Nil, status.Error(codes.Unimplemented,
+			"a nomination names who a deployment key is answered as in a tenant, so it is read on the data plane, where the key calls")
+	}
 	if o.db == nil {
 		return pdid.Nil, status.Error(codes.Unimplemented, "this deployment has no control plane, so no deployment keys")
 	}

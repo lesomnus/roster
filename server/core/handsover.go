@@ -196,6 +196,21 @@ var handsOver = []handedOver{
 			"that, and all of it",
 	},
 	{
+		// Putting somebody in a group asks whether the one doing it holds
+		// what the group hands out, and a group's manager is in it and holds
+		// it (`agree.go`, `mayJoin`): so whoever binds a role to a group has
+		// chosen its manager as who gives it out. The heading is about the
+		// binding; the verb it hands over by is this one.
+		grant:   "a-role-bound-to-a-group",
+		methods: []string{app.GroupMembershipService_Add_FullMethodName},
+		readsAs: "may put people in groups",
+		tenant: "the role bound to a group of the tenant, handed to whoever it puts in the group, by whoever " +
+			"holds that role -- which a group's manager does, being in it",
+		site: "the role bound to a group of that site, handed to whoever it puts in the group, by whoever " +
+			"holds that role -- which a group's manager does, being in it",
+		deployment: "the role bound to a group of any tenant, handed to whoever it puts in the group",
+	},
+	{
 		// The tenant's as a whole (`group.go`).
 		grant:      "groupexposureserviceadd",
 		methods:    []string{app.GroupExposureService_Add_FullMethodName},
@@ -279,6 +294,20 @@ var handsOver = []handedOver{
 			"is signed in",
 	},
 	{
+		// The four facts and no row (`sync.proto`), of everybody the wall
+		// shows its caller; and a stream that carries no field the schema
+		// calls somebody's leaves no row on the access record.
+		grant:   "syncservicewatch",
+		methods: []string{app.SyncService_Watch_FullMethodName},
+		readsAs: "may hear when a sign-in stops being good",
+		tenant: "the identifier, the tenant and four moments -- suspended, erased, signed out everywhere, their " +
+			"tenant closed -- of everybody of the tenant, and no row of the access record is written for it",
+		site: "the identifier, the tenant and four moments -- suspended, erased, signed out everywhere, their " +
+			"tenant closed -- of everybody of that site, and no row of the access record is written for it",
+		deployment: "the identifier, the tenant and four moments -- suspended, erased, signed out everywhere, " +
+			"their tenant closed -- of everybody of every tenant, and no row of the access record is written for it",
+	},
+	{
 		// `mayGrant` reads what the caller's **holder** is bound, and not the
 		// list of the credential that asks: it is how a terminal is signed in
 		// (`account`, the device grant). Said of the tenant, where a key is
@@ -289,6 +318,22 @@ var handsOver = []handedOver{
 		readsAs: "on a key, one method",
 		tenant: "listed on a key or a delegation, everything whoever it is for holds across the tenant: the key " +
 			"it mints lists anything they are bound, and the list it was itself minted with is not asked",
+	},
+	{
+		// The directory is whoever holds its verbs (`directory.go`): nothing
+		// ties them to the key `roster scim provision` mints. A person is no
+		// site's, so making one is the tenant's as a whole.
+		grant: "a-directorys-key",
+		methods: []string{
+			app.HolderService_Provision_FullMethodName,
+			app.HolderService_Deactivate_FullMethodName,
+			app.HolderService_Tell_FullMethodName,
+		},
+		readsAs: "a sync job",
+		tenant: "people made in the tenant, and whoever signs in through its connection suspended -- the " +
+			"tenant's last administrator among them",
+		deployment: "people made in any tenant, and whoever signs in through the connection that tenant " +
+			"provisions through suspended -- its last administrator among them",
 	},
 	{
 		// The one of what is somebody's own that is worth knowing (`own.go`).

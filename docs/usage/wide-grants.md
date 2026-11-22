@@ -33,6 +33,7 @@ writing a role whose methods end in `*`.
 | [`VouchService/LeaveLink` with `Leave`](#vouchserviceleavelink-with-leave) | *may mail a link that deletes an account* | anybody's account, deleted |
 | [`AuditService`](#auditservice) | *may read the audit log* | what every write said, of every row |
 | [`HolderService/SignsIn`](#holderservicesignsin) | *may see how somebody signs in* | everybody's keys and sessions, by name |
+| [`SyncService/Watch`](#syncservicewatch) | *may hear when a sign-in stops being good* | when everybody in sight is suspended, erased, signed out or closed, unrecorded |
 | [A deployment key](#a-deployment-key) | a key for one app | its list, in every tenant |
 | [A key that mints keys](#a-key-that-mints-keys) | a key that lists one method | everything its holder holds |
 | [A directory's key](#a-directorys-key) | a sync job | makes people, writes anybody's profile, reads everybody's addresses and accounts, and suspends the last administrator |
@@ -314,6 +315,17 @@ tenant, it is what turns `ApiKeyService/List` from *my keys* into
 *everybody's* (`TestAnOperatorSeesHowSomebodyElseSignsIn`).
 
 **It is for** an auditor and an administrator.
+
+### `SyncService/Watch`
+
+**Reads as** *may hear when a sign-in stops being good*, which is what an app
+that signs people in holds it for. **Is** the identifier, the tenant and four
+moments -- suspended, erased, signed out everywhere, their tenant closed -- of
+everybody in its holder's sight, held alone and with no other method: across
+the tenant, everybody of it. No row travels on it, and no row of the access
+record is written for it, so who was told of whom is not on the record.
+
+**It is for** an app's own key, and not for a person.
 
 ## Keys
 

@@ -139,9 +139,9 @@ func TestTheWideGrantsPageSaysWhatAKeyIsWarnedOf(t *testing.T) {
 //
 // The method exists so that a page says what the document says, and that is a
 // promise about two lists: a grant the wire answers is a heading somebody can
-// read the example under, and a heading there is one a page is told of. Three
-// are not about a method -- a role bound to a group, and the two kinds of key
-// -- and are named here, so that a fourth is a decision and not an omission.
+// read the example under, and a heading there is one a page is told of. One is
+// not about a method -- a deployment key, which is a kind of credential -- and
+// is named here, so that a second is a decision and not an omission.
 //
 // And what a terminal says of a key (`cmd.Widest`) is among what the wire
 // says, for that kind: a note with no entry is a grant the page was not told.
@@ -188,7 +188,31 @@ func TestTheWideGrantsPageIsWhatTheWireAnswers(t *testing.T) {
 		}
 	}
 
-	notAMethod := []string{"a-role-bound-to-a-group", "a-deployment-key", "a-directorys-key"}
+	// And the verbs a heading that names no method is about: asked of any of
+	// them, across the tenant, a page is told of it. *A directory's key* is
+	// whoever holds a directory's verbs, as the page says, and *a role bound
+	// to a group* is handed out by whoever puts somebody in the group. They
+	// were named below as about no method, and asked of their verbs answered
+	// no grant.
+	for anchor, methods := range map[string][]string{
+		"a-directorys-key": {
+			app.HolderService_Provision_FullMethodName,
+			app.HolderService_Deactivate_FullMethodName,
+			app.HolderService_Tell_FullMethodName,
+		},
+		"a-role-bound-to-a-group": {app.GroupMembershipService_Add_FullMethodName},
+		"syncservicewatch":        {app.SyncService_Watch_FullMethodName},
+	} {
+		for _, m := range methods {
+			told := false
+			for _, g := range core.HandedOver(keys.PrefixTenant, app.RoleHeld_ROLE_HELD_ACROSS_THE_TENANT, []string{m}) {
+				told = told || g.GetGrant() == anchor
+			}
+			x.True(told, "a page asking about %s is not told of %q", m, anchor)
+		}
+	}
+
+	notAMethod := []string{"a-deployment-key"}
 	for _, anchor := range notAMethod {
 		x.True(headings[anchor], "%q is named here as a heading of the page, and is not one", anchor)
 		x.False(answered[anchor], "%q is answered now, and is still named here as what is not", anchor)
