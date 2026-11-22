@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -174,9 +175,9 @@ func TestAKeyIsNotMintedIntoAnotherTenant(t *testing.T) {
 // tenant and wrong where there are many: a call that made a person by
 // mentioning them is a way to write rows into somebody else's tenant by typo.
 //
-// So each plane takes one form and refuses the other, and refuses a request
-// that gave both -- the refusal `vouch.refOf` makes about a person named two
-// ways, because a caller that filled in both has not decided which it means.
+// So each plane takes one form and refuses the other. A request cannot give
+// both: they are a `oneof`, `whose`, so that a caller decides which it means
+// before anything is sent.
 func TestTheTwoPlanesNameAHolderTheirOwnWay(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
@@ -188,21 +189,12 @@ func TestTheTwoPlanesNameAHolderTheirOwnWay(t *testing.T) {
 	c := app.NewApiKeyServiceClient(conn)
 
 	_, err := c.Issue(wire, app.ApiKeyIssueRequest_builder{
-		HolderAlias: "made-up-by-mentioning",
+		HolderAlias: z.Ptr("made-up-by-mentioning"),
 		Alias:       "ci",
 		Methods:     []string{listHolder},
 	}.Build())
 	x.Equal(codes.InvalidArgument, status.Code(err))
 	x.Contains(status.Convert(err).Message(), "holder:")
-
-	_, err = c.Issue(wire, app.ApiKeyIssueRequest_builder{
-		HolderAlias: "both",
-		Holder:      app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
-		Alias:       "ci",
-		Methods:     []string{listHolder},
-	}.Build())
-	x.Equal(codes.InvalidArgument, status.Code(err))
-	x.Contains(status.Convert(err).Message(), "two ways")
 
 	_, err = c.Issue(wire, app.ApiKeyIssueRequest_builder{
 		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),

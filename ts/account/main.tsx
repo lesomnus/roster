@@ -992,7 +992,7 @@ function Keys(props: {
 		setNote(null)
 		setToken(null)
 		void issue
-			.call({ holder: ref(props.own), alias, methods, dateExpires: expiresAt(expires) })
+			.call({ whose: { case: 'holder', value: ref(props.own) }, alias, methods, dateExpires: expiresAt(expires) })
 			.then((r) => {
 				form.reset()
 				setToken(r.token)

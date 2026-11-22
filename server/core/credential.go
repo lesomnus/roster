@@ -533,14 +533,12 @@ func (s coreCredential) Issue(ctx context.Context, req *app.CredentialIssueReque
 // that answered, so `holder_alias` off the control plane and `holder`/`email` on
 // it are refused by the wiring rather than by a flag.
 func (s coreCredential) whosePassword(ctx context.Context, req *app.CredentialIssueRequest) (*app.HolderRef, error) {
+	// One of the three or none: they are a `oneof`, so a request cannot carry
+	// two.
 	alias, ref, email := req.GetHolderAlias(), req.GetHolder(), req.GetEmail()
 	byName, byRef, byMail := alias != "", ref != nil, email != nil
 
 	switch {
-	case (byName && byRef) || (byName && byMail) || (byRef && byMail):
-		return nil, status.Error(codes.InvalidArgument,
-			"whose password this is is given more than one way; give one")
-
 	case s.prefix == "":
 		// A stack assembled without `WithPrefix` cannot say which plane it is,
 		// and the two differ in whether a name matching nobody is a new

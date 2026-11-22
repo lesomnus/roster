@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
 	"github.com/lesomnus/xli/flg"
+	"github.com/lesomnus/z"
 
 	"github.com/lesomnus/payday/pdcmd"
 
@@ -169,7 +170,7 @@ func (w whomed) kept(ctx context.Context, method string, write func(ctx context.
 func (w whomed) issuing(kind string) *app.CredentialIssueRequest {
 	req := app.CredentialIssueRequest_builder{Kind: kind}
 	if w.alias != "" {
-		req.HolderAlias = w.alias
+		req.HolderAlias = z.Ptr(w.alias)
 	} else {
 		req.Holder = app.HolderRef_builder{Id: w.who.GetId()}.Build()
 	}

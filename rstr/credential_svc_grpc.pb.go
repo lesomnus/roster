@@ -171,8 +171,8 @@ type CredentialServiceClient interface {
 	// which is the form an operator's console has when somebody writes in.
 	// `holder_alias` is a bare alias on the control plane's one tenant, **created
 	// if it is not there**, because a row a console has just named is not one set
-	// up on purpose beforehand. Giving more than one is refused rather than
-	// resolved in an order this comment would then have to define.
+	// up on purpose beforehand. The three are a `oneof`, so a request carries
+	// one or none, and none is refused.
 	//
 	// Which plane a caller is on is not a field: it is `WithPrefix`, one per
 	// stack, the same fact `ApiKey.Issue` reads. So `holder_alias` off the
@@ -447,8 +447,8 @@ type CredentialServiceServer interface {
 	// which is the form an operator's console has when somebody writes in.
 	// `holder_alias` is a bare alias on the control plane's one tenant, **created
 	// if it is not there**, because a row a console has just named is not one set
-	// up on purpose beforehand. Giving more than one is refused rather than
-	// resolved in an order this comment would then have to define.
+	// up on purpose beforehand. The three are a `oneof`, so a request carries
+	// one or none, and none is refused.
 	//
 	// Which plane a caller is on is not a field: it is `WithPrefix`, one per
 	// stack, the same fact `ApiKey.Issue` reads. So `holder_alias` off the

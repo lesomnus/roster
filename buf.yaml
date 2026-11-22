@@ -86,7 +86,9 @@ breaking:
   # owner's answer to a name put to them (#286). `AuthSignInRequest.password`
   # goes, its number and name reserved: what is proved at each step of a
   # sign-in is `secret`, bytes, as every other request that takes a password
-  # takes one.
+  # takes one. The alternatives of whom `ApiKeyService/Issue` and
+  # `CredentialService/Issue` are for go into a `oneof whose`, their numbers
+  # as they were.
   #
   # Out with the first change after this reaches `main`, which is the only
   # baseline here, as #234 took #233's out: left in, it is a hole in the check
@@ -94,3 +96,6 @@ breaking:
   ignore_only:
     FIELD_NO_DELETE:
       - proto/app/auth.proto
+    FIELD_SAME_ONEOF:
+      - proto/app/apikey_svc.g.proto
+      - proto/app/credential_svc.g.proto

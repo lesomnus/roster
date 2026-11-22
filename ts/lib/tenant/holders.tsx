@@ -394,7 +394,7 @@ export function Person(props: {
 					onClick={() => {
 						say(null)
 						void props.writes.credential
-							.issue({ holder: who })
+							.issue({ whose: { case: 'holder', value: who } })
 							.then((r) => say({ kind: 'secret', text: r.secret }))
 							.catch((e: unknown) =>
 								say({ kind: 'bad', text: e instanceof Error ? e.message : 'no' }),
@@ -690,7 +690,7 @@ function Keys(props: {
 					onClick={() => {
 						void props.writes.apiKey
 							.issue({
-								holder: who,
+								whose: { case: 'holder', value: who },
 								alias,
 								methods: methods
 									.split(',')

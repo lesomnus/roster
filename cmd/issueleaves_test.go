@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"testing"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -56,7 +57,7 @@ func TestAKeyThatIsRefusedMakesNobody(t *testing.T) {
 	before := holders()
 
 	_, err = app.NewApiKeyServiceClient(servedControl(t, s)).Issue(bearing(ctx, token), app.ApiKeyIssueRequest_builder{
-		HolderAlias: "left-behind",
+		HolderAlias: z.Ptr("left-behind"),
 		Alias:       "theirs",
 		Methods:     []string{"/roster.HolderService/Get"},
 	}.Build())

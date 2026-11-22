@@ -209,15 +209,13 @@ func (s coreApiKey) authenticatedFor(ctx context.Context, ref *app.HolderRef) (t
 // took and told apart by the plane: a `holder` reference on the data plane
 // (`rt_`), a `holder_alias` created if absent on the control plane (`rk_`).
 func (s coreApiKey) whoseKey(ctx context.Context, req *app.ApiKeyIssueRequest) (*app.HolderRef, error) {
+	// One of the two or neither: they are a `oneof`, so a request cannot
+	// carry both.
 	alias, ref := req.GetHolderAlias(), req.GetHolder()
 	byName := alias != ""
 	byRef := ref != nil
 
 	switch {
-	case byName && byRef:
-		return nil, status.Error(codes.InvalidArgument,
-			"holder_alias and holder name whose key this is two ways; give one")
-
 	case s.prefix == keys.PrefixTenant:
 		if !byRef {
 			return nil, status.Error(codes.InvalidArgument,

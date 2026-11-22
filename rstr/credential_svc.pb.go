@@ -2819,13 +2819,11 @@ func (b0 CredentialEnrolResponse_builder) Build() *CredentialEnrolResponse {
 }
 
 type CredentialIssueRequest struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,1,opt,name=holder"`
-	xxx_hidden_Kind        string                 `protobuf:"bytes,2,opt,name=kind"`
-	xxx_hidden_Email       *EmailRef              `protobuf:"bytes,3,opt,name=email"`
-	xxx_hidden_HolderAlias string                 `protobuf:"bytes,4,opt,name=holder_alias,json=holderAlias"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state            protoimpl.MessageState         `protogen:"opaque.v1"`
+	xxx_hidden_Whose isCredentialIssueRequest_Whose `protobuf_oneof:"whose"`
+	xxx_hidden_Kind  string                         `protobuf:"bytes,2,opt,name=kind"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *CredentialIssueRequest) Reset() {
@@ -2855,9 +2853,29 @@ func (x *CredentialIssueRequest) ProtoReflect() protoreflect.Message {
 
 func (x *CredentialIssueRequest) GetHolder() *HolderRef {
 	if x != nil {
-		return x.xxx_hidden_Holder
+		if x, ok := x.xxx_hidden_Whose.(*credentialIssueRequest_Holder); ok {
+			return x.Holder
+		}
 	}
 	return nil
+}
+
+func (x *CredentialIssueRequest) GetEmail() *EmailRef {
+	if x != nil {
+		if x, ok := x.xxx_hidden_Whose.(*credentialIssueRequest_Email); ok {
+			return x.Email
+		}
+	}
+	return nil
+}
+
+func (x *CredentialIssueRequest) GetHolderAlias() string {
+	if x != nil {
+		if x, ok := x.xxx_hidden_Whose.(*credentialIssueRequest_HolderAlias); ok {
+			return x.HolderAlias
+		}
+	}
+	return ""
 }
 
 func (x *CredentialIssueRequest) GetKind() string {
@@ -2867,90 +2885,186 @@ func (x *CredentialIssueRequest) GetKind() string {
 	return ""
 }
 
-func (x *CredentialIssueRequest) GetEmail() *EmailRef {
-	if x != nil {
-		return x.xxx_hidden_Email
-	}
-	return nil
-}
-
-func (x *CredentialIssueRequest) GetHolderAlias() string {
-	if x != nil {
-		return x.xxx_hidden_HolderAlias
-	}
-	return ""
-}
-
 func (x *CredentialIssueRequest) SetHolder(v *HolderRef) {
-	x.xxx_hidden_Holder = v
+	if v == nil {
+		x.xxx_hidden_Whose = nil
+		return
+	}
+	x.xxx_hidden_Whose = &credentialIssueRequest_Holder{v}
+}
+
+func (x *CredentialIssueRequest) SetEmail(v *EmailRef) {
+	if v == nil {
+		x.xxx_hidden_Whose = nil
+		return
+	}
+	x.xxx_hidden_Whose = &credentialIssueRequest_Email{v}
+}
+
+func (x *CredentialIssueRequest) SetHolderAlias(v string) {
+	x.xxx_hidden_Whose = &credentialIssueRequest_HolderAlias{v}
 }
 
 func (x *CredentialIssueRequest) SetKind(v string) {
 	x.xxx_hidden_Kind = v
 }
 
-func (x *CredentialIssueRequest) SetEmail(v *EmailRef) {
-	x.xxx_hidden_Email = v
-}
-
-func (x *CredentialIssueRequest) SetHolderAlias(v string) {
-	x.xxx_hidden_HolderAlias = v
+func (x *CredentialIssueRequest) HasWhose() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Whose != nil
 }
 
 func (x *CredentialIssueRequest) HasHolder() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Holder != nil
+	_, ok := x.xxx_hidden_Whose.(*credentialIssueRequest_Holder)
+	return ok
 }
 
 func (x *CredentialIssueRequest) HasEmail() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Email != nil
+	_, ok := x.xxx_hidden_Whose.(*credentialIssueRequest_Email)
+	return ok
+}
+
+func (x *CredentialIssueRequest) HasHolderAlias() bool {
+	if x == nil {
+		return false
+	}
+	_, ok := x.xxx_hidden_Whose.(*credentialIssueRequest_HolderAlias)
+	return ok
+}
+
+func (x *CredentialIssueRequest) ClearWhose() {
+	x.xxx_hidden_Whose = nil
 }
 
 func (x *CredentialIssueRequest) ClearHolder() {
-	x.xxx_hidden_Holder = nil
+	if _, ok := x.xxx_hidden_Whose.(*credentialIssueRequest_Holder); ok {
+		x.xxx_hidden_Whose = nil
+	}
 }
 
 func (x *CredentialIssueRequest) ClearEmail() {
-	x.xxx_hidden_Email = nil
+	if _, ok := x.xxx_hidden_Whose.(*credentialIssueRequest_Email); ok {
+		x.xxx_hidden_Whose = nil
+	}
+}
+
+func (x *CredentialIssueRequest) ClearHolderAlias() {
+	if _, ok := x.xxx_hidden_Whose.(*credentialIssueRequest_HolderAlias); ok {
+		x.xxx_hidden_Whose = nil
+	}
+}
+
+const CredentialIssueRequest_Whose_not_set_case case_CredentialIssueRequest_Whose = 0
+const CredentialIssueRequest_Holder_case case_CredentialIssueRequest_Whose = 1
+const CredentialIssueRequest_Email_case case_CredentialIssueRequest_Whose = 3
+const CredentialIssueRequest_HolderAlias_case case_CredentialIssueRequest_Whose = 4
+
+func (x *CredentialIssueRequest) WhichWhose() case_CredentialIssueRequest_Whose {
+	if x == nil {
+		return CredentialIssueRequest_Whose_not_set_case
+	}
+	switch x.xxx_hidden_Whose.(type) {
+	case *credentialIssueRequest_Holder:
+		return CredentialIssueRequest_Holder_case
+	case *credentialIssueRequest_Email:
+		return CredentialIssueRequest_Email_case
+	case *credentialIssueRequest_HolderAlias:
+		return CredentialIssueRequest_HolderAlias_case
+	default:
+		return CredentialIssueRequest_Whose_not_set_case
+	}
 }
 
 type CredentialIssueRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Whose, in full. **Data plane only**, and a reference rather than an alias
-	// because the wall has many tenants and a name alone is a question with more
-	// than one answer. Naming somebody who is not there is a refusal, not a
-	// creation: a customer's people are the customer's.
+	// Whose, one of three ways; see the method. None is refused.
+
+	// Fields of oneof xxx_hidden_Whose:
+	// Whose, in full. **Data plane only**, and a reference rather than an
+	// alias because the wall has many tenants and a name alone is a question
+	// with more than one answer. Naming somebody who is not there is a
+	// refusal, not a creation: a customer's people are the customer's.
 	Holder *HolderRef
+	// Whose, by an address of theirs. **Data plane only.** The form an
+	// operator has when somebody writes in about an account they cannot
+	// reach, and the one `Vouch.Reset` took as `who.address`.
+	Email *EmailRef
+	// Whose, by alias within this plane's one tenant, created if they are not
+	// there. **Control plane only.**
+	HolderAlias *string
+	// -- end of xxx_hidden_Whose
 	// Which credential; empty is the password. There is nothing sensible to
 	// generate for a second factor that somebody could then read out -- that is
 	// `Enrol`, which answers with a seed to scan -- so anything else is refused.
 	Kind string
-	// Whose, by an address of theirs. **Data plane only.** The form an operator
-	// has when somebody writes in about an account they cannot reach, and the one
-	// `Vouch.Reset` took as `who.address`.
-	Email *EmailRef
-	// Whose, by alias within this plane's one tenant, created if they are not
-	// there. **Control plane only.** Giving this with either of the two above is
-	// refused.
-	HolderAlias string
 }
 
 func (b0 CredentialIssueRequest_builder) Build() *CredentialIssueRequest {
 	m0 := &CredentialIssueRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Holder = b.Holder
+	if b.Holder != nil {
+		x.xxx_hidden_Whose = &credentialIssueRequest_Holder{b.Holder}
+	}
+	if b.Email != nil {
+		x.xxx_hidden_Whose = &credentialIssueRequest_Email{b.Email}
+	}
+	if b.HolderAlias != nil {
+		x.xxx_hidden_Whose = &credentialIssueRequest_HolderAlias{*b.HolderAlias}
+	}
 	x.xxx_hidden_Kind = b.Kind
-	x.xxx_hidden_Email = b.Email
-	x.xxx_hidden_HolderAlias = b.HolderAlias
 	return m0
 }
+
+type case_CredentialIssueRequest_Whose protoreflect.FieldNumber
+
+func (x case_CredentialIssueRequest_Whose) String() string {
+	md := file_app_credential_svc_g_proto_msgTypes[20].Descriptor()
+	if x == 0 {
+		return "not set"
+	}
+	return protoimpl.X.MessageFieldStringOf(md, protoreflect.FieldNumber(x))
+}
+
+type isCredentialIssueRequest_Whose interface {
+	isCredentialIssueRequest_Whose()
+}
+
+type credentialIssueRequest_Holder struct {
+	// Whose, in full. **Data plane only**, and a reference rather than an
+	// alias because the wall has many tenants and a name alone is a question
+	// with more than one answer. Naming somebody who is not there is a
+	// refusal, not a creation: a customer's people are the customer's.
+	Holder *HolderRef `protobuf:"bytes,1,opt,name=holder,oneof"`
+}
+
+type credentialIssueRequest_Email struct {
+	// Whose, by an address of theirs. **Data plane only.** The form an
+	// operator has when somebody writes in about an account they cannot
+	// reach, and the one `Vouch.Reset` took as `who.address`.
+	Email *EmailRef `protobuf:"bytes,3,opt,name=email,oneof"`
+}
+
+type credentialIssueRequest_HolderAlias struct {
+	// Whose, by alias within this plane's one tenant, created if they are not
+	// there. **Control plane only.**
+	HolderAlias string `protobuf:"bytes,4,opt,name=holder_alias,json=holderAlias,oneof"`
+}
+
+func (*credentialIssueRequest_Holder) isCredentialIssueRequest_Whose() {}
+
+func (*credentialIssueRequest_Email) isCredentialIssueRequest_Whose() {}
+
+func (*credentialIssueRequest_HolderAlias) isCredentialIssueRequest_Whose() {}
 
 type CredentialIssueResponse struct {
 	state             protoimpl.MessageState `protogen:"opaque.v1"`
@@ -3120,12 +3234,13 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\vattestation\x18\x05 \x01(\fB\x05\xaa\x01\x02\b\x02R\vattestation\"M\n" +
 	"\x17CredentialEnrolResponse\x12\x19\n" +
 	"\x04seed\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04seed\x12\x17\n" +
-	"\x03uri\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x03uri\"\xb0\x01\n" +
-	"\x16CredentialIssueRequest\x12)\n" +
-	"\x06holder\x18\x01 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x19\n" +
-	"\x04kind\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\x12&\n" +
-	"\x05email\x18\x03 \x01(\v2\x10.roster.EmailRefR\x05email\x12(\n" +
-	"\fholder_alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\vholderAlias\"8\n" +
+	"\x03uri\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x03uri\"\xb8\x01\n" +
+	"\x16CredentialIssueRequest\x12+\n" +
+	"\x06holder\x18\x01 \x01(\v2\x11.roster.HolderRefH\x00R\x06holder\x12(\n" +
+	"\x05email\x18\x03 \x01(\v2\x10.roster.EmailRefH\x00R\x05email\x12#\n" +
+	"\fholder_alias\x18\x04 \x01(\tH\x00R\vholderAlias\x12\x19\n" +
+	"\x04kind\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kindB\a\n" +
+	"\x05whose\"8\n" +
 	"\x17CredentialIssueResponse\x12\x1d\n" +
 	"\x06secret\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06secret2\xf8\x05\n" +
 	"\x11CredentialService\x127\n" +
@@ -3241,6 +3356,11 @@ func file_app_credential_svc_g_proto_init() {
 	file_app_credential_svc_g_proto_msgTypes[2].OneofWrappers = []any{
 		(*credentialRef_Id)(nil),
 		(*credentialRef_Kind)(nil),
+	}
+	file_app_credential_svc_g_proto_msgTypes[20].OneofWrappers = []any{
+		(*credentialIssueRequest_Holder)(nil),
+		(*credentialIssueRequest_Email)(nil),
+		(*credentialIssueRequest_HolderAlias)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

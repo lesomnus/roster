@@ -168,3 +168,35 @@ func TestNoEntityButAConnectionHasAnIssuer(t *testing.T) {
 	}
 	x.Equal([]string{"Connection"}, has)
 }
+
+// TestWhoseIsAOneofInTheTwoIssueRequests: the alternatives of whom a key or a
+// password is issued for are one `oneof`, as every generated reference says
+// its alternatives.
+//
+// `ApiKeyIssueRequest` (`holder_alias` or `holder`) and
+// `CredentialIssueRequest` (`holder`, `email` or `holder_alias`) said *exactly
+// one of* in a comment and refused two at run time, so every generated client
+// let two be built. Answered: separate fields; right is a `oneof whose`, the
+// numbers as they were, so that two cannot be sent and none is a `oneof`
+// unset.
+func TestWhoseIsAOneofInTheTwoIssueRequests(t *testing.T) {
+	x := require.New(t)
+
+	for name, want := range map[string][]string{
+		"roster.ApiKeyIssueRequest":     {"holder", "holder_alias"},
+		"roster.CredentialIssueRequest": {"email", "holder", "holder_alias"},
+	} {
+		d, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(name))
+		x.NoError(err, name)
+		m := d.(protoreflect.MessageDescriptor)
+
+		o := m.Oneofs().ByName("whose")
+		x.NotNil(o, "%s says whose in separate fields", name)
+		has := []string{}
+		for i := range o.Fields().Len() {
+			has = append(has, string(o.Fields().Get(i).Name()))
+		}
+		slices.Sort(has)
+		x.Equal(want, has, name)
+	}
+}
