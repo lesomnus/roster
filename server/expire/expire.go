@@ -103,7 +103,11 @@ func Gone(ctx context.Context, db *ent.Client, cs audit.Contents, act string, ro
 // that tenant ([Gone]).
 //
 // A page is one transaction, so a pass that fails part way has removed and
-// recorded the pages before it, and nothing of the one it failed in.
+// recorded the pages before it, and nothing of the one it failed in. And a
+// line is recorded for a row this pass's delete removed and for no other: two
+// passes at once read the same rows, and the second's delete removes none of
+// what the first's did, so a page whose delete removed fewer rows than it read
+// is read again rather than said (#285).
 func Rows(
 	ctx context.Context, db *ent.Client, cs audit.Contents, act string,
 	due func(context.Context, *ent.Client) ([]Row, error),
@@ -143,6 +147,16 @@ func page(
 	n, err := remove(ctx, tx.Client(), ids)
 	if err != nil {
 		return 0, false, err
+	}
+	if n != len(rows) {
+		// Somebody else removed some of what this page read before its delete
+		// reached them -- another pass of the same sweep, as there is around a
+		// failover -- and a line is for a row this pass's own delete removed.
+		// Which ones those are the count does not say, so nothing of the page
+		// is kept and it is read again: what the other removed is no longer
+		// due, since its delete was waited for and had committed before this
+		// one counted. No statement is added to a page that is not raced.
+		return 0, true, tx.Rollback()
 	}
 	if err := Gone(ctx, tx.Client(), cs, act, rows); err != nil {
 		return 0, false, err

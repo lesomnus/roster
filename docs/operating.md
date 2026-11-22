@@ -3265,7 +3265,8 @@ does not survive. `none` is a replica that runs no loop at all. What no lease
 promises is that a loop never runs twice at once: a replica cut off from the
 database goes on for up to a ping, five seconds, after another has taken its
 loops. roster's are fine with that. The expiry sweeps delete what is already past
-its time, the two forget windows act one person or one tenant at a time and log a
+its time, and a pass says on the trail that a row went only where its own delete
+removed it, so two at once say each row once; the two forget windows act one person or one tenant at a time and log a
 failure and carry on, and payday's drain and retention are written for it. A loop
 added here has to be too.
 
