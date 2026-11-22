@@ -1249,6 +1249,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 		WithUnary(grpcx.ClosedUnary(shut)).
 		WithStream(grpcx.ClosedStream(shut)).
 		WithUnary(Undeclared()).
+		With(NotByVerifier()).
 		WithUnary(Undated())
 
 	// A certificate that cannot be read is a server that must not start, which
@@ -1454,7 +1455,10 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 	app.RegisterSiteMembershipServiceServer(g, s.SiteMembership())
 	app.RegisterTeamMembershipServiceServer(g, s.TeamMembership())
 	app.RegisterAuditServiceServer(g, s.Audit())
-	app.RegisterOutboxServiceServer(g, s.Outbox())
+	// Not `OutboxService`: it has no method, and what keeps one tenant's
+	// writes from another's is that nothing serves it at all
+	// (`outbox.proto`). Registered, a release of payday that gave it a read
+	// would be served on every port by moving a pin.
 	// For its overlays (`Agree`, `Withdraw`, `Settled`) and its reads, which
 	// `server/core` narrows to the calling app's own. Its generated writes are
 	// shut by method in `closed`: a consent is never written as a row.
