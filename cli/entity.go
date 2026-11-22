@@ -551,7 +551,11 @@ func (l local) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 }
 
 // saidWho refuses a command at the box that was not told who is at the shell,
-// where the deployment has operators to name: one with a control plane.
+// where the deployment has operators to name: one with a control plane. The
+// entity commands, `key list`, and every command that writes somebody's way
+// in ask it -- `key add|revoke`, `control key add`, `vouch reset|set|unlock`
+// on either plane, `control vouch enrol|prove`, `restore` -- and
+// `docs/usage/cli.md` lists them (#284).
 //
 // Asked of the configuration, before anything is opened. Without a control
 // plane there is nobody `--as` could name, and [atTheBox] says the deployment.
@@ -606,8 +610,9 @@ func namedAt(ctx context.Context, c *cmd.Config, s *cmd.Server) (*cmd.Operator, 
 // shell by `by` where a name was given ([cmd.Server.AtTheShell]): what a
 // command writing somebody's way in or their standing does, so that the write
 // is a row of the access record naming who made it, as the same write through
-// the entity tree is (#284). Where no name was given it is the write alone, as
-// it was: whether these commands require one is the owner's to decide.
+// the entity tree is (#284). Each of those refuses to run without a name where
+// the deployment has a control plane ([saidWho]), so no name is a deployment
+// with no operators to name, and the write is the deployment's alone.
 //
 // `method` is the RPC the act is over the wire, which is what a reviewer reads
 // the row by -- and what every line of the trail the act writes is called,

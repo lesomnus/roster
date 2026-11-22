@@ -68,6 +68,7 @@ func TestTheCliMintsACustomersKey(t *testing.T) {
 
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
@@ -163,6 +164,7 @@ func TestNamingACustomersPersonDoesNotCreateThem(t *testing.T) {
 
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
@@ -412,6 +414,7 @@ func TestAllowIsAListHoweverItIsWritten(t *testing.T) {
 
 			out, err := initRun(t, c)
 			x.NoError(err, "init: %s", out)
+			c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 			args := append(append([]string{"key", "add"}, tc.args...), "loft")
 			x.NotEmpty(stdoutOf(t, cli.NewCmdControl(&c), args...))
@@ -434,6 +437,7 @@ func TestAllowIsAListHoweverItIsWritten(t *testing.T) {
 
 		out, err := initRun(t, c)
 		x.NoError(err, "init: %s", out)
+		c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 		err = cli.NewCmdControl(&c).Run(t.Context(), []string{"key", "add", "loft"})
 		x.Error(err, "a key that allows nothing is not a key")

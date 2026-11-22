@@ -31,6 +31,7 @@ func TestAKeyIsNotMintedAlreadyExpired(t *testing.T) {
 		c := seedbed(t)
 		out, err := initRun(t, c)
 		x.NoError(err, "init: %s", out)
+		c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 		for _, v := range []string{"-1h", "0", "0s"} {
 			err := cli.NewCmdControl(&c).Run(t.Context(), []string{"key", "add", "--allow", "/roster.HolderService/List", "--expires=" + v, "loft"})

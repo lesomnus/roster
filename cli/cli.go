@@ -110,11 +110,11 @@ func Cmd(c *cmd.Config) *xli.Command {
 			// And a flag only, never the file or the environment, which are
 			// everybody's who opens a shell here; see `cmd.ClientConfig.As`.
 			//
-			// Looked up wherever it is given ([built]), and kept by the
-			// commands that show somebody's rows or write somebody's way in;
-			// the help says which, since a name a command only checks is not
-			// one the record says (#284).
-			&flg.String{Name: "as", Brief: "who is at this shell: a holder of the control plane that is not stopped, by alias; looked up by every command here, and named on the access record by the entity commands, key list|add|revoke, control key add, vouch reset|set|unlock and their control forms, control vouch enrol|prove, restore of a person, and scim adopt"},
+			// Looked up wherever it is given ([built]), and required and kept
+			// by the commands that show somebody's rows or write somebody's
+			// way in ([saidWho]); the help says which, since a name a command
+			// only checks is not one the record says (#284).
+			&flg.String{Name: "as", Brief: "who is at this shell: a holder of the control plane that is not stopped, by alias; looked up by every command here; required, where there is a control plane, and named on the access record by the entity commands, key list|add|revoke, control key add, vouch reset|set|unlock and their control forms, control vouch enrol|prove, restore, and scim adopt"},
 		},
 
 		Commands: append([]*xli.Command{

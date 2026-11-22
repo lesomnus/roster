@@ -33,8 +33,8 @@ them*, and what an app does with the answer is the app's.
 For a person at a browser. Two ways to write one:
 
 ```sh
-roster vouch reset @newco/alice                        # generated here, printed once
-printf '%s' "${PW}" | roster vouch set --password-stdin @newco/alice
+roster --as admin vouch reset @newco/alice                        # generated here, printed once
+printf '%s' "${PW}" | roster --as admin vouch set --password-stdin @newco/alice
 ```
 
 `reset` generates thirty-two random bytes, because a secret the caller chose is
@@ -47,7 +47,7 @@ An account that wrong answers closed opens again by itself, and sooner if you
 say so:
 
 ```sh
-roster vouch unlock @newco/alice
+roster --as admin vouch unlock @newco/alice
 ```
 
 The same three acts are on the admin console, on a person's own panel. Nothing is only
@@ -59,8 +59,8 @@ The operator `roster init` made lives on the **control plane**, a different
 database from the people above, so the same three are under `roster control`:
 
 ```sh
-roster control vouch reset @admin                      # generated here, printed once
-roster control vouch unlock @admin
+roster --as admin control vouch reset @admin                      # generated here, printed once
+roster --as admin control vouch unlock @admin
 ```
 
 This is the way back for a deployment with **one** operator who has lost the
@@ -132,7 +132,7 @@ Something a **tenant** runs -- their CI, their sync job, their own copy of an ap
 -- is a holder in their tenant with an `rt_` ([below](#a-tenant-key--rt_)).
 
 ```sh
-roster control key add --allow '/roster.VouchService/Verify,/roster.MeService/Get' loft
+roster --as admin control key add --allow '/roster.VouchService/Verify,/roster.MeService/Get' loft
 ```
 
 ```
@@ -152,7 +152,7 @@ asked for, and nothing mints a key that silently does not work. The one key with
 nothing on it that works is said so:
 
 ```sh
-roster control key add --narrowed levyan
+roster --as admin control key add --narrowed levyan
 ```
 
 It is refused as itself and answered as whoever each tenant nominated -- the key
@@ -163,7 +163,7 @@ Write it however reads best — the flag repeats, and each occurrence may itself
 be a comma-separated list:
 
 ```sh
-roster control key add \
+roster --as admin control key add \
   --allow /roster.VouchService/Verify \
   --allow /roster.MeService/Get \
   loft
@@ -215,7 +215,7 @@ holder, so a call made with it is made *as them* — behind the wall, narrowed t
 their tenant, and never wider than what they hold.
 
 ```sh
-roster key add --tenant newco --holder alice --allow '/roster.HolderService/Get'
+roster --as admin key add --tenant newco --holder alice --allow '/roster.HolderService/Get'
 ```
 
 Naming a holder who is not there is a **refusal**, unlike `roster control key
@@ -708,7 +708,7 @@ credential erase` takes it away.
 
 ```sh
 roster --as admin key list                  # both planes, with what each may call
-roster key revoke --id 01a03322-…           # now, on whichever plane holds it
+roster --as admin key revoke --id 01a03322-…           # now, on whichever plane holds it
 ```
 
 A revoke is a delete and not a flag: the next call carrying that key finds

@@ -94,7 +94,7 @@ Three credentials, for three different things.
 **A password, for Alice at a browser:**
 
 ```sh
-roster vouch reset @newco/alice
+roster --as admin vouch reset @newco/alice
 ```
 ```
 TJCWlQLYd7NmXk1sHmfwUn0LZ0Bo7qUJmRTLwPvZgHo
@@ -103,12 +103,12 @@ the old sessions alive would not be a reset.
 ```
 
 The secret is on **stdout** and the sentence on stderr, so
-`PW=$(roster vouch reset @newco/alice)` is the password and nothing else.
+`PW=$(roster --as admin vouch reset @newco/alice)` is the password and nothing else.
 
 **A key for your login app**, which is a service of yours and not of newco's:
 
 ```sh
-APP=$(roster control key add \
+APP=$(roster --as admin control key add \
         --allow '/roster.VouchService/Verify,/roster.MeService/Get' portal)
 ```
 
@@ -121,7 +121,7 @@ unless `--narrowed` says the key is for an app that always names a tenant
 **A key for Alice's laptop**, which acts *as her*:
 
 ```sh
-KEY=$(roster key add --tenant newco --holder alice \
+KEY=$(roster --as admin key add --tenant newco --holder alice \
         --name laptop --allow '/roster.MeService/Get')
 ```
 
@@ -210,7 +210,7 @@ If your product resolves a customer by hostname:
 ```sh
 roster --as admin host add '{"tenant":{"alias":"newco"},"name":"newco.example.com"}'
 
-FD=$(roster control key add \
+FD=$(roster --as admin control key add \
        --allow '/roster.FrontService/WhoseHost,/roster.VouchService/Verify' frontdoor)
 
 curl -sS -X POST http://127.0.0.1:8080/roster.FrontService/WhoseHost \
@@ -231,7 +231,7 @@ is for.
 ## 8. Stopping something
 
 ```sh
-roster key revoke --id 01a0332f-d64d-8d70-880e-c31ade371232
+roster --as admin key revoke --id 01a0332f-d64d-8d70-880e-c31ade371232
 ```
 
 The next call carrying that key finds nothing. No window, nothing to expire, and
@@ -239,7 +239,7 @@ the trail keeps what it was. It works on either plane, and an identifier on
 neither is a refusal rather than a shrug.
 
 ```sh
-roster vouch unlock @newco/alice     # too many wrong answers closed it (ten, unless vouch.lockout says)
+roster --as admin vouch unlock @newco/alice     # too many wrong answers closed it (ten, unless vouch.lockout says)
 ```
 
 ## What you have

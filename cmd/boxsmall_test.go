@@ -7,6 +7,7 @@ import (
 
 	"github.com/lesomnus/roster/cli"
 	"github.com/lesomnus/roster/cmd"
+	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	app "github.com/lesomnus/roster/rstr"
 )
 
@@ -168,8 +169,15 @@ func TestInitSaysWhoItFound(t *testing.T) {
 		c := seedbed(t)
 		c.Control.Db.Migrate = true
 
-		_, said, err := boxRun(t, &c, "", "control", "key", "add", "--allow", "/roster.MeService/Get", "svc")
-		x.NoError(err, said)
+		// Made in process, as `login provision` makes the Login App's before
+		// anybody runs `init`: `control key add` names who runs it, and
+		// nobody is there to name yet (#284).
+		s, err := cmd.Build(t.Context(), c)
+		x.NoError(err)
+		x.NoError(entmigrate.NewSchema(s.Control.Drv).Create(t.Context()))
+		_, err = cmd.HolderNamed(t.Context(), s.Control, "svc")
+		x.NoError(err)
+		x.NoError(s.Close())
 
 		out, err := initRun(t, c, "--operator", "svc")
 		x.NoError(err, out)

@@ -94,10 +94,15 @@ func newExternal(t *testing.T) *external {
 	e.kim = addPerson(t, s, e.acme, "kim")
 	x.NoError(s.Close())
 
-	e.key = stdoutOf(t, cli.NewCmdControl(&c), "key", "add", "--narrowed", app)
-	x.NoError(cli.NewCmdApp(&c).Run(ctx, []string{"install", "--tenant", "acme",
+	// At the box, as the operator `init` made: a command that writes a way in
+	// names who runs it (#284).
+	box := c
+	box.Client.As = "admin"
+
+	e.key = stdoutOf(t, cli.NewCmdControl(&box), "key", "add", "--narrowed", app)
+	x.NoError(cli.NewCmdApp(&box).Run(ctx, []string{"install", "--tenant", "acme",
 		"--role", strings.Join(reach.Methods, ","), "--administer", ownMethods, app}))
-	e.admin = stdoutOf(t, cli.NewCmdKey(&c), "add", "--tenant", "acme", "--holder", "admin", "--name", "admin", "--allow", "/roster.*/*")
+	e.admin = stdoutOf(t, cli.NewCmdKey(&box), "add", "--tenant", "acme", "--holder", "admin", "--name", "admin", "--allow", "/roster.*/*")
 
 	e.s, err = cmd.Build(ctx, c)
 	x.NoError(err)

@@ -44,7 +44,7 @@ roster --as "${SEED_OPERATOR}" holder add "@${t}/${u}" >/dev/null
 # this binds to it rather than writing a second one.
 printf '{"role":{"slug":{"alias":"everything","tenant":{"alias":"%s"}}},"holder":{"slug":{"alias":"%s","tenant":{"alias":"%s"}}}}' "${t}" "${u}" "${t}" \
 	| roster --as "${SEED_OPERATOR}" binding add - >/dev/null
-printf '%s' "${SEED_PASSWORD}" | roster vouch set --password-stdin "@${t}/${u}" >/dev/null 2>&1
+printf '%s' "${SEED_PASSWORD}" | roster --as "${SEED_OPERATOR}" vouch set --password-stdin "@${t}/${u}" >/dev/null 2>&1
 # Every name a browser reaches this tenant at, and there are four of them
 # because this rig publishes on some and resolves others inside its own network.
 #
@@ -88,7 +88,7 @@ umask 077
 roster login provision --out "${ACCOUNT_STATE}" >/dev/null
 # The directory's one deployment key, allowed as itself only to find the
 # tenants that nominated it (#76).
-roster control key add --allow /roster.NominationService/List directory 2>/dev/null >"${ACCOUNT_STATE}/directory.key.tmp"
+roster --as "${SEED_OPERATOR}" control key add --allow /roster.NominationService/List directory 2>/dev/null >"${ACCOUNT_STATE}/directory.key.tmp"
 mv "${ACCOUNT_STATE}/directory.key.tmp" "${ACCOUNT_STATE}/directory.key"
 # The account app's, through the command rather than by hand, for the reason
 # the Login App's is: `account.Calls` is the one place that list lives, and this

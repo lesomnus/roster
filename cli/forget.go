@@ -469,6 +469,13 @@ func NewCmdRestore(c *cmd.Config) *xli.Command {
 			if !ok {
 				return invocation(errors.New("REF: who to bring back"))
 			}
+			// Somebody's way in, given back: named, as `key add` is (#284).
+			// Asked of a tenant too, before anything is opened, so that one
+			// command has one rule and nothing is read on the way to
+			// deciding whether a name was needed.
+			if err := saidWho(c); err != nil {
+				return err
+			}
 
 			s, err := built(ctx, *c)
 			if err != nil {

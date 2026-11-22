@@ -129,7 +129,9 @@ func OperatorNamed(ctx context.Context, s *Server, as string) (Operator, error) 
 		return Operator{}, fmt.Errorf("--as %s: %w", as, err)
 	} else if !made {
 		return Operator{}, fmt.Errorf("--as %s: nobody can be named at this shell before `roster init` has made the first operator, "+
-			"and this deployment's control plane has no tables yet; run `roster init` first, or leave --as out for this command", as)
+			"and this deployment's control plane has no tables yet; run `roster init` first. "+
+			"A command that writes somebody's way in -- control key add among them -- needs a name and so does not run before it; "+
+			"resources apply and login provision run with --as left out", as)
 	}
 
 	ts, err := s.Control.Ungated.Tenant().List(ctx, app.TenantListRequest_builder{Size: 1}.Build())

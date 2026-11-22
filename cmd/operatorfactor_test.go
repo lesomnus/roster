@@ -44,6 +44,7 @@ func TestAnOperatorHoldsASecondFactor(t *testing.T) {
 		c.Vouch.Keys = []string{"one:" + base64.StdEncoding.EncodeToString(freshKey(t))}
 	})
 	password := passwordFrom(t, out)
+	c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 	g, err := s.GrpcAdmin(t.Context(), c)
 	x.NoError(err)

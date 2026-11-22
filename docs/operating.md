@@ -783,7 +783,7 @@ account:
 ldap:
   addr: :389
   bind: key
-  key: file:/run/roster/directory.key     # `roster control key add --allow … directory`,
+  key: file:/run/roster/directory.key     # `roster --as admin control key add --allow … directory`,
                                           # and `roster app install … directory` per tenant
 
 login:                                    # only with Hydra in front; see login.md
@@ -1014,7 +1014,7 @@ over it. The role is written as exactly the app's list on every run, so a releas
 whose app calls something more -- the account app's `EmailService/Attest`, which
 it was missing -- is a restart in one process and `provision` run again in four.
 The directory's key is still yours to write either way:
-`roster control key add --allow /roster.NominationService/List directory`, and
+`roster --as admin control key add --allow /roster.NominationService/List directory`, and
 `roster app install --tenant … --role … directory` in each tenant it serves.
 
 **A sign-in through a provider is finished by the process that began it.** The
@@ -1753,9 +1753,11 @@ roster --as admin control holder list
 roster --as admin key list
 ```
 
-- **Every entity command, and `key list`**, on a deployment with a control
-  plane, is refused without it before anything is opened, and refused when it
-  names nobody or a disabled operator. It is a flag only, never the file or the
+- **Every entity command, `key list`, and every command that writes
+  somebody's way in** (below), on a deployment with a control plane, is
+  refused without it before anything is opened -- `restore` of a tenant as of a
+  person -- and refused when it names nobody
+  or a disabled operator. It is a flag only, never the file or the
   environment: those are everybody's who opens a shell on the box, and a name
   written there would be one person named for whoever ran the command.
 - A row is written **before the answer is printed**, and a read whose row cannot
@@ -1788,7 +1790,8 @@ roster --as admin key list
 
 `roster scim adopt` is asked too: it lists people, by address. The other
 commands print no field anybody's row declares personal -- identifiers, keys,
-secrets made for the occasion -- and need no `--as`. Given, it is looked up by
+secrets made for the occasion -- and those that write nobody's way in need no
+`--as`. Given, it is looked up by
 every command that opens the database, and a name that is nobody's, or
 somebody's who is stopped, is refused before anything is written; so is any
 name before `roster init` has made the control plane's tables, since nobody
@@ -1798,8 +1801,9 @@ can be named there yet. Then:
   `key add`, `key revoke`, `control key add`, `vouch reset|set|unlock` and
   `control vouch reset|set|unlock|enrol|prove`, and `restore` of a person. Each write is
   a call at the shell by who `--as` names, and leaves the row of the access
-  record that `roster --as … <entity> <verb>` of the same write leaves. With
-  no `--as` they leave none, as before.
+  record that `roster --as … <entity> <verb>` of the same write leaves. Each
+  is refused without it where there is a control plane, as above; where there
+  is none, nobody can be named and they leave none.
 - **Kept** by `trail accept`, as who accepted, where `--by` would have said it;
   `--by` stays for where `--as` is not given, and the two together are refused.
 - **Checked, and kept nowhere**, by the rest: `init`, `hold`, `forget`,
@@ -1866,7 +1870,7 @@ then moving it to the front.
 
 What to type -- `roster vouch reset|set|unlock`, and the same three RPCs from a
 console -- is [usage/ways-in.md](usage/ways-in.md). An operator who has lost
-their own console password is `roster control vouch reset @admin` from a
+their own console password is `roster --as admin control vouch reset @admin` from a
 shell on the box; with one operator there is no other way back. Two rules run over all of
 them, and they are the reason that page exists as well as this one: nobody hands
 out a method they do not hold, and nobody writes a way into an account wider than
@@ -2839,7 +2843,7 @@ For *destroy what you hold about them* there is a second act:
 roster forget @contoso/erin        # now, because they asked
 roster forget                      # everything a clock is done waiting for: what `serve`'s loops do, at once
 roster forget --dry-run            # who that would be
-roster restore @contoso/erin       # undo the erase, while there is one to undo
+roster --as admin restore @contoso/erin       # undo the erase, while there is one to undo
 ```
 
 ```yaml
@@ -2913,21 +2917,20 @@ erased**, and then restore:
 
 ```sh
 roster --as admin key list                 # an erased person's keys are listed with everybody's
-roster key revoke --id 01a03322-…          # now, and for good
-roster restore @contoso/erin
+roster --as admin key revoke --id 01a03322-…   # now, and for good
+roster --as admin restore @contoso/erin
 ```
 
 **And it says when their name is somebody else's.** An erase frees the alias at
 once, so somebody new may be called it by the time of a restore, which then refuses
 in words: who has the name now, and the rename that makes way. It names them by
-identifier and prints no name -- `restore` needs no `--as`, and shows nothing
-anybody's row declares personal; the first command it gives is the read that
-does. Somebody erased is renamed by nothing, so it is the other who is:
+identifier and prints no name -- `restore` shows nothing anybody's row
+declares personal; the first command it gives is the read that does. Somebody erased is renamed by nothing, so it is the other who is:
 
 ```sh
 roster --as admin holder get -o json 01a03b71-…        # whoever has the name now: their alias, and their dateUpdated, whole
 roster --as admin holder realias 01a03b71-… '{"alias":"erin-2","date_updated":"2026-11-17T03:45:23.443111678Z"}'
-roster restore 01a0332f-…                              # the one who was erased, by identifier
+roster --as admin restore 01a0332f-…                   # the one who was erased, by identifier
 ```
 
 `@contoso/erin` names two people then, and `restore` and `forget` refuse to choose:
@@ -3109,7 +3112,7 @@ A person's lifecycle one level up, in four steps (#98):
 
 ```sh
 roster --as admin tenant close @newco         # nobody of it gets in; nothing is destroyed
-roster restore @newco                         # while tenant.restore_within lasts
+roster --as admin restore @newco              # while tenant.restore_within lasts
 roster forget @newco                          # destroy it now; it has to be closed first
 roster forget                                 # and every one whose grace has run out
 roster forget --reuse @newco                  # free its alias now rather than in a year
@@ -3154,7 +3157,7 @@ exactly as it was, keys and all, until `restore_within` has run out -- and refus
 after it even if the sweep has not got there yet, because what decides is the window
 and not when something ran. With no window, a close can be restored until somebody
 destroys the tenant. On the trail it is `TenantService/Restore`, whether it was made
-over the wire or by `roster restore @newco` at the box.
+over the wire or by `roster --as admin restore @newco` at the box.
 
 **Destroy** takes what is left: every person forgotten as `roster forget` forgets
 anybody, every other row of the tenant removed -- roles, bindings, groups, sites and

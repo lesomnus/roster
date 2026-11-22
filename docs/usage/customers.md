@@ -102,7 +102,7 @@ One write, and then a way in:
 
 ```sh
 roster --as admin tenant add @newco '{"name":"Newco Ltd"}'
-roster vouch reset @newco/admin          # a password, printed once
+roster --as admin vouch reset @newco/admin          # a password, printed once
 ```
 
 The first command writes five rows: the tenant, `admin` in it, a role called
@@ -198,7 +198,7 @@ roster --as admin mail-domain add '{"tenant":{"alias":"newco"},"name":"newco.com
 
 ```sh
 roster --as admin holder erase @newco/alice  # unreachable, and destroys nothing
-roster restore @newco/alice          # while the grace lasts
+roster --as admin restore @newco/alice          # while the grace lasts
 roster forget @newco/alice           # destroys, including the trail's copy
 ```
 
@@ -261,7 +261,7 @@ The same three steps one level up, and a fourth for the name:
 
 ```sh
 roster --as admin tenant close @newco  # nobody of it gets in, and nothing is destroyed
-roster restore @newco           # while tenant.restore_within lasts
+roster --as admin restore @newco   # while tenant.restore_within lasts
 roster forget @newco            # every person forgotten, every other row of it gone
 ```
 

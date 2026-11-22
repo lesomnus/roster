@@ -155,7 +155,7 @@ func leaving(ctx context.Context, s *cmd.Server, c *cmd.Config, t pdid.Id) error
 	case time.Now().Before(v.DateClosed.Add(within)):
 		fmt.Fprintf(os.Stderr, "%[1]s is closed, and its grace runs on under a hold (tenant.restore_within): it can be restored until %[2]s and not after, "+
 			"held or not. From then the hold is all that keeps it, and lifting it lets the next pass destroy the tenant. "+
-			"If it is to come back, `roster restore %[1]s` before then\n",
+			"If it is to come back, `roster --as <alias> restore %[1]s` before then\n",
 			t, v.DateClosed.Add(within).UTC().Format(time.RFC3339))
 
 	default:

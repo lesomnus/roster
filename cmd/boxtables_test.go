@@ -17,6 +17,11 @@ import (
 // that runs its migration as a step of its own had its tables made by the
 // first key. Answered: a key, and the tables made; right is the refusal
 // `login provision` gives on the same file.
+//
+// And it is no longer the first thing that writes there whatever the switch
+// says: it names who runs it (#284), and nobody can be named before `init`
+// has made the first operator, so before `init` it is refused, in those
+// words, with nothing made.
 func TestControlKeyAddAsksBeforeItAltersTables(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
@@ -25,7 +30,7 @@ func TestControlKeyAddAsksBeforeItAltersTables(t *testing.T) {
 	c.Db.Migrate = true
 	c.Control.Db.Migrate = false
 
-	out, said, err := boxRun(t, &c, "", "control", "key", "add", "--allow", "/roster.MeService/Get", "svc")
+	out, said, err := boxRun(t, at(c, "admin"), "", "control", "key", "add", "--allow", "/roster.MeService/Get", "svc")
 	x.Error(err, said)
 	x.Empty(out, "a key was printed")
 
@@ -35,13 +40,13 @@ func TestControlKeyAddAsksBeforeItAltersTables(t *testing.T) {
 	s.Close()
 	x.Error(err, "the control plane's tables were made where control.db.migrate says they may not be")
 
-	t.Run("and where it may, they are made", func(t *testing.T) {
+	t.Run("and where it may, nobody is named before init", func(t *testing.T) {
 		x := require.New(t)
 
 		c.Control.Db.Migrate = true
-		out, said, err := boxRun(t, &c, "", "control", "key", "add", "--allow", "/roster.MeService/Get", "svc")
-		x.NoError(err, said)
-		x.NotEmpty(out)
+		out, said, err := boxRun(t, at(c, "admin"), "", "control", "key", "add", "--allow", "/roster.MeService/Get", "svc")
+		x.ErrorContains(err, "before `roster init`", said)
+		x.Empty(out)
 	})
 }
 

@@ -102,14 +102,17 @@ roster --as admin key list
 What a local command shows or writes of anybody is on the access record, and
 the record names a person: `--as`, a holder of the control plane by alias that
 is not stopped -- who `init` made, anybody the admin console signs in, or, where
-the operators are all disabled, a service, which is the way back. The entity
-commands and `key list` refuse to open anything without it on a deployment
-with a control plane, and `scim adopt` refuses without it once it has opened
-both planes, before it reads anybody. Wherever it is given, every local command
-looks it up and refuses a name that matches nobody, or somebody disabled or
-erased, before it reads or writes anybody; the commands that write
-somebody's way in (`key add|revoke`, `control key add`, `vouch reset|set|unlock` on either
-plane, `control vouch enrol|prove`, `restore` of a person) and `trail accept` keep it, and the rest only
+the operators are all disabled, a service, which is the way back.
+
+These refuse to run without it on a deployment with a control plane: the
+entity commands, `key list`, and the commands that write somebody's way in,
+`key add|revoke`, `control key add`, `vouch reset|set|unlock`,
+`control vouch reset|set|unlock|enrol|prove` and `restore`, of a person or a
+tenant. Each refuses before it opens anything, and it is status `2` ([below](#exit-statuses)). `scim adopt` refuses without it once it
+has opened both planes, before it reads anybody. Wherever it is given, every
+local command looks it up and refuses a name that matches nobody, or somebody
+disabled or erased, before it reads or writes anybody; the commands that write
+somebody's way in and `trail accept` keep it, and the rest only
 check it ([operating.md](../operating.md#the-cli-on-the-box-is-the-deployment)). A row is
 written before the answer is printed, and a read whose row cannot be written is
 refused rather than shown. It is a flag on the root, before the command, and
@@ -136,10 +139,13 @@ The operators and this deployment's own callers live on a second database,
 `control.db`, and every command that writes there is under one word:
 
 ```sh
-roster control key add --allow '/roster.VouchService/Verify' portal   # an rk_; naming it makes it
-roster control vouch reset @admin                                     # the operator's way back in
+roster --as admin control key add --allow '/roster.VouchService/Verify' portal   # an rk_; naming it makes it
+roster --as admin control vouch reset @admin                                     # the operator's way back in
 roster --as admin control holder list                                   # the holders of the control plane, a page of them
 ```
+
+`control key add` names who runs it, and nobody can be named before `init` has
+made the first operator, so it does not run before `roster init`: `init` first.
 
 The entity commands are all there except `tenant add`, `tenant close` and
 `tenant restore`: the control plane has one tenant, `owner`, and it is the

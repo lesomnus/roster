@@ -41,6 +41,7 @@ func TestServeOpensTheConsumersItIsToldTo(t *testing.T) {
 
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 	// A customer, and the key the front door fronts them with. Minted the way
 	// an operator mints one, because that is the only way there is.

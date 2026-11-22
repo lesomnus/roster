@@ -91,7 +91,13 @@ func cliUp(t *testing.T, methods ...string) *cliServed {
 	x.NoError(err)
 	x.NoError(s.Close())
 
-	token := stdoutOf(t, cli.NewCmdKey(&c), "add",
+	// At the box, as the operator `init` made: a command there names who is
+	// at the shell (#221), and one that writes a way in is refused without
+	// (#284).
+	local := c
+	local.Client.As = "admin"
+
+	token := stdoutOf(t, cli.NewCmdKey(&local), "add",
 		"--tenant", "newco", "--holder", "alice", "--name", "terminal",
 		"--allow", strings.Join(methods, ","))
 
@@ -106,11 +112,6 @@ func cliUp(t *testing.T, methods ...string) *cliServed {
 	x.NoError(err)
 	t.Cleanup(func() { g.Stop() })
 	go func() { _ = g.Serve(l) }()
-
-	// At the box, as the operator `init` made: a command there names who is at
-	// the shell (#221).
-	local := c
-	local.Client.As = "admin"
 
 	return &cliServed{
 		Server: s2,

@@ -222,7 +222,9 @@ func TestAClosedDirectoryIsTheFourthFactToAKeyOutsideIt(t *testing.T) {
 	x.NotErrorIs(err, standing.ErrNoPerson, "a closed directory is not its people gone")
 	x.ErrorIs(inside.Held(ctx, e.kim, time.Now()), standing.ErrUnreachable)
 
-	reader := stdoutOf(t, cli.NewCmdControl(&e.c), "key", "add", "--allow", rstr.HolderService_Get_FullMethodName, "reader")
+	box := e.c
+	box.Client.As = "admin" // who `init` made: a key minted at the box names who mints it (#284)
+	reader := stdoutOf(t, cli.NewCmdControl(&box), "key", "add", "--allow", rstr.HolderService_Get_FullMethodName, "reader")
 	outside := accounts(t, standing.Config{Conn: e.dial(t), As: bearer(reader)})
 	st, err := outside.StandingOf(ctx, e.kim)
 	x.NoError(err)
