@@ -68,6 +68,10 @@ spec:
         app.kubernetes.io/component: hydra-clients
     spec:
       restartPolicy: Never
+      # No token for the cluster's API: nothing in this Job calls it, and a
+      # token mounted where nothing reads it is one more thing a process that
+      # was broken into holds.
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
@@ -171,22 +175,33 @@ spec:
 ---
 # And then: are they registered in a way this stack works with?
 #
-# The Job above writes what `clients/*.json` says. This asks roster whether
-# what Hydra now holds is something its apps can actually sign somebody in
-# with -- which is a different question, and the one that was answered four
-# times this week by a person clicking something in a browser:
+# The Job above writes what `clients/*.json` says. This asks, with `roster
+# login doctor`, whether what Hydra now holds is something roster's apps can
+# sign somebody in with -- a different question, and the one that was answered
+# four times in one week by a person clicking something in a browser. What it
+# asks here is Hydra's half: each client's registration -- its authentication
+# method (one registered for `client_secret_post`, while every relying party
+# here sends the secret in the header, answered **400 to every sign-in**), its
+# redirects, grants, response types and scope -- and what Hydra was told,
+# read on its public port. A finding there that does not work now exits
+# non-zero, so the sync goes red rather than the deployment going quiet. One
+# that works and is worth knowing about is printed and does not fail: a client
+# with no `post_logout_redirect_uris` refuses an app that sends an
+# `id_token_hint` to come back, and lands one that does not on Hydra's
+# `urls.post_logout_redirect`, and that should not be red forever.
 #
-#   - a client with no `post_logout_redirect_uris`, so signing out of it ended
-#     on the issuer's error page
-#   - a client registered for `client_secret_post` while every relying party
-#     here sends the secret in the header, so **every sign-in answered 400**
-#   - a client at Hydra that `login.clients` did not name, so a flow for it
-#     reached a page saying the login is not working
+# What it **cannot** ask here is roster's half: whether each client's
+# redirects resolve to a tenant, which is a question of the `Host` rows and so
+# of the database. This pod mounts the configuration and a certificate and no
+# database -- nor could it share the SQLite file the server holds -- so that
+# half is skipped, and the run says so in a line that does not fail it:
 #
-# It exits non-zero on any of those, so this sync goes red rather than the
-# deployment going quiet. Things that work but are worth knowing about are
-# printed and do not fail: an app that cannot send an `id_token_hint` has no
-# way back from a sign-out on purpose, and that should not be red forever.
+#   fragile  product                  not asked whether its redirects resolve to a tenant
+#                                     ↳ this run cannot reach roster, so which tenant its flows are about is unchecked
+#
+# A client whose redirects no tenant answers at passes this Job, and every flow
+# for it reaches a page saying the login is not working. `scripts/hydra.sh`
+# runs the same command where the database is, and that half is asked there.
 #
 # It changes nothing. What it finds is fixed in `clients/*.json` above.
 apiVersion: batch/v1
@@ -207,6 +222,10 @@ spec:
         app.kubernetes.io/component: hydra-clients-check
     spec:
       restartPolicy: Never
+      # No token for the cluster's API: nothing in this Job calls it, and a
+      # token mounted where nothing reads it is one more thing a process that
+      # was broken into holds.
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532

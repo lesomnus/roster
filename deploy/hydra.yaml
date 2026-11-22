@@ -1,7 +1,7 @@
 # The issuer.
 #
 # What an overlay changes here is the host in `URLS_*` and where the database
-# lives. What it should not change is that the five `URLS_` are all set: one of
+# lives. What it should not change is that the six `URLS_` are all set: one of
 # them was missing in a real deployment for a day and what that looked like was
 # a **successful** sign-out ending on a page telling the person to contact an
 # administrator.
@@ -18,9 +18,11 @@ spec:
     # ever put in front of.
     - { name: public, port: 4444, targetPort: public }
     # Admin: register a client, read a challenge, accept a login. **Anybody who
-    # reaches this can sign anybody in as anybody**, so nothing routes it and
-    # what protects it is that fact rather than a credential. The Login App and
-    # `roster login doctor` call it in-cluster.
+    # reaches this can sign anybody in as anybody**, and it takes no credential.
+    # Nothing routes it out of the cluster; inside it, every pod reaches it
+    # unless the cluster says otherwise, since this base ships no
+    # `NetworkPolicy` (`README.md` § *Before this is safe*). The Login App and
+    # the two Jobs of `clients.yaml` call it in-cluster.
     - { name: admin, port: 4445, targetPort: admin }
 ---
 # What Hydra keeps: the clients, the consent sessions and the signing keys.
@@ -70,6 +72,10 @@ spec:
       # pair per Service in the namespace, and neither Hydra nor its migration
       # reads any of them.
       enableServiceLinks: false
+      # No token for the cluster's API: nothing in this pod calls it, and a
+      # token mounted where nothing reads it is one more thing a process that
+      # was broken into holds.
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
@@ -191,9 +197,9 @@ spec:
             - { name: tmp, mountPath: /tmp }
 
       volumes:
-        # Made by `scripts/cluster.sh` and not checked in, unlike the fake
-        # secrets beside it: a certificate expires, so one in git is a rig that
-        # works until a date nobody wrote down.
+        # Made by `scripts/cluster.sh` and not checked in, as no Secret of this
+        # base is: a certificate expires, so one in git is a rig that works
+        # until a date nobody wrote down.
         - name: tls
           secret:
             secretName: roster-hydra-tls

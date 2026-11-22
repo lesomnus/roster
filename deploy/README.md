@@ -88,7 +88,7 @@ What an overlay is expected to bring, and what it should leave alone:
 
 | | |
 | --- | --- |
-| its own | hosts, secrets (`roster-checkpoints` among them, `key.pem`, with the `trail` component), storage class, image digests, the products it actually runs, whether it keeps the trail's archive (below), and `config.yaml` -- by a `configMapGenerator` for `roster` with `behavior: replace` |
+| its own | hosts, secrets (`roster-checkpoints` among them, `key.pem`, with the `trail` component), storage class, image digests, the products it actually runs, whether it keeps the trail's archive (below), and `config.yaml` -- by a `configMapGenerator` for `roster` with `behavior: replace`; and everything § *Before this is safe* lists |
 | the base's | what a client has to be registered with, which `URLS_*` Hydra needs, that the clients are applied and then **checked** -- the four things that were wrong when they were written twice |
 
 **`config.yaml` is one file, and an overlay that replaces it restates all of
@@ -131,8 +131,88 @@ host ends in `.localhost`, so that shape needs something terminating TLS in fron
 of it -- an **ingress**, which is the deployment's and not this base's.
 `product.yaml` is here only because it can serve its own certificate.
 So the proxy demo lives in whatever has a terminator: `scripts/cluster.sh`'s
-overlay, or a deployment beside its own ingress. `scripts/cluster.sh`'s own overlay (its last phases) is a
-worked example of everything on this list except the secrets.
+overlay, or a deployment beside its own ingress. `scripts/cluster.sh`'s own
+overlay (its last phases) shows two things on this list: hosts, with TLS ending
+in front and Hydra told its public name, and a product of its own beside the
+base's. It names no storage class and no digest, and does not replace
+`config.yaml`.
+
+## Before this is safe
+
+What the base leaves to an overlay and an overlay must not forget, in one
+place. Each is a thing this base is right not to decide, and wrong to leave
+unsaid.
+
+**Argo CD runs the two Jobs.** `clients.yaml`'s Jobs are `PostSync` hooks, in
+waves `0` and `1` with `hook-delete-policy: BeforeHookCreation`: Argo runs them
+after every sync, writes the clients before it checks them, and deletes each
+Job's last run before making it again. Applied by `kubectl apply -k` the
+annotations mean nothing. Both Jobs start at once, so the check may read Hydra
+before the write -- and pass on what it read. And an apply that changes a Job
+within the hour its `ttlSecondsAfterFinished` keeps it is refused, *field is
+immutable*, since a Job's template cannot change. Without Argo, delete both Jobs
+and apply, wait for the clients' Job to finish, then delete the check and apply
+again, which is what `scripts/cluster.sh` does (`resync`).
+
+**The namespace is `roster`, in thirteen addresses.** The base names none, and
+an overlay chooses it; but the full names a relying party and the issuer are
+reached by say `roster.svc.cluster.local`: the six `URLS_` of `hydra.yaml`,
+`login.base` in `config.yaml`, `--issuer` and `--base` in `product.yaml`,
+`--public` in `clients.yaml`'s check, the `Host` row in `resources.yaml`, and
+the two redirects of `clients/product.json`. An overlay in another namespace
+restates each -- most of them are its own hosts anyway -- and one it misses is
+a name that resolves nowhere.
+
+**The Secrets, by name.** The base ships none (above). What it reads, and what
+a deployment that forgets each is told:
+
+| Secret | keys | read by | forgotten |
+| --- | --- | --- | --- |
+| `roster-vouch` | `keys` | roster, and its `provision` init container | roster's pod does not start; Kubernetes says the Secret is not found |
+| `roster-hydra` | `system` | Hydra | Hydra's pod does not start, the same way |
+| `roster-product` | `client-secret` | the product, and the Job that applies the clients | neither starts: the product as above, the Job waiting for its volume; and a sync waits on the Job |
+| `roster-product-tls` | `tls.crt`, `tls.key` | the product | its pod does not start, waiting for the volume |
+| `roster-hydra-tls` | `tls.crt`, `tls.key`, `ca.crt` | Hydra, the product and the check; optional in each | nothing waits for it. Hydra is told to serve TLS from it: an overlay brings it, or ends TLS in front and tells Hydra so (§ *TLS, and the `--dev` that is not here*) |
+| `roster-checkpoints` | `key.pem` | roster, with the `trail` component | a refusal in roster's log, naming the key's path (§ *The trail, kept and heard*) |
+
+**A storage class.** The claims -- `roster-data`, `roster-control` and
+`roster-hydra`, and `roster-audit` and `roster-witness` with the `trail`
+component -- name none, so the cluster's default is used, at 1 GiB and
+`ReadWriteOnce` each. An overlay names its class and its sizes.
+
+**Images by digest.** The base names roster's image `edge`, which is whatever CI
+last pushed from `main`, and sets no `imagePullPolicy`, so Kubernetes' default
+for a tag is `IfNotPresent`: a node keeps the `edge` it pulled first. Two nodes
+are then two builds, and a pod that moves between them changes build without a
+commit. An overlay names roster's image by digest in its `images:` -- from a
+commit to a digest is above -- and Hydra's and curl's the same way.
+
+**No `NetworkPolicy` is shipped.** Nothing here is a `NodePort`, a
+`LoadBalancer` or an `Ingress`, so nothing is reached from outside the cluster
+unless an overlay routes it. Inside it, **every pod of the cluster reaches every
+port here unless the cluster says otherwise**: Hydra's admin port, where whoever
+reaches it can sign anybody in as anybody, in the same Service as its public
+one; the admin console, which is the deployment's root; and roster's other
+listeners by the pod's address. On a cluster shared with anything else, an
+overlay writes the policies: Hydra's admin port is called by roster's pod and by
+the two Jobs of `clients.yaml`, and by nothing else here.
+
+**No `resources` are set**, on any container: every pod is the first a node
+under pressure evicts, and none is scheduled for what it uses. An overlay sets
+requests and limits for what it runs; a process that renders pictures takes up
+to about 150 MiB for them ([operating.md](../docs/operating.md) § *A picture
+from the directory*).
+
+**TLS, and the Login App's cookie.** The base's Login App is plain http --
+`login.base` an `http://` name and `login.insecure_cookie: true` in
+`config.yaml` -- because the rig has no browser. A deployment serves it over TLS,
+since a browser types a password into it, and says both: `login.base` its
+`https://` name and `login.insecure_cookie: false` (`ROSTER_LOGIN_BASE` and
+`ROSTER_LOGIN_INSECURE_COOKIE`, or its own `config.yaml`). An `https` base
+beside `insecure_cookie: true` is refused at start, so an overlay that says the
+first through the environment and inherits the file's second does not come up.
+
+No pod here mounts a token for the cluster's API: none calls it.
 
 ## The trail, kept and heard
 
