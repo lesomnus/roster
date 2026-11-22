@@ -26,7 +26,7 @@ func (Continuation) Fields() []ent.Field {
 			Optional(),
 		field.Bytes("secret").
 			Immutable(),
-		field.Bytes("issuer").
+		field.Bytes("issued_to").
 			Immutable(),
 		field.Uuid("metered_by").
 			Nillable().

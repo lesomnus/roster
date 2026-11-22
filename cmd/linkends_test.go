@@ -281,7 +281,7 @@ func TestALinkEndsWithWhatEndsASignIn(t *testing.T) {
 			_, err = b.Ungated.Link().Add(ctx, app.LinkAddRequest_builder{
 				Holder:      app.HolderRef_builder{Id: who.Bytes()}.Build(),
 				Secret:      sum,
-				Issuer:      issuerOf(t, ctx, b),
+				IssuedTo:    issuerOf(t, ctx, b),
 				DateExpires: timestamppb.New(time.Now().Add(time.Minute)),
 				DateCreated: timestamppb.New(at),
 			}.Build())
@@ -580,7 +580,7 @@ func TestASignInBegunBeforeEverythingWasEndedDoesNotFinish(t *testing.T) {
 				Holder:      app.HolderRef_builder{Id: who.Bytes()}.Build(),
 				Satisfied:   []string{vouch.KindPassword},
 				Secret:      sum256(handle),
-				Issuer:      issuerOf(t, ctx, b),
+				IssuedTo:    issuerOf(t, ctx, b),
 				DateExpires: timestamppb.New(time.Now().Add(time.Minute)),
 				DateCreated: timestamppb.New(at),
 			}.Build())

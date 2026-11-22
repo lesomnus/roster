@@ -21,7 +21,7 @@ func (e *Continuation) Proto() *rstr.Continuation {
 	}
 	x.SetSatisfied(e.Satisfied)
 	x.SetSecret(e.Secret)
-	x.SetIssuer(e.Issuer)
+	x.SetIssuedTo(e.IssuedTo)
 	if e.MeteredBy != nil {
 		x.SetMeteredBy(e.MeteredBy[:])
 	}

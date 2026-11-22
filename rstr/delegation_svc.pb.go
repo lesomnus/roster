@@ -28,7 +28,7 @@ type DelegationAddRequest struct {
 	xxx_hidden_Holder            *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Methods           []string               `protobuf:"bytes,8,rep,name=methods"`
 	xxx_hidden_Secret            []byte                 `protobuf:"bytes,9,opt,name=secret"`
-	xxx_hidden_Issuer            []byte                 `protobuf:"bytes,10,opt,name=issuer"`
+	xxx_hidden_IssuedTo          []byte                 `protobuf:"bytes,10,opt,name=issued_to,json=issuedTo"`
 	xxx_hidden_DateExpires       *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
 	xxx_hidden_DateAuthenticated *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_authenticated,json=dateAuthenticated"`
 	xxx_hidden_DateCreated       *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -91,9 +91,9 @@ func (x *DelegationAddRequest) GetSecret() []byte {
 	return nil
 }
 
-func (x *DelegationAddRequest) GetIssuer() []byte {
+func (x *DelegationAddRequest) GetIssuedTo() []byte {
 	if x != nil {
-		return x.xxx_hidden_Issuer
+		return x.xxx_hidden_IssuedTo
 	}
 	return nil
 }
@@ -142,11 +142,11 @@ func (x *DelegationAddRequest) SetSecret(v []byte) {
 	x.xxx_hidden_Secret = v
 }
 
-func (x *DelegationAddRequest) SetIssuer(v []byte) {
+func (x *DelegationAddRequest) SetIssuedTo(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
-	x.xxx_hidden_Issuer = v
+	x.xxx_hidden_IssuedTo = v
 }
 
 func (x *DelegationAddRequest) SetDateExpires(v *timestamppb.Timestamp) {
@@ -224,7 +224,7 @@ type DelegationAddRequest_builder struct {
 	Holder            *HolderRef
 	Methods           []string
 	Secret            []byte
-	Issuer            []byte
+	IssuedTo          []byte
 	DateExpires       *timestamppb.Timestamp
 	DateAuthenticated *timestamppb.Timestamp
 	DateCreated       *timestamppb.Timestamp
@@ -241,7 +241,7 @@ func (b0 DelegationAddRequest_builder) Build() *DelegationAddRequest {
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Methods = b.Methods
 	x.xxx_hidden_Secret = b.Secret
-	x.xxx_hidden_Issuer = b.Issuer
+	x.xxx_hidden_IssuedTo = b.IssuedTo
 	x.xxx_hidden_DateExpires = b.DateExpires
 	x.xxx_hidden_DateAuthenticated = b.DateAuthenticated
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -516,7 +516,7 @@ type DelegationSelect struct {
 	xxx_hidden_Holder            *HolderSelect          `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Methods           bool                   `protobuf:"varint,8,opt,name=methods"`
 	xxx_hidden_Secret            bool                   `protobuf:"varint,9,opt,name=secret"`
-	xxx_hidden_Issuer            bool                   `protobuf:"varint,10,opt,name=issuer"`
+	xxx_hidden_IssuedTo          bool                   `protobuf:"varint,10,opt,name=issued_to,json=issuedTo"`
 	xxx_hidden_DateExpires       bool                   `protobuf:"varint,11,opt,name=date_expires,json=dateExpires"`
 	xxx_hidden_DateAuthenticated bool                   `protobuf:"varint,12,opt,name=date_authenticated,json=dateAuthenticated"`
 	xxx_hidden_DateUpdated       bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
@@ -581,9 +581,9 @@ func (x *DelegationSelect) GetSecret() bool {
 	return false
 }
 
-func (x *DelegationSelect) GetIssuer() bool {
+func (x *DelegationSelect) GetIssuedTo() bool {
 	if x != nil {
-		return x.xxx_hidden_Issuer
+		return x.xxx_hidden_IssuedTo
 	}
 	return false
 }
@@ -642,8 +642,8 @@ func (x *DelegationSelect) SetSecret(v bool) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 10)
 }
 
-func (x *DelegationSelect) SetIssuer(v bool) {
-	x.xxx_hidden_Issuer = v
+func (x *DelegationSelect) SetIssuedTo(v bool) {
+	x.xxx_hidden_IssuedTo = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 10)
 }
 
@@ -700,7 +700,7 @@ func (x *DelegationSelect) HasSecret() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
-func (x *DelegationSelect) HasIssuer() bool {
+func (x *DelegationSelect) HasIssuedTo() bool {
 	if x == nil {
 		return false
 	}
@@ -761,9 +761,9 @@ func (x *DelegationSelect) ClearSecret() {
 	x.xxx_hidden_Secret = false
 }
 
-func (x *DelegationSelect) ClearIssuer() {
+func (x *DelegationSelect) ClearIssuedTo() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
-	x.xxx_hidden_Issuer = false
+	x.xxx_hidden_IssuedTo = false
 }
 
 func (x *DelegationSelect) ClearDateExpires() {
@@ -798,7 +798,7 @@ type DelegationSelect_builder struct {
 	Holder            *HolderSelect
 	Methods           *bool
 	Secret            *bool
-	Issuer            *bool
+	IssuedTo          *bool
 	DateExpires       *bool
 	DateAuthenticated *bool
 	DateUpdated       *bool
@@ -823,9 +823,9 @@ func (b0 DelegationSelect_builder) Build() *DelegationSelect {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 10)
 		x.xxx_hidden_Secret = *b.Secret
 	}
-	if b.Issuer != nil {
+	if b.IssuedTo != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 10)
-		x.xxx_hidden_Issuer = *b.Issuer
+		x.xxx_hidden_IssuedTo = *b.IssuedTo
 	}
 	if b.DateExpires != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 10)
@@ -1730,14 +1730,14 @@ var File_app_delegation_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_delegation_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/delegation_svc.g.proto\x12\x06roster\x1a\x14app/delegation.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xf2\x02\n" +
+	"\x1aapp/delegation_svc.g.proto\x12\x06roster\x1a\x14app/delegation.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xf7\x02\n" +
 	"\x14DelegationAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x18\n" +
 	"\amethods\x18\b \x03(\tR\amethods\x12\x1d\n" +
-	"\x06secret\x18\t \x01(\fB\x05\xaa\x01\x02\b\x02R\x06secret\x12\x1d\n" +
-	"\x06issuer\x18\n" +
-	" \x01(\fB\x05\xaa\x01\x02\b\x02R\x06issuer\x12=\n" +
+	"\x06secret\x18\t \x01(\fB\x05\xaa\x01\x02\b\x02R\x06secret\x12\"\n" +
+	"\tissued_to\x18\n" +
+	" \x01(\fB\x05\xaa\x01\x02\b\x02R\bissuedTo\x12=\n" +
 	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12I\n" +
 	"\x12date_authenticated\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\x11dateAuthenticated\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"q\n" +
@@ -1747,14 +1747,14 @@ const file_app_delegation_svc_g_proto_rawDesc = "" +
 	"\rDelegationRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x18\n" +
 	"\x06secret\x18\t \x01(\fH\x00R\x06secretB\x05\n" +
-	"\x03key\"\xd5\x02\n" +
+	"\x03key\"\xda\x02\n" +
 	"\x10DelegationSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12\x18\n" +
 	"\amethods\x18\b \x01(\bR\amethods\x12\x16\n" +
-	"\x06secret\x18\t \x01(\bR\x06secret\x12\x16\n" +
-	"\x06issuer\x18\n" +
-	" \x01(\bR\x06issuer\x12!\n" +
+	"\x06secret\x18\t \x01(\bR\x06secret\x12\x1b\n" +
+	"\tissued_to\x18\n" +
+	" \x01(\bR\bissuedTo\x12!\n" +
 	"\fdate_expires\x18\v \x01(\bR\vdateExpires\x12-\n" +
 	"\x12date_authenticated\x18\f \x01(\bR\x11dateAuthenticated\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +

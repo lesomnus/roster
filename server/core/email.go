@@ -301,7 +301,7 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 		Holder:      app.HolderRef_builder{Id: whose}.Build(),
 		Email:       app.EmailRef_builder{Id: v.GetId()}.Build(),
 		Secret:      sum,
-		Issuer:      f.Actor.Bytes(),
+		IssuedTo:    f.Actor.Bytes(),
 		DateExpires: timestamppb.New(expires),
 	}.Build()); err != nil {
 		return nil, err
@@ -568,7 +568,7 @@ func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*
 		Ref: app.LinkRef_builder{Secret: sum[:]}.Build(),
 		Select: app.LinkSelect_builder{
 			Secret:      z.Ptr(true),
-			Issuer:      z.Ptr(true),
+			IssuedTo:    z.Ptr(true),
 			DateExpires: z.Ptr(true),
 			Leave:       z.Ptr(true),
 			Email:       app.EmailSelect_builder{}.Build(),
@@ -593,7 +593,7 @@ func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*
 	switch {
 	case subtle.ConstantTimeCompare(l.GetSecret(), sum[:]) != 1,
 		l.GetDateExpires() == nil || !time.Now().Before(l.GetDateExpires().AsTime()),
-		subtle.ConstantTimeCompare(l.GetIssuer(), f.Actor.Bytes()) != 1,
+		subtle.ConstantTimeCompare(l.GetIssuedTo(), f.Actor.Bytes()) != 1,
 		len(l.GetEmail().GetId()) == 0,
 		// A link that confirms somebody leaving names the address it was
 		// mailed to as well, and is not a verification of it: spent here, it

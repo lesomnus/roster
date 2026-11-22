@@ -145,3 +145,26 @@ func TestASecretACallerSendsIsBytes(t *testing.T) {
 	x.GreaterOrEqual(asked, 6, "few fields were read, so this proves little")
 	x.Empty(text, "a password or a code a caller proves, sent as text")
 }
+
+// TestNoEntityButAConnectionHasAnIssuer: `issuer` is an OpenID issuer, and a
+// row that holds who a secret was handed to says `issued_to`.
+//
+// `Delegation.issuer`, `Link.issuer` and `Continuation.issuer` held the
+// identifier of the caller the secret was given to, so that no other caller
+// can present it, and on a delegation made by `Exchange` the audience: who
+// it was made **for**, which a page lists as where somebody is signed in.
+// `Connection.issuer` is an OpenID issuer's URL. Answered: one word for both;
+// right is `issuer` on `Connection` alone.
+func TestNoEntityButAConnectionHasAnIssuer(t *testing.T) {
+	x := require.New(t)
+
+	has := []string{}
+	for _, name := range wireNamesEntities(x) {
+		d, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName("roster." + name))
+		x.NoError(err, name)
+		if d.(protoreflect.MessageDescriptor).Fields().ByName("issuer") != nil {
+			has = append(has, name)
+		}
+	}
+	x.Equal([]string{"Connection"}, has)
+}

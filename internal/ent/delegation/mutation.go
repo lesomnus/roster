@@ -20,7 +20,7 @@ type Mutation struct {
 	methods            *[]string
 	appendmethods      []string
 	secret             *[]byte
-	issuer             *[]byte
+	issued_to          *[]byte
 	date_expires       *time.Time
 	date_authenticated *time.Time
 	date_updated       *time.Time
@@ -115,23 +115,23 @@ func (m *Mutation) ResetSecret() {
 	m.secret = nil
 }
 
-// SetIssuer sets the "issuer" field.
-func (m *Mutation) SetIssuer(b []byte) {
-	m.issuer = &b
+// SetIssuedTo sets the "issued_to" field.
+func (m *Mutation) SetIssuedTo(b []byte) {
+	m.issued_to = &b
 }
 
-// Issuer returns the value of the "issuer" field in the mutation.
-func (m *Mutation) Issuer() (r []byte, exists bool) {
-	v := m.issuer
+// IssuedTo returns the value of the "issued_to" field in the mutation.
+func (m *Mutation) IssuedTo() (r []byte, exists bool) {
+	v := m.issued_to
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetIssuer resets all changes to the "issuer" field.
-func (m *Mutation) ResetIssuer() {
-	m.issuer = nil
+// ResetIssuedTo resets all changes to the "issued_to" field.
+func (m *Mutation) ResetIssuedTo() {
+	m.issued_to = nil
 }
 
 // SetDateExpires sets the "date_expires" field.
@@ -377,8 +377,8 @@ func (m *Mutation) Fields() []string {
 	if m.secret != nil {
 		fields = append(fields, FieldSecret)
 	}
-	if m.issuer != nil {
-		fields = append(fields, FieldIssuer)
+	if m.issued_to != nil {
+		fields = append(fields, FieldIssuedTo)
 	}
 	if m.date_expires != nil {
 		fields = append(fields, FieldDateExpires)
@@ -416,8 +416,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Methods()
 	case FieldSecret:
 		return m.Secret()
-	case FieldIssuer:
-		return m.Issuer()
+	case FieldIssuedTo:
+		return m.IssuedTo()
 	case FieldDateExpires:
 		return m.DateExpires()
 	case FieldDateAuthenticated:
@@ -469,7 +469,7 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSecret(v)
 		return nil
-	case FieldIssuer:
+	case FieldIssuedTo:
 		v, ok := value.([]byte)
 		if !ok {
 			if e, ok := value.(sql.Querier); ok {
@@ -477,7 +477,7 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 			}
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetIssuer(v)
+		m.SetIssuedTo(v)
 		return nil
 	case FieldDateExpires:
 		v, ok := value.(time.Time)
@@ -565,7 +565,7 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
 	case FieldSecret:
 		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
-	case FieldIssuer:
+	case FieldIssuedTo:
 		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
 	case FieldDateExpires:
 		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
@@ -693,8 +693,8 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldSecret:
 		m.ResetSecret()
 		return nil
-	case FieldIssuer:
-		m.ResetIssuer()
+	case FieldIssuedTo:
+		m.ResetIssuedTo()
 		return nil
 	case FieldDateExpires:
 		m.ResetDateExpires()

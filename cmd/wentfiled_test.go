@@ -102,19 +102,19 @@ func TestWhatASweepCollectsIsSaidUnderTheTenantItWasOf(t *testing.T) {
 		who := app.HolderRef_builder{Id: of.who.Bytes()}.Build()
 
 		attempt, err := b.Ungated.Continuation().Add(ctx, app.ContinuationAddRequest_builder{
-			Holder: who, Secret: sweepable(t), Issuer: by, DateExpires: past,
+			Holder: who, Secret: sweepable(t), IssuedTo: by, DateExpires: past,
 		}.Build())
 		x.NoError(err)
 		gone[mustId(t, attempt.GetId())] = of.tenant
 
 		link, err := b.Ungated.Link().Add(ctx, app.LinkAddRequest_builder{
-			Holder: who, Secret: sweepable(t), Issuer: by, DateExpires: past,
+			Holder: who, Secret: sweepable(t), IssuedTo: by, DateExpires: past,
 		}.Build())
 		x.NoError(err)
 		gone[mustId(t, link.GetId())] = of.tenant
 
 		delegation, err := b.Ungated.Delegation().Add(ctx, app.DelegationAddRequest_builder{
-			Holder: who, Secret: sweepable(t), Issuer: by, Methods: []string{app.HolderService_Get_FullMethodName}, DateExpires: past,
+			Holder: who, Secret: sweepable(t), IssuedTo: by, Methods: []string{app.HolderService_Get_FullMethodName}, DateExpires: past,
 		}.Build())
 		x.NoError(err)
 		gone[mustId(t, delegation.GetId())] = of.tenant

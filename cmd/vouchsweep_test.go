@@ -67,7 +67,7 @@ func TestExpiredAttemptsAndLinksAreCollectedAndLiveOnesAreNot(t *testing.T) {
 		_, err := b.Ungated.Continuation().Add(ctx, app.ContinuationAddRequest_builder{
 			Holder:      who,
 			Secret:      tc.secret,
-			Issuer:      by,
+			IssuedTo:    by,
 			DateExpires: timestamppb.New(tc.expires),
 		}.Build())
 		x.NoError(err)
@@ -88,7 +88,7 @@ func TestExpiredAttemptsAndLinksAreCollectedAndLiveOnesAreNot(t *testing.T) {
 	_, err = b.Ungated.Link().Add(ctx, app.LinkAddRequest_builder{
 		Holder:      who,
 		Secret:      deadL,
-		Issuer:      by,
+		IssuedTo:    by,
 		DateExpires: timestamppb.New(time.Now().Add(-time.Minute)),
 	}.Build())
 	x.NoError(err)
@@ -143,7 +143,7 @@ func TestASpentAttemptIsCollectedOnItsOwnClockAndNotBefore(t *testing.T) {
 	v, err := b.Ungated.Continuation().Add(ctx, app.ContinuationAddRequest_builder{
 		Holder:      app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret:      secret,
-		Issuer:      issuerOf(t, ctx, b),
+		IssuedTo:    issuerOf(t, ctx, b),
 		DateExpires: timestamppb.New(time.Now().Add(time.Hour)),
 	}.Build())
 	x.NoError(err)

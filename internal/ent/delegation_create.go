@@ -36,9 +36,9 @@ func (_c *DelegationCreate) SetSecret(v []byte) *DelegationCreate {
 	return _c
 }
 
-// SetIssuer sets the "issuer" field.
-func (_c *DelegationCreate) SetIssuer(v []byte) *DelegationCreate {
-	_c.mutation.SetIssuer(v)
+// SetIssuedTo sets the "issued_to" field.
+func (_c *DelegationCreate) SetIssuedTo(v []byte) *DelegationCreate {
+	_c.mutation.SetIssuedTo(v)
 	return _c
 }
 
@@ -161,8 +161,8 @@ func (_c *DelegationCreate) check() error {
 	if _, ok := _c.mutation.Secret(); !ok {
 		return &ValidationError{Name: "secret", err: errors.New(`ent: missing required field "Delegation.secret"`)}
 	}
-	if _, ok := _c.mutation.Issuer(); !ok {
-		return &ValidationError{Name: "issuer", err: errors.New(`ent: missing required field "Delegation.issuer"`)}
+	if _, ok := _c.mutation.IssuedTo(); !ok {
+		return &ValidationError{Name: "issued_to", err: errors.New(`ent: missing required field "Delegation.issued_to"`)}
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Delegation.date_updated"`)}
@@ -232,9 +232,9 @@ func (_c *DelegationCreate) createSpec() (*Delegation, *sqlgraph.CreateSpec) {
 		_spec.SetField(delegation.FieldSecret, field.TypeBytes, value)
 		_node.Secret = value
 	}
-	if value, ok := _c.mutation.Issuer(); ok {
-		_spec.SetField(delegation.FieldIssuer, field.TypeBytes, value)
-		_node.Issuer = value
+	if value, ok := _c.mutation.IssuedTo(); ok {
+		_spec.SetField(delegation.FieldIssuedTo, field.TypeBytes, value)
+		_node.IssuedTo = value
 	}
 	if value, ok := _c.mutation.DateExpires(); ok {
 		_spec.SetField(delegation.FieldDateExpires, field.TypeTime, value)

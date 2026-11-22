@@ -2635,21 +2635,21 @@ func (m *ContinuationMutation) OldSecret(ctx context.Context) (v []byte, err err
 	return oldValue.Secret, nil
 }
 
-// OldIssuer returns the old "issuer" field's value of the Continuation entity.
+// OldIssuedTo returns the old "issued_to" field's value of the Continuation entity.
 // If the Continuation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ContinuationMutation) OldIssuer(ctx context.Context) (v []byte, err error) {
+func (m *ContinuationMutation) OldIssuedTo(ctx context.Context) (v []byte, err error) {
 	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldIssuer is only allowed on UpdateOne operations")
+		return v, errors.New("OldIssuedTo is only allowed on UpdateOne operations")
 	}
 	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldIssuer requires an Id field in the mutation")
+		return v, errors.New("OldIssuedTo requires an Id field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldIssuer: %w", err)
+		return v, fmt.Errorf("querying old value for OldIssuedTo: %w", err)
 	}
-	return oldValue.Issuer, nil
+	return oldValue.IssuedTo, nil
 }
 
 // OldMeteredBy returns the old "metered_by" field's value of the Continuation entity.
@@ -2763,8 +2763,8 @@ func (m *ContinuationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldSatisfied(ctx)
 	case continuation.FieldSecret:
 		return m.OldSecret(ctx)
-	case continuation.FieldIssuer:
-		return m.OldIssuer(ctx)
+	case continuation.FieldIssuedTo:
+		return m.OldIssuedTo(ctx)
 	case continuation.FieldMeteredBy:
 		return m.OldMeteredBy(ctx)
 	case continuation.FieldDateExpires:
@@ -3274,21 +3274,21 @@ func (m *DelegationMutation) OldSecret(ctx context.Context) (v []byte, err error
 	return oldValue.Secret, nil
 }
 
-// OldIssuer returns the old "issuer" field's value of the Delegation entity.
+// OldIssuedTo returns the old "issued_to" field's value of the Delegation entity.
 // If the Delegation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DelegationMutation) OldIssuer(ctx context.Context) (v []byte, err error) {
+func (m *DelegationMutation) OldIssuedTo(ctx context.Context) (v []byte, err error) {
 	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldIssuer is only allowed on UpdateOne operations")
+		return v, errors.New("OldIssuedTo is only allowed on UpdateOne operations")
 	}
 	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldIssuer requires an Id field in the mutation")
+		return v, errors.New("OldIssuedTo requires an Id field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldIssuer: %w", err)
+		return v, fmt.Errorf("querying old value for OldIssuedTo: %w", err)
 	}
-	return oldValue.Issuer, nil
+	return oldValue.IssuedTo, nil
 }
 
 // OldDateExpires returns the old "date_expires" field's value of the Delegation entity.
@@ -3402,8 +3402,8 @@ func (m *DelegationMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldMethods(ctx)
 	case delegation.FieldSecret:
 		return m.OldSecret(ctx)
-	case delegation.FieldIssuer:
-		return m.OldIssuer(ctx)
+	case delegation.FieldIssuedTo:
+		return m.OldIssuedTo(ctx)
 	case delegation.FieldDateExpires:
 		return m.OldDateExpires(ctx)
 	case delegation.FieldDateAuthenticated:
@@ -5853,21 +5853,21 @@ func (m *LinkMutation) OldSecret(ctx context.Context) (v []byte, err error) {
 	return oldValue.Secret, nil
 }
 
-// OldIssuer returns the old "issuer" field's value of the Link entity.
+// OldIssuedTo returns the old "issued_to" field's value of the Link entity.
 // If the Link object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *LinkMutation) OldIssuer(ctx context.Context) (v []byte, err error) {
+func (m *LinkMutation) OldIssuedTo(ctx context.Context) (v []byte, err error) {
 	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldIssuer is only allowed on UpdateOne operations")
+		return v, errors.New("OldIssuedTo is only allowed on UpdateOne operations")
 	}
 	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldIssuer requires an Id field in the mutation")
+		return v, errors.New("OldIssuedTo requires an Id field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldIssuer: %w", err)
+		return v, fmt.Errorf("querying old value for OldIssuedTo: %w", err)
 	}
-	return oldValue.Issuer, nil
+	return oldValue.IssuedTo, nil
 }
 
 // OldDateExpires returns the old "date_expires" field's value of the Link entity.
@@ -5983,8 +5983,8 @@ func (m *LinkMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldLeave(ctx)
 	case link.FieldSecret:
 		return m.OldSecret(ctx)
-	case link.FieldIssuer:
-		return m.OldIssuer(ctx)
+	case link.FieldIssuedTo:
+		return m.OldIssuedTo(ctx)
 	case link.FieldDateExpires:
 		return m.OldDateExpires(ctx)
 	case link.FieldDateUpdated:

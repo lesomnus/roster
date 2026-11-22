@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/link.proto.
  */
 export const file_app_link: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvbGluay5wcm90bxIGcm9zdGVyIsUECgRMaW5rEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESJgoFZW1haWwYDCABKAsyDS5yb3N0ZXIuRW1haWxCCPKCFgQ4AUABEhgKAmF0GAggASgJQgzqghYCQAGqwRYCGAASHQoFbGVhdmUYECABKAhCDuqCFgpAAYIBBWZhbHNlEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESHAoGaXNzdWVyGAogASgMQgzqghYCQAGqwRYCGAASOgoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEII6oIWBDgBQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOm/K/BUtEgmCAQCKAQCaAQAaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWOggXMiUKEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYgFChkIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_app_email, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvbGluay5wcm90bxIGcm9zdGVyIsgECgRMaW5rEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESJgoFZW1haWwYDCABKAsyDS5yb3N0ZXIuRW1haWxCCPKCFgQ4AUABEhgKAmF0GAggASgJQgzqghYCQAGqwRYCGAASHQoFbGVhdmUYECABKAhCDuqCFgpAAYIBBWZhbHNlEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESHwoJaXNzdWVkX3RvGAogASgMQgzqghYCQAGqwRYCGAASOgoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEII6oIWBDgBQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOm/K/BUtEgmCAQCKAQCaAQAaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWOggXMiUKEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYgFChkIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_app_email, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Link is a way in that roster mints and somebody else delivers -- or, for two
@@ -90,12 +90,13 @@ export type Link = Message<"roster.Link"> & {
    *
    * # The third kind, and what tells it from the other two
    *
-   * A recovery link is bound to its **issuer** -- the app that asked for it
-   * spends it (`issuer`, below) -- and ends in a delegation for that app. This
-   * one is the opposite on both counts, deliberately: it is minted by one
-   * caller and spent by a browser at roster's own console, where there is no
-   * key to bind to, so what it is bound to instead is **where** -- the tenant's
-   * own name, resolved the way every sign-in at that console is (`cmd.Hosted`).
+   * A recovery link is bound to the caller it was **issued to** -- the app that
+   * asked for it spends it (`issued_to`, below) -- and ends in a delegation for
+   * that app. This one is the opposite on both counts, deliberately: it is
+   * minted by one caller and spent by a browser at roster's own console, where
+   * there is no key to bind to, so what it is bound to instead is **where** --
+   * the tenant's own name, resolved the way every sign-in at that console is
+   * (`cmd.Hosted`).
    * And it ends in roster's own session, which is why a tenant with no
    * passwords may have one minted: nothing about it hands over a password.
    *
@@ -165,9 +166,9 @@ export type Link = Message<"roster.Link"> & {
    *
    * Not personal: a key's identifier, as bytes.
    *
-   * @generated from field: bytes issuer = 10;
+   * @generated from field: bytes issued_to = 10;
    */
-  issuer: Uint8Array;
+  issuedTo: Uint8Array;
 
   /**
    * When it stops working, and there is no such thing as one that does not.

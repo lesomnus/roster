@@ -306,7 +306,7 @@ func TestALinkThatConfirmsLeavingAsksWhatLeavingAsks(t *testing.T) {
 			Email:       app.EmailRef_builder{Id: l.address(t, "someone@contoso.example")}.Build(),
 			Leave:       z.Ptr(true),
 			Secret:      sum,
-			Issuer:      issuerOf(t, ctx, l.keyedBuilt),
+			IssuedTo:    issuerOf(t, ctx, l.keyedBuilt),
 			DateExpires: timestamppb.New(time.Now().Add(-time.Minute)),
 		}.Build())
 		x.NoError(err)

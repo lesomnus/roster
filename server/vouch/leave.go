@@ -145,7 +145,7 @@ func (s *Server) LeaveLink(ctx context.Context, req *app.VouchLeaveLinkRequest) 
 		Email:       app.EmailRef_builder{Id: e.GetId()}.Build(),
 		Leave:       z.Ptr(true),
 		Secret:      sum,
-		Issuer:      issuer.Bytes(),
+		IssuedTo:    issuer.Bytes(),
 		DateExpires: timestamppb.New(time.Now().Add(LeaveFor)),
 	}.Build())
 	if err != nil {
@@ -188,7 +188,7 @@ func (s *Server) Leave(ctx context.Context, req *app.VouchLeaveRequest) (*app.Me
 	e := v.GetEmail()
 	switch {
 	case !v.GetLeave(), v.GetAt() != "", len(e.GetId()) == 0,
-		subtle.ConstantTimeCompare(v.GetIssuer(), issuer.Bytes()) != 1,
+		subtle.ConstantTimeCompare(v.GetIssuedTo(), issuer.Bytes()) != 1,
 		e.GetDateErased() != nil, e.GetDateVerified() == nil,
 		!bytes.Equal(e.GetHolder().GetId(), v.GetHolder().GetId()):
 		return nil, no

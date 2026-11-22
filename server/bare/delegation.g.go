@@ -147,7 +147,7 @@ func (st DelegationServiceServer) create(ctx context.Context, req *rstr.Delegati
 		q.SetMethods(u)
 	}
 	q.SetSecret(req.GetSecret())
-	q.SetIssuer(req.GetIssuer())
+	q.SetIssuedTo(req.GetIssuedTo())
 	if req.HasDateExpires() {
 		q.SetDateExpires(req.GetDateExpires().AsTime())
 	}
@@ -295,8 +295,8 @@ func DelegationSelectedFields(m *rstr.DelegationSelect) []string {
 	if m.GetSecret() {
 		vs = append(vs, delegation.FieldSecret)
 	}
-	if m.GetIssuer() {
-		vs = append(vs, delegation.FieldIssuer)
+	if m.GetIssuedTo() {
+		vs = append(vs, delegation.FieldIssuedTo)
 	}
 	if m.GetDateExpires() {
 		vs = append(vs, delegation.FieldDateExpires)
@@ -400,7 +400,7 @@ func DelegationGetKey(ctx context.Context, db *ent.Client, ref *rstr.DelegationR
 var delegationOrmEntity = ormpatch.MustEntityOf(rstr.File_app_delegation_proto, "Delegation")
 
 var delegationPatchColumns = entpatch.Columns{
-	1: delegation.FieldId, 2: delegation.HolderColumn, 8: delegation.FieldMethods, 9: delegation.FieldSecret, 10: delegation.FieldIssuer, 11: delegation.FieldDateExpires, 12: delegation.FieldDateAuthenticated, 13: delegation.FieldDateUpdated, 14: delegation.FieldDateErased, 15: delegation.FieldDateCreated}
+	1: delegation.FieldId, 2: delegation.HolderColumn, 8: delegation.FieldMethods, 9: delegation.FieldSecret, 10: delegation.FieldIssuedTo, 11: delegation.FieldDateExpires, 12: delegation.FieldDateAuthenticated, 13: delegation.FieldDateUpdated, 14: delegation.FieldDateErased, 15: delegation.FieldDateCreated}
 
 func (s DelegationServiceServer) Apply(ctx context.Context, req *rstr.DelegationApplyRequest) (*rstr.Delegation, error) {
 	if !req.HasPatch() {

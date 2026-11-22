@@ -83,10 +83,10 @@ func wrote(t *testing.T, ctx context.Context, b *keyedBuilt, who pdid.Id, method
 	x.NoError(err)
 
 	req := app.DelegationAddRequest_builder{
-		Holder:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
-		Secret:  sum,
-		Issuer:  issuerOf(t, ctx, b),
-		Methods: methods,
+		Holder:   app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Secret:   sum,
+		IssuedTo: issuerOf(t, ctx, b),
+		Methods:  methods,
 	}
 	if expires != nil {
 		req.DateExpires = expires

@@ -16,8 +16,8 @@ const (
 	FieldSatisfied = "satisfied"
 	// FieldSecret holds the string denoting the secret field in the database.
 	FieldSecret = "secret"
-	// FieldIssuer holds the string denoting the issuer field in the database.
-	FieldIssuer = "issuer"
+	// FieldIssuedTo holds the string denoting the issued_to field in the database.
+	FieldIssuedTo = "issued_to"
 	// FieldMeteredBy holds the string denoting the metered_by field in the database.
 	FieldMeteredBy = "metered_by"
 	// FieldDateExpires holds the string denoting the date_expires field in the database.
@@ -48,7 +48,7 @@ var Columns = []string{
 	FieldId,
 	FieldSatisfied,
 	FieldSecret,
-	FieldIssuer,
+	FieldIssuedTo,
 	FieldMeteredBy,
 	FieldDateExpires,
 	FieldDateUpdated,

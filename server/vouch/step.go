@@ -455,7 +455,7 @@ func (s *Server) begin(ctx context.Context, who pdid.Id, satisfied []string, met
 		Holder:      app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Satisfied:   satisfied,
 		Secret:      sum[:],
-		Issuer:      issuer.Bytes(),
+		IssuedTo:    issuer.Bytes(),
 		MeteredBy:   metered,
 		DateExpires: timestamppb.New(time.Now().Add(ContinueFor)),
 	}.Build())
@@ -485,7 +485,7 @@ func (s *Server) continuation(ctx context.Context, handle string, by pdid.Id) (*
 		Select: app.ContinuationSelect_builder{
 			Secret:      z.Ptr(true),
 			Satisfied:   z.Ptr(true),
-			Issuer:      z.Ptr(true),
+			IssuedTo:    z.Ptr(true),
 			MeteredBy:   z.Ptr(true),
 			DateExpires: z.Ptr(true),
 			DateUpdated: z.Ptr(true),
@@ -555,8 +555,8 @@ func (s *Server) continuation(ctx context.Context, handle string, by pdid.Id) (*
 		return nil, status.Error(codes.NotFound, "no such continuation")
 	}
 
-	if len(v.GetIssuer()) == 0 || by == pdid.Nil ||
-		subtle.ConstantTimeCompare(v.GetIssuer(), by.Bytes()) != 1 {
+	if len(v.GetIssuedTo()) == 0 || by == pdid.Nil ||
+		subtle.ConstantTimeCompare(v.GetIssuedTo(), by.Bytes()) != 1 {
 		// D21's third condition. Two empty slices compare equal, so each side
 		// is refused before the comparison rather than by it.
 		return nil, status.Error(codes.NotFound, "no such continuation")

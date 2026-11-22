@@ -174,7 +174,7 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 	if _, err := s.open.Link().Add(ctx, app.LinkAddRequest_builder{
 		Holder:      app.HolderRef_builder{Id: who.GetId()}.Build(),
 		Secret:      sum,
-		Issuer:      issuer.Bytes(),
+		IssuedTo:    issuer.Bytes(),
 		DateExpires: timestamppb.New(expires),
 	}.Build()); err != nil {
 		return nil, err
@@ -267,8 +267,8 @@ func (s *Server) link(ctx context.Context, token string, by pdid.Id) (*app.Link,
 		return nil, err
 	}
 
-	if len(v.GetIssuer()) == 0 || by == pdid.Nil ||
-		subtle.ConstantTimeCompare(v.GetIssuer(), by.Bytes()) != 1 {
+	if len(v.GetIssuedTo()) == 0 || by == pdid.Nil ||
+		subtle.ConstantTimeCompare(v.GetIssuedTo(), by.Bytes()) != 1 {
 		return nil, status.Error(codes.NotFound, "no such link")
 	}
 
@@ -352,7 +352,7 @@ func (s *Server) row(ctx context.Context, token string) (*app.Link, error) {
 		Ref: app.LinkRef_builder{Secret: sum[:]}.Build(),
 		Select: app.LinkSelect_builder{
 			Secret:      z.Ptr(true),
-			Issuer:      z.Ptr(true),
+			IssuedTo:    z.Ptr(true),
 			At:          z.Ptr(true),
 			DateExpires: z.Ptr(true),
 			// When it was minted, to read against when everything of its
@@ -499,7 +499,7 @@ func (s *Server) linkAt(ctx context.Context, holder, issuer pdid.Id, at string) 
 	row, err := s.open.Link().Add(ctx, app.LinkAddRequest_builder{
 		Holder:      app.HolderRef_builder{Id: holder.Bytes()}.Build(),
 		Secret:      sum,
-		Issuer:      issuer.Bytes(),
+		IssuedTo:    issuer.Bytes(),
 		At:          at,
 		DateExpires: timestamppb.New(time.Now().Add(LinkAtFor)),
 	}.Build())

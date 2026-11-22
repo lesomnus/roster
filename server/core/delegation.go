@@ -80,14 +80,14 @@ func (s coreDelegation) Get(ctx context.Context, req *app.DelegationGetRequest) 
 	v, err := s.DelegationServiceServer.Get(ctx, app.DelegationGetRequest_builder{
 		Ref: req.GetRef(),
 		Select: app.DelegationSelect_builder{
-			Issuer: z.Ptr(true),
-			Holder: app.HolderSelect_builder{}.Build(),
+			IssuedTo: z.Ptr(true),
+			Holder:   app.HolderSelect_builder{}.Build(),
 		}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
 	}
-	if f, ok := frame.From(ctx); !ok || f.Actor.IsZero() || subtle.ConstantTimeCompare(v.GetIssuer(), f.Actor.Bytes()) != 1 {
+	if f, ok := frame.From(ctx); !ok || f.Actor.IsZero() || subtle.ConstantTimeCompare(v.GetIssuedTo(), f.Actor.Bytes()) != 1 {
 		holder, err := pdid.From(v.GetHolder().GetId())
 		if err != nil {
 			return nil, err
@@ -162,12 +162,12 @@ func (s coreDelegation) reachesOrWasIssued(ctx context.Context, ref *app.Delegat
 	if f, ok := frame.From(ctx); ok && !f.Actor.IsZero() {
 		v, err := s.DelegationServiceServer.Get(ctx, app.DelegationGetRequest_builder{
 			Ref:    ref,
-			Select: app.DelegationSelect_builder{Issuer: z.Ptr(true)}.Build(),
+			Select: app.DelegationSelect_builder{IssuedTo: z.Ptr(true)}.Build(),
 		}.Build())
 		if err != nil {
 			return err
 		}
-		if subtle.ConstantTimeCompare(v.GetIssuer(), f.Actor.Bytes()) == 1 {
+		if subtle.ConstantTimeCompare(v.GetIssuedTo(), f.Actor.Bytes()) == 1 {
 			return nil
 		}
 	}
