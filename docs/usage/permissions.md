@@ -432,7 +432,7 @@ Every write above is refused if the caller does not already hold what the write
 hands over:
 
 ```
-role.methods: you do not hold /roster.HolderService/Erase here, so you may not grant it
+role.methods: you do not hold "/roster.HolderService/Erase" here, so you may not grant it
 ```
 
 Each method must be covered by **one** thing the caller holds, on its own.
@@ -468,7 +468,7 @@ and erasing a team is that for every role held in it, since a team erased hands
 out nothing:
 
 ```
-methods: you do not hold /roster.HolderService/Erase here, so you may not take it away
+methods: you do not hold "/roster.HolderService/Erase" here, so you may not take it away
 ```
 
 Nobody takes away what they could not have given. What somebody holds is also

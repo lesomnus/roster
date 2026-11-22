@@ -14,6 +14,7 @@ import (
 	"github.com/lesomnus/z"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/quote"
 )
 
 // Narrow takes methods out of a role; `role_svc.ext.proto` says why it is a
@@ -190,7 +191,7 @@ func (s Core) mayTakeAway(ctx context.Context, field string, methods []string, a
 	for _, m := range methods {
 		if !slices.ContainsFunc(reaches, func(v string) bool { return frame.Covers(v, m) }) {
 			return status.Errorf(codes.PermissionDenied,
-				"%s: you do not hold %s here, so you may not take it away", field, m)
+				"%s: you do not hold %s here, so you may not take it away", field, quote.Sent(m))
 		}
 	}
 

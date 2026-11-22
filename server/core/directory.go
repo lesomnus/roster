@@ -17,6 +17,7 @@ import (
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
+	"github.com/lesomnus/roster/server/quote"
 )
 
 // A directory's say over the people it provisions: `Provision`, `Deactivate`
@@ -132,14 +133,14 @@ func (s coreHolder) Provision(ctx context.Context, req *app.HolderProvisionReque
 	}
 	if req.GetProvider() != c.GetName() {
 		return nil, pderr.Invalidf("provider",
-			"%q is not the connection this tenant provisions through, which is %q", req.GetProvider(), c.GetName())
+			"%s is not the connection this tenant provisions through, which is %q", quote.Sent(req.GetProvider()), c.GetName())
 	}
 	if err := subjectIsStable(req.GetSubject()); err != nil {
 		return nil, err
 	}
 	if subjectClaimOf(c.GetSubjectClaim()) == claimOid && !front.GUID(req.GetSubject()) {
 		return nil, pderr.Invalidf("subject",
-			"the %s connection names people by `oid`, which is a GUID, and %q is not one", c.GetName(), req.GetSubject())
+			"the %s connection names people by `oid`, which is a GUID, and %s is not one", c.GetName(), quote.Sent(req.GetSubject()))
 	}
 	if a := req.GetAddress(); a != "" {
 		if err := mailboxed("address", a); err != nil {
@@ -244,7 +245,7 @@ func (s coreHolder) freeAlias(ctx context.Context, tenant []byte, want string) (
 		try = want + "-" + slug.RandomAliasN(4)
 	}
 
-	return "", status.Errorf(codes.AlreadyExists, "alias: %q and every suffix tried are taken", want)
+	return "", status.Errorf(codes.AlreadyExists, "alias: %s and every suffix tried are taken", quote.Sent(want))
 }
 
 // Deactivate suspends somebody on their directory's word.
@@ -467,7 +468,7 @@ func (s coreHolder) Tell(ctx context.Context, req *app.HolderTellRequest) (*app.
 			}
 			if claim == claimOid && !front.GUID(subject) {
 				return nil, pderr.Invalidf("subject",
-					"the %s connection names people by `oid`, which is a GUID, and %q is not one", c.GetName(), subject)
+					"the %s connection names people by `oid`, which is a GUID, and %s is not one", c.GetName(), quote.Sent(subject))
 			}
 			patch.DirectorySubject = z.Ptr(subject)
 		}

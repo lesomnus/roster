@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/quote"
 )
 
 // randRead is `crypto/rand` behind a name, so that a test can be sure what it
@@ -76,7 +77,7 @@ func (s *Server) verifierOf(kind string) (verifier, error) {
 		return WebAuthn{}, nil
 
 	default:
-		return nil, status.Errorf(codes.InvalidArgument, "kind: %q is not something this checks", kind)
+		return nil, status.Errorf(codes.InvalidArgument, "kind: %s is not something this checks", quote.Sent(kind))
 	}
 }
 
@@ -195,10 +196,10 @@ var errAlone = status.Error(codes.FailedPrecondition,
 func Settable(kind string) error {
 	if k := kindOf(kind); k == KindTotp || k == KindWebAuthn {
 		return status.Errorf(codes.InvalidArgument,
-			"kind: %q is not something to set; a second factor is Enrol", k)
+			"kind: %s is not something to set; a second factor is Enrol", quote.Sent(k))
 	}
 	if kindOf(kind) != KindPassword {
-		return status.Errorf(codes.InvalidArgument, "kind: %q is not something this checks", kind)
+		return status.Errorf(codes.InvalidArgument, "kind: %s is not something this checks", quote.Sent(kind))
 	}
 
 	return nil

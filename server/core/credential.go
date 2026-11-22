@@ -17,6 +17,7 @@ import (
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/keys"
+	"github.com/lesomnus/roster/server/quote"
 	"github.com/lesomnus/roster/server/vouch"
 )
 
@@ -468,7 +469,7 @@ func (s coreCredential) Issue(ctx context.Context, req *app.CredentialIssueReque
 		// once -- the same shape as this and a different act, because what
 		// somebody does with a seed is scan it rather than read it out.
 		return nil, status.Errorf(codes.InvalidArgument,
-			"kind: %q is not a password; a second factor is Enrol", kind)
+			"kind: %s is not a password; a second factor is Enrol", quote.Sent(kind))
 	}
 
 	// Whoever this is about, resolved **here** and once, before the passphrase
@@ -676,7 +677,7 @@ func (s coreCredential) enrol(ctx context.Context, ref *app.HolderRef, kind, nam
 		// key holds. Refused rather than routed: a caller asking for one here
 		// has misunderstood which act they are doing.
 		return "", "", status.Errorf(codes.InvalidArgument,
-			"kind: %q is not something to enrol; a password is Set or Reset", kind)
+			"kind: %s is not something to enrol; a password is Set or Reset", quote.Sent(kind))
 	}
 
 	// Read the person before writing, for the alias the URI carries and the id

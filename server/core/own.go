@@ -10,6 +10,7 @@ import (
 	"github.com/lesomnus/payday/frame"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/quote"
 )
 
 // What somebody does to their own account, and what lets them.
@@ -131,7 +132,7 @@ func mayBeOwned(alias string, sited bool, methods []string) error {
 		if !slices.Contains(Owning, m) {
 			return status.Errorf(codes.FailedPrecondition,
 				"methods: the role %q is held by everybody of the tenant over what is their own, and %s is not one of the things somebody does to their own account (%s)",
-				Owns, m, strings.Join(Owning, ", "))
+				Owns, quote.Sent(m), strings.Join(Owning, ", "))
 		}
 	}
 

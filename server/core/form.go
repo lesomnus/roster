@@ -18,6 +18,7 @@ import (
 	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/portrait"
+	"github.com/lesomnus/roster/server/quote"
 )
 
 // What is written of a row has a length.
@@ -219,7 +220,7 @@ func spelled(field, v string) error {
 		return pderr.At(field, err)
 	}
 	if w != v {
-		return pderr.Invalidf(field, "written as it is read, so %q rather than %s", w, quoted(v))
+		return pderr.Invalidf(field, "written as it is read, so %s rather than %s", quote.Sent(w), quote.Sent(v))
 	}
 
 	return nil
@@ -256,10 +257,10 @@ func labelled(labels map[string]string) error {
 	}
 	for k, v := range labels {
 		if len(k) > MaxLabelKey {
-			return pderr.Invalidf("labels", "a key is at most %d bytes, and %s is %d", MaxLabelKey, quoted(k), len(k))
+			return pderr.Invalidf("labels", "a key is at most %d bytes, and %s is %d", MaxLabelKey, quote.Sent(k), len(k))
 		}
 		if len(v) > MaxLabelValue {
-			return pderr.Invalidf("labels", "a value is at most %d bytes, and that of %s is %d", MaxLabelValue, quoted(k), len(v))
+			return pderr.Invalidf("labels", "a value is at most %d bytes, and that of %s is %d", MaxLabelValue, quote.Sent(k), len(v))
 		}
 	}
 
@@ -302,7 +303,7 @@ func personal(p *app.Profile, data *anypb.Any) error {
 		// `Update` refused the same as the caller's mistake. One that says
 		// nothing at all is stored as nothing, as it was.
 		if _, err := data.UnmarshalNew(); err != nil {
-			return pderr.Invalidf("data", "roster cannot read a message of type %s from it", quoted(data.GetTypeUrl()))
+			return pderr.Invalidf("data", "roster cannot read a message of type %s from it", quote.Sent(data.GetTypeUrl()))
 		}
 	}
 

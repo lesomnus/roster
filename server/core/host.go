@@ -20,6 +20,7 @@ import (
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/prove"
+	"github.com/lesomnus/roster/server/quote"
 )
 
 // A name is stored as it will be compared, and this is what says so.
@@ -364,11 +365,11 @@ func normalised(field, v string, by func(string) string) error {
 		return nil
 	}
 	if w == "" {
-		return status.Errorf(codes.InvalidArgument, "%s: %q is not a name", field, v)
+		return status.Errorf(codes.InvalidArgument, "%s: %s is not a name", field, quote.Sent(v))
 	}
 
 	return status.Errorf(codes.InvalidArgument,
-		"%s: stored as it is compared, so %q rather than %q", field, w, v)
+		"%s: stored as it is compared, so %s rather than %s", field, quote.Sent(w), quote.Sent(v))
 }
 
 // hostnamed is [normalised] for a host's name, which is also held to being a
@@ -380,7 +381,7 @@ func normalised(field, v string, by func(string) string) error {
 func hostnamed(field, v string) error {
 	if w := front.Hostname(v); w != "" {
 		if why := front.NotHostname(w); why != "" {
-			return status.Errorf(codes.InvalidArgument, "%s: %q is not a hostname: %s", field, v, why)
+			return status.Errorf(codes.InvalidArgument, "%s: %s is not a hostname: %s", field, quote.Sent(v), why)
 		}
 	}
 

@@ -19,6 +19,7 @@ import (
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/keys"
+	"github.com/lesomnus/roster/server/quote"
 )
 
 // Delegate is [Server.Verify], and on a yes it mints a credential for the
@@ -217,7 +218,7 @@ func (s *Server) mayDelegate(ctx context.Context, methods []string) error {
 	for _, m := range methods {
 		if !f.Grant.Allows(m) {
 			return status.Errorf(codes.PermissionDenied,
-				"methods: you may not call %s, so you may not hand it out", m)
+				"methods: you may not call %s, so you may not hand it out", quote.Sent(m))
 		}
 	}
 
@@ -235,7 +236,7 @@ func (s *Server) mayDelegate(ctx context.Context, methods []string) error {
 			// In this rule's words and not the gate's, which are about a call
 			// that was made: nothing here was called.
 			return status.Errorf(codes.PermissionDenied,
-				"methods: you may not call %s, so you may not hand it out", m)
+				"methods: you may not call %s, so you may not hand it out", quote.Sent(m))
 		}
 		if err != nil {
 			return err
