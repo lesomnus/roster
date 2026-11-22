@@ -132,6 +132,10 @@ func (Binding) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("date_created", "id").
 			StorageKey("binding_page"),
+		index.Fields("holder_id").
+			StorageKey("binding_by_holder"),
+		index.Fields("group_id").
+			StorageKey("binding_by_group"),
 	}
 }
 
