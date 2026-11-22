@@ -153,13 +153,13 @@ func begun(satisfied []string) bool {
 var errAlone = status.Error(codes.FailedPrecondition,
 	"a second factor is not a way in on its own; this account has nothing for it to be second to")
 
-// settable refuses a kind [Server.Set] must not write down.
+// Settable refuses a kind `Credential.Set` must not write down.
 //
 // # What was wrong with writing whatever arrived
 //
-// `Set` put the `kind` column in as it was handed over, and it is the only
+// `Set` put the `kind` column in as it was handed over, and it was the only
 // entry point here that did: `Verify` and `Continue` refuse a kind
-// [Server.verifierOf] does not know, `Reset` refuses anything but a password,
+// [Server.verifierOf] does not know, `Reset` refused anything but a password,
 // `Enrol` anything but a second factor.
 //
 // The row that let through is not inert and cannot be taken back. `factors`
@@ -167,8 +167,8 @@ var errAlone = status.Error(codes.FailedPrecondition,
 // sign-in offers a kind nothing can check; `answer` sets `ok` only when there
 // is nothing left to prove, so it never does; and `Continue` refuses the very
 // kind it was just offered. Meanwhile `CredentialService`'s generated writes
-// are shut a method at a time, `Reset` refuses the kind
-// and so does `Enrol` -- so no call on any plane can delete it. One mistyped kind in an admin console is a
+// were shut a method at a time, `Reset` refused the kind
+// and so did `Enrol` -- so no call on any plane could delete it. One mistyped kind in an admin console is a
 // person who needs a shell on the database to sign in again.
 //
 // # Why it asks verifierOf rather than holding a list

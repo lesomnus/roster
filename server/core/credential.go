@@ -24,8 +24,9 @@ import (
 // coreCredential is the layer over the generated `CredentialService`.
 //
 // The service is served now -- see `cmd/serve`'s register/closed -- but its
-// generated reads and raw writes stay closed by method, so what reaches the
-// wire is these overlays and nothing that answers with a stored verifier. The
+// generated reads and raw `Add` stay closed by method, so what reaches the
+// wire is these overlays and `Erase`, and nothing that answers with a stored
+// verifier. The
 // hashing that made `Vouch.Set` a service rather than a `Credential.Add` lives
 // here as a layer; this file is the beginning of moving that surface onto the
 // entity it was always about. See `CLAUDE.md`, *Overlay before service, layer
@@ -96,8 +97,8 @@ func (s coreCredential) Unlock(ctx context.Context, req *app.CredentialUnlockReq
 	return res.Build(), nil
 }
 
-// Set writes somebody's secret to the one given, hashing it -- the operator
-// write `Vouch.Set` was, now on the entity and named by a reference. The
+// Set writes the caller's own secret to the one given, hashing it -- what
+// `Vouch.Set` was, now on the entity and named by a reference. The
 // email/sign-in-form addressing stays with the recovery flow (option 2), so
 // this takes a HolderRef and does no address lookup.
 //
@@ -107,13 +108,13 @@ func (s coreCredential) Unlock(ctx context.Context, req *app.CredentialUnlockReq
 // `mayReach` -- the last two now `server/core`'s own.
 //
 // **It is your own row or nothing.** Naming somebody else is refused here and
-// pointed at `Vouch.Reset`, which is the verb for giving somebody a password
-// they did not choose: it generates one, answers with it once, and voids what
-// came before. Both used to be this method, held apart by `mayReach` -- and
-// `mayReach` is the wrong shape for this one write. It asks whether the target
-// is no wider than the caller, which protects an administrator from a junior
-// and does nothing for an ordinary person, who is narrower than almost
-// everybody. A password is the most persistent thing there is to write on
+// pointed at [coreCredential.Issue], which is the verb for giving somebody a
+// password they did not choose: it generates one, answers with it once, and
+// voids what came before. Both used to be this method, held apart by
+// `mayReach` -- and `mayReach` is the wrong shape for this one write. It asks
+// whether the target is no wider than the caller, which protects an
+// administrator from a junior and does nothing for an ordinary person, who is
+// narrower than almost everybody. A password is the most persistent thing there is to write on
 // somebody's row and it now has one door, which an operator walks through on
 // purpose.
 //
@@ -224,7 +225,7 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 	// wider than the caller.
 	//
 	// Whether a **caller** may name anybody else at all is not decided here:
-	// that is [Self], a layer above this one, which `Vouch.Reset` enters below.
+	// that is [Self], a layer above this one, which `Issue` enters below.
 	f, framed := frame.From(ctx)
 	own := framed && !f.Actor.IsZero() && f.Actor == holder
 	if !own && len(req.GetCurrent()) != 0 {
@@ -673,11 +674,11 @@ func (s coreCredential) enrol(ctx context.Context, ref *app.HolderRef, kind, nam
 		}
 
 	default:
-		// A password is `Set` or `Reset`, and neither is a thing a phone or a
+		// A password is `Set` or `Issue`, and neither is a thing a phone or a
 		// key holds. Refused rather than routed: a caller asking for one here
 		// has misunderstood which act they are doing.
 		return "", "", status.Errorf(codes.InvalidArgument,
-			"kind: %s is not something to enrol; a password is Set or Reset", quote.Sent(kind))
+			"kind: %s is not something to enrol; a password is Set or Issued", quote.Sent(kind))
 	}
 
 	// Read the person before writing, for the alias the URI carries and the id

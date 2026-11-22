@@ -107,7 +107,8 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 		}
 	}
 
-	// Through the **walled** server, as `Reset`, `Unlock` and `Enrol` read.
+	// Through the **walled** server, as `CredentialService`'s `Issue`, `Unlock`
+	// and `Enrol` read.
 	//
 	// `Verify` reads the unwalled one because the person signing in has no
 	// credential yet and there is no frame to narrow by. This is not that call:
