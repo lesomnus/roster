@@ -525,7 +525,7 @@ func (s coreIdentity) Resubject(ctx context.Context, req *app.IdentityResubjectR
 			patch.DateUpdatedForce = z.Ptr(true)
 		}
 
-		w, err := next.Identity().Patch(ctx, patch.Build())
+		w, err := versioned(next.Identity().Patch(ctx, patch.Build()))
 		if err != nil {
 			return err
 		}

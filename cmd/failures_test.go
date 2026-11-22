@@ -275,7 +275,7 @@ func failureReads(row string, as pdid.Id, r failureRows) []failureCall {
 // Each row that a test can make is made here, for a representative verb of
 // five or six services, and the code is the one the row says, in the order the
 // row says them; the HTTP status is the row's too. A row a test cannot make
-// (roster's own store away, a deadline, a race roster lost) is named below
+// (roster's own store away, a deadline) is named below
 // with the reason, so that a row added to the page is a row this test is told
 // about.
 func TestTheManualsTableOfFailuresIsWhatIsAnswered(t *testing.T) {
@@ -451,9 +451,8 @@ func TestTheManualsTableOfFailuresIsWhatIsAnswered(t *testing.T) {
 	// What a test does not make, and why. Each is a row of the page all the
 	// same, and a row the page adds is one this list is told about.
 	notMade := map[string]string{
-		"a race roster lost to another write": "two writes made to meet in one moment, which a test can only hope for",
-		"a deadline":                          "a test does not time anything",
-		"roster itself failing":               "the store taken away under a running server, which is not a refusal of anybody's",
+		"a deadline":            "a test does not time anything",
+		"roster itself failing": "the store taken away under a running server, which is not a refusal of anybody's",
 	}
 	for _, row := range rows {
 		if made[row.failure] {

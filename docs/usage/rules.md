@@ -61,8 +61,7 @@ itself failing, and is not mended by changing the request.
 | a row that exists already | `AlreadyExists`, *Site already exists* and the like, for an alias, an address, a name taken in the tenant. A second account at one provider for one person (`IdentityService/Add`) is `InvalidArgument` | 409 / 400 | it is there: read it |
 | a request that cannot be taken as it is written | `InvalidArgument`: a field left out or empty, too long, or of the wrong form; a reference with no key in it; a version left out where the verb needs one; a moment or a mark the server stamps | 400 | mend the request; sent again as it is, it is refused again |
 | one rule's refusal | `FailedPrecondition` where what is refused is the state the write would leave: the tenant's last administrator, somebody's last way in, a site with something still in it, a row a file declares. `PermissionDenied` where it is how far the caller reaches: a grant wider than they hold, a password not their own (`Set` writes one's own, `Issue` somebody else's) | 400 / 403 | the words say what would be right; sent again as it is, it is refused again |
-| a version that moved (**not settled**) | `FailedPrecondition`, the code of a rule's refusal, in three wordings (the generated verbs' is *a test in the patch did not hold*). The version is `date_updated`, as the read answered it | 400 | read the row again and send the write again with its `date_updated` |
-| a race roster lost to another write | `Aborted`, *… ask again*: a role's methods changed each time `Widen` or `Narrow` read them, or a tenant's `group-manager` role was being made by another call | 409 | ask again |
+| a version that moved, or a race roster lost to another write | `Aborted`. A version that moved is *date_updated: it has changed since the version you sent; read it again and send the write again*, from every verb that takes one; the version is `date_updated`, as the read answered it. A race roster lost is *… ask again*: a role's methods changed each time `Widen` or `Narrow` read them, or a tenant's `group-manager` role was being made by another call | 409 | read the row again and send the write again with its `date_updated`; a write that sent none, ask again |
 | a general write | `Unimplemented`, *is not served; it is how the servers write, not how a caller asks*: every `Patch` and `Apply`, and `CredentialService`'s reads. It is decided after the gate, so a caller who lacks the method is `PermissionDenied` first | 501 / 403 | use the entity's own verb (`Update`, `Widen`, `Realias`, …), where it has one |
 | a method nobody serves | `Unimplemented`, gRPC's own *unknown method* or *unknown service*, before anybody is asked who they are. Over HTTP it is a 404 as plain text, not the error's JSON | 404 | the server is older than the client, or the name is wrong |
 | the deployment is not set up for it (**not settled**) | `Unimplemented` (*this deployment holds no key to wrap a seed with*, *nobody leaves by a link here*, and others) or `FailedPrecondition` (*this deployment cannot check whether a name is yours*, and others), by the verb | 501 / 400 | do not offer it; whoever runs the deployment turns it on |
@@ -71,10 +70,8 @@ itself failing, and is not mended by changing the request.
 | roster itself failing | `Unavailable`, `Unknown` or `Internal`, by where it was met: a store that cannot be reached, a constraint the store refused in its own words, a panic. None of the three is a refusal of the call | 503 / 500 / 500 | ask again later; tell whoever runs the deployment, with the time |
 | an `Erase` of a row that is not there (**not settled**) | `NotFound` in `Binding`, `Connection`, `Holder`, `Host`, `MailDomain`, `Nomination`, `Role`, `Site`; and `OK`, erasing nothing, in `ApiKey`, `Credential`, `Delegation`, `Email`, `Group`, `GroupExposure`, `GroupMembership`, `HostProof`, `Identity`, `Phone`, `Relation`, `SiteMembership`, `Team`, `TeamMembership`. The same of a row of another tenant and of an erased one | 404 / 200 | take either as *it is gone* |
 
-**Three are not settled**, and are written as they are today: one failure
-answered two ways. A version that moved has the code of a rule's refusal, so a
-page cannot tell *read again and send again* from a refusal nothing mends but
-by the words. The deployment not set up for something is `Unimplemented` from
+**Two are not settled**, and are written as they are today: one failure
+answered two ways. The deployment not set up for something is `Unimplemented` from
 some verbs and `FailedPrecondition` from others. An `Erase` of a row that is
 not there is `NotFound` from eight services and success from fourteen. Each may
 change before the API is frozen; a page written today reads the code as this
@@ -83,7 +80,9 @@ table has it, and the roadmap says when it changes.
 `TestTheManualsTableOfFailuresIsWhatIsAnswered` sends each failure a test can
 make to a verb of five or six services, over gRPC and through the transcoder,
 and holds the code and the status to this table's, reading the rows from this
-page.
+page. `TestAVersionThatMovedIsAbortedInOneSentence` asks each of the seventeen
+verbs that take a version with one that has moved, and holds each to the same
+code, status and sentence.
 
 ## Where a grant reaches
 

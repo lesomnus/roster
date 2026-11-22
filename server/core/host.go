@@ -318,7 +318,7 @@ func (s coreHost) Update(ctx context.Context, req *app.HostUpdateRequest) (*app.
 		patch.Desc = z.Ptr(req.GetDesc())
 	}
 
-	return s.HostServiceServer.Patch(ctx, patch.Build())
+	return versioned(s.HostServiceServer.Patch(ctx, patch.Build()))
 }
 
 type coreMailDomain struct {
@@ -416,5 +416,5 @@ func (s coreMailDomain) Update(ctx context.Context, req *app.MailDomainUpdateReq
 		patch.Desc = z.Ptr(req.GetDesc())
 	}
 
-	return s.MailDomainServiceServer.Patch(ctx, patch.Build())
+	return versioned(s.MailDomainServiceServer.Patch(ctx, patch.Build()))
 }

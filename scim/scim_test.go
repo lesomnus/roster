@@ -89,7 +89,9 @@ func (s *said) lines() []string {
 	return out
 }
 
-func stand(t *testing.T) *deployment {
+// stand is the deployment; `opts` are handed to the server roster answers the
+// endpoint from.
+func stand(t *testing.T, opts ...grpc.ServerOption) *deployment {
 	t.Helper()
 	x := require.New(t)
 	ctx := t.Context()
@@ -139,7 +141,7 @@ func stand(t *testing.T) *deployment {
 	x.NoError(err)
 	d.key = d.mint(t, h.GetId(), "scim", scim.Methods)
 
-	g, err := s.Grpc(ctx, cmd.Config{})
+	g, err := s.Grpc(ctx, cmd.Config{}, opts...)
 	x.NoError(err)
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	x.NoError(err)
