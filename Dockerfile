@@ -36,7 +36,11 @@ RUN npm run build
 
 # Also on the builder's, cross-compiling to the target: a Go toolchain does that
 # natively, and emulating one to avoid it is the slow way to the same binary.
-FROM --platform=$BUILDPLATFORM golang:1.27 AS base
+#
+# The Go of `go.mod`'s `toolchain`, to the patch: the binary pushed is compiled
+# by the Go every test ran on, and not by whichever 1.27 was newest the day the
+# image was built.
+FROM --platform=$BUILDPLATFORM golang:1.27.4 AS base
 
 WORKDIR /src
 
@@ -128,9 +132,9 @@ COPY --from=page /src/ts/dist/login /pages/login
 # that seed a deployment once so `docker compose up` has a customer in it.
 #
 # Not a production image, and the difference is the point: it runs as root, its
-# base is named by a tag alone, and its answer about secrets is an environment
-# variable. See `docker/entrypoint.sh`. It is not the last stage, so a build
-# gets it only by naming it.
+# base is named by a tag alone where `app`'s is pinned by its digest, and its
+# answer about secrets is an environment variable. See `docker/entrypoint.sh`.
+# It is not the last stage, so a build gets it only by naming it.
 FROM alpine:3.24 AS dev
 
 # `curl` and `oathtool` beside the certificates because this stage is the one
@@ -154,7 +158,12 @@ CMD ["serve"]
 # Static rather than scratch: `roster account serve` makes outbound TLS calls to
 # whatever providers a tenant wrote down as `Connection` rows, so it needs root
 # certificates, and this is the smallest base that has them and a nonroot uid.
-FROM gcr.io/distroless/static-debian12:nonroot AS app
+#
+# By its digest, beside the tag it had when it was written: `nonroot` names no
+# version and moves when Google rebuilds it, so without the digest two builds
+# of one commit could be two bases. Renovate's Dockerfile manager moves the
+# digest when the tag moves, in a pull request the gates run on.
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab AS app
 
 ARG TARGETARCH
 
