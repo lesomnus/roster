@@ -96,14 +96,19 @@ func newExternal(t *testing.T) *external {
 	e.kim = addPerson(t, s, e.acme, "kim")
 	x.NoError(s.Close())
 
+	// At the box, as the operator `init` made: a command that writes a way in
+	// names who runs it (#284).
+	box := c
+	box.Client.As = "admin"
+
 	// What `docs/apps.md` says an app beside roster is given: a deployment
 	// key that holds nothing as itself, installed into the tenant whose people
 	// are its accounts -- acme, and not beta.
-	e.key = stdoutOf(t, cli.NewCmdControl(&c), "key", "add", "--narrowed", app)
-	x.NoError(cli.NewCmdApp(&c).Run(ctx, []string{"install", "--tenant", "acme", "--role", strings.Join(methods, ","), app}))
-	e.tenantKey = stdoutOf(t, cli.NewCmdKey(&c), "add", "--tenant", "acme", "--holder", app, "--name", app, "--allow", strings.Join(methods, ","))
-	e.admin = stdoutOf(t, cli.NewCmdKey(&c), "add", "--tenant", "acme", "--holder", "admin", "--name", "admin", "--allow", "/roster.*/*")
-	e.operator = stdoutOf(t, cli.NewCmdControl(&c), "key", "add", "--allow",
+	e.key = stdoutOf(t, cli.NewCmdControl(&box), "key", "add", "--narrowed", app)
+	x.NoError(cli.NewCmdApp(&box).Run(ctx, []string{"install", "--tenant", "acme", "--role", strings.Join(methods, ","), app}))
+	e.tenantKey = stdoutOf(t, cli.NewCmdKey(&box), "add", "--tenant", "acme", "--holder", app, "--name", app, "--allow", strings.Join(methods, ","))
+	e.admin = stdoutOf(t, cli.NewCmdKey(&box), "add", "--tenant", "acme", "--holder", "admin", "--name", "admin", "--allow", "/roster.*/*")
+	e.operator = stdoutOf(t, cli.NewCmdControl(&box), "key", "add", "--allow",
 		"/roster.HolderService/Invalidate,/roster.HolderService/Disable,/roster.HolderService/Enable,/roster.HolderService/Erase,"+
 			"/roster.TenantService/Get,/roster.TenantService/Update,/roster.TenantService/Close,/roster.TenantService/Restore", "operator")
 

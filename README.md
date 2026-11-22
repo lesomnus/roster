@@ -60,7 +60,7 @@ go run ./cmd/roster serve &                   # the listeners roster.yaml names
 
 roster --as admin tenant add @newco           # your first customer, and who administers it
 
-KEY=$(roster key add --tenant newco --holder admin --allow '/roster.*/*')
+KEY=$(roster --as admin key add --tenant newco --holder admin --allow '/roster.*/*')
 ```
 
 `init` writes the operator and **no customer** -- a tenant is a customer, and one
@@ -81,7 +81,7 @@ curl -sS -X POST http://127.0.0.1:8080/roster.MeService/Get \
 A password instead of a key, for somebody at a browser:
 
 ```sh
-roster vouch reset @newco/admin               # generated here, printed once
+roster --as admin vouch reset @newco/admin               # generated here, printed once
 ```
 
 [docs/usage/tutorial.md](docs/usage/tutorial.md) is this walked slowly, from an

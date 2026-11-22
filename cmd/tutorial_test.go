@@ -51,6 +51,7 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin" // who `init` made, named at the box (#284)
 	x.Contains(out, "no customers yet", "the state the tutorial starts from")
 
 	// The server the curl half talks to. Built once; the commands below build

@@ -30,6 +30,7 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 	c := seedbed(t)
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
@@ -155,6 +156,7 @@ func TestInstallingAnAppLeavesARoleCalledAfterItAlone(t *testing.T) {
 	c := seedbed(t)
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
@@ -209,6 +211,7 @@ func TestInstallingAnAppTakesNoHolderThatIsSomebodys(t *testing.T) {
 	c := seedbed(t)
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)

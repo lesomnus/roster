@@ -1064,7 +1064,7 @@ lets go of what they still hold, after which the next arrival is a stranger's
 and the policy decides:
 
 ```sh
-roster restore <the holder the log said>                # they are who they were
+roster --as admin restore <the holder the log said>                # they are who they were
 roster --as admin identity list '{"filters":[{"holder":{"id":"<the holder the log said>"}}]}'
 roster --as admin identity erase <the id of the account>    # or: the account is nobody's
 roster --as admin email list '{"filters":[{"holder":{"id":"<the holder the log said>"}}]}'
@@ -1102,7 +1102,7 @@ Nothing above applies to them, because `login.enrol` decides where somebody who
 
 ```sh
 roster --as admin holder add @contoso/intern-kim
-roster vouch reset @contoso/intern-kim      # thirty-two bytes, printed once
+roster --as admin vouch reset @contoso/intern-kim      # thirty-two bytes, printed once
 ```
 
 and a role, the way [usage/permissions.md](usage/permissions.md) writes one. The

@@ -100,6 +100,10 @@ func newCmdControlKeyAdd(c *cmd.Config) *xli.Command {
 			if err != nil {
 				return err
 			}
+			// Somebody's way in, written: named, as `key add` is (#284).
+			if err := saidWho(c); err != nil {
+				return err
+			}
 
 			s, err := controlled(ctx, c)
 			if err != nil {
@@ -107,8 +111,10 @@ func newCmdControlKeyAdd(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
-			// The control database may be new: this is often the first thing
-			// that writes to it. Its tables are made where `control.db.migrate`
+			// The control database may be a build behind, with tables this one
+			// has and it has not; it is no longer new here, since this names
+			// who runs it and nobody is named before `init` (#284). Its
+			// tables are made where `control.db.migrate`
 			// says this process may alter them, and otherwise a database
 			// without them is refused, as `login provision` asks: this
 			// migrated whatever the switch said (#284).

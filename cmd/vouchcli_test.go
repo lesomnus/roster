@@ -91,6 +91,7 @@ func TestTheCliWritesAWayInForAPerson(t *testing.T) {
 
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
@@ -167,6 +168,7 @@ func TestTheCliIsNotADoorPastTheCorpus(t *testing.T) {
 
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
@@ -208,6 +210,7 @@ func TestUnlockSaysWhetherItDidAnything(t *testing.T) {
 
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)
@@ -261,6 +264,7 @@ func TestTheCliLetsASoleOperatorBackIn(t *testing.T) {
 
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin" // who `init` made, named at the box (#284)
 	lost := passwordFrom(t, out)
 
 	s, err := cmd.Build(ctx, c)
@@ -343,6 +347,7 @@ func TestTheControlPlaneHoldsTheCorpusToo(t *testing.T) {
 
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 	err = piped(t, "hunter2hunter2", cli.NewCmdControl(&c), "vouch", "set", "--password-stdin", "@admin")
 	x.Error(err, "an operator's password went past the corpus")

@@ -135,10 +135,10 @@ func TestARestoreGivesBackTheAccountAndNotTheSignIns(t *testing.T) {
 //
 // And the sentence names nobody. It said *... was @newco/alice* to whoever
 // had asked by identifier, and `restore` is one of the commands the manual
-// says print no field anybody's row declares personal, which is why it takes
-// no `--as` and leaves no row of the access record. So it says who has the
-// name, by identifier, and the first command it gives is a read with `--as`:
-// the name is read there, by somebody the record names.
+// says print no field anybody's row declares personal: the row it leaves on
+// the access record is of its write, and of nobody's name. So it says who has
+// the name, by identifier, and the first command it gives is a read with
+// `--as`: the name is read there, by somebody the record names.
 func TestARestoreSaysWhichNameIsTaken(t *testing.T) {
 	x := require.New(t)
 	b := cliUp(t, getMe)

@@ -182,7 +182,7 @@ func TestAHoldPlacedOnAClosedTenantSaysItsGraceRunsOn(t *testing.T) {
 	x.NoError(err)
 	x.Contains(out, "tenant.restore_within", "that its grace runs on under the hold is not said: %s", out)
 	x.Contains(out, until.UTC().Format(time.RFC3339), "until when it can still be restored is not said: %s", out)
-	x.Contains(out, "roster restore", "what to do if it is to come back is not said: %s", out)
+	x.Contains(out, "roster --as <alias> restore", "what to do if it is to come back is not said: %s", out)
 	x.Contains(out, "destroy", "what lifting the hold does past the grace is not said: %s", out)
 
 	t.Run("and one whose grace has run out, that it cannot come back", func(t *testing.T) {

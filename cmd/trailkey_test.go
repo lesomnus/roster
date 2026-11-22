@@ -222,6 +222,7 @@ func TestAKeyIsToldWhatItsOwnKindReads(t *testing.T) {
 		c := seedbed(t)
 		out, err := initRun(t, c)
 		x.NoError(err, "init: %s", out)
+		c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 		// A customer, and the `admin` a tenant arrives with.
 		s, err := cmd.Build(ctx, c)

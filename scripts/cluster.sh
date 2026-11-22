@@ -1089,7 +1089,7 @@ seed "--as rig role add @acme/everything '{\"methods\":[\"/roster.*/*\"]}'" >/de
 kube "printf '%s' '{\"role\":{\"slug\":{\"alias\":\"everything\",\"tenant\":{\"alias\":\"acme\"}}},\"holder\":{\"slug\":{\"alias\":\"erin\",\"tenant\":{\"alias\":\"acme\"}}}}' \
 	| kubectl -n ${NS} exec -i deploy/roster -c roster -- roster --config /config/config.yaml --as rig binding add -" >/dev/null 2>&1 || true
 kube "printf '%s' 'correct horse battery staple' \
-	| kubectl -n ${NS} exec -i deploy/roster -c roster -- roster --config /config/config.yaml vouch set --password-stdin @acme/erin" >/dev/null
+	| kubectl -n ${NS} exec -i deploy/roster -c roster -- roster --config /config/config.yaml --as rig vouch set --password-stdin @acme/erin" >/dev/null
 echo "erin, with a password"
 
 echo
@@ -1649,7 +1649,7 @@ sub="${sub%%$'\n'*}"
 # Piped into a Secret **inside the cluster** and never through this shell: a key
 # is a credential, and one that goes through a terminal is one in a scrollback.
 kube "kubectl -n ${NS} delete secret roster-walk-key --ignore-not-found >/dev/null 2>&1; \
-	kubectl -n ${NS} exec deploy/roster -c roster -- roster --config /config/config.yaml \
+	kubectl -n ${NS} exec deploy/roster -c roster -- roster --config /config/config.yaml --as rig \
 		key add --tenant acme --holder erin --name walk \
 		--allow /roster.HolderService/Invalidate,/roster.CredentialService/Enrol,/roster.VouchService/Verify \
 	| tr -d '\r\n' > /tmp/k && kubectl -n ${NS} create secret generic roster-walk-key --from-file=key=/tmp/k >/dev/null"

@@ -180,7 +180,7 @@ func TestAReadAtTheBoxIsOnTheAccessRecord(t *testing.T) {
 		x := require.New(t)
 		ctx := t.Context()
 
-		k := cli.NewCmdControl(at(b.c, ""))
+		k := cli.NewCmdControl(at(b.c, "admin"))
 		k.Writer = io.Discard
 		x.NoError(k.Run(ctx, []string{"key", "add", "--allow", "/roster.HolderService/Get", "loft"}))
 		_, err := entities(t, at(b.c, "admin"), "key", "add", "--tenant", "newco", "--holder", "erin", "--allow", "/roster.HolderService/Get")
@@ -264,7 +264,7 @@ func TestACommandAtTheBoxIsToldWhoIsThere(t *testing.T) {
 	t.Run("and one who is stopped does not act", func(t *testing.T) {
 		x := require.New(t)
 
-		k := cli.NewCmdControl(at(b.c, ""))
+		k := cli.NewCmdControl(at(b.c, "admin"))
 		k.Writer = io.Discard
 		x.NoError(k.Run(t.Context(), []string{"key", "add", "--allow", "/roster.HolderService/Get", "grace"}))
 		_, err := entities(t, at(b.c, "admin"), "control", "holder", "disable", "@owner/grace")

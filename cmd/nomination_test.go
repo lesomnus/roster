@@ -365,6 +365,7 @@ func TestANarrowedKeyDoesNothingUntilARequestNamesATenant(t *testing.T) {
 	c := seedbed(t)
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 	token := stdoutOf(t, cli.NewCmdControl(&c), "key", "add", "--narrowed", "product")
 	x.True(strings.HasPrefix(token, keys.PrefixDeployment), "not a deployment key: %.3q", token)

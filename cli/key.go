@@ -120,6 +120,11 @@ func newCmdKeyAdd(c *cmd.Config) *xli.Command {
 			if !c.Control.Serves() {
 				return needsControl("key add")
 			}
+			// Somebody's way in, written: named, as an entity command's
+			// write is, before anything is opened (#284).
+			if err := saidWho(c); err != nil {
+				return err
+			}
 
 			s, err := built(ctx, *c)
 			if err != nil {
@@ -336,6 +341,10 @@ func newCmdKeyRevoke(c *cmd.Config) *xli.Command {
 			k, err := pdid.Parse(v)
 			if err != nil {
 				return invocation(fmt.Errorf("--id: %w", err))
+			}
+			// Somebody's way in, taken away: named, as `key add` is (#284).
+			if err := saidWho(c); err != nil {
+				return err
 			}
 
 			s, err := built(ctx, *c)

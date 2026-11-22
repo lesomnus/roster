@@ -144,6 +144,7 @@ func TestTwoProcessesOnOneDatabase(t *testing.T) {
 
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin" // who `init` made, named at the box (#284)
 	password := passwordFrom(t, out)
 
 	// A customer, its administrator's key, and somebody to suspend: made at

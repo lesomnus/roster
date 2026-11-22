@@ -28,7 +28,7 @@ every time).
 ## Running it
 
 ```sh
-(umask 077 && roster control key add --allow /roster.NominationService/List directory > directory.key)
+(umask 077 && roster --as admin control key add --allow /roster.NominationService/List directory > directory.key)
 roster app install --tenant contoso --role '<the methods below>' directory
 
 roster ldap serve --roster roster:50051 \

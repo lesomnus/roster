@@ -564,7 +564,7 @@ Three things were turned on, and each goes by itself.
 
 ```sh
 roster --as admin key list                  # the directory's is @contoso/scim/scim
-roster key revoke --id <its identifier>
+roster --as admin key revoke --id <its identifier>
 ```
 
 Every request after that asks roster is `401`, and every write asks it. What

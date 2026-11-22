@@ -45,6 +45,7 @@ func TestTheCliIsAlsoACustomersPerson(t *testing.T) {
 
 	out, err := initRun(t, c)
 	x.NoError(err, "init: %s", out)
+	c.Client.As = "admin" // who `init` made, named at the box (#284)
 
 	s, err := cmd.Build(ctx, c)
 	x.NoError(err)

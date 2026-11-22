@@ -168,8 +168,8 @@ echo "== a key that may sign her out"
 # A name of this run's own, because a key's name is unique per holder and this
 # script is run again on the same volumes.
 gate="hydra-gate-${RANDOM}${RANDOM}"
-invalidate="$(docker compose exec -T -e "GATE=${gate}" roster sh -lc \
-	'roster key add --tenant "${SEED_CUSTOMER:-contoso}" --holder "${SEED_USER:-erin}" \
+invalidate="$(docker compose exec -T -e "GATE=${gate}" -e "OPERATOR=${ROSTER_ROOT_USER:-admin}" roster sh -lc \
+	'roster --as "${OPERATOR}" key add --tenant "${SEED_CUSTOMER:-contoso}" --holder "${SEED_USER:-erin}" \
 		--name "${GATE}" \
 		--allow /roster.HolderService/Invalidate,/roster.CredentialService/Enrol,/roster.VouchService/Verify \
 		2>/dev/null' | tr -d "\r\n")"

@@ -154,15 +154,14 @@ func boxSeen(t *testing.T, c cmd.Config, control bool) map[pdid.Id]bool {
 // the box that writes somebody's way in or their standing, given `--as`,
 // leaves on the access record the rows the same write through the entity tree
 // leaves -- a write's, naming the operator and whose row it wrote -- and no
-// read's, since it shows nothing of the row; given no name, it leaves none,
-// as before.
+// read's, since it shows nothing of the row.
 //
 // `key add`, `key revoke`, `control key add`, `vouch reset`, `set` and
 // `unlock` and their `control` forms, and `restore` of a person each wrote
 // with nobody named and no row of the access record, where `roster --as …
 // api-key add` of the same key was one. Answered: no row; right is the row
-// the entity tree leaves. Whether these commands require a name is the
-// owner's, and is not done here.
+// the entity tree leaves. Each refuses to run with no name where there is a
+// control plane (`TestALocalWriteOfSomebodysWayInNamesWhoRanIt`).
 func TestAWayInWrittenAtTheBoxIsOnTheRecordUnderWhoeverWasNamed(t *testing.T) {
 	x := require.New(t)
 	b := atTheBox(t)
@@ -306,13 +305,6 @@ func TestAWayInWrittenAtTheBoxIsOnTheRecordUnderWhoeverWasNamed(t *testing.T) {
 		x.Equal(byHand[0].TenantId, byBox[0].TenantId)
 	}
 
-	// And with no name, nothing is kept, as before.
-	{
-		seen := boxSeen(t, b.c, false)
-		_, _, err := boxRun(t, at(b.c, ""), "", "key", "add", "--tenant", "newco", "--holder", "bob", "--name", "bare", "--allow", "/roster.MeService/Get")
-		x.NoError(err)
-		x.Empty(boxRows(t, b.c, false, seen))
-	}
 }
 
 // TestANameGivenBeforeAnybodyExistsIsRefusedInWords: a name given at the box

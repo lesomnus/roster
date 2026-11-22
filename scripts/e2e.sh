@@ -183,14 +183,14 @@ op tenant add @contoso '{"name":"Contoso"}' >/dev/null
 op holder add @contoso/erin >/dev/null
 echo '{"role":{"slug":{"alias":"everything","tenant":{"alias":"contoso"}}},"holder":{"slug":{"alias":"erin","tenant":{"alias":"contoso"}}}}' \
 	| op binding add - >/dev/null
-echo "${E2E_ERIN_PASSWORD}" | r vouch set --password-stdin @contoso/erin >/dev/null 2>&1
+echo "${E2E_ERIN_PASSWORD}" | op vouch set --password-stdin @contoso/erin >/dev/null 2>&1
 # And a way in for the administrator the tenant arrived with, which is who the
 # user console signs in -- and for grace, who signs in at it after them.
-echo "${E2E_TENANT_ADMIN_PASSWORD}" | r vouch set --password-stdin @contoso/admin >/dev/null
+echo "${E2E_TENANT_ADMIN_PASSWORD}" | op vouch set --password-stdin @contoso/admin >/dev/null
 op holder add @contoso/grace >/dev/null
-echo "${E2E_GRACE_PASSWORD}" | r vouch set --password-stdin @contoso/grace >/dev/null
+echo "${E2E_GRACE_PASSWORD}" | op vouch set --password-stdin @contoso/grace >/dev/null
 op holder add @contoso/heidi >/dev/null
-echo "${E2E_HEIDI_PASSWORD}" | r vouch set --password-stdin @contoso/heidi >/dev/null
+echo "${E2E_HEIDI_PASSWORD}" | op vouch set --password-stdin @contoso/heidi >/dev/null
 op host add '{"tenant":{"alias":"contoso"},"name":"localhost"}' >/dev/null
 
 # tailspin: frank, with a password and an address nobody has confirmed yet --
@@ -207,7 +207,7 @@ op host add '{"tenant":{"alias":"contoso"},"name":"localhost"}' >/dev/null
 # `everything` is not.
 op tenant add @tailspin '{"name":"Tailspin","config":{"leave":true}}' >/dev/null
 op holder add @tailspin/frank >/dev/null
-echo "${E2E_FRANK_PASSWORD}" | r vouch set --password-stdin @tailspin/frank >/dev/null 2>&1
+echo "${E2E_FRANK_PASSWORD}" | op vouch set --password-stdin @tailspin/frank >/dev/null 2>&1
 op email add '{"holder":{"slug":{"alias":"frank","tenant":{"alias":"tailspin"}}},"address":"frank@tailspin.example"}' >/dev/null
 op host add '{"tenant":{"alias":"tailspin"},"name":"127.0.0.1"}' >/dev/null
 
@@ -236,7 +236,7 @@ key="${work}/keys/account.key"
 # A roster-hosted product put into contoso, which is what the *apps* tab lists
 # and what its administrator ends in `user.spec.ts`. The key is minted and
 # thrown away: nothing here calls as the app, and the rows are the point.
-r control key add --narrowed loft >/dev/null 2>&1
+op control key add --narrowed loft >/dev/null 2>&1
 r app install --tenant contoso --role '/loft.AssetService/*' loft >/dev/null 2>&1
 
 echo "== serve"

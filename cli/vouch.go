@@ -94,7 +94,16 @@ func NewCmdVouch(c *cmd.Config) *xli.Command {
 //
 // `Ungated` on both arguments, which is what `cmd/admin.go` passes as well:
 // the wall narrows by a tenant the caller belongs to, and there is no caller.
+//
+// And refused, before anything is opened, where the deployment has operators
+// and `--as` names none ([saidWho]): every command that asks for this writes
+// somebody's way in, and a password reset by nobody is the gap `--as` exists
+// for (#284).
 func vouching(ctx context.Context, c *cmd.Config) (*cmd.Server, *vouch.Server, error) {
+	if err := saidWho(c); err != nil {
+		return nil, nil, err
+	}
+
 	s, err := built(ctx, *c)
 	if err != nil {
 		return nil, nil, err

@@ -71,7 +71,7 @@ that always knows which tenant a request is about has none, and is minted with
 nothing on it:
 
 ```sh
-roster control key add --narrowed loft
+roster --as admin control key add --narrowed loft
 ```
 
 which is refused as itself and answered as whoever each tenant nominated (#74).
