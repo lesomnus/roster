@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -29,32 +30,47 @@ import (
 // only hold one without a session cookie, so serial and together both answer in
 // one grace and it discriminates nothing. What has to be true is a property of
 // this loop, so this is where it is asked.
+//
+// Asked as what it means: the five are in flight at one moment. Each stop
+// waits until all five have begun, and only then returns; run together they
+// all begin at once and none waits for long. It timed five sleeps and held
+// them to under three, which a slow machine fails with the loop right. The
+// bound below is only how long a stop waits for the others before the test
+// says they did not come, which is what one after another looks like.
 func TestTheListenersStopTogether(t *testing.T) {
 	x := require.New(t)
 
-	const each = 200 * time.Millisecond
+	const stops = 5
 
-	var ran atomic.Int32
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+
+	var began, ran atomic.Int32
+	all := make(chan struct{})
 
 	var v shutdown
-	for range 5 {
+	for range stops {
 		v.add(func() {
-			time.Sleep(each)
+			// All five begun, and none of them over yet.
+			if began.Add(1) == stops && ran.Load() == 0 {
+				close(all)
+			}
+			select {
+			case <-all:
+			case <-ctx.Done():
+			}
 			ran.Add(1)
 		})
 	}
 
-	at := time.Now()
 	v.run()
-	took := time.Since(at)
 
-	x.Equal(int32(5), ran.Load(), "a stop that was added was not run")
-
-	// One of them and not five. Generously, because what is asserted is that
-	// they do not queue rather than how precisely a sleep returns: five in
-	// series is five times this, which is nowhere near.
-	x.Less(took, 3*each,
-		"the stops ran one after another, so the grace is per listener")
+	x.Equal(int32(stops), ran.Load(), "a stop that was added was not run")
+	select {
+	case <-all:
+	default:
+		x.Fail("the stops ran one after another, so the grace is per listener")
+	}
 }
 
 // TestEveryStopAddedIsRun, which is the whole reason this is a type rather
