@@ -494,6 +494,7 @@ commands themselves ([cli.md](cli.md)).
 | `tenant add` names its tenant, by NAME or an alias in REQ, or is refused: a tenant is not erased, so one made under an alias nobody chose is not taken back by a command | `cli/entity.go` | `TestATenantIsNotAddedUnderAnAliasNobodyChose` |
 | `forget`, `restore` and `hold` given an identifier the customers' database does not have say so, and do nothing; an operator's is the control plane's, which they do not read | `cli/forget.go` | `TestAnIdentifierNobodyHasIsSaidToBeNobodys` |
 | `version --short` prints the commit the binary was built from, in an image as at a desk: an image's build hands it in, having no `.git/` for the toolchain to read | `cli/version.go` · `Dockerfile` | `TestAnImageSaysWhichCommitItIs` |
+| A process's exit status says which kind of failure it was: `2` an invocation refused by reading the command line alone, `3` a check that ran to its end and found what it looks for -- `trail verify`, `trail rows`, `login doctor`, `vouch verify` answered anything but *yes*, and `control vouch prove` answered *no*, and no other command -- and `1` everything else; what is printed is the same whichever | `cli/status.go` · `cmd/roster/main.go` | `TestAnExitStatusSaysWhichKindOfFailure` · `TestTheManualsListOfChecksIsTheCommandsThatExitThree` |
 
 ### At the box, of the trail
 

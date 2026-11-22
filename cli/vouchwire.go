@@ -102,7 +102,7 @@ func refFrom(who *app.VouchWho) (*app.HolderRef, error) {
 		}.Build(), nil
 	}
 
-	return nil, errors.New("who: @tenant/alias or an identifier")
+	return nil, invocation(errors.New("who: @tenant/alias or an identifier"))
 }
 
 // whoSaid is the person, in the words a sign-in form collects.
@@ -118,7 +118,7 @@ func whoSaid(cl *xli.Command) (*app.VouchWho, error) {
 
 	if address != "" {
 		if named {
-			return nil, errors.New("WHO or --address; naming somebody twice is not naming them better")
+			return nil, invocation(errors.New("WHO or --address; naming somebody twice is not naming them better"))
 		}
 
 		// The tenant does not travel inside an address, deliberately -- the
@@ -127,13 +127,13 @@ func whoSaid(cl *xli.Command) (*app.VouchWho, error) {
 		return app.VouchWho_builder{Tenant: tenant, Address: address}.Build(), nil
 	}
 	if tenant != "" {
-		return nil, errors.New("--tenant goes with --address; with WHO the tenant is in the name")
+		return nil, invocation(errors.New("--tenant goes with --address; with WHO the tenant is in the name"))
 	}
 	if !named {
-		return nil, errors.New("WHO: who, as @tenant/alias or an identifier -- or --tenant with --address")
+		return nil, invocation(errors.New("WHO: who, as @tenant/alias or an identifier -- or --tenant with --address"))
 	}
 	if err := ref.Expect(pd.HolderDomain); err != nil {
-		return nil, err
+		return nil, invocation(err)
 	}
 
 	if !ref.Id.IsZero() {
@@ -184,9 +184,9 @@ func whoFlags() flg.Flags {
 // history or the process list.
 func secretFrom(cl *xli.Command, name string) ([]byte, error) {
 	if on, _ := flg.Find[bool](cl, name); !on {
-		return nil, fmt.Errorf(
+		return nil, invocation(fmt.Errorf(
 			"--%s: there is no flag to pass a secret on, because an argument is in the "+
-				"shell history and in the process list", name)
+				"shell history and in the process list", name))
 	}
 
 	b, err := io.ReadAll(io.LimitReader(os.Stdin, 4<<10))
@@ -206,10 +206,10 @@ func allowed(cl *xli.Command) ([]string, error) {
 	vs, _ := flg.Find[[]string](cl, "allow")
 	methods, err := cmd.MethodsOf("--allow", vs)
 	if err != nil {
-		return nil, err
+		return nil, invocation(err)
 	}
 	if len(methods) == 0 {
-		return nil, errors.New("--allow: a delegation that allows nothing opens no door; name the methods")
+		return nil, invocation(errors.New("--allow: a delegation that allows nothing opens no door; name the methods"))
 	}
 
 	return methods, nil
@@ -224,14 +224,14 @@ func expiresOf(cl *xli.Command) (*timestamppb.Timestamp, error) {
 
 	d, err := time.ParseDuration(v)
 	if err != nil {
-		return nil, fmt.Errorf("--expires: %w", err)
+		return nil, invocation(fmt.Errorf("--expires: %w", err))
 	}
 	if d <= 0 {
 		// A sign the wrong way round, or a zero that was meant as forever
 		// (which is the flag left out). Minted, it was a credential that had
 		// already stopped working, printed under *this is the only time it is
 		// shown* (#276).
-		return nil, fmt.Errorf("--expires %s: how long it lasts from now, so more than nothing; leave it out for one that does not expire", v)
+		return nil, invocation(fmt.Errorf("--expires %s: how long it lasts from now, so more than nothing; leave it out for one that does not expire", v))
 	}
 
 	return timestamppb.New(time.Now().Add(d)), nil
@@ -349,7 +349,9 @@ func newCmdVouchVerify(c *cmd.Config) *xli.Command {
 				return err
 			}
 			if err := answered(v, "", nil); err != nil {
-				return err
+				// The check ran to its end and did not say yes: a no, a lock
+				// and a sign-in not finished alike, each status 3 (#284).
+				return finding(err)
 			}
 
 			return next(ctx)
@@ -397,10 +399,10 @@ func newCmdVouchDelegate(c *cmd.Config) *xli.Command {
 				// The server refuses who-and-continuation rather than resolving
 				// one by precedence, so that a call cannot name one person and
 				// sign in another. Said here, where the flags can be named.
-				return errors.New(
+				return invocation(errors.New(
 					"a continuation carries on a sign-in already begun; naming somebody too " +
 						"would be a second answer to who this is. Give one -- WHO to start, " +
-						"--continuation to carry on")
+						"--continuation to carry on"))
 
 			case cont != "":
 				req.Continuation = cont
@@ -479,7 +481,7 @@ func newCmdVouchContinue(c *cmd.Config) *xli.Command {
 
 			cont, _ := flg.Find[string](cl, "continuation")
 			if cont == "" {
-				return errors.New("--continuation: what the last call printed; there is nothing to carry on from")
+				return invocation(errors.New("--continuation: what the last call printed; there is nothing to carry on from"))
 			}
 			secret, err := secretFrom(cl, "secret-stdin")
 			if err != nil {
@@ -649,7 +651,7 @@ func newCmdVouchLeaveLink(c *cmd.Config) *xli.Command {
 			}
 			to, _ := flg.Find[string](cl, "to")
 			if to == "" {
-				return errors.New("--to: the address the link goes to, one of theirs that somebody proved")
+				return invocation(errors.New("--to: the address the link goes to, one of theirs that somebody proved"))
 			}
 
 			v, err := client.LeaveLink(ctx, app.VouchLeaveLinkRequest_builder{Who: who, Address: to}.Build())
@@ -800,9 +802,9 @@ func newCmdVouchEnrol(c *cmd.Config) *xli.Command {
 				kind = "totp"
 			}
 			if kind == "webauthn" {
-				return errors.New(
+				return invocation(errors.New(
 					"--kind webauthn: an authenticator makes that one and roster is handed the " +
-						"public half; there is nothing a shell can attest with")
+						"public half; there is nothing a shell can attest with"))
 			}
 
 			conn, done, err := dialed(ctx, c)
@@ -878,7 +880,7 @@ func newCmdVouchAccept(c *cmd.Config) *xli.Command {
 
 			k, err := pdid.Parse(tenant)
 			if err != nil {
-				return fmt.Errorf("--tenant: an identifier, which is what `front whose-host` answers: %w", err)
+				return invocation(fmt.Errorf("--tenant: an identifier, which is what `front whose-host` answers: %w", err))
 			}
 
 			methods, err := allowed(cl)

@@ -175,10 +175,10 @@ func newCmdMeIssueKey(c *cmd.Config) *xli.Command {
 			allow, _ := flg.Find[[]string](cl, "allow")
 			methods, err := cmd.MethodsOf("--allow", allow)
 			if err != nil {
-				return err
+				return invocation(err)
 			}
 			if len(methods) == 0 {
-				return errors.New("--allow: a key that allows nothing is not a key; name the methods")
+				return invocation(errors.New("--allow: a key that allows nothing is not a key; name the methods"))
 			}
 
 			own, err := myself(ctx, conn)
@@ -232,12 +232,12 @@ func newCmdMeRevokeKey(c *cmd.Config) *xli.Command {
 
 			v, ok := arg.Get[string](cl, "KEY")
 			if !ok || v == "" {
-				return errors.New("KEY: which key")
+				return invocation(errors.New("KEY: which key"))
 			}
 
 			k, err := pdid.Parse(v)
 			if err != nil {
-				return fmt.Errorf("KEY: %w", err)
+				return invocation(fmt.Errorf("KEY: %w", err))
 			}
 
 			// `ApiKey.Erase` by identifier: the layer reads the row through the
@@ -278,7 +278,7 @@ func newCmdMeLink(c *cmd.Config) *xli.Command {
 			provider, _ := arg.Get[string](cl, "PROVIDER")
 			subject, _ := arg.Get[string](cl, "SUBJECT")
 			if provider == "" || subject == "" {
-				return errors.New("PROVIDER and SUBJECT: which account, at which provider")
+				return invocation(errors.New("PROVIDER and SUBJECT: which account, at which provider"))
 			}
 
 			own, err := myself(ctx, conn)
@@ -316,12 +316,12 @@ func newCmdMeUnlink(c *cmd.Config) *xli.Command {
 
 			v, ok := arg.Get[string](cl, "IDENTITY")
 			if !ok || v == "" {
-				return errors.New("IDENTITY: which identity")
+				return invocation(errors.New("IDENTITY: which identity"))
 			}
 
 			k, err := pdid.Parse(v)
 			if err != nil {
-				return fmt.Errorf("IDENTITY: %w", err)
+				return invocation(fmt.Errorf("IDENTITY: %w", err))
 			}
 
 			_, err = app.NewMeServiceClient(conn).Unlink(ctx,
@@ -404,7 +404,7 @@ func newCmdMeLeave(c *cmd.Config) *xli.Command {
 
 			confirm, _ := flg.Get[string](cl, "confirm")
 			if confirm == "" {
-				return errors.New("--confirm: your alias, as `me get` prints it")
+				return invocation(errors.New("--confirm: your alias, as `me get` prints it"))
 			}
 
 			v, err := app.NewMeServiceClient(conn).Leave(ctx, app.MeLeaveRequest_builder{Confirm: confirm}.Build())

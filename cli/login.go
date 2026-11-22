@@ -272,8 +272,9 @@ func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 // newCmdLoginDoctor is the check a deployment runs before anybody clicks
 // anything, and `login/doctor.go` says at length what it is for.
 //
-// It exits **1** when something is broken, so a Job that runs it fails rather
-// than logging into a stream nobody reads. Fragile findings are printed and do
+// It exits **3** when something is broken, so a Job that runs it fails rather
+// than logging into a stream nobody reads, and tells a finding from a doctor
+// that could not ask (1). Fragile findings are printed and do
 // not fail: they are things that work, and a deployment that has decided to
 // live with one should not have a red sync forever.
 func newCmdLoginDoctor(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
@@ -361,7 +362,7 @@ func newCmdLoginDoctor(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				return nil
 			}
 
-			return fmt.Errorf("%d thing(s) here cannot sign anybody in", broken)
+			return finding(fmt.Errorf("%d thing(s) here cannot sign anybody in", broken))
 		}),
 	}
 }

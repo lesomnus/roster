@@ -71,7 +71,7 @@ func newCmdFrontWhoseHost(c *cmd.Config) *xli.Command {
 
 			host, _ := arg.Get[string](cl, "HOST")
 			if host == "" {
-				return errors.New("HOST: which name")
+				return invocation(errors.New("HOST: which name"))
 			}
 
 			v, err := app.NewFrontServiceClient(conn).WhoseHost(ctx,
@@ -110,13 +110,13 @@ func newCmdFrontWhereFrom(c *cmd.Config) *xli.Command {
 			t, _ := arg.Get[string](cl, "TENANT")
 			addr, _ := arg.Get[string](cl, "ADDRESS")
 			if t == "" || addr == "" {
-				return errors.New("both a tenant and an address")
+				return invocation(errors.New("both a tenant and an address"))
 			}
 
 			k, err := pdid.Parse(t)
 			if err != nil {
-				return errors.New("TENANT: an identifier, which is what whose-host answers; " +
-					"an alias would be a read this caller may not have")
+				return invocation(errors.New("TENANT: an identifier, which is what whose-host answers; " +
+					"an alias would be a read this caller may not have"))
 			}
 
 			v, err := app.NewFrontServiceClient(conn).WhereFrom(ctx,

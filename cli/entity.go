@@ -269,8 +269,8 @@ func tenantNamed(ctx context.Context, cl *xli.Command, next xli.Next) error {
 		}
 	}
 
-	return errors.New("NAME: which tenant, as @alias -- roster tenant add @contoso -- or an alias in REQ. " +
-		"A tenant is not erased, so one added under an alias nobody chose costs a close and a forget")
+	return invocation(errors.New("NAME: which tenant, as @alias -- roster tenant add @contoso -- or an alias in REQ. " +
+		"A tenant is not erased, so one added under an alias nobody chose costs a close and a forget"))
 }
 
 // formatsFirst puts [formatsOf] in front of every command of `cs`, and of the
@@ -303,14 +303,14 @@ func formatsOf(ctx context.Context, cl *xli.Command, next xli.Next) error {
 		case slices.Contains([]string{"pretty", "json", "protojson", "prototext", "name", "table", "wide"}, v):
 		case strings.HasPrefix(v, "template="):
 			if _, err := pdcmd.Template(strings.TrimPrefix(v, "template=")); err != nil {
-				return fmt.Errorf("-o %s: %w", v, err)
+				return invocation(fmt.Errorf("-o %s: %w", v, err))
 			}
 		default:
-			return fmt.Errorf("-o %s: not a format; one of pretty, json, prototext, protojson, name, table, wide, template=...", v)
+			return invocation(fmt.Errorf("-o %s: not a format; one of pretty, json, prototext, protojson, name, table, wide, template=...", v))
 		}
 	}
 	if v, ok := flg.Find[string](cl, "in"); ok && v != "" && v != "json" && v != "protojson" {
-		return fmt.Errorf("--in %s: not an input format; one of json, protojson", v)
+		return invocation(fmt.Errorf("--in %s: not an input format; one of json, protojson", v))
 	}
 
 	return next(ctx)
@@ -361,7 +361,7 @@ func newCmdTenantNotErased() *xli.Command {
 		Args: arg.Args{&arg.RestStrings{Name: "REF", Brief: "ignored"}},
 
 		Handler: xli.OnRun(func(context.Context, *xli.Command, xli.Next) error {
-			return errors.New(core.NotErased)
+			return invocation(errors.New(core.NotErased))
 		}),
 	}
 }
@@ -557,7 +557,7 @@ func (l local) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
 // plane there is nobody `--as` could name, and [atTheBox] says the deployment.
 func saidWho(c *cmd.Config) error {
 	if c.Control.Serves() && strings.TrimSpace(c.Client.As) == "" {
-		return cmd.ErrUnnamed
+		return invocation(cmd.ErrUnnamed)
 	}
 
 	return nil

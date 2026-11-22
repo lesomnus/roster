@@ -70,7 +70,7 @@ func NewCmdSignIn(c *cmd.Config) *xli.Command {
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			at, _ := flg.Find[string](cl, "at")
 			if at == "" {
-				return errors.New("--at: which account app to sign in at")
+				return invocation(errors.New("--at: which account app to sign in at"))
 			}
 			name, _ := flg.Find[string](cl, "name")
 			if name == "" {
@@ -80,20 +80,20 @@ func NewCmdSignIn(c *cmd.Config) *xli.Command {
 			raw, _ := flg.Find[[]string](cl, "allow")
 			allow, err := cmd.MethodsOf("--allow", raw)
 			if err != nil {
-				return err
+				return invocation(err)
 			}
 			// Refused rather than defaulted, which is `roster key add`'s decision:
 			// a credential nobody chose the reach of is either wider than somebody
 			// meant or narrower than works.
 			if len(allow) == 0 {
-				return errors.New("--allow: what this terminal may call, e.g. /roster.MeService/Get")
+				return invocation(errors.New("--allow: what this terminal may call, e.g. /roster.MeService/Get"))
 			}
 
 			// Over `https`, since what comes back is a key; `http` is taken
 			// for this machine alone, which is a development rig.
 			u, err := url.Parse(at)
 			if err != nil || u.Host == "" || (u.Scheme != "https" && !(u.Scheme == "http" && thisMachine(u.Hostname()))) {
-				return fmt.Errorf("--at %s: an https address of the account app; http is taken for this machine alone", at)
+				return invocation(fmt.Errorf("--at %s: an https address of the account app; http is taken for this machine alone", at))
 			}
 
 			// A client that gives up on one request, which the default never

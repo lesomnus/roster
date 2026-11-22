@@ -171,7 +171,7 @@ func leaving(ctx context.Context, s *cmd.Server, c *cmd.Config, t pdid.Id) error
 func onHeld(ctx context.Context, c *cmd.Config, cl *xli.Command, f func(s *cmd.Server, t pdid.Id) error) error {
 	ref, ok := arg.Get[pdcmd.Ref](cl, "TENANT")
 	if !ok {
-		return errors.New("TENANT: which tenant")
+		return invocation(errors.New("TENANT: which tenant"))
 	}
 
 	s, err := built(ctx, *c)

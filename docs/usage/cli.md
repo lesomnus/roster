@@ -311,6 +311,29 @@ is what is so:
   has the stream ended, when it is next asked who opened it
   (`stream.recheck`, [operating.md](../operating.md)).
 
+## Exit statuses
+
+A command that did what it was asked exits `0`. One that did not exits with
+the kind of failure it was, and says what on standard error, as it always has:
+
+| | |
+| --- | --- |
+| `2` | the invocation is wrong: what is refused by reading the command line alone, before a file is read, a database opened or a call made. An unknown command or flag, an argument missing or one too many, a flag's value that does not parse or is not one of its words (`-o` among them), two flags that do not go together, a group typed with nothing after it, `--as` left out where a local command needs it. Typed again, it is refused again |
+| `3` | a check ran to its end and found what it looks for |
+| `1` | everything else: a refusal, the server's or the box's; nothing found; roster not reachable; a file that cannot be read; a configuration refused at start; a check that could not run |
+
+These answer `3`, and no other command does:
+
+- `roster trail verify`, with a finding in the archive
+- `roster trail rows`, with a finding in the rows
+- `roster login doctor`, with something that cannot sign anybody in
+- `roster vouch verify`, answered anything but *yes*: *no*, *locked until …*, or a sign-in not finished
+- `roster control vouch prove`, answered *no*
+
+So a job running `roster trail verify` tells a finding, `3`, from a database
+it could not open, `1`. A setting a flag stands for, given by neither
+(`--hydra`, `login.hydra.admin`), is the configuration's, and `1`.
+
 ## Which RPCs have no command
 
 Three of roster's own methods are left out on purpose, and each absence is a

@@ -96,10 +96,10 @@ func newCmdIssueKey(c *cmd.Config) *xli.Command {
 
 			ref, named := arg.Get[pdcmd.Ref](cl, "WHO")
 			if !named {
-				return errors.New("WHO: whose key this is, as @tenant/alias or an identifier")
+				return invocation(errors.New("WHO: whose key this is, as @tenant/alias or an identifier"))
 			}
 			if err := ref.Expect(pd.HolderDomain); err != nil {
-				return err
+				return invocation(err)
 			}
 			if !ref.Id.IsZero() {
 				req.Holder = app.HolderRef_builder{Id: ref.Id.Bytes()}.Build()
@@ -109,9 +109,9 @@ func newCmdIssueKey(c *cmd.Config) *xli.Command {
 				// than sent with an empty tenant, which the server can only
 				// answer as a NotFound that names the wrong thing.
 				if ref.Tenant == "" {
-					return errors.New(
+					return invocation(errors.New(
 						"WHO: a key is for a person in a named tenant -- @tenant/alias, not @alias; " +
-							"this plane has more than one")
+							"this plane has more than one"))
 				}
 
 				req.Holder = app.HolderRef_builder{
@@ -192,7 +192,7 @@ func newCmdIssuePassword(c *cmd.Config) *xli.Command {
 
 			alias, _ := arg.Get[string](cl, "ALIAS")
 			if alias == "" {
-				return errors.New("ALIAS: whose")
+				return invocation(errors.New("ALIAS: whose"))
 			}
 
 			v, err := app.NewCredentialServiceClient(conn).Issue(ctx, app.CredentialIssueRequest_builder{

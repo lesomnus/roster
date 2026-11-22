@@ -98,20 +98,20 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 			adopt, _ := flg.Find[bool](cl, "adopt")
 
 			if tenant == "" {
-				return errors.New("--tenant: which tenant to install it into")
+				return invocation(errors.New("--tenant: which tenant to install it into"))
 			}
 			methods, err := cmd.MethodsOf("--role", role)
 			if err != nil {
-				return err
+				return invocation(err)
 			}
 			if len(methods) == 0 {
 				// An app with nothing bound acts as a holder that may do nothing,
 				// which is an installation that silently does not work.
-				return errors.New("--role: what the app may do in the tenant; a role that allows nothing installs nothing")
+				return invocation(errors.New("--role: what the app may do in the tenant; a role that allows nothing installs nothing"))
 			}
 			handed, err := cmd.MethodsOf("--administer", administer)
 			if err != nil {
-				return err
+				return invocation(err)
 			}
 
 			s, err := controlled(ctx, c)
@@ -403,7 +403,7 @@ func newCmdAppUninstall(c *cmd.Config) *xli.Command {
 			name, _ := arg.Get[string](cl, "APP")
 			tenant, _ := flg.Find[string](cl, "tenant")
 			if tenant == "" {
-				return errors.New("--tenant: which tenant to take it out of")
+				return invocation(errors.New("--tenant: which tenant to take it out of"))
 			}
 
 			s, err := controlled(ctx, c)

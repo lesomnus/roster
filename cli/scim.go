@@ -146,10 +146,10 @@ func newCmdScimProvision(c *cmd.Config) *xli.Command {
 			tenant, _ := flg.Find[string](cl, "tenant")
 			connection, _ := flg.Find[string](cl, "connection")
 			if tenant == "" {
-				return errors.New("--tenant: whose directory")
+				return invocation(errors.New("--tenant: whose directory"))
 			}
 			if connection == "" {
-				return errors.New("--connection: which connection its people sign in through")
+				return invocation(errors.New("--connection: which connection its people sign in through"))
 			}
 
 			s, err := controlled(ctx, c)
@@ -274,18 +274,18 @@ func newCmdScimAdopt(c *cmd.Config) *xli.Command {
 			of, _ := flg.Find[string](cl, "of")
 			of = strings.TrimSpace(of)
 			if tenant == "" {
-				return errors.New("--tenant: whose directory")
+				return invocation(errors.New("--tenant: whose directory"))
 			}
 			// Which list is believed, before anything is read: a list read
 			// again is one nobody has looked at yet.
 			if confirm != "" && of == "" {
-				return errors.New("--of: the digest `roster scim adopt` printed of the list that was read; nothing was written")
+				return invocation(errors.New("--of: the digest `roster scim adopt` printed of the list that was read; nothing was written"))
 			}
 			if of != "" && confirm == "" {
-				return errors.New("--of: goes with --confirm")
+				return invocation(errors.New("--of: goes with --confirm"))
 			}
 			if confirm != "" && confirm != tenant {
-				return fmt.Errorf("--confirm %s: that is not %s; nothing was written", confirm, tenant)
+				return invocation(fmt.Errorf("--confirm %s: that is not %s; nothing was written", confirm, tenant))
 			}
 
 			s, err := controlled(ctx, c)

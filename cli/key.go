@@ -99,13 +99,13 @@ func newCmdKeyAdd(c *cmd.Config) *xli.Command {
 
 			switch {
 			case tenant == "" && holder == "":
-				return errors.New(
+				return invocation(errors.New(
 					"--tenant and --holder: whose key this is; " +
-						"a key for one of this deployment's own services is `roster control key add`")
+						"a key for one of this deployment's own services is `roster control key add`"))
 			case tenant == "":
-				return fmt.Errorf("--tenant: which customer's %q, since an alias names one per tenant", holder)
+				return invocation(fmt.Errorf("--tenant: which customer's %q, since an alias names one per tenant", holder))
 			case holder == "":
-				return fmt.Errorf("--holder: whose key this is, inside %q", tenant)
+				return invocation(fmt.Errorf("--holder: whose key this is, inside %q", tenant))
 			}
 
 			m, err := mintingOf(cl, false)
@@ -176,7 +176,7 @@ func mintingOf(cl *xli.Command, narrows bool) (minting, error) {
 	allow, _ := flg.Find[[]string](cl, "allow")
 	methods, err := cmd.MethodsOf("--allow", allow)
 	if err != nil {
-		return minting{}, err
+		return minting{}, invocation(err)
 	}
 	narrowed, _ := flg.Find[bool](cl, "narrowed")
 	if len(methods) == 0 && !narrowed {
@@ -188,16 +188,16 @@ func mintingOf(cl *xli.Command, narrows bool) (minting, error) {
 		// `--narrowed` is the one key with nothing on it that works, and it
 		// has to be said: see [narrowedFlag].
 		if !narrows {
-			return minting{}, errors.New("--allow: a key that allows nothing is not a key; name the methods")
+			return minting{}, invocation(errors.New("--allow: a key that allows nothing is not a key; name the methods"))
 		}
 
-		return minting{}, errors.New("--allow: a key that allows nothing is not a key; name the methods, or say --narrowed")
+		return minting{}, invocation(errors.New("--allow: a key that allows nothing is not a key; name the methods, or say --narrowed"))
 	}
 	if len(methods) > 0 && narrowed {
 		// Two keys in one: narrowed is nothing as itself, and `--allow` is
 		// something as itself across every tenant. Taken silently, the second
 		// wins and the key is wider than the word on the command line.
-		return minting{}, errors.New("--narrowed: a narrowed key allows nothing as itself; drop --allow, or drop --narrowed")
+		return minting{}, invocation(errors.New("--narrowed: a narrowed key allows nothing as itself; drop --allow, or drop --narrowed"))
 	}
 
 	expires, err := expiresOf(cl)
@@ -330,12 +330,12 @@ func newCmdKeyRevoke(c *cmd.Config) *xli.Command {
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			v, _ := flg.Find[string](cl, "id")
 			if v == "" {
-				return errors.New("--id: which key")
+				return invocation(errors.New("--id: which key"))
 			}
 
 			k, err := pdid.Parse(v)
 			if err != nil {
-				return fmt.Errorf("--id: %w", err)
+				return invocation(fmt.Errorf("--id: %w", err))
 			}
 
 			s, err := built(ctx, *c)

@@ -40,7 +40,10 @@ func main() {
 
 	var c cmd.Config
 	if err := cli.Cmd(&c).Run(ctx, os.Args[1:]); err != nil {
+		// Said as it is, and the status is the kind of failure it was: 2 for
+		// a command line that is wrong, 3 for a check that found something,
+		// 1 for anything else (`cli.Status`).
 		fmt.Fprintln(os.Stderr, "roster:", err)
-		os.Exit(1)
+		os.Exit(cli.Status(err))
 	}
 }
