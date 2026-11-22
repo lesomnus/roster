@@ -53,7 +53,7 @@ bindings:
 	// Renaming either identity cannot move the grant to a user who takes its old alias.
 	before, err := b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{Ref: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build()}.Build())
 	require.NoError(t, err)
-	_, err = b.Ungated.Holder().Realias(ctx, app.HolderRealiasRequest_builder{Ref: before.Ref(), Alias: z.Ptr("renamed"), DateUpdated: before.GetDateUpdated()}.Build())
+	_, err = b.Ungated.Holder().Realias(ctx, app.HolderRealiasRequest_builder{Ref: before.Ref(), Alias: "renamed", DateUpdated: before.GetDateUpdated()}.Build())
 	require.NoError(t, err)
 	other := b.holder(t, ctx, b.Contoso, "someone")
 	gs, err := cmd.Granted(b.Ent, b.PolicyFile)(ctx, other)

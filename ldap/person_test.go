@@ -382,7 +382,7 @@ func TestAClientKeysOnEntryUUID(t *testing.T) {
 	lee, err := d.s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{Ref: rstr.HolderRef_builder{Id: d.lee}.Build()}.Build())
 	x.NoError(err)
 	_, err = d.s.Ungated.Holder().Realias(ctx, rstr.HolderRealiasRequest_builder{
-		Ref: rstr.HolderRef_builder{Id: d.lee}.Build(), DateUpdated: lee.GetDateUpdated(), Alias: ptr("junho"),
+		Ref: rstr.HolderRef_builder{Id: d.lee}.Build(), DateUpdated: lee.GetDateUpdated(), Alias: "junho",
 	}.Build())
 	x.NoError(err)
 

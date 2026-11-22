@@ -116,7 +116,7 @@ func TestAnAccountAtTheDirectorysConnectionIsTakenAwayAcrossTheTenant(t *testing
 	t.Run("nor moved on one", func(t *testing.T) {
 		x := require.New(t)
 		_, err := b.Walled.Identity().Resubject(b.calling(ctx, kim, resubject), app.IdentityResubjectRequest_builder{
-			Ref: app.IdentityRef_builder{Id: lee.theirs.GetId()}.Build(), Subject: z.Ptr(fredOid),
+			Ref: app.IdentityRef_builder{Id: lee.theirs.GetId()}.Build(), Subject: fredOid,
 		}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
 		stillThere(lee.theirs)
@@ -132,7 +132,7 @@ func TestAnAccountAtTheDirectorysConnectionIsTakenAwayAcrossTheTenant(t *testing
 	t.Run("and across the tenant it is moved, and taken away", func(t *testing.T) {
 		x := require.New(t)
 		v, err := b.Walled.Identity().Resubject(admin, app.IdentityResubjectRequest_builder{
-			Ref: app.IdentityRef_builder{Id: han.theirs.GetId()}.Build(), Subject: z.Ptr(erinOid),
+			Ref: app.IdentityRef_builder{Id: han.theirs.GetId()}.Build(), Subject: erinOid,
 		}.Build())
 		x.NoError(err)
 		x.Equal(erinOid, v.GetSubject())

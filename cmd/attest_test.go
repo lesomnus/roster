@@ -105,9 +105,9 @@ func TestAnAttestationIsOneOfATransaction(t *testing.T) {
 		return func(s app.Server) error {
 			_, err := s.Email().Attest(b.door, app.EmailAttestRequest_builder{
 				Holder:    app.HolderRef_builder{Id: ceo.Bytes()}.Build(),
-				Address:   z.Ptr(address),
+				Address:   address,
 				VouchedBy: app.IdentityRef_builder{Id: who.GetId()}.Build(),
-				Verified:  z.Ptr(verified),
+				Verified:  verified,
 			}.Build())
 
 			return err
@@ -214,9 +214,9 @@ func TestAnAddressDoesNotMoveWhereItsWritesCannotBeOne(t *testing.T) {
 	x.NoError(err)
 	_, err = bare.Email().Attest(ctx, app.EmailAttestRequest_builder{
 		Holder:    app.HolderRef_builder{Id: ceo.Bytes()}.Build(),
-		Address:   z.Ptr(theirs),
+		Address:   theirs,
 		VouchedBy: app.IdentityRef_builder{Id: who.GetId()}.Build(),
-		Verified:  z.Ptr(true),
+		Verified:  true,
 	}.Build())
 	x.Equal(codes.FailedPrecondition, status.Code(err), "%v", err)
 

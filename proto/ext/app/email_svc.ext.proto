@@ -167,7 +167,7 @@ message EmailAttestRequest {
 
   // The address, as the provider spelled it. Normalised here the way every
   // other write is, so that a lookup and a write agree.
-  string address = 8;
+  string address = 8 [features.field_presence = IMPLICIT];
 
   // Which identity vouched, and it is **required**: an attestation with no
   // voucher is an address somebody typed, and that has `Add` and a link.
@@ -181,7 +181,7 @@ message EmailAttestRequest {
   // in a token. False writes the row and stamps nothing, which is the right
   // answer for a directory that does not say: the address is kept, the evidence
   // is kept, and nothing claims a check that did not happen.
-  bool verified = 9;
+  bool verified = 9 [features.field_presence = IMPLICIT];
 }
 
 message EmailConfirmRequest {

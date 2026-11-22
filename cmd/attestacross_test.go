@@ -53,7 +53,7 @@ func TestAnAddressIsVouchedForByItsOwnPersonsIdentity(t *testing.T) {
 	attest := func(holder pdid.Id, address string, by *app.IdentityRef) (*app.Email, error) {
 		return b.Walled.Email().Attest(as, app.EmailAttestRequest_builder{
 			Holder:    app.HolderRef_builder{Id: holder.Bytes()}.Build(),
-			Address:   z.Ptr(address),
+			Address:   address,
 			VouchedBy: by,
 		}.Build())
 	}

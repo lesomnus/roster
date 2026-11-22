@@ -583,7 +583,7 @@ message HolderRealiasRequest {
   // alias, and refused if somebody in this tenant already has it -- both by
   // rules that were there before this method was, which is most of why this is
   // a narrow write rather than a special case.
-  string alias = 4;
+  string alias = 4 [features.field_presence = IMPLICIT];
 }
 
 message HolderDisableRequest {
@@ -641,7 +641,7 @@ message HolderReachesResponse {
   repeated bytes sites = 11;
 
   // A binding with no site is the tenant's whole width.
-  bool every_site = 12;
+  bool every_site = 12 [features.field_presence = IMPLICIT];
 
   // The patterns held **across the whole tenant**: through a binding with no
   // site, and not a role held in a team or in a group. What an app with no

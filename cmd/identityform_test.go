@@ -152,7 +152,7 @@ func TestAGUIDIsOneSpelling(t *testing.T) {
 		x := require.New(t)
 		move := func(ref []byte, subject string) (*app.Identity, error) {
 			return b.Walled.Identity().Resubject(admin, app.IdentityResubjectRequest_builder{
-				Ref: app.IdentityRef_builder{Id: ref}.Build(), Subject: z.Ptr(subject),
+				Ref: app.IdentityRef_builder{Id: ref}.Build(), Subject: subject,
 			}.Build())
 		}
 

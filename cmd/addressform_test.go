@@ -148,7 +148,7 @@ func TestAnAddressIsHeldToItsFormByEveryRoad(t *testing.T) {
 		require.Len(t, ids.GetItems(), 1)
 
 		_, err = b.Ungated.Email().Attest(ctx, app.EmailAttestRequest_builder{
-			Holder: erin, Address: z.Ptr(bracketed), Verified: z.Ptr(true),
+			Holder: erin, Address: bracketed, Verified: true,
 			VouchedBy: app.IdentityRef_builder{Id: ids.GetItems()[0].GetId()}.Build(),
 		}.Build())
 		refused(t, err)

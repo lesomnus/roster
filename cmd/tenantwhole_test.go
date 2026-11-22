@@ -7,7 +7,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -239,9 +238,9 @@ func TestTheOperatorsStackWritesAsOneWhatTheDataPlaneDoes(t *testing.T) {
 
 		v, err := operated.Email().Attest(as, app.EmailAttestRequest_builder{
 			Holder:    app.HolderRef_builder{Id: ceo.Bytes()}.Build(),
-			Address:   z.Ptr(theirs),
+			Address:   theirs,
 			VouchedBy: app.IdentityRef_builder{Id: who.GetId()}.Build(),
-			Verified:  z.Ptr(true),
+			Verified:  true,
 		}.Build())
 		x.NoError(err)
 		x.Equal(ceo.Bytes(), v.GetHolder().GetId())

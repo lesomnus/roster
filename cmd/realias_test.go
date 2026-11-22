@@ -42,7 +42,7 @@ func TestSomebodyIsWrittenAsSomethingElse(t *testing.T) {
 		was := read(t, b, who.Bytes())
 		v, err := b.Ungated.Holder().Realias(ctx, app.HolderRealiasRequest_builder{
 			Ref:         app.HolderRef_builder{Id: who.Bytes()}.Build(),
-			Alias:       proto.String("alice-kim"),
+			Alias:       "alice-kim",
 			DateUpdated: was.GetDateUpdated(),
 		}.Build())
 		x.NoError(err)
@@ -65,14 +65,14 @@ func TestSomebodyIsWrittenAsSomethingElse(t *testing.T) {
 		was := read(t, b, who.Bytes())
 		_, err := b.Ungated.Holder().Realias(ctx, app.HolderRealiasRequest_builder{
 			Ref:         app.HolderRef_builder{Id: who.Bytes()}.Build(),
-			Alias:       proto.String("Alice Kim"),
+			Alias:       "Alice Kim",
 			DateUpdated: was.GetDateUpdated(),
 		}.Build())
 		x.Equal(codes.InvalidArgument, status.Code(err))
 
 		_, err = b.Ungated.Holder().Realias(ctx, app.HolderRealiasRequest_builder{
 			Ref:         app.HolderRef_builder{Id: who.Bytes()}.Build(),
-			Alias:       proto.String("bob"),
+			Alias:       "bob",
 			DateUpdated: was.GetDateUpdated(),
 		}.Build())
 		x.Equal(codes.AlreadyExists, status.Code(err))
@@ -88,13 +88,13 @@ func TestSomebodyIsWrittenAsSomethingElse(t *testing.T) {
 
 		was := read(t, b, who.Bytes())
 		_, err := b.Ungated.Holder().Realias(ctx, app.HolderRealiasRequest_builder{
-			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(), Alias: proto.String("alice-kim"),
+			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(), Alias: "alice-kim",
 			DateUpdated: was.GetDateUpdated(),
 		}.Build())
 		x.NoError(err)
 
 		_, err = b.Ungated.Holder().Realias(ctx, app.HolderRealiasRequest_builder{
-			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(), Alias: proto.String("alice-lee"),
+			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(), Alias: "alice-lee",
 			DateUpdated: was.GetDateUpdated(),
 		}.Build())
 		x.Error(err, "a write against a row that had moved was applied")
@@ -111,7 +111,7 @@ func TestSomebodyIsWrittenAsSomethingElse(t *testing.T) {
 
 		was := read(t, b, alice.Bytes())
 		_, err := b.Ungated.Holder().Realias(ctx, app.HolderRealiasRequest_builder{
-			Ref: app.HolderRef_builder{Id: alice.Bytes()}.Build(), Alias: proto.String("alice-kim"),
+			Ref: app.HolderRef_builder{Id: alice.Bytes()}.Build(), Alias: "alice-kim",
 			DateUpdated: was.GetDateUpdated(),
 		}.Build())
 		x.NoError(err)
@@ -134,7 +134,7 @@ func TestSomebodyIsWrittenAsSomethingElse(t *testing.T) {
 		c := app.NewHolderServiceClient(b.Conn)
 
 		_, err := c.Realias(as, app.HolderRealiasRequest_builder{
-			Ref: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(), Alias: proto.String("renamed"),
+			Ref: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(), Alias: "renamed",
 		}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err), "Update carried Realias with it")
 
@@ -149,7 +149,7 @@ func TestSomebodyIsWrittenAsSomethingElse(t *testing.T) {
 		}.Build())
 		x.NoError(err)
 		_, err = c2.Realias(as2, app.HolderRealiasRequest_builder{
-			Ref: app.HolderRef_builder{Id: b2.Who.Bytes()}.Build(), Alias: proto.String("renamed"),
+			Ref: app.HolderRef_builder{Id: b2.Who.Bytes()}.Build(), Alias: "renamed",
 			DateUpdated: got.GetDateUpdated(),
 		}.Build())
 		x.NoError(err)

@@ -40,7 +40,7 @@ func TestARowAFileDeclaresIsNotRenamed(t *testing.T) {
 	ref := app.HolderRef_builder{Id: v.GetId()}.Build()
 
 	_, err = b.Walled.Holder().Realias(admin, app.HolderRealiasRequest_builder{
-		Ref: ref, Alias: z.Ptr("door"), DateUpdated: v.GetDateUpdated(),
+		Ref: ref, Alias: "door", DateUpdated: v.GetDateUpdated(),
 	}.Build())
 	x.Equal(codes.FailedPrecondition, status.Code(err), "%v", err)
 	x.Contains(status.Convert(err).Message(), "config: account")
@@ -56,7 +56,7 @@ func TestARowAFileDeclaresIsNotRenamed(t *testing.T) {
 	got, err = b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{Ref: ref}.Build())
 	x.NoError(err)
 	renamed, err := b.Ungated.Holder().Realias(ctx, app.HolderRealiasRequest_builder{
-		Ref: ref, Alias: z.Ptr("door"), DateUpdated: got.GetDateUpdated(),
+		Ref: ref, Alias: "door", DateUpdated: got.GetDateUpdated(),
 	}.Build())
 	x.NoError(err)
 	x.Equal("door", renamed.GetAlias())

@@ -216,5 +216,5 @@ message IdentityResubjectRequest {
   google.protobuf.Timestamp date_updated = 13;
 
   // What the provider calls this person under the connection's claim.
-  string subject = 9;
+  string subject = 9 [features.field_presence = IMPLICIT];
 }

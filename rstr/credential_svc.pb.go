@@ -2439,15 +2439,13 @@ func (b0 CredentialUnlockResponse_builder) Build() *CredentialUnlockResponse {
 }
 
 type CredentialSetRequest struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref         *HolderRef             `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Kind        string                 `protobuf:"bytes,2,opt,name=kind"`
-	xxx_hidden_Secret      []byte                 `protobuf:"bytes,3,opt,name=secret"`
-	xxx_hidden_Current     []byte                 `protobuf:"bytes,4,opt,name=current"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref     *HolderRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Kind    string                 `protobuf:"bytes,2,opt,name=kind"`
+	xxx_hidden_Secret  []byte                 `protobuf:"bytes,3,opt,name=secret"`
+	xxx_hidden_Current []byte                 `protobuf:"bytes,4,opt,name=current"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *CredentialSetRequest) Reset() {
@@ -2516,7 +2514,6 @@ func (x *CredentialSetRequest) SetSecret(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Secret = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
 }
 
 func (x *CredentialSetRequest) SetCurrent(v []byte) {
@@ -2524,7 +2521,6 @@ func (x *CredentialSetRequest) SetCurrent(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Current = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
 }
 
 func (x *CredentialSetRequest) HasRef() bool {
@@ -2534,32 +2530,8 @@ func (x *CredentialSetRequest) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *CredentialSetRequest) HasSecret() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
-}
-
-func (x *CredentialSetRequest) HasCurrent() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
-}
-
 func (x *CredentialSetRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
-}
-
-func (x *CredentialSetRequest) ClearSecret() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_Secret = nil
-}
-
-func (x *CredentialSetRequest) ClearCurrent() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
-	x.xxx_hidden_Current = nil
 }
 
 type CredentialSetRequest_builder struct {
@@ -2584,14 +2556,8 @@ func (b0 CredentialSetRequest_builder) Build() *CredentialSetRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_Kind = b.Kind
-	if b.Secret != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
-		x.xxx_hidden_Secret = b.Secret
-	}
-	if b.Current != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
-		x.xxx_hidden_Current = b.Current
-	}
+	x.xxx_hidden_Secret = b.Secret
+	x.xxx_hidden_Current = b.Current
 	return m0
 }
 
@@ -2645,8 +2611,6 @@ type CredentialEnrolRequest struct {
 	xxx_hidden_Name        string                 `protobuf:"bytes,3,opt,name=name"`
 	xxx_hidden_Issuer      string                 `protobuf:"bytes,4,opt,name=issuer"`
 	xxx_hidden_Attestation []byte                 `protobuf:"bytes,5,opt,name=attestation"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -2732,7 +2696,6 @@ func (x *CredentialEnrolRequest) SetAttestation(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Attestation = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
 }
 
 func (x *CredentialEnrolRequest) HasRef() bool {
@@ -2742,20 +2705,8 @@ func (x *CredentialEnrolRequest) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *CredentialEnrolRequest) HasAttestation() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
-}
-
 func (x *CredentialEnrolRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
-}
-
-func (x *CredentialEnrolRequest) ClearAttestation() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
-	x.xxx_hidden_Attestation = nil
 }
 
 type CredentialEnrolRequest_builder struct {
@@ -2787,10 +2738,7 @@ func (b0 CredentialEnrolRequest_builder) Build() *CredentialEnrolRequest {
 	x.xxx_hidden_Kind = b.Kind
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Issuer = b.Issuer
-	if b.Attestation != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
-		x.xxx_hidden_Attestation = b.Attestation
-	}
+	x.xxx_hidden_Attestation = b.Attestation
 	return m0
 }
 
@@ -3156,19 +3104,19 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\x04kind\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\"W\n" +
 	"\x18CredentialUnlockResponse\x12;\n" +
 	"\vdate_locked\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"dateLocked\"\x88\x01\n" +
+	"dateLocked\"\x96\x01\n" +
 	"\x14CredentialSetRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12\x19\n" +
-	"\x04kind\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\x12\x16\n" +
-	"\x06secret\x18\x03 \x01(\fR\x06secret\x12\x18\n" +
-	"\acurrent\x18\x04 \x01(\fR\acurrent\"\x17\n" +
-	"\x15CredentialSetResponse\"\xb4\x01\n" +
+	"\x04kind\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\x12\x1d\n" +
+	"\x06secret\x18\x03 \x01(\fB\x05\xaa\x01\x02\b\x02R\x06secret\x12\x1f\n" +
+	"\acurrent\x18\x04 \x01(\fB\x05\xaa\x01\x02\b\x02R\acurrent\"\x17\n" +
+	"\x15CredentialSetResponse\"\xbb\x01\n" +
 	"\x16CredentialEnrolRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12\x19\n" +
 	"\x04kind\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\x12\x19\n" +
 	"\x04name\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x1d\n" +
-	"\x06issuer\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06issuer\x12 \n" +
-	"\vattestation\x18\x05 \x01(\fR\vattestation\"M\n" +
+	"\x06issuer\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06issuer\x12'\n" +
+	"\vattestation\x18\x05 \x01(\fB\x05\xaa\x01\x02\b\x02R\vattestation\"M\n" +
 	"\x17CredentialEnrolResponse\x12\x19\n" +
 	"\x04seed\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04seed\x12\x17\n" +
 	"\x03uri\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x03uri\"\xaa\x01\n" +

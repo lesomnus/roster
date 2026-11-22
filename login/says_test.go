@@ -238,9 +238,9 @@ func TestAnAddressProvedAgainIsStillTheOneProvedFirst(t *testing.T) {
 	x.NoError(err)
 	_, err = emails.Attest(d.ops, rstr.EmailAttestRequest_builder{
 		Holder:    erin,
-		Address:   proto.String(first),
+		Address:   first,
 		VouchedBy: rstr.IdentityRef_builder{Id: id.GetId()}.Build(),
-		Verified:  proto.Bool(true),
+		Verified:  true,
 	}.Build())
 	x.NoError(err)
 

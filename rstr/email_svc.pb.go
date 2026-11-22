@@ -2496,15 +2496,13 @@ func (b0 EmailConfirmResponse_builder) Build() *EmailConfirmResponse {
 }
 
 type EmailAttestRequest struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,1,opt,name=holder"`
-	xxx_hidden_Address     *string                `protobuf:"bytes,8,opt,name=address"`
-	xxx_hidden_VouchedBy   *IdentityRef           `protobuf:"bytes,10,opt,name=vouched_by,json=vouchedBy"`
-	xxx_hidden_Verified    bool                   `protobuf:"varint,9,opt,name=verified"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Holder    *HolderRef             `protobuf:"bytes,1,opt,name=holder"`
+	xxx_hidden_Address   string                 `protobuf:"bytes,8,opt,name=address"`
+	xxx_hidden_VouchedBy *IdentityRef           `protobuf:"bytes,10,opt,name=vouched_by,json=vouchedBy"`
+	xxx_hidden_Verified  bool                   `protobuf:"varint,9,opt,name=verified"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *EmailAttestRequest) Reset() {
@@ -2541,10 +2539,7 @@ func (x *EmailAttestRequest) GetHolder() *HolderRef {
 
 func (x *EmailAttestRequest) GetAddress() string {
 	if x != nil {
-		if x.xxx_hidden_Address != nil {
-			return *x.xxx_hidden_Address
-		}
-		return ""
+		return x.xxx_hidden_Address
 	}
 	return ""
 }
@@ -2568,8 +2563,7 @@ func (x *EmailAttestRequest) SetHolder(v *HolderRef) {
 }
 
 func (x *EmailAttestRequest) SetAddress(v string) {
-	x.xxx_hidden_Address = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
+	x.xxx_hidden_Address = v
 }
 
 func (x *EmailAttestRequest) SetVouchedBy(v *IdentityRef) {
@@ -2578,7 +2572,6 @@ func (x *EmailAttestRequest) SetVouchedBy(v *IdentityRef) {
 
 func (x *EmailAttestRequest) SetVerified(v bool) {
 	x.xxx_hidden_Verified = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
 }
 
 func (x *EmailAttestRequest) HasHolder() bool {
@@ -2588,13 +2581,6 @@ func (x *EmailAttestRequest) HasHolder() bool {
 	return x.xxx_hidden_Holder != nil
 }
 
-func (x *EmailAttestRequest) HasAddress() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
-}
-
 func (x *EmailAttestRequest) HasVouchedBy() bool {
 	if x == nil {
 		return false
@@ -2602,29 +2588,12 @@ func (x *EmailAttestRequest) HasVouchedBy() bool {
 	return x.xxx_hidden_VouchedBy != nil
 }
 
-func (x *EmailAttestRequest) HasVerified() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
-}
-
 func (x *EmailAttestRequest) ClearHolder() {
 	x.xxx_hidden_Holder = nil
 }
 
-func (x *EmailAttestRequest) ClearAddress() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
-	x.xxx_hidden_Address = nil
-}
-
 func (x *EmailAttestRequest) ClearVouchedBy() {
 	x.xxx_hidden_VouchedBy = nil
-}
-
-func (x *EmailAttestRequest) ClearVerified() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
-	x.xxx_hidden_Verified = false
 }
 
 type EmailAttestRequest_builder struct {
@@ -2634,7 +2603,7 @@ type EmailAttestRequest_builder struct {
 	Holder *HolderRef
 	// The address, as the provider spelled it. Normalised here the way every
 	// other write is, so that a lookup and a write agree.
-	Address *string
+	Address string
 	// Which identity vouched, and it is **required**: an attestation with no
 	// voucher is an address somebody typed, and that has `Add` and a link.
 	//
@@ -2646,7 +2615,7 @@ type EmailAttestRequest_builder struct {
 	// in a token. False writes the row and stamps nothing, which is the right
 	// answer for a directory that does not say: the address is kept, the evidence
 	// is kept, and nothing claims a check that did not happen.
-	Verified *bool
+	Verified bool
 }
 
 func (b0 EmailAttestRequest_builder) Build() *EmailAttestRequest {
@@ -2654,15 +2623,9 @@ func (b0 EmailAttestRequest_builder) Build() *EmailAttestRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Holder = b.Holder
-	if b.Address != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
-		x.xxx_hidden_Address = b.Address
-	}
+	x.xxx_hidden_Address = b.Address
 	x.xxx_hidden_VouchedBy = b.VouchedBy
-	if b.Verified != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
-		x.xxx_hidden_Verified = *b.Verified
-	}
+	x.xxx_hidden_Verified = b.Verified
 	return m0
 }
 
@@ -2757,14 +2720,14 @@ const file_app_email_svc_g_proto_rawDesc = "" +
 	"\x13EmailConfirmRequest\x12\x1b\n" +
 	"\x05token\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\";\n" +
 	"\x14EmailConfirmResponse\x12#\n" +
-	"\x05email\x18\x01 \x01(\v2\r.roster.EmailR\x05email\"\xa9\x01\n" +
+	"\x05email\x18\x01 \x01(\v2\r.roster.EmailR\x05email\"\xb7\x01\n" +
 	"\x12EmailAttestRequest\x12)\n" +
-	"\x06holder\x18\x01 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x18\n" +
-	"\aaddress\x18\b \x01(\tR\aaddress\x122\n" +
+	"\x06holder\x18\x01 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1f\n" +
+	"\aaddress\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\aaddress\x122\n" +
 	"\n" +
 	"vouched_by\x18\n" +
-	" \x01(\v2\x13.roster.IdentityRefR\tvouchedBy\x12\x1a\n" +
-	"\bverified\x18\t \x01(\bR\bverified2\xc6\x04\n" +
+	" \x01(\v2\x13.roster.IdentityRefR\tvouchedBy\x12!\n" +
+	"\bverified\x18\t \x01(\bB\x05\xaa\x01\x02\b\x02R\bverified2\xc6\x04\n" +
 	"\fEmailService\x12-\n" +
 	"\x03Add\x12\x17.roster.EmailAddRequest\x1a\r.roster.Email\x12-\n" +
 	"\x03Get\x12\x17.roster.EmailGetRequest\x1a\r.roster.Email\x121\n" +
