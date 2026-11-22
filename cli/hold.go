@@ -111,7 +111,7 @@ func NewCmdHold(c *cmd.Config) *xli.Command {
 // patch of the tenant, and was filed under the generated method that wrote it,
 // `/roster.TenantService/Patch`, the same for both and for any change of a
 // tenant's note (#284). They have no RPC, so they are named as
-// `roster.holder.restore` and `roster.keys.use` are.
+// `roster.holder.restore` and `roster.apikey.use` are.
 const (
 	holdPlaced = "roster.hold.place"
 	holdLifted = "roster.hold.lift"

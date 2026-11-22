@@ -175,7 +175,7 @@ func TestWhatASweepCollectsIsSaidUnderTheTenantItWasOf(t *testing.T) {
 		x.NotZero(n)
 	}
 
-	wentUnder(t, ctx, b, gone, keys.Expired, vouch.Expired, prove.Expired, session.Expired, forget.DestroyedConsent)
+	wentUnder(t, ctx, b, gone, keys.Expired, vouch.ContinuationExpired, vouch.LinkExpired, prove.Expired, session.Expired, forget.DestroyedConsent)
 	x.NoError(rows())
 
 	// So a tenant's own reader of its trail is answered what went of theirs,

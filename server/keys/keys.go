@@ -369,7 +369,7 @@ func lookup(ctx context.Context, s app.Server, token string) (*app.ApiKey, error
 }
 
 // Used is the act a key's last use is on the trail as.
-const Used = "roster.keys.use"
+const Used = "roster.apikey.use"
 
 // touch records that the key was used, rarely.
 //

@@ -39,7 +39,8 @@ const Swept = 10 * time.Minute
 // spent row is out of reach immediately and takes up space until its own clock
 // runs out -- one pass rather than two is worth more than the space.
 //
-// Each one collected is on the trail as [Expired], for `expire.Rows`' reason.
+// Each one collected is on the trail as [ContinuationExpired] or [LinkExpired],
+// by which row it was, for `expire.Rows`' reason.
 func Sweep(db *ent.Client, cs audit.Contents, every time.Duration) spin.Func {
 	if every <= 0 {
 		every = Swept
@@ -71,7 +72,7 @@ func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error
 	// Which are due, and whose each is while it can still be asked: the line
 	// that says it went is filed under the tenant of whoever it was for
 	// (`expire.Rows`).
-	n, err := expire.Rows(ctx, db, cs, Expired,
+	n, err := expire.Rows(ctx, db, cs, ContinuationExpired,
 		func(ctx context.Context, db *ent.Client) ([]expire.Row, error) {
 			vs, err := db.Continuation.Query().
 				Where(continuation.DateExpiresLT(now)).
@@ -100,7 +101,7 @@ func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error
 		return n, err
 	}
 
-	m, err := expire.Rows(ctx, db, cs, Expired,
+	m, err := expire.Rows(ctx, db, cs, LinkExpired,
 		func(ctx context.Context, db *ent.Client) ([]expire.Row, error) {
 			vs, err := db.Link.Query().
 				Where(link.DateExpiresLT(now)).
@@ -129,6 +130,10 @@ func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error
 	return n + m, err
 }
 
-// Expired is the act an attempt or a link the sweep collected is on the trail
-// as.
-const Expired = "roster.vouch.expire"
+// ContinuationExpired and LinkExpired are the acts an attempt and a link the
+// sweep collected are on the trail as: each named for its row, as a line of
+// the trail is.
+const (
+	ContinuationExpired = "roster.continuation.expire"
+	LinkExpired         = "roster.link.expire"
+)

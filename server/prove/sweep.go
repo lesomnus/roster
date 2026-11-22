@@ -103,4 +103,4 @@ func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error
 }
 
 // Expired is the act a claim the sweep collected is on the trail as.
-const Expired = "roster.prove.expire"
+const Expired = "roster.hostproof.expire"
