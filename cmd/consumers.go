@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -156,7 +157,7 @@ type AccountConfig struct {
 	Terminal bool `yaml:"terminal"`
 
 	// InsecureCookie drops `Secure`, for a page served over plain http in
-	// development.
+	// development. Beside an `https` base it is refused ([secureBeside]).
 	InsecureCookie bool `yaml:"insecure_cookie"`
 
 	// Mail is how this front door delivers the links roster mints for it: a
@@ -225,8 +226,32 @@ func (c AccountConfig) Meant() error {
 	if err := webOrigin("account.base (--base)", c.Base); err != nil {
 		return err
 	}
+	if err := secureBeside("account", c.Base, c.InsecureCookie); err != nil {
+		return err
+	}
 
 	return dirThere("account.page.dir (--static)", c.Page.Dir)
+}
+
+// secureBeside refuses a front door's cookies without `Secure` where its base
+// is `https`.
+//
+// `insecure_cookie` is for a page served over plain http, where a browser
+// would not send a `Secure` cookie back. Beside an `https` base it is every
+// browser handed its session without the flag, which is what an overlay got
+// that said its own base and inherited the switch from `deploy/config.yaml`:
+// told once at start, by a line of payday's that named no key.
+func secureBeside(block, base string, insecure bool) error {
+	if !insecure {
+		return nil
+	}
+	u, err := url.Parse(base)
+	if err != nil || !strings.EqualFold(u.Scheme, "https") {
+		return nil
+	}
+
+	return fmt.Errorf("%[1]s.insecure_cookie (--insecure-cookie) is on and %[1]s.base (--base) is https: "+
+		"its cookies would go to every browser without Secure. take %[1]s.insecure_cookie out; it is for a page served over plain http", block)
 }
 
 // PageConfig is a built page, as a directory.
@@ -467,7 +492,7 @@ type LoginConfig struct {
 	Seal []string `yaml:"seal"`
 
 	// InsecureCookie drops `Secure`, for a page served over plain http in
-	// development.
+	// development. Beside an `https` base it is refused ([secureBeside]).
 	InsecureCookie bool `yaml:"insecure_cookie"`
 
 	// Page is the built sign-in page (`ts/dist/login`). Empty serves none: the
@@ -502,6 +527,9 @@ func (c LoginConfig) Meant() error {
 		return err
 	}
 	if err := webOrigin("login.base (--base)", c.Base); err != nil {
+		return err
+	}
+	if err := secureBeside("login", c.Base, c.InsecureCookie); err != nil {
 		return err
 	}
 
