@@ -495,7 +495,7 @@ func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) 
 		// a deployment key as itself -- was answered their bindings for as
 		// long as the tenant was closed, while `standing` asked by the same
 		// key refused them.
-		return app.HolderReachesResponse_builder{EverySite: z.Ptr(false)}.Build(), nil
+		return app.HolderReachesResponse_builder{EverySite: false}.Build(), nil
 	}
 	if s.rules.Held == nil {
 		return nil, status.Error(codes.Unimplemented,
@@ -512,7 +512,7 @@ func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) 
 		return nil, err
 	}
 
-	res := app.HolderReachesResponse_builder{Methods: ms, EverySite: z.Ptr(every)}
+	res := app.HolderReachesResponse_builder{Methods: ms, EverySite: every}
 	for _, k := range sites {
 		res.Sites = append(res.Sites, k.Bytes())
 	}

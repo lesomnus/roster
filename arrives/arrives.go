@@ -1420,7 +1420,7 @@ func (p *Providers) moved(ctx context.Context, who *Caller) (pdid.Id, bool, erro
 
 	if _, err := p.roster.Identity().Resubject(ctx, rstr.IdentityResubjectRequest_builder{
 		Ref:     rstr.IdentityRef_builder{Id: v.GetId()}.Build(),
-		Subject: proto.String(who.Subject),
+		Subject: who.Subject,
 	}.Build()); err != nil {
 		slog.WarnContext(ctx, "arrives: signed in by the subject they had; an operator moves them",
 			"provider", who.Provider, "holder", id.String(), "err", err)
@@ -1464,7 +1464,7 @@ func (p *Providers) attest(ctx context.Context, who pdid.Id, link *rstr.Identity
 
 	_, _ = p.roster.Email().Attest(ctx, rstr.EmailAttestRequest_builder{
 		Holder:  rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
-		Address: proto.String(front.Address(from.Email)),
+		Address: front.Address(from.Email),
 
 		// Whose word it was, which is the whole of what makes this different
 		// from an address somebody typed.
@@ -1474,7 +1474,7 @@ func (p *Providers) attest(ctx context.Context, who pdid.Id, link *rstr.Identity
 		// that does not send `email_verified` gets a row with the address and
 		// the evidence and no stamp, which is exactly right: the address is
 		// kept, and nothing claims a check that did not happen.
-		Verified: proto.Bool(from.Verified),
+		Verified: from.Verified,
 	}.Build())
 }
 

@@ -139,12 +139,12 @@ func TestAnAliasIsWrittenAsItWillBeRead(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = app.NewHolderServiceClient(conn).Realias(wire, app.HolderRealiasRequest_builder{
-			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(), Alias: z.Ptr("Alice-Kim"), DateUpdated: got.GetDateUpdated(),
+			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(), Alias: "Alice-Kim", DateUpdated: got.GetDateUpdated(),
 		}.Build())
 		refused(t, err, "alice-kim")
 
 		v, err := app.NewHolderServiceClient(conn).Realias(wire, app.HolderRealiasRequest_builder{
-			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(), Alias: z.Ptr("alice-kim"), DateUpdated: got.GetDateUpdated(),
+			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(), Alias: "alice-kim", DateUpdated: got.GetDateUpdated(),
 		}.Build())
 		require.NoError(t, err)
 		require.Equal(t, "alice-kim", v.GetAlias())

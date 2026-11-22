@@ -3517,9 +3517,7 @@ type HolderRealiasRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref         *HolderRef             `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_Alias       *string                `protobuf:"bytes,4,opt,name=alias"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
+	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -3565,10 +3563,7 @@ func (x *HolderRealiasRequest) GetDateUpdated() *timestamppb.Timestamp {
 
 func (x *HolderRealiasRequest) GetAlias() string {
 	if x != nil {
-		if x.xxx_hidden_Alias != nil {
-			return *x.xxx_hidden_Alias
-		}
-		return ""
+		return x.xxx_hidden_Alias
 	}
 	return ""
 }
@@ -3582,8 +3577,7 @@ func (x *HolderRealiasRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 }
 
 func (x *HolderRealiasRequest) SetAlias(v string) {
-	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+	x.xxx_hidden_Alias = v
 }
 
 func (x *HolderRealiasRequest) HasRef() bool {
@@ -3600,24 +3594,12 @@ func (x *HolderRealiasRequest) HasDateUpdated() bool {
 	return x.xxx_hidden_DateUpdated != nil
 }
 
-func (x *HolderRealiasRequest) HasAlias() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
-}
-
 func (x *HolderRealiasRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
 func (x *HolderRealiasRequest) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
-}
-
-func (x *HolderRealiasRequest) ClearAlias() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_Alias = nil
 }
 
 type HolderRealiasRequest_builder struct {
@@ -3630,7 +3612,7 @@ type HolderRealiasRequest_builder struct {
 	// alias, and refused if somebody in this tenant already has it -- both by
 	// rules that were there before this method was, which is most of why this is
 	// a narrow write rather than a special case.
-	Alias *string
+	Alias string
 }
 
 func (b0 HolderRealiasRequest_builder) Build() *HolderRealiasRequest {
@@ -3639,10 +3621,7 @@ func (b0 HolderRealiasRequest_builder) Build() *HolderRealiasRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_DateUpdated = b.DateUpdated
-	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
-		x.xxx_hidden_Alias = b.Alias
-	}
+	x.xxx_hidden_Alias = b.Alias
 	return m0
 }
 
@@ -4164,15 +4143,13 @@ func (b0 HolderReachesRequest_builder) Build() *HolderReachesRequest {
 }
 
 type HolderReachesResponse struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Methods     []string               `protobuf:"bytes,10,rep,name=methods"`
-	xxx_hidden_Sites       [][]byte               `protobuf:"bytes,11,rep,name=sites"`
-	xxx_hidden_EverySite   bool                   `protobuf:"varint,12,opt,name=every_site,json=everySite"`
-	xxx_hidden_Everywhere  []string               `protobuf:"bytes,13,rep,name=everywhere"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                 protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Methods    []string               `protobuf:"bytes,10,rep,name=methods"`
+	xxx_hidden_Sites      [][]byte               `protobuf:"bytes,11,rep,name=sites"`
+	xxx_hidden_EverySite  bool                   `protobuf:"varint,12,opt,name=every_site,json=everySite"`
+	xxx_hidden_Everywhere []string               `protobuf:"bytes,13,rep,name=everywhere"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *HolderReachesResponse) Reset() {
@@ -4238,23 +4215,10 @@ func (x *HolderReachesResponse) SetSites(v [][]byte) {
 
 func (x *HolderReachesResponse) SetEverySite(v bool) {
 	x.xxx_hidden_EverySite = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
 }
 
 func (x *HolderReachesResponse) SetEverywhere(v []string) {
 	x.xxx_hidden_Everywhere = v
-}
-
-func (x *HolderReachesResponse) HasEverySite() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
-}
-
-func (x *HolderReachesResponse) ClearEverySite() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_EverySite = false
 }
 
 type HolderReachesResponse_builder struct {
@@ -4268,7 +4232,7 @@ type HolderReachesResponse_builder struct {
 	// identifiers, which is the order they were made in.
 	Sites [][]byte
 	// A binding with no site is the tenant's whole width.
-	EverySite *bool
+	EverySite bool
 	// The patterns held **across the whole tenant**: through a binding with no
 	// site, and not a role held in a team or in a group. What an app with no
 	// sites of its own grants on.
@@ -4287,10 +4251,7 @@ func (b0 HolderReachesResponse_builder) Build() *HolderReachesResponse {
 	_, _ = b, x
 	x.xxx_hidden_Methods = b.Methods
 	x.xxx_hidden_Sites = b.Sites
-	if b.EverySite != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
-		x.xxx_hidden_EverySite = *b.EverySite
-	}
+	x.xxx_hidden_EverySite = b.EverySite
 	x.xxx_hidden_Everywhere = b.Everywhere
 	return m0
 }
@@ -5593,11 +5554,11 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12)\n" +
 	"\aprofile\x18\t \x01(\v2\x0f.roster.ProfileR\aprofile\x12(\n" +
 	"\x04data\x18\n" +
-	" \x01(\v2\x14.google.protobuf.AnyR\x04data\"\x90\x01\n" +
+	" \x01(\v2\x14.google.protobuf.AnyR\x04data\"\x97\x01\n" +
 	"\x14HolderRealiasRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12=\n" +
-	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12\x14\n" +
-	"\x05alias\x18\x04 \x01(\tR\x05alias\"z\n" +
+	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12\x1b\n" +
+	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\"z\n" +
 	"\x14HolderDisableRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12=\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\"y\n" +
@@ -5616,13 +5577,13 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\vcredentials\x18\x0e \x03(\v2\x18.roster.SignInCredentialR\vcredentials\x12%\n" +
 	"\x04keys\x18\x0f \x03(\v2\x11.roster.SignInKeyR\x04keys\";\n" +
 	"\x14HolderReachesRequest\x12#\n" +
-	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\"\x86\x01\n" +
+	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\"\x8d\x01\n" +
 	"\x15HolderReachesResponse\x12\x18\n" +
 	"\amethods\x18\n" +
 	" \x03(\tR\amethods\x12\x14\n" +
-	"\x05sites\x18\v \x03(\fR\x05sites\x12\x1d\n" +
+	"\x05sites\x18\v \x03(\fR\x05sites\x12$\n" +
 	"\n" +
-	"every_site\x18\f \x01(\bR\teverySite\x12\x1e\n" +
+	"every_site\x18\f \x01(\bB\x05\xaa\x01\x02\b\x02R\teverySite\x12\x1e\n" +
 	"\n" +
 	"everywhere\x18\r \x03(\tR\n" +
 	"everywhere\"\xcc\x01\n" +

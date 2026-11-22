@@ -300,9 +300,9 @@ func TestADirectoryTakesAnAddressNobodyProved(t *testing.T) {
 	attest := func(verified bool) (*app.Email, error) {
 		return b.Walled.Email().Attest(b.as(ctx, ceo, b.Contoso), app.EmailAttestRequest_builder{
 			Holder:    app.HolderRef_builder{Id: ceo.Bytes()}.Build(),
-			Address:   z.Ptr(theirs),
+			Address:   theirs,
 			VouchedBy: app.IdentityRef_builder{Id: who.GetId()}.Build(),
-			Verified:  z.Ptr(verified),
+			Verified:  verified,
 		}.Build())
 	}
 
@@ -344,9 +344,9 @@ func TestADirectoryTakesAnAddressNobodyProved(t *testing.T) {
 
 		_, err := b.Walled.Email().Attest(b.as(ctx, other, b.Contoso), app.EmailAttestRequest_builder{
 			Holder:    app.HolderRef_builder{Id: other.Bytes()}.Build(),
-			Address:   z.Ptr(theirs),
+			Address:   theirs,
 			VouchedBy: app.IdentityRef_builder{Id: theirId.GetId()}.Build(),
-			Verified:  z.Ptr(true),
+			Verified:  true,
 		}.Build())
 		x.Equal(codes.NotFound, status.Code(err))
 	})

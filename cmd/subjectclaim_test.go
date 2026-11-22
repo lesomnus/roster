@@ -130,7 +130,7 @@ func TestAnIdentityMovesToTheClaimItsConnectionNames(t *testing.T) {
 
 		return b.Walled.Identity().Resubject(admin, app.IdentityResubjectRequest_builder{
 			Ref:     app.IdentityRef_builder{Id: ref}.Build(),
-			Subject: z.Ptr(subject),
+			Subject: subject,
 		}.Build())
 	}
 	idOf := func(of pdid.Id) *app.Identity {
@@ -259,7 +259,7 @@ func TestAMoveIsAWayInAndIsHeldToIt(t *testing.T) {
 		t.Helper()
 		_, err := b.Walled.Identity().Resubject(as, app.IdentityResubjectRequest_builder{
 			Ref:     app.IdentityRef_builder{Id: ref}.Build(),
-			Subject: z.Ptr(subject),
+			Subject: subject,
 		}.Build())
 
 		return err

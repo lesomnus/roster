@@ -1863,9 +1863,7 @@ type IdentityResubjectRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref         *IdentityRef           `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_Subject     *string                `protobuf:"bytes,9,opt,name=subject"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
+	xxx_hidden_Subject     string                 `protobuf:"bytes,9,opt,name=subject"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -1911,10 +1909,7 @@ func (x *IdentityResubjectRequest) GetDateUpdated() *timestamppb.Timestamp {
 
 func (x *IdentityResubjectRequest) GetSubject() string {
 	if x != nil {
-		if x.xxx_hidden_Subject != nil {
-			return *x.xxx_hidden_Subject
-		}
-		return ""
+		return x.xxx_hidden_Subject
 	}
 	return ""
 }
@@ -1928,8 +1923,7 @@ func (x *IdentityResubjectRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 }
 
 func (x *IdentityResubjectRequest) SetSubject(v string) {
-	x.xxx_hidden_Subject = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 3)
+	x.xxx_hidden_Subject = v
 }
 
 func (x *IdentityResubjectRequest) HasRef() bool {
@@ -1946,24 +1940,12 @@ func (x *IdentityResubjectRequest) HasDateUpdated() bool {
 	return x.xxx_hidden_DateUpdated != nil
 }
 
-func (x *IdentityResubjectRequest) HasSubject() bool {
-	if x == nil {
-		return false
-	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
-}
-
 func (x *IdentityResubjectRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
 func (x *IdentityResubjectRequest) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
-}
-
-func (x *IdentityResubjectRequest) ClearSubject() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_Subject = nil
 }
 
 type IdentityResubjectRequest_builder struct {
@@ -1976,7 +1958,7 @@ type IdentityResubjectRequest_builder struct {
 	// changed in between.
 	DateUpdated *timestamppb.Timestamp
 	// What the provider calls this person under the connection's claim.
-	Subject *string
+	Subject string
 }
 
 func (b0 IdentityResubjectRequest_builder) Build() *IdentityResubjectRequest {
@@ -1985,10 +1967,7 @@ func (b0 IdentityResubjectRequest_builder) Build() *IdentityResubjectRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_DateUpdated = b.DateUpdated
-	if b.Subject != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 3)
-		x.xxx_hidden_Subject = b.Subject
-	}
+	x.xxx_hidden_Subject = b.Subject
 	return m0
 }
 
@@ -2060,11 +2039,11 @@ const file_app_identity_svc_g_proto_rawDesc = "" +
 	"\x11IdentityWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12&\n" +
 	"\x05value\x18\x02 \x01(\v2\x10.roster.IdentityR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\x9a\x01\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xa1\x01\n" +
 	"\x18IdentityResubjectRequest\x12%\n" +
 	"\x03ref\x18\x01 \x01(\v2\x13.roster.IdentityRefR\x03ref\x12=\n" +
-	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12\x18\n" +
-	"\asubject\x18\t \x01(\tR\asubject2\xf6\x03\n" +
+	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12\x1f\n" +
+	"\asubject\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\asubject2\xf6\x03\n" +
 	"\x0fIdentityService\x123\n" +
 	"\x03Add\x12\x1a.roster.IdentityAddRequest\x1a\x10.roster.Identity\x123\n" +
 	"\x03Get\x12\x1a.roster.IdentityGetRequest\x1a\x10.roster.Identity\x127\n" +
