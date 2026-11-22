@@ -12,6 +12,8 @@ import (
 	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -250,18 +252,24 @@ func TestARowKeepsHowItWasAskedAndNotTheWordsItWasAskedBy(t *testing.T) {
 		kept(t, app.HolderService_Watch_FullMethodName, &app.HolderWatchRequest{}, req)
 	})
 
+	// A key is not read by its verifier at a port any more
+	// (`TestAVerifierNamesNoRowOverTheWire`), and the refusal keeps nothing of
+	// what it was asked, as any refusal does.
 	t.Run("a key by its verifier", func(t *testing.T) {
+		x := require.New(t)
+
 		sel := app.ApiKeySelect_builder{Alias: z.Ptr(true), Holder: app.HolderSelect_builder{Alias: z.Ptr(true)}.Build()}.Build()
-		v, err := app.NewApiKeyServiceClient(conn).Get(as, app.ApiKeyGetRequest_builder{
+		_, err := app.NewApiKeyServiceClient(conn).Get(as, app.ApiKeyGetRequest_builder{
 			Ref: app.ApiKeyRef_builder{Secret: verifier}.Build(), Select: sel,
 		}.Build())
-		require.NoError(t, err)
-		require.Equal(t, "laptop", v.GetAlias())
+		x.Equal(codes.InvalidArgument, status.Code(err), "%v", err)
 
-		// That it was read by `secret`, and nothing of the secret.
-		kept(t, app.ApiKeyService_Get_FullMethodName, &app.ApiKeyGetRequest{}, app.ApiKeyGetRequest_builder{
-			Ref: app.ApiKeyRef_builder{Secret: []byte{}}.Build(), Select: sel,
-		}.Build())
+		for _, r := range filed(t, ctx, b.Server, app.ApiKeyService_Get_FullMethodName) {
+			d := &pdpb.AccessDetail{}
+			x.NoError(proto.Unmarshal(r.Value, d))
+			x.Empty(d.GetRequest())
+			x.NotContains(string(r.Value), string(verifier))
+		}
 	})
 
 	t.Run("and a call that was refused keeps nothing of what it asked, as before", func(t *testing.T) {

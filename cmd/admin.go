@@ -374,6 +374,7 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 		WithUnary(grpcx.ClosedUnary(shut)).
 		WithStream(grpcx.ClosedStream(shut)).
 		WithUnary(Undeclared()).
+		With(NotByVerifier()).
 		WithUnary(Undated())
 
 	vs, err := c.Admin.GrpcOptions()
