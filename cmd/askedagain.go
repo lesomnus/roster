@@ -110,11 +110,11 @@ func stillMay(ctx, arrived context.Context, h auth.Handler, r auth.Resolver, p g
 	// with what it arrived carrying.
 	id, err := h.Handle(arrived)
 	if err != nil {
-		return refusal(ctx, err)
+		return refusal(ctx, handlerSaid(err))
 	}
 	f, err := r.Resolve(arrived, id)
 	if err != nil {
-		return refusal(ctx, err)
+		return refusal(ctx, resolverSaid(err))
 	}
 	if f == nil {
 		return status.Error(codes.Unauthenticated, "nobody")
@@ -131,22 +131,57 @@ func stillMay(ctx, arrived context.Context, h auth.Handler, r auth.Resolver, p g
 	return nil
 }
 
+// handlerSaid is a handler's error in the code the door answers it with: it
+// could not ask, which is no refusal, or the credential is no good. A handler
+// refuses in words of its own -- a token nothing holds, a session the store
+// has forgotten -- and says [auth.ErrUnavailable] for the one thing that is
+// not a refusal.
+func handlerSaid(err error) error {
+	if errors.Is(err, auth.ErrUnavailable) {
+		return status.Error(codes.Unavailable, "could not ask")
+	}
+	if s, ok := status.FromError(err); ok {
+		return s.Err()
+	}
+
+	return status.Error(codes.Unauthenticated, "no such credential")
+}
+
+// resolverSaid is a resolver's error in the code the door answers it with.
+// [auth.ErrNoCredential] is the resolver saying the credential names nobody
+// who may be here -- erased, suspended, their tenant closed -- and is a
+// refusal. Anything else that is not a status is a query that went wrong,
+// which says nothing about the caller: the store's own error carries no
+// status, and read as one it was `Unknown`, which ended every stream open
+// the moment a database did not answer.
+func resolverSaid(err error) error {
+	if errors.Is(err, auth.ErrNoCredential) {
+		return status.Error(codes.Unauthenticated, "names nobody")
+	}
+	if s, ok := status.FromError(err); ok {
+		return s.Err()
+	}
+
+	return status.Error(codes.Unavailable, "could not ask")
+}
+
 // refusal is an error where it says the caller is refused, and nil where it
 // says only that nobody could tell -- or the stream is over, and nobody is
 // asking.
 //
-// A handler refuses in words of its own -- a token nothing holds, a session
-// the store has forgotten -- and says [auth.ErrUnavailable] for the one thing
-// that is not a refusal: it could not ask. So what is not that, and is not a
-// server saying it is in trouble, is somebody who may not.
+// A refusal is the three codes that say a caller may not: they are not who
+// they said, they may not call this, or what they would be served is not
+// theirs to see. Every other code is a server that could not answer this
+// time, and the stream is asked again next time. Listed this way round, a
+// code nobody thought of is not a reason to end somebody's stream.
 func refusal(ctx context.Context, err error) error {
-	if ctx.Err() != nil || errors.Is(err, auth.ErrUnavailable) {
+	if ctx.Err() != nil {
 		return nil
 	}
 	switch status.Code(err) {
-	case codes.Unavailable, codes.DeadlineExceeded, codes.Canceled, codes.Internal, codes.ResourceExhausted:
-		return nil
-	default:
+	case codes.Unauthenticated, codes.PermissionDenied, codes.NotFound:
 		return err
+	default:
+		return nil
 	}
 }
