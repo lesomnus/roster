@@ -223,7 +223,16 @@ func newCmdControlEntities(c *cmd.Config) xli.Commands {
 	// both trees: the control plane's one tenant is this deployment, and
 	// closing it would leave nobody to restore it, so the server refuses the
 	// first and has nothing to undo for the second (#284).
-	for _, path := range []string{"tenant/add", "tenant/erase", "tenant/close", "tenant/restore"} {
+	//
+	// And five more the overlays mount: `consent agree`, `withdraw`,
+	// `settled`, `email verify` and `confirm` ask who is calling and refuse a
+	// call made as nobody, which every call at the box is. On the data
+	// plane's tree they go over the wire; this tree is local and nothing
+	// else, so here they could only refuse (#286).
+	for _, path := range []string{
+		"tenant/add", "tenant/erase", "tenant/close", "tenant/restore",
+		"consent/agree", "consent/withdraw", "consent/settled", "email/verify", "email/confirm",
+	} {
 		if err := t.Drop(path); err != nil {
 			// A path the schema no longer has, which is a mistake in this file
 			// rather than something a deployment can cause.
