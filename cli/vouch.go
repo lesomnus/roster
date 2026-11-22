@@ -171,10 +171,10 @@ func (w whomed) issuing(kind string) *app.CredentialIssueRequest {
 func whom(ctx context.Context, c *cmd.Config, s *cmd.Server, cl *xli.Command, control bool) (whomed, error) {
 	ref, named := arg.Get[pdcmd.Ref](cl, "REF")
 	if !named {
-		return whomed{}, errors.New("REF: who, as @tenant/alias or an identifier")
+		return whomed{}, invocation(errors.New("REF: who, as @tenant/alias or an identifier"))
 	}
 	if err := ref.Expect(pd.HolderDomain); err != nil {
-		return whomed{}, err
+		return whomed{}, invocation(err)
 	}
 
 	by, err := namedAt(ctx, c, s)
@@ -301,9 +301,9 @@ func newCmdVouchSet(c *cmd.Config, control bool) *xli.Command {
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			if v, _ := flg.Find[bool](cl, "password-stdin"); !v {
-				return errors.New(
+				return invocation(errors.New(
 					"--password-stdin: there is no flag to pass a password on, " +
-						"because an argument is in the shell history and in the process list")
+						"because an argument is in the shell history and in the process list"))
 			}
 
 			b, err := io.ReadAll(io.LimitReader(os.Stdin, 4<<10))
@@ -502,7 +502,7 @@ func newCmdOperatorProve(c *cmd.Config) *xli.Command {
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			if v, _ := flg.Find[bool](cl, "code-stdin"); !v {
-				return errors.New("--code-stdin: the code is read from stdin, as every secret here is")
+				return invocation(errors.New("--code-stdin: the code is read from stdin, as every secret here is"))
 			}
 
 			b, err := io.ReadAll(io.LimitReader(os.Stdin, 4<<10))
@@ -550,7 +550,9 @@ func newCmdOperatorProve(c *cmd.Config) *xli.Command {
 				return err
 			}
 			if !slices.Contains(res.GetSatisfied(), vouch.KindTotp) {
-				return errors.New("no: that is not a code this seed makes now. Nothing is proved")
+				// The check ran to its end and said no: status 3, as `vouch
+				// verify`'s no is (#284).
+				return finding(errors.New("no: that is not a code this seed makes now. Nothing is proved"))
 			}
 
 			fmt.Fprintln(os.Stderr, "proved; it counts from now on.")

@@ -130,9 +130,9 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 					{"--discard", discard},
 				} {
 					if f.given {
-						return fmt.Errorf("%s: only a window of your own reads it, and --older-than or --before names none. "+
+						return invocation(fmt.Errorf("%s: only a window of your own reads it, and --older-than or --before names none. "+
 							"With no window this is one pass of what `audit:` says, of every kind, to where it says; "+
-							"name a window, or leave %s out", f.name, f.name)
+							"name a window, or leave %s out", f.name, f.name))
 					}
 				}
 
@@ -152,8 +152,8 @@ func newCmdTrailPrune(c *cmd.Config) *xli.Command {
 			// discard under a hold for. A dry run is refused too: what it
 			// counts is what the same line without `--dry-run` would take.
 			if to != "" && discard {
-				return errors.New("--discard and --to say two different things about the same rows: " +
-					"one keeps no copy and the other says where the copy goes; give one")
+				return invocation(errors.New("--discard and --to say two different things about the same rows: " +
+					"one keeps no copy and the other says where the copy goes; give one"))
 			}
 
 			// Read here and not bound to `audit.archive` as `--in` is: bound,
@@ -381,8 +381,8 @@ func newCmdTrailPurge(c *cmd.Config) *xli.Command {
 				// `prune` runs, so there is nothing for a bare `purge` to mean
 				// that is not already covered -- and guessing would be guessing
 				// about the one act with nothing after it.
-				return errors.New("--older-than or --before: how old is old enough; " +
-					"`trail prune` applies the deployment's own policy, this destroys archives by hand")
+				return invocation(errors.New("--older-than or --before: how old is old enough; " +
+					"`trail prune` applies the deployment's own policy, this destroys archives by hand"))
 			}
 
 			of, err := kindOf(cl)
@@ -527,7 +527,7 @@ func newCmdTrailVerify(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 					how += " --restored <the checkpoint the backup holds>"
 				}
 
-				return fmt.Errorf("%d finding(s): look at each, and `roster trail accept %s --why ...` once the archive is right", len(v.Findings), how)
+				return finding(fmt.Errorf("%d finding(s): look at each, and `roster trail accept %s --why ...` once the archive is right", len(v.Findings), how))
 			}
 
 			return nil
@@ -667,10 +667,10 @@ func newCmdTrailRows(c *cmd.Config) *xli.Command {
 			of, _ := flg.Find[string](cl, "of")
 			why, _ := flg.Find[string](cl, "why")
 			if accept && strings.TrimSpace(of) == "" {
-				return errors.New("--of: the digest `roster trail rows` printed of what was looked at")
+				return invocation(errors.New("--of: the digest `roster trail rows` printed of what was looked at"))
 			}
 			if accept && strings.TrimSpace(why) == "" {
-				return errors.New("--why: what was looked at and decided")
+				return invocation(errors.New("--why: what was looked at and decided"))
 			}
 
 			cs, err := c.Audit.Contents()
@@ -767,7 +767,7 @@ func newCmdTrailRows(c *cmd.Config) *xli.Command {
 
 			findings := len(v.Differs) + len(v.Forged) + len(v.NoDigest) + len(v.NotOnTrail) + len(v.KeyNotHeld) + len(v.Missing)
 			if !accept {
-				return fmt.Errorf("%d finding(s): look at each, and `roster trail rows --accept --of %s --why ...` once the rows are right", findings, digest)
+				return finding(fmt.Errorf("%d finding(s): look at each, and `roster trail rows --accept --of %s --why ...` once the rows are right", findings, digest))
 			}
 
 			// What was looked at, and nothing found since: an acceptance of
@@ -886,16 +886,16 @@ func newCmdTrailAccept(c *cmd.Config) *xli.Command {
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			of, _ := flg.Find[string](cl, "of")
 			if strings.TrimSpace(of) == "" {
-				return errors.New("--of: the digest `roster trail verify` printed of the findings looked at")
+				return invocation(errors.New("--of: the digest `roster trail verify` printed of the findings looked at"))
 			}
 			why, _ := flg.Find[string](cl, "why")
 			if strings.TrimSpace(why) == "" {
-				return errors.New("--why: what was looked at and decided")
+				return invocation(errors.New("--why: what was looked at and decided"))
 			}
 			by, _ := flg.Find[string](cl, "by")
 			named := strings.TrimSpace(c.Client.As) != ""
 			if named && strings.TrimSpace(by) != "" {
-				return errors.New("--by: --as says who accepts; drop one of them")
+				return invocation(errors.New("--by: --as says who accepts; drop one of them"))
 			}
 			if !named && strings.TrimSpace(by) == "" {
 				by = thisShell()
@@ -1009,7 +1009,7 @@ func kindOf(cl *xli.Command) (trail.Kinds, error) {
 
 	d, err := trail.DomainOf(v)
 	if err != nil {
-		return trail.Kinds{}, fmt.Errorf("--kind: %w", err)
+		return trail.Kinds{}, invocation(fmt.Errorf("--kind: %w", err))
 	}
 
 	return trail.Only(d), nil
@@ -1273,15 +1273,15 @@ func cutoff(cl *xli.Command) (time.Time, bool, error) {
 
 	switch {
 	case older != "" && before != "":
-		return time.Time{}, false, errors.New("--older-than and --before name the same instant two ways; give one")
+		return time.Time{}, false, invocation(errors.New("--older-than and --before name the same instant two ways; give one"))
 
 	case older != "":
 		d, err := time.ParseDuration(older)
 		if err != nil {
-			return time.Time{}, false, fmt.Errorf("--older-than: %w", err)
+			return time.Time{}, false, invocation(fmt.Errorf("--older-than: %w", err))
 		}
 		if d <= 0 {
-			return time.Time{}, false, errors.New("--older-than: a window of nothing is everything")
+			return time.Time{}, false, invocation(errors.New("--older-than: a window of nothing is everything"))
 		}
 
 		return time.Now().Add(-d), true, nil
@@ -1289,12 +1289,12 @@ func cutoff(cl *xli.Command) (time.Time, bool, error) {
 	case before != "":
 		at, err := time.Parse(time.RFC3339, before)
 		if err != nil {
-			return time.Time{}, false, fmt.Errorf("--before: %w", err)
+			return time.Time{}, false, invocation(fmt.Errorf("--before: %w", err))
 		}
 		if at.After(time.Now()) {
 			// The same window `--older-than 0` is, and less: every row there
 			// is, and every row written between now and then.
-			return time.Time{}, false, fmt.Errorf("--before: %s is still to come, and a window that ends after now is everything", before)
+			return time.Time{}, false, invocation(fmt.Errorf("--before: %s is still to come, and a window that ends after now is everything", before))
 		}
 
 		return at, true, nil
@@ -1402,7 +1402,7 @@ func identifier(cl *xli.Command, name string) (pdid.Id, error) {
 
 	k, err := pdid.Parse(v)
 	if err != nil {
-		return pdid.Nil, fmt.Errorf("--%s: %w", name, err)
+		return pdid.Nil, invocation(fmt.Errorf("--%s: %w", name, err))
 	}
 
 	return k, nil
@@ -1416,7 +1416,7 @@ func instant(cl *xli.Command, name string) (time.Time, error) {
 
 	at, err := time.Parse(time.RFC3339, v)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("--%s: %w", name, err)
+		return time.Time{}, invocation(fmt.Errorf("--%s: %w", name, err))
 	}
 
 	return at, nil

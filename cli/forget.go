@@ -131,7 +131,7 @@ func NewCmdForget(c *cmd.Config) *xli.Command {
 				return forgotten(ctx, s, who, p, cs)
 			}
 			if reuse {
-				return errors.New("--reuse frees one tenant's alias, so name the tenant")
+				return invocation(errors.New("--reuse frees one tenant's alias, so name the tenant"))
 			}
 
 			// Nobody named, so everything a clock is done waiting for. Which is
@@ -467,7 +467,7 @@ func NewCmdRestore(c *cmd.Config) *xli.Command {
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
 			ref, ok := arg.Get[pdcmd.Ref](cl, "REF")
 			if !ok {
-				return errors.New("REF: who to bring back")
+				return invocation(errors.New("REF: who to bring back"))
 			}
 
 			s, err := built(ctx, *c)
@@ -607,7 +607,7 @@ func whoIs(ctx context.Context, db *ent.Client, ref pdcmd.Ref) (pdid.Id, error) 
 		return ref.Id, nil
 	}
 	if ref.Alias == "" {
-		return pdid.Nil, errors.New("REF: an alias or an identifier")
+		return pdid.Nil, invocation(errors.New("REF: an alias or an identifier"))
 	}
 
 	q := db.Holder.Query().Where(entholder.AliasEQ(ref.Alias))

@@ -540,8 +540,8 @@ func keysOf(refs map[string]string, prefix string, given []string) (map[string]s
 		alias, token, ok := strings.Cut(v, "=")
 		if !ok || alias == "" || token == "" {
 			// Not said back: what is given here is a token.
-			return nil, errors.New("--key: a key is given as alias=token, and one is not; it is not said back, " +
-				"since what is given there is the token")
+			return nil, invocation(errors.New("--key: a key is given as alias=token, and one is not; it is not said back, " +
+				"since what is given there is the token"))
 		}
 		out[strings.ToLower(alias)] = token
 	}

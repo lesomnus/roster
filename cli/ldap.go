@@ -83,7 +83,7 @@ func newCmdLdapServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				for _, v := range vs {
 					alias, suffix, ok := strings.Cut(v, "=")
 					if !ok || alias == "" || suffix == "" {
-						return fmt.Errorf("--base %q: alias=dc=…", v)
+						return invocation(fmt.Errorf("--base %q: alias=dc=…", v))
 					}
 					lc.Bases[alias] = suffix
 				}
