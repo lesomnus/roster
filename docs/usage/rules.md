@@ -34,9 +34,56 @@ here that is not there.
    method this call is*.
 4. **The rules**, about this request and this row.
 
-A refusal at 3 is `NotFound`, since a row somebody may not see is not said to
-be there. At 2 and 4 it is `PermissionDenied`, or `FailedPrecondition` where
-what is refused is the state the write would leave.
+A row somebody may not see is not said to be there, so a call that the wall
+refuses is answered as one about a row nobody has. What each step's refusal is
+answered with, and every other failure, is the next section.
+
+## What a failure is answered with
+
+**A caller reads the code, and not the words.** The words say what was wrong
+to whoever reads them, and change from one release to the next; the code is
+what a page or a client branches on. The HTTP status is what the transcoder
+(`server.http.addr`, and the HTTP half of every other port) answers for the code, in the error's
+JSON (`{"code":"not_found","message":"…"}`), but where the row says otherwise.
+
+**`Unknown` and `Internal` are never roster refusing a call.** Each is roster
+itself failing, and is not mended by changing the request.
+
+| the failure | the code | HTTP | what a caller does |
+| --- | --- | --- | --- |
+| nobody by that reference | `NotFound`, *Holder not found* and the like, for every read and every verb that names a row. A `List` filtered to it answers nothing, and no error | 404 | stop asking about that reference |
+| somebody of another tenant | `NotFound`, in the words nobody is answered in: another tenant's row is not said to be there | 404 | as for nobody |
+| somebody erased | `NotFound`, as for nobody | 404 | as for nobody; a person erased is brought back at the box alone (`roster restore`) |
+| somebody out of the caller's reach in a site | `NotFound`, as for nobody. A verb about the whole tenant (the tenant's own, and every write of `Connection`, `Host`, `HostProof`, `MailDomain`, `Nomination`, `Site`) is `PermissionDenied`, *is about the whole tenant, and you hold it only in part of it*, whether or not the row is there; and so is `GroupService/Update`, *you hold nothing for that group*, of a group that is there and of one that is not | 404 / 403 | ask somebody who holds the method across the tenant |
+| no credential | `Unauthenticated`, *who is asking?*, on every method of every port but the three `AuthService` answers a stranger (`SignIn`, `Offers`, `Which`) | 401 | sign in, or send the key |
+| a credential that is none: a key nobody minted, one expired or revoked, one of somebody stopped, a scheme nobody reads | `Unauthenticated`, in two sentences that do not tell these apart. A stream already open is ended with it too, when whoever opened it may not any more | 401 | throw the credential away and sign in again |
+| a method the caller lacks | `PermissionDenied`, *no role of yours allows that*, or of a key that does not list it, *this credential is not for that*. A method of the tenant's `self-service` role asked about somebody else's row is `NotFound`, as the wall answers it | 403 / 404 | ask whoever writes the roles, or use a key that lists the method |
+| a row that exists already | `AlreadyExists`, *Site already exists* and the like, for an alias, an address, a name taken in the tenant. A second account at one provider for one person (`IdentityService/Add`) is `InvalidArgument` | 409 / 400 | it is there: read it |
+| a request that cannot be taken as it is written | `InvalidArgument`: a field left out or empty, too long, or of the wrong form; a reference with no key in it; a version left out where the verb needs one; a moment or a mark the server stamps | 400 | mend the request; sent again as it is, it is refused again |
+| one rule's refusal | `FailedPrecondition` where what is refused is the state the write would leave: the tenant's last administrator, somebody's last way in, a site with something still in it, a row a file declares. `PermissionDenied` where it is how far the caller reaches: a grant wider than they hold, a password not their own (`Set` writes one's own, `Issue` somebody else's) | 400 / 403 | the words say what would be right; sent again as it is, it is refused again |
+| a version that moved (**not settled**) | `FailedPrecondition`, the code of a rule's refusal, in three wordings (the generated verbs' is *a test in the patch did not hold*). The version is `date_updated`, as the read answered it | 400 | read the row again and send the write again with its `date_updated` |
+| a race roster lost to another write | `Aborted`, *… ask again*: a role's methods changed each time `Widen` or `Narrow` read them, or a tenant's `group-manager` role was being made by another call | 409 | ask again |
+| a general write | `Unimplemented`, *is not served; it is how the servers write, not how a caller asks*: every `Patch` and `Apply`, and `CredentialService`'s reads. It is decided after the gate, so a caller who lacks the method is `PermissionDenied` first | 501 / 403 | use the entity's own verb (`Update`, `Widen`, `Realias`, …), where it has one |
+| a method nobody serves | `Unimplemented`, gRPC's own *unknown method* or *unknown service*, before anybody is asked who they are. Over HTTP it is a 404 as plain text, not the error's JSON | 404 | the server is older than the client, or the name is wrong |
+| the deployment is not set up for it (**not settled**) | `Unimplemented` (*this deployment holds no key to wrap a seed with*, *nobody leaves by a link here*, and others) or `FailedPrecondition` (*this deployment cannot check whether a name is yours*, and others), by the verb | 501 / 400 | do not offer it; whoever runs the deployment turns it on |
+| too many calls | `ResourceExhausted`, *too many calls; wait and ask again*, with a `RetryInfo` that says how long. A stream cut for falling behind is the same code | 429 | wait as long as `RetryInfo` says, then ask again; open a stream again |
+| a deadline | `DeadlineExceeded`. A call that named no deadline is given `server.timeout`, thirty seconds unsaid; a stream is given none | 504 | ask again; a write may have been made, so read first |
+| roster itself failing | `Unavailable`, `Unknown` or `Internal`, by where it was met: a store that cannot be reached, a constraint the store refused in its own words, a panic. None of the three is a refusal of the call | 503 / 500 / 500 | ask again later; tell whoever runs the deployment, with the time |
+| an `Erase` of a row that is not there (**not settled**) | `NotFound` in `Binding`, `Connection`, `Holder`, `Host`, `MailDomain`, `Nomination`, `Role`, `Site`; and `OK`, erasing nothing, in `ApiKey`, `Credential`, `Delegation`, `Email`, `Group`, `GroupExposure`, `GroupMembership`, `HostProof`, `Identity`, `Phone`, `Relation`, `SiteMembership`, `Team`, `TeamMembership`. The same of a row of another tenant and of an erased one | 404 / 200 | take either as *it is gone* |
+
+**Three are not settled**, and are written as they are today: one failure
+answered two ways. A version that moved has the code of a rule's refusal, so a
+page cannot tell *read again and send again* from a refusal nothing mends but
+by the words. The deployment not set up for something is `Unimplemented` from
+some verbs and `FailedPrecondition` from others. An `Erase` of a row that is
+not there is `NotFound` from eight services and success from fourteen. Each may
+change before the API is frozen; a page written today reads the code as this
+table has it, and the roadmap says when it changes.
+
+`TestTheManualsTableOfFailuresIsWhatIsAnswered` sends each failure a test can
+make to a verb of five or six services, over gRPC and through the transcoder,
+and holds the code and the status to this table's, reading the rows from this
+page.
 
 ## Where a grant reaches
 
